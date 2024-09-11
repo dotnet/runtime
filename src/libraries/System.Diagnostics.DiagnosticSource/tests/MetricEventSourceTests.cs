@@ -50,11 +50,11 @@ namespace System.Diagnostics.Metrics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestVersion()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke(static () =>
             {
-                using var meter = new Meter("test");
+                using var meter = new Meter("test"); // we need this to ensure MetricsEventSource.Logger creation.
 
-                using (var eventSourceListener = new MetricsEventListener(_output, EventKeywords.All, 60))
+                using (var eventSourceListener = new MetricsEventListener(NullTestOutputHelper.Instance, EventKeywords.All, 60))
                 {
                     var versionEvents = eventSourceListener.Events.Where(e => e.EventName == "Version");
 
