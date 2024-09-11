@@ -1522,6 +1522,10 @@ void Compiler::fgAddSyncMethodEnterExit()
         }
 #endif
     }
+    else
+    {
+        lvaTable[lvaMonAcquired].lvIsOSRLocal = true;
+    }
 
     // Make a copy of the 'this' pointer to be used in the handler so it does
     // not inhibit enregistration of all uses of the variable. We cannot do
