@@ -245,8 +245,9 @@ CHECK Assembly::CheckActivated()
 
     CHECK_MSG(GetPEAssembly()->IsLoaded(), "PEAssembly has not been loaded");
     CHECK_MSG(IsLoaded(), "Assembly has not been fully loaded");
+#ifdef _DEBUG
     CHECK_MSG(m_bDisableActivationCheck || CheckLoadLevel(FILE_ACTIVE), "File has not had execution verified");
-
+#endif
     CHECK_OK;
 }
 
@@ -405,7 +406,9 @@ void Assembly::Activate()
     if (pMT != NULL)
     {
         pMT->CheckRestore();
+#ifdef _DEBUG
         m_bDisableActivationCheck=TRUE;
+#endif
         pMT->CheckRunClassInitThrowing();
     }
 #ifdef _DEBUG
@@ -435,7 +438,6 @@ void Assembly::Begin()
     }
     // Make it possible to find this DomainAssembly object from associated BINDER_SPACE::Assembly.
     RegisterWithHostAssembly();
-    m_fHostAssemblyPublished = true;
 }
 
 void Assembly::RegisterWithHostAssembly()

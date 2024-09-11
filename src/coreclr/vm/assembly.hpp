@@ -59,7 +59,7 @@ public:
     FileLoadLevel GetLoadLevel() { LIMITED_METHOD_DAC_CONTRACT; return m_level; }
 
     // Error means that a permanent load error has occurred.
-    BOOL IsError()
+    bool IsError()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         DACCOP_IGNORE(FieldAccess, "No marshalling required");
@@ -67,15 +67,15 @@ public:
     }
 
     // Loading means that the load is still being tracked by a FileLoadLock.
-    BOOL IsLoading() { LIMITED_METHOD_CONTRACT; return m_loading; }
+    bool IsLoading() { LIMITED_METHOD_CONTRACT; return m_isLoading; }
 
     // Loaded means that the file can be used passively. This includes loading types, reflection,
     // and jitting.
-    BOOL IsLoaded() { LIMITED_METHOD_DAC_CONTRACT; return m_level >= FILE_LOAD_DELIVER_EVENTS; }
+    bool IsLoaded() { LIMITED_METHOD_DAC_CONTRACT; return m_level >= FILE_LOAD_DELIVER_EVENTS; }
 
     // Active means that the file can be used actively. This includes code execution, static field
     // access, and instance allocation.
-    BOOL IsActive() { LIMITED_METHOD_CONTRACT; return m_level >= FILE_ACTIVE; }
+    bool IsActive() { LIMITED_METHOD_CONTRACT; return m_level >= FILE_ACTIVE; }
 
     // Checks if the load has reached the point where profilers may be notified
     // about the file. It's important that IF a profiler is notified, THEN this returns
@@ -83,7 +83,7 @@ public:
     // the file via either enumeration or notification. As a result, this begins
     // returning TRUE just before the profiler is actually notified.  See
     // code:ProfilerFunctionEnum::Init#ProfilerEnumAssemblies
-    BOOL IsAvailableToProfilers()
+    bool IsAvailableToProfilers()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return IsProfilerNotified(); // despite the name, this function returns TRUE just before we notify the profiler
@@ -91,7 +91,7 @@ public:
 
     BOOL DoIncrementalLoad(FileLoadLevel targetLevel);
 
-    void ClearLoading() { LIMITED_METHOD_CONTRACT; m_loading = FALSE; }
+    void ClearLoading() { LIMITED_METHOD_CONTRACT; m_isLoading = false; }
     void SetLoadLevel(FileLoadLevel level) { LIMITED_METHOD_CONTRACT; m_level = level; }
 
     BOOL NotifyDebuggerLoad(int flags, BOOL attaching);
@@ -150,9 +150,9 @@ private:
     void SetShouldNotifyDebugger() { LIMITED_METHOD_CONTRACT; m_notifyFlags |= DEBUGGER_NEEDNOTIFICATION; }
 
     // IsNotified means that the profiler API notification has been delivered
-    BOOL IsProfilerNotified() { LIMITED_METHOD_CONTRACT; return m_notifyFlags & PROFILER_NOTIFIED; }
-    BOOL IsDebuggerNotified() { LIMITED_METHOD_CONTRACT; return m_notifyFlags & DEBUGGER_NOTIFIED; }
-    BOOL ShouldNotifyDebugger() { LIMITED_METHOD_CONTRACT; return m_notifyFlags & DEBUGGER_NEEDNOTIFICATION; }
+    bool IsProfilerNotified() { LIMITED_METHOD_CONTRACT; return (m_notifyFlags & PROFILER_NOTIFIED) == PROFILER_NOTIFIED; }
+    bool IsDebuggerNotified() { LIMITED_METHOD_CONTRACT; return (m_notifyFlags & DEBUGGER_NOTIFIED) == DEBUGGER_NOTIFIED; }
+    bool ShouldNotifyDebugger() { LIMITED_METHOD_CONTRACT; return (m_notifyFlags & DEBUGGER_NEEDNOTIFICATION) == DEBUGGER_NEEDNOTIFICATION; }
 
     // CheckLoadLevel is an assert predicate used to verify the load level of an assembly.
     // deadlockOK indicates that the level is allowed to be one short if we are restricted
@@ -355,8 +355,8 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
-    FORCEINLINE BOOL IsDynamic() { LIMITED_METHOD_CONTRACT; return m_isDynamic; }
-    FORCEINLINE BOOL IsCollectible() { LIMITED_METHOD_DAC_CONTRACT; return m_isCollectible; }
+    FORCEINLINE bool IsDynamic() { LIMITED_METHOD_CONTRACT; return m_isDynamic; }
+    FORCEINLINE bool IsCollectible() { LIMITED_METHOD_DAC_CONTRACT; return m_isCollectible; }
 
     void AddType(Module* pModule,
                  mdTypeDef cl);
@@ -504,31 +504,32 @@ private:
 
     FriendAssemblyDescriptor *m_pFriendAssemblyDescriptor;
 
-    BOOL                  m_isDynamic;
-#ifdef FEATURE_COLLECTIBLE_TYPES
-    BOOL                  m_isCollectible;
-#endif // FEATURE_COLLECTIBLE_TYPES
-    PTR_LoaderAllocator   m_pLoaderAllocator;
-
 #ifdef FEATURE_COMINTEROP
     // If a TypeLib is ever required for this module, cache the pointer here.
     ITypeLib              *m_pITypeLib;
     InteropAttributeStatus m_InteropAttributeStatus;
 #endif // FEATURE_COMINTEROP
 
-    DebuggerAssemblyControlFlags m_debuggerFlags;
-
-    BOOL                  m_fTerminated;
-
-    LOADERHANDLE          m_hExposedObject;
+    PTR_LoaderAllocator   m_pLoaderAllocator;
+#ifdef FEATURE_COLLECTIBLE_TYPES
+    bool                  m_isCollectible;
+#endif // FEATURE_COLLECTIBLE_TYPES
+    bool                  m_isDynamic;
 
     // Load state tracking
+    bool            m_isLoading;
+    bool            m_isTerminated;
     FileLoadLevel   m_level;
-    BOOL            m_loading;
     DWORD           m_notifyFlags;
     Exception*      m_pError;
-    BOOL            m_fHostAssemblyPublished;
-    BOOL            m_bDisableActivationCheck;
+
+#ifdef _DEBUG
+    bool            m_bDisableActivationCheck;
+#endif
+
+    DebuggerAssemblyControlFlags m_debuggerFlags;
+
+    LOADERHANDLE          m_hExposedObject;
 };
 
 #ifndef DACCESS_COMPILE

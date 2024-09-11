@@ -123,26 +123,25 @@ Assembly::Assembly(PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debugge
     , m_pModule(NULL)
     , m_pPEAssembly(clr::SafeAddRef(pPEAssembly))
     , m_pFriendAssemblyDescriptor(NULL)
-    , m_isDynamic(false)
-#ifdef FEATURE_COLLECTIBLE_TYPES
-    , m_isCollectible{pLoaderAllocator->IsCollectible()}
-#endif
-    , m_pLoaderAllocator{pLoaderAllocator}
 #ifdef FEATURE_COMINTEROP
     , m_pITypeLib(NULL)
-#endif // FEATURE_COMINTEROP
-#ifdef FEATURE_COMINTEROP
     , m_InteropAttributeStatus(INTEROP_ATTRIBUTE_UNSET)
 #endif
-    , m_debuggerFlags(debuggerFlags)
-    , m_fTerminated(FALSE)
-    , m_hExposedObject{}
+    , m_pLoaderAllocator{pLoaderAllocator}
+#ifdef FEATURE_COLLECTIBLE_TYPES
+    , m_isCollectible{pLoaderAllocator->IsCollectible() != FALSE}
+#endif
+    , m_isDynamic(false)
+    , m_isLoading{true}
+    , m_isTerminated{false}
     , m_level{FILE_LOAD_CREATE}
-    , m_loading{TRUE}
     , m_notifyFlags{NOT_NOTIFIED}
     , m_pError{NULL}
-    , m_fHostAssemblyPublished{FALSE}
-    , m_bDisableActivationCheck{FALSE}
+#ifdef _DEBUG
+    , m_bDisableActivationCheck{false}
+#endif
+    , m_debuggerFlags(debuggerFlags)
+    , m_hExposedObject{}
 {
     CONTRACTL
     {
@@ -231,11 +230,8 @@ Assembly::~Assembly()
 
     if (m_pPEAssembly)
     {
-        if (m_fHostAssemblyPublished)
-        {
-            // Remove association first.
-            UnregisterFromHostAssembly();
-        }
+        // Remove association first.
+        UnregisterFromHostAssembly();
 
         m_pPEAssembly->Release();
     }
@@ -296,7 +292,7 @@ void Assembly::Terminate( BOOL signalProfiler )
 
     STRESS_LOG1(LF_LOADER, LL_INFO100, "Assembly::Terminate (this = 0x%p)\n", reinterpret_cast<void *>(this));
 
-    if (this->m_fTerminated)
+    if (m_isTerminated)
         return;
 
     if (m_pClassLoader != NULL)
@@ -315,7 +311,7 @@ void Assembly::Terminate( BOOL signalProfiler )
     }
 #endif // PROFILING_SUPPORTED
 
-    this->m_fTerminated = TRUE;
+    m_isTerminated = true;
 }
 
 Assembly * Assembly::Create(
