@@ -5687,6 +5687,12 @@ void Compiler::lvaFixVirtualFrameOffsets()
             // We set FP to be after LR, FP
             fpLrDelta += 2 * REGSIZE_BYTES;
             delta += fpLrDelta;
+
+            if ((lvaMonAcquired != BAD_VAR_NUM) && opts.IsOSR())
+            {
+                int offset = lvaTable[lvaMonAcquired].GetStackOffset() - fpLrDelta;
+                lvaTable[lvaMonAcquired].SetStackOffset(offset);
+            }
         }
         JITDUMP("--- delta bump %d for FP frame\n", delta);
     }
