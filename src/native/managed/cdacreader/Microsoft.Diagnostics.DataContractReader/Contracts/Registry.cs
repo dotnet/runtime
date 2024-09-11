@@ -25,25 +25,30 @@ internal sealed class Registry
     public IThread Thread => GetContract<IThread>();
     public IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IRuntimeTypeSystem>();
     public IDacStreams DacStreams => GetContract<IDacStreams>();
-    public ICodeVersions CodeVersions => GetContract<ICodeVersions>();
+    public ICodeVersions CodeVersions => GetContract<IFCodeVersions, ICodeVersions>();
     public IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
     public IExecutionManager ExecutionManager => GetContract<IExecutionManager>();
     public IReJIT ReJIT => GetContract<IReJIT>();
 
-    private T GetContract<T>() where T : IContractFactory<T>
+    private TProduct GetContract<TFactory, TProduct>() where TProduct : IContract where TFactory : TProduct, IContractFactory<TFactory, TProduct>
     {
-        if (_contracts.TryGetValue(typeof(T), out IContract? contractMaybe))
-            return (T)contractMaybe;
+        if (_contracts.TryGetValue(typeof(TProduct), out IContract? contractMaybe))
+            return (TProduct)contractMaybe;
 
-        if (!_target.TryGetContractVersion(T.Name, out int version))
+        if (!_target.TryGetContractVersion(TFactory.Name, out int version))
             throw new NotImplementedException();
 
         // Create and register the contract
-        T contract = T.Create(_target, version);
-        if (_contracts.TryAdd(typeof(T), contract))
+        TProduct contract = TFactory.CreateContract(_target, version);
+        if (_contracts.TryAdd(typeof(TProduct), contract))
             return contract;
 
         // Contract was already registered by someone else
-        return (T)_contracts[typeof(T)];
+        return (TProduct)_contracts[typeof(TProduct)];
+    }
+
+    private T GetContract<T>() where T : IContractFactory<T>
+    {
+        return GetContract<T, T>();
     }
 }

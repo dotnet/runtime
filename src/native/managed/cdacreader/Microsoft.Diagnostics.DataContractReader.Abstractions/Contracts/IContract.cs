@@ -10,7 +10,13 @@ internal interface IContract
     static virtual string Name => throw new NotImplementedException();
 }
 
-internal interface IContractFactory<ISelf> : IContract where ISelf : IContractFactory<ISelf>
+internal interface IContractFactory<ISelf, IProduct> : IContract where IProduct : IContract where ISelf : IProduct, IContractFactory<ISelf, IProduct>
 {
+    static virtual IProduct CreateContract(ITarget target, int version) => throw new NotImplementedException();
+}
+
+internal interface IContractFactory<ISelf> : IContractFactory<ISelf, ISelf> where ISelf : IContractFactory<ISelf>
+{
+    static ISelf IContractFactory<ISelf, ISelf>.CreateContract(ITarget target, int version) => ISelf.Create(target, version);
     static virtual ISelf Create(ITarget target, int version) => throw new NotImplementedException();
 }
