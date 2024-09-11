@@ -7,6 +7,8 @@ Provides functionality for dynamically generating and compiling source code usin
 It allows developers to represent code in a language-agnostic format and then generate code in multiple languages, such as C# and VB.NET.
 The primary use cases include creating dynamic code generation tools, runtime code generation, and facilitating code analysis or transformation.
 
+For a new modern development consider using the [.NET Compiler Platform SDK](https://learn.microsoft.com/otnet/csharp/roslyn-sdk/), check [Cross-Platform Code Generation with Roslyn and .NET Core](https://learn.microsoft.com/archive/msdn-magazine/2017/may/net-core-cross-platform-code-generation-with-roslyn-and-net-core) and [Get started with source generators](https://learn.microsoft.com/dotnet/csharp/roslyn-sdk/source-generators-overview#get-started-with-source-generators) for more info.
+
 ## Key Features
 
 <!-- The key features of this package -->
