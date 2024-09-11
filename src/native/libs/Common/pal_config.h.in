@@ -58,7 +58,6 @@
 #cmakedefine01 HAVE_EPOLL
 #cmakedefine01 HAVE_GETHOSTNAME
 #cmakedefine01 HAVE_GETNAMEINFO
-#cmakedefine01 HAVE_CMSGHDR
 #cmakedefine01 HAVE_SOCKADDR_UN_SUN_PATH
 #cmakedefine01 HAVE_ACCEPT4
 #cmakedefine01 HAVE_KQUEUE

@@ -932,7 +932,7 @@ SystemNative_SetIPv6Address(uint8_t* socketAddress, int32_t socketAddressLen, ui
     return Error_SUCCESS;
 }
 
-#if HAVE_CMSGHDR
+#if defined(CMSG_SPACE)
 static int8_t IsStreamSocket(int socket)
 {
     int type;
@@ -959,23 +959,23 @@ static void ConvertMessageHeaderToMsghdr(struct msghdr* header, const MessageHea
     header->msg_controllen = (uint32_t)messageHeader->ControlBufferLen;
     header->msg_flags = 0;
 }
-#endif // HAVE_CMSGHDR
+#endif // CMSG_SPACE
 
 int32_t SystemNative_GetControlMessageBufferSize(int32_t isIPv4, int32_t isIPv6)
 {
     // Note: it is possible that the address family of the socket is neither
     //       AF_INET nor AF_INET6. In this case both inputs will be 0 and
     //       the control message buffer size should be zero.
-#if HAVE_CMSGHDR
+#if defined(CMSG_SPACE)
     return (isIPv4 != 0 ? CMSG_SPACE(sizeof(struct in_pktinfo)) : 0) + (isIPv6 != 0 ? CMSG_SPACE(sizeof(struct in6_pktinfo)) : 0);
-#else // HAVE_CMSGHDR
+#else // CMSG_SPACE
     (void)isIPv4;
     (void)isIPv6;
     return 0;
-#endif // HAVE_CMSGHDR
+#endif // CMSG_SPACE
 }
 
-#if HAVE_CMSGHDR
+#if defined(CMSG_SPACE)
 static int32_t GetIPv4PacketInformation(struct cmsghdr* controlMessage, IPPacketInformation* packetInfo)
 {
     assert(controlMessage != NULL);
@@ -1054,7 +1054,7 @@ static struct cmsghdr* GET_CMSG_NXTHDR(struct msghdr* mhdr, struct cmsghdr* cmsg
 #pragma clang diagnostic pop
 #endif
 }
-#endif // HAVE_CMSGHDR
+#endif // CMSG_SPACE
 
 int32_t
 SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo)
@@ -1064,7 +1064,7 @@ SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isI
         return 0;
     }
 
-#if HAVE_CMSGHDR
+#if defined(CMSG_SPACE)
     struct msghdr header;
     ConvertMessageHeaderToMsghdr(&header, messageHeader, -1);
 
@@ -1093,12 +1093,12 @@ SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isI
     }
 
     return 0;
-#else // HAVE_CMSGHDR
+#else // CMSG_SPACE
     (void)messageHeader;
     (void)isIPv4;
     (void)packetInfo;
     return Error_ENOTSUP;
-#endif // HAVE_CMSGHDR
+#endif // CMSG_SPACE
 }
 
 static int8_t GetMulticastOptionName(int32_t multicastOption, int8_t isIPv6, int* optionName)
@@ -1440,7 +1440,7 @@ static int8_t ConvertSocketFlagsPalToPlatform(int32_t palFlags, int* platformFla
     return true;
 }
 
-#if HAVE_CMSGHDR
+#if defined(CMSG_SPACE)
 static int32_t ConvertSocketFlagsPlatformToPal(int platformFlags)
 {
     const int SupportedFlagsMask = MSG_OOB | MSG_DONTROUTE | MSG_TRUNC | MSG_CTRUNC;
@@ -1452,7 +1452,7 @@ static int32_t ConvertSocketFlagsPlatformToPal(int platformFlags)
            ((platformFlags & MSG_TRUNC) == 0 ? 0 : SocketFlags_MSG_TRUNC) |
            ((platformFlags & MSG_CTRUNC) == 0 ? 0 : SocketFlags_MSG_CTRUNC);
 }
-#endif // HAVE_CMSGHDR
+#endif // CMSG_SPACE
 
 int32_t SystemNative_Receive(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* received)
 {
@@ -1553,10 +1553,10 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
     }
 
     ssize_t res;
-#if !HAVE_CMSGHDR
+#if !defined(CMSG_SPACE)
     // TODO https://github.com/dotnet/runtime/issues/98957
     return Error_ENOTSUP;
-#else // !HAVE_CMSGHDR
+#else // !CMSG_SPACE
     struct msghdr header;
     ConvertMessageHeaderToMsghdr(&header, messageHeader, fd);
 
@@ -1581,7 +1581,7 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
 
     *received = 0;
     return SystemNative_ConvertErrorPlatformToPal(errno);
-#endif // !HAVE_CMSGHDR
+#endif // !CMSG_SPACE
 }
 
 int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* sent)
@@ -1635,10 +1635,10 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
         return Error_ENOTSUP;
     }
 
-#if !HAVE_CMSGHDR
+#if !defined(CMSG_SPACE)
     // TODO https://github.com/dotnet/runtime/issues/98957
     return Error_ENOTSUP;
-#else // !HAVE_CMSGHDR
+#else // !CMSG_SPACE
     ssize_t res;
     struct msghdr header;
     ConvertMessageHeaderToMsghdr(&header, messageHeader, fd);
@@ -1660,7 +1660,7 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
 
     *sent = 0;
     return SystemNative_ConvertErrorPlatformToPal(errno);
-#endif // !HAVE_CMSGHDR
+#endif // !CMSG_SPACE
 }
 
 int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, intptr_t* acceptedSocket)

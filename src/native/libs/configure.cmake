@@ -464,11 +464,6 @@ check_symbol_exists(
     HAVE_GETHOSTNAME)
 
 check_symbol_exists(
-    cmsghdr
-    sys/socket.h
-    HAVE_CMSGHDR)
-
-check_symbol_exists(
     getnameinfo
     netdb.h
     HAVE_GETNAMEINFO)
