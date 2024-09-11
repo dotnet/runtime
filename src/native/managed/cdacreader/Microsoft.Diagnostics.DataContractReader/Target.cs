@@ -12,12 +12,6 @@ using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
-public readonly struct TargetNUInt
-{
-    public readonly ulong Value;
-    public TargetNUInt(ulong value) => Value = value;
-}
-
 public readonly struct TargetSpan
 {
     public TargetSpan(TargetPointer address, ulong size)

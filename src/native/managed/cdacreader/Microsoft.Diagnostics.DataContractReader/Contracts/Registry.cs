@@ -19,7 +19,7 @@ internal sealed class Registry
     }
 
     public IException Exception => GetContract<IFException, IException>();
-    public ILoader Loader => GetContract<ILoader>();
+    public ILoader Loader => GetContract<IFLoader, ILoader>();
     public IEcmaMetadata EcmaMetadata => GetContract<IEcmaMetadata>();
     public IObject Object => GetContract<IFObject, IObject>();
     public IThread Thread => GetContract<IThread>();
