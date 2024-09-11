@@ -438,6 +438,8 @@ namespace WebAssemblyInfo
         public string Module;
         public string Name;
         public UInt32 Idx;
+        public UInt32 Min;
+        public UInt32 Max;
         public ImportDesc Desc;
 
         public override string ToString()

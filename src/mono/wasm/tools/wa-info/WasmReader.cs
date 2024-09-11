@@ -95,6 +95,14 @@ namespace WebAssemblyInfo
             }
         }
 
+        (uint, uint) ReadLimits()
+        {
+            var limitsType = Reader.ReadByte();
+            var min = ReadU32();
+            var max = limitsType == 1 ? ReadU32() : UInt32.MaxValue;
+
+            return (min, max);
+        }
 
         TableType[]? tables;
         void ReadTableSection()
@@ -111,12 +119,10 @@ namespace WebAssemblyInfo
             for (uint i = 0; i < count; i++)
             {
                 tables[i].RefType = (ReferenceType)Reader.ReadByte();
-                var limitsType = Reader.ReadByte();
-                tables[i].Min = ReadU32();
-                tables[i].Max = limitsType == 1 ? ReadU32() : UInt32.MaxValue;
+                (tables[i].Min, tables[i].Max) = ReadLimits();
 
                 if (Program.Verbose2)
-                    Console.WriteLine($"  table: {i} reftype: {tables[i].RefType} limits: {tables[i].Min}, {tables[i].Max} {limitsType}");
+                    Console.WriteLine($"  table: {i} reftype: {tables[i].RefType} limits: {tables[i].Min}, {tables[i].Max}");
             }
         }
 
@@ -296,12 +302,10 @@ namespace WebAssemblyInfo
             memories = new Memory[count];
             for (uint i = 0; i < count; i++)
             {
-                var limitsType = Reader.ReadByte();
-                memories[i].Min = ReadU32();
-                memories[i].Max = limitsType == 1 ? ReadU32() : UInt32.MaxValue;
+                (memories[i].Min, memories[i].Max) = ReadLimits();
 
                 if (Program.Verbose2)
-                    Console.Write($"  memory: {i} limits: {memories[i].Min}, {memories[i].Max} has max: {limitsType == 1}");
+                    Console.Write($"  memory: {i} limits: {memories[i].Min}, {memories[i].Max}");
 
                 if (Program.Verbose2)
                     Console.WriteLine();
@@ -1225,7 +1229,11 @@ namespace WebAssemblyInfo
                 imports[i].Module = ReadString();
                 imports[i].Name = ReadString();
                 imports[i].Desc = (ImportDesc)Reader.ReadByte();
-                imports[i].Idx = ReadU32();
+
+                if (imports[i].Desc == ImportDesc.MemIdx) {
+                    (imports[i].Min, imports[i].Max) = ReadLimits();
+                } else
+                    imports[i].Idx = ReadU32();
 
                 if (imports[i].Desc == ImportDesc.TypeIdx)
                     functionImportsCount++;
