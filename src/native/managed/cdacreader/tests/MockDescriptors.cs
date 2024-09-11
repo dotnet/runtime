@@ -11,7 +11,7 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public class MockDescriptors
 {
-    private static readonly Target.TypeInfo MethodTableTypeInfo = new()
+    private static readonly ITarget.TypeInfo MethodTableTypeInfo = new()
     {
         Fields = {
             { nameof(Data.MethodTable.MTFlags), new() { Offset = 4, Type = DataType.uint32}},
@@ -26,7 +26,7 @@ public class MockDescriptors
         }
     };
 
-    private static readonly Target.TypeInfo EEClassTypeInfo = new Target.TypeInfo()
+    private static readonly ITarget.TypeInfo EEClassTypeInfo = new ITarget.TypeInfo()
     {
         Fields = {
             { nameof (Data.EEClass.MethodTable), new () { Offset = 8, Type = DataType.pointer}},
@@ -37,21 +37,21 @@ public class MockDescriptors
         }
     };
 
-    private static readonly Target.TypeInfo ArrayClassTypeInfo = new Target.TypeInfo()
+    private static readonly ITarget.TypeInfo ArrayClassTypeInfo = new ITarget.TypeInfo()
     {
         Fields = {
             { nameof (Data.ArrayClass.Rank), new () { Offset = 0x70, Type = DataType.uint8}},
         }
     };
 
-    private static readonly Target.TypeInfo ObjectTypeInfo = new()
+    private static readonly ITarget.TypeInfo ObjectTypeInfo = new()
     {
         Fields = {
             { "m_pMethTab", new() { Offset = 0, Type = DataType.pointer} },
         }
     };
 
-    private static readonly Target.TypeInfo StringTypeInfo = new Target.TypeInfo()
+    private static readonly ITarget.TypeInfo StringTypeInfo = new ITarget.TypeInfo()
     {
         Fields = {
             { "m_StringLength", new() { Offset = 0x8, Type = DataType.uint32} },
@@ -59,28 +59,28 @@ public class MockDescriptors
         }
     };
 
-    private static readonly Target.TypeInfo ArrayTypeInfo = new Target.TypeInfo()
+    private static readonly ITarget.TypeInfo ArrayTypeInfo = new ITarget.TypeInfo()
     {
         Fields = {
             { "m_NumComponents", new() { Offset = 0x8, Type = DataType.uint32} },
         },
     };
 
-    private static readonly Target.TypeInfo SyncTableEntryInfo = new Target.TypeInfo()
+    private static readonly ITarget.TypeInfo SyncTableEntryInfo = new ITarget.TypeInfo()
     {
         Fields = {
             { nameof(Data.SyncTableEntry.SyncBlock), new() { Offset = 0, Type = DataType.pointer} },
         },
     };
 
-    private static readonly Target.TypeInfo SyncBlockTypeInfo = new Target.TypeInfo()
+    private static readonly ITarget.TypeInfo SyncBlockTypeInfo = new ITarget.TypeInfo()
     {
         Fields = {
             { nameof(Data.SyncBlock.InteropInfo), new() { Offset = 0, Type = DataType.pointer} },
         },
     };
 
-    private static readonly Target.TypeInfo InteropSyncBlockTypeInfo = new Target.TypeInfo()
+    private static readonly ITarget.TypeInfo InteropSyncBlockTypeInfo = new ITarget.TypeInfo()
     {
         Fields = {
             { nameof(Data.InteropSyncBlockInfo.RCW), new() { Offset = 0, Type = DataType.pointer} },
@@ -93,7 +93,7 @@ public class MockDescriptors
         internal const ulong TestFreeObjectMethodTableGlobalAddress = 0x00000000_7a0000a0;
         internal const ulong TestFreeObjectMethodTableAddress = 0x00000000_7a0000a8;
 
-        internal static readonly Dictionary<DataType, Target.TypeInfo> Types = new()
+        internal static readonly Dictionary<DataType, ITarget.TypeInfo> Types = new()
         {
             [DataType.MethodTable] = MethodTableTypeInfo,
             [DataType.EEClass] = EEClassTypeInfo,
@@ -176,8 +176,8 @@ public class MockDescriptors
         internal const ulong TestObjectToMethodTableUnmask = 0x7;
         internal const ulong TestSyncBlockValueToObjectOffset = sizeof(uint);
 
-        internal static Dictionary<DataType, Target.TypeInfo> Types(TargetTestHelpers helpers) => RuntimeTypeSystem.Types.Concat(
-        new Dictionary<DataType, Target.TypeInfo>()
+        internal static Dictionary<DataType, ITarget.TypeInfo> Types(TargetTestHelpers helpers) => RuntimeTypeSystem.Types.Concat(
+        new Dictionary<DataType, ITarget.TypeInfo>()
         {
             [DataType.Object] = ObjectTypeInfo,
             [DataType.String] = StringTypeInfo,
