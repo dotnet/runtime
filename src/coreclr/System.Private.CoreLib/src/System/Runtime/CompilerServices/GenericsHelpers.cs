@@ -24,24 +24,24 @@ internal static unsafe partial class GenericsHelpers
     [DebuggerHidden]
     public static IntPtr Method(IntPtr methodHnd, IntPtr signature)
     {
-        return JIT_GenericHandleWorker(IntPtr.Zero, methodHnd, signature, 0xFFFFFFFF, IntPtr.Zero);
+        return JIT_GenericHandleWorker(methodHnd, IntPtr.Zero, signature, 0xFFFFFFFF, IntPtr.Zero);
     }
 
     [DebuggerHidden]
     public static unsafe IntPtr MethodWithSlotAndModule(IntPtr methodHnd, GenericHandleArgs * pArgs)
     {
-        return JIT_GenericHandleWorker(IntPtr.Zero, methodHnd, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
+        return JIT_GenericHandleWorker(methodHnd, IntPtr.Zero, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
     }
 
     [DebuggerHidden]
     public static IntPtr Class(IntPtr classHnd, IntPtr signature)
     {
-        return JIT_GenericHandleWorker(classHnd, IntPtr.Zero, signature, 0xFFFFFFFF, IntPtr.Zero);
+        return JIT_GenericHandleWorker(IntPtr.Zero, classHnd, signature, 0xFFFFFFFF, IntPtr.Zero);
     }
 
     [DebuggerHidden]
     public static unsafe IntPtr ClassWithSlotAndModule(IntPtr classHnd, GenericHandleArgs * pArgs)
     {
-        return JIT_GenericHandleWorker(classHnd, IntPtr.Zero, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
+        return JIT_GenericHandleWorker(IntPtr.Zero, classHnd, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
     }
 }

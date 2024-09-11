@@ -1171,6 +1171,10 @@ DEFINE_METHOD(VIRTUALDISPATCHHELPERS, VIRTUALFUNCTIONPOINTER, VirtualFunctionPoi
 DEFINE_METHOD(VIRTUALDISPATCHHELPERS, VIRTUALFUNCTIONPOINTER_DYNAMIC, VirtualFunctionPointer_Dynamic, NoSig)
 DEFINE_FIELD(VIRTUALDISPATCHHELPERS, CACHE, s_virtualFunctionPointerCache)
 
+DEFINE_CLASS_U(CompilerServices, VirtualDispatchHelpers+VirtualFunctionPointerArgs, VirtualFunctionPointerArgs)
+DEFINE_FIELD_U(classHnd, VirtualFunctionPointerArgs, classHnd)
+DEFINE_FIELD_U(methodHnd, VirtualFunctionPointerArgs, methodHnd)
+
 DEFINE_CLASS(GENERICSHELPERS, CompilerServices, GenericsHelpers)
 DEFINE_METHOD(GENERICSHELPERS, METHOD, Method, NoSig)
 DEFINE_METHOD(GENERICSHELPERS, CLASS, Class, NoSig)
