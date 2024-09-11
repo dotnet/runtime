@@ -90,7 +90,9 @@ internal static class BinaryReaderExtensions
             PrimitiveType.Decimal => reader.ParseDecimal(),
             PrimitiveType.DateTime => CreateDateTimeFromData(reader.ReadUInt64()),
             PrimitiveType.TimeSpan => new TimeSpan(reader.ReadInt64()),
-          _ => throw new InvalidOperationException(),
+            // PrimitiveType.String is handled with a record, never on it's own
+            PrimitiveType.String => throw new SerializationException(SR.Format(SR.Serialization_InvalidValue, primitiveType)),
+            _ => throw new InvalidOperationException(),
         };
 
     // BinaryFormatter serializes decimals as strings and we can't BinaryReader.ReadDecimal.
