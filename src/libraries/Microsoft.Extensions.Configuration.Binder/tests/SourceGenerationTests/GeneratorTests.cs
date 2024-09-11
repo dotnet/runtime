@@ -257,6 +257,39 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             }
         }
 
+        /// <summary>
+        /// We binding the type "SslClientAuthenticationOptions" which has a property "CipherSuitesPolicy" of type "CipherSuitesPolicy". We can't bind this type.
+        /// This test is to ensure not including the property "CipherSuitesPolicy" in the generated code caused a build break.
+        /// </summary>
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task IgnoredUnBindablePropertiesTest()
+        {
+            string source = """
+                 using System;
+                 using System.Net.Security;
+                 using Microsoft.Extensions.Configuration;
+                 using System.Collections.Immutable;
+                 using System.Text;
+                 using System.Text.Json;
+
+                 public class Program
+                 {
+                     public static void Main()
+                     {
+                         ConfigurationBuilder configurationBuilder = new();
+                         IConfiguration config = configurationBuilder.Build();
+
+                         var obj = config.Get<SslClientAuthenticationOptions>();
+                      }
+                 }
+                 """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ImmutableArray<>), typeof(Encoding), typeof(JsonSerializer), typeof(System.Net.Security.AuthenticatedStream)));
+            Assert.NotNull(result.GeneratedSource);
+
+            Assert.DoesNotContain("CipherSuitesPolicy = ", result.GeneratedSource.Value.SourceText.ToString());
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         [ActiveIssue("Work out why we aren't getting all the expected diagnostics.")]
         public async Task IssueDiagnosticsForAllOffendingCallsites()

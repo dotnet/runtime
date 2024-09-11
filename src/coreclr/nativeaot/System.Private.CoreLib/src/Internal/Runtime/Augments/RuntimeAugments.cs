@@ -120,6 +120,32 @@ namespace Internal.Runtime.Augments
             return Array.NewMultiDimArray(typeHandleForArrayType.ToMethodTable(), pImmutableLengths, lengths.Length);
         }
 
+        public static unsafe void SetArrayValue(Array array, int[] indices, object value)
+        {
+            MethodTable* elementMT = array.ElementMethodTable;
+
+            if (elementMT->IsPointer || elementMT->IsFunctionPointer)
+            {
+                Debug.Assert(value.GetMethodTable()->ValueTypeSize == IntPtr.Size);
+                elementMT = value.GetMethodTable();
+            }
+
+            if (elementMT->IsValueType)
+            {
+                Debug.Assert(value.GetMethodTable()->IsValueType && elementMT->ValueTypeSize == value.GetMethodTable()->ValueTypeSize);
+                nint flattenedIndex = array.GetFlattenedIndex(indices);
+                ref byte element = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(array), (nuint)flattenedIndex * array.ElementSize);
+                RuntimeImports.RhUnbox(value, ref element, elementMT);
+            }
+            else
+            {
+                RuntimeImports.RhCheckArrayStore(array, value);
+                nint flattenedIndex = array.GetFlattenedIndex(indices);
+                ref object element = ref Unsafe.Add(ref Unsafe.As<byte, object>(ref MemoryMarshal.GetArrayDataReference(array)), flattenedIndex);
+                element = value;
+            }
+        }
+
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
         {
             return RuntimeImports.RhGetRuntimeHelperForType(type.ToMethodTable(), RuntimeHelperKind.AllocateObject);

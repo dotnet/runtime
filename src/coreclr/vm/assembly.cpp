@@ -117,28 +117,35 @@ void Assembly::Initialize()
 // It cannot do any allocations or operations that might fail. Those operations should be done
 // in Assembly::Init()
 //----------------------------------------------------------------------------------------------
-Assembly::Assembly(PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible) :
-    m_pClassLoader(NULL),
-    m_pEntryPoint(NULL),
-    m_pModule(NULL),
-    m_pPEAssembly(clr::SafeAddRef(pPEAssembly)),
-    m_pFriendAssemblyDescriptor(NULL),
-    m_isDynamic(false),
+Assembly::Assembly(PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, LoaderAllocator *pLoaderAllocator)
+    : m_pClassLoader(NULL)
+    , m_pEntryPoint(NULL)
+    , m_pModule(NULL)
+    , m_pPEAssembly(clr::SafeAddRef(pPEAssembly))
+    , m_pFriendAssemblyDescriptor(NULL)
+    , m_isDynamic(false)
 #ifdef FEATURE_COLLECTIBLE_TYPES
-    m_isCollectible(fIsCollectible),
+    , m_isCollectible{pLoaderAllocator->IsCollectible()}
 #endif
-    m_pLoaderAllocator(NULL),
+    , m_pLoaderAllocator{pLoaderAllocator}
 #ifdef FEATURE_COMINTEROP
-    m_pITypeLib(NULL),
+    , m_pITypeLib(NULL)
 #endif // FEATURE_COMINTEROP
 #ifdef FEATURE_COMINTEROP
-    m_InteropAttributeStatus(INTEROP_ATTRIBUTE_UNSET),
+    , m_InteropAttributeStatus(INTEROP_ATTRIBUTE_UNSET)
 #endif
-    m_debuggerFlags(debuggerFlags),
-    m_fTerminated(FALSE),
-    m_hExposedObject{}
+    , m_debuggerFlags(debuggerFlags)
+    , m_fTerminated(FALSE)
+    , m_hExposedObject{}
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(pPEAssembly != NULL);
+        PRECONDITION(pLoaderAllocator != NULL);
+        PRECONDITION(pLoaderAllocator->IsCollectible() || pLoaderAllocator == SystemDomain::GetGlobalLoaderAllocator());
+    }
+    CONTRACTL_END
 }
 
 // This name needs to stay in sync with AssemblyBuilder.ManifestModuleName
@@ -151,31 +158,9 @@ Assembly::Assembly(PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debugge
 // and the assembly is safely destructable. Whether this function throws or succeeds,
 // it must leave the Assembly in a safely destructable state.
 //----------------------------------------------------------------------------------------------
-void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator)
+void Assembly::Init(AllocMemTracker *pamTracker)
 {
     STANDARD_VM_CONTRACT;
-
-    if (IsSystem())
-    {
-        _ASSERTE(pLoaderAllocator == NULL); // pLoaderAllocator may only be non-null for collectible types
-        m_pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
-    }
-    else
-    {
-        if (!IsCollectible())
-        {
-            // pLoaderAllocator will only be non-null for reflection emit assemblies
-            _ASSERTE((pLoaderAllocator == NULL) || (pLoaderAllocator == AppDomain::GetCurrentDomain()->GetLoaderAllocator()));
-            m_pLoaderAllocator = AppDomain::GetCurrentDomain()->GetLoaderAllocator();
-        }
-        else
-        {
-            _ASSERTE(pLoaderAllocator != NULL); // ppLoaderAllocator must be non-null for collectible assemblies
-
-            m_pLoaderAllocator = pLoaderAllocator;
-        }
-    }
-    _ASSERTE(m_pLoaderAllocator != NULL);
 
     m_pClassLoader = new ClassLoader(this);
     m_pClassLoader->Init(pamTracker);
@@ -321,13 +306,19 @@ void Assembly::Terminate( BOOL signalProfiler )
 Assembly * Assembly::Create(
     PEAssembly *                 pPEAssembly,
     DebuggerAssemblyControlFlags debuggerFlags,
-    BOOL                         fIsCollectible,
     AllocMemTracker *            pamTracker,
     LoaderAllocator *            pLoaderAllocator)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(pPEAssembly != NULL);
+        PRECONDITION(pLoaderAllocator != NULL);
+        PRECONDITION(pLoaderAllocator->IsCollectible() || pLoaderAllocator == SystemDomain::GetGlobalLoaderAllocator());
+    }
+    CONTRACTL_END
 
-    NewHolder<Assembly> pAssembly (new Assembly(pPEAssembly, debuggerFlags, fIsCollectible));
+    NewHolder<Assembly> pAssembly (new Assembly(pPEAssembly, debuggerFlags, pLoaderAllocator));
 
 #ifdef PROFILING_SUPPORTED
     {
@@ -341,7 +332,7 @@ Assembly * Assembly::Create(
     EX_TRY
 #endif
     {
-        pAssembly->Init(pamTracker, pLoaderAllocator);
+        pAssembly->Init(pamTracker);
     }
 #ifdef PROFILING_SUPPORTED
     EX_HOOK
@@ -436,6 +427,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     AppDomain* pDomain = ::GetAppDomain();
 
     NewHolder<DomainAssembly> pDomainAssembly;
+    Assembly* pAssem;
     BOOL                      createdNewAssemblyLoaderAllocator = FALSE;
 
     {
@@ -455,7 +447,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
 
             // Some of the initialization functions are not virtual. Call through the derived class
             // to prevent calling the base class version.
-            pCollectibleLoaderAllocator->Init(pDomain);
+            pCollectibleLoaderAllocator->Init();
 
             // Setup the managed proxy now, but do not actually transfer ownership to it.
             // Once everything is setup and nothing can fail anymore, the ownership will be
@@ -479,7 +471,9 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         }
 
         // Create a domain assembly
-        pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator);
+        pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator, pamTracker);
+        pAssem = pDomainAssembly->GetAssembly();
+        pAssem->m_isDynamic = true;
         if (pDomainAssembly->IsCollectible())
         {
             // We add the assembly to the LoaderAllocator only when we are sure that it can be added
@@ -489,66 +483,48 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     }
 
     // Start loading process
+    if (createdNewAssemblyLoaderAllocator)
     {
-        // Create a concrete assembly
-        // (!Do not remove scoping brace: order is important here: the Assembly holder must destruct before the AllocMemTracker!)
-        NewHolder<Assembly> pAssem;
+        GCX_PREEMP();
 
+        // Initializing the virtual call stub manager is delayed to remove the need for the LoaderAllocator destructor to properly handle
+        // uninitializing the VSD system. (There is a need to suspend the runtime, and that's tricky)
+        pLoaderAllocator->InitVirtualCallStubManager();
+    }
+
+    {
+        GCX_PREEMP();
+
+        // Finish loading process
+        // <TODO> would be REALLY nice to unify this with main loading loop </TODO>
+        pDomainAssembly->Begin();
+        pDomainAssembly->DeliverSyncEvents();
+        pDomainAssembly->DeliverAsyncEvents();
+        pDomainAssembly->FinishLoad();
+        pDomainAssembly->ClearLoading();
+        pDomainAssembly->m_level = FILE_ACTIVE;
+    }
+
+    {
+        CANNOTTHROWCOMPLUSEXCEPTION();
+        FAULT_FORBID();
+
+        // Cannot fail after this point
+
+        pDomainAssembly.SuppressRelease();
+        pamTracker->SuppressRelease();
+
+        // Once we reach this point, the loader allocator lifetime is controlled by the Assembly object.
+        if (createdNewAssemblyLoaderAllocator)
         {
-            GCX_PREEMP();
-            // Assembly::Create will call SuppressRelease on the NewHolder that holds the LoaderAllocator when it transfers ownership
-            pAssem = Assembly::Create(pPEAssembly, pDomainAssembly->GetDebuggerInfoBits(), pLoaderAllocator->IsCollectible(), pamTracker, pLoaderAllocator);
-
-            ReflectionModule* pModule = (ReflectionModule*) pAssem->GetModule();
-
-            if (createdNewAssemblyLoaderAllocator)
-            {
-                // Initializing the virtual call stub manager is delayed to remove the need for the LoaderAllocator destructor to properly handle
-                // uninitializing the VSD system. (There is a need to suspend the runtime, and that's tricky)
-                pLoaderAllocator->InitVirtualCallStubManager();
-            }
+            // Atomically transfer ownership to the managed heap
+            pLoaderAllocator->ActivateManagedTracking();
+            pLoaderAllocator.SuppressRelease();
         }
 
-        pAssem->m_isDynamic = true;
-
-        //we need to suppress release for pAssem to avoid double release
-        pAssem.SuppressRelease ();
-
-        {
-            GCX_PREEMP();
-
-            // Finish loading process
-            // <TODO> would be REALLY nice to unify this with main loading loop </TODO>
-            pDomainAssembly->Begin();
-            pDomainAssembly->SetAssembly(pAssem);
-            pDomainAssembly->m_level = FILE_LOAD_ALLOCATE;
-            pDomainAssembly->DeliverSyncEvents();
-            pDomainAssembly->DeliverAsyncEvents();
-            pDomainAssembly->FinishLoad();
-            pDomainAssembly->ClearLoading();
-            pDomainAssembly->m_level = FILE_ACTIVE;
-        }
-
-        {
-            CANNOTTHROWCOMPLUSEXCEPTION();
-            FAULT_FORBID();
-
-            //Cannot fail after this point
-
-            pDomainAssembly.SuppressRelease(); // This also effectively suppresses the release of the pAssem
-            pamTracker->SuppressRelease();
-
-            // Once we reach this point, the loader allocator lifetime is controlled by the Assembly object.
-            if (createdNewAssemblyLoaderAllocator)
-            {
-                // Atomically transfer ownership to the managed heap
-                pLoaderAllocator->ActivateManagedTracking();
-                pLoaderAllocator.SuppressRelease();
-            }
-
-            pAssem->SetIsTenured();
-            pRetVal = pAssem;
-        }
+        // Set the assembly module to be tenured now that we know it won't be deleted
+        pAssem->SetIsTenured();
+        pRetVal = pAssem;
     }
 
     RETURN pRetVal;
@@ -655,11 +631,9 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
                 {
 #ifndef DACCESS_COMPILE
                     // LoadAssembly never returns NULL
-                    DomainAssembly * pDomainAssembly =
-                        GetModule()->LoadAssembly(mdLinkRef);
-                    PREFIX_ASSUME(pDomainAssembly != NULL);
-
-                    RETURN pDomainAssembly->GetModule();
+                    pAssembly = GetModule()->LoadAssembly(mdLinkRef);
+                    PREFIX_ASSUME(pAssembly != NULL);
+                    break;
 #else
                     _ASSERTE(!"DAC shouldn't attempt to trigger loading");
                     return NULL;
@@ -884,14 +858,7 @@ Module * Assembly::FindModuleByTypeRef(
                 RETURN NULL;
             }
 
-
-            DomainAssembly * pDomainAssembly = pModule->LoadAssembly(tkType);
-
-
-            if (pDomainAssembly == NULL)
-                RETURN NULL;
-
-            pAssembly = pDomainAssembly->GetAssembly();
+            pAssembly = pModule->LoadAssembly(tkType);
             if (pAssembly == NULL)
             {
                 RETURN NULL;

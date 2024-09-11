@@ -513,16 +513,16 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedType(QCall::AssemblyHandle 
     END_QCALL;
 }
 
-FCIMPL1(FC_BOOL_RET, AssemblyNative::IsDynamic, AssemblyBaseObject* pAssemblyUNSAFE)
+FCIMPL1(FC_BOOL_RET, AssemblyNative::GetIsDynamic, Assembly* pAssembly)
 {
-    FCALL_CONTRACT;
+    CONTRACTL
+    {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pAssembly));
+    }
+    CONTRACTL_END;
 
-    ASSEMBLYREF refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
-
-    if (refAssembly == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    FC_RETURN_BOOL(refAssembly->GetAssembly()->GetPEAssembly()->IsReflectionEmit());
+    FC_RETURN_BOOL(pAssembly->GetPEAssembly()->IsReflectionEmit());
 }
 FCIMPLEND
 
@@ -1205,7 +1205,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
                 GCX_PREEMP();
                 // Some of the initialization functions are not virtual. Call through the derived class
                 // to prevent calling the base class version.
-                loaderAllocator->Init(pCurDomain);
+                loaderAllocator->Init();
                 loaderAllocator->InitVirtualCallStubManager();
 
                 // Setup the managed proxy now, but do not actually transfer ownership to it.
