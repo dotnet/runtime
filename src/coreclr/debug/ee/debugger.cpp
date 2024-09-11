@@ -2832,7 +2832,7 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS_FROM_GETJITINFO;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 

@@ -1123,42 +1123,6 @@ ReJITID ReJitManager::GetReJitId(PTR_MethodDesc pMD, PCODE pCodeStart)
     CONTRACTL
     {
         NOTHROW;
-        CAN_TAKE_LOCK;
-        GC_TRIGGERS;
-        PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pCodeStart != NULL);
-    }
-    CONTRACTL_END;
-
-    // Fast-path: If the rejit map is empty, no need to look up anything. Do this outside
-    // of a lock to impact our caller (the prestub worker) as little as possible. If the
-    // map is nonempty, we'll acquire the lock at that point and do the lookup for real.
-    CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
-    if (!pCodeVersionManager->HasNonDefaultILVersions())
-    {
-        return 0;
-    }
-
-    CodeVersionManager::LockHolder codeVersioningLockHolder;
-    return ReJitManager::GetReJitIdNoLock(pMD, pCodeStart);
-}
-
-//---------------------------------------------------------------------------------------
-//
-// See comment above code:ReJitManager::GetReJitId for main details of what this does.
-//
-// This function is basically the same as GetReJitId, except caller is expected to take
-// the ReJitManager lock directly (via ReJitManager::TableLockHolder). This exists so
-// that ETW can explicitly take the triggering ReJitManager lock up front, and in the
-// proper order, to avoid lock leveling issues, and triggering issues with other locks it
-// takes that are CRST_UNSAFE_ANYMODE
-//
-
-ReJITID ReJitManager::GetReJitIdNoLock(PTR_MethodDesc pMD, PCODE pCodeStart)
-{
-    CONTRACTL
-    {
-        NOTHROW;
         CANNOT_TAKE_LOCK;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pMD));
@@ -1166,10 +1130,14 @@ ReJITID ReJitManager::GetReJitIdNoLock(PTR_MethodDesc pMD, PCODE pCodeStart)
     }
     CONTRACTL_END;
 
-    // Caller must ensure this lock is taken!
-    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+    // Fast-path: If the rejit map is empty, no need to look up anything.
+    CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
+    if (!pCodeVersionManager->HasNonDefaultILVersions())
+    {
+        return 0;
+    }
 
-    NativeCodeVersion nativeCodeVersion = pMD->GetCodeVersionManager()->GetNativeCodeVersion(pMD, pCodeStart);
+    NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(pMD, pCodeStart);
     if (nativeCodeVersion.IsNull())
     {
         return 0;
@@ -1265,11 +1233,6 @@ HRESULT ReJitManager::RequestRevert(
 }
 
 ReJITID ReJitManager::GetReJitId(PTR_MethodDesc pMD, PCODE pCodeStart)
-{
-    return 0;
-}
-
-ReJITID ReJitManager::GetReJitIdNoLock(PTR_MethodDesc pMD, PCODE pCodeStart)
 {
     return 0;
 }

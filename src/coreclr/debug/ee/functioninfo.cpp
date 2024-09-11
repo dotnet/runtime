@@ -926,8 +926,6 @@ void DebuggerJitInfo::LazyInitBounds()
         LOG((LF_CORDB,LL_EVERYTHING, "DJI::LazyInitBounds: this=%p GetBoundariesAndVars success=%s\n",
             this, (fSuccess ? "true" : "false")));
 
-        // SetBoundaries uses the CodeVersionManager, need to take it now for lock ordering reasons
-        CodeVersionManager::LockHolder codeVersioningLockHolder;
         Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
 
         if (!m_fAttemptInit)
@@ -1053,15 +1051,22 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     // Pick a unique initial value (-10) so that the 1st doesn't accidentally match.
     int ilPrevOld = -10;
 
-    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
-
     InstrumentedILOffsetMapping mapping;
 
     ILCodeVersion ilVersion = m_nativeCodeVersion.GetILCodeVersion();
     if (!ilVersion.IsDefaultVersion())
     {
         // Did the current rejit provide a map?
-        const InstrumentedILOffsetMapping *pReJitMap = ilVersion.GetInstrumentedILMap();
+        const InstrumentedILOffsetMapping *pReJitMap = NULL;
+        if (ilVersion.GetRejitState() == ILCodeVersion::kStateActive)
+        {
+            pReJitMap = ilVersion.GetInstrumentedILMap();
+        }
+        else
+        {
+            _ASSERTE(!"Unexpected rejit state, should be active as there exists a native code version for this IL code version");
+        }
+
         if (pReJitMap != NULL)
         {
             mapping = *pReJitMap;
@@ -1607,7 +1612,6 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     if (fd->IsVersionable())
     {
         CodeVersionManager *pCodeVersionManager = fd->GetCodeVersionManager();
-        CodeVersionManager::LockHolder codeVersioningLockHolder;
         nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(fd, startAddr);
         if (nativeCodeVersion.IsNull())
         {

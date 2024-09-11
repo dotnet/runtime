@@ -94,12 +94,6 @@ ReJITID NativeCodeVersionNode::GetILVersionId() const
 ILCodeVersion NativeCodeVersionNode::GetILCodeVersion() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-#ifdef DEBUG
-    if (GetILVersionId() != 0)
-    {
-        _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
-    }
-#endif
     PTR_MethodDesc pMD = GetMethodDesc();
     return pMD->GetCodeVersionManager()->GetILCodeVersion(pMD, GetILVersionId());
 }
@@ -169,7 +163,7 @@ void NativeCodeVersionNode::SetOptimizationTier(NativeCodeVersion::OptimizationT
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-PatchpointInfo* NativeCodeVersionNode::GetOSRInfo(unsigned * ilOffset)
+PatchpointInfo* NativeCodeVersionNode::GetOSRInfo(unsigned * ilOffset) const
 {
     LIMITED_METHOD_DAC_CONTRACT;
     *ilOffset = m_ilOffset;
@@ -622,14 +616,12 @@ DWORD ILCodeVersionNode::GetJitFlags() const
 const InstrumentedILOffsetMapping* ILCodeVersionNode::GetInstrumentedILMap() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
     return &m_instrumentedILMap;
 }
 
 PTR_ILCodeVersionNode ILCodeVersionNode::GetNextILVersionNode() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
     return m_pNextILVersionNode;
 }
 
@@ -812,6 +804,8 @@ NativeCodeVersionCollection ILCodeVersion::GetNativeCodeVersions(PTR_MethodDesc 
 NativeCodeVersion ILCodeVersion::GetActiveNativeCodeVersion(PTR_MethodDesc pClosedMethodDesc) const
 {
     LIMITED_METHOD_DAC_CONTRACT;
+    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+
     NativeCodeVersionCollection versions = GetNativeCodeVersions(pClosedMethodDesc);
     for (NativeCodeVersionIterator cur = versions.Begin(), end = versions.End(); cur != end; cur++)
     {
@@ -1019,6 +1013,8 @@ HRESULT ILCodeVersion::AddNativeCodeVersion(
 HRESULT ILCodeVersion::GetOrCreateActiveNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion* pActiveNativeCodeVersion)
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+
     HRESULT hr = S_OK;
     NativeCodeVersion activeNativeChild = GetActiveNativeCodeVersion(pClosedMethodDesc);
     if (activeNativeChild.IsNull())
@@ -1143,7 +1139,6 @@ void ILCodeVersionIterator::Next()
     }
     if (m_stage == IterationStage::ImplicitCodeVersion)
     {
-        _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
         CodeVersionManager* pCodeVersionManager = m_pCollection->m_pModule->GetCodeVersionManager();
         PTR_ILCodeVersioningState pILCodeVersioningState = pCodeVersionManager->GetILCodeVersioningState(m_pCollection->m_pModule, m_pCollection->m_methodDef);
         if (pILCodeVersioningState != NULL)
@@ -1235,7 +1230,7 @@ void MethodDescVersioningState::LinkNativeCodeVersionNode(NativeCodeVersionNode*
 {
     LIMITED_METHOD_CONTRACT;
     pNativeCodeVersionNode->m_pNextMethodDescSibling = m_pFirstVersionNode;
-    m_pFirstVersionNode = pNativeCodeVersionNode;
+    VolatileStore(&m_pFirstVersionNode, pNativeCodeVersionNode);
 }
 #endif
 
@@ -1297,8 +1292,9 @@ void ILCodeVersioningState::SetActiveVersion(ILCodeVersion ilActiveCodeVersion)
 void ILCodeVersioningState::LinkILCodeVersionNode(ILCodeVersionNode* pILCodeVersionNode)
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
     pILCodeVersionNode->SetNextILVersionNode(m_pFirstVersionNode);
-    m_pFirstVersionNode = pILCodeVersionNode;
+    VolatileStore(&m_pFirstVersionNode, pILCodeVersionNode);
 }
 #endif
 
@@ -1309,6 +1305,7 @@ bool CodeVersionManager::s_initialNativeCodeVersionMayNotBeTheDefaultNativeCodeV
 PTR_ILCodeVersioningState CodeVersionManager::GetILCodeVersioningState(PTR_Module pModule, mdMethodDef methodDef) const
 {
     LIMITED_METHOD_DAC_CONTRACT;
+    // Safe without any locks, because this uses a LookupMap, which is safe for concurrent reads of pre-initialized data
     return pModule->LookupILCodeVersioningState(methodDef);
 }
 
@@ -1408,14 +1405,12 @@ BOOL CodeVersionManager::HasNonDefaultILVersions()
 ILCodeVersionCollection CodeVersionManager::GetILCodeVersions(PTR_MethodDesc pMethod)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(IsLockOwnedByCurrentThread());
     return GetILCodeVersions(dac_cast<PTR_Module>(pMethod->GetModule()), pMethod->GetMemberDef());
 }
 
 ILCodeVersionCollection CodeVersionManager::GetILCodeVersions(PTR_Module pModule, mdMethodDef methodDef)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(IsLockOwnedByCurrentThread());
     return ILCodeVersionCollection(pModule, methodDef);
 }
 
@@ -1444,7 +1439,6 @@ ILCodeVersion CodeVersionManager::GetActiveILCodeVersion(PTR_Module pModule, mdM
 ILCodeVersion CodeVersionManager::GetILCodeVersion(PTR_MethodDesc pMethod, ReJITID rejitId)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(IsLockOwnedByCurrentThread());
 
 #ifdef FEATURE_REJIT
     ILCodeVersionCollection collection = GetILCodeVersions(pMethod);
@@ -1465,14 +1459,12 @@ ILCodeVersion CodeVersionManager::GetILCodeVersion(PTR_MethodDesc pMethod, ReJIT
 NativeCodeVersionCollection CodeVersionManager::GetNativeCodeVersions(PTR_MethodDesc pMethod) const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(IsLockOwnedByCurrentThread());
     return NativeCodeVersionCollection(pMethod, ILCodeVersion());
 }
 
 NativeCodeVersion CodeVersionManager::GetNativeCodeVersion(PTR_MethodDesc pMethod, PCODE codeStartAddress) const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(IsLockOwnedByCurrentThread());
 
     NativeCodeVersionCollection nativeCodeVersions = GetNativeCodeVersions(pMethod);
     for (NativeCodeVersionIterator cur = nativeCodeVersions.Begin(), end = nativeCodeVersions.End(); cur != end; cur++)

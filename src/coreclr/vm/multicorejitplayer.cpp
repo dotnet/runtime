@@ -1132,7 +1132,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     MulticoreJitTrace(("PlayProfile %d bytes in (%s)",
         nSize,
-        GetAppDomain()->GetFriendlyNameForLogging()));
+        GetAppDomain()->GetFriendlyName()));
 
     while ((SUCCEEDED(hr)) && (nSize > sizeof(unsigned)))
     {

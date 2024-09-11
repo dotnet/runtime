@@ -649,39 +649,7 @@ void DacDbiInterfaceImpl::GetAppDomainFullName(
     AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
 
     // Get the AppDomain name from the VM without changing anything
-    // We might be able to simplify this, eg. by returning an SString.
-    bool fIsUtf8;
-    PVOID pRawName = pAppDomain->GetFriendlyNameNoSet(&fIsUtf8);
-
-    if (!pRawName)
-    {
-        ThrowHR(E_NOINTERFACE);
-    }
-
-    HRESULT hrStatus = S_OK;
-    if (fIsUtf8)
-    {
-        // we have to allocate a temporary string
-        // we could avoid this by adding a version of IStringHolder::AssignCopy that takes a UTF8 string
-        // We should also probably check to see when fIsUtf8 is ever true (it looks like it should normally be false).
-        ULONG32 dwNameLen = 0;
-        hrStatus = ConvertUtf8((LPCUTF8)pRawName, 0, &dwNameLen, NULL);
-        if (SUCCEEDED( hrStatus ))
-        {
-            NewArrayHolder<WCHAR> pwszName(new WCHAR[dwNameLen]);
-            hrStatus = ConvertUtf8((LPCUTF8)pRawName, dwNameLen, &dwNameLen, pwszName );
-            IfFailThrow(hrStatus);
-
-            hrStatus =  pStrName->AssignCopy(pwszName);
-        }
-    }
-    else
-    {
-        hrStatus =  pStrName->AssignCopy(static_cast<PCWSTR>(pRawName));
-    }
-
-    // Very important that this either sets pStrName or Throws.
-    IfFailThrow(hrStatus);
+    IfFailThrow(pStrName->AssignCopy(pAppDomain->GetFriendlyName()));
 }
 
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
