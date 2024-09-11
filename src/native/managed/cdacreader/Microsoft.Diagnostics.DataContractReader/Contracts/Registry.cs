@@ -30,12 +30,12 @@ internal sealed class Registry
     public IExecutionManager ExecutionManager => GetContract<IExecutionManager>();
     public IReJIT ReJIT => GetContract<IReJIT>();
 
-    private TProduct GetContract<TFactory, TProduct>() where TProduct : IContract where TFactory : TProduct, IContractFactory<TFactory, TProduct>
+    private TProduct GetContract<TFactory, TProduct>() where TProduct : IContract where TFactory : IContractFactory<TFactory, TProduct>
     {
         if (_contracts.TryGetValue(typeof(TProduct), out IContract? contractMaybe))
             return (TProduct)contractMaybe;
 
-        if (!_target.TryGetContractVersion(TFactory.Name, out int version))
+        if (!_target.TryGetContractVersion(TProduct.Name, out int version))
             throw new NotImplementedException();
 
         // Create and register the contract
