@@ -8,12 +8,26 @@ using System.Numerics;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
+/// <summary>
+/// Representation of the target under inspection
+/// </summary>
+/// <remarks>
+/// This class provides APIs used by contracts for reading from the target and getting type and globals
+/// information based on the target's contract descriptor. Like the contracts themselves in cdacreader,
+/// these are throwing APIs. Any callers at the boundaries (for example, unmanaged entry points, COM)
+/// should handle any exceptions.
+/// </remarks>
 internal interface ITarget
 {
     int PointerSize { get; }
 
     TargetPointer ReadGlobalPointer(string global);
 
+    /// <summary>
+    /// Read a pointer from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Pointer read from the target</returns>}
     TargetPointer ReadPointer(ulong address);
     public TargetCodePointer ReadCodePointer(ulong address);
 
