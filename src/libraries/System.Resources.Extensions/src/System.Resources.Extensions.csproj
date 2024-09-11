@@ -88,6 +88,10 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '9.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
+  </ItemGroup>
+
   <Target Name="GeneratePackageTargetsFile" 
           Inputs="$(MSBuildAllProjects)"
           Outputs="$(SuggestedBindingRedirectsPackageFile)"

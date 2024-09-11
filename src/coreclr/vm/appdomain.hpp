@@ -68,7 +68,7 @@ class PinnedHeapHandleBucket
 {
 public:
     // Constructor and desctructor.
-    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PTRARRAYREF pinnedHandleArrayObj, DWORD size, BaseDomain *pDomain);
+    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PTRARRAYREF pinnedHandleArrayObj, DWORD size);
     ~PinnedHeapHandleBucket();
 
     // This returns the next bucket.
@@ -123,7 +123,7 @@ class PinnedHeapHandleTable
 {
 public:
     // Constructor and desctructor.
-    PinnedHeapHandleTable(BaseDomain *pDomain, DWORD InitialBucketSize);
+    PinnedHeapHandleTable(DWORD InitialBucketSize);
     ~PinnedHeapHandleTable();
 
     // Allocate handles from the pinned heap handle table.
@@ -140,9 +140,6 @@ private:
     // The buckets of object handles.
     // synchronized by m_Crst
     PinnedHeapHandleBucket *m_pHead;
-
-    // We need to know the containing domain so we know where to allocate handles
-    BaseDomain *m_pDomain;
 
     // The size of the PinnedHeapHandleBucket.
     // synchronized by m_Crst
@@ -456,216 +453,21 @@ public:
     class AssemblyIterator;
     friend class AssemblyIterator;
 
-    // Static initialization.
-    static void Attach();
-
     //****************************************************************************************
     //
     // Initialization/shutdown routines for every instance of an BaseDomain.
 
-    BaseDomain();
+    BaseDomain() = default;
     virtual ~BaseDomain() {}
-    void Init();
-    void Stop();
 
     virtual BOOL IsAppDomain()    { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
 
-    PTR_LoaderAllocator GetLoaderAllocator();
     virtual PTR_AppDomain AsAppDomain()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(!"Not an AppDomain");
         return NULL;
     }
-
-    STRINGREF *IsStringInterned(STRINGREF *pString);
-    STRINGREF *GetOrInternString(STRINGREF *pString);
-
-    // Returns an array of OBJECTREF* that can be used to store domain specific data.
-    // Statics and reflection info (Types, MemberInfo,..) are stored this way
-    // If pStaticsInfo != 0, allocation will only take place if GC statics in the DynamicStaticsInfo are NULL (and the allocation
-    // will be properly serialized)
-    OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo = NULL, MethodTable *pMTToFillWithStaticBoxes = NULL, bool isClassInitdeByUpdatingStaticPointer = false);
-
-    //****************************************************************************************
-    // Handles
-
-#if !defined(DACCESS_COMPILE)
-    IGCHandleStore* GetHandleStore()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_handleStore;
-    }
-
-    OBJECTHANDLE CreateTypedHandle(OBJECTREF object, HandleType type)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateHandleCommon(m_handleStore, object, type);
-    }
-
-    OBJECTHANDLE CreateHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL)
-        return ::CreateHandle(m_handleStore, object);
-    }
-
-    OBJECTHANDLE CreateWeakHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateWeakHandle(m_handleStore, object);
-    }
-
-    OBJECTHANDLE CreateShortWeakHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateShortWeakHandle(m_handleStore, object);
-    }
-
-    OBJECTHANDLE CreateLongWeakHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL)
-        return ::CreateLongWeakHandle(m_handleStore, object);
-    }
-
-    OBJECTHANDLE CreateStrongHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateStrongHandle(m_handleStore, object);
-    }
-
-    OBJECTHANDLE CreatePinningHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreatePinningHandle(m_handleStore, object);
-    }
-
-    OBJECTHANDLE CreateWeakInteriorHandle(OBJECTREF object, void* pInteriorPointerLocation)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateWeakInteriorHandle(m_handleStore, object, pInteriorPointerLocation);
-    }
-
-    OBJECTHANDLE CreateSizedRefHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        OBJECTHANDLE h;
-        if (GCHeapUtilities::IsServerHeap())
-        {
-            h = ::CreateSizedRefHandle(m_handleStore, object, m_dwSizedRefHandles % m_iNumberOfProcessors);
-        }
-        else
-        {
-            h = ::CreateSizedRefHandle(m_handleStore, object);
-        }
-
-        InterlockedIncrement((LONG*)&m_dwSizedRefHandles);
-        return h;
-    }
-
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-    OBJECTHANDLE CreateRefcountedHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateRefcountedHandle(m_handleStore, object);
-    }
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
-
-    OBJECTHANDLE CreateDependentHandle(OBJECTREF primary, OBJECTREF secondary)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateDependentHandle(m_handleStore, primary, secondary);
-    }
-
-#endif // DACCESS_COMPILE
-
-    DefaultAssemblyBinder *GetDefaultBinder() {LIMITED_METHOD_CONTRACT;  return m_pDefaultBinder; }
-
-    CrstExplicitInit * GetLoaderAllocatorReferencesLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_crstLoaderAllocatorReferences;
-    }
-
-    static CrstStatic* GetMethodTableExposedClassObjectLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_MethodTableExposedClassObjectCrst;
-    }
-
-protected:
-
-    //****************************************************************************************
-    // Helper method to initialize the large heap handle table.
-    void InitPinnedHeapHandleTable();
-
-    // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
-    CrstExplicitInit m_crstLoaderAllocatorReferences;
-
-    DefaultAssemblyBinder *m_pDefaultBinder; // Reference to the binding context that holds TPA list details
-
-    IGCHandleStore* m_handleStore;
-
-    // The pinned heap handle table.
-    PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
-
-    // Protects allocation of slot IDs for thread statics
-    static CrstStatic m_MethodTableExposedClassObjectCrst;
-
-public:
-    // Only call this routine when you can guarantee there are no
-    // loads in progress.
-    void ClearBinderContext();
-
-    void InitVSD();
-
-private:
-    TypeIDMap m_typeIDMap;
-
-public:
-
-
-    UINT32 GetTypeID(PTR_MethodTable pMT);
-    UINT32 LookupTypeID(PTR_MethodTable pMT);
-    PTR_MethodTable LookupType(UINT32 id);
-#ifndef DACCESS_COMPILE
-    void RemoveTypesFromTypeIDMap(LoaderAllocator* pLoaderAllocator);
-#endif // DACCESS_COMPILE
-
-private:
-    // I have yet to figure out an efficient way to get the number of handles
-    // of a particular type that's currently used by the process without
-    // spending more time looking at the handle table code. We know that
-    // our only customer (asp.net) in Dev10 is not going to create many of
-    // these handles so I am taking a shortcut for now and keep the sizedref
-    // handle count on the AD itself.
-    DWORD m_dwSizedRefHandles;
-
-    static int m_iNumberOfProcessors;
-
-public:
-    // Called by DestroySizedRefHandle
-    void DecNumSizedRefHandles()
-    {
-        WRAPPER_NO_CONTRACT;
-        LONG result;
-        result = InterlockedDecrement((LONG*)&m_dwSizedRefHandles);
-        _ASSERTE(result >= 0);
-    }
-
-    DWORD GetNumSizedRefHandles()
-    {
-        return m_dwSizedRefHandles;
-    }
-
-#ifdef FEATURE_CODE_VERSIONING
-private:
-    CodeVersionManager m_codeVersionManager;
-
-public:
-    CodeVersionManager* GetCodeVersionManager() { return &m_codeVersionManager; }
-#endif //FEATURE_CODE_VERSIONING
 
 #ifdef DACCESS_COMPILE
 public:
@@ -931,6 +733,11 @@ public:
     virtual BOOL IsAppDomain() { LIMITED_METHOD_DAC_CONTRACT; return TRUE; }
     virtual PTR_AppDomain AsAppDomain() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_AppDomain>(this); }
 
+    PTR_LoaderAllocator GetLoaderAllocator();
+
+    STRINGREF *IsStringInterned(STRINGREF *pString);
+    STRINGREF *GetOrInternString(STRINGREF *pString);
+
     OBJECTREF GetRawExposedObject() { LIMITED_METHOD_CONTRACT; return NULL; }
     OBJECTHANDLE GetRawExposedObjectHandleForDebugger() { LIMITED_METHOD_DAC_CONTRACT; return (OBJECTHANDLE)NULL; }
 
@@ -970,12 +777,94 @@ public:
         return &m_crstGenericDictionaryExpansionLock;
     }
 
+    CrstExplicitInit* GetLoaderAllocatorReferencesLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_crstLoaderAllocatorReferences;
+    }
+
+    CrstExplicitInit* GetMethodTableExposedClassObjectLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_MethodTableExposedClassObjectCrst;
+    }
+
 private:
     JitListLock      m_JITLock;
     ListLock         m_ClassInitLock;
     ListLock         m_ILStubGenLock;
     ListLock         m_NativeTypeLoadLock;
     CrstExplicitInit m_crstGenericDictionaryExpansionLock;
+
+    // Used to protect the reference lists in the collectible loader allocators attached to the app domain
+    CrstExplicitInit m_crstLoaderAllocatorReferences;
+
+    // Protects allocation of slot IDs for thread statics
+    CrstExplicitInit m_MethodTableExposedClassObjectCrst;
+
+#if !defined(DACCESS_COMPILE)
+public: // Handles
+    IGCHandleStore* GetHandleStore()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_handleStore;
+    }
+
+    OBJECTHANDLE CreateTypedHandle(OBJECTREF object, HandleType type)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateHandleCommon(m_handleStore, object, type);
+    }
+
+    OBJECTHANDLE CreateHandle(OBJECTREF object)
+    {
+        WRAPPER_NO_CONTRACT;
+        CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL)
+        return ::CreateHandle(m_handleStore, object);
+    }
+
+    OBJECTHANDLE CreateLongWeakHandle(OBJECTREF object)
+    {
+        WRAPPER_NO_CONTRACT;
+        CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL)
+        return ::CreateLongWeakHandle(m_handleStore, object);
+    }
+
+    OBJECTHANDLE CreateStrongHandle(OBJECTREF object)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateStrongHandle(m_handleStore, object);
+    }
+
+    OBJECTHANDLE CreatePinningHandle(OBJECTREF object)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreatePinningHandle(m_handleStore, object);
+    }
+
+    OBJECTHANDLE CreateWeakInteriorHandle(OBJECTREF object, void* pInteriorPointerLocation)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateWeakInteriorHandle(m_handleStore, object, pInteriorPointerLocation);
+    }
+
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+    OBJECTHANDLE CreateRefcountedHandle(OBJECTREF object)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateRefcountedHandle(m_handleStore, object);
+    }
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+
+    OBJECTHANDLE CreateDependentHandle(OBJECTREF primary, OBJECTREF secondary)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateDependentHandle(m_handleStore, primary, secondary);
+    }
+#endif // DACCESS_COMPILE
+
+private:
+    IGCHandleStore* m_handleStore;
 
 protected:
     // Multi-thread safe access to the list of assemblies
@@ -1318,13 +1207,9 @@ public:
     ULONG Release(void) DAC_EMPTY_RET(0);
 
     //****************************************************************************************
-    LPCWSTR GetFriendlyName(BOOL fDebuggerCares = TRUE);
+    LPCWSTR GetFriendlyName();
     LPCWSTR GetFriendlyNameForDebugger();
-    LPCWSTR GetFriendlyNameForLogging();
-#ifdef DACCESS_COMPILE
-    PVOID GetFriendlyNameNoSet(bool* isUtf8);
-#endif
-    void SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares = TRUE);
+    void SetFriendlyName(LPCWSTR pwzFriendlyName);
 
     PEAssembly * BindAssemblySpec(
         AssemblySpec *pSpec,
@@ -1353,6 +1238,12 @@ public:
     void NotifyDebuggerUnload();
 #endif // DEBUGGING_SUPPORTED
 
+public:
+    // Returns an array of OBJECTREF* that can be used to store domain specific data.
+    // Statics and reflection info (Types, MemberInfo,..) are stored this way
+    // If pStaticsInfo != 0, allocation will only take place if GC statics in the DynamicStaticsInfo are NULL (and the allocation
+    // will be properly serialized)
+    OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo = NULL, MethodTable *pMTToFillWithStaticBoxes = NULL, bool isClassInitdeByUpdatingStaticPointer = false);
 #ifndef DACCESS_COMPILE
     OBJECTREF* AllocateStaticFieldObjRefPtrs(int nRequested)
     {
@@ -1362,7 +1253,16 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    void              EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
+private:
+    // Helper method to initialize the large heap handle table.
+    void InitPinnedHeapHandleTable();
+
+private:
+    // The pinned heap handle table.
+    PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
+
+public:
+    void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
 
     void SetupSharedStatics();
 
@@ -1397,6 +1297,10 @@ public:
 #endif // FEATURE_COMWRAPPERS
 
     DefaultAssemblyBinder *CreateDefaultBinder();
+    DefaultAssemblyBinder *GetDefaultBinder() {LIMITED_METHOD_CONTRACT;  return m_pDefaultBinder; }
+
+    // Only call this routine when you can guarantee there are no loads in progress.
+    void ClearBinderContext();
 
     void SetIgnoreUnhandledExceptions()
     {
@@ -1440,15 +1344,27 @@ public:
     Assembly* RaiseAssemblyResolveEvent(AssemblySpec *pSpec);
 
 private:
+    DefaultAssemblyBinder *m_pDefaultBinder; // Reference to the binding context that holds TPA list details
+
     CrstExplicitInit    m_ReflectionCrst;
     CrstExplicitInit    m_RefClassFactCrst;
-
 
     EEClassFactoryInfoHashTable *m_pRefClassFactHash;   // Hash table that maps a class factory info to a COM comp.
 #ifdef FEATURE_COMINTEROP
     DispIDCache *m_pRefDispIDCache;
     OBJECTHANDLE  m_hndMissing;     //Handle points to Missing.Value Object which is used for [Optional] arg scenario during IDispatch CCW Call
 #endif // FEATURE_COMINTEROP
+
+public:
+    UINT32 GetTypeID(PTR_MethodTable pMT);
+    UINT32 LookupTypeID(PTR_MethodTable pMT);
+    PTR_MethodTable LookupType(UINT32 id);
+#ifndef DACCESS_COMPILE
+    void RemoveTypesFromTypeIDMap(LoaderAllocator* pLoaderAllocator);
+#endif // DACCESS_COMPILE
+
+private:
+    TypeIDMap m_typeIDMap;
 
 public:
 
@@ -1515,7 +1431,7 @@ public:
 #endif // FEATURE_COMINTEROP
 
 private:
-    void RaiseLoadingAssemblyEvent(DomainAssembly* pAssembly);
+    void RaiseLoadingAssemblyEvent(Assembly* pAssembly);
 
     friend class DomainAssembly;
 
@@ -1602,7 +1518,7 @@ public:
     SPTR_DECL(AppDomain, m_pTheAppDomain);
 
 private:
-    SString         m_friendlyName;
+    PTR_CWSTR       m_friendlyName;
     PTR_Assembly    m_pRootAssembly;
 
     // General purpose flags.
@@ -1757,6 +1673,14 @@ private:
     };
 
     SHash<UnmanagedImageCacheTraits> m_unmanagedCache;
+
+#ifdef FEATURE_CODE_VERSIONING
+private:
+    CodeVersionManager m_codeVersionManager;
+
+public:
+    CodeVersionManager* GetCodeVersionManager() { return &m_codeVersionManager; }
+#endif //FEATURE_CODE_VERSIONING
 
 #ifdef FEATURE_TYPEEQUIVALENCE
 private:
@@ -2086,7 +2010,7 @@ private:
 
         m_pDelayedUnloadListOfLoaderAllocators=NULL;
 
-        m_GlobalAllocator.Init(this);
+        m_GlobalAllocator.Init();
     }
 #endif
 
@@ -2094,7 +2018,6 @@ private:
     PTR_Assembly    m_pSystemAssembly;  // Single assembly (here for quicker reference);
 
     GlobalLoaderAllocator m_GlobalAllocator;
-
 
     InlineSString<100>  m_BaseLibrary;
 
@@ -2135,10 +2058,7 @@ inline static BOOL IsUnderDomainLock() { LIMITED_METHOD_CONTRACT; return m_Syste
             WRAPPER_NO_CONTRACT;
         }
     };
-#endif // DACCESS_COMPILE
-
-public:
-    DWORD GetTotalNumSizedRefHandles();
+#endif // !DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
 public:

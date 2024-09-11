@@ -85,7 +85,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
         }
         else if (typeof(T) == typeof(char))
         {
-            return (T[])(object)reader.ReadChars(count);
+            return (T[])(object)reader.ParseChars(count);
         }
 
         // It's safe to pre-allocate, as we have ensured there is enough bytes in the stream.
@@ -171,12 +171,17 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
 
             reader.BaseStream.ReadExactly(buffer.Slice(0, stringLength));
 
-            values.Add(decimal.Parse(buffer.Slice(0, stringLength), CultureInfo.InvariantCulture));
+            if (!decimal.TryParse(buffer.Slice(0, stringLength), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal value))
+            {
+                ThrowHelper.ThrowInvalidFormat();
+            }
+
+            values.Add(value);
         }
 #else
         for (int i = 0; i < count; i++)
         {
-            values.Add(decimal.Parse(reader.ReadString(), CultureInfo.InvariantCulture));
+            values.Add(reader.ParseDecimal());
         }
 #endif
         return values;
@@ -201,7 +206,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             }
             else if (typeof(T) == typeof(char))
             {
-                values.Add((T)(object)reader.ReadChar());
+                values.Add((T)(object)reader.ParseChar());
             }
             else if (typeof(T) == typeof(short))
             {

@@ -16,7 +16,7 @@ public sealed class PayloadOptions
     public PayloadOptions() { }
 
     /// <summary>
-    /// Configuration options for parsing <see cref="TypeName"/> instances.
+    /// Gets or sets configuration options for parsing <see cref="TypeName"/> instances.
     /// </summary>
     public TypeNameParseOptions? TypeNameParseOptions { get; set; }
 
