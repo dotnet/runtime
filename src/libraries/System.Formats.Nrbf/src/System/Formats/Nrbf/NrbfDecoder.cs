@@ -76,6 +76,7 @@ public static class NrbfDecoder
             int read = stream.Read(buffer, offset, buffer.Length - offset);
             if (read == 0)
             {
+                stream.Position = beginning;
                 return false;
             }
             offset += read;
