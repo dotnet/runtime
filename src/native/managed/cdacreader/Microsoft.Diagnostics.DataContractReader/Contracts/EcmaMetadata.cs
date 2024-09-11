@@ -6,10 +6,9 @@ using System.Reflection.Metadata;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal interface IEcmaMetadata : IContract, IContractFactory<IEcmaMetadata>
+internal interface IFEcmaMetadata : IContractFactory<IFEcmaMetadata, IEcmaMetadata>
 {
-    static string IContract.Name { get; } = nameof(EcmaMetadata);
-    static IEcmaMetadata IContractFactory<IEcmaMetadata>.Create(ITarget target, int version)
+    static IEcmaMetadata IContractFactory<IFEcmaMetadata, IEcmaMetadata>.CreateContract(ITarget target, int version)
     {
         return version switch
         {
@@ -17,13 +16,4 @@ internal interface IEcmaMetadata : IContract, IContractFactory<IEcmaMetadata>
             _ => default(EcmaMetadata),
         };
     }
-
-    public virtual TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle) => throw new NotImplementedException();
-
-    public virtual MetadataReader? GetMetadata(ModuleHandle module) => throw new NotImplementedException();
-}
-
-internal readonly struct EcmaMetadata : IEcmaMetadata
-{
-    // Everything throws NotImplementedException
 }

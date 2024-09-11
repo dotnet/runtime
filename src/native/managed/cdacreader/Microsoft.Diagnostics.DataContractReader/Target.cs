@@ -12,18 +12,6 @@ using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
-public readonly struct TargetSpan
-{
-    public TargetSpan(TargetPointer address, ulong size)
-    {
-        Address = address;
-        Size = size;
-    }
-
-    public TargetPointer Address { get; }
-    public ulong Size { get; }
-}
-
 /// <summary>
 /// Representation of the target under inspection
 /// </summary>
