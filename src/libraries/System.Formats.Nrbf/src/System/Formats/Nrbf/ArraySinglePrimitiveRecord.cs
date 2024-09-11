@@ -94,7 +94,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
 #if NET
         reader.BaseStream.ReadExactly(resultAsBytes);
 #else
-        byte[] bytes = ArrayPool<byte>.Shared.Rent(Math.Min(count * Unsafe.SizeOf<T>(), 256_000));
+        byte[] bytes = ArrayPool<byte>.Shared.Rent((int)Math.Min(requiredBytes, 256_000));
 
         while (!resultAsBytes.IsEmpty)
         {
