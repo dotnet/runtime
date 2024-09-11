@@ -63,6 +63,15 @@
     <ProjectCapability Include="DotNetCoreWeb"/>
   </ItemGroup>
 
+  <!-- When trimming non-exe projects, root the whole intermediate assembly. -->
+  <Target Name="_RootEntireIntermediateAssembly" AfterTargets="PrepareForILLink" BeforeTargets="_RunILLink" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' And '$(OutputType)' == 'Library'">
+    <ItemGroup>
+      <TrimmerRootAssembly Condition="'%(Identity)' == '@(IntermediateAssembly)'">
+        <RootMode>all</RootMode>
+      </TrimmerRootAssembly>
+    </ItemGroup>
+  </Target>
+
   <Target Name="_GetWasmGenerateAppBundleDependencies">
     <Warning Condition="'$(InvariantGlobalization)' == 'true' and '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(WasmIcuDataFileName)' != '' and '$(HybridGlobalization)' == 'true'" Text="%24(WasmIcuDataFileName) has no effect when %24(HybridGlobalization) is set to true." />

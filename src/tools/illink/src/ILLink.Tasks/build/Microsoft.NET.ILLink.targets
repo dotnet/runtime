@@ -140,11 +140,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
 
     <Delete Files="@(_LinkedResolvedFileToPublishCandidate)" />
-    <ItemGroup>
-      <TrimmerRootAssembly Condition="'$(RuntimeIdentifier)' == 'browser-wasm' And '%(Identity)' == '@(IntermediateAssembly)' And '$(OutputType)' == 'Library'">
-        <RootMode>all</RootMode>
-      </TrimmerRootAssembly>
-    </ItemGroup>
     <ILLink AssemblyPaths="@(ManagedAssemblyToLink)"
             ReferenceAssemblyPaths="@(ReferencePath)"
             RootAssemblyNames="@(TrimmerRootAssembly)"

@@ -798,7 +798,8 @@
       PInvokeOutputPath="$(_WasmPInvokeTablePath)"
       InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
       CacheFilePath="$(_WasmM2NCachePath)"
-      IsLibraryMode="$(_IsLibraryMode)">
+      IsLibraryMode="$(_IsLibraryMode)"
+      RuntimeIdentifier="$(RuntimeIdentifier)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
   </Target>
