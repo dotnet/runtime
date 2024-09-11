@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -45,15 +44,10 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// Set up the configuration for the builder itself. This will be used to initialize
         /// the <see cref="HostApplicationBuilder.Environment"/> through the use of <see cref="HostDefaults"/> keys.
+        /// The configuration is also added to the <see cref="HostApplicationBuilder.Configuration"/>.
         /// Disposing the built <see cref="IHost"/> disposes the <see cref="ConfigurationManager"/>.
         /// </summary>
-        public ConfigurationManager? HostConfiguration { get; set; }
-
-        /// <summary>
-        /// Obsolete name for the <see cref="HostConfiguration"/>.
-        /// </summary>
-        [Obsolete($"Use {nameof(HostConfiguration)} instead.")]
-        public ConfigurationManager? Configuration { get => HostConfiguration; set => HostConfiguration = value; }
+        public ConfigurationManager? Configuration { get; set; }
 
         /// <summary>
         /// The environment name.

@@ -47,8 +47,6 @@ namespace Microsoft.Extensions.Hosting
         public HostApplicationBuilderSettings() { }
         public string? ApplicationName { get { throw null; } set { } }
         public string[]? Args { get { throw null; } set { } }
-        public Microsoft.Extensions.Configuration.ConfigurationManager? HostConfiguration { get { throw null; } set { } }
-        [System.Obsolete($"Use {nameof(HostConfiguration)} instead.")]
         public Microsoft.Extensions.Configuration.ConfigurationManager? Configuration { get { throw null; } set { } }
         public string? ContentRootPath { get { throw null; } set { } }
         public bool DisableDefaults { get { throw null; } set { } }

@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.Hosting
 
         private static void InitializeHostConfiguration(HostApplicationBuilderSettings settings, out ConfigurationManager hostConfiguration)
         {
-            hostConfiguration = settings.HostConfiguration ?? new();
+            hostConfiguration = settings.Configuration ?? new();
 
             if (!settings.DisableDefaults)
             {
@@ -193,7 +193,7 @@ namespace Microsoft.Extensions.Hosting
         /// <remarks>
         /// This can be mutated by adding more configuration sources, which will update its current view.
         /// Changing the application configuration properties will not affect host properties such as the <see cref="Environment"/>.
-        /// Use the <see cref="HostApplicationBuilderSettings.HostConfiguration"/> to affect the host properties.
+        /// Use the <see cref="HostApplicationBuilderSettings.Configuration"/> to affect the host properties.
         /// </remarks>
         public ConfigurationManager Configuration { get; } = new();
 
