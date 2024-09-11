@@ -26,9 +26,9 @@ internal sealed class Registry
     public IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IFRuntimeTypeSystem, IRuntimeTypeSystem>();
     public IDacStreams DacStreams => GetContract<IFDacStreams, IDacStreams>();
     public ICodeVersions CodeVersions => GetContract<IFCodeVersions, ICodeVersions>();
-    public IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
-    public IExecutionManager ExecutionManager => GetContract<IExecutionManager>();
-    public IReJIT ReJIT => GetContract<IReJIT>();
+    public IPrecodeStubs PrecodeStubs => GetContract<IFPrecodeStubs, IPrecodeStubs>();
+    public IExecutionManager ExecutionManager => GetContract<IFExecutionManager, IExecutionManager>();
+    public IReJIT ReJIT => GetContract<IFReJIT, IReJIT>();
 
     private TProduct GetContract<TFactory, TProduct>() where TProduct : IContract where TFactory : IContractFactory<TFactory, TProduct>
     {
@@ -45,10 +45,5 @@ internal sealed class Registry
 
         // Contract was already registered by someone else
         return (TProduct)_contracts[typeof(TProduct)];
-    }
-
-    private T GetContract<T>() where T : IContractFactory<T>
-    {
-        return GetContract<T, T>();
     }
 }

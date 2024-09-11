@@ -5,16 +5,9 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal struct EECodeInfoHandle
+internal interface IFExecutionManager : IContractFactory<IFExecutionManager, IExecutionManager>
 {
-    public readonly TargetPointer Address;
-    internal EECodeInfoHandle(TargetPointer address) => Address = address;
-}
-
-internal interface IExecutionManager : IContract, IContractFactory<IExecutionManager>
-{
-    static string IContract.Name { get; } = nameof(ExecutionManager);
-    static IExecutionManager IContractFactory<IExecutionManager>.Create(ITarget target, int version)
+    static IExecutionManager IContractFactory<IFExecutionManager, IExecutionManager>.CreateContract(ITarget target, int version)
     {
         TargetPointer executionManagerCodeRangeMapAddress = target.ReadGlobalPointer(Constants.Globals.ExecutionManagerCodeRangeMapAddress);
         Data.RangeSectionMap rangeSectionMap = target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(executionManagerCodeRangeMapAddress);
@@ -24,14 +17,4 @@ internal interface IExecutionManager : IContract, IContractFactory<IExecutionMan
             _ => default(ExecutionManager),
         };
     }
-
-    EECodeInfoHandle? GetEECodeInfoHandle(TargetCodePointer ip) => throw new NotImplementedException();
-    TargetPointer GetMethodDesc(EECodeInfoHandle codeInfoHandle) => throw new NotImplementedException();
-    TargetCodePointer GetStartAddress(EECodeInfoHandle codeInfoHandle) => throw new NotImplementedException();
-
-}
-
-internal readonly struct ExecutionManager : IExecutionManager
-{
-
 }

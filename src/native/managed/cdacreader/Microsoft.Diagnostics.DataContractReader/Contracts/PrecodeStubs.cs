@@ -5,10 +5,9 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal interface IPrecodeStubs : IContract, IContractFactory<IPrecodeStubs>
+internal interface IFPrecodeStubs : IContractFactory<IFPrecodeStubs, IPrecodeStubs>
 {
-    static string IContract.Name { get; } = nameof(PrecodeStubs);
-    static IPrecodeStubs IContractFactory<IPrecodeStubs>.Create(ITarget target, int version)
+    static IPrecodeStubs IContractFactory<IFPrecodeStubs, IPrecodeStubs>.CreateContract(ITarget target, int version)
     {
         TargetPointer precodeMachineDescriptorAddress = target.ReadGlobalPointer(Constants.Globals.PrecodeMachineDescriptor);
         Data.PrecodeMachineDescriptor precodeMachineDescriptor = target.ProcessedData.GetOrAdd<Data.PrecodeMachineDescriptor>(precodeMachineDescriptorAddress);
@@ -18,12 +17,4 @@ internal interface IPrecodeStubs : IContract, IContractFactory<IPrecodeStubs>
             _ => default(PrecodeStubs),
         };
     }
-
-    TargetPointer GetMethodDescFromStubAddress(TargetCodePointer entryPoint) => throw new NotImplementedException();
-
-}
-
-internal readonly struct PrecodeStubs : IPrecodeStubs
-{
-
 }
