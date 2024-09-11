@@ -283,7 +283,7 @@ namespace System.Diagnostics.Metrics
         [Event(18, Keywords = Keywords.Messages)]
         public void Version(int Major, int Minor, int Patch)
         {
-            WriteEvent(13, Major, Minor, Patch);
+            WriteEvent(18, Major, Minor, Patch);
         }
 
         /// <summary>
@@ -298,7 +298,7 @@ namespace System.Diagnostics.Metrics
                 Version(
                     ThisAssembly.AssemblyFileVersion.Major,
                     ThisAssembly.AssemblyFileVersion.Minor,
-                    ThisAssembly.AssemblyFileVersion.Revision);
+                    ThisAssembly.AssemblyFileVersion.Build);
             }
 
             lock (this)

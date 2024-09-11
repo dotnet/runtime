@@ -370,7 +370,7 @@ namespace System.Diagnostics
                 Version(
                     ThisAssembly.AssemblyFileVersion.Major,
                     ThisAssembly.AssemblyFileVersion.Minor,
-                    ThisAssembly.AssemblyFileVersion.Revision);
+                    ThisAssembly.AssemblyFileVersion.Build);
             }
 
             // On every command (which the debugger can force by turning on this EventSource with ETW)

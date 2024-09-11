@@ -5,9 +5,7 @@ namespace System.Diagnostics;
 
 internal static class ThisAssembly
 {
-    private const string BuildAssemblyVersion = "${AssemblyVersion}";
     private const string BuildAssemblyFileVersion = "${AssemblyFileVersion}";
 
-    public static Version AssemblyVersion { get; } = new(BuildAssemblyVersion);
     public static Version AssemblyFileVersion { get; } = new(BuildAssemblyFileVersion);
 }
