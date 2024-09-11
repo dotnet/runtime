@@ -966,13 +966,13 @@ int32_t SystemNative_GetControlMessageBufferSize(int32_t isIPv4, int32_t isIPv6)
     // Note: it is possible that the address family of the socket is neither
     //       AF_INET nor AF_INET6. In this case both inputs will be 0 and
     //       the control message buffer size should be zero.
-#ifdef CMSG_SPACE
+#if HAVE_CMSGHDR
     return (isIPv4 != 0 ? CMSG_SPACE(sizeof(struct in_pktinfo)) : 0) + (isIPv6 != 0 ? CMSG_SPACE(sizeof(struct in6_pktinfo)) : 0);
-#else // CMSG_SPACE
+#else // HAVE_CMSGHDR
     (void)isIPv4;
     (void)isIPv6;
     return 0;
-#endif // CMSG_SPACE
+#endif // HAVE_CMSGHDR
 }
 
 #if HAVE_CMSGHDR
@@ -3609,6 +3609,6 @@ uint32_t SystemNative_InterfaceNameToIndex(char* interfaceName)
     return if_nametoindex(interfaceName);
 #else // HAVE_NET_IF_H
     (void)interfaceName;
-    return 0;
+    return Error_ENOTSUP;
 #endif // HAVE_NET_IF_H
 }
