@@ -39,7 +39,7 @@ public class MemoryTests : AppTestBase
         }
     }
 
-    [Theory]
+    [Fact]
     public async Task RunSimpleAppWithProfiler()
     {
         string config = "Release";
