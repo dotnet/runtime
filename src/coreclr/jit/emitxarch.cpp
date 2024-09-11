@@ -5965,11 +5965,7 @@ void emitter::emitInsNddBinary(instruction ins, emitAttr attr, regNumber targetR
     GenTree* cnsOp   = nullptr;
     GenTree* otherOp = nullptr;
 
-    if (op1->isContained() || (op1->isLclField() && (op1->GetRegNum() == REG_NA)) || op1->isUsedFromSpillTemp())
-    {
-        unreached();
-    }
-    else if (op2->isContained() || op2->isUsedFromSpillTemp())
+    if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
         assert(!op1->isUsedFromMemory());
         otherOp = op1;
@@ -6029,24 +6025,20 @@ void emitter::emitInsNddBinary(instruction ins, emitAttr attr, regNumber targetR
                 {
                     instrDesc* id = nullptr;
 
-                    if (cnsOp != nullptr)
-                    {
-                        unreached();
-                    }
-                    else
-                    {
-                        ssize_t offset = memIndir->Offset();
-                        id             = emitNewInstrAmd(attr, offset);
-                        id->idIns(ins);
+                    assert(cnsOp != nullptr);
+                    
+                    ssize_t offset = memIndir->Offset();
+                    id             = emitNewInstrAmd(attr, offset);
+                    id->idIns(ins);
 
-                        GenTree* regTree = (memOp == op2) ? op1 : op2;
+                    GenTree* regTree = (memOp == op2) ? op1 : op2;
 
-                        // there must be one non-contained op
-                        assert(!regTree->isContained());
-                        id->idReg1(targetReg);
-                        id->idReg2(regTree->GetRegNum());
-                        id->idSetEvexNdContext();
-                    }
+                    // there must be one non-contained op
+                    assert(!regTree->isContained());
+                    id->idReg1(targetReg);
+                    id->idReg2(regTree->GetRegNum());
+                    id->idSetEvexNdContext();
+                    
                     assert(id != nullptr);
 
                     id->idIns(ins); // Set the instruction.
@@ -6054,33 +6046,20 @@ void emitter::emitInsNddBinary(instruction ins, emitAttr attr, regNumber targetR
                     // Determine the instruction format
                     insFormat fmt = IF_NONE;
 
-                    if (memOp == op2)
-                    {
-                        assert(cnsOp == nullptr);
-                        assert(otherOp == op1);
+                    assert(memOp == op2);
+                    assert(cnsOp == nullptr);
+                    assert(otherOp == op1);
 
-                        fmt = emitInsModeFormat(ins, IF_RWR_RRD_ARD);
-                    }
-                    else
-                    {
-                        unreached();
-                    }
+                    fmt = emitInsModeFormat(ins, IF_RWR_RRD_ARD);
                     assert(fmt != IF_NONE);
                     emitHandleMemOp(memIndir, id, fmt, ins);
 
                     // Determine the instruction size
                     UNATIVE_OFFSET sz = 0;
+                    assert(otherOp == op1);
+                    assert(cnsOp == nullptr);
+                    sz = emitInsSizeAM(id, insCodeRM(ins));
 
-                    if (memOp == op2)
-                    {
-                        assert(otherOp == op1);
-                        assert(cnsOp == nullptr);
-                        sz = emitInsSizeAM(id, insCodeRM(ins));
-                    }
-                    else
-                    {
-                        unreached();
-                    }
                     assert(sz != 0);
 
                     id->idCodeSize(sz);
@@ -6123,41 +6102,14 @@ void emitter::emitInsNddBinary(instruction ins, emitAttr attr, regNumber targetR
         assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
         assert(offset != (unsigned)-1);
 
-        if (memOp == op2)
-        {
-            assert(otherOp == op1);
-            assert(cnsOp == nullptr);
+        assert(memOp == op2);
+        assert(otherOp == op1);
+        assert(cnsOp == nullptr);
 
-            // op2 is a stack based local variable
-            // op1 is a register
-            emitIns_R_R_S(ins, attr, targetReg, op1Reg, varNum, offset, INS_OPTS_EVEX_nd);
-        }
-        else
-        {
-            unreached();
-            assert(memOp == op1);
-            assert((op1->GetRegNum() == REG_NA) || op1->IsRegOptional());
+        // op2 is a stack based local variable
+        // op1 is a register
+        emitIns_R_R_S(ins, attr, targetReg, op1Reg, varNum, offset, INS_OPTS_EVEX_nd);
 
-            if (cnsOp != nullptr)
-            {
-                assert(cnsOp == op2);
-                assert(otherOp == nullptr);
-                assert(op2->IsCnsIntOrI());
-
-                // op2 is an contained immediate
-                // op1 is a stack based local variable
-                emitIns_R_S_I(ins, attr, targetReg, varNum, offset, (int)op2->AsIntConCommon()->IconValue(), INS_OPTS_EVEX_nd);
-            }
-            else
-            {
-                assert(otherOp == op2);
-                assert(!op2->isContained());
-
-                // this will be R_S_R.
-                unreached();
-
-            }
-        }
     }
     else if (cnsOp != nullptr) // reg, immed
     {
@@ -7660,7 +7612,6 @@ void emitter::emitIns_R_S_I(
 
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
-    SetEvexNdIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeSV(id, code, varx, offs, ival);
     id->idCodeSize(sz);
@@ -16017,7 +15968,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         // So the logic should be:
         // checking if those new features are used, then check if EGPRs are involved.
         // EGPRs will be supported by EVEX anyway, so don't need to check in the first place.
-        assert(!TakesSimdPrefix(id) || IsApxNDDEncodableInstruction(ins));
+        assert(!TakesSimdPrefix(id));
         code = insCodeMR(ins);
         code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeMRreg(id, code);
