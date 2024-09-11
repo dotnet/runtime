@@ -22,7 +22,7 @@ internal sealed class Registry
     public ILoader Loader => GetContract<IFLoader, ILoader>();
     public IEcmaMetadata EcmaMetadata => GetContract<IFEcmaMetadata, IEcmaMetadata>();
     public IObject Object => GetContract<IFObject, IObject>();
-    public IThread Thread => GetContract<IThread>();
+    public IThread Thread => GetContract<IFThread, IThread>();
     public IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IFRuntimeTypeSystem, IRuntimeTypeSystem>();
     public IDacStreams DacStreams => GetContract<IFDacStreams, IDacStreams>();
     public ICodeVersions CodeVersions => GetContract<IFCodeVersions, ICodeVersions>();
