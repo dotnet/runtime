@@ -8,12 +8,16 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace System.Net
 {
     internal static partial class NameResolutionPal
     {
         public const bool SupportsGetAddrInfoAsync = false;
+
+        [UnsupportedOSPlatformGuard("wasi")]
+        public static bool SupportsGetNameInfo = !OperatingSystem.IsWasi();
 
 #pragma warning disable IDE0060
         internal static Task? GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily family, CancellationToken cancellationToken) =>
@@ -40,11 +44,8 @@ namespace System.Net
                 case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_MEMORY:
                     throw new OutOfMemoryException();
                 case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_SYSTEM:
-#if !TARGET_WASI
+                    Debug.Fail($"Unexpected error: {error} errno: {Interop.Sys.GetErrNo()}");
                     return SocketError.SocketError;
-#else
-                    throw new Exception("ErrNo: " + Interop.Sys.GetErrNo());
-#endif
                 default:
                     Debug.Fail($"Unexpected error: {error}");
                     return SocketError.SocketError;
@@ -152,7 +153,8 @@ namespace System.Net
 
         public static unsafe string? TryGetNameInfo(IPAddress addr, out SocketError socketError, out int nativeErrorCode)
         {
-#if !TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             byte* buffer = stackalloc byte[Interop.Sys.NI_MAXHOST + 1 /*for null*/];
 
             byte isIPv6;
@@ -185,9 +187,6 @@ namespace System.Net
             socketError = GetSocketErrorForNativeError(error);
             nativeErrorCode = error;
             return socketError == SocketError.Success ? Marshal.PtrToStringUTF8((IntPtr)buffer) : null;
-#else
-            throw new PlatformNotSupportedException();
-#endif
         }
 
         public static string GetHostName() => Interop.Sys.GetHostName();

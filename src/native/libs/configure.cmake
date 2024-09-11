@@ -459,6 +459,23 @@ check_symbol_exists(
     HAVE_EPOLL)
 
 check_symbol_exists(
+    gethostname
+    unistd.h
+    HAVE_GETHOSTNAME)
+
+check_symbol_exists(
+    cmsghdr
+    socket.h
+    HAVE_CMSGHDR)
+
+check_symbol_exists(
+    getnameinfo
+    netdb.h
+    HAVE_GETNAMEINFO)
+
+check_struct_has_member("struct sockaddr_un" sin_len "netinet/un.h" HAVE_SOCKADDR_UN_SUN_PATH)
+
+check_symbol_exists(
     accept4
     sys/socket.h
     HAVE_ACCEPT4)
@@ -565,6 +582,7 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
 elseif(CLR_CMAKE_TARGET_WASI)
     set(HAVE_FORK 0)
     set(HAVE_GETIFADDRS 0)
+    set(HAVE_GETNAMEINFO 0)
 elseif(CLR_CMAKE_TARGET_BROWSER)
     set(HAVE_FORK 0)
 else()

@@ -14,7 +14,11 @@ internal static partial class Interop
 
         internal static unsafe string GetHostName()
         {
-#if !TARGET_WASI
+            if (OperatingSystem.IsWasi())
+            {
+                return "localhost";
+            }
+
             const int HOST_NAME_MAX = 255;
             const int ArrLength = HOST_NAME_MAX + 1;
 
@@ -35,9 +39,6 @@ internal static partial class Interop
             name[ArrLength - 1] = 0;
 
             return Marshal.PtrToStringUTF8((IntPtr)name)!;
-#else
-            return "localhost";
-#endif
         }
     }
 }

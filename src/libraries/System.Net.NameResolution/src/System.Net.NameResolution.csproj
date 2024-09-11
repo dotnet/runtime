@@ -18,8 +18,8 @@
     <Compile Include="System\Net\Dns.cs" />
     <Compile Include="System\Net\IPHostEntry.cs" />
     <Compile Include="System\Net\NetEventSource.NameResolution.cs" Condition="'$(TargetPlatformIdentifier)' != 'wasi'" />
-    <Compile Include="System\Net\NameResolutionMetrics.cs" Condition="'$(TargetPlatformIdentifier)' != 'wasi'" />
-    <Compile Include="System\Net\NameResolutionTelemetry.cs" Condition="'$(TargetPlatformIdentifier)' != 'wasi'" />
+    <Compile Include="System\Net\NameResolutionMetrics.cs" />
+    <Compile Include="System\Net\NameResolutionTelemetry.cs" />
     <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
@@ -106,8 +106,6 @@
              Link="Common\Interop\Unix\System.Native\Interop.GetHostName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ErrNo.cs"
              Link="Common\Interop\Unix\System.Native\Interop.ErrNo.cs"/>
-
-    <Compile Include="System\Net\NameResolutionTelemetry.Wasi.cs" />
 
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
