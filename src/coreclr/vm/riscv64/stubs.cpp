@@ -1696,10 +1696,9 @@ void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEnt
         if (delowered[i].srcofs == ShuffleEntry::SENTINEL)
             break;
         _ASSERTE(IsRegisterFloating(delowered[i].srcofs));
-        FloatReg src = GetRegister(delowered[i].srcofs);
         TransferredField f = GetTransferredField(delowered[i].srcofs);
         int slotOffset = GetStackSlot(delowered[i].dstofs) * sizeof(void*);
-        EmitAnyStore(true, f.sizeShift, src, RegSp, slotOffset + f.offset);
+        EmitAnyStore(true, f.sizeShift, f.reg, RegSp, slotOffset + f.offset);
     }
 
     // Last FP regs occupied by the delowered argument have been freed, we can shuffle FP registers to the right
