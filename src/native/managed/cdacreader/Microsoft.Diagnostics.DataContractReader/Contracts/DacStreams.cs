@@ -2,17 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal interface IDacStreams : IContract, IContractFactory<IDacStreams>
+internal interface IFDacStreams : IContractFactory<IFDacStreams, IDacStreams>
 {
-    static string IContract.Name { get; } = nameof(DacStreams);
-    static IDacStreams IContractFactory<IDacStreams>.Create(ITarget target, int version)
+    static IDacStreams IContractFactory<IFDacStreams, IDacStreams>.CreateContract(ITarget target, int version)
     {
         return version switch
         {
@@ -20,11 +15,4 @@ internal interface IDacStreams : IContract, IContractFactory<IDacStreams>
             _ => default(DacStreams),
         };
     }
-
-    public virtual string? StringFromEEAddress(TargetPointer address) => throw new NotImplementedException();
-}
-
-internal readonly struct DacStreams : IDacStreams
-{
-    // Everything throws NotImplementedException
 }
