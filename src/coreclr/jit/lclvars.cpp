@@ -5649,6 +5649,9 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
     // The delta to be added to virtual offset to adjust it relative to frame pointer or SP
     int delta = 0;
+#if defined(TARGET_ARM64)
+    int fpLrDelta = 0;
+#endif
 
 #ifdef TARGET_XARCH
     delta += REGSIZE_BYTES; // pushed PC (return address) for x86/x64
@@ -5682,7 +5685,8 @@ void Compiler::lvaFixVirtualFrameOffsets()
                                                                // have a frame pointer
         {
             // We set FP to be after LR, FP
-            delta += 2 * REGSIZE_BYTES;
+            fpLrDelta += 2 * REGSIZE_BYTES;
+            delta += fpLrDelta;
         }
         JITDUMP("--- delta bump %d for FP frame\n", delta);
     }
@@ -5774,15 +5778,23 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
         if (doAssignStkOffs)
         {
-            JITDUMP("-- V%02u was %d, now %d\n", lclNum, varDsc->GetStackOffset(), varDsc->GetStackOffset() + delta);
-            varDsc->SetStackOffset(varDsc->GetStackOffset() + delta);
+            int localDelta = delta;
+
+#if defined(TARGET_ARM64)
+            if (varDsc->GetStackOffset() >= 0)
+                localDelta -= fpLrDelta;
+#endif
+
+            JITDUMP("-- V%02u was %d, now %d\n", lclNum, varDsc->GetStackOffset(),
+                    varDsc->GetStackOffset() + localDelta);
+            varDsc->SetStackOffset(varDsc->GetStackOffset() + localDelta);
 
 #if DOUBLE_ALIGN
             if (genDoubleAlign() && !codeGen->isFramePointerUsed())
             {
                 if (varDsc->lvFramePointerBased)
                 {
-                    varDsc->SetStackOffset(varDsc->GetStackOffset() - delta);
+                    varDsc->SetStackOffset(varDsc->GetStackOffset() - localDelta);
 
                     // We need to re-adjust the offsets of the parameters so they are EBP
                     // relative rather than stack/frame pointer relative
