@@ -1,6 +1,6 @@
 parameters:
   hybridGlobalization: True
-  perfBranch: 'refs/heads/main'
+  perfBranch: 'main'
 
 jobs:
   # build mono iOS scenarios HybridGlobalization

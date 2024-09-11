@@ -30,7 +30,7 @@ parameters:
   onlySanityCheck: false
   downloadSpecificBuild: null # buildId, pipeline, branchName, project
   crossBuild: false
-  perfBranch: 'refs/heads/main'
+  perfBranch: 'main'
 
 ### Perf job
 

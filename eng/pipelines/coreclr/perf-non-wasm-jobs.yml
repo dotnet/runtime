@@ -1,5 +1,5 @@
 parameters:
-  perfBranch: 'refs/heads/main'
+  perfBranch: 'main'
 
 jobs:
 

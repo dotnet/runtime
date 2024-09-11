@@ -2,7 +2,7 @@ parameters:
 - name: perfBranch
   displayName: Performance Repo Branch
   type: string
-  default: 'refs/heads/main'
+  default: 'main'
 
 trigger:
   batch: true

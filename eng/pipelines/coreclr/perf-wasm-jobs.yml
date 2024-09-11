@@ -7,7 +7,7 @@ parameters:
   onlySanityCheck: false
   downloadSpecificBuild: null # { buildId, pipeline, branchName, project }
   collectHelixLogsScript: ''
-  perfBranch: 'refs/heads/main'
+  perfBranch: 'main'
 
 jobs:
 
