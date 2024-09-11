@@ -39,13 +39,19 @@ public class MemoryTests : AppTestBase
         }
     }
 
-    [Fact]
-    public async Task RunSimpleAppWithProfiler()
+    [Theory]
+    [InlineData("log", true)]
+    [InlineData("browser", false)]
+    [InlineData("aot", false)]
+    public async Task RunSimpleAppWithProfiler(string wasmProfiler, bool testRun)
     {
         string config = "Release";
         CopyTestAsset("WasmBasicTestApp", "ProfilerTest", "App");
-        string extraArgs = "-p:WasmProfilers=log; -p:WasmBuildNative=true";
+        string extraArgs = $"-p:WasmProfilers={wasmProfiler}; -p:WasmBuildNative=true";
         BuildProject(config, assertAppBundle: false, extraArgs: extraArgs);
+
+        if (!testRun)
+            return;
 
         var result = await RunSdkStyleAppForBuild(new (Configuration: config, TestScenario: "ProfilerTest"));
         Regex regex = new Regex(@"Profile data of size (\d+) bytes");
