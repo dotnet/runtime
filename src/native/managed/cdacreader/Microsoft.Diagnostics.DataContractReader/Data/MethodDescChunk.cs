@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class MethodDescChunk : IData<MethodDescChunk>
 {
     static MethodDescChunk IData<MethodDescChunk>.Create(ITarget target, TargetPointer address) => new MethodDescChunk((Target)target, address);
-    public MethodDescChunk(Target target, TargetPointer address)
+    public MethodDescChunk(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.MethodDescChunk);
 

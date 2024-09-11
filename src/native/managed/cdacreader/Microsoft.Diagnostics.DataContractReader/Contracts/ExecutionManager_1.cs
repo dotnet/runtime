@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly partial struct ExecutionManager_1 : IExecutionManager
 {
-    internal readonly Target _target;
+    internal readonly ITarget _target;
 
     // maps EECodeInfoHandle.Address (which is the CodeHeaderAddress) to the EECodeInfo
     private readonly Dictionary<TargetPointer, EECodeInfo> _codeInfos = new();
@@ -20,7 +20,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
 
     public ExecutionManager_1(ITarget target, Data.RangeSectionMap topRangeSectionMap)
     {
-        _target = (Target)target;
+        _target = target;
         _topRangeSectionMap = topRangeSectionMap;
         _rangeSectionLookupAlgorithm = RangeSectionLookupAlgorithm.Create(_target);
         NibbleMap nibbleMap = NibbleMap.Create(_target);
@@ -74,12 +74,12 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             return new ExMgrPtr(RawValue.Value + (ulong)(stride * idx));
         }
 
-        public T Load<T>(Target target) where T : Data.IData<T>
+        public T Load<T>(ITarget target) where T : Data.IData<T>
         {
             return target.ProcessedData.GetOrAdd<T>(Address);
         }
 
-        public ExMgrPtr LoadPointer(Target target)
+        public ExMgrPtr LoadPointer(ITarget target)
         {
             return new ExMgrPtr(target.ReadPointer(Address));
         }
@@ -97,7 +97,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             MapLevels = mapLevels;
             MaxSetBit = maxSetBit;
         }
-        public static RangeSectionLookupAlgorithm Create(Target target)
+        public static RangeSectionLookupAlgorithm Create(ITarget target)
         {
             if (target.PointerSize == 4)
             {
@@ -123,7 +123,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             return checked((int)addressBitsUsedInLevel);
         }
 
-        internal ExMgrPtr /*PTR_RangeSectionFragment*/ FindFragment(Target target, Data.RangeSectionMap topRangeSectionMap, TargetCodePointer jittedCodeAddress)
+        internal ExMgrPtr /*PTR_RangeSectionFragment*/ FindFragment(ITarget target, Data.RangeSectionMap topRangeSectionMap, TargetCodePointer jittedCodeAddress)
         {
             /* The outer levels are all pointer arrays to the next level down.  Level 1 is an array of pointers to a RangeSectionFragment */
             int topLevelIndex = EffectiveBitsForLevel(jittedCodeAddress, MapLevels);
@@ -150,9 +150,9 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
     }
     private abstract class JitManager
     {
-        public Target Target { get; }
+        public ITarget Target { get; }
 
-        protected JitManager(Target target)
+        protected JitManager(ITarget target)
         {
             Target = target;
         }
@@ -163,7 +163,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
 
     private class ReadyToRunJitManager : JitManager
     {
-        public ReadyToRunJitManager(Target target) : base(target)
+        public ReadyToRunJitManager(ITarget target) : base(target)
         {
         }
         public override bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out EECodeInfo? info)
@@ -189,13 +189,13 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
         internal bool IsRangeList => HasFlags(RangeSectionFlags.RangeList);
         internal bool IsCodeHeap => HasFlags(RangeSectionFlags.CodeHeap);
 
-        internal static bool IsStubCodeBlock(Target target, TargetPointer codeHeaderIndirect)
+        internal static bool IsStubCodeBlock(ITarget target, TargetPointer codeHeaderIndirect)
         {
             uint stubCodeBlockLast = target.ReadGlobal<uint>(Constants.Globals.StubCodeBlockLast);
             return codeHeaderIndirect.Value <= stubCodeBlockLast;
         }
 
-        internal static RangeSection Find(Target target, Data.RangeSectionMap topRangeSectionMap, RangeSectionLookupAlgorithm rangeSectionLookup, TargetCodePointer jittedCodeAddress)
+        internal static RangeSection Find(ITarget target, Data.RangeSectionMap topRangeSectionMap, RangeSectionLookupAlgorithm rangeSectionLookup, TargetCodePointer jittedCodeAddress)
         {
             ExMgrPtr rangeSectionFragmentPtr = rangeSectionLookup.FindFragment(target, topRangeSectionMap, jittedCodeAddress);
             if (rangeSectionFragmentPtr.IsNull)

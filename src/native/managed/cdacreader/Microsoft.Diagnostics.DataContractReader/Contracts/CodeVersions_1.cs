@@ -7,12 +7,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly partial struct CodeVersions_1 : ICodeVersions
 {
-    private readonly Target _target;
+    private readonly ITarget _target;
 
 
     public CodeVersions_1(ITarget target)
     {
-        _target = (Target)target;
+        _target = target;
     }
 
     NativeCodeVersionHandle ICodeVersions.GetNativeCodeVersionForIP(TargetCodePointer ip)

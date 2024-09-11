@@ -7,11 +7,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Loader_1 : ILoader
 {
-    private readonly Target _target;
+    private readonly ITarget _target;
 
     internal Loader_1(ITarget target)
     {
-        _target = (Target)target;
+        _target = target;
     }
 
     ModuleHandle ILoader.GetModuleHandle(TargetPointer modulePointer)

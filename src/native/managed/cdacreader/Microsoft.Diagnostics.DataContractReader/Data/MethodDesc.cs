@@ -7,8 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class MethodDesc : IData<MethodDesc>
 {
-    static MethodDesc IData<MethodDesc>.Create(ITarget target, TargetPointer address) => new MethodDesc((Target)target, address);
-    public MethodDesc(Target target, TargetPointer address)
+    static MethodDesc IData<MethodDesc>.Create(ITarget target, TargetPointer address) => new MethodDesc(target, address);
+    public MethodDesc(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.MethodDesc);
 
@@ -31,8 +31,8 @@ internal sealed class MethodDesc : IData<MethodDesc>
 
 internal sealed class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>
 {
-    static InstantiatedMethodDesc IData<InstantiatedMethodDesc>.Create(ITarget target, TargetPointer address) => new InstantiatedMethodDesc((Target)target, address);
-    public InstantiatedMethodDesc(Target target, TargetPointer address)
+    static InstantiatedMethodDesc IData<InstantiatedMethodDesc>.Create(ITarget target, TargetPointer address) => new InstantiatedMethodDesc(target, address);
+    public InstantiatedMethodDesc(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.InstantiatedMethodDesc);
 
@@ -48,8 +48,8 @@ internal sealed class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>
 
 internal sealed class DynamicMethodDesc : IData<DynamicMethodDesc>
 {
-    static DynamicMethodDesc IData<DynamicMethodDesc>.Create(ITarget target, TargetPointer address) => new DynamicMethodDesc((Target)target, address);
-    public DynamicMethodDesc(Target target, TargetPointer address)
+    static DynamicMethodDesc IData<DynamicMethodDesc>.Create(ITarget target, TargetPointer address) => new DynamicMethodDesc(target, address);
+    public DynamicMethodDesc(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.DynamicMethodDesc);
 
@@ -61,8 +61,8 @@ internal sealed class DynamicMethodDesc : IData<DynamicMethodDesc>
 
 internal sealed class StoredSigMethodDesc : IData<StoredSigMethodDesc>
 {
-    static StoredSigMethodDesc IData<StoredSigMethodDesc>.Create(ITarget target, TargetPointer address) => new StoredSigMethodDesc((Target)target, address);
-    public StoredSigMethodDesc(Target target, TargetPointer address)
+    static StoredSigMethodDesc IData<StoredSigMethodDesc>.Create(ITarget target, TargetPointer address) => new StoredSigMethodDesc(target, address);
+    public StoredSigMethodDesc(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.StoredSigMethodDesc);
 

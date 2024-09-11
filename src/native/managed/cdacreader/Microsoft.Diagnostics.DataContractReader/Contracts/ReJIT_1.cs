@@ -7,12 +7,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly partial struct ReJIT_1 : IReJIT
 {
-    internal readonly Target _target;
+    internal readonly ITarget _target;
     private readonly Data.ProfControlBlock _profControlBlock;
 
     public ReJIT_1(ITarget target, Data.ProfControlBlock profControlBlock)
     {
-        _target = (Target)target;
+        _target = target;
         _profControlBlock = profControlBlock;
     }
 

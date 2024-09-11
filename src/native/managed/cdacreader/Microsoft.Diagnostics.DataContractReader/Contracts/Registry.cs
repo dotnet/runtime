@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class Registry
+internal sealed class Registry : IRegistry
 {
     // Contracts that have already been created for a target.
     // Items should not be removed from this, only added.

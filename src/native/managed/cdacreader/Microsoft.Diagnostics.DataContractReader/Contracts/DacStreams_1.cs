@@ -12,7 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal class DacStreams_1 : IDacStreams
 {
-    private readonly Target _target;
+    private readonly ITarget _target;
 
     private const uint MiniMetadataSignature = 0x6d727473;
     private const uint EENameStreamSignature = 0x614e4545;
@@ -28,7 +28,7 @@ internal class DacStreams_1 : IDacStreams
 
     internal DacStreams_1(ITarget target)
     {
-        _target = (Target)target;
+        _target = target;
     }
 
     public virtual string? StringFromEEAddress(TargetPointer address)

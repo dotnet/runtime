@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-public interface IData<TSelf> where TSelf : IData<TSelf>
+internal interface IData<TSelf> where TSelf : IData<TSelf>
 {
     static abstract TSelf Create(ITarget target, TargetPointer address);
 }

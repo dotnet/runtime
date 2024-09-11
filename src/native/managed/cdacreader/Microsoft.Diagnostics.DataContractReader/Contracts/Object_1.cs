@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Object_1 : IObject
 {
-    private readonly Target _target;
+    private readonly ITarget _target;
     private readonly ulong _methodTableOffset;
     private readonly byte _objectToMethodTableUnmask;
     private readonly TargetPointer _stringMethodTable;
@@ -32,7 +32,7 @@ internal readonly struct Object_1 : IObject
 
     internal Object_1(ITarget target, ulong methodTableOffset, byte objectToMethodTableUnmask, TargetPointer stringMethodTable, TargetPointer syncTableEntries)
     {
-        _target = (Target)target;
+        _target = target;
         _methodTableOffset = methodTableOffset;
         _stringMethodTable = stringMethodTable;
         _objectToMethodTableUnmask = objectToMethodTableUnmask;

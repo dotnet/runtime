@@ -7,11 +7,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Exception_1 : IException
 {
-    private readonly Target _target;
+    private readonly ITarget _target;
 
     internal Exception_1(ITarget target)
     {
-        _target = (Target)target;
+        _target = target;
     }
 
     TargetPointer IException.GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo)

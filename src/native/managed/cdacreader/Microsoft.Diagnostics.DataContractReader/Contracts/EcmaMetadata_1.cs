@@ -12,12 +12,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal class EcmaMetadata_1 : IEcmaMetadata
 {
-    private readonly Target target;
+    private readonly ITarget target;
     private Dictionary<ModuleHandle, MetadataReaderProvider?> _metadata = new();
 
     public EcmaMetadata_1(ITarget target)
     {
-        this.target = (Target)target;
+        this.target = target;
     }
 
     public TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)

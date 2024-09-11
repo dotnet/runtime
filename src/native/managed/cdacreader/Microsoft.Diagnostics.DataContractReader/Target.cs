@@ -21,7 +21,7 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// these are throwing APIs. Any callers at the boundaries (for example, unmanaged entry points, COM)
 /// should handle any exceptions.
 /// </remarks>
-public sealed unsafe class Target : ITarget
+internal sealed unsafe class Target : ITarget
 {
     private const int StackAllocByteThreshold = 1024;
 
@@ -39,7 +39,7 @@ public sealed unsafe class Target : ITarget
     private readonly Dictionary<DataType, ITarget.TypeInfo> _knownTypes = [];
     private readonly Dictionary<string, ITarget.TypeInfo> _types = [];
 
-    internal Contracts.Registry Contracts { get; }
+    public Contracts.IRegistry Contracts { get; }
     internal DataCache ProcessedData { get; }
     ITarget.IDataCache ITarget.ProcessedData => ProcessedData;
 

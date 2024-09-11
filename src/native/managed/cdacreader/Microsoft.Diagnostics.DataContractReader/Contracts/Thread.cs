@@ -21,13 +21,13 @@ internal sealed class FThread : IContractFactory<IThread>
 
 internal readonly struct Thread_1 : IThread
 {
-    private readonly Target _target;
+    private readonly ITarget _target;
     private readonly TargetPointer _threadStoreAddr;
     private readonly ulong _threadLinkOffset;
 
     internal Thread_1(ITarget target, TargetPointer threadStore)
     {
-        _target = (Target)target;
+        _target = target;
         _threadStoreAddr = threadStore;
 
         // Get the offset into Thread of the SLink. We use this to find the actual

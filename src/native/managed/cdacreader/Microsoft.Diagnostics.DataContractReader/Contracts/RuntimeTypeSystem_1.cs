@@ -15,7 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 {
-    private readonly Target _target;
+    private readonly ITarget _target;
     private readonly TargetPointer _freeObjectMethodTablePointer;
     private readonly ulong _methodDescAlignment;
 
@@ -137,10 +137,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         private readonly Data.MethodDesc _desc;
         private readonly Data.MethodDescChunk _chunk;
-        private readonly Target _target;
+        private readonly ITarget _target;
 
         internal TargetPointer Address { get; init; }
-        internal MethodDesc(Target target, TargetPointer methodDescPointer, Data.MethodDesc desc, Data.MethodDescChunk chunk)
+        internal MethodDesc(ITarget target, TargetPointer methodDescPointer, Data.MethodDesc desc, Data.MethodDescChunk chunk)
         {
             _target = target;
             _desc = desc;
@@ -154,7 +154,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         public ushort Slot => _desc.Slot;
         public uint Token { get; }
 
-        private static uint ComputeToken(Target target, Data.MethodDesc desc, Data.MethodDescChunk chunk)
+        private static uint ComputeToken(ITarget target, Data.MethodDesc desc, Data.MethodDescChunk chunk)
         {
             int tokenRemainderBitCount = target.ReadGlobal<byte>(Constants.Globals.MethodDescTokenRemainderBitCount);
             int tokenRangeBitCount = Constants.EcmaMetadata.RowIdBitCount - tokenRemainderBitCount;
@@ -302,7 +302,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     internal RuntimeTypeSystem_1(ITarget target, TargetPointer freeObjectMethodTablePointer, ulong methodDescAlignment)
     {
-        _target = (Target)target;
+        _target = target;
         _freeObjectMethodTablePointer = freeObjectMethodTablePointer;
         _methodDescAlignment = methodDescAlignment;
     }
