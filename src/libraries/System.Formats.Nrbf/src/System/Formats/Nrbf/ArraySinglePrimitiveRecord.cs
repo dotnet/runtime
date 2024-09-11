@@ -159,31 +159,10 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
     private static List<decimal> DecodeDecimals(BinaryReader reader, int count)
     {
         List<decimal> values = new();
-#if NET
-        Span<byte> buffer = stackalloc byte[256];
-        for (int i = 0; i < count; i++)
-        {
-            int stringLength = reader.Read7BitEncodedInt();
-            if (!(stringLength > 0 && stringLength <= buffer.Length))
-            {
-                ThrowHelper.ThrowInvalidValue(stringLength);
-            }
-
-            reader.BaseStream.ReadExactly(buffer.Slice(0, stringLength));
-
-            if (!decimal.TryParse(buffer.Slice(0, stringLength), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal value))
-            {
-                ThrowHelper.ThrowInvalidFormat();
-            }
-
-            values.Add(value);
-        }
-#else
         for (int i = 0; i < count; i++)
         {
             values.Add(reader.ParseDecimal());
         }
-#endif
         return values;
     }
 
