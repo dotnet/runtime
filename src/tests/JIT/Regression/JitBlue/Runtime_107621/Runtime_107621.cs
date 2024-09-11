@@ -11,6 +11,8 @@
 //     File: /__w/1/s/src/coreclr/jit/lsra.cpp Line: 10074
 // 
 using System;
+using Xunit;
+
 namespace _107621
 {
     public struct S0
