@@ -853,6 +853,8 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_property_value(
     if (name == nullptr || value == nullptr)
         return StatusCode::InvalidArgFailure;
 
+    *value = nullptr;
+
     const host_context_t *context;
     if (host_context_handle == nullptr)
     {
@@ -931,6 +933,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_properties(
         if (context_maybe == nullptr)
         {
             trace::error(_X("Hosting components context has not been initialized. Cannot get runtime properties."));
+            *count = 0;
             return StatusCode::HostInvalidState;
         }
 
@@ -940,7 +943,10 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_properties(
     {
         context = host_context_t::from_handle(host_context_handle);
         if (context == nullptr)
+        {
+            *count = 0;
             return StatusCode::InvalidArgFailure;
+        }
     }
 
     if (context->type == host_context_type::secondary)
