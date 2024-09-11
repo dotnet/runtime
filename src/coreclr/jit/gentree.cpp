@@ -20509,11 +20509,12 @@ bool GenTree::isEvexCompatibleHWIntrinsic() const
 //
 bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
 {
+    NamedIntrinsic intrinsicId = AsHWIntrinsic()->GetHWIntrinsicId();
+
     if (OperIsHWIntrinsic())
     {
 #if defined(TARGET_XARCH)
-        NamedIntrinsic intrinsicId  = AsHWIntrinsic()->GetHWIntrinsicId();
-        var_types      simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
+        var_types simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
 
         switch (intrinsicId)
         {
@@ -20533,8 +20534,9 @@ bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
             }
         }
 #elif defined(TARGET_ARM64)
-        return HWIntrinsicInfo::IsEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId()) ||
-               HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId());
+        return HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId) ||
+               HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinsicId) ||
+               (intrinsicId == NI_Sve_ConditionalSelect);
 #endif
     }
     return false;

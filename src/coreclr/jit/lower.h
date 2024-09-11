@@ -98,6 +98,7 @@ private:
     void      TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond);
     bool      TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next);
     bool      TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next);
+    bool      TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntrinsic* childNode);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);

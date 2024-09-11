@@ -1423,6 +1423,7 @@ private:
     GenTree*                 getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree);
     GenTree*                 getConsecutiveRegistersOperand(const HWIntrinsic intrin, bool* destIsConsecutive);
     GenTreeHWIntrinsic*      getEmbeddedMaskOperand(const HWIntrinsic intrin);
+    GenTreeHWIntrinsic*      getContainedCselOperand(GenTreeHWIntrinsic* intrinsicTree);
 #endif
 
 #ifdef DEBUG
@@ -2034,6 +2035,9 @@ private:
     void BuildConsecutiveRegistersForDef(GenTree* treeNode, int fieldCount);
     void BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, const HWIntrinsic intrin);
     int  BuildEmbeddedOperandUses(GenTreeHWIntrinsic* embeddedOpNode, GenTree* embeddedDelayFreeOp);
+    int  BuildContainedCselUses(GenTreeHWIntrinsic* containedCselOpNode,
+                                GenTree*            delayFreeOp,
+                                SingleTypeRegSet    candidates);
 #endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
 
