@@ -27,7 +27,6 @@ class MethodTable;
 class EEClass;
 class Module;
 class Assembly;
-class BaseDomain;
 class MethodDesc;
 class TypeKey;
 class TypeHandleList;

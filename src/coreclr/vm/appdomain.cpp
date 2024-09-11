@@ -4420,7 +4420,7 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
     if (enumThis)
     {
         //sizeof(AppDomain) == 0xeb0
-        DAC_ENUM_VTHIS();
+        DAC_ENUM_DTHIS();
         EMEM_OUT(("MEM: %p AppDomain\n", dac_cast<TADDR>(this)));
     }
 
@@ -4451,7 +4451,7 @@ SystemDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
     SUPPORTS_DAC;
     if (enumThis)
     {
-        DAC_ENUM_VTHIS();
+        DAC_ENUM_DTHIS();
         EMEM_OUT(("MEM: %p SystemAppomain\n", dac_cast<TADDR>(this)));
     }
 

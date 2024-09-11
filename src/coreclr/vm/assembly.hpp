@@ -23,10 +23,8 @@
 #include "cordbpriv.h"
 #include "assemblyspec.hpp"
 
-class BaseDomain;
 class AppDomain;
 class DomainAssembly;
-class DomainModule;
 class SystemDomain;
 class ClassLoader;
 class AssemblyNative;
@@ -45,13 +43,11 @@ class FriendAssemblyDescriptor;
 //
 class Assembly
 {
-    friend class BaseDomain;
     friend class SystemDomain;
     friend class ClassLoader;
     friend class AssemblyNative;
     friend class AssemblySpec;
     friend class NDirect;
-    friend class AssemblyNameNative;
     friend class ClrDataAccess;
 
 private:

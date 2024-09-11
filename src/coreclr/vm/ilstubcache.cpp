@@ -447,9 +447,9 @@ MethodDesc* ILStubCache::InsertStubMethodDesc(MethodDesc *pMD, ILStubHashBlob* p
 //
 // JIT'ed IL stubs
 //
-//    - The ILStubCache is per-BaseDomain
+//    - The ILStubCache is per-LoaderAllocator
 //
-//    - Each BaseDomain's ILStubCache will lazily create a "minimal MethodTable" to
+//    - Each LoaderAllocator's ILStubCache will lazily create a "minimal MethodTable" to
 //      serve as the home for IL stub MethodDescs
 //
 //    - The created MethodTables will use the Module belonging to one of the
@@ -463,10 +463,7 @@ MethodDesc* ILStubCache::InsertStubMethodDesc(MethodDesc *pMD, ILStubHashBlob* p
 //
 // It's important to point out that the Module we latch onto here has no knowledge
 // of the MethodTable that we've just "added" to it.  There only exists a "back
-// pointer" to the Module from the MethodTable itself.  So we're really only using
-// that module to answer the question of what BaseDomain the MethodTable lives in.
-// So as long as the BaseDomain for that module is the same as the BaseDomain the
-// ILStubCache lives in, I think we have a fairly consistent story here.
+// pointer" to the Module from the MethodTable itself.
 //
 // We're relying on the fact that a VASigCookie may only mention types within the
 // corresponding module used to qualify the signature and the fact that interop
@@ -475,14 +472,7 @@ MethodDesc* ILStubCache::InsertStubMethodDesc(MethodDesc *pMD, ILStubHashBlob* p
 // ELEMENT_TYPE_INTERNAL, which may refer to any type.
 //
 // We can only access E_T_INTERNAL through LCG, which does not permit referring
-// to types in other BaseDomains.
-//
-//
-// Places for improvement:
-//
-//    - allow NGEN'ing of CALLI pinvoke and vararg pinvoke
-//
-//    - pre-populate the per-BaseDomain cache with IL stubs from  NGEN'ed image
+// to types in other AppDomains.
 //
 
 MethodDesc* ILStubCache::GetStubMethodDesc(

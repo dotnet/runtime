@@ -29,7 +29,6 @@ class MethodDesc;
 class FramedMethodFrame;
 class Module;
 class ComCallMethodDesc;
-class BaseDomain;
 
 // CPU-dependent functions
 Stub * GenerateInitPInvokeFrameHelper();
