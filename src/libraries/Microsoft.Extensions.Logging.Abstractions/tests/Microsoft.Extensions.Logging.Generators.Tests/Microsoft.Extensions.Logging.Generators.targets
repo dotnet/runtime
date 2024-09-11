@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="$(RoslynApiVersion)" />
+    <PackageReference Include="NETStandard.Library" Version="$(NETStandardLibraryVersion)" />
     <PackageReference Include="SQLitePCLRaw.bundle_green" Version="$(SQLitePCLRawbundle_greenVersion)" />
   </ItemGroup>
 
