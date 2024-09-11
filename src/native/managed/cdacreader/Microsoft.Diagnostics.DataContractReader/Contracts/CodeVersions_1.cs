@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly partial struct CodeVersions_1 : IFCodeVersions
+internal readonly partial struct CodeVersions_1 : ICodeVersions
 {
     private readonly Target _target;
 

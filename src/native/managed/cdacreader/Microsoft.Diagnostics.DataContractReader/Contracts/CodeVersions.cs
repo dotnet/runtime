@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal interface IFCodeVersions : ICodeVersions, IContractFactory<IFCodeVersions, ICodeVersions>
+internal interface IFCodeVersions : IContractFactory<IFCodeVersions, ICodeVersions>
 {
     static ICodeVersions IContractFactory<IFCodeVersions, ICodeVersions>.CreateContract(ITarget target, int version)
     {
