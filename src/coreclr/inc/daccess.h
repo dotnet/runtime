@@ -2469,6 +2469,12 @@ typedef DPTR(T_RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 #endif
 #endif
 
+#ifdef DACCESS_COMPILE
+#define DAC_IGNORE(x)
+#else
+#define DAC_IGNORE(x) x
+#endif // DACCESS_COMPILE
+
 //----------------------------------------------------------------------------
 //
 // A PCODE is a valid PC/IP value -- a pointer to an instruction, possibly including some processor mode bits.

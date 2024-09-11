@@ -1207,13 +1207,9 @@ public:
     ULONG Release(void) DAC_EMPTY_RET(0);
 
     //****************************************************************************************
-    LPCWSTR GetFriendlyName(BOOL fDebuggerCares = TRUE);
+    LPCWSTR GetFriendlyName();
     LPCWSTR GetFriendlyNameForDebugger();
-    LPCWSTR GetFriendlyNameForLogging();
-#ifdef DACCESS_COMPILE
-    PVOID GetFriendlyNameNoSet(bool* isUtf8);
-#endif
-    void SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares = TRUE);
+    void SetFriendlyName(LPCWSTR pwzFriendlyName);
 
     PEAssembly * BindAssemblySpec(
         AssemblySpec *pSpec,
@@ -1522,7 +1518,7 @@ public:
     SPTR_DECL(AppDomain, m_pTheAppDomain);
 
 private:
-    SString         m_friendlyName;
+    PTR_CWSTR       m_friendlyName;
     PTR_Assembly    m_pRootAssembly;
 
     // General purpose flags.

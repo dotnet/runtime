@@ -3040,24 +3040,39 @@ ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout
         // SystemDomain doesn't have this field.
         if (pNeeded)
             *pNeeded = 1;
-        if (name)
+        if (name && count > 0)
             name[0] = 0;
     }
     else
     {
         PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
-        if (!pAppDomain->m_friendlyName.IsEmpty())
+
+        size_t countAsSizeT = count;
+        if (pAppDomain->m_friendlyName.IsValid())
         {
-            if (!pAppDomain->m_friendlyName.DacGetUnicode(count, name, pNeeded))
+            LPCWSTR friendlyName = (LPCWSTR)pAppDomain->m_friendlyName;
+            size_t friendlyNameLen = u16_strlen(friendlyName);
+
+            if (pNeeded)
             {
-                hr =  E_FAIL;
+                *pNeeded = (unsigned int)(friendlyNameLen + 1);
+            }
+
+            if (name && count > 0)
+            {
+                if (countAsSizeT > (friendlyNameLen + 1))
+                {
+                    countAsSizeT = friendlyNameLen + 1;
+                }
+                memcpy(name, friendlyName, countAsSizeT * sizeof(WCHAR));
+                name[countAsSizeT - 1] = 0;
             }
         }
         else
         {
             if (pNeeded)
                 *pNeeded = 1;
-            if (name)
+            if (name && count > 0)
                 name[0] = 0;
 
             hr = S_OK;
