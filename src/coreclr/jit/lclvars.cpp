@@ -5781,7 +5781,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
             int localDelta = delta;
 
 #if defined(TARGET_ARM64)
-            if (varDsc->GetStackOffset() >= 0)
+            if (varDsc->GetStackOffset() >= 0 || lvaIsOSRLocal(lclNum))
                 localDelta -= fpLrDelta;
 #endif
 
