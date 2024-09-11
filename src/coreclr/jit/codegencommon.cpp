@@ -5043,46 +5043,6 @@ void CodeGen::genFinalizeFrame()
 
     compiler->lvaAssignFrameOffsets(Compiler::FINAL_FRAME_LAYOUT);
 
-#ifdef TARGET_ARM64
-    // Decide where to save FP and LR registers. We store FP/LR registers at the bottom of the frame if there is
-    // a frame pointer used (so we get positive offsets from the frame pointer to access locals), but not if we
-    // need a GS cookie AND localloc is used, since we need the GS cookie to protect the saved return value,
-    // and also the saved frame pointer. See CodeGen::genPushCalleeSavedRegisters() for more details about the
-    // frame types. Since saving FP/LR at high addresses is a relatively rare case, force using it during stress.
-    // (It should be legal to use these frame types for every frame).
-
-    if (compiler->opts.compJitSaveFpLrWithCalleeSavedRegisters == 0)
-    {
-        // For Apple NativeAOT ABI we try to save the FP/LR registers on top to get canonical frame layout
-        // that can be represented with compact unwinding information. In order to maintain code quality we
-        // only do it when we can use SP-based addressing (!isFramePointerRequired) through lvaFrameAddress
-        // optimization, or if the whole frame is small enough that the negative FP-based addressing can
-        // address the whole frame.
-        if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsApplePlatform &&
-            (!isFramePointerRequired() ||
-             compiler->compLclFrameSize + (compiler->compCalleeRegsPushed * REGSIZE_BYTES) < 0x100))
-        {
-            SetSaveFpLrWithAllCalleeSavedRegisters(true);
-        }
-        else
-        {
-            // Default configuration
-            SetSaveFpLrWithAllCalleeSavedRegisters(
-                (compiler->getNeedsGSSecurityCookie() && compiler->compLocallocUsed) || compiler->opts.compDbgEnC ||
-                compiler->compStressCompile(Compiler::STRESS_GENERIC_VARN, 20));
-        }
-    }
-    else if (compiler->opts.compJitSaveFpLrWithCalleeSavedRegisters == 1)
-    {
-        SetSaveFpLrWithAllCalleeSavedRegisters(false); // Disable using new frames
-    }
-    else if ((compiler->opts.compJitSaveFpLrWithCalleeSavedRegisters == 2) ||
-             (compiler->opts.compJitSaveFpLrWithCalleeSavedRegisters == 3))
-    {
-        SetSaveFpLrWithAllCalleeSavedRegisters(true); // Force using new frames
-    }
-#endif // TARGET_ARM64
-
 #ifdef DEBUG
     if (compiler->opts.dspCode || compiler->opts.disAsm || compiler->opts.disAsm2 || verbose)
     {
