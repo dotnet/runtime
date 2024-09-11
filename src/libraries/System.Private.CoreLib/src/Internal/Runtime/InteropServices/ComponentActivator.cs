@@ -67,6 +67,9 @@ namespace Internal.Runtime.InteropServices
                                                                    IntPtr reserved,
                                                                    IntPtr functionHandle)
         {
+            if (functionHandle != IntPtr.Zero)
+                *(IntPtr*)functionHandle = 0;
+
             if (!IsSupported)
                 return HostFeatureDisabled;
 
@@ -229,6 +232,9 @@ namespace Internal.Runtime.InteropServices
                                                     IntPtr reserved,
                                                     IntPtr functionHandle)
         {
+            if (functionHandle != IntPtr.Zero)
+                *(IntPtr*)functionHandle = 0;
+
             if (!IsSupported)
             {
 #if CORECLR

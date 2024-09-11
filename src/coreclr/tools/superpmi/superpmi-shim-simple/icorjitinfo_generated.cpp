@@ -307,22 +307,10 @@ uint32_t interceptor_ICJI::getClassAttribs(
     return original_ICorJitInfo->getClassAttribs(cls);
 }
 
-CORINFO_MODULE_HANDLE interceptor_ICJI::getClassModule(
+const char* interceptor_ICJI::getClassAssemblyName(
           CORINFO_CLASS_HANDLE cls)
 {
-    return original_ICorJitInfo->getClassModule(cls);
-}
-
-CORINFO_ASSEMBLY_HANDLE interceptor_ICJI::getModuleAssembly(
-          CORINFO_MODULE_HANDLE mod)
-{
-    return original_ICorJitInfo->getModuleAssembly(mod);
-}
-
-const char* interceptor_ICJI::getAssemblyName(
-          CORINFO_ASSEMBLY_HANDLE assem)
-{
-    return original_ICorJitInfo->getAssemblyName(assem);
+    return original_ICorJitInfo->getClassAssemblyName(cls);
 }
 
 void* interceptor_ICJI::LongLifetimeMalloc(
@@ -671,9 +659,9 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getFieldClass(
 CorInfoType interceptor_ICJI::getFieldType(
           CORINFO_FIELD_HANDLE field,
           CORINFO_CLASS_HANDLE* structType,
-          CORINFO_CLASS_HANDLE memberParent)
+          CORINFO_CLASS_HANDLE fieldOwnerHint)
 {
-    return original_ICorJitInfo->getFieldType(field, structType, memberParent);
+    return original_ICorJitInfo->getFieldType(field, structType, fieldOwnerHint);
 }
 
 unsigned interceptor_ICJI::getFieldOffset(

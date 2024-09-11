@@ -6,15 +6,13 @@ using System;
 namespace Microsoft.Extensions.Configuration.UserSecrets
 {
     /// <summary>
-    /// <para>
     /// Represents the user secrets ID.
-    /// </para>
-    /// <para>
+    /// </summary>
+    /// <remarks>
     /// In most cases, this attribute is automatically generated during compilation by MSBuild targets
     /// included in the UserSecrets NuGet package. These targets use the MSBuild property 'UserSecretsId'
     /// to set the value for <see cref="UserSecretsId"/>.
-    /// </para>
-    /// </summary>
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false, AllowMultiple = false)]
     public class UserSecretsIdAttribute : Attribute
     {
