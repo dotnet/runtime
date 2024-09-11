@@ -170,7 +170,7 @@ jobs:
           pwd
           git clone https://github.com/dotnet/performance.git --depth 1 -b ${{ parameters.perfBranch }} --single-branch
         displayName:  Clone performance
-        workingDirectory: $(Build.SourcesDirectory)
+        workingDirectory: $(Agent.BuildDirectory)
     - ${{ if ne(variables['System.TeamProject'], 'public') }}:
       # Copy dotnet-runtime directory to Build.SourcesDirectory (TODO: Update yaml to just use the dotnet-runtime directory)
       - task: CopyFiles@2
