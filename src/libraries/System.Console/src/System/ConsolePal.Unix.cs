@@ -378,24 +378,11 @@ namespace System
 
         public static void SetWindowSize(int width, int height)
         {
-           lock (Console.Out)
-           {
-               Interop.Sys.WinSize winsize = default;
-               winsize.Row = (ushort)height;
-               winsize.Col = (ushort)width;
-               if (Interop.Sys.SetWindowSize(in winsize) == 0)
-               {
-                   s_windowWidth = winsize.Col;
-                   s_windowHeight = winsize.Row;
-               }
-               else
-               {
-                   Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                   throw errorInfo.Error == Interop.Error.ENOTSUP ?
-                       new PlatformNotSupportedException() :
-                       Interop.GetIOException(errorInfo);
-               }
-           }
+            // note: We can't implement SetWindowSize using TIOCSWINSZ.
+            // TIOCSWINSZ is meant to inform the kernel of the terminal size.
+            // The window that shows the terminal doesn't change to match that size.
+
+            throw new PlatformNotSupportedException();
         }
 
         public static bool CursorVisible

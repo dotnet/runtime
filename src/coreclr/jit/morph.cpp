@@ -451,7 +451,8 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     // Because there is no IL instruction conv.r4.un, uint/ulong -> float
     // casts are always imported as CAST(float <- CAST(double <- uint/ulong)).
     // We can eliminate the redundant intermediate cast as an optimization.
-    else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && oper->OperIs(GT_CAST)
+    else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && oper->OperIs(GT_CAST) &&
+             !gtIsActiveCSE_Candidate(tree)
 #ifdef TARGET_ARM
              && !varTypeIsLong(oper->AsCast()->CastOp())
 #endif
@@ -1666,6 +1667,8 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                     unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
                     GenTree* store     = comp->gtNewTempStore(tmpVarNum, use.GetNode());
 
+                    INDEBUG(store->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
                     if (setupArg == nullptr)
                     {
                         setupArg = store;
@@ -1673,6 +1676,7 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                     else
                     {
                         setupArg = comp->gtNewOperNode(GT_COMMA, TYP_VOID, setupArg, store);
+                        INDEBUG(setupArg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                     }
 
                     use.SetNode(comp->gtNewLclvNode(tmpVarNum, genActualType(use.GetNode())));
@@ -1687,6 +1691,8 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                 unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
 
                 setupArg = comp->gtNewTempStore(tmpVarNum, argx);
+
+                INDEBUG(setupArg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
                 LclVarDsc* varDsc     = comp->lvaGetDesc(tmpVarNum);
                 var_types  lclVarType = genActualType(argx->gtType);
@@ -7082,18 +7088,15 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.
     // This needs to be done after the arguments are morphed to ensure constant propagation has already taken place.
-    if (opts.OptimizationEnabled() && call->IsHelperCall() &&
-        (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ARRADDR_ST)))
+    if (opts.OptimizationEnabled() && call->IsHelperCall(this, CORINFO_HELP_ARRADDR_ST))
     {
         assert(call->gtArgs.CountArgs() == 3);
+        GenTree* arr   = call->gtArgs.GetArgByIndex(0)->GetNode();
+        GenTree* index = call->gtArgs.GetArgByIndex(1)->GetNode();
         GenTree* value = call->gtArgs.GetArgByIndex(2)->GetNode();
-        if (value->IsIntegralConst(0))
+
+        if (gtCanSkipCovariantStoreCheck(value, arr))
         {
-            assert(value->OperGet() == GT_CNS_INT);
-
-            GenTree* arr   = call->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree* index = call->gtArgs.GetArgByIndex(1)->GetNode();
-
             // Either or both of the array and index arguments may have been spilled to temps by `fgMorphArgs`. Copy
             // the spill trees as well if necessary.
             GenTree* argSetup = nullptr;
@@ -11145,8 +11148,8 @@ GenTree* Compiler::fgMorphRetInd(GenTreeOp* ret)
         bool canFold = (indSize == lclVarSize) && (lclVarSize <= REGSIZE_BYTES);
 #endif
 
-        // TODO: support `genReturnBB != nullptr`, it requires #11413 to avoid `Incompatible types for
-        // gtNewTempStore`.
+        // If we have a shared return temp we cannot represent the store properly with these retyped values,
+        // so skip the optimization in that case.
         if (canFold && (genReturnBB == nullptr))
         {
             // Fold even if types do not match, lowering will handle it. This allows the local

@@ -2214,8 +2214,8 @@ namespace System
                 valueType = valueType.GetEnumUnderlyingType();
             }
 
-            if (valueType == typeof(nint)) ToObject(enumType, (nint)value);
-            if (valueType == typeof(nuint)) ToObject(enumType, (nuint)value);
+            if (valueType == typeof(nint)) return ToObject(enumType, (nint)value);
+            if (valueType == typeof(nuint)) return ToObject(enumType, (nuint)value);
 
             throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
         }

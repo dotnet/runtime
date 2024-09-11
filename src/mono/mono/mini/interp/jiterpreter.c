@@ -203,6 +203,18 @@ mono_jiterp_try_newstr (MonoString **destination, int length) {
 }
 
 EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_try_newarr (MonoArray **destination, MonoVTable *vtable, int length) {
+	if (length < 0)
+		return 0;
+	ERROR_DECL(error);
+	*destination = mono_array_new_specific_checked (vtable, length, error);
+	if (!is_ok (error))
+		*destination = 0;
+	mono_error_cleanup (error); // FIXME: do not swallow the error
+	return *destination != 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_gettype_ref (
 	MonoObject **destination, MonoObject **source
 ) {
@@ -561,18 +573,6 @@ mono_jiterp_interp_entry_prologue (JiterpEntryData *data, void *this_arg)
 	return sp_args;
 }
 
-EMSCRIPTEN_KEEPALIVE int32_t
-mono_jiterp_cas_i32 (volatile int32_t *addr, int32_t newVal, int32_t expected)
-{
-	return mono_atomic_cas_i32 (addr, newVal, expected);
-}
-
-EMSCRIPTEN_KEEPALIVE void
-mono_jiterp_cas_i64 (volatile int64_t *addr, int64_t *newVal, int64_t *expected, int64_t *oldVal)
-{
-	*oldVal = mono_atomic_cas_i64 (addr, *newVal, *expected);
-}
-
 static int opcode_value_table [MINT_LASTOP] = { 0 };
 static gboolean opcode_value_table_initialized = FALSE;
 
@@ -636,7 +636,9 @@ jiterp_get_opcode_value (InterpInst *ins, gboolean *inside_branch_block)
 		//  operations please put them in the values table header
 		// Please keep this in sync with jiterpreter.ts:generate_wasm_body
 		case MINT_BR:
+		case MINT_BR_S:
 		case MINT_CALL_HANDLER:
+		case MINT_CALL_HANDLER_S:
 			// Detect backwards branches
 			if (ins->info.target_bb->il_offset <= ins->il_offset) {
 				if (*inside_branch_block)
@@ -1175,6 +1177,7 @@ mono_jiterp_stelem_ref (
 	return 1;
 }
 
+
 // keep in sync with jiterpreter-enums.ts JiterpMember
 enum {
 	JITERP_MEMBER_VT_INITIALIZED = 0,
@@ -1266,7 +1269,9 @@ enum {
 	JITERP_COUNTER_BACK_BRANCHES_NOT_EMITTED,
 	JITERP_COUNTER_ELAPSED_GENERATION,
 	JITERP_COUNTER_ELAPSED_COMPILATION,
-	JITERP_COUNTER_MAX = JITERP_COUNTER_ELAPSED_COMPILATION
+	JITERP_COUNTER_SWITCH_TARGETS_OK,
+	JITERP_COUNTER_SWITCH_TARGETS_FAILED,
+	JITERP_COUNTER_MAX = JITERP_COUNTER_SWITCH_TARGETS_FAILED
 };
 
 #define JITERP_COUNTER_UNIT 100
@@ -1515,7 +1520,11 @@ EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_allocate_table_entry (int type) {
 	g_assert ((type >= 0) && (type <= JITERPRETER_TABLE_LAST));
 	JiterpreterTableInfo *table = &tables[type];
-	g_assert (table->first_index > 0);
+	// Handle unlikely condition where the jiterpreter is engaged before initialize_table runs at all (i.e. tiering disabled)
+	if (table->first_index <= 0) {
+		g_printf ("MONO_WASM: Jiterpreter table %d is not yet initialized\n", type);
+		return 0;
+	}
 
 	// Handle extremely unlikely race condition (allocate_table_entry called while another thread is in initialize_table)
 #ifdef DISABLE_THREADS

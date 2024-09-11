@@ -1136,8 +1136,8 @@ extern thread_local int64_t t_cbILJittedForThread;
 extern thread_local int64_t t_cMethodsJittedForThread;
 extern thread_local int64_t t_c100nsTicksInJitForThread;
 
-FCDECL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread);
-FCDECL1(INT64, GetCompiledMethodCount, CLR_BOOL currentThread);
-FCDECL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread);
+FCDECL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread);
+FCDECL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread);
+FCDECL1(INT64, GetCompilationTimeInTicks, FC_BOOL_ARG currentThread);
 
 #endif // JITINTERFACE_H

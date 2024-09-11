@@ -733,6 +733,27 @@ PVOID DacAllocHostOnlyInstance(ULONG32 size, bool throwEx);
 // Determines whether ASSERTs should be raised when inconsistencies in the target are detected
 bool DacTargetConsistencyAssertsEnabled();
 
+// Sets whether ASSERTs should be raised when then fail.
+// Returns the previous value
+bool DacSetEnableDacAssertsUnconditionally(bool enable);
+
+class DacAssertsEnabledHolder
+{
+#ifdef _DEBUG
+    bool m_fOldValue;
+public:
+    DacAssertsEnabledHolder()
+    {
+        m_fOldValue = DacSetEnableDacAssertsUnconditionally(true);
+    }
+
+    ~DacAssertsEnabledHolder()
+    {
+        DacSetEnableDacAssertsUnconditionally(m_fOldValue);
+    }
+#endif // _DEBUG
+};
+
 // Host instances can be marked as they are enumerated in
 // order to break cycles.  This function returns true if
 // the instance is already marked, otherwise it marks the
@@ -2447,6 +2468,12 @@ typedef DPTR(union _UNWIND_CODE)       PTR_UNWIND_CODE;
 typedef DPTR(T_RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 #endif
 #endif
+
+#ifdef DACCESS_COMPILE
+#define DAC_IGNORE(x)
+#else
+#define DAC_IGNORE(x) x
+#endif // DACCESS_COMPILE
 
 //----------------------------------------------------------------------------
 //

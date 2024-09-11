@@ -319,7 +319,7 @@ namespace System.Diagnostics.Metrics
                 try
                 {
 #if OS_ISBROWSER_SUPPORT
-                    if (OperatingSystem.IsBrowser())
+                    if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                     {
                         // AggregationManager uses a dedicated thread to avoid losing data for apps experiencing threadpool starvation
                         // and browser doesn't support Thread.Start()
@@ -327,7 +327,7 @@ namespace System.Diagnostics.Metrics
                         // This limitation shouldn't really matter because browser also doesn't support out-of-proc EventSource communication
                         // which is the intended scenario for this EventSource. If it matters in the future AggregationManager can be
                         // modified to have some other fallback path that works for browser.
-                        Parent.Error("", "System.Diagnostics.Metrics EventSource not supported on browser");
+                        Parent.Error("", "System.Diagnostics.Metrics EventSource not supported on browser and wasi");
                         return;
                     }
 #endif
@@ -698,6 +698,11 @@ namespace System.Diagnostics.Metrics
                 {
                     Log.GaugeValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
                         lastValueStats.LastValue.HasValue ? lastValueStats.LastValue.Value.ToString(CultureInfo.InvariantCulture) : "", instrumentId);
+                }
+                else if (stats.AggregationStatistics is SynchronousLastValueStatistics synchronousLastValueStats)
+                {
+                    Log.GaugeValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
+                        synchronousLastValueStats.LastValue.ToString(CultureInfo.InvariantCulture), instrumentId);
                 }
                 else if (stats.AggregationStatistics is HistogramStatistics histogramStats)
                 {

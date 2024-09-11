@@ -332,6 +332,7 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     : m_pPEAssembly{pPEAssembly}
     , m_dwTransientFlags{CLASSES_FREED}
     , m_pAssembly{pAssembly}
+    , m_pDynamicMethodTable{NULL}
     , m_hExposedObject{}
 {
     CONTRACTL
@@ -414,6 +415,8 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
     m_loaderAllocator = GetAssembly()->GetLoaderAllocator();
     m_pSimpleName = m_pPEAssembly->GetSimpleName();
+    m_path = m_pPEAssembly->GetPath().GetUnicode();
+    _ASSERTE(m_path != NULL);
     m_baseAddress = m_pPEAssembly->HasLoadedPEImage() ? m_pPEAssembly->GetLoadedLayout()->GetBase() : NULL;
     if (m_pPEAssembly->IsReflectionEmit())
         m_dwTransientFlags |= IS_REFLECTION_EMIT;
@@ -471,11 +474,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_dwTypeCount = 0;
     m_dwExportedTypeCount = 0;
     m_dwCustomAttributeCount = 0;
-
-    if (m_AssemblyRefByNameTable == NULL)
-    {
-        Module::CreateAssemblyRefByNameTable(pamTracker);
-    }
 
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     m_pJitInlinerTrackingMap = NULL;
@@ -746,6 +744,8 @@ void Module::Destruct()
     }
 
     m_pPEAssembly->Release();
+    if (m_pDynamicMethodTable)
+        m_pDynamicMethodTable->Destroy();
 
 #if defined(PROFILING_SUPPORTED)
     delete m_pJitInlinerTrackingMap;
@@ -2258,7 +2258,6 @@ Assembly *
 Module::GetAssemblyIfLoaded(
     mdAssemblyRef       kAssemblyRef,
     IMDInternalImport * pMDImportOverride,  // = NULL
-    BOOL                fDoNotUtilizeExtraChecks, // = FALSE
     AssemblyBinder      *pBinderForLoadedAssembly // = NULL
 )
 {
@@ -2387,9 +2386,9 @@ ModuleBase::GetAssemblyRefFlags(
 } // Module::GetAssemblyRefFlags
 
 #ifndef DACCESS_COMPILE
-DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
+Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 {
-    CONTRACT(DomainAssembly *)
+    CONTRACT(Assembly *)
     {
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
@@ -2402,20 +2401,17 @@ DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 
     ETWOnStartup (LoaderCatchCall_V1, LoaderCatchCallEnd_V1);
 
-    DomainAssembly * pDomainAssembly;
-
     //
     // Early out quickly if the result is cached
     //
     Assembly * pAssembly = LookupAssemblyRef(kAssemblyRef);
     if (pAssembly != NULL)
     {
-        pDomainAssembly = pAssembly->GetDomainAssembly();
-        ::GetAppDomain()->LoadDomainAssembly(pDomainAssembly, FILE_LOADED);
-
-        RETURN pDomainAssembly;
+        ::GetAppDomain()->LoadDomainAssembly(pAssembly->GetDomainAssembly(), FILE_LOADED);
+        RETURN pAssembly;
     }
 
+    DomainAssembly * pDomainAssembly;
     {
         PEAssemblyHolder pPEAssembly = GetPEAssembly()->LoadAssembly(kAssemblyRef);
         AssemblySpec spec;
@@ -2431,23 +2427,18 @@ DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
         pDomainAssembly = GetAppDomain()->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
     }
 
-    if (pDomainAssembly != NULL)
-    {
-        _ASSERTE(
-            pDomainAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find CoreLib (see AppDomain::FindCachedFile)
-            !pDomainAssembly->IsLoaded() ||                 // GetAssemblyIfLoaded will not find not-yet-loaded assemblies
-            GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, pDomainAssembly->GetPEAssembly()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
+    pAssembly = pDomainAssembly->GetAssembly();
+    _ASSERTE(pDomainAssembly->IsLoaded() && pAssembly != NULL);
+    _ASSERTE(
+        pDomainAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find CoreLib (see AppDomain::FindCachedFile)
+        GetAssemblyIfLoaded(kAssemblyRef, NULL, pDomainAssembly->GetPEAssembly()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
 
-        if (pDomainAssembly->GetAssembly() != NULL)
-        {
-            StoreAssemblyRef(kAssemblyRef, pDomainAssembly->GetAssembly());
-        }
-    }
+    StoreAssemblyRef(kAssemblyRef, pAssembly);
 
-    RETURN pDomainAssembly;
+    RETURN pAssembly;
 }
 #else
-DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
+Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 {
     WRAPPER_NO_CONTRACT;
     ThrowHR(E_FAIL);
@@ -4473,24 +4464,6 @@ VOID Module::EnsureActive()
 
 #include <optdefault.h>
 
-
-#ifndef DACCESS_COMPILE
-
-VOID Module::EnsureAllocated()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    GetDomainAssembly()->EnsureAllocated();
-}
-
-#endif // !DACCESS_COMPILE
-
 CHECK Module::CheckActivated()
 {
     CONTRACTL
@@ -4872,59 +4845,6 @@ class CheckAsmOffsets
 };
 
 //-------------------------------------------------------------------------------
-
-#ifndef DACCESS_COMPILE
-
-void Module::CreateAssemblyRefByNameTable(AllocMemTracker *pamTracker)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    LoaderHeap *        pHeap       = GetLoaderAllocator()->GetLowFrequencyHeap();
-    IMDInternalImport * pImport     = GetMDImport();
-
-    DWORD               dwMaxRid    = pImport->GetCountWithTokenKind(mdtAssemblyRef);
-    if (dwMaxRid == 0)
-        return;
-
-    S_SIZE_T            dwAllocSize = S_SIZE_T(sizeof(LPWSTR)) * S_SIZE_T(dwMaxRid);
-    m_AssemblyRefByNameTable = (LPCSTR *) pamTracker->Track( pHeap->AllocMem(dwAllocSize) );
-
-    DWORD dwCount = 0;
-    for (DWORD rid=1; rid <= dwMaxRid; rid++)
-    {
-        mdAssemblyRef mdToken = TokenFromRid(rid,mdtAssemblyRef);
-        LPCSTR        szName;
-        HRESULT       hr;
-
-        hr = pImport->GetAssemblyRefProps(mdToken, NULL, NULL, &szName, NULL, NULL, NULL, NULL);
-
-        if (SUCCEEDED(hr))
-        {
-            m_AssemblyRefByNameTable[dwCount++] = szName;
-        }
-    }
-    m_AssemblyRefByNameCount = dwCount;
-}
-
-bool Module::HasReferenceByName(LPCUTF8 pModuleName)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    for (DWORD i=0; i < m_AssemblyRefByNameCount; i++)
-    {
-        if (0 == strcmp(pModuleName, m_AssemblyRefByNameTable[i]))
-            return true;
-    }
-
-    return false;
-}
-#endif
 
 #ifdef DACCESS_COMPILE
 void DECLSPEC_NORETURN ModuleBase::ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,
