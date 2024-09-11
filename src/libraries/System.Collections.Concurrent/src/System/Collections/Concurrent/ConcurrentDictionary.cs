@@ -443,57 +443,52 @@ namespace System.Collections.Concurrent
                 object[] locks = tables._locks;
                 ref Node? bucket = ref GetBucketAndLock(tables, hashcode, out uint lockNo);
 
-                // Do a hot read on number of items stored in the bucket.  If it's empty, we can avoid
-                // taking the lock and fail fast.
-                if (tables._countPerLock[lockNo] != 0)
+                lock (locks[lockNo])
                 {
-                    lock (locks[lockNo])
+                    // If the table just got resized, we may not be holding the right lock, and must retry.
+                    // This should be a rare occurrence.
+                    if (tables != _tables)
                     {
-                        // If the table just got resized, we may not be holding the right lock, and must retry.
-                        // This should be a rare occurrence.
-                        if (tables != _tables)
+                        tables = _tables;
+                        if (!ReferenceEquals(comparer, tables._comparer))
                         {
-                            tables = _tables;
-                            if (!ReferenceEquals(comparer, tables._comparer))
-                            {
-                                comparer = tables._comparer;
-                                hashcode = GetHashCode(comparer, key);
-                            }
-                            continue;
+                            comparer = tables._comparer;
+                            hashcode = GetHashCode(comparer, key);
                         }
+                        continue;
+                    }
 
-                        Node? prev = null;
-                        for (Node? curr = bucket; curr is not null; curr = curr._next)
+                    Node? prev = null;
+                    for (Node? curr = bucket; curr is not null; curr = curr._next)
+                    {
+                        Debug.Assert((prev is null && curr == bucket) || prev!._next == curr);
+
+                        if (hashcode == curr._hashcode && NodeEqualsKey(comparer, curr, key))
                         {
-                            Debug.Assert((prev is null && curr == bucket) || prev!._next == curr);
-
-                            if (hashcode == curr._hashcode && NodeEqualsKey(comparer, curr, key))
+                            if (matchValue)
                             {
-                                if (matchValue)
+                                bool valuesMatch = EqualityComparer<TValue>.Default.Equals(oldValue, curr._value);
+                                if (!valuesMatch)
                                 {
-                                    bool valuesMatch = EqualityComparer<TValue>.Default.Equals(oldValue, curr._value);
-                                    if (!valuesMatch)
-                                    {
-                                        value = default;
-                                        return false;
-                                    }
+                                    value = default;
+                                    return false;
                                 }
-
-                                if (prev is null)
-                                {
-                                    Volatile.Write(ref bucket, curr._next);
-                                }
-                                else
-                                {
-                                    prev._next = curr._next;
-                                }
-
-                                value = curr._value;
-                                tables._countPerLock[lockNo]--;
-                                return true;
                             }
-                            prev = curr;
+
+                            if (prev is null)
+                            {
+                                Volatile.Write(ref bucket, curr._next);
+                            }
+                            else
+                            {
+                                prev._next = curr._next;
+                            }
+
+                            value = curr._value;
+                            tables._countPerLock[lockNo]--;
+                            return true;
                         }
+                        prev = curr;
                     }
                 }
 
