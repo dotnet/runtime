@@ -5163,17 +5163,19 @@ void Compiler::ehUpdateTryLasts(GetTryLast getTryLast, SetTryLast setTryLast)
 }
 
 //-------------------------------------------------------------
-// fgUpdateFlowGraphPhase: run flow graph optimization as a
-//   phase, with no tail duplication
+// fgUpdateFlowGraphPhase: run flow graph optimization as a phase
+//
+// Arguments:
+//   early - Whether this is being checked early in the phase list
 //
 // Returns:
 //    Suitable phase status
 //
-PhaseStatus Compiler::fgUpdateFlowGraphPhase()
+PhaseStatus Compiler::fgUpdateFlowGraphPhase(bool early)
 {
-    constexpr bool doTailDup   = false;
-    constexpr bool isPhase     = true;
-    const bool     madeChanges = fgUpdateFlowGraph(doTailDup, isPhase);
+    const bool doTailDup   = early;
+    const bool isPhase     = true;
+    const bool madeChanges = fgUpdateFlowGraph(doTailDup, isPhase);
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -5290,9 +5292,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                         // similarly have its control flow straightened out.
                         // Try to compact it and repeat the optimization for
                         // it.
-                        if (bDest->bbRefs == 1)
+                        BasicBlock* otherPred = bDest->GetUniquePred(this);
+                        if (otherPred != nullptr)
                         {
-                            BasicBlock* otherPred = bDest->bbPreds->getSourceBlock();
                             JITDUMP("Trying to compact last pred " FMT_BB " of " FMT_BB " that we now bypass\n",
                                     otherPred->bbNum, bDest->bbNum);
                             if (fgCanCompactBlock(otherPred))

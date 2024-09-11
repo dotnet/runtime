@@ -4769,7 +4769,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Run an early flow graph simplification pass
         //
-        DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
+        DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, [this]() {
+            return fgUpdateFlowGraphPhase(true);
+        });
     }
 
     // Promote struct locals
@@ -5100,7 +5102,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             {
                 // update the flowgraph if we modified it during the optimization phase
                 //
-                DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
+                DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, [this]() {
+                    return fgUpdateFlowGraphPhase(false);
+                });
             }
 
             // Iterate if requested, resetting annotations first.
