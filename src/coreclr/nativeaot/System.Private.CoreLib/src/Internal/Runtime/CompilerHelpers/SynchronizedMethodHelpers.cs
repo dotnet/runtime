@@ -43,7 +43,7 @@ namespace Internal.Runtime.CompilerHelpers
             lockTaken = false;
         }
 
-        private static unsafe object GetSyncFromClassHandle(MethodTable* pMT) => Type.GetTypeFromMethodTable(pMT);
+        private static unsafe RuntimeType GetSyncFromClassHandle(MethodTable* pMT) => Type.GetTypeFromMethodTable(pMT);
 
         private static unsafe MethodTable* GetClassFromMethodParam(IntPtr pDictionary)
         {
