@@ -69,28 +69,21 @@ public static class NrbfDecoder
             return false;
         }
 
-        try
+        byte[] buffer = new byte[SerializedStreamHeaderRecord.Size];
+        int offset = 0;
+        while (offset < buffer.Length)
         {
-#if NET
-            Span<byte> buffer = stackalloc byte[SerializedStreamHeaderRecord.Size];
-            stream.ReadExactly(buffer);
-#else
-            byte[] buffer = new byte[SerializedStreamHeaderRecord.Size];
-            int offset = 0;
-            while (offset < buffer.Length)
+            int read = stream.Read(buffer, offset, buffer.Length - offset);
+            if (read == 0)
             {
-                int read = stream.Read(buffer, offset, buffer.Length - offset);
-                if (read == 0)
-                    throw new EndOfStreamException();
-                offset += read;
+                return false;
             }
-#endif
-            return StartsWithPayloadHeader(buffer);
+            offset += read;
         }
-        finally
-        {
-            stream.Position = beginning;
-        }
+
+        bool result = StartsWithPayloadHeader(buffer);
+        stream.Position = beginning;
+        return result;
     }
 
     /// <summary>
