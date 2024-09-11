@@ -81,6 +81,8 @@
              Link="Common\Interop\CoreLib\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ErrNo.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.ErrNo.cs"/>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Close.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs"
