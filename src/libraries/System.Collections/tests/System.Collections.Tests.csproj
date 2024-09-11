@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
@@ -48,6 +48,7 @@
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
              Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
     <!-- Generic tests -->
+    <Compile Include="Generic\HashSet\HashSet.NonGeneric.Tests.cs" />
     <Compile Include="Generic\SortedSet\SortedSet.TreeSubSet.Tests.cs" />
     <Compile Include="StructuralComparisonsTests.cs" />
     <Compile Include="BitArray\BitArray_CtorTests.cs" />
