@@ -108,6 +108,7 @@ internal sealed class RectangularArrayRecord : ArrayRecord
             else if (ElementType == typeof(TimeSpan)) CopyTo<TimeSpan>(_values, result);
             else if (ElementType == typeof(DateTime)) CopyTo<DateTime>(_values, result);
             else if (ElementType == typeof(decimal)) CopyTo<decimal>(_values, result);
+            else throw new InvalidOperationException();
         }
         else
         {
@@ -176,7 +177,7 @@ internal sealed class RectangularArrayRecord : ArrayRecord
                 PrimitiveType.Int64 => sizeof(long),
                 PrimitiveType.UInt64 => sizeof(ulong),
                 PrimitiveType.Double => sizeof(double),
-                _ => -1
+                _ => throw new InvalidOperationException()
             };
 
             if (sizeOfSingleValue > 0)
@@ -215,7 +216,8 @@ internal sealed class RectangularArrayRecord : ArrayRecord
             PrimitiveType.DateTime => typeof(DateTime),
             PrimitiveType.UInt16 => typeof(ushort),
             PrimitiveType.UInt32 => typeof(uint),
-            _ => typeof(ulong)
+            PrimitiveType.UInt64 => typeof(ulong),
+            _ => throw new InvalidOperationException()
         };
 
     private static Type MapPrimitiveArray(PrimitiveType primitiveType)
@@ -235,7 +237,8 @@ internal sealed class RectangularArrayRecord : ArrayRecord
             PrimitiveType.DateTime => typeof(DateTime[]),
             PrimitiveType.UInt16 => typeof(ushort[]),
             PrimitiveType.UInt32 => typeof(uint[]),
-            _ => typeof(ulong[]),
+            PrimitiveType.UInt64 => typeof(ulong[]),
+            _ => throw new InvalidOperationException()
         };
 
     private static object? GetActualValue(object value)

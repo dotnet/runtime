@@ -48,7 +48,7 @@ internal static class TypeNameHelpers
                 ObjectPrimitiveType => "System.Object",
                 IntPtrPrimitiveType => "System.IntPtr",
                 UIntPtrPrimitiveType => "System.UIntPtr",
-                _ => throw new ArgumentOutOfRangeException(paramName: nameof(primitiveType), actualValue: primitiveType, message: null)
+                _ => throw new InvalidOperationException()
             };
 
             s_primitiveTypeNames[(int)primitiveType] = typeName = TypeName.Parse(fullName.AsSpan()).WithCoreLibAssemblyName();

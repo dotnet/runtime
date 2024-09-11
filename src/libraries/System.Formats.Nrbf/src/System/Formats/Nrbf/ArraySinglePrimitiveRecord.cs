@@ -244,11 +244,13 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             {
                 values.Add((T)(object)Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadUInt64()));
             }
+            else if (typeof(T) == typeof(TimeSpan))
+            {
+                values.Add((T)(object)new TimeSpan(reader.ReadInt64()));
+            }
             else
             {
-                Debug.Assert(typeof(T) == typeof(TimeSpan));
-
-                values.Add((T)(object)new TimeSpan(reader.ReadInt64()));
+                throw new InvalidOperationException();
             }
         }
 

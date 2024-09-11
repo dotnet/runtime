@@ -241,7 +241,8 @@ public static class NrbfDecoder
             SerializationRecordType.ObjectNullMultiple => ObjectNullMultipleRecord.Decode(reader),
             SerializationRecordType.ObjectNullMultiple256 => ObjectNullMultiple256Record.Decode(reader),
             SerializationRecordType.SerializedStreamHeader => SerializedStreamHeaderRecord.Decode(reader),
-            _ => SystemClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
+            SerializationRecordType.SystemClassWithMembersAndTypes => SystemClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
+            _ => throw new InvalidOperationException()
         };
 
         recordMap.Add(record);
@@ -269,8 +270,9 @@ public static class NrbfDecoder
             PrimitiveType.Double => new MemberPrimitiveTypedRecord<double>(reader.ReadDouble()),
             PrimitiveType.Decimal => new MemberPrimitiveTypedRecord<decimal>(reader.ParseDecimal()),
             PrimitiveType.DateTime => new MemberPrimitiveTypedRecord<DateTime>(Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadUInt64())),
-            // String is handled with a record, never on it's own
-            _ => new MemberPrimitiveTypedRecord<TimeSpan>(new TimeSpan(reader.ReadInt64())),
+            PrimitiveType.TimeSpan => new MemberPrimitiveTypedRecord<TimeSpan>(new TimeSpan(reader.ReadInt64())),
+            // PrimitiveType.String is handled with a record, never on it's own
+            _ => throw new InvalidOperationException()
         };
     }
 
@@ -295,7 +297,9 @@ public static class NrbfDecoder
             PrimitiveType.Double => Decode<double>(info, reader),
             PrimitiveType.Decimal => Decode<decimal>(info, reader),
             PrimitiveType.DateTime => Decode<DateTime>(info, reader),
-            _ => Decode<TimeSpan>(info, reader),
+            PrimitiveType.TimeSpan => Decode<TimeSpan>(info, reader),
+            // PrimitiveType.String is handled with a record, never on it's own
+            _ => throw new InvalidOperationException()
         };
 
         static SerializationRecord Decode<T>(ArrayInfo info, BinaryReader reader) where T : unmanaged
