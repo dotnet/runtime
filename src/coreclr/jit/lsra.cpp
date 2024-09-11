@@ -9778,6 +9778,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             targetRegsToDo |= genRegMask(toReg);
         }
     }
+
     // REGISTER to REGISTER MOVES
 
     // First, find all the ones that are ready to move now
@@ -10079,7 +10080,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     {
                         assert(sourceIntervals[targetReg] != nullptr);
 
-                        addResolution(block, insertionPoint, sourceIntervals[fromReg], tempReg,
+                        addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg,
                                       targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
                                           DEBUG_ARG(resolveTypeName[resolveType]));
                         location[targetReg] = (regNumberSmall)tempReg;
