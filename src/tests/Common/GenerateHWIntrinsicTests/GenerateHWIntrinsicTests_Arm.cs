@@ -220,6 +220,49 @@ const string VecPairBinOpTest_ValidationLogic = @"
                     }
             }";
 
+const string VecReduceUnOpTest_VectorValidationLogicForCndSel = @"
+            {
+                var hasFailed = (mask[0] != 0) ? ({ValidateReduceOpResult}): (falseVal[0] != result[0]);
+
+                if (hasFailed)
+                {
+                    succeeded = false;
+                }
+                else
+                {
+                    for (var i = 1; i < RetElementCount; i++)
+                    {
+                        hasFailed = (mask[i] != 0) ? ({ValidateRemainingResults}) : (falseVal[i] != result[i]);
+                        if (hasFailed)
+                        {
+                            succeeded = false;
+                            break;
+                        }
+                    }
+                }
+            }";
+
+const string VecReduceUnOpTest_VectorValidationLogicForCndSel_FalseValue = @"
+            {
+                var hasFailed = (mask[0] != 0) ? (trueVal[0] != result[0]): ({ValidateReduceOpResult});
+                if (hasFailed)
+                {
+                    succeeded = false;
+                }
+                else
+                {
+                    for (var i = 1; i < RetElementCount; i++)
+                    {
+                        hasFailed = (mask[i] != 0) ? (trueVal[i] != result[i]) : ({ValidateRemainingResults});
+                        if (hasFailed)
+                        {
+                            succeeded = false;
+                            break;
+                        }
+                    }
+                }
+            }";
+
 const string VecReduceOpTest_ValidationLogic = @"if ({ValidateReduceOpResult})
             {
                 succeeded = false;
