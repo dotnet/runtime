@@ -41,17 +41,9 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
     public override T[] GetArray(bool allowNulls = true)
         => (T[])(_arrayNullsNotAllowed ??= (Values is T[] array ? array : Values.ToArray()));
 
-    internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType()
-    {
-        Debug.Fail("GetAllowedRecordType should never be called on ArraySinglePrimitiveRecord");
-        throw new InvalidOperationException();
-    }
+    internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType() => throw new InvalidOperationException();
 
-    private protected override void AddValue(object value)
-    {
-        Debug.Fail("AddValue should never be called on ArraySinglePrimitiveRecord");
-        throw new InvalidOperationException();
-    }
+    private protected override void AddValue(object value) => throw new InvalidOperationException();
 
     internal static IReadOnlyList<T> DecodePrimitiveTypes(BinaryReader reader, int count)
     {
