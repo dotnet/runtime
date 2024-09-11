@@ -732,7 +732,7 @@
     <ItemGroup>
       <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)">
         <ObjectFile>$(_WasmIntermediateOutputPath)%(FileName).o</ObjectFile>
-        <RelativePath>$([System.IO.Path]::GetRelativePath('$(MsBuildProjectDirectory)', '%(Identity)'))</RelativePath>
+        <RelativePath>$([System.IO.Path]::GetRelativePath('$(MsBuildProjectDirectory)', '%(LlvmBitCodeFile)'))</RelativePath>
       </_BitcodeFile>
 
       <!-- Add the skipped assemblies -->
@@ -922,6 +922,7 @@
   <Target Name="_CheckToolchainIsExpectedVersion" />
 
   <Target Name="_WasmWriteRspForLinking">
+    <!-- HERE, how stripped landed here? -->
     <WriteLinesToFile Lines="@(_WasmLinkStepArgs)" File="$(_WasmLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_WasmLinkRsp)" />
