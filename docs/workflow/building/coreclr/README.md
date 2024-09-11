@@ -37,11 +37,11 @@ All the generated logs are placed in under `artifacts/log`, and all the intermed
 
 ### What to do with the Build
 
-*CoreCLR* is one of the most important components of the runtime repo, as it is one of the main engines of the .NET product. That said, while you can test and use it on its own, it becomes easiest to do this when used in conjuction with the *Libraries* subset. When you build both subsets, you can get access to the *Core_Root*. This includes all the libraries, as well as the Clr alongside other tools like *Crossgen2*, *R2RDump*, and the *ILC* compiler, and the main command-line host executable `corerun`, all bundled together. The *Core_Root* is one of the most reliable ways of testing changes to the runtime, running external apps with your build, and it is the way Clr tests are run in the CI pipelines.
+*CoreCLR* is one of the most important components of the runtime repo, as it is one of the main engines of the .NET product. That said, while you can test and use it on its own, it is easiest to do this when used in conjunction with the *Libraries* subset. When you build both subsets, you can get access to the *Core_Root*. This includes all the libraries and the Clr, alongside other tools like *Crossgen2*, *R2RDump*, and the *ILC* compiler, and the main command-line host executable `corerun`, all bundled together. The *Core_Root* is one of the most reliable ways of testing changes to the runtime, running external apps with your build, and it is the way Clr tests are run in the CI pipelines.
 
-#### The Core Root for Testing Your Build
+#### The Core_Root for Testing Your Build
 
-As described in the [workflow README](/docs/workflow/README.md#building-the-repo), you can build multiple subsets by concatenating them with a `+` sign in the `-subset` argument. So, in this case, it would be `clr+libs`. Usually, the recommended workflow is to build the clr in *Debug* configuration and the libraries in *Release*:
+As described in the [workflow README](/docs/workflow/README.md#building-the-repo), you can build multiple subsets by concatenating them with a `+` sign in the `-subset` argument. To prepare to build the *Core_Root*, we need to build the libraries and CoreCLR. Thus, the `-subset` argument would be `clr+libs`. Usually, the recommended workflow is to build the clr in *Debug* configuration and the libraries in *Release*:
 
 ```bash
 ./build.sh -subset clr+libs -runtimeConfiguration Debug -librariesConfiguration Release

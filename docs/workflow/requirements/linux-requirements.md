@@ -9,7 +9,7 @@
   - [Gentoo](#gentoo)
 - [Using Docker](#using-docker)
 
-To build the runtime repo on *Linux*, there are two ways you can opt for: Set up your environment in your Linux machine, or use the Docker images that are used in the official builds. This guide will cover both of these approaches. Using Docker allows you to leverage our existing images which already have an environment set up, while using your own environment grants you better flexibility on having other tools at hand you might need.
+There are two ways to build the runtime repo on *Linux*: Set up your environment in your Linux machine, or use the Docker images that are used in the official builds. This guide will cover both of these approaches. Using Docker allows you to leverage our existing images which already have an environment set up, while using your own environment grants you better flexibility on having other tools at hand you might need.
 
 **NOTE:** If you're using WSL, then follow the instructions for the distro you have installed there.
 

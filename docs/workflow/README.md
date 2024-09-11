@@ -29,7 +29,7 @@ The runtime repo can be worked with on Windows, Linux, macOS, and FreeBSD. Each 
 
 - **The Target Platform:** This is the platform you are building the artifacts for, i.e. the platform you intend to run your builds on.
 
-The *Build Platform* and the *Target Platform* can be either the same of different from each other. The former scenario is straightforward, as you will most likely be doing all the work on the same machine. When working with the latter one, the process is called *cross-compiling*. There are certain workflows that require you to follow this process, as it is not possible to build the repo directly on those platforms (e.g., Web Assembly (WASM), Browser, Mobiles). The full instructions on how to work with this are detailed in the building docs later on.
+The *Build Platform* and the *Target Platform* can be either the same as or different from each other. The former scenario is straightforward, as you will likely be doing all the work on the same machine. In the latter scenario, the process is called *cross-compiling*. There are certain workflows that require you to follow this process, as it is not possible to build the repo directly on those platforms (e.g., Web Assembly (WASM), Browser, Mobiles). The full instructions on how to work with this are detailed in the building docs later on.
 
 Additionally, keep in mind that cloning the full history of this repo takes roughly 400-500 MB of network transfer, inflating to a repository that can consume somewhere between 1 to 1.5 GB. A build of the repo can take somewhere between 10 and 20 GB of space for a single OS and Platform configuration depending on the portions of the product built. This might increase over time, so consider this to be a minimum bar for working with this codebase.
 
@@ -60,30 +60,30 @@ To work with the runtime repo, there are three supported configurations (one is 
 ### Build Components
 
 - **Runtime**: The execution engine for managed code. There are two different implementations, both written in C or C++:
-  - *CoreCLR*: The comprehensive execution engine originally born from .NET Framework. Its source code lives in under the [src/coreclr](/src/coreclr) subtree.
-  - *Mono*: A slimmer runtime than CoreCLR, originally born open-source to bring .NET and C# support to non-Windows platforms. Due to its lightweight nature, it is less affected in terms of speed when working with the *Debug* configuration. Its source code lives in under the [src/mono](/src/mono) subtree.
+  - *CoreCLR*: The comprehensive execution engine originally born from .NET Framework. Its source code lives under the [src/coreclr](/src/coreclr) subtree.
+  - *Mono*: A slimmer runtime than CoreCLR, originally born open-source to bring .NET and C# support to non-Windows platforms. Due to its lightweight nature, it is less affected in terms of speed when working with the *Debug* configuration. Its source code lives under the [src/mono](/src/mono) subtree.
 
-- **CoreLib** *(also known as System.Private.CoreLib)*: The lowest level managed library. It is directly related to the runtime, which means it must be built in the matching configuration (e.g. Building a *Debug* runtime means *CoreLib* must also be in *Debug*). You usually don't have to worry about that, since the `clr` subset includes it, but there are some special cases where you might need to build it separately. The runtime agnostic code for this library can be found at [src/libraries/System.Private.CoreLib/src](/src/libraries/System.Private.CoreLib/src/README.md).
+- **CoreLib** *(also known as System.Private.CoreLib)*: The lowest level managed library. It is directly related to the runtime, which means it must be built in the matching configuration (e.g. Building a *Debug* runtime means *CoreLib* must also be in *Debug*). The `clr` subset includes both, the *Runtime* and the *CoreLib* components, so you usually don't have to worry about that. There are, however, some special cases where you might need to build the components separately. The runtime agnostic code for this library can be found at [src/libraries/System.Private.CoreLib/src](/src/libraries/System.Private.CoreLib/src/README.md).
 
-- **Libraries**: The bulk of dll's providing the rest of the functionality to the runtime. The libraries can be built in their own configuration, regardless of which one the runtime is using. Their source code lives in under the [src/libraries](/src/libraries) subtree.
+- **Libraries**: The bulk of dll's providing the rest of the functionality to the runtime. The libraries can be built in their own configuration, regardless of which one the runtime is using. Their source code lives under the [src/libraries](/src/libraries) subtree.
 
 ## Building the Repo
 
 The main script that will be in charge of most of the building you might want to do is the `build.sh`, or `build.cmd` on Windows, located at the root of the repo. This script receives as arguments the subset(s) you might want to build, as well as multiple parameters to configure your build, such as the configuration, target operating system, target architecture, and so on.
 
-**NOTE:** If you plan on using Docker to work on the runtime repo, read [this doc](/docs/workflow/using-docker.md) first, as it explains how to set it up, as well as the images and the containers, so that you are ready to start following the building and testing instructions in the next sections and their linked docs.
+**NOTE:** If you plan on using Docker to work on the runtime repo, read [this doc](/docs/workflow/using-docker.md) first. It explains how to set up, as well as the images and containers to prepare you to follow the building and testing instructions in the next sections.
 
 ### General Overview
 
-Running the script as is with no arguments whatsoever, will build the whole repo in *Debug* configuration, for the OS and architecture of your machine. But you probably will be working with only one or two components at a time, so it is more efficient to just build those. This is done by means of the `-subset` flag. For example, for CoreCLR, it would be:
+Running the script (`build.sh`/`build.cmd`) with no arguments will build the whole repo in *Debug* configuration, for the OS and architecture of your machine. A typical dev workflow only one or two components at a time, so it is more efficient to just build those. This is done by means of the `-subset` flag. For example, for CoreCLR, it would be:
 
 ```bash
 ./build.sh -subset clr
 ```
 
-The main subset values you can use are:
+The main subset values are:
 
-- `Clr`: The full CoreCLR runtime
+- `Clr`: The full CoreCLR runtime, which consists of the runtime itself and the CoreLib components.
 - `Libs`: All the libraries components, excluding their tests. This includes the libraries' native parts, refs, source assemblies, and their packages and test infrastructure.
 - `Packs`: The shared framework packs, archives, bundles, installers, and the framework pack tests.
 - `Host`: The .NET hosts, packages, hosting libraries, and their tests.
@@ -109,7 +109,7 @@ The behavior of the script is that the general configuration flag `-c` affects a
 ./build.sh -subset clr+libs -configuration Release -runtimeConfiguration Debug
 ```
 
-In this example, the `-lc` flag was not specified, so `-c` qualifies `libs`. And in the first example, only `-c` was passed, so it qualifies both, `clr` and `libs`.
+In this example, the `-lc` flag was not specified, so `-c` qualifies `libs`. In the first example, only `-c` was passed, so it qualifies both, `clr` and `libs`.
 
 As an extra note here, if your first argument to the build script are the subsets, you can omit the `-subset` flag altogether. Additionally, several of the supported flags also include a shorthand version (e.g. `-c` for `-configuration`). Run the script with `-h` or `-help` to get an extensive overview on all the supported flags to customize your build, including their shorthand forms, as well as a wider variety of examples.
 
