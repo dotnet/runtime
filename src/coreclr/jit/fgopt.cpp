@@ -6402,7 +6402,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     if (madeChanges && !early)
     {
         // Clean up potential unconditional jumps produced by tail merging
-        fgUpdateFlowGraph();
+        //fgUpdateFlowGraph();
     }
 
     // If we altered flow, reset fgModified. Given where we sit in the
