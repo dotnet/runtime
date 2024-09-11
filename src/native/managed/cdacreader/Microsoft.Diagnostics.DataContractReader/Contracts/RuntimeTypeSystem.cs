@@ -5,9 +5,9 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal interface IFRuntimeTypeSystem : IContractFactory<IFRuntimeTypeSystem, IRuntimeTypeSystem>
+internal sealed class FRuntimeTypeSystem : IContractFactory<IRuntimeTypeSystem>
 {
-    static IRuntimeTypeSystem IContractFactory<IFRuntimeTypeSystem, IRuntimeTypeSystem>.CreateContract(ITarget target, int version)
+    static IRuntimeTypeSystem IContractFactory<IRuntimeTypeSystem>.CreateContract(ITarget target, int version)
     {
         TargetPointer targetPointer = target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable);
         TargetPointer freeObjectMethodTable = target.ReadPointer(targetPointer);

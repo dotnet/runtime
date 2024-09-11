@@ -5,9 +5,9 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal interface IFThread : IContractFactory<IFThread, IThread>
+internal sealed class FThread : IContractFactory<IThread>
 {
-    static IThread IContractFactory<IFThread, IThread>.CreateContract(ITarget target, int version)
+    static IThread IContractFactory<IThread>.CreateContract(ITarget target, int version)
     {
         TargetPointer threadStorePointer = target.ReadGlobalPointer(Constants.Globals.ThreadStore);
         TargetPointer threadStore = target.ReadPointer(threadStorePointer);

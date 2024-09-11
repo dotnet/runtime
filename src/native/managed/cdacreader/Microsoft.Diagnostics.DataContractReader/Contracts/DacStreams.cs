@@ -5,9 +5,9 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal interface IFDacStreams : IContractFactory<IFDacStreams, IDacStreams>
+internal sealed class FDacStreams : IContractFactory<IDacStreams>
 {
-    static IDacStreams IContractFactory<IFDacStreams, IDacStreams>.CreateContract(ITarget target, int version)
+    static IDacStreams IContractFactory<IDacStreams>.CreateContract(ITarget target, int version)
     {
         return version switch
         {

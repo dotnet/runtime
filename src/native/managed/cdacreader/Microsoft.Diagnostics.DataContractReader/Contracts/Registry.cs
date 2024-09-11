@@ -18,19 +18,19 @@ internal sealed class Registry
         _target = target;
     }
 
-    public IException Exception => GetContract<IFException, IException>();
-    public ILoader Loader => GetContract<IFLoader, ILoader>();
-    public IEcmaMetadata EcmaMetadata => GetContract<IFEcmaMetadata, IEcmaMetadata>();
-    public IObject Object => GetContract<IFObject, IObject>();
-    public IThread Thread => GetContract<IFThread, IThread>();
-    public IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IFRuntimeTypeSystem, IRuntimeTypeSystem>();
-    public IDacStreams DacStreams => GetContract<IFDacStreams, IDacStreams>();
-    public ICodeVersions CodeVersions => GetContract<IFCodeVersions, ICodeVersions>();
-    public IPrecodeStubs PrecodeStubs => GetContract<IFPrecodeStubs, IPrecodeStubs>();
-    public IExecutionManager ExecutionManager => GetContract<IFExecutionManager, IExecutionManager>();
-    public IReJIT ReJIT => GetContract<IFReJIT, IReJIT>();
+    public IException Exception => GetContract<FException, IException>();
+    public ILoader Loader => GetContract<FLoader, ILoader>();
+    public IEcmaMetadata EcmaMetadata => GetContract<FEcmaMetadata, IEcmaMetadata>();
+    public IObject Object => GetContract<FObject, IObject>();
+    public IThread Thread => GetContract<FThread, IThread>();
+    public IRuntimeTypeSystem RuntimeTypeSystem => GetContract<FRuntimeTypeSystem, IRuntimeTypeSystem>();
+    public IDacStreams DacStreams => GetContract<FDacStreams, IDacStreams>();
+    public ICodeVersions CodeVersions => GetContract<FCodeVersions, ICodeVersions>();
+    public IPrecodeStubs PrecodeStubs => GetContract<FPrecodeStubs, IPrecodeStubs>();
+    public IExecutionManager ExecutionManager => GetContract<FExecutionManager, IExecutionManager>();
+    public IReJIT ReJIT => GetContract<FReJIT, IReJIT>();
 
-    private TProduct GetContract<TFactory, TProduct>() where TProduct : IContract where TFactory : IContractFactory<TFactory, TProduct>
+    private TProduct GetContract<TFactory, TProduct>() where TProduct : IContract where TFactory : IContractFactory<TProduct>
     {
         if (_contracts.TryGetValue(typeof(TProduct), out IContract? contractMaybe))
             return (TProduct)contractMaybe;

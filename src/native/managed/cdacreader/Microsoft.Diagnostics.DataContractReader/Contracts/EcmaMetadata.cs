@@ -6,9 +6,9 @@ using System.Reflection.Metadata;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal interface IFEcmaMetadata : IContractFactory<IFEcmaMetadata, IEcmaMetadata>
+internal sealed class FEcmaMetadata : IContractFactory<IEcmaMetadata>
 {
-    static IEcmaMetadata IContractFactory<IFEcmaMetadata, IEcmaMetadata>.CreateContract(ITarget target, int version)
+    static IEcmaMetadata IContractFactory<IEcmaMetadata>.CreateContract(ITarget target, int version)
     {
         return version switch
         {

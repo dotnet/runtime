@@ -5,9 +5,9 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal interface IFException : IContractFactory<IFException, IException>
+internal sealed class FException : IContractFactory<IException>
 {
-    static IException IContractFactory<IFException, IException>.CreateContract(ITarget target, int version)
+    static IException IContractFactory<IException>.CreateContract(ITarget target, int version)
     {
         return version switch
         {

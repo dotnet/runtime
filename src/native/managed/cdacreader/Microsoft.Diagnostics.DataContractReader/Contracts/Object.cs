@@ -5,9 +5,9 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal interface IFObject : IContractFactory<IFObject, IObject>
+internal sealed class FObject : IContractFactory<IObject>
 {
-    static IObject IContractFactory<IFObject, IObject>.CreateContract(ITarget target, int version)
+    static IObject IContractFactory<IObject>.CreateContract(ITarget target, int version)
     {
         ulong methodTableOffset = (ulong)target.GetTypeInfo(DataType.Object).Fields["m_pMethTab"].Offset;
         byte objectToMethodTableUnmask = target.ReadGlobal<byte>(Constants.Globals.ObjectToMethodTableUnmask);

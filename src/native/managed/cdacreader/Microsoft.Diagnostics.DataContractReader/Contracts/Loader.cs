@@ -6,9 +6,9 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal interface IFLoader : IContractFactory<IFLoader, ILoader>
+internal sealed class FLoader : IContractFactory<ILoader>
 {
-    static ILoader IContractFactory<IFLoader, ILoader>.CreateContract(ITarget target, int version)
+    static ILoader IContractFactory<ILoader>.CreateContract(ITarget target, int version)
     {
         return version switch
         {

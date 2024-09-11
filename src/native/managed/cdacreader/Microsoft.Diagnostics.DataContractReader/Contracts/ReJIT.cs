@@ -5,9 +5,9 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal interface IFReJIT : IContractFactory<IFReJIT, IReJIT>
+internal sealed class FReJIT : IContractFactory<IReJIT>
 {
-    static IReJIT IContractFactory<IFReJIT, IReJIT>.CreateContract(ITarget target, int version)
+    static IReJIT IContractFactory<IReJIT>.CreateContract(ITarget target, int version)
     {
         TargetPointer profControlBlockAddress = target.ReadGlobalPointer(Constants.Globals.ProfilerControlBlock);
         Data.ProfControlBlock profControlBlock = target.ProcessedData.GetOrAdd<Data.ProfControlBlock>(profControlBlockAddress);
