@@ -20,7 +20,7 @@ export const maxFailures = 2,
     shortNameBase = 36,
     // NOTE: This needs to be big enough to hold the maximum module size since there's no auto-growth
     //  support yet. If that becomes a problem, we should just make it growable
-    blobBuilderCapacity = 16 * 1024;
+    blobBuilderCapacity = 24 * 1024;
 
 // uint16
 export declare interface MintOpcodePtr extends NativePointer {
