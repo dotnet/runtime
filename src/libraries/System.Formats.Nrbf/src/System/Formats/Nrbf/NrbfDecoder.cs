@@ -265,6 +265,7 @@ public static class NrbfDecoder
             PrimitiveType.DateTime => new MemberPrimitiveTypedRecord<DateTime>(Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadUInt64())),
             PrimitiveType.TimeSpan => new MemberPrimitiveTypedRecord<TimeSpan>(new TimeSpan(reader.ReadInt64())),
             // PrimitiveType.String is handled with a record, never on it's own
+            PrimitiveType.String => throw new SerializationException(SR.Format(SR.Serialization_InvalidValue, primitiveType)),
             _ => throw new InvalidOperationException()
         };
     }
@@ -292,6 +293,7 @@ public static class NrbfDecoder
             PrimitiveType.DateTime => Decode<DateTime>(info, reader),
             PrimitiveType.TimeSpan => Decode<TimeSpan>(info, reader),
             // PrimitiveType.String is handled with a record, never on it's own
+            PrimitiveType.String => throw new SerializationException(SR.Format(SR.Serialization_InvalidValue, primitiveType)),
             _ => throw new InvalidOperationException()
         };
 
