@@ -135,6 +135,10 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Initializes a new instance of the <seealso cref="AssemblyName"/> class based on the stored information.
         /// </summary>
+        /// <remarks>
+        /// Do not create an <see cref="AssemblyName"/> instance with <see cref="CultureName"/> string unless
+        /// you know the string has originated from a trustworthy source.
+        /// </remarks>
         public AssemblyName ToAssemblyName()
         {
             AssemblyName assemblyName = new();

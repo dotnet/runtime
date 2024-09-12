@@ -101,6 +101,11 @@ internal static class BinaryReaderExtensions
     // BinaryFormatter serializes decimals as strings and we can't BinaryReader.ReadDecimal.
     internal static decimal ParseDecimal(this BinaryReader reader)
     {
+        // The spec (MS NRBF 2.1.1.6, https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nrbf/10b218f5-9b2b-4947-b4b7-07725a2c8127)
+        // says that the length of LengthPrefixedString must be of optimal size (using as few bytes as possible).
+        // BinaryReader.ReadString does not enforce that and we are OK with that,
+        // as it takes care of handling multiple edge cases and we don't want to re-implement it.
+
         string text = reader.ReadString();
         if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal result))
         {
