@@ -22,5 +22,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj" />
+    <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader.Contracts\Microsoft.Diagnostics.DataContractReader.Contracts.csproj" />
   </ItemGroup>
 </Project>
