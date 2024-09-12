@@ -467,8 +467,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint8_t svand[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)</para>
         ///   <para>svuint8_t svand[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)</para>
         ///   <para>  AND Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  AND Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<byte> And(Vector<byte> left, Vector<byte> right) => And(left, right);
 
@@ -477,8 +475,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint16_t svand[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)</para>
         ///   <para>svint16_t svand[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)</para>
         ///   <para>  AND Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  AND Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<short> And(Vector<short> left, Vector<short> right) => And(left, right);
 
@@ -487,8 +483,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint32_t svand[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)</para>
         ///   <para>svint32_t svand[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)</para>
         ///   <para>  AND Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  AND Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<int> And(Vector<int> left, Vector<int> right) => And(left, right);
 
@@ -497,8 +491,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svand[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)</para>
         ///   <para>svint64_t svand[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)</para>
         ///   <para>  AND Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  AND Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<long> And(Vector<long> left, Vector<long> right) => And(left, right);
 
@@ -507,8 +499,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint8_t svand[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)</para>
         ///   <para>svint8_t svand[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)</para>
         ///   <para>  AND Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  AND Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<sbyte> And(Vector<sbyte> left, Vector<sbyte> right) => And(left, right);
 
@@ -517,8 +507,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint16_t svand[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)</para>
         ///   <para>svuint16_t svand[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)</para>
         ///   <para>  AND Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  AND Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<ushort> And(Vector<ushort> left, Vector<ushort> right) => And(left, right);
 
@@ -527,8 +515,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint32_t svand[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)</para>
         ///   <para>svuint32_t svand[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)</para>
         ///   <para>  AND Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  AND Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<uint> And(Vector<uint> left, Vector<uint> right) => And(left, right);
 
@@ -537,8 +523,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint64_t svand[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)</para>
         ///   <para>svuint64_t svand[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)</para>
         ///   <para>  AND Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  AND Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<ulong> And(Vector<ulong> left, Vector<ulong> right) => And(left, right);
 
@@ -602,8 +586,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint8_t svbic[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)</para>
         ///   <para>  BIC Ztied1.B, Pg/M, Ztied1.B, Zop2.B</para>
         ///   <para>  BIC Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  BIC Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<byte> BitwiseClear(Vector<byte> left, Vector<byte> right) => BitwiseClear(left, right);
 
@@ -613,8 +595,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint16_t svbic[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)</para>
         ///   <para>  BIC Ztied1.H, Pg/M, Ztied1.H, Zop2.H</para>
         ///   <para>  BIC Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  BIC Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<short> BitwiseClear(Vector<short> left, Vector<short> right) => BitwiseClear(left, right);
 
@@ -624,8 +604,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint32_t svbic[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)</para>
         ///   <para>  BIC Ztied1.S, Pg/M, Ztied1.S, Zop2.S</para>
         ///   <para>  BIC Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  BIC Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<int> BitwiseClear(Vector<int> left, Vector<int> right) => BitwiseClear(left, right);
 
@@ -635,8 +613,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svbic[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)</para>
         ///   <para>  BIC Ztied1.D, Pg/M, Ztied1.D, Zop2.D</para>
         ///   <para>  BIC Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  BIC Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<long> BitwiseClear(Vector<long> left, Vector<long> right) => BitwiseClear(left, right);
 
@@ -646,8 +622,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint8_t svbic[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)</para>
         ///   <para>  BIC Ztied1.B, Pg/M, Ztied1.B, Zop2.B</para>
         ///   <para>  BIC Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  BIC Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<sbyte> BitwiseClear(Vector<sbyte> left, Vector<sbyte> right) => BitwiseClear(left, right);
 
@@ -657,8 +631,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint16_t svbic[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)</para>
         ///   <para>  BIC Ztied1.H, Pg/M, Ztied1.H, Zop2.H</para>
         ///   <para>  BIC Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  BIC Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<ushort> BitwiseClear(Vector<ushort> left, Vector<ushort> right) => BitwiseClear(left, right);
 
@@ -668,8 +640,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint32_t svbic[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)</para>
         ///   <para>  BIC Ztied1.S, Pg/M, Ztied1.S, Zop2.S</para>
         ///   <para>  BIC Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  BIC Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<uint> BitwiseClear(Vector<uint> left, Vector<uint> right) => BitwiseClear(left, right);
 
@@ -679,8 +649,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint64_t svbic[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)</para>
         ///   <para>  BIC Ztied1.D, Pg/M, Ztied1.D, Zop2.D</para>
         ///   <para>  BIC Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
-        ///   <para>  BIC Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<ulong> BitwiseClear(Vector<ulong> left, Vector<ulong> right) => BitwiseClear(left, right);
 
@@ -10563,24 +10531,18 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         ///   <para>svuint16_t svzip2[_u16](svuint16_t op1, svuint16_t op2)</para>
         ///   <para>  ZIP2 Zresult.H, Zop1.H, Zop2.H</para>
-        ///   <para>svbool_t svzip2_b16(svbool_t op1, svbool_t op2)</para>
-        ///   <para>  ZIP2 Presult.H, Pop1.H, Pop2.H</para>
         /// </summary>
         public static unsafe Vector<ushort> ZipHigh(Vector<ushort> left, Vector<ushort> right) => ZipHigh(left, right);
 
         /// <summary>
         ///   <para>svuint32_t svzip2[_u32](svuint32_t op1, svuint32_t op2)</para>
         ///   <para>  ZIP2 Zresult.S, Zop1.S, Zop2.S</para>
-        ///   <para>svbool_t svzip2_b32(svbool_t op1, svbool_t op2)</para>
-        ///   <para>  ZIP2 Presult.S, Pop1.S, Pop2.S</para>
         /// </summary>
         public static unsafe Vector<uint> ZipHigh(Vector<uint> left, Vector<uint> right) => ZipHigh(left, right);
 
         /// <summary>
         ///   <para>svuint64_t svzip2[_u64](svuint64_t op1, svuint64_t op2)</para>
         ///   <para>  ZIP2 Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svzip2_b64(svbool_t op1, svbool_t op2)</para>
-        ///   <para>  ZIP2 Presult.D, Pop1.D, Pop2.D</para>
         /// </summary>
         public static unsafe Vector<ulong> ZipHigh(Vector<ulong> left, Vector<ulong> right) => ZipHigh(left, right);
 
@@ -10590,8 +10552,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         ///   <para>svuint8_t svzip1[_u8](svuint8_t op1, svuint8_t op2)</para>
         ///   <para>  ZIP1 Zresult.B, Zop1.B, Zop2.B</para>
-        ///   <para>svbool_t svzip1_b8(svbool_t op1, svbool_t op2)</para>
-        ///   <para>  ZIP1 Presult.B, Pop1.B, Pop2.B</para>
         /// </summary>
         public static unsafe Vector<byte> ZipLow(Vector<byte> left, Vector<byte> right) => ZipLow(left, right);
 
@@ -10634,24 +10594,18 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         ///   <para>svuint16_t svzip1[_u16](svuint16_t op1, svuint16_t op2)</para>
         ///   <para>  ZIP1 Zresult.H, Zop1.H, Zop2.H</para>
-        ///   <para>svbool_t svzip1_b16(svbool_t op1, svbool_t op2)</para>
-        ///   <para>  ZIP1 Presult.H, Pop1.H, Pop2.H</para>
         /// </summary>
         public static unsafe Vector<ushort> ZipLow(Vector<ushort> left, Vector<ushort> right) => ZipLow(left, right);
 
         /// <summary>
         ///   <para>svuint32_t svzip1[_u32](svuint32_t op1, svuint32_t op2)</para>
         ///   <para>  ZIP1 Zresult.S, Zop1.S, Zop2.S</para>
-        ///   <para>svbool_t svzip1_b32(svbool_t op1, svbool_t op2)</para>
-        ///   <para>  ZIP1 Presult.S, Pop1.S, Pop2.S</para>
         /// </summary>
         public static unsafe Vector<uint> ZipLow(Vector<uint> left, Vector<uint> right) => ZipLow(left, right);
 
         /// <summary>
         ///   <para>svuint64_t svzip1[_u64](svuint64_t op1, svuint64_t op2)</para>
         ///   <para>  ZIP1 Zresult.D, Zop1.D, Zop2.D</para>
-        ///   <para>svbool_t svzip1_b64(svbool_t op1, svbool_t op2)</para>
-        ///   <para>  ZIP1 Presult.D, Pop1.D, Pop2.D</para>
         /// </summary>
         public static unsafe Vector<ulong> ZipLow(Vector<ulong> left, Vector<ulong> right) => ZipLow(left, right);
 
