@@ -5817,9 +5817,9 @@ void Compiler::lvaFixVirtualFrameOffsets()
         temp->tdAdjustTempOffs(delta + frameLocalsDelta);
     }
 
-    lvaCachedGenericContextArgOffs += delta;
     if (lvaCachedGenericContextArgOffs < frameBoundary)
         lvaCachedGenericContextArgOffs += frameLocalsDelta;
+    lvaCachedGenericContextArgOffs += delta;
 
 #if FEATURE_FIXED_OUT_ARGS
 
