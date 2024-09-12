@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { ENVIRONMENT_IS_WEB, mono_assert, runtimeHelpers } from "./globals";
-import { MonoMethod, AOTProfilerOptions, BrowserProfilerOptions } from "./types/internal";
+import { MonoMethod, AOTProfilerOptions, BrowserProfilerOptions, LogProfilerOptions } from "./types/internal";
 import { profiler_c_functions as cwraps } from "./cwraps";
 import { utf8ToString } from "./strings";
 
@@ -32,6 +32,12 @@ export function mono_wasm_init_browser_profiler (options: BrowserProfilerOptions
         options = {};
     const arg = "browser:";
     cwraps.mono_wasm_profiler_init_browser(arg);
+}
+
+export function mono_wasm_init_log_profiler (options: LogProfilerOptions): void {
+    mono_assert(runtimeHelpers.emscriptenBuildOptions.enableLogProfiler, "Log profiler is not enabled, please use <WasmProfilers>log;</WasmProfilers> in your project file.");
+    mono_assert(options.takeHeapshot, "Log profiler is not enabled, the takeHeapshot method must be defined in LogProfilerOptions.takeHeapshot");
+    cwraps.mono_wasm_profiler_init_log( (options.configuration || "log:alloc,output=output.mlpd") + `,take-heapshot-method=${options.takeHeapshot}`);
 }
 
 export const enum MeasuredBlock {

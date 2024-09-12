@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { dotnet, exit } from './_framework/dotnet.js'
+import { saveProfile } from './profiler.js'
 
 // Read test case from query string
 const params = new URLSearchParams(location.search);
@@ -121,9 +122,17 @@ switch (testCase) {
         };
         dotnet.withConfig({ maxParallelDownloads: maxParallelDownloads });
         break;
+    case "ProfilerTest":
+        dotnet.withConfig({
+            logProfilerOptions: {
+                takeHeapshot: "ProfilerTest::TakeHeapshot",
+                configuration: "log:alloc,output=output.mlpd"
+            }
+        })
+        break;
 }
 
-const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
+const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith('.wasm') ? ".wasm" : ".dll";
@@ -200,6 +209,25 @@ try {
             });
             exports.MemoryTest.Run();
             exit(0);
+            break;
+        case "ProfilerTest":
+            console.log("not ready yet")
+            const myExports = await getAssemblyExports(config.mainAssemblyName);
+            const testMeaning = myExports.ProfilerTest.TestMeaning;
+            const takeHeapshot = myExports.ProfilerTest.TakeHeapshot;
+            console.log("ready");
+
+            dotnet.run();
+
+            const ret = testMeaning();
+            document.getElementById("out").innerHTML = ret;
+            console.debug(`ret: ${ret}`);
+
+            takeHeapshot();
+            saveProfile(Module);
+
+            let exit_code = ret == 42 ? 0 : 1;
+            exit(exit_code);
             break;
         default:
             console.error(`Unknown test case: ${testCase}`);

@@ -577,7 +577,6 @@ mono_init_native_crash_info (void)
 void
 mono_runtime_setup_stat_profiler (void)
 {
-	g_error ("mono_runtime_setup_stat_profiler");
 }
 
 gboolean
