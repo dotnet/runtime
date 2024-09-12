@@ -35,7 +35,6 @@
 
 #include "codeversion.h"
 
-class BaseDomain;
 class SystemDomain;
 class AppDomain;
 class GlobalStringLiteralMap;
@@ -435,47 +434,6 @@ public:
     __newLimit.Activate();                                                              \
     __newLimit.SetLoadLevel(newLimit);
 
-// A BaseDomain much basic information in a code:AppDomain including
-//
-//    * code:#AppdomainHeaps - Heaps for any data structures that will be freed on appdomain unload
-//
-class BaseDomain
-{
-    friend class Assembly;
-    friend class AssemblySpec;
-    friend class AppDomain;
-
-    VPTR_BASE_VTABLE_CLASS(BaseDomain)
-    VPTR_UNIQUE(VPTR_UNIQUE_BaseDomain)
-
-public:
-
-    class AssemblyIterator;
-    friend class AssemblyIterator;
-
-    //****************************************************************************************
-    //
-    // Initialization/shutdown routines for every instance of an BaseDomain.
-
-    BaseDomain() = default;
-    virtual ~BaseDomain() {}
-
-    virtual BOOL IsAppDomain()    { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
-
-    virtual PTR_AppDomain AsAppDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(!"Not an AppDomain");
-        return NULL;
-    }
-
-#ifdef DACCESS_COMPILE
-public:
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis) = 0;
-#endif
-
-};  // class BaseDomain
-
 enum
 {
     ATTACH_ASSEMBLY_LOAD = 0x1,
@@ -687,25 +645,17 @@ const DWORD DefaultADID = 1;
 // Threads are always running in the context of a particular AppDomain.  See
 // file:threads.h#RuntimeThreadLocals for more details.
 //
-// see code:BaseDomain for much of the meat of a AppDomain (heaps locks, etc)
 //     * code:AppDomain.m_Assemblies - is a list of code:Assembly in the appdomain
 //
-class AppDomain : public BaseDomain
+class AppDomain final
 {
-    friend class SystemDomain;
-    friend class AssemblyNative;
-    friend class AssemblySpec;
-    friend class ClassLoader;
-    friend class ThreadNative;
+    friend struct _DacGlobals;
     friend class ClrDataAccess;
-    friend class CheckAsmOffsets;
-
-    VPTR_VTABLE_CLASS(AppDomain, BaseDomain)
 
 public:
 #ifndef DACCESS_COMPILE
     AppDomain();
-    virtual ~AppDomain();
+    ~AppDomain();
     static void Create();
 #endif
 
@@ -729,9 +679,6 @@ public:
 
     // final assembly cleanup
     void ShutdownFreeLoaderAllocators();
-
-    virtual BOOL IsAppDomain() { LIMITED_METHOD_DAC_CONTRACT; return TRUE; }
-    virtual PTR_AppDomain AsAppDomain() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_AppDomain>(this); }
 
     PTR_LoaderAllocator GetLoaderAllocator();
 
@@ -1694,7 +1641,7 @@ public:
 
 #ifdef DACCESS_COMPILE
 public:
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
                                    bool enumThis);
 #endif
 
@@ -1731,14 +1678,12 @@ private:
 // Just a ref holder
 typedef ReleaseHolder<AppDomain> AppDomainRefHolder;
 
-typedef VPTR(class SystemDomain) PTR_SystemDomain;
+typedef DPTR(class SystemDomain) PTR_SystemDomain;
 
-class SystemDomain : public BaseDomain
+class SystemDomain final
 {
+    friend struct _DacGlobals;
     friend class ClrDataAccess;
-
-    VPTR_VTABLE_CLASS(SystemDomain, BaseDomain)
-    VPTR_UNIQUE(VPTR_UNIQUE_SystemDomain)
 
 public:
     static PTR_LoaderAllocator GetGlobalLoaderAllocator();
@@ -2062,7 +2007,7 @@ inline static BOOL IsUnderDomainLock() { LIMITED_METHOD_CONTRACT; return m_Syste
 
 #ifdef DACCESS_COMPILE
 public:
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
                                    bool enumThis);
 #endif
 
