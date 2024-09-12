@@ -256,7 +256,7 @@
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
     <!-- sdk version, for testing workloads -->
-    <SdkVersionForWorkloadTesting>9.0.0-rc.1.24419.7</SdkVersionForWorkloadTesting><!-- pin temporarily since new sdk's aren't being produced, must be >= sdk runtime version -->
+    <SdkVersionForWorkloadTesting>9.0.100-rc.1.24452.12</SdkVersionForWorkloadTesting><!-- pin temporarily since new sdk's aren't being produced, must be >= sdk runtime version -->
     <runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>9.0.0-alpha.1.24175.1</runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
     <EmsdkPackageVersion>$(MicrosoftNETRuntimeEmscriptenVersion)</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
