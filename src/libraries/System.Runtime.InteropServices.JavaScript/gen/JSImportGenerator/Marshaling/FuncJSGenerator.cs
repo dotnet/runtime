@@ -15,6 +15,11 @@ namespace Microsoft.Interop.JavaScript
     {
         public override IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
         {
+            foreach (var statement in base.Generate(context))
+            {
+                yield return statement;
+            }
+
             var (managed, js) = context.GetIdentifiers(TypeInfo);
 
             var jsty = (JSFunctionTypeInfo)((JSMarshallingInfo)TypeInfo.MarshallingAttributeInfo).TypeInfo;

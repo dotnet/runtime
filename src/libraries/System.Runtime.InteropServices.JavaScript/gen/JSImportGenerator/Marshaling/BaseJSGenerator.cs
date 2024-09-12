@@ -32,7 +32,27 @@ namespace Microsoft.Interop.JavaScript
             return ByValueMarshalKindSupport.NotSupported;
         }
 
-        public abstract IEnumerable<StatementSyntax> Generate(StubIdentifierContext context);
+        public virtual IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
+        {
+            MarshalDirection marshalDirection = MarshallerHelpers.GetMarshalDirection(TypeInfo, CodeContext);
+            if (context.CurrentStage == StubIdentifierContext.Stage.Setup
+                && marshalDirection == MarshalDirection.ManagedToUnmanaged
+                && !TypeInfo.IsNativeReturnPosition)
+            {
+                var (_, js) = context.GetIdentifiers(TypeInfo);
+                return [
+                    ExpressionStatement(
+                        AssignmentExpression(
+                            SyntaxKind.SimpleAssignmentExpression,
+                            IdentifierName(js),
+                            LiteralExpression(SyntaxKind.DefaultLiteralExpression)
+                        )
+                    )
+                ];
+            }
+
+            return [];
+        }
 
         protected static IdentifierNameSyntax GetToManagedMethod(MarshalerType marshalerType)
         {

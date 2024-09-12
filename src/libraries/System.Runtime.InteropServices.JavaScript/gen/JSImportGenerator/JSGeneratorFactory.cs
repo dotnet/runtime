@@ -163,7 +163,7 @@ namespace Microsoft.Interop.JavaScript
 
 
                 // task
-                (KnownManagedType.Task, JSTypeFlags.Promise, [], [JSTypeFlags.Void]) => resolved(new TaskJSGenerator(info, context, MarshalerType.Void), MarshalerType.Task),
+                (KnownManagedType.Task, JSTypeFlags.Promise, [], [JSTypeFlags.Void]) => resolved(new TaskJSGenerator(info, context, MarshalerType.Void), MarshalerType.Task, []),
                 (KnownManagedType.Task, JSTypeFlags.Promise, [KnownManagedType.Boolean], [JSTypeFlags.Boolean]) => resolved(new TaskJSGenerator(info, context, MarshalerType.Boolean), MarshalerType.Task, [MarshalerType.Boolean]),
                 (KnownManagedType.Task, JSTypeFlags.Promise, [KnownManagedType.Byte], [JSTypeFlags.Number]) => resolved(new TaskJSGenerator(info, context, MarshalerType.Byte), MarshalerType.Task, [MarshalerType.Byte]),
                 (KnownManagedType.Task, JSTypeFlags.Promise, [KnownManagedType.Char], [JSTypeFlags.String]) => resolved(new TaskJSGenerator(info, context, MarshalerType.Char), MarshalerType.Task, [MarshalerType.Char]),
@@ -182,7 +182,7 @@ namespace Microsoft.Interop.JavaScript
                 (KnownManagedType.Task, JSTypeFlags.Promise, [KnownManagedType.Object], [JSTypeFlags.Any]) => resolved(new TaskJSGenerator(info, context, MarshalerType.Object), MarshalerType.Task, [MarshalerType.Object]),
 
                 // task missing
-                (KnownManagedType.Task, JSTypeFlags.Missing, [], _) => resolved(new TaskJSGenerator(info, context, MarshalerType.Void), MarshalerType.Task),
+                (KnownManagedType.Task, JSTypeFlags.Missing, [], _) => resolved(new TaskJSGenerator(info, context, MarshalerType.Void), MarshalerType.Task, []),
                 (KnownManagedType.Task, JSTypeFlags.Missing, [KnownManagedType.Boolean], _) => resolved(new TaskJSGenerator(info, context, MarshalerType.Boolean), MarshalerType.Task, [MarshalerType.Boolean]),
                 (KnownManagedType.Task, JSTypeFlags.Missing, [KnownManagedType.Byte], _) => resolved(new TaskJSGenerator(info, context, MarshalerType.Byte), MarshalerType.Task, [MarshalerType.Byte]),
                 (KnownManagedType.Task, JSTypeFlags.Missing, [KnownManagedType.Char], _) => resolved(new TaskJSGenerator(info, context, MarshalerType.Char), MarshalerType.Task, [MarshalerType.Char]),

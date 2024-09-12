@@ -14,6 +14,11 @@ namespace Microsoft.Interop.JavaScript
         // TODO order parameters in such way that affinity capturing parameters are emitted first
         public override IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
         {
+            foreach (var statement in base.Generate(context))
+            {
+                yield return statement;
+            }
+
             var (managed, js) = context.GetIdentifiers(TypeInfo);
 
             MarshalDirection marshalDirection = MarshallerHelpers.GetMarshalDirection(TypeInfo, CodeContext);
