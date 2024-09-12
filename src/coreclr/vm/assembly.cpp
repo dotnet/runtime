@@ -231,7 +231,10 @@ Assembly::~Assembly()
     if (m_pPEAssembly)
     {
         // Remove association first.
-        UnregisterFromHostAssembly();
+        if (m_level >= FILE_LOAD_BEGIN)
+        {
+            UnregisterFromHostAssembly();
+        }
 
         m_pPEAssembly->Release();
     }
