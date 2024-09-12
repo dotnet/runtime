@@ -561,6 +561,12 @@ namespace ILCompiler
 
                             AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
 
+                            if (!TryGetSpanElementType(owningType, isReadOnlySpan: true, out MetadataType readOnlySpanElementType)
+                                && !TryGetSpanElementType(owningType, isReadOnlySpan: false, out readOnlySpanElementType))
+                            {
+                                readOnlySpanElementType = null;
+                            }
+
                             Value instance;
                             if (owningType.IsDelegate)
                             {
@@ -592,9 +598,8 @@ namespace ILCompiler
 
                                 instance = new DelegateInstance(owningType, pointedMethod, firstParameter, allocSite);
                             }
-                            else if ((TryGetSpanElementType(owningType, isReadOnlySpan: true, out MetadataType readOnlySpanElementType)
-                                || TryGetSpanElementType(owningType, isReadOnlySpan: false, out readOnlySpanElementType))
-                                && ctorSig.Length == 2 && ctorSig[0].IsByRef && ctorSig[1].IsWellKnownType(WellKnownType.Int32))
+                            else if (readOnlySpanElementType != null && ctorSig.Length == 2 && ctorSig[0].IsByRef
+                                && ctorSig[1].IsWellKnownType(WellKnownType.Int32))
                             {
                                 int length = ctorParameters[2].AsInt32();
                                 if (ctorParameters[1] is not ByRefValue byref)
@@ -2937,8 +2942,7 @@ namespace ILCompiler
 
             public bool TryGetReadOnlySpan(out ReadOnlySpanValue value)
             {
-                var parameterType = ((ArrayType)Type).ParameterType as MetadataType;
-                if (parameterType != null)
+                if (((ArrayType)Type).ParameterType is MetadataType parameterType)
                 {
                     value = new ReadOnlySpanValue(parameterType, _data, 0, _data.Length);
                     return true;
