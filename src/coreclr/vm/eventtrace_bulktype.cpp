@@ -517,10 +517,10 @@ void BulkStaticsLogger::LogAllStatics()
         while (assemblyIter.Next(pDomainAssembly.This()))
         {
             // Make sure the assembly is loaded.
-            if (!pDomainAssembly->IsLoaded())
+            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
+            if (!pAssembly->IsLoaded())
                 continue;
 
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
             // Get the domain module from the module/appdomain pair.
             Module *module = pDomainAssembly->GetModule();
             if (module == NULL)
@@ -531,7 +531,7 @@ void BulkStaticsLogger::LogAllStatics()
                 continue;
 
             // Ensure the module has fully loaded.
-            if (!domainAssembly->IsActive())
+            if (!pAssembly->IsActive())
                 continue;
 
             // Now iterate all types with

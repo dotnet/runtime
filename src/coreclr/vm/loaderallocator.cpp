@@ -542,7 +542,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
             // Call AssemblyUnloadStarted event
             domainAssemblyIt->GetAssembly()->StartUnload();
             // Notify the debugger
-            domainAssemblyIt->NotifyDebuggerUnload();
+            domainAssemblyIt->GetAssembly()->NotifyDebuggerUnload();
             domainAssemblyIt++;
         }
 

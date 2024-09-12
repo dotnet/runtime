@@ -497,7 +497,7 @@ PEAssembly* PEAssembly::LoadAssembly(mdAssemblyRef kAssemblyRef)
 
     AssemblySpec spec;
 
-    spec.InitializeSpec(kAssemblyRef, pImport, GetAppDomain()->FindAssembly(this)->GetAssembly());
+    spec.InitializeSpec(kAssemblyRef, pImport, GetAppDomain()->FindAssembly(this));
 
     RETURN GetAppDomain()->BindAssemblySpec(&spec, TRUE);
 }
@@ -538,8 +538,8 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
     else
     {
         AppDomain* pAppDomain = AppDomain::GetCurrentDomain();
-        DomainAssembly* pParentAssembly = pAppDomain->FindAssembly(this);
-        pAssembly = pAppDomain->RaiseResourceResolveEvent(pParentAssembly->GetAssembly(), szName);
+        Assembly* pParentAssembly = pAppDomain->FindAssembly(this);
+        pAssembly = pAppDomain->RaiseResourceResolveEvent(pParentAssembly, szName);
         if (pAssembly == NULL)
             return FALSE;
         pPEAssembly = pAssembly->GetPEAssembly();

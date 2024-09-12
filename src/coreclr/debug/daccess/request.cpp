@@ -2859,7 +2859,7 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
 
                 while (i.Next(pDomainAssembly.This()))
                 {
-                    if (pDomainAssembly->IsLoaded())
+                    if (pDomainAssembly->GetAssembly()->IsLoaded())
                     {
                         appdomainData->AssemblyCount++;
                     }
@@ -2978,9 +2978,9 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
         {
             while (i.Next(pDomainAssembly.This()) && (n < count))
             {
-                if (pDomainAssembly->IsLoaded())
+                CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
+                if (pAssembly->IsLoaded())
                 {
-                    CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
                     // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
                     values[n++] = HOST_CDADDR(pAssembly.Extract());
                 }
@@ -2989,7 +2989,7 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
         else
         {
             while (i.Next(pDomainAssembly.This()))
-                if (pDomainAssembly->IsLoaded())
+                if (pDomainAssembly->GetAssembly()->IsLoaded())
                     n++;
         }
 
