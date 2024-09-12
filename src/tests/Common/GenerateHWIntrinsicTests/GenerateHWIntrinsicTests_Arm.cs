@@ -220,6 +220,49 @@ const string VecPairBinOpTest_ValidationLogic = @"
                     }
             }";
 
+const string VecReduceUnOpTest_VectorValidationLogicForCndSel = @"
+            {
+                var hasFailed = (mask[0] != 0) ? ({ValidateReduceOpResult}): (falseVal[0] != result[0]);
+
+                if (hasFailed)
+                {
+                    succeeded = false;
+                }
+                else
+                {
+                    for (var i = 1; i < RetElementCount; i++)
+                    {
+                        hasFailed = (mask[i] != 0) ? ({ValidateRemainingResults}) : (falseVal[i] != result[i]);
+                        if (hasFailed)
+                        {
+                            succeeded = false;
+                            break;
+                        }
+                    }
+                }
+            }";
+
+const string VecReduceUnOpTest_VectorValidationLogicForCndSel_FalseValue = @"
+            {
+                var hasFailed = (mask[0] != 0) ? (trueVal[0] != result[0]): ({ValidateReduceOpResult});
+                if (hasFailed)
+                {
+                    succeeded = false;
+                }
+                else
+                {
+                    for (var i = 1; i < RetElementCount; i++)
+                    {
+                        hasFailed = (mask[i] != 0) ? (trueVal[i] != result[i]) : ({ValidateRemainingResults});
+                        if (hasFailed)
+                        {
+                            succeeded = false;
+                            break;
+                        }
+                    }
+                }
+            }";
+
 const string VecReduceOpTest_ValidationLogic = @"if ({ValidateReduceOpResult})
             {
                 succeeded = false;
@@ -293,7 +336,7 @@ const string SecureHashOpTest_ValidationLogic = @"{RetBaseType}[] expectedResult
     ("_SveImmTernOpFirstArgTestTemplate.template",       "SveVecImmTernOpFirstArgTest.template",        new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue }),
     ("_SveScalarTernOpTestTemplate.template",            "SveScalarTernOpTest.template",                new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleScalarOpTest_ValidationLogic }),
     ("_SveImm2UnaryOpTestTemplate.template",             "SveVecImm2UnOpTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "Imm",        ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic }),
-    ("_SveMinimalUnaryOpTestTemplate.template",          "SveVecReduceUnOpTest.template",               new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = VecReduceOpTest_ValidationLogic }),
+    ("_SveMinimalUnaryOpTestTemplate.template",          "SveVecReduceUnOpTest.template",               new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = VecReduceOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = VecReduceUnOpTest_VectorValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = VecReduceUnOpTest_VectorValidationLogicForCndSel_FalseValue }),
     ("_SveMasklessUnaryOpTestTemplate.template",         "SveMasklessSimpleVecOpTest.template",         new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic }),
     ("_SveVecAndScalarOpTest.template",                  "SveVecAndScalarOpTest.template",              new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_VectorValidationLogic }),
     ("_SveMasklessBinaryOpTestTemplate.template",        "SveMasklessVecBinOpTest.template",            new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic }),
