@@ -5649,9 +5649,8 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
     // The delta to be added to virtual offset to adjust it relative to frame pointer or SP
     int delta = 0;
-#if defined(TARGET_ARM64)
-    int fpLrDelta = 0;
-#endif
+    int frameLocalsDelta = 0;
+    int frameBoundary = 0;
 
 #ifdef TARGET_XARCH
     delta += REGSIZE_BYTES; // pushed PC (return address) for x86/x64
@@ -5685,16 +5684,10 @@ void Compiler::lvaFixVirtualFrameOffsets()
                                                                // have a frame pointer
         {
             // We set FP to be after LR, FP
-            fpLrDelta += 2 * REGSIZE_BYTES;
-            delta += fpLrDelta;
-
-            if ((lvaMonAcquired != BAD_VAR_NUM) && opts.IsOSR())
-            {
-                int offset = lvaTable[lvaMonAcquired].GetStackOffset() - fpLrDelta;
-                lvaTable[lvaMonAcquired].SetStackOffset(offset);
-            }
+            frameLocalsDelta = 2 * REGSIZE_BYTES;
+            frameBoundary = opts.IsOSR() ? -info.compPatchpointInfo->TotalFrameSize() : 0;
         }
-        JITDUMP("--- delta bump %d for FP frame\n", delta);
+        JITDUMP("--- delta bump %d for FP frame, %d inside frame\n", delta, frameLocalsDelta);
     }
 #elif defined(TARGET_AMD64)
     else
@@ -5785,11 +5778,8 @@ void Compiler::lvaFixVirtualFrameOffsets()
         if (doAssignStkOffs)
         {
             int localDelta = delta;
-
-#if defined(TARGET_ARM64)
-            if (varDsc->GetStackOffset() >= 0 || lvaIsOSRLocal(lclNum))
-                localDelta -= fpLrDelta;
-#endif
+            if (frameLocalsDelta != 0 && varDsc->GetStackOffset() < frameBoundary)
+                localDelta += frameLocalsDelta;
 
             JITDUMP("-- V%02u was %d, now %d\n", lclNum, varDsc->GetStackOffset(),
                     varDsc->GetStackOffset() + localDelta);
@@ -5822,10 +5812,10 @@ void Compiler::lvaFixVirtualFrameOffsets()
     assert(codeGen->regSet.tmpAllFree());
     for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
     {
-        temp->tdAdjustTempOffs(delta);
+        temp->tdAdjustTempOffs(delta + frameLocalsDelta);
     }
 
-    lvaCachedGenericContextArgOffs += delta;
+    lvaCachedGenericContextArgOffs += delta + frameLocalsDelta;
 
 #if FEATURE_FIXED_OUT_ARGS
 
