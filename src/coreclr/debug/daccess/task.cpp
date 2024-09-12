@@ -713,30 +713,21 @@ ClrDataAppDomain::GetName(
 
     EX_TRY
     {
-        bool isUtf8;
-        PVOID rawName = m_appDomain->GetFriendlyNameNoSet(&isUtf8);
+        LPCWSTR rawName = m_appDomain->GetFriendlyName();
         if (rawName)
         {
-            if (isUtf8)
+            status = StringCchCopy(name, bufLen, rawName) == S_OK ?
+                S_OK : S_FALSE;
+            if (nameLen)
             {
-                status = ConvertUtf8((LPCUTF8)rawName,
-                                     bufLen, nameLen, name);
-            }
-            else
-            {
-                status = StringCchCopy(name, bufLen, (PCWSTR)rawName) == S_OK ?
-                    S_OK : S_FALSE;
-                if (nameLen)
+                size_t cchName = u16_strlen(rawName) + 1;
+                if (FitsIn<ULONG32>(cchName))
                 {
-                    size_t cchName = u16_strlen((PCWSTR)rawName) + 1;
-                    if (FitsIn<ULONG32>(cchName))
-                    {
-                        *nameLen = (ULONG32) cchName;
-                    }
-                    else
-                    {
-                        status = COR_E_OVERFLOW;
-                    }
+                    *nameLen = (ULONG32) cchName;
+                }
+                else
+                {
+                    status = COR_E_OVERFLOW;
                 }
             }
         }

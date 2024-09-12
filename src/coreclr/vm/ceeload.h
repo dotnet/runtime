@@ -52,7 +52,6 @@ class EEStringData;
 class MethodDescChunk;
 class SigTypeContext;
 class Assembly;
-class BaseDomain;
 class AppDomain;
 class SystemDomain;
 class Module;

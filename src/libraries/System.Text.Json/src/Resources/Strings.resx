@@ -662,6 +662,9 @@
   <data name="Polymorphism_InvalidCustomTypeDiscriminatorPropertyName" xml:space="preserve">
     <value>The metadata property names '$id', '$ref', and '$values' are reserved and cannot be used as custom type discriminator property names.</value>
   </data>
+  <data name="Polymorphism_PropertyConflictsWithMetadataPropertyName" xml:space="preserve">
+    <value>The type '{0}' contains property '{1}' that conflicts with an existing metadata property name. Consider either renaming it or ignoring it with JsonIgnoreAttribute.</value>
+  </data>
   <data name="Polymorphism_ConfigurationDoesNotSpecifyDerivedTypes" xml:space="preserve">
     <value>Polymorphic configuration for type '{0}' should specify at least one derived type.</value>
   </data>
