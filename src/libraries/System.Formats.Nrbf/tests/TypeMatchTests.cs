@@ -84,6 +84,24 @@ public class TypeMatchTests : ReadTests
     }
 
     [Fact]
+    public void TakesCustomOffsetsIntoAccount()
+    {
+        int[] input = [1, 2, 3];
+
+        SerializationRecord record = NrbfDecoder.Decode(Serialize(input));
+
+        Assert.True(record.TypeNameMatches(typeof(int[])));
+
+        Type nonSzArray = typeof(int).Assembly.GetType("System.Int32[*]");
+#if NET
+        Assert.False(nonSzArray.IsSZArray);
+        Assert.True(nonSzArray.IsVariableBoundArray);
+#endif
+        Assert.Equal(1, nonSzArray.GetArrayRank());
+        Assert.False(record.TypeNameMatches(nonSzArray));
+    }
+
+    [Fact]
     public void TakesGenericTypeDefinitionIntoAccount()
     {
         List<int> input = new List<int>();

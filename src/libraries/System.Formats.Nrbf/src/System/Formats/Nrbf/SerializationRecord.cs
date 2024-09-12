@@ -99,7 +99,13 @@ public abstract class SerializationRecord
         // At first, check the non-allocating properties for mismatch.
         if (type.IsArray != typeName.IsArray || type.IsConstructedGenericType != typeName.IsConstructedGenericType
             || type.IsNested != typeName.IsNested
-            || (type.IsArray && type.GetArrayRank() != typeName.GetArrayRank()))
+            || (type.IsArray && type.GetArrayRank() != typeName.GetArrayRank())
+#if NET
+            || type.IsSZArray != typeName.IsSZArray // int[] vs int[*]
+#else
+            || (type.IsArray && type.Name != typeName.Name)
+#endif
+            )
         {
             return false;
         }
