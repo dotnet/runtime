@@ -28,77 +28,58 @@
 
 #ifdef VERIFY_HEAP
 
-CQuickArray<StubHelpers::ByrefValidationEntry> StubHelpers::s_ByrefValidationEntries;
-SIZE_T StubHelpers::s_ByrefValidationIndex = 0;
-CrstStatic StubHelpers::s_ByrefValidationLock;
-
-// static
-void StubHelpers::Init()
+struct ByrefValidationEntry final
 {
-    WRAPPER_NO_CONTRACT;
-    s_ByrefValidationLock.Init(CrstPinnedByrefValidation);
-}
+    void       *pByref; // pointer to GC heap
+    MethodDesc *pMD;    // interop MD this byref was passed to
+};
 
-// static
-void StubHelpers::ValidateObjectInternal(Object *pObjUNSAFE, BOOL fValidateNextObj)
+static CQuickArray<ByrefValidationEntry> s_ByrefValidationEntries;
+static SIZE_T                            s_ByrefValidationIndex = 0;
+static CrstStatic                        s_ByrefValidationLock;
+
+static void ValidateObjectInternal(Object *pObjUNSAFE, BOOL fValidateNextObj)
 {
-	CONTRACTL
-	{
-	NOTHROW;
-	GC_NOTRIGGER;
-	MODE_ANY;
-}
-	CONTRACTL_END;
-
-	_ASSERTE(GCHeapUtilities::GetGCHeap()->RuntimeStructuresValid());
-
-	// validate the object - there's no need to validate next object's
-	// header since we validate the next object explicitly below
-	if (pObjUNSAFE)
-	{
-		pObjUNSAFE->Validate(/*bDeep=*/ TRUE, /*bVerifyNextHeader=*/ FALSE, /*bVerifySyncBlock=*/ TRUE);
-	}
-
-	// and the next object as required
-	if (fValidateNextObj)
-	{
-		Object *nextObj = GCHeapUtilities::GetGCHeap()->NextObj(pObjUNSAFE);
-		if (nextObj != NULL)
-		{
-			// Note that the MethodTable of the object (i.e. the pointer at offset 0) can change from
-			// g_pFreeObjectMethodTable to NULL, from NULL to <legal-value>, or possibly also from
-			// g_pFreeObjectMethodTable to <legal-value> concurrently while executing this function.
-			// Once <legal-value> is seen, we believe that the object should pass the Validate check.
-			// We have to be careful and read the pointer only once to avoid "phantom reads".
-			MethodTable *pMT = VolatileLoad(nextObj->GetMethodTablePtr());
-			if (pMT != NULL && pMT != g_pFreeObjectMethodTable)
-			{
-				// do *not* verify the next object's syncblock - the next object is not guaranteed to
-				// be "alive" so the finalizer thread may have already released its syncblock
-				nextObj->Validate(/*bDeep=*/ TRUE, /*bVerifyNextHeader=*/ FALSE, /*bVerifySyncBlock=*/ FALSE);
-			}
-		}
-	}
-}
-
-// static
-MethodDesc *StubHelpers::ResolveInteropMethod(Object *pThisUNSAFE, MethodDesc *pMD)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (pMD == NULL && pThisUNSAFE != NULL)
+    CONTRACTL
     {
-        // if this is a call via delegate, get its Invoke method
-        MethodTable *pMT = pThisUNSAFE->GetMethodTable();
-
-        _ASSERTE(pMT->IsDelegate());
-        return ((DelegateEEClass *)pMT->GetClass())->GetInvokeMethod();
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
     }
-    return pMD;
+    CONTRACTL_END;
+
+    _ASSERTE(GCHeapUtilities::GetGCHeap()->RuntimeStructuresValid());
+
+    // validate the object - there's no need to validate next object's
+    // header since we validate the next object explicitly below
+    if (pObjUNSAFE)
+    {
+        pObjUNSAFE->Validate(/*bDeep=*/ TRUE, /*bVerifyNextHeader=*/ FALSE, /*bVerifySyncBlock=*/ TRUE);
+    }
+
+    // and the next object as required
+    if (fValidateNextObj)
+    {
+        Object *nextObj = GCHeapUtilities::GetGCHeap()->NextObj(pObjUNSAFE);
+        if (nextObj != NULL)
+        {
+            // Note that the MethodTable of the object (i.e. the pointer at offset 0) can change from
+            // g_pFreeObjectMethodTable to NULL, from NULL to <legal-value>, or possibly also from
+            // g_pFreeObjectMethodTable to <legal-value> concurrently while executing this function.
+            // Once <legal-value> is seen, we believe that the object should pass the Validate check.
+            // We have to be careful and read the pointer only once to avoid "phantom reads".
+            MethodTable *pMT = VolatileLoad(nextObj->GetMethodTablePtr());
+            if (pMT != NULL && pMT != g_pFreeObjectMethodTable)
+            {
+                // do *not* verify the next object's syncblock - the next object is not guaranteed to
+                // be "alive" so the finalizer thread may have already released its syncblock
+                nextObj->Validate(/*bDeep=*/ TRUE, /*bVerifyNextHeader=*/ FALSE, /*bVerifySyncBlock=*/ FALSE);
+            }
+        }
+    }
 }
 
-// static
-void StubHelpers::FormatValidationMessage(MethodDesc *pMD, SString &ssErrorString)
+static void FormatValidationMessage(MethodDesc *pMD, SString &ssErrorString)
 {
     CONTRACTL
     {
@@ -108,25 +89,25 @@ void StubHelpers::FormatValidationMessage(MethodDesc *pMD, SString &ssErrorStrin
     }
     CONTRACTL_END;
 
-    ssErrorString.Append(W("Detected managed heap corruption, likely culprit is interop call through "));
+    ssErrorString.AppendUTF8("Detected managed heap corruption, likely culprit is interop call through ");
 
     if (pMD == NULL)
     {
         // the only case where we don't have interop MD is CALLI
-        ssErrorString.Append(W("CALLI."));
+        ssErrorString.AppendUTF8("CALLI.");
     }
     else
     {
-        ssErrorString.Append(W("method '"));
+        ssErrorString.AppendUTF8("method '");
 
         StackSString ssClassName;
         pMD->GetMethodTable()->_GetFullyQualifiedNameForClass(ssClassName);
 
         ssErrorString.Append(ssClassName);
-        ssErrorString.Append(NAMESPACE_SEPARATOR_CHAR);
+        ssErrorString.AppendUTF8(NAMESPACE_SEPARATOR_CHAR);
         ssErrorString.AppendUTF8(pMD->GetName());
 
-        ssErrorString.Append(W("'."));
+        ssErrorString.AppendUTF8("'.");
     }
 }
 
@@ -177,6 +158,15 @@ void StubHelpers::ProcessByrefValidationList()
 }
 
 #endif // VERIFY_HEAP
+
+// static
+void StubHelpers::Init()
+{
+    WRAPPER_NO_CONTRACT;
+#ifdef VERIFY_HEAP
+    s_ByrefValidationLock.Init(CrstPinnedByrefValidation);
+#endif // VERIFY_HEAP
+}
 
 #ifdef FEATURE_COMINTEROP
 
@@ -246,37 +236,8 @@ FORCEINLINE static void *GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, CLRToCOMCallI
 {
     LIMITED_METHOD_CONTRACT;
 
-
     LPVOID *lpVtbl = *(LPVOID **)pUnk;
     return lpVtbl[pComInfo->m_cachedComSlot];
-}
-
-NOINLINE static IUnknown* GetCOMIPFromRCWHelper(LPVOID pFCall, OBJECTREF pSrc, MethodDesc* pMD, void **ppTarget)
-{
-    FC_INNER_PROLOG(pFCall);
-
-    IUnknown *pIntf = NULL;
-
-    // This is only called in IL stubs which are in CER, so we don't need to worry about ThreadAbort
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_NO_THREAD_ABORT|Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, pSrc);
-
-    SafeComHolder<IUnknown> pRetUnk;
-
-    CLRToCOMCallInfo *pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
-    pRetUnk = ComObject::GetComIPFromRCWThrowing(&pSrc, pComInfo->m_pInterfaceMT);
-
-    *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, pComInfo);
-    _ASSERTE(*ppTarget != NULL);
-
-    GetCOMIPFromRCW_ClearFP();
-
-    pIntf = pRetUnk.Extract();
-
-    // No exception will be thrown here (including thread abort as it is delayed in IL stubs)
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-    return pIntf;
 }
 
 //==================================================================================================================
@@ -289,7 +250,7 @@ NOINLINE static IUnknown* GetCOMIPFromRCWHelper(LPVOID pFCall, OBJECTREF pSrc, M
 
 // This helper can handle any CLR->COM call, it supports hosting,
 // and clears FP state on x86 for compatibility with VB6.
-FCIMPL4(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget, CLR_BOOL* pfNeedsRelease)
+FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget)
 {
     CONTRACTL
     {
@@ -299,13 +260,10 @@ FCIMPL4(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc*
     CONTRACTL_END;
 
     OBJECTREF pSrc = ObjectToOBJECTREF(pSrcUNSAFE);
-    *pfNeedsRelease = false;
-
     CLRToCOMCallInfo *pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
     RCW *pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
     if (pRCW != NULL)
     {
-
         IUnknown * pUnk = GetCOMIPFromRCW_GetIUnknownFromRCWCache(pRCW, pComInfo->m_pInterfaceMT);
         if (pUnk != NULL)
         {
@@ -317,14 +275,40 @@ FCIMPL4(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc*
             }
         }
     }
-
-    /* if we didn't find the COM interface pointer in the cache we will have to erect an HMF */
-    *pfNeedsRelease = true;
-    FC_INNER_RETURN(IUnknown*, GetCOMIPFromRCWHelper(StubHelpers::GetCOMIPFromRCW, pSrc, pMD, ppTarget));
+    return NULL;
 }
 FCIMPLEND
 
 #include <optdefault.h>
+
+extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodDesc* pMD, void** ppTarget)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(pMD != NULL);
+    _ASSERTE(ppTarget != NULL);
+
+    IUnknown *pIntf = NULL;
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    OBJECTREF objRef = pSrc.Get();
+    GCPROTECT_BEGIN(objRef);
+
+    CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
+    SafeComHolder<IUnknown> pRetUnk = ComObject::GetComIPFromRCWThrowing(&objRef, pComInfo->m_pInterfaceMT);
+    *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, pComInfo);
+    _ASSERTE(*ppTarget != NULL);
+
+    GetCOMIPFromRCW_ClearFP();
+    pIntf = pRetUnk.Extract();
+
+    GCPROTECT_END();
+
+    END_QCALL;
+
+    return pIntf;
+}
 
 extern "C" void QCALLTYPE ObjectMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pSrcUNSAFE, VARIANT* pDest)
 {
@@ -498,239 +482,185 @@ extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT 
 }
 
 #ifdef PROFILING_SUPPORTED
-FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretParam, Thread* pThread, Object* unsafe_pThis)
+extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDesc* pTargetMD)
 {
-    FCALL_CONTRACT;
-
-    // We can get here with an ngen image generated with "/prof",
-    // even if the profiler doesn't want to track transitions.
-    if (!CORProfilerTrackTransitions())
-    {
-        return 0;
-    }
-
-    MethodDesc* pRealMD = NULL;
-
     BEGIN_PRESERVE_LAST_ERROR;
 
-    // We must transition to preemptive GC mode before calling out to the profiler,
-    // and the transition requires us to set up a HMF.
-    DELEGATEREF dref = (DELEGATEREF)ObjectToOBJECTREF(unsafe_pThis);
-    HELPER_METHOD_FRAME_BEGIN_RET_1(dref);
+    QCALL_CONTRACT;
 
-    if (pSecretParam == 0)
-    {
-        // Secret param is null.  This is the calli pinvoke case or the unmanaged delegate case.
-        // We have an unmanaged target address but no MD.  For the unmanaged delegate case, we can
-        // still retrieve the MD by looking at the "this" object.
+    BEGIN_QCALL;
 
-        if (dref == NULL)
-        {
-            // calli pinvoke case
-            pRealMD = NULL;
-        }
-        else
-        {
-            // unmanaged delegate case
-            MethodTable* pMT = dref->GetMethodTable();
-            _ASSERTE(pMT->IsDelegate());
+    ProfilerManagedToUnmanagedTransitionMD(pTargetMD, COR_PRF_TRANSITION_CALL);
 
-            EEClass * pClass = pMT->GetClass();
-            pRealMD = ((DelegateEEClass*)pClass)->GetInvokeMethod();
-            _ASSERTE(pRealMD);
-        }
-    }
-    else
-    {
-        // This is either the COM interop or the pinvoke case.
-        pRealMD = (MethodDesc*)pSecretParam;
-    }
-
-    {
-        GCX_PREEMP_THREAD_EXISTS(pThread);
-
-        ProfilerManagedToUnmanagedTransitionMD(pRealMD, COR_PRF_TRANSITION_CALL);
-    }
-
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     END_PRESERVE_LAST_ERROR;
 
-    return (SIZE_T)pRealMD;
+    return pTargetMD;
 }
-FCIMPLEND
 
-FCIMPL2(void, StubHelpers::ProfilerEndTransitionCallback, MethodDesc* pRealMD, Thread* pThread)
+extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* pTargetMD)
 {
-    FCALL_CONTRACT;
-
-    // We can get here with an ngen image generated with "/prof",
-    // even if the profiler doesn't want to track transitions.
-    if (!CORProfilerTrackTransitions())
-    {
-        return;
-    }
-
     BEGIN_PRESERVE_LAST_ERROR;
 
-    // We must transition to preemptive GC mode before calling out to the profiler,
-    // and the transition requires us to set up a HMF.
-    HELPER_METHOD_FRAME_BEGIN_0();
-    {
-        GCX_PREEMP_THREAD_EXISTS(pThread);
+    QCALL_CONTRACT;
 
-        ProfilerUnmanagedToManagedTransitionMD(pRealMD, COR_PRF_TRANSITION_RETURN);
-    }
-    HELPER_METHOD_FRAME_END();
+    BEGIN_QCALL;
+
+    ProfilerUnmanagedToManagedTransitionMD(pTargetMD, COR_PRF_TRANSITION_RETURN);
+
+    END_QCALL;
 
     END_PRESERVE_LAST_ERROR;
 }
-FCIMPLEND
 #endif // PROFILING_SUPPORTED
 
-FCIMPL1(Object*, StubHelpers::GetHRExceptionObject, HRESULT hr)
+extern "C" void QCALLTYPE StubHelpers_GetHRExceptionObject(HRESULT hr, QCall::ObjectHandleOnStack result)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     OBJECTREF oThrowable = NULL;
+    GCPROTECT_BEGIN(oThrowable);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oThrowable);
-    {
-        // GetExceptionForHR uses equivalant logic as COMPlusThrowHR
-        GetExceptionForHR(hr, &oThrowable);
-    }
-    HELPER_METHOD_FRAME_END();
+    // GetExceptionForHR uses equivalant logic as COMPlusThrowHR
+    GetExceptionForHR(hr, &oThrowable);
+    result.Set(oThrowable);
 
-    return OBJECTREFToObject(oThrowable);
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP
-FCIMPL3(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis)
+extern "C" void QCALLTYPE StubHelpers_GetCOMHRExceptionObject(
+    HRESULT hr,
+    MethodDesc* pMD,
+    QCall::ObjectHandleOnStack pThis,
+    QCall::ObjectHandleOnStack result)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF oThrowable = NULL;
+    BEGIN_QCALL;
 
-    // get 'this'
-    OBJECTREF oref = ObjectToOBJECTREF(unsafe_pThis);
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_BEGIN_RET_2(oref, oThrowable);
+    struct
     {
-        IErrorInfo *pErrInfo = NULL;
+        OBJECTREF oThrowable;
+        OBJECTREF oref;
+    } gc;
+    gc.oThrowable = NULL;
+    gc.oref = NULL;
+    GCPROTECT_BEGIN(gc);
 
-        if (pMD != NULL)
+    IErrorInfo* pErrorInfo = NULL;
+    if (pMD != NULL)
+    {
+        // Retrieve the interface method table.
+        MethodTable* pItfMT = CLRToCOMCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
+
+        // get 'this'
+        gc.oref = ObjectToOBJECTREF(pThis.Get());
+
+        // Get IUnknown pointer for this interface on this object
+        IUnknown* pUnk = ComObject::GetComIPFromRCW(&gc.oref, pItfMT);
+        if (pUnk != NULL)
         {
-            // Retrieve the interface method table.
-            MethodTable *pItfMT = CLRToCOMCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
+            // Check to see if the component supports error information for this interface.
+            IID ItfIID;
+            pItfMT->GetGuid(&ItfIID, TRUE);
+            pErrorInfo = GetSupportedErrorInfo(pUnk, ItfIID);
 
-            // Get IUnknown pointer for this interface on this object
-            IUnknown* pUnk = ComObject::GetComIPFromRCW(&oref, pItfMT);
-            if (pUnk != NULL)
-            {
-                // Check to see if the component supports error information for this interface.
-                IID ItfIID;
-                pItfMT->GetGuid(&ItfIID, TRUE);
-                pErrInfo = GetSupportedErrorInfo(pUnk, ItfIID);
-
-                DWORD cbRef = SafeRelease(pUnk);
-                LogInteropRelease(pUnk, cbRef, "IUnk to QI for ISupportsErrorInfo");
-            }
+            DWORD cbRef = SafeRelease(pUnk);
+            LogInteropRelease(pUnk, cbRef, "IUnk to QI for ISupportsErrorInfo");
         }
-
-        GetExceptionForHR(hr, pErrInfo, &oThrowable);
     }
-    HELPER_METHOD_FRAME_END();
 
-    return OBJECTREFToObject(oThrowable);
+    // GetExceptionForHR will handle lifetime of IErrorInfo.
+    GetExceptionForHR(hr, pErrorInfo, &gc.oThrowable);
+    result.Set(gc.oThrowable);
+
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 #endif // FEATURE_COMINTEROP
 
-FCIMPL1(Object*, StubHelpers::AllocateInternal, EnregisteredTypeHandle pRegisteredTypeHnd)
+extern "C" void QCALLTYPE StubHelpers_MarshalToManagedVaList(va_list va, VARARGS* pArgIterator)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    TypeHandle typeHnd = TypeHandle::FromPtr(pRegisteredTypeHnd);
-    OBJECTREF objRet = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(objRet);
-
-    MethodTable* pMT = typeHnd.GetMethodTable();
-    objRet = pMT->Allocate();
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(objRet);
-}
-FCIMPLEND
-
-FCIMPL3(void, StubHelpers::MarshalToUnmanagedVaListInternal, va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-    VARARGS::MarshalToUnmanagedVaList(va, cbVaListSize, pArgIterator);
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL2(void, StubHelpers::MarshalToManagedVaListInternal, va_list va, VARARGS* pArgIterator)
-{
-    FCALL_CONTRACT;
-
+    BEGIN_QCALL;
     VARARGS::MarshalToManagedVaList(va, pArgIterator);
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL3(void, StubHelpers::ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, Object *pThisUNSAFE)
+extern "C" void QCALLTYPE StubHelpers_MarshalToUnmanagedVaList(va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    VARARGS::MarshalToUnmanagedVaList(va, cbVaListSize, pArgIterator);
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE StubHelpers_ValidateObject(QCall::ObjectHandleOnStack pObj, MethodDesc *pMD)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
 
 #ifdef VERIFY_HEAP
-    HELPER_METHOD_FRAME_BEGIN_0();
+    GCX_COOP();
 
     StackSString errorString;
     EX_TRY
     {
         AVInRuntimeImplOkayHolder AVOkay;
-		// don't validate the next object if a BGC is in progress.  we can race with background
-	    // sweep which could make the next object a Free object underneath us if it's dead.
-        ValidateObjectInternal(pObjUNSAFE, !(GCHeapUtilities::GetGCHeap()->IsConcurrentGCInProgress()));
+        // don't validate the next object if a BGC is in progress.  we can race with background
+        // sweep which could make the next object a Free object underneath us if it's dead.
+        ValidateObjectInternal(OBJECTREFToObject(pObj.Get()), !(GCHeapUtilities::GetGCHeap()->IsConcurrentGCInProgress()));
     }
     EX_CATCH
     {
-        FormatValidationMessage(ResolveInteropMethod(pThisUNSAFE, pMD), errorString);
+        FormatValidationMessage(pMD, errorString);
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, errorString.GetUnicode());
     }
     EX_END_CATCH_UNREACHABLE;
 
-    HELPER_METHOD_FRAME_END();
 #else // VERIFY_HEAP
-    FCUnique(0xa3);
-    UNREACHABLE_MSG("No validation support without VERIFY_HEAP");
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, "No validation support without VERIFY_HEAP");
 #endif // VERIFY_HEAP
+
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL3(void, StubHelpers::ValidateByref, void *pByref, MethodDesc *pMD, Object *pThisUNSAFE)
+extern "C" void QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pMD)
 {
-    FCALL_CONTRACT;
-
-#ifdef VERIFY_HEAP
-    // We cannot validate byrefs at this point as code:GCHeap.GetContainingObject could potentially race
-    // with allocations on other threads. We'll just remember this byref along with the interop MD and
-    // perform the validation on next GC (see code:StubHelpers.ProcessByrefValidationList).
+    QCALL_CONTRACT;
 
     // Skip byref if is not pointing inside managed heap
     if (!GCHeapUtilities::GetGCHeap()->IsHeapPointer(pByref))
     {
         return;
     }
+
+    BEGIN_QCALL;
+
+#ifdef VERIFY_HEAP
+    GCX_COOP();
+
+    // We cannot validate byrefs at this point as code:GCHeap.GetContainingObject could potentially race
+    // with allocations on other threads. We'll just remember this byref along with the interop MD and
+    // perform the validation on next GC (see code:StubHelpers.ProcessByrefValidationList).
+
     ByrefValidationEntry entry;
     entry.pByref = pByref;
-    entry.pMD = ResolveInteropMethod(pThisUNSAFE, pMD);
-
-    HELPER_METHOD_FRAME_BEGIN_0();
+    entry.pMD = pMD;
 
     SIZE_T NumOfEntries = 0;
     {
@@ -759,14 +689,12 @@ FCIMPL3(void, StubHelpers::ValidateByref, void *pByref, MethodDesc *pMD, Object 
         // if the list is too big, trigger GC now
         GCHeapUtilities::GetGCHeap()->GarbageCollect(0);
     }
-
-    HELPER_METHOD_FRAME_END();
 #else // VERIFY_HEAP
-    FCUnique(0xa4);
-    UNREACHABLE_MSG("No validation support without VERIFY_HEAP");
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, "No validation support without VERIFY_HEAP");
 #endif // VERIFY_HEAP
+
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL0(void*, StubHelpers::GetStubContext)
 {

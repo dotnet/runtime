@@ -76,6 +76,7 @@ struct _EventPipeProviderCallbackData_Internal {
 	EventPipeEventLevel provider_level;
 	bool enabled;
 	EventPipeSessionID session_id;
+	EventPipeProvider *provider;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
@@ -100,7 +101,8 @@ ep_provider_callback_data_alloc (
 	int64_t keywords,
 	EventPipeEventLevel provider_level,
 	bool enabled,
-	EventPipeSessionID session_id);
+	EventPipeSessionID session_id,
+	EventPipeProvider *provider);
 
 EventPipeProviderCallbackData *
 ep_provider_callback_data_alloc_copy (EventPipeProviderCallbackData *provider_callback_data_src);
@@ -117,7 +119,8 @@ ep_provider_callback_data_init (
 	int64_t keywords,
 	EventPipeEventLevel provider_level,
 	bool enabled,
-	EventPipeSessionID session_id);
+	EventPipeSessionID session_id,
+	EventPipeProvider *provider);
 
 EventPipeProviderCallbackData *
 ep_provider_callback_data_init_copy (

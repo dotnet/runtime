@@ -63,6 +63,7 @@
 
 // Helper method that creates a method-desc off a template method desc
 static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
+                                    Module* pLoaderModule,
                                     MethodTable *pMT,
                                     MethodDesc *pTemplateMD,
                                     DWORD classification,
@@ -91,7 +92,8 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
                                      TRUE /* fNonVtableSlot*/,
                                      fNativeCodeSlot,
                                      pMT,
-                                     pamTracker);
+                                     pamTracker,
+                                     pLoaderModule);
 
     // Now initialize the MDesc at the single method descriptor in
     // the new chunk
@@ -415,6 +417,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         // used in some of the subsequent setup methods for method descs.
         //
         pNewMD = (InstantiatedMethodDesc*) (CreateMethodDesc(pAllocator,
+                                                             pExactMDLoaderModule,
                                                              pExactMT,
                                                              pGenericMDescInRepMT,
                                                              mcInstantiated,
@@ -440,7 +443,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         // Check that whichever field holds the inst. got setup correctly
         _ASSERTE((PVOID)pNewMD->GetMethodInstantiation().GetRawArgs() == (PVOID)pInstOrPerInstInfo);
 
-        pNewMD->SetTemporaryEntryPoint(pAllocator, &amt);
+        pNewMD->SetTemporaryEntryPoint(&amt);
 
         {
             // The canonical instantiation is exempt from constraint checks. It's used as the basis
@@ -894,6 +897,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                     AllocMemTracker amt;
 
                     pResultMD = CreateMethodDesc(pAllocator,
+                                                 pLoaderModule,
                                                  pRepMT,
                                                  pMDescInCanonMT,
                                                  mcInstantiated,
@@ -905,7 +909,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                     pResultMD->SetIsUnboxingStub();
                     pResultMD->AsInstantiatedMethodDesc()->SetupWrapperStubWithInstantiations(pMDescInCanonMT, 0, NULL);
 
-                    pResultMD->SetTemporaryEntryPoint(pAllocator, &amt);
+                    pResultMD->SetTemporaryEntryPoint(&amt);
 
                     amt.SuppressRelease();
 
@@ -975,6 +979,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                     _ASSERTE(pDefMD->GetClassification() == mcInstantiated);
 
                     pResultMD = CreateMethodDesc(pAllocator,
+                                                 pLoaderModule,
                                                  pExactMT,
                                                  pNonUnboxingStub,
                                                  mcInstantiated,
@@ -986,7 +991,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                                               pNonUnboxingStub->GetNumGenericMethodArgs(),
                                                                                               (TypeHandle *)pNonUnboxingStub->GetMethodInstantiation().GetRawArgs());
 
-                    pResultMD->SetTemporaryEntryPoint(pAllocator, &amt);
+                    pResultMD->SetTemporaryEntryPoint(&amt);
 
                     amt.SuppressRelease();
 

@@ -52,6 +52,7 @@ namespace System.Security.Cryptography
         internal const string CertificateAuthorityIssuers = "1.3.6.1.5.5.7.48.2";
         internal const string Pkcs9ExtensionRequest = "1.2.840.113549.1.9.14";
         internal const string MsPkcs12KeyProviderName = "1.3.6.1.4.1.311.17.1";
+        internal const string MsPkcs12MachineKeySet = "1.3.6.1.4.1.311.17.2";
 
         // Key wrap algorithms
         internal const string CmsRc2Wrap = "1.2.840.113549.1.9.16.3.7";

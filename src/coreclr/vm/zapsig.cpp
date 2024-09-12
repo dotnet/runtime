@@ -579,7 +579,7 @@ ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
         }
         else
         {
-            pAssembly = fromModule->LoadAssembly(RidToToken(index, mdtAssemblyRef))->GetAssembly();
+            pAssembly = fromModule->LoadAssembly(RidToToken(index, mdtAssemblyRef));
         }
     }
     else
@@ -599,7 +599,7 @@ ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
 
         if(pAssembly == NULL)
         {
-            DomainAssembly *pParentAssembly = fromModule->GetDomainAssembly();
+            Assembly *pParentAssembly = fromModule->GetAssembly();
             if (nativeImage != NULL)
             {
                 pAssembly = nativeImage->LoadManifestAssembly(index, pParentAssembly);

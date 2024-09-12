@@ -44,7 +44,7 @@ internal static partial class SafeLsaMemoryHandleExtensions
                 pTrustInformation += domainList.Entries;
 
                 long bufferSize = (byte*)pTrustInformation - pRdl;
-                System.Diagnostics.Debug.Assert(bufferSize > 0, "bufferSize > 0");
+                System.Diagnostics.Debug.Assert(bufferSize > 0);
                 referencedDomains.Initialize((ulong)bufferSize);
             }
         }

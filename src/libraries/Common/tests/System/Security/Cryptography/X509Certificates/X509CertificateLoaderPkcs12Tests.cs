@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Security.Cryptography.Pkcs;
 using Test.Cryptography;
 using Xunit;
 
@@ -178,7 +179,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 #if NETFRAMEWORK
             X509KeyStorageFlags.DefaultKeySet;
 #else
-           PlatformDetection.UsesAppleCrypto ? 
+            PlatformDetection.UsesAppleCrypto ? 
                 X509KeyStorageFlags.DefaultKeySet :
                 X509KeyStorageFlags.EphemeralKeySet;
 #endif
@@ -735,5 +736,218 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void LoadWithDuplicateAttributes(bool allowDuplicates)
+        {
+            Pkcs12LoaderLimits limits = Pkcs12LoaderLimits.Defaults;
+
+            if (allowDuplicates)
+            {
+                limits = Pkcs12LoaderLimits.DangerousNoLimits;
+            }
+
+            // remove the edit lock
+            limits = new Pkcs12LoaderLimits(limits)
+            {
+                PreserveCertificateAlias = false,
+                PreserveKeyName = false,
+                PreserveStorageProvider = false,
+                PreserveUnknownAttributes = false,
+            };
+
+            Func<X509Certificate2> func =
+                () => LoadPfxNoFile(TestData.DuplicateAttributesPfx, TestData.PlaceholderPw, loaderLimits: limits);
+
+            if (allowDuplicates)
+            {
+                using (X509Certificate2 cert = func())
+                {
+                    Assert.Equal("Certificate 1", cert.GetNameInfo(X509NameType.SimpleName, false));
+                    Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+                }
+            }
+            else
+            {
+                Pkcs12LoadLimitExceededException ex = Assert.Throws<Pkcs12LoadLimitExceededException>(() => func());
+                Assert.Contains("AllowDuplicateAttributes", ex.Message);
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void LoadWithLegacyProvider(bool preserveStorageProvider, bool ephemeralIfPossible)
+        {
+            Pkcs12LoaderLimits limits = new Pkcs12LoaderLimits { PreserveStorageProvider = preserveStorageProvider, };
+            X509KeyStorageFlags flags = ephemeralIfPossible ? EphemeralIfPossible : X509KeyStorageFlags.DefaultKeySet;
+
+            // EphemeralKeySet is not available by name in the netfx build.
+            const X509KeyStorageFlags EphemeralKeySet = (X509KeyStorageFlags)0x20;
+            bool expectLegacy = (flags & EphemeralKeySet) == 0 && preserveStorageProvider; 
+
+            using (X509Certificate2 cert = LoadPfxNoFile(TestData.SChannelPfx, TestData.PlaceholderPw, flags, limits))
+            {
+                VerifySChannelProvider(cert, expectLegacy);
+            }
+        }
+
+        internal static void VerifySChannelProvider(X509Certificate2 cert, bool expectLegacy)
+        {
+            const string SChannelProviderName = "Microsoft RSA SChannel Cryptographic Provider";
+
+            Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+
+            using (RSA privateKey = cert.GetRSAPrivateKey())
+            {
+                Assert.NotNull(privateKey);
+
+                if (PlatformDetection.IsWindows)
+                {
+                    string expectedProvider = expectLegacy ?
+                        SChannelProviderName :
+                        "Microsoft Software Key Storage Provider";
+
+                    RSACng cng = Assert.IsType<RSACng>(privateKey);
+                    Assert.Equal(expectedProvider, cng.Key.Provider.Provider);
+                }
+
+                if (PlatformDetection.IsNetFramework)
+                {
+#pragma warning disable SYSLIB0028
+                    if (expectLegacy)
+                    {
+                        AsymmetricAlgorithm otherPrivateKeyInstance = cert.PrivateKey;
+
+                        RSACryptoServiceProvider csp =
+                            Assert.IsType<RSACryptoServiceProvider>(otherPrivateKeyInstance);
+
+                        Assert.Equal(SChannelProviderName, csp.CspKeyContainerInfo.ProviderName);
+                    }
+                    else
+                    {
+                        Assert.Throws<CryptographicException>(() => cert.PrivateKey);
+                    }
+#pragma warning restore SYSLIB0028
+                }
+
+                // Regardless of the platform, the key should work (partially because of the CNG wrapper of CAPI keys)
+                // Assert.NoThrow
+                privateKey.SignData(TestData.SChannelPfx, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+            }
+        }
+
+#if NET
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void LoadWithDuplicateAttributes_KeyOnly(bool ignorePrivateKeys)
+        {
+            byte[] pfx;
+
+            using (ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=No Duplicates Here",
+                    key,
+                    HashAlgorithmName.SHA256);
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(now, now.AddMinutes(1)))
+                {
+                    Pkcs12SafeContents contents = new Pkcs12SafeContents();
+                    Pkcs9LocalKeyId keyId = new Pkcs9LocalKeyId(new byte[] { 2, 2, 4 });
+
+                    Pkcs12CertBag certBag = contents.AddCertificate(cert);
+                    certBag.Attributes.Add(keyId);
+
+                    Pkcs12KeyBag keyBag = contents.AddKeyUnencrypted(key);
+                    keyBag.Attributes.Add(keyId);
+                    keyBag.Attributes.Add(keyId);
+
+                    Pkcs12Builder builder = new Pkcs12Builder();
+                    builder.AddSafeContentsUnencrypted(contents);
+                    builder.SealWithoutIntegrity();
+                    pfx = builder.Encode();
+                }
+            }
+
+            Pkcs12LoaderLimits limits = new Pkcs12LoaderLimits
+            {
+                IgnorePrivateKeys = ignorePrivateKeys,
+            };
+
+            Exception ex = Assert.Throws<Pkcs12LoadLimitExceededException>(
+                () => LoadPfxNoFile(pfx, loaderLimits: limits));
+
+            Assert.Contains("AllowDuplicateAttributes", ex.Message);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void LoadWithDuplicateAttributes_EncryptedOnly(bool ignoreEncryptedAuthSafes)
+        {
+            byte[] pfx;
+
+            using (ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=No Duplicates Here",
+                    key,
+                    HashAlgorithmName.SHA256);
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(now, now.AddMinutes(1)))
+                {
+                    Pkcs12SafeContents certSafe = new Pkcs12SafeContents();
+                    Pkcs12SafeContents keySafe = new Pkcs12SafeContents();
+                    Pkcs9LocalKeyId keyId = new Pkcs9LocalKeyId(new byte[] { 2, 2, 4 });
+
+                    Pkcs12CertBag certBag = certSafe.AddCertificate(cert);
+                    certBag.Attributes.Add(keyId);
+
+                    Pkcs12KeyBag keyBag = keySafe.AddKeyUnencrypted(key);
+                    keyBag.Attributes.Add(keyId);
+                    keyBag.Attributes.Add(keyId);
+
+                    Pkcs12Builder builder = new Pkcs12Builder();
+                    builder.AddSafeContentsUnencrypted(certSafe);
+
+                    builder.AddSafeContentsEncrypted(
+                        keySafe,
+                        "",
+                        new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 1));
+
+                    builder.SealWithoutIntegrity();
+                    pfx = builder.Encode();
+                }
+            }
+
+            Pkcs12LoaderLimits limits = new Pkcs12LoaderLimits
+            {
+                IgnoreEncryptedAuthSafes = ignoreEncryptedAuthSafes,
+            };
+
+            Func<X509Certificate2> func = () => LoadPfxNoFile(pfx, loaderLimits: limits);
+
+            if (ignoreEncryptedAuthSafes)
+            {
+                // Assert.NoThrow
+                func().Dispose();
+            }
+            else
+            {
+                Exception ex = Assert.Throws<Pkcs12LoadLimitExceededException>(() => func());
+                Assert.Contains("AllowDuplicateAttributes", ex.Message);
+            }
+        }
+#endif
     }
 }

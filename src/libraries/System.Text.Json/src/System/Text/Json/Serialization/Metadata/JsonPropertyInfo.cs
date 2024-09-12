@@ -443,7 +443,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                CacheNameAsUtf8BytesAndEscapedNameSection();
+                ValidateAndCachePropertyName();
             }
 
             if (IsRequired)
@@ -472,9 +472,20 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal abstract void DetermineReflectionPropertyAccessors(MemberInfo memberInfo, bool useNonPublicAccessors);
 
-        private void CacheNameAsUtf8BytesAndEscapedNameSection()
+        private void ValidateAndCachePropertyName()
         {
             Debug.Assert(Name != null);
+
+            if (Options.ReferenceHandlingStrategy is ReferenceHandlingStrategy.Preserve &&
+                this is { DeclaringType.IsValueType: false, IsIgnored: false, IsExtensionData: false } &&
+                Name is JsonSerializer.IdPropertyName or JsonSerializer.RefPropertyName)
+            {
+                // Validate potential conflicts with reference preservation metadata property names.
+                // Conflicts with polymorphic type discriminators are contextual and need to be
+                // handled separately by the PolymorphicTypeResolver type.
+
+                ThrowHelper.ThrowInvalidOperationException_PropertyConflictsWithMetadataPropertyName(DeclaringType, Name);
+            }
 
             NameAsUtf8Bytes = Encoding.UTF8.GetBytes(Name);
             EscapedNameSection = JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
@@ -800,12 +811,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Utf8 version of Name.
         /// </summary>
-        internal byte[] NameAsUtf8Bytes { get; set; } = null!;
+        internal byte[] NameAsUtf8Bytes { get; private set; } = null!;
 
         /// <summary>
         /// The escaped name passed to the writer.
         /// </summary>
-        internal byte[] EscapedNameSection { get; set; } = null!;
+        internal byte[] EscapedNameSection { get; private set; } = null!;
 
         /// <summary>
         /// Gets the <see cref="JsonSerializerOptions"/> value associated with the current contract instance.

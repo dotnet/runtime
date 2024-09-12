@@ -40,11 +40,23 @@ bool FileWriter::Printf(const char* fmt, ...)
 
 bool FileWriter::Print(const char* value, size_t numChars)
 {
-    DWORD numWritten;
-    bool result =
-        WriteFile(m_file.Get(), value, static_cast<DWORD>(numChars), &numWritten, nullptr) &&
-        (numWritten == static_cast<DWORD>(numChars));
-    return result;
+    if (numChars > (m_buffer.size() - m_bufferIndex))
+    {
+        Flush();
+
+        if (numChars > m_buffer.size())
+        {
+            DWORD numWritten;
+            bool result =
+                WriteFile(m_file.Get(), value, static_cast<DWORD>(numChars), &numWritten, nullptr) &&
+                (numWritten == static_cast<DWORD>(numChars));
+            return result;
+        }
+    }
+
+    memcpy(m_buffer.data() + m_bufferIndex, value, numChars);
+    m_bufferIndex += numChars;
+    return true;
 }
 
 bool FileWriter::Print(const char* value)
@@ -105,6 +117,19 @@ bool FileWriter::PrintQuotedCsvField(const char* value)
         delete[] buffer;
         return result;
     }
+}
+
+bool FileWriter::Flush()
+{
+    if (m_bufferIndex <= 0)
+        return true;
+
+    DWORD numWritten;
+    bool result =
+        WriteFile(m_file.Get(), m_buffer.data(), static_cast<DWORD>(m_bufferIndex), &numWritten, nullptr) &&
+        (numWritten == static_cast<DWORD>(m_bufferIndex));
+    m_bufferIndex = 0;
+    return result;
 }
 
 bool FileWriter::CreateNew(const char* path, FileWriter* fw)

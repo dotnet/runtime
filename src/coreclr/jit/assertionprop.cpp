@@ -291,7 +291,8 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_LZCNT_X64_LeadingZeroCount:
                 case NI_POPCNT_PopCount:
                 case NI_POPCNT_X64_PopCount:
-                    // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
+                    // Note: No advantage in using a precise range for IntegralRange.
+                    // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #elif defined(TARGET_ARM64)
                 case NI_Vector64_op_Equality:
@@ -317,7 +318,8 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_ArmBase_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingSignCount:
-                    // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
+                    // Note: No advantage in using a precise range for IntegralRange.
+                    // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #else
 #error Unsupported platform
@@ -1466,9 +1468,24 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             assertion.op1.vn         = optConservativeNormalVN(op1);
             assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
 
-            assert((assertion.op1.lcl.ssaNum == SsaConfig::RESERVED_SSA_NUM) ||
-                   (assertion.op1.vn == vnStore->VNConservativeNormalValue(
-                                            lvaGetDesc(lclNum)->GetPerSsaData(assertion.op1.lcl.ssaNum)->m_vnPair)));
+#ifdef DEBUG
+
+            // If we're ssa based, check that the VN is reasonable.
+            //
+            if (assertion.op1.lcl.ssaNum != SsaConfig::RESERVED_SSA_NUM)
+            {
+                LclSsaVarDsc* const ssaDsc = lvaGetDesc(lclNum)->GetPerSsaData(assertion.op1.lcl.ssaNum);
+
+                bool doesVNMatch = (assertion.op1.vn == vnStore->VNConservativeNormalValue(ssaDsc->m_vnPair));
+
+                if (!doesVNMatch && ssaDsc->m_updated)
+                {
+                    doesVNMatch = (assertion.op1.vn == vnStore->VNConservativeNormalValue(ssaDsc->m_origVNPair));
+                }
+
+                assert(doesVNMatch);
+            }
+#endif
 
             ssize_t      cnsValue  = 0;
             GenTreeFlags iconFlags = GTF_EMPTY;
@@ -3004,10 +3021,10 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         {
             simdmask_t value = vnStore->ConstantValue<simdmask_t>(vnCns);
 
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            memcpy(&vecCon->gtSimdVal, &value, sizeof(simdmask_t));
+            GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet());
+            memcpy(&mskCon->gtSimdMaskVal, &value, sizeof(simdmask_t));
 
-            conValTree = vecCon;
+            conValTree = mskCon;
             break;
         }
         break;
@@ -3136,7 +3153,7 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
         }
 #endif // FEATURE_HW_INTRINSICS
     }
-    else if (!value->IsCnsFltOrDbl())
+    else if (!value->IsCnsFltOrDbl() && !value->IsCnsMsk())
     {
         return true;
     }
@@ -4394,7 +4411,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         }
     }
     // If the assertion involves "op2" and "op1" is also a local var, then just morph the tree.
-    else if (op2->gtOper == GT_LCL_VAR)
+    else if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR))
     {
 #ifdef DEBUG
         if (verbose)
@@ -4846,6 +4863,52 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*                 
         }
     }
     return NO_ASSERTION_INDEX;
+}
+
+//------------------------------------------------------------------------
+// optAssertionVNIsNonNull: See if we can prove that the value of a VN is
+// non-null using assertions.
+//
+// Arguments:
+//   vn         - VN to check
+//   assertions - set of live assertions
+//
+// Return Value:
+//   True if the VN could be proven non-null.
+//
+bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
+{
+    if (vnStore->IsKnownNonNull(vn))
+    {
+        return true;
+    }
+
+    // Check each assertion to find if we have a vn != null assertion.
+    //
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        AssertionIndex assertionIndex = GetAssertionIndex(index);
+        if (assertionIndex > optAssertionCount)
+        {
+            break;
+        }
+        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
+        if (!curAssertion->CanPropNonNull())
+        {
+            continue;
+        }
+
+        if (curAssertion->op1.vn != vn)
+        {
+            continue;
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 /*****************************************************************************
@@ -6193,13 +6256,7 @@ GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
         // Do a sanity check to ensure persistent side effects aren't discarded and
         // tell gtExtractSideEffList to ignore the root of the tree.
         // We are relying here on an invariant that VN will only fold non-throwing expressions.
-        const bool ignoreExceptions = true;
-        const bool ignoreCctors     = false;
-        // We have to check "AsCall()->HasSideEffects()" here separately because "gtNodeHasSideEffects"
-        // also checks for side effects that arguments introduce (incosistently so, it otherwise only
-        // checks for the side effects the node itself has). TODO-Cleanup: change it to not do that?
-        assert(!gtNodeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS) ||
-               (tree->IsCall() && !tree->AsCall()->HasSideEffects(this, ignoreExceptions, ignoreCctors)));
+        assert(!gtNodeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS));
 
         // Exception side effects may be ignored because the root is known to be a constant
         // (e.g. VN may evaluate a DIV/MOD node to a constant and the node may still
@@ -6426,9 +6483,6 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
         // Not propagated, keep going.
         return WALK_CONTINUE;
     }
-
-    // TODO https://github.com/dotnet/runtime/issues/10450:
-    // at that moment stmt could be already removed from the stmt list.
 
     optAssertionProp_Update(newTree, tree, stmt);
 

@@ -12,15 +12,11 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn);CA1822;IDE0060</NoWarn>
 
-    <FunctioningBinaryFormatter Condition="'$(TargetFramework)' == '$(NetCoreAppMinimum)'">true</FunctioningBinaryFormatter>
+    <FunctioningBinaryFormatter Condition="'$(TargetFramework)' == '$(NetCoreAppMinimum)' and '$(DotNetBuildSourceOnly)' != 'true'">true</FunctioningBinaryFormatter>
     <!-- The GenerateNuspec target fails if this property is keyed off of FunctioningBinaryFormatter, so keep it logically in sync --> 
     <IncludeBuildOutput Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking Condition="'$(FunctioningBinaryFormatter)' != 'true'">true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(FunctioningBinaryFormatter)' == 'true'">
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
@@ -96,6 +92,10 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '9.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
   </ItemGroup>
 
 </Project>

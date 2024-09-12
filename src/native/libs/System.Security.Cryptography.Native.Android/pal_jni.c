@@ -451,8 +451,6 @@ jmethodID g_ByteBufferGet;
 jmethodID g_ByteBufferLimit;
 jmethodID g_ByteBufferPosition;
 jmethodID g_ByteBufferPutBuffer;
-jmethodID g_ByteBufferPutByteArray;
-jmethodID g_ByteBufferPutByteArrayWithLength;
 jmethodID g_ByteBufferRemaining;
 
 // javax/net/ssl/SSLContext
@@ -477,6 +475,7 @@ jclass    g_SSLEngineResult;
 jmethodID g_SSLEngineResultGetStatus;
 jmethodID g_SSLEngineResultGetHandshakeStatus;
 bool      g_SSLEngineResultStatusLegacyOrder;
+jmethodID g_SSLEngineResultBytesConsumed;
 
 // javax/crypto/KeyAgreement
 jclass    g_KeyAgreementClass;
@@ -689,11 +688,10 @@ int GetEnumAsInt(JNIEnv *env, jobject enumObj)
     return value;
 }
 
-JNIEXPORT jint JNICALL
-JNI_OnLoad(JavaVM *vm, void *reserved)
+jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
 {
     (void)reserved;
-    LOG_INFO("JNI_OnLoad in pal_jni.c");
+    LOG_DEBUG("%s in %s", __PRETTY_FUNCTION__, __FILE__);
     gJvm = vm;
 
     JNIEnv* env = GetJNIEnv();
@@ -1074,8 +1072,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_ByteBufferLimit =                     GetMethod(env, false, g_ByteBuffer, "limit", "()I");
     g_ByteBufferPosition =                  GetMethod(env, false, g_ByteBuffer, "position", "()I");
     g_ByteBufferPutBuffer =                 GetMethod(env, false, g_ByteBuffer, "put", "(Ljava/nio/ByteBuffer;)Ljava/nio/ByteBuffer;");
-    g_ByteBufferPutByteArray =              GetMethod(env, false, g_ByteBuffer, "put", "([B)Ljava/nio/ByteBuffer;");
-    g_ByteBufferPutByteArrayWithLength =    GetMethod(env, false, g_ByteBuffer, "put", "([BII)Ljava/nio/ByteBuffer;");
     g_ByteBufferRemaining =                 GetMethod(env, false, g_ByteBuffer, "remaining", "()I");
 
     g_SSLContext =                        GetClassGRef(env, "javax/net/ssl/SSLContext");
@@ -1096,6 +1092,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLEngineResult =                     GetClassGRef(env, "javax/net/ssl/SSLEngineResult");
     g_SSLEngineResultGetStatus =            GetMethod(env, false, g_SSLEngineResult, "getStatus", "()Ljavax/net/ssl/SSLEngineResult$Status;");
     g_SSLEngineResultGetHandshakeStatus =   GetMethod(env, false, g_SSLEngineResult, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
+    g_SSLEngineResultBytesConsumed =        GetMethod(env, false, g_SSLEngineResult, "bytesConsumed", "()I");
     g_SSLEngineResultStatusLegacyOrder = android_get_device_api_level() < 24;
 
     g_KeyAgreementClass          = GetClassGRef(env, "javax/crypto/KeyAgreement");

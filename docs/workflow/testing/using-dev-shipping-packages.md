@@ -81,7 +81,7 @@ This config file will require a handful of modifications to work as we need it t
 
     <!-- Any packages that might be required, but not present in your build, will have to be taken from the latest NuGet feed. -->
     <!-- More info on: https://github.com/dotnet/sdk#installing-the-sdk -->
-    <add key="dotnet8" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet8/nuget/v3/index.json" />
+    <add key="dotnet9" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet9/nuget/v3/index.json" />
 
     <!-- Set this path to where your Shipping Artifacts are located. Note that we are assuming a 'Debug' build in this example. -->
     <add key="local runtime" value="Path/To/Runtime/artifacts/packages/Debug/Shipping" />

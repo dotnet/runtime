@@ -10959,7 +10959,7 @@ void Interpreter::DoIsReferenceOrContainsReferences(CORINFO_METHOD_HANDLE method
 
     MethodTable* typeArg = GetMethodTableFromClsHnd(sigInfoFull.sigInst.methInst[0]);
 
-    bool containsGcPtrs = typeArg->ContainsPointers();
+    bool containsGcPtrs = typeArg->ContainsGCPointers();
 
     // Return true for byref-like structs with ref fields (they might not have them)
     if (!containsGcPtrs && typeArg->IsByRefLike())
@@ -10981,7 +10981,7 @@ bool Interpreter::DoInterlockedCompareExchange(CorInfoType retType)
     } CONTRACTL_END;
 
     // These CompareExchange are must-expand:
-    // 
+    //
     //  long   CompareExchange(ref long location1, long value, long comparand)
     //  int    CompareExchange(ref int location1, int value, int comparand)
     //  ushort CompareExchange(ref ushort location1, ushort value, ushort comparand)
@@ -11033,7 +11033,7 @@ bool Interpreter::DoInterlockedExchange(CorInfoType retType)
     } CONTRACTL_END;
 
     // These Exchange are must-expand:
-    // 
+    //
     //  long   Exchange(ref long location1, long value)
     //  int    Exchange(ref int location1, int value)
     //  ushort Exchange(ref ushort location1, ushort value)
@@ -11082,7 +11082,7 @@ bool Interpreter::DoInterlockedExchangeAdd(CorInfoType retType)
     } CONTRACTL_END;
 
     // These ExchangeAdd are must-expand:
-    // 
+    //
     //  long ExchangeAdd(ref long location1, long value)
     //  int  ExchangeAdd(ref int location1, int value)
     //

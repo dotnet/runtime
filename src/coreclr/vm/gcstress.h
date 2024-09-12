@@ -72,13 +72,22 @@ namespace GCStressPolicy
     private:
         // This static controls whether GC stress may induce GCs. EEConfig::GetGCStressLevel() still
         // controls when GCs may occur.
-        static Volatile<DWORD> s_nGcStressDisabled;
-
+        static int s_nGcStressDisabled;
         bool m_bAcquired;
+
+        FORCEINLINE static void Disable()
+        { Interlocked::Increment(&InhibitHolder::s_nGcStressDisabled); }
+
+        FORCEINLINE static void Enable()
+        {
+            int newVal;
+            newVal = Interlocked::Decrement(&InhibitHolder::s_nGcStressDisabled);
+            _ASSERTE(newVal >= 0);
+        }
 
     public:
         InhibitHolder()
-        { LIMITED_METHOD_CONTRACT; ++s_nGcStressDisabled; m_bAcquired = true; }
+        { LIMITED_METHOD_CONTRACT; Disable(); m_bAcquired = true;}
 
         ~InhibitHolder()
         { LIMITED_METHOD_CONTRACT; Release(); }
@@ -88,7 +97,7 @@ namespace GCStressPolicy
             LIMITED_METHOD_CONTRACT;
             if (m_bAcquired)
             {
-                --s_nGcStressDisabled;
+                Enable();
                 m_bAcquired = false;
             }
         }
@@ -99,13 +108,13 @@ namespace GCStressPolicy
     } UNUSED_ATTR;
 
     FORCEINLINE bool IsEnabled()
-    { return InhibitHolder::s_nGcStressDisabled == 0U; }
+    { return VolatileLoadWithoutBarrier(&InhibitHolder::s_nGcStressDisabled) == 0; }
 
     FORCEINLINE void GlobalDisable()
-    { ++InhibitHolder::s_nGcStressDisabled; }
+    { InhibitHolder::Disable(); }
 
     FORCEINLINE void GlobalEnable()
-    { --InhibitHolder::s_nGcStressDisabled; }
+    { InhibitHolder::Enable(); }
 
 #else // STRESS_HEAP
 

@@ -6,6 +6,7 @@
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ActivityTest.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="GetHostByAddressTest.cs" />
     <Compile Include="GetHostByNameTest.cs" />
@@ -20,6 +21,8 @@
     <!-- Common test files -->
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\ActivityRecorder.cs"
+                 Link="Common\System\Net\ActivityRecorder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
              Link="Common\System\Net\Configuration.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Sockets.cs"

@@ -76,8 +76,8 @@ ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSiz
 #define MethodTable__m_dwFlags         0x0
 ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));
 
-#define MethodTable__enum_flag_ContainsPointers 0x01000000
-ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsPointers == MethodTable::enum_flag_ContainsPointers);
+#define MethodTable__enum_flag_ContainsGCPointers 0x01000000
+ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsGCPointers == MethodTable::enum_flag_ContainsGCPointers);
 
 #define MethodTable__m_ElementType        DBG_FRE(0x24, 0x20)
 ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_ElementTypeHnd));

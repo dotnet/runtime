@@ -636,7 +636,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        private static string GetRandomNonExistingFilePath()
+        internal static string GetRandomNonExistingFilePath()
         {
             string result;
             do

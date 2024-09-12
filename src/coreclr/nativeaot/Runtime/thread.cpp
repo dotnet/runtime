@@ -572,13 +572,13 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
 
 #ifdef FEATURE_HIJACK
 
-EXTERN_C void FASTCALL RhpGcProbeHijack();
-EXTERN_C void FASTCALL RhpGcStressHijack();
+EXTERN_C void RhpGcProbeHijack();
+EXTERN_C void RhpGcStressHijack();
 
 // static
 bool Thread::IsHijackTarget(void* address)
 {
-    if (&RhpGcProbeHijack == address)
+    if (PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack) == address)
         return true;
 #ifdef FEATURE_GC_STRESS
     if (&RhpGcStressHijack == address)
@@ -675,10 +675,16 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
     if (runtime->IsConservativeStackReportingEnabled() ||
         codeManager->IsSafePoint(pvAddress))
     {
+        // IsUnwindable is precise on arm64, but can give false negatives on other architectures.
+        // (when IP is on the first instruction of an epilog, we still can unwind,
+        // but we can tell if the instruction is the first only if we can navigate instructions backwards and check)
+        // The preciseness of IsUnwindable is tracked in https://github.com/dotnet/runtime/issues/101932
+#if defined(TARGET_ARM64)
         // we may not be able to unwind in some locations, such as epilogs.
         // such locations should not contain safe points.
         // when scanning conservatively we do not need to unwind
         ASSERT(codeManager->IsUnwindable(pvAddress) || runtime->IsConservativeStackReportingEnabled());
+#endif
 
         // if we are not given a thread to hijack
         // perform in-line wait on the current thread
@@ -697,7 +703,9 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
 #endif //FEATURE_SUSPEND_REDIRECTION
     }
 
-    pThread->HijackReturnAddress(pThreadContext, &RhpGcProbeHijack);
+    pThread->HijackReturnAddress(
+        pThreadContext,
+        PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack));
 }
 
 #ifdef FEATURE_GC_STRESS

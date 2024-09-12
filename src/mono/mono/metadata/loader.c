@@ -1303,6 +1303,7 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 		g_assert (itf_slot >= 0);
 		gboolean variant = FALSE;
 		int itf_base = mono_class_interface_offset_with_variance (constrained_class, base_class, &variant);
+		g_assert (itf_base >= 0);
 		vtable_slot = itf_slot + itf_base;
 	}
 	g_assert (vtable_slot >= 0);

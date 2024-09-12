@@ -176,9 +176,9 @@ ASMCONSTANTS_C_ASSERT(METHODTABLE_EQUIVALENCE_FLAGS
 #define               METHODTABLE_EQUIVALENCE_FLAGS 0x0
 #endif
 
-#define               MethodTable__enum_flag_ContainsPointers 0x01000000
-ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsPointers
-                    == MethodTable::enum_flag_ContainsPointers);
+#define               MethodTable__enum_flag_ContainsGCPointers 0x01000000
+ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsGCPointers
+                    == MethodTable::enum_flag_ContainsGCPointers);
 
 #define               OFFSETOF__InterfaceInfo_t__m_pMethodTable  0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceInfo_t__m_pMethodTable
@@ -409,13 +409,17 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Xmm15
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__VectorRegister
                     == offsetof(CONTEXT, VectorRegister[0]));
 
-#define               SIZEOF__FaultingExceptionFrame  (0x20 + SIZEOF__CONTEXT)
+#define               SIZEOF__FaultingExceptionFrame  (0x20 + SIZEOF__CONTEXT + 16)
 ASMCONSTANTS_C_ASSERT(SIZEOF__FaultingExceptionFrame
                     == sizeof(FaultingExceptionFrame));
 
 #define               OFFSETOF__FaultingExceptionFrame__m_fFilterExecuted 0x10
 ASMCONSTANTS_C_ASSERT(OFFSETOF__FaultingExceptionFrame__m_fFilterExecuted
                     == offsetof(FaultingExceptionFrame, m_fFilterExecuted));
+
+#define               OFFSETOF__FaultingExceptionFrame__m_SSP (0x20 + SIZEOF__CONTEXT)
+ASMCONSTANTS_C_ASSERT(OFFSETOF__FaultingExceptionFrame__m_SSP
+                    == offsetof(FaultingExceptionFrame, m_SSP));
 
 #define               OFFSETOF__PtrArray__m_NumComponents 0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__PtrArray__m_NumComponents

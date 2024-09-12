@@ -1178,7 +1178,7 @@ void InitThreadManager()
 
 #ifdef _DEBUG
     // Randomize OBJREF_HASH to handle hash collision.
-    Thread::OBJREF_HASH = OBJREF_TABSIZE - (DbgGetEXETimeStamp()%10);
+    Thread::OBJREF_HASH = OBJREF_TABSIZE - GetRandomInt(10);
 #endif // _DEBUG
 
     ThreadSuspend::Initialize();
@@ -1329,14 +1329,6 @@ Thread::Thread()
 #endif
 
     m_dwForbidSuspendThread = 0;
-
-    // Initialize lock state
-    m_pHead = &m_embeddedEntry;
-    m_embeddedEntry.pNext = m_pHead;
-    m_embeddedEntry.pPrev = m_pHead;
-    m_embeddedEntry.dwLLockID = 0;
-    m_embeddedEntry.dwULockID = 0;
-    m_embeddedEntry.wReaderLevel = 0;
 
     m_pBlockingLock = NULL;
 
@@ -2322,7 +2314,6 @@ int Thread::DecExternalCount(BOOL holdingLock)
         if (!HasValidThreadHandle())
         {
             SelfDelete = this == pCurThread;
-            m_ExceptionState.FreeAllStackTraces();
             if (SelfDelete) {
                 SetThread(NULL);
             }
@@ -2774,6 +2765,10 @@ void Thread::CooperativeCleanup()
         // Clear out the alloc context pointer for this thread. When TLS is gone, this pointer will point into freed memory.
         m_pRuntimeThreadLocals = nullptr;
     }
+
+    OBJECTREF threadObjMaybe = GetExposedObjectRaw();
+    if (threadObjMaybe != NULL)
+        ((THREADBASEREF)threadObjMaybe)->SetIsDead();
 }
 
 // See general comments on thread destruction (code:#threadDestruction) above.
@@ -3121,14 +3116,14 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
     // want true WAIT_ALL, we need to fire up a different thread in the MTA and wait
     // on its result.  This isn't implemented yet.
     //
-    // A change was added to WaitHandleNative::CorWaitMultipleNative to disable WaitAll
+    // A change was added to WaitHandle_WaitMultipleIgnoringSyncContext to disable WaitAll
     // in an STA with more than one handle.
     if (bWaitAll)
     {
         if (numWaiters == 1)
             bWaitAll = FALSE;
 
-        // The check that's supposed to prevent this condition from occurring, in WaitHandleNative::CorWaitMultipleNative,
+        // The check that's supposed to prevent this condition from occurring, in WaitHandle_WaitMultipleIgnoringSyncContext,
         // is unfortunately behind FEATURE_COMINTEROP instead of FEATURE_COMINTEROP_APARTMENT_SUPPORT.
         // So on CoreCLR (where FEATURE_COMINTEROP is not currently defined) we can actually reach this point.
         // We can't fix this, because it's a breaking change, so we just won't assert here.
@@ -4240,7 +4235,10 @@ void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
     }
     CONTRACTL_END;
 
-    STRESS_LOG_COND1(LF_EH, LL_INFO100, OBJECTREFToObject(throwable) != NULL, "in Thread::SetLastThrownObject: obj = %p\n", OBJECTREFToObject(throwable));
+    if (OBJECTREFToObject(throwable) != NULL)
+    {
+        STRESS_LOG1(LF_EH, LL_INFO100, "in Thread::SetLastThrownObject: obj = %p\n", OBJECTREFToObject(throwable));
+    }
 
     // you can't have a NULL unhandled exception
     _ASSERTE(!(throwable == NULL && isUnhandled));
@@ -4785,20 +4783,6 @@ Thread::ApartmentState Thread::GetFinalApartment()
     }
 
     return as;
-}
-
-// when we get apartment tear-down notification,
-// we want reset the apartment state we cache on the thread
-VOID Thread::ResetApartment()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    // reset the TS_InSTA bit and TS_InMTA bit
-    ResetThreadState((Thread::ThreadState)(TS_InSTA | TS_InMTA));
 }
 
 // Attempt to set current thread's apartment state. The actual apartment state
@@ -8066,6 +8050,15 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
             frame->EnumMemoryRegions(flags);
             frame = frame->m_Next;
         }
+    }
+
+    //
+    // Add the thread local variables like alloc_context, etc.
+    //
+
+    if (m_pRuntimeThreadLocals.IsValid())
+    {
+        m_pRuntimeThreadLocals.EnumMem();
     }
 
     //

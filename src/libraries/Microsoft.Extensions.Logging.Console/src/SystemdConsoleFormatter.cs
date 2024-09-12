@@ -36,19 +36,27 @@ namespace Microsoft.Extensions.Logging.Console
 
         public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider? scopeProvider, TextWriter textWriter)
         {
-            string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
-            if (logEntry.Exception == null && message == null)
+            if (logEntry.State is BufferedLogRecord bufferedRecord)
             {
-                return;
+                string message = bufferedRecord.FormattedMessage ?? string.Empty;
+                WriteInternal(null, textWriter, message, bufferedRecord.LogLevel, logEntry.Category, bufferedRecord.EventId.Id, bufferedRecord.Exception, bufferedRecord.Timestamp);
             }
+            else
+            {
+                string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
+                if (logEntry.Exception == null && message == null)
+                {
+                    return;
+                }
 
-            // We extract most of the work into a non-generic method to save code size. If this was left in the generic
-            // method, we'd get generic specialization for all TState parameters, but that's unnecessary.
-            WriteInternal(scopeProvider, textWriter, message, logEntry.LogLevel, logEntry.Category, logEntry.EventId.Id, logEntry.Exception);
+                // We extract most of the work into a non-generic method to save code size. If this was left in the generic
+                // method, we'd get generic specialization for all TState parameters, but that's unnecessary.
+                WriteInternal(scopeProvider, textWriter, message, logEntry.LogLevel, logEntry.Category, logEntry.EventId.Id, logEntry.Exception?.ToString(), GetCurrentDateTime());
+            }
         }
 
         private void WriteInternal(IExternalScopeProvider? scopeProvider, TextWriter textWriter, string message, LogLevel logLevel, string category,
-            int eventId, Exception? exception)
+            int eventId, string? exception, DateTimeOffset stamp)
         {
             // systemd reads messages from standard out line-by-line in a '<pri>message' format.
             // newline characters are treated as message delimiters, so we must replace them.
@@ -64,8 +72,7 @@ namespace Microsoft.Extensions.Logging.Console
             string? timestampFormat = FormatterOptions.TimestampFormat;
             if (timestampFormat != null)
             {
-                DateTimeOffset dateTimeOffset = GetCurrentDateTime();
-                textWriter.Write(dateTimeOffset.ToString(timestampFormat));
+                textWriter.Write(stamp.ToString(timestampFormat));
             }
 
             // category and event id
@@ -90,7 +97,7 @@ namespace Microsoft.Extensions.Logging.Console
             if (exception != null)
             {
                 textWriter.Write(' ');
-                WriteReplacingNewLine(textWriter, exception.ToString());
+                WriteReplacingNewLine(textWriter, exception);
             }
 
             // newline delimiter
@@ -105,7 +112,9 @@ namespace Microsoft.Extensions.Logging.Console
 
         private DateTimeOffset GetCurrentDateTime()
         {
-            return FormatterOptions.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now;
+            return FormatterOptions.TimestampFormat != null
+                ? (FormatterOptions.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now)
+                : DateTimeOffset.MinValue;
         }
 
         private static string GetSyslogSeverityString(LogLevel logLevel)

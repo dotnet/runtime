@@ -768,8 +768,6 @@ namespace System
                 ThrowArgumentNullException(argName);
         }
 
-
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedSimdVectorBaseType<TVector, T>()
             where TVector : ISimdVector<TVector, T>

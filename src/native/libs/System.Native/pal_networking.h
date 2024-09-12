@@ -427,3 +427,5 @@ PALEXPORT int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t
 PALEXPORT int32_t SystemNative_Disconnect(intptr_t socket);
 
 PALEXPORT uint32_t SystemNative_InterfaceNameToIndex(char* interfaceName);
+
+PALEXPORT int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int writeFdsCount,  int* errorFds, int errorFdsCount, int32_t microseconds, int32_t maxFd, int* triggered);

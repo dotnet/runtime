@@ -93,6 +93,10 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<IntEnum>(IntEnum.A, ExpectedJsonSchema: """{"type":"integer"}""");
             yield return new TestData<StringEnum>(StringEnum.A, ExpectedJsonSchema: """{"enum":["A","B","C"]}""");
             yield return new TestData<FlagsStringEnum>(FlagsStringEnum.A, ExpectedJsonSchema: """{"type":"string"}""");
+            yield return new TestData<EnumWithNameAttributes>(
+                EnumWithNameAttributes.Value1,
+                AdditionalValues: [EnumWithNameAttributes.Value2],
+                ExpectedJsonSchema: """{"enum":["A","B"]}""");
 
             // Nullable<T> types
             yield return new TestData<bool?>(true, AdditionalValues: [null], ExpectedJsonSchema: """{"type":["boolean","null"]}""");
@@ -673,6 +677,24 @@ namespace System.Text.Json.Schema.Tests
                 }
                 """);
 
+            // Global setting for JsonUnmappedMemberHandling.Disallow
+            yield return new TestData<SimplePoco>(
+                Value: new() { String = "string", StringNullable = "string", Int = 42, Double = 3.14, Boolean = true },
+                ExpectedJsonSchema: """
+                {
+                    "type": ["object","null"],
+                    "properties": {
+                        "String": { "type": "string" },
+                        "StringNullable": { "type": ["string", "null"] },
+                        "Int": { "type": "integer" },
+                        "Double": { "type": "number" },
+                        "Boolean": { "type": "boolean" }
+                    },
+                    "additionalProperties": false,
+                }
+                """,
+                SerializerOptions: new() { UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow });
+
             yield return new TestData<PocoWithNullableAnnotationAttributes>(
                 Value: new() { MaybeNull = null!, AllowNull = null, NotNull = null, DisallowNull = null!, NotNullDisallowNull = "str" },
                 ExpectedJsonSchema: """
@@ -1077,6 +1099,15 @@ namespace System.Text.Json.Schema.Tests
         [Flags, JsonConverter(typeof(JsonStringEnumConverter<FlagsStringEnum>))]
         public enum FlagsStringEnum { A = 1, B = 2, C = 4 };
 
+        [JsonConverter(typeof(JsonStringEnumConverter<EnumWithNameAttributes>))]
+        public enum EnumWithNameAttributes
+        {
+            [JsonStringEnumMemberName("A")]
+            Value1 = 1,
+            [JsonStringEnumMemberName("B")]
+            Value2 = 2,
+        }
+
         public class SimplePoco
         {
             public string String { get; set; } = "default";
@@ -1433,7 +1464,8 @@ namespace System.Text.Json.Schema.Tests
             T? Value,
             string ExpectedJsonSchema,
             IEnumerable<T?>? AdditionalValues = null,
-            JsonSchemaExporterOptions? Options = null)
+            JsonSchemaExporterOptions? Options = null,
+            JsonSerializerOptions? SerializerOptions = null)
             : ITestData
         {
             public Type Type => typeof(T);
@@ -1467,6 +1499,8 @@ namespace System.Text.Json.Schema.Tests
             string ExpectedJsonSchema { get; }
 
             JsonSchemaExporterOptions? Options { get; }
+
+            JsonSerializerOptions? SerializerOptions { get; }
 
             IEnumerable<ITestData> GetTestDataForAllValues();
         }

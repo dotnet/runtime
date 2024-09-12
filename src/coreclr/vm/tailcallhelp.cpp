@@ -281,7 +281,7 @@ bool TailCallHelp::GenerateGCDescriptor(
         TypeHandle tyHnd = val.TyHnd;
         if (tyHnd.IsValueType())
         {
-            if (!tyHnd.GetMethodTable()->ContainsPointers())
+            if (!tyHnd.GetMethodTable()->ContainsGCPointers())
             {
 #ifndef TARGET_X86
                 // The generic instantiation arg is right after this pointer

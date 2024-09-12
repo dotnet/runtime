@@ -91,7 +91,7 @@ namespace System.Net
                         return true;
                     }
 
-                    _clientCert = c as X509Certificate2 ?? new X509Certificate2(c.GetRawCertData());
+                    _clientCert = c as X509Certificate2 ?? X509CertificateLoader.LoadCertificate(c.GetRawCertData());
                     _clientCertErrors = new int[] { (int)e };
                     return true;
                 });

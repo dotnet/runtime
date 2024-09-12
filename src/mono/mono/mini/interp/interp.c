@@ -619,10 +619,14 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 		g_assert (vtable->klass != m->klass);
 		/* TODO: interface offset lookup is slow, go through IMT instead */
 		gboolean non_exact_match;
-		slot += mono_class_interface_offset_with_variance (vtable->klass, m->klass, &non_exact_match);
+		int ioffset = mono_class_interface_offset_with_variance (vtable->klass, m->klass, &non_exact_match);
+		g_assert (ioffset >= 0);
+		slot += ioffset;
 	}
 
 	MonoMethod *virtual_method = m_class_get_vtable (vtable->klass) [slot];
+	g_assert (virtual_method);
+
 	if (m->is_inflated && mono_method_get_context (m)->method_inst) {
 		MonoGenericContext context = { NULL, NULL };
 
@@ -7184,6 +7188,46 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			mono_memory_barrier ();
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_U1) {
+			guint8 *dest = LOCAL_VAR (ip [2], guint8*);
+			guint8 exch = LOCAL_VAR (ip[3], guint8);
+			NULL_CHECK(dest);
+			LOCAL_VAR(ip[1], guint32) = (guint32)mono_atomic_xchg_u8(dest, exch);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_I1) {
+			gint8 *dest = LOCAL_VAR (ip [2], gint8*);
+			gint8 exch = LOCAL_VAR (ip[3], gint8);
+			NULL_CHECK(dest);
+			LOCAL_VAR(ip[1], gint32) = (gint32)(gint8)mono_atomic_xchg_u8((guint8*)dest, exch);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_U2) {
+			guint16 *dest = LOCAL_VAR (ip [2], guint16*);
+			guint16 exch = LOCAL_VAR (ip[3], guint16);
+			NULL_CHECK(dest);
+			LOCAL_VAR(ip[1], guint32) = (guint32)mono_atomic_xchg_u16(dest, exch);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_I2) {
+			gint16 *dest = LOCAL_VAR (ip [2], gint16*);
+			gint16 exch = LOCAL_VAR (ip[3], gint16);
+			NULL_CHECK(dest);
+			LOCAL_VAR(ip[1], gint32) = (gint32)(gint16)mono_atomic_xchg_u16((guint16*)dest, exch);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_I4) {
+			gint32 *dest = LOCAL_VAR (ip [2], gint32*);
+			gint32 exch = LOCAL_VAR (ip[3], gint32);
+			NULL_CHECK(dest);
+			LOCAL_VAR(ip[1], gint32) = mono_atomic_xchg_i32(dest, exch);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_MONO_EXCHANGE_I8) {
 			gboolean flag = FALSE;
 			gint64 *dest = LOCAL_VAR (ip [2], gint64*);
@@ -7203,6 +7247,46 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			if (!flag)
 				LOCAL_VAR (ip [1], gint64) = mono_atomic_xchg_i64 (dest, exch);
 			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_CMPXCHG_U1) {
+			guint8 *dest = LOCAL_VAR(ip[2], guint8*);
+			guint8 value = LOCAL_VAR(ip[3], guint8);
+			guint8 comparand = LOCAL_VAR(ip[4], guint8);
+			NULL_CHECK(dest);
+
+			LOCAL_VAR(ip[1], guint32) = (guint32)mono_atomic_cas_u8(dest, value, comparand);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_CMPXCHG_I1) {
+			gint8 *dest = LOCAL_VAR(ip[2], gint8*);
+			gint8 value = LOCAL_VAR(ip[3], gint8);
+			gint8 comparand = LOCAL_VAR(ip[4], gint8);
+			NULL_CHECK(dest);
+
+			LOCAL_VAR(ip[1], gint32) = (gint32)(gint8)mono_atomic_cas_u8((guint8*)dest, value, comparand);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_CMPXCHG_U2) {
+			guint16 *dest = LOCAL_VAR(ip[2], guint16*);
+			guint16 value = LOCAL_VAR(ip[3], guint16);
+			guint16 comparand = LOCAL_VAR(ip[4], guint16);
+			NULL_CHECK(dest);
+
+			LOCAL_VAR(ip[1], guint32) = (guint32)mono_atomic_cas_u16(dest, value, comparand);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_CMPXCHG_I2) {
+			gint16 *dest = LOCAL_VAR(ip[2], gint16*);
+			gint16 value = LOCAL_VAR(ip[3], gint16);
+			gint16 comparand = LOCAL_VAR(ip[4], gint16);
+			NULL_CHECK(dest);
+
+			LOCAL_VAR(ip[1], gint32) = (gint32)(gint16)mono_atomic_cas_u16((guint16*)dest, value, comparand);
+			ip += 5;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_MONO_CMPXCHG_I4) {
@@ -7474,6 +7558,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 			MonoMethod *local_cmethod = LOCAL_VAR (ip [2], MonoMethod*);
 
+			if (local_cmethod->is_generic || mono_class_is_gtd (local_cmethod->klass)) {
+				MonoException *ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidOperationException", "");
+				THROW_EX (ex, ip);
+			}
+
 			// FIXME push/pop LMF
 			if (G_UNLIKELY (mono_method_has_unmanaged_callers_only_attribute (local_cmethod))) {
 				local_cmethod = mono_marshal_get_managed_wrapper  (local_cmethod, NULL, (MonoGCHandle)0, error);
@@ -7568,7 +7657,8 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDLOCA_S)
 			LOCAL_VAR (ip [1], gpointer) = locals + ip [2];
-			ip += 3;
+			// ip[3] reserved for size data for jiterpreter
+			ip += 4;
 			MINT_IN_BREAK;
 
 #define MOV(argtype1,argtype2) \

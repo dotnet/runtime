@@ -92,7 +92,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 #define MONO_ARCH_LLVM_TARGET_LAYOUT "e-m:e-p:32:32-i64:64-n32:64-S128"
 #ifdef TARGET_WASI
-#define MONO_ARCH_LLVM_TARGET_TRIPLE "wasm32-unknown-wasi"
+#define MONO_ARCH_LLVM_TARGET_TRIPLE "wasm32-unknown-wasip2"
 #else
 #define MONO_ARCH_LLVM_TARGET_TRIPLE "wasm32-unknown-emscripten"
 #endif

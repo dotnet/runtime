@@ -141,20 +141,22 @@ namespace Profiler.Tests
             return 100;
         }
 
+        public const string ProfilerName = "Profiler";
+
         public static string GetProfilerPath()
         {
             string profilerName;
             if (TestLibrary.Utilities.IsWindows)
             {
-                profilerName = "Profiler.dll";
+                profilerName = $"{ProfilerName}.dll";
             }
             else if (TestLibrary.Utilities.IsLinux)
             {
-                profilerName = "libProfiler.so";
+                profilerName = $"lib{ProfilerName}.so";
             }
             else
             {
-                profilerName = "libProfiler.dylib";
+                profilerName = $"lib{ProfilerName}.dylib";
             }
 
             string profilerPath = Path.Combine(Environment.CurrentDirectory, profilerName);

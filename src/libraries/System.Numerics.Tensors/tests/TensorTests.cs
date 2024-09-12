@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
+using static System.Numerics.Tensors.Tests.TensorTests;
 
 namespace System.Numerics.Tensors.Tests
 {
@@ -33,6 +34,7 @@ namespace System.Numerics.Tensors.Tests
             return totalLength;
         }
 
+        public delegate Tensor<T> PerformSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input);
         public delegate void PerformCalculationSpanInSpanOut<T>(ReadOnlySpan<T> input, Span<T> output);
 
         public static IEnumerable<object[]> SpanInSpanOutData()
@@ -85,12 +87,12 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float>(TensorPrimitives.TanPi, Tensor.TanPi);
             yield return Create<float>(TensorPrimitives.Truncate, Tensor.Truncate);
 
-            static object[] Create<T>(PerformCalculationSpanInSpanOut<T> tensorPrimitivesMethod, Func<Tensor<T>, Tensor<T>> tensorOperation)
+            static object[] Create<T>(PerformCalculationSpanInSpanOut<T> tensorPrimitivesMethod, PerformSpanInSpanOut<T> tensorOperation)
                 => new object[] { tensorPrimitivesMethod, tensorOperation };
         }
 
         [Theory, MemberData(nameof(SpanInSpanOutData))]
-        public void TensorExtensionsSpanInSpanOut<T>(PerformCalculationSpanInSpanOut<T> tensorPrimitivesOperation, Func<Tensor<T>, Tensor<T>> tensorOperation)
+        public void TensorExtensionsSpanInSpanOut<T>(PerformCalculationSpanInSpanOut<T> tensorPrimitivesOperation, PerformSpanInSpanOut<T> tensorOperation)
             where T: INumberBase<T>
         {
             Assert.All(Helpers.TensorShapes, tensorLength =>
@@ -115,6 +117,7 @@ namespace System.Numerics.Tensors.Tests
             });
         }
 
+        public delegate T PerformSpanInTOut<T>(scoped in ReadOnlyTensorSpan<T> input);
         public delegate T PerformCalculationSpanInTOut<T>(ReadOnlySpan<T> input);
         public static IEnumerable<object[]> SpanInFloatOutData()
         {
@@ -128,12 +131,12 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float>(TensorPrimitives.Product, Tensor.Product);
             yield return Create<float>(TensorPrimitives.Sum, Tensor.Sum);
 
-            static object[] Create<T>(PerformCalculationSpanInTOut<T> tensorPrimitivesMethod, Func<Tensor<T>, T> tensorOperation)
+            static object[] Create<T>(PerformCalculationSpanInTOut<T> tensorPrimitivesMethod, PerformSpanInTOut<T> tensorOperation)
                 => new object[] { tensorPrimitivesMethod, tensorOperation };
         }
 
         [Theory, MemberData(nameof(SpanInFloatOutData))]
-        public void TensorExtensionsSpanInTOut<T>(PerformCalculationSpanInTOut<T> tensorPrimitivesOperation, Func<Tensor<T>, T> tensorOperation)
+        public void TensorExtensionsSpanInTOut<T>(PerformCalculationSpanInTOut<T> tensorPrimitivesOperation, PerformSpanInTOut<T> tensorOperation)
             where T : INumberBase<T>
         {
             Assert.All(Helpers.TensorShapes, tensorLength =>
@@ -150,6 +153,7 @@ namespace System.Numerics.Tensors.Tests
             });
         }
 
+        public delegate Tensor<T> PerformTwoSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> input2);
         public delegate void PerformCalculationTwoSpanInSpanOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo, Span<T> output);
         public static IEnumerable<object[]> TwoSpanInSpanOutData()
         {
@@ -164,12 +168,12 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float>(TensorPrimitives.Pow, Tensor.Pow);
             yield return Create<float>(TensorPrimitives.Subtract, Tensor.Subtract);
 
-            static object[] Create<T>(PerformCalculationTwoSpanInSpanOut<T> tensorPrimitivesMethod, Func<Tensor<T>, Tensor<T>, Tensor<T>> tensorOperation)
+            static object[] Create<T>(PerformCalculationTwoSpanInSpanOut<T> tensorPrimitivesMethod, PerformTwoSpanInSpanOut<T> tensorOperation)
                 => new object[] { tensorPrimitivesMethod, tensorOperation };
         }
 
         [Theory, MemberData(nameof(TwoSpanInSpanOutData))]
-        public void TensorExtensionsTwoSpanInSpanOut<T>(PerformCalculationTwoSpanInSpanOut<T> tensorPrimitivesOperation, Func<Tensor<T>, Tensor<T>, Tensor<T>> tensorOperation)
+        public void TensorExtensionsTwoSpanInSpanOut<T>(PerformCalculationTwoSpanInSpanOut<T> tensorPrimitivesOperation, PerformTwoSpanInSpanOut<T> tensorOperation)
             where T: INumberBase<T>
         {
             Assert.All(Helpers.TensorShapes, tensorLength =>
@@ -197,18 +201,19 @@ namespace System.Numerics.Tensors.Tests
             });
         }
 
+        public delegate T PerformTwoSpanInFloatOut<T>(scoped in ReadOnlyTensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> input2);
         public delegate T PerformCalculationTwoSpanInFloatOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo);
         public static IEnumerable<object[]> TwoSpanInFloatOutData()
         {
             yield return Create<float>(TensorPrimitives.Distance, Tensor.Distance);
             yield return Create<float>(TensorPrimitives.Dot, Tensor.Dot);
 
-            static object[] Create<T>(PerformCalculationTwoSpanInFloatOut<T> tensorPrimitivesMethod, Func<Tensor<T>, Tensor<T>, T> tensorOperation)
+            static object[] Create<T>(PerformCalculationTwoSpanInFloatOut<T> tensorPrimitivesMethod, PerformTwoSpanInFloatOut<T> tensorOperation)
                 => new object[] { tensorPrimitivesMethod, tensorOperation };
         }
 
         [Theory, MemberData(nameof(TwoSpanInFloatOutData))]
-        public void TensorExtensionsTwoSpanInFloatOut<T>(PerformCalculationTwoSpanInFloatOut<T> tensorPrimitivesOperation, Func<Tensor<T>, Tensor<T>, T> tensorOperation)
+        public void TensorExtensionsTwoSpanInFloatOut<T>(PerformCalculationTwoSpanInFloatOut<T> tensorPrimitivesOperation, PerformTwoSpanInFloatOut<T> tensorOperation)
             where T: INumberBase<T>
         {
             Assert.All(Helpers.TensorShapes, tensorLength =>
@@ -543,21 +548,21 @@ namespace System.Numerics.Tensors.Tests
             // Make sure strides can't be negative
             Assert.Throws<ArgumentOutOfRangeException>(() => {
                 Span<int> a = [91, 92, -93, 94];
-                var t1 = Tensor.Create<int>([1, 2], [-1, 0], false);
+                var t1 = Tensor.Create<int>((Span<nint>)[1, 2], [-1, 0], false);
             });
             Assert.Throws<ArgumentOutOfRangeException>(() => {
                 Span<int> a = [91, 92, -93, 94];
-                var t1 = Tensor.Create<int>([1, 2], [0, -1], false);
+                var t1 = Tensor.Create<int>((Span<nint>)[1, 2], [0, -1], false);
             });
 
             // Make sure lengths can't be negative
             Assert.Throws<ArgumentOutOfRangeException>(() => {
                 Span<int> a = [91, 92, -93, 94];
-                var t1 = Tensor.Create<int>([-1, 2], [], false);
+                var t1 = Tensor.Create<int>([-1, 2], false);
             });
             Assert.Throws<ArgumentOutOfRangeException>(() => {
                 Span<int> a = [91, 92, -93, 94];
-                var t1 = Tensor.Create<int>([1, -2], [], false);
+                var t1 = Tensor.Create<int>([1, -2], false);
             });
 
             // Make sure 2D array works with strides to hit element 0,0,2,2
@@ -572,8 +577,7 @@ namespace System.Numerics.Tensors.Tests
 
             // Make sure you can't overlap elements using strides
             Assert.Throws<ArgumentOutOfRangeException>(() => {
-                Span<int> a = [91, 92, -93, 94];
-                var t1 = Tensor.Create<int>([2, 2], [1, 1], false);
+                var t1 = Tensor.Create<int>((Span<nint>)[2, 2], [1, 1], false);
             });
         }
         
@@ -586,7 +590,7 @@ namespace System.Numerics.Tensors.Tests
             Tensor<float> left = Tensor.Create<float>(a, [2,3]);
             Tensor<float> right = Tensor.Create<float>(b, [2,3]);
 
-            Tensor<float> result = Tensor.CosineSimilarity(left, right);
+            Tensor<float> result = Tensor.CosineSimilarity(left.AsReadOnlyTensorSpan(), right);
             Assert.Equal(2, result.Rank);
             Assert.Equal(2, result.Lengths[0]);
             Assert.Equal(2, result.Lengths[1]);
@@ -678,7 +682,7 @@ namespace System.Numerics.Tensors.Tests
         {
             Tensor<int> t0 = Tensor.Create(Enumerable.Range(0, 3), default);
             Tensor<int> t1 = Tensor.Create(Enumerable.Range(0, 3), [3, 1]);
-            Tensor<int> t2 = Tensor.Multiply(t0, t1);
+            Tensor<int> t2 = Tensor.Multiply(t0.AsReadOnlyTensorSpan(), t1);
 
             Assert.Equal([3,3], t2.Lengths.ToArray());
             Assert.Equal(0, t2[0, 0]);
@@ -691,7 +695,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, t2[2, 1]);
             Assert.Equal(4, t2[2, 2]);
 
-            t2 = Tensor.Multiply(t1, t0);
+            t2 = Tensor.Multiply(t1.AsReadOnlyTensorSpan(), t0);
 
             Assert.Equal([3, 3], t2.Lengths.ToArray());
             Assert.Equal(0, t2[0, 0]);
@@ -705,7 +709,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(4, t2[2, 2]);
 
             t1 = Tensor.Create(Enumerable.Range(0, 9), [3, 3]);
-            t2 = Tensor.Multiply(t0, t1);
+            t2 = Tensor.Multiply(t0.AsReadOnlyTensorSpan(), t1);
 
             Assert.Equal([3, 3], t2.Lengths.ToArray());
             Assert.Equal(0, t2[0, 0]);
@@ -905,7 +909,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, t1[1, 1, 0]);
             Assert.Equal(0, t1[1, 1, 1]);
 
-            t1 = Tensor.Reverse<int>(t0, 0);
+            t1 = Tensor.ReverseDimension<int>(t0, 0);
             Assert.Equal(4, t1[0, 0, 0]);
             Assert.Equal(5, t1[0, 0, 1]);
             Assert.Equal(6, t1[0, 1, 0]);
@@ -915,7 +919,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, t1[1, 1, 0]);
             Assert.Equal(3, t1[1, 1, 1]);
 
-            t1 = Tensor.Reverse<int>(t0, 1);
+            t1 = Tensor.ReverseDimension<int>(t0, 1);
             Assert.Equal(2, t1[0, 0, 0]);
             Assert.Equal(3, t1[0, 0, 1]);
             Assert.Equal(0, t1[0, 1, 0]);
@@ -925,7 +929,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(4, t1[1, 1, 0]);
             Assert.Equal(5, t1[1, 1, 1]);
 
-            t1 = Tensor.Reverse<int>(t0, 2);
+            t1 = Tensor.ReverseDimension<int>(t0, 2);
             Assert.Equal(1, t1[0, 0, 0]);
             Assert.Equal(0, t1[0, 0, 1]);
             Assert.Equal(3, t1[0, 1, 0]);
@@ -1017,7 +1021,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(8, resultTensor[1, 1, 3]);
             Assert.Equal(9, resultTensor[1, 1, 4]);
 
-            resultTensor = Tensor.Stack([t0, t1], axis:1);
+            resultTensor = Tensor.StackAlongDimension(1, [t0, t1]);
             Assert.Equal(3, resultTensor.Rank);
             Assert.Equal(2, resultTensor.Lengths[0]);
             Assert.Equal(2, resultTensor.Lengths[1]);
@@ -1044,7 +1048,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(8, resultTensor[1, 1, 3]);
             Assert.Equal(9, resultTensor[1, 1, 4]);
 
-            resultTensor = Tensor.Stack([t0, t1], axis: 2);
+            resultTensor = Tensor.StackAlongDimension(2, [t0, t1]);
             Assert.Equal(3, resultTensor.Rank);
             Assert.Equal(2, resultTensor.Lengths[0]);
             Assert.Equal(5, resultTensor.Lengths[1]);
@@ -1096,7 +1100,7 @@ namespace System.Numerics.Tensors.Tests
         {
             Tensor<float> t0 = Tensor.Create<float>((Enumerable.Range(0, 4).Select(i => (float)i)), [2, 2]);
 
-            Assert.Equal(Mean([0, 1, 2, 3]), Tensor.Mean<float>(t0), .1);
+            Assert.Equal(Mean([0, 1, 2, 3]), Tensor.Average<float>(t0), .1);
         }
 
         public static float Mean(float[] values)
@@ -1128,7 +1132,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, resultTensor[3, 0]);
             Assert.Equal(3, resultTensor[3, 1]);
 
-            resultTensor = Tensor.Concatenate([t0, t1], 1);
+            resultTensor = Tensor.ConcatenateOnDimension(1, [t0, t1]);
             Assert.Equal(2, resultTensor.Rank);
             Assert.Equal(2, resultTensor.Lengths[0]);
             Assert.Equal(4, resultTensor.Lengths[1]);
@@ -1141,7 +1145,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, resultTensor[1, 2]);
             Assert.Equal(3, resultTensor[1, 3]);
 
-            resultTensor = Tensor.Concatenate([t0, t1], -1);
+            resultTensor = Tensor.ConcatenateOnDimension(-1, [t0, t1]);
             Assert.Equal(1, resultTensor.Rank);
             Assert.Equal(8, resultTensor.Lengths[0]);
             Assert.Equal(0, resultTensor[0]);
@@ -1172,7 +1176,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, resultTensor[5, 0]);
             Assert.Equal(3, resultTensor[5, 1]);
 
-            resultTensor = Tensor.Concatenate([t0, t1, t2], -1);
+            resultTensor = Tensor.ConcatenateOnDimension(-1, [t0, t1, t2]);
 
             Assert.Equal(1, resultTensor.Rank);
             Assert.Equal(12, resultTensor.Lengths[0]);
@@ -1189,7 +1193,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, resultTensor[10]);
             Assert.Equal(3, resultTensor[11]);
 
-            resultTensor = Tensor.Concatenate([t0, t1, t2], 1);
+            resultTensor = Tensor.ConcatenateOnDimension(1, [t0, t1, t2]);
 
             Assert.Equal(2, resultTensor.Rank);
             Assert.Equal(2, resultTensor.Lengths[0]);
@@ -1210,17 +1214,17 @@ namespace System.Numerics.Tensors.Tests
             t0 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [2, 3, 2]);
             t1 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [2, 3, 2]);
             t2 = Tensor.Create<float>((Enumerable.Range(0, 8).Select(i => (float)i)), [2, 2, 2]);
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2]));
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 2));
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 5));
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], -2));
-            resultTensor = Tensor.Concatenate([t0, t1, t2], -1);
+            Assert.Throws<ArgumentException>(() => Tensor.ConcatenateOnDimension(0, [t0, t1, t2]));
+            Assert.Throws<ArgumentException>(() => Tensor.ConcatenateOnDimension(2, [t0, t1, t2]));
+            Assert.Throws<ArgumentException>(() => Tensor.ConcatenateOnDimension(5, [t0, t1, t2]));
+            Assert.Throws<ArgumentException>(() => Tensor.ConcatenateOnDimension(-2, [t0, t1, t2]));
+            resultTensor = Tensor.ConcatenateOnDimension(-1, [t0, t1, t2]);
             float[] result = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7];
             Assert.Equal(1, resultTensor.Rank);
             Assert.Equal(32, resultTensor.Lengths[0]);
             Assert.Equal(result, resultTensor.ToArray());
 
-            resultTensor = Tensor.Concatenate([t0, t1, t2], 1);
+            resultTensor = Tensor.ConcatenateOnDimension(1, [t0, t1, t2]);
             result = [0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 6, 7, 8, 9, 10, 11, 4, 5, 6, 7];
             Assert.Equal(3, resultTensor.Rank);
             Assert.Equal(2, resultTensor.Lengths[0]);
@@ -1237,9 +1241,9 @@ namespace System.Numerics.Tensors.Tests
             t0 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [2, 2, 3]);
             t1 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [2, 2, 3]);
             t2 = Tensor.Create<float>((Enumerable.Range(0, 8).Select(i => (float)i)), [2, 2, 2]);
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 0));
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 1));
-            resultTensor = Tensor.Concatenate([t0, t1, t2], 2);
+            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2]));
+            Assert.Throws<ArgumentException>(() => Tensor.ConcatenateOnDimension(1, [t0, t1, t2]));
+            resultTensor = Tensor.ConcatenateOnDimension(2, [t0, t1, t2]);
             result = [0, 1, 2, 0, 1, 2, 0, 1, 3, 4, 5, 3, 4, 5, 2, 3, 6, 7, 8, 6, 7, 8, 4, 5, 9, 10, 11, 9, 10, 11, 6, 7];
             Assert.Equal(3, resultTensor.Rank);
             Assert.Equal(2, resultTensor.Lengths[0]);
@@ -1256,9 +1260,9 @@ namespace System.Numerics.Tensors.Tests
             t0 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [3, 2, 2]);
             t1 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [3, 2, 2]);
             t2 = Tensor.Create<float>((Enumerable.Range(0, 8).Select(i => (float)i)), [2, 2, 2]);
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 1));
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 2));
-            resultTensor = Tensor.Concatenate([t0, t1, t2]);
+            Assert.Throws<ArgumentException>(() => Tensor.ConcatenateOnDimension(1, [t0, t1, t2]));
+            Assert.Throws<ArgumentException>(() => Tensor.ConcatenateOnDimension(2, [t0, t1, t2]));
+            resultTensor = Tensor.ConcatenateOnDimension(0, [t0, t1, t2]);
             result = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7];
             Assert.Equal(3, resultTensor.Rank);
             Assert.Equal(8, resultTensor.Lengths[0]);
@@ -1277,7 +1281,7 @@ namespace System.Numerics.Tensors.Tests
         public static void TensorTransposeTests()
         {
             Tensor<float> t0 = Tensor.Create<float>((Enumerable.Range(0, 4).Select(i => (float)i)), [2, 2]);
-            var t1 = Tensor.Permute(t0);
+            var t1 = Tensor.PermuteDimensions(t0);
 
             Assert.Equal(0, t1[0, 0]);
             Assert.Equal(2, t1[0, 1]);
@@ -1285,7 +1289,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(3, t1[1, 1]);
 
             t0 = Tensor.Create<float>((Enumerable.Range(0, 6).Select(i => (float)i)), [2, 3]);
-            t1 = Tensor.Permute(t0);
+            t1 = Tensor.PermuteDimensions(t0);
 
             Assert.Equal(3, t1.Lengths[0]);
             Assert.Equal(2, t1.Lengths[1]);
@@ -1297,7 +1301,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(5, t1[2, 1]);
 
             t0 = Tensor.Create<float>((Enumerable.Range(0, 6).Select(i => (float)i)), [1, 2, 3]);
-            t1 = Tensor.Permute(t0);
+            t1 = Tensor.PermuteDimensions(t0);
 
             Assert.Equal(3, t1.Lengths[0]);
             Assert.Equal(2, t1.Lengths[1]);
@@ -1310,7 +1314,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(5, t1[2, 1, 0]);
 
             t0 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [2, 2, 3]);
-            t1 = Tensor.Permute(t0);
+            t1 = Tensor.PermuteDimensions(t0);
 
             Assert.Equal(3, t1.Lengths[0]);
             Assert.Equal(2, t1.Lengths[1]);
@@ -1329,7 +1333,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(11, t1[2, 1, 1]);
 
             t0 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [2, 2, 3]);
-            t1 = Tensor.Permute(t0, 1, 2, 0);
+            t1 = Tensor.PermuteDimensions(t0, 1, 2, 0);
 
             Assert.Equal(2, t1.Lengths[0]);
             Assert.Equal(3, t1.Lengths[1]);
@@ -2063,7 +2067,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, tensor.Lengths[1]);
             Assert.Equal(1, tensor.Lengths[2]);
 
-            tensor = Tensor.Squeeze(tensor, 0);
+            tensor = Tensor.SqueezeDimension(tensor, 0);
             Assert.Equal(2, tensor.Rank);
             Assert.Equal(2, tensor.Lengths[0]);
             Assert.Equal(1, tensor.Lengths[1]);
@@ -2075,7 +2079,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, tensor.Lengths[1]);
             Assert.Equal(1, tensor.Lengths[2]);
 
-            tensor = Tensor.Squeeze(tensor, 2);
+            tensor = Tensor.SqueezeDimension(tensor, 2);
             Assert.Equal(2, tensor.Rank);
             Assert.Equal(1, tensor.Lengths[0]);
             Assert.Equal(2, tensor.Lengths[1]);
@@ -2087,8 +2091,8 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, tensor.Lengths[1]);
             Assert.Equal(1, tensor.Lengths[2]);
 
-            Assert.Throws<ArgumentException>(() => tensor = Tensor.Squeeze(tensor, 1));
-            Assert.Throws<ArgumentException>(() => tensor = Tensor.Squeeze(tensor, 3));
+            Assert.Throws<ArgumentException>(() => tensor = Tensor.SqueezeDimension(tensor, 1));
+            Assert.Throws<ArgumentException>(() => tensor = Tensor.SqueezeDimension(tensor, 3));
         }
 
         [Fact]
@@ -2123,6 +2127,430 @@ namespace System.Numerics.Tensors.Tests
             t0 = Tensor.Unsqueeze(t0, 1);
             Assert.Equal(0, t0[0, 0]);
             Assert.Equal(1, t0[1, 0]);
+        }
+
+        [Fact]
+        public void TensorGreaterThanTest()
+        {
+            Tensor<int> tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3], false);
+            Tensor<int> tensor2 = Tensor.Create<int>(new int[] { 2, 2, 2 }, [3], false);
+
+            Tensor<bool> result = Tensor.GreaterThan(tensor1.AsReadOnlyTensorSpan(), tensor2);
+
+            Assert.Equal(new bool[] { false, false, true }, result.ToArray());
+
+            tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3, 4 }, [2, 2], false);
+            tensor2 = Tensor.Create<int>(new int[] { 0, 2, 2, 3 }, [2, 2], false);
+
+            result = Tensor.GreaterThan(tensor1.AsReadOnlyTensorSpan(), tensor2);
+
+            Assert.Equal(new bool[] { true, false, true, true }, result.ToArray());
+
+            result = Tensor.GreaterThan(tensor1.AsReadOnlyTensorSpan(), 2);
+
+            Assert.Equal(new bool[] { false, false, true, true }, result.ToArray());
+
+            result = Tensor.GreaterThan(2, tensor1.AsReadOnlyTensorSpan());
+
+            Assert.Equal(new bool[] { true, false, false, false }, result.ToArray());
+        }
+
+        [Fact]
+        public void TensorGreaterThanOrEqualTest()
+        {
+            Tensor<int> tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3], false);
+            Tensor<int> tensor2 = Tensor.Create<int>(new int[] { 2, 2, 2 }, [3], false);
+
+            Tensor<bool> result = Tensor.GreaterThanOrEqual(tensor1.AsReadOnlyTensorSpan(), tensor2);
+
+            Assert.Equal(new bool[] { false, true, true }, result.ToArray());
+
+            tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3, 4 }, [2, 2], false);
+            tensor2 = Tensor.Create<int>(new int[] { 0, 2, 2, 3 }, [2, 2], false);
+
+            result = Tensor.GreaterThanOrEqual(tensor1.AsReadOnlyTensorSpan(), tensor2);
+
+            Assert.Equal(new bool[] { true, true, true, true }, result.ToArray());
+
+            result = Tensor.GreaterThanOrEqual(tensor1.AsReadOnlyTensorSpan(), 2);
+
+            Assert.Equal(new bool[] { false, true, true, true }, result.ToArray());
+
+            result = Tensor.GreaterThanOrEqual(2, tensor1.AsReadOnlyTensorSpan());
+
+            Assert.Equal(new bool[] { true, true, false, false }, result.ToArray());
+        }
+
+        [Fact]
+        public void TensorGreaterThanAllTest()
+        {
+            Tensor<int> tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3], false);
+            Tensor<int> tensor2 = Tensor.Create<int>(new int[] { 2, 2, 2 }, [3], false);
+
+            bool result = Tensor.GreaterThanAll(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.False(result);
+
+            tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3, 4 }, [2, 2], false);
+            tensor2 = Tensor.Create<int>(new int[] { 0, 2, 2, 3 }, [2, 2], false);
+
+            result = Tensor.GreaterThanAll(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.False(result);
+
+            result = Tensor.GreaterThanAll(tensor1.AsReadOnlyTensorSpan(), 2);
+            Assert.False(result);
+
+            result = Tensor.GreaterThanAll(tensor1.AsReadOnlyTensorSpan(), 0);
+            Assert.True(result);
+
+            result = Tensor.GreaterThanAll(2, tensor1.AsReadOnlyTensorSpan());
+            Assert.False(result);
+
+            result = Tensor.GreaterThanAll(5, tensor1.AsReadOnlyTensorSpan());
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void TensorGreaterThanOrEqualAllTest()
+        {
+            Tensor<int> tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3], false);
+            Tensor<int> tensor2 = Tensor.Create<int>(new int[] { 2, 2, 2 }, [3], false);
+
+            bool result = Tensor.GreaterThanOrEqualAll(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.False(result);
+
+            tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3, 4 }, [2, 2], false);
+            tensor2 = Tensor.Create<int>(new int[] { 0, 2, 2, 3 }, [2, 2], false);
+
+            result = Tensor.GreaterThanOrEqualAll(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.True(result);
+
+            result = Tensor.GreaterThanOrEqualAll(tensor1.AsReadOnlyTensorSpan(), 2);
+            Assert.False(result);
+
+            result = Tensor.GreaterThanOrEqualAll(tensor1.AsReadOnlyTensorSpan(), 1);
+            Assert.True(result);
+
+            result = Tensor.GreaterThanOrEqualAll(2, tensor1.AsReadOnlyTensorSpan());
+            Assert.False(result);
+
+            result = Tensor.GreaterThanOrEqualAll(4, tensor1.AsReadOnlyTensorSpan());
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void TensorGreaterThanAnyTest()
+        {
+            Tensor<int> tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3], false);
+            Tensor<int> tensor2 = Tensor.Create<int>(new int[] { 2, 2, 2 }, [3], false);
+
+            bool result = Tensor.GreaterThanAny(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.True(result);
+
+            tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3, 4 }, [2, 2], false);
+            tensor2 = Tensor.Create<int>(new int[] { 0, 2, 2, 3 }, [2, 2], false);
+
+            result = Tensor.GreaterThanAny(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.True(result);
+
+            result = Tensor.GreaterThanAny(tensor1.AsReadOnlyTensorSpan(), 2);
+            Assert.True(result);
+
+            result = Tensor.GreaterThanAny(tensor1.AsReadOnlyTensorSpan(), 5);
+            Assert.False(result);
+
+            result = Tensor.GreaterThanAny(2, tensor1.AsReadOnlyTensorSpan());
+            Assert.True(result);
+
+            result = Tensor.GreaterThanAny(0, tensor1.AsReadOnlyTensorSpan());
+            Assert.False(result);
+
+            result = Tensor.GreaterThanAny(3, tensor1.AsReadOnlyTensorSpan());
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void TensorGreaterThanOrEqualAnyTest()
+        {
+            Tensor<int> tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3], false);
+            Tensor<int> tensor2 = Tensor.Create<int>(new int[] { 2, 2, 2 }, [3], false);
+
+            bool result = Tensor.GreaterThanOrEqualAny(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.True(result);
+
+            tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3, 4 }, [2, 2], false);
+            tensor2 = Tensor.Create<int>(new int[] { 0, 2, 2, 3 }, [2, 2], false);
+
+            result = Tensor.GreaterThanOrEqualAny(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.True(result);
+
+            result = Tensor.GreaterThanOrEqualAny(tensor1.AsReadOnlyTensorSpan(), 1);
+            Assert.True(result);
+
+            result = Tensor.GreaterThanOrEqualAny(tensor1.AsReadOnlyTensorSpan(), 5);
+            Assert.False(result);
+
+            result = Tensor.GreaterThanOrEqualAny(2, tensor1.AsReadOnlyTensorSpan());
+            Assert.True(result);
+
+            result = Tensor.GreaterThanOrEqualAny(0, tensor1.AsReadOnlyTensorSpan());
+            Assert.False(result);
+
+            result = Tensor.GreaterThanOrEqualAny(1, tensor1.AsReadOnlyTensorSpan());
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void TensorLessThanTest()
+        {
+            Tensor<int> tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3], false);
+            Tensor<int> tensor2 = Tensor.Create<int>(new int[] { 2, 2, 2 }, [3], false);
+
+            Tensor<bool> result = Tensor.LessThan(tensor1.AsReadOnlyTensorSpan(), tensor2);
+
+            Assert.Equal(new bool[] { true, false, false }, result.ToArray());
+
+            tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3, 4 }, [2, 2], false);
+            tensor2 = Tensor.Create<int>(new int[] { 0, 2, 2, 3 }, [2, 2], false);
+
+            result = Tensor.LessThan(tensor1.AsReadOnlyTensorSpan(), tensor2);
+
+            Assert.Equal(new bool[] { false, false, false, false }, result.ToArray());
+
+            result = Tensor.LessThan(tensor1.AsReadOnlyTensorSpan(), 2);
+
+            Assert.Equal(new bool[] { true, false, false, false }, result.ToArray());
+
+            result = Tensor.LessThan(2, tensor1.AsReadOnlyTensorSpan());
+
+            Assert.Equal(new bool[] { false, false, true, true }, result.ToArray());
+        }
+
+        [Fact]
+        public void TensorLessThanOrEqualTest()
+        {
+            Tensor<int> tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3], false);
+            Tensor<int> tensor2 = Tensor.Create<int>(new int[] { 2, 2, 2 }, [3], false);
+
+            Tensor<bool> result = Tensor.LessThanOrEqual(tensor1.AsReadOnlyTensorSpan(), tensor2);
+
+            Assert.Equal(new bool[] { true, true, false }, result.ToArray());
+
+            tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3, 4 }, [2, 2], false);
+            tensor2 = Tensor.Create<int>(new int[] { 0, 2, 2, 3 }, [2, 2], false);
+
+            result = Tensor.LessThanOrEqual(tensor1.AsReadOnlyTensorSpan(), tensor2);
+
+            Assert.Equal(new bool[] { false, true, false, false }, result.ToArray());
+
+            result = Tensor.LessThanOrEqual(tensor1.AsReadOnlyTensorSpan(), 2);
+
+            Assert.Equal(new bool[] { true, true, false, false }, result.ToArray());
+
+            result = Tensor.LessThanOrEqual(2, tensor1.AsReadOnlyTensorSpan());
+
+            Assert.Equal(new bool[] { false, true, true, true }, result.ToArray());
+        }
+
+        [Fact]
+        public void TensorLessThanAllTest()
+        {
+            Tensor<int> tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3], false);
+            Tensor<int> tensor2 = Tensor.Create<int>(new int[] { 2, 2, 2 }, [3], false);
+
+            bool result = Tensor.LessThanAll(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.False(result);
+
+            tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3, 4 }, [2, 2], false);
+            tensor2 = Tensor.Create<int>(new int[] { 0, 2, 2, 3 }, [2, 2], false);
+
+            result = Tensor.LessThanAll(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.False(result);
+
+            result = Tensor.LessThanAll(tensor1.AsReadOnlyTensorSpan(), 4);
+            Assert.False(result);
+
+            result = Tensor.LessThanAll(tensor1.AsReadOnlyTensorSpan(), 5);
+            Assert.True(result);
+
+            result = Tensor.LessThanAll(2, tensor1.AsReadOnlyTensorSpan());
+            Assert.False(result);
+
+            result = Tensor.LessThanAll(0, tensor1.AsReadOnlyTensorSpan());
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void TensorLessThanAnyTest()
+        {
+            Tensor<int> tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3], false);
+            Tensor<int> tensor2 = Tensor.Create<int>(new int[] { 2, 2, 2 }, [3], false);
+
+            bool result = Tensor.LessThanAny(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.True(result);
+
+            tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3, 4 }, [2, 2], false);
+            tensor2 = Tensor.Create<int>(new int[] { 0, 2, 2, 3 }, [2, 2], false);
+
+            result = Tensor.LessThanAny(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.False(result);
+
+            result = Tensor.LessThanAny(tensor1.AsReadOnlyTensorSpan(), 2);
+            Assert.True(result);
+
+            result = Tensor.LessThanAny(tensor1.AsReadOnlyTensorSpan(), 5);
+            Assert.True(result);
+
+            result = Tensor.LessThanAny(2, tensor1.AsReadOnlyTensorSpan());
+            Assert.True(result);
+
+            result = Tensor.LessThanAny(5, tensor1.AsReadOnlyTensorSpan());
+            Assert.False(result);
+
+            result = Tensor.LessThanAny(3, tensor1.AsReadOnlyTensorSpan());
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void TensorLessThanOrEqualAllTest()
+        {
+            Tensor<int> tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3], false);
+            Tensor<int> tensor2 = Tensor.Create<int>(new int[] { 2, 2, 2 }, [3], false);
+
+            bool result = Tensor.LessThanOrEqualAll(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.False(result);
+
+            tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3, 4 }, [2, 2], false);
+            tensor2 = Tensor.Create<int>(new int[] { 0, 2, 2, 3 }, [2, 2], false);
+
+            result = Tensor.LessThanOrEqualAll(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.False(result);
+
+            result = Tensor.LessThanOrEqualAll(tensor2, tensor1.AsReadOnlyTensorSpan());
+            Assert.True(result);
+
+            result = Tensor.LessThanOrEqualAll(tensor1.AsReadOnlyTensorSpan(), 4);
+            Assert.True(result);
+
+            result = Tensor.LessThanOrEqualAll(tensor1.AsReadOnlyTensorSpan(), 3);
+            Assert.False(result);
+
+            result = Tensor.LessThanOrEqualAll(2, tensor1.AsReadOnlyTensorSpan());
+            Assert.False(result);
+
+            result = Tensor.LessThanOrEqualAll(1, tensor1.AsReadOnlyTensorSpan());
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void TensorLessThanOrEqualAnyTest()
+        {
+            Tensor<int> tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3], false);
+            Tensor<int> tensor2 = Tensor.Create<int>(new int[] { 2, 2, 2 }, [3], false);
+
+            bool result = Tensor.LessThanOrEqualAny(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.True(result);
+
+            tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3, 4 }, [2, 2], false);
+            tensor2 = Tensor.Create<int>(new int[] { 0, 2, 2, 3 }, [2, 2], false);
+
+            result = Tensor.LessThanOrEqualAny(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.True(result);
+
+            result = Tensor.LessThanOrEqualAny(tensor1.AsReadOnlyTensorSpan(), 1);
+            Assert.True(result);
+
+            result = Tensor.LessThanOrEqualAny(tensor1.AsReadOnlyTensorSpan(), 0);
+            Assert.False(result);
+
+            result = Tensor.LessThanOrEqualAny(2, tensor1.AsReadOnlyTensorSpan());
+            Assert.True(result);
+
+            result = Tensor.LessThanOrEqualAny(5, tensor1.AsReadOnlyTensorSpan());
+            Assert.False(result);
+
+            result = Tensor.LessThanOrEqualAny(4, tensor1.AsReadOnlyTensorSpan());
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void TensorEqualsTest()
+        {
+            Tensor<int> tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3]);
+            Tensor<int> tensor2 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3]);
+
+            Tensor<bool> result = Tensor.Equals(tensor1.AsReadOnlyTensorSpan(), tensor2);
+
+            Assert.Equal(new bool[] { true, true, true }, result.ToArray());
+
+            result = Tensor.Equals(tensor1.AsReadOnlyTensorSpan(), 1);
+
+            Assert.Equal(new bool[] { true, false, false}, result.ToArray());
+
+            result = Tensor.Equals(tensor1.AsReadOnlyTensorSpan(), 2);
+
+            Assert.Equal(new bool[] { false, true, false }, result.ToArray());
+
+            result = Tensor.Equals(tensor1.AsReadOnlyTensorSpan(), 3);
+
+            Assert.Equal(new bool[] { false, false, true }, result.ToArray());
+
+            tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3, 4, 5, 6 }, [2, 3]);
+            tensor2 = Tensor.Create<int>(new int[] { 4, 5, 6 }, [3]);
+
+            result = Tensor.Equals(tensor1.AsReadOnlyTensorSpan(), tensor2);
+
+            Assert.Equal(new bool[] { false, false, false, true, true, true }, result.ToArray());
+        }
+
+        [Fact]
+        public void TensorEqualsAllTest()
+        {
+            Tensor<int> tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3]);
+            Tensor<int> tensor2 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3]);
+
+            bool result = Tensor.EqualsAll(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.True(result);
+
+            result = Tensor.EqualsAll(tensor1.AsReadOnlyTensorSpan(), 1);
+            Assert.False(result);
+
+            result = Tensor.EqualsAll(tensor1.AsReadOnlyTensorSpan(), 2);
+            Assert.False(result);
+
+            result = Tensor.EqualsAll(tensor1.AsReadOnlyTensorSpan(), 3);
+            Assert.False(result);
+
+            tensor1 = Tensor.Create<int>(new int[] { 1, 1, 1 }, [3]);
+            result = Tensor.EqualsAll(tensor1.AsReadOnlyTensorSpan(), 1);
+            Assert.True(result);
+
+            tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3, 4, 5, 6 }, [2, 3]);
+            tensor2 = Tensor.Create<int>(new int[] { 4, 5, 6 }, [3]);
+
+            result = Tensor.EqualsAll(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.False(result);
+
+            tensor1 = Tensor.Create<int>(new int[] { 4, 5, 6, 4, 5, 6 }, [2, 3]);
+            result = Tensor.EqualsAll(tensor1.AsReadOnlyTensorSpan(), tensor2);
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void TensorFilteredUpdateTest()
+        {
+            Tensor<int> tensor1 = Tensor.Create<int>(new int[] { 1, 2, 3 }, [3]);
+            Tensor<bool> filter = Tensor.Create<bool>(new bool[] { true, false, false }, [3]);
+            Tensor<int> replace = Tensor.Create<int>(new int[] { -1, -1, -1 }, [3]);
+
+            Tensor.FilteredUpdate(tensor1.AsTensorSpan(), filter, 2);
+            Assert.Equal(new int[] { 2, 2, 3 }, tensor1.ToArray());
+
+            Tensor.FilteredUpdate(tensor1.AsTensorSpan(), filter, replace);
+            Assert.Equal(new int[] { -1, 2, 3 }, tensor1.ToArray());
+
+            filter = Tensor.Create<bool>(new bool[] { true, true, true}, [3]);
+            Tensor.FilteredUpdate(tensor1.AsTensorSpan(), filter, replace);
+            Assert.Equal(new int[] { -1, -1, -1 }, tensor1.ToArray());
         }
     }
 }

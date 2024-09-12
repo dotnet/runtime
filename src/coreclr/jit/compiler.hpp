@@ -3322,7 +3322,7 @@ inline bool Compiler::IsPotentialGCSafePoint(GenTree* tree) const
     if (((tree->gtFlags & GTF_CALL) != 0))
     {
         // if this is not a No-GC helper
-        if (!tree->IsCall() || !emitter::emitNoGChelper(tree->AsCall()->GetHelperNum()))
+        if (!tree->IsHelperCall() || !s_helperCallProperties.IsNoGC(tree->AsCall()->GetHelperNum()))
         {
             // assume that we have a safe point.
             return true;
@@ -4245,6 +4245,10 @@ bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
     bool       result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (varNum == lvaGSSecurityCookie) ||
                   (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
 
+#ifdef TARGET_ARM64
+    result = result || (varNum == lvaFfrRegister);
+#endif
+
 #if FEATURE_FIXED_OUT_ARGS
     result = result || (varNum == lvaOutgoingArgSpaceVar);
 #endif
@@ -4358,6 +4362,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CNS_DBL:
         case GT_CNS_STR:
         case GT_CNS_VEC:
+        case GT_CNS_MSK:
         case GT_MEMORYBARRIER:
         case GT_JMP:
         case GT_JCC:

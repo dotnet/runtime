@@ -15,7 +15,7 @@ using Microsoft.CodeAnalysis.Editing;
 namespace ILLink.CodeFix
 {
 	[ExportCodeFixProvider (LanguageNames.CSharp, Name = nameof (RequiresUnreferencedCodeCodeFixProvider)), Shared]
-	public class RequiresUnreferencedCodeCodeFixProvider : BaseAttributeCodeFixProvider
+	public sealed class RequiresUnreferencedCodeCodeFixProvider : BaseAttributeCodeFixProvider
 	{
 		public static ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresUnreferencedCode));
 

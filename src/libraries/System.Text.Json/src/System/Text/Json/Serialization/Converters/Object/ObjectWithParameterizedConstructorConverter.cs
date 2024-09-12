@@ -58,6 +58,11 @@ namespace System.Text.Json.Serialization.Converters
 
                 ReadConstructorArguments(ref state, ref reader, options);
 
+                // We've read all ctor parameters and properties,
+                // validate that all required parameters were provided
+                // before calling the constructor which may throw.
+                state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
+
                 obj = (T)CreateObject(ref state.Current);
 
                 jsonTypeInfo.OnDeserializing?.Invoke(obj);
@@ -192,6 +197,11 @@ namespace System.Text.Json.Serialization.Converters
                     return false;
                 }
 
+                // We've read all ctor parameters and properties,
+                // validate that all required parameters were provided
+                // before calling the constructor which may throw.
+                state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
+
                 obj = (T)CreateObject(ref state.Current);
 
                 if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
@@ -219,9 +229,6 @@ namespace System.Text.Json.Serialization.Converters
                             if (propValue is not null || !jsonPropertyInfo.IgnoreNullTokensOnRead || default(T) is not null)
                             {
                                 jsonPropertyInfo.Set(obj, propValue);
-
-                                // if this is required property IgnoreNullTokensOnRead will always be false because we don't allow for both to be true
-                                state.Current.MarkRequiredPropertyAsRead(jsonPropertyInfo);
                             }
                         }
                         else
@@ -249,16 +256,15 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             jsonTypeInfo.OnDeserialized?.Invoke(obj);
-            state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
             // Unbox
             Debug.Assert(obj != null);
             value = (T)obj;
 
-            // Check if we are trying to build the sorted cache.
-            if (state.Current.PropertyRefCache != null)
+            // Check if we are trying to update the UTF-8 property cache.
+            if (state.Current.PropertyRefCacheBuilder != null)
             {
-                state.Current.JsonTypeInfo.UpdateSortedPropertyCache(ref state.Current);
+                jsonTypeInfo.UpdateUtf8PropertyCache(ref state.Current);
             }
 
             return true;
@@ -603,12 +609,11 @@ namespace System.Text.Json.Serialization.Converters
                 unescapedPropertyName,
                 ref state,
                 options,
-                out byte[] utf8PropertyName,
                 out bool useExtensionProperty,
                 createExtensionProperty: false);
 
-            // For case insensitive and missing property support of JsonPath, remember the value on the temporary stack.
-            state.Current.JsonPropertyName = utf8PropertyName;
+            // Mark the property as read from the payload if required.
+            state.Current.MarkRequiredPropertyAsRead(jsonPropertyInfo);
 
             jsonParameterInfo = jsonPropertyInfo.AssociatedParameter;
             if (jsonParameterInfo != null)

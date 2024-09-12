@@ -176,7 +176,7 @@ namespace System.Net.Http
 
             try
             {
-                return method!.Invoke(_nativeHandler, parameters)!;
+                return method!.Invoke(_nativeUnderlyingHandler, parameters)!;
             }
             catch (TargetInvocationException e)
             {

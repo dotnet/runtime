@@ -8,6 +8,7 @@ using System.Linq;
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared;
 using ILLink.Shared.DataFlow;
+using ILLink.Shared.TrimAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -26,6 +27,8 @@ namespace ILLink.RoslynAnalyzer
 		private protected abstract DiagnosticTargets AnalyzerDiagnosticTargets { get; }
 
 		private protected abstract DiagnosticDescriptor RequiresDiagnosticRule { get; }
+
+		private protected abstract DiagnosticId RequiresDiagnosticId { get; }
 
 		private protected abstract DiagnosticDescriptor RequiresAttributeMismatch { get; }
 		private protected abstract DiagnosticDescriptor RequiresOnStaticCtor { get; }
@@ -123,41 +126,51 @@ namespace ILLink.RoslynAnalyzer
 					INamedTypeSymbol type)
 				{
 					foreach (var memberpair in type.GetMemberInterfaceImplementationPairs ()) {
+						var implementationType = memberpair.ImplementationMember switch {
+							IMethodSymbol method => method.ContainingType,
+							IPropertySymbol property => property.ContainingType,
+							IEventSymbol @event => @event.ContainingType,
+							_ => throw new NotSupportedException ()
+						};
+						ISymbol origin = memberpair.ImplementationMember;
+
+						// If this type implements an interface method through a base class, the origin of the warning is this type,
+						// not the member on the base class.
+						if (!implementationType.IsInterface () && !SymbolEqualityComparer.Default.Equals (implementationType, type))
+							origin = type;
+
 						if (HasMismatchingAttributes (memberpair.InterfaceMember, memberpair.ImplementationMember)) {
-							ReportMismatchInAttributesDiagnostic (symbolAnalysisContext, memberpair.ImplementationMember, memberpair.InterfaceMember, isInterface: true);
+							ReportMismatchInAttributesDiagnostic (symbolAnalysisContext, memberpair.ImplementationMember, memberpair.InterfaceMember, isInterface: true, origin);
 						}
 					}
 				}
 			});
 		}
 
-		public bool CheckAndCreateRequiresDiagnostic (
-			IOperation operation,
+		internal void CheckAndCreateRequiresDiagnostic (
 			ISymbol member,
 			ISymbol containingSymbol,
 			ImmutableArray<ISymbol> incompatibleMembers,
-			[NotNullWhen (true)] out Diagnostic? diagnostic)
+			in DiagnosticContext diagnosticContext)
 		{
-			diagnostic = null;
 			// Do not emit any diagnostic if caller is annotated with the attribute too.
 			if (containingSymbol.IsInRequiresScope (RequiresAttributeName, out _))
-				return false;
+				return;
 
-			if (CreateSpecialIncompatibleMembersDiagnostic (operation, incompatibleMembers, member, out diagnostic))
-				return diagnostic != null;
+			if (CreateSpecialIncompatibleMembersDiagnostic (incompatibleMembers, member, diagnosticContext))
+				return;
 
 			// Warn on the most derived base method taking into account covariant returns
 			while (member is IMethodSymbol method && method.OverriddenMethod != null && SymbolEqualityComparer.Default.Equals (method.ReturnType, method.OverriddenMethod.ReturnType))
 				member = method.OverriddenMethod;
 
 			if (!member.DoesMemberRequire (RequiresAttributeName, out var requiresAttribute))
-				return false;
+				return;
 
 			if (!VerifyAttributeArguments (requiresAttribute))
-				return false;
+				return;
 
-			diagnostic = CreateRequiresDiagnostic (operation, member, requiresAttribute);
-			return true;
+			CreateRequiresDiagnostic (member, requiresAttribute, diagnosticContext);
 		}
 
 		[Flags]
@@ -210,16 +223,11 @@ namespace ILLink.RoslynAnalyzer
 		/// <param name="operationContext">Analyzer operation context to be able to report the diagnostic.</param>
 		/// <param name="member">Information about the member that generated the diagnostic.</param>
 		/// <param name="requiresAttribute">Requires attribute data to print attribute arguments.</param>
-		private Diagnostic CreateRequiresDiagnostic (IOperation operation, ISymbol member, AttributeData requiresAttribute)
+		private void CreateRequiresDiagnostic (ISymbol member, AttributeData requiresAttribute, in DiagnosticContext diagnosticContext)
 		{
 			var message = GetMessageFromAttribute (requiresAttribute);
 			var url = GetUrlFromAttribute (requiresAttribute);
-			return Diagnostic.Create (
-				RequiresDiagnosticRule,
-				operation.Syntax.GetLocation (),
-				member.GetDisplayName (),
-				message,
-				url);
+			diagnosticContext.AddDiagnostic (RequiresDiagnosticId, member.GetDisplayName (), message, url);
 		}
 
 		private void ReportRequiresOnStaticCtorDiagnostic (SymbolAnalysisContext symbolAnalysisContext, IMethodSymbol ctor)
@@ -230,12 +238,13 @@ namespace ILLink.RoslynAnalyzer
 				ctor.GetDisplayName ()));
 		}
 
-		private void ReportMismatchInAttributesDiagnostic (SymbolAnalysisContext symbolAnalysisContext, ISymbol member, ISymbol baseMember, bool isInterface = false)
+		private void ReportMismatchInAttributesDiagnostic (SymbolAnalysisContext symbolAnalysisContext, ISymbol member, ISymbol baseMember, bool isInterface = false, ISymbol? origin = null)
 		{
+			origin ??= member;
 			string message = MessageFormat.FormatRequiresAttributeMismatch (member.HasAttribute (RequiresAttributeName), isInterface, RequiresAttributeName, member.GetDisplayName (), baseMember.GetDisplayName ());
 			symbolAnalysisContext.ReportDiagnostic (Diagnostic.Create (
 				RequiresAttributeMismatch,
-				member.Locations[0],
+				origin.Locations[0],
 				message));
 		}
 
@@ -271,12 +280,10 @@ namespace ILLink.RoslynAnalyzer
 		/// <param name="member">Member to compare.</param>
 		/// <returns>True if the function generated a diagnostic; otherwise, returns false</returns>
 		protected virtual bool CreateSpecialIncompatibleMembersDiagnostic (
-			IOperation operation,
 			ImmutableArray<ISymbol> specialIncompatibleMembers,
 			ISymbol member,
-			out Diagnostic? incompatibleMembersDiagnostic)
+			in DiagnosticContext diagnosticContext)
 		{
-			incompatibleMembersDiagnostic = null;
 			return false;
 		}
 
@@ -319,29 +326,26 @@ namespace ILLink.RoslynAnalyzer
 				|| IsRequiresCheck (propertySymbol, compilation);
 		}
 
-		internal bool CheckAndCreateRequiresDiagnostic (
+		internal void CheckAndCreateRequiresDiagnostic (
 			IOperation operation,
 			ISymbol member,
 			ISymbol owningSymbol,
 			DataFlowAnalyzerContext context,
 			FeatureContext featureContext,
-			[NotNullWhen (true)] out Diagnostic? diagnostic)
+			in DiagnosticContext diagnosticContext)
 		{
 			// Warnings are not emitted if the featureContext says the feature is available.
-			if (featureContext.IsEnabled (RequiresAttributeFullyQualifiedName)) {
-				diagnostic = null;
-				return false;
-			}
+			if (featureContext.IsEnabled (RequiresAttributeFullyQualifiedName))
+				return;
 
 			ISymbol containingSymbol = operation.FindContainingSymbol (owningSymbol);
 
 			var incompatibleMembers = context.GetSpecialIncompatibleMembers (this);
-			return CheckAndCreateRequiresDiagnostic (
-				operation,
+			CheckAndCreateRequiresDiagnostic (
 				member,
 				containingSymbol,
 				incompatibleMembers,
-				out diagnostic);
+				diagnosticContext);
 		}
 
 		internal virtual bool IsIntrinsicallyHandled (

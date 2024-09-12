@@ -969,6 +969,17 @@ private:
     // ObjectiveCMarshal.NativeAot.cs
     BYTE m_taggedAlloc[2 * sizeof(void*)];
 #endif // FEATURE_OBJCMARSHAL
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<InteropSyncBlockInfo>
+{
+#ifdef FEATURE_COMINTEROP
+    static constexpr size_t CCW = offsetof(InteropSyncBlockInfo, m_pCCW);
+    static constexpr size_t RCW = offsetof(InteropSyncBlockInfo, m_pRCW);
+#endif // FEATURE_COMINTEROP
 };
 
 typedef DPTR(InteropSyncBlockInfo) PTR_InteropSyncBlockInfo;
@@ -1274,6 +1285,14 @@ class SyncBlock
         return m_Monitor.GetPtrForLockContract();
     }
 #endif // defined(ENABLE_CONTRACTS_IMPL)
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<SyncBlock>
+{
+    static constexpr size_t InteropInfo = offsetof(SyncBlock, m_pInteropInfo);
 };
 
 class SyncTableEntry
@@ -1654,8 +1673,15 @@ class ObjHeader
     void ReleaseSpinLock();
 
     BOOL Validate (BOOL bVerifySyncBlkIndex = TRUE);
+
+    template<typename T> friend struct ::cdac_data;
 };
 
+template<>
+struct cdac_data<ObjHeader>
+{
+    static constexpr size_t SyncBlockValue = offsetof(ObjHeader, m_SyncBlockValue);
+};
 
 typedef DPTR(class ObjHeader) PTR_ObjHeader;
 

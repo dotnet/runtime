@@ -1,13 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if defined(__APPLE__) && __APPLE__
+#define _DARWIN_UNLIMITED_SELECT 1
+#endif
+
 #include "pal_config.h"
 #include "pal_networking.h"
 #include "pal_safecrt.h"
 #include "pal_utilities.h"
 #include <pal_networking_common.h>
 #include <fcntl.h>
-
 #include <stdlib.h>
 #include <limits.h>
 #include <pthread.h>
@@ -21,6 +24,7 @@
 #include <sys/event.h>
 #elif HAVE_SYS_POLL_H
 #include <sys/poll.h>
+#include <sys/select.h>
 #endif
 #if HAVE_SYS_PROCINFO_H
 #include <sys/proc_info.h>
@@ -31,7 +35,6 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <net/if.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -2760,6 +2763,97 @@ int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available)
 
     *available = (int32_t)result;
     return Error_SUCCESS;
+}
+
+int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int writeFdsCount,  int* errorFds, int errorFdsCount, int32_t microseconds, int maxFd, int* triggered)
+{
+#ifdef _DARWIN_UNLIMITED_SELECT
+    fd_set readSet;
+    fd_set writeSet;
+    fd_set errorSet;
+
+    fd_set* readSetPtr;
+    fd_set* writeSetPtr;
+    fd_set* errorSetPtr;
+
+    if (maxFd < FD_SETSIZE)
+    {
+        FD_ZERO(&readSet);
+        FD_ZERO(&writeSet);
+        FD_ZERO(&errorSet);
+        readSetPtr = readFdsCount == 0 ? NULL : &readSet;
+        writeSetPtr= writeFdsCount == 0 ? NULL : &writeSet;
+        errorSetPtr = errorFdsCount == 0 ? NULL : &errorSet;
+    }
+    else
+    {
+       readSetPtr = readFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
+       writeSetPtr = writeFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
+       errorSetPtr = errorFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
+    }
+
+
+    struct timeval timeout;
+    timeout.tv_sec = microseconds / 1000000;
+    timeout.tv_usec = microseconds % 1000000;
+
+    int fd;
+    for (int i = 0 ; i < readFdsCount; i++)
+    {
+        fd = *(readFds + i);
+        __DARWIN_FD_SET(fd, readSetPtr);
+    }
+    for (int i = 0 ; i < writeFdsCount; i++)
+    {
+        fd = *(writeFds + i);
+        __DARWIN_FD_SET(fd, writeSetPtr);
+    }
+    for (int i = 0 ; i < errorFdsCount; i++)
+    {
+        fd = *(errorFds + i);
+        __DARWIN_FD_SET(fd, errorSetPtr);
+    }
+
+    *triggered = select(maxFd + 1, readSetPtr, writeSetPtr, errorSetPtr, microseconds < 0 ? NULL : &timeout);
+
+    if (*triggered < 0)
+    {
+        return SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+
+    for (int i = 0 ; i < readFdsCount; i++)
+    {
+        fd = *(readFds + i);
+        *(readFds + i) = __DARWIN_FD_ISSET(fd, readSetPtr);
+    }
+    for (int i = 0 ; i < writeFdsCount; i++)
+    {
+        fd = *(writeFds + i);
+        *(writeFds + i) = __DARWIN_FD_ISSET(fd, writeSetPtr);
+    }
+    for (int i = 0 ; i < errorFdsCount; i++)
+    {
+        fd = *(errorFds + i);
+        *(errorFds + i) = __DARWIN_FD_ISSET(fd, errorSetPtr);
+    }
+
+    if (maxFd >= FD_SETSIZE)
+    {
+        free(readSetPtr);
+        free(writeSetPtr);
+        free(errorSetPtr);
+    }
+
+    return Error_SUCCESS;
+#else
+    // avoid unused parameters warnings
+    (void*)readFds;
+    (void*)writeFds;
+    (void*)errorFds;
+    (void*)triggered;
+    readFdsCount + writeFdsCount + errorFdsCount + microseconds + maxFd;
+    return SystemNative_ConvertErrorPlatformToPal(ENOTSUP);
+#endif
 }
 
 #if HAVE_EPOLL

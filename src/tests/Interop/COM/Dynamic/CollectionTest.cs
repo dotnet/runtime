@@ -29,6 +29,7 @@ namespace Dynamic
 
         private void Array()
         {
+            Console.WriteLine($" -- {nameof(Array)}");
             int len = 5;
             int[] array = new int[len];
             int[] expected = new int[len];
@@ -39,19 +40,19 @@ namespace Dynamic
                 expected[i] = val + 1;
             }
 
-            // Call method returning array
+            Console.WriteLine("  + Call method returning array");
             AssertExtensions.CollectionEqual(expected, obj.Array_PlusOne_Ret(array));
 
-            // Call method with array in/out
+            Console.WriteLine("  + Call method with array in/out");
             int[] inout = new int[len];
             System.Array.Copy(array, inout, len);
             obj.Array_PlusOne_InOut(ref inout);
             AssertExtensions.CollectionEqual(expected, inout);
 
-            // Call method returning array as variant
+            Console.WriteLine("  + Call method returning array as variant");
             AssertExtensions.CollectionEqual(expected, obj.ArrayVariant_PlusOne_Ret(array));
 
-            // Call method with array as variant in/out
+            Console.WriteLine("  + Call method with array as variant in/out");
             inout = new int[len];
             System.Array.Copy(array, inout, len);
             obj.ArrayVariant_PlusOne_InOut(ref inout);
@@ -60,7 +61,9 @@ namespace Dynamic
 
         private void CustomCollection()
         {
-            // Add to the collection
+            Console.WriteLine($" -- {nameof(CustomCollection)}");
+
+            Console.WriteLine("  + Add to the collection");
             Assert.Equal(0, obj.Count);
             string[] array = { "ONE", "TWO", "THREE" };
             foreach (string s in array)
@@ -68,7 +71,7 @@ namespace Dynamic
                 obj.Add(s);
             }
 
-            // Get item by index
+            Console.WriteLine("  + Get item by index");
             Assert.Equal(array[0], obj[0]);
             Assert.Equal(array[0], obj.Item(0));
             Assert.Equal(array[0], obj.Item[0]);
@@ -78,10 +81,10 @@ namespace Dynamic
             Assert.Equal(array[2], obj.Item(2));
             Assert.Equal(array.Length, obj.Count);
 
-            // Enumerate collection
+            Console.WriteLine("  + Enumerate collection");
             List<string> list = new List<string>();
 
-            // Get and use enumerator directly
+            Console.WriteLine("  + Get and use enumerator directly");
             System.Collections.IEnumerator enumerator = obj.GetEnumerator();
             while (enumerator.MoveNext())
             {
@@ -97,7 +100,7 @@ namespace Dynamic
             }
             AssertExtensions.CollectionEqual(array, list);
 
-            // Iterate over object that handles DISPID_NEWENUM
+            Console.WriteLine("  + Iterate over object that handles DISPID_NEWENUM");
             list.Clear();
             foreach (string str in obj)
             {
@@ -106,7 +109,8 @@ namespace Dynamic
             AssertExtensions.CollectionEqual(array, list);
 
             array = new string[] { "NEW_ONE", "NEW_TWO", "NEW_THREE" };
-            // Update items by index
+
+            Console.WriteLine("  + Update items by index");
             obj[0] = array[0];
             Assert.Equal(array[0], obj[0]);
             obj[1] = array[1];
@@ -122,19 +126,21 @@ namespace Dynamic
             }
             AssertExtensions.CollectionEqual(array, list);
 
-            // Remove item
+            Console.WriteLine("  + Remove item");
             obj.Remove(1);
             Assert.Equal(2, obj.Count);
             Assert.Equal(array[0], obj[0]);
             Assert.Equal(array[2], obj[1]);
 
-            // Clear collection
+            Console.WriteLine("  + Clear collection");
             obj.Clear();
             Assert.Equal(0, obj.Count);
         }
 
         private void IndexChain()
         {
+            Console.WriteLine($" -- {nameof(IndexChain)}");
+
             dynamic collection = obj.GetDispatchCollection();
             collection.Add(collection);
 
