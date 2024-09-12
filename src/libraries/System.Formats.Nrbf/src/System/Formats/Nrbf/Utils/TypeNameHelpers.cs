@@ -12,7 +12,8 @@ namespace System.Formats.Nrbf.Utils;
 
 internal static class TypeNameHelpers
 {
-    // PrimitiveType does not define Object, IntPtr or UIntPtr
+    // PrimitiveType does not define Object, IntPtr or UIntPtr.
+    internal const PrimitiveType StringPrimitiveType = (PrimitiveType)18;
     internal const PrimitiveType ObjectPrimitiveType = (PrimitiveType)19;
     internal const PrimitiveType IntPtrPrimitiveType = (PrimitiveType)20;
     internal const PrimitiveType UIntPtrPrimitiveType = (PrimitiveType)21;
@@ -22,8 +23,6 @@ internal static class TypeNameHelpers
 
     internal static TypeName GetPrimitiveTypeName(PrimitiveType primitiveType)
     {
-        Debug.Assert(primitiveType is not (PrimitiveType.None or PrimitiveType.Null));
-
         TypeName? typeName = s_primitiveTypeNames[(int)primitiveType];
         if (typeName is null)
         {
@@ -44,11 +43,11 @@ internal static class TypeNameHelpers
                 PrimitiveType.Decimal => "System.Decimal",
                 PrimitiveType.TimeSpan => "System.TimeSpan",
                 PrimitiveType.DateTime => "System.DateTime",
-                PrimitiveType.String => "System.String",
+                StringPrimitiveType => "System.String",
                 ObjectPrimitiveType => "System.Object",
                 IntPtrPrimitiveType => "System.IntPtr",
                 UIntPtrPrimitiveType => "System.UIntPtr",
-                _ => throw new ArgumentOutOfRangeException(paramName: nameof(primitiveType), actualValue: primitiveType, message: null)
+                _ => throw new InvalidOperationException()
             };
 
             s_primitiveTypeNames[(int)primitiveType] = typeName = TypeName.Parse(fullName.AsSpan()).WithCoreLibAssemblyName();
@@ -99,7 +98,7 @@ internal static class TypeNameHelpers
         else if (typeof(T) == typeof(TimeSpan))
             return PrimitiveType.TimeSpan;
         else if (typeof(T) == typeof(string))
-            return PrimitiveType.String;
+            return StringPrimitiveType;
         else if (typeof(T) == typeof(IntPtr))
             return IntPtrPrimitiveType;
         else if (typeof(T) == typeof(UIntPtr))

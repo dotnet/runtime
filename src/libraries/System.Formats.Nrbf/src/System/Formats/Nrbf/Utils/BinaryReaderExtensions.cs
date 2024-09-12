@@ -60,8 +60,8 @@ internal static class BinaryReaderExtensions
     internal static PrimitiveType ReadPrimitiveType(this BinaryReader reader)
     {
         byte primitiveType = reader.ReadByte();
-        // String is the last defined value, 4 is not used at all.
-        if (primitiveType is 0 or 4 or (byte)PrimitiveType.Null or > (byte)PrimitiveType.String)
+        // Boolean is the first valid value (1), UInt64 (16) is the last one. 4 is not used at all.
+        if (primitiveType is 4 or < (byte)PrimitiveType.Boolean or > (byte)PrimitiveType.UInt64)
         {
             ThrowHelper.ThrowInvalidValue(primitiveType);
         }
@@ -88,7 +88,8 @@ internal static class BinaryReaderExtensions
             PrimitiveType.Double => reader.ReadDouble(),
             PrimitiveType.Decimal => reader.ParseDecimal(),
             PrimitiveType.DateTime => CreateDateTimeFromData(reader.ReadUInt64()),
-            _ => new TimeSpan(reader.ReadInt64()),
+            PrimitiveType.TimeSpan => new TimeSpan(reader.ReadInt64()),
+            _ => throw new InvalidOperationException(),
         };
 
     // BinaryFormatter serializes decimals as strings and we can't BinaryReader.ReadDecimal.
@@ -117,14 +118,22 @@ internal static class BinaryReaderExtensions
 
     internal static char[] ParseChars(this BinaryReader reader, int count)
     {
+        char[]? result;
         try
         {
-            return reader.ReadChars(count);
+            result = reader.ReadChars(count);
         }
         catch (ArgumentException) // A surrogate character was read.
         {
             throw new SerializationException(SR.Serialization_SurrogateCharacter);
         }
+
+        if (result.Length != count)
+        {
+            ThrowHelper.ThrowEndOfStreamException();
+        }
+
+        return result;
     }
 
     /// <summary>

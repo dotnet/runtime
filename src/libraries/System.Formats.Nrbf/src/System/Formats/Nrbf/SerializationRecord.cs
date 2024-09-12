@@ -114,8 +114,8 @@ public abstract class SerializationRecord
     internal virtual object? GetValue() => this;
 
     internal virtual void HandleNextRecord(SerializationRecord nextRecord, NextInfo info)
-        => Debug.Fail($"HandleNextRecord should not have been called for '{GetType().Name}'");
+        => throw new InvalidOperationException();
 
     internal virtual void HandleNextValue(object value, NextInfo info)
-        => Debug.Fail($"HandleNextValue should not have been called for '{GetType().Name}'");
+        => throw new InvalidOperationException();
 }

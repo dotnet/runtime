@@ -21,7 +21,7 @@ internal sealed class ArraySingleStringRecord : SZArrayRecord<string?>
     public override SerializationRecordType RecordType => SerializationRecordType.ArraySingleString;
 
     /// <inheritdoc />
-    public override TypeName TypeName => TypeNameHelpers.GetPrimitiveSZArrayTypeName(PrimitiveType.String);
+    public override TypeName TypeName => TypeNameHelpers.GetPrimitiveSZArrayTypeName(TypeNameHelpers.StringPrimitiveType);
 
     private List<SerializationRecord> Records { get; }
 

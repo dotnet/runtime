@@ -138,7 +138,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
             lengths[i] = ArrayInfo.ParseValidArrayLength(reader);
             totalElementCount *= lengths[i];
 
-            if (totalElementCount > uint.MaxValue)
+            if (totalElementCount > ArrayInfo.MaxArrayLength)
             {
                 ThrowHelper.ThrowInvalidValue(lengths[i]); // max array size exceeded
             }

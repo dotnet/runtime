@@ -30,14 +30,7 @@ internal sealed class BinaryLibraryRecord : SerializationRecord
 
     public override SerializationRecordType RecordType => SerializationRecordType.BinaryLibrary;
 
-    public override TypeName TypeName
-    {
-        get
-        {
-            Debug.Fail("TypeName should never be called on BinaryLibraryRecord");
-            return TypeName.Parse(nameof(BinaryLibraryRecord).AsSpan());
-        }
-    }
+    public override TypeName TypeName => TypeName.Parse(nameof(BinaryLibraryRecord).AsSpan());
 
     internal string? RawLibraryName { get; }
 

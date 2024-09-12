@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Formats.Nrbf.Utils;
 using System.IO;
 using System.Linq;
@@ -15,6 +16,7 @@ namespace System.Formats.Nrbf;
 /// <summary>
 /// The ID of <see cref="SerializationRecord" />.
 /// </summary>
+[DebuggerDisplay("{_id}")]
 public readonly struct SerializationRecordId : IEquatable<SerializationRecordId>
 {
 #pragma warning disable CS0649 // the default value is used on purpose

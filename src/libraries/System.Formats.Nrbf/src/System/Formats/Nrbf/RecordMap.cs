@@ -56,7 +56,7 @@ internal sealed class RecordMap : IReadOnlyDictionary<SerializationRecordId, Ser
                     return;
                 }
 #endif
-                throw new SerializationException(SR.Format(SR.Serialization_DuplicateSerializationRecordId, record.Id));
+                throw new SerializationException(SR.Format(SR.Serialization_DuplicateSerializationRecordId, record.Id._id));
             }
         }
     }
