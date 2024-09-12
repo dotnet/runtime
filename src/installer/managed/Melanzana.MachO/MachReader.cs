@@ -395,7 +395,7 @@ namespace Melanzana.MachO
             return objectFile;
         }
 
-        private static MachMagic ReadMagic(Stream stream)
+        private static bool TryReadMachMagic(Stream stream, out MachMagic machMagic)
         {
             if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
@@ -404,12 +404,16 @@ namespace Melanzana.MachO
             stream.Seek(0, SeekOrigin.Begin);
             stream.ReadFully(magicBuffer);
 
-            var magic = (MachMagic)BinaryPrimitives.ReadUInt32BigEndian(magicBuffer);
-            if (!Enum.IsDefined(typeof(MachMagic), magic))
+            machMagic = (MachMagic)BinaryPrimitives.ReadUInt32BigEndian(magicBuffer);
+            return Enum.IsDefined(typeof(MachMagic), machMagic);
+        }
+
+        private static MachMagic ReadMagic(Stream stream)
+        {
+            if (!TryReadMachMagic(stream, out var magic))
             {
                 throw new InvalidDataException("The archive is not a valid MACH object.");
             }
-
             return magic;
         }
 
@@ -417,6 +421,19 @@ namespace Melanzana.MachO
         {
             var magic = ReadMagic(stream);
             return magic == MachMagic.FatMagicLittleEndian || magic == MachMagic.FatMagicBigEndian;
+        }
+
+        public static bool IsMach(Stream stream)
+        {
+            bool isMach = TryReadMachMagic(stream, out _);
+            stream.Seek(0, SeekOrigin.Begin);
+            return isMach;
+        }
+
+        public static bool IsMachOImage(string filePath)
+        {
+            using var stream = File.OpenRead(filePath);
+            return IsMach(stream);
         }
 
         public static IList<MachObjectFile> Read(Stream stream)

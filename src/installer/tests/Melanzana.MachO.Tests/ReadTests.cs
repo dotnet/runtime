@@ -8,6 +8,13 @@ namespace Melanzana.MachO.Tests
 {
     public class ReadTests
     {
+        public static MachObjectFile GetMachExecutable()
+        {
+            var aOutStream = typeof(RoundtripTests).Assembly.GetManifestResourceStream("Melanzana.MachO.Tests.Data.a.out")!;
+            var objectFile = MachReader.Read(aOutStream).Single();
+            return objectFile;
+        }
+
         [Fact]
         public void ReadExecutable()
         {

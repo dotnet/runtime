@@ -8,6 +8,7 @@ using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Text;
 using Melanzana.CodeSign;
+using Melanzana.MachO;
 
 namespace Microsoft.NET.HostModel.AppHost
 {
@@ -179,10 +180,10 @@ namespace Microsoft.NET.HostModel.AppHost
                     {
                         throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {appHostDestinationFilePath}.");
                     }
-                    if (enableMacOSCodeSign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    {
-                        Signer.AdHocSign(appHostDestinationFilePath);
-                    }
+                }
+                if (enableMacOSCodeSign)
+                {
+                    Signer.AdHocSign(appHostDestinationFilePath);
                 }
             }
             catch (Exception ex)

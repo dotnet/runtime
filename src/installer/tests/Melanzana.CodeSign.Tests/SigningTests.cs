@@ -5,6 +5,7 @@ using Melanzana.MachO;
 using Melanzana.Streams;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using Microsoft.DotNet.CoreSetup.Test;
 
 namespace Melanzana.CodeSign.Tests
 {
@@ -167,6 +168,29 @@ namespace Melanzana.CodeSign.Tests
                     Assert.NotEqual(0, exitCode);
                 }
 
+            }
+            finally
+            {
+                if (File.Exists(tmpFilePath))
+                    File.Delete(tmpFilePath);
+            }
+        }
+
+        [Fact]
+        public void RemoveSignatureAndSignTwice()
+        {
+            string tmpFilePath = Path.GetTempFileName();
+            try
+            {
+                var objectFile = GetMachObjectFileFromResource("Melanzana.CodeSign.Tests.Data.a.out");
+                using (var strippedFileTmpStream = new FileStream(tmpFilePath, FileMode.Create))
+                    MachWriter.Write(strippedFileTmpStream, objectFile);
+
+                Signer.TryRemoveCodesign(tmpFilePath);
+                Signer.AdHocSign(tmpFilePath);
+
+                Signer.TryRemoveCodesign(tmpFilePath);
+                Signer.AdHocSign(tmpFilePath);
             }
             finally
             {

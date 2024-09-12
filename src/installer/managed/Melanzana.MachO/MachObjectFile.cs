@@ -261,18 +261,35 @@ namespace Melanzana.MachO
                     case MachCustomLoadCommand customLoadCommand:
                         fileOffset += (ulong)customLoadCommand.Data.Length;
                         break;
+                    case MachRunPath machRunPath:
+                        fileOffset += (ulong)(4 + Encoding.UTF8.GetByteCount(machRunPath.RunPath) + 1);
+                        break;
+                    case MachLoadDylinkerCommand loadDylinkerCommand:
+                        fileOffset += (ulong)(4 + Encoding.UTF8.GetByteCount(loadDylinkerCommand.Name) + 1);
+                        break;
+                    case MachUuid:
+                        fileOffset += 16;
+                        break;
+                    case MachSourceVersion:
+                        fileOffset += MachSourceVersion.BinarySize;
+                        break;
+                    default:
+                        throw new NotImplementedException($"Load command {loadCommand.GetType().Name} is not handled.");
                 }
             }
 
-            fileOffset = (fileOffset + segmentAlignment) & ~segmentAlignment;
+            // Align segments to virtual page size for efficiency
+            fileOffset = Align(fileOffset, segmentAlignment);
             ulong virtualAddress = options.BaseAddress;
             foreach (var segment in Segments)
             {
                 ulong segmentFileSize = 0;
                 ulong segmentSize = 0;
 
-                segment.VirtualAddress = virtualAddress;
-                segment.FileOffset = fileOffset;
+                // __TEXT and __PAGEZERO are typically set at FileOffset 0
+                // Segments where these are set to 0 are probably set this way for a reason
+                segment.VirtualAddress = Align(segment.VirtualAddress == 0 ? 0 : virtualAddress, segmentAlignment);
+                segment.FileOffset = Align(segment.FileOffset == 0 ? 0 : fileOffset, segmentAlignment);
 
                 if (!segment.IsLinkEditSegment && segment.Sections.Count > 0)
                 {
@@ -280,8 +297,8 @@ namespace Melanzana.MachO
                     {
                         ulong alignment = 1u << (int)section.Log2Alignment;
 
-                        fileOffset = (fileOffset + alignment - 1) & ~(alignment - 1);
-                        virtualAddress = (virtualAddress + alignment - 1) & ~(alignment - 1);
+                        fileOffset = Align(fileOffset, alignment);
+                        virtualAddress = Align(virtualAddress, alignment);
 
                         if (section.Type is not MachSectionType.ZeroFill or MachSectionType.GBZeroFill or MachSectionType.ThreadLocalZeroFill)
                         {
@@ -301,10 +318,10 @@ namespace Melanzana.MachO
                         segmentSize = Math.Max(segmentSize, virtualAddress - segment.VirtualAddress);
                     }
 
-                    segment.FileSize = (segmentFileSize + segmentAlignment - 1) & ~(segmentAlignment - 1);
-                    segment.Size = (segmentSize + segmentAlignment - 1) & ~(segmentAlignment - 1);
+                    segment.FileSize = Align(segmentFileSize, segmentAlignment);
+                    segment.Size = Align(segmentSize, segmentAlignment);
 
-                    virtualAddress = (virtualAddress + segmentAlignment - 1) & ~(segmentAlignment - 1);
+                    virtualAddress = Align(virtualAddress, segmentAlignment);
                 }
             }
 
@@ -316,6 +333,9 @@ namespace Melanzana.MachO
             }
 
             static int AlignedSize(int size, bool is64bit) => is64bit ? (size + 7) & ~7 : (size + 3) & ~3;
+
+            static ulong Align(ulong value, ulong alignment)
+                => (value + alignment - 1) & ~(alignment - 1);
         }
     }
 }

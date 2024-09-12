@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\managed\Melanzana.CodeSign\Melanzana.CodeSign.csproj" />
+    <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -44,7 +44,7 @@ namespace Microsoft.NET.HostModel.Bundle
                        Version targetFrameworkVersion = null,
                        bool diagnosticOutput = false,
                        string appAssemblyName = null,
-                       bool macosCodesign = true)
+                       bool? macosCodesign = null)
         {
             _tracer = new Trace(diagnosticOutput);
 
@@ -65,7 +65,11 @@ namespace Microsoft.NET.HostModel.Bundle
 
             BundleManifest = new Manifest(_target.BundleMajorVersion, netcoreapp3CompatMode: options.HasFlag(BundleOptions.BundleAllContent));
             _options = _target.DefaultOptions | options;
-            _macosCodesign = macosCodesign;
+            if (macosCodesign == true && targetOS != OSPlatform.OSX)
+            {
+                throw new ArgumentException("macosCodesign can only be set to true when publishing for OSX", nameof(macosCodesign));
+            }
+            _macosCodesign = macosCodesign ?? targetOS == OSPlatform.OSX;
         }
 
         private bool ShouldCompress(FileType type)
@@ -348,7 +352,7 @@ namespace Microsoft.NET.HostModel.Bundle
             HostWriter.SetAsBundle(bundlePath, headerOffset);
 
             // Sign the bundle if requested
-            if (_macosCodesign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (_macosCodesign)
             {
                 Signer.AdHocSign(bundlePath);
             }

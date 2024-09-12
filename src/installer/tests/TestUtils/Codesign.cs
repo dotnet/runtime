@@ -7,7 +7,7 @@ using Melanzana.Streams;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
-namespace Melanzana.CodeSign.Tests
+namespace Microsoft.DotNet.CoreSetup.Test
 {
     public class Codesign
     {

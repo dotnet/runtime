@@ -8,8 +8,11 @@ using System.Linq;
 using System.Runtime.InteropServices;
 
 using FluentAssertions;
+using Melanzana.MachO;
+using Melanzana.MachO.Tests;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.NET.HostModel.AppHost.Tests;
 using Xunit;
 
 namespace Microsoft.NET.HostModel.Bundle.Tests
@@ -24,8 +27,20 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         }
 
         private static string BundlerHostName = Binaries.GetExeName(SharedTestState.AppName);
-        private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, bool macosCodesign = true)
-            => new Bundler(BundlerHostName, sharedTestState.App.GetUniqueSubdirectory("bundle"), bundleOptions, targetFrameworkVersion: version, macosCodesign: macosCodesign);
+        private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, OSPlatform? targetOS = null, bool? macosCodesign = null)
+        {
+            return new Bundler(
+                BundlerHostName,
+                sharedTestState.App.GetUniqueSubdirectory("bundle"),
+                bundleOptions,
+                targetOS: targetOS,
+                targetFrameworkVersion: version,
+                macosCodesign: macosCodesign);
+        }
+
+        OSPlatform CurrentOS => OperatingSystem.IsWindows() ? OSPlatform.Windows :
+            OperatingSystem.IsLinux() ? OSPlatform.Linux :
+            OperatingSystem.IsMacOS() ? OSPlatform.OSX : throw new PlatformNotSupportedException();
 
         [Fact]
         public void EnableCompression_Before60_Fails()
@@ -313,8 +328,49 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        public void CodesignMachOBundle(bool shouldCodesign)
+        {
+            var appHostMockFile = PrepareMockMachAppHostFile(Path.GetTempPath());
+            try
+            {
+                TestApp app = sharedTestState.App;
+                FileSpec[] fileSpecs = new FileSpec[]
+                {
+                    new FileSpec(appHostMockFile, BundlerHostName),
+                    new FileSpec(app.AppDll, Path.GetRelativePath(app.Location, app.AppDll)),
+                    new FileSpec(app.DepsJson, Path.GetRelativePath(app.Location, app.DepsJson)),
+                    new FileSpec(app.RuntimeConfigJson, Path.GetRelativePath(app.Location, app.RuntimeConfigJson)),
+                };
+
+                Bundler bundler = CreateBundlerInstance(targetOS: OSPlatform.OSX, macosCodesign: shouldCodesign);
+                string bundledApp = bundler.GenerateBundle(fileSpecs);
+
+                if (!Codesign.IsAvailable())
+                {
+                    return;
+                }
+                // Check if the file is signed
+                var (exitCode, stdErr) = Codesign.Run($"--verify", bundledApp);
+                if (shouldCodesign)
+                {
+                    exitCode.Should().Be(0);
+                }
+                else
+                {
+                    exitCode.Should().Be(1);
+                }
+            }
+            finally
+            {
+                File.Delete(appHostMockFile);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [PlatformSpecific(TestPlatforms.OSX)]
-        public void Codesign(bool shouldCodesign)
+        public void CodesignBundle(bool shouldCodesign)
         {
             TestApp app = sharedTestState.App;
             FileSpec[] fileSpecs = new FileSpec[]
@@ -329,20 +385,53 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             string bundledApp = bundler.GenerateBundle(fileSpecs);
 
             // Check if the file is signed
-            CommandResult result = Command.Create("codesign", $"-v {bundledApp}")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute(expectedToFail: !shouldCodesign);
-
+            if (!Codesign.IsAvailable())
+            {
+                return;
+            }
+            // Check if the file is signed
+            var (exitCode, stdErr) = Codesign.Run($"--verify", bundledApp);
             if (shouldCodesign)
             {
-                result.Should().Pass();
+                exitCode.Should().Be(0);
             }
             else
             {
-                result.Should().Fail();
+                exitCode.Should().Be(1);
             }
         }
+
+        static string PrepareMockMachAppHostFile(string directory)
+        {
+            var objectFile = ReadTests.GetMachExecutable();
+            var segments = objectFile.LoadCommands.OfType<MachSegment>().ToArray();
+
+            var textSegment = segments.Single(s => s.Name == "__TEXT");
+            var textSection = textSegment.Sections.Single(s => s.SectionName == "__text");
+            using (var textStream = textSection.GetWriteStream())
+            {
+                textStream.Write(BundleHeaderPlaceholder);
+            }
+            // The text section has a large padding before it. We can more easily decrease the FileOffset than move all the sections after.
+            textSection.FileOffset -= (uint)BundleHeaderPlaceholder.Length;
+            objectFile.UpdateLayout();
+            string outputFilePath = Path.Combine(directory, "SourceAppHost.mach.o.mock");
+            using var outputFileStream = File.OpenWrite(outputFilePath);
+            MachWriter.Write(outputFileStream, objectFile);
+            return outputFilePath;
+        }
+
+        static readonly byte[] BundleHeaderPlaceholder = {
+            // 8 bytes represent the bundle header-offset
+            // Zero for non-bundle apphosts (default).
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            // 32 bytes represent the bundle signature: SHA-256 for ".net core bundle"
+            0x8b, 0x12, 0x02, 0xb9, 0x6a, 0x61, 0x20, 0x38,
+            0x72, 0x7b, 0x93, 0x02, 0x14, 0xd7, 0xa0, 0x32,
+            0x13, 0xf5, 0xb9, 0xe6, 0xef, 0xae, 0x33, 0x18,
+            0xee, 0x3b, 0x2d, 0xce, 0x24, 0xb3, 0x6a, 0xae
+        };
+
 
         public class SharedTestState : IDisposable
         {

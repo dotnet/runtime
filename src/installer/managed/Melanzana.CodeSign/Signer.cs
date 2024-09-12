@@ -43,128 +43,120 @@ namespace Melanzana.CodeSign
         {
             var bundleIdentifier = Path.GetFileName(executablePath);
 
-            byte[]? entitlementsBlob = null;
-            byte[]? entitlementsDerBlob = null;
-
             var hashTypesPerArch = new Dictionary<(MachCpuType cpuType, uint cpuSubType), HashType[]>();
             var cdBuildersPerArch = new Dictionary<(MachCpuType cpuType, uint cpuSubType), CodeDirectoryBuilder[]>();
 
             ExecutableSegmentFlags executableSegmentFlags = 0;
 
-            var inputFile = File.OpenRead(executablePath);
-            var objectFiles = MachReader.Read(inputFile).ToList();
-            var codeSignAllocate = new CodeSignAllocate(objectFiles);
-            foreach (var objectFile in objectFiles)
+            List<MachObjectFile> objectFiles;
+            CodeSignAllocate codeSignAllocate;
+            string tempFileName;
+            using (FileStream inputFile = File.Open(executablePath, FileMode.Open, FileAccess.Read))
             {
-                var hashTypes = GetHashTypesForObjectFile(objectFile);
-                var cdBuilders = new CodeDirectoryBuilder[hashTypes.Length];
-
-                hashTypesPerArch.Add((objectFile.CpuType, objectFile.CpuSubType), hashTypes);
-                cdBuildersPerArch.Add((objectFile.CpuType, objectFile.CpuSubType), cdBuilders);
-
-                long signatureSizeEstimate = 18000; // Blob Wrapper (CMS)
-                for (int i = 0; i < hashTypes.Length; i++)
+                objectFiles = MachReader.Read(inputFile).ToList();
+                codeSignAllocate = new CodeSignAllocate(objectFiles);
+                foreach (var objectFile in objectFiles)
                 {
-                    cdBuilders[i] = new CodeDirectoryBuilder(objectFile, bundleIdentifier)
+                    var hashTypes = GetHashTypesForObjectFile(objectFile);
+                    var cdBuilders = new CodeDirectoryBuilder[hashTypes.Length];
+
+                    hashTypesPerArch.Add((objectFile.CpuType, objectFile.CpuSubType), hashTypes);
+                    cdBuildersPerArch.Add((objectFile.CpuType, objectFile.CpuSubType), cdBuilders);
+
+                    long signatureSizeEstimate = 18000; // Blob Wrapper (CMS)
+                    for (int i = 0; i < hashTypes.Length; i++)
                     {
-                        HashType = hashTypes[i],
-                    };
+                        cdBuilders[i] = new CodeDirectoryBuilder(objectFile, bundleIdentifier)
+                        {
+                            HashType = hashTypes[i],
+                        };
 
-                    cdBuilders[i].ExecutableSegmentFlags |= executableSegmentFlags;
+                        cdBuilders[i].ExecutableSegmentFlags |= executableSegmentFlags;
 
-                    cdBuilders[i].Flags |= CodeDirectoryFlags.Adhoc;
-                    if (entitlementsBlob != null)
-                        cdBuilders[i].SetSpecialSlotData(CodeDirectorySpecialSlot.Entitlements, entitlementsBlob);
-                    if (entitlementsDerBlob != null)
-                        cdBuilders[i].SetSpecialSlotData(CodeDirectorySpecialSlot.EntitlementsDer, entitlementsDerBlob);
+                        cdBuilders[i].Flags |= CodeDirectoryFlags.Adhoc;
 
-                    signatureSizeEstimate += cdBuilders[i].Size(CodeDirectoryVersion.HighestVersion);
+                        signatureSizeEstimate += cdBuilders[i].Size(CodeDirectoryVersion.HighestVersion);
+                    }
+
+                    var codeSignatureCommand = objectFile.LoadCommands.OfType<MachCodeSignature>().FirstOrDefault();
+                    if (codeSignatureCommand == null ||
+                        codeSignatureCommand.FileSize < signatureSizeEstimate)
+                    {
+                        codeSignAllocate.SetArchSize(objectFile, (uint)signatureSizeEstimate);
+                    }
                 }
-
-                signatureSizeEstimate += entitlementsBlob?.Length ?? 0;
-                signatureSizeEstimate += entitlementsBlob?.Length ?? 0;
-
-                var codeSignatureCommand = objectFile.LoadCommands.OfType<MachCodeSignature>().FirstOrDefault();
-                if (codeSignatureCommand == null ||
-                    codeSignatureCommand.FileSize < signatureSizeEstimate)
-                {
-                    codeSignAllocate.SetArchSize(objectFile, (uint)signatureSizeEstimate);
-                }
+                tempFileName = codeSignAllocate.Allocate();
             }
 
-            string tempFileName = codeSignAllocate.Allocate();
-            inputFile.Close();
 
             // Re-read the object files
-            inputFile = File.OpenRead(tempFileName);
-            objectFiles = MachReader.Read(inputFile).ToList();
-            foreach (var objectFile in objectFiles)
+            using (FileStream tempFileStream = File.Open(tempFileName, FileMode.Open, FileAccess.ReadWrite))
             {
-                var hashTypes = hashTypesPerArch[(objectFile.CpuType, objectFile.CpuSubType)];
-                var cdBuilders = cdBuildersPerArch[(objectFile.CpuType, objectFile.CpuSubType)];
 
-                var blobs = new List<(CodeDirectorySpecialSlot Slot, byte[] Data)>();
-                var codeDirectory = cdBuilders[0].Build(objectFile.GetOriginalStream());
-
-                blobs.Add((CodeDirectorySpecialSlot.CodeDirectory, codeDirectory));
-                if (entitlementsBlob != null)
-                    blobs.Add((CodeDirectorySpecialSlot.Entitlements, entitlementsBlob));
-                if (entitlementsDerBlob != null)
-                    blobs.Add((CodeDirectorySpecialSlot.EntitlementsDer, entitlementsDerBlob));
-
-                var cdHashes = new byte[hashTypes.Length][];
-                var hasher = hashTypes[0].GetIncrementalHash();
-                hasher.AppendData(codeDirectory);
-                cdHashes[0] = hasher.GetHashAndReset();
-                for (int i = 1; i < hashTypes.Length; i++)
+                objectFiles = MachReader.Read(tempFileStream).ToList();
+                foreach (var objectFile in objectFiles)
                 {
-                    byte[] alternativeCodeDirectory = cdBuilders[i].Build(objectFile.GetOriginalStream());
-                    blobs.Add((CodeDirectorySpecialSlot.AlternativeCodeDirectory + i - 1, alternativeCodeDirectory));
-                    hasher = hashTypes[i].GetIncrementalHash();
-                    hasher.AppendData(alternativeCodeDirectory);
-                    cdHashes[i] = hasher.GetHashAndReset();
+                    var hashTypes = hashTypesPerArch[(objectFile.CpuType, objectFile.CpuSubType)];
+                    var cdBuilders = cdBuildersPerArch[(objectFile.CpuType, objectFile.CpuSubType)];
+
+                    var blobs = new List<(CodeDirectorySpecialSlot Slot, byte[] Data)>();
+                    var codeDirectory = cdBuilders[0].Build(objectFile.GetOriginalStream());
+
+                    blobs.Add((CodeDirectorySpecialSlot.CodeDirectory, codeDirectory));
+
+                    var cdHashes = new byte[hashTypes.Length][];
+                    var hasher = hashTypes[0].GetIncrementalHash();
+                    hasher.AppendData(codeDirectory);
+                    cdHashes[0] = hasher.GetHashAndReset();
+                    for (int i = 1; i < hashTypes.Length; i++)
+                    {
+                        byte[] alternativeCodeDirectory = cdBuilders[i].Build(objectFile.GetOriginalStream());
+                        blobs.Add((CodeDirectorySpecialSlot.AlternativeCodeDirectory + i - 1, alternativeCodeDirectory));
+                        hasher = hashTypes[i].GetIncrementalHash();
+                        hasher.AppendData(alternativeCodeDirectory);
+                        cdHashes[i] = hasher.GetHashAndReset();
+                    }
+
+                    var cmsWrapperBlob = CmsWrapperBlob.Create(
+                        codeDirectory,
+                        hashTypes,
+                        cdHashes);
+                    blobs.Add((CodeDirectorySpecialSlot.CmsWrapper, cmsWrapperBlob));
+
+                    /// TODO: Hic sunt leones (all code below)
+
+                    // Rewrite LC_CODESIGNATURE data
+                    var codeSignatureCommand = objectFile.LoadCommands.OfType<MachCodeSignature>().First();
+
+                    // FIXME: Adjust the size to match LinkEdit section?
+                    long size = blobs.Sum(b => b.Data != null ? b.Data.Length + 8 : 0);
+
+                    var embeddedSignatureBuffer = new byte[12 + (blobs.Count * 8)];
+                    BinaryPrimitives.WriteUInt32BigEndian(embeddedSignatureBuffer.AsSpan(0, 4), (uint)BlobMagic.EmbeddedSignature);
+                    BinaryPrimitives.WriteUInt32BigEndian(embeddedSignatureBuffer.AsSpan(4, 4), (uint)(12 + size));
+                    BinaryPrimitives.WriteUInt32BigEndian(embeddedSignatureBuffer.AsSpan(8, 4), (uint)blobs.Count);
+                    int bufferOffset = 12;
+                    int dataOffset = embeddedSignatureBuffer.Length;
+                    foreach (var (slot, data) in blobs)
+                    {
+                        BinaryPrimitives.WriteUInt32BigEndian(embeddedSignatureBuffer.AsSpan(bufferOffset, 4), (uint)slot);
+                        BinaryPrimitives.WriteUInt32BigEndian(embeddedSignatureBuffer.AsSpan(bufferOffset + 4, 4), (uint)dataOffset);
+                        dataOffset += data.Length;
+                        bufferOffset += 8;
+                    }
+                    uint codeSignatureSize = codeSignatureCommand.FileSize;
+                    using var codeSignatureStream = codeSignatureCommand.Data.GetWriteStream();
+                    codeSignatureStream.Write(embeddedSignatureBuffer);
+                    foreach (var (slot, data) in blobs)
+                    {
+                        codeSignatureStream.Write(data);
+                    }
+                    codeSignatureStream.WritePadding(codeSignatureSize - codeSignatureStream.Position);
                 }
 
-                var cmsWrapperBlob = CmsWrapperBlob.Create(
-                    codeDirectory,
-                    hashTypes,
-                    cdHashes);
-                blobs.Add((CodeDirectorySpecialSlot.CmsWrapper, cmsWrapperBlob));
-
-                /// TODO: Hic sunt leones (all code below)
-
-                // Rewrite LC_CODESIGNATURE data
-                var codeSignatureCommand = objectFile.LoadCommands.OfType<MachCodeSignature>().First();
-
-                // FIXME: Adjust the size to match LinkEdit section?
-                long size = blobs.Sum(b => b.Data != null ? b.Data.Length + 8 : 0);
-
-                var embeddedSignatureBuffer = new byte[12 + (blobs.Count * 8)];
-                BinaryPrimitives.WriteUInt32BigEndian(embeddedSignatureBuffer.AsSpan(0, 4), (uint)BlobMagic.EmbeddedSignature);
-                BinaryPrimitives.WriteUInt32BigEndian(embeddedSignatureBuffer.AsSpan(4, 4), (uint)(12 + size));
-                BinaryPrimitives.WriteUInt32BigEndian(embeddedSignatureBuffer.AsSpan(8, 4), (uint)blobs.Count);
-                int bufferOffset = 12;
-                int dataOffset = embeddedSignatureBuffer.Length;
-                foreach (var (slot, data) in blobs)
-                {
-                    BinaryPrimitives.WriteUInt32BigEndian(embeddedSignatureBuffer.AsSpan(bufferOffset, 4), (uint)slot);
-                    BinaryPrimitives.WriteUInt32BigEndian(embeddedSignatureBuffer.AsSpan(bufferOffset + 4, 4), (uint)dataOffset);
-                    dataOffset += data.Length;
-                    bufferOffset += 8;
-                }
-                uint codeSignatureSize = codeSignatureCommand.FileSize;
-                using var codeSignatureStream = codeSignatureCommand.Data.GetWriteStream();
-                codeSignatureStream.Write(embeddedSignatureBuffer);
-                foreach (var (slot, data) in blobs)
-                {
-                    codeSignatureStream.Write(data);
-                }
-                codeSignatureStream.WritePadding(codeSignatureSize - codeSignatureStream.Position);
+                using (var outputFile = File.OpenWrite(executablePath))
+                    MachWriter.Write(outputFile, objectFiles.Single());
             }
-
-            using var outputFile = File.OpenWrite(executablePath);
-            MachWriter.Write(outputFile, objectFiles);
-            inputFile.Close();
         }
 
         public static void AdHocSign(string path)

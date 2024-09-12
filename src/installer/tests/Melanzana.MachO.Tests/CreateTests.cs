@@ -53,7 +53,7 @@ namespace Melanzana.MachO.Tests
             var linkEditSegment = new MachSegment(objectFile, "__LINKEDIT")
             {
                 VirtualAddress = textSection.VirtualAddress + textSection.Size,
-                // FileOffset = 
+                // FileOffset =
                 // FileSize =
                 InitialProtection = MachVmProtection.Read,
                 MaximumProtection = MachVmProtection.Read,
@@ -77,6 +77,7 @@ namespace Melanzana.MachO.Tests
             {
                 InitialProtection = MachVmProtection.Execute | MachVmProtection.Read | MachVmProtection.Write,
                 MaximumProtection = MachVmProtection.Execute | MachVmProtection.Read | MachVmProtection.Write,
+                FileOffset = 100,
             };
 
             var textSection = new MachSection(objectFile, "__TEXT", "__text")
@@ -118,7 +119,7 @@ namespace Melanzana.MachO.Tests
                     IsExternal = false,
                     IsPCRelative = false,
                 });
-                compactUnwindWriter.Write(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }); 
+                compactUnwindWriter.Write(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
 
                 compactUnwindWriter.Write(new byte[] { 0x14, 0x00, 0x00, 0x00 }); // Length of _main
                 compactUnwindWriter.Write(new byte[] { 0x00, 0x10, 0x00, 0x02 }); // Unwind code
