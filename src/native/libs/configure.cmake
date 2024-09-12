@@ -468,7 +468,7 @@ check_symbol_exists(
     netdb.h
     HAVE_GETNAMEINFO)
 
-check_struct_has_member("struct sockaddr_un" sun_path "sys/types.h;syn/un.h" HAVE_SOCKADDR_UN_SUN_PATH)
+check_struct_has_member("struct sockaddr_un" sun_path "sys/types.h;sys/un.h" HAVE_SOCKADDR_UN_SUN_PATH)
 
 check_symbol_exists(
     accept4
