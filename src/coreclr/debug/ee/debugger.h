@@ -2197,7 +2197,7 @@ public:
 
     DebuggerModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly);
     DebuggerModule * LookupOrCreateModule(DomainAssembly * pDomainAssembly);
-    DebuggerModule * LookupOrCreateModule(Module * pModule, AppDomain * pAppDomain);
+    DebuggerModule * LookupOrCreateModule(Module * pModule);
 
     HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent *event);
 
