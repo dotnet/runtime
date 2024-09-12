@@ -274,11 +274,12 @@ namespace System.Net.NameResolution.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
-#if !TARGET_WASI
         [InlineData(2)]
-#endif
         public async Task DnsGetHostEntry_LoopbackIP_MatchesGetHostEntryLoopbackString(int mode)
         {
+            if (OperatingSystem.IsWasi() && mode == 2)
+                throw new SkipTestException("mode 2 is not supported on WASI");
+
             IPAddress address = IPAddress.Loopback;
 
             IPHostEntry ipEntry = mode switch

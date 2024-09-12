@@ -59,7 +59,7 @@ namespace System.Net
         private void ResolutionFailed() => WriteEvent(ResolutionFailedEventId);
 
         [NonEvent]
-        public static bool AnyDiagnosticsEnabled() => !OperatingSystem.IsWasi() && Log.IsEnabled() || NameResolutionMetrics.IsEnabled() || NameResolutionActivity.IsTracingEnabled();
+        public static bool AnyDiagnosticsEnabled() => !OperatingSystem.IsWasi() && (Log.IsEnabled() || NameResolutionMetrics.IsEnabled() || NameResolutionActivity.IsTracingEnabled());
 
         [NonEvent]
         public NameResolutionActivity BeforeResolution(object hostNameOrAddress, long startingTimestamp = 0)

@@ -6,10 +6,6 @@
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
     <XunitShowProgress Condition="'$(TargetOS)' == 'wasi'">true</XunitShowProgress>
   </PropertyGroup>
-  <PropertyGroup>
-    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(DefineConstants);TARGET_WASI</DefineConstants>
-  </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Net.NameResolution" />
