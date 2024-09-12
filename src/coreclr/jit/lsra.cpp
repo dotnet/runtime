@@ -9876,17 +9876,18 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
                         if (otherInterval->registerType == TYP_DOUBLE)
                         {
-                            // If the interval targeting fromReg is double...
+                            // If the interval targeting fromReg is TYP_DOUBLE...
                             if (location[upperHalfReg] != REG_NA)
                             {
                                 // .. and the other half is a busy target, then fromReg is not yet ready either.
                                 targetRegsReady.RemoveRegNumFromMask(fromReg);
                             }
-                            else if (!targetRegsFromStack.IsRegNumInMask(upperHalfReg) && targetRegsToDo.IsRegNumInMask(upperHalfReg))
+                            else if (!targetRegsFromStack.IsRegNumInMask(upperHalfReg) &&
+                                     targetRegsToDo.IsRegNumInMask(upperHalfReg))
                             {
                                 // ... if the other half (that is not resolved from the stack), is a target of
-                                // an unrelated interval, and got freed up after the above resolution of TYP_DOUBLE took place,
-                                // make it ready as well.
+                                // an unrelated interval, and got freed up after the above resolution of TYP_DOUBLE took
+                                // place, make it ready as well.
                                 targetRegsReady.AddRegNumInMask(upperHalfReg);
                             }
                         }
