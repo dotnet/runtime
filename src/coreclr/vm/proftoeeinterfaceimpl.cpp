@@ -5989,7 +5989,8 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
     TypeHandle specificClass;
     MethodDesc* pActualMethod;
 
-    ClassID classId = 0;
+    TypeHandle typeHandle(pMethDesc->GetMethodTable());
+    ClassID classId = TypeHandleToClassID(typeHandle);
 
     if (pMethDesc->IsSharedByGenericInstantiations())
     {
@@ -6041,14 +6042,10 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
             // Though missing frameInfo may not lead to an exact typeHandle match for the method's class,
             // the default value of the method's method table may still be helpful to callers.
             //
-            TypeHandle typeHandle(pMethDesc->GetMethodTable());
-            classId = TypeHandleToClassID(typeHandle);
         }
     }
     else
     {
-        TypeHandle typeHandle(pMethDesc->GetMethodTable());
-        classId = TypeHandleToClassID(typeHandle);
         pActualMethod = pMethDesc;
     }
 
