@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class FThread : IContractFactory<IThread>
 {
-    static IThread IContractFactory<IThread>.CreateContract(ITarget target, int version)
+    IThread IContractFactory<IThread>.CreateContract(ITarget target, int version)
     {
         TargetPointer threadStorePointer = target.ReadGlobalPointer(Constants.Globals.ThreadStore);
         TargetPointer threadStore = target.ReadPointer(threadStorePointer);

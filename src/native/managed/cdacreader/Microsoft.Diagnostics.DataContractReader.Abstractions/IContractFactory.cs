@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
-internal interface IContractFactory<IProduct> where IProduct : Contracts.IContract
+internal interface IContractFactory<out TProduct> where TProduct : Contracts.IContract
 {
-    static virtual IProduct CreateContract(ITarget target, int version) => throw new NotImplementedException();
+    TProduct CreateContract(ITarget target, int version);
 }

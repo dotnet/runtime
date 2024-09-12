@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class FPrecodeStubs : IContractFactory<IPrecodeStubs>
 {
-    static IPrecodeStubs IContractFactory<IPrecodeStubs>.CreateContract(ITarget target, int version)
+    IPrecodeStubs IContractFactory<IPrecodeStubs>.CreateContract(ITarget target, int version)
     {
         TargetPointer precodeMachineDescriptorAddress = target.ReadGlobalPointer(Constants.Globals.PrecodeMachineDescriptor);
         Data.PrecodeMachineDescriptor precodeMachineDescriptor = target.ProcessedData.GetOrAdd<Data.PrecodeMachineDescriptor>(precodeMachineDescriptorAddress);

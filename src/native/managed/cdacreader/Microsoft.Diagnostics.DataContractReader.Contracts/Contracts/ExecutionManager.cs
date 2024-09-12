@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class FExecutionManager : IContractFactory<IExecutionManager>
 {
-    static IExecutionManager IContractFactory<IExecutionManager>.CreateContract(ITarget target, int version)
+    IExecutionManager IContractFactory<IExecutionManager>.CreateContract(ITarget target, int version)
     {
         TargetPointer executionManagerCodeRangeMapAddress = target.ReadGlobalPointer(Constants.Globals.ExecutionManagerCodeRangeMapAddress);
         Data.RangeSectionMap rangeSectionMap = target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(executionManagerCodeRangeMapAddress);

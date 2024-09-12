@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class FReJIT : IContractFactory<IReJIT>
 {
-    static IReJIT IContractFactory<IReJIT>.CreateContract(ITarget target, int version)
+    IReJIT IContractFactory<IReJIT>.CreateContract(ITarget target, int version)
     {
         TargetPointer profControlBlockAddress = target.ReadGlobalPointer(Constants.Globals.ProfilerControlBlock);
         Data.ProfControlBlock profControlBlock = target.ProcessedData.GetOrAdd<Data.ProfControlBlock>(profControlBlockAddress);

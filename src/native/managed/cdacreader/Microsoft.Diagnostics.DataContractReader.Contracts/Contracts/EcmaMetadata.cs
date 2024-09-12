@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class FEcmaMetadata : IContractFactory<IEcmaMetadata>
 {
-    static IEcmaMetadata IContractFactory<IEcmaMetadata>.CreateContract(ITarget target, int version)
+    IEcmaMetadata IContractFactory<IEcmaMetadata>.CreateContract(ITarget target, int version)
     {
         return version switch
         {

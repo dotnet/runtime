@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class FRuntimeTypeSystem : IContractFactory<IRuntimeTypeSystem>
 {
-    static IRuntimeTypeSystem IContractFactory<IRuntimeTypeSystem>.CreateContract(ITarget target, int version)
+    IRuntimeTypeSystem IContractFactory<IRuntimeTypeSystem>.CreateContract(ITarget target, int version)
     {
         TargetPointer targetPointer = target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable);
         TargetPointer freeObjectMethodTable = target.ReadPointer(targetPointer);
