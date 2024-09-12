@@ -239,6 +239,10 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
 
     pRD->SP = m_ctx.Rsp;
 
+#ifdef TARGET_WINDOWS
+    pRD->SSP = m_SSP;
+#endif
+
     pRD->pCurrentContextPointers->Rax = &m_ctx.Rax;
     pRD->pCurrentContextPointers->Rcx = &m_ctx.Rcx;
     pRD->pCurrentContextPointers->Rdx = &m_ctx.Rdx;

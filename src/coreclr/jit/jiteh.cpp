@@ -4513,31 +4513,3 @@ bool Compiler::fgCheckEHCanInsertAfterBlock(BasicBlock* blk, unsigned regionInde
 
     return insertOK;
 }
-
-//------------------------------------------------------------------------
-// fgIsFirstBlockOfFilterOrHandler: return true if the given block is the first block of an EH handler
-// or filter.
-//
-// Arguments:
-//    block - the BasicBlock in question
-//
-// Return Value:
-//    As described above.
-//
-bool Compiler::fgIsFirstBlockOfFilterOrHandler(BasicBlock* block)
-{
-    if (!block->hasHndIndex())
-    {
-        return false;
-    }
-    EHblkDsc* ehDsc = ehGetDsc(block->getHndIndex());
-    if (ehDsc->ebdHndBeg == block)
-    {
-        return true;
-    }
-    if (ehDsc->HasFilter() && (ehDsc->ebdFilter == block))
-    {
-        return true;
-    }
-    return false;
-}
