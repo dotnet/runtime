@@ -77,10 +77,10 @@ namespace System.Data
         internal bool _useDataSetSchemaOnly; // UseDataSetSchemaOnly  , for YUKON
         internal bool _udtIsWrapped; // if UDT is wrapped , for YUKON
 
-        [FeatureSwitchDefinition("System.Data.DataSet.XmlSerializationSupport")]
+        [FeatureSwitchDefinition("System.Data.DataSet.XmlSerializationIsSupported")]
         [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 #pragma warning disable IL4000
-        internal static bool XmlSerializationSupport => AppContext.TryGetSwitch("System.Data.DataSet.XmlSerializationSupport", out bool isSupported) ? isSupported : true;
+        internal static bool XmlSerializationIsSupported => AppContext.TryGetSwitch("System.Data.DataSet.XmlSerializationIsSupported", out bool isSupported) ? isSupported : true;
 #pragma warning restore IL4000
 
         /// <summary>
@@ -3465,7 +3465,7 @@ namespace System.Data
 
         XmlSchema? IXmlSerializable.GetSchema()
         {
-            if (!XmlSerializationSupport)
+            if (!XmlSerializationIsSupported)
             {
                 throw new NotSupportedException(SR.DataSet_XmlSerializationUnsupported);
             }
@@ -3494,7 +3494,7 @@ namespace System.Data
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            if (!XmlSerializationSupport)
+            if (!XmlSerializationIsSupported)
             {
                 throw new NotSupportedException(SR.DataSet_XmlSerializationUnsupported);
             }
@@ -3537,7 +3537,7 @@ namespace System.Data
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            if (!XmlSerializationSupport)
+            if (!XmlSerializationIsSupported)
             {
                 throw new NotSupportedException(SR.DataSet_XmlSerializationUnsupported);
             }

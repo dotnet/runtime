@@ -6666,7 +6666,7 @@ namespace System.Data
 
         XmlSchema? IXmlSerializable.GetSchema()
         {
-            if (!DataSet.XmlSerializationSupport)
+            if (!DataSet.XmlSerializationIsSupported)
             {
                 throw new NotSupportedException(SR.DataSet_XmlSerializationUnsupported);
             }
@@ -6699,7 +6699,7 @@ namespace System.Data
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            if (!DataSet.XmlSerializationSupport)
+            if (!DataSet.XmlSerializationIsSupported)
             {
                 throw new NotSupportedException(SR.DataSet_XmlSerializationUnsupported);
             }
@@ -6727,7 +6727,7 @@ namespace System.Data
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            if (!DataSet.XmlSerializationSupport)
+            if (!DataSet.XmlSerializationIsSupported)
             {
                 throw new NotSupportedException(SR.DataSet_XmlSerializationUnsupported);
             }
