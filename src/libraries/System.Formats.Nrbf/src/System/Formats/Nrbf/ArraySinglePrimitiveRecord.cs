@@ -163,6 +163,18 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             }
         }
 
+        if (typeof(T) == typeof(bool))
+        {
+            // See DontCastBytesToBooleans test to see what could go wrong.
+            bool[] booleans = (bool[])(object)result;
+            for (int i = 0; i < booleans.Length; i++)
+            {
+                if (booleans[i]) // it can be any byte different than 0
+                {
+                    booleans[i] = true; // set it to 1 in explicit way
+                }
+            }
+        }
         return result;
     }
 
