@@ -33,8 +33,6 @@
       <!-- non-net4* -->
       <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\$(MSBuildProjectName)*"
                       TargetPath="tasks\$(NetCoreAppToolCurrent)" />
-      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\System.Reflection.MetadataLoadContext.dll"
-                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
       <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\Microsoft.NET.WebAssembly.Webcil.dll"
                       TargetPath="tasks\$(NetCoreAppToolCurrent)" />
 
