@@ -2,14 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
 
@@ -199,16 +202,93 @@ namespace Microsoft.Interop.JavaScript
             var diagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), incrementalContext.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
             // Generate stub code
-            var stubGenerator = new JSImportCodeGenerator(
+            var stubGenerator = new ManagedToNativeStubGenerator(
                 incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
+                setLastError: false,
+                diagnostics,
+                new CompositeMarshallingGeneratorResolver(
+                    new NoSpanAndTaskMixingResolver(),
+                    new JSGeneratorResolver()),
+                new CodeEmitOptions(SkipInit: true));
+
+            const string LocalFunctionName = "__InvokeJSFunction";
+
+            BlockSyntax code = stubGenerator.GenerateStubBody(LocalFunctionName);
+
+            StatementSyntax bindStatement = GenerateBindSyntax(
                 incrementalContext.JSImportData,
                 incrementalContext.SignatureContext,
-                diagnostics,
-                new JSGeneratorResolver());
+                SignatureBindingHelpers.CreateSignaturesArgument(incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation, StubCodeContext.DefaultManagedToNativeStub));
 
-            BlockSyntax code = stubGenerator.GenerateJSImportBody();
+            LocalFunctionStatementSyntax localFunction = GenerateInvokeFunction(LocalFunctionName, incrementalContext.SignatureContext, stubGenerator);
 
-            return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, incrementalContext.ContainingSyntaxContext, code), incrementalContext.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
+            return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, incrementalContext.ContainingSyntaxContext, Block(bindStatement, code, localFunction)), incrementalContext.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
+        }
+
+        private static IfStatementSyntax GenerateBindSyntax(JSImportData jsImportData, JSSignatureContext signatureContext, ArgumentSyntax signaturesArgument)
+        {
+            var bindingParameters =
+                (new ArgumentSyntax[] {
+                        Argument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(jsImportData.FunctionName))),
+                        Argument(
+                            jsImportData.ModuleName == null
+                            ? LiteralExpression(SyntaxKind.NullLiteralExpression)
+                            : LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(jsImportData.ModuleName))),
+                        signaturesArgument,
+                });
+
+            return IfStatement(BinaryExpression(SyntaxKind.EqualsExpression, IdentifierName(signatureContext.BindingName), LiteralExpression(SyntaxKind.NullLiteralExpression)),
+                            Block(SingletonList<StatementSyntax>(
+                                    ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                                            IdentifierName(signatureContext.BindingName),
+                                            InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                                    IdentifierName(Constants.JSFunctionSignatureGlobal), IdentifierName(Constants.BindJSFunctionMethod)))
+                                            .WithArgumentList(ArgumentList(SeparatedList(bindingParameters))))))));
+        }
+
+        private static LocalFunctionStatementSyntax GenerateInvokeFunction(string functionName, JSSignatureContext signatureContext, ManagedToNativeStubGenerator stubGenerator)
+        {
+            var (parameters, returnType, _) = stubGenerator.GenerateTargetMethodSignatureData();
+            TypeSyntax jsMarshalerArgument = ParseTypeName(Constants.JSMarshalerArgumentGlobal);
+
+            return LocalFunctionStatement(
+                jsMarshalerArgument,
+                functionName)
+                .WithBody(
+                    Block(
+                        List<StatementSyntax>(
+                            [
+                                Declare(jsMarshalerArgument, Constants.ArgumentException, true),
+                                MethodInvocationStatement(
+                                    IdentifierName(Constants.ArgumentException),
+                                    IdentifierName("Initialize")),
+                                Declare(jsMarshalerArgument, Constants.ArgumentReturn, true),
+                                MethodInvocationStatement(
+                                    IdentifierName(Constants.ArgumentReturn),
+                                    IdentifierName("Initialize")),
+                                Declare(SpanOf(jsMarshalerArgument), Constants.ArgumentsBuffer,
+                                    CollectionExpression(
+                                        SeparatedList(
+                                            (IEnumerable<CollectionElementSyntax>)[
+                                                ExpressionElement(IdentifierName(Constants.ArgumentException)),
+                                                ExpressionElement(IdentifierName(Constants.ArgumentReturn)),
+                                                ..parameters.Parameters
+                                                    .Select(p => ExpressionElement(IdentifierName(p.Identifier)))
+                                            ]))),
+                                MethodInvocationStatement(
+                                    IdentifierName(Constants.JSFunctionSignatureGlobal),
+                                    IdentifierName("InvokeJS"),
+                                    Argument(IdentifierName(signatureContext.BindingName)),
+                                    Argument(IdentifierName(Constants.ArgumentsBuffer))),
+                                ReturnStatement(
+                                    ElementAccessExpression(
+                                    IdentifierName(Constants.ArgumentsBuffer),
+                                    BracketedArgumentList(SingletonSeparatedList(Argument(
+                                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)))))))
+                            ])))
+                .WithParameterList(parameters)
+                .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
+                    Attribute(IdentifierName(Constants.DebuggerNonUserCodeAttribute))))));
         }
 
         private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)

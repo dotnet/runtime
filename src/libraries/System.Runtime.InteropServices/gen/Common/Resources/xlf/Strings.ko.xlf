@@ -842,9 +842,9 @@
         <target state="translated">관리 유형 '{1}'에 대한 마샬러 진입점 유형 '{0}'에는 관리 유형보다 1이 더 커야 합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
-        <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
-        <target state="translated">관리되지 않는 반환 값으로 전달되는 값에 대한 모든 마샬러는 관리되지 않는 형식이 동일해야 합니다.</target>
+      <trans-unit id="MarshallerInOverlappingNativePositionMustMatchNativeType">
+        <source>All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</source>
+        <target state="new">All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">

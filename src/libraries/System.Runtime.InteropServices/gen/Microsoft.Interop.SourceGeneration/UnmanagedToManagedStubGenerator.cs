@@ -11,7 +11,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal sealed class UnmanagedToManagedStubGenerator
+    public sealed class UnmanagedToManagedStubGenerator
     {
         private const string ReturnIdentifier = "__retVal";
 

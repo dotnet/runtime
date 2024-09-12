@@ -842,9 +842,9 @@
         <target state="translated">Тип точки входа маршаллера "{0}" для управляемого типа "{1}" должен иметь более высокую арность, чем управляемый тип.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
-        <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
-        <target state="translated">Все маршалеры для значений, передаваемых в качестве неуправляемого возвращаемого значения, должны использовать одинаковый неуправляемый тип.</target>
+      <trans-unit id="MarshallerInOverlappingNativePositionMustMatchNativeType">
+        <source>All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</source>
+        <target state="new">All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
