@@ -6038,9 +6038,11 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
         else
         {
             //
-            // We could not get any class information.
+            // Though missing frameInfo may not lead to an exact typeHandle match for the method's class,
+            // the default value of the method's method table may still be helpful to callers.
             //
-            classId = 0;
+            TypeHandle typeHandle(pMethDesc->GetMethodTable());
+            classId = TypeHandleToClassID(typeHandle);
         }
     }
     else
