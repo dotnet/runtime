@@ -2300,8 +2300,7 @@ Module::GetAssemblyIfLoaded(
     if ((pAssembly != NULL) && !IsGCThread() && !IsStackWalkerThread())
     {
         _ASSERTE(::GetAppDomain() != NULL);
-        DomainAssembly * pDomainAssembly = pAssembly->GetDomainAssembly();
-        if ((pDomainAssembly == NULL) || !pDomainAssembly->IsLoaded())
+        if (!pAssembly->IsLoaded())
             pAssembly = NULL;
     }
 
@@ -2330,7 +2329,7 @@ Module::GetAssemblyIfLoaded(
 
         DomainAssembly * pDomainAssembly = AppDomain::GetCurrentDomain()->FindCachedAssembly(&spec, FALSE /*fThrow*/);
 
-        if (pDomainAssembly && pDomainAssembly->IsLoaded())
+        if (pDomainAssembly && pDomainAssembly->GetAssembly()->IsLoaded())
             pAssembly = pDomainAssembly->GetAssembly();
 
         // Only store in the rid map if working with the current AppDomain.
@@ -2407,11 +2406,10 @@ Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
     Assembly * pAssembly = LookupAssemblyRef(kAssemblyRef);
     if (pAssembly != NULL)
     {
-        ::GetAppDomain()->LoadDomainAssembly(pAssembly->GetDomainAssembly(), FILE_LOADED);
+        ::GetAppDomain()->LoadAssembly(pAssembly, FILE_LOADED);
         RETURN pAssembly;
     }
 
-    DomainAssembly * pDomainAssembly;
     {
         PEAssemblyHolder pPEAssembly = GetPEAssembly()->LoadAssembly(kAssemblyRef);
         AssemblySpec spec;
@@ -2424,14 +2422,13 @@ Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
         {
             spec.SetBinder(pBinder);
         }
-        pDomainAssembly = GetAppDomain()->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
+        pAssembly = GetAppDomain()->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
     }
 
-    pAssembly = pDomainAssembly->GetAssembly();
-    _ASSERTE(pDomainAssembly->IsLoaded() && pAssembly != NULL);
+    _ASSERTE(pAssembly != NULL && pAssembly->IsLoaded());
     _ASSERTE(
-        pDomainAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find CoreLib (see AppDomain::FindCachedFile)
-        GetAssemblyIfLoaded(kAssemblyRef, NULL, pDomainAssembly->GetPEAssembly()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
+        pAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find CoreLib (see AppDomain::FindCachedFile)
+        GetAssemblyIfLoaded(kAssemblyRef, NULL, pAssembly->GetPEAssembly()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
 
     StoreAssemblyRef(kAssemblyRef, pAssembly);
 
@@ -4458,7 +4455,7 @@ VOID Module::EnsureActive()
         MODE_ANY;
     }
     CONTRACTL_END;
-    GetDomainAssembly()->EnsureActive();
+    GetAssembly()->EnsureActive();
 }
 #endif // DACCESS_COMPILE
 
@@ -4475,10 +4472,10 @@ CHECK Module::CheckActivated()
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-    DomainAssembly *pDomainAssembly = GetDomainAssembly();
-    CHECK(pDomainAssembly != NULL);
-    PREFIX_ASSUME(pDomainAssembly != NULL);
-    CHECK(pDomainAssembly->CheckActivated());
+    Assembly *pAssembly = GetAssembly();
+    CHECK(pAssembly != NULL);
+    PREFIX_ASSUME(pAssembly != NULL);
+    CHECK(pAssembly->CheckActivated());
 #endif
     CHECK_OK;
 }
