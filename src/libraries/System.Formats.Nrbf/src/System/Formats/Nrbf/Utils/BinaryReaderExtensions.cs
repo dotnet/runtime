@@ -60,9 +60,8 @@ internal static class BinaryReaderExtensions
     internal static PrimitiveType ReadPrimitiveType(this BinaryReader reader)
     {
         byte primitiveType = reader.ReadByte();
-        // String is the last defined value, 4 is not used at all.
-        // None (0) is part of the enum, but not part of the spec.
-        if (primitiveType is (byte)PrimitiveType.None or 4 or (byte)PrimitiveType.Null or > (byte)PrimitiveType.String)
+        // Boolean is the first valid value (1), UInt64 (16) is the last one. 4 is not used at all.
+        if (primitiveType is 4 or < (byte)PrimitiveType.Boolean or > (byte)PrimitiveType.UInt64)
         {
             ThrowHelper.ThrowInvalidValue(primitiveType);
         }
@@ -90,8 +89,6 @@ internal static class BinaryReaderExtensions
             PrimitiveType.Decimal => reader.ParseDecimal(),
             PrimitiveType.DateTime => CreateDateTimeFromData(reader.ReadUInt64()),
             PrimitiveType.TimeSpan => new TimeSpan(reader.ReadInt64()),
-            // PrimitiveType.String is handled with a record, never on it's own
-            PrimitiveType.String => throw new SerializationException(SR.Format(SR.Serialization_InvalidValue, primitiveType)),
             _ => throw new InvalidOperationException(),
         };
 

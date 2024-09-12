@@ -170,7 +170,6 @@ internal sealed class RectangularArrayRecord : ArrayRecord
                 PrimitiveType.TimeSpan => sizeof(ulong),
                 PrimitiveType.DateTime => sizeof(ulong),
                 PrimitiveType.Decimal => -1, // represented as variable-length string
-                PrimitiveType.String => -1, // can't predict required size based on the number of strings
                 _ => throw new InvalidOperationException()
             };
 
