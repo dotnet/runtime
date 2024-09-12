@@ -45,7 +45,7 @@ public class MemoryTests : AppTestBase
         string config = "Release";
         CopyTestAsset("WasmBasicTestApp", "ProfilerTest", "App");
         // are are linking all 3 profilers, but below we only initialize log profiler and test it
-        string extraArgs = $"-p:WasmProfilers=\"aot;browser;log;\" -p:WasmBuildNative=true";
+        string extraArgs = $"-p:WasmProfilers=\"aot+browser+log\" -p:WasmBuildNative=true";
         BuildProject(config, assertAppBundle: false, extraArgs: extraArgs);
 
         var result = await RunSdkStyleAppForBuild(new (Configuration: config, TestScenario: "ProfilerTest"));
