@@ -53,8 +53,26 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             return (List<T>)(object)DecodeDecimals(reader, count);
         }
 
+        // char[] has a unique representation in NRBF streams. Typical strings are transcoded
+        // to UTF-8 and prefixed with the number of bytes in the UTF-8 representation. char[]
+        // is also serialized as UTF-8, but it is instead prefixed with the number of chars
+        // in the UTF-16 representation, not the number of bytes in the UTF-8 representation.
+        // This number doesn't directly precede the UTF-8 contents in the NRBF stream; it's
+        // instead contained within the ArrayInfo structure (passed to this method as the
+        // 'count' argument).
+        //
+        // The practical consequence of this is that we don't actually know how many UTF-8
+        // bytes we need to consume in order to ensure we've read 'count' chars. We know that
+        // an n-length UTF-16 string turns into somewhere between [n .. 3n] UTF-8 bytes.
+        // The best we can do is that when reading an n-element char[], we'll ensure that
+        // there are at least n bytes remaining in the input stream. We'll still need to
+        // account for that even with this check, we might hit EOF before fully populating
+        // the char[]. But from a safety perspective, it does appropriately limit our
+        // allocations to be proportional to the amount of data present in the input stream,
+        // which is a sufficient defense against DoS.
+
         long requiredBytes = count;
-        if (typeof(T) != typeof(char)) // the input is UTF8
+        if (typeof(T) != typeof(char))
         {
             requiredBytes *= Unsafe.SizeOf<T>();
         }
@@ -160,6 +178,10 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
 
     private static List<T> DecodeFromNonSeekableStream(BinaryReader reader, int count)
     {
+        // The count arg could originate from untrusted input, so we shouldn't
+        // pass it as-is to the ctor's capacity arg. We'll instead rely on
+        // List<T>.Add's O(1) amortization to keep the entire loop O(count).
+
         List<T> values = new List<T>(Math.Min(count, 4));
         for (int i = 0; i < count; i++)
         {

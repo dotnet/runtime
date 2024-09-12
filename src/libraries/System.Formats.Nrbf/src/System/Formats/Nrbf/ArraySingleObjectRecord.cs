@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Formats.Nrbf.Utils;
+using System.Diagnostics;
 
 namespace System.Formats.Nrbf;
 
@@ -33,7 +34,8 @@ internal sealed class ArraySingleObjectRecord : SZArrayRecord<object?>
     {
         object?[] values = new object?[Length];
 
-        for (int recordIndex = 0, valueIndex = 0; recordIndex < Records.Count; recordIndex++)
+        int valueIndex = 0;
+        for (int recordIndex = 0; recordIndex < Records.Count; recordIndex++)
         {
             SerializationRecord record = Records[recordIndex];
 
@@ -58,6 +60,8 @@ internal sealed class ArraySingleObjectRecord : SZArrayRecord<object?>
             }
             while (nullCount > 0);
         }
+
+        Debug.Assert(valueIndex == values.Length, "We should have traversed the entirety of the newly created array.");
 
         return values;
     }

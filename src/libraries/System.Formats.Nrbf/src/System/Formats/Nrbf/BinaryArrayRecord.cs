@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Formats.Nrbf.Utils;
+using System.Diagnostics;
 
 namespace System.Formats.Nrbf;
 
@@ -84,6 +85,10 @@ internal sealed class BinaryArrayRecord : ArrayRecord
                 case SerializationRecordType.ArraySinglePrimitive:
                 case SerializationRecordType.ArraySingleObject:
                 case SerializationRecordType.ArraySingleString:
+
+                    // Recursion depth is bounded by the depth of arrayType, which is
+                    // a trustworthy Type instance. Don't need to worry about stack overflow.
+
                     ArrayRecord nestedArrayRecord = (ArrayRecord)record;
                     Array nestedArray = nestedArrayRecord.GetArray(actualElementType, allowNulls);
                     array.SetValue(nestedArray, resultIndex++);
@@ -97,6 +102,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
                     }
 
                     int nullCount = ((NullsRecord)item).NullCount;
+                    Debug.Assert(nullCount > 0, "All implementations of NullsRecord are expected to return a positive value for NullCount.");
                     do
                     {
                         array.SetValue(null, resultIndex++);
@@ -110,6 +116,8 @@ internal sealed class BinaryArrayRecord : ArrayRecord
             }
         }
 
+        Debug.Assert(resultIndex == array.Length, "We should have traversed the entirety of the newly created array.");
+
         return array;
     }
 
@@ -122,6 +130,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
         bool isRectangular = arrayType is BinaryArrayType.Rectangular;
 
         // It is an arbitrary limit in the current CoreCLR type loader.
+        // Don't change this value without reviewing the loop a few lines below.
         const int MaxSupportedArrayRank = 32;
 
         if (rank < 1 || rank > MaxSupportedArrayRank
@@ -132,17 +141,25 @@ internal sealed class BinaryArrayRecord : ArrayRecord
         }
 
         int[] lengths = new int[rank]; // adversary-controlled, but acceptable since upper limit of 32
-        long totalElementCount = 1;
+        long totalElementCount = 1; // to avoid integer overflow during the multiplication below
         for (int i = 0; i < lengths.Length; i++)
         {
             lengths[i] = ArrayInfo.ParseValidArrayLength(reader);
             totalElementCount *= lengths[i];
+
+            // n.b. This forbids "new T[Array.MaxLength, Array.MaxLength, Array.MaxLength, ..., 0]"
+            // but allows "new T[0, Array.MaxLength, Array.MaxLength, Array.MaxLength, ...]". But
+            // that's the same behavior that newarr and Array.CreateInstance exhibit, so at least
+            // we're consistent.
 
             if (totalElementCount > ArrayInfo.MaxArrayLength)
             {
                 ThrowHelper.ThrowInvalidValue(lengths[i]); // max array size exceeded
             }
         }
+
+        // Per BinaryReaderExtensions.ReadArrayType, we do not support nonzero offsets, so
+        // we don't need to read the NRBF stream 'LowerBounds' field here.
 
         MemberTypeInfo memberTypeInfo = MemberTypeInfo.Decode(reader, 1, options, recordMap);
         ArrayInfo arrayInfo = new(objectId, totalElementCount, arrayType, rank);
@@ -185,6 +202,9 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     {
         Type elementType = arrayType;
         int arrayNestingDepth = 0;
+
+        // Loop iteration counts are bound by the nesting depth of arrayType,
+        // which is a trustworthy input. No DoS concerns.
 
         while (elementType.IsArray)
         {

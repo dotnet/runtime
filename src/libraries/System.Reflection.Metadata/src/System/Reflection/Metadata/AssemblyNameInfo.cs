@@ -81,6 +81,10 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Gets the name of the culture associated with the assembly.
         /// </summary>
+        /// <remarks>
+        /// Do not create a <see cref="System.Globalization.CultureInfo"/> instance from this string unless
+        /// you know the string has originated from a trustworthy source.
+        /// </remarks>
         public string? CultureName { get; }
 
         /// <summary>
