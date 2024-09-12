@@ -3735,6 +3735,9 @@ ThrowControlForThread(
 #ifdef FEATURE_EH_FUNCLETS
         FaultingExceptionFrame *pfef
 #endif // FEATURE_EH_FUNCLETS
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+        , TADDR ssp
+#endif // TARGET_AMD64 && TARGET_WINDOWS
         )
 {
     STATIC_CONTRACT_THROWS;
@@ -3783,6 +3786,10 @@ ThrowControlForThread(
     FaultingExceptionFrame *pfef = &fef;
 #endif // FEATURE_EH_FUNCLETS
     pfef->InitAndLink(pThread->m_OSContext);
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    pfef->SetSSP(ssp);
+#endif
 
     // !!! Can not assert here.  Sometimes our EHInfo for catch clause extends beyond
     // !!! Jit_EndCatch.  Not sure if we have guarantee on catch clause.

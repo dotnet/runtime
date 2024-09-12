@@ -16,6 +16,12 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void ReadOnlyTensorSpanSystemArrayConstructorTests()
         {
+            // When using System.Array constructor make sure the type of the array matches T[]
+            Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<double>(array: new[] { 1 }));
+
+            string[] stringArray = { "a", "b", "c" };
+            Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<object>(array: stringArray));
+
             // Make sure basic T[,] constructor works
             int[,] a = new int[,] { { 91, 92, -93, 94 } };
             scoped ReadOnlyTensorSpan<int> spanInt = new ReadOnlyTensorSpan<int>(a);
