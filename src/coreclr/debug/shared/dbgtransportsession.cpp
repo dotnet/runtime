@@ -119,7 +119,7 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
     m_fInitStateLock = true;
 
 #ifdef RIGHT_SIDE_COMPILE
-    m_hSessionOpenEvent = WszCreateEvent(NULL, TRUE, FALSE, NULL); // Manual reset, not signalled
+    m_hSessionOpenEvent = CreateEvent(NULL, TRUE, FALSE, NULL); // Manual reset, not signalled
     if (m_hSessionOpenEvent == NULL)
         return E_OUTOFMEMORY;
 #else // RIGHT_SIDE_COMPILE
@@ -139,11 +139,11 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
     if (m_pEventBuffers == NULL)
         return E_OUTOFMEMORY;
 
-    m_rghEventReadyEvent[IPCET_OldStyle] = WszCreateEvent(NULL, FALSE, FALSE, NULL); // Auto reset, not signalled
+    m_rghEventReadyEvent[IPCET_OldStyle] = CreateEvent(NULL, FALSE, FALSE, NULL); // Auto reset, not signalled
     if (m_rghEventReadyEvent[IPCET_OldStyle] == NULL)
         return E_OUTOFMEMORY;
 
-    m_rghEventReadyEvent[IPCET_DebugEvent] = WszCreateEvent(NULL, FALSE, FALSE, NULL); // Auto reset, not signalled
+    m_rghEventReadyEvent[IPCET_DebugEvent] = CreateEvent(NULL, FALSE, FALSE, NULL); // Auto reset, not signalled
     if (m_rghEventReadyEvent[IPCET_DebugEvent] == NULL)
         return E_OUTOFMEMORY;
 
@@ -720,7 +720,7 @@ HRESULT DbgTransportSession::SendMessage(Message *pMessage, bool fWaitsForReply)
 HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
 {
     // Allocate event to wait for reply on.
-    pMessage->m_hReplyEvent = WszCreateEvent(NULL, FALSE, FALSE, NULL); // Auto-reset, not signalled
+    pMessage->m_hReplyEvent = CreateEvent(NULL, FALSE, FALSE, NULL); // Auto-reset, not signalled
     if (pMessage->m_hReplyEvent == NULL)
         return E_OUTOFMEMORY;
 

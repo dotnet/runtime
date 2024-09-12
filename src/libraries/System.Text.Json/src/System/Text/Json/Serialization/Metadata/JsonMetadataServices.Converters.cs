@@ -287,7 +287,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentNullException(nameof(options));
             }
 
-            return new EnumConverter<T>(EnumConverterOptions.AllowNumbers, options);
+            return EnumConverterFactory.Create<T>(EnumConverterOptions.AllowNumbers, options);
         }
 
         /// <summary>

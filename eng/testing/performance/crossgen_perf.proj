@@ -10,7 +10,7 @@
     Crossgen and Crossgen2 Scenario WorkItems 
   -->
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
-    <Python>py -3</Python>
+    <Python>python</Python>
     <HelixPreCommands>$(HelixPreCommands)</HelixPreCommands>
     <CoreRoot>%HELIX_CORRELATION_PAYLOAD%\Core_Root</CoreRoot>
     <ScenarioDirectory>%HELIX_CORRELATION_PAYLOAD%\performance\src\scenarios\</ScenarioDirectory>

@@ -3,6 +3,20 @@
   <PropertyGroup>
     <GeneratePackage>true</GeneratePackage>
     <PackageDescription>Provides a native AOT compiler and runtime for .NET</PackageDescription>
+
+    <!-- Microsoft.DotNet.ILCompiler includes a 'runtime.json' file that per rid
+         references the corresponding 'runtime.<rid>.Microsoft.DotNet.ILCompiler' package for restore.
+
+         With a source-built SDK, we support bundling the source-built 'runtime.<rid>.Microsoft.DotNet.ILCompiler'
+         package as a pack. Since packs can not be restored by NuGet, the 'runtime.json' reference for the
+         source-built rid leads to NuGet restore errors.
+
+         To work around these errors we remove the 'runtime.json' file completely on the source-built SDK.
+         'ProcessFrameworkReferences' is responsible for either picking up the bundled pack (when targetting the source-built rid)
+         or to add a 'runtime.<rid>.Microsoft.DotNet.ILCompiler' package for download. -->
+    <IncludeRuntimeJson Condition="'$(DotNetBuildSourceOnly)' == 'true'">false</IncludeRuntimeJson>
+    <!-- Set 'ExcludeLineupReference' to avoid package dependencies due to disabling 'runtime.json'. -->
+    <ExcludeLineupReference Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ExcludeLineupReference>
   </PropertyGroup>
 
   <Target Name="GetIlcCompilerFiles"

@@ -31,6 +31,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     app.AppDll,
                     "NativeEntryPoint"
                 };
+
                 if (no_runtimeconfig)
                 {
                     File.Delete(app.RuntimeConfigJson);
@@ -52,6 +53,42 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 }
             }
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void LoadLibrary_ContextConfig(bool load_isolated)
+        {
+            // make a copy of a portion of the shared state because we will modify it
+            using (var app = sharedState.IjwApp.Copy())
+            {
+                string[] args = {
+                    "ijwhost",
+                    app.AppDll,
+                    "NativeEntryPoint"
+                };
+
+                RuntimeConfig.FromFile(app.RuntimeConfigJson)
+                    .WithProperty("System.Runtime.InteropServices.CppCLI.LoadComponentInIsolatedContext", load_isolated.ToString())
+                    .Save();
+
+                CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
+                    .Execute();
+
+                result.Should().Pass()
+                    .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class");
+
+                if (load_isolated)  // Assembly should be loaded in an isolated context
+                {
+                    result.Should().HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"IsolatedComponentLoadContext");
+                }
+                else  // Assembly should be loaded in the default context
+                {
+                    result.Should().HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext");
+                }
+            }
+        }
+
 
         [Fact]
         public void LoadLibraryWithoutRuntimeConfigButActiveRuntime()

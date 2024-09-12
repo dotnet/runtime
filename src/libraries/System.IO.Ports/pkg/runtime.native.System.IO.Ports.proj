@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
+
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <IsPackable>true</IsPackable>
@@ -6,6 +7,7 @@
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
     <!-- This is a meta package and doesn't contain any libs. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <PackageReadmeFilePath>$(MSBuildThisFileDirectory)../src/PACKAGE.md</PackageReadmeFilePath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,4 +16,5 @@
          They are filtered in the traversal build in oob-all.csproj based on the OutputRID. -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)*.proj" Exclude="$(MSBuildProjectFile)" BuildReference="false" />
   </ItemGroup>
+
 </Project>

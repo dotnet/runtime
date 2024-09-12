@@ -151,7 +151,12 @@ export function resolve_single_asset_path (behavior: SingleAssetBehaviors): Asse
     return asset;
 }
 
+let downloadAssetsStarted = false;
 export async function mono_download_assets (): Promise<void> {
+    if (downloadAssetsStarted) {
+        return;
+    }
+    downloadAssetsStarted = true;
     mono_log_debug("mono_download_assets");
     try {
         const promises_of_assets_core: Promise<AssetEntryInternal>[] = [];
@@ -176,6 +181,14 @@ export async function mono_download_assets (): Promise<void> {
         }
 
         loaderHelpers.allDownloadsQueued.promise_control.resolve();
+
+        Promise.all([...promises_of_assets_core, ...promises_of_assets_remaining]).then(() => {
+            loaderHelpers.allDownloadsFinished.promise_control.resolve();
+        }).catch(err => {
+            loaderHelpers.err("Error in mono_download_assets: " + err);
+            mono_exit(1, err);
+            throw err;
+        });
 
         // continue after the dotnet.runtime.js was loaded
         await loaderHelpers.runtimeModuleLoaded.promise;
@@ -262,7 +275,12 @@ export async function mono_download_assets (): Promise<void> {
     }
 }
 
+let assetsPrepared = false;
 export function prepareAssets () {
+    if (assetsPrepared) {
+        return;
+    }
+    assetsPrepared = true;
     const config = loaderHelpers.config;
     const modulesAssets: AssetEntryInternal[] = [];
 
@@ -300,6 +318,9 @@ export function prepareAssets () {
         }
 
         const addAsset = (asset: AssetEntryInternal, isCore: boolean) => {
+            if (resources.fingerprinting && (asset.behavior == "assembly" || asset.behavior == "pdb" || asset.behavior == "resource")) {
+                asset.virtualPath = getNonFingerprintedAssetName(asset.name);
+            }
             if (isCore) {
                 asset.isCore = true;
                 coreAssetsToLoad.push(asset);
@@ -400,7 +421,7 @@ export function prepareAssets () {
                         behavior: "icu",
                         loadRemote: true
                     });
-                } else if (name === "segmentation-rules.json") {
+                } else if (name.startsWith("segmentation-rules") && name.endsWith(".json")) {
                     assetsToLoad.push({
                         name,
                         hash: resources.icu[name],
@@ -440,6 +461,15 @@ export function prepareAssets () {
     }
 
     config.assets = [...coreAssetsToLoad, ...assetsToLoad, ...modulesAssets];
+}
+
+export function getNonFingerprintedAssetName (assetName: string) {
+    const fingerprinting = loaderHelpers.config.resources?.fingerprinting;
+    if (fingerprinting && fingerprinting[assetName]) {
+        return fingerprinting[assetName];
+    }
+
+    return assetName;
 }
 
 export function prepareAssetsWorker () {
@@ -822,6 +852,7 @@ export function preloadWorkers () {
         const workerNumber = loaderHelpers.workerNextNumber++;
         const worker: Partial<PThreadWorker> = new Worker(jsModuleWorker.resolvedUrl!, {
             name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
+            type: "module",
         });
         worker.info = {
             workerNumber,

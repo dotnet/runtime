@@ -526,6 +526,10 @@ namespace System.Text.Json.Serialization
 
                     break;
 
+                case JsonTokenType.None:
+                    Debug.Assert(IsRootLevelMultiContentStreamingConverter);
+                    break;
+
                 default:
                     if (isValueConverter)
                     {

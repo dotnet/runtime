@@ -158,6 +158,11 @@ namespace System.Net
             X509Certificate2 cert = context.TargetCertificate;
             Debug.Assert(context.TargetCertificate.HasPrivateKey);
 
+            if (Interop.AndroidCrypto.IsKeyStorePrivateKeyEntry(cert.Handle))
+            {
+                return Interop.AndroidCrypto.SSLStreamCreateWithKeyStorePrivateKeyEntry(sslStreamProxy, cert.Handle);
+            }
+
             PAL_KeyAlgorithm algorithm;
             byte[] keyBytes;
             using (AsymmetricAlgorithm key = GetPrivateKeyAlgorithm(cert, out algorithm))

@@ -28,12 +28,7 @@ void ClrFlsSetThreadType(TlsThreadTypeFlag flag)
 
     // The historic location of ThreadType slot kept for compatibility with SOS
     // TODO: Introduce DAC API to make this hack unnecessary
-#if defined(_MSC_VER) && defined(HOST_X86)
-    // Workaround for https://developercommunity.visualstudio.com/content/problem/949233/tls-relative-fixup-overflow-tls-section-is-too-lar.html
-    gCurrentThreadInfo.m_EETlsData = (void**)(((size_t)&t_ThreadType ^ 1) - (4 * TlsIdx_ThreadType + 1));
-#else
     gCurrentThreadInfo.m_EETlsData = (void**)&t_ThreadType - TlsIdx_ThreadType;
-#endif
 }
 
 void ClrFlsClearThreadType(TlsThreadTypeFlag flag)
@@ -370,6 +365,86 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
     case ICorDebugInfo::REGNUM_FP: return offsetof(T_CONTEXT, Fp);
     case ICorDebugInfo::REGNUM_LR: return offsetof(T_CONTEXT, Lr);
     case ICorDebugInfo::REGNUM_SP: return offsetof(T_CONTEXT, Sp);
+    case ICorDebugInfo::REGNUM_PC: return offsetof(T_CONTEXT, Pc);
+    case ICorDebugInfo::REGNUM_AMBIENT_SP: return offsetof(T_CONTEXT, Sp);
+    default: _ASSERTE(!"Bad regNum"); return (SIZE_T)(-1);
+    }
+#elif defined(TARGET_LOONGARCH64)
+
+    switch(regNum)
+    {
+    case ICorDebugInfo::REGNUM_R0: return offsetof(T_CONTEXT, R0);
+    case ICorDebugInfo::REGNUM_RA: return offsetof(T_CONTEXT, Ra);
+    case ICorDebugInfo::REGNUM_TP: return offsetof(T_CONTEXT, Tp);
+    case ICorDebugInfo::REGNUM_SP: return offsetof(T_CONTEXT, Sp);
+    case ICorDebugInfo::REGNUM_A0: return offsetof(T_CONTEXT, A0);
+    case ICorDebugInfo::REGNUM_A1: return offsetof(T_CONTEXT, A1);
+    case ICorDebugInfo::REGNUM_A2: return offsetof(T_CONTEXT, A2);
+    case ICorDebugInfo::REGNUM_A3: return offsetof(T_CONTEXT, A3);
+    case ICorDebugInfo::REGNUM_A4: return offsetof(T_CONTEXT, A4);
+    case ICorDebugInfo::REGNUM_A5: return offsetof(T_CONTEXT, A5);
+    case ICorDebugInfo::REGNUM_A6: return offsetof(T_CONTEXT, A6);
+    case ICorDebugInfo::REGNUM_A7: return offsetof(T_CONTEXT, A7);
+    case ICorDebugInfo::REGNUM_T0: return offsetof(T_CONTEXT, T0);
+    case ICorDebugInfo::REGNUM_T1: return offsetof(T_CONTEXT, T1);
+    case ICorDebugInfo::REGNUM_T2: return offsetof(T_CONTEXT, T2);
+    case ICorDebugInfo::REGNUM_T3: return offsetof(T_CONTEXT, T3);
+    case ICorDebugInfo::REGNUM_T4: return offsetof(T_CONTEXT, T4);
+    case ICorDebugInfo::REGNUM_T5: return offsetof(T_CONTEXT, T5);
+    case ICorDebugInfo::REGNUM_T6: return offsetof(T_CONTEXT, T6);
+    case ICorDebugInfo::REGNUM_T7: return offsetof(T_CONTEXT, T7);
+    case ICorDebugInfo::REGNUM_T8: return offsetof(T_CONTEXT, T8);
+    case ICorDebugInfo::REGNUM_X0: return offsetof(T_CONTEXT, X0);
+    case ICorDebugInfo::REGNUM_FP: return offsetof(T_CONTEXT, Fp);
+    case ICorDebugInfo::REGNUM_S0: return offsetof(T_CONTEXT, S0);
+    case ICorDebugInfo::REGNUM_S1: return offsetof(T_CONTEXT, S1);
+    case ICorDebugInfo::REGNUM_S2: return offsetof(T_CONTEXT, S2);
+    case ICorDebugInfo::REGNUM_S3: return offsetof(T_CONTEXT, S3);
+    case ICorDebugInfo::REGNUM_S4: return offsetof(T_CONTEXT, S4);
+    case ICorDebugInfo::REGNUM_S5: return offsetof(T_CONTEXT, S5);
+    case ICorDebugInfo::REGNUM_S6: return offsetof(T_CONTEXT, S6);
+    case ICorDebugInfo::REGNUM_S7: return offsetof(T_CONTEXT, S7);
+    case ICorDebugInfo::REGNUM_S8: return offsetof(T_CONTEXT, S8);
+    case ICorDebugInfo::REGNUM_PC: return offsetof(T_CONTEXT, Pc);
+    case ICorDebugInfo::REGNUM_AMBIENT_SP: return offsetof(T_CONTEXT, Sp);
+    default: _ASSERTE(!"Bad regNum"); return (SIZE_T)(-1);
+    }
+#elif defined(TARGET_RISCV64)
+
+    switch(regNum)
+    {
+    case ICorDebugInfo::REGNUM_R0: return offsetof(T_CONTEXT, R0);
+    case ICorDebugInfo::REGNUM_RA: return offsetof(T_CONTEXT, Ra);
+    case ICorDebugInfo::REGNUM_SP: return offsetof(T_CONTEXT, Sp);
+    case ICorDebugInfo::REGNUM_GP: return offsetof(T_CONTEXT, Gp);
+    case ICorDebugInfo::REGNUM_TP: return offsetof(T_CONTEXT, Tp);
+    case ICorDebugInfo::REGNUM_T0: return offsetof(T_CONTEXT, T0);
+    case ICorDebugInfo::REGNUM_T1: return offsetof(T_CONTEXT, T1);
+    case ICorDebugInfo::REGNUM_T2: return offsetof(T_CONTEXT, T2);
+    case ICorDebugInfo::REGNUM_FP: return offsetof(T_CONTEXT, Fp);
+    case ICorDebugInfo::REGNUM_S1: return offsetof(T_CONTEXT, S1);
+    case ICorDebugInfo::REGNUM_A0: return offsetof(T_CONTEXT, A0);
+    case ICorDebugInfo::REGNUM_A1: return offsetof(T_CONTEXT, A1);
+    case ICorDebugInfo::REGNUM_A2: return offsetof(T_CONTEXT, A2);
+    case ICorDebugInfo::REGNUM_A3: return offsetof(T_CONTEXT, A3);
+    case ICorDebugInfo::REGNUM_A4: return offsetof(T_CONTEXT, A4);
+    case ICorDebugInfo::REGNUM_A5: return offsetof(T_CONTEXT, A5);
+    case ICorDebugInfo::REGNUM_A6: return offsetof(T_CONTEXT, A6);
+    case ICorDebugInfo::REGNUM_A7: return offsetof(T_CONTEXT, A7);
+    case ICorDebugInfo::REGNUM_S2: return offsetof(T_CONTEXT, S2);
+    case ICorDebugInfo::REGNUM_S3: return offsetof(T_CONTEXT, S3);
+    case ICorDebugInfo::REGNUM_S4: return offsetof(T_CONTEXT, S4);
+    case ICorDebugInfo::REGNUM_S5: return offsetof(T_CONTEXT, S5);
+    case ICorDebugInfo::REGNUM_S6: return offsetof(T_CONTEXT, S6);
+    case ICorDebugInfo::REGNUM_S7: return offsetof(T_CONTEXT, S7);
+    case ICorDebugInfo::REGNUM_S8: return offsetof(T_CONTEXT, S8);
+    case ICorDebugInfo::REGNUM_S9: return offsetof(T_CONTEXT, S9);
+    case ICorDebugInfo::REGNUM_S10: return offsetof(T_CONTEXT, S10);
+    case ICorDebugInfo::REGNUM_S11: return offsetof(T_CONTEXT, S11);
+    case ICorDebugInfo::REGNUM_T3: return offsetof(T_CONTEXT, T3);
+    case ICorDebugInfo::REGNUM_T4: return offsetof(T_CONTEXT, T4);
+    case ICorDebugInfo::REGNUM_T5: return offsetof(T_CONTEXT, T5);
+    case ICorDebugInfo::REGNUM_T6: return offsetof(T_CONTEXT, T6);
     case ICorDebugInfo::REGNUM_PC: return offsetof(T_CONTEXT, Pc);
     case ICorDebugInfo::REGNUM_AMBIENT_SP: return offsetof(T_CONTEXT, Sp);
     default: _ASSERTE(!"Bad regNum"); return (SIZE_T)(-1);

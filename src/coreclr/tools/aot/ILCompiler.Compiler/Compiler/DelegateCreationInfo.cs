@@ -141,10 +141,10 @@ namespace ILCompiler
             switch (_targetKind)
             {
                 case TargetKind.CanonicalEntrypoint:
-                    return factory.CanonicalEntrypoint(TargetMethod, TargetMethodIsUnboxingThunk);
+                    return factory.AddressTakenMethodEntrypoint(TargetMethod, TargetMethodIsUnboxingThunk);
 
                 case TargetKind.ExactCallableAddress:
-                    return factory.ExactCallableAddress(TargetMethod, TargetMethodIsUnboxingThunk);
+                    return factory.ExactCallableAddressTakenAddress(TargetMethod, TargetMethodIsUnboxingThunk);
 
                 case TargetKind.InterfaceDispatch:
                     return factory.InterfaceDispatchCell(TargetMethod);
@@ -347,7 +347,7 @@ namespace ILCompiler
             if (compare != 0)
                 return compare;
 
-            compare = comparer.Compare(TargetMethod, other.TargetMethod);
+            compare = comparer.Compare(_targetMethod, other._targetMethod);
             if (compare != 0)
                 return compare;
 

@@ -7,33 +7,25 @@ namespace System.Web.Util
 {
     internal static class UriUtil
     {
-        // Just extracts the query string and fragment from the input path by splitting on the separator characters.
-        // Doesn't perform any validation as to whether the input represents a valid URL.
+        // Attempts to split a URI into its constituent pieces.
+        // Even if this method returns true, one or more of the out parameters might contain a null or empty string, e.g. if there is no query / fragment.
         // Concatenating the pieces back together will form the original input string.
-        private static void ExtractQueryAndFragment(string input, out string path, out string? queryAndFragment)
+        internal static bool TrySplitUriForPathEncode(string input, out ReadOnlySpan<char> schemeAndAuthority, [NotNullWhen(true)] out string? path, out ReadOnlySpan<char> queryAndFragment)
         {
+            // Strip off ?query and #fragment if they exist, since we're not going to look at them
             int queryFragmentSeparatorPos = input.AsSpan().IndexOfAny('?', '#'); // query fragment separators
+            string inputWithoutQueryFragment;
             if (queryFragmentSeparatorPos >= 0)
             {
-                path = input.Substring(0, queryFragmentSeparatorPos);
-                queryAndFragment = input.Substring(queryFragmentSeparatorPos);
+                inputWithoutQueryFragment = input.Substring(0, queryFragmentSeparatorPos);
+                queryAndFragment = input.AsSpan(queryFragmentSeparatorPos);
             }
             else
             {
                 // no query or fragment separator
-                path = input;
-                queryAndFragment = null;
+                inputWithoutQueryFragment = input;
+                queryAndFragment = ReadOnlySpan<char>.Empty;
             }
-        }
-
-        // Attempts to split a URI into its constituent pieces.
-        // Even if this method returns true, one or more of the out parameters might contain a null or empty string, e.g. if there is no query / fragment.
-        // Concatenating the pieces back together will form the original input string.
-        internal static bool TrySplitUriForPathEncode(string input, [NotNullWhen(true)] out string? schemeAndAuthority, [NotNullWhen(true)] out string? path, out string? queryAndFragment)
-        {
-            // Strip off ?query and #fragment if they exist, since we're not going to look at them
-            string inputWithoutQueryFragment;
-            ExtractQueryAndFragment(input, out inputWithoutQueryFragment, out queryAndFragment);
 
             // Use Uri class to parse the url into authority and path, use that to help decide
             // where to split the string. Do not rebuild the url from the Uri instance, as that
@@ -48,10 +40,10 @@ namespace System.Web.Util
                     // To retain the same string as originally given, find the authority in the original url and include
                     // everything up to that.
                     int authorityIndex = inputWithoutQueryFragment.IndexOf(authority, StringComparison.OrdinalIgnoreCase);
-                    if (authorityIndex != -1)
+                    if (authorityIndex >= 0)
                     {
                         int schemeAndAuthorityLength = authorityIndex + authority.Length;
-                        schemeAndAuthority = inputWithoutQueryFragment.Substring(0, schemeAndAuthorityLength);
+                        schemeAndAuthority = input.AsSpan(0, schemeAndAuthorityLength);
                         path = inputWithoutQueryFragment.Substring(schemeAndAuthorityLength);
                         return true;
                     }
@@ -59,9 +51,9 @@ namespace System.Web.Util
             }
 
             // Not a safe URL
-            schemeAndAuthority = null;
+            schemeAndAuthority = ReadOnlySpan<char>.Empty;
             path = null;
-            queryAndFragment = null;
+            queryAndFragment = ReadOnlySpan<char>.Empty;
             return false;
         }
     }

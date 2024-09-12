@@ -62,6 +62,7 @@ namespace ILCompiler.DependencyAnalysis
             if (implementationMethod != null)
             {
                 MethodDesc openImplementationMethod = implementationMethod.GetTypicalMethodDefinition();
+                dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(openImplementationMethod.OwningType), "interface gvm table implementation method owning type"));
                 var openImplementationMethodNameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(openImplementationMethod);
                 dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(openImplementationMethodNameAndSig), "interface gvm table implementation method signature"));
             }

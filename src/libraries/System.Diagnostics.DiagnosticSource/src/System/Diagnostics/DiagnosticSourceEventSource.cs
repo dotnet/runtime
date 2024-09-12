@@ -1,14 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-using System.Collections;
-using System.Collections.Concurrent;
+
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading;
 
 namespace System.Diagnostics
 {
@@ -61,7 +57,11 @@ namespace System.Diagnostics
     ///       * ACTIVITY_SOURCE_NAME can be empty string which will listen to ActivitySource that create Activities using "new Activity(...)"
     ///       * ACTIVITY_NAME is the activity operation name to filter with.
     ///       * ACTIVITY_EVENT_NAME either "Start" to listen to Activity Start event, or "Stop" to listen to Activity Stop event, or empty string to listen to both Start and Stop Activity events.
-    ///       * SAMPLING_RESULT either "Propagate" to create the Activity with PropagationData, or "Record" to create the Activity with AllData, or empty string to create the Activity with AllDataAndRecorded
+    ///       * SAMPLING_RESULT either:
+    ///         * "Propagate" to create the Activity with PropagationData
+    ///         * "Record" to create the Activity with AllData
+    ///         * "ParentRatioSampler([ratio])" to create the Activity based on OTel parent + TraceId ratio algorithm. [ratio] should be a value between 0.0 (0%) and 1.0 (100%).
+    ///         * Empty string to create the Activity with AllDataAndRecorded
     ///   * TRANSFORM_SPEC is a semicolon separated list of TRANSFORM_SPEC, which can be
     ///       * - TRANSFORM_SPEC               - the '-' indicates that implicit payload elements should be suppressed
     ///       * VARIABLE_NAME = PROPERTY_SPEC  - indicates that a payload element 'VARIABLE_NAME' is created from PROPERTY_SPEC
@@ -113,7 +113,6 @@ namespace System.Diagnostics
     ///     "[AS]MyLibrary/-Propagate"   listen to `MyLibrary` ActivitySource and the 'Start and Stop' Activity events. The Activities will be created with PropagationData sampling.
     ///     "[AS]MyLibrary/Stop-Record"  listen to `MyLibrary` ActivitySource and the 'Stop' Activity event. The Activities will be created with AllData sampling.
     ///     "[AS]*/-"                    listen to all ActivitySources and the Start and Stop Activity events. Activities will be created with AllDataAndRecorded sampling. this equivalent to "[AS]*" too.
-    ///     "[AS]*+MyActivity"           listen to all activity sources when creating Activity with the operation name "MyActivity".
     ///
     /// * How data is logged in the EventSource
     ///
@@ -161,17 +160,6 @@ namespace System.Diagnostics
     /// See the DiagnosticSourceEventSourceBridgeTest.cs for more explicit examples of using this bridge.
     /// </summary>
     [EventSource(Name = "Microsoft-Diagnostics-DiagnosticSource")]
-    // These suppressions can go away with https://github.com/mono/linker/issues/2175
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:ReflectionToRequiresUnreferencedCode",
-        Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
-                        "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
-                        "This includes Delegate and MulticastDelegate methods which require unreferenced code, but " +
-                        "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2115:ReflectionToDynamicallyAccessedMembers",
-        Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
-                        "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
-                        "This includes Delegate and MulticastDelegate methods which have dynamically accessed members requirements, but " +
-                        "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
     internal sealed class DiagnosticSourceEventSource : EventSource
     {
         public static readonly DiagnosticSourceEventSource Log = new DiagnosticSourceEventSource();
@@ -238,7 +226,7 @@ namespace System.Diagnostics
             Justification = "Arguments parameter is preserved by DynamicDependency")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(2, Keywords = Keywords.Events)]
-        private void Event(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>>? Arguments)
+        public void Event(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>>? Arguments)
         {
             WriteEvent(2, SourceName, EventName, Arguments);
         }
@@ -248,7 +236,7 @@ namespace System.Diagnostics
         /// It will eventually go away, but we should always reserve the ID for this.
         /// </summary>
         [Event(3, Keywords = Keywords.Events)]
-        private void EventJson(string SourceName, string EventName, string ArgmentsJson)
+        public void EventJson(string SourceName, string EventName, string ArgmentsJson)
         {
             WriteEvent(3, SourceName, EventName, ArgmentsJson);
         }
@@ -260,7 +248,7 @@ namespace System.Diagnostics
             Justification = "Arguments parameter is preserved by DynamicDependency")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(4, Keywords = Keywords.Events)]
-        private void Activity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
+        public void Activity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             WriteEvent(4, SourceName, EventName, Arguments);
         }
@@ -272,7 +260,7 @@ namespace System.Diagnostics
             Justification = "Arguments parameter is preserved by DynamicDependency")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(5, Keywords = Keywords.Events)]
-        private void Activity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
+        public void Activity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             WriteEvent(5, SourceName, EventName, Arguments);
         }
@@ -284,7 +272,7 @@ namespace System.Diagnostics
             Justification = "Arguments parameter is preserved by DynamicDependency")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(6, Keywords = Keywords.Events)]
-        private void Activity2Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
+        public void Activity2Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             WriteEvent(6, SourceName, EventName, Arguments);
         }
@@ -296,7 +284,7 @@ namespace System.Diagnostics
             Justification = "Arguments parameter is preserved by DynamicDependency")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(7, Keywords = Keywords.Events)]
-        private void Activity2Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
+        public void Activity2Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             WriteEvent(7, SourceName, EventName, Arguments);
         }
@@ -308,7 +296,7 @@ namespace System.Diagnostics
             Justification = "Arguments parameter is preserved by DynamicDependency")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(8, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
-        private void RecursiveActivity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
+        public void RecursiveActivity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             WriteEvent(8, SourceName, EventName, Arguments);
         }
@@ -320,7 +308,7 @@ namespace System.Diagnostics
             Justification = "Arguments parameter is preserved by DynamicDependency")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(9, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
-        private void RecursiveActivity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
+        public void RecursiveActivity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             WriteEvent(9, SourceName, EventName, Arguments);
         }
@@ -330,7 +318,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="SourceName"></param>
         [Event(10, Keywords = Keywords.Events)]
-        private void NewDiagnosticListener(string SourceName)
+        public void NewDiagnosticListener(string SourceName)
         {
             WriteEvent(10, SourceName);
         }
@@ -345,7 +333,7 @@ namespace System.Diagnostics
             Justification = "Arguments parameter is preserved by DynamicDependency")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(11, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
-        private void ActivityStart(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
+        public void ActivityStart(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
             WriteEvent(11, SourceName, ActivityName, Arguments);
 
         /// <summary>
@@ -358,17 +346,8 @@ namespace System.Diagnostics
             Justification = "Arguments parameter is preserved by DynamicDependency")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(12, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
-        private void ActivityStop(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
+        public void ActivityStop(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
             WriteEvent(12, SourceName, ActivityName, Arguments);
-
-        #region private
-
-        private DiagnosticSourceEventSource()
-            // This constructor uses EventSourceSettings which is only available on V4.6 and above
-            // Use the EventSourceSettings to turn on support for complex types, if available (v4.6 and above).
-            : base(EventSourceSettings.EtwSelfDescribingEventFormat)
-        {
-        }
 
         /// <summary>
         /// Called when the EventSource gets a command from a EventListener or ETW.
@@ -395,13 +374,22 @@ namespace System.Diagnostics
                         if (IsEnabled(EventLevel.Informational, Keywords.EntityFrameworkCoreCommands))
                             filterAndPayloadSpecs = NewLineSeparate(filterAndPayloadSpecs, EntityFrameworkCoreCommandsKeywordValue);
                     }
-                    FilterAndTransform.CreateFilterAndTransformList(ref _specs, filterAndPayloadSpecs, this);
+                    _listener?.Dispose();
+                    _listener = DsesFilterAndTransform.ParseFilterAndPayloadSpecs(this, filterAndPayloadSpecs);
                 }
                 else if (command.Command == EventCommand.Update || command.Command == EventCommand.Disable)
                 {
-                    FilterAndTransform.DestroyFilterAndTransformList(ref _specs, this);
+                    _listener?.Dispose();
                 }
             }
+        }
+
+        #region private
+        private DiagnosticSourceEventSource()
+            // This constructor uses EventSourceSettings which is only available on V4.6 and above
+            // Use the EventSourceSettings to turn on support for complex types, if available (v4.6 and above).
+            : base(EventSourceSettings.EtwSelfDescribingEventFormat)
+        {
         }
 
         // trivial helper to allow you to join two strings the first of which can be null.
@@ -412,6 +400,9 @@ namespace System.Diagnostics
                 return str2;
             return str1 + "\n" + str2;
         }
+
+        private IDisposable? _listener;
+        #endregion
 
         #region debugger hooks
         private volatile bool _false;       // A value that is always false but the compiler does not know this.
@@ -431,1152 +422,5 @@ namespace System.Diagnostics
             }
         }
         #endregion
-
-
-        [Flags]
-        internal enum ActivityEvents
-        {
-            None          = 0x00,
-            ActivityStart = 0x01,
-            ActivityStop  = 0x02,
-            All           = ActivityStart | ActivityStop,
-        }
-
-        #region EventSource hooks
-
-        /// <summary>
-        /// FilterAndTransform represents on transformation specification from a DiagnosticsSource
-        /// to EventSource's 'Event' method. (e.g. MySource/MyEvent:out=prop1.prop2.prop3).
-        /// Its main method is 'Morph' which takes a DiagnosticSource object and morphs it into
-        /// a list of string,string key value pairs.
-        ///
-        /// This method also contains that static 'Create/Destroy FilterAndTransformList, which
-        /// simply parse a series of transformation specifications.
-        /// </summary>
-        internal sealed class FilterAndTransform
-        {
-            /// <summary>
-            /// Parses filterAndPayloadSpecs which is a list of lines each of which has the from
-            ///
-            ///    DiagnosticSourceName/EventName:PAYLOAD_SPEC
-            ///
-            /// where PAYLOADSPEC is a semicolon separated list of specifications of the form
-            ///
-            ///    OutputName=Prop1.Prop2.PropN
-            ///
-            /// Into linked list of FilterAndTransform that together forward events from the given
-            /// DiagnosticSource's to 'eventSource'. Sets the 'specList' variable to this value
-            /// (destroying anything that was there previously).
-            ///
-            /// By default any serializable properties of the payload object are also included
-            /// in the output payload, however this feature and be tuned off by prefixing the
-            /// PAYLOADSPEC with a '-'.
-            /// </summary>
-            public static void CreateFilterAndTransformList(ref FilterAndTransform? specList, string? filterAndPayloadSpecs, DiagnosticSourceEventSource eventSource)
-            {
-                DestroyFilterAndTransformList(ref specList, eventSource);        // Stop anything that was on before.
-                filterAndPayloadSpecs ??= "";
-
-                // Points just beyond the last point in the string that has yet to be parsed. Thus we start with the whole string.
-                int endIdx = filterAndPayloadSpecs.Length;
-                while (true)
-                {
-                    // Skip trailing whitespace.
-                    while (0 < endIdx && char.IsWhiteSpace(filterAndPayloadSpecs[endIdx - 1]))
-                        --endIdx;
-
-                    int newlineIdx = filterAndPayloadSpecs.LastIndexOf('\n', endIdx - 1, endIdx);
-                    int startIdx = 0;
-                    if (0 <= newlineIdx)
-                        startIdx = newlineIdx + 1;  // starts after the newline, or zero if we don't find one.
-
-                    // Skip leading whitespace
-                    while (startIdx < endIdx && char.IsWhiteSpace(filterAndPayloadSpecs[startIdx]))
-                        startIdx++;
-
-                    if (IsActivitySourceEntry(filterAndPayloadSpecs, startIdx, endIdx))
-                    {
-                        AddNewActivitySourceTransform(filterAndPayloadSpecs, startIdx, endIdx, eventSource);
-                    }
-                    else
-                    {
-                        specList = new FilterAndTransform(filterAndPayloadSpecs, startIdx, endIdx, eventSource, specList);
-                    }
-
-                    endIdx = newlineIdx;
-                    if (endIdx < 0)
-                        break;
-                }
-
-                if (eventSource._activitySourceSpecs != null)
-                {
-                    NormalizeActivitySourceSpecsList(eventSource);
-                    CreateActivityListener(eventSource);
-                }
-            }
-
-            /// <summary>
-            /// This destroys (turns off) the FilterAndTransform stopping the forwarding started with CreateFilterAndTransformList
-            /// </summary>
-            /// <param name="specList"></param>
-            /// <param name="eventSource"></param>
-            public static void DestroyFilterAndTransformList(ref FilterAndTransform? specList, DiagnosticSourceEventSource eventSource)
-            {
-                eventSource._activityListener?.Dispose();
-                eventSource._activityListener = null;
-                eventSource._activitySourceSpecs = null; // nothing to dispose inside this list.
-
-                var curSpec = specList;
-                specList = null;            // Null out the list
-                while (curSpec != null)     // Dispose everything in the list.
-                {
-                    curSpec.Dispose();
-                    curSpec = curSpec.Next;
-                }
-            }
-
-            /// <summary>
-            /// Creates one FilterAndTransform specification from filterAndPayloadSpec starting at 'startIdx' and ending just before 'endIdx'.
-            /// This FilterAndTransform will subscribe to DiagnosticSources specified by the specification and forward them to 'eventSource.
-            /// For convenience, the 'Next' field is set to the 'next' parameter, so you can easily form linked lists.
-            /// </summary>
-            public FilterAndTransform(string filterAndPayloadSpec, int startIdx, int endIdx, DiagnosticSourceEventSource eventSource, FilterAndTransform? next)
-            {
-                Debug.Assert(filterAndPayloadSpec != null && startIdx >= 0 && startIdx <= endIdx && endIdx <= filterAndPayloadSpec.Length);
-                Next = next;
-                _eventSource = eventSource;
-
-                string? listenerNameFilter = null;       // Means WildCard.
-                string? eventNameFilter = null;          // Means WildCard.
-                string? activityName = null;
-
-                var startTransformIdx = startIdx;
-                var endEventNameIdx = endIdx;
-                var colonIdx = filterAndPayloadSpec.IndexOf(':', startIdx, endIdx - startIdx);
-                if (0 <= colonIdx)
-                {
-                    endEventNameIdx = colonIdx;
-                    startTransformIdx = colonIdx + 1;
-                }
-
-                // Parse the Source/Event name into listenerNameFilter and eventNameFilter
-                var slashIdx = filterAndPayloadSpec.IndexOf('/', startIdx, endEventNameIdx - startIdx);
-                if (0 <= slashIdx)
-                {
-                    listenerNameFilter = filterAndPayloadSpec.Substring(startIdx, slashIdx - startIdx);
-
-                    var atIdx = filterAndPayloadSpec.IndexOf('@', slashIdx + 1, endEventNameIdx - slashIdx - 1);
-                    if (0 <= atIdx)
-                    {
-                        activityName = filterAndPayloadSpec.Substring(atIdx + 1, endEventNameIdx - atIdx - 1);
-                        eventNameFilter = filterAndPayloadSpec.Substring(slashIdx + 1, atIdx - slashIdx - 1);
-                    }
-                    else
-                    {
-                        eventNameFilter = filterAndPayloadSpec.Substring(slashIdx + 1, endEventNameIdx - slashIdx - 1);
-                    }
-                }
-                else if (startIdx < endEventNameIdx)
-                {
-                    listenerNameFilter = filterAndPayloadSpec.Substring(startIdx, endEventNameIdx - startIdx);
-                }
-
-                _eventSource.Message("DiagnosticSource: Enabling '" + (listenerNameFilter ?? "*") + "/" + (eventNameFilter ?? "*") + "'");
-
-                // If the transform spec begins with a - it means you don't want implicit transforms.
-                if (startTransformIdx < endIdx && filterAndPayloadSpec[startTransformIdx] == '-')
-                {
-                    _eventSource.Message("DiagnosticSource: suppressing implicit transforms.");
-                    _noImplicitTransforms = true;
-                    startTransformIdx++;
-                }
-
-                // Parse all the explicit transforms, if present
-                if (startTransformIdx < endIdx)
-                {
-                    while (true)
-                    {
-                        int specStartIdx = startTransformIdx;
-                        int semiColonIdx = filterAndPayloadSpec.LastIndexOf(';', endIdx - 1, endIdx - startTransformIdx);
-                        if (0 <= semiColonIdx)
-                            specStartIdx = semiColonIdx + 1;
-
-                        // Ignore empty specifications.
-                        if (specStartIdx < endIdx)
-                        {
-                            if (_eventSource.IsEnabled(EventLevel.Informational, Keywords.Messages))
-                                _eventSource.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
-
-                            _explicitTransforms = new TransformSpec(filterAndPayloadSpec, specStartIdx, endIdx, _explicitTransforms);
-                        }
-                        if (startTransformIdx == specStartIdx)
-                            break;
-                        endIdx = semiColonIdx;
-                    }
-                }
-
-                Action<string, string, IEnumerable<KeyValuePair<string, string?>>>? writeEvent = null;
-                if (activityName != null && activityName.Contains("Activity"))
-                {
-                    writeEvent = activityName switch
-                    {
-                        nameof(Activity1Start) => _eventSource.Activity1Start,
-                        nameof(Activity1Stop) => _eventSource.Activity1Stop,
-                        nameof(Activity2Start) => _eventSource.Activity2Start,
-                        nameof(Activity2Stop) => _eventSource.Activity2Stop,
-                        nameof(RecursiveActivity1Start) => _eventSource.RecursiveActivity1Start,
-                        nameof(RecursiveActivity1Stop) => _eventSource.RecursiveActivity1Stop,
-                        _ => null
-                    };
-
-                    if (writeEvent == null)
-                        _eventSource.Message("DiagnosticSource: Could not find Event to log Activity " + activityName);
-                }
-
-                writeEvent ??= _eventSource.Event;
-
-                // Set up a subscription that watches for the given Diagnostic Sources and events which will call back
-                // to the EventSource.
-                _diagnosticsListenersSubscription = DiagnosticListener.AllListeners.Subscribe(new CallbackObserver<DiagnosticListener>(delegate (DiagnosticListener newListener)
-                {
-                    if (listenerNameFilter == null || listenerNameFilter == newListener.Name)
-                    {
-                        _eventSource.NewDiagnosticListener(newListener.Name);
-                        Predicate<string>? eventNameFilterPredicate = null;
-                        if (eventNameFilter != null)
-                            eventNameFilterPredicate = (string eventName) => eventNameFilter == eventName;
-
-                        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                            Justification = "DiagnosticSource.Write is marked with RequiresUnreferencedCode.")]
-                        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2119",
-                            Justification = "DAM on EventSource references this compiler-generated local function which calls a " +
-                                            "method that requires unreferenced code. EventSource will not access this local function.")]
-                        void OnEventWritten(KeyValuePair<string, object?> evnt)
-                        {
-                            // The filter given to the DiagnosticSource may not work if users don't is 'IsEnabled' as expected.
-                            // Thus we look for any events that may have snuck through and filter them out before forwarding.
-                            if (eventNameFilter != null && eventNameFilter != evnt.Key)
-                                return;
-
-                            var outputArgs = this.Morph(evnt.Value);
-                            var eventName = evnt.Key;
-                            writeEvent(newListener.Name, eventName, outputArgs);
-                        }
-
-                        var subscription = newListener.Subscribe(new CallbackObserver<KeyValuePair<string, object?>>(OnEventWritten), eventNameFilterPredicate);
-                        _liveSubscriptions = new Subscriptions(subscription, _liveSubscriptions);
-                    }
-                }));
-            }
-
-            internal FilterAndTransform(string filterAndPayloadSpec, int endIdx, int colonIdx, string activitySourceName, string? activityName, ActivityEvents events, ActivitySamplingResult samplingResult, DiagnosticSourceEventSource eventSource)
-            {
-                _eventSource = eventSource;
-
-                Next = _eventSource._activitySourceSpecs;
-                _eventSource._activitySourceSpecs = this;
-
-                SourceName = activitySourceName;
-                ActivityName = activityName;
-                Events = events;
-                SamplingResult = samplingResult;
-
-                if (colonIdx >= 0)
-                {
-                    int startTransformIdx = colonIdx + 1;
-
-                    // If the transform spec begins with a - it means you don't want implicit transforms.
-                    if (startTransformIdx < endIdx && filterAndPayloadSpec[startTransformIdx] == '-')
-                    {
-                        _eventSource.Message("DiagnosticSource: suppressing implicit transforms.");
-                        _noImplicitTransforms = true;
-                        startTransformIdx++;
-                    }
-
-                    // Parse all the explicit transforms, if present
-                    if (startTransformIdx < endIdx)
-                    {
-                        while (true)
-                        {
-                            int specStartIdx = startTransformIdx;
-                            int semiColonIdx = filterAndPayloadSpec.LastIndexOf(';', endIdx - 1, endIdx - startTransformIdx);
-                            if (0 <= semiColonIdx)
-                                specStartIdx = semiColonIdx + 1;
-
-                            // Ignore empty specifications.
-                            if (specStartIdx < endIdx)
-                            {
-                                if (_eventSource.IsEnabled(EventLevel.Informational, Keywords.Messages))
-                                    _eventSource.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
-
-                                _explicitTransforms = new TransformSpec(filterAndPayloadSpec, specStartIdx, endIdx, _explicitTransforms);
-                            }
-                            if (startTransformIdx == specStartIdx)
-                                break;
-                            endIdx = semiColonIdx;
-                        }
-                    }
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal static bool IsActivitySourceEntry(string filterAndPayloadSpec, int startIdx, int endIdx) =>
-                            filterAndPayloadSpec.AsSpan(startIdx, endIdx - startIdx).StartsWith(c_ActivitySourcePrefix.AsSpan(), StringComparison.Ordinal);
-
-            internal static void AddNewActivitySourceTransform(string filterAndPayloadSpec, int startIdx, int endIdx, DiagnosticSourceEventSource eventSource)
-            {
-                Debug.Assert(endIdx - startIdx >= 4);
-                Debug.Assert(IsActivitySourceEntry(filterAndPayloadSpec, startIdx, endIdx));
-
-                ReadOnlySpan<char> eventName;
-                ReadOnlySpan<char> activitySourceName;
-
-                ActivityEvents supportedEvent = ActivityEvents.All; // Default events
-                ActivitySamplingResult samplingResult = ActivitySamplingResult.AllDataAndRecorded; // Default sampling results
-
-                int colonIdx = filterAndPayloadSpec.IndexOf(':', startIdx + c_ActivitySourcePrefix.Length, endIdx - startIdx - c_ActivitySourcePrefix.Length);
-
-                ReadOnlySpan<char> entry = filterAndPayloadSpec.AsSpan(
-                                                startIdx + c_ActivitySourcePrefix.Length,
-                                                (colonIdx >= 0 ? colonIdx : endIdx) - startIdx - c_ActivitySourcePrefix.Length)
-                                                .Trim();
-
-                int eventNameIndex = entry.IndexOf('/');
-                if (eventNameIndex >= 0)
-                {
-                    activitySourceName = entry.Slice(0, eventNameIndex).Trim();
-
-                    ReadOnlySpan<char> suffixPart = entry.Slice(eventNameIndex + 1).Trim();
-                    int samplingResultIndex = suffixPart.IndexOf('-');
-                    if (samplingResultIndex >= 0)
-                    {
-                        // We have the format "[AS]SourceName/[EventName]-[SamplingResult]
-                        eventName = suffixPart.Slice(0, samplingResultIndex).Trim();
-                        suffixPart = suffixPart.Slice(samplingResultIndex + 1).Trim();
-
-                        if (suffixPart.Length > 0)
-                        {
-                            if (suffixPart.Equals("Propagate".AsSpan(), StringComparison.OrdinalIgnoreCase))
-                            {
-                                samplingResult = ActivitySamplingResult.PropagationData;
-                            }
-                            else if (suffixPart.Equals("Record".AsSpan(), StringComparison.OrdinalIgnoreCase))
-                            {
-                                samplingResult = ActivitySamplingResult.AllData;
-                            }
-                            else
-                            {
-                                // Invalid format
-                                return;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // We have the format "[AS]SourceName/[EventName]
-                        eventName = suffixPart;
-                    }
-
-                    if (eventName.Length > 0)
-                    {
-                        if (eventName.Equals("Start".AsSpan(), StringComparison.OrdinalIgnoreCase))
-                        {
-                            supportedEvent = ActivityEvents.ActivityStart;
-                        }
-                        else if (eventName.Equals("Stop".AsSpan(), StringComparison.OrdinalIgnoreCase))
-                        {
-                            supportedEvent = ActivityEvents.ActivityStop;
-                        }
-                        else
-                        {
-                            // Invalid format
-                            return;
-                        }
-                    }
-                }
-                else
-                {
-                    // We have the format "[AS]SourceName"
-                    activitySourceName = entry;
-                }
-
-                string? activityName = null;
-                int plusSignIndex = activitySourceName.IndexOf('+');
-                if (plusSignIndex >= 0)
-                {
-                    activityName = activitySourceName.Slice(plusSignIndex + 1).Trim().ToString();
-                    activitySourceName = activitySourceName.Slice(0, plusSignIndex).Trim();
-                }
-
-                new FilterAndTransform(filterAndPayloadSpec, endIdx, colonIdx, activitySourceName.ToString(), activityName, supportedEvent, samplingResult, eventSource);
-            }
-
-            // Check if we are interested to listen to such ActivitySource
-            private static ActivitySamplingResult Sample(string activitySourceName, string activityName, DiagnosticSourceEventSource eventSource)
-            {
-                FilterAndTransform? list = eventSource._activitySourceSpecs;
-                ActivitySamplingResult specificResult = ActivitySamplingResult.None;
-                ActivitySamplingResult wildResult = ActivitySamplingResult.None;
-
-                while (list != null)
-                {
-                    if (list.ActivityName == null || list.ActivityName == activityName)
-                    {
-                        if (activitySourceName == list.SourceName)
-                        {
-                                if (list.SamplingResult > specificResult)
-                                {
-                                    specificResult = list.SamplingResult;
-                                }
-
-                                if (specificResult >= ActivitySamplingResult.AllDataAndRecorded)
-                                {
-                                    return specificResult; // highest possible value
-                                }
-                                // We don't break here as we can have more than one entry with the same source name.
-                            }
-                        else if (list.SourceName == "*")
-                        {
-                            if (specificResult != ActivitySamplingResult.None)
-                            {
-                                // We reached the '*' nodes which means there is no more specific source names in the list.
-                                // If we encountered any specific node before, then return that value.
-                                return specificResult;
-                            }
-
-                            if (list.SamplingResult > wildResult)
-                            {
-                                wildResult = list.SamplingResult;
-                            }
-                        }
-                    }
-                    list = list.Next;
-                }
-
-                // We can return None in case there is no '*' nor any entry match the source name.
-                return specificResult != ActivitySamplingResult.None ? specificResult : wildResult;
-            }
-
-            internal static void CreateActivityListener(DiagnosticSourceEventSource eventSource)
-            {
-                Debug.Assert(eventSource._activityListener == null);
-                Debug.Assert(eventSource._activitySourceSpecs != null);
-
-                eventSource._activityListener = new ActivityListener();
-
-                eventSource._activityListener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => Sample(activityOptions.Source.Name, activityOptions.Name, eventSource);
-                eventSource._activityListener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => Sample(activityOptions.Source.Name, activityOptions.Name, eventSource);
-
-                eventSource._activityListener.ShouldListenTo = (activitySource) =>
-                {
-                    FilterAndTransform? list = eventSource._activitySourceSpecs;
-                    while (list != null)
-                    {
-                        if (activitySource.Name == list.SourceName || list.SourceName == "*")
-                        {
-                            return true;
-                        }
-
-                        list = list.Next;
-                    }
-
-                    return false;
-                };
-
-                eventSource._activityListener.ActivityStarted = activity => OnActivityStarted(eventSource, activity);
-
-                eventSource._activityListener.ActivityStopped = activity => OnActivityStopped(eventSource, activity);
-
-                ActivitySource.AddActivityListener(eventSource._activityListener);
-            }
-
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(Activity))]
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ActivityContext))]
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ActivityEvent))]
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ActivityLink))]
-            [DynamicDependency(nameof(DateTime.Ticks), typeof(DateTime))]
-            [DynamicDependency(nameof(TimeSpan.Ticks), typeof(TimeSpan))]
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Activity's properties are being preserved with the DynamicDependencies on OnActivityStarted.")]
-            private static void OnActivityStarted(DiagnosticSourceEventSource eventSource, Activity activity)
-            {
-                FilterAndTransform? list = eventSource._activitySourceSpecs;
-                while (list != null)
-                {
-                    if ((list.Events & ActivityEvents.ActivityStart) != 0 &&
-                        (activity.Source.Name == list.SourceName || list.SourceName == "*") &&
-                        (list.ActivityName == null || list.ActivityName == activity.OperationName))
-                    {
-                        eventSource.ActivityStart(activity.Source.Name, activity.OperationName, list.Morph(activity));
-                        return;
-                    }
-
-                    list = list.Next;
-                }
-            }
-
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Activity's properties are being preserved with the DynamicDependencies on OnActivityStarted.")]
-            private static void OnActivityStopped(DiagnosticSourceEventSource eventSource, Activity activity)
-            {
-                FilterAndTransform? list = eventSource._activitySourceSpecs;
-                while (list != null)
-                {
-                    if ((list.Events & ActivityEvents.ActivityStop) != 0 &&
-                        (activity.Source.Name == list.SourceName || list.SourceName == "*") &&
-                        (list.ActivityName == null || list.ActivityName == activity.OperationName))
-                    {
-                        eventSource.ActivityStop(activity.Source.Name, activity.OperationName, list.Morph(activity));
-                        return;
-                    }
-
-                    list = list.Next;
-                }
-            }
-
-            // Move all wildcard nodes at the end of the list.
-            // This will give more priority to the specific nodes over the wildcards.
-            internal static void NormalizeActivitySourceSpecsList(DiagnosticSourceEventSource eventSource)
-            {
-                Debug.Assert(eventSource._activityListener == null);
-                Debug.Assert(eventSource._activitySourceSpecs != null);
-
-                FilterAndTransform? list = eventSource._activitySourceSpecs;
-
-                FilterAndTransform? firstSpecificList = null;
-                FilterAndTransform? lastSpecificList = null;
-
-                FilterAndTransform? firstWildcardList = null;
-                FilterAndTransform? lastWildcardList = null;
-
-                while (list != null)
-                {
-                    if (list.SourceName == "*")
-                    {
-                        if (firstWildcardList == null)
-                        {
-                            firstWildcardList = lastWildcardList = list;
-                        }
-                        else
-                        {
-                            Debug.Assert(lastWildcardList != null);
-                            lastWildcardList.Next = list;
-                            lastWildcardList = list;
-                        }
-                    }
-                    else
-                    {
-                        if (firstSpecificList == null)
-                        {
-                            firstSpecificList = lastSpecificList = list;
-                        }
-                        else
-                        {
-                            Debug.Assert(lastSpecificList != null);
-                            lastSpecificList.Next = list;
-                            lastSpecificList = list;
-                        }
-                    }
-
-                    list = list.Next;
-                }
-
-                if (firstSpecificList == null || firstWildcardList == null)
-                {
-                    Debug.Assert(firstSpecificList != null || firstWildcardList != null);
-                    return; // list shouldn't be chanaged.
-                }
-
-                Debug.Assert(lastWildcardList != null && lastSpecificList != null);
-
-                lastSpecificList.Next = firstWildcardList;
-                lastWildcardList.Next = null;
-
-                eventSource._activitySourceSpecs = firstSpecificList;
-            }
-
-            private void Dispose()
-            {
-                if (_diagnosticsListenersSubscription != null)
-                {
-                    _diagnosticsListenersSubscription.Dispose();
-                    _diagnosticsListenersSubscription = null;
-                }
-
-                if (_liveSubscriptions != null)
-                {
-                    Subscriptions? subscr = _liveSubscriptions;
-                    _liveSubscriptions = null;
-                    while (subscr != null)
-                    {
-                        subscr.Subscription.Dispose();
-                        subscr = subscr.Next;
-                    }
-                }
-            }
-
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-                Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                                "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
-            [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
-            public List<KeyValuePair<string, string?>> Morph(object? args)
-            {
-                // Transform the args into a bag of key-value strings.
-                var outputArgs = new List<KeyValuePair<string, string?>>();
-                if (args != null)
-                {
-                    if (!_noImplicitTransforms)
-                    {
-                        // given the type, fetch the implicit transforms for that type and put it in the implicitTransforms variable.
-                        Type argType = args.GetType();
-                        TransformSpec? implicitTransforms;
-
-                        // First check the one-element cache _firstImplicitTransformsEntry
-                        ImplicitTransformEntry? cacheEntry = _firstImplicitTransformsEntry;
-                        if (cacheEntry != null && cacheEntry.Type == argType)
-                        {
-                            implicitTransforms = cacheEntry.Transforms;     // Yeah we hit the cache.
-                        }
-                        else if (cacheEntry == null)
-                        {
-                            // _firstImplicitTransformsEntry is empty, we should fill it.
-                            // Note that it is OK that two threads may race and both call MakeImplicitTransforms on their own
-                            // (that is we don't expect exactly once initialization of _firstImplicitTransformsEntry)
-                            implicitTransforms = MakeImplicitTransforms(argType);
-                            Interlocked.CompareExchange(ref _firstImplicitTransformsEntry,
-                                new ImplicitTransformEntry() { Type = argType, Transforms = implicitTransforms }, null);
-                        }
-                        else
-                        {
-                            // This should only happen when you are wildcarding your events (reasonably rare).
-                            // In that case you will probably need many types
-                            // Note currently we don't limit the cache size, but it is limited by the number of
-                            // distinct types of objects passed to DiagnosticSource.Write.
-                            if (_implicitTransformsTable == null)
-                            {
-                                Interlocked.CompareExchange(ref _implicitTransformsTable,
-                                    new ConcurrentDictionary<Type, TransformSpec?>(1, 8), null);
-                            }
-                            implicitTransforms = _implicitTransformsTable.GetOrAdd(argType, MakeImplicitTransforms);
-                        }
-
-                        // implicitTransformas now fetched from cache or constructed, use it to Fetch all the implicit fields.
-                        if (implicitTransforms != null)
-                        {
-                            for (TransformSpec? serializableArg = implicitTransforms; serializableArg != null; serializableArg = serializableArg.Next)
-                                outputArgs.Add(serializableArg.Morph(args));
-                        }
-                    }
-
-                    if (_explicitTransforms != null)
-                    {
-                        for (TransformSpec? explicitTransform = _explicitTransforms; explicitTransform != null; explicitTransform = explicitTransform.Next)
-                        {
-                            var keyValue = explicitTransform.Morph(args);
-                            if (keyValue.Value != null)
-                                outputArgs.Add(keyValue);
-                        }
-                    }
-                }
-                return outputArgs;
-            }
-
-            public FilterAndTransform? Next;
-
-            // Specific ActivitySource Transforms information
-
-            internal const string c_ActivitySourcePrefix = "[AS]";
-            internal string? SourceName { get; set; }
-            internal string? ActivityName { get; set; }
-            internal DiagnosticSourceEventSource.ActivityEvents Events  { get; set; }
-            internal ActivitySamplingResult SamplingResult { get; set; }
-
-            #region private
-
-            // Given a type generate all the implicit transforms for type (that is for every field
-            // generate the spec that fetches it).
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-                Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                                "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
-            [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
-            private static TransformSpec? MakeImplicitTransforms(Type type)
-            {
-                TransformSpec? newSerializableArgs = null;
-                TypeInfo curTypeInfo = type.GetTypeInfo();
-                foreach (PropertyInfo property in curTypeInfo.GetProperties(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-                {
-                    // prevent TransformSpec from attempting to implicitly transform index properties
-                    if (property.GetMethod == null || property.GetMethod!.GetParameters().Length > 0)
-                        continue;
-                    newSerializableArgs = new TransformSpec(property.Name, 0, property.Name.Length, newSerializableArgs);
-                }
-                return Reverse(newSerializableArgs);
-            }
-
-            // Reverses a linked list (of TransformSpecs) in place.
-            private static TransformSpec? Reverse(TransformSpec? list)
-            {
-                TransformSpec? ret = null;
-                while (list != null)
-                {
-                    var next = list.Next;
-                    list.Next = ret;
-                    ret = list;
-                    list = next;
-                }
-                return ret;
-            }
-
-            private IDisposable? _diagnosticsListenersSubscription; // This is our subscription that listens for new Diagnostic source to appear.
-            private Subscriptions? _liveSubscriptions;              // These are the subscriptions that we are currently forwarding to the EventSource.
-            private readonly bool _noImplicitTransforms;                    // Listener can say they don't want implicit transforms.
-            private ImplicitTransformEntry? _firstImplicitTransformsEntry; // The transform for _firstImplicitFieldsType
-            private ConcurrentDictionary<Type, TransformSpec?>? _implicitTransformsTable; // If there is more than one object type for an implicit transform, they go here.
-            private readonly TransformSpec? _explicitTransforms;             // payload to include because the user explicitly indicated how to fetch the field.
-            private readonly DiagnosticSourceEventSource _eventSource;      // Where the data is written to.
-            #endregion
-        }
-
-        // This olds one the implicit transform for one type of object.
-        // We remember this type-transform pair in the _firstImplicitTransformsEntry cache.
-        internal sealed class ImplicitTransformEntry
-        {
-            public Type? Type;
-            public TransformSpec? Transforms;
-        }
-
-        /// <summary>
-        /// Transform spec represents a string that describes how to extract a piece of data from
-        /// the DiagnosticSource payload. An example string is OUTSTR=EVENT_VALUE.PROP1.PROP2.PROP3
-        /// It has a Next field so they can be chained together in a linked list.
-        /// </summary>
-        internal sealed class TransformSpec
-        {
-            /// <summary>
-            /// parse the strings 'spec' from startIdx to endIdx (points just beyond the last considered char)
-            /// The syntax is ID1=ID2.ID3.ID4 .... Where ID1= is optional.
-            /// </summary>
-            public TransformSpec(string transformSpec, int startIdx, int endIdx, TransformSpec? next = null)
-            {
-                Debug.Assert(transformSpec != null && startIdx >= 0 && startIdx < endIdx && endIdx <= transformSpec.Length);
-                Next = next;
-
-                // Pick off the Var=
-                int equalsIdx = transformSpec.IndexOf('=', startIdx, endIdx - startIdx);
-                if (0 <= equalsIdx)
-                {
-                    _outputName = transformSpec.Substring(startIdx, equalsIdx - startIdx);
-                    startIdx = equalsIdx + 1;
-                }
-
-                // Working from back to front, create a PropertySpec for each .ID in the string.
-                while (startIdx < endIdx)
-                {
-                    int dotIdx = transformSpec.LastIndexOf('.', endIdx - 1, endIdx - startIdx);
-                    int idIdx = startIdx;
-                    if (0 <= dotIdx)
-                        idIdx = dotIdx + 1;
-
-                    string propertyName = transformSpec.Substring(idIdx, endIdx - idIdx);
-                    _fetches = new PropertySpec(propertyName, _fetches);
-
-                    // If the user did not explicitly set a name, it is the last one (first to be processed from the end).
-                    _outputName ??= propertyName;
-
-                    endIdx = dotIdx;    // This works even when LastIndexOf return -1.
-                }
-            }
-
-            /// <summary>
-            /// Given the DiagnosticSourcePayload 'obj', compute a key-value pair from it. For example
-            /// if the spec is OUTSTR=EVENT_VALUE.PROP1.PROP2.PROP3 and the ultimate value of PROP3 is
-            /// 10 then the return key value pair is  KeyValuePair("OUTSTR","10")
-            /// </summary>
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-                Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                                "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
-            [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
-            public KeyValuePair<string, string?> Morph(object? obj)
-            {
-                for (PropertySpec? cur = _fetches; cur != null; cur = cur.Next)
-                {
-                    if (obj != null || cur.IsStatic)
-                        obj = cur.Fetch(obj);
-                }
-
-                return new KeyValuePair<string, string?>(_outputName, obj?.ToString());
-            }
-
-            /// <summary>
-            /// A public field that can be used to form a linked list.
-            /// </summary>
-            public TransformSpec? Next;
-
-            #region private
-            /// <summary>
-            /// A PropertySpec represents information needed to fetch a property from
-            /// and efficiently. Thus it represents a '.PROP' in a TransformSpec
-            /// (and a transformSpec has a list of these).
-            /// </summary>
-            internal sealed class PropertySpec
-            {
-                private const string CurrentActivityPropertyName = "*Activity";
-                private const string EnumeratePropertyName = "*Enumerate";
-
-                /// <summary>
-                /// Make a new PropertySpec for a property named 'propertyName'.
-                /// For convenience you can set he 'next' field to form a linked
-                /// list of PropertySpecs.
-                /// </summary>
-                public PropertySpec(string propertyName, PropertySpec? next)
-                {
-                    Next = next;
-                    _propertyName = propertyName;
-
-                    // detect well-known names that are static functions
-                    if (_propertyName == CurrentActivityPropertyName)
-                    {
-                        IsStatic = true;
-                    }
-                }
-
-                public bool IsStatic { get; }
-
-                /// <summary>
-                /// Given an object fetch the property that this PropertySpec represents.
-                /// obj may be null when IsStatic is true, otherwise it must be non-null.
-                /// </summary>
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-                    Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
-                [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
-                public object? Fetch(object? obj)
-                {
-                    PropertyFetch? fetch = _fetchForExpectedType;
-                    Debug.Assert(obj != null || IsStatic);
-                    Type? objType = obj?.GetType();
-                    if (fetch == null || fetch.Type != objType)
-                    {
-                        _fetchForExpectedType = fetch = PropertyFetch.FetcherForProperty(objType, _propertyName);
-                    }
-                    object? ret = null;
-                    // Avoid the exception which can be thrown during accessing the object properties.
-                    try { ret = fetch!.Fetch(obj); } catch (Exception e) { Log.Message($"Property {objType}.{_propertyName} threw the exception {e}"); }
-                    return ret;
-                }
-
-                /// <summary>
-                /// A public field that can be used to form a linked list.
-                /// </summary>
-                public PropertySpec? Next;
-
-                #region private
-                /// <summary>
-                /// PropertyFetch is a helper class. It takes a PropertyInfo and then knows how
-                /// to efficiently fetch that property from a .NET object (See Fetch method).
-                /// It hides some slightly complex generic code.
-                /// </summary>
-                private class PropertyFetch
-                {
-                    public PropertyFetch(Type? type)
-                    {
-                        Type = type;
-                    }
-
-                    /// <summary>
-                    /// The type of the object that the property is fetched from. For well-known static methods that
-                    /// aren't actually property getters this will return null.
-                    /// </summary>
-                    internal Type? Type { get; }
-
-                    /// <summary>
-                    /// Create a property fetcher for a propertyName
-                    /// </summary>
-                    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-                        Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                                        "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
-                    [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
-                    public static PropertyFetch FetcherForProperty(Type? type, string propertyName)
-                    {
-                        if (propertyName == null)
-                            return new PropertyFetch(type);     // returns null on any fetch.
-                        if (propertyName == CurrentActivityPropertyName)
-                        {
-                            return new CurrentActivityPropertyFetch();
-                        }
-
-                        Debug.Assert(type != null, "Type should only be null for the well-known static fetchers already checked");
-                        TypeInfo typeInfo = type.GetTypeInfo();
-                        if (propertyName == EnumeratePropertyName)
-                        {
-                            // If there are multiple implementations of IEnumerable<T>, this arbitrarily uses the first one
-                            foreach (Type iFaceType in typeInfo.GetInterfaces())
-                            {
-                                TypeInfo iFaceTypeInfo = iFaceType.GetTypeInfo();
-                                if (!iFaceTypeInfo.IsGenericType ||
-                                    iFaceTypeInfo.GetGenericTypeDefinition() != typeof(IEnumerable<>))
-                                {
-                                    continue;
-                                }
-
-                                return CreateEnumeratePropertyFetch(type, iFaceTypeInfo);
-                            }
-
-                            // no implementation of IEnumerable<T> found, return a null fetcher
-                            Log.Message($"*Enumerate applied to non-enumerable type {type}");
-                            return new PropertyFetch(type);
-                        }
-                        else
-                        {
-                            PropertyInfo? propertyInfo = typeInfo.GetDeclaredProperty(propertyName);
-                            if (propertyInfo == null)
-                            {
-                                foreach (PropertyInfo pi in typeInfo.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
-                                {
-                                    if (pi.Name == propertyName)
-                                    {
-                                        propertyInfo = pi;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (propertyInfo == null)
-                            {
-                                Log.Message($"Property {propertyName} not found on {type}. Ensure the name is spelled correctly. If you published the application with PublishTrimmed=true, ensure the property was not trimmed away.");
-                                return new PropertyFetch(type);
-                            }
-                            // Delegate creation below is incompatible with static properties.
-                            else if (propertyInfo.GetMethod?.IsStatic == true || propertyInfo.SetMethod?.IsStatic == true)
-                            {
-                                Log.Message($"Property {propertyName} is static.");
-                                return new PropertyFetch(type);
-                            }
-
-                            return CreatePropertyFetch(typeInfo, propertyInfo);
-                        }
-                    }
-
-                    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
-                        Justification = "MakeGenericType is only called when IsDynamicCodeSupported is true or only with ref types.")]
-                    private static PropertyFetch CreateEnumeratePropertyFetch(Type type, TypeInfo enumerableOfTType)
-                    {
-                        Type elemType = enumerableOfTType.GetGenericArguments()[0];
-#if NET
-                        if (!RuntimeFeature.IsDynamicCodeSupported && elemType.IsValueType)
-                        {
-                            return new EnumeratePropertyFetch(type);
-                        }
-#endif
-                        Type instantiatedTypedPropertyFetcher = typeof(EnumeratePropertyFetch<>)
-                            .GetTypeInfo().MakeGenericType(elemType);
-                        return (PropertyFetch)Activator.CreateInstance(instantiatedTypedPropertyFetcher, type)!;
-                    }
-
-                    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
-                        Justification = "MakeGenericType is only called when IsDynamicCodeSupported is true or only with ref types.")]
-                    private static PropertyFetch CreatePropertyFetch(Type type, PropertyInfo propertyInfo)
-                    {
-#if NET
-                        if (!RuntimeFeature.IsDynamicCodeSupported && (propertyInfo.DeclaringType!.IsValueType || propertyInfo.PropertyType.IsValueType))
-                        {
-                            return new ReflectionPropertyFetch(type, propertyInfo);
-                        }
-#endif
-                        Type typedPropertyFetcher = type.IsValueType ?
-                            typeof(ValueTypedFetchProperty<,>) : typeof(RefTypedFetchProperty<,>);
-                        Type instantiatedTypedPropertyFetcher = typedPropertyFetcher.GetTypeInfo().MakeGenericType(
-                            propertyInfo.DeclaringType!, propertyInfo.PropertyType);
-                        return (PropertyFetch)Activator.CreateInstance(instantiatedTypedPropertyFetcher, type, propertyInfo)!;
-                    }
-
-                    /// <summary>
-                    /// Given an object, fetch the property that this propertyFech represents.
-                    /// </summary>
-                    public virtual object? Fetch(object? obj) { return null; }
-
-#region private
-
-                    private sealed class RefTypedFetchProperty<TObject, TProperty> : PropertyFetch
-                    {
-                        public RefTypedFetchProperty(Type type, PropertyInfo property) : base(type)
-                        {
-                            Debug.Assert(typeof(TObject).GetTypeInfo().IsAssignableFrom(type.GetTypeInfo()));
-                            _propertyFetch = (Func<TObject, TProperty>)property.GetMethod!.CreateDelegate(typeof(Func<TObject, TProperty>));
-                        }
-                        public override object? Fetch(object? obj)
-                        {
-                            Debug.Assert(obj is TObject);
-                            return _propertyFetch((TObject)obj);
-                        }
-                        private readonly Func<TObject, TProperty> _propertyFetch;
-                    }
-
-                    private delegate TProperty StructFunc<TStruct, TProperty>(ref TStruct thisArg);
-
-                    // Value types methods require that the first argument is passed by reference. This requires a different delegate signature
-                    // from the reference type case.
-                    private sealed class ValueTypedFetchProperty<TStruct, TProperty> : PropertyFetch
-                    {
-                        public ValueTypedFetchProperty(Type type, PropertyInfo property) : base(type)
-                        {
-                            Debug.Assert(typeof(TStruct) == type);
-                            _propertyFetch = (StructFunc<TStruct, TProperty>)property.GetMethod!.CreateDelegate(typeof(StructFunc<TStruct, TProperty>));
-                        }
-                        public override object? Fetch(object? obj)
-                        {
-                            Debug.Assert(obj is TStruct);
-                            // It is uncommon for property getters to mutate the struct, but if they do the change will be lost.
-                            // We are calling the getter on an unboxed copy
-                            TStruct structObj = (TStruct)obj;
-                            return _propertyFetch(ref structObj);
-                        }
-                        private readonly StructFunc<TStruct, TProperty> _propertyFetch;
-                    }
-
-#if NET
-                    /// <summary>
-                    /// A fetcher that can be used when MakeGenericType isn't available.
-                    /// </summary>
-                    private sealed class ReflectionPropertyFetch : PropertyFetch
-                    {
-                        private readonly MethodInvoker _getterInvoker;
-                        public ReflectionPropertyFetch(Type type, PropertyInfo property) : base(type)
-                        {
-                            _getterInvoker = MethodInvoker.Create(property.GetMethod!);
-                        }
-
-                        public override object? Fetch(object? obj) => _getterInvoker.Invoke(obj);
-                    }
-
-                    /// <summary>
-                    /// A fetcher that enumerates and formats an IEnumerable when MakeGenericType isn't available.
-                    /// </summary>
-                    private sealed class EnumeratePropertyFetch : PropertyFetch
-                    {
-                        public EnumeratePropertyFetch(Type type) : base(type) { }
-
-                        public override object? Fetch(object? obj)
-                        {
-                            IEnumerable? enumerable = obj as IEnumerable;
-                            Debug.Assert(enumerable is not null);
-
-                            // string.Join for a non-generic IEnumerable
-                            IEnumerator en = enumerable.GetEnumerator();
-                            using (IDisposable? disposable = en as IDisposable)
-                            {
-                                if (!en.MoveNext())
-                                {
-                                    return string.Empty;
-                                }
-
-                                object? currentValue = en.Current;
-                                string? firstString = currentValue?.ToString();
-
-                                // If there's only 1 item, simply return the ToString of that
-                                if (!en.MoveNext())
-                                {
-                                    // Only one value available
-                                    return firstString ?? string.Empty;
-                                }
-
-                                var result = new ValueStringBuilder(stackalloc char[256]);
-
-                                result.Append(firstString);
-
-                                do
-                                {
-                                    currentValue = en.Current;
-
-                                    result.Append(",");
-                                    if (currentValue != null)
-                                    {
-                                        result.Append(currentValue.ToString());
-                                    }
-                                }
-                                while (en.MoveNext());
-
-                                return result.ToString();
-                            }
-                        }
-                    }
-#endif
-
-                    /// <summary>
-                    /// A fetcher that returns the result of Activity.Current
-                    /// </summary>
-                    private sealed class CurrentActivityPropertyFetch : PropertyFetch
-                    {
-                        public CurrentActivityPropertyFetch() : base(null) { }
-                        public override object? Fetch(object? obj)
-                        {
-                            return Activity.Current;
-                        }
-                    }
-
-                    /// <summary>
-                    /// A fetcher that enumerates and formats an IEnumerable
-                    /// </summary>
-                    private sealed class EnumeratePropertyFetch<ElementType> : PropertyFetch
-                    {
-                        public EnumeratePropertyFetch(Type type) : base(type) { }
-                        public override object? Fetch(object? obj)
-                        {
-                            Debug.Assert(obj is IEnumerable<ElementType>);
-                            return string.Join(",", (IEnumerable<ElementType>)obj);
-                        }
-                    }
-#endregion
-                }
-
-                private readonly string _propertyName;
-                private volatile PropertyFetch? _fetchForExpectedType;
-#endregion
-            }
-
-            private readonly string _outputName = null!;
-            private readonly PropertySpec? _fetches;
-#endregion
-        }
-
-        /// <summary>
-        /// CallbackObserver is an adapter class that creates an observer (which you can pass
-        /// to IObservable.Subscribe), and calls the given callback every time the 'next'
-        /// operation on the IObserver happens.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        internal sealed class CallbackObserver<T> : IObserver<T>
-        {
-            public CallbackObserver(Action<T> callback) { _callback = callback; }
-
-#region private
-            public void OnCompleted() { }
-            public void OnError(Exception error) { }
-            public void OnNext(T value) { _callback(value); }
-
-            private readonly Action<T> _callback;
-#endregion
-        }
-
-        // A linked list of IObservable subscriptions (which are IDisposable).
-        // We use this to keep track of the DiagnosticSource subscriptions.
-        // We use this linked list for thread atomicity
-        internal sealed class Subscriptions
-        {
-            public Subscriptions(IDisposable subscription, Subscriptions? next)
-            {
-                Subscription = subscription;
-                Next = next;
-            }
-            public IDisposable Subscription;
-            public Subscriptions? Next;
-        }
-
-#endregion
-
-        private FilterAndTransform? _specs;                 // Transformation specifications that indicate which sources/events are forwarded.
-        private FilterAndTransform? _activitySourceSpecs;   // ActivitySource Transformation specifications that indicate which sources/events are forwarded.
-        private ActivityListener? _activityListener;
-#endregion
     }
 }

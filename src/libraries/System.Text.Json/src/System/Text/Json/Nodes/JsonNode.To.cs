@@ -44,13 +44,12 @@ namespace System.Text.Json.Nodes
             // Special case for string; don't quote it.
             if (this is JsonValue)
             {
-                if (this is JsonValue<string> jsonString)
+                if (this is JsonValuePrimitive<string> jsonString)
                 {
                     return jsonString.Value;
                 }
 
-                if (this is JsonValue<JsonElement> jsonElement &&
-                    jsonElement.Value.ValueKind == JsonValueKind.String)
+                if (this is JsonValueOfElement { Value.ValueKind: JsonValueKind.String } jsonElement)
                 {
                     return jsonElement.Value.GetString()!;
                 }

@@ -338,6 +338,8 @@ CONFIG_STRING_INFO(INTERNAL_TailCallMax, W("TailCallMax"), "")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_TailCallOpt, W("TailCallOpt"), "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TailCallLoopOpt, W("TailCallLoopOpt"), 1, "Convert recursive tail calls to loops")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Jit_NetFx40PInvokeStackResilience, W("NetFx40_PInvokeStackResilience"), (DWORD)-1, "Makes P/Invoke resilient against mismatched signature and calling convention (significant perf penalty).")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DisableOptimizedThreadStaticAccess, W("DisableOptimizedThreadStaticAccess"), (DWORD)0, "Disable the OptimizedThreadStaticAccess feature.")
+CONFIG_DWORD_INFO(EXTERNAL_AssertNotStaticTlsResolver, W("AssertNotStaticTlsResolver"), (DWORD)0, "Assert if we attempt to use the static tls resolver path.")
 
 // AltJitAssertOnNYI should be 0 on targets where JIT is under development or bring up stage, so as to facilitate fallback to main JIT on hitting a NYI.
 #if defined(TARGET_X86)
@@ -690,6 +692,11 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeOutputStreaming, W("EventPipeOutputStreaming"), 1, "Enable/disable streaming for trace file set in DOTNET_EventPipeOutputPath.  Non-zero values enable streaming.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeEnableStackwalk, W("EventPipeEnableStackwalk"), 1, "Set to 0 to disable collecting stacks for EventPipe events.")
 
+//
+// UserEvents
+//
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_EnableUserEvents, W("EnableUserEvents"), 0, "Enable/disable writing events to user_events.  Non-zero values enable tracing.")
+
 #ifdef FEATURE_AUTO_TRACE
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_AutoTrace_N_Tracers, W("AutoTrace_N_Tracers"), 0, "", CLRConfig::LookupOptions::ParseIntegerAsBase10)
 RETAIL_CONFIG_STRING_INFO(INTERNAL_AutoTrace_Command, W("AutoTrace_Command"), "")
@@ -722,7 +729,12 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_LTTng, W("LTTng"), 1, "If DOTNET_LTTng is s
 //
 // Executable code
 //
+// TODO: https://github.com/dotnet/runtime/issues/103465
+#ifdef TARGET_RISCV64
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableWriteXorExecute, W("EnableWriteXorExecute"), 0, "Enable W^X for executable memory.");
+#else
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableWriteXorExecute, W("EnableWriteXorExecute"), 1, "Enable W^X for executable memory.");
+#endif // TARGET_RISCV64
 
 #ifdef FEATURE_GDBJIT
 ///

@@ -35,6 +35,7 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do t
 #include <sys/mount.h>
 #include <errno.h>
 #include <limits.h>
+#include <fcntl.h>
 
 using namespace CorUnix;
 

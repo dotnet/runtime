@@ -20,7 +20,7 @@
 #define IJW_API SHARED_API
 #endif // _WIN32
 
-pal::hresult_t get_load_in_memory_assembly_delegate(pal::dll_t handle, load_in_memory_assembly_fn* delegate)
+pal::hresult_t get_load_in_memory_assembly_delegate(pal::dll_t handle, load_in_memory_assembly_fn* delegate, void **load_context)
 {
     get_function_pointer_fn get_function_pointer;
     int status = load_fxr_and_get_delegate(
@@ -40,7 +40,17 @@ pal::hresult_t get_load_in_memory_assembly_delegate(pal::dll_t handle, load_in_m
 
             return StatusCode::Success;
         },
-        [](pal::dll_t fxr, hostfxr_handle context){ },
+        [load_context](pal::dll_t fxr, hostfxr_handle context)
+        {
+            *load_context = nullptr;   // default load context
+            auto get_runtime_property_value = reinterpret_cast<hostfxr_get_runtime_property_value_fn>(pal::get_symbol(fxr, "hostfxr_get_runtime_property_value"));
+            const pal::char_t* value;
+            if (get_runtime_property_value(context, _X("System.Runtime.InteropServices.CppCLI.LoadComponentInIsolatedContext"), &value) == StatusCode::Success
+                && pal::strcasecmp(value, _X("true")) == 0)
+            {
+                *load_context = ISOLATED_CONTEXT; // Isolated load context
+            }
+        },
         reinterpret_cast<void**>(&get_function_pointer),
         true // ignore missing config file if there's an active context
     );

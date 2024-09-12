@@ -234,3 +234,19 @@ int32_t AppleCryptoNative_DigestReset(DigestCtx* ctx)
             return -2;
     }
 }
+
+DigestCtx* AppleCryptoNative_DigestClone(const DigestCtx* ctx)
+{
+    if (ctx == NULL)
+        return NULL;
+
+    DigestCtx* cloneCtx = (DigestCtx*)malloc(sizeof(DigestCtx)); // Must use same allocator as AppleCryptoNative_DigestCreate
+
+    if (cloneCtx == NULL)
+    {
+        return NULL;
+    }
+
+    memcpy(cloneCtx, ctx, sizeof(DigestCtx));
+    return cloneCtx;
+}

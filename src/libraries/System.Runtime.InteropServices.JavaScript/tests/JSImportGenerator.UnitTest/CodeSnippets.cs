@@ -61,6 +61,35 @@ namespace JSImportGenerator.Unit.Tests
             }
             """;
 
+        public static readonly string AllAnnotatedExport = """
+            //AllAnnotated
+            using System;
+            using System.Runtime.InteropServices.JavaScript;
+            using System.Threading.Tasks;
+            partial class Basic
+            {
+                [JSExport]
+                internal static void AnnotatedExport(
+                    [JSMarshalAs<JSType.Any>] object a1,
+                    [JSMarshalAs<JSType.Number>] long a2,
+                    [JSMarshalAs<JSType.BigInt>] long a3,
+                    [JSMarshalAs<JSType.Function>] Action a4,
+                    [JSMarshalAs<JSType.Function<JSType.Number>>] Func<int> a5,
+                    [JSMarshalAs<JSType.MemoryView>] Span<byte> a6,
+                    [JSMarshalAs<JSType.MemoryView>] ArraySegment<byte> a7,
+                    [JSMarshalAs<JSType.Promise<JSType.Any>>] Task<object> a8,
+                    [JSMarshalAs<JSType.Array<JSType.Any>>] object[] a9,
+                    [JSMarshalAs<JSType.Date>] DateTime a10,
+                    [JSMarshalAs<JSType.Date>] DateTimeOffset a11,
+                    [JSMarshalAs<JSType.Promise<JSType.Date>>] Task<DateTime> a12,
+                    [JSMarshalAs<JSType.Promise<JSType.Date>>] Task<DateTimeOffset> a13,
+                    [JSMarshalAs<JSType.Promise<JSType.Number>>] Task<long> a14,
+                    [JSMarshalAs<JSType.Promise<JSType.BigInt>>] Task<long> a15
+                )
+                {}
+            }
+            """;
+
         public static readonly string AllMissing = """
             //AllMissing
             using System;

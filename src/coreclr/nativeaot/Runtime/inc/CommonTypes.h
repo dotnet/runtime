@@ -61,4 +61,8 @@ typedef struct _GUID {
 } GUID;
 #endif // FEATURE_EVENT_TRACE && !_INC_WINDOWS
 
+// Hijack funcs are not called, they are "returned to". And when done, they return to the actual caller.
+// Thus they cannot have any parameters or return anything.
+typedef void HijackFunc();
+
 #endif // __COMMON_TYPES_H__

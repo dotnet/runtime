@@ -384,6 +384,6 @@ namespace System.Buffers
 
         internal override string[] GetValues() => HasUniqueValues
             ? base.GetValues()
-            : new string[] { _value };
+            : [_value];
     }
 }

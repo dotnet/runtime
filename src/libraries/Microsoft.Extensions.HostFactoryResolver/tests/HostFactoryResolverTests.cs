@@ -271,10 +271,13 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             Assembly assembly = Assembly.Load("ApplicationNameSetFromArgument");
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(assembly, s_WaitTimeout);
+            Assert.NotNull(factory);
             IServiceProvider? serviceProvider = factory(Array.Empty<string>());
+            Assert.NotNull(serviceProvider);
 
-            var configuration = (IConfiguration)serviceProvider.GetService(typeof(IConfiguration));
-            Assert.Contains("ApplicationNameSetFromArgument", configuration["applicationName"]);
+            var configuration = (IConfiguration?)serviceProvider.GetService(typeof(IConfiguration));
+            Assert.NotNull(configuration);
+            Assert.Equal("ApplicationNameSetFromArgument", configuration["applicationName"]);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -284,7 +287,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, s_WaitTimeout);
             Assert.NotNull(factory);
 
-            var tasks = new Task<IServiceProvider>[30];
+            var tasks = new Task<IServiceProvider?>[30];
             int index = 0;
             for (int i = 0; i < tasks.Length; i++)
             {

@@ -1696,7 +1696,7 @@ namespace System
             TypeCache cache = Cache;
             int oldCached = cache.Cached;
             int newCached = oldCached | (int)entry;
-            // This CAS will ensure ordering with the the store into the cache
+            // This CAS will ensure ordering with the store into the cache
             // If this fails, we will just take the slowpath again
             Interlocked.CompareExchange(ref cache.Cached, newCached, oldCached);
         }

@@ -267,6 +267,8 @@
              Link="Common\Interop\Unix\System.Native\Interop.ReceiveMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Send.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Send.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Select.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Select.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SendMessage.cs"
              Link="Common\Interop\Unix\System.Native\Interop.SendMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetSockOpt.cs"
@@ -292,6 +294,7 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
+    <Reference Include="System.Diagnostics.DiagnosticSource" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.NameResolution" />

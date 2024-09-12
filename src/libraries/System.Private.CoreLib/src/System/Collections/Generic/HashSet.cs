@@ -69,7 +69,7 @@ namespace System.Collections.Generic
                 // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
                 // hash buckets become unbalanced.
                 if (typeof(T) == typeof(string) &&
-                    NonRandomizedStringEqualityComparer.GetStringComparer(_comparer!) is IEqualityComparer<string> stringComparer)
+                    NonRandomizedStringEqualityComparer.GetStringComparer(_comparer) is IEqualityComparer<string> stringComparer)
                 {
                     _comparer = (IEqualityComparer<T>)stringComparer;
                 }
@@ -92,7 +92,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
             }
 
-            if (collection is HashSet<T> otherAsHashSet && EqualityComparersAreEqual(this, otherAsHashSet))
+            if (collection is HashSet<T> otherAsHashSet && EffectiveEqualityComparersAreEqual(this, otherAsHashSet))
             {
                 ConstructFrom(otherAsHashSet);
             }
@@ -145,6 +145,8 @@ namespace System.Collections.Generic
         /// <summary>Initializes the HashSet from another HashSet with the same element type and equality comparer.</summary>
         private void ConstructFrom(HashSet<T> source)
         {
+            Debug.Assert(EffectiveEqualityComparersAreEqual(this, source), "must use identical effective comparers.");
+
             if (source.Count == 0)
             {
                 // As well as short-circuiting on the rest of the work done,
@@ -364,6 +366,52 @@ namespace System.Collections.Generic
         #endregion
 
         #region AlternateLookup
+
+        /// <summary>
+        /// Gets an instance of a type that may be used to perform operations on the current <see cref="HashSet{T}"/>
+        /// using a <typeparamref name="TAlternate"/> instead of a <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="TAlternate">The alternate type of instance for performing lookups.</typeparam>
+        /// <returns>The created lookup instance.</returns>
+        /// <exception cref="InvalidOperationException">The set's comparer is not compatible with <typeparamref name="TAlternate"/>.</exception>
+        /// <remarks>
+        /// The set must be using a comparer that implements <see cref="IAlternateEqualityComparer{TAlternate, T}"/> with
+        /// <typeparamref name="TAlternate"/> and <typeparamref name="T"/>. If it doesn't, an exception will be thrown.
+        /// </remarks>
+        public AlternateLookup<TAlternate> GetAlternateLookup<TAlternate>()
+            where TAlternate : allows ref struct
+        {
+            if (!AlternateLookup<TAlternate>.IsCompatibleItem(this))
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IncompatibleComparer);
+            }
+
+            return new AlternateLookup<TAlternate>(this);
+        }
+
+        /// <summary>
+        /// Gets an instance of a type that may be used to perform operations on the current <see cref="HashSet{T}"/>
+        /// using a <typeparamref name="TAlternate"/> instead of a <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="TAlternate">The alternate type of instance for performing lookups.</typeparam>
+        /// <param name="lookup">The created lookup instance when the method returns true, or a default instance that should not be used if the method returns false.</param>
+        /// <returns>true if a lookup could be created; otherwise, false.</returns>
+        /// <remarks>
+        /// The set must be using a comparer that implements <see cref="IAlternateEqualityComparer{TAlternate, T}"/> with
+        /// <typeparamref name="TAlternate"/> and <typeparamref name="T"/>. If it doesn't, the method returns false.
+        /// </remarks>
+        public bool TryGetAlternateLookup<TAlternate>(out AlternateLookup<TAlternate> lookup)
+            where TAlternate : allows ref struct
+        {
+            if (AlternateLookup<TAlternate>.IsCompatibleItem(this))
+            {
+                lookup = new AlternateLookup<TAlternate>(this);
+                return true;
+            }
+
+            lookup = default;
+            return false;
+        }
 
         /// <summary>
         /// Provides a type that may be used to perform operations on a <see cref="HashSet{T}"/>
@@ -879,25 +927,26 @@ namespace System.Collections.Generic
             }
 
             // The empty set is a subset of any set, and a set is a subset of itself.
-            // Set is always a subset of itself
+            // Set is always a subset of itself.
             if (Count == 0 || other == this)
             {
                 return true;
             }
 
-            // Faster if other has unique elements according to this equality comparer; so check
-            // that other is a hashset using the same equality comparer.
-            if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
+            if (other is ICollection<T> otherAsCollection)
             {
-                // if this has more elements then it can't be a subset
-                if (Count > otherAsSet.Count)
+                // If this has more elements then it can't be a subset.
+                if (Count > otherAsCollection.Count)
                 {
                     return false;
                 }
 
-                // already checked that we're using same equality comparer. simply check that
-                // each element in this is contained in other.
-                return IsSubsetOfHashSetWithSameComparer(otherAsSet);
+                // Faster if other has unique elements according to this equality comparer; so check
+                // that other is a hashset using the same equality comparer.
+                if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
+                {
+                    return IsSubsetOfHashSetWithSameComparer(otherAsSet);
+                }
             }
 
             (int uniqueCount, int unfoundCount) = CheckUniqueAndUnfoundElements(other, returnIfUnfound: false);
@@ -922,8 +971,8 @@ namespace System.Collections.Generic
 
             if (other is ICollection<T> otherAsCollection)
             {
-                // No set is a proper subset of an empty set.
-                if (otherAsCollection.Count == 0)
+                // No set is a proper subset of a set with less or equal number of elements.
+                if (otherAsCollection.Count <= Count)
                 {
                     return false;
                 }
@@ -931,17 +980,13 @@ namespace System.Collections.Generic
                 // The empty set is a proper subset of anything but the empty set.
                 if (Count == 0)
                 {
-                    return otherAsCollection.Count > 0;
+                    // Based on check above, other is not empty when Count == 0.
+                    return true;
                 }
 
                 // Faster if other is a hashset (and we're using same equality comparer).
                 if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
                 {
-                    if (Count >= otherAsSet.Count)
-                    {
-                        return false;
-                    }
-
                     // This has strictly less than number of items in other, so the following
                     // check suffices for proper subset.
                     return IsSubsetOfHashSetWithSameComparer(otherAsSet);
@@ -1088,33 +1133,38 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            // Faster if other is a hashset and we're using same equality comparer.
-            if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
+            if (other is ICollection<T> otherAsCollection)
             {
-                // Attempt to return early: since both contain unique elements, if they have
-                // different counts, then they can't be equal.
-                if (Count != otherAsSet.Count)
+                // If this is empty, they are equal iff other is empty.
+                if (Count == 0)
+                {
+                    return otherAsCollection.Count == 0;
+                }
+
+                // Faster if other is a hashset and we're using same equality comparer.
+                if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
+                {
+                    // Attempt to return early: since both contain unique elements, if they have
+                    // different counts, then they can't be equal.
+                    if (Count != otherAsSet.Count)
+                    {
+                        return false;
+                    }
+
+                    // Already confirmed that the sets have the same number of distinct elements, so if
+                    // one is a subset of the other then they must be equal.
+                    return IsSubsetOfHashSetWithSameComparer(otherAsSet);
+                }
+
+                // Can't be equal if other set contains fewer elements than this.
+                if (Count > otherAsCollection.Count)
                 {
                     return false;
                 }
-
-                // Already confirmed that the sets have the same number of distinct elements, so if
-                // one is a subset of the other then they must be equal.
-                return IsSubsetOfHashSetWithSameComparer(otherAsSet);
             }
-            else
-            {
-                // If this count is 0 but other contains at least one element, they can't be equal.
-                if (Count == 0 &&
-                    other is ICollection<T> otherAsCollection &&
-                    otherAsCollection.Count > 0)
-                {
-                    return false;
-                }
 
-                (int uniqueCount, int unfoundCount) = CheckUniqueAndUnfoundElements(other, returnIfUnfound: true);
-                return uniqueCount == Count && unfoundCount == 0;
-            }
+            (int uniqueCount, int unfoundCount) = CheckUniqueAndUnfoundElements(other, returnIfUnfound: true);
+            return uniqueCount == Count && unfoundCount == 0;
         }
 
         public void CopyTo(T[] array) => CopyTo(array, 0, Count);
@@ -1201,6 +1251,11 @@ namespace System.Collections.Generic
                 }
             }
         }
+
+        /// <summary>
+        /// Similar to <see cref="Comparer"/> but surfaces the actual comparer being used to hash entries.
+        /// </summary>
+        internal IEqualityComparer<T> EffectiveComparer => _comparer ?? EqualityComparer<T>.Default;
 
         /// <summary>Ensures that this hash set can hold the specified number of elements without growing.</summary>
         public int EnsureCapacity(int capacity)
@@ -1720,7 +1775,13 @@ namespace System.Collections.Generic
         /// </summary>
         internal static bool EqualityComparersAreEqual(HashSet<T> set1, HashSet<T> set2) => set1.Comparer.Equals(set2.Comparer);
 
-#endregion
+        /// <summary>
+        /// Checks if effective equality comparers are equal. This is used for algorithms that
+        /// require that both collections use identical hashing implementations for their entries.
+        /// </summary>
+        internal static bool EffectiveEqualityComparersAreEqual(HashSet<T> set1, HashSet<T> set2) => set1.EffectiveComparer.Equals(set2.EffectiveComparer);
+
+        #endregion
 
         private struct Entry
         {

@@ -148,7 +148,7 @@ AssemblySpecHash::~AssemblySpecHash()
 
 HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
                                   IMDInternalImport *pImport,
-                                  DomainAssembly *pStaticParent)
+                                  Assembly *pStaticParent)
 {
     CONTRACTL
     {
@@ -295,24 +295,6 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
     spec.AssemblyNameInit(assemblyNameRef);
 }
 
-Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel, BOOL fThrowOnFileNotFound)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    DomainAssembly * pDomainAssembly = LoadDomainAssembly(targetLevel, fThrowOnFileNotFound);
-    if (pDomainAssembly == NULL) {
-        _ASSERTE(!fThrowOnFileNotFound);
-        return NULL;
-    }
-    return pDomainAssembly->GetAssembly();
-}
-
 AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
 {
     CONTRACTL
@@ -325,12 +307,12 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
     CONTRACTL_END;
 
     AssemblyBinder *pParentAssemblyBinder = NULL;
-    DomainAssembly *pParentDomainAssembly = GetParentAssembly();
+    Assembly *pParentAssembly = GetParentAssembly();
 
-    if(pParentDomainAssembly != NULL)
+    if(pParentAssembly != NULL)
     {
         // Get the PEAssembly associated with the parent's domain assembly
-        PEAssembly *pParentPEAssembly = pParentDomainAssembly->GetPEAssembly();
+        PEAssembly *pParentPEAssembly = pParentAssembly->GetPEAssembly();
         pParentAssemblyBinder = pParentPEAssembly->GetAssemblyBinder();
     }
 
@@ -372,10 +354,10 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
     return pParentAssemblyBinder;
 }
 
-DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
-                                                 BOOL fThrowOnFileNotFound)
+Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel,
+                                     BOOL fThrowOnFileNotFound)
 {
-    CONTRACT(DomainAssembly *)
+    CONTRACT(Assembly *)
     {
         INSTANCE_CHECK;
         THROWS;
@@ -390,23 +372,21 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
     ETWOnStartup (LoaderCatchCall_V1, LoaderCatchCallEnd_V1);
     AppDomain* pDomain = GetAppDomain();
 
-    DomainAssembly* pAssembly = pDomain->FindCachedAssembly(this);
-    if (pAssembly)
+    DomainAssembly* domainAssembly = pDomain->FindCachedAssembly(this);
+    if (domainAssembly)
     {
         BinderTracing::AssemblyBindOperation bindOperation(this);
-        bindOperation.SetResult(pAssembly->GetPEAssembly(), true /*cached*/);
+        bindOperation.SetResult(domainAssembly->GetPEAssembly(), true /*cached*/);
 
-        pDomain->LoadDomainAssembly(pAssembly, targetLevel);
-        RETURN pAssembly;
+        pDomain->LoadDomainAssembly(domainAssembly, targetLevel);
+        RETURN domainAssembly->GetAssembly();
     }
 
     PEAssemblyHolder pFile(pDomain->BindAssemblySpec(this, fThrowOnFileNotFound));
     if (pFile == NULL)
         RETURN NULL;
 
-    pAssembly = pDomain->LoadDomainAssembly(this, pFile, targetLevel);
-
-    RETURN pAssembly;
+    RETURN pDomain->LoadAssembly(this, pFile, targetLevel);
 }
 
 /* static */
@@ -1121,7 +1101,7 @@ BOOL AssemblySpecBindingCache::CompareSpecs(UPTR u1, UPTR u2)
     return a1->CompareEx(a2);
 }
 
-DomainAssembly * AssemblySpec::GetParentAssembly()
+Assembly * AssemblySpec::GetParentAssembly()
 {
     LIMITED_METHOD_CONTRACT;
     return m_pParentAssembly;

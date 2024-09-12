@@ -26,6 +26,7 @@ public class InterpPgoTests : AppTestBase
     // Interpreter PGO is not meaningful to enable in debug builds - tiering is inactive there so all methods
     //  would get added to the PGO table instead of just hot ones.
     [InlineData("Release")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/105733")]
     public async Task FirstRunGeneratesTableAndSecondRunLoadsIt(string config)
     {
         // We need to invoke Greeting enough times to cause BCL code to tier so we can exercise interpreter PGO

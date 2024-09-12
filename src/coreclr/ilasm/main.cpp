@@ -95,16 +95,16 @@ void MakeProperSourceFileName(_In_ __nullterminated WCHAR* wzOrigName,
         }
     }
     while(j);
-    WszWideCharToMultiByte(uCodePage,0,wzProperName,-1,szProperName,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
+    WideCharToMultiByte(uCodePage,0,wzProperName,-1,szProperName,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
 }
 
 char* FullFileName(_In_ __nullterminated WCHAR* wzFileName, unsigned uCodePage)
 {
     static WCHAR wzFullPath[MAX_FILENAME_LENGTH];
     WCHAR* pwz;
-    WszGetFullPathName(wzFileName,MAX_FILENAME_LENGTH,wzFullPath,&pwz);
+    GetFullPathName(wzFileName,MAX_FILENAME_LENGTH,wzFullPath,&pwz);
     char szFullPath[MAX_FILENAME_LENGTH*3];
-    WszWideCharToMultiByte(uCodePage,0,wzFullPath,-1,szFullPath,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
+    WideCharToMultiByte(uCodePage,0,wzFullPath,-1,szFullPath,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
     char* sz = new char[strlen(szFullPath)+1];
     if(sz) strcpy_s(sz,strlen(szFullPath)+1,szFullPath);
     return sz;
@@ -234,7 +234,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
 #endif
                 {
                     char szOpt[3 + 1] = { 0 };
-                    WszWideCharToMultiByte(uCodePage, 0, &argv[i][1], 3, szOpt, sizeof(szOpt), NULL, NULL);
+                    WideCharToMultiByte(uCodePage, 0, &argv[i][1], 3, szOpt, sizeof(szOpt), NULL, NULL);
                     if (!_stricmp(szOpt, "NOA"))
                     {
                         pAsm->m_fAutoInheritFromObject = FALSE;
@@ -326,7 +326,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         // We could change it to be longer, but that would affect the existing usability (ARM64 was
                         // added much later). Thus, just distinguish the two here.
                         char szOpt2[5 + 1] = { 0 };
-                        WszWideCharToMultiByte(uCodePage, 0, &argv[i][1], 5, szOpt2, sizeof(szOpt2), NULL, NULL);
+                        WideCharToMultiByte(uCodePage, 0, &argv[i][1], 5, szOpt2, sizeof(szOpt2), NULL, NULL);
                         if (!_stricmp(szOpt2, "ARM"))
                         {
                             pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;
@@ -687,7 +687,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                             {
                                 char szOutputFilename[MAX_FILENAME_LENGTH*3];
                                 memset(szOutputFilename,0,sizeof(szOutputFilename));
-                                WszWideCharToMultiByte(uCodePage,0,wzOutputFilename,-1,szOutputFilename,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
+                                WideCharToMultiByte(uCodePage,0,wzOutputFilename,-1,szOutputFilename,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
                                 pParser->msg(" --> '%s'\n", szOutputFilename);
                             }
                         }

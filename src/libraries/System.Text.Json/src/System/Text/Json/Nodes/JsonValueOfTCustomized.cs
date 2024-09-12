@@ -7,17 +7,24 @@ using System.Text.Json.Serialization.Metadata;
 namespace System.Text.Json.Nodes
 {
     /// <summary>
-    /// A JsonValue encapsulating arbitrary types using custom JsonTypeInfo metadata.
+    /// A JsonValue that encapsulates arbitrary .NET type configurations.
+    /// Paradoxically, instances of this type can be of any JsonValueKind
+    /// (including objects and arrays) and introspecting these values is
+    /// generally slower compared to the other JsonValue implementations.
     /// </summary>
     internal sealed class JsonValueCustomized<TValue> : JsonValue<TValue>
     {
         private readonly JsonTypeInfo<TValue> _jsonTypeInfo;
+        private JsonValueKind? _valueKind;
 
-        public JsonValueCustomized(TValue value, JsonTypeInfo<TValue> jsonTypeInfo, JsonNodeOptions? options = null) : base(value, options)
+        public JsonValueCustomized(TValue value, JsonTypeInfo<TValue> jsonTypeInfo, JsonNodeOptions? options = null): base(value, options)
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
             _jsonTypeInfo = jsonTypeInfo;
         }
+
+        private protected override JsonValueKind GetValueKindCore() => _valueKind ??= ComputeValueKind();
+        internal override JsonNode DeepCloneCore() => JsonSerializer.SerializeToNode(Value, _jsonTypeInfo)!;
 
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
@@ -37,9 +44,25 @@ namespace System.Text.Json.Nodes
             jsonTypeInfo.Serialize(writer, Value);
         }
 
-        internal override JsonNode DeepCloneCore()
+        /// <summary>
+        /// Computes the JsonValueKind of the value by serializing it and reading the resultant JSON.
+        /// </summary>
+        private JsonValueKind ComputeValueKind()
         {
-            return JsonSerializer.SerializeToNode(Value, _jsonTypeInfo)!;
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(options: default, JsonSerializerOptions.BufferSizeDefault, out PooledByteBufferWriter output);
+            try
+            {
+                WriteTo(writer);
+                writer.Flush();
+                Utf8JsonReader reader = new(output.WrittenMemory.Span);
+                bool success = reader.Read();
+                Debug.Assert(success);
+                return JsonReaderHelper.ToValueKind(reader.TokenType);
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
+            }
         }
     }
 }

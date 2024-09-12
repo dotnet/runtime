@@ -56,3 +56,13 @@ Gets an opaque handle for a certificate's public key
 Returns null if the requested algorithm does not match that of the public key.
 */
 PALEXPORT void* AndroidCryptoNative_X509PublicKey(jobject /*X509Certificate*/ cert, PAL_KeyAlgorithm algorithm);
+
+/*
+Returns the certificate belonging to the PrivateKeyEntry
+*/
+PALEXPORT jobject /*X509Certificate*/ AndroidCryptoNative_X509GetCertificateForPrivateKeyEntry(jobject /*PrivateKeyEntry*/ privateKeyEntry);
+
+/*
+Checks if the given entry is a private key entry
+*/
+PALEXPORT int32_t AndroidCryptoNative_X509IsKeyStorePrivateKeyEntry(jobject entry);

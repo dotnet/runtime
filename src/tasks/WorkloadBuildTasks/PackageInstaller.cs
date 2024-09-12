@@ -123,7 +123,7 @@ namespace Microsoft.Workload.Build.Tasks
             projectFileBuilder.Append(@"
 <Project Sdk=""Microsoft.NET.Sdk"">
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net$(NETCoreAppMaximumVersion)</TargetFramework>
     </PropertyGroup>
     <ItemGroup>");
 

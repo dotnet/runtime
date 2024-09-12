@@ -52,17 +52,21 @@ namespace System.Linq
 
             public override List<TResult> ToList()
             {
-                var list = new List<TResult>();
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
                 foreach (object? item in _source)
                 {
                     if (item is TResult castItem)
                     {
-                        list.Add(castItem);
+                        builder.Add(castItem);
                     }
                 }
 
-                return list;
+                List<TResult> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override TResult? TryGetFirst(out bool found)

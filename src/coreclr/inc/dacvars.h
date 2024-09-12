@@ -145,7 +145,6 @@ DEFINE_DACVAR(gc_alloc_context, dac__g_global_alloc_context, ::g_global_alloc_co
 DEFINE_DACVAR(IGCHeap, dac__g_pGCHeap, ::g_pGCHeap)
 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pThinLockThreadIdDispenser, ::g_pThinLockThreadIdDispenser)
-DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pModuleIndexDispenser, ::g_pModuleIndexDispenser)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pObjectClass, ::g_pObjectClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pRuntimeTypeClass, ::g_pRuntimeTypeClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pCanonMethodTableClass, ::g_pCanonMethodTableClass)
@@ -175,10 +174,6 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pBaseCOMObject, ::g_pBaseCOMObject)
 #endif
 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pIDynamicInterfaceCastableInterface, ::g_pIDynamicInterfaceCastableInterface)
-
-#ifdef FEATURE_ICASTABLE
-DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pICastableInterface, ::g_pICastableInterface)
-#endif // FEATURE_ICASTABLE
 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pObjectFinalizerMD, ::g_pObjectFinalizerMD)
 

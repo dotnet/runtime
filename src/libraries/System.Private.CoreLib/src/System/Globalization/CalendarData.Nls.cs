@@ -6,8 +6,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 8500 // taking address of managed type
-
 namespace System.Globalization
 {
     internal sealed partial class CalendarData
