@@ -948,11 +948,17 @@
     </ItemGroup>
 
     <ItemGroup>
-      <XHarnessAppBundleToTest>
+      <!--
+        We're building on Helix, so pass the zip as the app bundle path (as the bundle doesn't exist yet).
+        The XHarness SDK renames zip app bundle files if they're specified as the AppBundle path,
+        but not if they're the identity of the item. Change the item metadata such that the zip is the identity
+        and no app bundle is provided. -->
+      <_XHarnessAppBundleZipWorkItems Include="@(XHarnessAppBundleToTest->'$(MergedPayloadsRootDirectory)%(PayloadGroup).zip')" RemoveMetadata="AppBundlePath">
         <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
-        <!-- We're building on Helix, so pass the zip as the app bundle path (as the bundle doesn't exist yet) -->
-        <AppBundlePath>$(MergedPayloadsRootDirectory)%(PayloadGroup).zip</AppBundlePath>
-      </XHarnessAppBundleToTest>
+      </_XHarnessAppBundleZipWorkItems>
+      <!-- Replace the items. -->
+      <XHarnessAppBundleToTest Remove="@(XHarnessAppBundleToTest)" />
+      <XHarnessAppBundleToTest Include="@(_XHarnessAppBundleZipWorkItems)" />
     </ItemGroup>
   </Target>
 
