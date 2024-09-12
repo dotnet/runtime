@@ -222,7 +222,7 @@ const string VecPairBinOpTest_ValidationLogic = @"
 
 const string VecReduceUnOpTest_VectorValidationLogicForCndSel = @"
             {
-                var hasFailed = (mask[0] != 0 ? {ValidateReduceOpResult}: (falseVal[0] != result[0]));
+                var hasFailed = (mask[0] != 0) ? ({ValidateReduceOpResult}): (falseVal[0] != result[0]);
 
                 if (hasFailed)
                 {
@@ -232,20 +232,11 @@ const string VecReduceUnOpTest_VectorValidationLogicForCndSel = @"
                 {
                     for (var i = 1; i < RetElementCount; i++)
                     {
-                        var iterResult = (mask[i] != 0) ? 0 : falseVal[i];
-                        if (mask[i] != 0)
+                        hasFailed = (mask[i] != 0) ? ({ValidateRemainingResults}) : (falseVal[i] != result[i]);
+                        if (hasFailed)
                         {
-                            // Pick the trueValue
-                            if (iterResult != result[i])
-                            {
-                                succeeded = false;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            // For false, the values are merged with destination, and we do not know
-                            // those contents would be, so skip verification for them.
+                            succeeded = false;
+                            break;
                         }
                     }
                 }
@@ -253,7 +244,7 @@ const string VecReduceUnOpTest_VectorValidationLogicForCndSel = @"
 
 const string VecReduceUnOpTest_VectorValidationLogicForCndSel_FalseValue = @"
             {
-                var hasFailed = (mask[0] != 0) ? (trueVal[0] != result[0]): {ValidateReduceOpResult};
+                var hasFailed = (mask[0] != 0) ? (trueVal[0] != result[0]): ({ValidateReduceOpResult});
                 if (hasFailed)
                 {
                     succeeded = false;
@@ -262,20 +253,11 @@ const string VecReduceUnOpTest_VectorValidationLogicForCndSel_FalseValue = @"
                 {
                     for (var i = 1; i < RetElementCount; i++)
                     {
-                        var iterResult = (mask[i] != 0) ? trueVal[i] : 0;
-                        if (mask[i] != 0)
+                        hasFailed = (mask[i] != 0) ? (trueVal[i] != result[i]) : ({ValidateRemainingResults});
+                        if (hasFailed)
                         {
-                            // Pick the trueValue
-                            if (iterResult != result[i])
-                            {
-                                succeeded = false;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            // For false, the values are merged with destination, and we do not know
-                            // those contents would be, so skip verification for them.
+                            succeeded = false;
+                            break;
                         }
                     }
                 }
