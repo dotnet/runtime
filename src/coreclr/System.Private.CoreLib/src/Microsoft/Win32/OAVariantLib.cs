@@ -20,6 +20,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.StubHelpers;
 
 namespace Microsoft.Win32
 {
@@ -73,8 +74,7 @@ namespace Microsoft.Win32
                 if (source is int || source is uint)
                 {
                     uint sourceData = source is int ? (uint)(int)source : (uint)source;
-                    // Int32/UInt32 can be converted to System.Drawing.Color
-                    Variant.ConvertOleColorToSystemColor(ObjectHandleOnStack.Create(ref result), sourceData, targetClass.TypeHandle.Value);
+                    result = ColorMarshaler.ConvertToManaged((int)sourceData);
                     Debug.Assert(result != null);
                     return result;
                 }

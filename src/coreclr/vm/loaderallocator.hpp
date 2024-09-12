@@ -264,6 +264,8 @@ class SegmentedHandleIndexStack
 
 public:
 
+    ~SegmentedHandleIndexStack();
+    
     // Push the value to the stack. If the push cannot be done due to OOM, return false;
     inline bool Push(DWORD value);
 
@@ -359,8 +361,6 @@ protected:
 public:
     BYTE *GetVSDHeapInitialBlock(DWORD *pSize);
     BYTE *GetCodeHeapInitialBlock(const BYTE * loAddr, const BYTE * hiAddr, DWORD minimumSize, DWORD *pSize);
-
-    BaseDomain *m_pDomain;
 
     // ExecutionManager caches
     void * m_pLastUsedCodeHeap;
@@ -735,9 +735,8 @@ public:
 
     LoaderAllocator(bool collectible);
     virtual ~LoaderAllocator();
-    BaseDomain *GetDomain() { LIMITED_METHOD_CONTRACT; return m_pDomain; }
     virtual BOOL CanUnload() = 0;
-    void Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory = NULL);
+    void Init(BYTE *pExecutableHeapMemory);
     void Terminate();
     virtual void ReleaseManagedAssemblyLoadContext() {}
 
@@ -887,7 +886,7 @@ protected:
     LoaderAllocatorID m_Id;
 
 public:
-    void Init(BaseDomain *pDomain);
+    void Init();
     GlobalLoaderAllocator() : LoaderAllocator(false), m_Id(LAT_Global, (void*)1) { LIMITED_METHOD_CONTRACT;};
     virtual LoaderAllocatorID* Id();
     virtual BOOL CanUnload();
@@ -913,7 +912,7 @@ public:
         , m_binderToRelease(NULL)
 #endif
     { LIMITED_METHOD_CONTRACT; }
-    void Init(AppDomain *pAppDomain);
+    void Init();
     virtual BOOL CanUnload();
 
     void AddDomainAssembly(DomainAssembly *pDomainAssembly)

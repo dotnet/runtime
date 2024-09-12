@@ -166,7 +166,7 @@
   </ItemGroup>
 
   <!-- SocketsHttpHandler implementation -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'">
     <Compile Include="System\Net\Http\HttpHandlerDefaults.cs" />
     <Compile Include="System\Net\Http\HttpMethod.SocketsHttpHandler.cs" />
     <Compile Include="System\Net\Http\Headers\AltSvcHeaderParser.cs" />
@@ -324,13 +324,13 @@
   </ItemGroup>
 
   <!-- SocketsHttpHandler platform parts -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\CurrentUserIdentityProvider.Unix.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'osx' and '$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'tvos' and '$(TargetPlatformIdentifier)' != 'maccatalyst'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi' and '$(TargetPlatformIdentifier)' != 'osx' and '$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'tvos' and '$(TargetPlatformIdentifier)' != 'maccatalyst'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" />
   </ItemGroup>
@@ -407,7 +407,7 @@
              Link="Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'">
     <Compile Include="$(CommonPath)System\StrongToWeakReference.cs"
              Link="Common\Interop\Unix\StrongToWeakReference.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
@@ -432,7 +432,7 @@
              Link="Common\System\Net\Security\CertificateHelper.Unix.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'osx' and '$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'tvos'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi' and '$(TargetPlatformIdentifier)' != 'osx' and '$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'tvos'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
   </ItemGroup>
@@ -453,8 +453,17 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
-    <Reference Include="System.Threading.Thread" />
+    <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs"
+             Link="Common\System\Net\HttpStatusDescription.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpConnectionContext.cs" />
+    <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\SystemProxyInfo.Wasi.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpHandler.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpInterop.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiOutputStream.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiInputStream.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttp.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.imports.wasi.clocks.v0_2_1.MonotonicClockInterop.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.imports.wasi.http.v0_2_1.ITypes.cs" />
@@ -488,7 +497,7 @@
     <Reference Include="System.IO.Compression.Brotli" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi' ">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Tracing" />
@@ -496,15 +505,16 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
     <Reference Include="Microsoft.Win32.Registry" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'">
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Security.Cryptography" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />

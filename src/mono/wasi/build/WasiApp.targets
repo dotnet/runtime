@@ -314,8 +314,18 @@
     </ItemGroup>
 
     <ItemGroup>
+      <!-- using relative paths fixes https://github.com/dotnet/runtime/issues/106845 -->
+      <RelativeBitcodeFiles Include="%(_BitcodeFile.ObjectFile)" Condition="'%(_BitcodeFile.ObjectFile)' != ''">
+        <RelativePath>$([System.IO.Path]::GetRelativePath('$(MSBuildProjectDirectory)', '%(Identity)'))</RelativePath>
+      </RelativeBitcodeFiles>
+      <RelativeWasmObjectFiles Include="@(_WasmObjectFilesForBundle)" Condition="'%(_WasmObjectFilesForBundle.Identity)' != ''">
+        <RelativePath>$([System.IO.Path]::GetRelativePath('$(MSBuildProjectDirectory)', '%(Identity)'))</RelativePath>
+      </RelativeWasmObjectFiles>
+    </ItemGroup>
+
+    <ItemGroup>
       <!-- order matters -->
-      <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
+      <_WasmNativeFileForLinking Include="%(RelativeBitcodeFiles.RelativePath)" />
       <!--<_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />-->
 
       <_WasmNativeFileForLinking
@@ -334,9 +344,8 @@
 
     <ItemGroup>
       <_WasiClangXLinkerFlags Include="--initial-memory=$(WasmInitialHeapSize)" />
-
       <_WasiFilePathForFixup Include="$(_WasiGetEntrypointCFile)" />
-      <_WasiFilePathForFixup Include="@(_WasmObjectFilesForBundle)" />
+      <_WasiFilePathForFixup Include="%(RelativeWasmObjectFiles.RelativePath)" />
       <_WasiFilePathForFixup Include="@(_WasmNativeFileForLinking)" />
 
       <_WasmLinkDependencies Include="@(_WasiFilePathForFixup)" />
@@ -348,7 +357,7 @@
       <!-- keep in sync with src\mono\wasi\wasi.proj -->
       <!-- keep in sync with src\native\libs\CMakeLists.txt -->
       <_WasiLinkStepArgs Include="-Wl,-z,stack-size=8388608,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>
-      <!-- 
+      <!--
       this together with some DLLImports makes dependency on wasi:http@0.2.0
       it will get trimmed when HTTP is not used and using publish + native rebuild
       otherwise it will be included in the dotnet.wasm and required -S http argument to wasmtime
@@ -376,7 +385,7 @@
     <Message Text="Linking with $(WasiClang) with $(WasmLinkOptimizationFlag). This may take a while ..." Importance="High" />
 
     <Message Importance="High" Text="Performing WASI SDK build: &quot;$(WasiClang)&quot; &quot;$(_WasmLinkRsp)&quot;" />
-    <Exec Command="&quot;$(WasiClang)&quot; &quot;@$(_WasmLinkRsp)&quot;" />
+    <Exec Command="&quot;$(WasiClang)&quot; &quot;@$(_WasmLinkRsp)&quot;" WorkingDirectory="$(MsBuildProjectDirectory)" />
 
     <CallTarget Targets="_RunWasmOptPostLink" Condition="'$(WasmRunWasmOpt)' == 'true'" />
 

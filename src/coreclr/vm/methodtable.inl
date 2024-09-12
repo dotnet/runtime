@@ -300,15 +300,6 @@ inline BOOL MethodTable::IsValueType()
 }
 
 //==========================================================================================
-inline CorElementType MethodTable::GetArrayElementType()
-{
-    WRAPPER_NO_CONTRACT;
-
-    _ASSERTE (IsArray());
-    return dac_cast<PTR_ArrayClass>(GetClass())->GetArrayElementType();
-}
-
-//==========================================================================================
 inline DWORD MethodTable::GetRank()
 {
     LIMITED_METHOD_DAC_CONTRACT;

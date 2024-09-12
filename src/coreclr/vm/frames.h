@@ -1064,6 +1064,10 @@ class FaultingExceptionFrame : public Frame
     T_CONTEXT               m_ctx;
 #endif // !FEATURE_EH_FUNCLETS
 
+#ifdef TARGET_AMD64
+    TADDR                   m_SSP;
+#endif
+
     VPTR_VTABLE_CLASS(FaultingExceptionFrame, Frame)
 
 public:
@@ -1123,6 +1127,13 @@ public:
         return &m_fFilterExecuted;
     }
 #endif // FEATURE_EH_FUNCLETS
+
+#ifdef TARGET_AMD64
+    void SetSSP(TADDR value)
+    {
+        m_SSP = value;
+    }
+#endif
 
     virtual BOOL NeedsUpdateRegDisplay()
     {
