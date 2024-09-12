@@ -2763,10 +2763,10 @@ Assembly * AppDomain::FindAssembly(PEAssembly * pPEAssembly, FindAssemblyOptions
 
     if (pPEAssembly->HasHostAssembly())
     {
-        DomainAssembly * pDA = pPEAssembly->GetHostAssembly()->GetDomainAssembly();
-        if (pDA != nullptr && (pDA->GetAssembly()->IsLoaded() || (includeFailedToLoad && pDA->GetAssembly()->IsError())))
+        Assembly * pAssembly = pPEAssembly->GetHostAssembly()->GetRuntimeAssembly();
+        if (pAssembly != nullptr && (pAssembly->IsLoaded() || (includeFailedToLoad && pAssembly->IsError())))
         {
-            return pDA->GetAssembly();
+            return pAssembly;
         }
         return nullptr;
     }
