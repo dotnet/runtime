@@ -76,19 +76,26 @@ internal interface ITarget
         bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data);
     }
 
-    public record struct TypeInfo
+    public readonly record struct TypeInfo
     {
-        public uint? Size;
-        public Dictionary<string, FieldInfo> Fields = [];
+        public uint? Size { get; init; }
+        public readonly IReadOnlyDictionary<string, FieldInfo> Fields
+        {
+            get;
+            init;
+        }
 
-        public TypeInfo() { }
+        public TypeInfo()
+        {
+            Fields = new Dictionary<string, FieldInfo>();
+        }
     }
 
-    public record struct FieldInfo
+    public readonly record struct FieldInfo
     {
-        public int Offset;
-        public DataType Type;
-        public string? TypeName;
+        public int Offset {get; init; }
+        public readonly DataType Type {get; init;}
+        public readonly string? TypeName {get; init; }
     }
 
     Contracts.IRegistry Contracts { get; }

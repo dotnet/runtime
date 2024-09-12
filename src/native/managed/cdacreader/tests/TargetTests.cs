@@ -17,14 +17,14 @@ public unsafe class TargetTests
         // Size and fields
         [DataType.Thread] = new(){
             Size = 56,
-            Fields = {
+            Fields = new Dictionary<string, ITarget.FieldInfo> {
                 { "Field1", new(){ Offset = 8, Type = DataType.uint16, TypeName = DataType.uint16.ToString() }},
                 { "Field2", new(){ Offset = 16, Type = DataType.GCHandle, TypeName = DataType.GCHandle.ToString() }},
                 { "Field3", new(){ Offset = 32 }}
             }},
         // Fields only
         [DataType.ThreadStore] = new(){
-            Fields = {
+            Fields = new Dictionary<string, ITarget.FieldInfo> {
                 { "Field1", new(){ Offset = 0, TypeName = "FieldType" }},
                 { "Field2", new(){ Offset = 8 }}
             }},

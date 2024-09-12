@@ -72,12 +72,12 @@ internal sealed unsafe class Target : ITarget
         {
             foreach ((string name, ContractDescriptorParser.TypeDescriptor type) in descriptor.Types)
             {
-                ITarget.TypeInfo typeInfo = new() { Size = type.Size };
+                Dictionary<string, ITarget.FieldInfo> fieldInfos = [];
                 if (type.Fields is not null)
                 {
                     foreach ((string fieldName, ContractDescriptorParser.FieldDescriptor field) in type.Fields)
                     {
-                        typeInfo.Fields[fieldName] = new ITarget.FieldInfo()
+                        fieldInfos[fieldName] = new ITarget.FieldInfo()
                         {
                             Offset = field.Offset,
                             Type = field.Type is null ? DataType.Unknown : GetDataType(field.Type),
@@ -85,6 +85,7 @@ internal sealed unsafe class Target : ITarget
                         };
                     }
                 }
+                ITarget.TypeInfo typeInfo = new() { Size = type.Size, Fields = fieldInfos };
 
                 DataType dataType = GetDataType(name);
                 if (dataType is not DataType.Unknown)
