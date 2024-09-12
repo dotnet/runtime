@@ -977,7 +977,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.Select (name => name.Name)
 				.ToArray ();
 
-			if (!actual.SequenceEqual(expected))
+			if (!actual!.SequenceEqual(expected))
 				yield return $"Expected references do not match actual references:\n\tExpected: {string.Join(", ", expected)}\n\tActual: {string.Join(", ", actual)}";
 		}
 
