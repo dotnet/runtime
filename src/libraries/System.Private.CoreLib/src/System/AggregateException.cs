@@ -213,18 +213,19 @@ namespace System
         }
 
         /// <summary>
-        /// Returns the <see cref="AggregateException"/> that is the root cause of this exception.
+        /// Returns the <see cref="Exception"/> that is the root cause of this exception.
+        /// This will either be the root exception, or the first <see cref="AggregateException"/>
+        /// that contains either multiple inner exceptions or no inner exceptions at all.
         /// </summary>
         public override Exception GetBaseException()
         {
-            // Returns the first inner AggregateException that contains more or less than one inner exception
-
-            // Recursively traverse the inner exceptions as long as the inner exception of type AggregateException and has only one inner exception
+            // Recursively traverse the inner exceptions as long as the inner exception of type
+            // AggregateException and has only one inner exception
             Exception? back = this;
             AggregateException? backAsAggregate = this;
             while (backAsAggregate != null && backAsAggregate.InnerExceptions.Count == 1)
             {
-                back = back!.InnerException;
+                back = back!.InnerException; // this can be any type of exception
                 backAsAggregate = back as AggregateException;
             }
             return back!;
