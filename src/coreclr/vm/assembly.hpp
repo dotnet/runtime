@@ -23,10 +23,8 @@
 #include "cordbpriv.h"
 #include "assemblyspec.hpp"
 
-class BaseDomain;
 class AppDomain;
 class DomainAssembly;
-class DomainModule;
 class SystemDomain;
 class ClassLoader;
 class AssemblyNative;
@@ -45,24 +43,22 @@ class FriendAssemblyDescriptor;
 //
 class Assembly
 {
-    friend class BaseDomain;
     friend class SystemDomain;
     friend class ClassLoader;
     friend class AssemblyNative;
     friend class AssemblySpec;
     friend class NDirect;
-    friend class AssemblyNameNative;
     friend class ClrDataAccess;
 
 private:
-    Assembly(PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible);
-    void Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
+    Assembly(PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, LoaderAllocator* pLoaderAllocator);
+    void Init(AllocMemTracker *pamTracker);
 
 public:
     void StartUnload();
     void Terminate( BOOL signalProfiler = TRUE );
 
-    static Assembly *Create(PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
+    static Assembly *Create(PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
     static void Initialize();
 
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->IsSystem(); }
@@ -221,6 +217,7 @@ public:
     }
 
     OBJECTREF GetExposedObject();
+    OBJECTREF GetExposedObjectIfExists();
 
     DebuggerAssemblyControlFlags GetDebuggerInfoBits(void)
     {
@@ -362,7 +359,6 @@ public:
 
     static void AddDiagnosticStartupHookPath(LPCWSTR wszPath);
 
-
 protected:
 #ifdef FEATURE_COMINTEROP
 
@@ -431,6 +427,8 @@ private:
     DebuggerAssemblyControlFlags m_debuggerFlags;
 
     BOOL                  m_fTerminated;
+
+    LOADERHANDLE          m_hExposedObject;
 };
 
 #ifndef DACCESS_COMPILE

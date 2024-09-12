@@ -16,7 +16,7 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.Extensions.Caching.Memory
 {
     /// <summary>
-    /// An implementation of <see cref="IMemoryCache"/> using a dictionary to
+    /// Implements <see cref="IMemoryCache"/> using a dictionary to
     /// store its entries.
     /// </summary>
     public class MemoryCache : IMemoryCache
