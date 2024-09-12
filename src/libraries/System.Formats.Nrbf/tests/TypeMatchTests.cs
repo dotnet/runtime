@@ -74,6 +74,16 @@ public class TypeMatchTests : ReadTests
     }
 
     [Fact]
+    public void ThrowsForNullType()
+    {
+        List<int> input = new List<int>();
+
+        SerializationRecord record = NrbfDecoder.Decode(Serialize(input));
+
+        Assert.Throws<ArgumentNullException>(() => record.TypeNameMatches(type: null));
+    }
+
+    [Fact]
     public void TakesGenericTypeDefinitionIntoAccount()
     {
         List<int> input = new List<int>();

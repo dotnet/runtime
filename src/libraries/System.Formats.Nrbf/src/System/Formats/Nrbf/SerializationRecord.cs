@@ -50,7 +50,20 @@ public abstract class SerializationRecord
     /// </remarks>
     /// <param name="type">The type to compare against.</param>
     /// <returns><see langword="true" /> if the serialized type name matches the provided type; otherwise, <see langword="false" />.</returns>
-    public bool TypeNameMatches(Type type) => Matches(type, TypeName);
+    /// <exception cref="ArgumentNullException"><paramref name="type" /> is <see langword="null" />.</exception>
+    public bool TypeNameMatches(Type type)
+    {
+#if NET
+        ArgumentNullException.ThrowIfNull(type);
+#else
+        if (type is null)
+        {
+            throw new ArgumentNullException(nameof(type));
+        }
+#endif
+
+        return Matches(type, TypeName);
+    }
 
     private static bool Matches(Type type, TypeName typeName)
     {
