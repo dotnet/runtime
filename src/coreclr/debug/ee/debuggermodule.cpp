@@ -118,52 +118,6 @@ bool DebuggerModuleTable::ThreadHoldsLock()
 }
 #endif
 
-//
-// RemoveModules removes any module loaded into the given appdomain from the hash.  This is used when we send an
-// ExitAppdomain event to ensure that there are no leftover modules in the hash. This can happen when we have shared
-// modules that aren't properly accounted for in the CLR. We miss sending UnloadModule events for those modules, so
-// we clean them up with this method.
-//
-void DebuggerModuleTable::RemoveModules(AppDomain *pAppDomain)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB, LL_INFO1000, "DMT::RM removing all modules from AD 0x%08x\n", pAppDomain));
-
-    _ASSERTE(ThreadHoldsLock());
-
-    HASHFIND hf;
-    DebuggerModuleEntry *pDME = (DebuggerModuleEntry *) FindFirstEntry(&hf);
-
-    while (pDME != NULL)
-    {
-        DebuggerModule *pDM = pDME->module;
-
-        if (pDM->GetAppDomain() == pAppDomain)
-        {
-            LOG((LF_CORDB, LL_INFO1000, "DMT::RM removing DebuggerModule 0x%08x\n", pDM));
-
-            // Defer to the normal logic in RemoveModule for the actual removal. This accurately simulates what
-            // happens when we process an UnloadModule event.
-            RemoveModule(pDM->GetRuntimeModule(), pAppDomain);
-
-            // Start back at the first entry since we just modified the hash.
-            pDME = (DebuggerModuleEntry *) FindFirstEntry(&hf);
-        }
-        else
-        {
-            pDME = (DebuggerModuleEntry *) FindNextEntry(&hf);
-        }
-    }
-
-    LOG((LF_CORDB, LL_INFO1000, "DMT::RM done removing all modules from AD 0x%08x\n", pAppDomain));
-}
-
 void DebuggerModuleTable::Clear()
 {
     CONTRACTL
