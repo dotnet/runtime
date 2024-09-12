@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Serialization;
 using System.Text;
 using Xunit;
 
@@ -50,6 +51,24 @@ public class ArraySinglePrimitiveRecordTests : ReadTests
         Assert.True(b);
         bool c = a && b;
         Assert.True(c);
+    }
+
+    [Fact]
+    public void DontCastBytesToDateTimes()
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        writer.Write((byte)SerializationRecordType.ArraySinglePrimitive);
+        writer.Write(1); // object ID
+        writer.Write(1); // length
+        writer.Write((byte)PrimitiveType.DateTime); // element type
+        writer.Write(ulong.MaxValue); // un-representable DateTime
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+        stream.Position = 0;
+
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
     [Theory]

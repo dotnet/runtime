@@ -175,6 +175,17 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
                 }
             }
         }
+        else if (typeof(T) == typeof(DateTime))
+        {
+            DateTime[] dateTimes = (DateTime[])(object)result;
+            Span<ulong> span = MemoryMarshal.Cast<T, ulong>(result);
+            for (int i = 0; i < dateTimes.Length; i++)
+            {
+                // The value needs to get validated.
+                dateTimes[i] = BinaryReaderExtensions.CreateDateTimeFromData(span[i]);
+            }
+        }
+
         return result;
     }
 
