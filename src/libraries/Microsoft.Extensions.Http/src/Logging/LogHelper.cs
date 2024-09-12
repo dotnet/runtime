@@ -32,6 +32,8 @@ namespace Microsoft.Extensions.Http.Logging
             public static readonly EventId RequestPipelineResponseHeader = new EventId(103, "RequestPipelineResponseHeader");
         }
 
+        public static readonly Func<string, bool> ShouldRedactHeaderValue = (header) => true;
+
         private static readonly Action<ILogger, HttpMethod, string?, Exception?> _requestStart = LoggerMessage.Define<HttpMethod, string?>(
             LogLevel.Information,
             EventIds.RequestStart,

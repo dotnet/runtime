@@ -4457,25 +4457,17 @@ namespace System.Text.RegularExpressions
                     Sub();
                     Stloc(iterationLocal);
                 }
-                else if (maxIterations > 1 && CanEmitIndexOf(node, out _))
+                else if (maxIterations == int.MaxValue && CanEmitIndexOf(node, out _))
                 {
-                    // We can use an IndexOf method to perform the search. If the number of iterations is unbounded, we can just search the whole span.
-                    // If, however, it's bounded, we need to slice the span to the min(remainingSpan.Length, maxIterations) so that we don't
-                    // search more than is necessary. (There's little point in using IndexOf for an optional / something with at most one iteration,
-                    // so we also skip using IndexOf in that case.)
+                    // We're unbounded and we can use an IndexOf method to perform the search. The unbounded restriction is
+                    // purely for simplicity; it could be removed in the future with additional code to handle that case.
 
-                    TransferSliceStaticPosToPos();
-
-                    // int i = slice.Slice(0, Math.Min(maxIterations, slice.Length)).IndexOf(...);
-                    if (maxIterations != int.MaxValue)
+                    // int i = slice.Slice(sliceStaticPos).IndexOf(...);
+                    if (sliceStaticPos > 0)
                     {
                         Ldloca(slice);
-                        Ldc(0);
-                        Ldc(maxIterations);
-                        Ldloca(slice);
-                        Call(s_spanGetLengthMethod);
-                        Call(s_mathMinIntInt);
-                        Call(s_spanSliceIntIntMethod);
+                        Ldc(sliceStaticPos);
+                        Call(s_spanSliceIntMethod);
                     }
                     else
                     {
@@ -4490,13 +4482,13 @@ namespace System.Text.RegularExpressions
                     Ldc(0);
                     BgeFar(atomicLoopDoneLabel);
 
-                    // i = Math.Min(slice.Length, maxIterations);
+                    // i = slice.Length - sliceStaticPos;
                     Ldloca(slice);
                     Call(s_spanGetLengthMethod);
-                    if (maxIterations != int.MaxValue)
+                    if (sliceStaticPos > 0)
                     {
-                        Ldc(maxIterations);
-                        Call(s_mathMinIntInt);
+                        Ldc(sliceStaticPos);
+                        Sub();
                     }
                     Stloc(iterationLocal);
                 }

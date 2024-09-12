@@ -5,7 +5,7 @@ using Mono.Linker;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	internal readonly partial struct DiagnosticContext
+	public readonly partial struct DiagnosticContext
 	{
 		public readonly MessageOrigin Origin;
 		public readonly bool DiagnosticsEnabled;

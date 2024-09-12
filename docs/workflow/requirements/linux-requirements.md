@@ -37,7 +37,7 @@ Install the following packages for the toolchain:
 * CMake 3.20 or newer
 * llvm
 * lld
-* clang
+* clang (for WASM 16 or newer)
 * build-essential
 * python-is-python3
 * curl
@@ -59,6 +59,7 @@ sudo apt install -y cmake llvm lld clang build-essential \
 ```
 
 **NOTE**: As of now, Ubuntu's `apt` only has until CMake version 3.16.3 if you're using Ubuntu 20.04 LTS (less in older Ubuntu versions), and version 3.18.4 in Debian 11 (less in older Debian versions). This is lower than the required 3.20, which in turn makes it incompatible with the repo. For this case, we can use the `snap` package manager or the _Kitware APT feed_ to get a new enough version of CMake.
+**NOTE**: If you have Ubuntu 22.04 LTS and older and your `apt` does not have clang version 16, you can add `"deb http://apt.llvm.org/$(lsb_release -s -c)/ llvm-toolchain-$(lsb_release -s -c)-18 main"` repository to your `apt`. See how we do it for linux-based containers [here](./../../../.devcontainer/Dockerfile).
 
 For snap:
 

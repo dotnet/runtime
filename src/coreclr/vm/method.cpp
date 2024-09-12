@@ -68,7 +68,7 @@ static_assert_no_msg((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK
 #define METHOD_DESC_SIZES(adjustment)                                       \
     adjustment + sizeof(MethodDesc),                 /* mcIL            */  \
     adjustment + sizeof(FCallMethodDesc),            /* mcFCall         */  \
-    adjustment + sizeof(NDirectMethodDesc),          /* mcNDirect       */  \
+    adjustment + sizeof(NDirectMethodDesc),          /* mcPInvoke       */  \
     adjustment + sizeof(EEImplMethodDesc),           /* mcEEImpl        */  \
     adjustment + sizeof(ArrayMethodDesc),            /* mcArray         */  \
     adjustment + sizeof(InstantiatedMethodDesc),     /* mcInstantiated  */  \
@@ -1506,6 +1506,20 @@ DWORD MethodDesc::GetImplAttrs()
     return props;
 }
 
+PTR_Module MethodDescChunk::GetLoaderModule()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    if (IsLoaderModuleAttachedToChunk())
+    {
+        TADDR ppLoaderModule = dac_cast<TADDR>(this) + SizeOf() - sizeof(PTR_Module);
+        return *dac_cast<DPTR(PTR_Module)>(ppLoaderModule);
+    }
+    else
+    {
+        return GetMethodTable()->GetLoaderModule();
+    }
+}
+
 //*******************************************************************************
 Module* MethodDesc::GetLoaderModule()
 {
@@ -1517,17 +1531,24 @@ Module* MethodDesc::GetLoaderModule()
     }
     CONTRACTL_END;
 
+    Module* pLoaderModule = GetMethodDescChunk()->GetLoaderModule();
+
+#ifdef _DEBUG
+    // Verify that the LoaderModule stored in the MethodDescChunk matches the result achieved by computation
     if (HasMethodInstantiation() && !IsGenericMethodDefinition())
     {
-        Module *retVal = ClassLoader::ComputeLoaderModule(GetMethodTable(),
+        Module *computeLoaderModuleAlgorithmResult = ClassLoader::ComputeLoaderModule(GetMethodTable(),
                                                 GetMemberDef(),
                                                 GetMethodInstantiation());
-        return retVal;
+        _ASSERTE(computeLoaderModuleAlgorithmResult == pLoaderModule);
     }
     else
     {
-        return GetMethodTable()->GetLoaderModule();
+        _ASSERTE(pLoaderModule == GetMethodTable()->GetLoaderModule());
     }
+#endif // _DEBUG
+
+    return pLoaderModule;
 }
 
 //*******************************************************************************
@@ -1845,7 +1866,7 @@ MethodDesc* MethodDesc::StripMethodInstantiation()
 
 //*******************************************************************************
 MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDescCount,
-    DWORD classification, BOOL fNonVtableSlot, BOOL fNativeCodeSlot, MethodTable *pInitialMT, AllocMemTracker *pamTracker)
+    DWORD classification, BOOL fNonVtableSlot, BOOL fNativeCodeSlot, MethodTable *pInitialMT, AllocMemTracker *pamTracker, Module *pLoaderModule)
 {
     CONTRACT(MethodDescChunk *)
     {
@@ -1878,18 +1899,28 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
 
     MethodDescChunk * pFirstChunk = NULL;
 
+    bool needsExplicitLoaderModule = false;
+    if (pLoaderModule != NULL && pLoaderModule != pInitialMT->GetLoaderModule())
+    {
+        needsExplicitLoaderModule = true;
+    }
+
     do
     {
         DWORD count = min(methodDescCount, maxMethodDescsPerChunk);
 
         void * pMem = pamTracker->Track(
-                pHeap->AllocMem(S_SIZE_T(sizeof(MethodDescChunk) + oneSize * count)));
+                pHeap->AllocMem(S_SIZE_T(sizeof(MethodDescChunk) + oneSize * count + (needsExplicitLoaderModule ? sizeof(Module *) : 0))));
 
         // Skip pointer to temporary entrypoints
         MethodDescChunk * pChunk = (MethodDescChunk *)((BYTE*)pMem);
 
         pChunk->SetSizeAndCount(oneSize * count, count);
         pChunk->SetMethodTable(pInitialMT);
+        if (needsExplicitLoaderModule)
+        {
+            pChunk->SetLoaderModuleAttachedToChunk(pLoaderModule);
+        }
 
         MethodDesc * pMD = pChunk->GetFirstMethodDesc();
         for (DWORD i = 0; i < count; i++)
@@ -2539,7 +2570,7 @@ BOOL MethodDesc::MayHaveNativeCode()
         break;
     case mcFCall:           // FCalls do not have real native code.
         return FALSE;
-    case mcNDirect:         // NDirect never have native code (note that the NDirect method
+    case mcPInvoke:         // NDirect never have native code (note that the NDirect method
         return FALSE;       //  does not appear as having a native code even for stubs as IL)
     case mcEEImpl:          // Runtime provided implementation. No native code.
         return FALSE;
@@ -2624,7 +2655,7 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
     }
     CONTRACT_END;
 
-    MethodDesc *  pMD = NULL;
+    MethodDesc* pMD = NULL;
 
     // Otherwise this must be some kind of precode
     //
@@ -2633,10 +2664,9 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
     if (pPrecode != NULL)
     {
         pMD = pPrecode->GetMethodDesc(fSpeculative);
-        RETURN(pMD);
     }
 
-    RETURN(NULL); // Not found
+    RETURN(pMD);
 }
 
 //*******************************************************************************
@@ -3487,14 +3517,6 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
         WellKnownAttribute::UnmanagedCallersOnly,
         nullptr,
         nullptr);
-    if (hr != S_OK)
-    {
-        // See https://github.com/dotnet/runtime/issues/37622
-        hr = GetCustomAttribute(
-            WellKnownAttribute::NativeCallableInternal,
-            nullptr,
-            nullptr);
-    }
 
     return (hr == S_OK) ? TRUE : FALSE;
 }

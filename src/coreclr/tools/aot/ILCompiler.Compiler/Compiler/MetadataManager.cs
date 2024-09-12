@@ -21,6 +21,7 @@ using CombinedDependencyListEntry = ILCompiler.DependencyAnalysisFramework.Depen
 using MethodIL = Internal.IL.MethodIL;
 using CustomAttributeValue = System.Reflection.Metadata.CustomAttributeValue<Internal.TypeSystem.TypeDesc>;
 using MethodSignature = Internal.TypeSystem.MethodSignature;
+using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
 
 using MetadataRecord = Internal.Metadata.NativeFormat.Writer.MetadataRecord;
 using MetadataWriter = Internal.Metadata.NativeFormat.Writer.MetadataWriter;
@@ -82,12 +83,14 @@ namespace ILCompiler
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
 
+        internal FlowAnnotations FlowAnnotations { get; }
+
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
 
         public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy,
             ManifestResourceBlockingPolicy resourceBlockingPolicy, string logFile, StackTraceEmissionPolicy stackTracePolicy,
             DynamicInvokeThunkGenerationPolicy dynamicInvokeThunkGenerationPolicy,
-            MetadataManagerOptions options)
+            MetadataManagerOptions options, FlowAnnotations flowAnnotations)
         {
             _typeSystemContext = typeSystemContext;
             _blockingPolicy = blockingPolicy;
@@ -96,6 +99,8 @@ namespace ILCompiler
             _options = options;
             _metadataLogFile = logFile;
             _stackTraceEmissionPolicy = stackTracePolicy;
+
+            FlowAnnotations = flowAnnotations;
         }
 
         public bool IsDataDehydrated => (_options & MetadataManagerOptions.DehydrateData) != 0;
@@ -343,6 +348,23 @@ namespace ILCompiler
         }
 
         protected virtual bool AllMethodsCanBeReflectable => false;
+
+        public bool IsTypeInstantiationReflectionVisible(TypeDesc type)
+        {
+            if (FlowAnnotations == null)
+                return false;
+
+            if (FlowAnnotations.HasGenericParameterAnnotation(type))
+                return true;
+
+            foreach (TypeDesc instArg in type.Instantiation)
+            {
+                if (IsTypeInstantiationReflectionVisible(instArg))
+                    return true;
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// Is a method that is reflectable a method which should be placed into the invoke map as invokable?

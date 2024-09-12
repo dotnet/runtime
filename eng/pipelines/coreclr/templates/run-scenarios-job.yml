@@ -60,13 +60,13 @@ jobs:
       - SharedHelixPreCommands: 'chmod +x $HELIX_WORKITEM_PAYLOAD/machine-setup.sh;. $HELIX_WORKITEM_PAYLOAD/machine-setup.sh;export PYTHONPATH=$HELIX_WORKITEM_PAYLOAD/scripts:$HELIX_WORKITEM_PAYLOAD'
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - HelixPreCommandWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install --user azure.storage.blob==12.13.0;py -3 -m pip install --user azure.storage.queue==12.4.0;py -3 -m pip install --user urllib3==1.26.15;py -3 -m pip install --user azure.identity==1.16.1;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
+      - HelixPreCommandWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;echo on;set PYTHONPATH=;python -m pip install -U pip;python -m pip install azure.storage.blob==12.13.0;python -m pip install azure.storage.queue==12.4.0;python -m pip install urllib3==1.26.15;python -m pip install azure.identity==1.16.1;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
       - HelixPostCommandsWindows: 'set PYTHONPATH=%ORIGPYPATH%'
     - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'osx'), ne(parameters.osSubGroup, '_musl')) }}:
-      - HelixPreCommandLinux: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.13.0;pip3 install --user azure.storage.queue==12.4.0;pip3 install --user azure.identity==1.16.1;pip3 install --user urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+      - HelixPreCommandLinux: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.13.0;pip3 install azure.storage.queue==12.4.0;pip3 install azure.identity==1.16.1;pip3 install urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
       - HelixPostCommandsLinux: 'export PYTHONPATH=$ORIGPYPATH'
     - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'osx'), eq(parameters.osSubGroup, '_musl')) }}:
-      - HelixPreCommandMusl: 'ulimit -n 4096;export ORIGPYPATH=$PYTHONPATH;sudo apk add py3-virtualenv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.13.0;pip3 install --user azure.storage.queue==12.4.0;pip3 install --user azure.identity==1.16.1;pip3 install --user urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+      - HelixPreCommandMusl: 'ulimit -n 4096;export ORIGPYPATH=$PYTHONPATH;sudo apk add py3-virtualenv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.13.0;pip3 install azure.storage.queue==12.4.0;pip3 install azure.identity==1.16.1;pip3 install urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
       - HelixPostCommandsMusl: 'export PYTHONPATH=$ORIGPYPATH'
     - ${{ if eq(parameters.osGroup, 'osx') }}:
       - HelixPreCommandOSX: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.13.0;pip3 install azure.storage.queue==12.4.0;pip3 install azure.identity==1.16.1;pip3 install urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
@@ -158,36 +158,36 @@ jobs:
       displayName: Copy scenario support files (Linux/MAC)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     # build Startup
-    - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)\Startup -f net7.0 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\Startup\Startup.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
+    - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)\Startup -f net8.0 -r win-$(Architecture) --self-contained $(PerformanceDirectory)\src\tools\ScenarioMeasurement\Startup\Startup.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
       displayName: Build Startup tool (Windows)
       env:
-        PERFLAB_TARGET_FRAMEWORKS: net7.0
+        PERFLAB_TARGET_FRAMEWORKS: net8.0
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/startup -f net7.0 -r linux-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/Startup/Startup.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
+    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/startup -f net8.0 -r linux-$(Architecture) --self-contained $(PerformanceDirectory)/src/tools/ScenarioMeasurement/Startup/Startup.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
       displayName: Build Startup tool (Linux)
       env:
-        PERFLAB_TARGET_FRAMEWORKS: net7.0
+        PERFLAB_TARGET_FRAMEWORKS: net8.0
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Linux'))
-    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/startup -f net7.0 -r osx-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/Startup/Startup.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
+    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/startup -f net8.0 -r osx-$(Architecture) --self-contained $(PerformanceDirectory)/src/tools/ScenarioMeasurement/Startup/Startup.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
       displayName: Build Startup tool (MAC)
       env:
-        PERFLAB_TARGET_FRAMEWORKS: net7.0
+        PERFLAB_TARGET_FRAMEWORKS: net8.0
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Darwin'))
     # build SizeOnDisk
-    - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)\SOD -f net7.0 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\SizeOnDisk\SizeOnDisk.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
+    - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)\SOD -f net8.0 -r win-$(Architecture) --self-contained $(PerformanceDirectory)\src\tools\ScenarioMeasurement\SizeOnDisk\SizeOnDisk.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
       displayName: Build SizeOnDisk tool (Windows)
       env:
-        PERFLAB_TARGET_FRAMEWORKS: net7.0
+        PERFLAB_TARGET_FRAMEWORKS: net8.0
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/SOD -f net7.0 -r linux-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/SizeOnDisk/SizeOnDisk.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
+    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/SOD -f net8.0 -r linux-$(Architecture) --self-contained $(PerformanceDirectory)/src/tools/ScenarioMeasurement/SizeOnDisk/SizeOnDisk.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
       displayName: Build SizeOnDisk tool (Linux)
       env:
-        PERFLAB_TARGET_FRAMEWORKS: net7.0
+        PERFLAB_TARGET_FRAMEWORKS: net8.0
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Linux'))
-    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/SOD -f net7.0 -r osx-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/SizeOnDisk/SizeOnDisk.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
+    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/SOD -f net8.0 -r osx-$(Architecture) --self-contained $(PerformanceDirectory)/src/tools/ScenarioMeasurement/SizeOnDisk/SizeOnDisk.csproj -p:DisableTransitiveFrameworkReferenceDownloads=true
       displayName: Build SizeOnDisk tool (MAC)
       env:
-        PERFLAB_TARGET_FRAMEWORKS: net7.0
+        PERFLAB_TARGET_FRAMEWORKS: net8.0
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Darwin'))
 
     # Zip the workitem directory (for xharness (mobile) based workitems)

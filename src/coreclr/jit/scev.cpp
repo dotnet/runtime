@@ -515,6 +515,11 @@ Scev* ScalarEvolutionContext::CreateScevForConstant(GenTreeIntConCommon* tree)
 //
 Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int depth)
 {
+    if (!varTypeIsIntegralOrI(tree->TypeGet()))
+    {
+        return nullptr;
+    }
+
     switch (tree->OperGet())
     {
         case GT_CNS_INT:
@@ -1259,15 +1264,15 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev, const SimplificationAssumptio
 // Materialize: Materialize a SCEV into IR and/or a value number.
 //
 // Parameters:
-//   scev     - The SCEV
-//   createIR - Whether to create IR. If so "result" will be assigned.
-//   result   - [out] The IR node result.
-//   resultVN - [out] The VN result. Cannot be nullptr.
+//   scev      - The SCEV
+//   createIR  - Whether to create IR. If so "result" will be assigned.
+//   result    - [out] The IR node result.
+//   resultVNP - [out] The VNP result. Cannot be nullptr.
 //
 // Returns:
 //   True on success. Add recurrences cannot be materialized.
 //
-bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** result, ValueNum* resultVN)
+bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** result, ValueNumPair* resultVNP)
 {
     switch (scev->Oper)
     {
@@ -1282,7 +1287,7 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
                     return false;
                 }
 
-                *resultVN = m_comp->vnStore->VNForNull();
+                resultVNP->SetBoth(m_comp->vnStore->VNForNull());
             }
             else if (cns->TypeIs(TYP_BYREF))
             {
@@ -1292,11 +1297,12 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
                     return false;
                 }
 
-                *resultVN = m_comp->vnStore->VNForNull();
+                resultVNP->SetBoth(m_comp->vnStore->VNForNull());
             }
             else
             {
-                *resultVN = m_comp->vnStore->VNForGenericCon(scev->Type, reinterpret_cast<uint8_t*>(&cns->Value));
+                resultVNP->SetBoth(
+                    m_comp->vnStore->VNForGenericCon(scev->Type, reinterpret_cast<uint8_t*>(&cns->Value)));
             }
 
             if (createIR)
@@ -1318,8 +1324,7 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
             ScevLocal*    lcl    = (ScevLocal*)scev;
             LclVarDsc*    dsc    = m_comp->lvaGetDesc(lcl->LclNum);
             LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(lcl->SsaNum);
-            // TODO: To match RBO, but RBO should not use liberal VNs
-            *resultVN = m_comp->vnStore->VNLiberalNormalValue(ssaDsc->m_vnPair);
+            *resultVNP           = m_comp->vnStore->VNPNormalPair(ssaDsc->m_vnPair);
 
             if (createIR)
             {
@@ -1331,15 +1336,16 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
         case ScevOper::ZeroExtend:
         case ScevOper::SignExtend:
         {
-            ScevUnop* ext = (ScevUnop*)scev;
-            GenTree*  op  = nullptr;
-            ValueNum  opVN;
+            ScevUnop*    ext = (ScevUnop*)scev;
+            GenTree*     op  = nullptr;
+            ValueNumPair opVN;
             if (!Materialize(ext->Op1, createIR, &op, &opVN))
             {
                 return false;
             }
 
-            *resultVN = m_comp->vnStore->VNForCast(opVN, TYP_LONG, ext->Type, scev->OperIs(ScevOper::ZeroExtend));
+            *resultVNP = m_comp->vnStore->VNPairForCast(opVN, TYP_LONG, ext->Type, scev->OperIs(ScevOper::ZeroExtend));
+
             if (createIR)
             {
                 *result = m_comp->gtNewCastNode(ext->Type, op, scev->OperIs(ScevOper::ZeroExtend), TYP_LONG);
@@ -1351,11 +1357,11 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
         case ScevOper::Mul:
         case ScevOper::Lsh:
         {
-            ScevBinop* binop = (ScevBinop*)scev;
-            GenTree*   op1   = nullptr;
-            ValueNum   op1VN;
-            GenTree*   op2 = nullptr;
-            ValueNum   op2VN;
+            ScevBinop*   binop = (ScevBinop*)scev;
+            GenTree*     op1   = nullptr;
+            ValueNumPair op1VN;
+            GenTree*     op2 = nullptr;
+            ValueNumPair op2VN;
             if (!Materialize(binop->Op1, createIR, &op1, &op1VN) || !Materialize(binop->Op2, createIR, &op2, &op2VN))
             {
                 return false;
@@ -1377,7 +1383,7 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
                     unreached();
             }
 
-            *resultVN = m_comp->vnStore->VNForFunc(binop->Type, VNFunc(oper), op1VN, op2VN);
+            *resultVNP = m_comp->vnStore->VNPairForFunc(binop->Type, VNFunc(oper), op1VN, op2VN);
             if (createIR)
             {
                 if (oper == GT_MUL)
@@ -1414,7 +1420,7 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
 
     if (createIR)
     {
-        (*result)->SetVNs(ValueNumPair(*resultVN, *resultVN));
+        (*result)->SetVNs(*resultVNP);
     }
 
     return true;
@@ -1431,9 +1437,9 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
 //
 GenTree* ScalarEvolutionContext::Materialize(Scev* scev)
 {
-    ValueNum vn;
-    GenTree* result;
-    return Materialize(scev, true, &result, &vn) ? result : nullptr;
+    ValueNumPair vnp;
+    GenTree*     result;
+    return Materialize(scev, true, &result, &vnp) ? result : nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -1443,12 +1449,12 @@ GenTree* ScalarEvolutionContext::Materialize(Scev* scev)
 //   scev - The SCEV
 //
 // Returns:
-//   The VN, or ValueNumStore::NoVN if the SCEV is not representable as a VN.
+//   The VNP, or (NoVN, NoVN) if the SCEV is not representable as a VN.
 //
-ValueNum ScalarEvolutionContext::MaterializeVN(Scev* scev)
+ValueNumPair ScalarEvolutionContext::MaterializeVN(Scev* scev)
 {
-    ValueNum vn;
-    return Materialize(scev, false, nullptr, &vn) ? vn : ValueNumStore::NoVN;
+    ValueNumPair vnp;
+    return Materialize(scev, false, nullptr, &vnp) ? vnp : ValueNumPair();
 }
 
 //------------------------------------------------------------------------
@@ -1500,16 +1506,13 @@ RelopEvaluationResult ScalarEvolutionContext::EvaluateRelop(ValueNum vn)
     }
 
     // Evaluate by using dominators and RBO's logic.
+    assert(m_comp->m_domTree != nullptr);
     //
     // TODO-CQ: Using assertions could be stronger given its dataflow, but it
     // is not convenient to use (optVNConstantPropOnJTrue does not actually
     // make any use of assertions to evaluate conditionals, so it seems like
     // the logic does not actually exist anywhere.)
     //
-    if (m_comp->m_domTree == nullptr)
-    {
-        m_comp->m_domTree = FlowGraphDominatorTree::Build(m_comp->m_dfsTree);
-    }
 
     for (BasicBlock* idom = m_loop->GetHeader()->bbIDom; idom != nullptr; idom = idom->bbIDom)
     {
@@ -1654,12 +1657,12 @@ bool ScalarEvolutionContext::MayOverflowBeforeExit(ScevAddRec* lhs, Scev* rhs, V
         step         = NewBinop(ScevOper::Add, step, posOne);
     }
 
-    Scev* steppedVal      = NewBinop(ScevOper::Add, rhs, step);
-    steppedVal            = Simplify(steppedVal);
-    ValueNum steppedValVN = MaterializeVN(steppedVal);
+    Scev* steppedVal           = NewBinop(ScevOper::Add, rhs, step);
+    steppedVal                 = Simplify(steppedVal);
+    ValueNumPair steppedValVNP = MaterializeVN(steppedVal);
 
-    ValueNum              rhsVN  = MaterializeVN(rhs);
-    ValueNum              relop  = m_comp->vnStore->VNForFunc(TYP_INT, exitOp, steppedValVN, rhsVN);
+    ValueNumPair rhsVNP = MaterializeVN(rhs);
+    ValueNum     relop  = m_comp->vnStore->VNForFunc(TYP_INT, exitOp, steppedValVNP.GetLiberal(), rhsVNP.GetLiberal());
     RelopEvaluationResult result = EvaluateRelop(relop);
     return result != RelopEvaluationResult::True;
 }
@@ -1977,9 +1980,21 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
     JITDUMP(" <= ");
     DBEXEC(VERBOSE, upperBound->Dump(m_comp));
 
-    VNFunc   relopFunc = ValueNumStore::VNFuncIsSignedComparison(exitOpVNF) ? VNF_LE : VNF_LE_UN;
+    VNFunc       relopFunc     = ValueNumStore::VNFuncIsSignedComparison(exitOpVNF) ? VNF_LE : VNF_LE_UN;
+    ValueNumPair lowerBoundVNP = MaterializeVN(lowerBound);
+    if (lowerBoundVNP.GetLiberal() == ValueNumStore::NoVN)
+    {
+        return nullptr;
+    }
+
+    ValueNumPair upperBoundVNP = MaterializeVN(upperBound);
+    if (upperBoundVNP.GetLiberal() == ValueNumStore::NoVN)
+    {
+        return nullptr;
+    }
+
     ValueNum relop =
-        m_comp->vnStore->VNForFunc(TYP_INT, relopFunc, MaterializeVN(lowerBound), MaterializeVN(upperBound));
+        m_comp->vnStore->VNForFunc(TYP_INT, relopFunc, lowerBoundVNP.GetLiberal(), upperBoundVNP.GetLiberal());
     RelopEvaluationResult result = EvaluateRelop(relop);
     JITDUMP(": %s\n", RelopEvaluationResultString(result));
 

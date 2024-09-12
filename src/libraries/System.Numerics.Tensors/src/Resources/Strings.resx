@@ -198,8 +198,8 @@
   <data name="ThrowArgument_SetSliceNoRange" xml:space="preserve">
     <value>When no ranges are specified the values tensor must be equal in size as the input tensor.</value>
   </data>
-  <data name="ThrowArgument_ShapesNotBroadcastCompatible" xml:space="preserve">
-    <value>Shapes are not broadcast compatible.</value>
+  <data name="ThrowArgument_LengthsNotBroadcastCompatible" xml:space="preserve">
+    <value>Lengths are not broadcast compatible.</value>
   </data>
   <data name="ThrowArgument_SplitNotSplitEvenly" xml:space="preserve">
     <value>The number of splits must perfectly divide the dimension.</value>

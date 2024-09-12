@@ -137,7 +137,7 @@ namespace System.Threading
                     if (context != null && context.IsWaitNotificationRequired())
                     {
                         usedSyncContextWait = true;
-                        waitResult = context.Wait(new[] { waitHandle.DangerousGetHandle() }, false, millisecondsTimeout);
+                        waitResult = context.Wait([waitHandle.DangerousGetHandle()], false, millisecondsTimeout);
                     }
                 }
 
@@ -248,12 +248,7 @@ namespace System.Threading
             {
                 for (int i = 0; i < waitHandles.Length; ++i)
                 {
-                    WaitHandle waitHandle = waitHandles[i];
-                    if (waitHandle == null)
-                    {
-                        throw new ArgumentNullException($"waitHandles[{i}]", SR.ArgumentNull_ArrayElement);
-                    }
-
+                    WaitHandle waitHandle = waitHandles[i] ?? throw new ArgumentNullException($"waitHandles[{i}]", SR.ArgumentNull_ArrayElement);
                     SafeWaitHandle? safeWaitHandle = waitHandle._waitHandle;
                     ObjectDisposedException.ThrowIf(safeWaitHandle is null, waitHandle); // throw ObjectDisposedException for backward compatibility even though it is not representative of the issue
 

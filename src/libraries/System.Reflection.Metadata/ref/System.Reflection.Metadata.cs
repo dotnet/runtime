@@ -2427,7 +2427,7 @@ namespace System.Reflection.Metadata
         internal TypeName() { }
         public string AssemblyQualifiedName { get { throw null; } }
         public AssemblyNameInfo? AssemblyName { get { throw null; } }
-        public System.Reflection.Metadata.TypeName? DeclaringType { get { throw null; } }
+        public System.Reflection.Metadata.TypeName DeclaringType { get { throw null; } }
         public string FullName { get { throw null; } }
         public bool IsArray { get { throw null; } }
         public bool IsByRef { get { throw null; } }
@@ -2445,6 +2445,12 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.TypeName GetGenericTypeDefinition() { throw null; }
         public System.Reflection.Metadata.TypeName GetElementType() { throw null; }
         public int GetNodeCount() { throw null; }
+        public System.Reflection.Metadata.TypeName MakeSZArrayTypeName() { throw null; }
+        public System.Reflection.Metadata.TypeName MakeArrayTypeName(int rank) { throw null; }
+        public System.Reflection.Metadata.TypeName MakeByRefTypeName() { throw null; }
+        public System.Reflection.Metadata.TypeName MakeGenericTypeName(System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.TypeName> typeArguments) { throw null; }
+        public System.Reflection.Metadata.TypeName MakePointerTypeName() { throw null; }
+        public System.Reflection.Metadata.TypeName WithAssemblyName(AssemblyNameInfo? assemblyName) { throw null; }
     }
     public sealed partial class TypeNameParseOptions
     {

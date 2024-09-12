@@ -119,7 +119,7 @@ namespace Internal.Cryptography
                 // so add it to the buffer.
                 if (!byteInProgress)
                 {
-                    Debug.Assert(index < cbHex, "index < cbHex");
+                    Debug.Assert(index < cbHex);
 
                     hex[index] = accum;
                     index++;
@@ -130,7 +130,7 @@ namespace Internal.Cryptography
             // The .NET Framework algorithm removed all whitespace before the loop, then went up to length/2
             // of what was left.  This means that in the event of odd-length input the last char is
             // ignored, no exception should be raised.
-            Debug.Assert(index == cbHex, "index == cbHex");
+            Debug.Assert(index == cbHex);
 
             return hex;
         }
@@ -343,12 +343,49 @@ namespace Internal.Cryptography
             byte[] arg,
             [CallerArgumentExpression(nameof(arg))] string? paramName = null)
         {
-            if (arg is null)
-            {
-                throw new ArgumentNullException(paramName);
-            }
+            ArgumentNullException.ThrowIfNull(arg, paramName);
 
             return arg;
+        }
+
+        internal static int HashLength(HashAlgorithmName hashAlgorithmName)
+        {
+            if (hashAlgorithmName == HashAlgorithmName.SHA1)
+            {
+                return HMACSHA1.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA256)
+            {
+                return HMACSHA256.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA384)
+            {
+                return HMACSHA384.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA512)
+            {
+                return HMACSHA512.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA3_256)
+            {
+                return HMACSHA3_256.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA3_384)
+            {
+                return HMACSHA3_384.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA3_512)
+            {
+                return HMACSHA3_512.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.MD5)
+            {
+                return HMACMD5.HashSizeInBytes;
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(hashAlgorithmName));
+            }
         }
     }
 }

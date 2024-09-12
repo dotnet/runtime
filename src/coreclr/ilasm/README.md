@@ -16,3 +16,4 @@ $ docker run --rm -v$(pwd):/runtime -w /runtime/src/coreclr/ilasm alpine \
     sh -c 'apk add bison && yacc asmparse.y -o prebuilt/asmparse.cpp'
 ```
 
+To generate grammar, see [GrammarExtractor README](GrammarExtractor/README.md).

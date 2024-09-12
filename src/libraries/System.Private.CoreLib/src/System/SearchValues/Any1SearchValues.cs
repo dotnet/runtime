@@ -24,7 +24,7 @@ namespace System.Buffers
         internal override unsafe T[] GetValues()
         {
             TImpl e0 = _e0;
-            return new[] { *(T*)&e0 };
+            return [*(T*)&e0];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -134,6 +134,7 @@ public partial class Program
 
         IsPrimitiveTests();
         IsGenericTypeTests();
+        GetGenericTypeDefinitionTests();
 
         return 100 + _errors;
     }
@@ -276,6 +277,44 @@ public partial class Program
         IsTrue(new ClassUsingIsGenericTypeOnT<int[]>().IsGenericTypeFromOtherGenericType());
     }
 
+    private static void GetGenericTypeDefinitionTests()
+    {
+        AreEqual(typeof(GenericEnumClass<SimpleEnum>).GetGenericTypeDefinition(), typeof(GenericEnumClass<>));
+        AreEqual(typeof(GenericEnumClass<>).GetGenericTypeDefinition(), typeof(GenericEnumClass<>));
+        AreEqual(typeof(IGenericInterface<string>).GetGenericTypeDefinition(), typeof(IGenericInterface<>));
+        AreEqual(typeof(IGenericInterface<>).GetGenericTypeDefinition(), typeof(IGenericInterface<>));
+        AreEqual(typeof(GenericStruct<string>).GetGenericTypeDefinition(), typeof(GenericStruct<>));
+        AreEqual(typeof(GenericStruct<>).GetGenericTypeDefinition(), typeof(GenericStruct<>));
+        AreEqual(typeof(SimpleEnum?).GetGenericTypeDefinition(), typeof(Nullable<>));
+        AreEqual(typeof(int?).GetGenericTypeDefinition(), typeof(Nullable<>));
+        AreEqual(typeof(IntPtr?).GetGenericTypeDefinition(), typeof(Nullable<>));
+        AreEqual(typeof(Nullable<>).GetGenericTypeDefinition(), typeof(Nullable<>));
+        AreEqual(typeof(KeyValuePair<int,string>).GetGenericTypeDefinition(), typeof(KeyValuePair<,>));
+        AreEqual(typeof(KeyValuePair<,>).GetGenericTypeDefinition(), typeof(KeyValuePair<,>));
+        AreEqual(typeof(Dictionary<int,string>).GetGenericTypeDefinition(), typeof(Dictionary<,>));
+        AreEqual(typeof(Dictionary<,>).GetGenericTypeDefinition(), typeof(Dictionary<,>));
+        AreEqual(typeof(List<string>).GetGenericTypeDefinition(), typeof(List<>));
+        AreEqual(typeof(List<>).GetGenericTypeDefinition(), typeof(List<>));
+        AreEqual(typeof(Action<>).GetGenericTypeDefinition(), typeof(Action<>));
+        AreEqual(typeof(Action<string>).GetGenericTypeDefinition(), typeof(Action<>));
+        AreEqual(typeof(Func<string, int>).GetGenericTypeDefinition(), typeof(Func<,>));
+        AreEqual(typeof(Func<,>).GetGenericTypeDefinition(), typeof(Func<,>));
+
+        // Test for __Canon
+        AreEqual(GetGenericTypeDefinition<GenericEnumClass<SimpleEnum>>(), typeof(GenericEnumClass<>));
+        AreEqual(GetGenericTypeDefinition<IGenericInterface<string>>(), typeof(IGenericInterface<>));
+        AreEqual(GetGenericTypeDefinition<GenericStruct<string>>(), typeof(GenericStruct<>));
+        AreEqual(GetGenericTypeDefinition<Dictionary<int,string>>(), typeof(Dictionary<,>));
+        AreEqual(GetGenericTypeDefinition<List<string>>(), typeof(List<>));
+        AreEqual(GetGenericTypeDefinition<Action<string>>(), typeof(Action<>));
+        AreEqual(GetGenericTypeDefinition<Func<string, int>>(), typeof(Func<,>));
+
+        // Test for failures
+        GetGenericTypeDefinitionThrows<int>();
+        GetGenericTypeDefinitionThrows<string>();
+        GetGenericTypeDefinitionThrows<object>();
+    }
+
     private static int _varInt = 42;
     private static int? _varNullableInt = 42;
     private static decimal _varDecimal = 42M;
@@ -310,6 +349,30 @@ public partial class Program
     private static dynamic CreateDynamic2() => new { Name = "Test" };
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type GetGenericTypeDefinition<T>() => typeof(T).GetGenericTypeDefinition();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void GetGenericTypeDefinitionThrows<T>([CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
+    {
+        bool success = false;
+
+        try
+        {
+            _ = typeof(T).GetGenericTypeDefinition();
+        }
+        catch (InvalidOperationException)
+        {
+            success = true;
+        }
+
+        if (!success)
+        {
+            Console.WriteLine($"{file}:L{line} test failed (expected: 'InvalidOperationException').");
+            _errors++;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static void IsTrue(bool expression, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
     {
         if (!expression)
@@ -325,6 +388,16 @@ public partial class Program
         if (expression)
         {
             Console.WriteLine($"{file}:L{line} test failed (expected: false).");
+            _errors++;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void AreEqual(Type left, Type right, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
+    {
+        if (left != right)
+        {
+            Console.WriteLine($"{file}:L{line} test failed (expected: '{left}' to be equal to '{right}').");
             _errors++;
         }
     }

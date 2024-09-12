@@ -719,6 +719,12 @@ namespace System.Text.Json
         {
             throw new ObjectDisposedException(nameof(JsonDocument));
         }
+
+        [DoesNotReturn]
+        public static void ThrowInsufficientExecutionStackException_JsonElementDeepEqualsInsufficientExecutionStack()
+        {
+            throw new InsufficientExecutionStackException(SR.JsonElementDeepEqualsInsufficientExecutionStack);
+        }
     }
 
     internal enum ExceptionResource

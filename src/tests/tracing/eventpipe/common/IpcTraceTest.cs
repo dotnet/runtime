@@ -344,7 +344,7 @@ namespace Tracing.Tests.Common
         // the process that created them, so we don't need to check on that platform.
         static public bool EnsureCleanEnvironment()
         {
-            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
             {
                 Func<(IEnumerable<IGrouping<int,FileInfo>>, List<int>)> getPidsAndSockets = () =>
                 {

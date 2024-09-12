@@ -58,10 +58,14 @@ struct Access
     // Number of times this is passed as a call arg. We insert writebacks
     // before these.
     unsigned CountCallArgs = 0;
+    // Number of times this is passed as a register call arg. We may be able to
+    // avoid the writeback for some overlapping replacements for these.
+    unsigned CountRegCallArgs = 0;
 
     weight_t CountWtd               = 0;
     weight_t CountStoredFromCallWtd = 0;
     weight_t CountCallArgsWtd       = 0;
+    weight_t CountRegCallArgsWtd    = 0;
 
 #ifdef DEBUG
     // Number of times this access is the source of a store.
@@ -113,12 +117,13 @@ enum class AccessKindFlags : uint32_t
 {
     None             = 0,
     IsCallArg        = 1,
-    IsStoredFromCall = 2,
-    IsCallRetBuf     = 4,
+    IsRegCallArg     = 2,
+    IsStoredFromCall = 4,
+    IsCallRetBuf     = 8,
 #ifdef DEBUG
-    IsStoreSource      = 8,
-    IsStoreDestination = 16,
-    IsReturned         = 32,
+    IsStoreSource      = 16,
+    IsStoreDestination = 32,
+    IsReturned         = 64,
 #endif
 };
 
@@ -352,6 +357,12 @@ public:
         {
             access->CountCallArgs++;
             access->CountCallArgsWtd += weight;
+
+            if ((flags & AccessKindFlags::IsRegCallArg) != AccessKindFlags::None)
+            {
+                access->CountRegCallArgs++;
+                access->CountRegCallArgsWtd += weight;
+            }
         }
 
         if ((flags & (AccessKindFlags::IsStoredFromCall | AccessKindFlags::IsCallRetBuf)) != AccessKindFlags::None)
@@ -688,6 +699,44 @@ public:
 
             countOverlappedCallArgWtd += otherAccess.CountCallArgsWtd;
             countOverlappedStoredFromCallWtd += otherAccess.CountStoredFromCallWtd;
+
+            if (otherAccess.CountRegCallArgs > 0)
+            {
+                auto willPassFieldInRegister = [=, &access, &otherAccess]() {
+                    if (access.Offset < otherAccess.Offset)
+                    {
+                        return false;
+                    }
+
+                    unsigned layoutOffset = access.Offset - otherAccess.Offset;
+                    if ((layoutOffset % TARGET_POINTER_SIZE) != 0)
+                    {
+                        return false;
+                    }
+
+                    unsigned accessSize = genTypeSize(access.AccessType);
+                    if (accessSize == TARGET_POINTER_SIZE)
+                    {
+                        return true;
+                    }
+
+                    const StructSegments& significantSegments = comp->GetSignificantSegments(otherAccess.Layout);
+                    if (!significantSegments.Intersects(
+                            StructSegments::Segment(layoutOffset + accessSize, layoutOffset + TARGET_POINTER_SIZE)))
+                    {
+                        return true;
+                    }
+
+                    return false;
+                };
+                // We may be able to decompose the call argument to require no
+                // write-back.
+                if (willPassFieldInRegister())
+                {
+                    countOverlappedCallArg -= otherAccess.CountRegCallArgs;
+                    countOverlappedCallArgWtd -= otherAccess.CountRegCallArgsWtd;
+                }
+            }
         }
 
         // We cost any normal access (which is a struct load or store) without promotion at 3 cycles.
@@ -881,6 +930,8 @@ public:
                    access.CountStoreDestinationWtd);
             printf("    # as call arg:                 (%u, " FMT_WT ")\n", access.CountCallArgs,
                    access.CountCallArgsWtd);
+            printf("    # as reg call arg:             (%u, " FMT_WT ")\n", access.CountRegCallArgs,
+                   access.CountRegCallArgsWtd);
             printf("    # as retbuf:                   (%u, " FMT_WT ")\n", access.CountPassedAsRetbuf,
                    access.CountPassedAsRetbufWtd);
             printf("    # as returned value:           (%u, " FMT_WT ")\n\n", access.CountReturns,
@@ -1430,13 +1481,31 @@ private:
 
         if (user->IsCall())
         {
-            for (CallArg& arg : user->AsCall()->gtArgs.Args())
+            GenTreeCall* call = user->AsCall();
+            for (CallArg& arg : call->gtArgs.Args())
             {
-                if (arg.GetNode()->gtEffectiveVal() == lcl)
+                if (arg.GetNode()->gtEffectiveVal() != lcl)
                 {
-                    flags |= AccessKindFlags::IsCallArg;
-                    break;
+                    continue;
                 }
+
+                flags |= AccessKindFlags::IsCallArg;
+
+#if FEATURE_MULTIREG_ARGS
+                if (!call->gtArgs.IsNewAbiInformationDetermined())
+                {
+                    call->gtArgs.DetermineNewABIInfo(m_compiler, call);
+                }
+
+                if (!arg.NewAbiInfo.HasAnyStackSegment() && !arg.NewAbiInfo.HasExactlyOneRegisterSegment())
+                {
+                    // TODO-CQ: Support for other register args than multireg
+                    // args as well.
+                    flags |= AccessKindFlags::IsRegCallArg;
+                }
+#endif
+
+                break;
             }
         }
 
@@ -1859,15 +1928,18 @@ void ReplaceVisitor::InsertPreStatementReadBacks()
 //   lcl  - The local
 //   offs - Start offset of the segment
 //   size - Size of the segment
-//   func - Callback
+//   func - Callback of type bool(Replacement&). If the callback returns false, the visit aborts.
+//
+// Return Value:
+//   false if the visitor aborted.
 //
 template <typename Func>
-void ReplaceVisitor::VisitOverlappingReplacements(unsigned lcl, unsigned offs, unsigned size, Func func)
+bool ReplaceVisitor::VisitOverlappingReplacements(unsigned lcl, unsigned offs, unsigned size, Func func)
 {
     AggregateInfo* agg = m_aggregates.Lookup(lcl);
     if (agg == nullptr)
     {
-        return;
+        return true;
     }
 
     jitstd::vector<Replacement>& replacements = agg->Replacements;
@@ -1886,10 +1958,15 @@ void ReplaceVisitor::VisitOverlappingReplacements(unsigned lcl, unsigned offs, u
     while ((index < replacements.size()) && (replacements[index].Offset < end))
     {
         Replacement& rep = replacements[index];
-        func(rep);
+        if (!func(rep))
+        {
+            return false;
+        }
 
         index++;
     }
+
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -1935,8 +2012,15 @@ void ReplaceVisitor::InsertPreStatementWriteBacks()
                 for (CallArg& arg : call->gtArgs.Args())
                 {
                     GenTree* node = arg.GetNode()->gtEffectiveVal();
-                    if (!node->TypeIs(TYP_STRUCT) || !node->OperIsLocalRead())
+                    if (!node->TypeIs(TYP_STRUCT) || !node->OperIsLocalRead() ||
+                        (m_replacer->m_aggregates.Lookup(node->AsLclVarCommon()->GetLclNum()) == nullptr))
                     {
+                        continue;
+                    }
+
+                    if (m_replacer->CanReplaceCallArgWithFieldListOfReplacements(call, &arg, node->AsLclVarCommon()))
+                    {
+                        // Multi-reg arg; can decompose into FIELD_LIST.
                         continue;
                     }
 
@@ -2019,6 +2103,180 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacks(GenTree** use)
 
     assert(m_numPendingReadBacks == 0);
     return use;
+}
+
+//------------------------------------------------------------------------
+// ReplaceCallArgWithFieldList:
+//   Handle a call that may  pass a struct local with replacements as the
+//   retbuf.
+//
+// Parameters:
+//   call    - The call
+//   argNode - The argument node
+//
+bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVarCommon* argNode)
+{
+    CallArg* callArg = call->gtArgs.FindByNode(argNode);
+    if (callArg == nullptr)
+    {
+        // TODO-CQ: Could be wrapped in a comma? Does this happen?
+        return false;
+    }
+
+    if (!CanReplaceCallArgWithFieldListOfReplacements(call, callArg, argNode))
+    {
+        return false;
+    }
+
+    AggregateInfo* agg    = m_aggregates.Lookup(argNode->GetLclNum());
+    ClassLayout*   layout = argNode->GetLayout(m_compiler);
+    assert(layout != nullptr);
+    StructDeaths      deaths    = m_liveness->GetDeathsForStructLocal(argNode);
+    GenTreeFieldList* fieldList = new (m_compiler, GT_FIELD_LIST) GenTreeFieldList;
+    for (unsigned i = 0; i < callArg->NewAbiInfo.NumSegments; i++)
+    {
+        const ABIPassingSegment& seg = callArg->NewAbiInfo.Segment(i);
+
+        Replacement* rep = nullptr;
+        if (agg->OverlappingReplacements(argNode->GetLclOffs() + seg.Offset, seg.Size, &rep, nullptr) &&
+            rep->NeedsWriteBack)
+        {
+            GenTreeLclVar* fieldValue = m_compiler->gtNewLclvNode(rep->LclNum, rep->AccessType);
+
+            if (deaths.IsReplacementDying(static_cast<unsigned>(rep - agg->Replacements.data())))
+            {
+                fieldValue->gtFlags |= GTF_VAR_DEATH;
+                CheckForwardSubForLastUse(rep->LclNum);
+            }
+
+            fieldList->AddField(m_compiler, fieldValue, seg.Offset, rep->AccessType);
+        }
+        else
+        {
+            // Unpromoted part, or replacement local is not up to date.
+            var_types type;
+            if (rep != nullptr)
+            {
+                type = rep->AccessType;
+            }
+            else if (genIsValidFloatReg(seg.GetRegister()))
+            {
+                type = seg.GetRegisterType();
+            }
+            else
+            {
+                if ((seg.Offset % TARGET_POINTER_SIZE) == 0 && (seg.Size == TARGET_POINTER_SIZE))
+                {
+                    type = layout->GetGCPtrType(seg.Offset / TARGET_POINTER_SIZE);
+                }
+                else
+                {
+                    type = seg.GetRegisterType();
+                }
+            }
+
+            GenTree* fieldValue =
+                m_compiler->gtNewLclFldNode(argNode->GetLclNum(), type, argNode->GetLclOffs() + seg.Offset);
+            fieldList->AddField(m_compiler, fieldValue, seg.Offset, type);
+
+            if (!m_compiler->lvaGetDesc(argNode->GetLclNum())->lvDoNotEnregister)
+            {
+                m_compiler->lvaSetVarDoNotEnregister(argNode->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+            }
+        }
+    }
+
+    assert(callArg->GetEarlyNode() == argNode);
+    callArg->SetEarlyNode(fieldList);
+
+    m_madeChanges = true;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// CanReplaceCallArgWithFieldListOfReplacements:
+//   Returns true if a struct arg is replaceable by a FIELD_LIST containing
+//   some replacement field.
+//
+// Parameters:
+//   call    - The call
+//   callArg - The call argument
+//   lcl     - The local that is the node of the call argument
+//
+// Returns:
+//   True if the arg can be replaced by a FIELD_LIST that contains at least one
+//   replacement.
+//
+bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*         call,
+                                                                  CallArg*             callArg,
+                                                                  GenTreeLclVarCommon* lcl)
+{
+#if !FEATURE_MULTIREG_ARGS
+    // TODO-CQ: We should do a similar thing for structs passed in a single
+    // register.
+    return false;
+#else
+    // We should have computed ABI information during the costing phase.
+    assert(call->gtArgs.IsNewAbiInformationDetermined());
+
+    if (callArg->NewAbiInfo.HasAnyStackSegment() || callArg->NewAbiInfo.HasExactlyOneRegisterSegment())
+    {
+        return false;
+    }
+
+    AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
+    assert(agg != nullptr);
+
+    bool anyReplacements = false;
+    for (unsigned i = 0; i < callArg->NewAbiInfo.NumSegments; i++)
+    {
+        const ABIPassingSegment& seg = callArg->NewAbiInfo.Segment(i);
+        assert(seg.IsPassedInRegister());
+
+        auto callback = [=, &anyReplacements, &seg](Replacement& rep) {
+            anyReplacements = true;
+
+            // Replacement must start at the right offset...
+            if (rep.Offset != lcl->GetLclOffs() + seg.Offset)
+            {
+                return false;
+            }
+
+            // It must not be too long..
+            unsigned repSize = genTypeSize(rep.AccessType);
+            if (repSize > seg.Size)
+            {
+                return false;
+            }
+
+            // If it is too short, the remainder that would be passed in the
+            // register should be padding. We can check that by only checking
+            // whether the remainder intersects anything unpromoted, since if
+            // the remainder is a different promotion we will return false when
+            // the replacement is visited in this callback.
+            if ((repSize < seg.Size) &&
+                agg->Unpromoted.Intersects(StructSegments::Segment(rep.Offset + repSize, rep.Offset + seg.Size)))
+            {
+                return false;
+            }
+
+            // Finally, the backend requires the register types to match.
+            if (!varTypeUsesSameRegType(rep.AccessType, seg.GetRegisterType()))
+            {
+                return false;
+            }
+
+            return true;
+        };
+
+        if (!VisitOverlappingReplacements(lcl->GetLclNum(), lcl->GetLclOffs() + seg.Offset, seg.Size, callback))
+        {
+            return false;
+        }
+    }
+
+    return anyReplacements;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -2187,22 +2445,27 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
                 offs + lcl->GetLayout(m_compiler)->GetSize());
 
         assert(effectiveUser->OperIs(GT_CALL, GT_RETURN, GT_SWIFT_ERROR_RET));
-        unsigned size = lcl->GetLayout(m_compiler)->GetSize();
-        WriteBackBeforeUse(use, lclNum, lcl->GetLclOffs(), size);
 
-        if (IsPromotedStructLocalDying(lcl))
+        if (!effectiveUser->IsCall() || !ReplaceCallArgWithFieldList(effectiveUser->AsCall(), lcl))
         {
-            lcl->gtFlags |= GTF_VAR_DEATH;
-            CheckForwardSubForLastUse(lclNum);
+            unsigned size = lcl->GetLayout(m_compiler)->GetSize();
+            WriteBackBeforeUse(use, lclNum, lcl->GetLclOffs(), size);
 
-            // Relying on the values in the struct local after this struct use
-            // would effectively introduce another use of the struct, so
-            // indicate that no replacements are up to date.
-            for (Replacement& rep : replacements)
+            if (IsPromotedStructLocalDying(lcl))
             {
-                SetNeedsWriteBack(rep);
+                lcl->gtFlags |= GTF_VAR_DEATH;
+                CheckForwardSubForLastUse(lclNum);
+
+                // Relying on the values in the struct local after this struct use
+                // would effectively introduce another use of the struct, so
+                // indicate that no replacements are up to date.
+                for (Replacement& rep : replacements)
+                {
+                    SetNeedsWriteBack(rep);
+                }
             }
         }
+
         return;
     }
 
@@ -2331,7 +2594,7 @@ void ReplaceVisitor::WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs
     VisitOverlappingReplacements(lcl, offs, size, [this, lcl](Replacement& rep) {
         if (!rep.NeedsWriteBack)
         {
-            return;
+            return true;
         }
 
         GenTree*   readBack = Promotion::CreateWriteBack(m_compiler, lcl, rep);
@@ -2340,6 +2603,7 @@ void ReplaceVisitor::WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs
         DISPSTMT(stmt);
         m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
         ClearNeedsWriteBack(rep);
+        return true;
     });
 }
 
@@ -2359,7 +2623,7 @@ void ReplaceVisitor::WriteBackBeforeUse(GenTree** use, unsigned lcl, unsigned of
     VisitOverlappingReplacements(lcl, offs, size, [this, &use, lcl](Replacement& rep) {
         if (!rep.NeedsWriteBack)
         {
-            return;
+            return true;
         }
 
         GenTreeOp* comma = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(),
@@ -2369,6 +2633,7 @@ void ReplaceVisitor::WriteBackBeforeUse(GenTree** use, unsigned lcl, unsigned of
 
         ClearNeedsWriteBack(rep);
         m_madeChanges = true;
+        return true;
     });
 }
 

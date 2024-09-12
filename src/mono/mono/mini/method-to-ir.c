@@ -7533,6 +7533,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), n);
 				uint32_t new_param_count = 0;
 				MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+				MonoClass *swift_self_t = mono_class_try_get_swift_self_t_class ();
 				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 				MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
 				/*
@@ -7543,6 +7544,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				for (int idx_param = 0; idx_param < n; ++idx_param) {
 					MonoType *ptype = fsig->params [idx_param];
 					MonoClass *klass = mono_class_from_mono_type_internal (ptype);
+					MonoGenericClass *gklass = mono_class_try_get_generic_class (klass);
 
 					// SwiftSelf, SwiftError, and SwiftIndirectResult are special cases where we need to preserve the class information for the codegen to handle them correctly.
 					if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error || klass == swift_indirect_result)) {
@@ -7562,9 +7564,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 								++new_param_count;
 							}
 						} else {
-							// For structs that cannot be lowered, we change the argument to byref type
+							// For structs that cannot be lowered, we change the argument to a pointer-like argument type.
+							// If SwiftSelf<T> can't be lowered, it should be passed in the same manner as SwiftSelf, via the context register.
+							if (gklass && (gklass->container_class == swift_self_t)) {
+								ptype = mono_class_get_byref_type (swift_self);
+								// The ARGLOADA should be a pointer-like type.
+								struct_base_address->klass = mono_defaults.int_class;
+							} else {
+								ptype = mono_class_get_byref_type (klass);
+							}
+
 							*sp++ = struct_base_address;
-							ptype = mono_class_get_byref_type (klass);
 
 							g_array_append_val (new_params, ptype);
 							++new_param_count;

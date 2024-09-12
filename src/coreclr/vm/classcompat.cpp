@@ -2705,13 +2705,13 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
                 if (dwMethodRVA == 0)
                     Classification = mcFCall;
                 else
-                    Classification = mcNDirect;
+                    Classification = mcPInvoke;
             }
             // The NAT_L attribute is present, marking this method as NDirect
             else
             {
                 CONSISTENCY_CHECK(hr == S_OK);
-                Classification = mcNDirect;
+                Classification = mcPInvoke;
             }
         }
         else if (IsMiRuntime(dwImplFlags))
@@ -2770,11 +2770,6 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
             {
                 // Static methods in interfaces need nothing special.
                 Classification = mcIL;
-            }
-            else if (bmtProp->fIsMngStandardItf)
-            {
-                // If the interface is a standard managed interface then allocate space for an FCall method desc.
-                Classification = mcFCall;
             }
             else if (IsMdAbstract(dwMemberAttrs))
             {
@@ -2840,7 +2835,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
         }
 
         BYTE type;
-        if ((Classification & mdfClassification)  == mcNDirect)
+        if ((Classification & mdfClassification)  == mcPInvoke)
         {
             type = METHOD_TYPE_NDIRECT;
         }

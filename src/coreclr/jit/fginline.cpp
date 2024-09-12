@@ -1975,7 +1975,7 @@ void Compiler::fgInsertInlineeArgument(
 //    * Passing of call arguments via temps
 //
 //    Newly added statements are placed just after the original call
-//    and are are given the same inline context as the call any calls
+//    and are given the same inline context as the call any calls
 //    added here will appear to have been part of the immediate caller.
 //
 Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
