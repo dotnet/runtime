@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class SyncBlock : IData<SyncBlock>
 {
     static SyncBlock IData<SyncBlock>.Create(ITarget target, TargetPointer address)
-        => new SyncBlock((Target)target, address);
+        => new SyncBlock(target, address);
 
-    public SyncBlock(Target target, TargetPointer address)
+    public SyncBlock(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.SyncBlock);
 

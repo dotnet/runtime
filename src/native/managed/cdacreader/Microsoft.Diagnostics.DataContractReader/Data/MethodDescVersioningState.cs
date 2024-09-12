@@ -7,8 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class MethodDescVersioningState : IData<MethodDescVersioningState>
 {
-    static MethodDescVersioningState IData<MethodDescVersioningState>.Create(ITarget target, TargetPointer address) => new MethodDescVersioningState((Target)target, address);
-    public MethodDescVersioningState(Target target, TargetPointer address)
+    static MethodDescVersioningState IData<MethodDescVersioningState>.Create(ITarget target, TargetPointer address) => new MethodDescVersioningState(target, address);
+    public MethodDescVersioningState(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.MethodDescVersioningState);
 

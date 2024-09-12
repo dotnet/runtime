@@ -5,8 +5,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal class GenericsDictInfo : IData<GenericsDictInfo>
 {
-    static GenericsDictInfo IData<GenericsDictInfo>.Create(ITarget target, TargetPointer address) => new GenericsDictInfo((Target)target, address);
-    public GenericsDictInfo(Target target, TargetPointer address)
+    static GenericsDictInfo IData<GenericsDictInfo>.Create(ITarget target, TargetPointer address) => new GenericsDictInfo(target, address);
+    public GenericsDictInfo(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.GenericsDictInfo);
 

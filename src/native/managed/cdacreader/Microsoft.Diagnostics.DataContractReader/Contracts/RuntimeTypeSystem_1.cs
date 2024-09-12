@@ -225,12 +225,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>
     {
-        public static InstantiatedMethodDesc Create(ITarget target, TargetPointer address) => new InstantiatedMethodDesc((Target)target, address);
+        public static InstantiatedMethodDesc Create(ITarget target, TargetPointer address) => new InstantiatedMethodDesc(target, address);
 
         private readonly TargetPointer _address;
         private readonly Data.InstantiatedMethodDesc _desc;
 
-        private InstantiatedMethodDesc(Target target, TargetPointer methodDescPointer)
+        private InstantiatedMethodDesc(ITarget target, TargetPointer methodDescPointer)
         {
             _address = methodDescPointer;
             RuntimeTypeSystem_1 rts = (RuntimeTypeSystem_1)target.Contracts.RuntimeTypeSystem;
@@ -262,13 +262,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private class DynamicMethodDesc : IData<DynamicMethodDesc>
     {
-        public static DynamicMethodDesc Create(ITarget target, TargetPointer address) => new DynamicMethodDesc((Target)target, address);
+        public static DynamicMethodDesc Create(ITarget target, TargetPointer address) => new DynamicMethodDesc(target, address);
 
         private readonly TargetPointer _address;
         private readonly Data.DynamicMethodDesc _desc;
         private readonly Data.StoredSigMethodDesc _storedSigDesc;
 
-        private DynamicMethodDesc(Target target, TargetPointer methodDescPointer)
+        private DynamicMethodDesc(ITarget target, TargetPointer methodDescPointer)
         {
             _address = methodDescPointer;
             _desc = target.ProcessedData.GetOrAdd<Data.DynamicMethodDesc>(methodDescPointer);
@@ -289,10 +289,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private class StoredSigMethodDesc : IData<StoredSigMethodDesc>
     {
-        public static StoredSigMethodDesc Create(ITarget target, TargetPointer address) => new StoredSigMethodDesc((Target)target, address);
+        public static StoredSigMethodDesc Create(ITarget target, TargetPointer address) => new StoredSigMethodDesc(target, address);
 
         public byte[] Signature { get; }
-        private StoredSigMethodDesc(Target target, TargetPointer methodDescPointer)
+        private StoredSigMethodDesc(ITarget target, TargetPointer methodDescPointer)
         {
             Data.StoredSigMethodDesc storedSigMethodDesc = target.ProcessedData.GetOrAdd<Data.StoredSigMethodDesc>(methodDescPointer);
             Signature = new byte[storedSigMethodDesc.cSig];
@@ -462,10 +462,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private class TypeInstantiation : IData<TypeInstantiation>
     {
-        public static TypeInstantiation Create(ITarget target, TargetPointer address) => new TypeInstantiation((Target)target, address);
+        public static TypeInstantiation Create(ITarget target, TargetPointer address) => new TypeInstantiation(target, address);
 
         public TypeHandle[] TypeHandles { get; }
-        private TypeInstantiation(Target target, TargetPointer typePointer)
+        private TypeInstantiation(ITarget target, TargetPointer typePointer)
         {
             RuntimeTypeSystem_1 rts = (RuntimeTypeSystem_1)target.Contracts.RuntimeTypeSystem;
             MethodTable methodTable = rts._methodTables[typePointer];
@@ -636,10 +636,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private class FunctionPointerRetAndArgs : IData<FunctionPointerRetAndArgs>
     {
-        public static FunctionPointerRetAndArgs Create(ITarget target, TargetPointer address) => new FunctionPointerRetAndArgs((Target)target, address);
+        public static FunctionPointerRetAndArgs Create(ITarget target, TargetPointer address) => new FunctionPointerRetAndArgs(target, address);
 
         public TypeHandle[] TypeHandles { get; }
-        private FunctionPointerRetAndArgs(Target target, TargetPointer typePointer)
+        private FunctionPointerRetAndArgs(ITarget target, TargetPointer typePointer)
         {
             RuntimeTypeSystem_1 rts = (RuntimeTypeSystem_1)target.Contracts.RuntimeTypeSystem;
             FnPtrTypeDesc fnPtrTypeDesc = target.ProcessedData.GetOrAdd<FnPtrTypeDesc>(typePointer);

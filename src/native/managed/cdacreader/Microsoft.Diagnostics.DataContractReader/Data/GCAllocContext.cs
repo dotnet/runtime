@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class GCAllocContext : IData<GCAllocContext>
 {
     static GCAllocContext IData<GCAllocContext>.Create(ITarget target, TargetPointer address)
-        => new GCAllocContext((Target)target, address);
+        => new GCAllocContext(target, address);
 
-    public GCAllocContext(Target target, TargetPointer address)
+    public GCAllocContext(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.GCAllocContext);
         Pointer = target.ReadPointer(address + (ulong)type.Fields[nameof(Pointer)].Offset);

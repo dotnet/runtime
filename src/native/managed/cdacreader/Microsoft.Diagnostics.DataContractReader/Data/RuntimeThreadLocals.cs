@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class RuntimeThreadLocals : IData<RuntimeThreadLocals>
 {
     static RuntimeThreadLocals IData<RuntimeThreadLocals>.Create(ITarget target, TargetPointer address)
-        => new RuntimeThreadLocals((Target)target, address);
+        => new RuntimeThreadLocals(target, address);
 
-    public RuntimeThreadLocals(Target target, TargetPointer address)
+    public RuntimeThreadLocals(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.RuntimeThreadLocals);
         AllocContext = target.ProcessedData.GetOrAdd<GCAllocContext>(address + (ulong)type.Fields[nameof(AllocContext)].Offset);

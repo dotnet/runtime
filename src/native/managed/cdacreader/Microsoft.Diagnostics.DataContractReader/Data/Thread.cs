@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class Thread : IData<Thread>
 {
     static Thread IData<Thread>.Create(ITarget target, TargetPointer address)
-        => new Thread((Target)target, address);
+        => new Thread(target, address);
 
-    public Thread(Target target, TargetPointer address)
+    public Thread(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.Thread);
 

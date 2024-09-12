@@ -7,8 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class NativeCodeVersionNode : IData<NativeCodeVersionNode>
 {
-    static NativeCodeVersionNode IData<NativeCodeVersionNode>.Create(ITarget target, TargetPointer address) => new NativeCodeVersionNode((Target)target, address);
-    public NativeCodeVersionNode(Target target, TargetPointer address)
+    static NativeCodeVersionNode IData<NativeCodeVersionNode>.Create(ITarget target, TargetPointer address) => new NativeCodeVersionNode(target, address);
+    public NativeCodeVersionNode(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.NativeCodeVersionNode);
 

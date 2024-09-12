@@ -42,16 +42,16 @@ internal class DacStreams_1 : IDacStreams
 
     internal class DacStreams_1_Data : IData<DacStreams_1_Data>
     {
-        static DacStreams_1_Data IData<DacStreams_1_Data>.Create(ITarget target, TargetPointer address) => new DacStreams_1_Data((Target)target);
+        static DacStreams_1_Data IData<DacStreams_1_Data>.Create(ITarget target, TargetPointer address) => new DacStreams_1_Data(target);
 
-        public DacStreams_1_Data(Target target)
+        public DacStreams_1_Data(ITarget target)
         {
             EEObjectToString = GetEEAddressToStringMap(target);
         }
 
         public readonly Dictionary<TargetPointer, string> EEObjectToString;
 
-        internal static Dictionary<TargetPointer, string> GetEEAddressToStringMap(Target target)
+        internal static Dictionary<TargetPointer, string> GetEEAddressToStringMap(ITarget target)
         {
             TargetPointer miniMetaDataBuffAddress = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.MiniMetaDataBuffAddress));
             uint miniMetaDataBuffMaxSize = target.Read<uint>(target.ReadGlobalPointer(Constants.Globals.MiniMetaDataBuffMaxSize));

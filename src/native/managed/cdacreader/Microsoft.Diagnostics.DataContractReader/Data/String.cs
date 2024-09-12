@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class String : IData<String>
 {
     static String IData<String>.Create(ITarget target, TargetPointer address)
-        => new String((Target)target, address);
+        => new String(target, address);
 
-    public String(Target target, TargetPointer address)
+    public String(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.String);
 

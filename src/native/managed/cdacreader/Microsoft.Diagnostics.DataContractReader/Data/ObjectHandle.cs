@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class ObjectHandle : IData<ObjectHandle>
 {
     static ObjectHandle IData<ObjectHandle>.Create(ITarget target, TargetPointer address)
-        => new ObjectHandle((Target)target, address);
+        => new ObjectHandle(target, address);
 
-    public ObjectHandle(Target target, TargetPointer address)
+    public ObjectHandle(ITarget target, TargetPointer address)
     {
         Handle = address;
         if (address != TargetPointer.Null)

@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class SyncTableEntry : IData<SyncTableEntry>
 {
     static SyncTableEntry IData<SyncTableEntry>.Create(ITarget target, TargetPointer address)
-        => new SyncTableEntry((Target)target, address);
+        => new SyncTableEntry(target, address);
 
-    public SyncTableEntry(Target target, TargetPointer address)
+    public SyncTableEntry(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.SyncTableEntry);
 

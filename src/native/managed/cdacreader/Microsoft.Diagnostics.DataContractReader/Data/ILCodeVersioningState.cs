@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class ILCodeVersioningState : IData<ILCodeVersioningState>
 {
     static ILCodeVersioningState IData<ILCodeVersioningState>.Create(ITarget target, TargetPointer address)
-        => new ILCodeVersioningState((Target)target, address);
+        => new ILCodeVersioningState(target, address);
 
-    public ILCodeVersioningState(Target target, TargetPointer address)
+    public ILCodeVersioningState(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.ILCodeVersioningState);
 

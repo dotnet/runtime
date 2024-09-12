@@ -5,9 +5,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class ModuleLookupMap : IData<ModuleLookupMap>
 {
-    static ModuleLookupMap IData<ModuleLookupMap>.Create(ITarget target, TargetPointer address) => new ModuleLookupMap((Target)target, address);
+    static ModuleLookupMap IData<ModuleLookupMap>.Create(ITarget target, TargetPointer address) => new ModuleLookupMap(target, address);
 
-    private ModuleLookupMap(Target target, TargetPointer address)
+    private ModuleLookupMap(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.ModuleLookupMap);
 

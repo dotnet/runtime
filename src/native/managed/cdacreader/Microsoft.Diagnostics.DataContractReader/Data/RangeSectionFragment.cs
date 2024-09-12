@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class RangeSectionFragment : IData<RangeSectionFragment>
 {
     static RangeSectionFragment IData<RangeSectionFragment>.Create(ITarget target, TargetPointer address)
-        => new RangeSectionFragment((Target)target, address);
+        => new RangeSectionFragment(target, address);
 
-    public RangeSectionFragment(Target target, TargetPointer address)
+    public RangeSectionFragment(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.RangeSectionFragment);
         RangeBegin = target.ReadPointer(address + (ulong)type.Fields[nameof(RangeBegin)].Offset);

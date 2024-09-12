@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class Array : IData<Array>
 {
     static Array IData<Array>.Create(ITarget target, TargetPointer address)
-        => new Array((Target)target, address);
+        => new Array(target, address);
 
-    public Array(Target target, TargetPointer address)
+    public Array(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.Array);
 

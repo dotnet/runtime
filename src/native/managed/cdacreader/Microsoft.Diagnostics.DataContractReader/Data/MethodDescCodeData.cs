@@ -6,8 +6,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class MethodDescCodeData : IData<MethodDescCodeData>
 {
-    static MethodDescCodeData IData<MethodDescCodeData>.Create(ITarget target, TargetPointer address) => new MethodDescCodeData((Target)target, address);
-    public MethodDescCodeData(Target target, TargetPointer address)
+    static MethodDescCodeData IData<MethodDescCodeData>.Create(ITarget target, TargetPointer address) => new MethodDescCodeData(target, address);
+    public MethodDescCodeData(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.MethodDescCodeData);
 

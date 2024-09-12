@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class InteropSyncBlockInfo : IData<InteropSyncBlockInfo>
 {
     static InteropSyncBlockInfo IData<InteropSyncBlockInfo>.Create(ITarget target, TargetPointer address)
-        => new InteropSyncBlockInfo((Target)target, address);
+        => new InteropSyncBlockInfo(target, address);
 
-    public InteropSyncBlockInfo(Target target, TargetPointer address)
+    public InteropSyncBlockInfo(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.InteropSyncBlockInfo);
 

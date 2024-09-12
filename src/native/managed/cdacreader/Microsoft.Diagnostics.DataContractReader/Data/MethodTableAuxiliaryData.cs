@@ -5,9 +5,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class MethodTableAuxiliaryData : IData<MethodTableAuxiliaryData>
 {
-    static MethodTableAuxiliaryData IData<MethodTableAuxiliaryData>.Create(ITarget target, TargetPointer address) => new MethodTableAuxiliaryData((Target)target, address);
+    static MethodTableAuxiliaryData IData<MethodTableAuxiliaryData>.Create(ITarget target, TargetPointer address) => new MethodTableAuxiliaryData(target, address);
 
-    private MethodTableAuxiliaryData(Target target, TargetPointer address)
+    private MethodTableAuxiliaryData(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.MethodTableAuxiliaryData);
 

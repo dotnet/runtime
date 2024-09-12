@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class StubPrecodeData : IData<StubPrecodeData>
 {
     static StubPrecodeData IData<StubPrecodeData>.Create(ITarget target, TargetPointer address)
-        => new StubPrecodeData((Target)target, address);
+        => new StubPrecodeData(target, address);
 
-    public StubPrecodeData(Target target, TargetPointer address)
+    public StubPrecodeData(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.StubPrecodeData);
         MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);

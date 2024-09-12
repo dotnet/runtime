@@ -8,11 +8,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class Module : IData<Module>
 {
     static Module IData<Module>.Create(ITarget target, TargetPointer address)
-        => new Module((Target)target, address);
+        => new Module(target, address);
 
-    private readonly Target _target;
+    private readonly ITarget _target;
 
-    public Module(Target target, TargetPointer address)
+    public Module(ITarget target, TargetPointer address)
     {
         _target = target;
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.Module);

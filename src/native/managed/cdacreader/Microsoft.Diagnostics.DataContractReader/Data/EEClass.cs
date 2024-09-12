@@ -5,8 +5,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class EEClass : IData<EEClass>
 {
-    static EEClass IData<EEClass>.Create(ITarget target, TargetPointer address) => new EEClass((Target)target, address);
-    public EEClass(Target target, TargetPointer address)
+    static EEClass IData<EEClass>.Create(ITarget target, TargetPointer address) => new EEClass(target, address);
+    public EEClass(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.EEClass);
 
@@ -35,8 +35,8 @@ internal sealed class EEClass : IData<EEClass>
 
 internal sealed class ArrayClass : IData<ArrayClass>
 {
-    static ArrayClass IData<ArrayClass>.Create(ITarget target, TargetPointer address) => new ArrayClass((Target)target, address);
-    public ArrayClass(Target target, TargetPointer address)
+    static ArrayClass IData<ArrayClass>.Create(ITarget target, TargetPointer address) => new ArrayClass(target, address);
+    public ArrayClass(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.ArrayClass);
 

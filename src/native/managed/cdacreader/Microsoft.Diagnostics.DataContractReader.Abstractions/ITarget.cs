@@ -34,11 +34,25 @@ internal interface ITarget
     void ReadBuffer(ulong address, Span<byte> buffer);
 
     /// <summary>
+    /// Read a null-terminated UTF-8 string from the target
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>String read from the target</returns>}
+    public string ReadUtf8String(ulong address);
+
+    /// <summary>
     /// Read a null-terminated UTF-16 string from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
     /// <returns>String read from the target</returns>}
     public string ReadUtf16String(ulong address);
+
+    /// <summary>
+    /// Read a native unsigned integer from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Value read from the target</returns>
+    public TargetNUInt ReadNUInt(ulong address);
 
     T ReadGlobal<T>(string name) where T : struct, INumber<T>;
 

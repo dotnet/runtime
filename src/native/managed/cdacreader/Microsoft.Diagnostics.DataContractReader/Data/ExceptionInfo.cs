@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class ExceptionInfo : IData<ExceptionInfo>
 {
     static ExceptionInfo IData<ExceptionInfo>.Create(ITarget target, TargetPointer address)
-        => new ExceptionInfo((Target)target, address);
+        => new ExceptionInfo(target, address);
 
-    public ExceptionInfo(Target target, TargetPointer address)
+    public ExceptionInfo(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.ExceptionInfo);
 

@@ -7,8 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class LoaderAllocator : IData<LoaderAllocator>
 {
-    static LoaderAllocator IData<LoaderAllocator>.Create(ITarget target, TargetPointer address) => new LoaderAllocator((Target)target, address);
-    public LoaderAllocator(Target target, TargetPointer address)
+    static LoaderAllocator IData<LoaderAllocator>.Create(ITarget target, TargetPointer address) => new LoaderAllocator(target, address);
+    public LoaderAllocator(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.LoaderAllocator);
 

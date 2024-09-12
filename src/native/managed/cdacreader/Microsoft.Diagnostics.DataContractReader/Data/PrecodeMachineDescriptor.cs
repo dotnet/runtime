@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
 {
     static PrecodeMachineDescriptor IData<PrecodeMachineDescriptor>.Create(ITarget target, TargetPointer address)
-        => new PrecodeMachineDescriptor((Target)target, address);
+        => new PrecodeMachineDescriptor(target, address);
 
-    public PrecodeMachineDescriptor(Target target, TargetPointer address)
+    public PrecodeMachineDescriptor(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.PrecodeMachineDescriptor);
         CodePointerToInstrPointerMask = target.ReadNUInt(address + (ulong)type.Fields[nameof(CodePointerToInstrPointerMask)].Offset);

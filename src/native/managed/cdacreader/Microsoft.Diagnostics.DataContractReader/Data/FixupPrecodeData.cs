@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class FixupPrecodeData : IData<FixupPrecodeData>
 {
     static FixupPrecodeData IData<FixupPrecodeData>.Create(ITarget target, TargetPointer address)
-        => new FixupPrecodeData((Target)target, address);
+        => new FixupPrecodeData(target, address);
 
-    public FixupPrecodeData(Target target, TargetPointer address)
+    public FixupPrecodeData(ITarget target, TargetPointer address)
     {
         ITarget.TypeInfo type = target.GetTypeInfo(DataType.FixupPrecodeData);
         MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
