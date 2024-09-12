@@ -25,24 +25,39 @@ record struct ModuleLookupTables(
     TargetPointer MemberRefToDesc,
     TargetPointer MethodDefToDesc,
     TargetPointer TypeDefToMethodTable,
-    TargetPointer TypeRefToMethodTable);
+    TargetPointer TypeRefToMethodTable,
+    TargetPointer MethodDefToILCodeVersioningState);
 ```
 
 ``` csharp
-ModuleHandle GetModuleHandle(TargetPointer);
+ModuleHandle GetModuleHandle(TargetPointer module);
 TargetPointer GetAssembly(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
+string GetPath(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetThunkHeap(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
-TargetPointer GetMetadataAddress(ModuleHandle handle, out ulong size);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
 ```
 
 ## Version 1
 
 Data descriptors used:
-- `Module`
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| `Module` | `Assembly` | Assembly of the Module |
+| `Module` | `Base` | Pointer to start of PE file in memory |
+| `Module` | `Flags` | Assembly of the Module |
+| `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
+| `Module` | `ThunkHeap` | Pointer to the thunk heap |
+| `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
+| `Module` | `FieldDefToDescMap` | Mapping table |
+| `Module` | `ManifestModuleReferencesMap` | Mapping table |
+| `Module` | `MemberRefToDescMap` | Mapping table |
+| `Module` | `MethodDefToDescMap` | Mapping table |
+| `Module` | `TypeDefToMethodTableMap` | Mapping table |
+| `Module` | `TypeRefToMethodTableMap` | Mapping table |
+| `ModuleLookupMap` | `TableData` | Start of the mapping table's data |
 
 ``` csharp
 ModuleHandle GetModuleHandle(TargetPointer modulePointer)
@@ -60,6 +75,13 @@ ModuleFlags GetFlags(ModuleHandle handle)
     return target.Read<uint>(handle.Address + /* Module::Flags offset */);
 }
 
+string GetPath(ModuleHandle handle)
+{
+    TargetPointer pathStart = target.ReadPointer(handle.Address + /* Module::Path offset */);
+    char[] path = // Read<char> from target starting at pathStart until null terminator
+    return new string(path);
+}
+
 TargetPointer GetLoaderAllocator(ModuleHandle handle)
 {
     return target.ReadPointer(handle.Address + /* Module::LoaderAllocator offset */);
@@ -75,25 +97,6 @@ TargetPointer GetILBase(ModuleHandle handle)
     return target.ReadPointer(handle.Address + /* Module::Base offset */);
 }
 
-TargetPointer GetMetadataAddress(ModuleHandle handle, out ulong size)
-{
-    TargetPointer baseAddress = GetILBase(handle);
-    if (baseAddress == TargetPointer.Null)
-    {
-        size = 0;
-        return TargetPointer.Null;
-    }
-
-    // Read CLR header per https://learn.microsoft.com/windows/win32/debug/pe-format
-    ulong clrHeaderRVA = ...
-
-    // Read Metadata per ECMA-335 II.25.3.3 CLI Header
-    ulong metadataDirectoryAddress = baseAddress + clrHeaderRva + /* offset to Metadata */
-    int rva = target.Read<int>(metadataDirectoryAddress);
-    size = target.Read<int>(metadataDirectoryAddress + sizeof(int));
-    return baseAddress + rva;
-}
-
 ModuleLookupTables GetLookupTables(ModuleHandle handle)
 {
     return new ModuleLookupTables(
@@ -102,6 +105,8 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle)
         MemberRefToDescMap: target.ReadPointer(handle.Address + /* Module::MemberRefToDescMap */),
         MethodDefToDescMap: target.ReadPointer(handle.Address + /* Module::MethodDefToDescMap */),
         TypeDefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeDefToMethodTableMap */),
-        TypeRefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */));
+        TypeRefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */),
+        MethodDefToILCodeVersioningState: target.ReadPointer(handle.Address + /*
+        Module::MethodDefToILCodeVersioningState */));
 }
 ```

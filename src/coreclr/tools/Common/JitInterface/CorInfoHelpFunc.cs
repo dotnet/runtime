@@ -40,8 +40,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_DBL2ULNG_OVF,
         CORINFO_HELP_FLTREM,
         CORINFO_HELP_DBLREM,
-        CORINFO_HELP_FLTROUND,
-        CORINFO_HELP_DBLROUND,
 
         /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide
            which is the right helper to use to allocate an object of a given type. */
@@ -141,27 +139,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_ASSIGN_BYREF,
         CORINFO_HELP_BULK_WRITEBARRIER,
 
-
         /* Accessing fields */
-
-        // For COM object support (using COM get/set routines to update object)
-        // and EnC and cross-context support
-        CORINFO_HELP_GETFIELD8,
-        CORINFO_HELP_SETFIELD8,
-        CORINFO_HELP_GETFIELD16,
-        CORINFO_HELP_SETFIELD16,
-        CORINFO_HELP_GETFIELD32,
-        CORINFO_HELP_SETFIELD32,
-        CORINFO_HELP_GETFIELD64,
-        CORINFO_HELP_SETFIELD64,
-        CORINFO_HELP_GETFIELDOBJ,
-        CORINFO_HELP_SETFIELDOBJ,
-        CORINFO_HELP_GETFIELDSTRUCT,
-        CORINFO_HELP_SETFIELDSTRUCT,
-        CORINFO_HELP_GETFIELDFLOAT,
-        CORINFO_HELP_SETFIELDFLOAT,
-        CORINFO_HELP_GETFIELDDOUBLE,
-        CORINFO_HELP_SETFIELDDOUBLE,
 
         CORINFO_HELP_GETFIELDADDR,
         CORINFO_HELP_GETSTATICFIELDADDR,
@@ -207,8 +185,6 @@ namespace Internal.JitInterface
 
         /* Miscellaneous */
 
-        CORINFO_HELP_BBT_FCN_ENTER,         // record the entry to a method for collecting Tuning data
-
         CORINFO_HELP_PINVOKE_CALLI,         // Indirect pinvoke call
         CORINFO_HELP_TAILCALL,              // Perform a tail call
 
@@ -223,9 +199,7 @@ namespace Internal.JitInterface
                                             // not safe for unbounded size, does not trigger GC)
 
         CORINFO_HELP_RUNTIMEHANDLE_METHOD,  // determine a type/field/method handle at run-time
-        CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG, // determine a type/field/method handle at run-time, with IBC logging
         CORINFO_HELP_RUNTIMEHANDLE_CLASS,    // determine a type/field/method handle at run-time
-        CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG, // determine a type/field/method handle at run-time, with IBC logging
 
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time, the type may be null

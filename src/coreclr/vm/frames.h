@@ -1064,6 +1064,10 @@ class FaultingExceptionFrame : public Frame
     T_CONTEXT               m_ctx;
 #endif // !FEATURE_EH_FUNCLETS
 
+#ifdef TARGET_AMD64
+    TADDR                   m_SSP;
+#endif
+
     VPTR_VTABLE_CLASS(FaultingExceptionFrame, Frame)
 
 public:
@@ -1123,6 +1127,13 @@ public:
         return &m_fFilterExecuted;
     }
 #endif // FEATURE_EH_FUNCLETS
+
+#ifdef TARGET_AMD64
+    void SetSSP(TADDR value)
+    {
+        m_SSP = value;
+    }
+#endif
 
     virtual BOOL NeedsUpdateRegDisplay()
     {
@@ -1259,7 +1270,7 @@ public:
         {
 #if defined(DACCESS_COMPILE)
             MachState unwoundState;
-            InsureInit(false, &unwoundState);
+            InsureInit(&unwoundState);
             return unwoundState.GetRetAddr();
 #else  // !DACCESS_COMPILE
             _ASSERTE(!"HMF's should always be initialized in the non-DAC world.");
@@ -1342,7 +1353,7 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    BOOL InsureInit(bool initialInit, struct MachState* unwindState);
+    BOOL InsureInit(struct MachState* unwindState);
 
     LazyMachState * MachineState() {
         LIMITED_METHOD_CONTRACT;
@@ -3188,8 +3199,8 @@ public:
     FrameType* operator&() { LIMITED_METHOD_CONTRACT; return &m_frame; }
     LazyMachState * MachineState() { WRAPPER_NO_CONTRACT; return m_frame.MachineState(); }
     Thread * GetThread() { WRAPPER_NO_CONTRACT; return m_frame.GetThread(); }
-    BOOL InsureInit(bool initialInit, struct MachState* unwindState)
-        { WRAPPER_NO_CONTRACT; return m_frame.InsureInit(initialInit, unwindState); }
+    BOOL InsureInit(struct MachState* unwindState)
+        { WRAPPER_NO_CONTRACT; return m_frame.InsureInit(unwindState); }
     void Poll() { WRAPPER_NO_CONTRACT; m_frame.Poll(); }
     void SetStackPointerPtr(TADDR sp) { WRAPPER_NO_CONTRACT; m_frame.SetStackPointerPtr(sp); }
     void InitAndLink(T_CONTEXT *pContext) { WRAPPER_NO_CONTRACT; m_frame.InitAndLink(pContext); }

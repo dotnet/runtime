@@ -9,6 +9,8 @@
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <IsPackable>true</IsPackable>
     <PackageDescription>This package includes the default implementation of IMeterFactory and additional extension methods to easily register it with the Dependency Injection framework.</PackageDescription>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>

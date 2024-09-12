@@ -178,29 +178,4 @@ do { hr = (EXPR); if(hr != ERROR_SUCCESS) { hr = HRESULT_FROM_WIN32(hr); goto LA
 #undef _ASSERT
 #define _ASSERT _ASSERTE
 
-
-#if defined(_DEBUG) && defined(HOST_WINDOWS)
-
-// This function returns the EXE time stamp (effectively a random number)
-// Under retail it always returns 0.  This is meant to be used in the
-// RandomOnExe macro
-unsigned DbgGetEXETimeStamp();
-
-// returns true 'fractionOn' amount of the time using the EXE timestamp
-// as the random number seed.  For example DbgRandomOnExe(.1) returns true 1/10
-// of the time.  We use the line number so that different uses of DbgRandomOnExe
-// will not be coorelated with each other (9973 is prime).  Returns false on a retail build
-#define DbgRandomOnHashAndExe(hash, fractionOn) \
-    (((DbgGetEXETimeStamp() * __LINE__ * ((hash) ? (hash) : 1)) % 9973) < \
-     unsigned((fractionOn) * 9973))
-#define DbgRandomOnExe(fractionOn) DbgRandomOnHashAndExe(0, fractionOn)
-
-#else
-
-#define DbgGetEXETimeStamp() 0
-#define DbgRandomOnHashAndExe(hash, fractionOn)  0
-#define DbgRandomOnExe(fractionOn)  0
-
-#endif // _DEBUG && !FEATUREPAL
-
-#endif
+#endif // __DebugMacros_h__

@@ -29,7 +29,8 @@ internal record struct ModuleLookupTables(
     TargetPointer MemberRefToDesc,
     TargetPointer MethodDefToDesc,
     TargetPointer TypeDefToMethodTable,
-    TargetPointer TypeRefToMethodTable);
+    TargetPointer TypeRefToMethodTable,
+    TargetPointer MethodDefToILCodeVersioningState);
 
 internal interface ILoader : IContract
 {
@@ -47,12 +48,11 @@ internal interface ILoader : IContract
 
     public virtual TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     public virtual ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
+    public virtual string GetPath(ModuleHandle handle) => throw new NotImplementedException();
+
     public virtual TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
     public virtual TargetPointer GetThunkHeap(ModuleHandle handle) => throw new NotImplementedException();
-
     public virtual TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
-    public virtual TargetPointer GetMetadataAddress(ModuleHandle handle, out ulong size) => throw new NotImplementedException();
-
     public virtual ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
 }
 

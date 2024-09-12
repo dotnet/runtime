@@ -172,6 +172,7 @@
     <TestEnvironment Include="jitstress_isas_2_x86_nosse41" JitStress="2" EnableSSE41="0" /> <!-- Depends on SSSE3 and SSE3_4 -->
     <TestEnvironment Include="jitstress_isas_2_x86_nosse42" JitStress="2" EnableSSE42="0" /> <!-- Depends on SSE41 -->
     <TestEnvironment Include="jitstress_isas_2_x86_nossse3" JitStress="2" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
+    <TestEnvironment Include="jitstress_isas_arm64_sve" AltJitName="clrjit_universal_arm64_x64.dll" AltJit="*" MaxVectorTBitWidth="128" EnableAVX="0" /> <!-- Trigger Sve code paths-->
     <TestEnvironment Include="jitstressregs1_x86_noavx" JitStressRegs="1" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs2_x86_noavx" JitStressRegs="2" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs3_x86_noavx" JitStressRegs="3" EnableAVX="0" />

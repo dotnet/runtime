@@ -409,7 +409,7 @@ namespace System
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is OrdinalComparer comparer))
+            if (obj is not OrdinalComparer comparer)
             {
                 return false;
             }

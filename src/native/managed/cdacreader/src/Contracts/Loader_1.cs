@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -35,6 +34,12 @@ internal readonly struct Loader_1 : ILoader
         return (ModuleFlags)module.Flags;
     }
 
+    string ILoader.GetPath(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return _target.ReadUtf16String(module.Path);
+    }
+
     TargetPointer ILoader.GetLoaderAllocator(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
@@ -53,12 +58,6 @@ internal readonly struct Loader_1 : ILoader
         return module.Base;
     }
 
-    TargetPointer ILoader.GetMetadataAddress(ModuleHandle handle, out ulong size)
-    {
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        return module.GetLoadedMetadata(out size);
-    }
-
     ModuleLookupTables ILoader.GetLookupTables(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
@@ -68,6 +67,7 @@ internal readonly struct Loader_1 : ILoader
             module.MemberRefToDescMap,
             module.MethodDefToDescMap,
             module.TypeDefToMethodTableMap,
-            module.TypeRefToMethodTableMap);
+            module.TypeRefToMethodTableMap,
+            module.MethodDefToILCodeVersioningStateMap);
     }
 }

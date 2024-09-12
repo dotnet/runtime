@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 using Swift.Runtime;
@@ -27,6 +28,10 @@ internal static partial class Interop
                 : ref MemoryMarshal.GetReference(b));
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("ios13.0")]
+        [SupportedOSPlatform("tvos13.0")]
         internal static unsafe void ChaCha20Poly1305Encrypt(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> nonce,
@@ -60,6 +65,10 @@ internal static partial class Interop
             }
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("ios13.0")]
+        [SupportedOSPlatform("tvos13.0")]
         internal static unsafe void ChaCha20Poly1305Decrypt(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> nonce,
@@ -100,6 +109,10 @@ internal static partial class Interop
             }
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("ios13.0")]
+        [SupportedOSPlatform("tvos13.0")]
         internal static unsafe void AesGcmEncrypt(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> nonce,
@@ -133,6 +146,10 @@ internal static partial class Interop
             }
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("ios13.0")]
+        [SupportedOSPlatform("tvos13.0")]
         internal static unsafe void AesGcmDecrypt(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> nonce,

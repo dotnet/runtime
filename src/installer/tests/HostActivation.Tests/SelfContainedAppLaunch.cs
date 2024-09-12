@@ -95,7 +95,7 @@ namespace HostActivation.Tests
         {
             var app = sharedTestState.App.Copy();
 
-            var renamedAppExe = app.AppExe + Binaries.GetExeFileNameForCurrentPlatform("renamed");
+            var renamedAppExe = app.AppExe + Binaries.GetExeName("renamed");
             File.Move(app.AppExe, renamedAppExe, true);
 
             Command.Create(renamedAppExe)

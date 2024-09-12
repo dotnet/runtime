@@ -36,19 +36,10 @@ namespace System.Net
             }
             else
             {
-                var errorTypeTag = KeyValuePair.Create("error.type", (object?)GetErrorType(exception));
+                string errorType = NameResolutionTelemetry.GetErrorType(exception);
+                var errorTypeTag = KeyValuePair.Create("error.type", (object?)errorType);
                 s_lookupDuration.Record(duration.TotalSeconds, hostNameTag, errorTypeTag);
             }
         }
-
-        private static string GetErrorType(Exception exception) => (exception as SocketException)?.SocketErrorCode switch
-        {
-            SocketError.HostNotFound => "host_not_found",
-            SocketError.TryAgain => "try_again",
-            SocketError.AddressFamilyNotSupported => "address_family_not_supported",
-            SocketError.NoRecovery => "no_recovery",
-
-            _ => exception.GetType().FullName!
-        };
     }
 }

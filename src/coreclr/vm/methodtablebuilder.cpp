@@ -1260,8 +1260,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     }
     CONTRACTL_END;
 
-    pModule->EnsureLibraryLoaded();
-
     // The following structs, defined as private members of MethodTableBuilder, contain the necessary local
     // parameters needed for BuildMethodTable Look at the struct definitions for a detailed list of all
     // parameters available to BuildMethodTableThrowing.
@@ -1490,13 +1488,26 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (bmtProp->fIsIntrinsicType && !bmtGenerics->HasInstantiation())
     {
-        LPCUTF8 className;
         LPCUTF8 nameSpace;
-        HRESULT hr = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &className, &nameSpace);
+        HRESULT hr = S_OK;
 
-        if (bmtInternal->pType->IsNested())
+        if (!bmtInternal->pType->IsNested())
         {
-            IfFailThrow(GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetEnclosingTypeToken(), NULL, &nameSpace));
+            hr = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), NULL, &nameSpace);
+        }
+        else
+        {
+            mdTypeDef rootEnclosingTD = bmtInternal->pType->GetEnclosingTypeToken();
+
+            mdTypeDef td = rootEnclosingTD;
+            // Some are hardware intrinsics are nested twice, so try to go
+            // another level up to get the namespace.
+            if (SUCCEEDED(GetMDImport()->GetNestedClassProps(rootEnclosingTD, &td)))
+            {
+                rootEnclosingTD = td;
+            }
+
+            IfFailThrow(GetMDImport()->GetNameOfTypeDef(td, NULL, &nameSpace));
         }
 
 #if defined(TARGET_ARM64)
@@ -1794,6 +1805,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
+    if (IsValueClass())
+    {
+        if ((int)bmtFP->NumInstanceFieldBytes != (INT64)bmtFP->NumInstanceFieldBytes)
+            BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
+    }
+
     if (CheckIfSIMDAndUpdateSize())
     {
         totalDeclaredFieldSize = bmtFP->NumInstanceFieldBytes;
@@ -1985,13 +2002,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     if (!IsValueClass())
     {
-#ifdef FEATURE_ICASTABLE
-        if (g_pICastableInterface != NULL && pMT->CanCastToInterface(g_pICastableInterface))
-        {
-            pMT->SetICastable();
-        }
-#endif // FEATURE_ICASTABLE
-
         if (g_pIDynamicInterfaceCastableInterface != NULL && pMT->CanCastToInterface(g_pIDynamicInterfaceCastableInterface))
         {
             pMT->SetIDynamicInterfaceCastable();
@@ -3170,14 +3180,14 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
                 else
                 {
-                    type = mcNDirect;
+                    type = mcPInvoke;
                 }
             }
             // The NAT_L attribute is present, marking this method as NDirect
             else
             {
                 CONSISTENCY_CHECK(hr == S_OK);
-                type = mcNDirect;
+                type = mcPInvoke;
             }
         }
         else if (IsMiRuntime(dwImplFlags))
@@ -3242,11 +3252,6 @@ MethodTableBuilder::EnumerateClassMethods()
             {
                 // Methods in instantiated interfaces need nothing special - they are not visible from COM etc.
                 type = mcIL;
-            }
-            else if (bmtProp->fIsMngStandardItf)
-            {
-                // If the interface is a standard managed interface then allocate space for an FCall method desc.
-                type = mcFCall;
             }
             else if (IsMdAbstract(dwMemberAttrs))
             {
@@ -5080,7 +5085,7 @@ MethodTableBuilder::ValidateMethods()
             {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_BAD_UNMANAGED_RVA, it.Token());
             }
-            if (it.MethodType() != mcNDirect)
+            if (it.MethodType() != mcPInvoke)
             {
                 BuildMethodTableThrowException(BFA_BAD_UNMANAGED_ENTRY_POINT);
             }
@@ -6086,7 +6091,7 @@ MethodTableBuilder::InitMethodDesc(
 
     switch (Classification)
     {
-    case mcNDirect:
+    case mcPInvoke:
         {
             // NDirect specific initialization.
             NDirectMethodDesc *pNewNMD = (NDirectMethodDesc*)pNewMD;
@@ -6848,7 +6853,7 @@ VOID MethodTableBuilder::ValidateInterfaceMethodConstraints()
 
             // Grab the method token
             MethodTable * pMTItf = pItf->GetMethodTable();
-            CONSISTENCY_CHECK(CheckPointer(pMTItf->GetMethodDescForSlot(it.GetSlotNumber())));
+            CONSISTENCY_CHECK(CheckPointer(pMTItf->GetMethodDescForSlot_NoThrow(it.GetSlotNumber())));
             mdMethodDef mdTok = pItf->GetMethodTable()->GetMethodDescForSlot(it.GetSlotNumber())->GetMemberDef();
 
             // Default to the current module. The code immediately below determines if this
@@ -6935,9 +6940,6 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
     SIZE_T sizeOfMethodDescs = 0; // current running size of methodDesc chunk
     int startIndex = 0; // start of the current chunk (index into bmtMethod array)
 
-    // Limit the maximum MethodDescs per chunk by the number of precodes that can fit to a single memory page,
-    // since we allocate consecutive temporary entry points for all MethodDescs in the whole chunk.
-    DWORD maxPrecodesPerPage = Precode::GetMaxTemporaryEntryPointsCount();
     DWORD methodDescCount = 0;
 
     DeclaredMethodIterator it(*this);
@@ -6978,8 +6980,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         }
 
         if (tokenRange != currentTokenRange ||
-            sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs ||
-            methodDescCount + currentSlotMethodDescCount > maxPrecodesPerPage)
+            sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs)
         {
             if (sizeOfMethodDescs != 0)
             {
@@ -7021,10 +7022,10 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
 
     PTR_LoaderHeap pHeap = GetLoaderAllocator()->GetHighFrequencyHeap();
     void * pMem = GetMemTracker()->Track(
-        pHeap->AllocMem(S_SIZE_T(sizeof(TADDR) + sizeof(MethodDescChunk) + sizeOfMethodDescs)));
+        pHeap->AllocMem(S_SIZE_T(sizeof(MethodDescChunk) + sizeOfMethodDescs)));
 
     // Skip pointer to temporary entrypoints
-    MethodDescChunk * pChunk = (MethodDescChunk *)((BYTE*)pMem + sizeof(TADDR));
+    MethodDescChunk * pChunk = (MethodDescChunk *)((BYTE*)pMem);
 
     COUNT_T methodDescCount = 0;
 
@@ -7045,8 +7046,6 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
         MethodDesc * pMD = (MethodDesc *)((BYTE *)pChunk + offset);
 
         pMD->SetChunkIndex(pChunk);
-        pMD->SetMethodDescIndex(methodDescCount);
-
         InitNewMethodDesc(pMDMethod, pMD);
 
 #ifdef _PREFAST_
@@ -7089,7 +7088,6 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
 
             // Reset the chunk index
             pUnboxedMD->SetChunkIndex(pChunk);
-            pUnboxedMD->SetMethodDescIndex(methodDescCount);
 
             if (bmtGenerics->GetNumGenericArgs() == 0) {
                 pUnboxedMD->SetHasNonVtableSlot();
@@ -9232,7 +9230,7 @@ void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT)
             // fix up wrongly-inherited method descriptors
             MethodDesc* pMD = hMTData->GetImplMethodDesc(i);
             CONSISTENCY_CHECK(CheckPointer(pMD));
-            CONSISTENCY_CHECK(pMD == pMT->GetMethodDescForSlot(i));
+            CONSISTENCY_CHECK(pMD == pMT->GetMethodDescForSlot_NoThrow(i));
 
             if (pMD->GetMethodTable() == pMT)
                 continue;
@@ -10821,9 +10819,8 @@ MethodTableBuilder::SetupMethodTable2(
     {
         for (MethodDescChunk *pChunk = GetHalfBakedClass()->GetChunks(); pChunk != NULL; pChunk = pChunk->GetNextChunk())
         {
-            // Make sure that temporary entrypoints are create for methods. NGEN uses temporary
-            // entrypoints as surrogate keys for precodes.
-            pChunk->EnsureTemporaryEntryPointsCreated(GetLoaderAllocator(), GetMemTracker());
+            // Make sure that eligibility for versionability is computed
+            pChunk->DetermineAndSetIsEligibleForTieredCompilation();
         }
     }
 
@@ -10863,7 +10860,7 @@ MethodTableBuilder::SetupMethodTable2(
                 //
                 DWORD indirectionIndex = MethodTable::GetIndexOfVtableIndirection(iCurSlot);
                 if (GetParentMethodTable()->GetVtableIndirections()[indirectionIndex] != pMT->GetVtableIndirections()[indirectionIndex])
-                    pMT->SetSlot(iCurSlot, pMD->GetInitialEntryPointForCopiedSlot());
+                    pMT->SetSlot(iCurSlot, pMD->GetInitialEntryPointForCopiedSlot(pMT, GetMemTracker()));
             }
             else
             {
@@ -10872,7 +10869,13 @@ MethodTableBuilder::SetupMethodTable2(
                 //
                 _ASSERTE(iCurSlot >= bmtVT->cVirtualSlots || ChangesImplementationOfVirtualSlot(iCurSlot));
 
-                PCODE addr = pMD->GetTemporaryEntryPoint();
+                if ((pMD->GetSlot() == iCurSlot) && (GetParentMethodTable() == NULL || iCurSlot >= GetParentMethodTable()->GetNumVirtuals()))
+                    continue; // For cases where the method is defining the method desc slot, we don't need to fill it in yet
+
+                pMD->EnsureTemporaryEntryPointCore(GetMemTracker());
+                // Use the IfExists variant, as GetTemporaryEntrypoint isn't safe to call during MethodTable construction, as it might allocate
+                // without using the MemTracker.
+                PCODE addr = pMD->GetTemporaryEntryPointIfExists();
                 _ASSERTE(addr != (PCODE)NULL);
 
                 if (pMD->HasNonVtableSlot())
@@ -10888,7 +10891,7 @@ MethodTableBuilder::SetupMethodTable2(
                 {
                     // The rest of the system assumes that certain methods always have stable entrypoints.
                     // Create them now.
-                    pMD->GetOrCreatePrecode();
+                    pMD->MarkPrecodeAsStableEntrypoint();
                 }
             }
         }
@@ -10937,7 +10940,7 @@ MethodTableBuilder::SetupMethodTable2(
                 MethodDesc* pMD = hMTData->GetImplMethodDesc(i);
 
                 CONSISTENCY_CHECK(CheckPointer(pMD));
-                CONSISTENCY_CHECK(pMD == pMT->GetMethodDescForSlot(i));
+                CONSISTENCY_CHECK(pMD == pMT->GetMethodDescForSlot_NoThrow(i));
 
                 // This indicates that the method body in this slot was copied here through a methodImpl.
                 // Thus, copy the value of the slot from which the body originally came, in case it was
@@ -10947,11 +10950,11 @@ MethodTableBuilder::SetupMethodTable2(
                 {
                     MethodDesc *pOriginalMD = hMTData->GetImplMethodDesc(originalIndex);
                     CONSISTENCY_CHECK(CheckPointer(pOriginalMD));
-                    CONSISTENCY_CHECK(pOriginalMD == pMT->GetMethodDescForSlot(originalIndex));
+                    CONSISTENCY_CHECK(pOriginalMD == pMT->GetMethodDescForSlot_NoThrow(originalIndex));
                     if (pMD != pOriginalMD)
                     {
                         // Copy the slot value in the method's original slot.
-                        pMT->SetSlot(i, pOriginalMD->GetInitialEntryPointForCopiedSlot());
+                        pMT->SetSlot(i, pOriginalMD->GetInitialEntryPointForCopiedSlot(pMT, GetMemTracker()));
                         hMTData->InvalidateCachedVirtualSlot(i);
 
                         // Update the pMD to the new method desc we just copied over ourselves with. This will
@@ -11008,8 +11011,7 @@ MethodTableBuilder::SetupMethodTable2(
                     // If we fail to find an _IMPLEMENTATION_ for the interface MD, then
                     // we are a ComImportMethod, otherwise we still be a ComImportMethod or
                     // we can be a ManagedMethod.
-                    DispatchSlot impl(it.GetTarget());
-                    if (!impl.IsNull())
+                    if (!it.IsTargetNull())
                     {
                         pClsMD = it.GetMethodDesc();
 
@@ -11250,7 +11252,7 @@ void MethodTableBuilder::VerifyVirtualMethodsImplemented(MethodTable::MethodData
             MethodTable::MethodIterator it(hData);
             for (; it.IsValid() && it.IsVirtual(); it.Next())
             {
-                if (it.GetTarget().IsNull())
+                if (it.IsTargetNull())
                 {
                     MethodDesc *pMD = it.GetDeclMethodDesc();
 
@@ -11361,10 +11363,8 @@ VOID MethodTableBuilder::CheckForRemotingProxyAttrib()
 
 
 //*******************************************************************************
-// Checks for a bunch of special interface names and if it matches then it sets
-// bmtProp->fIsMngStandardItf to TRUE. Additionally, it checks to see if the
-// type is an interface and if it has ComEventInterfaceAttribute custom attribute
-// set, then it sets bmtProp->fComEventItfType to true.
+// Checks to see if the type is an interface and if it has ComEventInterfaceAttribute
+// custom attribute set, then it sets bmtProp->fComEventItfType to true.
 //
 // NOTE: This only does anything when COM interop is enabled.
 
@@ -11372,54 +11372,6 @@ VOID MethodTableBuilder::CheckForSpecialTypes()
 {
 #ifdef FEATURE_COMINTEROP
     STANDARD_VM_CONTRACT;
-
-
-    Module *pModule = GetModule();
-    IMDInternalImport *pMDImport = pModule->GetMDImport();
-
-    // Check to see if this type is a managed standard interface. All the managed
-    // standard interfaces live in CoreLib so checking for that first
-    // makes the strcmp that comes afterwards acceptable.
-    if (pModule->IsSystem())
-    {
-        if (IsInterface())
-        {
-            LPCUTF8 pszClassName;
-            LPCUTF8 pszClassNamespace;
-            if (FAILED(pMDImport->GetNameOfTypeDef(GetCl(), &pszClassName, &pszClassNamespace)))
-            {
-                pszClassName = pszClassNamespace = NULL;
-            }
-            if ((pszClassName != NULL) && (pszClassNamespace != NULL))
-            {
-                LPUTF8 pszFullyQualifiedName = NULL;
-                MAKE_FULLY_QUALIFIED_NAME(pszFullyQualifiedName, pszClassNamespace, pszClassName);
-
-                // This is just to give us a scope to break out of.
-                do
-                {
-
-#define MNGSTDITF_BEGIN_INTERFACE(FriendlyName, strMngItfName, strUCOMMngItfName, strCustomMarshalerName, strCustomMarshalerCookie, strManagedViewName, NativeItfIID, bCanCastOnNativeItfQI) \
-                    if (strcmp(strMngItfName, pszFullyQualifiedName) == 0) \
-                    { \
-                        bmtProp->fIsMngStandardItf = true; \
-                        break; \
-                    }
-
-#define MNGSTDITF_DEFINE_METH_IMPL(FriendlyName, ECallMethName, MethName, MethSig, FcallDecl)
-
-#define MNGSTDITF_END_INTERFACE(FriendlyName)
-
-#include "mngstditflist.h"
-
-#undef MNGSTDITF_BEGIN_INTERFACE
-#undef MNGSTDITF_DEFINE_METH_IMPL
-#undef MNGSTDITF_END_INTERFACE
-
-                } while (FALSE);
-            }
-        }
-    }
 
     // Check to see if the type is a COM event interface (classic COM interop only).
     if (IsInterface())

@@ -103,8 +103,8 @@ namespace System
             GC_ALLOC_PINNED_OBJECT_HEAP = 64,
         };
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Array AllocateNewArray(IntPtr typeHandle, int length, GC_ALLOC_FLAGS flags);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AllocateNewArray")]
+        private static partial void AllocateNewArray(IntPtr typeHandlePtr, int length, GC_ALLOC_FLAGS flags, ObjectHandleOnStack ret);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
         private static partial long GetTotalMemory();
@@ -291,10 +291,7 @@ namespace System
             object? obj = GCHandle.InternalGet(wo.WeakHandle);
             KeepAlive(wo);
 
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(wo));
-            }
+            ArgumentNullException.ThrowIfNull(obj, nameof(wo));
 
             return GetGeneration(obj);
         }
@@ -790,22 +787,29 @@ namespace System
                 // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
 #if !DEBUG
                 // small arrays are allocated using `new[]` as that is generally faster.
-#pragma warning disable 8500 // sizeof of managed types
                 if (length < 2048 / sizeof(T))
-#pragma warning restore 8500
                 {
                     return new T[length];
                 }
-
 #endif
             }
 
-            // Runtime overrides GC_ALLOC_ZEROING_OPTIONAL if the type contains references, so we don't need to worry about that.
-            GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
-            if (pinned)
-                flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
+            return AllocateNewArrayWorker(length, pinned);
 
-            return Unsafe.As<T[]>(AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags));
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static T[] AllocateNewArrayWorker(int length, bool pinned)
+            {
+                // Runtime overrides GC_ALLOC_ZEROING_OPTIONAL if the type contains references, so we don't need to worry about that.
+                GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
+                if (pinned)
+                {
+                    flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
+                }
+
+                T[]? result = null;
+                AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result));
+                return result!;
+            }
         }
 
         /// <summary>
@@ -823,7 +827,9 @@ namespace System
                 flags = GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
             }
 
-            return Unsafe.As<T[]>(AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags));
+            T[]? result = null;
+            AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result));
+            return result!;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -892,9 +898,7 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-#pragma warning disable CS8500 // takes address of managed type
             _EnumerateConfigurationValues(&context, &ConfigCallback);
-#pragma warning restore CS8500
             return context.Configurations!;
         }
 

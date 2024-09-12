@@ -104,7 +104,7 @@ namespace System.Runtime.Loader
             _nativeSearchPaths = SplitPathsList(nativeSearchPathsList);
             _resourceSearchPaths = SplitPathsList(resourceSearchPathsList);
 
-            _assemblyDirectorySearchPaths = new string[1] { Path.GetDirectoryName(componentAssemblyPath)! };
+            _assemblyDirectorySearchPaths = [Path.GetDirectoryName(componentAssemblyPath)!];
         }
 
         public string? ResolveAssemblyToPath(AssemblyName assemblyName)

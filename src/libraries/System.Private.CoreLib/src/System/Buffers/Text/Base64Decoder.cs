@@ -18,8 +18,8 @@ namespace System.Buffers.Text
         /// <param name="bytes">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <param name="bytesConsumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
         /// <param name="bytesWritten">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
-        /// <param name="isFinalBlock"><see langword="true"/> (default) when the input span contains the entire data to encode.
-        /// Set to <see langword="true"/> when the source buffer contains the entirety of the data to encode.
+        /// <param name="isFinalBlock"><see langword="true"/> (default) when the input span contains the entire data to decode.
+        /// Set to <see langword="true"/> when the source buffer contains the entirety of the data to decode.
         /// Set to <see langword="false"/> if this method is being called in a loop and if more input data may follow.
         /// At the end of the loop, call this (potentially with an empty source buffer) passing <see langword="true"/>.</param>
         /// <returns>It returns the OperationStatus enum values:

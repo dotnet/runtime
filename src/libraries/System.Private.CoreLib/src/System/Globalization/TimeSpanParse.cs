@@ -1234,22 +1234,13 @@ namespace System.Globalization
 
             if (format.Length == 1)
             {
-                switch (format[0])
+                return format[0] switch
                 {
-                    case 'c':
-                    case 't':
-                    case 'T':
-                        return TryParseTimeSpanConstant(input, ref result); // fast path for legacy style TimeSpan formats.
-
-                    case 'g':
-                        return TryParseTimeSpan(input, TimeSpanStandardStyles.Localized, formatProvider, ref result);
-
-                    case 'G':
-                        return TryParseTimeSpan(input, TimeSpanStandardStyles.Localized | TimeSpanStandardStyles.RequireFull, formatProvider, ref result);
-
-                    default:
-                        return result.SetBadFormatSpecifierFailure(format[0]);
-                }
+                    'c' or 't' or 'T' => TryParseTimeSpanConstant(input, ref result), // fast path for legacy style TimeSpan formats.
+                    'g' => TryParseTimeSpan(input, TimeSpanStandardStyles.Localized, formatProvider, ref result),
+                    'G' => TryParseTimeSpan(input, TimeSpanStandardStyles.Localized | TimeSpanStandardStyles.RequireFull, formatProvider, ref result),
+                    _ => result.SetBadFormatSpecifierFailure(format[0]),
+                };
             }
 
             return TryParseByFormat(input, format, styles, ref result);

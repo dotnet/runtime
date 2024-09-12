@@ -1350,6 +1350,14 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.CosSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void CosSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector3 actualResult = Vector3.Cos(Vector3.Create(value));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Create(variance));
+        }
+
+        [Theory]
         [MemberData(nameof(GenericMathTestMemberData.ExpSingle), MemberType = typeof(GenericMathTestMemberData))]
         public void ExpSingleTest(float value, float expectedResult, float variance)
         {
@@ -1522,6 +1530,23 @@ namespace System.Numerics.Tests
         {
             Vector3 actualResult = Vector3.Round(Vector3.Create(value), MidpointRounding.ToEven);
             AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector3 actualResult = Vector3.Sin(Vector3.Create(value));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinCosSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinCosSingleTest(float value, float expectedResultSin, float expectedResultCos, float allowedVarianceSin, float allowedVarianceCos)
+        {
+            (Vector3 resultSin, Vector3 resultCos) = Vector3.SinCos(Vector3.Create(value));
+            AssertEqual(Vector3.Create(expectedResultSin), resultSin, Vector3.Create(allowedVarianceSin));
+            AssertEqual(Vector3.Create(expectedResultCos), resultCos, Vector3.Create(allowedVarianceCos));
         }
 
         [Theory]

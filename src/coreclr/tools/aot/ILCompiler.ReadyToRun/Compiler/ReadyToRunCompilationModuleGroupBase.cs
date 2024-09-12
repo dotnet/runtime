@@ -860,7 +860,7 @@ namespace ILCompiler
                 return true;
             }
 
-            Debug.Assert(false, "Unhandled form of type in VersionsWithTypeReference");
+            Debug.Fail("Unhandled form of type in VersionsWithTypeReference");
             return false;
         }
 

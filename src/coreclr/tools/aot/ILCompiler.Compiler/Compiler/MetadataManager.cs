@@ -21,6 +21,7 @@ using CombinedDependencyListEntry = ILCompiler.DependencyAnalysisFramework.Depen
 using MethodIL = Internal.IL.MethodIL;
 using CustomAttributeValue = System.Reflection.Metadata.CustomAttributeValue<Internal.TypeSystem.TypeDesc>;
 using MethodSignature = Internal.TypeSystem.MethodSignature;
+using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
 
 using MetadataRecord = Internal.Metadata.NativeFormat.Writer.MetadataRecord;
 using MetadataWriter = Internal.Metadata.NativeFormat.Writer.MetadataWriter;
@@ -77,16 +78,19 @@ namespace ILCompiler
         private readonly SortedSet<TypeDesc> _typeTemplates = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MetadataType> _typesWithGenericStaticBaseInfo = new SortedSet<MetadataType>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _genericMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
+        private readonly SortedSet<MethodDesc> _exactMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly HashSet<TypeDesc> _usedInterfaces = new HashSet<TypeDesc>();
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
+
+        internal FlowAnnotations FlowAnnotations { get; }
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
 
         public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy,
             ManifestResourceBlockingPolicy resourceBlockingPolicy, string logFile, StackTraceEmissionPolicy stackTracePolicy,
             DynamicInvokeThunkGenerationPolicy dynamicInvokeThunkGenerationPolicy,
-            MetadataManagerOptions options)
+            MetadataManagerOptions options, FlowAnnotations flowAnnotations)
         {
             _typeSystemContext = typeSystemContext;
             _blockingPolicy = blockingPolicy;
@@ -95,6 +99,8 @@ namespace ILCompiler
             _options = options;
             _metadataLogFile = logFile;
             _stackTraceEmissionPolicy = stackTracePolicy;
+
+            FlowAnnotations = flowAnnotations;
         }
 
         public bool IsDataDehydrated => (_options & MetadataManagerOptions.DehydrateData) != 0;
@@ -330,6 +336,11 @@ namespace ILCompiler
                 _genericMethodHashtableEntries.Add(genericMethodsHashtableEntryNode.Method);
             }
 
+            if (obj is ExactMethodInstantiationsEntryNode exactMethodsHashtableEntryNode)
+            {
+                _exactMethodHashtableEntries.Add(exactMethodsHashtableEntryNode.Method);
+            }
+
             if (obj is InterfaceUseNode interfaceUse)
             {
                 _usedInterfaces.Add(interfaceUse.Type);
@@ -337,6 +348,23 @@ namespace ILCompiler
         }
 
         protected virtual bool AllMethodsCanBeReflectable => false;
+
+        public bool IsTypeInstantiationReflectionVisible(TypeDesc type)
+        {
+            if (FlowAnnotations == null)
+                return false;
+
+            if (FlowAnnotations.HasGenericParameterAnnotation(type))
+                return true;
+
+            foreach (TypeDesc instArg in type.Instantiation)
+            {
+                if (IsTypeInstantiationReflectionVisible(instArg))
+                    return true;
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// Is a method that is reflectable a method which should be placed into the invoke map as invokable?
@@ -605,11 +633,6 @@ namespace ILCompiler
         /// </summary>
         public void GetDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, MethodIL methodIL)
         {
-            if (method.HasInstantiation)
-            {
-                ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(ref dependencies, factory, method);
-            }
-
             InlineableStringsResourceNode.AddDependenciesDueToResourceStringUse(ref dependencies, factory, method);
 
             GetDependenciesDueToMethodCodePresenceInternal(ref dependencies, factory, method, methodIL);
@@ -1012,6 +1035,11 @@ namespace ILCompiler
             return _genericMethodHashtableEntries;
         }
 
+        public IEnumerable<MethodDesc> GetExactMethodHashtableEntries()
+        {
+            return _exactMethodHashtableEntries;
+        }
+
         public bool IsInterfaceUsed(TypeDesc type)
         {
             Debug.Assert(type.IsTypeDefinition);
@@ -1186,7 +1214,7 @@ namespace ILCompiler
             return null;
         }
 
-        public virtual void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
+        public virtual void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod, TypeSystemEntity origin = null)
         {
         }
     }

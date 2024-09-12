@@ -116,7 +116,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     await connection.ReadRequestDataAsync();
-                    await connection.SendResponseAsync($"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R)}\r\nContent-Length: 1000\r\n\r\n");
+                    await connection.SendResponseAsync(LoopbackServer.GetHttpResponseHeaders(contentLength: 1000));
                     await tcs.Task;
                 });
             });

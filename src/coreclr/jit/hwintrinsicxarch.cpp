@@ -126,6 +126,8 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
     {
         case InstructionSet_AVX10v1:
             return InstructionSet_AVX10v1_V512;
+        case InstructionSet_AVX10v1_X64:
+            return InstructionSet_AVX10v1_V512_X64;
         default:
             return InstructionSet_NONE;
     }
@@ -313,15 +315,18 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
 //
 // Arguments:
 //    className -- The name of the class associated with the InstructionSet to lookup
-//    enclosingClassName -- The name of the enclosing class of X64 classes
+//    innerEnclosingClassName -- The name of the inner enclosing class of X64 classes
+//    outerEnclosingClassName -- The name of the outer enclosing class of X64 classes
 //
 // Return Value:
 //    The InstructionSet associated with className and enclosingClassName
-CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const char* enclosingClassName)
+CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className,
+                                                  const char* innerEnclosingClassName,
+                                                  const char* outerEnclosingClassName)
 {
     assert(className != nullptr);
 
-    if (enclosingClassName == nullptr)
+    if (innerEnclosingClassName == nullptr)
     {
         // No nested class is the most common, so fast path it
         return lookupInstructionSet(className);
@@ -331,7 +336,7 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
     // or intrinsics in the platform specific namespace, we assume
     // that it will be one we can handle and don't try to early out.
 
-    CORINFO_InstructionSet enclosingIsa = lookupInstructionSet(enclosingClassName);
+    CORINFO_InstructionSet enclosingIsa = lookupIsa(innerEnclosingClassName, outerEnclosingClassName, nullptr);
 
     if (className[0] == 'V')
     {
@@ -879,7 +884,9 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_X86Serialize:
         case InstructionSet_X86Serialize_X64:
         case InstructionSet_AVX10v1:
+        case InstructionSet_AVX10v1_X64:
         case InstructionSet_AVX10v1_V512:
+        case InstructionSet_AVX10v1_V512_X64:
         case InstructionSet_EVEX:
         {
             return true;
@@ -1394,19 +1401,77 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_SSE_AndNot:
+        case NI_SSE2_AndNot:
+        case NI_AVX_AndNot:
+        case NI_AVX2_AndNot:
+        case NI_AVX512F_AndNot:
+        case NI_AVX512DQ_AndNot:
+        case NI_AVX10v1_V512_AndNot:
+        {
+            assert(sig->numArgs == 2);
+
+            // We don't want to support creating AND_NOT nodes prior to LIR
+            // as it can break important optimizations. We'll produces this
+            // in lowering instead so decompose into the individual operations
+            // on import, taking into account that despite the name, these APIs
+            // do (~op1 & op2), so we need to account for that
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            if (IsBaselineSimdIsaSupported())
+            {
+                op1     = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize));
+                retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                // We need to ensure we import even if SSE2 is disabled
+                assert(intrinsic == NI_SSE_AndNot);
+
+                op3 = gtNewAllBitsSetConNode(retType);
+
+                op1 = gtNewSimdHWIntrinsicNode(retType, op1, op3, NI_SSE_Xor, simdBaseJitType, simdSize);
+                op1 = gtFoldExpr(op1);
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_SSE_And, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
+        case NI_BMI1_AndNot:
+        case NI_BMI1_X64_AndNot:
+        {
+            assert(sig->numArgs == 2);
+
+            // The same general reasoning for the decomposition exists here as
+            // given above for the SIMD AndNot APIs.
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            op1     = gtFoldExpr(gtNewOperNode(GT_NOT, retType, op1));
+            retNode = gtNewOperNode(GT_AND, retType, op1, op2);
+            break;
+        }
+
         case NI_Vector128_AndNot:
         case NI_Vector256_AndNot:
         case NI_Vector512_AndNot:
         {
             assert(sig->numArgs == 2);
 
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            // We don't want to support creating AND_NOT nodes prior to LIR
+            // as it can break important optimizations. We'll produces this
+            // in lowering instead so decompose into the individual operations
+            // on import
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdBinOpNode(GT_AND_NOT, retType, op1, op2, simdBaseJitType, simdSize);
+            op2     = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op2, simdBaseJitType, simdSize));
+            retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2273,16 +2338,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     }
                 }
 
-                if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->OperIsConst())
+                if (varTypeIsLong(simdBaseType))
                 {
-                    // When op2 is a constant, we can skip the multiplication allowing us to always
-                    // generate better code. However, if it isn't then we need to fallback in the
-                    // cases where multiplication isn't supported.
-
-                    if ((simdSize != 64) && !canUseEvexEncoding())
+                    if (!impStackTop(0).val->OperIsConst())
                     {
-                        // TODO-XARCH-CQ: We should support long/ulong multiplication
-                        break;
+                        // When op2 is a constant, we can skip the multiplication allowing us to always
+                        // generate better code. However, if it isn't then we need to fallback in the
+                        // cases where multiplication isn't supported.
+
+                        if ((simdSize != 64) && !canUseEvexEncoding())
+                        {
+                            // TODO-XARCH-CQ: We should support long/ulong multiplication
+                            break;
+                        }
                     }
 
 #if defined(TARGET_X86)
@@ -3409,7 +3477,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!indices->IsVectorConst() || !IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
+            if (!indices->IsCnsVec() || !IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
             {
                 assert(sig->numArgs == 2);
 
@@ -4735,7 +4803,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             int immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
 
             op3 = impPopStack().val;
-            op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immLowerBound, immUpperBound);
+            op3 = addRangeCheckIfNeeded(intrinsic, op3, immLowerBound, immUpperBound);
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
@@ -4993,6 +5061,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
+            impSpillSideEffect(true, verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 for ZeroHighBits"));
+
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impPopStack().val;
             // Instruction BZHI requires to encode op2 (3rd register) in VEX.vvvv and op1 maybe memory operand,
@@ -5009,6 +5079,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 return nullptr;
             }
             assert(sig->numArgs == 2);
+
+            impSpillSideEffect(true, verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 for BitFieldExtract"));
 
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impPopStack().val;

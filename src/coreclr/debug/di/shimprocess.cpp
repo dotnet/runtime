@@ -1654,3 +1654,12 @@ bool ShimProcess::IsThreadSuspendedOrHijacked(ICorDebugThread * pThread)
 {
     return m_pProcess->IsThreadSuspendedOrHijacked(pThread);
 }
+
+bool ShimProcess::IsUnmanagedThreadHijacked(ICorDebugThread * pThread)
+{
+#ifdef FEATURE_INTEROP_DEBUGGING
+    return m_pProcess->IsUnmanagedThreadHijacked(pThread);
+#else
+    return false;
+#endif
+}

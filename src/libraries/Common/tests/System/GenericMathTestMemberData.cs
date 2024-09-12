@@ -198,6 +198,86 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> CosDouble
+        {
+            get
+            {
+                yield return new object[] {  double.NegativeInfinity,  double.NaN,          0.0 };
+                yield return new object[] { -3.1415926535897932,      -1.0,                 DoubleCrossPlatformMachineEpsilon * 10 }; // value: -(pi)
+                yield return new object[] { -2.7182818284590452,      -0.91173391478696510, DoubleCrossPlatformMachineEpsilon };      // value: -(e)
+                yield return new object[] { -2.3025850929940457,      -0.66820151019031295, DoubleCrossPlatformMachineEpsilon };      // value: -(ln(10))
+                yield return new object[] { -1.5707963267948966,       0.0,                 DoubleCrossPlatformMachineEpsilon };      // value: -(pi / 2)
+                yield return new object[] { -1.4426950408889634,       0.12775121753523991, DoubleCrossPlatformMachineEpsilon };      // value: -(log2(e))
+                yield return new object[] { -1.4142135623730950,       0.15594369476537447, DoubleCrossPlatformMachineEpsilon };      // value: -(sqrt(2))
+                yield return new object[] { -1.1283791670955126,       0.42812514788535792, DoubleCrossPlatformMachineEpsilon };      // value: -(2 / sqrt(pi))
+                yield return new object[] { -1.0,                      0.54030230586813972, DoubleCrossPlatformMachineEpsilon };
+                yield return new object[] { -0.78539816339744831,      0.70710678118654752, DoubleCrossPlatformMachineEpsilon };      // value: -(pi / 4),        expected:  (1 / sqrt(2))
+                yield return new object[] { -0.70710678118654752,      0.76024459707563015, DoubleCrossPlatformMachineEpsilon };      // value: -(1 / sqrt(2))
+                yield return new object[] { -0.69314718055994531,      0.76923890136397213, DoubleCrossPlatformMachineEpsilon };      // value: -(ln(2))
+                yield return new object[] { -0.63661977236758134,      0.80410982822879171, DoubleCrossPlatformMachineEpsilon };      // value: -(2 / pi)
+                yield return new object[] { -0.43429448190325183,      0.90716712923909839, DoubleCrossPlatformMachineEpsilon };      // value: -(log10(e))
+                yield return new object[] { -0.31830988618379067,      0.94976571538163866, DoubleCrossPlatformMachineEpsilon };      // value: -(1 / pi)
+                yield return new object[] { -0.0,                      1.0,                 DoubleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] {  double.NaN,               double.NaN,          0.0 };
+                yield return new object[] {  0.0,                      1.0,                 DoubleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] {  0.31830988618379067,      0.94976571538163866, DoubleCrossPlatformMachineEpsilon };      // value:  (1 / pi)
+                yield return new object[] {  0.43429448190325183,      0.90716712923909839, DoubleCrossPlatformMachineEpsilon };      // value:  (log10(e))
+                yield return new object[] {  0.63661977236758134,      0.80410982822879171, DoubleCrossPlatformMachineEpsilon };      // value:  (2 / pi)
+                yield return new object[] {  0.69314718055994531,      0.76923890136397213, DoubleCrossPlatformMachineEpsilon };      // value:  (ln(2))
+                yield return new object[] {  0.70710678118654752,      0.76024459707563015, DoubleCrossPlatformMachineEpsilon };      // value:  (1 / sqrt(2))
+                yield return new object[] {  0.78539816339744831,      0.70710678118654752, DoubleCrossPlatformMachineEpsilon };      // value:  (pi / 4),        expected:  (1 / sqrt(2))
+                yield return new object[] {  1.0,                      0.54030230586813972, DoubleCrossPlatformMachineEpsilon };
+                yield return new object[] {  1.1283791670955126,       0.42812514788535792, DoubleCrossPlatformMachineEpsilon };      // value:  (2 / sqrt(pi))
+                yield return new object[] {  1.4142135623730950,       0.15594369476537447, DoubleCrossPlatformMachineEpsilon };      // value:  (sqrt(2))
+                yield return new object[] {  1.4426950408889634,       0.12775121753523991, DoubleCrossPlatformMachineEpsilon };      // value:  (log2(e))
+                yield return new object[] {  1.5707963267948966,       0.0,                 DoubleCrossPlatformMachineEpsilon };      // value:  (pi / 2)
+                yield return new object[] {  2.3025850929940457,      -0.66820151019031295, DoubleCrossPlatformMachineEpsilon };      // value:  (ln(10))
+                yield return new object[] {  2.7182818284590452,      -0.91173391478696510, DoubleCrossPlatformMachineEpsilon };      // value:  (e)
+                yield return new object[] {  3.1415926535897932,      -1.0,                 DoubleCrossPlatformMachineEpsilon * 10 }; // value:  (pi)
+                yield return new object[] {  double.PositiveInfinity,  double.NaN,          0.0 };
+            }
+        }
+
+        public static IEnumerable<object[]> CosSingle
+        {
+            get
+            {
+                yield return new object[] {  float.NegativeInfinity,  float.NaN,    0.0f };
+                yield return new object[] { -3.14159265f,            -1.0f,         SingleCrossPlatformMachineEpsilon * 10 }; // value: -(pi)
+                yield return new object[] { -2.71828183f,            -0.911733918f, SingleCrossPlatformMachineEpsilon };      // value: -(e)
+                yield return new object[] { -2.30258509f,            -0.668201510f, SingleCrossPlatformMachineEpsilon };      // value: -(ln(10))
+                yield return new object[] { -1.57079633f,             0.0f,         SingleCrossPlatformMachineEpsilon };      // value: -(pi / 2)
+                yield return new object[] { -1.44269504f,             0.127751218f, SingleCrossPlatformMachineEpsilon };      // value: -(log2(e))
+                yield return new object[] { -1.41421356f,             0.155943695f, SingleCrossPlatformMachineEpsilon };      // value: -(sqrt(2))
+                yield return new object[] { -1.12837917f,             0.428125148f, SingleCrossPlatformMachineEpsilon };      // value: -(2 / sqrt(pi))
+                yield return new object[] { -1.0f,                    0.540302306f, SingleCrossPlatformMachineEpsilon };
+                yield return new object[] { -0.785398163f,            0.707106781f, SingleCrossPlatformMachineEpsilon };      // value: -(pi / 4),        expected:  (1 / sqrt(2))
+                yield return new object[] { -0.707106781f,            0.760244597f, SingleCrossPlatformMachineEpsilon };      // value: -(1 / sqrt(2))
+                yield return new object[] { -0.693147181f,            0.769238901f, SingleCrossPlatformMachineEpsilon };      // value: -(ln(2))
+                yield return new object[] { -0.636619772f,            0.804109828f, SingleCrossPlatformMachineEpsilon };      // value: -(2 / pi)
+                yield return new object[] { -0.434294482f,            0.907167129f, SingleCrossPlatformMachineEpsilon };      // value: -(log10(e))
+                yield return new object[] { -0.318309886f,            0.949765715f, SingleCrossPlatformMachineEpsilon };      // value: -(1 / pi)
+                yield return new object[] { -0.0f,                    1.0f,         SingleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] {  float.NaN,               float.NaN,    0.0f };
+                yield return new object[] {  0.0f,                    1.0f,         SingleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] {  0.318309886f,            0.949765715f, SingleCrossPlatformMachineEpsilon };      // value:  (1 / pi)
+                yield return new object[] {  0.434294482f,            0.907167129f, SingleCrossPlatformMachineEpsilon };      // value:  (log10(e))
+                yield return new object[] {  0.636619772f,            0.804109828f, SingleCrossPlatformMachineEpsilon };      // value:  (2 / pi)
+                yield return new object[] {  0.693147181f,            0.769238901f, SingleCrossPlatformMachineEpsilon };      // value:  (ln(2))
+                yield return new object[] {  0.707106781f,            0.760244597f, SingleCrossPlatformMachineEpsilon };      // value:  (1 / sqrt(2))
+                yield return new object[] {  0.785398163f,            0.707106781f, SingleCrossPlatformMachineEpsilon };      // value:  (pi / 4),        expected:  (1 / sqrt(2))
+                yield return new object[] {  1.0f,                    0.540302306f, SingleCrossPlatformMachineEpsilon };
+                yield return new object[] {  1.12837917f,             0.428125148f, SingleCrossPlatformMachineEpsilon };      // value:  (2 / sqrt(pi))
+                yield return new object[] {  1.41421356f,             0.155943695f, SingleCrossPlatformMachineEpsilon };      // value:  (sqrt(2))
+                yield return new object[] {  1.44269504f,             0.127751218f, SingleCrossPlatformMachineEpsilon };      // value:  (log2(e))
+                yield return new object[] {  1.57079633f,             0.0f,         SingleCrossPlatformMachineEpsilon };      // value:  (pi / 2)
+                yield return new object[] {  2.30258509f,            -0.668201510f, SingleCrossPlatformMachineEpsilon };      // value:  (ln(10))
+                yield return new object[] {  2.71828183f,            -0.911733918f, SingleCrossPlatformMachineEpsilon };      // value:  (e)
+                yield return new object[] {  3.14159265f,            -1.0f,         SingleCrossPlatformMachineEpsilon * 10 }; // value:  (pi)
+                yield return new object[] {  float.PositiveInfinity,  float.NaN,    0.0f };
+            }
+        }
+
         public static IEnumerable<object[]> DegreesToRadiansDouble
         {
             get
@@ -981,7 +1061,7 @@ namespace System.Tests
                 yield return new object[] { 0.64321824193300488,     -0.63661977236758126,     DoubleCrossPlatformMachineEpsilon };         // expected: -(2 / pi)
                 yield return new object[] { 0.74005557395545179,     -0.43429448190325190,     DoubleCrossPlatformMachineEpsilon };         // expected: -(log10(e))
                 yield return new object[] { 0.80200887896145195,     -0.31830988618379073,     DoubleCrossPlatformMachineEpsilon };         // expected: -(1 / pi)
-                yield return new object[] { 1,                        0.0,                     0.0 };                        
+                yield return new object[] { 1,                        0.0,                     0.0 };
                 yield return new object[] { 1.2468689889006383,       0.31830988618379073,     DoubleCrossPlatformMachineEpsilon };         // expected:  (1 / pi)
                 yield return new object[] { 1.3512498725672678,       0.43429448190325226,     DoubleCrossPlatformMachineEpsilon };         // expected:  (log10(e))
                 yield return new object[] { 1.5546822754821001,       0.63661977236758126,     DoubleCrossPlatformMachineEpsilon };         // expected:  (2 / pi)
@@ -1661,6 +1741,170 @@ namespace System.Tests
                 yield return new object[] {  float.NegativeInfinity,     float.NegativeInfinity };
                 yield return new object[] {  3.4028235E+38f,             3.4028235E+38f };
                 yield return new object[] { -3.4028235E+38f,            -3.4028235E+38f };
+            }
+        }
+
+        public static IEnumerable<object[]> SinDouble
+        {
+            get
+            {
+                yield return new object[] {  double.NegativeInfinity,  double.NaN,          0.0 };
+                yield return new object[] { -3.1415926535897932,      -0.0,                 DoubleCrossPlatformMachineEpsilon };      // value: -(pi)
+                yield return new object[] { -2.7182818284590452,      -0.41078129050290870, DoubleCrossPlatformMachineEpsilon };      // value: -(e)
+                yield return new object[] { -2.3025850929940457,      -0.74398033695749319, DoubleCrossPlatformMachineEpsilon };      // value: -(ln(10))
+                yield return new object[] { -1.5707963267948966,      -1.0,                 DoubleCrossPlatformMachineEpsilon * 10 }; // value: -(pi / 2)
+                yield return new object[] { -1.4426950408889634,      -0.99180624439366372, DoubleCrossPlatformMachineEpsilon };      // value: -(log2(e))
+                yield return new object[] { -1.4142135623730950,      -0.98776594599273553, DoubleCrossPlatformMachineEpsilon };      // value: -(sqrt(2))
+                yield return new object[] { -1.1283791670955126,      -0.90371945743584630, DoubleCrossPlatformMachineEpsilon };      // value: -(2 / sqrt(pi))
+                yield return new object[] { -1.0,                     -0.84147098480789651, DoubleCrossPlatformMachineEpsilon };
+                yield return new object[] { -0.78539816339744831,     -0.70710678118654752, DoubleCrossPlatformMachineEpsilon };      // value: -(pi / 4),        expected: -(1 / sqrt(2))
+                yield return new object[] { -0.70710678118654752,     -0.64963693908006244, DoubleCrossPlatformMachineEpsilon };      // value: -(1 / sqrt(2))
+                yield return new object[] { -0.69314718055994531,     -0.63896127631363480, DoubleCrossPlatformMachineEpsilon };      // value: -(ln(2))
+                yield return new object[] { -0.63661977236758134,     -0.59448076852482208, DoubleCrossPlatformMachineEpsilon };      // value: -(2 / pi)
+                yield return new object[] { -0.43429448190325183,     -0.42077048331375735, DoubleCrossPlatformMachineEpsilon };      // value: -(log10(e))
+                yield return new object[] { -0.31830988618379067,     -0.31296179620778659, DoubleCrossPlatformMachineEpsilon };      // value: -(1 / pi)
+                yield return new object[] { -0.0,                     -0.0,                 0.0 };
+                yield return new object[] {  double.NaN,               double.NaN,          0.0 };
+                yield return new object[] {  0.0,                      0.0,                 0.0 };
+                yield return new object[] {  0.31830988618379067,      0.31296179620778659, DoubleCrossPlatformMachineEpsilon };      // value:  (1 / pi)
+                yield return new object[] {  0.43429448190325183,      0.42077048331375735, DoubleCrossPlatformMachineEpsilon };      // value:  (log10(e))
+                yield return new object[] {  0.63661977236758134,      0.59448076852482208, DoubleCrossPlatformMachineEpsilon };      // value:  (2 / pi)
+                yield return new object[] {  0.69314718055994531,      0.63896127631363480, DoubleCrossPlatformMachineEpsilon };      // value:  (ln(2))
+                yield return new object[] {  0.70710678118654752,      0.64963693908006244, DoubleCrossPlatformMachineEpsilon };      // value:  (1 / sqrt(2))
+                yield return new object[] {  0.78539816339744831,      0.70710678118654752, DoubleCrossPlatformMachineEpsilon };      // value:  (pi / 4),        expected:  (1 / sqrt(2))
+                yield return new object[] {  1.0,                      0.84147098480789651, DoubleCrossPlatformMachineEpsilon };
+                yield return new object[] {  1.1283791670955126,       0.90371945743584630, DoubleCrossPlatformMachineEpsilon };      // value:  (2 / sqrt(pi))
+                yield return new object[] {  1.4142135623730950,       0.98776594599273553, DoubleCrossPlatformMachineEpsilon };      // value:  (sqrt(2))
+                yield return new object[] {  1.4426950408889634,       0.99180624439366372, DoubleCrossPlatformMachineEpsilon };      // value:  (log2(e))
+                yield return new object[] {  1.5707963267948966,       1.0,                 DoubleCrossPlatformMachineEpsilon * 10 }; // value:  (pi / 2)
+                yield return new object[] {  2.3025850929940457,       0.74398033695749319, DoubleCrossPlatformMachineEpsilon };      // value:  (ln(10))
+                yield return new object[] {  2.7182818284590452,       0.41078129050290870, DoubleCrossPlatformMachineEpsilon };      // value:  (e)
+                yield return new object[] {  3.1415926535897932,       0.0,                 DoubleCrossPlatformMachineEpsilon };      // value:  (pi)
+                yield return new object[] {  double.PositiveInfinity,  double.NaN,          0.0 };
+            }
+        }
+
+        public static IEnumerable<object[]> SinSingle
+        {
+            get
+            {
+                yield return new object[] {  float.NegativeInfinity,  float.NaN,    0.0f };
+                yield return new object[] { -3.14159265f,            -0.0f,         SingleCrossPlatformMachineEpsilon };      // value: -(pi)
+                yield return new object[] { -2.71828183f,            -0.410781291f, SingleCrossPlatformMachineEpsilon };      // value: -(e)
+                yield return new object[] { -2.30258509f,            -0.743980337f, SingleCrossPlatformMachineEpsilon };      // value: -(ln(10))
+                yield return new object[] { -1.57079633f,            -1.0f,         SingleCrossPlatformMachineEpsilon * 10 }; // value: -(pi / 2)
+                yield return new object[] { -1.44269504f,            -0.991806244f, SingleCrossPlatformMachineEpsilon };      // value: -(log2(e))
+                yield return new object[] { -1.41421356f,            -0.987765946f, SingleCrossPlatformMachineEpsilon };      // value: -(sqrt(2))
+                yield return new object[] { -1.12837917f,            -0.903719457f, SingleCrossPlatformMachineEpsilon };      // value: -(2 / sqrt(pi))
+                yield return new object[] { -1.0f,                   -0.841470985f, SingleCrossPlatformMachineEpsilon };
+                yield return new object[] { -0.785398163f,           -0.707106781f, SingleCrossPlatformMachineEpsilon };      // value: -(pi / 4),        expected: -(1 / sqrt(2))
+                yield return new object[] { -0.707106781f,           -0.649636939f, SingleCrossPlatformMachineEpsilon };      // value: -(1 / sqrt(2))
+                yield return new object[] { -0.693147181f,           -0.638961276f, SingleCrossPlatformMachineEpsilon };      // value: -(ln(2))
+                yield return new object[] { -0.636619772f,           -0.594480769f, SingleCrossPlatformMachineEpsilon };      // value: -(2 / pi)
+                yield return new object[] { -0.434294482f,           -0.420770483f, SingleCrossPlatformMachineEpsilon };      // value: -(log10(e))
+                yield return new object[] { -0.318309886f,           -0.312961796f, SingleCrossPlatformMachineEpsilon };      // value: -(1 / pi)
+                yield return new object[] { -0.0f,                   -0.0f,         0.0f };
+                yield return new object[] {  float.NaN,               float.NaN,    0.0f };
+                yield return new object[] {  0.0f,                    0.0f,         0.0f };
+                yield return new object[] {  0.318309886f,            0.312961796f, SingleCrossPlatformMachineEpsilon };      // value:  (1 / pi)
+                yield return new object[] {  0.434294482f,            0.420770483f, SingleCrossPlatformMachineEpsilon };      // value:  (log10(e))
+                yield return new object[] {  0.636619772f,            0.594480769f, SingleCrossPlatformMachineEpsilon };      // value:  (2 / pi)
+                yield return new object[] {  0.693147181f,            0.638961276f, SingleCrossPlatformMachineEpsilon };      // value:  (ln(2))
+                yield return new object[] {  0.707106781f,            0.649636939f, SingleCrossPlatformMachineEpsilon };      // value:  (1 / sqrt(2))
+                yield return new object[] {  0.785398163f,            0.707106781f, SingleCrossPlatformMachineEpsilon };      // value:  (pi / 4),        expected:  (1 / sqrt(2))
+                yield return new object[] {  1.0f,                    0.841470985f, SingleCrossPlatformMachineEpsilon };
+                yield return new object[] {  1.12837917f,             0.903719457f, SingleCrossPlatformMachineEpsilon };      // value:  (2 / sqrt(pi))
+                yield return new object[] {  1.41421356f,             0.987765946f, SingleCrossPlatformMachineEpsilon };      // value:  (sqrt(2))
+                yield return new object[] {  1.44269504f,             0.991806244f, SingleCrossPlatformMachineEpsilon };      // value:  (log2(e))
+                yield return new object[] {  1.57079633f,             1.0f,         SingleCrossPlatformMachineEpsilon * 10 }; // value:  (pi / 2)
+                yield return new object[] {  2.30258509f,             0.743980337f, SingleCrossPlatformMachineEpsilon };      // value:  (ln(10))
+                yield return new object[] {  2.71828183f,             0.410781291f, SingleCrossPlatformMachineEpsilon };      // value:  (e)
+                yield return new object[] {  3.14159265f,             0.0f,         SingleCrossPlatformMachineEpsilon };      // value:  (pi)
+                yield return new object[] {  float.PositiveInfinity,  float.NaN,    0.0f };
+            }
+        }
+
+        public static IEnumerable<object[]> SinCosDouble
+        {
+            get
+            {
+                yield return new object[] {  double.NegativeInfinity,  double.NaN,           double.NaN,          0.0,                                    0.0 };
+                yield return new object[] { -1e18,                     0.9929693207404051,   0.11837199021871073, 0.0002,                                 0.002 };                                  // https://github.com/dotnet/runtime/issues/98204
+                yield return new object[] { -3.1415926535897932,      -0.0,                 -1.0,                 DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon * 10 }; // value: -(pi)
+                yield return new object[] { -2.7182818284590452,      -0.41078129050290870, -0.91173391478696510, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value: -(e)
+                yield return new object[] { -2.3025850929940457,      -0.74398033695749319, -0.66820151019031295, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value: -(ln(10))
+                yield return new object[] { -1.5707963267948966,      -1.0,                  0.0,                 DoubleCrossPlatformMachineEpsilon * 10, DoubleCrossPlatformMachineEpsilon };      // value: -(pi / 2)
+                yield return new object[] { -1.4426950408889634,      -0.99180624439366372,  0.12775121753523991, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value: -(log2(e))
+                yield return new object[] { -1.4142135623730950,      -0.98776594599273553,  0.15594369476537447, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value: -(sqrt(2))
+                yield return new object[] { -1.1283791670955126,      -0.90371945743584630,  0.42812514788535792, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value: -(2 / sqrt(pi))
+                yield return new object[] { -1.0,                     -0.84147098480789651,  0.54030230586813972, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };
+                yield return new object[] { -0.78539816339744831,     -0.70710678118654752,  0.70710678118654752, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value: -(pi / 4),        expected_sin: -(1 / sqrt(2)),    expected_cos: 1
+                yield return new object[] { -0.70710678118654752,     -0.64963693908006244,  0.76024459707563015, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value: -(1 / sqrt(2))
+                yield return new object[] { -0.69314718055994531,     -0.63896127631363480,  0.76923890136397213, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value: -(ln(2))
+                yield return new object[] { -0.63661977236758134,     -0.59448076852482208,  0.80410982822879171, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value: -(2 / pi)
+                yield return new object[] { -0.43429448190325183,     -0.42077048331375735,  0.90716712923909839, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value: -(log10(e))
+                yield return new object[] { -0.31830988618379067,     -0.31296179620778659,  0.94976571538163866, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value: -(1 / pi)
+                yield return new object[] { -0.0,                     -0.0,                  1.0,                 0.0,                                    DoubleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] {  double.NaN,               double.NaN,           double.NaN,          0.0,                                    0.0 };
+                yield return new object[] {  0.0,                      0.0,                  1.0,                 0.0,                                    DoubleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] {  0.31830988618379067,      0.31296179620778659,  0.94976571538163866, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value:  (1 / pi)
+                yield return new object[] {  0.43429448190325183,      0.42077048331375735,  0.90716712923909839, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value:  (log10(e))
+                yield return new object[] {  0.63661977236758134,      0.59448076852482208,  0.80410982822879171, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value:  (2 / pi)
+                yield return new object[] {  0.69314718055994531,      0.63896127631363480,  0.76923890136397213, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value:  (ln(2))
+                yield return new object[] {  0.70710678118654752,      0.64963693908006244,  0.76024459707563015, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value:  (1 / sqrt(2))
+                yield return new object[] {  0.78539816339744831,      0.70710678118654752,  0.70710678118654752, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value:  (pi / 4),        expected_sin:  (1 / sqrt(2)),    expected_cos: 1
+                yield return new object[] {  1.0,                      0.84147098480789651,  0.54030230586813972, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };
+                yield return new object[] {  1.1283791670955126,       0.90371945743584630,  0.42812514788535792, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value:  (2 / sqrt(pi))
+                yield return new object[] {  1.4142135623730950,       0.98776594599273553,  0.15594369476537447, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value:  (sqrt(2))
+                yield return new object[] {  1.4426950408889634,       0.99180624439366372,  0.12775121753523991, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value:  (log2(e))
+                yield return new object[] {  1.5707963267948966,       1.0,                  0.0,                 DoubleCrossPlatformMachineEpsilon * 10, DoubleCrossPlatformMachineEpsilon };      // value:  (pi / 2)
+                yield return new object[] {  2.3025850929940457,       0.74398033695749319, -0.66820151019031295, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value:  (ln(10))
+                yield return new object[] {  2.7182818284590452,       0.41078129050290870, -0.91173391478696510, DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon };      // value:  (e)
+                yield return new object[] {  3.1415926535897932,       0.0,                 -1.0,                 DoubleCrossPlatformMachineEpsilon,      DoubleCrossPlatformMachineEpsilon * 10 }; // value:  (pi)
+                yield return new object[] {  1e18,                    -0.9929693207404051,   0.11837199021871073, 0.0002,                                 0.002 };                                  // https://github.com/dotnet/runtime/issues/98204
+                yield return new object[] {  double.PositiveInfinity,  double.NaN,           double.NaN,          0.0,                                    0.0 };
+            }
+        }
+
+        public static IEnumerable<object[]> SinCosSingle
+        {
+            get
+            {
+                yield return new object[] {  float.NegativeInfinity,  float.NaN,     float.NaN,    0.0f,                                   0.0f };
+                yield return new object[] { -1e8f,                   -0.931639,     -0.36338508,   SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // https://github.com/dotnet/runtime/issues/98204
+                yield return new object[] { -3.14159265f,            -0.0f,         -1.0f,         SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon * 10 };    // value: -(pi)
+                yield return new object[] { -2.71828183f,            -0.410781291f, -0.911733918f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value: -(e)
+                yield return new object[] { -2.30258509f,            -0.743980337f, -0.668201510f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value: -(ln(10))
+                yield return new object[] { -1.57079633f,            -1.0f,          0.0f,         SingleCrossPlatformMachineEpsilon * 10, SingleCrossPlatformMachineEpsilon };         // value: -(pi / 2)
+                yield return new object[] { -1.44269504f,            -0.991806244f,  0.127751218f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value: -(log2(e))
+                yield return new object[] { -1.41421356f,            -0.987765946f,  0.155943695f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value: -(sqrt(2))
+                yield return new object[] { -1.12837917f,            -0.903719457f,  0.428125148f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value: -(2 / sqrt(pi))
+                yield return new object[] { -1.0f,                   -0.841470985f,  0.540302306f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };
+                yield return new object[] { -0.785398163f,           -0.707106781f,  0.707106781f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value: -(pi / 4),        expected_sin: -(1 / sqrt(2)),    expected_cos: 1
+                yield return new object[] { -0.707106781f,           -0.649636939f,  0.760244597f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value: -(1 / sqrt(2))
+                yield return new object[] { -0.693147181f,           -0.638961276f,  0.769238901f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value: -(ln(2))
+                yield return new object[] { -0.636619772f,           -0.594480769f,  0.804109828f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value: -(2 / pi)
+                yield return new object[] { -0.434294482f,           -0.420770483f,  0.907167129f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value: -(log10(e))
+                yield return new object[] { -0.318309886f,           -0.312961796f,  0.949765715f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value: -(1 / pi)
+                yield return new object[] { -0.0f,                   -0.0f,          1.0f,         0.0f,                                   SingleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] {  float.NaN,               float.NaN,     float.NaN,    0.0f,                                   0.0f };
+                yield return new object[] {  0.0f,                    0.0f,          1.0f,         0.0f,                                   SingleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] {  0.318309886f,            0.312961796f,  0.949765715f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value:  (1 / pi)
+                yield return new object[] {  0.434294482f,            0.420770483f,  0.907167129f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value:  (log10(e))
+                yield return new object[] {  0.636619772f,            0.594480769f,  0.804109828f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value:  (2 / pi)
+                yield return new object[] {  0.693147181f,            0.638961276f,  0.769238901f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value:  (ln(2))
+                yield return new object[] {  0.707106781f,            0.649636939f,  0.760244597f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value:  (1 / sqrt(2))
+                yield return new object[] {  0.785398163f,            0.707106781f,  0.707106781f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value:  (pi / 4),        expected_sin:  (1 / sqrt(2)),    expected_cos: 1
+                yield return new object[] {  1.0f,                    0.841470985f,  0.540302306f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };
+                yield return new object[] {  1.12837917f,             0.903719457f,  0.428125148f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value:  (2 / sqrt(pi))
+                yield return new object[] {  1.41421356f,             0.987765946f,  0.155943695f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value:  (sqrt(2))
+                yield return new object[] {  1.44269504f,             0.991806244f,  0.127751218f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value:  (log2(e))
+                yield return new object[] {  1.57079633f,             1.0f,          0.0f,         SingleCrossPlatformMachineEpsilon * 10, SingleCrossPlatformMachineEpsilon };         // value:  (pi / 2)
+                yield return new object[] {  2.30258509f,             0.743980337f, -0.668201510f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value:  (ln(10))
+                yield return new object[] {  2.71828183f,             0.410781291f, -0.911733918f, SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // value:  (e)
+                yield return new object[] {  3.14159265f,             0.0f,         -1.0f,         SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon * 10 };    // value:  (pi)
+                yield return new object[] {  1e8f,                    0.931639,     -0.36338508,   SingleCrossPlatformMachineEpsilon,      SingleCrossPlatformMachineEpsilon };         // https://github.com/dotnet/runtime/issues/98204
+                yield return new object[] {  float.PositiveInfinity,  float.NaN,     float.NaN,    0.0f,                                   0.0f };
             }
         }
 
