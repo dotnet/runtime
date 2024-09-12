@@ -15,13 +15,7 @@
     <PublishReadyToRun Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishReadyToRun>
     <PublishSingleFile Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishSingleFile>
     <PublishTrimmed Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishTrimmed>
-    <SuppressGenerateILCompilerExplicitPackageReferenceWarning>true</SuppressGenerateILCompilerExplicitPackageReferenceWarning>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(UseNativeAotForComponents)' == 'true'">
-    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
-    <PackageReference Include="runtime.$(ToolsRID).Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
-  </ItemGroup>
 
   <!-- Needed for the amd64 -> amd64 musl cross-build to pass the target flag. -->
   <Target Name="_FixIlcTargetTriple"

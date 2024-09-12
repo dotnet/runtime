@@ -58,6 +58,15 @@
     <SingleFileHostSourcePath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', 'corehost', 'singlefilehost$(ExeSuffix)'))</SingleFileHostSourcePath>
   </PropertyGroup>
 
+  <!-- Not a live build, but allow overriding the LKG ILCompiler package with a specific version. -->
+  <PropertyGroup Condition="'$(UseNativeAotForComponents)' == 'true' and '$(PublishAot)' == 'true' and '$(MicrosoftDotNetILCompilerVersion)' != ''">
+    <SuppressGenerateILCompilerExplicitPackageReferenceWarning>true</SuppressGenerateILCompilerExplicitPackageReferenceWarning>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(UseNativeAotForComponents)' == 'true' and '$(PublishAot)' == 'true' and '$(MicrosoftDotNetILCompilerVersion)' != ''">
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
+    <PackageReference Include="runtime.$(ToolsRID).Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
+  </ItemGroup>
+
   <Target Name="ResolveRuntimeFilesFromLocalBuild">
     <Error Condition="!Exists('$(CoreCLRArtifactsPath)') and '$(RuntimeFlavor)' == 'CoreCLR'"
            Text="The CoreCLR artifacts path does not exist '$(CoreCLRArtifactsPath)'. The 'clr' subset must be built before building this project. Configuration: '$(CoreCLRConfiguration)'. To use a different configuration, specify the 'RuntimeConfiguration' property." />
