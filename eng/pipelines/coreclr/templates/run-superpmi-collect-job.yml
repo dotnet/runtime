@@ -9,6 +9,7 @@ parameters:
   archType: ''                    # required -- targeting CPU architecture
   osGroup: ''                     # required -- operating system for the job
   osSubgroup: ''                  # optional -- operating system subgroup
+  crossBuild: ''                  # optional -- 'true' if this is a cross-build
   continueOnError: 'false'        # optional -- determines whether to continue the build if the step errors
   dependsOn: ''                   # optional -- dependencies of the job
   timeoutInMinutes: 320           # optional -- timeout for the job
@@ -25,6 +26,8 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    container: ${{ parameters.container }}
+    crossBuild: ${{ parameters.crossBuild }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     enableTelemetry: ${{ parameters.enableTelemetry }}
     enablePublishBuildArtifacts: true
@@ -114,7 +117,6 @@ jobs:
       clean: all
     pool:
       ${{ parameters.pool }}
-    container: ${{ parameters.container }}
     steps:
     - ${{ parameters.steps }}
 
