@@ -24,14 +24,14 @@ The .NET Foundation licenses this file to you under the MIT license.
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
     <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == '' and '$(_linuxLibcFlavor)' == 'musl'">1572864</IlcDefaultStackSize>
-    <UseSystemZlib Condition="'$(UseSystemZlib)' == '' and !Exists('$(IlcSdkPath)libz.a')">true</UseSystemZlib>
-    <!-- Use libbrotlicommon.a as the sentinel for the three brotli libs. -->
-    <UseSystemBrotli Condition="'$(UseSystemBrotli)' == '' and !Exists('$(IlcSdkPath)libbrotlicommon.a')">true</UseSystemBrotli>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
     <PropertyGroup>
+      <UseSystemZlib Condition="'$(UseSystemZlib)' == '' and !Exists('$(IlcSdkPath)libz.a')">true</UseSystemZlib>
+      <!-- Use libbrotlicommon.a as the sentinel for the three brotli libs. -->
+      <UseSystemBrotli Condition="'$(UseSystemBrotli)' == '' and !Exists('$(IlcSdkPath)libbrotlicommon.a')">true</UseSystemBrotli>
       <FullRuntimeName>libRuntime.WorkstationGC</FullRuntimeName>
       <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(IlcLinkServerGC)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
 
