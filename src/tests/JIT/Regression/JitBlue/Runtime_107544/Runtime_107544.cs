@@ -23,14 +23,22 @@ public class Runtime_107173
     {
         if (AdvSimd.IsSupported && Dp.IsSupported)
         {
-            ushort vr7 = default(ushort);
-            var vr5 = (byte)vr7;
-            Vector128<uint> vr10 = Vector128.Create<uint>(0);
-            var vr11 = Vector128.Create<byte>(0);
-            var vr12 = Vector128.CreateScalar(vr5);
-            var vr13 = Dp.DotProductBySelectedQuadruplet(vr10, vr11, vr12, 13);
-            vr10 = AdvSimd.Multiply(vr13, vr10);
-            Console.WriteLine(vr10);
+            try
+            {
+                ushort vr7 = default(ushort);
+                var vr5 = (byte)vr7;
+                Vector128<uint> vr10 = Vector128.Create<uint>(0);
+                var vr11 = Vector128.Create<byte>(0);
+                var vr12 = Vector128.CreateScalar(vr5);
+                var vr13 = Dp.DotProductBySelectedQuadruplet(vr10, vr11, vr12, 13); // throws AE
+                vr10 = AdvSimd.Multiply(vr13, vr10);
+                Console.WriteLine(vr10);
+            }
+            catch (ArgumentException)
+            {
+                return;
+            }
+            throw new Exception("ArgumentException was not thrown");
         }
     }
 }
