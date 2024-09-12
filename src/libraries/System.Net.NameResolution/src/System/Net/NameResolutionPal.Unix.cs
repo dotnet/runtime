@@ -17,7 +17,7 @@ namespace System.Net
         public const bool SupportsGetAddrInfoAsync = false;
 
         [UnsupportedOSPlatformGuard("wasi")]
-        public static bool SupportsGetNameInfo = !OperatingSystem.IsWasi();
+        public static bool SupportsGetNameInfo => !OperatingSystem.IsWasi();
 
 #pragma warning disable IDE0060
         internal static Task? GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily family, CancellationToken cancellationToken) =>
