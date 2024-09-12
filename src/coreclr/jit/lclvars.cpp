@@ -5648,9 +5648,9 @@ void Compiler::lvaFixVirtualFrameOffsets()
 #endif
 
     // The delta to be added to virtual offset to adjust it relative to frame pointer or SP
-    int delta = 0;
+    int delta            = 0;
     int frameLocalsDelta = 0;
-    int frameBoundary = 0;
+    int frameBoundary    = 0;
 
 #ifdef TARGET_XARCH
     delta += REGSIZE_BYTES; // pushed PC (return address) for x86/x64
@@ -5685,7 +5685,9 @@ void Compiler::lvaFixVirtualFrameOffsets()
         {
             // We set FP to be after LR, FP
             frameLocalsDelta = 2 * REGSIZE_BYTES;
-            frameBoundary = opts.IsOSR() ? -info.compPatchpointInfo->TotalFrameSize() : 0;
+            frameBoundary    = opts.IsOSR() ? -info.compPatchpointInfo->TotalFrameSize() : 0;
+            if (info.compIsVarArgs)
+                frameBoundary -= MAX_REG_ARG * REGSIZE_BYTES;
         }
         JITDUMP("--- delta bump %d for FP frame, %d inside frame\n", delta, frameLocalsDelta);
     }
@@ -5815,7 +5817,9 @@ void Compiler::lvaFixVirtualFrameOffsets()
         temp->tdAdjustTempOffs(delta + frameLocalsDelta);
     }
 
-    lvaCachedGenericContextArgOffs += delta + frameLocalsDelta;
+    lvaCachedGenericContextArgOffs += delta;
+    if (lvaCachedGenericContextArgOffs < frameBoundary)
+        lvaCachedGenericContextArgOffs += frameLocalsDelta;
 
 #if FEATURE_FIXED_OUT_ARGS
 
