@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 using X86 = System.Runtime.Intrinsics.X86;
 
-#pragma warning disable CA2252 // X86Base.DivRem that requires opting into preview features is used in a few places
+#pragma warning disable SYSLIB5004 // DivRem is marked as [Experimental], see https://github.com/dotnet/runtime/issues/82194
 
 namespace System
 {
