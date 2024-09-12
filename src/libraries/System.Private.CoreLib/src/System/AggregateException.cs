@@ -225,7 +225,7 @@ namespace System
             AggregateException? backAsAggregate = this;
             while (backAsAggregate != null && backAsAggregate.InnerExceptions.Count == 1)
             {
-                back = back!.InnerException; // this can be any type of exception
+                back = back!.InnerException;
                 backAsAggregate = back as AggregateException;
             }
             return back!;
