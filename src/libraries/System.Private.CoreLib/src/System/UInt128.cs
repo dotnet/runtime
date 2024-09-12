@@ -1109,14 +1109,14 @@ namespace System
                     ulong highRes = 0ul;
                     ulong remainder = left._upper;
 
-#pragma warning disable CA2252 // This API requires opting into preview features
+#pragma warning disable SYSLIB5004 // DivRem is marked as [Experimental], partly because it does not get optmized by the JIT for constant inputs
                     if (remainder >= right._lower)
                     {
                         (highRes, remainder) = X86Base.X64.DivRem(left._upper, 0, right._lower);
                     }
 
                     return new UInt128(highRes, X86Base.X64.DivRem(left._lower, remainder, right._lower).Quotient);
-#pragma warning restore CA2252 // This API requires opting into preview features
+#pragma warning restore SYSLIB5004 // DivRem is marked as [Experimental]
                 }
             }
 
