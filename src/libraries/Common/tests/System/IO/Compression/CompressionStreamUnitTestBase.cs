@@ -498,6 +498,30 @@ namespace System.IO.Compression
         }
 
         [Theory]
+        [MemberData(nameof(UncompressedTestFilesZLib))]
+        public async Task ZLibCompressionOptions_SizeInOrder(string testFile)
+        {
+            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+
+            async Task<long> GetLengthAsync(int compressionLevel)
+            {
+                uncompressedStream.Position = 0;
+                using var mms = new MemoryStream();
+                using var compressor = CreateStream(mms, new ZLibCompressionOptions() { CompressionLevel = compressionLevel, CompressionStrategy = ZLibCompressionStrategy.Default }, leaveOpen: false);
+                await uncompressedStream.CopyToAsync(compressor);
+                await compressor.FlushAsync();
+                return mms.Length;
+            }
+            
+            long fastestLength = await GetLengthAsync(1);
+            long optimalLength = await GetLengthAsync(5);
+            long smallestLength = await GetLengthAsync(9);
+
+            Assert.True(fastestLength >= optimalLength);
+            Assert.True(optimalLength >= smallestLength);
+        }
+
+        [Theory]
         [MemberData(nameof(ZLibOptionsRoundTripTestData))]
         public async Task RoundTripWithZLibCompressionOptions(string testFile, ZLibCompressionOptions options)
         {
@@ -537,28 +561,6 @@ namespace System.IO.Compression
             return compressorOutput;
         }
 
-        protected async Task CompressionLevel_SizeInOrderBase(string testFile)
-        {
-            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
-
-            async Task<long> GetLengthAsync(int compressionLevel)
-            {
-                uncompressedStream.Position = 0;
-                using var mms = new MemoryStream();
-                using var compressor = CreateStream(mms, new ZLibCompressionOptions() { CompressionLevel = compressionLevel, CompressionStrategy = ZLibCompressionStrategy.Default }, leaveOpen: false);
-                await uncompressedStream.CopyToAsync(compressor);
-                await compressor.FlushAsync();
-                return mms.Length;
-            }
-
-            long prev = await GetLengthAsync(0);
-            for (int i = 1; i < 10; i++)
-            {
-                long cur = await GetLengthAsync(i);
-                Assert.True(cur <= prev, $"Expected {cur} <= {prev} for quality {i}");
-                prev = cur;
-            }
-        }
     }
 
     public enum TestScenario
