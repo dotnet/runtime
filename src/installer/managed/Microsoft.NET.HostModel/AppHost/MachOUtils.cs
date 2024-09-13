@@ -59,7 +59,7 @@ namespace Microsoft.NET.HostModel.AppHost
         {
             ulong fileLength = (ulong)new FileInfo(filePath).Length;
             using var fileStream = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite);
-            if (!MachReader.IsMach(fileStream))
+            if (!MachReader.IsMachOImage(fileStream))
             {
                 return false;
             }

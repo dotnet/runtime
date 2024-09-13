@@ -443,20 +443,21 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             }
         }
 
+        private static byte[] s_placeholderData = AppBinaryPathPlaceholderSearchValue.Concat(DotNetSearchPlaceholderValue).ToArray();
         public static string PrepareMockMachAppHostFile(string directory)
         {
             var objectFile = ReadTests.GetMachExecutable();
             var segments = objectFile.LoadCommands.OfType<MachSegment>().ToArray();
 
             var textSegment = segments.Single(s => s.Name == "__TEXT");
-            var textSection = textSegment.Sections.Single(s => s.SectionName == "__text");
+            var textSection = textSegment.Sections.First();
             using (var textStream = textSection.GetWriteStream())
             {
-                textStream.Write(AppBinaryPathPlaceholderSearchValue.Concat(DotNetSearchPlaceholderValue).ToArray());
+                textStream.Write(s_placeholderData);
             }
-            // The text section has a large padding before it. We can more easily decrease the FileOffset than move all the sections after.
+            // The __TEXT segment has it's sections at the end of the segment, with padding at the beginning
+            // We can move the file offset back
             textSection.FileOffset -= (uint)(AppBinaryPathPlaceholderSearchValue.Length + DotNetSearchPlaceholderValue.Length);
-            objectFile.UpdateLayout();
             string outputFilePath = Path.Combine(directory, "SourceAppHost.mach.o.mock");
             using var outputFileStream = File.OpenWrite(outputFilePath);
             MachWriter.Write(outputFileStream, objectFile);

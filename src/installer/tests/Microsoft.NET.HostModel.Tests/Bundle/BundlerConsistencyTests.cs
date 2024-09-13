@@ -405,16 +405,15 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         {
             var objectFile = ReadTests.GetMachExecutable();
             var segments = objectFile.LoadCommands.OfType<MachSegment>().ToArray();
-
             var textSegment = segments.Single(s => s.Name == "__TEXT");
-            var textSection = textSegment.Sections.Single(s => s.SectionName == "__text");
+            var textSection = textSegment.Sections.First();
             using (var textStream = textSection.GetWriteStream())
             {
                 textStream.Write(BundleHeaderPlaceholder);
             }
-            // The text section has a large padding before it. We can more easily decrease the FileOffset than move all the sections after.
+            // The __TEXT segment has it's sections at the end of the segment, with padding at the beginning
+            // We can move the file offset back to accomodate for the size of the header.
             textSection.FileOffset -= (uint)BundleHeaderPlaceholder.Length;
-            objectFile.UpdateLayout();
             string outputFilePath = Path.Combine(directory, "SourceAppHost.mach.o.mock");
             using var outputFileStream = File.OpenWrite(outputFilePath);
             MachWriter.Write(outputFileStream, objectFile);

@@ -423,7 +423,7 @@ namespace Melanzana.MachO
             return magic == MachMagic.FatMagicLittleEndian || magic == MachMagic.FatMagicBigEndian;
         }
 
-        public static bool IsMach(Stream stream)
+        public static bool IsMachOImage(Stream stream)
         {
             bool isMach = TryReadMachMagic(stream, out _);
             stream.Seek(0, SeekOrigin.Begin);
@@ -433,7 +433,7 @@ namespace Melanzana.MachO
         public static bool IsMachOImage(string filePath)
         {
             using var stream = File.OpenRead(filePath);
-            return IsMach(stream);
+            return IsMachOImage(stream);
         }
 
         public static IList<MachObjectFile> Read(Stream stream)

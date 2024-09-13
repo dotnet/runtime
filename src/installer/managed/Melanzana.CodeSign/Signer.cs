@@ -174,6 +174,10 @@ namespace Melanzana.CodeSign
         public static bool TryRemoveCodesign(Stream inputStream, Stream outputStream)
         {
             inputStream.Position = 0;
+            if (!MachReader.IsMachOImage(inputStream))
+            {
+                return false;
+            }
             MachObjectFile objectFile = MachReader.Read(inputStream).Single();
 
             MachCodeSignature? codeSignature = objectFile.LoadCommands.OfType<MachCodeSignature>().FirstOrDefault();
