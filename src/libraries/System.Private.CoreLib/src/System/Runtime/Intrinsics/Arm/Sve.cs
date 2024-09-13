@@ -3142,11 +3142,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch16Bit(Vector<short> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, address, indices, prefetchType);
 
-        /// <summary>
-        ///   <para>void svprfh_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
-        ///   <para>  PRFH op, Pg, [Zbases.S, #0]</para>
-        /// </summary>
-        public static unsafe void GatherPrefetch16Bit(Vector<short> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, addresses, prefetchType);
+        // <summary>
+        //   <para>void svprfh_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
+        //   <para>  PRFH op, Pg, [Zbases.S, #0]</para>
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch16Bit(Vector<short> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, addresses, prefetchType);
 
         /// <summary>
         ///   <para>void svprfh_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)</para>
@@ -3178,11 +3179,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch16Bit(Vector<ushort> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, address, indices, prefetchType);
 
-        /// <summary>
-        ///   <para>void svprfh_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
-        ///   <para>  PRFH op, Pg, [Zbases.S, #0]</para>
-        /// </summary>
-        public static unsafe void GatherPrefetch16Bit(Vector<ushort> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, addresses, prefetchType);
+        // <summary>
+        //   <para>void svprfh_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
+        //   <para>  PRFH op, Pg, [Zbases.S, #0]</para>
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch16Bit(Vector<ushort> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, addresses, prefetchType);
 
         /// <summary>
         ///   <para>void svprfh_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)</para>
@@ -3217,11 +3219,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch32Bit(Vector<int> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, address, indices, prefetchType);
 
-        /// <summary>
-        ///   <para>void svprfw_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
-        ///   <para>  PRFW op, Pg, [Zbases.S, #0]</para>
-        /// </summary>
-        public static unsafe void GatherPrefetch32Bit(Vector<int> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, addresses, prefetchType);
+        // <summary>
+        //   <para>void svprfw_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
+        //   <para>  PRFW op, Pg, [Zbases.S, #0]</para>
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch32Bit(Vector<int> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, addresses, prefetchType);
 
         /// <summary>
         ///   <para>void svprfw_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)</para>
@@ -3253,11 +3256,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch32Bit(Vector<uint> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, address, indices, prefetchType);
 
-        /// <summary>
-        ///   <para>void svprfw_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
-        ///   <para>  PRFW op, Pg, [Zbases.S, #0]</para>
-        /// </summary>
-        public static unsafe void GatherPrefetch32Bit(Vector<uint> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, addresses, prefetchType);
+        // <summary>
+        //   <para>void svprfw_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
+        //   <para>  PRFW op, Pg, [Zbases.S, #0]</para>
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch32Bit(Vector<uint> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, addresses, prefetchType);
 
         /// <summary>
         ///   <para>void svprfw_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)</para>
@@ -3292,11 +3296,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch64Bit(Vector<long> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, address, indices, prefetchType);
 
-        /// <summary>
-        ///   <para>void svprfd_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
-        ///   <para>  PRFD op, Pg, [Zbases.S, #0]</para>
-        /// </summary>
-        public static unsafe void GatherPrefetch64Bit(Vector<long> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, addresses, prefetchType);
+        // <summary>
+        //   <para>void svprfd_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
+        //   <para>  PRFD op, Pg, [Zbases.S, #0]</para>
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch64Bit(Vector<long> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, addresses, prefetchType);
 
         /// <summary>
         ///   <para>void svprfd_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)</para>
@@ -3328,11 +3333,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch64Bit(Vector<ulong> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, address, indices, prefetchType);
 
-        /// <summary>
-        ///   <para>void svprfd_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
-        ///   <para>  PRFD op, Pg, [Zbases.S, #0]</para>
-        /// </summary>
-        public static unsafe void GatherPrefetch64Bit(Vector<ulong> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, addresses, prefetchType);
+        // <summary>
+        //   <para>void svprfd_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
+        //   <para>  PRFD op, Pg, [Zbases.S, #0]</para>
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch64Bit(Vector<ulong> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, addresses, prefetchType);
 
         /// <summary>
         ///   <para>void svprfd_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)</para>
@@ -3367,11 +3373,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch8Bit(Vector<byte> mask, void* address, Vector<long> offsets, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, address, offsets, prefetchType);
 
-        /// <summary>
-        ///   <para>void svprfb_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
-        ///   <para>  PRFB op, Pg, [Zbases.S, #0]</para>
-        /// </summary>
-        public static unsafe void GatherPrefetch8Bit(Vector<byte> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, addresses, prefetchType);
+        // <summary>
+        //   <para>void svprfb_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
+        //   <para>  PRFB op, Pg, [Zbases.S, #0]</para>
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch8Bit(Vector<byte> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, addresses, prefetchType);
 
         /// <summary>
         ///   <para>void svprfb_gather_[u32]offset(svbool_t pg, const void *base, svuint32_t offsets, enum svprfop op)</para>
@@ -3403,11 +3410,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch8Bit(Vector<sbyte> mask, void* address, Vector<long> offsets, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, address, offsets, prefetchType);
 
-        /// <summary>
-        ///   <para>void svprfb_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
-        ///   <para>  PRFB op, Pg, [Zbases.S, #0]</para>
-        /// </summary>
-        public static unsafe void GatherPrefetch8Bit(Vector<sbyte> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, addresses, prefetchType);
+        // <summary>
+        //   <para>void svprfb_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)</para>
+        //   <para>  PRFB op, Pg, [Zbases.S, #0]</para>
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch8Bit(Vector<sbyte> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, addresses, prefetchType);
 
         /// <summary>
         ///   <para>void svprfb_gather_[u32]offset(svbool_t pg, const void *base, svuint32_t offsets, enum svprfop op)</para>
@@ -3895,11 +3903,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<int> GatherVectorInt16SignExtendFirstFaulting(Vector<int> mask, short* address, Vector<int> indices) => GatherVectorInt16SignExtendFirstFaulting(mask, address, indices);
 
-        /// <summary>
-        ///   <para>svint32_t svldff1sh_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)</para>
-        ///   <para>  LDFF1SH Zresult.S, Pg/Z, [Zbases.S, #0]</para>
-        /// </summary>
-        public static unsafe Vector<int> GatherVectorInt16SignExtendFirstFaulting(Vector<int> mask, Vector<uint> addresses) => GatherVectorInt16SignExtendFirstFaulting(mask, addresses);
+        // <summary>
+        //   <para>svint32_t svldff1sh_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)</para>
+        //   <para>  LDFF1SH Zresult.S, Pg/Z, [Zbases.S, #0]</para>
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorInt16SignExtendFirstFaulting(Vector<int> mask, Vector<uint> addresses) => GatherVectorInt16SignExtendFirstFaulting(mask, addresses);
 
         /// <summary>
         ///   <para>svint32_t svldff1sh_gather_[u32]index_s32(svbool_t pg, const int16_t *base, svuint32_t indices)</para>
@@ -3931,11 +3940,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<uint> GatherVectorInt16SignExtendFirstFaulting(Vector<uint> mask, short* address, Vector<int> indices) => GatherVectorInt16SignExtendFirstFaulting(mask, address, indices);
 
-        /// <summary>
-        ///   <para>svuint32_t svldff1sh_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)</para>
-        ///   <para>  LDFF1SH Zresult.S, Pg/Z, [Zbases.S, #0]</para>
-        /// </summary>
-        public static unsafe Vector<uint> GatherVectorInt16SignExtendFirstFaulting(Vector<uint> mask, Vector<uint> addresses) => GatherVectorInt16SignExtendFirstFaulting(mask, addresses);
+        // <summary>
+        //   <para>svuint32_t svldff1sh_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)</para>
+        //   <para>  LDFF1SH Zresult.S, Pg/Z, [Zbases.S, #0]</para>
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorInt16SignExtendFirstFaulting(Vector<uint> mask, Vector<uint> addresses) => GatherVectorInt16SignExtendFirstFaulting(mask, addresses);
 
         /// <summary>
         ///   <para>svuint32_t svldff1sh_gather_[u32]index_u32(svbool_t pg, const int16_t *base, svuint32_t indices)</para>
@@ -4281,11 +4291,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<int> GatherVectorSByteSignExtendFirstFaulting(Vector<int> mask, sbyte* address, Vector<int> offsets) => GatherVectorSByteSignExtendFirstFaulting(mask, address, offsets);
 
-        /// <summary>
-        ///   <para>svint32_t svldff1sb_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)</para>
-        ///   <para>  LDFF1SB Zresult.S, Pg/Z, [Zbases.S, #0]</para>
-        /// </summary>
-        public static unsafe Vector<int> GatherVectorSByteSignExtendFirstFaulting(Vector<int> mask, Vector<uint> addresses) => GatherVectorSByteSignExtendFirstFaulting(mask, addresses);
+        // <summary>
+        //   <para>svint32_t svldff1sb_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)</para>
+        //   <para>  LDFF1SB Zresult.S, Pg/Z, [Zbases.S, #0]</para>
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorSByteSignExtendFirstFaulting(Vector<int> mask, Vector<uint> addresses) => GatherVectorSByteSignExtendFirstFaulting(mask, addresses);
 
         /// <summary>
         ///   <para>svint32_t svldff1sb_gather_[u32]offset_s32(svbool_t pg, const int8_t *base, svuint32_t offsets)</para>
@@ -4317,11 +4328,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<uint> GatherVectorSByteSignExtendFirstFaulting(Vector<uint> mask, sbyte* address, Vector<int> offsets) => GatherVectorSByteSignExtendFirstFaulting(mask, address, offsets);
 
-        /// <summary>
-        ///   <para>svuint32_t svldff1sb_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)</para>
-        ///   <para>  LDFF1SB Zresult.S, Pg/Z, [Zbases.S, #0]</para>
-        /// </summary>
-        public static unsafe Vector<uint> GatherVectorSByteSignExtendFirstFaulting(Vector<uint> mask, Vector<uint> addresses) => GatherVectorSByteSignExtendFirstFaulting(mask, addresses);
+        // <summary>
+        //   <para>svuint32_t svldff1sb_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)</para>
+        //   <para>  LDFF1SB Zresult.S, Pg/Z, [Zbases.S, #0]</para>
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorSByteSignExtendFirstFaulting(Vector<uint> mask, Vector<uint> addresses) => GatherVectorSByteSignExtendFirstFaulting(mask, addresses);
 
         /// <summary>
         ///   <para>svuint32_t svldff1sb_gather_[u32]offset_u32(svbool_t pg, const int8_t *base, svuint32_t offsets)</para>
