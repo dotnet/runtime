@@ -3897,11 +3897,10 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                     case TernaryLogicUseFlags::AB:
                     {
                         // Swap the operands here to make the containment checks in codegen significantly simpler
-                        std::swap(node->Op(2), node->Op(3));
-                        std::swap(node->Op(1), node->Op(2));
+                        std::swap(node->Op(1), node->Op(3));
 
                         // Make sure we also fixup the control byte
-                        control = TernaryLogicInfo::GetTernaryControlByte(info, C, A, B);
+                        control = TernaryLogicInfo::GetTernaryControlByte(info, C, B, A);
                         op4->AsIntCon()->SetIconValue(control);
 
                         useFlags = TernaryLogicUseFlags::BC;
