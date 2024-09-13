@@ -9886,7 +9886,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                             // - There is a source register for this reg (upperHalfSrcReg != REG_NA)
                             // - It is currently free                    (upperHalfSrcLoc == REG_NA)
                             // - The source interval isn't yet completed (sourceIntervals[upperHalfSrcReg] != nullptr)
-                            // - It's not resolved from stack            (!targetRegsFromStack.IsRegNumInMask(upperHalfReg))
+                            // - It's not resolved from stack (!targetRegsFromStack.IsRegNumInMask(upperHalfReg))
                             if ((upperHalfSrcReg != REG_NA) && (upperHalfSrcLoc == REG_NA) &&
                                 (sourceIntervals[upperHalfSrcReg] != nullptr) &&
                                 !targetRegsFromStack.IsRegNumInMask(upperHalfReg))
