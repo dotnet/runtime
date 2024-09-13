@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Creates an <see cref="IServiceProvider"/> from the container builder.
         /// </summary>
         /// <param name="containerBuilder">The container builder.</param>
-        /// <returns>An <see cref="IServiceProvider"/>.</returns>
+        /// <returns>An <see cref="IServiceProvider"/> instance.</returns>
         IServiceProvider CreateServiceProvider(TContainerBuilder containerBuilder);
     }
 }
