@@ -2144,20 +2144,15 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             opCandidates = (opNum == 2) ? RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet() : opCandidates;
         }
     }
-    else if (opNum == 1 && HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
-    {
-        assert(varTypeIsMask(intrinsicTree->Op(opNum)->TypeGet()));
-
-        opCandidates = RBM_ALLMASK.GetPredicateRegSet();
-
-        if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
-        {
-            opCandidates = RBM_LOWMASK.GetPredicateRegSet();
-        }
-    }
     else if (varTypeIsMask(intrinsicTree->Op(opNum)->TypeGet()))
     {
         opCandidates = RBM_ALLMASK.GetPredicateRegSet();
+
+        // Any low mask operands are always in op1
+        if (opNum == 1 && HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
+        {
+            opCandidates = RBM_LOWMASK.GetPredicateRegSet();
+        }
     }
 
     return opCandidates;
