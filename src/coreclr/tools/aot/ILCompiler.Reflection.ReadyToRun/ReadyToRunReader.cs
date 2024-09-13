@@ -1380,7 +1380,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/zap/zapimport.cpp">ZapImportSectionsTable::Save</a>
+        /// originally based on <a href="https://github.com/dotnet/coreclr/blob/master/src/zap/zapimport.cpp">ZapImportSectionsTable::Save</a>
         /// </summary>
         private void EnsureImportSections()
         {
