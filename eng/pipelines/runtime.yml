@@ -519,7 +519,7 @@ extends:
           jobParameters:
             testScope: innerloop
             nameSuffix: CoreCLR
-            buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) -rc Checked
+            buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) -rc Checked -p:NativeAotSupported=false
             timeoutInMinutes: 120
             condition: >-
               or(
