@@ -50,7 +50,7 @@ public abstract class ArrayRecord : SerializationRecord
 
     internal long ValuesToRead { get; private protected set; }
 
-    private protected ArrayInfo ArrayInfo { get; }
+    internal ArrayInfo ArrayInfo { get; }
 
     internal bool IsJagged
         => ArrayInfo.ArrayType == BinaryArrayType.Jagged
