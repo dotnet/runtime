@@ -469,42 +469,16 @@ class DebuggerModule
 
     Module * GetRuntimeModule();
 
-
-    // <TODO> (8/12/2002)
-    // Currently we create a new DebuggerModules for each appdomain a shared
-    // module lives in. We then pretend there aren't any shared modules.
-    // This is bad. We need to move away from this.
-    // Once we stop lying, then every module will be it's own PrimaryModule. :)
-    //
-    // Currently, Module* is 1:n w/ DebuggerModule.
-    // We add a notion of PrimaryModule so that:
-    // Module* is 1:1 w/ DebuggerModule::GetPrimaryModule();
-    // This should help transition towards exposing shared modules.
-    // If the Runtime module is shared, then this gives a common DM.
-    // If the runtime module is not shared, then this is an identity function.
-    //
-    // The runtime has the notion of "DomainAssembly", which is 1:1 with DebuggerModule
-    // and thus 1:1 with CordbModule.  The CordbModule hash table on the RS now uses
-    // the DomainAssembly as the key instead of DebuggerModule.  This is a temporary
-    // workaround to facilitate the removal of DebuggerModule.
-    // </TODO>
-    DebuggerModule * GetPrimaryModule();
     DomainAssembly * GetDomainAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pRuntimeDomainAssembly;
     }
 
-    // Called by DebuggerModuleTable to set our primary module
-    void SetPrimaryModule(DebuggerModule * pPrimary);
-
     void SetCanChangeJitFlags(bool fCanChangeJitFlags);
 
   private:
     BOOL            m_enableClassLoadCallbacks;
-
-    // First step in moving away from hiding shared modules.
-    DebuggerModule* m_pPrimaryModule;
 
     PTR_Module     m_pRuntimeModule;
     PTR_DomainAssembly m_pRuntimeDomainAssembly;
@@ -513,13 +487,9 @@ class DebuggerModule
 
     bool m_fHasOptimizedCode;
 
-    void PickPrimaryModule();
-
     // Can we change jit flags on the module?
     // This is true during the Module creation
     bool           m_fCanChangeJitFlags;
-
-
 };
 
 /* ------------------------------------------------------------------------ *
@@ -1109,12 +1079,13 @@ public:
     // correct IL offset if this code happens to be instrumented
     ULONG32 TranslateToInstIL(const InstrumentedILOffsetMapping * pMapping, ULONG32 offOrig, bool fOrigToInst);
 
-
+private:
     // We don't always have a debugger module. (Ex: we're tracking debug info,
     // but no debugger's attached). So this may return NULL alot.
     // If we can, we should use the RuntimeModule when ever possible.
-    DebuggerModule* GetPrimaryModule();
+    DebuggerModule* GetModule();
 
+public:
     // We always have a runtime module.
     Module * GetRuntimeModule();
 

@@ -22,69 +22,6 @@
  * Debugger Module routines
  * ------------------------------------------------------------------------ */
 
-// <TODO> (8/12/2002)
-// We need to stop lying to the debugger about not sharing Modules.
-// Primary Modules allow a transition to that. Once we stop lying,
-// then all modules will be their own Primary.
-// </TODO>
-// Select the primary module.
-// Primary Modules are selected DebuggerModules that map 1:1 w/ Module*.
-// If the runtime module is not shared, then we're our own Primary Module.
-// If the Runtime module is shared, the primary module is some specific instance.
-// Note that a domain-neutral module can be loaded into multiple domains without
-// being loaded into the default domain, and so there is no "primary module" as far
-// as the CLR is concerned - we just pick any one and call it primary.
-void DebuggerModule::PickPrimaryModule()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    Debugger::DebuggerDataLockHolder ch(g_pDebugger);
-
-    LOG((LF_CORDB, LL_INFO100000, "DM::PickPrimaryModule, this=0x%p\n", this));
-
-    // We're our own primary module, unless something else proves otherwise.
-    // Note that we should be able to skip all of this if this module is not domain neutral
-    m_pPrimaryModule = this;
-
-    // This should be thread safe because our creation for the DebuggerModules
-    // are serialized.
-
-    // Lookup our Runtime Module. If it's already in there,
-    // then
-    DebuggerModuleTable * pTable = g_pDebugger->GetModuleTable();
-
-    // If the table doesn't exist yet, then we must be a primary module.
-    if (pTable == NULL)
-    {
-        LOG((LF_CORDB, LL_INFO100000, "DM::PickPrimaryModule, this=0x%p, table not created yet\n", this));
-        return;
-    }
-
-    // Look through existing module list to find a common primary DebuggerModule
-    // for the given EE Module. We don't know what order we'll traverse in.
-
-    HASHFIND f;
-    for (DebuggerModule * m = pTable->GetFirstModule(&f);
-         m != NULL;
-         m = pTable->GetNextModule(&f))
-    {
-
-        if (m->GetRuntimeModule() == this->GetRuntimeModule())
-        {
-            // Make sure we're picking another primary module.
-            _ASSERTE(m->GetPrimaryModule() != m);
-        }
-    } // end for
-
-    // If we got here, then this instance is a Primary Module.
-    LOG((LF_CORDB, LL_INFO100000, "DM::PickPrimaryModule, this=%p is first, primary.\n", this));
-}
-
 void DebuggerModule::SetCanChangeJitFlags(bool fCanChangeJitFlags)
 {
     m_fCanChangeJitFlags = fCanChangeJitFlags;
@@ -218,9 +155,6 @@ void DebuggerModuleTable::AddModule(DebuggerModule *pModule)
     }
 
     pEntry->module = pModule;
-
-    // Don't need to update the primary module since it was set when we created the module.
-    _ASSERTE(pModule->GetPrimaryModule() != NULL);
 }
 
 //-----------------------------------------------------------------------------
