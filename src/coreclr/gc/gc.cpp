@@ -1406,9 +1406,9 @@ enter_msl_status gc_heap::enter_spin_lock_msl_helper (GCSpinLock* msl)
 {
     do
     {
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
         uint64_t start = GetHighPrecisionTimeStamp();
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
         unsigned int i = 0;
         while (VolatileLoad (&msl->lock) != lock_free)
@@ -1435,13 +1435,13 @@ enter_msl_status gc_heap::enter_spin_lock_msl_helper (GCSpinLock* msl)
                     }
                     if (VolatileLoad (&msl->lock) != lock_free && !IsGCInProgress ())
                     {
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
                         start -= GetHighPrecisionTimeStamp();
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
                         safe_switch_to_thread ();
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
                         start += GetHighPrecisionTimeStamp();
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
                     }
                 }
                 else
@@ -1451,20 +1451,20 @@ enter_msl_status gc_heap::enter_spin_lock_msl_helper (GCSpinLock* msl)
             }
             else
             {
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
                 start -= GetHighPrecisionTimeStamp();
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
                 WaitLongerNoInstru (i);
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
                 start += GetHighPrecisionTimeStamp();
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
             }
         }
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
         uint64_t end = GetHighPrecisionTimeStamp();
         Interlocked::ExchangeAdd64 (&msl->msl_wait_time, end - start);
         dprintf (3, ("h%d wait for msl lock wait time %zd, total wait time: %zd", heap_number, (end - start), msl->msl_wait_time));
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
     }
     while (Interlocked::CompareExchange (&msl->lock, lock_taken, lock_free) != lock_free);
 
@@ -2892,7 +2892,7 @@ bool gc_heap::maxgen_size_inc_p = false;
 BOOL gc_heap::should_expand_in_full_gc = FALSE;
 #endif //!USE_REGIONS
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
 int gc_heap::dynamic_adaptation_mode = dynamic_adaptation_default;
 gc_heap::dynamic_heap_count_data_t SVR::gc_heap::dynamic_heap_count_data;
 size_t gc_heap::current_total_soh_stable_size = 0;
@@ -2906,10 +2906,10 @@ bool gc_heap::trigger_initial_gen2_p = false;
 bool gc_heap::trigger_bgc_for_rethreading_p = false;
 #endif //BACKGROUND_GC
 
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
+#ifdef STRESS_DYNAMIC_ADAPTATION_TO_APP
 int gc_heap::heaps_in_this_gc = 0;
-#endif //STRESS_DYNAMIC_HEAP_COUNT
-#endif // DYNAMIC_HEAP_COUNT
+#endif //STRESS_DYNAMIC_ADAPTATION_TO_APP
+#endif // DYNAMIC_ADAPTATION_TO_APP
 
 // Provisional mode related stuff.
 bool gc_heap::provisional_mode_triggered = false;
@@ -3806,17 +3806,6 @@ heap_segment* get_region_info_for_address (uint8_t* address)
     return ((heap_segment*)(&seg_mapping_table[basic_region_index]));
 }
 
-// Go from the physical start of a region to its region info.
-inline
-heap_segment* get_region_info (uint8_t* region_start)
-{
-    size_t region_index = (size_t)region_start >> gc_heap::min_segment_size_shr;
-    heap_segment* region_info_entry = (heap_segment*)&seg_mapping_table[region_index];
-    dprintf (REGIONS_LOG, ("region info for region %p is at %zd, %zx (alloc: %p)",
-        region_start, region_index, (size_t)region_info_entry, heap_segment_allocated (region_info_entry)));
-    return (heap_segment*)&seg_mapping_table[region_index];
-}
-
 // Go from the actual region info to its region start.
 inline
 uint8_t* get_region_start (heap_segment* region_info)
@@ -3829,6 +3818,17 @@ inline
 size_t get_region_size (heap_segment* region_info)
 {
     return (size_t)(heap_segment_reserved (region_info) - get_region_start (region_info));
+}
+
+// Go from the physical start of a region to its region info.
+inline
+heap_segment* get_region_info (uint8_t* region_start)
+{
+    size_t region_index = (size_t)region_start >> gc_heap::min_segment_size_shr;
+    heap_segment* region_info_entry = (heap_segment*)&seg_mapping_table[region_index];
+    dprintf (REGIONS_LOG, ("region info for region %p is at %zd, %zx (size: %zx, alloc: %p)",
+        region_start, region_index, (size_t)region_info_entry, get_region_size(region_info_entry), heap_segment_allocated (region_info_entry)));
+    return (heap_segment*)&seg_mapping_table[region_index];
 }
 
 inline
@@ -7065,7 +7065,7 @@ void gc_heap::gc_thread_function ()
         {
             bool wait_on_time_out_p = gradual_decommit_in_progress_p;
             uint32_t wait_time = DECOMMIT_TIME_STEP_MILLISECONDS;
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
             // background_running_p can only change from false to true during suspension.
             if (
 #ifdef BACKGROUND_GC
@@ -7082,16 +7082,16 @@ void gc_heap::gc_thread_function ()
 
                 dprintf (6666, ("gc#0 thread waiting for %d ms (betwen GCs %I64d)", wait_time, sample.elapsed_between_gcs));
             }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
             uint32_t wait_result = gc_heap::ee_suspend_event.Wait(wait_on_time_out_p ? wait_time : INFINITE, FALSE);
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
             dprintf (9999, ("waiting for ee done res %d (timeout %d, %I64d ms since last suspend end)(should_change_heap_count is %d) (gradual_decommit_in_progress_p %d)",
                 wait_result, wait_time, ((GetHighPrecisionTimeStamp() - last_suspended_end_time) / 1000),
                 dynamic_heap_count_data.should_change_heap_count, gradual_decommit_in_progress_p));
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
             if (wait_result == WAIT_TIMEOUT)
             {
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
                 if (dynamic_heap_count_data.should_change_heap_count)
                 {
 #ifdef BACKGROUND_GC
@@ -7102,7 +7102,7 @@ void gc_heap::gc_thread_function ()
                         check_heap_count();
                     }
                 }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
                 if (gradual_decommit_in_progress_p)
                 {
@@ -7117,7 +7117,7 @@ void gc_heap::gc_thread_function ()
                 continue;
             }
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
             // We might want to consider also doing this when a BGC finishes.
             if (dynamic_heap_count_data.should_change_heap_count)
             {
@@ -7148,7 +7148,7 @@ void gc_heap::gc_thread_function ()
 
                 dynamic_heap_count_data.last_n_heaps = n_heaps;
             }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
             suspended_start_time = GetHighPrecisionTimeStamp();
             BEGIN_TIMING(suspend_ee_during_log);
@@ -7167,14 +7167,14 @@ void gc_heap::gc_thread_function ()
             else
             {
                 settings.init_mechanisms();
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
                 if (gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
                 {
                     // make sure the other gc threads cannot see this as a request to change heap count
                     // see explanation below about the cases when we return from gc_start_event.Wait
                     assert (dynamic_heap_count_data.new_n_heaps == n_heaps);
                 }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
                 dprintf (9999, ("GC thread %d setting_gc_start_in_gc(h%d)", heap_number, n_heaps));
                 gc_start_event.Set();
             }
@@ -7184,7 +7184,7 @@ void gc_heap::gc_thread_function ()
         {
             dprintf (9999, ("GC thread %d waiting_for_gc_start(%d)(gc%Id)", heap_number, n_heaps, VolatileLoadWithoutBarrier(&settings.gc_index)));
             gc_start_event.Wait(INFINITE, FALSE);
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
             dprintf (9999, ("GC thread %d waiting_done_gc_start(%d-%d)(i: %d)(gc%Id)",
                 heap_number, n_heaps, dynamic_heap_count_data.new_n_heaps, dynamic_heap_count_data.init_only_p, VolatileLoadWithoutBarrier (&settings.gc_index)));
 
@@ -7236,7 +7236,7 @@ void gc_heap::gc_thread_function ()
 
                 continue;
             }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
             dprintf (3, (ThreadStressLog::gcServerThreadNStartMsg(), heap_number));
         }
 
@@ -7264,15 +7264,15 @@ void gc_heap::gc_thread_function ()
 #endif //BACKGROUND_GC
 
 #ifdef MULTIPLE_HEAPS
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
+#ifdef STRESS_DYNAMIC_ADAPTATION_TO_APP
             dynamic_heap_count_data.lowest_heap_with_msl_uoh = -1;
-#endif //STRESS_DYNAMIC_HEAP_COUNT
+#endif //STRESS_DYNAMIC_ADAPTATION_TO_APP
             for (int i = 0; i < gc_heap::n_heaps; i++)
             {
                 gc_heap* hp = gc_heap::g_heaps[i];
                 leave_spin_lock(&hp->more_space_lock_soh);
 
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
+#ifdef STRESS_DYNAMIC_ADAPTATION_TO_APP
                 if ((dynamic_heap_count_data.lowest_heap_with_msl_uoh == -1) && (hp->uoh_msl_before_gc_p))
                 {
                     dynamic_heap_count_data.lowest_heap_with_msl_uoh = i;
@@ -7283,7 +7283,7 @@ void gc_heap::gc_thread_function ()
                     dprintf (5555, ("h%d uoh msl was taken before GC", i));
                     hp->uoh_msl_before_gc_p = false;
                 }
-#endif //STRESS_DYNAMIC_HEAP_COUNT
+#endif //STRESS_DYNAMIC_ADAPTATION_TO_APP
             }
 #endif //MULTIPLE_HEAPS
 
@@ -13064,7 +13064,7 @@ heap_segment* region_free_list::unlink_smallest_region (size_t minimum_size)
     return smallest_region;
 }
 
-void region_free_list::transfer_regions (region_free_list* from)
+void region_free_list::transfer_regions_from (region_free_list* from)
 {
     this->verify (this->num_free_regions == 0);
     from->verify (from->num_free_regions == 0);
@@ -13344,7 +13344,7 @@ void gc_heap::distribute_free_regions()
 #endif //MULTIPLE_HEAPS
     if (settings.reason == reason_induced_aggressive)
     {
-        global_regions_to_decommit[huge_free_region].transfer_regions (&global_free_huge_regions);
+        global_regions_to_decommit[huge_free_region].transfer_regions_from (&global_free_huge_regions);
 
 #ifdef MULTIPLE_HEAPS
         for (int i = 0; i < n_heaps; i++)
@@ -13356,7 +13356,7 @@ void gc_heap::distribute_free_regions()
 #endif //MULTIPLE_HEAPS
             for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
             {
-                global_regions_to_decommit[kind].transfer_regions (&hp->free_regions[kind]);
+                global_regions_to_decommit[kind].transfer_regions_from (&hp->free_regions[kind]);
             }
         }
         while (decommit_step(DECOMMIT_TIME_STEP_MILLISECONDS))
@@ -13410,7 +13410,7 @@ void gc_heap::distribute_free_regions()
     {
         // we may still have regions left on the regions_to_decommit list -
         // use these to fill the budget as well
-        surplus_regions[kind].transfer_regions (&global_regions_to_decommit[kind]);
+        surplus_regions[kind].transfer_regions_from (&global_regions_to_decommit[kind]);
     }
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < n_heaps; i++)
@@ -13449,12 +13449,14 @@ void gc_heap::distribute_free_regions()
             total_num_free_regions[kind] += region_list.get_num_free_regions();
         }
 
-        global_free_huge_regions.transfer_regions (&hp->free_regions[huge_free_region]);
+        global_free_huge_regions.transfer_regions_from (&hp->free_regions[huge_free_region]);
 
         heap_budget_in_region_units[i][basic_free_region] = 0;
         min_heap_budget_in_region_units[i] = 0;
         heap_budget_in_region_units[i][large_free_region] = 0;
     }
+
+    dprintf (1, ("moved %2zd regions (%8zd) to decommit based on time", num_decommit_regions_by_time, size_decommit_regions_by_time));
 
     for (int gen = soh_gen0; gen < total_generation_count; gen++)
     {
@@ -13494,9 +13496,7 @@ void gc_heap::distribute_free_regions()
         }
     }
 
-    dprintf (1, ("moved %2zd regions (%8zd) to decommit based on time", num_decommit_regions_by_time, size_decommit_regions_by_time));
-
-    global_free_huge_regions.transfer_regions (&global_regions_to_decommit[huge_free_region]);
+    global_free_huge_regions.transfer_regions_from (&global_regions_to_decommit[huge_free_region]);
 
     size_t free_space_in_huge_regions = global_free_huge_regions.get_size_free_regions();
     size_t free_space_in_young_huge_regions = global_free_huge_regions.get_size_free_regions(MIN_AGE_TO_DECOMMIT_HUGE - 1);
@@ -13519,12 +13519,13 @@ void gc_heap::distribute_free_regions()
     {
         num_regions_to_decommit[kind] = surplus_regions[kind].get_num_free_regions();
 
-        dprintf(REGIONS_LOG, ("%zd %s free regions, %zd regions budget, %zd regions on decommit list, %zd huge regions to consider",
+        dprintf(REGIONS_LOG, ("%zd %s free regions, %zd regions budget, %zd regions on decommit list, %zd huge region units (%zd young) to consider",
             total_num_free_regions[kind],
             kind_name[kind],
             total_budget_in_region_units[kind],
             num_regions_to_decommit[kind],
-            num_huge_region_units_to_consider[kind]));
+            num_huge_region_units_to_consider[kind],
+            num_young_huge_region_units_to_consider[kind]));
 
         // check if the free regions exceed the budget
         // if so, consider putting the highest free regions on the decommit list
@@ -13546,7 +13547,7 @@ void gc_heap::distribute_free_regions()
 
             balance -= num_regions_to_decommit[kind];
 
-            dprintf(REGIONS_LOG, ("distributing the %zd %s regions, removing %zd regions",
+            dprintf(REGIONS_LOG, ("distributing the %zd %s region units, removing %zd region units",
                 total_budget_in_region_units[kind],
                 kind_name[kind],
                 num_regions_to_decommit[kind]));
@@ -13572,8 +13573,9 @@ void gc_heap::distribute_free_regions()
                 }
                 else
                 {
-                    dprintf (REGIONS_LOG, ("Moved %zd %s regions to decommit list",
-                        global_regions_to_decommit[huge_free_region].get_num_free_regions(), kind_name[huge_free_region]));
+                    dprintf (REGIONS_LOG, ("Moved %zd %s regions (%zd units) to decommit list",
+                        global_regions_to_decommit[huge_free_region].get_num_free_regions(), kind_name[huge_free_region],
+                        (global_regions_to_decommit[huge_free_region].get_size_free_regions() / region_size[kind])));
 
                     // cannot assert we moved any regions because there may be a single huge region with more than we want to decommit
                 }
@@ -13583,7 +13585,7 @@ void gc_heap::distribute_free_regions()
 #ifdef MULTIPLE_HEAPS
         if (balance != 0)
         {
-            dprintf (REGIONS_LOG, ("distributing the %zd %s regions deficit", -balance, kind_name[kind]));
+            dprintf (REGIONS_LOG, ("distributing the %zd %s region units deficit", -balance, kind_name[kind]));
 
             // we may have a deficit or  - if background GC is going on - a surplus.
             // adjust the budget per heap accordingly
@@ -13607,7 +13609,7 @@ void gc_heap::distribute_free_regions()
                 rem_balance += new_budget - heap_budget_in_region_units[i][kind];
             }
             assert (rem_balance <= 0);
-            dprintf (REGIONS_LOG, ("remaining balance: %zd %s regions", rem_balance, kind_name[kind]));
+            dprintf (REGIONS_LOG, ("remaining balance: %zd %s region units", rem_balance, kind_name[kind]));
 
             // if we have a left over deficit, distribute that to the heaps that still have more than the minimum
             while (rem_balance < 0)
@@ -13617,7 +13619,7 @@ void gc_heap::distribute_free_regions()
                     size_t min_budget = (kind == basic_free_region) ? min_heap_budget_in_region_units[i] : 0;
                     if (heap_budget_in_region_units[i][kind] > min_budget)
                     {
-                        dprintf (REGIONS_LOG, ("adjusting the budget for heap %d from %zd %s regions by %d to %zd",
+                        dprintf (REGIONS_LOG, ("adjusting the budget for heap %d from %zd %s region units by %d to %zd",
                             i,
                             heap_budget_in_region_units[i][kind],
                             kind_name[kind],
@@ -13682,7 +13684,7 @@ void gc_heap::distribute_free_regions()
         if (surplus_regions[kind].get_num_free_regions() > 0)
         {
             assert (!"should have exhausted the surplus_regions");
-            global_regions_to_decommit[kind].transfer_regions (&surplus_regions[kind]);
+            global_regions_to_decommit[kind].transfer_regions_from (&surplus_regions[kind]);
         }
     }
 
@@ -13717,7 +13719,7 @@ void gc_heap::distribute_free_regions()
     {
         if (global_regions_to_decommit[kind].get_num_free_regions() != 0)
         {
-            free_regions[kind].transfer_regions (&global_regions_to_decommit[kind]);
+            free_regions[kind].transfer_regions_from (&global_regions_to_decommit[kind]);
         }
     }
 #endif //MULTIPLE_HEAPS
@@ -14233,7 +14235,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 
     conserve_mem_setting = (int)GCConfig::GetGCConserveMem();
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
     dynamic_adaptation_mode = (int)GCConfig::GetGCDynamicAdaptationMode();
     if (GCConfig::GetHeapCount() != 0)
     {
@@ -14242,7 +14244,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 
     if ((dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) && (conserve_mem_setting == 0))
         conserve_mem_setting = 5;
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
     if (conserve_mem_setting < 0)
         conserve_mem_setting = 0;
@@ -14303,12 +14305,6 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 #ifdef USE_REGIONS
     if (regions_range)
     {
-        // REGIONS TODO: we should reserve enough space at the end of what we reserved that's
-        // big enough to accommodate if we were to materialize all the GC bookkeeping datastructures.
-        // We only need to commit what we use and just need to commit more instead of having to
-        // relocate the existing table and then calling copy_brick_card_table.
-        // Right now all the non mark array portions are commmitted since I'm calling make_card_table
-        // on the whole range. This can be committed as needed.
         size_t reserve_size = regions_range;
         uint8_t* reserve_range = (uint8_t*)virtual_alloc (reserve_size, use_large_pages_p);
         if (!reserve_range)
@@ -14445,12 +14441,12 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 
     original_spin_count_unit = yp_spin_count_unit;
 
-#if (defined(MULTIPLE_HEAPS) && defined(DYNAMIC_HEAP_COUNT))
+#if (defined(MULTIPLE_HEAPS) && defined(DYNAMIC_ADAPTATION_TO_APP))
     if ((dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) && (!gc_heap::spin_count_unit_config_p))
     {
         yp_spin_count_unit = 10;
     }
-#endif // MULTIPLE_HEAPS && DYNAMIC_HEAP_COUNT
+#endif // MULTIPLE_HEAPS && DYNAMIC_ADAPTATION_TO_APP
 
 #if defined(__linux__)
     GCToEEInterface::UpdateGCEventStatus(static_cast<int>(GCEventStatus::GetEnabledLevel(GCEventProvider_Default)),
@@ -14493,14 +14489,14 @@ gc_heap::init_semi_shared()
 
 #ifdef MULTIPLE_HEAPS
     mark_list_size = min ((size_t)100*1024, max ((size_t)8192, soh_segment_size/(2*10*32)));
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
     if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
     {
         // we'll actually start with one heap in this case
         g_mark_list_total_size = mark_list_size;
     }
     else
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
     {
         g_mark_list_total_size = mark_list_size*n_heaps;
     }
@@ -15045,7 +15041,7 @@ gc_heap::init_gc_heap (int h_number)
     gc_done_event_lock = -1;
     gc_done_event_set = false;
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
     if (h_number != 0)
     {
         if (!gc_idle_thread_event.CreateAutoEventNoThrow (FALSE))
@@ -15062,7 +15058,7 @@ gc_heap::init_gc_heap (int h_number)
 
         dprintf (9999, ("creating idle events for h%d", h_number));
     }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
     if (!init_dynamic_data())
     {
@@ -15214,9 +15210,9 @@ gc_heap::init_gc_heap (int h_number)
 
     //needs to be done after the dynamic data has been initialized
 #ifdef MULTIPLE_HEAPS
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
+#ifdef STRESS_DYNAMIC_ADAPTATION_TO_APP
     uoh_msl_before_gc_p = false;
-#endif //STRESS_DYNAMIC_HEAP_COUNT
+#endif //STRESS_DYNAMIC_ADAPTATION_TO_APP
 #else //MULTIPLE_HEAPS
     allocation_running_amount = dd_min_size (dynamic_data_of (0));
 #endif //!MULTIPLE_HEAPS
@@ -16150,7 +16146,7 @@ int allocator::thread_item_front_added (uint8_t* item, size_t size)
 }
 #endif //DOUBLY_LINKED_FL
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
 // This counts the total fl items, and print out the ones whose heap != this_hp
 void allocator::count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* fl_items_for_oh_count)
 {
@@ -16357,7 +16353,7 @@ void allocator::merge_items (gc_heap* current_heap, int to_num_heaps, int from_n
         }
     }
 }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
 void allocator::clear()
 {
@@ -18940,9 +18936,9 @@ enter_msl_status gc_heap::trigger_gc_for_alloc (int gen_number, gc_reason gr,
     if (loh_p)
     {
 #ifdef MULTIPLE_HEAPS
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
+#ifdef STRESS_DYNAMIC_ADAPTATION_TO_APP
         uoh_msl_before_gc_p = true;
-#endif //STRESS_DYNAMIC_HEAP_COUNT
+#endif //STRESS_DYNAMIC_ADAPTATION_TO_APP
         dprintf (5555, ("h%d uoh alloc before GC", heap_number));
 #endif //MULTIPLE_HEAPS
         add_saved_spinlock_info (loh_p, me_release, take_state, msl_status);
@@ -21100,7 +21096,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
 #endif //STRESS_HEAP
 
 #ifdef BACKGROUND_GC
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
     if (trigger_bgc_for_rethreading_p)
     {
         if (background_running_p())
@@ -21127,7 +21123,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         }
     }
     else
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
     if ((n == max_generation) && background_running_p())
     {
         n = max_generation - 1;
@@ -21135,7 +21131,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
     }
 #endif //BACKGROUND_GC
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
     if (trigger_initial_gen2_p)
     {
 #ifdef BACKGROUND_GC
@@ -21153,7 +21149,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
 
         trigger_initial_gen2_p = false;
     }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
     return n;
 }
@@ -21465,7 +21461,7 @@ bool gc_heap::init_table_for_region (int gen_number, heap_segment* region)
 inline
 size_t gc_heap::generation_allocator_efficiency_percent (generation* inst)
 {
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
     if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
     {
         uint64_t total_plan_allocated = generation_total_plan_allocated (inst);
@@ -21473,7 +21469,7 @@ size_t gc_heap::generation_allocator_efficiency_percent (generation* inst)
         return ((total_plan_allocated == 0) ? 0 : (100 * (total_plan_allocated - condemned_allocated) / total_plan_allocated));
     }
     else
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
     {
         uint64_t free_obj_space = generation_free_obj_space (inst);
         uint64_t free_list_allocated = generation_free_list_allocated (inst);
@@ -21486,7 +21482,7 @@ size_t gc_heap::generation_allocator_efficiency_percent (generation* inst)
 inline
 size_t gc_heap::generation_unusable_fragmentation (generation* inst, int hn)
 {
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
     if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
     {
         uint64_t total_plan_allocated = generation_total_plan_allocated (inst);
@@ -21509,7 +21505,7 @@ size_t gc_heap::generation_unusable_fragmentation (generation* inst, int hn)
         return (size_t)unusable_frag;
     }
     else
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
     {
         uint64_t free_obj_space = generation_free_obj_space (inst);
         uint64_t free_list_allocated = generation_free_list_allocated (inst);
@@ -22484,17 +22480,17 @@ void gc_heap::gc1()
         end_gc_time = GetHighPrecisionTimeStamp();
         size_t time_since_last_gen2 = 0;
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
         if ((heap_number == 0) && (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes))
         {
             time_since_last_gen2 = (size_t)(end_gc_time - (dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd)));
             dprintf (6666, ("BGC %Id end %I64d - (prev gen2 start %I64d + elapsed %Id = %I64d) = time inbewteen gen2 %Id",
                 dd_gc_clock (dd), end_gc_time, dd_previous_time_clock (dd), dd_gc_elapsed_time (dd), (dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd)), time_since_last_gen2));
         }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
         dd_gc_elapsed_time (dd) = (size_t)(end_gc_time - dd_time_clock (dd));
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
         if ((heap_number == 0) && (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes))
         {
             dprintf (6666, ("updating BGC %Id elapsed time to %I64d - %I64d = %I64d", dd_gc_clock (dd), end_gc_time, dd_time_clock (dd), dd_gc_elapsed_time (dd)));
@@ -22512,7 +22508,7 @@ void gc_heap::gc1()
 
             calculate_new_heap_count ();
         }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
 #ifdef HEAP_BALANCE_INSTRUMENTATION
         if (heap_number == 0)
@@ -22840,9 +22836,9 @@ void gc_heap::gc1()
                     size_t desired_per_heap_after_smoothing = desired_per_heap;
 
                     if (!heap_hard_limit
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
                         && (dynamic_adaptation_mode != dynamic_adaptation_to_application_sizes)
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
                         )
                     {
                         // if desired_per_heap is close to min_gc_size, trim it
@@ -22938,7 +22934,7 @@ void gc_heap::gc1()
                 }
             }
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
             if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
             {
                 update_total_soh_stable_size();
@@ -22950,7 +22946,7 @@ void gc_heap::gc1()
 
                 process_datas_sample();
             }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
             for (int i = 0; i < gc_heap::n_heaps; i++)
             {
@@ -23025,7 +23021,7 @@ void gc_heap::gc1()
 #endif //USE_REGIONS
 }
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
 size_t gc_heap::get_total_soh_stable_size()
 {
     if (current_total_soh_stable_size)
@@ -23230,7 +23226,7 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
     }
 #endif //_DEBUG
 }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
 void gc_heap::save_data_for_no_gc()
 {
@@ -24188,9 +24184,9 @@ void gc_heap::garbage_collect (int n)
 #endif // STRESS_HEAP
 
 #ifdef MULTIPLE_HEAPS
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
+#ifdef STRESS_DYNAMIC_ADAPTATION_TO_APP
     Interlocked::Increment (&heaps_in_this_gc);
-#endif //STRESS_DYNAMIC_HEAP_COUNT
+#endif //STRESS_DYNAMIC_ADAPTATION_TO_APP
     //align all heaps on the max generation to condemn
     dprintf (3, ("Joining for max generation to condemn"));
     condemned_generation_num = generation_to_condemn (n,
@@ -24210,7 +24206,7 @@ void gc_heap::garbage_collect (int n)
 #endif //!USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
+#ifdef STRESS_DYNAMIC_ADAPTATION_TO_APP
         dprintf (9999, ("%d heaps, join sees %d, actually joined %d, %d idle threads (%d)",
             n_heaps, gc_t_join.get_num_threads (), heaps_in_this_gc,
             VolatileLoadWithoutBarrier(&dynamic_heap_count_data.idle_thread_count), (n_max_heaps - n_heaps)));
@@ -24221,7 +24217,7 @@ void gc_heap::garbage_collect (int n)
         }
 
         heaps_in_this_gc = 0;
-#endif //STRESS_DYNAMIC_HEAP_COUNT
+#endif //STRESS_DYNAMIC_ADAPTATION_TO_APP
 
         for (int i = 0; i < n_heaps; i++)
         {
@@ -24458,12 +24454,12 @@ void gc_heap::garbage_collect (int n)
                     settings.init_mechanisms();
                     settings.condemned_generation = gen;
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
                     if (trigger_bgc_for_rethreading_p)
                     {
                         settings.condemned_generation = 0;
                     }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
                     settings.gc_index = (size_t)dd_collection_count (dynamic_data_of (0)) + 2;
                     do_pre_gc();
@@ -25036,7 +25032,7 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
 #endif //MULTIPLE_HEAPS
 }
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
 
 // check that the fields of a decommissioned heap have their expected values,
 // i.e. were not inadvertently modified
@@ -25651,7 +25647,7 @@ void gc_heap::calculate_new_heap_count ()
     int extra_heaps = (n_max_heaps >= 16) + (n_max_heaps >= 64);
     int actual_n_max_heaps = n_max_heaps - extra_heaps;
 
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
+#ifdef STRESS_DYNAMIC_ADAPTATION_TO_APP
     // quick hack for initial testing
     int new_n_heaps = (int)gc_rand::get_rand (n_max_heaps - 1) + 1;
 
@@ -25662,7 +25658,7 @@ void gc_heap::calculate_new_heap_count ()
         new_n_heaps = max (new_n_heaps, 1);
     }
     dprintf (6666, ("stress %d -> %d", n_heaps, new_n_heaps));
-#else //STRESS_DYNAMIC_HEAP_COUNT
+#else //STRESS_DYNAMIC_ADAPTATION_TO_APP
     int new_n_heaps = n_heaps;
 
     float target_tcp = dynamic_heap_count_data.target_tcp;
@@ -25863,7 +25859,7 @@ void gc_heap::calculate_new_heap_count ()
         dprintf (6666, ("processed gen2 samples, updating processed %Id -> %Id", dynamic_heap_count_data.processed_gen2_samples_count, dynamic_heap_count_data.current_gen2_samples_count));
         dynamic_heap_count_data.processed_gen2_samples_count = dynamic_heap_count_data.current_gen2_samples_count;
     }
-#endif //STRESS_DYNAMIC_HEAP_COUNT
+#endif //STRESS_DYNAMIC_ADAPTATION_TO_APP
 
     if (new_n_heaps != n_heaps)
     {
@@ -26276,7 +26272,7 @@ bool gc_heap::change_heap_count (int new_n_heaps)
 
             for (int kind = 0; kind < count_free_region_kinds; kind++)
             {
-                hpd->free_regions[kind].transfer_regions(&hp->free_regions[kind]);
+                hpd->free_regions[kind].transfer_regions_from (&hp->free_regions[kind]);
             }
         }
         dprintf (9999, ("h%d changing %d->%d", heap_number, n_heaps, new_n_heaps));
@@ -26595,7 +26591,7 @@ void gc_heap::process_datas_sample()
     last_suspended_end_time = before_distribute_free_regions_time;
 }
 
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 #endif //USE_REGIONS
 
 
@@ -38350,12 +38346,6 @@ void gc_heap::background_mark_phase ()
 #endif //!USE_REGIONS
     current_bgc_state = bgc_reset_ww;
 
-    // we don't need a join here - just whichever thread that gets here
-    // first can change the states and call restart_vm.
-    // this is not true - we can't let the EE run when we are scanning stack.
-    // since we now allow reset ww to run concurrently and have a join for it,
-    // we can do restart ee on the 1st thread that got here. Make sure we handle the
-    // sizedref handles correctly.
 #ifdef MULTIPLE_HEAPS
     bgc_t_join.join(this, gc_join_restart_ee);
     if (bgc_t_join.joined())
@@ -39674,7 +39664,7 @@ void gc_heap::bgc_thread_function()
             generation_free_obj_space (generation_of (max_generation)),
             dd_fragmentation (dynamic_data_of (max_generation))));
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
         if (n_heaps <= heap_number)
         {
             // this is the case where we have more background GC threads than heaps
@@ -39684,7 +39674,7 @@ void gc_heap::bgc_thread_function()
             dprintf (9999, ("BGC thread %d waking from idle (%d heaps) (gc%Id)", heap_number, n_heaps, VolatileLoadWithoutBarrier (&settings.gc_index)));
             continue;
         }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
         gc1();
 
@@ -39744,12 +39734,12 @@ void gc_heap::bgc_thread_function()
             fire_pevents();
 #endif //MULTIPLE_HEAPS
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
             if (trigger_bgc_for_rethreading_p)
             {
                 trigger_bgc_for_rethreading_p = false;
             }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
             c_write (settings.concurrent, FALSE);
             gc_background_running = FALSE;
@@ -43636,9 +43626,9 @@ bool gc_heap::init_dynamic_data()
     {
         process_start_time = now;
         smoothed_desired_total[0] = dynamic_data_of (0)->min_size * n_heaps;
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
         last_suspended_end_time = now;
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 #ifdef HEAP_BALANCE_INSTRUMENTATION
         last_gc_end_time_us = now;
         dprintf (HEAP_BALANCE_LOG, ("qpf=%zd, start: %zd(%d)", qpf, start_raw_ts, now));
@@ -43822,9 +43812,9 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
             new_allocation = linear_allocation_model (allocation_fraction, new_allocation,
                                                       dd_desired_allocation (dd), time_since_previous_collection_secs);
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
             if (dynamic_adaptation_mode != dynamic_adaptation_to_application_sizes)
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
             {
                 if (gen_number == 0)
                 {
@@ -46032,11 +46022,11 @@ void gc_heap::background_sweep()
     bool rebuild_maxgen_fl_p = true;
 
 #ifdef DOUBLY_LINKED_FL
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
     rebuild_maxgen_fl_p = trigger_bgc_for_rethreading_p;
 #else
     rebuild_maxgen_fl_p = false;
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 #endif //DOUBLY_LINKED_FL
 
     for (int i = 0; i <= max_generation; i++)
@@ -46546,9 +46536,9 @@ void gc_heap::background_sweep()
         // this state can live with per heap state like should_check_bgc_mark.
         current_c_gc_state = c_gc_state_free;
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
         update_total_soh_stable_size();
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
 #ifdef BGC_SERVO_TUNING
         if (bgc_tuning::enable_fl_tuning)
@@ -48955,9 +48945,9 @@ HRESULT GCHeap::Initialize()
     if (g_num_active_processors > nhp)
     {
         bool distribute_all_p = false;
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
         distribute_all_p = (gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes);
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
         heap_select::distribute_other_procs (distribute_all_p);
     }
 
@@ -49033,7 +49023,7 @@ HRESULT GCHeap::Initialize()
         dprintf (6666, ("conserve mem %d, concurent %d, WKS", gc_heap::conserve_mem_setting, gc_heap::gc_can_use_concurrent));
 #endif
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
         // if no heap count was specified, and we are told to adjust heap count dynamically ...
         if (gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
         {
@@ -49080,7 +49070,7 @@ HRESULT GCHeap::Initialize()
             dprintf (6666, ("datas max gen0 budget %Id, min %Id",
                 gc_heap::dynamic_heap_count_data.max_gen0_new_allocation, gc_heap::dynamic_heap_count_data.min_gen0_new_allocation));
         }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
         GCScan::GcRuntimeStructuresValid (TRUE);
 
         GCToEEInterface::DiagUpdateGenerationBounds();
@@ -49920,12 +49910,12 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
         {
             // the heap may have changed due to heap balancing or heaps going out of service
             // to register the object for finalization on the heap it was allocated on
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
             hp = (newAlloc == nullptr) ? acontext->get_alloc_heap()->pGenGCHeap : gc_heap::heap_of ((uint8_t*)newAlloc);
-#else //DYNAMIC_HEAP_COUNT
+#else //DYNAMIC_ADAPTATION_TO_APP
             hp = acontext->get_alloc_heap()->pGenGCHeap;
             assert ((newAlloc == nullptr) || (hp == gc_heap::heap_of ((uint8_t*)newAlloc)));
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
         }
 #endif //MULTIPLE_HEAPS
 
@@ -51559,13 +51549,13 @@ size_t gc_heap::get_gen0_min_size()
         int n_heaps = 1;
 #endif //SERVER_GC
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION_TO_APP
         if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
         {
             // if we are asked to be stingy with memory, limit gen 0 size
             gen0size = min (gen0size, (size_t)(4*1024*1024));
         }
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION_TO_APP
 
         dprintf (1, ("gen0size: %zd * %d = %zd, physical mem: %zd / 6 = %zd",
                 gen0size, n_heaps, (gen0size * n_heaps),
