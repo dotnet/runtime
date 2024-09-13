@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
@@ -9,6 +10,12 @@ namespace WebAssemblyInfo
     class WasmDiffReader : WasmReader
     {
         public WasmDiffReader(string path) : base(path) { }
+        public WasmDiffReader(Stream stream, long length) : base(stream, length) { }
+
+        override protected WasmReader CreateEmbeddedReader(Stream stream, long length)
+        {
+            return new WasmDiffReader(stream, length);
+        }
 
         void CompareSections(SectionInfo section1, SectionInfo section2)
         {
@@ -22,8 +29,8 @@ namespace WebAssemblyInfo
 
         public int CompareSummary(WasmDiffReader other)
         {
-            if (Reader.BaseStream.Length != other.Reader.BaseStream.Length)
-                Console.WriteLine($"Files length difference: {other.Reader.BaseStream.Length - Reader.BaseStream.Length} bytes");
+            if (Length != other.Length)
+                Console.WriteLine($"Files length difference: {other.Length - Length} bytes");
 
             var processedSections = new HashSet<SectionId>();
 
@@ -281,15 +288,18 @@ namespace WebAssemblyInfo
             processedIndexes ??= new HashSet<uint>();
             base.FilterFunctions(processFunction, (otherReader, false));
 
-            for (UInt32 idx = 0; idx < otherReader.functions.Length; idx++)
+            if (otherReader.functions != null)
             {
-                if (processedIndexes.Contains(idx))
-                    continue;
+                for (UInt32 idx = 0; idx < otherReader.functions.Length; idx++)
+                {
+                    if (processedIndexes.Contains(idx))
+                        continue;
 
-                if (!otherReader.FilterFunction(idx, out string? name, data))
-                    continue;
+                    if (!otherReader.FilterFunction(idx, out string? name, data))
+                        continue;
 
-                processFunction(idx, name, (otherReader, true));
+                    processFunction(idx, name, (otherReader, true));
+                }
             }
 
             processedIndexes = null;

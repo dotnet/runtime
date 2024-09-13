@@ -9,8 +9,19 @@ namespace WebAssemblyInfo
 {
     class WasmReader : WasmReaderBase
     {
+        public List<WasmReader> ModuleReaders = new();
+
         public WasmReader(string path) : base(path)
         {
+        }
+
+        public WasmReader(Stream stream, long length) : base(stream, length)
+        {
+        }
+
+        protected virtual WasmReader CreateEmbeddedReader(Stream stream, long length)
+        {
+            return new WasmReader(stream, length);
         }
 
         protected override void PostParse()
@@ -89,6 +100,16 @@ namespace WebAssemblyInfo
                     break;
                 case SectionId.Memory:
                     ReadMemorySection();
+                    break;
+                case SectionId.WitCoreModule:
+                    InWitComponent = false;
+                    EndOfModulePositions.Push(Reader.BaseStream.Position + section.size);
+
+                    var reader = CreateEmbeddedReader(Reader.BaseStream, section.size);
+                    reader.ReadModule();
+                    ModuleReaders.Add(reader);
+                    EndOfModulePositions.Pop();
+                    InWitComponent = true;
                     break;
                 default:
                     break;
@@ -1086,7 +1107,12 @@ namespace WebAssemblyInfo
             }
         }
 
-        string moduleName = "";
+        public override string ToString()
+        {
+            return $"module name: {ModuleName} path: {Path}";
+        }
+
+        protected string ModuleName = "";
         readonly NameMap functionNames = new();
         readonly Dictionary<string, UInt32> nameToFunction = new();
         readonly NameMap globalNames = new();
@@ -1109,9 +1135,9 @@ namespace WebAssemblyInfo
                 switch (id)
                 {
                     case CustomSubSectionId.ModuleName:
-                        moduleName = ReadString();
+                        ModuleName = ReadString();
                         if (Program.Verbose2)
-                            Console.WriteLine($"  module name: {moduleName}");
+                            Console.WriteLine($"  module name: {ModuleName}");
                         break;
                     case CustomSubSectionId.FunctionNames:
                         ReadNameMap(functionNames, "function", nameToFunction);
@@ -1245,7 +1271,9 @@ namespace WebAssemblyInfo
 
         string ReadString()
         {
-            return Encoding.UTF8.GetString(Reader.ReadBytes((int)ReadU32()));
+            var len = ReadU32();
+
+            return Encoding.UTF8.GetString(Reader.ReadBytes((int)len));
         }
 
         protected Function[]? functions;
@@ -1394,6 +1422,11 @@ namespace WebAssemblyInfo
         public void PrintFunctions()
         {
             FilterFunctions(PrintFunction);
+
+            foreach(var reader in ModuleReaders) {
+                Console.WriteLine($"Module: {reader.Path}");
+                reader.PrintFunctions();
+            }
         }
 
         protected void PrintFunctionWithPrefix(UInt32 idx, string? name, string? prefix = null)
@@ -1484,9 +1517,9 @@ namespace WebAssemblyInfo
 
         public void PrintSummary()
         {
-            var moduleName = string.IsNullOrEmpty(this.moduleName) ? null : $" name: {this.moduleName}";
+            var moduleName = string.IsNullOrEmpty(this.ModuleName) ? null : $" name: {this.ModuleName}";
             Console.WriteLine($"Module:{moduleName} path: {Path}");
-            Console.WriteLine($"  size: {Reader.BaseStream.Length:N0}");
+            Console.WriteLine($"  size: {Length:N0}");
             Console.WriteLine($"  binary format version: {Version}");
             Console.WriteLine($"  sections: {sections.Count}");
 
@@ -1496,6 +1529,10 @@ namespace WebAssemblyInfo
                 var id = sections[i].id;
                 var sectionName = (id == SectionId.Custom && customSectionOffset < customSectionNames.Count) ? $" name: {customSectionNames[customSectionOffset++]}" : "";
                 Console.WriteLine($"    id: {id}{sectionName} size: {sections[i].size:N0}");
+            }
+
+            foreach(var reader in ModuleReaders) {
+                reader.PrintSummary();
             }
         }
     }

@@ -41,15 +41,38 @@ namespace WebAssemblyInfo
             var reader2 = new WasmDiffReader(files[1]);
             reader2.Parse();
 
+            return CompareReaders(reader1, reader2);
+        }
+
+        static int CompareReaders(WasmDiffReader reader1, WasmDiffReader reader2)
+        {
+            int rv = 0;
+
             if (!Disassemble)
             {
                 if (Program.ShowFunctionSize)
                     reader1.CompareFunctions(reader2);
 
-                return reader1.CompareSummary(reader2);
+                rv |= reader1.CompareSummary(reader2);
             }
             else
-                return reader1.CompareDissasembledFunctions(reader2);
+                rv |= reader1.CompareDissasembledFunctions(reader2);
+
+            if (reader1.ModuleReaders != null && reader2.ModuleReaders != null && reader1.ModuleReaders.Count == reader2.ModuleReaders.Count) {
+                for(int i = 0; i < reader1.ModuleReaders.Count; i++) {
+                    var module1 = reader1.ModuleReaders[i] as WasmDiffReader;
+                    var module2 = reader2.ModuleReaders[i] as WasmDiffReader;
+
+                    if (module1 == null || module2 == null)
+                        continue;
+
+                    Console.WriteLine($"Comparing {module1} and {module2}");
+
+                    rv |= CompareReaders(module1, module2);
+                }
+            }
+
+            return rv;
         }
 
         static List<string> ProcessArguments(string[] args)

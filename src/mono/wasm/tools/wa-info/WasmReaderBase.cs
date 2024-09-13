@@ -13,6 +13,9 @@ namespace WebAssemblyInfo
         public UInt32 Version { get; private set; }
         public string Path { get; private set; }
 
+        protected readonly long Length;
+        protected readonly Stack<long> EndOfModulePositions = new();
+
         public WasmReaderBase(string path)
         {
             if (Program.Verbose)
@@ -20,7 +23,17 @@ namespace WebAssemblyInfo
 
             Path = path;
             var stream = File.Open(Path, FileMode.Open);
+            Length = stream.Length;
             Reader = new BinaryReader(stream);
+            EndOfModulePositions.Push(Length);
+        }
+
+        public WasmReaderBase(Stream stream, long len)
+        {
+            Length =  len;
+            Path = "[embedded]";
+            Reader = new BinaryReader(stream);
+            EndOfModulePositions.Push(stream.Position + len);
         }
 
         public void Parse()
@@ -32,6 +45,8 @@ namespace WebAssemblyInfo
         protected virtual void PostParse() { }
 
         protected byte[] MagicWasm = { 0x0, 0x61, 0x73, 0x6d };
+
+        protected bool InWitComponent = false;
 
         protected virtual void ReadModule()
         {
@@ -45,9 +60,24 @@ namespace WebAssemblyInfo
 
             Version = Reader.ReadUInt32();
             if (Program.Verbose)
-                Console.WriteLine($"WebAssembly binary format version: {Version}");
+                Console.WriteLine($"WebAssembly binary format version: 0x{Version:x8}");
 
-            while (Reader.BaseStream.Position < Reader.BaseStream.Length)
+            switch (Version)
+            {
+                case 0x1000d:
+                    InWitComponent = true;
+                    goto case 1;
+                case 1:
+                    ReadWasmModule();
+                    break;
+                default:
+                    throw new FileLoadException($"Unsupported WebAssembly binary format version: 0x{Version:x8}");
+            }
+        }
+
+        void ReadWasmModule()
+        {
+            while (Reader.BaseStream.Position < EndOfModulePositions.Peek())
                 ReadSection();
         }
 
@@ -67,6 +97,20 @@ namespace WebAssemblyInfo
             Data,
             DataCount,
             Tag,
+            // Wit Component sections
+            WitCoreCustom = 0x1000,
+            WitCoreModule,
+            WitCoreInstance,
+            WitCoreType,
+            WitComponent,
+            WitInstance,
+            WitAlias,
+            WitType,
+            WitCanon,
+            WitStart,
+            WitImport,
+            WitExport,
+            WitValue,
         }
 
         protected struct SectionInfo
@@ -81,9 +125,18 @@ namespace WebAssemblyInfo
 
         protected abstract void ReadSection(SectionInfo section);
 
+        SectionId ReadSectionId()
+        {
+            var id = (int)Reader.ReadByte();
+            if (InWitComponent)
+                id += 0x1000;
+
+            return (SectionId)id;
+        }
+
         void ReadSection()
         {
-            var section = new SectionInfo() { offset=Reader.BaseStream.Position, id = (SectionId)Reader.ReadByte(), size = ReadU32(), begin = Reader.BaseStream.Position };
+            var section = new SectionInfo() { offset=Reader.BaseStream.Position, id = ReadSectionId(), size = ReadU32(), begin = Reader.BaseStream.Position };
             sections.Add(section);
             if (!sectionsById.ContainsKey(section.id))
                 sectionsById[section.id] = new List<SectionInfo>();
