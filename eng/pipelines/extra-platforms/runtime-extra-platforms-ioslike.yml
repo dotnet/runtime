@@ -90,9 +90,9 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
-            testBuildArgs: /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildTestsOnHelix=true
+            testBuildArgs: /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-            extraHelixArguments: /p:MonoForceInterpreter=true /p:NeedsToBuildAppsOnHelix=true
+            extraHelixArguments: /p:MonoForceInterpreter=true
 
 #
 # iOS/tvOS devices
