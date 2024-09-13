@@ -30,9 +30,7 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get => IsSupported; }
         }
 
-        /// <summary>
-        /// void _serialize (void);
-        /// </summary>
+        /// <summary>void _serialize (void);</summary>
         public static void Serialize() => Serialize();
 
     }

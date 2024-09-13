@@ -128,7 +128,6 @@ namespace Microsoft.Interop
         {
             // DeclarationCopiedFromBaseDeclaration(<Arguments>)
             //    => ((<baseInterfaceType>)this).<MethodName>(<Arguments>);
-            var forwarder = new Forwarder();
             return MethodDeclaration(GenerationContext.SignatureContext.StubReturnType, MethodInfo.MethodName)
                 .WithModifiers(TokenList(Token(SyntaxKind.NewKeyword)))
                 .WithAttributeLists(List(GenerationContext.SignatureContext.AdditionalAttributes.Concat(MethodInfo.Attributes.Select(a => a.GenerateAttributeList()))))
@@ -142,7 +141,7 @@ namespace Microsoft.Interop
                                     CastExpression(OriginalDeclaringInterface.Info.Type.Syntax, IdentifierName("this"))),
                                 IdentifierName(MethodInfo.MethodName)),
                             ArgumentList(
-                                SeparatedList(GenerationContext.SignatureContext.ManagedParameters.Select(p => forwarder.Bind(p).AsArgument(new ManagedStubCodeContext())))))))
+                                SeparatedList(GenerationContext.SignatureContext.ManagedParameters.Select(p => Argument(IdentifierName(p.InstanceIdentifier))))))))
                 .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
         }
 

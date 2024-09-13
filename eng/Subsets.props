@@ -587,6 +587,7 @@
       <AdditionalProperties Condition="'%(ProjectToBuild.Category)' == 'tools'">%(AdditionalProperties);Configuration=$(ToolsConfiguration)</AdditionalProperties>
 
       <!-- Propagate configurations for cross-subset builds -->
+      <AdditionalProperties>%(AdditionalProperties);RuntimeConfiguration=$(RuntimeConfiguration)</AdditionalProperties>
       <AdditionalProperties>%(AdditionalProperties);LibrariesConfiguration=$(LibrariesConfiguration)</AdditionalProperties>
       <AdditionalProperties>%(AdditionalProperties);HostConfiguration=$(HostConfiguration)</AdditionalProperties>
       <AdditionalProperties>%(AdditionalProperties);TasksConfiguration=$(TasksConfiguration)</AdditionalProperties>

@@ -478,17 +478,14 @@ void VirtualCallStubManager::ResetCache()
 
 }
 
-void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderAllocator)
+void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
 {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        PRECONDITION(CheckPointer(pDomain));
         INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
-    // Record the parent domain
-    parentDomain        = pDomain;
     m_loaderAllocator   = pLoaderAllocator;
 
     //

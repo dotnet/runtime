@@ -25,6 +25,7 @@ PARTICULAR PURPOSE.
 // Add the classes in the following namespaces to our namespace
 using System;
 using System.Threading;
+using Xunit;
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -202,7 +203,7 @@ public class DisposeObj : BaseObj {
 
 
 // This class represents the application itself
-class Application {
+public class Application {
     static private int indent = 0;
 
     static public void Display(String s) {
@@ -497,7 +498,9 @@ class Application {
     }
 
 
-    public static int Main() {
+    [Fact]
+    public static void TestEntryPoint()
+    {
     // Environment.ExitCode = 1;
         Display("To fully understand this sample, you should step through the");
         Display("code in the debugger while monitoring the output generated.\n");
@@ -522,8 +525,6 @@ class Application {
 
         // This is the last line of code executed before the application terminates.
         Display(-1, "Demo stop: Finalize on shutdown (application is now terminating)", 0);
-
-    return 100;
     }
 }
 

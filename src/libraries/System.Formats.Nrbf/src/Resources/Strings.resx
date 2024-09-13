@@ -130,7 +130,7 @@
     <value>{0} Record Type is not supported by design.</value>
   </data>
   <data name="Serialization_InvalidReference" xml:space="preserve">
-    <value>Member reference was pointing to a record of unexpected type.</value>
+    <value>Invalid member reference.</value>
   </data>
   <data name="Serialization_InvalidTypeName" xml:space="preserve">
     <value>Invalid type name.</value>
@@ -158,5 +158,11 @@
   </data>
   <data name="Serialization_InvalidAssemblyName" xml:space="preserve">
     <value>Invalid assembly name.</value>
+  </data>
+  <data name="Serialization_InvalidFormat" xml:space="preserve">
+    <value>Invalid format.</value>
+  </data>
+  <data name="Serialization_SurrogateCharacter" xml:space="preserve">
+    <value>A surrogate character was read.</value>
   </data>
 </root>

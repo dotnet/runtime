@@ -1061,7 +1061,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *data);
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyList(CLRDATA_ADDRESS appDomain, int count, CLRDATA_ADDRESS values[], int *fetched);
-    virtual HRESULT STDMETHODCALLTYPE GetAssemblyData(CLRDATA_ADDRESS baseDomainPtr, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *data);
+    virtual HRESULT STDMETHODCALLTYPE GetAssemblyData(CLRDATA_ADDRESS domainPtr, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *data);
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetThreadData(CLRDATA_ADDRESS thread, struct DacpThreadData *data);
     virtual HRESULT STDMETHODCALLTYPE GetThreadFromThinlockID(UINT thinLockId, CLRDATA_ADDRESS *pThread);
@@ -2171,7 +2171,7 @@ private:
     void WalkHandles();
     static inline bool IsAlwaysStrongReference(unsigned int type)
     {
-        return type == HNDTYPE_STRONG || type == HNDTYPE_PINNED || type == HNDTYPE_SIZEDREF;
+        return type == HNDTYPE_STRONG || type == HNDTYPE_PINNED;
     }
 
 private:

@@ -4,7 +4,7 @@
     <body>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateMessage">
         <source>Argument '{0}' is not referenced from the logging message</source>
-        <target state="translated">Do argumentu „{0}” nie odwołuje się komunikat rejestrowania</target>
+        <target state="needs-review-translation">Do argumentu „{0}” nie odwołuje się komunikat rejestrowania</target>
         <note />
       </trans-unit>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateTitle">
@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
         <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="translated">Argument „{0}” używa nieobsługiwanego modyfikatora parametrów danych wyjściowych</target>
+        <target state="new">Argument '{0}' is using the unsupported out parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
         <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="translated">Argument używa nieobsługiwanego modyfikatora parametrów danych wyjściowych</target>
+        <target state="new">Argument is using the unsupported out parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
@@ -69,22 +69,22 @@
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
         <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="translated">Generator źródła rejestrowania nie jest dostępny w języku C# {0}. Użyj wersji językowej {1} lub nowszej.</target>
+        <target state="new">The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
         <source>C# language version not supported by the source generator.</source>
-        <target state="translated">Wersja języka C# nie jest obsługiwana przez generator źródła.</target>
+        <target state="new">C# language version not supported by the source generator.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Logging method '{0}' contains malformed format strings</source>
-        <target state="translated">Metoda rejestrowania „{0}” zawiera źle sformułowane ciągi formatu</target>
+        <target state="new">Logging method '{0}' contains malformed format strings</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsTitle">
         <source>Logging method contains malformed format strings</source>
-        <target state="translated">Metoda rejestrowania zawiera źle sformułowane ciągi formatu</target>
+        <target state="new">Logging method contains malformed format strings</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -184,12 +184,12 @@
       </trans-unit>
       <trans-unit id="ShouldntReuseEventNamesMessage">
         <source>Multiple logging methods are using event name {0} in class {1}</source>
-        <target state="translated">Wiele metod rejestrowania używa nazwy zdarzenia {0} w klasie {1}</target>
+        <target state="new">Multiple logging methods are using event name {0} in class {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntReuseEventNamesTitle">
         <source>Multiple logging methods should not use the same event name within a class</source>
-        <target state="translated">Wiele metod rejestrowania nie powinno używać tej samej nazwy zdarzenia w klasie</target>
+        <target state="new">Multiple logging methods should not use the same event name within a class</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">

@@ -31,7 +31,7 @@ NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 na
 {
     STANDARD_VM_CONTRACT;
 
-    BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
+    AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
     AssemblyBinder* binder = componentModule->GetPEAssembly()->GetAssemblyBinder();
     PTR_LoaderAllocator moduleLoaderAllocator = componentModule->GetLoaderAllocator();
 
@@ -158,7 +158,7 @@ void AssemblyBinder::DeclareLoadedAssembly(Assembly* loadedAssembly)
 
 void AssemblyBinder::AddLoadedAssembly(Assembly* loadedAssembly)
 {
-    BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
+    AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
     m_loadedAssemblies.Append(loadedAssembly);
 
 #ifdef FEATURE_READYTORUN

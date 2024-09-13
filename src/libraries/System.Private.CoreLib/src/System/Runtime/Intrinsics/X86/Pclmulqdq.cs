@@ -31,15 +31,15 @@ namespace System.Runtime.Intrinsics.X86
         }
 
         /// <summary>
-        /// __m128i _mm_clmulepi64_si128 (__m128i a, __m128i b, const int imm8)
-        ///    PCLMULQDQ xmm1,       xmm2/m128, imm8
-        ///   VPCLMULQDQ xmm1, xmm2, xmm3/m128, imm8
+        ///   <para>__m128i _mm_clmulepi64_si128 (__m128i a, __m128i b, const int imm8)</para>
+        ///   <para>   PCLMULQDQ xmm1,       xmm2/m128, imm8</para>
+        ///   <para>  VPCLMULQDQ xmm1, xmm2, xmm3/m128, imm8</para>
         /// </summary>
         public static Vector128<long> CarrylessMultiply(Vector128<long> left, Vector128<long> right, [ConstantExpected] byte control) => CarrylessMultiply(left, right, control);
         /// <summary>
-        /// __m128i _mm_clmulepi64_si128 (__m128i a, __m128i b, const int imm8)
-        ///    PCLMULQDQ xmm1,       xmm2/m128, imm8
-        ///   VPCLMULQDQ xmm1, xmm2, xmm3/m128, imm8
+        ///   <para>__m128i _mm_clmulepi64_si128 (__m128i a, __m128i b, const int imm8)</para>
+        ///   <para>   PCLMULQDQ xmm1,       xmm2/m128, imm8</para>
+        ///   <para>  VPCLMULQDQ xmm1, xmm2, xmm3/m128, imm8</para>
         /// </summary>
         public static Vector128<ulong> CarrylessMultiply(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected] byte control) => CarrylessMultiply(left, right, control);
     }

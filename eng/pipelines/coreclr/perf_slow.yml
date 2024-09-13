@@ -86,6 +86,24 @@ extends:
               logicalmachine: 'perfampere'
               timeoutInMinutes: 720
 
+        # run arm64 jit jobs for mono
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+            buildConfig: release
+            runtimeFlavor: mono
+            platforms:
+            - linux_arm64
+            jobParameters:
+              testGroup: perf
+              liveLibrariesBuildConfig: Release
+              runtimeType: mono
+              projectFile: microbenchmarks.proj
+              runKind: micro_mono
+              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+              logicalmachine: 'perfampere'
+              timeoutInMinutes: 720
+
       - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(notin(variables['Build.Reason'], 'Schedule', 'Manual'), parameters.runPrivateJobs)) }}:
 
         # build coreclr and libraries

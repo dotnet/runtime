@@ -10,8 +10,8 @@
 #include "pal_types.h"
 
 #include <assert.h>
-#include <errno.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <fnmatch.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -367,6 +367,72 @@ int32_t SystemNative_Unlink(const char* path)
     int32_t result;
     while ((result = unlink(path)) < 0 && errno == EINTR);
     return result;
+}
+
+#ifdef __NR_memfd_create
+#ifndef MFD_CLOEXEC
+#define MFD_CLOEXEC 0x0001U
+#endif
+#ifndef MFD_ALLOW_SEALING
+#define MFD_ALLOW_SEALING 0x0002U
+#endif
+#ifndef F_ADD_SEALS
+#define F_ADD_SEALS (1024 + 9)
+#endif
+#ifndef F_SEAL_WRITE
+#define F_SEAL_WRITE 0x0008
+#endif
+#endif
+
+int32_t SystemNative_IsMemfdSupported(void)
+{
+#ifdef __NR_memfd_create
+#ifdef TARGET_LINUX
+    struct utsname uts;
+    int32_t major, minor;
+
+    // memfd_create is known to only work properly on kernel version > 3.17.
+    // On earlier versions, it may raise SIGSEGV instead of returning ENOTSUP.
+    if (uname(&uts) == 0 && sscanf(uts.release, "%d.%d", &major, &minor) == 2 && (major < 3 || (major == 3 && minor < 17)))
+    {
+        return 0;
+    }
+#endif
+
+    // Note that the name has no affect on file descriptor behavior. From linux manpage: 
+    //   Names do not affect the behavior of the file descriptor, and as such multiple files can have the same name without any side effects.
+    int32_t fd = (int32_t)syscall(__NR_memfd_create, "test", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    if (fd < 0) return 0;
+
+    close(fd);
+    return 1;
+#else
+    errno = ENOTSUP;
+    return 0;
+#endif
+}
+
+intptr_t SystemNative_MemfdCreate(const char* name, int32_t isReadonly)
+{
+#ifdef __NR_memfd_create
+#if defined(SHM_NAME_MAX) // macOS
+    assert(strlen(name) <= SHM_NAME_MAX);
+#elif defined(PATH_MAX) // other Unixes
+    assert(strlen(name) <= PATH_MAX);
+#endif
+
+    int32_t fd = (int32_t)syscall(__NR_memfd_create, name, MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    if (!isReadonly || fd < 0) return fd;
+
+    // Add a write seal when readonly protection requested
+    while (fcntl(fd, F_ADD_SEALS, F_SEAL_WRITE) < 0 && errno == EINTR);
+    return fd;
+#else
+    (void)name;
+    (void)isReadonly;
+    errno = ENOTSUP;
+    return -1;
+#endif
 }
 
 intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t mode)

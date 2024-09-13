@@ -8,7 +8,9 @@
 
 #include <config.h>
 
+#if !defined (HOST_WASM)
 #include <mono/utils/mono-logger-internals.h>
+#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -42,6 +44,7 @@ mono_profhelper_close_socket_fd (SOCKET fd)
 void
 mono_profhelper_setup_command_server (SOCKET *server_socket, int *command_port, const char* profiler_name)
 {
+#if !defined (HOST_WASM)
 	*server_socket = socket (PF_INET, SOCK_STREAM, 0);
 
 	if (*server_socket == INVALID_SOCKET) {
@@ -77,11 +80,13 @@ mono_profhelper_setup_command_server (SOCKET *server_socket, int *command_port, 
 	}
 
 	*command_port = ntohs (server_address.sin_port);
+#endif
 }
 
 void
 mono_profhelper_add_to_fd_set (fd_set *set, SOCKET fd, int *max_fd)
 {
+#if !defined (HOST_WASM)
 	/*
 	 * This should only trigger for the basic FDs (server socket, pipes) at
 	 * startup if for some mysterious reason they're too large. In this case,
@@ -99,4 +104,5 @@ mono_profhelper_add_to_fd_set (fd_set *set, SOCKET fd, int *max_fd)
 
 	if (*max_fd < GUINT64_TO_INT(fd))
 		*max_fd = (int)fd;
+#endif
 }
