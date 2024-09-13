@@ -18,6 +18,7 @@
     <Compile Include="System\Net\WebSockets\Compression\WebSocketInflater.cs" />
     <Compile Include="System\Net\WebSockets\ManagedWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\ManagedWebSocket.KeepAlive.cs" />
+    <Compile Include="System\Net\WebSockets\ManagedWebSocketStates.cs" />
     <Compile Include="System\Net\WebSockets\NetEventSource.WebSockets.cs" />
     <Compile Include="System\Net\WebSockets\ValueWebSocketReceiveResult.cs" />
     <Compile Include="System\Net\WebSockets\WebSocket.cs" />

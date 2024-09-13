@@ -12,8 +12,6 @@ namespace System.Net.WebSockets
     internal sealed partial class ManagedWebSocket : WebSocket
     {
         private bool IsUnsolicitedPongKeepAlive => _keepAlivePingState is null;
-        private static bool IsValidSendState(WebSocketState state) => WebSocketStateHelper.HasFlag(s_validSendStates, state);
-        private static bool IsValidReceiveState(WebSocketState state) => WebSocketStateHelper.HasFlag(s_validReceiveStates, state);
 
         private void HeartBeat()
         {
@@ -39,7 +37,7 @@ namespace System.Net.WebSockets
         {
             Debug.Assert((opcode is MessageOpcode.Pong) || (!IsUnsolicitedPongKeepAlive && opcode is MessageOpcode.Ping));
 
-            if (!IsValidSendState(_state))
+            if (!WebSocketStateHelper.IsValidSendState(_state))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Cannot send keep-alive frame in {nameof(_state)}={_state}");
 
