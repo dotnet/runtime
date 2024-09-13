@@ -522,19 +522,8 @@ extends:
             buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) -rc Checked -p:NativeAotSupported=false
             timeoutInMinutes: 120
             postBuildSteps:
-              - template: /eng/pipelines/common/platform-matrix.yml
-                parameters:
-                  jobTemplate: /eng/pipelines/common/global-build-job.yml
-                  helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-                  buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-                  runtimeFlavor: coreclr
-                  platforms:
-                  - freebsd_x64
-                  jobParameters:
-                    testScope: innerloop
-                    nameSuffix: CoreCLR
-                    buildArgs: -s clr.tools+packs -c $(_BuildConfig) -rc Checked
-                    timeoutInMinutes: 120
+              - script: $(Build.SourcesDirectory)/build$(scriptExt) ${{ variables.debugOnPrReleaseOnRolling }} -s clr.tools+packs -c $(_BuildConfig) -rc Checked -cross -os freebsd
+                displayName: Build clr.tools and packs
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
