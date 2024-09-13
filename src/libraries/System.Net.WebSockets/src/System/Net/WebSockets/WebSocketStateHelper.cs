@@ -40,14 +40,11 @@ namespace System.Net.WebSockets
             ObjectDisposedException.ThrowIf(isDisposed, typeof(WebSocket));
         }
 
-        private static ManagedWebSocketStates ToFlag(WebSocketState value) => value switch
+        private static ManagedWebSocketStates ToFlag(WebSocketState value)
         {
-            WebSocketState.Open => ManagedWebSocketStates.Open,
-            WebSocketState.CloseSent => ManagedWebSocketStates.CloseSent,
-            WebSocketState.CloseReceived => ManagedWebSocketStates.CloseReceived,
-            WebSocketState.Closed => ManagedWebSocketStates.Closed,
-            WebSocketState.Aborted => ManagedWebSocketStates.Aborted,
-            _ => throw new ArgumentOutOfRangeException(nameof(value))
-        };
+            ManagedWebSocketStates flag = (ManagedWebSocketStates)(1 << (int)value);
+            Debug.Assert(Enum.IsDefined(flag));
+            return flag;
+        }
     }
 }
