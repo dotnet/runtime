@@ -2425,6 +2425,12 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
 
         case 0x0F:
         {
+            if (((evexPrefix >> 16) & 0x07) == 0x04)
+            {
+                // MAP index equal to 4 indicates this instruction is a promoted legacy instruction.
+                // the MAP ID has been set when EVEX prefix is added.
+                break;
+            }
             evexPrefix |= (0x01 << 16);
             break;
         }
@@ -7352,6 +7358,13 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     id->idReg1(reg1);
     id->idReg2(reg2);
 
+    SetEvexNdIfNeeded(id, instOptions);
+
+    if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
+    {
+        id->idInsFmt(IF_RWR_RRD);
+    }
+
     if ((instOptions & INS_OPTS_EVEX_b_MASK) != INS_OPTS_NONE)
     {
         // if EVEX.b needs to be set in this path, then it should be embedded rounding.
@@ -7359,6 +7372,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
         id->idSetEvexbContext(instOptions);
     }
     SetEvexEmbMaskIfNeeded(id, instOptions);
+
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id);
     id->idCodeSize(sz);
@@ -7407,12 +7421,27 @@ void emitter::emitIns_R_R_I(
     SetEvexEmbMaskIfNeeded(id, instOptions);
     SetEvexNdIfNeeded(id, instOptions);
 
-    if (id->idIsEvexNdContextSet())
+    if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
     {
         // need to fix the instruction opcode for legacy instructions as they has different opcode for RI form.
         code = insCodeMI(ins);
         // need to fix the instructions format for NDD legacy instructions.
-        id->idInsFmt(IF_RWR_RRD_CNS);
+        insFormat fmt;
+        switch (ins)
+        {
+            case INS_shl_N:
+            case INS_shr_N:
+            case INS_sar_N:
+            case INS_ror_N:
+            case INS_rol_N:
+                fmt = IF_RWR_RRD_SHF;
+                break;
+        
+            default:
+                fmt = IF_RWR_RRD_CNS;
+                break;
+        }
+        id->idInsFmt(fmt);
     }
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id, code, ival);
@@ -7797,7 +7826,7 @@ void emitter::emitIns_R_R_R(
     SetEvexEmbMaskIfNeeded(id, instOptions);
     SetEvexNdIfNeeded(id, instOptions);
 
-    if (id->idIsEvexNdContextSet())
+    if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
     {
         // need to fix the instructions format for NDD legacy instructions.
         id->idInsFmt(IF_RWR_RRD_RRD);
@@ -7828,7 +7857,7 @@ void emitter::emitIns_R_R_S(
     SetEvexEmbMaskIfNeeded(id, instOptions);
     SetEvexNdIfNeeded(id, instOptions);
 
-    if (id->idIsEvexNdContextSet())
+    if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
     {
         id->idInsFmt(IF_RWR_RRD_SRD);
     }
@@ -12723,6 +12752,21 @@ void emitter::emitDispIns(
                     break;
                 }
 
+                case INS_rol:
+                case INS_ror:
+                case INS_rcl:
+                case INS_rcr:
+                case INS_shl:
+                case INS_shr:
+                case INS_sar:
+                {
+                    assert(id->idIsEvexNdContextSet());
+                    printf("%s", emitRegName(id->idReg1(), attr));
+                    printf(", %s", emitRegName(id->idReg2(), attr));
+                    emitDispShift(ins, (BYTE)0);
+                    break;
+                }
+
                 default:
                 {
                     printf("%s", emitRegName(id->idReg1(), attr));
@@ -12965,6 +13009,20 @@ void emitter::emitDispIns(
                     goto PRINT_CONSTANT;
                 }
             }
+            break;
+        }
+
+        case IF_RWR_RRD_SHF:
+        {
+            assert(IsApxNDDEncodableInstruction(id->idIns()));
+            printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
+            
+
+            emitGetInsCns(id, &cnsVal);
+            val = cnsVal.cnsVal;
+
+            emitDispShift(ins, (BYTE)val);
+            
             break;
         }
 
@@ -15987,7 +16045,17 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
-                dst += emitOutputByte(dst, 0x66);
+                if (TakesLegacyPromotedEvexPrefix(id))
+                {
+                    assert(IsApxNDDEncodableInstruction(ins));
+                    assert(hasEvexPrefix(code));
+                    // Evex.pp should already be added when adding the prefix.
+                    assert((code & PPBITS_FOR_SHORT_INPUT) != 0);
+                }
+                else
+                {
+                    dst += emitOutputByte(dst, 0x66);
+                }
                 FALLTHROUGH;
 
             case EA_4BYTE:
@@ -16038,8 +16106,19 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         }
     }
 
-    unsigned regCode = insEncodeReg345(id, regFor345Bits, size, &code);
-    regCode |= insEncodeReg012(id, regFor012Bits, size, &code);
+    
+    unsigned regCode;
+    if (!id->idIsEvexNdContextSet() || !IsApxNDDEncodableInstruction(ins))
+    {
+        regCode = insEncodeReg345(id, regFor345Bits, size, &code);
+        regCode |= insEncodeReg012(id, regFor012Bits, size, &code);
+    }
+    else
+    {
+        // unary ins with NDD form use Evex.vvvvv for dst, and ModRM.rm for src
+        code = insEncodeReg3456(id, reg1, size, code);
+        regCode = insEncodeReg012(id, reg2, size, &code);
+    }
 
     if (TakesSimdPrefix(id))
     {
@@ -16097,6 +16176,11 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         dst += emitOutputByte(dst, (code >> 8) & 0xFF);
         dst += emitOutputByte(dst, (0xC0 | regCode));
     }
+    else if (IsApxNDDEncodableInstruction(ins) && id->idIsEvexNdContextSet())
+    {
+        dst += emitOutputByte(dst, (code & 0xFF));
+        dst += emitOutputByte(dst, (0xC0 | regCode | (code >> 8)));
+    }    
     else
     {
         dst += emitOutputWord(dst, code);
@@ -18055,6 +18139,37 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         }
 
+        case IF_RWR_RRD_SHF:
+        {
+            assert(IsApxNDDEncodableInstruction(ins));
+            code = insCodeMR(ins);
+            code = AddX86PrefixIfNeeded(id, code, size);
+            code = insEncodeMRreg(id, id->idReg2(), size, code);
+            code = insEncodeReg3456(id, id->idReg1(), size, code);
+
+            // set the W bit
+            if (size != EA_1BYTE)
+            {
+                code |= 1;
+            }
+
+            // Emit the REX prefix if it exists
+            if (TakesRexWPrefix(id))
+            {
+                code = AddRexWPrefix(id, code);
+            }
+
+            dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
+            dst += emitOutputWord(dst, code);
+            dst += emitOutputByte(dst, emitGetInsSC(id));
+            sz = emitSizeOfInsDsc_CNS(id);
+
+            // Update GC info.
+            assert(!id->idGCref());
+            emitGCregDeadUpd(id->idReg1(), dst);
+            break;
+        }
+
         case IF_RRD_RRD:
         case IF_RWR_RRD:
         case IF_RRW_RRD:
@@ -19864,6 +19979,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
 
                 case IF_RRW:
+                // TODO-XArch-APX: to be verified if this data is correct for NDD form.
+                case IF_RWR_RRD:
                     // ins   reg, cl
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
@@ -19891,6 +20008,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             switch (insFmt)
             {
                 case IF_RRW:
+                // TODO-XArch-APX: to be verified if this data is correct for NDD form.
+                case IF_RWR_RRD:
                     // ins   reg, 1
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     break;
@@ -19924,6 +20043,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             switch (insFmt)
             {
                 case IF_RRW_SHF:
+                // TODO-XArch-APX: to be verified if this data is correct for NDD form.
+                case IF_RWR_RRD_SHF:
                     // ins   reg, cns
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     break;

@@ -58,9 +58,9 @@ INST5(pop,              "pop",              IUM_WR, 0x00008E,     BAD_CODE,     
 INST5(push_hide,        "push",             IUM_RD, 0x0030FE,     0x000068,     BAD_CODE,     BAD_CODE,     0x000050,    INS_TT_NONE,    Encoding_REX2)
 INST5(pop_hide,         "pop",              IUM_WR, 0x00008E,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000058,    INS_TT_NONE,    Encoding_REX2)
 
-INST5(inc,              "inc",              IUM_RW, 0x0000FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000040,    INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF | INS_FLAGS_Has_Wbit | Encoding_REX2)
+INST5(inc,              "inc",              IUM_RW, 0x0000FE,     BAD_CODE,     0x0000FE,     BAD_CODE,     0x000040,    INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
 INST5(inc_l,            "inc",              IUM_RW, 0x0000FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C0FE,    INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF | Encoding_REX2)
-INST5(dec,              "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000048,    INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF | INS_FLAGS_Has_Wbit | Encoding_REX2)
+INST5(dec,              "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     0x0008FE,     BAD_CODE,     0x000048,    INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
 INST5(dec_l,            "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C8FE,    INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF | Encoding_REX2)
 
 // Multi-byte opcodes without modrm are represented in mixed endian fashion.
@@ -99,22 +99,22 @@ INST3(movsxd,           "movsxd",           IUM_WR, BAD_CODE,     BAD_CODE,     
 #endif
 INST3(movzx,            "movzx",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00B6,                                INS_TT_NONE,    INS_FLAGS_Has_Wbit | Encoding_REX2)
 
-INST3(cmovo,            "cmovo",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0040,                                INS_TT_NONE,    Reads_OF | Encoding_REX2)
-INST3(cmovno,           "cmovno",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0041,                                INS_TT_NONE,    Reads_OF | Encoding_REX2)
-INST3(cmovb,            "cmovb",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0042,                                INS_TT_NONE,    Reads_CF | Encoding_REX2)
-INST3(cmovae,           "cmovae",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0043,                                INS_TT_NONE,    Reads_CF | Encoding_REX2)
-INST3(cmove,            "cmove",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0044,                                INS_TT_NONE,    Reads_ZF | Encoding_REX2)
-INST3(cmovne,           "cmovne",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0045,                                INS_TT_NONE,    Reads_ZF | Encoding_REX2)
-INST3(cmovbe,           "cmovbe",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0046,                                INS_TT_NONE,    Reads_ZF | Reads_CF | Encoding_REX2)
-INST3(cmova,            "cmova",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0047,                                INS_TT_NONE,    Reads_ZF | Reads_CF | Encoding_REX2)
-INST3(cmovs,            "cmovs",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0048,                                INS_TT_NONE,    Reads_SF | Encoding_REX2)
-INST3(cmovns,           "cmovns",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0049,                                INS_TT_NONE,    Reads_SF | Encoding_REX2)
-INST3(cmovp,            "cmovp",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004A,                                INS_TT_NONE,    Reads_PF | Encoding_REX2)
-INST3(cmovnp,           "cmovnp",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004B,                                INS_TT_NONE,    Reads_PF | Encoding_REX2)
-INST3(cmovl,            "cmovl",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004C,                                INS_TT_NONE,    Reads_OF       | Reads_SF | Encoding_REX2)
-INST3(cmovge,           "cmovge",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004D,                                INS_TT_NONE,    Reads_OF       | Reads_SF | Encoding_REX2)
-INST3(cmovle,           "cmovle",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004E,                                INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF | Encoding_REX2)
-INST3(cmovg,            "cmovg",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004F,                                INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF | Encoding_REX2)
+INST3(cmovo,            "cmovo",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0040,                                INS_TT_NONE,    Reads_OF | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(cmovno,           "cmovno",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0041,                                INS_TT_NONE,    Reads_OF | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(cmovb,            "cmovb",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0042,                                INS_TT_NONE,    Reads_CF | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(cmovae,           "cmovae",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0043,                                INS_TT_NONE,    Reads_CF | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(cmove,            "cmove",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0044,                                INS_TT_NONE,    Reads_ZF | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(cmovne,           "cmovne",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0045,                                INS_TT_NONE,    Reads_ZF | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(cmovbe,           "cmovbe",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0046,                                INS_TT_NONE,    Reads_ZF | Reads_CF | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(cmova,            "cmova",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0047,                                INS_TT_NONE,    Reads_ZF | Reads_CF | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(cmovs,            "cmovs",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0048,                                INS_TT_NONE,    Reads_SF | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(cmovns,           "cmovns",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F0049,                                INS_TT_NONE,    Reads_SF | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(cmovp,            "cmovp",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004A,                                INS_TT_NONE,    Reads_PF | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(cmovnp,           "cmovnp",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004B,                                INS_TT_NONE,    Reads_PF | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(cmovl,            "cmovl",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004C,                                INS_TT_NONE,    Reads_OF       | Reads_SF | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(cmovge,           "cmovge",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004D,                                INS_TT_NONE,    Reads_OF       | Reads_SF | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(cmovle,           "cmovle",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004E,                                INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(cmovg,            "cmovg",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004F,                                INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF | Encoding_REX2 | INS_Flags_Has_NDD)
 
 INST3(xchg,             "xchg",             IUM_RW, 0x000086,     BAD_CODE,     0x000086,                                INS_TT_NONE,    INS_FLAGS_Has_Wbit | Encoding_REX2)
 INST3(imul,             "imul",             IUM_RW, 0x0F00AC,     BAD_CODE,     0x0F00AF,                                INS_TT_NONE,    Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit)
@@ -896,34 +896,36 @@ INST3(movbe,            "movbe",            IUM_WR, PCKMVB(0xF1), BAD_CODE,     
 // POPCNT
 INST3(popcnt,           "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xB8),                            INS_TT_NONE,    Resets_OF      | Resets_SF     | Writes_ZF     | Resets_AF     | Resets_PF     | Resets_CF | Encoding_REX2)
 
+INST3(neg,              "neg",              IUM_RW, 0x0018F6,     BAD_CODE,     0x0018F6,                                INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(not,              "not",              IUM_RW, 0x0010F6,     BAD_CODE,     0x0010F6,                                INS_TT_NONE,    INS_FLAGS_None | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+
+INST3(rol,              "rol",              IUM_RW, 0x0000D2,     BAD_CODE,     0x0000D2,                                INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(rol_1,            "rol",              IUM_RW, 0x0000D0,     0x0000D0,     0x0000D0,                                INS_TT_NONE,    Writes_OF                                                                      | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(rol_N,            "rol",              IUM_RW, 0x0000C0,     0x0000C0,     BAD_CODE,                                INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(ror,              "ror",              IUM_RW, 0x0008D2,     BAD_CODE,     0x0008D2,                                INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(ror_1,            "ror",              IUM_RW, 0x0008D0,     0x0008D0,     0x0008D0,                                INS_TT_NONE,    Writes_OF                                                                      | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(ror_N,            "ror",              IUM_RW, 0x0008C0,     0x0008C0,     BAD_CODE,                                INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+
+INST3(rcl,              "rcl",              IUM_RW, 0x0010D2,     BAD_CODE,     0x0010D2,                                INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(rcl_1,            "rcl",              IUM_RW, 0x0010D0,     0x0010D0,     0x0010D0,                                INS_TT_NONE,    Writes_OF                                                                      | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(rcl_N,            "rcl",              IUM_RW, 0x0010C0,     0x0010C0,     BAD_CODE,                                INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit)
+INST3(rcr,              "rcr",              IUM_RW, 0x0018D2,     BAD_CODE,     0x0018D2,                                INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(rcr_1,            "rcr",              IUM_RW, 0x0018D0,     0x0018D0,     0x0018D0,                                INS_TT_NONE,    Writes_OF                                                                      | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(rcr_N,            "rcr",              IUM_RW, 0x0018C0,     0x0018C0,     BAD_CODE,                                INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit)
+INST3(shl,              "shl",              IUM_RW, 0x0020D2,     BAD_CODE,     0x0020D2,                                INS_TT_NONE,    Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(shl_1,            "shl",              IUM_RW, 0x0020D0,     0x0020D0,     0x0020D0,                                INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(shl_N,            "shl",              IUM_RW, 0x0020C0,     0x0020C0,     BAD_CODE,                                INS_TT_NONE,    Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(shr,              "shr",              IUM_RW, 0x0028D2,     BAD_CODE,     0x0028D2,                                INS_TT_NONE,    Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(shr_1,            "shr",              IUM_RW, 0x0028D0,     0x0028D0,     0x0028D0,                                INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(shr_N,            "shr",              IUM_RW, 0x0028C0,     0x0028C0,     BAD_CODE,                                INS_TT_NONE,    Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(sar,              "sar",              IUM_RW, 0x0038D2,     BAD_CODE,     0x0038D2,                                INS_TT_NONE,    Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(sar_1,            "sar",              IUM_RW, 0x0038D0,     0x0038D0,     0x0038D0,                                INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+INST3(sar_N,            "sar",              IUM_RW, 0x0038C0,     0x0038C0,     BAD_CODE,                                INS_TT_NONE,    Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
+
 //    id                nm                  um      mr            mi                                                     flags
 INST2(ret,              "ret",              IUM_RD, 0x0000C3,     0x0000C2,                                              INS_TT_NONE,    INS_FLAGS_None)
 INST2(loop,             "loop",             IUM_RD, BAD_CODE,     0x0000E2,                                              INS_TT_NONE,    INS_FLAGS_None)
 INST2(call,             "call",             IUM_RD, 0x0010FF,     0x0000E8,                                              INS_TT_NONE,    Encoding_REX2)
-
-INST2(rol,              "rol",              IUM_RW, 0x0000D2,     BAD_CODE,                                              INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(rol_1,            "rol",              IUM_RW, 0x0000D0,     0x0000D0,                                              INS_TT_NONE,    Writes_OF                                                                      | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(rol_N,            "rol",              IUM_RW, 0x0000C0,     0x0000C0,                                              INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(ror,              "ror",              IUM_RW, 0x0008D2,     BAD_CODE,                                              INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(ror_1,            "ror",              IUM_RW, 0x0008D0,     0x0008D0,                                              INS_TT_NONE,    Writes_OF                                                                      | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(ror_N,            "ror",              IUM_RW, 0x0008C0,     0x0008C0,                                              INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
-
-INST2(rcl,              "rcl",              IUM_RW, 0x0010D2,     BAD_CODE,                                              INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(rcl_1,            "rcl",              IUM_RW, 0x0010D0,     0x0010D0,                                              INS_TT_NONE,    Writes_OF                                                                      | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(rcl_N,            "rcl",              IUM_RW, 0x0010C0,     0x0010C0,                                              INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit)
-INST2(rcr,              "rcr",              IUM_RW, 0x0018D2,     BAD_CODE,                                              INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(rcr_1,            "rcr",              IUM_RW, 0x0018D0,     0x0018D0,                                              INS_TT_NONE,    Writes_OF                                                                      | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(rcr_N,            "rcr",              IUM_RW, 0x0018C0,     0x0018C0,                                              INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit)
-INST2(shl,              "shl",              IUM_RW, 0x0020D2,     BAD_CODE,                                              INS_TT_NONE,    Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(shl_1,            "shl",              IUM_RW, 0x0020D0,     0x0020D0,                                              INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(shl_N,            "shl",              IUM_RW, 0x0020C0,     0x0020C0,                                              INS_TT_NONE,    Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(shr,              "shr",              IUM_RW, 0x0028D2,     BAD_CODE,                                              INS_TT_NONE,    Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(shr_1,            "shr",              IUM_RW, 0x0028D0,     0x0028D0,                                              INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(shr_N,            "shr",              IUM_RW, 0x0028C0,     0x0028C0,                                              INS_TT_NONE,    Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(sar,              "sar",              IUM_RW, 0x0038D2,     BAD_CODE,                                              INS_TT_NONE,    Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(sar_1,            "sar",              IUM_RW, 0x0038D0,     0x0038D0,                                              INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST2(sar_N,            "sar",              IUM_RW, 0x0038C0,     0x0038C0,                                              INS_TT_NONE,    Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
-
 
 //    id                nm                  um      mr                                                                   flags
 INST1(r_movsb,          "rep movsb",        IUM_RD, 0x00A4F3,                                                            INS_TT_NONE,    Reads_DF | INS_FLAGS_Has_Wbit)
@@ -955,9 +957,6 @@ INST1(lock,             "lock",             IUM_RD, 0x0000F0,                   
 INST1(leave,            "leave",            IUM_RD, 0x0000C9,                                                            INS_TT_NONE,    INS_FLAGS_None)
 
 INST1(serialize,        "serialize",        IUM_RD, 0x0fe801,                                                            INS_TT_NONE,    INS_FLAGS_None)
-
-INST1(neg,              "neg",              IUM_RW, 0x0018F6,                                                            INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     | INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST1(not,              "not",              IUM_RW, 0x0010F6,                                                            INS_TT_NONE,    INS_FLAGS_None | INS_FLAGS_Has_Wbit | Encoding_REX2)
 
 INST1(cwde,             "cwde",             IUM_RD, 0x000098,                                                            INS_TT_NONE,    INS_FLAGS_None)
 INST1(cdq,              "cdq",              IUM_RD, 0x000099,                                                            INS_TT_NONE,    INS_FLAGS_None)

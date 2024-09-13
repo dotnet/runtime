@@ -534,6 +534,7 @@ void SetEvexNdIfNeeded(instrDesc* id, insOpts instOptions)
     if ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0)
     {
         assert(UsePromotedEVEXEncoding());
+        assert(IsApxNDDEncodableInstruction(id->idIns()));
         id->idSetEvexNdContext();
     }
     else
