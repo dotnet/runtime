@@ -10,7 +10,7 @@ $dir = Split-Path $scriptpath
 Push-Location $dir
 
 
-cargo install --locked --no-default-features --features csharp --version 0.30.0 wit-bindgen-cli
+cargo install --locked --no-default-features --features csharp --version 0.32.0 wit-bindgen-cli
 Invoke-WebRequest -Uri https://github.com/WebAssembly/wasi-http/archive/refs/tags/v0.2.1.tar.gz -OutFile v0.2.1.tar.gz
 tar xzf v0.2.1.tar.gz
 cp world.wit wasi-http-0.2.1/wit/world.wit
