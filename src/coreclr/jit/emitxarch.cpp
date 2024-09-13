@@ -3443,6 +3443,10 @@ inline bool hasCodeMI(instruction ins)
 inline size_t insCodeMI(instruction ins)
 {
     assert((unsigned)ins < ArrLen(insCodesMI));
+    if (insCodesMI[ins] == BAD_CODE)
+    {
+        printf("Ruihan: %d\n", ins);
+    }
     assert((insCodesMI[ins] != BAD_CODE));
 
     return insCodesMI[ins];
@@ -6031,7 +6035,7 @@ void emitter::emitInsNddBinary(instruction ins, emitAttr attr, regNumber targetR
                 {
                     instrDesc* id = nullptr;
 
-                    assert(cnsOp != nullptr);
+                    assert(cnsOp == nullptr);
                     
                     ssize_t offset = memIndir->Offset();
                     id             = emitNewInstrAmd(attr, offset);

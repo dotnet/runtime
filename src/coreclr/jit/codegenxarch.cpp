@@ -772,7 +772,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
         regNumber operandReg = genConsumeReg(operand);
         instruction ins = genGetInsForOper(tree->OperGet(), targetType);
 
-        if (GetEmitter()->IsApxNDDEncodableInstruction(ins))
+        if (GetEmitter()->IsApxNDDEncodableInstruction(ins) && (targetReg != operandReg))
         {
             GetEmitter()->emitIns_R_R(ins, emitTypeSize(operand), targetReg, operandReg, INS_OPTS_EVEX_nd);
         }
@@ -4922,6 +4922,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             
             if (GetEmitter()->IsApxNDDEncodableInstruction(ins) && (tree->GetRegNum() != operandReg))
             {
+                ins = genMapShiftInsToShiftByConstantIns(ins, shiftByValue);
                 // If APX is available, we can use NDD to optimize the case when LSRA failed to avoid explicit mov.
                 // this case might be rarely hit.
                 if (shiftByValue == 1)
