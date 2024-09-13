@@ -77,7 +77,6 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
 
 class MethodTable;
 class Thread;
-class BaseDomain;
 class Assembly;
 class DomainAssembly;
 class AssemblyNative;
@@ -1219,13 +1218,6 @@ class ReflectModuleBaseObject : public Object
     }
 };
 
-NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pModule, OBJECTREF keepAlive);
-#define FC_RETURN_MODULE_OBJECT(pModule, refKeepAlive) FC_INNER_RETURN(ReflectModuleBaseObject*, GetRuntimeModuleHelper(__me, pModule, refKeepAlive))
-
-
-
-
-
 class ThreadBaseObject;
 class SynchronizationContextObject: public Object
 {
@@ -1302,7 +1294,6 @@ typedef DPTR(class ThreadBaseObject) PTR_ThreadBaseObject;
 class ThreadBaseObject : public Object
 {
     friend class ClrDataAccess;
-    friend class ThreadNative;
     friend class CoreLibBinder;
     friend class Object;
 
@@ -1332,6 +1323,9 @@ private:
 
     // Only used by managed code, see comment there
     bool          m_MayNeedResetForThreadPool;
+
+    // Set in unmanaged code and read in managed code.
+    bool          m_IsDead;
 
 protected:
     // the ctor and dtor can do no useful work.
@@ -1384,6 +1378,12 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_Priority;
     }
+
+    void SetIsDead()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_IsDead = true;
+    }
 };
 
 // MarshalByRefObjectBaseObject
@@ -1430,8 +1430,6 @@ class AssemblyBaseObject : public Object
         SetObjectReference(&m_pSyncRoot, pSyncRoot);
     }
 };
-NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, Assembly *pAssembly, OBJECTREF keepAlive);
-#define FC_RETURN_ASSEMBLY_OBJECT(pAssembly, refKeepAlive) FC_INNER_RETURN(AssemblyBaseObject*, GetRuntimeAssemblyHelper(__me, pAssembly, refKeepAlive))
 
 // AssemblyLoadContextBaseObject
 // This class is the base class for AssemblyLoadContext

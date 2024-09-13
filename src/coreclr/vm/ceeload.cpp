@@ -2258,7 +2258,6 @@ Assembly *
 Module::GetAssemblyIfLoaded(
     mdAssemblyRef       kAssemblyRef,
     IMDInternalImport * pMDImportOverride,  // = NULL
-    BOOL                fDoNotUtilizeExtraChecks, // = FALSE
     AssemblyBinder      *pBinderForLoadedAssembly // = NULL
 )
 {
@@ -2301,8 +2300,7 @@ Module::GetAssemblyIfLoaded(
     if ((pAssembly != NULL) && !IsGCThread() && !IsStackWalkerThread())
     {
         _ASSERTE(::GetAppDomain() != NULL);
-        DomainAssembly * pDomainAssembly = pAssembly->GetDomainAssembly();
-        if ((pDomainAssembly == NULL) || !pDomainAssembly->IsLoaded())
+        if (!pAssembly->IsLoaded())
             pAssembly = NULL;
     }
 
@@ -2331,7 +2329,7 @@ Module::GetAssemblyIfLoaded(
 
         DomainAssembly * pDomainAssembly = AppDomain::GetCurrentDomain()->FindCachedAssembly(&spec, FALSE /*fThrow*/);
 
-        if (pDomainAssembly && pDomainAssembly->IsLoaded())
+        if (pDomainAssembly && pDomainAssembly->GetAssembly()->IsLoaded())
             pAssembly = pDomainAssembly->GetAssembly();
 
         // Only store in the rid map if working with the current AppDomain.
@@ -2387,9 +2385,9 @@ ModuleBase::GetAssemblyRefFlags(
 } // Module::GetAssemblyRefFlags
 
 #ifndef DACCESS_COMPILE
-DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
+Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 {
-    CONTRACT(DomainAssembly *)
+    CONTRACT(Assembly *)
     {
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
@@ -2402,18 +2400,14 @@ DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 
     ETWOnStartup (LoaderCatchCall_V1, LoaderCatchCallEnd_V1);
 
-    DomainAssembly * pDomainAssembly;
-
     //
     // Early out quickly if the result is cached
     //
     Assembly * pAssembly = LookupAssemblyRef(kAssemblyRef);
     if (pAssembly != NULL)
     {
-        pDomainAssembly = pAssembly->GetDomainAssembly();
-        ::GetAppDomain()->LoadDomainAssembly(pDomainAssembly, FILE_LOADED);
-
-        RETURN pDomainAssembly;
+        ::GetAppDomain()->LoadAssembly(pAssembly, FILE_LOADED);
+        RETURN pAssembly;
     }
 
     {
@@ -2428,26 +2422,20 @@ DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
         {
             spec.SetBinder(pBinder);
         }
-        pDomainAssembly = GetAppDomain()->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
+        pAssembly = GetAppDomain()->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
     }
 
-    if (pDomainAssembly != NULL)
-    {
-        _ASSERTE(
-            pDomainAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find CoreLib (see AppDomain::FindCachedFile)
-            !pDomainAssembly->IsLoaded() ||                 // GetAssemblyIfLoaded will not find not-yet-loaded assemblies
-            GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, pDomainAssembly->GetPEAssembly()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
+    _ASSERTE(pAssembly != NULL && pAssembly->IsLoaded());
+    _ASSERTE(
+        pAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find CoreLib (see AppDomain::FindCachedFile)
+        GetAssemblyIfLoaded(kAssemblyRef, NULL, pAssembly->GetPEAssembly()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
 
-        if (pDomainAssembly->GetAssembly() != NULL)
-        {
-            StoreAssemblyRef(kAssemblyRef, pDomainAssembly->GetAssembly());
-        }
-    }
+    StoreAssemblyRef(kAssemblyRef, pAssembly);
 
-    RETURN pDomainAssembly;
+    RETURN pAssembly;
 }
 #else
-DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
+Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 {
     WRAPPER_NO_CONTRACT;
     ThrowHR(E_FAIL);
@@ -4467,7 +4455,7 @@ VOID Module::EnsureActive()
         MODE_ANY;
     }
     CONTRACTL_END;
-    GetDomainAssembly()->EnsureActive();
+    GetAssembly()->EnsureActive();
 }
 #endif // DACCESS_COMPILE
 
@@ -4484,10 +4472,10 @@ CHECK Module::CheckActivated()
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-    DomainAssembly *pDomainAssembly = GetDomainAssembly();
-    CHECK(pDomainAssembly != NULL);
-    PREFIX_ASSUME(pDomainAssembly != NULL);
-    CHECK(pDomainAssembly->CheckActivated());
+    Assembly *pAssembly = GetAssembly();
+    CHECK(pAssembly != NULL);
+    PREFIX_ASSUME(pAssembly != NULL);
+    CHECK(pAssembly->CheckActivated());
 #endif
     CHECK_OK;
 }

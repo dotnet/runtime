@@ -33,7 +33,6 @@ static TLSIndexToMethodTableMap *g_pThreadStaticCollectibleTypeIndices;
 static TLSIndexToMethodTableMap *g_pThreadStaticNonCollectibleTypeIndices;
 static PTR_MethodTable g_pMethodTablesForDirectThreadLocalData[offsetof(ThreadLocalData, ExtendedDirectThreadLocalTLSData) - offsetof(ThreadLocalData, ThreadBlockingInfo_First) + EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
 
-static Volatile<uint8_t> s_GCsWhichDoRelocateAndCanEmptyOutTheTLSIndices = 0;
 static uint32_t g_NextTLSSlot = 1;
 static uint32_t g_NextNonCollectibleTlsSlot = NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY;
 static uint32_t g_directThreadLocalTLSBytesAvailable = EXTENDED_DIRECT_THREAD_LOCAL_SIZE;
@@ -277,7 +276,7 @@ void TLSIndexToMethodTableMap::Clear(TLSIndex index, uint8_t whenCleared)
     _ASSERTE(IsClearedValue(pMap[index.GetIndexOffset()]));
 }
 
-bool TLSIndexToMethodTableMap::FindClearedIndex(uint8_t whenClearedMarkerToAvoid, TLSIndex* pIndex)
+bool TLSIndexToMethodTableMap::FindClearedIndex(TLSIndex* pIndex)
 {
     CONTRACTL
     {
@@ -291,15 +290,6 @@ bool TLSIndexToMethodTableMap::FindClearedIndex(uint8_t whenClearedMarkerToAvoid
     {
         if (entry.IsClearedValue)
         {
-            uint8_t whenClearedMarker = entry.ClearedMarker;
-            if ((whenClearedMarker == whenClearedMarkerToAvoid) ||
-                (whenClearedMarker == (whenClearedMarkerToAvoid - 1)) ||
-                (whenClearedMarker == (whenClearedMarkerToAvoid - 2)))
-            {
-                // Make sure we are not within 2 of the marker we are trying to avoid
-                // Use multiple compares instead of trying to fuss around with the overflow style comparisons
-                continue;
-            }
             *pIndex = entry.TlsIndex;
             return true;
         }
@@ -317,7 +307,7 @@ void InitializeThreadStaticData()
     }
     CONTRACTL_END;
 
-    g_pThreadStaticCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::NonCollectible);
+    g_pThreadStaticCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::Collectible);
     g_pThreadStaticNonCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::NonCollectible);
     g_TLSCrst.Init(CrstThreadLocalStorageLock, CRST_UNSAFE_ANYMODE);
 }
@@ -387,7 +377,7 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
 #endif
         for (const auto& entry : g_pThreadStaticCollectibleTypeIndices->CollectibleEntries())
         {
-            _ASSERTE((entry.TlsIndex.GetIndexOffset() < pThread->cLoaderHandles) || allRemainingIndicesAreNotValid);
+            _ASSERTE((entry.TlsIndex.GetIndexOffset() <= pThread->cLoaderHandles) || allRemainingIndicesAreNotValid);
             if (entry.TlsIndex.GetIndexOffset() >= pThread->cLoaderHandles)
             {
 #ifndef _DEBUG
@@ -404,6 +394,13 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
                     pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()] = (LOADERHANDLE)NULL;
                 }
             }
+        }
+
+        pThread->cLoaderHandles = -1; // Sentinel value indicating that there are no LoaderHandles and the thread is permanently dead.
+        if (pThread->pLoaderHandles != NULL)
+        {
+            delete[] pThread->pLoaderHandles;
+            pThread->pLoaderHandles = NULL;
         }
     }
 }
@@ -431,34 +428,46 @@ void FreeThreadStaticData(Thread* pThread)
     }
     CONTRACTL_END;
 
-    SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
+    InFlightTLSData* pOldInFlightData = nullptr;
 
-    ThreadLocalData *pThreadLocalData = &t_ThreadStatics;
+    int32_t oldCollectibleTlsDataCount = 0;
+    DPTR(OBJECTHANDLE) pOldCollectibleTlsArrayData = nullptr;
 
-    for (int32_t iTlsSlot = 0; iTlsSlot < pThreadLocalData->cCollectibleTlsData; ++iTlsSlot)
     {
-        if (!IsHandleNullUnchecked(pThreadLocalData->pCollectibleTlsArrayData[iTlsSlot]))
+        SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
+
+        ThreadLocalData *pThreadLocalData = &t_ThreadStatics;
+
+        pOldCollectibleTlsArrayData = pThreadLocalData->pCollectibleTlsArrayData;
+        oldCollectibleTlsDataCount = pThreadLocalData->cCollectibleTlsData;
+
+        pThreadLocalData->pCollectibleTlsArrayData = NULL;
+        pThreadLocalData->cCollectibleTlsData = 0;
+        pThreadLocalData->pNonCollectibleTlsArrayData = NULL;
+        pThreadLocalData->cNonCollectibleTlsData = 0;
+
+        pOldInFlightData = pThreadLocalData->pInFlightData;
+        pThreadLocalData->pInFlightData = NULL;
+        _ASSERTE(pThreadLocalData->pThread == pThread);
+        pThreadLocalData->pThread = NULL;
+    }
+
+    for (int32_t iTlsSlot = 0; iTlsSlot < oldCollectibleTlsDataCount; ++iTlsSlot)
+    {
+        if (!IsHandleNullUnchecked(pOldCollectibleTlsArrayData[iTlsSlot]))
         {
-            DestroyLongWeakHandle(pThreadLocalData->pCollectibleTlsArrayData[iTlsSlot]);
+            DestroyLongWeakHandle(pOldCollectibleTlsArrayData[iTlsSlot]);
         }
     }
 
-    delete[] (uint8_t*)pThreadLocalData->pCollectibleTlsArrayData;
+    delete[] (uint8_t*)pOldCollectibleTlsArrayData;
 
-    pThreadLocalData->pCollectibleTlsArrayData = 0;
-    pThreadLocalData->cCollectibleTlsData = 0;
-    pThreadLocalData->pNonCollectibleTlsArrayData = 0;
-    pThreadLocalData->cNonCollectibleTlsData = 0;
-
-    while (pThreadLocalData->pInFlightData != NULL)
+    while (pOldInFlightData != NULL)
     {
-        InFlightTLSData* pInFlightData = pThreadLocalData->pInFlightData;
-        pThreadLocalData->pInFlightData = pInFlightData->pNext;
+        InFlightTLSData* pInFlightData = pOldInFlightData;
+        pOldInFlightData = pInFlightData->pNext;
         delete pInFlightData;
     }
-
-    _ASSERTE(pThreadLocalData->pThread == pThread);
-    pThreadLocalData->pThread = NULL;
 }
 
 void SetTLSBaseValue(TADDR *ppTLSBaseAddress, TADDR pTLSBaseAddress, bool useGCBarrierInsteadOfHandleStore)
@@ -553,6 +562,8 @@ void* GetThreadLocalStaticBase(TLSIndex index)
             delete[] pOldArray;
         }
 
+        _ASSERTE(t_ThreadStatics.pThread->cLoaderHandles != -1); // Check sentinel value indicating that there are no LoaderHandles, the thread has gone through termination and is permanently dead.
+
         if (isCollectible && t_ThreadStatics.pThread->cLoaderHandles <= index.GetIndexOffset())
         {
             // Grow the underlying TLS array
@@ -594,9 +605,11 @@ void* GetThreadLocalStaticBase(TLSIndex index)
                 gcBaseAddresses.pTLSBaseAddress = dac_cast<TADDR>(OBJECTREFToObject(ObjectFromHandle(pInFlightData->hTLSData)));
                 if (pMT->IsClassInited())
                 {
-                    SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
-                    SetTLSBaseValue(gcBaseAddresses.ppTLSBaseAddress, gcBaseAddresses.pTLSBaseAddress, staticIsNonCollectible);
-                    *ppOldNextPtr = pInFlightData->pNext;
+                    {
+                        SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
+                        SetTLSBaseValue(gcBaseAddresses.ppTLSBaseAddress, gcBaseAddresses.pTLSBaseAddress, staticIsNonCollectible);
+                        *ppOldNextPtr = pInFlightData->pNext;
+                    }
                     delete pInFlightData;
                 }
                 break;
@@ -744,7 +757,7 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
     }
     else
     {
-        if (!g_pThreadStaticCollectibleTypeIndices->FindClearedIndex(s_GCsWhichDoRelocateAndCanEmptyOutTheTLSIndices, &newTLSIndex))
+        if (!g_pThreadStaticCollectibleTypeIndices->FindClearedIndex(&newTLSIndex))
         {
             uint32_t tlsRawIndex = g_NextTLSSlot;
             newTLSIndex = TLSIndex(TLSIndexType::Collectible, tlsRawIndex);
@@ -777,7 +790,7 @@ void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator)
 
     while (current != end)
     {
-        g_pThreadStaticCollectibleTypeIndices->Clear(tlsIndicesToCleanup[current], s_GCsWhichDoRelocateAndCanEmptyOutTheTLSIndices);
+        g_pThreadStaticCollectibleTypeIndices->Clear(tlsIndicesToCleanup[current], 0);
         ++current;
     }
 }

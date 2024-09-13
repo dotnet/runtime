@@ -2828,7 +2828,7 @@ void Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
 
         if (insertionPoint == nullptr)
         {
-            insertionPoint = optFindLoopCompactionInsertionPoint(loop, top);
+            insertionPoint = loop->GetLexicallyBottomMostBlock();
         }
 
         BasicBlock* previous      = cur->Prev();
@@ -2842,8 +2842,6 @@ void Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
         }
 
         // Now physically move the blocks.
-        BasicBlock* moveBefore = insertionPoint->Next();
-
         fgUnlinkRange(cur, lastNonLoopBlock);
         fgMoveBlocksAfter(cur, lastNonLoopBlock, insertionPoint);
         ehUpdateLastBlocks(insertionPoint, lastNonLoopBlock);
@@ -2853,137 +2851,6 @@ void Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
 
         cur = nextLoopBlock;
     }
-}
-
-//-----------------------------------------------------------------------------
-// optFindLoopCompactionInsertionPoint: Find a good insertion point at which to
-// move blocks from the lexical range of "loop" that is not part of the loop.
-//
-// Parameters:
-//   loop - The loop
-//   top  - Lexical top block of the loop.
-//
-// Returns:
-//   Non-null insertion point.
-//
-BasicBlock* Compiler::optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* top)
-{
-    // Find an insertion point for blocks we're going to move.  Move them down
-    // out of the loop, and if possible find a spot that won't break up fall-through.
-    BasicBlock* bottom         = loop->GetLexicallyBottomMostBlock();
-    BasicBlock* insertionPoint = bottom;
-    while (!insertionPoint->IsLast())
-    {
-        switch (insertionPoint->GetKind())
-        {
-            case BBJ_ALWAYS:
-                if (!insertionPoint->JumpsToNext())
-                {
-                    // Found a branch that isn't to the next block, so we won't split up any fall-through.
-                    return insertionPoint;
-                }
-                break;
-
-            case BBJ_COND:
-                if (!insertionPoint->FalseTargetIs(insertionPoint->Next()))
-                {
-                    // Found a conditional branch that doesn't have a false branch to the next block,
-                    // so we won't split up any fall-through.
-                    return insertionPoint;
-                }
-                break;
-
-            case BBJ_CALLFINALLY:
-                if (!insertionPoint->isBBCallFinallyPair())
-                {
-                    // Found a retless BBJ_CALLFINALLY block, so we won't split up any fall-through.
-                    return insertionPoint;
-                }
-                break;
-
-            default:
-                // No fall-through to split up.
-                return insertionPoint;
-        }
-
-        // Keep looking for a better insertion point if we can.
-        BasicBlock* newInsertionPoint = optTryAdvanceLoopCompactionInsertionPoint(loop, insertionPoint, top, bottom);
-        if (newInsertionPoint == nullptr)
-        {
-            // Ran out of candidate insertion points, so just split up the fall-through.
-            break;
-        }
-
-        insertionPoint = newInsertionPoint;
-    }
-
-    return insertionPoint;
-}
-
-//-----------------------------------------------------------------------------
-// optTryAdvanceLoopCompactionInsertionPoint: Advance the insertion point to
-// avoid having to insert new blocks due to fallthrough.
-//
-// Parameters:
-//   loop           - The loop
-//   insertionPoint - Current insertion point
-//   top            - Lexical top block of the loop.
-//   bottom         - Lexical bottom block of the loop.
-//
-// Returns:
-//   New insertion point.
-//
-BasicBlock* Compiler::optTryAdvanceLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop,
-                                                                BasicBlock*           insertionPoint,
-                                                                BasicBlock*           top,
-                                                                BasicBlock*           bottom)
-{
-    BasicBlock* newInsertionPoint = insertionPoint->Next();
-
-    if (!BasicBlock::sameEHRegion(insertionPoint, newInsertionPoint))
-    {
-        // Don't cross an EH region boundary.
-        return nullptr;
-    }
-
-    // TODO-Quirk: Compatibility with old compaction
-    if (newInsertionPoint->KindIs(BBJ_ALWAYS, BBJ_COND))
-    {
-        BasicBlock* dest =
-            newInsertionPoint->KindIs(BBJ_ALWAYS) ? newInsertionPoint->GetTarget() : newInsertionPoint->GetTrueTarget();
-        if ((dest->bbNum >= top->bbNum) && (dest->bbNum <= bottom->bbNum) && !loop->ContainsBlock(dest))
-        {
-            return nullptr;
-        }
-    }
-
-    // TODO-Quirk: Compatibility with old compaction
-    for (BasicBlock* const predBlock : newInsertionPoint->PredBlocks())
-    {
-        if ((predBlock->bbNum >= top->bbNum) && (predBlock->bbNum <= bottom->bbNum) && !loop->ContainsBlock(predBlock))
-        {
-            // Don't make this forward edge a backwards edge.
-            return nullptr;
-        }
-    }
-
-    // Compaction runs on outer loops before inner loops. That means all
-    // unlexical blocks here are part of an ancestor loop (or trivial
-    // BBJ_ALWAYS exit blocks). To avoid breaking lexicality of ancestor loops
-    // we avoid moving any block past the bottom of an ancestor loop.
-    for (FlowGraphNaturalLoop* ancestor = loop->GetParent(); ancestor != nullptr; ancestor = ancestor->GetParent())
-    {
-        if (newInsertionPoint == ancestor->GetLexicallyBottomMostBlock())
-        {
-            return nullptr;
-        }
-    }
-
-    // Advancing the insertion point is ok, except that we can't split up any call finally
-    // pair, so if we've got such a pair recurse to see if we can move past the whole thing.
-    return newInsertionPoint->isBBCallFinallyPair()
-               ? optTryAdvanceLoopCompactionInsertionPoint(loop, newInsertionPoint, top, bottom)
-               : newInsertionPoint;
 }
 
 //-----------------------------------------------------------------------------
@@ -3024,16 +2891,10 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
         }
     }
 
-    BasicBlock* insertBefore = loop->GetLexicallyTopMostBlock();
-    if (!BasicBlock::sameEHRegion(insertBefore, header))
-    {
-        insertBefore = header;
-    }
-
-    BasicBlock* preheader = fgNewBBbefore(BBJ_ALWAYS, insertBefore, false);
+    BasicBlock* preheader = fgNewBBbefore(BBJ_ALWAYS, header, false);
     preheader->SetFlags(BBF_INTERNAL);
     fgSetEHRegionForNewPreheaderOrExit(preheader);
-    preheader->bbCodeOffs = insertBefore->bbCodeOffs;
+    preheader->bbCodeOffs = header->bbCodeOffs;
 
     JITDUMP("Created new preheader " FMT_BB " for " FMT_LP "\n", preheader->bbNum, loop->GetIndex());
 
@@ -3136,21 +2997,11 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
     {
         // Branches to a BBJ_CALLFINALLY _must_ come from inside its associated
         // try region, and when we have callfinally thunks the BBJ_CALLFINALLY
-        // is outside it. First try to see if the lexically bottom most block
-        // is part of the try; if so, inserting after that is a good choice.
+        // is outside it. Thus, insert newExit at the end of the finally's
+        // try region.
         BasicBlock* finallyBlock = exit->GetTarget();
         assert(finallyBlock->hasHndIndex());
-        BasicBlock* bottom = loop->GetLexicallyBottomMostBlock();
-        if (bottom->hasTryIndex() && (bottom->getTryIndex() == finallyBlock->getHndIndex()) && !bottom->hasHndIndex())
-        {
-            newExit = fgNewBBafter(BBJ_ALWAYS, bottom, true);
-        }
-        else
-        {
-            // Otherwise just do the heavy-handed thing and insert it anywhere in the right region.
-            newExit = fgNewBBinRegion(BBJ_ALWAYS, finallyBlock->bbHndIndex, 0, nullptr, /* putInFilter */ false,
-                                      /* runRarely */ false, /* insertAtEnd */ true);
-        }
+        newExit = fgNewBBatTryRegionEnd(BBJ_ALWAYS, finallyBlock->getHndIndex());
     }
     else
     {

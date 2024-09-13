@@ -5316,6 +5316,8 @@ public:
                                       unsigned    xcptnIndex,
                                       bool        putInTryRegion);
 
+    BasicBlock* fgNewBBatTryRegionEnd(BBKinds jumpKind, unsigned tryIndex);
+
     void fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk);
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
     void fgUnlinkBlock(BasicBlock* block);
@@ -7064,8 +7066,6 @@ public:
 
     void optCompactLoops();
     void optCompactLoop(FlowGraphNaturalLoop* loop);
-    BasicBlock* optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* top);
-    BasicBlock* optTryAdvanceLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* insertionPoint, BasicBlock* top, BasicBlock* bottom);
     bool optCreatePreheader(FlowGraphNaturalLoop* loop);
     void optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicBlock* block);
 
@@ -8336,6 +8336,8 @@ public:
 
     void        eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle);
     const char* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
+
+    const char* eeGetClassAssemblyName(CORINFO_CLASS_HANDLE clsHnd);
 
 #if defined(DEBUG)
     unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);

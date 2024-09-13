@@ -29,6 +29,9 @@ internal static class ThrowHelper
     internal static void ThrowInvalidAssemblyName(string rawName)
         => throw new SerializationException(SR.Format(SR.Serialization_InvalidAssemblyName, rawName));
 
+    internal static void ThrowInvalidFormat()
+        => throw new SerializationException(SR.Serialization_InvalidFormat);
+
     internal static void ThrowEndOfStreamException()
         => throw new EndOfStreamException();
 
