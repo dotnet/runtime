@@ -9,7 +9,7 @@ using System.Linq;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Extension methods for configuration classes.
+    /// Provides extension methods for configuration classes.
     /// </summary>
     public static class ConfigurationExtensions
     {
@@ -27,7 +27,8 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Shorthand for GetSection("ConnectionStrings")[name].
+        /// Gets the specified connection string from the specified configuration.
+        /// Shorthand for <c>GetSection("ConnectionStrings")[name]</c>.
         /// </summary>
         /// <param name="configuration">The configuration to enumerate.</param>
         /// <param name="name">The connection string key.</param>
@@ -48,7 +49,7 @@ namespace Microsoft.Extensions.Configuration
         /// Get the enumeration of key value pairs within the <see cref="IConfiguration" />
         /// </summary>
         /// <param name="configuration">The configuration to enumerate.</param>
-        /// <param name="makePathsRelative">If true, the child keys returned will have the current configuration's Path trimmed from the front.</param>
+        /// <param name="makePathsRelative"><see langword="true" /> to trim the current configuration's path from the front of the returned child keys.</param>
         /// <returns>An enumeration of key value pairs.</returns>
         public static IEnumerable<KeyValuePair<string, string?>> AsEnumerable(this IConfiguration configuration, bool makePathsRelative)
         {
@@ -71,7 +72,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Determines whether the section has a <see cref="IConfigurationSection.Value"/> or has children
+        /// Determines whether the section has a <see cref="IConfigurationSection.Value"/> or has children.
         /// </summary>
         /// <param name="section">The section to enumerate.</param>
         /// <returns><see langword="true" /> if the section has values or children; otherwise, <see langword="false" />.</returns>
@@ -85,7 +86,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Gets a configuration sub-section with the specified key.
+        /// Gets a configuration subsection with the specified key.
         /// </summary>
         /// <param name="configuration">The configuration to enumerate.</param>
         /// <param name="key">The key of the configuration section.</param>
