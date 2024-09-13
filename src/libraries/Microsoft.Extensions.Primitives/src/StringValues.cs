@@ -335,7 +335,7 @@ namespace Microsoft.Extensions.Primitives
 
         /// <summary>Determines whether a string is in the <see cref="StringValues" />.</summary>
         /// <param name="item">The <see cref="string"/> to locate in the <see cref="StringValues" />.</param>
-        /// <returns><see langword="true"/> if <paramref name="item"/> is found in the <see cref="StringValues" />; otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if <paramref name="item" /> is found in the <see cref="StringValues" />; otherwise, <see langword="false"/>.</returns>
         bool ICollection<string?>.Contains(string? item)
         {
             return IndexOf(item) >= 0;
@@ -346,9 +346,9 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="array">The one-dimensional <see cref="Array" /> that is the destination of the elements copied from. The <see cref="Array" /> must have zero-based indexing.</param>
         /// <param name="arrayIndex">The zero-based index in the destination array at which copying begins.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="array"/> is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="arrayIndex"/> is less than 0.</exception>
-        /// <exception cref="ArgumentException">The number of elements in the source <see cref="StringValues"></see> is greater than the available space from <paramref name="arrayIndex">arrayIndex</paramref> to the end of the destination <paramref name="array">array</paramref>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="array" /> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="arrayIndex" /> is less than 0.</exception>
+        /// <exception cref="ArgumentException">The number of elements in the source <see cref="StringValues" /> is greater than the available space from <paramref name="arrayIndex" /> to the end of the destination <paramref name="array" />.</exception>
         void ICollection<string?>.CopyTo(string?[] array, int arrayIndex)
         {
             CopyTo(array, arrayIndex);
