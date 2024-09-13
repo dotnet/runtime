@@ -1,3 +1,10 @@
+### Release version 0.2
+
+Changes:
+
+ * initial support for wit components
+ * improved import description parsing
+
 ### Release version 0.1
 
 Changes:
