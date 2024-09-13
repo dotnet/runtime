@@ -65,7 +65,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
             BundleManifest = new Manifest(_target.BundleMajorVersion, netcoreapp3CompatMode: options.HasFlag(BundleOptions.BundleAllContent));
             _options = _target.DefaultOptions | options;
-            if (macosCodesign == true && targetOS != OSPlatform.OSX)
+            if (macosCodesign == true && !_target.IsOSX)
             {
                 throw new ArgumentException("macosCodesign can only be set to true when publishing for OSX", nameof(macosCodesign));
             }
