@@ -16521,6 +16521,11 @@ INTEGRAL_OVF:
 
     tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), op1, op2);
 
+    if (fgGlobalMorph)
+    {
+        tree = fgMorphTree(tree);
+    }
+
     return tree;
 }
 #ifdef _PREFAST_
