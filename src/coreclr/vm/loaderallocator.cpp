@@ -472,7 +472,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                 pAppDomain->RemoveFileFromCache(domainAssemblyToRemove->GetPEAssembly());
                 AssemblySpec spec;
                 spec.InitializeSpec(domainAssemblyToRemove->GetPEAssembly());
-                VERIFY(pAppDomain->RemoveAssemblyFromCache(domainAssemblyToRemove));
+                VERIFY(pAppDomain->RemoveAssemblyFromCache(domainAssemblyToRemove->GetAssembly()));
             }
 
             domainAssemblyIt++;
