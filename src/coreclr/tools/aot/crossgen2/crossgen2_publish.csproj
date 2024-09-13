@@ -8,9 +8,6 @@
     <PublishTrimmed>true</PublishTrimmed>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
-    <!-- Publish uses the LKG compiler, which is the tool compiler. -->
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <UseLocalAppHostPack>true</UseLocalAppHostPack>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
 
