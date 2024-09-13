@@ -623,6 +623,7 @@
       <GroupBuildCmd Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(GroupBuildCmd) "/p:BuildNativeAotFrameworkObjects=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(GroupBuildCmd) /p:ContinuousIntegrationBuild=true</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(BuildTestsOnHelix)' == 'true'">$(GroupBuildCmd) "/p:BuildTestsOnHelix=true"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(MonoForceInterpreter)' == 'true'">$(GroupBuildCmd) "/p:MonoForceInterpreter=true"</GroupBuildCmd>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Building managed test group $(__TestGroupToBuild): $(GroupBuildCmd)" />
