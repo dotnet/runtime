@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputPath>$(RuntimeBinDir)ilc/</OutputPath>
-    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(_IsPublishing)' != 'true'">$(PackageRID)</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(_IsPublishing)' == 'true'">$(OutputRID)</RuntimeIdentifier>
     <UseLocalTargetingRuntimePack Condition="'$(UseNativeAotForComponents)' != 'true' and '$(CrossBuild)' == 'true' and '$(TargetOS)' != '$(HostOS)' and '$(TargetsMobile)' != 'true'">true</UseLocalTargetingRuntimePack>
   </PropertyGroup>
 
