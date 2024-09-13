@@ -9800,12 +9800,12 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             Interval* interval            = sourceIntervals[sourceReg];
             Interval* otherTargetInterval = nullptr;
             regNumber otherHalfTargetReg  = REG_NA;
-
             if (genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
             {
                 otherHalfTargetReg  = REG_PREV(targetReg);
                 otherTargetInterval = sourceIntervals[otherHalfTargetReg];
             }
+
             if (interval->registerType == TYP_DOUBLE)
             {
                 // Condition 1 above.
@@ -9843,7 +9843,6 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         {
             regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetRegsReady);
             targetRegsToDo.RemoveRegNumFromMask(targetReg);
-
             assert(location[targetReg] != targetReg);
             assert(targetReg < REG_COUNT);
             regNumber sourceReg = (regNumber)source[targetReg];
@@ -9887,7 +9886,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                             // - There is a source register for this reg (upperHalfSrcReg != REG_NA)
                             // - It is currently free                    (upperHalfSrcLoc == REG_NA)
                             // - The source interval isn't yet completed (sourceIntervals[upperHalfSrcReg] != nullptr)
-                            // - It's not resolved from stack (!targetRegsFromStack.IsRegNumInMask(upperHalfReg))
+                            // - It's not resolved from stack            (!targetRegsFromStack.IsRegNumInMask(upperHalfReg))
                             if ((upperHalfSrcReg != REG_NA) && (upperHalfSrcLoc == REG_NA) &&
                                 (sourceIntervals[upperHalfSrcReg] != nullptr) &&
                                 !targetRegsFromStack.IsRegNumInMask(upperHalfReg))
