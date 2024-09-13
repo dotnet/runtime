@@ -1,0 +1,4 @@
+world wasi-poll {
+  import wasi:io/poll@0.2.1;
+  import wasi:clocks/monotonic-clock@0.2.1;
+}
