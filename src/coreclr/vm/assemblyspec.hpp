@@ -435,7 +435,7 @@ class AssemblySpecBindingCache
 
         AssemblySpec    m_spec;
         PEAssembly      *m_pPEAssembly;
-        Assembly  *m_pAssembly;
+        Assembly        *m_pAssembly;
         enum{
             EXTYPE_NONE               = 0x00000000,
             EXTYPE_HR                    = 0x00000001,
