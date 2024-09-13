@@ -72,7 +72,13 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
         // which is a sufficient defense against DoS.
 
         long requiredBytes = count;
-        if (typeof(T) != typeof(char))
+        if (typeof(T) == typeof(DateTime) || typeof(T) == typeof(TimeSpan))
+        {
+            // We can't assume DateTime as represented by the runtime is 8 bytes.
+            // The only assumption we can make is that it's 8 bytes on the wire.
+            requiredBytes *= 8;
+        }
+        else if (typeof(T) != typeof(char))
         {
             requiredBytes *= Unsafe.SizeOf<T>();
         }
@@ -96,6 +102,10 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
         else if (typeof(T) == typeof(char))
         {
             return (T[])(object)reader.ParseChars(count);
+        }
+        else if (typeof(T) == typeof(TimeSpan) || typeof(T) == typeof(DateTime))
+        {
+            return DecodeTime(reader, count);
         }
 
         // It's safe to pre-allocate, as we have ensured there is enough bytes in the stream.
@@ -148,8 +158,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
                 }
 #endif
             }
-            else if (typeof(T) == typeof(long) || typeof(T) == typeof(ulong) || typeof(T) == typeof(double)
-                  || typeof(T) == typeof(DateTime) || typeof(T) == typeof(TimeSpan))
+            else if (typeof(T) == typeof(long) || typeof(T) == typeof(ulong) || typeof(T) == typeof(double))
             {
                 Span<long> span = MemoryMarshal.Cast<T, long>(result);
 #if NET
@@ -167,22 +176,14 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
         {
             // See DontCastBytesToBooleans test to see what could go wrong.
             bool[] booleans = (bool[])(object)result;
+            resultAsBytes = MemoryMarshal.AsBytes<T>(result);
             for (int i = 0; i < booleans.Length; i++)
             {
-                if (booleans[i]) // it can be any byte different than 0
+                // We don't use the bool array to get the value, as an optimizing compiler or JIT could elide this.
+                if (resultAsBytes[i] != 0) // it can be any byte different than 0
                 {
                     booleans[i] = true; // set it to 1 in explicit way
                 }
-            }
-        }
-        else if (typeof(T) == typeof(DateTime))
-        {
-            DateTime[] dateTimes = (DateTime[])(object)result;
-            Span<ulong> span = MemoryMarshal.Cast<T, ulong>(result);
-            for (int i = 0; i < dateTimes.Length; i++)
-            {
-                // The value needs to get validated.
-                dateTimes[i] = BinaryReaderExtensions.CreateDateTimeFromData(span[i]);
             }
         }
 
@@ -196,6 +197,28 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
         {
             values.Add(reader.ParseDecimal());
         }
+        return values;
+    }
+
+    private static T[] DecodeTime(BinaryReader reader, int count)
+    {
+        T[] values = new T[count];
+        for (int i = 0; i < values.Length; i++)
+        {
+            if (typeof(T) == typeof(DateTime))
+            {
+                values[i] = (T)(object)Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadUInt64());
+            }
+            else if (typeof(T) == typeof(TimeSpan))
+            {
+                values[i] = (T)(object)new TimeSpan(reader.ReadInt64());
+            }
+            else
+            {
+                throw new InvalidOperationException();
+            }
+        }
+
         return values;
     }
 
