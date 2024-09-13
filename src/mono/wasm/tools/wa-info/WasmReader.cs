@@ -1355,9 +1355,9 @@ namespace WebAssemblyInfo
             return name;
         }
 
-        public bool GetFunctionIdx(string name, out UInt32 idx)
+        public bool GetFunctionIdx(string? name, out UInt32 idx)
         {
-            if (!nameToFunction.ContainsKey(name))
+            if (name == null || !nameToFunction.ContainsKey(name))
             {
                 idx = 0;
                 return false;
@@ -1434,7 +1434,6 @@ namespace WebAssemblyInfo
             if (functions == null || functionTypes == null || funcsCode == null)
                 return;
 
-            //Console.WriteLine($"read func {name}");
             var type = functionTypes[functions[idx].TypeIdx];
             Console.WriteLine($"{prefix}{type.ToString(name, true)}\n{funcsCode[idx].ToString(this, type.Parameters.Types.Length).Indent(prefix)}");
         }

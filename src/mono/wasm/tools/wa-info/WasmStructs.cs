@@ -159,7 +159,7 @@ namespace WebAssemblyInfo
             }
         }
 
-        static string FunctionName(UInt32 idx, WasmReader? reader)
+        static string? FunctionName(UInt32 idx, WasmReader? reader)
         {
             if (reader == null)
                 return $"[{idx.ToString()}]";
@@ -310,8 +310,8 @@ namespace WebAssemblyInfo
 
         public string ToString(int idx)
         {
-            string varName = idx == -1 ? null : $" ${idx}";
-            string count = Count == 1 ? null : $" {Count}";
+            string? varName = idx == -1 ? null : $" ${idx}";
+            string? count = Count == 1 ? null : $" {Count}";
             return $"local{varName}{count} {Type}";
         }
 

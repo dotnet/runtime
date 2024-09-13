@@ -98,7 +98,7 @@ namespace WebAssemblyInfo
             {
                 otherName = otherReader.GetFunctionName(otherIdx);
                 f2 = otherReader.functions[otherIdx];
-                processedIndexes.Add(otherIdx);
+                processedIndexes?.Add(otherIdx);
             }
 
             if (f2 == null)
@@ -226,7 +226,7 @@ namespace WebAssemblyInfo
             {
                 otherName = otherReader.GetFunctionName(otherIdx);
                 f2 = otherReader.functions[otherIdx];
-                processedIndexes.Add(otherIdx);
+                processedIndexes?.Add(otherIdx);
             }
 
             if (f2 == null)
@@ -241,7 +241,7 @@ namespace WebAssemblyInfo
                 sizeDiffs[$" {name}"] = delta;
         }
 
-        static bool GetOtherIndex(string name, uint idx, WasmDiffReader other, out uint otherIdx)
+        static bool GetOtherIndex(string? name, uint idx, WasmDiffReader other, out uint otherIdx)
         {
             otherIdx = idx;
             return other.HasFunctionNames && other.GetFunctionIdx(name, out otherIdx);
@@ -276,7 +276,7 @@ namespace WebAssemblyInfo
             return 0;
         }
 
-        HashSet<uint> processedIndexes;
+        HashSet<uint>? processedIndexes;
 
         protected override void FilterFunctions(ProcessFunction processFunction, object? data = null)
         {
