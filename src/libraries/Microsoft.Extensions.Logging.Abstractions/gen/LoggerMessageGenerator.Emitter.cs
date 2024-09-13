@@ -389,7 +389,7 @@ namespace {lc.Namespace}
 
                     GenDefineTypes(lm, brackets: true);
 
-                    _builder.Append(@$"({level}, new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}), ""{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}"", new global::Microsoft.Extensions.Logging.LogDefineOptions() {{ SkipEnabledCheck = true }}); 
+                    _builder.Append(@$"({level}, new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}), ""{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}"", new global::Microsoft.Extensions.Logging.LogDefineOptions() {{ SkipEnabledCheck = true }});
 ");
                 }
 
@@ -426,8 +426,8 @@ namespace {lc.Namespace}
                 {nestedIndentation}{enabledCheckIndentation}{level},
                 {nestedIndentation}{enabledCheckIndentation}new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}),
                 {nestedIndentation}{enabledCheckIndentation}");
-                GenHolder(lm);
-                _builder.Append($@",
+                    GenHolder(lm);
+                    _builder.Append($@",
                 {nestedIndentation}{enabledCheckIndentation}{exceptionArg},
                 {nestedIndentation}{enabledCheckIndentation}__{lm.UniqueName}Struct.Format);");
                 }
@@ -507,7 +507,7 @@ namespace {lc.Namespace}
             {
                 if (_needEnumerationHelper)
                 {
-                                _builder.Append($@"
+                    _builder.Append($@"
 /// {GeneratedTypeSummary}
 [{s_generatedCodeAttribute}]
 [{EditorBrowsableAttribute}]
@@ -612,7 +612,7 @@ internal static class __LoggerMessageGenerator
         /// Checks if variableOrTemplateName contains a special symbol ('@') as starting char
         /// </summary>
         /// <param name="variableOrTemplateName">variable that might contain '@' symbol</param>
-        /// <returns>true if contains special symbol, false otherwise.</returns>
+        /// <returns><see langword="true" /> if contains special symbol, false otherwise.</returns>
         private static bool ContainsSpecialSymbol(ReadOnlySpan<char> variableOrTemplateName)
             => variableOrTemplateName.Length > 0 && variableOrTemplateName[0] == '@';
 
