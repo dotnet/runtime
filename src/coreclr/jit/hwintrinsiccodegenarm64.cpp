@@ -1096,6 +1096,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else if (isRMW)
                     {
+                        assert((targetReg == op1Reg) || (targetReg != op2Reg));
                         GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
                                                   /* canSkip */ true);
                         GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
