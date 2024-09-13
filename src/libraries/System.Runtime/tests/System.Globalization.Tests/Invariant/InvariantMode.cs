@@ -898,14 +898,17 @@ namespace System.Globalization.Tests
 
                 Assert.Equal(offsetResult, sourceBoundedSpan.IndexOf(valueBoundedSpan, GetStringComparison(options)));
                 Assert.Equal(offsetResult, compareInfo.IndexOf(sourceBoundedSpan, valueBoundedSpan, options));
-                Assert.Equal(offsetResult, compareInfo.IndexOf(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
-                if (offsetResult >= 0)
+                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 {
-                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
-                }
-                else
-                {
-                    Assert.Equal(0, matchLength); // not found
+                    Assert.Equal(offsetResult, compareInfo.IndexOf(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                    if (offsetResult >= 0)
+                    {
+                        Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                    }
+                    else
+                    {
+                        Assert.Equal(0, matchLength); // not found
+                    }
                 }
             }
         }
@@ -958,14 +961,17 @@ namespace System.Globalization.Tests
 
                 Assert.Equal(result, sourceBoundedSpan.LastIndexOf(valueBoundedSpan, GetStringComparison(options)));
                 Assert.Equal(result, compareInfo.LastIndexOf(sourceBoundedSpan, valueBoundedSpan, options));
-                Assert.Equal(result, compareInfo.LastIndexOf(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
-                if (result >= 0)
+                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 {
-                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
-                }
-                else
-                {
-                    Assert.Equal(0, matchLength); // not found
+                    Assert.Equal(result, compareInfo.LastIndexOf(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                    if (result >= 0)
+                    {
+                        Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                    }
+                    else
+                    {
+                        Assert.Equal(0, matchLength); // not found
+                    }
                 }
             }
         }
@@ -993,14 +999,17 @@ namespace System.Globalization.Tests
 
                 Assert.Equal(result, sourceBoundedSpan.StartsWith(valueBoundedSpan, GetStringComparison(options)));
                 Assert.Equal(result, compareInfo.IsPrefix(sourceBoundedSpan, valueBoundedSpan, options));
-                Assert.Equal(result, compareInfo.IsPrefix(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
-                if (result)
+                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 {
-                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
-                }
-                else
-                {
-                    Assert.Equal(0, matchLength); // not found
+                    Assert.Equal(result, compareInfo.IsPrefix(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                    if (result)
+                    {
+                        Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                    }
+                    else
+                    {
+                        Assert.Equal(0, matchLength); // not found
+                    }
                 }
             }
         }
@@ -1028,14 +1037,17 @@ namespace System.Globalization.Tests
 
                 Assert.Equal(result, sourceBoundedSpan.EndsWith(valueBoundedSpan, GetStringComparison(options)));
                 Assert.Equal(result, compareInfo.IsSuffix(sourceBoundedSpan, valueBoundedSpan, options));
-                Assert.Equal(result, compareInfo.IsSuffix(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
-                if (result)
+                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 {
-                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
-                }
-                else
-                {
-                    Assert.Equal(0, matchLength); // not found
+                    Assert.Equal(result, compareInfo.IsSuffix(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                    if (result)
+                    {
+                        Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                    }
+                    else
+                    {
+                        Assert.Equal(0, matchLength); // not found
+                    }
                 }
             }
         }
