@@ -1141,20 +1141,20 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
                         {
-                                assert((targetReg == op2Reg) || ((targetReg != op1Reg) && (targetReg != op3Reg)));
+                            assert((targetReg == op2Reg) || ((targetReg != op1Reg) && (targetReg != op3Reg)));
 
-                                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op2Reg,
-                                                          /* canSkip */ true);
-                            }
+                            GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op2Reg,
+                                                      /* canSkip */ true);
 
                             GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op3Reg, opt);
                         }
                         else
                         {
-                                assert((targetReg == op1Reg) || ((targetReg != op2Reg) && (targetReg != op3Reg)));
-                                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
-                                                          /* canSkip */ true);
-                            }
+                            assert((targetReg == op1Reg) || ((targetReg != op2Reg) && (targetReg != op3Reg)));
+
+                            GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
+                                                      /* canSkip */ true);
+
                             GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
                         }
                     }
