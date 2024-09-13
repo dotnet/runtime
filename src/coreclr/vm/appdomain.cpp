@@ -2516,11 +2516,11 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
     {
         AssemblySpec spec;
         spec.InitializeSpec(result->GetPEAssembly());
-        GetAppDomain()->AddAssemblyToCache(&spec, result->GetDomainAssembly());
+        GetAppDomain()->AddAssemblyToCache(&spec, result);
     }
     else
     {
-        GetAppDomain()->AddAssemblyToCache(pIdentity, result->GetDomainAssembly());
+        GetAppDomain()->AddAssemblyToCache(pIdentity, result);
     }
 
     RETURN result;
@@ -2763,10 +2763,10 @@ Assembly * AppDomain::FindAssembly(PEAssembly * pPEAssembly, FindAssemblyOptions
 
     if (pPEAssembly->HasHostAssembly())
     {
-        DomainAssembly * pDA = pPEAssembly->GetHostAssembly()->GetDomainAssembly();
-        if (pDA != nullptr && (pDA->GetAssembly()->IsLoaded() || (includeFailedToLoad && pDA->GetAssembly()->IsError())))
+        Assembly * pAssembly = pPEAssembly->GetHostAssembly()->GetRuntimeAssembly();
+        if (pAssembly != nullptr && (pAssembly->IsLoaded() || (includeFailedToLoad && pAssembly->IsError())))
         {
-            return pDA->GetAssembly();
+            return pAssembly;
         }
         return nullptr;
     }
@@ -2910,7 +2910,7 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly)
     return m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly);
 }
 
-BOOL AppDomain::AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembly)
+BOOL AppDomain::AddAssemblyToCache(AssemblySpec* pSpec, Assembly *pAssembly)
 {
     CONTRACTL
     {
@@ -3027,7 +3027,7 @@ BOOL AppDomain::RemoveFileFromCache(PEAssembly * pPEAssembly)
     return TRUE;
 }
 
-BOOL AppDomain::RemoveAssemblyFromCache(DomainAssembly* pAssembly)
+BOOL AppDomain::RemoveAssemblyFromCache(Assembly* pAssembly)
 {
     CONTRACTL
     {

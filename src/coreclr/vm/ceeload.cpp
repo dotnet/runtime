@@ -2327,10 +2327,10 @@ Module::GetAssemblyIfLoaded(
             spec.SetBinder(pBinderForLoadedAssembly);
         }
 
-        DomainAssembly * pDomainAssembly = AppDomain::GetCurrentDomain()->FindCachedAssembly(&spec, FALSE /*fThrow*/);
+        Assembly * pCachedAssembly = AppDomain::GetCurrentDomain()->FindCachedAssembly(&spec, FALSE /*fThrow*/);
 
-        if (pDomainAssembly && pDomainAssembly->GetAssembly()->IsLoaded())
-            pAssembly = pDomainAssembly->GetAssembly();
+        if (pCachedAssembly && pCachedAssembly->IsLoaded())
+            pAssembly = pCachedAssembly;
 
         // Only store in the rid map if working with the current AppDomain.
         if (fCanUseRidMap && pAssembly)

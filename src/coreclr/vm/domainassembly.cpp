@@ -452,7 +452,7 @@ void Assembly::RegisterWithHostAssembly()
 
     if (GetPEAssembly()->HasHostAssembly())
     {
-        GetPEAssembly()->GetHostAssembly()->SetDomainAssembly(GetDomainAssembly());
+        GetPEAssembly()->GetHostAssembly()->SetRuntimeAssembly(this);
     }
 }
 
@@ -468,7 +468,7 @@ void Assembly::UnregisterFromHostAssembly()
 
     if (GetPEAssembly()->HasHostAssembly())
     {
-        GetPEAssembly()->GetHostAssembly()->SetDomainAssembly(nullptr);
+        GetPEAssembly()->GetHostAssembly()->SetRuntimeAssembly(nullptr);
     }
 }
 
