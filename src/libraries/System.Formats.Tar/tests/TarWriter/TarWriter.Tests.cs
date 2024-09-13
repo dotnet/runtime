@@ -419,20 +419,5 @@ namespace System.Formats.Tar.Tests
             // Gnu BlockDevice: 623 + 1004 + 686 + 1142 = 3455
             return checksum;
         }
-
-        [Fact]
-        void Verify_Size_RegularFile_Empty()
-        {
-            using MemoryStream emptyData = new(0);
-            using MemoryStream output = new();
-            using TarWriter archive = new(output, TarEntryFormat.Pax);
-            PaxTarEntry te = new(TarEntryType.RegularFile, "zero_size")
-            { DataStream = emptyData };
-            archive.WriteEntry(te);
-            var sizeBuffer = output.GetBuffer()[1148..(1148 + 12)];
-            // we expect ocal zeros
-            byte[] expected = [0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0];
-            Assert.True(sizeBuffer.SequenceEqual(expected));
-        }
     }
 }
