@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="value">When this method returns, contains the value.</param>
-        /// <returns><c>true</c> if a value for the specified key was found, otherwise <c>false</c>.</returns>
+        /// <returns><see langword="true"/> if a value for the specified key was found, otherwise <see langword="false"/>.</returns>
         public bool TryGet(string key, out string? value)
         {
             value = _config[key];
