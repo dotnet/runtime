@@ -9714,14 +9714,6 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         }
     }
 
-    // kpathak
-    bool startLogging = false;
-    bool revertChange = false;
-    if ((fromBlock->bbNum == 12) && (toBlock->bbNum == 13))
-    {
-        printf("targetRegsToDo=%x\n", targetRegsToDo);
-        startLogging = true;
-    }
     // First:
     //   - Perform all moves from reg to stack (no ordering needed on these)
     //   - For reg to reg moves, record the current location, associating their
@@ -9784,14 +9776,6 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             source[toReg]            = (regNumberSmall)fromReg;
             sourceIntervals[fromReg] = interval;
             targetRegsToDo |= genRegMask(toReg);
-            if (startLogging && genIsValidFloatReg(fromReg))
-            {
-                printf("Added ");
-                interval->tinyDump();
-                printf(" for %s -> %s (%s). targetRegsToDo= ", getRegName(fromReg), getRegName(toReg), ((interval->registerType == TYP_DOUBLE)? "double" : "float"));
-                compiler->dumpRegMask(targetRegsToDo.getLow(), TYP_FLOAT);
-                printf("\n");
-            }
         }
     }
 
@@ -9816,13 +9800,8 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             Interval* interval            = sourceIntervals[sourceReg];
             Interval* otherTargetInterval = nullptr;
             regNumber otherHalfTargetReg  = REG_NA;
-            if (startLogging && genIsValidFloatReg(sourceReg))
-            {
-                printf("For ");
-                interval->tinyDump();
-                printf(" from %s -> %s.\n", getRegName(sourceReg), getRegName(targetReg));
-            }
-            if (!revertChange && genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
+
+            if (genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
             {
                 otherHalfTargetReg  = REG_PREV(targetReg);
                 otherTargetInterval = sourceIntervals[otherHalfTargetReg];
@@ -9860,27 +9839,11 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     // Perform reg to reg moves
     while (targetRegsToDo.IsNonEmpty())
     {
-        if (startLogging)
-        {            
-            printf("targetRegsReady: ");
-            compiler->dumpRegMask(targetRegsReady.getLow(), TYP_FLOAT);
-            printf(", targetRegsToDo: ");
-            compiler->dumpRegMask(targetRegsToDo.getLow(), TYP_FLOAT);
-            printf("\n");
-        }
         while (targetRegsReady.IsNonEmpty())
         {
             regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetRegsReady);
             targetRegsToDo.RemoveRegNumFromMask(targetReg);
-            if (startLogging)
-            {
-                printf("targetReg: %s, ", getRegName(targetReg));
-                printf("targetRegsReady: ");
-                compiler->dumpRegMask(targetRegsReady.getLow(), TYP_FLOAT);
-                printf(", targetRegsToDo: ");
-                compiler->dumpRegMask(targetRegsToDo.getLow(), TYP_FLOAT);
-                printf("\n");
-            }
+
             assert(location[targetReg] != targetReg);
             assert(targetReg < REG_COUNT);
             regNumber sourceReg = (regNumber)source[targetReg];
@@ -9892,13 +9855,6 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             assert(interval != nullptr);
             addResolution(block, insertionPoint, interval, targetReg,
                           fromReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock) DEBUG_ARG(resolveTypeName[resolveType]));
-            if (startLogging && genIsValidFloatReg(sourceReg))
-            {
-                printf("Added resolution: %s -> %s\n", getRegName(fromReg), getRegName(targetReg));
-                printf("  Removing ");
-                interval->tinyDump();
-                printf("for %s.\n", getRegName(sourceReg));
-            }
             sourceIntervals[sourceReg] = nullptr;
             location[sourceReg]        = REG_NA;
 
@@ -9916,21 +9872,26 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         // - the other half of the double is free.
                         Interval* otherInterval = sourceIntervals[source[fromReg]];
                         regNumber upperHalfReg  = REG_NEXT(fromReg);
-
-                        if (otherInterval->registerType == TYP_DOUBLE)
+                        if ((otherInterval->registerType == TYP_DOUBLE) && (location[upperHalfReg] != REG_NA))
                         {
-                            // If the interval targeting fromReg is TYP_DOUBLE...
-                            if (location[upperHalfReg] != REG_NA)
+                            targetRegsReady.RemoveRegNumFromMask(fromReg);
+                        }
+
+                        // Since we want to check if we can free upperHalfReg, only do it
+                        // if lowerHalfReg is ready.
+                        if (targetRegsReady.IsRegNumInMask(fromReg))
+                        {
+                            regNumber upperHalfSrcReg = (regNumber)source[upperHalfReg];
+                            regNumber upperHalfSrcLoc = (regNumber)location[upperHalfReg];
+                            // Necessary conditions:
+                            // - There is a source register for this reg (upperHalfSrcReg != REG_NA)
+                            // - It is currently free                    (upperHalfSrcLoc == REG_NA)
+                            // - The source interval isn't yet completed (sourceIntervals[upperHalfSrcReg] != nullptr)
+                            // - It's not resolved from stack (!targetRegsFromStack.IsRegNumInMask(upperHalfReg))
+                            if ((upperHalfSrcReg != REG_NA) && (upperHalfSrcLoc == REG_NA) &&
+                                (sourceIntervals[upperHalfSrcReg] != nullptr) &&
+                                !targetRegsFromStack.IsRegNumInMask(upperHalfReg))
                             {
-                                // .. and the other half is a busy target, then fromReg is not yet ready either.
-                                targetRegsReady.RemoveRegNumFromMask(fromReg);
-                            }
-                            else if (!targetRegsFromStack.IsRegNumInMask(upperHalfReg) &&
-                                     targetRegsToDo.IsRegNumInMask(upperHalfReg))
-                            {
-                                // ... if the other half (that is not resolved from the stack), is a target of
-                                // an unrelated interval, and got freed up after the above resolution of TYP_DOUBLE took
-                                // place, make it ready as well.
                                 targetRegsReady.AddRegNumInMask(upperHalfReg);
                             }
                         }
@@ -9940,10 +9901,9 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 {
                     // We may have freed up the other half of a double where the lower half
                     // was already free.
-                    regNumber lowerHalfReg     = REG_PREV(fromReg);
-                    regNumber lowerHalfSrcReg  = (regNumber)source[lowerHalfReg];
-                    regNumber lowerHalfSrcLoc  = (regNumber)location[lowerHalfReg];
-                    regMaskTP lowerHalfRegMask = genRegMask(lowerHalfReg);
+                    regNumber lowerHalfReg    = REG_PREV(fromReg);
+                    regNumber lowerHalfSrcReg = (regNumber)source[lowerHalfReg];
+                    regNumber lowerHalfSrcLoc = (regNumber)location[lowerHalfReg];
                     // Necessary conditions:
                     // - There is a source register for this reg (lowerHalfSrcReg != REG_NA)
                     // - It is currently free                    (lowerHalfSrcLoc == REG_NA)
@@ -10105,7 +10065,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 #ifdef TARGET_ARM
                     Interval* otherTargetInterval = nullptr;
                     regNumber otherHalfTargetReg  = REG_NA;
-                    if (!revertChange && genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
+                    if (genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
                     {
                         otherHalfTargetReg  = REG_PREV(targetReg);
                         otherTargetInterval = sourceIntervals[otherHalfTargetReg];
