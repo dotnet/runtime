@@ -1,16 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-  <!-- This project is specifically to build and publish a build of crossgen2 for shipping. -->
   <PropertyGroup>
     <_IsPublishing>true</_IsPublishing>
-    <PublishTrimmed>true</PublishTrimmed>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
-    <SelfContained>true</SelfContained>
-    <TrimmerSingleWarn>false</TrimmerSingleWarn>
-    <PublishDir>$(RuntimeBinDir)crossgen2-published/</PublishDir>
+    <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
+    <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
 
-  <Import Project="crossgen2.props" />
+  <Import Project="ILCompiler.props" />
 
   <PropertyGroup Condition="'$(UseNativeAotForComponents)' != 'true'">
     <PublishSingleFile>true</PublishSingleFile>
