@@ -5210,9 +5210,6 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule)
         SIMPLIFYING_ASSUMPTION(dmod != NULL); // may not be true in OOM cases; but LS doesn't handle OOM.
     }
 
-    // The module must be in the one and only AppDomain
-    _ASSERTE( (dmod == NULL) || (dmod->GetAppDomain() == AppDomain::GetCurrentDomain()) );
-
     LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p -> dm=%p(Mod=%p, DomFile=%p)\n",
         pModule, dmod, dmod->GetRuntimeModule(), dmod->GetDomainAssembly()));
     return dmod;
@@ -5239,12 +5236,11 @@ DebuggerModule* Debugger::AddDebuggerModule(DomainAssembly * pDomainAssembly)
     DebuggerDataLockHolder chInfo(this);
 
     Module *     pRuntimeModule = pDomainAssembly->GetModule();
-    AppDomain *  pAppDomain     = AppDomain::GetCurrentDomain();
 
     HRESULT hr = CheckInitModuleTable();
     IfFailThrow(hr);
 
-    DebuggerModule* pModule = new (interopsafe) DebuggerModule(pRuntimeModule, pDomainAssembly, pAppDomain);
+    DebuggerModule* pModule = new (interopsafe) DebuggerModule(pRuntimeModule, pDomainAssembly);
     _ASSERTE(pModule != NULL); // throws on oom
 
     TRACE_ALLOC(pModule);
@@ -9354,15 +9350,13 @@ void Debugger::UnloadAssembly(DomainAssembly * pDomainAssembly)
 
 //
 // LoadModule is called when a Runtime thread loads a new module and a debugger
-// is attached.  This also includes when a domain-neutral module is "loaded" into
-// a new domain.
+// is attached.
 //
 // TODO: remove pszModuleName and perhaps other args.
 void Debugger::LoadModule(Module* pRuntimeModule,
                           LPCWSTR pszModuleName, // module file name.
                           DWORD dwModuleName, // length of pszModuleName in chars, not including null.
                           Assembly *pAssembly,
-                          AppDomain *pAppDomain,
                           DomainAssembly *  pDomainAssembly,
                           BOOL fAttaching)
 {
@@ -9408,12 +9402,11 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     // We should simply things when we actually get rid of DebuggerModule, possibly by just passing the
     // DomainAssembly around.
     _ASSERTE(module->GetDomainAssembly()    == pDomainAssembly);
-    _ASSERTE(module->GetAppDomain()     == AppDomain::GetCurrentDomain());
     _ASSERTE(module->GetRuntimeModule() == pDomainAssembly->GetModule());
 
     // Send a load module event to the Right Side.
     ipce = m_pRCThread->GetIPCEventSendBuffer();
-    InitIPCEvent(ipce,DB_IPCE_LOAD_MODULE, pThread, pAppDomain);
+    InitIPCEvent(ipce,DB_IPCE_LOAD_MODULE, pThread, AppDomain::GetCurrentDomain());
 
     ipce->LoadModuleData.vmDomainAssembly.SetRawPtr(pDomainAssembly);
 
@@ -9541,16 +9534,9 @@ void Debugger::SendUpdateModuleSymsEventAndBlock(Module* pRuntimeModule, AppDoma
 
 
 //
-// UnloadModule is called by the Runtime for each module (including shared ones)
-// in an AppDomain that is being unloaded, when a debugger is attached.
-// In the EE, a module may be domain-neutral and therefore shared across all AppDomains.
-// We abstract this detail away in the Debugger and consider each such EE module to correspond
-// to multiple "Debugger Module" instances (one per AppDomain).
-// Therefore, this doesn't necessarily mean the runtime is unloading the module, just
-// that the Debugger should consider it's (per-AppDomain) DebuggerModule to be unloaded.
+// UnloadModule is called by the Runtime for each module that is being unloaded, when a debugger is attached.
 //
-void Debugger::UnloadModule(Module* pRuntimeModule,
-                            AppDomain *pAppDomain)
+void Debugger::UnloadModule(Module* pRuntimeModule)
 {
     CONTRACTL
     {
@@ -9567,11 +9553,8 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
     if (CORDBUnrecoverableError(this))
         return;
 
-
-
-    LOG((LF_CORDB, LL_INFO100, "D::UM: unload module Mod:%#08x AD:%#08x runtimeMod:%#08x modName:%s\n",
-         LookupOrCreateModule(pRuntimeModule), pAppDomain, pRuntimeModule, pRuntimeModule->GetDebugName()));
-
+    LOG((LF_CORDB, LL_INFO100, "D::UM: unload module Mod:%#08x runtimeMod:%#08x modName:%s\n",
+         LookupOrCreateModule(pRuntimeModule), pRuntimeModule, pRuntimeModule->GetDebugName()));
 
     Thread *thread = g_pEEInterface->GetThread();
     SENDIPCEVENT_BEGIN(this, thread);
@@ -9581,8 +9564,8 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
         DebuggerModule* module = LookupOrCreateModule(pRuntimeModule);
         if (module == NULL)
         {
-            LOG((LF_CORDB, LL_INFO100, "D::UM: module already unloaded AD:%#08x runtimeMod:%#08x modName:%s\n",
-                 pAppDomain, pRuntimeModule, pRuntimeModule->GetDebugName()));
+            LOG((LF_CORDB, LL_INFO100, "D::UM: module already unloaded runtimeMod:%#08x modName:%s\n",
+                 pRuntimeModule, pRuntimeModule->GetDebugName()));
             goto LExit;
         }
         _ASSERTE(module != NULL);
@@ -9592,13 +9575,9 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
             pRuntimeModule, pRuntimeModule->GetDomainAssembly(), false,
             module, module->GetRuntimeModule(), module->GetDomainAssembly());
 
-        // Note: the appdomain the module was loaded in must match the appdomain we're unloading it from. If it doesn't,
-        // then we've either found the wrong DebuggerModule in LookupModule or we were passed bad data.
-        _ASSERTE(module->GetAppDomain() == pAppDomain);
-
         // Send the unload module event to the Right Side.
         DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
-        InitIPCEvent(ipce, DB_IPCE_UNLOAD_MODULE, thread, pAppDomain);
+        InitIPCEvent(ipce, DB_IPCE_UNLOAD_MODULE, thread, AppDomain::GetCurrentDomain());
         ipce->UnloadModuleData.vmDomainAssembly.SetRawPtr((module ? module->GetDomainAssembly() : NULL));
         ipce->UnloadModuleData.debuggerAssemblyToken.Set(pRuntimeModule->GetClassLoader()->GetAssembly());
         m_pRCThread->SendIPCEvent();
@@ -9640,7 +9619,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
         if (m_pModules != NULL)
         {
             DebuggerDataLockHolder chInfo(this);
-            m_pModules->RemoveModule(pRuntimeModule, pAppDomain);
+            m_pModules->RemoveModule(pRuntimeModule);
         }
 
         // Stop all Runtime threads
@@ -10014,7 +9993,6 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     // because we can't prove that the AppDomain* would be valid (not unloaded).
     //
     AppDomain *pDomain = AppDomain::GetCurrentDomain();
-    AppDomain *pResultDomain = ((pDE->m_debuggerModule == NULL) ? pDomain : pDE->m_debuggerModule->GetAppDomain());
 
     // Send a func eval complete event to the Right Side.
     DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
@@ -10024,13 +10002,13 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     ipce->FuncEvalComplete.successful = pDE->m_successful;
     ipce->FuncEvalComplete.aborted = pDE->m_aborted;
     ipce->FuncEvalComplete.resultAddr = pDE->m_result;
-    ipce->FuncEvalComplete.vmAppDomain.SetRawPtr(pResultDomain);
+    ipce->FuncEvalComplete.vmAppDomain.SetRawPtr(pDomain);
     ipce->FuncEvalComplete.vmObjectHandle = pDE->m_vmObjectHandle;
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: TypeHandle is %p\n", pDE->m_resultType.AsPtr()));
 
     Debugger::TypeHandleToExpandedTypeInfo(pDE->m_retValueBoxing, // whether return values get boxed or not depends on the particular FuncEval we're doing...
-                                           pResultDomain,
+                                           pDomain,
                                            pDE->m_resultType,
                                            &ipce->FuncEvalComplete.resultType);
 
