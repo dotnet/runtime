@@ -106,7 +106,7 @@ namespace System
         {
             get
             {
-                if (IsWindows || IsAndroid || UsesMobileAppleCrypto || IsBrowser)
+                if (IsWindows || IsAndroid || UsesMobileAppleCrypto || IsBrowser || IsWasi)
                 {
                     return false;
                 }
