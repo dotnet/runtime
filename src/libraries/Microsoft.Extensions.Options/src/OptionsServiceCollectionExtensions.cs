@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Adds services required for using options and enforces options validation check on start rather than in runtime.
+        /// Adds services required for using options and enforces options validation check on start rather than at run time.
         /// </summary>
         /// <remarks>
         /// The <seealso cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Adds services required for using options and enforces options validation check on start rather than in runtime.
+        /// Adds services required for using options and enforces options validation check on start rather than at run time.
         /// </summary>
         /// <remarks>
         /// The <seealso cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
