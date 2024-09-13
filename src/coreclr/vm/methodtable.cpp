@@ -7825,8 +7825,9 @@ MethodTable::ResolveVirtualStaticMethod(
     ClassLoadLevel level)
 {
     CONTRACTL{
-       THROWS;
-       GC_TRIGGERS;
+        MODE_ANY;
+        THROWS;
+        GC_TRIGGERS;
     } CONTRACTL_END;
 
     bool verifyImplemented = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::VerifyImplemented) != ResolveVirtualStaticMethodFlags::None;
@@ -7986,6 +7987,12 @@ MethodTable::ResolveVirtualStaticMethod(
 MethodDesc*
 MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level)
 {
+    CONTRACTL{
+        MODE_ANY;
+        THROWS;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
     bool instantiateMethodParameters = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc) != ResolveVirtualStaticMethodFlags::None;
     bool allowVariance = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::AllowVariantMatches) != ResolveVirtualStaticMethodFlags::None;
     bool verifyImplemented = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::VerifyImplemented) != ResolveVirtualStaticMethodFlags::None;
@@ -8041,7 +8048,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         {
             // Allow variant, but not equivalent interface match
             if (!pInterfaceType->HasSameTypeDefAs(pInterfaceMT) ||
-                !pInterfaceMT->CanCastTo(pInterfaceType, NULL))
+                !TypeHandle(pInterfaceMT).CanCastTo(pInterfaceType, NULL))
             {
                 continue;
             }
