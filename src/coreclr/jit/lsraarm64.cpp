@@ -1724,7 +1724,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
             }
         }
-        else if (intrinsicTree->OperIsMemoryLoadOrStore())
+        else if ((intrinsicTree->OperIsMemoryLoadOrStore()) && (intrin.id != NI_AdvSimd_LoadAndInsertScalar))
         {
             srcCount += BuildAddrUses(intrin.op1);
         }
@@ -2151,7 +2151,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             SingleTypeRegSet candidates = lowVectorOperandNum == 3 ? lowVectorCandidates : RBM_NONE;
 
-            if (isRMW)
+            if (intrin.id == NI_AdvSimd_LoadAndInsertScalar)
+            {
+                srcCount += BuildAddrUses(intrin.op3);
+            }
+            else if (isRMW)
             {
                 srcCount += BuildDelayFreeUses(intrin.op3, (tgtPrefOp2 ? intrin.op2 : intrin.op1), candidates);
             }
