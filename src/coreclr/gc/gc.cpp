@@ -9666,7 +9666,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         dprintf (GC_TABLE_LOG, ("card table: %zx(translated: %zx), seg map: %zx, mark array: %zx",
             (size_t)ct, (size_t)translated_ct, (size_t)new_seg_mapping_table, (size_t)card_table_mark_array (ct)));
 
-        if (is_bgc_in_progress())
+        if (hp->is_bgc_in_progress())
         {
             dprintf (GC_TABLE_LOG, ("new low: %p, new high: %p, latest mark array is %p(translate: %p)",
                                     saved_g_lowest_address, saved_g_highest_address,
@@ -9793,7 +9793,7 @@ fail:
     else
     {
 #ifdef BACKGROUND_GC
-        if (is_bgc_in_progress())
+        if (hp->is_bgc_in_progress())
         {
             dprintf (GC_TABLE_LOG, ("in range new seg %p, mark_array is %p", new_seg, hp->mark_array));
             if (!commit_mark_array_new_seg (hp, new_seg))
@@ -13214,13 +13214,7 @@ void region_free_list::sort_by_committed_and_age()
 
 void gc_heap::age_free_regions (const char* msg)
 {
-    // If we are doing an ephemeral GC as a precursor to a BGC, then we will age all of the region
-    // kinds during the ephemeral GC and skip the call to age_free_regions during the BGC itself.
-    bool age_all_region_kinds = (settings.condemned_generation == max_generation) || is_bgc_in_progress();
-    if (age_all_region_kinds)
-    {
-        global_free_huge_regions.age_free_regions();
-    }
+    bool age_all_region_kinds = (settings.condemned_generation == max_generation);
 
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < n_heaps; i++)
@@ -37747,15 +37741,7 @@ void gc_heap::allow_fgc()
 
 BOOL gc_heap::is_bgc_in_progress()
 {
-#ifdef MULTIPLE_HEAPS
-    // All heaps are changed to/from the bgc_initialized state during the VM suspension at the start of BGC,
-    // so checking any heap will work.
-    gc_heap* hp = g_heaps[0];
-#else
-    gc_heap* hp = pGenGCHeap;
-#endif //MULTIPLE_HEAPS
-
-    return (background_running_p() || (hp->current_bgc_state == bgc_initialized));
+    return (background_running_p() || (current_bgc_state == bgc_initialized));
 }
 
 void gc_heap::clear_commit_flag()
