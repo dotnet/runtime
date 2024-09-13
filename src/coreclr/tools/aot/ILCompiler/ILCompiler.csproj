@@ -10,7 +10,6 @@
 
   <Import Project="ILCompiler.props" />
 
-  <!-- BEGIN: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
     <PublishAot Condition="'$(UseNativeAotForComponents)' == 'true'">true</PublishAot>
