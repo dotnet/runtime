@@ -1819,11 +1819,10 @@ BOOL AppDomain::ContainsAssembly(Assembly * assem)
     WRAPPER_NO_CONTRACT;
     AssemblyIterator i = IterateAssembliesEx((AssemblyIterationFlags)(
         kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-    while (i.Next(pDomainAssembly.This()))
+    while (i.Next(pAssembly.This()))
     {
-        CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
         if (pAssembly == assem)
             return TRUE;
     }
@@ -2776,15 +2775,15 @@ Assembly * AppDomain::FindAssembly(PEAssembly * pPEAssembly, FindAssemblyOptions
         kIncludeLoaded |
         (includeFailedToLoad ? kIncludeFailedToLoad : 0) |
         kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-    while (i.Next(pDomainAssembly.This()))
+    while (i.Next(pAssembly.This()))
     {
-        PEAssembly * pManifestFile = pDomainAssembly->GetPEAssembly();
+        PEAssembly * pManifestFile = pAssembly->GetPEAssembly();
         if (pManifestFile &&
             pManifestFile->Equals(pPEAssembly))
         {
-            return pDomainAssembly.GetValue()->GetAssembly();
+            return pAssembly;
         }
     }
     return NULL;
@@ -3579,10 +3578,10 @@ BOOL AppDomain::NotifyDebuggerLoad(int flags, BOOL attaching)
     // Attach to our assemblies
     LOG((LF_CORDB, LL_INFO100, "AD::NDA: Iterating assemblies\n"));
     i = IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeLoading | kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-    while (i.Next(pDomainAssembly.This()))
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
+    while (i.Next(pAssembly.This()))
     {
-        result = (pDomainAssembly->GetAssembly()->NotifyDebuggerLoad(flags, attaching) ||
+        result = (pAssembly->NotifyDebuggerLoad(flags, attaching) ||
                   result);
     }
 
@@ -3599,13 +3598,13 @@ void AppDomain::NotifyDebuggerUnload()
 
     LOG((LF_CORDB, LL_INFO100, "AD::NDD: Interating domain bound assemblies\n"));
     AssemblyIterator i = IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded |  kIncludeLoading  | kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
 
     // Detach from our assemblies
-    while (i.Next(pDomainAssembly.This()))
+    while (i.Next(pAssembly.This()))
     {
         LOG((LF_CORDB, LL_INFO100, "AD::NDD: Iterating assemblies\n"));
-        pDomainAssembly->GetAssembly()->NotifyDebuggerUnload();
+        pAssembly->NotifyDebuggerUnload();
     }
 }
 #endif // DEBUGGING_SUPPORTED
@@ -4024,7 +4023,7 @@ void AppDomain::RemoveTypesFromTypeIDMap(LoaderAllocator* pLoaderAllocator)
 //
 BOOL
 AppDomain::AssemblyIterator::Next(
-    CollectibleAssemblyHolder<DomainAssembly *> * pDomainAssemblyHolder)
+    CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder)
 {
     CONTRACTL {
         NOTHROW;
@@ -4033,7 +4032,7 @@ AppDomain::AssemblyIterator::Next(
     } CONTRACTL_END;
 
     CrstHolder ch(m_pAppDomain->GetAssemblyListLock());
-    return Next_Unlocked(pDomainAssemblyHolder);
+    return Next_Unlocked(pAssemblyHolder);
 }
 
 //---------------------------------------------------------------------------------------
@@ -4042,7 +4041,7 @@ AppDomain::AssemblyIterator::Next(
 //
 BOOL
 AppDomain::AssemblyIterator::Next_Unlocked(
-    CollectibleAssemblyHolder<DomainAssembly *> * pDomainAssemblyHolder)
+    CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder)
 {
     CONTRACTL {
         NOTHROW;
@@ -4068,13 +4067,13 @@ AppDomain::AssemblyIterator::Next_Unlocked(
         {
             if (m_assemblyIterationFlags & kIncludeFailedToLoad)
             {
-                *pDomainAssemblyHolder = pDomainAssembly;
+                *pAssemblyHolder = pAssembly;
                 return TRUE;
             }
             continue; // reject
         }
 
-        // First, reject DomainAssemblies whose load status is not to be included in
+        // First, reject assemblies whose load status is not to be included in
         // the enumeration
 
         if (pAssembly->IsAvailableToProfilers() &&
@@ -4104,7 +4103,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
             }
         }
 
-        // Next, reject DomainAssemblies whose execution status is
+        // Next, reject assemblies whose execution status is
         // not to be included in the enumeration
 
         // execution assembly
@@ -4114,7 +4113,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
         }
 
         // Next, reject collectible assemblies
-        if (pDomainAssembly->IsCollectible())
+        if (pAssembly->IsCollectible())
         {
             if (m_assemblyIterationFlags & kExcludeCollectible)
             {
@@ -4130,14 +4129,14 @@ AppDomain::AssemblyIterator::Next_Unlocked(
                 continue; // reject
             }
 
-            if (pDomainAssembly->GetLoaderAllocator()->AddReferenceIfAlive())
+            if (pAssembly->GetLoaderAllocator()->AddReferenceIfAlive())
             {   // The assembly is alive
 
                 // Set the holder value (incl. increasing ref-count)
-                *pDomainAssemblyHolder = pDomainAssembly;
+                *pAssemblyHolder = pAssembly;
 
                 // Now release the reference we took in the if-condition
-                pDomainAssembly->GetLoaderAllocator()->Release();
+                pAssembly->GetLoaderAllocator()->Release();
                 return TRUE;
             }
             // The assembly is not alive anymore (and we didn't increase its ref-count in the
@@ -4149,15 +4148,15 @@ AppDomain::AssemblyIterator::Next_Unlocked(
             }
             // Set the holder value to assembly with 0 ref-count without increasing the ref-count (won't
             // call Release either)
-            pDomainAssemblyHolder->Assign(pDomainAssembly, FALSE);
+            pAssemblyHolder->Assign(pAssembly, FALSE);
             return TRUE;
         }
 
-        *pDomainAssemblyHolder = pDomainAssembly;
+        *pAssemblyHolder = pAssembly;
         return TRUE;
     }
 
-    *pDomainAssemblyHolder = NULL;
+    *pAssemblyHolder = NULL;
     return FALSE;
 } // AppDomain::AssemblyIterator::Next_Unlocked
 
@@ -4424,11 +4423,11 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
 
     m_Assemblies.EnumMemoryRegions(flags);
     AssemblyIterator assem = IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-    while (assem.Next(pDomainAssembly.This()))
+    while (assem.Next(pAssembly.This()))
     {
-        pDomainAssembly->EnumMemoryRegions(flags);
+        pAssembly->GetDomainAssembly()->EnumMemoryRegions(flags);
     }
 }
 

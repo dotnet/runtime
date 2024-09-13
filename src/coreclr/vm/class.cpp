@@ -459,10 +459,10 @@ HRESULT EEClass::AddField(MethodTable* pMT, mdFieldDef fieldDef, FieldDesc** ppN
         AppDomain::AssemblyIterator appIt = pDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
 
         bool isStaticField = !!pNewFD->IsStatic();
-        CollectibleAssemblyHolder<DomainAssembly*> pDomainAssembly;
-        while (appIt.Next(pDomainAssembly.This()) && SUCCEEDED(hr))
+        CollectibleAssemblyHolder<Assembly*> pAssembly;
+        while (appIt.Next(pAssembly.This()) && SUCCEEDED(hr))
         {
-            Module* pMod = pDomainAssembly->GetModule();
+            Module* pMod = pAssembly->GetModule();
             LOG((LF_ENC, LL_INFO100, "EEClass::AddField Checking: %s mod:%p\n", pMod->GetDebugName(), pMod));
 
             EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
@@ -655,10 +655,10 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
         PTR_AppDomain pDomain = AppDomain::GetCurrentDomain();
         AppDomain::AssemblyIterator appIt = pDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
 
-        CollectibleAssemblyHolder<DomainAssembly*> pDomainAssembly;
-        while (appIt.Next(pDomainAssembly.This()) && SUCCEEDED(hr))
+        CollectibleAssemblyHolder<Assembly*> pAssembly;
+        while (appIt.Next(pAssembly.This()) && SUCCEEDED(hr))
         {
-            Module* pMod = pDomainAssembly->GetModule();
+            Module* pMod = pAssembly->GetModule();
             LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Checking: %s mod:%p\n", pMod->GetDebugName(), pMod));
 
             EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
