@@ -117,7 +117,7 @@ INST3(cmovle,           "cmovle",           IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(cmovg,            "cmovg",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004F,                                INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF | Encoding_REX2 | INS_Flags_Has_NDD)
 
 INST3(xchg,             "xchg",             IUM_RW, 0x000086,     BAD_CODE,     0x000086,                                INS_TT_NONE,    INS_FLAGS_Has_Wbit | Encoding_REX2)
-INST3(imul,             "imul",             IUM_RW, 0x0F00AC,     BAD_CODE,     0x0F00AF,                                INS_TT_NONE,    Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit)
+INST3(imul,             "imul",             IUM_RW, 0x0F00AC,     BAD_CODE,     0x0F00AF,                                INS_TT_NONE,    Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit | INS_Flags_Has_NDD)
 
 //    id                nm                  um      mr            mi            rm                                       tt              flags
 
