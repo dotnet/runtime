@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Configuration
         /// Gets or sets a value that indicates whether the binder attempts to set all properties or only public properties.
         /// </summary>
         /// <value>
-        /// <see langword="true" /> if the binder attempts to set all non-read-only properties; <see langword="false" if only public properties are set.
+        /// <see langword="true" /> if the binder attempts to set all non-read-only properties; <see langword="false" /> if only public properties are set.
         /// </value>
         public bool BindNonPublicProperties { get; set; }
 
@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Configuration
         /// key is found for which the provided model object doesn't have an appropriate property that matches the key's name.
         /// </summary>
         /// <value>
-        /// <see langword="true" /> if an <see cref="System.InvalidOperationException"/> is thrown with a description; <see langword="false" if no exceptions are thrown. The default is <see langword="false" />.
+        /// <see langword="true" /> if an <see cref="System.InvalidOperationException"/> is thrown with a description; <see langword="false" /> if no exceptions are thrown. The default is <see langword="false" />.
         /// </value>
         public bool ErrorOnUnknownConfiguration { get; set; }
     }
