@@ -526,5 +526,6 @@ typedef struct {
 } ProfilerConfig;
 
 void proflog_parse_args (ProfilerConfig *config, const char *desc);
+void set_log_profiler_take_heapshot_method (const char *val);
 
 #endif /* __MONO_PROFLOG_H__ */
