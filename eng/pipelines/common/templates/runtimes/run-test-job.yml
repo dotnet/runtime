@@ -539,6 +539,7 @@ jobs:
             scenarios:
             - jitosr_stress
             - jitpartialcompilation_pgo
+            - jitpartialcompilation_pgo_stress_random
             - jitoptrepeat
             - jitoldlayout
           ${{ else }}:
@@ -548,6 +549,7 @@ jobs:
             - jit_stress_splitting
             - jitpartialcompilation
             - jitpartialcompilation_pgo
+            - jitpartialcompilation_pgo_stress_random
             - jitobjectstackallocation
             - jitphysicalpromotion_only
             - jitphysicalpromotion_full
