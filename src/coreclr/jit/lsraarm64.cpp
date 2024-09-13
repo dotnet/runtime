@@ -1405,7 +1405,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     if (embeddedOp != nullptr)
     {
         assert(delayFreeOp == nullptr);
-        delayFreeOp = getDelayFreeOperand(embeddedOp);
+        delayFreeOp = getDelayFreeOperand(embeddedOp, /* embedded */ true);
     }
 
     // Build any immediates
@@ -2166,11 +2166,12 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
 //
 // Arguments:
 //    intrinsicTree - Tree to check
+//    embeddedOp - The embedded operand, if any
 //
 // Return Value:
 //    The operand that needs to be delay freed
 //
-GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree)
+GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool embedded)
 {
     bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 
@@ -2228,6 +2229,16 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree)
                     // First operand contains the mask, RMW op is the second one.
                     delayFreeOp = intrinsicTree->Op(2);
                     assert(delayFreeOp != nullptr);
+                }
+                else if (HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinsicId))
+                {
+                    // For optional embedded masks, RMW behavior only holds when the operand is embedded.
+                    // The non-embedded variant is always not RMW.
+                    if (embedded)
+                    {
+                        delayFreeOp = intrinsicTree->Op(1);
+                        assert(delayFreeOp != nullptr);
+                    }
                 }
                 else
                 {

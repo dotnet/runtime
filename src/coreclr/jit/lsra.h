@@ -1445,7 +1445,7 @@ private:
     }
     FORCEINLINE RefPosition* getNextConsecutiveRefPosition(RefPosition* refPosition);
     SingleTypeRegSet         getOperandCandidates(GenTreeHWIntrinsic* intrinsicTree, HWIntrinsic intrin, size_t opNum);
-    GenTree*                 getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree);
+    GenTree*                 getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool embedded = false);
     GenTree*                 getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree);
     GenTree*                 getConsecutiveRegistersOperand(const HWIntrinsic intrin, bool* destIsConsecutive);
     GenTreeHWIntrinsic*      getEmbeddedMaskOperand(const HWIntrinsic intrin);
