@@ -1002,9 +1002,9 @@ public:
         AssemblyIterationFlags m_assemblyIterationFlags;
 
     public:
-        BOOL Next(CollectibleAssemblyHolder<DomainAssembly *> * pDomainAssemblyHolder);
-        // Note: Does not lock the assembly list, but AddRefs collectible assemblies.
-        BOOL Next_Unlocked(CollectibleAssemblyHolder<DomainAssembly *> * pDomainAssemblyHolder);
+        BOOL Next(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder);
+        // Note: Does not lock the assembly list, but AddRefs collectible assemblies' loader allocator.
+        BOOL Next_Unlocked(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder);
 
     private:
         inline DWORD GetIndex()

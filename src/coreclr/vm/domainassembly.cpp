@@ -674,12 +674,12 @@ BOOL Assembly::NotifyDebuggerLoad(int flags, BOOL attaching)
     if(this->ShouldNotifyDebugger())
     {
         result = result ||
-            this->GetModule()->NotifyDebuggerLoad(AppDomain::GetCurrentDomain(), GetDomainAssembly(), flags, attaching);
+            this->GetModule()->NotifyDebuggerLoad(GetDomainAssembly(), flags, attaching);
     }
 
     if( ShouldNotifyDebugger())
     {
-           result|=m_pModule->NotifyDebuggerLoad(AppDomain::GetCurrentDomain(), GetDomainAssembly(), ATTACH_MODULE_LOAD, attaching);
+           result|=m_pModule->NotifyDebuggerLoad(GetDomainAssembly(), ATTACH_MODULE_LOAD, attaching);
            SetDebuggerNotified();
     }
 
@@ -695,7 +695,7 @@ void Assembly::NotifyDebuggerUnload()
 
     // Dispatch module unload for the module. Debugger is resilient in case we haven't dispatched
     // a previous load event (such as if debugger attached after the modules was loaded).
-    this->GetModule()->NotifyDebuggerUnload(AppDomain::GetCurrentDomain());
+    this->GetModule()->NotifyDebuggerUnload();
 
     g_pDebugInterface->UnloadAssembly(GetDomainAssembly());
 }
