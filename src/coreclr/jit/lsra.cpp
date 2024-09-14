@@ -9875,24 +9875,40 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         {
                             targetRegsReady.RemoveRegNumFromMask(fromReg);
                         }
+
+                        // Since we want to check if we can free upperHalfReg, only do it
+                        // if lowerHalfReg is ready.
+                        if (targetRegsReady.IsRegNumInMask(fromReg))
+                        {
+                            regNumber upperHalfSrcReg = (regNumber)source[upperHalfReg];
+                            regNumber upperHalfSrcLoc = (regNumber)location[upperHalfReg];
+                            // Necessary conditions:
+                            // - There is a source register for this reg (upperHalfSrcReg != REG_NA)
+                            // - It is currently free                    (upperHalfSrcLoc == REG_NA)
+                            // - The source interval isn't yet completed (sourceIntervals[upperHalfSrcReg] != nullptr)
+                            // - It's not resolved from stack (!targetRegsFromStack.IsRegNumInMask(upperHalfReg))
+                            if ((upperHalfSrcReg != REG_NA) && (upperHalfSrcLoc == REG_NA) &&
+                                (sourceIntervals[upperHalfSrcReg] != nullptr) &&
+                                !targetRegsFromStack.IsRegNumInMask(upperHalfReg))
+                            {
+                                targetRegsReady.AddRegNumInMask(upperHalfReg);
+                            }
+                        }
                     }
                 }
                 else if (genIsValidFloatReg(fromReg) && !genIsValidDoubleReg(fromReg))
                 {
                     // We may have freed up the other half of a double where the lower half
                     // was already free.
-                    regNumber lowerHalfReg     = REG_PREV(fromReg);
-                    regNumber lowerHalfSrcReg  = (regNumber)source[lowerHalfReg];
-                    regNumber lowerHalfSrcLoc  = (regNumber)location[lowerHalfReg];
-                    regMaskTP lowerHalfRegMask = genRegMask(lowerHalfReg);
+                    regNumber lowerHalfReg    = REG_PREV(fromReg);
+                    regNumber lowerHalfSrcReg = (regNumber)source[lowerHalfReg];
+                    regNumber lowerHalfSrcLoc = (regNumber)location[lowerHalfReg];
                     // Necessary conditions:
                     // - There is a source register for this reg (lowerHalfSrcReg != REG_NA)
                     // - It is currently free                    (lowerHalfSrcLoc == REG_NA)
                     // - The source interval isn't yet completed (sourceIntervals[lowerHalfSrcReg] != nullptr)
-                    // - It's not in the ready set               ((targetRegsReady & lowerHalfRegMask) ==
-                    //                                            RBM_NONE)
-                    // - It's not resolved from stack            ((targetRegsFromStack & lowerHalfRegMask) !=
-                    //                                            lowerHalfRegMask)
+                    // - It's not in the ready set               (!targetRegsReady.IsRegNumInMask(lowerHalfReg))
+                    // - It's not resolved from stack            (!targetRegsFromStack.IsRegNumInMask(lowerHalfReg))
                     if ((lowerHalfSrcReg != REG_NA) && (lowerHalfSrcLoc == REG_NA) &&
                         (sourceIntervals[lowerHalfSrcReg] != nullptr) &&
                         !targetRegsReady.IsRegNumInMask(lowerHalfReg) &&
