@@ -254,8 +254,6 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
         JITDUMP("The default target is performing a value test on a different variable - bail out.\n");
         return false;
     }
-    assert((variableNode->gtFlags & GTF_ALL_EFFECT) == 0);
-    assert((switchOp->gtFlags & GTF_ALL_EFFECT) == 0);
 
     // We're less conservative than Roslyn, but we still have some limits
     if (static_cast<size_t>(cns + switchTargetOffset) > SWITCH_MAX_DISTANCE)
