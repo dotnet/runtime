@@ -1,20 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <!-- This project is specifically to build and publish a build of crossgen2 for shipping. -->
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="Publish;PublishItemsOutputGroup">
+  <!-- This project is publishes a self-contained copy of crossgen2. -->
   <PropertyGroup>
     <_IsPublishing>true</_IsPublishing>
-    <PublishTrimmed>true</PublishTrimmed>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
-    <SelfContained>true</SelfContained>
-    <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <PublishDir>$(RuntimeBinDir)crossgen2-published/</PublishDir>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <AotOrSingleFile>true</AotOrSingleFile>
   </PropertyGroup>
 
   <Import Project="crossgen2.props" />
-
-  <Target Name="PublishAfterBuild"
-          AfterTargets="Build"
-          DependsOnTargets="Publish" />
-
 </Project>
