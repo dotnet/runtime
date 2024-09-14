@@ -34,10 +34,18 @@ PhaseStatus Compiler::optSwitchRecognition()
             JITDUMP("Converted block " FMT_BB " to switch\n", block->bbNum)
             modified = true;
         }
+
+        // See if we can merge BBJ_COND into an existing switch block
+        while (block->KindIs(BBJ_SWITCH) && optExtendSwitch(block))
+        {
+            modified = true;
+        }
     }
 
     if (modified)
     {
+        // Remove unreachable blocks
+        fgUpdateFlowGraph();
         fgRenumberBlocks();
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
@@ -63,8 +71,8 @@ PhaseStatus Compiler::optSwitchRecognition()
 //
 bool IsConstantTestCondBlock(const BasicBlock* block,
                              bool              allowSideEffects,
-                             BasicBlock**      trueTarget,
-                             BasicBlock**      falseTarget,
+                             FlowEdge**        trueEdge,
+                             FlowEdge**        falseEdge,
                              bool*             isReversed,
                              GenTree**         variableNode = nullptr,
                              ssize_t*          cns          = nullptr)
@@ -102,9 +110,9 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                     return false;
                 }
 
-                *isReversed  = rootNode->gtGetOp1()->OperIs(GT_NE);
-                *trueTarget  = *isReversed ? block->GetFalseTarget() : block->GetTrueTarget();
-                *falseTarget = *isReversed ? block->GetTrueTarget() : block->GetFalseTarget();
+                *isReversed = rootNode->gtGetOp1()->OperIs(GT_NE);
+                *trueEdge   = *isReversed ? block->GetFalseEdge() : block->GetTrueEdge();
+                *falseEdge  = *isReversed ? block->GetTrueEdge() : block->GetFalseEdge();
 
                 if (block->FalseTargetIs(block) || block->TrueTargetIs(block))
                 {
@@ -133,6 +141,219 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
 }
 
 //------------------------------------------------------------------------------
+// GetSwitchValueOp: Try to extract BBJ_SWITCH's variable (and the offset)
+//
+// Arguments:
+//    switchBlock  - BBJ_SWITCH block to get the switch value from
+//    variableNode - [out] Switch value node
+//    offset       - [out] Offset of the switch value
+//
+// Return Value:
+//    True if switch value was successfully extracted, false otherwise
+//
+static bool GetSwitchValueOp(const BasicBlock* switchBlock, GenTree** variableNode, ssize_t* offset)
+{
+    assert(switchBlock->KindIs(BBJ_SWITCH));
+
+    GenTree* switchNode = switchBlock->lastStmt()->GetRootNode()->gtEffectiveVal();
+    assert(switchNode->OperIs(GT_SWITCH));
+
+    GenTree* switchOp = switchNode->gtGetOp1();
+
+    // In most cases the switch value is either ADD(LCL_VAR, CNS) or LCL_VAR
+    if (switchOp->OperIs(GT_ADD))
+    {
+        // We use gtEffectiveVal() to skip COMMA nodes, those will be evaluated before
+        // any other case node in the switch block anyway.
+        GenTree* op1 = switchOp->gtGetOp1()->gtEffectiveVal();
+        GenTree* op2 = switchOp->gtGetOp2();
+
+        // TODO-JumpTable: We should be able to accept any side-effect-free op1 here
+        if (op1->OperIs(GT_LCL_VAR) && op2->IsCnsIntOrI())
+        {
+            *variableNode = op1;
+            *offset       = op2->AsIntCon()->IconValue();
+            return true;
+        }
+    }
+    else
+    {
+        // We use gtEffectiveVal() to skip COMMA nodes, those will be evaluated before
+        // any other case node in the switch block anyway.
+        GenTree* op1 = switchOp->gtEffectiveVal();
+        if (op1->OperIs(GT_LCL_VAR))
+        {
+            *variableNode = op1;
+            *offset       = 0;
+            return true;
+        }
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+// optExtendSwitch: If one of the switch's targets is a value test block,
+//    and the switch's variable is the same as the value test's variable - try to merge
+//    that test (BBJ_COND) into the switch block. It's useful to assist Roslyn, which
+//    uses fairly conservative heuristics to generate switch blocks and may give up on
+//    some tests that could be merged into the switch.
+//
+// Arguments:
+//    block - BBJ_SWITCH block to extend
+//
+// Return Value:
+//    True if switch was successfully extended, false otherwise
+//
+bool Compiler::optExtendSwitch(BasicBlock* block)
+{
+    assert(block->KindIs(BBJ_SWITCH));
+    JITDUMP("Considering expanding switch " FMT_BB "\n", block->bbNum);
+
+    BBswtDesc* switchTargets = block->GetSwitchTargets();
+
+    GenTree* switchOp           = nullptr;
+    ssize_t  switchTargetOffset = 0;
+    if (!GetSwitchValueOp(block, &switchOp, &switchTargetOffset))
+    {
+        JITDUMP("Couldn't extract the switch's variable - bail out.\n");
+        return false;
+    }
+
+    // TODO-JumpTable: Currently, we only expand the default target, but it should be possible
+    // to traverse all non-default edges as well (if they point to similar value tests).
+    // It shouldn't be too hard to implement (might be TP costly, though).
+
+    if (!switchTargets->bbsHasDefault)
+    {
+        JITDUMP("Switch doesn't have a default target - bail out.\n");
+        return false;
+    }
+
+    FlowEdge* edgeToExpand = switchTargets->getDefault();
+
+    // Now let's see if we can merge the value test in the edgeToExpand's destination block
+    // with the switch block.
+    BasicBlock* oldCaseBlock = edgeToExpand->getDestinationBlock();
+
+    // IsConstantTestCondBlock will tell us if the default target is a value test block (e.g. "x == cns")
+    // TODO-JumpTable: Add support for more complex tests like "x > 10 && x < 20"
+    // Also, we should be able to merge two BBJ_SWITCH on the same variable. Roslyn may create such shapes.
+    FlowEdge* testPasses;
+    FlowEdge* testFails;
+    bool      isReversed;
+    GenTree*  variableNode;
+    ssize_t   cns;
+    if (!IsConstantTestCondBlock(oldCaseBlock, false, &testPasses, &testFails, &isReversed, &variableNode, &cns))
+    {
+        JITDUMP("The default target is not performing a value test - bail out.\n");
+        return false;
+    }
+
+    if (!GenTree::Compare(variableNode, switchOp))
+    {
+        JITDUMP("The default target is performing a value test on a different variable - bail out.\n");
+        return false;
+    }
+    assert((variableNode->gtFlags & GTF_ALL_EFFECT) == 0);
+    assert((switchOp->gtFlags & GTF_ALL_EFFECT) == 0);
+
+    // We're less conservative than Roslyn, but we still have some limits
+    if (static_cast<size_t>(cns + switchTargetOffset) > SWITCH_MAX_DISTANCE)
+    {
+        JITDUMP("Switch value is out of range - bail out.\n");
+        return false;
+    }
+
+    const ssize_t newTestValue = cns + switchTargetOffset;
+
+    unsigned   oldJumpCnt = switchTargets->bbsCount;
+    unsigned   newJumpCnt = max(oldJumpCnt, (unsigned)(newTestValue + 1 + (switchTargets->bbsHasDefault ? 1 : 0)));
+    FlowEdge** oldJumpTab = switchTargets->bbsDstTab;
+    FlowEdge** newJumpTab = new (this, CMK_FlowEdge) FlowEdge*[newJumpCnt];
+
+    //
+    // Update likelihoods
+    //
+
+    weight_t newTestLikelihood = edgeToExpand->getLikelihood() * testPasses->getLikelihood();
+    weight_t newDefLikelihood  = edgeToExpand->getLikelihood() * testFails->getLikelihood();
+
+    // However, it gets tricky if testPasses or testFails are already presented in the jump table
+    // We need to adjust the likelihoods of the new test and the new default target so that the sum
+    // of all unique edges' likelihoods is 1.0 in the new jump table
+    for (unsigned i = 0; i < oldJumpCnt; i++)
+    {
+        if (oldJumpTab[i]->getDestinationBlock() == testPasses->getDestinationBlock())
+        {
+            newTestLikelihood =
+                oldJumpTab[i]->getLikelihood() + edgeToExpand->getLikelihood() * testPasses->getLikelihood();
+        }
+
+        if (oldJumpTab[i]->getDestinationBlock() == testFails->getDestinationBlock())
+        {
+            newDefLikelihood =
+                oldJumpTab[i]->getLikelihood() + edgeToExpand->getLikelihood() * testFails->getLikelihood();
+        }
+    }
+
+    //
+    // Create the new jump table
+    //
+
+    for (unsigned i = 0; i < newJumpCnt; i++)
+    {
+        const bool isNewTest = i == (unsigned)newTestValue;
+
+        if (i < oldJumpCnt)
+        {
+            // Not only the default case can point to oldDefaultBb so we replace them all
+            if (oldJumpTab[i]->getDestinationBlock() == oldCaseBlock)
+            {
+                fgRemoveRefPred(oldJumpTab[i]);
+                if (isNewTest)
+                {
+                    newJumpTab[i] = fgAddRefPred(testPasses->getDestinationBlock(), block);
+                    newJumpTab[i]->setLikelihood(newTestLikelihood);
+                }
+                else
+                {
+                    newJumpTab[i] = fgAddRefPred(testFails->getDestinationBlock(), block);
+                    newJumpTab[i]->setLikelihood(newDefLikelihood);
+                }
+            }
+            else
+            {
+                // Just copy the old edge
+                newJumpTab[i] = oldJumpTab[i];
+            }
+        }
+        else
+        {
+            // At this point all old edges have been copied, so add the new ones now
+            if (isNewTest)
+            {
+                newJumpTab[i] = fgAddRefPred(testPasses->getDestinationBlock(), block);
+                newJumpTab[i]->setLikelihood(newTestLikelihood);
+            }
+            else
+            {
+                newJumpTab[i] = fgAddRefPred(testFails->getDestinationBlock(), block);
+                newJumpTab[i]->setLikelihood(newDefLikelihood);
+            }
+        }
+    }
+
+    switchTargets->bbsCount  = newJumpCnt;
+    switchTargets->bbsDstTab = newJumpTab;
+
+    // m_switchDescMap cache is invalidated by this change, so it has to be recomputed
+    InvalidateUniqueSwitchSuccMap();
+
+    JITDUMP("Successfully merged the default target's value test with the switch.\n");
+    return true;
+}
+
+//------------------------------------------------------------------------------
 // optSwitchDetectAndConvert : Try to detect a series of conditional blocks which
 //    can be converted into a switch (jump-table) construct. See optSwitchConvert
 //    for more details.
@@ -147,10 +368,10 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
 {
     assert(firstBlock->KindIs(BBJ_COND));
 
-    GenTree*    variableNode = nullptr;
-    ssize_t     cns          = 0;
-    BasicBlock* trueTarget   = nullptr;
-    BasicBlock* falseTarget  = nullptr;
+    GenTree*  variableNode = nullptr;
+    ssize_t   cns          = 0;
+    FlowEdge* trueTarget   = nullptr;
+    FlowEdge* falseTarget  = nullptr;
 
     // The algorithm is simple - we check that the given block is a constant test block
     // and then try to accumulate as many constant test blocks as possible. Once we hit
@@ -180,10 +401,10 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
         // Now walk the next blocks and see if they are basically the same type of test
         for (const BasicBlock* currBb = firstBlock->Next(); currBb != nullptr; currBb = currBb->Next())
         {
-            GenTree*    currVariableNode = nullptr;
-            ssize_t     currCns          = 0;
-            BasicBlock* currTrueTarget   = nullptr;
-            BasicBlock* currFalseTarget  = nullptr;
+            GenTree*  currVariableNode = nullptr;
+            ssize_t   currCns          = 0;
+            FlowEdge* currTrueTarget   = nullptr;
+            FlowEdge* currFalseTarget  = nullptr;
 
             if (!currBb->hasSingleStmt())
             {
@@ -196,7 +417,7 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
             if (IsConstantTestCondBlock(currBb, false, &currTrueTarget, &currFalseTarget, &isReversed,
                                         &currVariableNode, &currCns))
             {
-                if (currTrueTarget != trueTarget)
+                if (currTrueTarget->getDestinationBlock() != trueTarget->getDestinationBlock())
                 {
                     // This blocks jumps to a different target, stop searching and process what we already have.
                     return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
@@ -329,11 +550,14 @@ bool Compiler::optSwitchConvert(
         lastBlock = lastBlock->Next();
     }
 
-    BasicBlock* blockIfTrue  = nullptr;
-    BasicBlock* blockIfFalse = nullptr;
-    bool        isReversed   = false;
-    const bool  isTest       = IsConstantTestCondBlock(lastBlock, false, &blockIfTrue, &blockIfFalse, &isReversed);
+    FlowEdge*  blockIfTrueEdge  = nullptr;
+    FlowEdge*  blockIfFalseEdge = nullptr;
+    bool       isReversed       = false;
+    const bool isTest = IsConstantTestCondBlock(lastBlock, false, &blockIfTrueEdge, &blockIfFalseEdge, &isReversed);
     assert(isTest);
+
+    BasicBlock* blockIfTrue  = blockIfTrueEdge->getDestinationBlock();
+    BasicBlock* blockIfFalse = blockIfFalseEdge->getDestinationBlock();
 
     assert(firstBlock->TrueTargetIs(blockIfTrue));
     FlowEdge* const trueEdge  = firstBlock->GetTrueEdge();
