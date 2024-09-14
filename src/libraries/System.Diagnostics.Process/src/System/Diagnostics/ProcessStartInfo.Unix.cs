@@ -52,5 +52,16 @@ namespace System.Diagnostics
             get { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(Password))); }
             set { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(Password))); }
         }
+
+        /// <summary>
+        /// If true, the child process inherits handles from this process that were opened as
+        /// inheritable.
+        /// </summary>
+        public bool InheritHandles
+        {
+            get { return true; }
+            [SupportedOSPlatform("windows")]
+            set { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(InheritHandles))); }
+        }
     }
 }
