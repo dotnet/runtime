@@ -46,5 +46,16 @@ namespace System.Diagnostics
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
         public SecureString? Password { get; set; }
+
+        /// <summary>
+        /// If true, the child process inherits handles from this process that were opened as
+        /// inheritable.
+        /// </summary>
+        public bool InheritHandles
+        {
+            get;
+            [SupportedOSPlatform("windows")]
+            set;
+        } = true;
     }
 }
