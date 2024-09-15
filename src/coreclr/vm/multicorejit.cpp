@@ -786,12 +786,12 @@ HRESULT MulticoreJitModuleEnumerator::EnumerateLoadedModules(AppDomain * pDomain
 
     AppDomain::AssemblyIterator appIt = pDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
 
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-    while (appIt.Next(pDomainAssembly.This()) && SUCCEEDED(hr))
+    while (appIt.Next(pAssembly.This()) && SUCCEEDED(hr))
     {
         {
-            hr = HandleAssembly(pDomainAssembly->GetAssembly());
+            hr = HandleAssembly(pAssembly);
         }
     }
 

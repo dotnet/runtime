@@ -55,52 +55,6 @@ bool DebuggerModuleTable::ThreadHoldsLock()
 }
 #endif
 
-//
-// RemoveModules removes any module loaded into the given appdomain from the hash.  This is used when we send an
-// ExitAppdomain event to ensure that there are no leftover modules in the hash. This can happen when we have shared
-// modules that aren't properly accounted for in the CLR. We miss sending UnloadModule events for those modules, so
-// we clean them up with this method.
-//
-void DebuggerModuleTable::RemoveModules(AppDomain *pAppDomain)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB, LL_INFO1000, "DMT::RM removing all modules from AD 0x%08x\n", pAppDomain));
-
-    _ASSERTE(ThreadHoldsLock());
-
-    HASHFIND hf;
-    DebuggerModuleEntry *pDME = (DebuggerModuleEntry *) FindFirstEntry(&hf);
-
-    while (pDME != NULL)
-    {
-        DebuggerModule *pDM = pDME->module;
-
-        if (pDM->GetAppDomain() == pAppDomain)
-        {
-            LOG((LF_CORDB, LL_INFO1000, "DMT::RM removing DebuggerModule 0x%08x\n", pDM));
-
-            // Defer to the normal logic in RemoveModule for the actual removal. This accurately simulates what
-            // happens when we process an UnloadModule event.
-            RemoveModule(pDM->GetRuntimeModule(), pAppDomain);
-
-            // Start back at the first entry since we just modified the hash.
-            pDME = (DebuggerModuleEntry *) FindFirstEntry(&hf);
-        }
-        else
-        {
-            pDME = (DebuggerModuleEntry *) FindNextEntry(&hf);
-        }
-    }
-
-    LOG((LF_CORDB, LL_INFO1000, "DMT::RM done removing all modules from AD 0x%08x\n", pAppDomain));
-}
-
 void DebuggerModuleTable::Clear()
 {
     CONTRACTL
@@ -145,8 +99,8 @@ void DebuggerModuleTable::AddModule(DebuggerModule *pModule)
 
     _ASSERTE(pModule != NULL);
 
-    LOG((LF_CORDB, LL_EVERYTHING, "DMT::AM: DebuggerMod:0x%x Module:0x%x AD:0x%x\n",
-        pModule, pModule->GetRuntimeModule(), pModule->GetAppDomain()));
+    LOG((LF_CORDB, LL_EVERYTHING, "DMT::AM: DebuggerMod:0x%x Module:0x%x\n",
+        pModule, pModule->GetRuntimeModule()));
 
     DebuggerModuleEntry * pEntry = (DebuggerModuleEntry *) Add(HASH(pModule->GetRuntimeModule()));
     if (pEntry == NULL)
@@ -161,7 +115,7 @@ void DebuggerModuleTable::AddModule(DebuggerModule *pModule)
 // Remove a DebuggerModule from the module table when it gets notified.
 // This occurs in response to the finalization of an unloaded AssemblyLoadContext.
 //-----------------------------------------------------------------------------
-void DebuggerModuleTable::RemoveModule(Module* pModule, AppDomain *pAppDomain)
+void DebuggerModuleTable::RemoveModule(Module* pModule)
 {
     CONTRACTL
     {
@@ -170,7 +124,7 @@ void DebuggerModuleTable::RemoveModule(Module* pModule, AppDomain *pAppDomain)
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO1000, "DMT::RM Attempting to remove Module:0x%x AD:0x%x\n", pModule, pAppDomain));
+    LOG((LF_CORDB, LL_INFO1000, "DMT::RM Attempting to remove Module:0x%x\n", pModule));
 
     _ASSERTE(ThreadHoldsLock());
     _ASSERTE(pModule != NULL);
@@ -184,19 +138,19 @@ void DebuggerModuleTable::RemoveModule(Module* pModule, AppDomain *pAppDomain)
         DebuggerModule *pDM = pDME->module;
         Module* pRuntimeModule = pDM->GetRuntimeModule();
 
-        if ((pRuntimeModule == pModule) && (pDM->GetAppDomain() == pAppDomain))
+        if (pRuntimeModule == pModule)
         {
-            LOG((LF_CORDB, LL_INFO1000, "DMT::RM Removing DebuggerMod:0x%x - Module:0x%x DF:0x%x AD:0x%x\n",
-                pDM, pModule, pDM->GetDomainAssembly(), pAppDomain));
+            LOG((LF_CORDB, LL_INFO1000, "DMT::RM Removing DebuggerMod:0x%x - Module:0x%x DF:0x%x\n",
+                pDM, pModule, pDM->GetDomainAssembly()));
             TRACE_FREE(pDM);
             DeleteInteropSafe(pDM);
             Delete(HASH(pRuntimeModule), (HASHENTRY *) pDME);
-            _ASSERTE(GetModule(pModule, pAppDomain) == NULL);
+            _ASSERTE(GetModule(pModule) == NULL);
             return;
         }
     }
 
-    LOG((LF_CORDB, LL_INFO1000, "DMT::RM  No debugger module found for Module:0x%x AD:0x%x\n", pModule, pAppDomain));
+    LOG((LF_CORDB, LL_INFO1000, "DMT::RM  No debugger module found for Module:0x%x\n", pModule));
 }
 
 
@@ -220,38 +174,6 @@ DebuggerModule *DebuggerModuleTable::GetModule(Module* module)
         return NULL;
     else
         return entry->module;
-}
-
-// We should never look for a NULL Module *
-DebuggerModule *DebuggerModuleTable::GetModule(Module* module, AppDomain* pAppDomain)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(module != NULL);
-    _ASSERTE(ThreadHoldsLock());
-
-
-    HASHFIND findmodule;
-    DebuggerModuleEntry *moduleentry;
-
-    for (moduleentry =  (DebuggerModuleEntry*) FindFirstEntry(&findmodule);
-         moduleentry != NULL;
-         moduleentry =  (DebuggerModuleEntry*) FindNextEntry(&findmodule))
-    {
-        DebuggerModule *pModule = moduleentry->module;
-
-        if ((pModule->GetRuntimeModule() == module) &&
-            (pModule->GetAppDomain() == pAppDomain))
-            return pModule;
-    }
-
-    // didn't find any match! So return a matching module for any app domain
-    return NULL;
 }
 
 DebuggerModule *DebuggerModuleTable::GetFirstModule(HASHFIND *info)
