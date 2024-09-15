@@ -2145,7 +2145,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_MEMORYBARRIER:
         {
             CodeGen::BarrierKind barrierKind =
-                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY : BARRIER_FULL;
+                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY :
+                    (treeNode->gtFlags & GTF_MEMORYBARRIER_STORE ? BARRIER_STORE_ONLY : BARRIER_FULL);
 
             instGen_MemoryBarrier(barrierKind);
             break;
@@ -11089,8 +11090,8 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     }
 #endif // DEBUG
 
-    // only full barrier needs to be emitted on Xarch
-    if (barrierKind == BARRIER_FULL)
+    // only full and store barriers need to be emitted on Xarch
+    if (barrierKind == BARRIER_FULL || barrierKind == BARRIER_STORE_ONLY)
     {
         instGen(INS_lock);
         GetEmitter()->emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0);
