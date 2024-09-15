@@ -9666,7 +9666,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         dprintf (GC_TABLE_LOG, ("card table: %zx(translated: %zx), seg map: %zx, mark array: %zx",
             (size_t)ct, (size_t)translated_ct, (size_t)new_seg_mapping_table, (size_t)card_table_mark_array (ct)));
 
-        if (is_bgc_in_progress())
+        if (hp->is_bgc_in_progress())
         {
             dprintf (GC_TABLE_LOG, ("new low: %p, new high: %p, latest mark array is %p(translate: %p)",
                                     saved_g_lowest_address, saved_g_highest_address,
@@ -9793,7 +9793,7 @@ fail:
     else
     {
 #ifdef BACKGROUND_GC
-        if (is_bgc_in_progress())
+        if (hp->is_bgc_in_progress())
         {
             dprintf (GC_TABLE_LOG, ("in range new seg %p, mark_array is %p", new_seg, hp->mark_array));
             if (!commit_mark_array_new_seg (hp, new_seg))
@@ -13093,21 +13093,6 @@ void region_free_list::age_free_regions (region_free_list free_lists[count_free_
     }
 }
 
-size_t region_free_list::get_size_free_regions(int max_age)
-{
-    size_t result = 0;
-
-    for (heap_segment* region = head_free_region; region != nullptr; region = heap_segment_next (region))
-    {
-        if (heap_segment_age_in_free (region) <= max_age)
-        {
-            result += get_region_size(region);
-        }
-    }
-
-    return result;
-}
-
 void region_free_list::print (int hn, const char* msg, int* ages)
 {
     dprintf (3, ("h%2d PRINTING-------------------------------", hn));
@@ -13229,13 +13214,7 @@ void region_free_list::sort_by_committed_and_age()
 
 void gc_heap::age_free_regions (const char* msg)
 {
-    // If we are doing an ephemeral GC as a precursor to a BGC, then we will age all of the region
-    // kinds during the ephemeral GC and skip the call to age_free_regions during the BGC itself.
-    bool age_all_region_kinds = (settings.condemned_generation == max_generation) || is_bgc_in_progress();
-    if (age_all_region_kinds)
-    {
-        global_free_huge_regions.age_free_regions();
-    }
+    bool age_all_region_kinds = (settings.condemned_generation == max_generation);
 
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < n_heaps; i++)
@@ -13436,7 +13415,6 @@ void gc_heap::distribute_free_regions()
     global_free_huge_regions.transfer_regions (&global_regions_to_decommit[huge_free_region]);
 
     size_t free_space_in_huge_regions = global_free_huge_regions.get_size_free_regions();
-    size_t free_space_in_young_huge_regions = global_free_huge_regions.get_size_free_regions(MIN_AGE_TO_DECOMMIT_HUGE - 1);
 
     ptrdiff_t num_regions_to_decommit[kind_count];
     int region_factor[kind_count] = { 1, LARGE_REGION_FACTOR };
@@ -13450,7 +13428,6 @@ void gc_heap::distribute_free_regions()
 #endif //!MULTIPLE_HEAPS
 
     size_t num_huge_region_units_to_consider[kind_count] = { 0, free_space_in_huge_regions / region_size[large_free_region] };
-    size_t num_young_huge_region_units_to_consider[kind_count] = { 0, free_space_in_young_huge_regions / region_size[large_free_region] };
 
     for (int kind = basic_free_region; kind < kind_count; kind++)
     {
@@ -13469,22 +13446,9 @@ void gc_heap::distribute_free_regions()
 
         ptrdiff_t balance = total_num_free_regions[kind] + num_huge_region_units_to_consider[kind] - total_budget_in_region_units[kind];
 
-        // Ignore young huge regions if they are contributing to a surplus.
-        if (balance > 0)
-        {
-            if (balance > static_cast<ptrdiff_t>(num_young_huge_region_units_to_consider[kind]))
-            {
-                balance -= num_young_huge_region_units_to_consider[kind];
-            }
-            else
-            {
-                balance = 0;
-            }
-        }
-
         if (
 #ifdef BACKGROUND_GC
-            (background_running_p() && (settings.condemned_generation != max_generation)) ||
+            background_running_p() ||
 #endif
             (balance < 0))
         {
@@ -37777,15 +37741,7 @@ void gc_heap::allow_fgc()
 
 BOOL gc_heap::is_bgc_in_progress()
 {
-#ifdef MULTIPLE_HEAPS
-    // All heaps are changed to/from the bgc_initialized state during the VM suspension at the start of BGC,
-    // so checking any heap will work.
-    gc_heap* hp = g_heaps[0];
-#else
-    gc_heap* hp = pGenGCHeap;
-#endif //MULTIPLE_HEAPS
-
-    return (background_running_p() || (hp->current_bgc_state == bgc_initialized));
+    return (background_running_p() || (current_bgc_state == bgc_initialized));
 }
 
 void gc_heap::clear_commit_flag()
@@ -38300,16 +38256,6 @@ void gc_heap::background_mark_phase ()
     if (bgc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
-#ifdef USE_REGIONS
-        // There's no need to distribute a second time if we just did an ephemeral GC, and we don't want to
-        // age the free regions twice.
-        if (!do_ephemeral_gc_p)
-        {
-            distribute_free_regions ();
-            age_free_regions ("BGC");
-        }
-#endif //USE_REGIONS
-
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         // Resetting write watch for software write watch is pretty fast, much faster than for hardware write watch. Reset
         // can be done while the runtime is suspended or after the runtime is restarted, the preference was to reset while
