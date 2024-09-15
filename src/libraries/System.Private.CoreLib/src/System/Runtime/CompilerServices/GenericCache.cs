@@ -162,7 +162,7 @@ namespace System.Runtime.CompilerServices
                     value = pEntry._value;
 
                     // make sure the second read of 'version' happens after reading '_value'
-                    Interlocked.ReadMemoryBarrier();
+                    Volatile.ReadBarrier();
 
                     // mask the lower version bit to make it even.
                     // This way we can check if version is odd or changing in just one compare.

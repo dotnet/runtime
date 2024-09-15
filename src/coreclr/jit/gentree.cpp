@@ -8632,16 +8632,24 @@ GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeF
 // Arguments:
 //    loadOnly - relaxes the full memory barrier to be load-only
 //
+// Arguments:
+//    storeOnly - relaxes the full memory barrier to be store-only
+//
 // Return Value:
 //    The created GT_MEMORYBARRIER node.
 //
-GenTree* Compiler::gtNewMemoryBarrier(bool loadOnly)
+GenTree* Compiler::gtNewMemoryBarrier(bool loadOnly, bool storeOnly)
 {
     GenTree* tree = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
     tree->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+    assert(!loadOnly || !storeOnly);
     if (loadOnly)
     {
         tree->gtFlags |= GTF_MEMORYBARRIER_LOAD;
+    }
+    if (storeOnly)
+    {
+        tree->gtFlags |= GTF_MEMORYBARRIER_STORE;
     }
     return tree;
 }

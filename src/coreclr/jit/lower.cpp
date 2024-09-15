@@ -8737,8 +8737,8 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
 #ifndef TARGET_XARCH
     if (isVolatile)
     {
-        GenTree* firstBarrier  = comp->gtNewMemoryBarrier();
-        GenTree* secondBarrier = comp->gtNewMemoryBarrier(/*loadOnly*/ true);
+        GenTree* firstBarrier  = comp->gtNewMemoryBarrier(/*loadOnly*/ false, /*storeOnly*/ true);
+        GenTree* secondBarrier = comp->gtNewMemoryBarrier(/*loadOnly*/ true, /*storeOnly*/ false);
         BlockRange().InsertBefore(call, firstBarrier);
         BlockRange().InsertAfter(call, secondBarrier);
         LowerNode(firstBarrier);
