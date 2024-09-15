@@ -22,18 +22,18 @@
 //
 PhaseStatus Compiler::optSwitchRecognition()
 {
-// Limit to XARCH, ARM is already doing a great job with such comparisons using
-// a series of ccmp instruction (see ifConvert phase).
-#ifdef TARGET_XARCH
     bool modified = false;
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
     {
-        // block->KindIs(BBJ_COND) check is for better throughput.
+#ifdef TARGET_XARCH
+        // Limit to XARCH, ARM is already doing a great job with such comparisons using
+        // a series of ccmp instruction (see ifConvert phase).
         if (block->KindIs(BBJ_COND) && !block->isRunRarely() && optSwitchDetectAndConvert(block))
         {
             JITDUMP("Converted block " FMT_BB " to switch\n", block->bbNum)
             modified = true;
         }
+#endif
 
         // See if we can merge BBJ_COND into an existing switch block
         while (block->KindIs(BBJ_SWITCH) && optExtendSwitch(block))
@@ -49,7 +49,6 @@ PhaseStatus Compiler::optSwitchRecognition()
         fgRenumberBlocks();
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
-#endif
     return PhaseStatus::MODIFIED_NOTHING;
 }
 
