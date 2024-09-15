@@ -4192,7 +4192,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 assert(sig->numArgs == 0);
                 // On XARCH `NI_System_Threading_Volatile_ReadBarrier` fences need not be emitted.
                 // However, we still need to capture the effect on reordering.
-                retNode = gtNewMemoryBarrier(ni == NI_System_Threading_Volatile_ReadBarrier, ni == NI_System_Threading_Volatile_WriteBarrier);
+                retNode = gtNewMemoryBarrier(ni == NI_System_Threading_Volatile_ReadBarrier,
+                                             ni == NI_System_Threading_Volatile_WriteBarrier);
                 break;
             }
 
@@ -10725,7 +10726,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_Threading_Volatile_Write;
                         }
-                        if (strcmp(methodName, "ReadBarrier") == 0)
+                        else if (strcmp(methodName, "ReadBarrier") == 0)
                         {
                             result = NI_System_Threading_Volatile_ReadBarrier;
                         }
@@ -10735,7 +10736,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         }
                     }
                 }
-            }
         }
     }
     else if (strcmp(namespaceName, "Internal.Runtime") == 0)

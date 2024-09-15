@@ -5756,7 +5756,8 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 #endif // DEBUG
 
     // We cannot emit BARRIER_STORE_ONLY better than BARRIER_FULL on arm64 today
-    if (barrierKind == BARRIER_STORE_ONLY) barrierKind = BARRIER_FULL;
+    if (barrierKind == BARRIER_STORE_ONLY)
+        barrierKind = BARRIER_FULL;
 
     // Avoid emitting redundant memory barriers on arm64 if they belong to the same IG
     // and there were no memory accesses in-between them
