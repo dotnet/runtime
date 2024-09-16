@@ -11388,9 +11388,9 @@ namespace System.Numerics
 #nullable disable
             where TOther : System.Numerics.INumberBase<TOther>;
 #nullable restore
-        protected static abstract bool TryConvertFromTruncating<TOther>(TOther value, bool signPropagation, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result)
+        protected static virtual bool TryConvertFromTruncating<TOther>(TOther value, bool signPropagation, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result)
 #nullable disable
-            where TOther : System.Numerics.INumberBase<TOther>;
+            where TOther : System.Numerics.INumberBase<TOther> { throw null; }
 #nullable restore
         protected static abstract bool TryConvertToChecked<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TOther result)
 #nullable disable
@@ -11404,9 +11404,9 @@ namespace System.Numerics
 #nullable disable
             where TOther : System.Numerics.INumberBase<TOther>;
 #nullable restore
-        protected static abstract bool TryConvertToTruncating<TOther>(TSelf value, bool signPropagation, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TOther result)
+        protected static virtual bool TryConvertToTruncating<TOther>(TSelf value, bool signPropagation, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TOther result)
 #nullable disable
-            where TOther : System.Numerics.INumberBase<TOther>;
+            where TOther : System.Numerics.INumberBase<TOther> { throw null; }
 #nullable restore
         static virtual bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result) { throw null; }
         static abstract bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result);

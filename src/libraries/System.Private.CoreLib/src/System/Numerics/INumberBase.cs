@@ -404,16 +404,17 @@ namespace System.Numerics
         /// <summary>Tries to convert a value to an instance of the current type, truncating any values that fall outside the representable range of the current type.</summary>
         /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
         /// <param name="value">The value which is used to create the instance of <typeparamref name="TSelf" />.</param>
+        /// <param name="signPropagation"></param>
         /// <param name="result">On return, contains an instance of <typeparamref name="TSelf" /> converted from <paramref name="value" />.</param>
         /// <returns><c>false</c> if <typeparamref name="TOther" /> is not supported; otherwise, <c>true</c>.</returns>
-        protected static bool TryConvertFromTruncating<TOther>(TOther value, bool signPropagation, [MaybeNullWhen(false)] out TSelf result)
+        protected static virtual bool TryConvertFromTruncating<TOther>(TOther value, bool signPropagation, [MaybeNullWhen(false)] out TSelf result)
 #nullable disable
             where TOther : INumberBase<TOther>
 #nullable restore
         {
-            if (signPropagation)
-                throw new NotImplementedException();
-            return TSelf.TryConvertFromTruncating(value, out result);
+            if (signPropagation || !TOther.IsNegative(value))
+                return TSelf.TryConvertFromTruncating(value, out result);
+            throw new NotImplementedException();
         }
 
         /// <summary>Tries to convert an instance of the current type to another type, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
@@ -450,16 +451,17 @@ namespace System.Numerics
         /// <summary>Tries to convert an instance of the current type to another type, truncating any values that fall outside the representable range of the current type.</summary>
         /// <typeparam name="TOther">The type to which <paramref name="value" /> should be converted.</typeparam>
         /// <param name="value">The value which is used to create the instance of <typeparamref name="TOther" />.</param>
+        /// <param name="signPropagation"></param>
         /// <param name="result">On return, contains an instance of <typeparamref name="TOther" /> converted from <paramref name="value" />.</param>
         /// <returns><c>false</c> if <typeparamref name="TOther" /> is not supported; otherwise, <c>true</c>.</returns>
-        protected static bool TryConvertToTruncating<TOther>(TSelf value, bool signPropagation, [MaybeNullWhen(false)] out TOther result)
+        protected static virtual bool TryConvertToTruncating<TOther>(TSelf value, bool signPropagation, [MaybeNullWhen(false)] out TOther result)
 #nullable disable
             where TOther : INumberBase<TOther>
 #nullable restore
         {
-            if (signPropagation)
-                throw new NotImplementedException();
-            return TSelf.TryConvertToTruncating(value, out result);
+            if (signPropagation || !TSelf.IsNegative(value))
+                return TSelf.TryConvertToTruncating(value, out result);
+            throw new NotImplementedException();
 
         }
 
