@@ -3312,12 +3312,11 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch64Bit(Vector<long> mask, void* address, Vector<uint> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
-        // <summary>
-        //   <para>void svprfd_gather[_u64base](svbool_t pg, svuint64_t bases, enum svprfop op)</para>
-        //   <para>  PRFD op, Pg, [Zbases.D, #0]</para>
-        // </summary>
-        // Removed as per #103297
-        // public static void GatherPrefetch64Bit(Vector<long> mask, Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>void svprfd_gather[_u64base](svbool_t pg, svuint64_t bases, enum svprfop op)</para>
+        ///   <para>  PRFD op, Pg, [Zbases.D, #0]</para>
+        /// </summary>
+        public static void GatherPrefetch64Bit(Vector<long> mask, Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>void svprfd_gather_[u64]index(svbool_t pg, const void *base, svuint64_t indices, enum svprfop op)</para>
