@@ -127,10 +127,10 @@ While this is functional at the time of writing this doc, it is still recommende
 
 ### Debugging Information for macOS
 
-When building on macOS, the build process puts native component symbol and debugging information into `.dwarf` files, one for each built binary. This is not the native format used by macOS, and debuggers like LLDB can't automatically find them. The format macOS uses is `.dSYM` bundles. To generate them and get a better inner-loop developer experience (e.g. have the LLDB debugger automatically find program symbols and display source code lines, etc.), make sure to enable the `DLCR_CMAKE_APPLE_DYSM` flag when calling the build script:
+When building on macOS, the build process puts native component symbol and debugging information into `.dwarf` files, one for each built binary. This is not the native format used by macOS, and debuggers like LLDB can't automatically find them. The format macOS uses is `.dSYM` bundles. To generate them and get a better inner-loop developer experience (e.g. have the LLDB debugger automatically find program symbols and display source code lines, etc.), make sure to enable the `DCLR_CMAKE_APPLE_DYSM` flag when calling the build script:
 
 ```bash
-./build.sh -subset clr -cmakeargs "-DLCR_CMAKE_APPLE_DYSM=TRUE"
+./build.sh -subset clr -cmakeargs "-DCLR_CMAKE_APPLE_DYSM=TRUE"
 ```
 
 **NOTE:** Converting the entire build process to build and package `.dSYM` bundles on macOS by default is on the table and tracked by issue #92911 [over here](https://github.com/dotnet/runtime/issues/92911).
