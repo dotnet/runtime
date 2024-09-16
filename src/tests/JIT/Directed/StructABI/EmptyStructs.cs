@@ -2061,27 +2061,44 @@ public static class Program
 			=> $"{{Uint0:{Uint0}, Float0:{Float0}}}";
 	}
 
+	public struct LongDoubleInt
+	{
+		public long Long0;
+		public double Double0;
+		public int Int0;
+
+		public static LongDoubleInt Get()
+			=> new LongDoubleInt { Long0 = 0xDadAddedC0ffee, Double0 = 3.14159, Int0 = 0xBabc1a };
+
+		public override bool Equals(object other)
+			=> other is LongDoubleInt o && Long0 == o.Long0 && Double0 == o.Double0 && Int0 == o.Int0;
+
+		public override string ToString()
+			=> $"{{Long:{Long0}, Double0:{Double0}, Int0:{Int0}}}";
+	}
+
 	class ShufflingThunk_MemberGrowsStack_RiscV
 	{
 		public static ShufflingThunk_MemberGrowsStack_RiscV TestInstance =
 			new ShufflingThunk_MemberGrowsStack_RiscV();
 
-		public delegate void TestDelegate(
+		public delegate LongDoubleInt TestDelegate(
 			ShufflingThunk_MemberGrowsStack_RiscV tc,
-			int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+			// ReturnBuffer* a2_to_a0
+			int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
 			float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
 			UintFloat stack0_to_a7_fa6, // frees 1 stack slot
 			DoubleFloatNestedEmpty fa6_fa7_to_stack0_stack1); // takes 2 stack slots, shuffling thunk must grow the stack
 
 		[MethodImpl(MethodImplOptions.NoInlining)]
-		public void TestMethod(
-			int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+		public LongDoubleInt TestMethod(
+			// ReturnBuffer* a2_to_a0
+			int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
 			float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
 			UintFloat stack0_to_a7_fa6, // frees 1 stack slot
 			DoubleFloatNestedEmpty fa6_fa7_to_stack0_stack1) // takes 2 stack slots, shuffling thunk must grow the stack
 		{
 			Assert.Equal(TestInstance, this);
-			Assert.Equal(1, a2_to_a1);
 			Assert.Equal(2, a3_to_a2);
 			Assert.Equal(3, a4_to_a3);
 			Assert.Equal(4, a5_to_a4);
@@ -2095,6 +2112,7 @@ public static class Program
 			Assert.Equal(5f, fa5);
 			Assert.Equal(UintFloat.Get(), stack0_to_a7_fa6);
 			Assert.Equal(DoubleFloatNestedEmpty.Get(), fa6_fa7_to_stack0_stack1);
+			return LongDoubleInt.Get(); // via return buffer
 		}
 	}
 
@@ -2106,8 +2124,9 @@ public static class Program
 			typeof(ShufflingThunk_MemberGrowsStack_RiscV).GetMethod(
 				nameof(ShufflingThunk_MemberGrowsStack_RiscV.TestMethod))
 		);
-		delegat(ShufflingThunk_MemberGrowsStack_RiscV.TestInstance,
-			1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, UintFloat.Get(), DoubleFloatNestedEmpty.Get());
+		LongDoubleInt ret = delegat(ShufflingThunk_MemberGrowsStack_RiscV.TestInstance,
+			2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, UintFloat.Get(), DoubleFloatNestedEmpty.Get());
+		Assert.Equal(LongDoubleInt.Get(), ret);
 	}
 #endregion
 }
