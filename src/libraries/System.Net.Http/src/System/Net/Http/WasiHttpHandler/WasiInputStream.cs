@@ -199,12 +199,9 @@ namespace System.Net.Http
                     }
                     else if (inner.AsErr.Tag == ErrorCode.CONNECTION_TERMINATED)
                     {
-                        // TODO: As of this writing, `wasmtime-wasi-http`
-                        // returns this error when no headers are present.  I
-                        // *think* that's a bug, since the `wasi-http` WIT docs
-                        // say it should return `none` rather than an error in
-                        // that case.  If it turns out that, yes, it's a bug, we
-                        // can remove this case once a fix is available.
+                        // TODO after we upgrade to wasmtime version 25
+                        // https://github.com/bytecodealliance/wasmtime/pull/9208
+                        // we can remove this, it will return None
                         break;
                     }
                     else
