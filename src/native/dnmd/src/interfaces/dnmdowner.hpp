@@ -5,8 +5,8 @@
 #include "tearoffbase.hpp"
 #include "controllingiunknown.hpp"
 
-#include <external/cor.h>
-#include <external/corhdr.h>
+#include <cor.h>
+#include <corhdr.h>
 
 #include <cstdint>
 #include <atomic>
@@ -71,7 +71,7 @@ class DNMDOwner final : public TearOffBase<IDNMDOwner>
 private:
     mdhandle_ptr _handle;
     malloc_ptr<void> _malloc_to_free;
-    dncp::cotaskmem_ptr<void> _cotaskmem_to_free;
+    minipal::cotaskmem_ptr<void> _cotaskmem_to_free;
 
 protected:
     virtual bool TryGetInterfaceOnThis(REFIID riid, void** ppvObject) override
@@ -93,7 +93,7 @@ public:
         , _cotaskmem_to_free{ nullptr }
     { }
 
-    DNMDOwner(IUnknown* controllingUnknown, mdhandle_ptr md_ptr, malloc_ptr<void> mallocMem, dncp::cotaskmem_ptr<void> cotaskmemMem)
+    DNMDOwner(IUnknown* controllingUnknown, mdhandle_ptr md_ptr, malloc_ptr<void> mallocMem, minipal::cotaskmem_ptr<void> cotaskmemMem)
         : TearOffBase(controllingUnknown)
         , _handle{ std::move(md_ptr) }
         , _malloc_to_free{ std::move(mallocMem) }

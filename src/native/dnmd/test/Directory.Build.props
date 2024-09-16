@@ -1,7 +1,7 @@
 <Project>
     <PropertyGroup>
         <UseArtifactsOutput>true</UseArtifactsOutput>
-        <ArtifactsPath>$(MSBuildThisFileDirectory)/artifacts/managed</ArtifactsPath>
+        <ArtifactsPath>$(MSBuildThisFileDirectory)/../artifacts/managed</ArtifactsPath>
 
         <!-- Define the intermediate and output paths so the configuration isn't appended -->
         <NativeOutputPath Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(BaseArtifactsPath)/bin</NativeOutputPath>

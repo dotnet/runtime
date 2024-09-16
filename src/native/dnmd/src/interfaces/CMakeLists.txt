@@ -61,43 +61,30 @@ target_compile_definitions(dnmd_interfaces PRIVATE DNMD_BUILD_SHARED COM_NO_WIND
 
 target_link_libraries(dnmd_interfaces_static
   PUBLIC
-  dncp::dncp
+  minipal
+  minipal_com
   dnmd::dnmd)
 
 target_link_libraries(dnmd_interfaces
   PRIVATE
-  dncp::dncp
+  minipal
+  minipal_com
   dnmd::dnmd)
 
 if(NOT MSVC)
-  target_link_libraries(dnmd_interfaces_static PUBLIC dncp::winhdrs)
-  target_link_libraries(dnmd_interfaces PRIVATE dncp::winhdrs)
-endif()
-
-if (NOT WIN32)
-  # Use ICU when running on macOS or Linux
-  if (APPLE)
-    set(ICU_FIND_COMPONENTS core)
-    set(ICU_FIND_REQUIRED_core TRUE)
-    set(ICU_TARGET_NAME ICU::core)
-  elseif(UNIX)
-    set(ICU_FIND_COMPONENTS uc)
-    set(ICU_FIND_REQUIRED_uc TRUE)
-    set(ICU_TARGET_NAME ICU::uc)
-  endif()
-  include(FindICU)
-  target_link_libraries(dnmd_interfaces_static PUBLIC ${ICU_TARGET_NAME})
-  target_link_libraries(dnmd_interfaces PRIVATE ${ICU_TARGET_NAME})
+  target_link_libraries(dnmd_interfaces_static PUBLIC minipal_comhdrs)
+  target_link_libraries(dnmd_interfaces PRIVATE minipal_comhdrs)
 endif()
 
 set_target_properties(dnmd_interfaces PROPERTIES
-  PUBLIC_HEADER ../inc/dnmd_interfaces.hpp
-  INTERPROCEDURAL_OPTIMIZATION $<$<NOT:$<CONFIG:DEBUG>>:TRUE>)
+  PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/../inc/dnmd_interfaces.hpp)
 
-install(TARGETS dnmd_interfaces dnmd_interfaces_static EXPORT interfaces
-  PUBLIC_HEADER DESTINATION include
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin)
+if (DNMD_INSTALL)
+  install(TARGETS dnmd_interfaces EXPORT interfaces
+    PUBLIC_HEADER DESTINATION include
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin)
 
-install(EXPORT interfaces NAMESPACE dnmd:: FILE dnmdinterfaces.cmake DESTINATION lib/cmake/dnmd)
+  install(EXPORT interfaces NAMESPACE dnmd:: FILE dnmdinterfaces.cmake DESTINATION lib/cmake/dnmd)
+endif()

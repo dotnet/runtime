@@ -394,7 +394,7 @@ bool md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, mdguid_t* gu
     return true;
 }
 
-int32_t md_get_many_rows_column_value_as_token(mdcursor_t c, uint32_t col_idx, uint32_t out_length, mdToken* tk)
+int32_t md_get_many_rows_column_value_as_token(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdToken* tk)
 {
     assert(out_length != 0 && tk != NULL);
 

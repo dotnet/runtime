@@ -1,34 +1,39 @@
 #include <gtest/gtest.h>
 #include <string>
+#ifdef BUILD_WINDOWS
+#include <wil/stl.h>
+#include <wil/win32_helpers.h>
+#else
+#define RETURN_IF_FAILED(x) { auto hr = x; if (FAILED(hr)) return hr; }
+#endif
 #include "baseline.h"
 #include "fixtures.h"
 #include "pal.hpp"
 
 namespace TestBaseline
 {
-    dncp::com_ptr<IMetaDataDispenser> Metadata = nullptr;
-    dncp::com_ptr<IMetaDataDispenserEx> DeltaMetadataBuilder = nullptr;
-    dncp::com_ptr<ISymUnmanagedBinder> Symbol = nullptr;
+    minipal::com_ptr<IMetaDataDispenser> Metadata = nullptr;
+    minipal::com_ptr<IMetaDataDispenserEx> DeltaMetadataBuilder = nullptr;
+    minipal::com_ptr<ISymUnmanagedBinder> Symbol = nullptr;
 }
 
-#define RETURN_IF_FAILED(x) { auto hr = x; if (FAILED(hr)) return hr; }
 
-class ThrowListener final : public testing::EmptyTestEventListener  
-{  
-    void OnTestPartResult(testing::TestPartResult const& result) override  
-    {  
-        if (result.fatally_failed())  
-        {  
-            throw testing::AssertionException(result);  
-        }  
-    }  
+class ThrowListener final : public testing::EmptyTestEventListener
+{
+    void OnTestPartResult(testing::TestPartResult const& result) override
+    {
+        if (result.fatally_failed())
+        {
+            throw testing::AssertionException(result);
+        }
+    }
 };
 
-int main(int argc, char** argv)
+int MAIN_CALLCONV main(int argc, char** argv)
 {
     RETURN_IF_FAILED(pal::GetBaselineMetadataDispenser(&TestBaseline::Metadata));
 
-    dncp::com_ptr<IMetaDataDispenser> deltaBuilder;
+    minipal::com_ptr<IMetaDataDispenser> deltaBuilder;
     RETURN_IF_FAILED(pal::GetBaselineMetadataDispenser(&deltaBuilder));
     RETURN_IF_FAILED(deltaBuilder->QueryInterface(IID_IMetaDataDispenserEx, (void**)&TestBaseline::DeltaMetadataBuilder));
 
@@ -39,15 +44,29 @@ int main(int argc, char** argv)
         return hr;
 
     auto coreClrPath = pal::GetCoreClrPath();
-    std::cout << "Loaded metadata baseline module: " << coreClrPath.generic_string() << std::endl;
+    pal::cout() << X("Loaded metadata baseline module: ") << coreClrPath << std::endl;
     SetBaselineModulePath(std::move(coreClrPath));
 
-    std::filesystem::path regressionAssemblyPath = argv[0];
-    regressionAssemblyPath = regressionAssemblyPath.parent_path() / "Regression.TargetAssembly.dll";
+#ifdef BUILD_WINDOWS
+    pal::path regressionAssemblyPath;
+    wil::AdaptFixedSizeToAllocatedResult(regressionAssemblyPath, [&](LPWSTR value, size_t valueLength, size_t* valueLengthNeededWithNul)
+    {
+        *valueLengthNeededWithNul = ::MultiByteToWideChar(CP_UTF8, 0, argv[0], (int)strlen(argv[0]), value, (int)valueLength) + 1;
+        if (*valueLengthNeededWithNul == 0)
+        {
+            return HRESULT_FROM_WIN32(GetLastError());
+        }
+        return S_OK;
+    });
+    regressionAssemblyPath.erase(regressionAssemblyPath.find_last_of(X('\\')) + 1).append(X("Regression.TargetAssembly.dll"));
+#else
+    std::string regressionAssemblyPath = argv[0];
+    regressionAssemblyPath.erase(regressionAssemblyPath.find_last_of(X('/')) + 1).append(X("Regression.TargetAssembly.dll"));
+#endif
 
-    SetRegressionAssemblyPath(regressionAssemblyPath.generic_string());
+    SetRegressionAssemblyPath(regressionAssemblyPath);
 
-    std::cout << "Regression assembly path: " << regressionAssemblyPath.generic_string() << std::endl;
+    pal::cout() << X("Regression assembly path: ") << regressionAssemblyPath << std::endl;
 
     ::testing::InitGoogleTest(&argc, argv);
     testing::UnitTest::GetInstance()->listeners().Append(new ThrowListener);

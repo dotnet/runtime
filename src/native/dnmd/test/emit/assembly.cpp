@@ -2,7 +2,7 @@
 
 TEST(Assembly, DefineNoPublicKey)
 {
-    dncp::com_ptr<IMetaDataAssemblyEmit> emit;
+    minipal::com_ptr<IMetaDataAssemblyEmit> emit;
     ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
     mdAssembly assembly;
 
@@ -19,7 +19,7 @@ TEST(Assembly, DefineNoPublicKey)
     ASSERT_EQ(1, RidFromToken(assembly));
     ASSERT_EQ(mdtAssembly, TypeFromToken(assembly));
 
-    dncp::com_ptr<IMetaDataAssemblyImport> import;
+    minipal::com_ptr<IMetaDataAssemblyImport> import;
     ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&import));
 
     ASSEMBLYMETADATA metadata;
@@ -33,7 +33,7 @@ TEST(Assembly, DefineNoPublicKey)
     ULONG assemblyNameLen;
     void const* publicKey;
     ULONG publicKeyLength;
-    ASSERT_EQ(S_OK, import->GetAssemblyProps(assembly, &publicKey, &publicKeyLength, &importHashAlgId, assemblyName.data(), (ULONG)assemblyName.capacity(), &assemblyNameLen, &metadata, & assemblyFlags));
+    ASSERT_EQ(S_OK, import->GetAssemblyProps(assembly, &publicKey, &publicKeyLength, &importHashAlgId, &assemblyName[0], (ULONG)assemblyName.capacity(), &assemblyNameLen, &metadata, & assemblyFlags));
     EXPECT_EQ(0, assemblyFlags);
     EXPECT_EQ(W("AssemblyName"), assemblyName.substr(0, assemblyNameLen - 1));
     EXPECT_EQ(1, metadata.usMajorVersion);

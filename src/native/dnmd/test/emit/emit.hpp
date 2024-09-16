@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <cstddef>
 
-#include <dncp.h>
+#include <minipal_com.h>
 #include <cor.h>
 #include <dnmd_interfaces.hpp>
 #include <gtest/gtest.h>
@@ -16,23 +16,23 @@
 
 using WSTR_string = std::basic_string<WCHAR>;
 
-inline void CreateEmit(dncp::com_ptr<IMetaDataEmit>& emit)
+inline void CreateEmit(minipal::com_ptr<IMetaDataEmit>& emit)
 {
-    dncp::com_ptr<IMetaDataDispenser> dispenser;
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
     ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
     ASSERT_EQ(S_OK, dispenser->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit, (IUnknown**)&emit));
 }
 
-inline void CreateEmit(dncp::com_ptr<IMetaDataEmit2>& emit)
+inline void CreateEmit(minipal::com_ptr<IMetaDataEmit2>& emit)
 {
-    dncp::com_ptr<IMetaDataDispenser> dispenser;
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
     ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
     ASSERT_EQ(S_OK, dispenser->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit2, (IUnknown**)&emit));
 }
 
-inline void CreateEmit(dncp::com_ptr<IMetaDataAssemblyEmit>& emit)
+inline void CreateEmit(minipal::com_ptr<IMetaDataAssemblyEmit>& emit)
 {
-    dncp::com_ptr<IMetaDataDispenser> dispenser;
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
     ASSERT_EQ(S_OK, GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
     ASSERT_EQ(S_OK, dispenser->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataAssemblyEmit, (IUnknown**)&emit));
 }

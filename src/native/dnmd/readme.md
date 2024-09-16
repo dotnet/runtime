@@ -11,8 +11,9 @@ DNMD provides the following tools:
   - [`IMetaDataAssemblyImport`][api_assemblyimport]
 - `dnmd_interfaces_static` - A static library version of `dnmd_interfaces`.
 - `mddump` - Utility for dumping ECMA-335 tables.
+- `mdmerge` - Utility for merging EnC deltas into ECMA-335 tables.
 
-The primary goal of DNMD is to explore the benefits of a rewrite of the metadata APIs found in [dotnet/runtime](https://github.com/dotnet/runtime). The rewrite has the following constraints:
+The primary goal of DNMD is to explore the benefits of a rewrite of the metadata APIs in the .NET runtime. The rewrite has the following constraints:
 
 - Must be sharable across any existing .NET runtime implementation.
 - Must be cross-platform with minimal OS abstraction layering.
@@ -20,13 +21,11 @@ The primary goal of DNMD is to explore the benefits of a rewrite of the metadata
 
 ## Requirements (minimum)
 
-- [CMake](https://cmake.org/download/) 3.10
+- [CMake](https://cmake.org/download/) 3.20
 
 - C11 and C++14 compliant compilers
 
 ## Build
-
-> `git submodule update --init --recursive`
 
 > `cmake -S . -B artifacts`
 
@@ -37,12 +36,10 @@ The primary goal of DNMD is to explore the benefits of a rewrite of the metadata
 The `test/` directory contains all product tests. The native components for
 DNMD should be built first. See the Build section.
 
-The `DNMD.Tests.sln` file can be loaded in Visual Studio to run associated tests.
-The managed tests will use the latest build of the DNMD libraries. Keep in mind
-the native assets are built with a configuration independent of the tests.
+Tests can be run using `ctest --test-dir artifacts`.
 
 Testing correctness defers to the current implementation of the relevant interface
-defined in the .NET runtime the test is running on (for example, `IMetaDataImport`).
+defined in the newest .NET runtime the test finds via normal runtime discovery mechanisms (for example, `IMetaDataImport`).
 The approach is to pass identical arguments to the current implementation and the
 implementation in this repo. The return argument and all out arguments are then
 compared for equality. In some cases pointers are returned so the pointer is dereferenced

@@ -5,7 +5,7 @@
 TEST(FieldMarshal, DefineAndDelete)
 {
     // Define a field
-    dncp::com_ptr<IMetaDataEmit> emit;
+    minipal::com_ptr<IMetaDataEmit> emit;
     ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
     mdFieldDef field;
     mdTypeDef type;
@@ -18,7 +18,7 @@ TEST(FieldMarshal, DefineAndDelete)
     ASSERT_EQ(S_OK, emit->SetFieldMarshal(field, marshalSignature.data(), (ULONG)marshalSignature.size()));
 
     // Read the field marshal signature
-    dncp::com_ptr<IMetaDataImport> import;
+    minipal::com_ptr<IMetaDataImport> import;
     ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
 
     ULONG readMarshalLength;

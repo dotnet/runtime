@@ -9,9 +9,9 @@
 #include <internal/dnmd_platform.hpp>
 #include "dnmd_interfaces.hpp"
 
-#include <external/cor.h>
-#include <external/corhdr.h>
-#include <external/corsym.h>
+#include <cor.h>
+#include <corhdr.h>
+#include <corsym.h>
 
 EXTERN_GUID(IID_ISymUnmanagedBinder, 0xaa544d42, 0x28cb, 0x11d3, 0xbd, 0x22, 0x00, 0x00, 0xf8, 0x08, 0x49, 0xbd);
 

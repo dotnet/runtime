@@ -182,6 +182,7 @@
     <SubsetName Include="Tools.ILLinkTests" OnDemand="true" Description="Unit tests for the tools.illink subset." />
 
     <SubsetName Include="Tools.CdacReaderTests" OnDemand="true" Description="Units tests for the cDAC reader." />
+    <SubsetName Include="Tools.NativeTests" OnDemand="true" Description="Native unit tests for native tools and libraries." />
 
     <!-- Host -->
     <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests. Equivalent to: $(DefaultHostSubsets)" />
@@ -407,6 +408,11 @@
       Test="true" Category="tools"/>
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\ILLink.RoslynAnalyzer.Tests.Generator\ILLink.RoslynAnalyzer.Tests.Generator.csproj"
       Test="true" Category="tools"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+tools.nativetests+'))">
+    <ProjectToBuild Include="$(RepoRoot)src\native\dnmd\dnmd.proj"
+      Test="true" Category="tools" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">

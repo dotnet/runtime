@@ -1752,7 +1752,11 @@ typedef enum NativeTypeArrayFlags
 //
 // Enum used for HFA type recognition.
 // Supported across architectures, so that it can be used in altjits and cross-compilation.
+#ifdef __cplusplus
 typedef enum CorInfoHFAElemType : unsigned {
+#else
+typedef enum CorInfoHFAElemType {
+#endif
     CORINFO_HFA_ELEM_NONE,
     CORINFO_HFA_ELEM_FLOAT,
     CORINFO_HFA_ELEM_DOUBLE,

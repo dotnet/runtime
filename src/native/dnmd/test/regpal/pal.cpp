@@ -1,56 +1,77 @@
-#define DNCP_DEFINE_GUID
+#define MINIPAL_COM_DEFINE_GUID
 #include "pal.hpp"
 
 #include <nethost.h>
 #include <hostfxr.h>
 
-#ifndef BUILD_WINDOWS
+#ifdef BUILD_WINDOWS
+#include <windows.h>
+#include <wil/resource.h>
+#include <shlwapi.h>
+#else
 #include <dlfcn.h>
+#include <unistd.h>
 #endif
 
 #include <iostream>
 #include <fstream>
-#include <filesystem>
-#include <string_view>
-
-using std::filesystem::path;
 
 #ifdef BUILD_WINDOWS
-#define W_StringView(str) std::wstring_view{L##str}
+#define W_StdString(str) std::wstring{L##str}
 #else
-#define W_StringView(str) std::string_view{str}
+#define W_StdString(str) std::string{str}
+#endif
+
+#ifdef BUILD_WINDOWS
+std::wostream& pal::cout()
+{
+    return std::wcout;
+}
+std::wostream& pal::cerr()
+{
+    return std::wcerr;
+}
+#else
+std::ostream& pal::cout()
+{
+    return std::cout;
+}
+std::ostream& pal::cerr()
+{
+    return std::cerr;
+}
 #endif
 
 namespace
 {
-    void* LoadModule(path path)
+    void* LoadModule(pal::path path)
     {
 #ifdef BUILD_WINDOWS
-        return ::LoadLibraryW(path.c_str());  
-#else  
-        return ::dlopen(path.c_str(), RTLD_LAZY);  
+        return ::LoadLibraryW(path.c_str());
+#else
+        return ::dlopen(path.c_str(), RTLD_LAZY);
 #endif
     }
 
     void* GetSymbol(void* module, char const* name)
     {
 #ifdef BUILD_WINDOWS
-        return ::GetProcAddress((HMODULE)module, name);  
-#else  
-        return ::dlsym(module, name); 
+        return ::GetProcAddress((HMODULE)module, name);
+#else
+        return ::dlsym(module, name);
 #endif
     }
 
     using MetaDataGetDispenser = HRESULT(STDMETHODCALLTYPE*)(REFCLSID, REFIID, LPVOID*);
 
     using CoreCLRInitialize = int(STDMETHODCALLTYPE*)(
-            char const* exePath,  
-            char const* appDomainFriendlyName,  
-            int propertyCount,  
-            char const** propertyKeys,  
-            char const** propertyValues,  
-            void** hostHandle,  
-            uint32_t* domainId);  
+            char const* exePath,
+            char const* appDomainFriendlyName,
+            int propertyCount,
+            char const** propertyKeys,
+            char const** propertyValues,
+            void** hostHandle,
+            uint32_t* domainId);
 
     MetaDataGetDispenser LoadGetDispenser()
     {
@@ -64,7 +85,7 @@ namespace
         auto mod = LoadModule(coreClrPath);
         if (mod == nullptr)
         {
-            std::cerr << "Failed to load metadata baseline module: " << coreClrPath << std::endl;
+            pal::cerr() << X("Failed to load metadata baseline module: ") << coreClrPath << std::endl;
             return nullptr;
         }
 #ifndef BUILD_WINDOWS
@@ -73,11 +94,11 @@ namespace
         auto init = (CoreCLRInitialize)GetSymbol(mod, "coreclr_initialize");
         if (init == nullptr)
         {
-            std::cerr << "Failed to find coreclr_initialize in module: " << coreClrPath << std::endl;
+            pal::cerr() << X("Failed to find coreclr_initialize in module: ") << coreClrPath << std::endl;
             return nullptr;
         }
 
-        char const* propertyKeys[] = { "TRUSTED_PLATFORM_ASSEMBLIES" };  
+        char const* propertyKeys[] = { "TRUSTED_PLATFORM_ASSEMBLIES" };
         char const* propertyValues[] = { coreClrPath.c_str() };
         init("regpal", "regpal", 1, propertyKeys, propertyValues, nullptr, nullptr);
 #endif
@@ -85,7 +106,7 @@ namespace
         auto getDispenser = (MetaDataGetDispenser)GetSymbol(mod, "MetaDataGetDispenser");
         if (getDispenser == nullptr)
         {
-            std::cerr << "Failed to find MetaDataGetDispenser in module: " << coreClrPath << std::endl;
+            pal::cerr() << X("Failed to find MetaDataGetDispenser in module: ") << coreClrPath << std::endl;
             return nullptr;
         }
 
@@ -105,24 +126,44 @@ HRESULT pal::GetBaselineMetadataDispenser(IMetaDataDispenser** dispenser)
     return GetDispenser(CLSID_CorMetaDataDispenser, IID_IMetaDataDispenser, (void**)dispenser);
 }
 
-bool pal::ReadFile(path path, malloc_span<uint8_t>& b)
+bool pal::ReadFile(pal::path path, malloc_span<uint8_t>& b)
 {
-    // Read in the entire file
-    std::ifstream fd{ path, std::ios::binary | std::ios::in };
-    if (!fd)
+#ifdef BUILD_WINDOWS
+    wil::unique_handle file{ CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr) };
+    if (!file)
         return false;
 
-    size_t size = std::filesystem::file_size(path);
-    if (size == 0)
+    DWORD size = GetFileSize(file.get(), nullptr);
+    if (size == INVALID_FILE_SIZE)
         return false;
 
     b = { (uint8_t*)std::malloc(size), size };
 
-    fd.read((char*)(uint8_t*)b, b.size());
+    DWORD bytesRead;
+    if (!ReadFile(file.get(), b, (DWORD)b.size(), &bytesRead, nullptr))
+        return false;
+
+    return bytesRead == b.size();
+#else
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0)
+        return false;
+    b = { (uint8_t*)std::malloc((size_t)st.st_size), (size_t)st.st_size };
+
+    std::ifstream file{ path, std::ios::binary };
+
+    if (!file)
+        return false;
+
+    file.read((char*)b.data(), b.size());
+
     return true;
+#endif
 }
 
-path pal::GetCoreClrPath()
+constexpr int NetHostBufferTooSmall = 0x80008098;
+
+pal::path pal::GetCoreClrPath()
 {
     int result = 0;
     size_t bufferSize = 4096;
@@ -131,13 +172,19 @@ path pal::GetCoreClrPath()
     {
         hostfxr_path.reset(new char_t[bufferSize]);
         result = get_hostfxr_path(hostfxr_path.get(), &bufferSize, nullptr);
-    } while (result != 0);
+    } while (result == NetHostBufferTooSmall);
 
-    path hostFxrPath = hostfxr_path.get();
+    if (result != 0)
+    {
+        std::cerr << "Failed to get hostfxr path. Error code: " << std::hex << result << std::dec << std::endl;
+        return {};
+    }
+
+    pal::path hostFxrPath = hostfxr_path.get();
     void* hostfxrModule = LoadModule(hostfxr_path.get());
     if (hostfxrModule == nullptr)
     {
-        std::cerr << "Failed to load hostfxr module: " << hostFxrPath << std::endl;
+        cerr() << "Failed to load hostfxr module: " << hostFxrPath << std::endl;
         return {};
     }
 
@@ -147,9 +194,13 @@ path pal::GetCoreClrPath()
     // We need to do this because hostfxr_get_dotnet_environment_info only returns information
     // for a globally-installed dotnet if we don't pass a path to the dotnet root.
     // The macOS machines on GitHub Actions don't have dotnet globally installed.
-    path dotnetRoot = hostFxrPath.parent_path().parent_path().parent_path().parent_path();
+#ifdef BUILD_WINDOWS
+    pal::path dotnetRoot = hostFxrPath.substr(0, hostFxrPath.find(X("host\\fxr"), 0));
+#else
+    pal::path dotnetRoot = hostFxrPath.substr(0, hostFxrPath.find(X("host/fxr"), 0));
+#endif
 
-    path coreClrPath = {};
+    pal::path coreClrPath = {};
     auto getDotnetEnvironmentInfo = (hostfxr_get_dotnet_environment_info_fn)GetSymbol(hostfxrModule, "hostfxr_get_dotnet_environment_info");
     if (getDotnetEnvironmentInfo(
             dotnetRoot.c_str(),
@@ -159,16 +210,18 @@ path pal::GetCoreClrPath()
                 path& coreClrPath = *(path*)result_context;
                 for (size_t i = 0; i < info->framework_count; ++i)
                 {
-                    if (info->frameworks[i].name == W_StringView("Microsoft.NETCore.App"))
+                    if (info->frameworks[i].name == W_StdString("Microsoft.NETCore.App"))
                     {
                         coreClrPath = info->frameworks[i].path;
-                        coreClrPath /= info->frameworks[i].version;
+                        coreClrPath += X('/');
+                        coreClrPath += info->frameworks[i].version;
+                        coreClrPath += X('/');
 #ifdef BUILD_WINDOWS
-                        coreClrPath /= "coreclr.dll";
+                        coreClrPath += X("coreclr.dll");
 #elif BUILD_MACOS
-                        coreClrPath /= "libcoreclr.dylib";
+                        coreClrPath += X("libcoreclr.dylib");
 #elif BUILD_UNIX
-                        coreClrPath /= "libcoreclr.so";
+                        coreClrPath += X("libcoreclr.so");
 #else
 #error "Unknown platform, cannot determine name for CoreCLR executable"
 #endif
@@ -183,4 +236,13 @@ path pal::GetCoreClrPath()
     }
 
     return coreClrPath;
+}
+
+bool pal::FileExists(pal::path path)
+{
+#ifdef BUILD_WINDOWS
+    return PathFileExistsW(path.c_str());
+#else
+    return access(path.c_str(), F_OK) != -1;
+#endif
 }

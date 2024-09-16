@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <utility>
 #include <cstring>
+#include <minipal/strings.h>
 
 #define RETURN_IF_FAILED(exp) \
 { \
@@ -420,19 +421,19 @@ HRESULT MetadataEmit::DefineImportType(
         mdTypeRef   *ptr)
 {
     HRESULT hr;
-    dncp::com_ptr<IDNMDOwner> assemImport{};
+    minipal::com_ptr<IDNMDOwner> assemImport{};
 
     if (pAssemImport != nullptr)
         RETURN_IF_FAILED(pAssemImport->QueryInterface(IID_IDNMDOwner, (void**)&assemImport));
 
-    dncp::com_ptr<IDNMDOwner> assemEmit{};
+    minipal::com_ptr<IDNMDOwner> assemEmit{};
     if (pAssemEmit != nullptr)
         RETURN_IF_FAILED(pAssemEmit->QueryInterface(IID_IDNMDOwner, (void**)&assemEmit));
 
     if (pImport == nullptr)
         return E_INVALIDARG;
 
-    dncp::com_ptr<IDNMDOwner> import{};
+    minipal::com_ptr<IDNMDOwner> import{};
     RETURN_IF_FAILED(pImport->QueryInterface(IID_IDNMDOwner, (void**)&import));
 
     mdcursor_t originalTypeDef;
@@ -1626,7 +1627,7 @@ namespace
             if (strLen != (uint32_t) -1)
                 size = strLen * sizeof(WCHAR);
             else
-                size = (uint32_t)(sizeof(WCHAR) * PAL_wcslen((LPWSTR)pValue));
+                size = (uint32_t)(sizeof(WCHAR) * minipal_u16_strlen((CHAR16_T*)pValue));
             break;
 
         case ELEMENT_TYPE_CLASS:
@@ -2177,7 +2178,7 @@ HRESULT MetadataEmit::ApplyEditAndContinue(
         IUnknown    *pImport)
 {
     HRESULT hr;
-    dncp::com_ptr<IDNMDOwner> delta;
+    minipal::com_ptr<IDNMDOwner> delta;
     RETURN_IF_FAILED(pImport->QueryInterface(IID_IDNMDOwner, (void**)&delta));
 
     if (!md_apply_delta(MetaData(), delta->MetaData()))
@@ -2201,22 +2202,22 @@ HRESULT MetadataEmit::TranslateSigWithScope(
         ULONG       *pcbTranslatedSig)
 {
     HRESULT hr;
-    dncp::com_ptr<IDNMDOwner> assemImport{};
+    minipal::com_ptr<IDNMDOwner> assemImport{};
 
     if (pAssemImport != nullptr)
         RETURN_IF_FAILED(pAssemImport->QueryInterface(IID_IDNMDOwner, (void**)&assemImport));
 
-    dncp::com_ptr<IDNMDOwner> assemEmit{};
+    minipal::com_ptr<IDNMDOwner> assemEmit{};
     if (pAssemEmit != nullptr)
         RETURN_IF_FAILED(pAssemEmit->QueryInterface(IID_IDNMDOwner, (void**)&assemEmit));
 
     if (import == nullptr)
         return E_INVALIDARG;
 
-    dncp::com_ptr<IDNMDOwner> moduleImport{};
+    minipal::com_ptr<IDNMDOwner> moduleImport{};
     RETURN_IF_FAILED(import->QueryInterface(IID_IDNMDOwner, (void**)&moduleImport));
 
-    dncp::com_ptr<IDNMDOwner> moduleEmit{};
+    minipal::com_ptr<IDNMDOwner> moduleEmit{};
     RETURN_IF_FAILED(emit->QueryInterface(IID_IDNMDOwner, (void**)&moduleEmit));
 
     inline_span<uint8_t> translatedSig;

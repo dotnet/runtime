@@ -6,11 +6,14 @@
 #define NOMINMAX
 #include <Windows.h>
 
+#define MAIN_CALLCONV __cdecl
+
 #else
 
 #include <sys/stat.h>
 #include "dnmd_peimage.h"
 
+#define MAIN_CALLCONV
 #endif // !BUILD_WINDOWS
 
 // Machine code masks for native (R2R) images
@@ -24,11 +27,12 @@
 #include <cstdlib>
 #include <cstdint>
 
-#include <dncp.h>
+#define _HRESULT_TYPEDEF_(_sc) ((HRESULT)_sc)
+
+#include <minipal/utils.h>
+#include <minipal_com.h>
 #include <cor.h>
 #include <dnmd.hpp>
-
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))
 
 template<typename T>
 struct malloc_deleter_t final

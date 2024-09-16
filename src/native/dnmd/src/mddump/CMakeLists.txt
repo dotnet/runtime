@@ -8,10 +8,12 @@ add_executable(mddump
 
 target_link_libraries(mddump
   dnmd::pdb
-  dncp::dncp)
+  minipal_com)
 
 if(NOT MSVC)
-  target_link_libraries(mddump dncp::winhdrs)
+  target_link_libraries(mddump minipal_comhdrs)
 endif()
 
-install(TARGETS mddump)
+if (DNMD_INSTALL)
+  install(TARGETS mddump)
+endif()

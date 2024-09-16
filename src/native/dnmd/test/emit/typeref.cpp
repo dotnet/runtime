@@ -2,7 +2,7 @@
 
 TEST(TypeRef, ValidScopeAndDottedName)
 {
-    dncp::com_ptr<IMetaDataEmit> emit;
+    minipal::com_ptr<IMetaDataEmit> emit;
     ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
     mdTypeRef typeRef;
     WSTR_string name = W("System.Object");
@@ -10,13 +10,13 @@ TEST(TypeRef, ValidScopeAndDottedName)
     ASSERT_EQ(1, RidFromToken(typeRef));
     ASSERT_EQ(mdtTypeRef, TypeFromToken(typeRef));
 
-    dncp::com_ptr<IMetaDataImport> import;
+    minipal::com_ptr<IMetaDataImport> import;
     ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
     mdToken resolutionScope;
     WSTR_string readName;
     readName.resize(name.capacity() + 1);
     ULONG readNameLength;
-    ASSERT_EQ(S_OK, import->GetTypeRefProps(typeRef, &resolutionScope, readName.data(), (ULONG) readName.size(), &readNameLength));
+    ASSERT_EQ(S_OK, import->GetTypeRefProps(typeRef, &resolutionScope, &readName[0], (ULONG) readName.size(), &readNameLength));
     EXPECT_EQ(TokenFromRid(1, mdtModule), resolutionScope);
     EXPECT_EQ(readNameLength, name.size() + 1);
     EXPECT_EQ(name, readName.substr(0, readNameLength - 1));
@@ -24,7 +24,7 @@ TEST(TypeRef, ValidScopeAndDottedName)
 
 TEST(TypeRef, InvalidScope)
 {
-    dncp::com_ptr<IMetaDataEmit> emit;
+    minipal::com_ptr<IMetaDataEmit> emit;
     ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
     mdTypeRef typeRef;
     ASSERT_EQ(E_FAIL, emit->DefineTypeRefByName(TokenFromRid(1, mdtTypeDef), W("System.Object"), &typeRef));
@@ -32,7 +32,7 @@ TEST(TypeRef, InvalidScope)
 
 TEST(TypeRef, ValidScopeAndNonDottedName)
 {
-    dncp::com_ptr<IMetaDataEmit> emit;
+    minipal::com_ptr<IMetaDataEmit> emit;
     ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
     mdTypeRef typeRef;
     WSTR_string name = W("Bar");
@@ -40,13 +40,13 @@ TEST(TypeRef, ValidScopeAndNonDottedName)
     ASSERT_EQ(1, RidFromToken(typeRef));
     ASSERT_EQ(mdtTypeRef, TypeFromToken(typeRef));
 
-    dncp::com_ptr<IMetaDataImport> import;
+    minipal::com_ptr<IMetaDataImport> import;
     ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
     mdToken resolutionScope;
     WSTR_string readName;
     readName.resize(name.capacity() + 1);
     ULONG readNameLength;
-    ASSERT_EQ(S_OK, import->GetTypeRefProps(typeRef, &resolutionScope, readName.data(), (ULONG) readName.size(), &readNameLength));
+    ASSERT_EQ(S_OK, import->GetTypeRefProps(typeRef, &resolutionScope, &readName[0], (ULONG) readName.size(), &readNameLength));
     EXPECT_EQ(TokenFromRid(1, mdtModule), resolutionScope);
     EXPECT_EQ(readNameLength, name.size() + 1);
     EXPECT_EQ(name, readName.substr(0, readNameLength - 1));

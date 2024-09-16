@@ -1384,6 +1384,7 @@ namespace
                             // This type is from a file in the source assembly, so we need to create an AssemblyRef to the source assembly.
                             RETURN_IF_FAILED(ImportReferenceToAssembly(sourceAssembly, sourceAssemblyHash, targetModule, targetAssembly, onRowAdded, &targetOutermostScope));
                         }
+                        FALLTHROUGH;
                         case mdtAssemblyRef:
                         {
                             // This type is a type-forward from another assembly.
@@ -1797,7 +1798,7 @@ HRESULT DefineImportMember(
     // Define ModuleRef for imported Member functions
 
     // Check if the Member being imported is a global function.
-    dncp::com_ptr<IMetaDataImport> pEmitImport;
+    minipal::com_ptr<IMetaDataImport> pEmitImport;
     RETURN_IF_FAILED(emit->QueryInterface(IID_IMetaDataImport, (void**)&pEmitImport));
     RETURN_IF_FAILED(pEmitImport->GetScopeProps(nullptr, 0, nullptr, &mvidEmit));
 

@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <IsUnitTestProject>true</IsUnitTestProject>
+    <DnmdBuildArtifactsDir>$(BaseIntermediateOutputPath)/$(TargetOS).$(TargetArchitecture).$(Configuration)</DnmdBuildArtifactsDir>
+  </PropertyGroup>
+
+  <Target Name="BuildNative" BeforeTargets="Build">
+    <PropertyGroup>
+      <CrossArg Condition="'$(CrossBuild)' == 'true'">-cross</CrossArg>
+      <NinjaArg Condition="'$(Ninja)' == 'true' and !$([MSBuild]::IsOsPlatform(Windows))">-ninja</NinjaArg>
+      <NinjaArg Condition="'$(Ninja)' != 'true' and $([MSBuild]::IsOsPlatform(Windows))">-msbuild</NinjaArg>
+      <PortableBuildArg Condition="'$(PortableBuild)' != 'true'">-portablebuild=false</PortableBuildArg>
+      <ScriptName>bash ./build-native.sh</ScriptName>
+      <ScriptName Condition="$([MSBuild]::IsOsPlatform(Windows))">./build-native.cmd</ScriptName>
+    </PropertyGroup>
+    <Exec Command="$(ScriptName) -$(Configuration.ToLower()) -$(TargetArchitecture) -os $(TargetOS) $(CrossArg) $(Compiler) $(NinjaArg) $(PortableBuildArg)"
+          EnvironmentVariables="DOTNET_ROOT=$(DotNetRoot)" />
+  </Target>
+
+  <Target Name="RunTests" BeforeTargets="VSTest">
+    <Exec Command="ctest --test-dir $(DnmdBuildArtifactsDir) -T Test"
+          EnvironmentVariables="DOTNET_ROOT=$(DotNetRoot)" />
+    <ItemGroup>
+      <CTestResults Include="$(DnmdBuildArtifactsDir)\Testing\**\Test.xml" />
+      <!-- Add metadata afterwards to ensure that built-in metadata is already available. -->
+      <CTestResults>
+        <TargetFileName>dnmd-$([System.String]::new('%(RecursiveDir)').TrimEnd('\\').TrimEnd('/')).ctestxml</TargetFileName>
+      </CTestResults>
+    </ItemGroup>
+    <Copy SourceFiles="@(CTestResults)" DestinationFiles="@(CTestResults->'$(ArtifactsTestResultsDir)/%(TargetFileName)')" />
+  </Target>
+</Project>

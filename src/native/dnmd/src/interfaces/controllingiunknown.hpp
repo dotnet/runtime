@@ -2,7 +2,7 @@
 #define _SRC_INTERFACES_CONTROLLINGIUNKNOWN_HPP_
 
 #include "tearoffbase.hpp"
-#include <dncp.h>
+#include <minipal_com.h>
 #include <atomic>
 #include <vector>
 #include <new>

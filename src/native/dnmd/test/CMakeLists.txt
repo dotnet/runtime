@@ -14,9 +14,11 @@ FetchContent_Declare(
   GIT_TAG
   v1.14.0
 )
+
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+set_property(DIRECTORY ${googletest_SOURCE_DIR} PROPERTY SET_SOURCE_CHARSET OFF)
 
 FetchContent_Declare(
   benchmark
@@ -29,7 +31,23 @@ FetchContent_Declare(
 # Don't build the tests for the benchmark library.
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+
 FetchContent_MakeAvailable(googletest benchmark)
+
+if (WIN32)
+    FetchContent_Declare(
+        wil
+        GIT_REPOSITORY
+        https://github.com/microsoft/wil.git
+        GIT_TAG
+        v1.0.231216.1
+    )
+
+    set(WIL_BUILD_PACKAGING OFF CACHE BOOL "" FORCE)
+    set(WIL_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+
+    FetchContent_MakeAvailable(wil)
+endif()
 
 include(GoogleTest)
 

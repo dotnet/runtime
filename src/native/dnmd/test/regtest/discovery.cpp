@@ -1,14 +1,16 @@
 #include "fixtures.h"
 #include "baseline.h"
 #include <pal.hpp>
-#include <filesystem>
 #include <algorithm>
 #include <unordered_map>
 
 #ifdef BUILD_WINDOWS
+#include <wil/stl.h>
 #include <wil/registry.h>
+#include <wil/win32_helpers.h>
 #else
 #define THROW_IF_FAILED(x) do { HRESULT hr = (x); if (FAILED(hr)) { throw std::runtime_error("Failed HR when running '" #x "'"); } } while (false)
+#include <dirent.h>
 #endif
 
 #include <internal/dnmd_tools_platform.hpp>
@@ -19,8 +21,8 @@
 
 namespace
 {
-    std::filesystem::path baselinePath;
-    std::string regressionAssemblyPath;
+    pal::path baselinePath;
+    pal::path regressionAssemblyPath;
 
     template<typename T>
     struct OnExit
@@ -38,7 +40,7 @@ namespace
         return { callback };
     }
 
-    malloc_span<uint8_t> ReadMetadataFromFile(std::filesystem::path path)
+    malloc_span<uint8_t> ReadMetadataFromFile(pal::path path)
     {
         malloc_span<uint8_t> b;
         if (!pal::ReadFile(path, b)
@@ -56,12 +58,12 @@ namespace
     malloc_span<uint8_t> CreateImageWithIndirectionTables()
     {
         std::cout << "Creating image with indirection tables" << std::endl;
-        dncp::com_ptr<IMetaDataEmit> image;
+        minipal::com_ptr<IMetaDataEmit> image;
         THROW_IF_FAILED(TestBaseline::DeltaMetadataBuilder->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit, (IUnknown**)&image));
 
         THROW_IF_FAILED(image->SetModuleProps(W("IndirectionTables.dll")));
 
-        dncp::com_ptr<IMetaDataAssemblyEmit> assemblyEmit;
+        minipal::com_ptr<IMetaDataAssemblyEmit> assemblyEmit;
         THROW_IF_FAILED(image->QueryInterface(IID_IMetaDataAssemblyEmit, (void**)&assemblyEmit));
 
         ASSEMBLYMETADATA assemblyMetadata = { 0 };
@@ -71,7 +73,7 @@ namespace
 
         mdTypeRef systemObject;
         THROW_IF_FAILED(image->DefineTypeRefByName(systemRuntimeRef, W("System.Object"), &systemObject));
-        
+
         // Define two types so we can define out-of-order rows.
         mdTypeDef type1;
         THROW_IF_FAILED(image->DefineTypeDef(W("Type1"), tdSealed, systemObject, nullptr, &type1));
@@ -81,7 +83,7 @@ namespace
 
         // Define a signature that has two parameters and a return type.
         // This will provide us with enough structure to define out-of-order Param rows.
-        std::array signature = { (uint8_t)IMAGE_CEE_CS_CALLCONV_DEFAULT, (uint8_t)0x02, (uint8_t)ELEMENT_TYPE_I4, (uint8_t)ELEMENT_TYPE_I2, (uint8_t)ELEMENT_TYPE_I8};
+        std::array<uint8_t, 5> signature = { (uint8_t)IMAGE_CEE_CS_CALLCONV_DEFAULT, (uint8_t)0x02, (uint8_t)ELEMENT_TYPE_I4, (uint8_t)ELEMENT_TYPE_I2, (uint8_t)ELEMENT_TYPE_I8};
 
         mdMethodDef method1;
         THROW_IF_FAILED(image->DefineMethod(type1, W("Method1"), 0, signature.data(), (ULONG)signature.size(), 0, 0, &method1));
@@ -95,12 +97,12 @@ namespace
 
         mdMethodDef method2;
         THROW_IF_FAILED(image->DefineMethod(type2, W("Method2"), 0, signature.data(), (ULONG)signature.size(), 0, 0, &method2));
-        
+
         // Define a method on the first type after we've already defined a method on the second type.
         mdMethodDef methodOutOfOrder;
         THROW_IF_FAILED(image->DefineMethod(type1, W("MethodOutOfOrder"), 0, signature.data(), (ULONG)signature.size(), 0, 0, &methodOutOfOrder));
 
-        std::array fieldSignature = { (uint8_t)IMAGE_CEE_CS_CALLCONV_FIELD, (uint8_t)ELEMENT_TYPE_I4 };
+        std::array<uint8_t, 2> fieldSignature = { (uint8_t)IMAGE_CEE_CS_CALLCONV_FIELD, (uint8_t)ELEMENT_TYPE_I4 };
 
         mdFieldDef field1;
         THROW_IF_FAILED(image->DefineField(type1, W("Field1"), 0, fieldSignature.data(), (ULONG)fieldSignature.size(), 0, nullptr, 0, &field1));
@@ -112,9 +114,9 @@ namespace
         mdFieldDef fieldOutOfOrder;
         THROW_IF_FAILED(image->DefineField(type1, W("FieldOutOfOrder"), 0, fieldSignature.data(), (ULONG)fieldSignature.size(), 0, nullptr, 0, &fieldOutOfOrder));
 
-        std::array propertySignature = { (uint8_t)IMAGE_CEE_CS_CALLCONV_PROPERTY, (uint8_t)ELEMENT_TYPE_I4 };
-        std::array getterSignature = { (uint8_t)IMAGE_CEE_CS_CALLCONV_DEFAULT, (uint8_t)0x00, (uint8_t)ELEMENT_TYPE_I4 };
-        
+        std::array<uint8_t, 2> propertySignature = { (uint8_t)IMAGE_CEE_CS_CALLCONV_PROPERTY, (uint8_t)ELEMENT_TYPE_I4 };
+        std::array<uint8_t, 3> getterSignature = { (uint8_t)IMAGE_CEE_CS_CALLCONV_DEFAULT, (uint8_t)0x00, (uint8_t)ELEMENT_TYPE_I4 };
+
         mdMethodDef getter1;
         THROW_IF_FAILED(image->DefineMethod(type1, W("get_Property1"), 0, getterSignature.data(), (ULONG)getterSignature.size(), 0, 0, &getter1));
 
@@ -133,7 +135,7 @@ namespace
 
         mdTypeRef eventHandlerRef;
         THROW_IF_FAILED(image->DefineTypeRefByName(systemRuntimeRef, W("System.EventHandler"), &eventHandlerRef));
-        
+
         mdEvent event1;
         THROW_IF_FAILED(image->DefineEvent(type1, W("Event1"), 0, eventHandlerRef, mdMethodDefNil, mdMethodDefNil, mdMethodDefNil, nullptr, &event1));
 
@@ -163,59 +165,86 @@ namespace
     }
 }
 
-std::vector<MetadataFile> MetadataFilesInDirectory(std::string directory)
+std::vector<MetadataFile> MetadataFilesInDirectory(pal::path directory)
 {
-    std::cout << "Discovering metadata files in directory: " << directory << std::endl;
+    pal::cout() << X("Discovering metadata files in directory: ") << directory << std::endl;
     std::vector<MetadataFile> scenarios;
 
-    if (!std::filesystem::exists(directory))
+    if (!pal::FileExists(directory))
     {
-        std::cout << "Directory '" << directory << "' does not exist" << std::endl;
+        pal::cout() << X("Directory '") << directory << X("' does not exist") << std::endl;
+        return scenarios;
+    }
+#ifdef BUILD_WINDOWS
+    pal::path pattern = directory + X("\\*.dll");
+    WIN32_FIND_DATAW findData;
+    auto findHandle = FindFirstFileW(pattern.c_str(), &findData);
+    if (findHandle == INVALID_HANDLE_VALUE)
+    {
         return scenarios;
     }
 
-    for (auto& entry : std::filesystem::directory_iterator(directory))
+    do
     {
-        if (entry.is_regular_file())
+        if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
         {
-            auto path = entry.path();
-            auto ext = path.extension();
-            if (ext == ".dll")
-            {
-                // Some of the DLLs in our search paths are native,
-                // so we need to filter to the managed ones.
-                // We could try opening them and skip them if they don't have any metadata,
-                // but that is slow and we don't want to do that for test discovery.
-                // Instead, we'll use the following heuristic to determine if the DLL is managed:
-                // - If the file name contains '.Native.', then it's not managed
-                // - If the file name contains '.Thunk.', then it's not managed
-                // - If the file name starts with 'System.' or 'Microsoft.', then it's managed
-
-                auto fileName = path.filename().generic_string();
-
-                if (fileName.find(".Native.") != std::string::npos
-                    || fileName.find(".Thunk.") != std::string::npos)
-                {
-                    continue;
-                }
-
-                if (fileName.find("System.") != 0
-                    && fileName.find("Microsoft.") != 0)
-                {
-                    continue;
-                }
-
-#ifdef BUILD_WINDOWS
-                std::wcout << "Found file: " << entry.path().filename() << std::endl;
-#else
-                std::cout << "Found file: " << entry.path().filename() << std::endl;
-#endif
-
-                scenarios.emplace_back(MetadataFile::Kind::OnDisk, path.generic_string());
-            }
+            continue;
         }
+
+        auto fileName = findData.cFileName;
+        if (wcsstr(fileName, L".Native.") != nullptr
+            || wcsstr(fileName, L".Thunk.") != nullptr)
+        {
+            continue;
+        }
+
+        if (wcsstr(fileName, L"System.") != fileName
+            && wcsstr(fileName, L"Microsoft.") != fileName)
+        {
+            continue;
+        }
+
+        std::wcout << "Found file: " << fileName << std::endl;
+        scenarios.emplace_back(MetadataFile::Kind::OnDisk, fileName);
+    } while (FindNextFileW(findHandle, &findData));
+#else
+    DIR* dirInfo;
+    dirent *file;
+    if ((dirInfo = opendir(directory.c_str())) == nullptr)
+    {
+        return scenarios;
     }
 
+    while ((file = readdir(dirInfo)) != nullptr)
+    {
+        if (file->d_type != DT_REG)
+        {
+            continue;
+        }
+
+        auto fileName = file->d_name;
+        if (strstr(fileName, ".Native.") != nullptr
+            || strstr(fileName, ".Thunk.") != nullptr)
+        {
+            continue;
+        }
+
+        if (strstr(fileName, "System.") != fileName
+            && strstr(fileName, "Microsoft.") != fileName)
+        {
+            continue;
+        }
+
+        if (strstr(fileName, ".dll") == nullptr)
+        {
+            continue;
+        }
+
+        std::cout << "Found file: " << fileName << std::endl;
+        scenarios.emplace_back(MetadataFile::Kind::OnDisk, fileName);
+    }
+
+#endif
     return scenarios;
 }
 
@@ -224,15 +253,15 @@ std::vector<MetadataFile> CoreLibFiles()
     std::cout << "Discovering CoreLib files" << std::endl;
     std::vector<MetadataFile> scenarios;
 
-    scenarios.emplace_back(MetadataFile::Kind::OnDisk, (baselinePath.parent_path() / "System.Private.CoreLib.dll").generic_string(), "System_Private_CoreLib");
+    scenarios.emplace_back(MetadataFile::Kind::OnDisk, (GetBaselineDirectory() + X("/System.Private.CoreLib.dll")), "System_Private_CoreLib");
 
 #ifdef BUILD_WINDOWS
-    scenarios.emplace_back(MetadataFile::Kind::OnDisk, (std::filesystem::path(FindFrameworkInstall("v4.0.30319")) / "mscorlib.dll").generic_string(), "4_0_mscorlib");
+    scenarios.emplace_back(MetadataFile::Kind::OnDisk, FindFrameworkInstall(X("v4.0.30319")).append(X("\\mscorlib.dll")), "4_0_mscorlib");
 
-    auto fx2mscorlib = std::filesystem::path(FindFrameworkInstall("v2.0.50727")) / "mscorlib.dll";
-    if (std::filesystem::exists(fx2mscorlib))
+    auto fx2mscorlib = FindFrameworkInstall(X("v2.0.50727")).append(X("\\mscorlib.dll"));
+    if (pal::FileExists(fx2mscorlib))
     {
-        scenarios.emplace_back(MetadataFile::Kind::OnDisk, fx2mscorlib.generic_string(), "2_0_mscorlib");
+        scenarios.emplace_back(MetadataFile::Kind::OnDisk, fx2mscorlib, "2_0_mscorlib");
     }
 #endif
     return scenarios;
@@ -265,7 +294,31 @@ span<uint8_t> GetMetadataForFile(MetadataFile file)
     malloc_span<uint8_t> b;
     if (file.kind == MetadataFile::Kind::OnDisk)
     {
-        auto path = baselinePath.parent_path() / file.pathOrKey;
+        pal::path pathOrKey;
+
+#ifdef BUILD_WINDOWS
+            wil::AdaptFixedSizeToAllocatedResult(pathOrKey, [&](LPWSTR value, size_t valueLength, size_t* valueLengthNeededWithNul)
+            {
+                *valueLengthNeededWithNul = ::MultiByteToWideChar(CP_UTF8, 0, file.pathOrKey.c_str(), (int)file.pathOrKey.size(), value, (int)valueLength) + 1;
+                if (*valueLengthNeededWithNul == 0)
+                {
+                    return HRESULT_FROM_WIN32(GetLastError());
+                }
+                return S_OK;
+            });
+#else
+            pathOrKey = file.pathOrKey;
+#endif
+
+        pal::path path;
+        if (pathOrKey[0] == X('/'))
+        {
+            path = pathOrKey;
+        }
+        else
+        {
+            path = baselinePath.substr(0, baselinePath.find_last_of('/')) + X("/") + pathOrKey;
+        }
         b = ReadMetadataFromFile(path);
     }
     else
@@ -294,7 +347,7 @@ std::string PrintName(testing::TestParamInfo<MetadataFile> info)
     std::string name;
     if (info.param.kind == MetadataFile::Kind::OnDisk)
     {
-        name = std::filesystem::path(info.param.pathOrKey).stem().generic_string();
+        name = info.param.pathOrKey.substr(0, info.param.pathOrKey.find_last_of('.'));
         std::replace(name.begin(), name.end(), '.', '_');
     }
     else
@@ -304,17 +357,17 @@ std::string PrintName(testing::TestParamInfo<MetadataFile> info)
     return name;
 }
 
-std::string GetBaselineDirectory()
+pal::path GetBaselineDirectory()
 {
-    return baselinePath.parent_path().string();
+    return baselinePath.substr(0, baselinePath.find_last_of(X('/')));
 }
 
-void SetBaselineModulePath(std::filesystem::path path)
+void SetBaselineModulePath(pal::path path)
 {
     baselinePath = std::move(path);
 }
 
-void SetRegressionAssemblyPath(std::string path)
+void SetRegressionAssemblyPath(pal::path path)
 {
     regressionAssemblyPath = path;
 }
@@ -324,13 +377,13 @@ malloc_span<uint8_t> GetRegressionAssemblyMetadata()
     return ReadMetadataFromFile(regressionAssemblyPath);
 }
 
-std::string FindFrameworkInstall(std::string version)
+pal::path FindFrameworkInstall(pal::path version)
 {
-    std::cout << "Discovering framework install for version: " << version << std::endl;
+    pal::cout() << X("Discovering framework install for version: ") << version << std::endl;
 #ifdef BUILD_WINDOWS
     auto key = wil::reg::create_unique_key(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\.NETFramework");
-    std::filesystem::path installPath{ wil::reg::get_value_string(key.get(), L"InstallRoot") };
-    return (installPath / version).generic_string();
+    pal::path installPath{ wil::reg::get_value_string(key.get(), L"InstallRoot") };
+    return installPath.append(version);
 #else
     return {};
 #endif

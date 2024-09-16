@@ -3,7 +3,7 @@
 TEST(FieldRva, Define)
 {
     // Define a field
-    dncp::com_ptr<IMetaDataEmit> emit;
+    minipal::com_ptr<IMetaDataEmit> emit;
     ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
     mdFieldDef field;
     mdTypeDef type;
@@ -16,7 +16,7 @@ TEST(FieldRva, Define)
     ASSERT_EQ(S_OK, emit->SetFieldRVA(field, rva));
 
     // Read the field marshal signature
-    dncp::com_ptr<IMetaDataImport> import;
+    minipal::com_ptr<IMetaDataImport> import;
     ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
 
     DWORD readRva = 0;

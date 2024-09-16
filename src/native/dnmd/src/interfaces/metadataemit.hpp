@@ -6,8 +6,8 @@
 #include "controllingiunknown.hpp"
 #include "dnmdowner.hpp"
 
-#include <external/cor.h>
-#include <external/corhdr.h>
+#include <cor.h>
+#include <corhdr.h>
 
 #include <cstdint>
 #include <atomic>

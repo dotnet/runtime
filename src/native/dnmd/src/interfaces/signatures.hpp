@@ -4,7 +4,7 @@
 #include <internal/dnmd_platform.hpp>
 #include <internal/span.hpp>
 
-#include <external/cor.h>
+#include <cor.h>
 
 #include <array>
 #include <cstdint>

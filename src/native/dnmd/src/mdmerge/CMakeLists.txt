@@ -8,10 +8,12 @@ add_executable(mdmerge
 
 target_link_libraries(mdmerge
   dnmd::dnmd
-  dncp::dncp)
+  minipal_com)
 
 if(NOT MSVC)
-  target_link_libraries(mdmerge dncp::winhdrs)
+  target_link_libraries(mdmerge minipal_comhdrs)
 endif()
 
-install(TARGETS mdmerge)
+if (DNMD_INSTALL)
+  install(TARGETS mdmerge)
+endif()

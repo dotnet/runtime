@@ -6,9 +6,9 @@
 
 namespace TestBaseline
 {
-    extern dncp::com_ptr<IMetaDataDispenser> Metadata;
-    extern dncp::com_ptr<IMetaDataDispenserEx> DeltaMetadataBuilder;
-    extern dncp::com_ptr<ISymUnmanagedBinder> Symbol;
+    extern minipal::com_ptr<IMetaDataDispenser> Metadata;
+    extern minipal::com_ptr<IMetaDataDispenserEx> DeltaMetadataBuilder;
+    extern minipal::com_ptr<ISymUnmanagedBinder> Symbol;
 }
 
 #endif // !_TEST_REGTEST_BASELINE_H_

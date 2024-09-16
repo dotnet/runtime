@@ -2,7 +2,7 @@
 
 TEST(Param, Define)
 {
-    dncp::com_ptr<IMetaDataEmit> emit;
+    minipal::com_ptr<IMetaDataEmit> emit;
     ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
     mdParamDef param;
     mdMethodDef method;
@@ -13,7 +13,7 @@ TEST(Param, Define)
     ASSERT_EQ(1, RidFromToken(param));
     ASSERT_EQ(mdtParamDef, TypeFromToken(param));
 
-    dncp::com_ptr<IMetaDataImport> import;
+    minipal::com_ptr<IMetaDataImport> import;
     ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
 
     WSTR_string readName;
@@ -25,7 +25,7 @@ TEST(Param, Define)
     DWORD paramConstType;
     UVCP_CONSTANT constValue;
     ULONG constValueLength;
-    ASSERT_EQ(S_OK, import->GetParamProps(param, & readMethod, & sequence, readName.data(), (ULONG)readName.capacity(), & readNameLength, & flags, & paramConstType, & constValue, & constValueLength));
+    ASSERT_EQ(S_OK, import->GetParamProps(param, & readMethod, & sequence, &readName[0], (ULONG)readName.capacity(), & readNameLength, & flags, & paramConstType, & constValue, & constValueLength));
 
     EXPECT_EQ(paramName, readName.substr(0, readNameLength - 1));
     EXPECT_EQ(method, readMethod);
@@ -38,7 +38,7 @@ TEST(Param, Define)
 
 TEST(Param, DefineWithConstant)
 {
-    dncp::com_ptr<IMetaDataEmit> emit;
+    minipal::com_ptr<IMetaDataEmit> emit;
     ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
     mdParamDef param;
     mdMethodDef method;
@@ -51,7 +51,7 @@ TEST(Param, DefineWithConstant)
     ASSERT_EQ(1, RidFromToken(param));
     ASSERT_EQ(mdtParamDef, TypeFromToken(param));
 
-    dncp::com_ptr<IMetaDataImport> import;
+    minipal::com_ptr<IMetaDataImport> import;
     ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
 
     WSTR_string readName;
@@ -63,7 +63,7 @@ TEST(Param, DefineWithConstant)
     DWORD paramConstType;
     UVCP_CONSTANT constValue;
     ULONG constValueLength;
-    ASSERT_EQ(S_OK, import->GetParamProps(param, & readMethod, & sequence, readName.data(), (ULONG)readName.capacity(), & readNameLength, & flags, & paramConstType, & constValue, & constValueLength));
+    ASSERT_EQ(S_OK, import->GetParamProps(param, & readMethod, & sequence, &readName[0], (ULONG)readName.capacity(), & readNameLength, & flags, & paramConstType, & constValue, & constValueLength));
 
     EXPECT_EQ(paramName, readName.substr(0, readNameLength - 1));
     EXPECT_EQ(method, readMethod);
@@ -81,7 +81,7 @@ TEST(Param, DefineWithConstant)
 
 TEST(Param, DefineWithConstantString)
 {
-    dncp::com_ptr<IMetaDataEmit> emit;
+    minipal::com_ptr<IMetaDataEmit> emit;
     ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
     mdParamDef param;
     mdMethodDef method;
@@ -94,7 +94,7 @@ TEST(Param, DefineWithConstantString)
     ASSERT_EQ(1, RidFromToken(param));
     ASSERT_EQ(mdtParamDef, TypeFromToken(param));
 
-    dncp::com_ptr<IMetaDataImport> import;
+    minipal::com_ptr<IMetaDataImport> import;
     ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
 
     WSTR_string readName;
@@ -106,7 +106,7 @@ TEST(Param, DefineWithConstantString)
     DWORD paramConstType;
     UVCP_CONSTANT constValue;
     ULONG constValueLength;
-    ASSERT_EQ(S_OK, import->GetParamProps(param, &readMethod, &sequence, readName.data(), (ULONG)readName.capacity(), &readNameLength, &flags, &paramConstType, &constValue, &constValueLength));
+    ASSERT_EQ(S_OK, import->GetParamProps(param, &readMethod, &sequence, &readName[0], (ULONG)readName.capacity(), &readNameLength, &flags, &paramConstType, &constValue, &constValueLength));
 
     EXPECT_EQ(paramName, readName.substr(0, readNameLength - 1));
     EXPECT_EQ(method, readMethod);
@@ -122,7 +122,7 @@ TEST(Param, DefineWithConstantString)
 
 TEST(Param, DefineOutOfOrder)
 {
-    dncp::com_ptr<IMetaDataEmit> emit;
+    minipal::com_ptr<IMetaDataEmit> emit;
     ASSERT_NO_FATAL_FAILURE(CreateEmit(emit));
     mdParamDef param1;
     mdParamDef param;
@@ -136,7 +136,7 @@ TEST(Param, DefineOutOfOrder)
     ASSERT_EQ(2, RidFromToken(param));
     ASSERT_EQ(mdtParamDef, TypeFromToken(param));
 
-    dncp::com_ptr<IMetaDataImport> import;
+    minipal::com_ptr<IMetaDataImport> import;
     ASSERT_EQ(S_OK, emit->QueryInterface(IID_IMetaDataImport, (void**)&import));
 
     HCORENUM paramEnum = nullptr;

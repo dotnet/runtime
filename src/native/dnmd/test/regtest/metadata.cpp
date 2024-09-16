@@ -542,7 +542,7 @@ namespace
             for (ULONG i = 0; i < returned; ++i)
                 tokens.push_back(tokensBuffer[i]);
         }
-        dncp::com_ptr<IMetaDataImport2> mdImport;
+        minipal::com_ptr<IMetaDataImport2> mdImport;
         HRESULT hr = import->QueryInterface(IID_IMetaDataImport2, (void**)&mdImport);
         EXPECT_HRESULT_SUCCEEDED(hr);
         ValidateAndCloseEnum(mdImport, hcorenum, (ULONG)tokens.size());
@@ -561,7 +561,7 @@ namespace
             for (ULONG i = 0; i < returned; ++i)
                 tokens.push_back(tokensBuffer[i]);
         }
-        dncp::com_ptr<IMetaDataImport2>  mdImport;
+        minipal::com_ptr<IMetaDataImport2>  mdImport;
         HRESULT hr = import->QueryInterface(IID_IMetaDataImport2, (void**)&mdImport);
         EXPECT_HRESULT_SUCCEEDED(hr);
         ValidateAndCloseEnum(mdImport, hcorenum, (ULONG)tokens.size());
@@ -580,7 +580,7 @@ namespace
             for (ULONG i = 0; i < returned; ++i)
                 tokens.push_back(tokensBuffer[i]);
         }
-        dncp::com_ptr<IMetaDataImport2>  mdImport;
+        minipal::com_ptr<IMetaDataImport2>  mdImport;
         HRESULT hr = import->QueryInterface(IID_IMetaDataImport2, (void**)&mdImport);
         EXPECT_HRESULT_SUCCEEDED(hr);
         ValidateAndCloseEnum(mdImport, hcorenum, (ULONG)tokens.size());
@@ -599,7 +599,7 @@ namespace
             for (ULONG i = 0; i < returned; ++i)
                 tokens.push_back(tokensBuffer[i]);
         }
-        dncp::com_ptr<IMetaDataImport2>  mdImport;
+        minipal::com_ptr<IMetaDataImport2>  mdImport;
         HRESULT hr = import->QueryInterface(IID_IMetaDataImport2, (void**)&mdImport);
         EXPECT_HRESULT_SUCCEEDED(hr);
         ValidateAndCloseEnum(mdImport, hcorenum, (ULONG)tokens.size());
@@ -1623,12 +1623,12 @@ TEST(FindTest, FindAPIs)
 {
     malloc_span<uint8_t> metadata = GetRegressionAssemblyMetadata();
 
-    dncp::com_ptr<IMetaDataImport2> baselineImport;
+    minipal::com_ptr<IMetaDataImport2> baselineImport;
     ASSERT_HRESULT_SUCCEEDED(CreateImport(TestBaseline::Metadata, metadata, (uint32_t)metadata.size(), &baselineImport));
     // Load metadata
-    dncp::com_ptr<IMetaDataImport2> currentImport;
+    minipal::com_ptr<IMetaDataImport2> currentImport;
 
-    dncp::com_ptr<IMetaDataDispenser> dispenser;
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
     ASSERT_HRESULT_SUCCEEDED(GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
 
     ASSERT_HRESULT_SUCCEEDED(CreateImport(dispenser, metadata, (uint32_t)metadata.size(), &currentImport));
@@ -1771,12 +1771,12 @@ TEST_P(MetadataImportTest, ImportAPIs)
     uint32_t dataLen = (uint32_t)blob.size();
 
     // Load metadata
-    dncp::com_ptr<IMetaDataImport2> baselineImport;
+    minipal::com_ptr<IMetaDataImport2> baselineImport;
     ASSERT_HRESULT_SUCCEEDED(CreateImport(TestBaseline::Metadata, data, dataLen, &baselineImport));
-    
-    dncp::com_ptr<IMetaDataDispenser> dispenser;
+
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
     ASSERT_HRESULT_SUCCEEDED(GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
-    dncp::com_ptr<IMetaDataImport2> currentImport;
+    minipal::com_ptr<IMetaDataImport2> currentImport;
     ASSERT_HRESULT_SUCCEEDED(CreateImport(dispenser, data, dataLen, &currentImport));
 
     // Verify APIs
@@ -1941,9 +1941,9 @@ TEST_P(MetadataImportTest, ImportAPIs)
         }
     }
 
-    dncp::com_ptr<IMetaDataAssemblyImport> baselineAssembly;
+    minipal::com_ptr<IMetaDataAssemblyImport> baselineAssembly;
     ASSERT_THAT(S_OK, baselineImport->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&baselineAssembly));
-    dncp::com_ptr<IMetaDataAssemblyImport> currentAssembly;
+    minipal::com_ptr<IMetaDataAssemblyImport> currentAssembly;
     ASSERT_THAT(S_OK, currentImport->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&currentAssembly));
 
     TokenList assemblyTokens;
@@ -1991,8 +1991,8 @@ TEST_P(MetadataImportTest, ImportAPIs)
 
 INSTANTIATE_TEST_SUITE_P(MetaDataImportTestCore, MetadataImportTest, testing::ValuesIn(MetadataFilesInDirectory(GetBaselineDirectory())), PrintName);
 
-INSTANTIATE_TEST_SUITE_P(MetaDataImportTestFx4_0, MetadataImportTest, testing::ValuesIn(MetadataFilesInDirectory(FindFrameworkInstall("v4.0.30319"))), PrintName);
-INSTANTIATE_TEST_SUITE_P(MetaDataImportTestFx2_0, MetadataImportTest, testing::ValuesIn(MetadataFilesInDirectory(FindFrameworkInstall("v2.0.50727"))), PrintName);
+INSTANTIATE_TEST_SUITE_P(MetaDataImportTestFx4_0, MetadataImportTest, testing::ValuesIn(MetadataFilesInDirectory(FindFrameworkInstall(X("v4.0.30319")))), PrintName);
+INSTANTIATE_TEST_SUITE_P(MetaDataImportTestFx2_0, MetadataImportTest, testing::ValuesIn(MetadataFilesInDirectory(FindFrameworkInstall(X("v2.0.50727")))), PrintName);
 
 INSTANTIATE_TEST_SUITE_P(MetaDataImportTest_IndirectionTables, MetadataImportTest, testing::Values(MetadataFile{ MetadataFile::Kind::Generated, IndirectionTablesKey }), PrintName);
 
@@ -2008,12 +2008,12 @@ TEST_P(MetaDataLongRunningTest, ImportAPIs)
     uint32_t dataLen = (uint32_t)blob.size();
 
     // Load metadata
-    dncp::com_ptr<IMetaDataImport2> baselineImport;
+    minipal::com_ptr<IMetaDataImport2> baselineImport;
     ASSERT_HRESULT_SUCCEEDED(CreateImport(TestBaseline::Metadata, data, dataLen, &baselineImport));
 
-    dncp::com_ptr<IMetaDataDispenser> dispenser;
+    minipal::com_ptr<IMetaDataDispenser> dispenser;
     ASSERT_HRESULT_SUCCEEDED(GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
-    dncp::com_ptr<IMetaDataImport2> currentImport;
+    minipal::com_ptr<IMetaDataImport2> currentImport;
     ASSERT_HRESULT_SUCCEEDED(CreateImport(dispenser, data, dataLen, &currentImport));
 
     static auto VerifyFindMemberRef = [](IMetaDataImport2 * import, mdToken memberRef) -> std::vector<uint32_t>
