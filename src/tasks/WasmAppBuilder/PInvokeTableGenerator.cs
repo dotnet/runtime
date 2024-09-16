@@ -28,13 +28,13 @@ internal sealed class PInvokeTableGenerator
     private readonly bool _isLibraryMode;
     private readonly string _runtimeIdentifier;
 
-    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode = false, string runtimeIdentifier = "browser-wasm")
+    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, string runtimeIdentifier, bool isLibraryMode = false)
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
         _pinvokeCollector = new(log);
-        _isLibraryMode = isLibraryMode;
         _runtimeIdentifier = runtimeIdentifier;
+        _isLibraryMode = isLibraryMode;
     }
 
     public void ScanAssembly(Assembly asm)

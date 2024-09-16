@@ -73,7 +73,7 @@ public class ManagedToNativeGenerator : Task
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
         if (ShouldRun(managedAssemblies))
         {
-            var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode, RuntimeIdentifier);
+            var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, RuntimeIdentifier, IsLibraryMode);
             var icall = new IcallTableGenerator(RuntimeIcallTableFile, FixupSymbolName, log);
 
             var resolver = new PathAssemblyResolver(managedAssemblies);
