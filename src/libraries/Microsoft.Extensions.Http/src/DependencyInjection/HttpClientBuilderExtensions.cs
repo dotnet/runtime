@@ -15,7 +15,7 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// Extension methods for configuring an <see cref="IHttpClientBuilder"/>
+    /// Extension methods for configuring an <see cref="IHttpClientBuilder"/>.
     /// </summary>
     public static partial class HttpClientBuilderExtensions
     {
@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="configureHandler">A delegate that is used to create a <see cref="DelegatingHandler"/>.</param>
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
-        /// The <see paramref="configureHandler"/> delegate should return a new instance of the message handler each time it
+        /// The <paramref name="configureHandler"/> delegate should return a new instance of the message handler each time it
         /// is invoked.
         /// </remarks>
         public static IHttpClientBuilder AddHttpMessageHandler(this IHttpClientBuilder builder, Func<DelegatingHandler> configureHandler)
@@ -88,10 +88,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Adds a delegate that will be used to create an additional message handler for a named <see cref="HttpClient"/>.
         /// </summary>
         /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
-        /// <param name="configureHandler">A delegate that is used to create a <see cref="DelegatingHandler"/>.</param>       /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
+        /// <param name="configureHandler">A delegate that is used to create a <see cref="DelegatingHandler"/>.</param>
+        /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// The <see paramref="configureHandler"/> delegate should return a new instance of the message handler each time it
+        /// The <paramref name="configureHandler"/> delegate should return a new instance of the message handler each time it
         /// is invoked.
         /// </para>
         /// <para>
@@ -147,7 +148,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="configureHandler">A delegate that is used to create an <see cref="HttpMessageHandler"/>.</param>
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
-        /// The <see paramref="configureHandler"/> delegate should return a new instance of the message handler each time it
+        /// The <paramref name="configureHandler"/> delegate should return a new instance of the message handler each time it
         /// is invoked.
         /// </remarks>
         public static IHttpClientBuilder ConfigurePrimaryHttpMessageHandler(this IHttpClientBuilder builder, Func<HttpMessageHandler> configureHandler)
@@ -172,7 +173,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// The <see paramref="configureHandler"/> delegate should return a new instance of the message handler each time it
+        /// The <paramref name="configureHandler"/> delegate should return a new instance of the message handler each time it
         /// is invoked.
         /// </para>
         /// <para>
@@ -195,7 +196,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         /// <summary>
         /// Configures the primary <see cref="HttpMessageHandler"/> from the dependency injection container
-        /// for a  named <see cref="HttpClient"/>.
+        /// for a named <see cref="HttpClient"/>.
         /// </summary>
         /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>

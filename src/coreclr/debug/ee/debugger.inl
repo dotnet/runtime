@@ -52,15 +52,13 @@ inline DebuggerModuleTable * Debugger::GetModuleTable()
 // @dbgtodo inspection - get rid of this entire class as we move things out-of-proc.
 //-----------------------------------------------------------------------------
 inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
-                                      DomainAssembly *  pDomainAssembly,
-                                      AppDomain *   pAppDomain) :
+                                      DomainAssembly *  pDomainAssembly) :
         m_enableClassLoadCallbacks(FALSE),
         m_pRuntimeModule(pRuntimeModule),
-        m_pRuntimeDomainAssembly(pDomainAssembly),
-        m_pAppDomain(pAppDomain)
+        m_pRuntimeDomainAssembly(pDomainAssembly)
 {
-    LOG((LF_CORDB,LL_INFO10000, "DM::DM this:0x%x Module:0x%x DF:0x%x AD:0x%x\n",
-        this, pRuntimeModule, pDomainAssembly, pAppDomain));
+    LOG((LF_CORDB,LL_INFO10000, "DM::DM this:0x%x Module:0x%x DF:0x%x\n",
+        this, pRuntimeModule, pDomainAssembly));
 
     // Do we have any optimized code?
     DWORD dwDebugBits = pRuntimeModule->GetDebuggerInfoBits();
@@ -117,14 +115,6 @@ inline void DebuggerModule::EnableClassLoadCallbacks(BOOL f)
 
         m_enableClassLoadCallbacks = f;
     }
-}
-
-//-----------------------------------------------------------------------------
-// Return the appdomain that this module exists in.
-//-----------------------------------------------------------------------------
-inline AppDomain* DebuggerModule::GetAppDomain()
-{
-    return m_pAppDomain;
 }
 
 //-----------------------------------------------------------------------------
