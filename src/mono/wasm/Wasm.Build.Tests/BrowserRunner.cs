@@ -135,16 +135,23 @@ internal class BrowserRunner : IAsyncDisposable
                 attempt++;
                 _testOutput.WriteLine($"Attempt {attempt} failed with TimeoutException: {ex.Message}");
 
-                // Cleanup before retrying
-                if (Browser != null)
+                try
                 {
-                    await Browser.CloseAsync();
-                    Browser = null;
+                    // Cleanup before retrying
+                    if (Browser != null)
+                    {
+                        await Browser.CloseAsync();
+                        Browser = null;
+                    }
+                    if (Playwright != null)
+                    {
+                        Playwright.Dispose();
+                        Playwright = null;
+                    }
                 }
-                if (Playwright != null)
+                catch(Exception ex)
                 {
-                    Playwright.Dispose();
-                    Playwright = null;
+                    _testOutput.WriteLine($"Attempt to clean up failed with {ex}");
                 }
             }
         }
