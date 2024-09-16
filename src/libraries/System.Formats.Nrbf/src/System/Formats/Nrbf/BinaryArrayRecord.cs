@@ -28,18 +28,37 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     ];
 
     private TypeName? _typeName;
+    private long _totalElementsCount;
 
     private BinaryArrayRecord(ArrayInfo arrayInfo, MemberTypeInfo memberTypeInfo)
         : base(arrayInfo)
     {
         MemberTypeInfo = memberTypeInfo;
         Values = [];
+        // We need to parse all elements of the jagged array to obtain total elements count.
+        _totalElementsCount = -1;
     }
 
     public override SerializationRecordType RecordType => SerializationRecordType.BinaryArray;
 
     /// <inheritdoc/>
     public override ReadOnlySpan<int> Lengths => new int[1] { Length };
+
+    /// <inheritdoc/>
+    public override long FlattenedLength
+    {
+        get
+        {
+            if (_totalElementsCount < 0)
+            {
+                _totalElementsCount = IsJagged
+                    ? GetJaggedArrayFlattenedLength(this)
+                    : ArrayInfo.FlattenedLength;
+            }
+
+            return _totalElementsCount;
+        }
+    }
 
     public override TypeName TypeName
         => _typeName ??= MemberTypeInfo.GetArrayTypeName(ArrayInfo);
@@ -172,6 +191,65 @@ internal sealed class BinaryArrayRecord : ArrayRecord
         return memberTypeInfo.ShouldBeRepresentedAsArrayOfClassRecords()
             ? new ArrayOfClassesRecord(arrayInfo, memberTypeInfo)
             : new BinaryArrayRecord(arrayInfo, memberTypeInfo);
+    }
+
+    private static long GetJaggedArrayFlattenedLength(BinaryArrayRecord jaggedArrayRecord)
+    {
+        long result = 0;
+        Queue<BinaryArrayRecord>? jaggedArrayRecords = null;
+
+        do
+        {
+            if (jaggedArrayRecords is not null)
+            {
+                jaggedArrayRecord = jaggedArrayRecords.Dequeue();
+            }
+
+            Debug.Assert(jaggedArrayRecord.IsJagged);
+
+            // In theory somebody could create a payload that would represent
+            // a very nested array with total elements count > long.MaxValue.
+            // That is why this method is using checked arithmetic.
+            result = checked(result + jaggedArrayRecord.Length); // count the arrays themselves
+
+            foreach (object value in jaggedArrayRecord.Values)
+            {
+                if (value is not SerializationRecord record)
+                {
+                    continue;
+                }
+
+                if (record.RecordType == SerializationRecordType.MemberReference)
+                {
+                    record = ((MemberReferenceRecord)record).GetReferencedRecord();
+                }
+
+                switch (record.RecordType)
+                {
+                    case SerializationRecordType.ArraySinglePrimitive:
+                    case SerializationRecordType.ArraySingleObject:
+                    case SerializationRecordType.ArraySingleString:
+                    case SerializationRecordType.BinaryArray:
+                        ArrayRecord nestedArrayRecord = (ArrayRecord)record;
+                        if (nestedArrayRecord.IsJagged)
+                        {
+                            (jaggedArrayRecords ??= new()).Enqueue((BinaryArrayRecord)nestedArrayRecord);
+                        }
+                        else
+                        {
+                            // Don't call nestedArrayRecord.FlattenedLength to avoid any potential recursion,
+                            // just call nestedArrayRecord.ArrayInfo.FlattenedLength that returns pre-computed value.
+                            result = checked(result + nestedArrayRecord.ArrayInfo.FlattenedLength);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        while (jaggedArrayRecords is not null && jaggedArrayRecords.Count > 0);
+
+        return result;
     }
 
     private protected override void AddValue(object value) => Values.Add(value);
