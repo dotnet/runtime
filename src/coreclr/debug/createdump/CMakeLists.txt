@@ -87,6 +87,7 @@ else()
         ${CREATEDUMP_SOURCES}
     )
 endif(CLR_CMAKE_HOST_OSX)
+target_link_libraries(createdump_static PRIVATE minipal)
 
     add_executable_clr(createdump
         main.cpp
@@ -103,7 +104,6 @@ endif(CLR_CMAKE_HOST_OSX)
 
 endif(CLR_CMAKE_HOST_WIN32)
 
-target_link_libraries(createdump_static PRIVATE minipal)
 target_link_libraries(createdump PRIVATE minipal)
 
 if (CLR_CMAKE_HOST_APPLE)
