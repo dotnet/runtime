@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="10.0.0-alpha.1.24414.3">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-rc.2.24466.2">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>5e8042fc4234e09540448c06a3da434492dfc91c</Sha>
+      <Sha>48715e786cb907ee56f73ed74c0a19a6181d250f</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="9.0.0-alpha.1.24167.3">
       <Uri>https://github.com/dotnet/msquic</Uri>
@@ -64,14 +64,14 @@
       <Sha>c667bfea9cdbc5b5493e49e7ddc8dd635a217891</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-rc.2.24455.1">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-rc.2.24464.3">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>6e079c23aee94577c17bae34522b52df0d646ca5</Sha>
+      <Sha>c3d83d0ea894e5ee537bfc591fd48e06af8d9166</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="9.0.0-rc.2.24455.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="9.0.0-rc.2.24464.3">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>6e079c23aee94577c17bae34522b52df0d646ca5</Sha>
+      <Sha>c3d83d0ea894e5ee537bfc591fd48e06af8d9166</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
@@ -348,9 +348,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>8674aaa459d33551d419fece377f5512a1d93689</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="9.0.0-alpha.0.24456.2">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="9.0.0-alpha.0.24459.2">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>c370ed67f5dd76ea6289765e6d7788855dbd825a</Sha>
+      <Sha>7ff7b02ec46216eb41d1674d38f087f7e086ded8</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="9.0.0-beta.24419.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
