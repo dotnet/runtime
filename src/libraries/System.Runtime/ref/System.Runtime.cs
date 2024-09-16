@@ -11343,6 +11343,11 @@ namespace System.Numerics
 #nullable disable
             where TOther : System.Numerics.INumberBase<TOther> { throw null; }
 #nullable restore
+        static virtual TSelf CreateTruncating<TOther>(TOther value, bool signPropagation)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther>
+        { throw null; }
+#nullable restore
         static abstract bool IsCanonical(TSelf value);
         static abstract bool IsComplexNumber(TSelf value);
         static abstract bool IsEvenInteger(TSelf value);
@@ -11383,6 +11388,10 @@ namespace System.Numerics
 #nullable disable
             where TOther : System.Numerics.INumberBase<TOther>;
 #nullable restore
+        protected static abstract bool TryConvertFromTruncating<TOther>(TOther value, bool signPropagation, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther>;
+#nullable restore
         protected static abstract bool TryConvertToChecked<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TOther result)
 #nullable disable
             where TOther : System.Numerics.INumberBase<TOther>;
@@ -11392,6 +11401,10 @@ namespace System.Numerics
             where TOther : System.Numerics.INumberBase<TOther>;
 #nullable restore
         protected static abstract bool TryConvertToTruncating<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TOther result)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther>;
+#nullable restore
+        protected static abstract bool TryConvertToTruncating<TOther>(TSelf value, bool signPropagation, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TOther result)
 #nullable disable
             where TOther : System.Numerics.INumberBase<TOther>;
 #nullable restore
