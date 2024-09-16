@@ -149,9 +149,9 @@ internal class BrowserRunner : IAsyncDisposable
                         Playwright = null;
                     }
                 }
-                catch(Exception ex)
+                catch(Exception cleanupException)
                 {
-                    _testOutput.WriteLine($"Attempt to clean up failed with {ex}");
+                    _testOutput.WriteLine($"Attempt to clean up failed with {cleanupException}");
                 }
             }
         }
