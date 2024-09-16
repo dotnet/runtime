@@ -399,13 +399,14 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(tensors[0].Rank);
                 curIndex = curIndexArray.AsSpan(0, tensors[0].Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[tensors[0].Rank];
             }
+            curIndex.Clear();
+
             nint srcIndex;
             nint copyLength;
 
@@ -504,13 +505,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
                 curIndex = curIndexArray.AsSpan(0, right.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[right.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < left.FlattenedLength; i++)
             {
@@ -560,13 +561,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
                 curIndex = curIndexArray.AsSpan(0, x.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -605,13 +606,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Rank);
                 curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -644,13 +645,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
                 curIndex = curIndexArray.AsSpan(0, x.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -689,13 +690,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
                 curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -728,13 +729,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
                 curIndex = curIndexArray.AsSpan(0, x.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -875,13 +876,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
                 curIndex = curIndexArray.AsSpan(0, right.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[right.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < left.FlattenedLength; i++)
             {
@@ -935,13 +936,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
                 curIndex = curIndexArray.AsSpan(0, x.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -995,13 +996,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
                 curIndex = curIndexArray.AsSpan(0, y.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -1084,13 +1085,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
                 curIndex = curIndexArray.AsSpan(0, right.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[right.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < left.FlattenedLength; i++)
             {
@@ -1144,13 +1145,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
                 curIndex = curIndexArray.AsSpan(0, x.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -1204,13 +1205,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
                 curIndex = curIndexArray.AsSpan(0, y.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -1248,13 +1249,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
                 curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -1287,13 +1288,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
                 curIndex = curIndexArray.AsSpan(0, x.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -1326,13 +1327,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
                 curIndex = curIndexArray.AsSpan(0, y.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -1371,13 +1372,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
                 curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -1410,13 +1411,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
                 curIndex = curIndexArray.AsSpan(0, x.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -1449,13 +1450,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
                 curIndex = curIndexArray.AsSpan(0, y.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -1495,13 +1496,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Rank);
                 curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -1534,13 +1535,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
                 curIndex = curIndexArray.AsSpan(0, x.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -1573,13 +1574,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
                 curIndex = curIndexArray.AsSpan(0, y.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -1619,13 +1620,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Rank);
                 curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -1658,13 +1659,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
                 curIndex = curIndexArray.AsSpan(0, x.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -1697,13 +1698,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
                 curIndex = curIndexArray.AsSpan(0, y.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -1787,13 +1788,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
                 curIndex = curIndexArray.AsSpan(0, right.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[right.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < left.FlattenedLength; i++)
             {
@@ -1847,13 +1848,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
                 curIndex = curIndexArray.AsSpan(0, x.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -1907,13 +1908,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
                 curIndex = curIndexArray.AsSpan(0, y.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -1996,13 +1997,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
                 curIndex = curIndexArray.AsSpan(0, right.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[right.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < left.FlattenedLength; i++)
             {
@@ -2056,13 +2057,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
                 curIndex = curIndexArray.AsSpan(0, x.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -2116,13 +2117,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
                 curIndex = curIndexArray.AsSpan(0, y.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -2161,13 +2162,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
                 curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -2200,13 +2201,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
                 curIndex = curIndexArray.AsSpan(0, x.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -2239,13 +2240,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
                 curIndex = curIndexArray.AsSpan(0, y.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -2285,13 +2286,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
                 curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -2324,13 +2325,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
                 curIndex = curIndexArray.AsSpan(0, x.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -2363,13 +2364,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
                 curIndex = curIndexArray.AsSpan(0, y.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i <= y.FlattenedLength; i++)
             {
@@ -2408,13 +2409,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
                 curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -2447,13 +2448,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
                 curIndex = curIndexArray.AsSpan(0, x.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -2486,13 +2487,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
                 curIndex = curIndexArray.AsSpan(0, y.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -2531,13 +2532,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
                 curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -2570,13 +2571,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
                 curIndex = curIndexArray.AsSpan(0, x.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -2609,13 +2610,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
                 curIndex = curIndexArray.AsSpan(0, y.Rank);
-                curIndex.Clear();
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -6757,13 +6758,13 @@ namespace System.Numerics.Tensors
                 {
                     curIndexArray = ArrayPool<nint>.Shared.Rent(input.Lengths.Length);
                     curIndex = curIndexArray.AsSpan(0, input.Rank);
-                    curIndex.Clear();
                 }
                 else
                 {
                     curIndexArray = null;
                     curIndex = stackalloc nint[input.Lengths.Length];
                 }
+                curIndex.Clear();
 
                 int copiedValues = 0;
                 nint rowLength = input.Lengths[^1];
@@ -6809,13 +6810,13 @@ namespace System.Numerics.Tensors
                 {
                     curIndexArray = ArrayPool<nint>.Shared.Rent(input.Lengths.Length);
                     curIndex = curIndexArray.AsSpan(0, input.Rank);
-                    curIndex.Clear();
                 }
                 else
                 {
                     curIndexArray = null;
                     curIndex = stackalloc nint[input.Lengths.Length];
                 }
+                curIndex.Clear();
 
                 int copiedValues = 0;
                 nint rowLength = input.Lengths[^1];
@@ -6861,13 +6862,13 @@ namespace System.Numerics.Tensors
                 {
                     curIndexArray = ArrayPool<nint>.Shared.Rent(input.Lengths.Length);
                     curIndex = curIndexArray.AsSpan(0, input.Rank);
-                    curIndex.Clear();
                 }
                 else
                 {
                     curIndexArray = null;
                     curIndex = stackalloc nint[input.Lengths.Length];
                 }
+                curIndex.Clear();
 
                 int copiedValues = 0;
                 nint rowLength = input.Lengths[^1];
@@ -6925,13 +6926,13 @@ namespace System.Numerics.Tensors
                 {
                     curIndexArray = ArrayPool<nint>.Shared.Rent(newSize.Length);
                     curIndex = curIndexArray.AsSpan(0, newSize.Length);
-                    curIndex.Clear();
                 }
                 else
                 {
                     curIndexArray = null;
                     curIndex = stackalloc nint[newSize.Length];
                 }
+                curIndex.Clear();
 
                 int outputOffset = 0;
                 // neither row contiguous

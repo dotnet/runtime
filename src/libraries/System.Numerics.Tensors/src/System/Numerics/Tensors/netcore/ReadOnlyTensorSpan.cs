@@ -526,13 +526,13 @@ namespace System.Numerics.Tensors
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                     curIndexes = curIndexesArray.AsSpan(0, Rank);
-                    curIndexes.Clear();
                 }
                 else
                 {
                     curIndexesArray = null;
                     curIndexes = stackalloc nint[Rank];
                 }
+                curIndexes.Clear();
 
                 nint copiedValues = 0;
                 TensorSpan<T> slice = destination.Slice(_shape.Lengths);
@@ -573,13 +573,13 @@ namespace System.Numerics.Tensors
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                     curIndexes = curIndexesArray.AsSpan(0, Rank);
-                    curIndexes.Clear();
                 }
                 else
                 {
                     curIndexesArray = null;
                     curIndexes = stackalloc nint[Rank];
                 }
+                curIndexes.Clear();
 
                 nint copiedValues = 0;
                 TensorSpan<T> slice = destination.Slice(_shape.Lengths);
@@ -662,11 +662,9 @@ namespace System.Numerics.Tensors
             {
                 lengthsArray = ArrayPool<nint>.Shared.Rent(Rank);
                 lengths = lengthsArray.AsSpan(0, Rank);
-                lengths.Clear();
 
                 offsetsArray = ArrayPool<nint>.Shared.Rent(Rank);
                 offsets = offsetsArray.AsSpan(0, Rank);
-                offsets.Clear();
             }
             else
             {
@@ -676,6 +674,8 @@ namespace System.Numerics.Tensors
                 lengthsArray = null;
                 offsetsArray = null;
             }
+            lengths.Clear();
+            offsets.Clear();
 
             for (int i = 0; i < ranges.Length; i++)
             {
@@ -685,18 +685,13 @@ namespace System.Numerics.Tensors
             // FlattenedLength is computed everytime so using a local to cache the value.
             nint flattenedLength = FlattenedLength;
             nint index = 0;
-            for (int i = 0; i < offsets.Length; i++)
+
+            if (flattenedLength != 0)
             {
-                // When flattenedLength is 0, at least 1 of the Lengths will be 0 and so will the offset which would trigger this exception even though its valid.
-                // To counteract this we specifically check for the case where the offset is 0 and skip the check.
-                if ((nuint)offsets[i] != 0 && (nuint)offsets[i] >= (nuint)Lengths[i])
-                    ThrowHelper.ThrowIndexOutOfRangeException();
-
-                if (lengths[i] > Lengths[i])
-                    ThrowHelper.ThrowIndexOutOfRangeException();
-
-                if (flattenedLength != 0)
+                for (int i = 0; i < offsets.Length; i++)
+                {
                     index += Strides[i] * (offsets[i]);
+                }
             }
 
             if ((index >= _shape._memoryLength || index < 0) && flattenedLength != 0)
@@ -727,13 +722,13 @@ namespace System.Numerics.Tensors
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                     curIndexes = curIndexesArray.AsSpan(0, Rank);
-                    curIndexes.Clear();
                 }
                 else
                 {
                     curIndexesArray = null;
                     curIndexes = stackalloc nint[Rank];
                 }
+                curIndexes.Clear();
 
                 nint copiedValues = 0;
                 while (copiedValues < _shape.FlattenedLength)
@@ -768,13 +763,13 @@ namespace System.Numerics.Tensors
             {
                 curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                 curIndexes = curIndexesArray.AsSpan(0, Rank);
-                curIndexes.Clear();
             }
             else
             {
                 curIndexesArray = null;
                 curIndexes = stackalloc nint[Rank];
             }
+            curIndexes.Clear();
 
             nint copiedValues = 0;
             while (copiedValues < _shape.FlattenedLength)
