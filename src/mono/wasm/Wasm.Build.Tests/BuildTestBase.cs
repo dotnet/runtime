@@ -275,7 +275,7 @@ namespace Wasm.Build.Tests
 
             // `/.dockerenv` - is to check if this is running in a codespace
             if (File.Exists("/.dockerenv"))
-                args.Append(" --browser-arg=--no-sandbox");            
+                args.Append(" --browser-arg=--no-sandbox");
 
             args.Append(" -- ");
             if (extraXHarnessMonoArgs != null)
