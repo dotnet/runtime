@@ -311,10 +311,9 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
     //
     for (unsigned i = 0; i < newJumpCnt; i++)
     {
-        const bool isNewTest = i == (unsigned)newTestValue;
         if (i < oldJumpCnt)
         {
-            // Not only the default case can point to oldDefaultBb so we replace them all
+            // Not only the default case can point to edgeToExpandDst
             if (oldJumpTab[i]->getDestinationBlock() == edgeToExpandDst)
             {
                 fgRemoveRefPred(oldJumpTab[i]);
@@ -327,7 +326,7 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
             }
         }
 
-        if (isNewTest)
+        if (i == (unsigned)newTestValue)
         {
             newJumpTab[i] = fgAddRefPred(testPassesBb, block);
             newJumpTab[i]->setLikelihood(newTestLikelihood);
