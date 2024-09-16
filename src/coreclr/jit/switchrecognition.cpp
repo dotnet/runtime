@@ -208,8 +208,6 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
     assert(block->KindIs(BBJ_SWITCH));
     JITDUMP("Considering expanding switch " FMT_BB "\n", block->bbNum);
 
-    BBswtDesc* switchTargets = block->GetSwitchTargets();
-
     GenTree* switchOp           = nullptr;
     ssize_t  switchTargetOffset = 0;
     if (!GetSwitchValueOp(block, &switchOp, &switchTargetOffset))
@@ -222,17 +220,17 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
     // to traverse all non-default edges as well (if they point to similar value tests).
     // It shouldn't be too hard to implement (might be TP costly, though).
 
+    BBswtDesc* switchTargets = block->GetSwitchTargets();
     if (!switchTargets->bbsHasDefault)
     {
         JITDUMP("Switch doesn't have a default target - bail out.\n");
         return false;
     }
 
-    FlowEdge* edgeToExpand = switchTargets->getDefault();
-
     // Now let's see if we can merge the value test in the edgeToExpand's destination block
     // with the switch block.
-    BasicBlock* oldCaseBlock = edgeToExpand->getDestinationBlock();
+    FlowEdge*   edgeToExpand    = switchTargets->getDefault();
+    BasicBlock* edgeToExpandDst = edgeToExpand->getDestinationBlock();
 
     // IsConstantTestCondBlock will tell us if the default target is a value test block (e.g. "x == cns")
     // TODO-JumpTable: Add support for more complex tests like "x > 10 && x < 20"
@@ -242,11 +240,14 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
     bool      isReversed;
     GenTree*  variableNode;
     ssize_t   cns;
-    if (!IsConstantTestCondBlock(oldCaseBlock, false, &testPasses, &testFails, &isReversed, &variableNode, &cns))
+    if (!IsConstantTestCondBlock(edgeToExpandDst, false, &testPasses, &testFails, &isReversed, &variableNode, &cns))
     {
         JITDUMP("The default target is not performing a value test - bail out.\n");
         return false;
     }
+
+    BasicBlock* testPassesBb = testPasses->getDestinationBlock();
+    BasicBlock* testFailsBb  = testFails->getDestinationBlock();
 
     if (!GenTree::Compare(variableNode, switchOp))
     {
@@ -261,6 +262,7 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
         return false;
     }
 
+    // We need to normalize the test value to the switch's range
     const ssize_t newTestValue = cns + switchTargetOffset;
 
     unsigned   oldJumpCnt = switchTargets->bbsCount;
@@ -271,72 +273,58 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
     //
     // Update likelihoods
     //
+    weight_t edgeToExpandLikelihood = edgeToExpand->getLikelihood();
+    weight_t newTestLikelihood      = edgeToExpandLikelihood * testPasses->getLikelihood();
+    weight_t newDefLikelihood       = edgeToExpandLikelihood * testFails->getLikelihood();
 
-    weight_t newTestLikelihood = edgeToExpand->getLikelihood() * testPasses->getLikelihood();
-    weight_t newDefLikelihood  = edgeToExpand->getLikelihood() * testFails->getLikelihood();
-
-    // However, it gets tricky if testPasses or testFails are already presented in the jump table
-    // We need to adjust the likelihoods of the new test and the new default target so that the sum
-    // of all unique edges' likelihoods is 1.0 in the new jump table
+    // However, it is tricky if testPasses or testFails are already presented in the jump table.
+    // Switch block currently doesn't support different likelihoods for edges pointing to the same block.
+    // So we need to adjust the existing likelihoods.
     for (unsigned i = 0; i < oldJumpCnt; i++)
     {
-        if (oldJumpTab[i]->getDestinationBlock() == testPasses->getDestinationBlock())
-        {
-            newTestLikelihood =
-                oldJumpTab[i]->getLikelihood() + edgeToExpand->getLikelihood() * testPasses->getLikelihood();
-        }
+        BasicBlock* edgeDstBb      = oldJumpTab[i]->getDestinationBlock();
+        weight_t    edgeLikelihood = oldJumpTab[i]->getLikelihood();
 
-        if (oldJumpTab[i]->getDestinationBlock() == testFails->getDestinationBlock())
+        if (edgeDstBb == testPassesBb)
         {
-            newDefLikelihood =
-                oldJumpTab[i]->getLikelihood() + edgeToExpand->getLikelihood() * testFails->getLikelihood();
+            newTestLikelihood = edgeLikelihood + edgeToExpandLikelihood * testPasses->getLikelihood();
+        }
+        if (edgeDstBb == testFailsBb)
+        {
+            newDefLikelihood = edgeLikelihood + edgeToExpandLikelihood * testFails->getLikelihood();
         }
     }
 
     //
     // Create the new jump table
     //
-
     for (unsigned i = 0; i < newJumpCnt; i++)
     {
         const bool isNewTest = i == (unsigned)newTestValue;
-
         if (i < oldJumpCnt)
         {
             // Not only the default case can point to oldDefaultBb so we replace them all
-            if (oldJumpTab[i]->getDestinationBlock() == oldCaseBlock)
+            if (oldJumpTab[i]->getDestinationBlock() == edgeToExpandDst)
             {
                 fgRemoveRefPred(oldJumpTab[i]);
-                if (isNewTest)
-                {
-                    newJumpTab[i] = fgAddRefPred(testPasses->getDestinationBlock(), block);
-                    newJumpTab[i]->setLikelihood(newTestLikelihood);
-                }
-                else
-                {
-                    newJumpTab[i] = fgAddRefPred(testFails->getDestinationBlock(), block);
-                    newJumpTab[i]->setLikelihood(newDefLikelihood);
-                }
             }
             else
             {
                 // Just copy the old edge
                 newJumpTab[i] = oldJumpTab[i];
+                continue;
             }
+        }
+
+        if (isNewTest)
+        {
+            newJumpTab[i] = fgAddRefPred(testPassesBb, block);
+            newJumpTab[i]->setLikelihood(newTestLikelihood);
         }
         else
         {
-            // At this point all old edges have been copied, so add the new ones now
-            if (isNewTest)
-            {
-                newJumpTab[i] = fgAddRefPred(testPasses->getDestinationBlock(), block);
-                newJumpTab[i]->setLikelihood(newTestLikelihood);
-            }
-            else
-            {
-                newJumpTab[i] = fgAddRefPred(testFails->getDestinationBlock(), block);
-                newJumpTab[i]->setLikelihood(newDefLikelihood);
-            }
+            newJumpTab[i] = fgAddRefPred(testFailsBb, block);
+            newJumpTab[i]->setLikelihood(newDefLikelihood);
         }
     }
 
