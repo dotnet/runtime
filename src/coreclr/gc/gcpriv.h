@@ -5193,8 +5193,6 @@ private:
     PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t current_total_soh_stable_size;
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t last_suspended_end_time;
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t change_heap_count_time;
-    PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t total_change_heap_count;
-    PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t total_change_heap_count_time;
 
     // If the last full GC is blocking, this is that GC's index; for BGC, this is the settings.gc_index
     // when the BGC ended.
@@ -5408,8 +5406,8 @@ private:
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t max_peak_heap_size;
 
     // Sometimes it's difficult to figure out why we get the gen0 min/max budget.
-    // These fields help figure those out.
-    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t llc_size;
+    // These fields help figure those out. Making it volatile so it doesn't get optimized out.
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY VOLATILE(size_t) llc_size;
 
 #ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY gc_history_global bgc_data_global;
@@ -5442,6 +5440,8 @@ private:
 #ifdef DYNAMIC_HEAP_COUNT
     // Number of times we bailed from check_heap_count because we didn't have enough memory for the preparation
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t hc_change_cancelled_count_prep;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t total_change_heap_count;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t total_change_heap_count_time;
 
 #ifdef BACKGROUND_GC
     // We log an entry whenever we needed to create new BGC threads.

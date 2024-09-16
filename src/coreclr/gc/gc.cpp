@@ -783,9 +783,10 @@ public:
         return join_struct.n_threads;
     }
 
+    // This is for instrumentation only.
     int get_join_lock()
     {
-        return join_struct.join_lock;
+        return VolatileLoadWithoutBarrier (&join_struct.join_lock);
     }
 
     void destroy ()
@@ -2425,7 +2426,7 @@ last_recorded_gc_info gc_heap::last_full_blocking_gc_info;
 
 uint64_t    gc_heap::last_alloc_reset_suspended_end_time = 0;
 size_t      gc_heap::max_peak_heap_size = 0;
-size_t      gc_heap::llc_size = 0;
+VOLATILE(size_t) gc_heap::llc_size = 0;
 
 #ifdef BACKGROUND_GC
 last_recorded_gc_info gc_heap::last_bgc_info[2];
