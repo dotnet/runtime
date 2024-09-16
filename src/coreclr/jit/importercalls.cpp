@@ -4190,7 +4190,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Threading_Volatile_WriteBarrier:
             {
                 assert(sig->numArgs == 0);
-                // On XARCH `NI_System_Threading_Volatile_ReadBarrier` fences need not be emitted.
+                // On XARCH `NI_System_Threading_Volatile_ReadBarrier/WriteBarrier` fences need not be emitted.
                 // However, we still need to capture the effect on reordering.
                 retNode = gtNewMemoryBarrier(ni == NI_System_Threading_Volatile_ReadBarrier,
                                              ni == NI_System_Threading_Volatile_WriteBarrier);
