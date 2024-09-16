@@ -977,7 +977,7 @@ static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* p
     MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(
         pDelegateMD->GetLoaderAllocator(),
         pDelegateMD->GetMethodTable(),
-        ILSTUB_MULTICASTDELEGATE_INVOKE,
+        ILSTUB_DELEGATE_SHUFFLE_THUNK,
         pDelegateMD->GetModule(),
         pSig, cbSig,
         &typeContext,

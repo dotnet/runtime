@@ -2512,6 +2512,7 @@ public:
         StubTailCallCallTarget,
 
         StubVirtualStaticMethodDispatch,
+        StubDelegateShuffleThunk,
 
         StubLast
     };

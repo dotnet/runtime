@@ -202,6 +202,9 @@ enum ILStubTypes
     ILSTUB_TAILCALL_STOREARGS            = 0x80000008,
     ILSTUB_TAILCALL_CALLTARGET           = 0x80000009,
     ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB  = 0x8000000A,
+#ifdef TARGET_RISCV64
+    ILSTUB_DELEGATE_SHUFFLE_THUNK        = 0x8000000B,
+#endif
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -238,6 +241,9 @@ inline bool SF_IsInstantiatingStub      (DWORD dwStubFlags) { LIMITED_METHOD_CON
 #endif
 inline bool SF_IsTailCallStoreArgsStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_STOREARGS); }
 inline bool SF_IsTailCallCallTargetStub (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_CALLTARGET); }
+#ifdef TARGET_RISCV64
+inline bool SF_IsDelegateShuffleThunk (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_DELEGATE_SHUFFLE_THUNK); }
+#endif // TARGET_RISCV64
 
 inline bool SF_IsCOMStub               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COM)); }
 inline bool SF_IsCOMLateBoundStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COMLATEBOUND)); }
