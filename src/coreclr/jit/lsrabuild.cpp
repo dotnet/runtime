@@ -3851,8 +3851,8 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
     bool addDelayFreeUses = false;
     // Multi register nodes should no go via this route.
     assert(!node->IsMultiRegNode());
-    if (rmwNode == nullptr || varTypeUsesSameRegType(rmwNode->TypeGet(), node->TypeGet())
-        || (rmwNode->IsMultiRegNode() && varTypeUsesFloatReg(node->TypeGet())))
+    if (rmwNode == nullptr || varTypeUsesSameRegType(rmwNode->TypeGet(), node->TypeGet()) ||
+        (rmwNode->IsMultiRegNode() && varTypeUsesFloatReg(node->TypeGet())))
     {
         addDelayFreeUses = true;
     }
