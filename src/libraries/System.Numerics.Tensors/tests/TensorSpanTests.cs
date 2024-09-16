@@ -486,12 +486,13 @@ namespace System.Numerics.Tensors.Tests
         public static IEnumerable<object[]> TwoSpanInFloatOutData()
         {
             yield return Create<float>(TensorPrimitives.Distance, Tensor.Distance);
-            //yield return Create<float>(TensorPrimitives.Dot, Tensor.Dot);
+            yield return Create<float>(TensorPrimitives.Dot, Tensor.Dot);
 
             static object[] Create<T>(TensorPrimitivesTwoSpanInTOut<T> tensorPrimitivesMethod, TensorTwoSpanInTOut<T> tensorOperation)
                 => new object[] { tensorPrimitivesMethod, tensorOperation };
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107254")]
         [Theory, MemberData(nameof(TwoSpanInFloatOutData))]
         public void TensorExtensionsTwoSpanInFloatOut<T>(TensorPrimitivesTwoSpanInTOut<T> tensorPrimitivesOperation, TensorTwoSpanInTOut<T> tensorOperation)
             where T : INumberBase<T>
@@ -557,6 +558,12 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void TensorSpanSystemArrayConstructorTests()
         {
+            // When using System.Array constructor make sure the type of the array matches T[]
+            Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<double>(array: new[] { 1 }));
+
+            string[] stringArray = { "a", "b", "c" };
+            Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<object>(array: stringArray));
+
             // Make sure basic T[,] constructor works
             int[,] a = new int[,] { { 91, 92, -93, 94 } };
             scoped TensorSpan<int> spanInt = new TensorSpan<int>(a);
