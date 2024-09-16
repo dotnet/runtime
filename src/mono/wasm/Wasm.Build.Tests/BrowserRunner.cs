@@ -133,7 +133,7 @@ internal class BrowserRunner : IAsyncDisposable
             catch (System.TimeoutException ex)
             {
                 attempt++;
-                _testOutput.WriteLine($"Attempt {attempt} failed with TimeoutException: {ex.Message}");
+                _testOutput.WriteLine($"Attempt {attempt} failed with TimeoutException: {ex}");
 
                 try
                 {
