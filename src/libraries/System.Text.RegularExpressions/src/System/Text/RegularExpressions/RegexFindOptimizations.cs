@@ -84,7 +84,6 @@ namespace System.Text.RegularExpressions
             bool dfa = (options & RegexOptions.NonBacktracking) != 0;
             bool compiled = (options & RegexOptions.Compiled) != 0 && !dfa; // for now, we never generate code for NonBacktracking, so treat it as non-compiled
             bool interpreter = !compiled && !dfa;
-            bool usesRfoTryFind = !compiled;
 
             // For interpreter, we want to employ optimizations, but we don't want to make construction significantly
             // more expensive; someone who wants to pay to do more work can specify Compiled.  So for the interpreter
@@ -149,10 +148,7 @@ namespace System.Text.RegularExpressions
                     LeadingPrefixes = caseInsensitivePrefixes;
                     FindMode = FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight;
 #if SYSTEM_TEXT_REGULAREXPRESSIONS
-                    if (usesRfoTryFind)
-                    {
-                        LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.OrdinalIgnoreCase);
-                    }
+                    LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.OrdinalIgnoreCase);
 #endif
                     return;
                 }
@@ -165,10 +161,7 @@ namespace System.Text.RegularExpressions
                 //    LeadingPrefixes = caseSensitivePrefixes;
                 //    FindMode = FindNextStartingPositionMode.LeadingStrings_LeftToRight;
 #if SYSTEM_TEXT_REGULAREXPRESSIONS
-                //    if (usesRfoTryFind)
-                //    {
-                //        LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.Ordinal);
-                //    }
+                //    LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.Ordinal);
 #endif
                 //    return;
                 //}
@@ -699,14 +692,9 @@ namespace System.Text.RegularExpressions
                 case FindNextStartingPositionMode.LeadingStrings_LeftToRight:
                 case FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight:
                 {
-                    if (LeadingStrings is not SearchValues<string> searchValues)
-                    {
-                        // This should be exceedingly rare and only happen if a Compiled regex selected this
-                        // option but then failed to compile (e.g. due to too deep stacks) and fell back to the interpreter.
-                        return true;
-                    }
+                    Debug.Assert(LeadingStrings is not null);
 
-                    int i = textSpan.Slice(pos).IndexOfAny(searchValues);
+                    int i = textSpan.Slice(pos).IndexOfAny(LeadingStrings);
                     if (i >= 0)
                     {
                         pos += i;
