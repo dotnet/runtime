@@ -193,11 +193,11 @@ internal sealed class RectangularArrayRecord : ArrayRecord
                 // to encountering an EOF if we realize later that we actually need to read more bytes in
                 // order to fully populate the char[,,,...] array. Any such allocation is still linearly
                 // proportional to the length of the incoming payload, so it's not a DoS vector.
-                // The multiplication below is guaranteed not to overflow because TotalElementsCount is bounded
-                // to <= uint.MaxValue (see BinaryArrayRecord.Decode) and sizeOfSingleValue is at most 8.
-                Debug.Assert(arrayInfo.TotalElementsCount >= 0 && arrayInfo.TotalElementsCount <= long.MaxValue / sizeOfSingleValue);
+                // The multiplication below is guaranteed not to overflow because FlattenedLength is bounded
+                // to <= Array.MaxLength (see BinaryArrayRecord.Decode) and sizeOfSingleValue is at most 8.
+                Debug.Assert(arrayInfo.FlattenedLength >= 0 && arrayInfo.FlattenedLength <= long.MaxValue / sizeOfSingleValue);
 
-                long size = arrayInfo.TotalElementsCount * sizeOfSingleValue;
+                long size = arrayInfo.FlattenedLength * sizeOfSingleValue;
                 bool? isDataAvailable = reader.IsDataAvailable(size);
                 if (isDataAvailable.HasValue)
                 {
