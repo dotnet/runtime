@@ -3172,11 +3172,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch16Bit(Vector<short> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// void svprfh_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
-        ///   PRFH op, Pg, [Zbases.S, #0]
-        /// </summary>
-        public static unsafe void GatherPrefetch16Bit(Vector<short> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+        // <summary>
+        // void svprfh_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        //   PRFH op, Pg, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch16Bit(Vector<short> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svprfh_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)
@@ -3208,11 +3209,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch16Bit(Vector<ushort> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// void svprfh_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
-        ///   PRFH op, Pg, [Zbases.S, #0]
-        /// </summary>
-        public static unsafe void GatherPrefetch16Bit(Vector<ushort> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+        // <summary>
+        // void svprfh_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        //   PRFH op, Pg, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch16Bit(Vector<ushort> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svprfh_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)
@@ -3247,11 +3249,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch32Bit(Vector<int> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// void svprfw_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
-        ///   PRFW op, Pg, [Zbases.S, #0]
-        /// </summary>
-        public static unsafe void GatherPrefetch32Bit(Vector<int> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+        // <summary>
+        // void svprfw_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        //   PRFW op, Pg, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch32Bit(Vector<int> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svprfw_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)
@@ -3283,11 +3286,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch32Bit(Vector<uint> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// void svprfw_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
-        ///   PRFW op, Pg, [Zbases.S, #0]
-        /// </summary>
-        public static unsafe void GatherPrefetch32Bit(Vector<uint> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+        // <summary>
+        // void svprfw_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        //   PRFW op, Pg, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch32Bit(Vector<uint> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svprfw_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)
@@ -3322,11 +3326,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch64Bit(Vector<long> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// void svprfd_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
-        ///   PRFD op, Pg, [Zbases.S, #0]
-        /// </summary>
-        public static unsafe void GatherPrefetch64Bit(Vector<long> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+        // <summary>
+        // void svprfd_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        //   PRFD op, Pg, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch64Bit(Vector<long> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svprfd_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)
@@ -3358,11 +3363,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch64Bit(Vector<ulong> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// void svprfd_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
-        ///   PRFD op, Pg, [Zbases.S, #0]
-        /// </summary>
-        public static unsafe void GatherPrefetch64Bit(Vector<ulong> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+        // <summary>
+        // void svprfd_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        //   PRFD op, Pg, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch64Bit(Vector<ulong> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svprfd_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)
@@ -3397,11 +3403,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch8Bit(Vector<byte> mask, void* address, Vector<long> offsets, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// void svprfb_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
-        ///   PRFB op, Pg, [Zbases.S, #0]
-        /// </summary>
-        public static unsafe void GatherPrefetch8Bit(Vector<byte> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+        // <summary>
+        // void svprfb_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        //   PRFB op, Pg, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch8Bit(Vector<byte> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svprfb_gather_[u32]offset(svbool_t pg, const void *base, svuint32_t offsets, enum svprfop op)
@@ -3433,11 +3440,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void GatherPrefetch8Bit(Vector<sbyte> mask, void* address, Vector<long> offsets, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// void svprfb_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
-        ///   PRFB op, Pg, [Zbases.S, #0]
-        /// </summary>
-        public static unsafe void GatherPrefetch8Bit(Vector<sbyte> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+        // <summary>
+        // void svprfb_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        //   PRFB op, Pg, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void GatherPrefetch8Bit(Vector<sbyte> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svprfb_gather_[u32]offset(svbool_t pg, const void *base, svuint32_t offsets, enum svprfop op)
@@ -3925,11 +3933,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<int> GatherVectorInt16SignExtendFirstFaulting(Vector<int> mask, short* address, Vector<int> indices) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// svint32_t svldff1sh_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
-        ///   LDFF1SH Zresult.S, Pg/Z, [Zbases.S, #0]
-        /// </summary>
-        public static unsafe Vector<int> GatherVectorInt16SignExtendFirstFaulting(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+        // <summary>
+        // svint32_t svldff1sh_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
+        //   LDFF1SH Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorInt16SignExtendFirstFaulting(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svldff1sh_gather_[u32]index_s32(svbool_t pg, const int16_t *base, svuint32_t indices)
@@ -3961,11 +3970,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<uint> GatherVectorInt16SignExtendFirstFaulting(Vector<uint> mask, short* address, Vector<int> indices) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// svuint32_t svldff1sh_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
-        ///   LDFF1SH Zresult.S, Pg/Z, [Zbases.S, #0]
-        /// </summary>
-        public static unsafe Vector<uint> GatherVectorInt16SignExtendFirstFaulting(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+        // <summary>
+        // svuint32_t svldff1sh_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        //   LDFF1SH Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorInt16SignExtendFirstFaulting(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32_t svldff1sh_gather_[u32]index_u32(svbool_t pg, const int16_t *base, svuint32_t indices)
@@ -4311,11 +4321,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<int> GatherVectorSByteSignExtendFirstFaulting(Vector<int> mask, sbyte* address, Vector<int> offsets) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// svint32_t svldff1sb_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
-        ///   LDFF1SB Zresult.S, Pg/Z, [Zbases.S, #0]
-        /// </summary>
-        public static unsafe Vector<int> GatherVectorSByteSignExtendFirstFaulting(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+        // <summary>
+        // svint32_t svldff1sb_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
+        //   LDFF1SB Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorSByteSignExtendFirstFaulting(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svldff1sb_gather_[u32]offset_s32(svbool_t pg, const int8_t *base, svuint32_t offsets)
@@ -4347,11 +4358,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<uint> GatherVectorSByteSignExtendFirstFaulting(Vector<uint> mask, sbyte* address, Vector<int> offsets) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// svuint32_t svldff1sb_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
-        ///   LDFF1SB Zresult.S, Pg/Z, [Zbases.S, #0]
-        /// </summary>
-        public static unsafe Vector<uint> GatherVectorSByteSignExtendFirstFaulting(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+        // <summary>
+        // svuint32_t svldff1sb_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        //   LDFF1SB Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorSByteSignExtendFirstFaulting(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32_t svldff1sb_gather_[u32]offset_u32(svbool_t pg, const int8_t *base, svuint32_t offsets)

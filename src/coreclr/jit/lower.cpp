@@ -8823,8 +8823,18 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
         assert(prevData.IsStore());
         assert(currData.IsStore());
 
-        // For now, only constants are supported for data.
+        // For now, only non-relocatable constants are supported for data.
         if (!prevData.value->OperIsConst() || !currData.value->OperIsConst())
+        {
+            return;
+        }
+
+        if (prevData.value->IsCnsIntOrI() && prevData.value->AsIntCon()->ImmedValNeedsReloc(comp))
+        {
+            return;
+        }
+
+        if (currData.value->IsCnsIntOrI() && currData.value->AsIntCon()->ImmedValNeedsReloc(comp))
         {
             return;
         }
