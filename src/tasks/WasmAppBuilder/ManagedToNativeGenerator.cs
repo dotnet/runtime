@@ -35,7 +35,8 @@ public class ManagedToNativeGenerator : Task
 
     public bool IsLibraryMode { get; set; }
 
-    public string RuntimeIdentifier { get; set; } = string.Empty;
+    [Required, NotNull]
+    public string? RuntimeIdentifier { get; set; }
 
     [Output]
     public string[]? FileWrites { get; private set; }
