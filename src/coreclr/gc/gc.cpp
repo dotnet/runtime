@@ -26592,6 +26592,7 @@ void gc_heap::add_to_hc_history_worker (hc_history* hist, int* current_index, hc
     current_hist->concurrent_p = (bool)settings.concurrent;
     current_hist->bgc_thread_running = (bool)bgc_thread_running;
 
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(_DEBUG)
     int bgc_thread_os_id = 0;
 
     if (bgc_thread)
@@ -26600,6 +26601,7 @@ void gc_heap::add_to_hc_history_worker (hc_history* hist, int* current_index, hc
     }
 
     current_hist->bgc_thread_os_id = bgc_thread_os_id;
+#endif //TARGET_AMD64 && TARGET_WINDOWS && !_DEBUG
 #endif //BACKGROUND_GC
 
     *current_index  = (*current_index + 1) % max_hc_history_count;
