@@ -986,19 +986,15 @@ void LinearScan::setBlockSequence()
     // Initialize the "visited" blocks set.
     bbVisitedSet = BlockSetOps::MakeEmpty(compiler);
 
-    BlockSet readySet(BlockSetOps::MakeEmpty(compiler));
-    BlockSet predSet(BlockSetOps::MakeEmpty(compiler));
-
     assert(blockSequence == nullptr && bbSeqCount == 0);
-    blockSequence            = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
+    FlowGraphDfsTree* const dfsTree = compiler->fgComputeDfs</* useProfile */ true>();
+    blockSequence            = new (compiler, CMK_LSRA) BasicBlock*[dfsTree->GetPostOrderCount()];
     bbNumMaxBeforeResolution = compiler->fgBBNumMax;
     blockInfo                = new (compiler, CMK_LSRA) LsraBlockInfo[bbNumMaxBeforeResolution + 1];
 
     assert(blockSequenceWorkList == nullptr);
 
-    verifiedAllBBs   = false;
     hasCriticalEdges = false;
-    BasicBlock* nextBlock;
     // We use a bbNum of 0 for entry RefPositions.
     // The other information in blockInfo[0] will never be used.
     blockInfo[0].weight = BB_UNITY_WEIGHT;
@@ -1010,13 +1006,13 @@ void LinearScan::setBlockSequence()
 #endif // TRACK_LSRA_STATS
 
     JITDUMP("Start LSRA Block Sequence: \n");
-    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = nextBlock)
+    for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
     {
+        BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
         JITDUMP("Current block: " FMT_BB "\n", block->bbNum);
         blockSequence[bbSeqCount] = block;
         markBlockVisited(block);
         bbSeqCount++;
-        nextBlock = nullptr;
 
         // Initialize the blockInfo.
         // predBBNum will be set later.
@@ -1087,69 +1083,13 @@ void LinearScan::setBlockSequence()
             assert(!"Switch with single successor");
         }
 
-        for (unsigned succIndex = 0; succIndex < numSuccs; succIndex++)
+        for (BasicBlock* const succ : block->Succs(compiler))
         {
-            BasicBlock* succ = block->GetSucc(succIndex, compiler);
-            if (checkForCriticalOutEdge && succ->GetUniquePred(compiler) == nullptr)
+            if (checkForCriticalOutEdge && (succ->GetUniquePred(compiler) == nullptr))
             {
                 blockInfo[block->bbNum].hasCriticalOutEdge = true;
                 hasCriticalEdges                           = true;
                 // We can stop checking now.
-                checkForCriticalOutEdge = false;
-            }
-
-            if (isTraversalLayoutOrder() || isBlockVisited(succ))
-            {
-                continue;
-            }
-
-            // We've now seen a predecessor, so add it to the work list and the "readySet".
-            // It will be inserted in the worklist according to the specified traversal order
-            // (i.e. pred-first or random, since layout order is handled above).
-            if (!BlockSetOps::IsMember(compiler, readySet, succ->bbNum))
-            {
-                JITDUMP("\tSucc block: " FMT_BB, succ->bbNum);
-                addToBlockSequenceWorkList(readySet, succ, predSet);
-                BlockSetOps::AddElemD(compiler, readySet, succ->bbNum);
-            }
-        }
-
-        // For layout order, simply use bbNext
-        if (isTraversalLayoutOrder())
-        {
-            nextBlock = block->Next();
-            continue;
-        }
-
-        while (nextBlock == nullptr)
-        {
-            nextBlock = getNextCandidateFromWorkList();
-
-            // TODO-Throughput: We would like to bypass this traversal if we know we've handled all
-            // the blocks - but fgBBcount does not appear to be updated when blocks are removed.
-            if (nextBlock == nullptr /* && bbSeqCount != compiler->fgBBcount*/ && !verifiedAllBBs)
-            {
-                // If we don't encounter all blocks by traversing the regular successor links, do a full
-                // traversal of all the blocks, and add them in layout order.
-                // This may include:
-                //   - internal-only blocks which may not be in the flow graph
-                //   - blocks that have become unreachable due to optimizations, but that are strongly
-                //     connected (these are not removed)
-                //   - EH blocks
-
-                for (BasicBlock* const seqBlock : compiler->Blocks())
-                {
-                    if (!isBlockVisited(seqBlock))
-                    {
-                        JITDUMP("\tUnvisited block: " FMT_BB, seqBlock->bbNum);
-                        addToBlockSequenceWorkList(readySet, seqBlock, predSet);
-                        BlockSetOps::AddElemD(compiler, readySet, seqBlock->bbNum);
-                    }
-                }
-                verifiedAllBBs = true;
-            }
-            else
-            {
                 break;
             }
         }
@@ -1160,7 +1100,7 @@ void LinearScan::setBlockSequence()
     // Make sure that we've visited all the blocks.
     for (BasicBlock* const block : compiler->Blocks())
     {
-        assert(isBlockVisited(block));
+        assert(isBlockVisited(block) || (block->bbPreds == nullptr));
     }
 
     JITDUMP("Final LSRA Block Sequence:\n");
