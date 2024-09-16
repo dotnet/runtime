@@ -26,7 +26,7 @@ namespace System.Collections.Immutable.Tests
 
         internal override IBinaryTree GetRootNode<T>(IImmutableSet<T> set)
         {
-            return ((ImmutableHashSet<T>)set).Root;
+            return ((ImmutableHashSet<T>)set).GetBinaryTreeProxy();
         }
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace System.Collections.Immutable.Tests
 
             this.EmptyTestHelper(emptySet);
             Assert.Same(emptySet, emptySet.ToImmutableHashSet(comparer));
-            Assert.Same(comparer ?? EqualityComparer<T>.Default, ((IHashKeyCollection<T>)emptySet).KeyComparer);
+            Assert.Same(comparer ?? EqualityComparer<T>.Default, ((ImmutableHashSet<T>)emptySet).KeyComparer);
 
             if (comparer == null)
             {

@@ -15,7 +15,7 @@ namespace System.Collections.Immutable.Tests
     {
         internal override IBinaryTree GetRootNode<TKey, TValue>(IImmutableDictionary<TKey, TValue> dictionary)
         {
-            return ((ImmutableSortedDictionary<TKey, TValue>)dictionary).Root;
+            return ((ImmutableSortedDictionary<TKey, TValue>)dictionary).GetBinaryTreeProxy();
         }
     }
 }

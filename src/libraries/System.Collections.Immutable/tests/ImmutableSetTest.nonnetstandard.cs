@@ -26,13 +26,9 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void EnumeratorTest()
         {
-            IComparer<double> comparer = null;
             IImmutableSet<double> set = this.Empty<double>();
-            var sortedSet = set as ISortKeyCollection<double>;
-            if (sortedSet != null)
-            {
-                comparer = sortedSet.KeyComparer;
-            }
+            Assert.True(set is ImmutableSortedSet<double> or ImmutableHashSet<double>);
+            IComparer<double>? comparer = (set as ImmutableSortedSet<double>)?.KeyComparer;
 
             this.EnumeratorTestHelper(set, comparer, 3, 5, 1);
             double[] data = this.GenerateDummyFillData();

@@ -16,7 +16,7 @@ namespace System.Collections.Immutable
     [CollectionBuilder(typeof(ImmutableList), nameof(ImmutableList.Create))]
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-    public sealed partial class ImmutableList<T> : IImmutableList<T>, IList<T>, IList, IOrderedCollection<T>, IImmutableListQueries<T>, IStrongEnumerable<T, ImmutableList<T>.Enumerator>
+    public sealed partial class ImmutableList<T> : IImmutableList<T>, IList<T>, IList, IOrderedCollection<T>, IStrongEnumerable<T, ImmutableList<T>.Enumerator>
     {
         /// <summary>
         /// An empty immutable list.
@@ -1096,11 +1096,6 @@ namespace System.Collections.Immutable
         /// corruption and/or exceptions.
         /// </remarks>
         public Enumerator GetEnumerator() => new Enumerator(_root);
-
-        /// <summary>
-        /// Returns the root <see cref="Node"/> of the list
-        /// </summary>
-        internal Node Root => _root;
 
         /// <summary>
         /// Creates a new sorted set wrapper for a node tree.

@@ -131,14 +131,6 @@ namespace System.Collections.Immutable
 
         #endregion
 
-        /// <summary>
-        /// Gets the root node (for testing purposes).
-        /// </summary>
-        internal IBinaryTree Root
-        {
-            get { return _root; }
-        }
-
         #region IReadOnlyList<T> Indexers
 
         /// <summary>

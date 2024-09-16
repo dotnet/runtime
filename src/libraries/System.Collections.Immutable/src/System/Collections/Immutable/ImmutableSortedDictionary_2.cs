@@ -177,14 +177,6 @@ namespace System.Collections.Immutable
 
         #endregion
 
-        /// <summary>
-        /// Gets the root node (for testing purposes).
-        /// </summary>
-        internal Node Root
-        {
-            get { return _root; }
-        }
-
         #region IImmutableMap<TKey, TValue> Indexers
 
         /// <summary>
