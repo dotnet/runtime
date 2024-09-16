@@ -10,15 +10,15 @@
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.100" Version="6.0.35">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>c68eace1f3c11ab25cdf30a425ab3792773bb2cc</Sha>
+      <Sha>7ed979b305fb1fa655b83b64dc247a9398273cf8</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.300" Version="6.0.35">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>c68eace1f3c11ab25cdf30a425ab3792773bb2cc</Sha>
+      <Sha>7ed979b305fb1fa655b83b64dc247a9398273cf8</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.400" Version="6.0.35">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>c68eace1f3c11ab25cdf30a425ab3792773bb2cc</Sha>
+      <Sha>7ed979b305fb1fa655b83b64dc247a9398273cf8</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0">
       <Uri>https://github.com/dotnet/wcf</Uri>
