@@ -382,14 +382,14 @@
       <Sha>df4ae6b81013ac45367372176b9c3135a35a7e3c</Sha>
       <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-rc.2.24466.7">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-rc.1.24409.1">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>fb54cfdd13f5f5f6c3228208ee5927a147642291</Sha>
+      <Sha>43360291a50c9c7c471551f8f8363919d38014ea</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.sdk" Version="9.0.100-rc.2.24466.7">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.sdk" Version="9.0.100-rc.1.24409.1">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>fb54cfdd13f5f5f6c3228208ee5927a147642291</Sha>
+      <Sha>43360291a50c9c7c471551f8f8363919d38014ea</Sha>
       <SourceBuild RepoName="sdk" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.24409.2">
