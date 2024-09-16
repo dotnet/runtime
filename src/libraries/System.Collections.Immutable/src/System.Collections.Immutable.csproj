@@ -175,8 +175,4 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="System\Collections\Generic\" />
-  </ItemGroup>
-
 </Project>
