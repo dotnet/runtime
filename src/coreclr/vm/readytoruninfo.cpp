@@ -18,8 +18,8 @@
 #include "nativeimage.h"
 
 #ifndef DACCESS_COMPILE
-static PCODE g_pMethodWithSlotAndModule = NULL;
-static PCODE g_pClassWithSlotAndModule = NULL;
+static PCODE g_pMethodWithSlotAndModule = (PCODE)NULL;
+static PCODE g_pClassWithSlotAndModule = (PCODE)NULL;
 
 PCODE DynamicHelpers::GetDictionaryLookupHelper(CorInfoHelpFunc jitHelper)
 {
@@ -27,7 +27,7 @@ PCODE DynamicHelpers::GetDictionaryLookupHelper(CorInfoHelpFunc jitHelper)
     if (jitHelper == CORINFO_HELP_RUNTIMEHANDLE_METHOD)
     {
         PCODE pFunc = VolatileLoadWithoutBarrier(&g_pMethodWithSlotAndModule);
-        if (pFunc == NULL)
+        if (pFunc == (PCODE)NULL)
         {
             pFunc = CoreLibBinder::GetMethod(METHOD__GENERICSHELPERS__METHODWITHSLOTANDMODULE)->GetMultiCallableAddrOfCode();
             VolatileStore(&g_pMethodWithSlotAndModule, pFunc);
@@ -38,7 +38,7 @@ PCODE DynamicHelpers::GetDictionaryLookupHelper(CorInfoHelpFunc jitHelper)
     else
     {
         PCODE pFunc = VolatileLoadWithoutBarrier(&g_pClassWithSlotAndModule);
-        if (pFunc == NULL)
+        if (pFunc == (PCODE)NULL)
         {
             pFunc = CoreLibBinder::GetMethod(METHOD__GENERICSHELPERS__CLASSWITHSLOTANDMODULE)->GetMultiCallableAddrOfCode();
             VolatileStore(&g_pClassWithSlotAndModule, pFunc);
