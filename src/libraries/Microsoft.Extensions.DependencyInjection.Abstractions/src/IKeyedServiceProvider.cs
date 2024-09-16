@@ -6,8 +6,7 @@ using System;
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// IKeyedServiceProvider is a service provider that can be used to retrieve services using a key in addition
-    /// to a type.
+    /// Retrieves services using a key and a type.
     /// </summary>
     public interface IKeyedServiceProvider : IServiceProvider
     {
@@ -16,7 +15,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="serviceType">An object that specifies the type of service object to get.</param>
         /// <param name="serviceKey">An object that specifies the key of service object to get.</param>
-        /// <returns> A service object of type serviceType. -or- null if there is no service object of type serviceType.</returns>
+        /// <returns><para>A service object of type <paramref name="serviceType"/>.</para>
+        /// <para>-or-</para>
+        /// <para><see langword="null"/> if there is no service object of type <paramref name="serviceType"/>.</para></returns>
         object? GetKeyedService(Type serviceType, object? serviceKey);
 
         /// <summary>
@@ -31,12 +32,12 @@ namespace Microsoft.Extensions.DependencyInjection
     }
 
     /// <summary>
-    /// Statics for use with <see cref="IKeyedServiceProvider"/>.
+    /// Provides static APIs for use with <see cref="IKeyedServiceProvider"/>.
     /// </summary>
     public static class KeyedService
     {
         /// <summary>
-        /// Represents a key that matches any key.
+        /// Gets a key that matches any key.
         /// </summary>
         public static object AnyKey { get; } = new AnyKeyObj();
 

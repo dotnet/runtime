@@ -115,12 +115,12 @@ namespace Microsoft.Extensions.DependencyInjection
             => GetService(new ServiceIdentifier(serviceKey, serviceType), serviceProviderEngineScope);
 
         /// <summary>
-        /// Gets the service object of the specified type. Will throw if the service not found.
+        /// Gets the service object of the specified type.
         /// </summary>
         /// <param name="serviceType">The type of the service to get.</param>
         /// <param name="serviceKey">The key of the service to get.</param>
         /// <returns>The keyed service.</returns>
-        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="InvalidOperationException">The service wasn't found.</exception>
         public object GetRequiredKeyedService(Type serviceType, object? serviceKey)
             => GetRequiredKeyedService(serviceType, serviceKey, Root);
 

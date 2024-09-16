@@ -13,10 +13,14 @@ namespace System.Formats.Nrbf;
 /// <remarks>
 /// ArrayInfo structures are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/8fac763f-e46d-43a1-b360-80eb83d2c5fb">[MS-NRBF] 2.4.2.1</see>.
 /// </remarks>
-[DebuggerDisplay("Length={Length}, {ArrayType}, rank={Rank}")]
+[DebuggerDisplay("{ArrayType}, rank={Rank}")]
 internal readonly struct ArrayInfo
 {
-    internal const int MaxArrayLength = 2147483591; // Array.MaxLength
+#if NET8_0_OR_GREATER
+    internal static int MaxArrayLength => Array.MaxLength; // dynamic lookup in case the value changes in a future runtime
+#else
+    internal const int MaxArrayLength = 2147483591; // hardcode legacy Array.MaxLength for downlevel runtimes
+#endif
 
     internal ArrayInfo(SerializationRecordId id, long totalElementsCount, BinaryArrayType arrayType = BinaryArrayType.Single, int rank = 1)
     {
@@ -47,7 +51,7 @@ internal readonly struct ArrayInfo
     {
         int length = reader.ReadInt32();
 
-        if (length is < 0 or > MaxArrayLength)
+        if (length < 0 || length > MaxArrayLength)
         {
             ThrowHelper.ThrowInvalidValue(length);
         }
