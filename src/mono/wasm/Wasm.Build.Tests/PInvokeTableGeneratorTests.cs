@@ -572,7 +572,7 @@ namespace Wasm.Build.Tests
                     PInvokeOutputPath="$(WasmPInvokeTablePath)"
                     RuntimeIcallTableFile="$(WasmRuntimeICallTablePath)"
                     InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)"
-                    RuntimeIdentifier="$(RuntimeIdentifier)">
+                    RuntimeIdentifier="browser-wasm">
                     <Output TaskParameter="FileWrites" ItemName="FileWrites" />
                   </ManagedToNativeGenerator>
                 </Target>
