@@ -1109,7 +1109,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    EmitStartBlock($"if ({sectionValueExpr} is string {nonNull_StringValue_Identifier})");
+                    // In case of calling parsing methods, check the section value first for null or empty before calling parse.
+                    string extraCondition = typeKind == StringParsableTypeKind.AssignFromSectionValue ? "" : $" && !string.IsNullOrEmpty({nonNull_StringValue_Identifier})";
+                    EmitStartBlock($"if ({sectionValueExpr} is string {nonNull_StringValue_Identifier}{extraCondition})");
                     writeOnSuccess?.Invoke(parsedValueExpr);
                     EmitEndBlock();
                 }
