@@ -50,7 +50,8 @@ internal sealed class ClassInfo
 
         // Use Dictionary instead of List so that searching for member IDs by name
         // is O(n) instead of O(m * n), where m = memberCount and n = memberNameLength,
-        // in degenerate cases.
+        // in degenerate cases. Since memberCount may be hostile, don't allow it to be
+        // used as the initial capacity in the collection instance.
         Dictionary<string, int> memberNames = new(StringComparer.Ordinal);
         for (int i = 0; i < memberCount; i++)
         {
