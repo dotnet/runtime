@@ -208,6 +208,14 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
     assert(block->KindIs(BBJ_SWITCH));
     JITDUMP("Considering expanding switch " FMT_BB "\n", block->bbNum);
 
+    if (opts.IsInstrumented())
+    {
+        JITDUMP("Instrumentation is enabled - bail out.\n");
+        return false;
+    }
+
+    assert(opts.OptimizationEnabled());
+
     GenTree* switchOp           = nullptr;
     ssize_t  switchTargetOffset = 0;
     if (!GetSwitchValueOp(block, &switchOp, &switchTargetOffset))
@@ -240,7 +248,8 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
     bool      isReversed;
     GenTree*  variableNode;
     ssize_t   cns;
-    if (!IsConstantTestCondBlock(edgeToExpandDst, false, &testPasses, &testFails, &isReversed, &variableNode, &cns))
+    if (!IsConstantTestCondBlock(edgeToExpandDst, false, &testPasses, &testFails, &isReversed, &variableNode, &cns) ||
+        !edgeToExpandDst->hasSingleStmt())
     {
         JITDUMP("The default target is not performing a value test - bail out.\n");
         return false;
@@ -255,8 +264,10 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
         return false;
     }
 
-    // We're less conservative than Roslyn, but we still have some limits
-    if (static_cast<size_t>(cns + switchTargetOffset) > SWITCH_MAX_DISTANCE)
+    // We're less conservative than Roslyn, but we still have some limits (unless stress mode is enabled)
+
+    if ((static_cast<size_t>(cns + switchTargetOffset) > SWITCH_MAX_DISTANCE) &&
+        !compStressCompile(STRESS_DONT_LIMIT_JUMP_TABLE, 50))
     {
         JITDUMP("Switch value is out of range - bail out.\n");
         return false;
