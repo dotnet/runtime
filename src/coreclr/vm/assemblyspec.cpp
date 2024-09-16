@@ -378,7 +378,7 @@ Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel,
         BinderTracing::AssemblyBindOperation bindOperation(this);
         bindOperation.SetResult(domainAssembly->GetPEAssembly(), true /*cached*/);
 
-        pDomain->LoadDomainAssembly(domainAssembly, targetLevel);
+        pDomain->LoadAssembly(domainAssembly->GetAssembly(), targetLevel);
         RETURN domainAssembly->GetAssembly();
     }
 
@@ -838,8 +838,7 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(UnsafeContains(this, pSpec));
-        POSTCONDITION(UnsafeVerifyLookupAssembly(this, pSpec, pAssembly));
+        POSTCONDITION((!RETVAL) || (UnsafeContains(this, pSpec) && UnsafeVerifyLookupAssembly(this, pSpec, pAssembly)));
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACT_END;
