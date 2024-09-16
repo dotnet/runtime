@@ -1659,20 +1659,12 @@ private:
     // The order in which the blocks will be allocated.
     // This is any array of BasicBlock*, in the order in which they should be traversed.
     BasicBlock** blockSequence;
-    // The verifiedAllBBs flag indicates whether we have verified that all BBs have been
-    // included in the blockSeuqence above, during setBlockSequence().
-    bool            verifiedAllBBs;
     void            setBlockSequence();
-    int             compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block2, bool useBlockWeights);
-    BasicBlockList* blockSequenceWorkList;
     bool            blockSequencingDone;
 #ifdef DEBUG
     // LSRA must not change number of blocks and blockEpoch that it initializes at start.
     unsigned blockEpoch;
 #endif // DEBUG
-    void        addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlock* block, BlockSet& predSet);
-    void        removeFromBlockSequenceWorkList(BasicBlockList* listNode, BasicBlockList* prevNode);
-    BasicBlock* getNextCandidateFromWorkList();
 
     // Indicates whether the allocation pass has been completed.
     bool allocationPassComplete;

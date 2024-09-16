@@ -915,7 +915,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // are accounted for (and we don't have BasicBlockEpoch issues).
     blockSequencingDone   = false;
     blockSequence         = nullptr;
-    blockSequenceWorkList = nullptr;
     curBBSeqNum           = 0;
     bbSeqCount            = 0;
 
@@ -924,39 +923,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     pendingDelayFree = false;
     tgtPrefUse       = nullptr;
-}
-
-//------------------------------------------------------------------------
-// getNextCandidateFromWorkList: Get the next candidate for block sequencing
-//
-// Arguments:
-//    None.
-//
-// Return Value:
-//    The next block to be placed in the sequence.
-//
-// Notes:
-//    This method currently always returns the next block in the list, and relies on having
-//    blocks added to the list only when they are "ready", and on the
-//    addToBlockSequenceWorkList() method to insert them in the proper order.
-//    However, a block may be in the list and already selected, if it was subsequently
-//    encountered as both a flow and layout successor of the most recently selected
-//    block.
-//
-BasicBlock* LinearScan::getNextCandidateFromWorkList()
-{
-    BasicBlockList* nextWorkList = nullptr;
-    for (BasicBlockList* workList = blockSequenceWorkList; workList != nullptr; workList = nextWorkList)
-    {
-        nextWorkList          = workList->next;
-        BasicBlock* candBlock = workList->block;
-        removeFromBlockSequenceWorkList(workList, nullptr);
-        if (!isBlockVisited(candBlock))
-        {
-            return candBlock;
-        }
-    }
-    return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -991,8 +957,6 @@ void LinearScan::setBlockSequence()
     blockSequence            = new (compiler, CMK_LSRA) BasicBlock*[dfsTree->GetPostOrderCount()];
     bbNumMaxBeforeResolution = compiler->fgBBNumMax;
     blockInfo                = new (compiler, CMK_LSRA) LsraBlockInfo[bbNumMaxBeforeResolution + 1];
-
-    assert(blockSequenceWorkList == nullptr);
 
     hasCriticalEdges = false;
     // We use a bbNum of 0 for entry RefPositions.
@@ -1137,169 +1101,6 @@ void LinearScan::setBlockSequence()
     }
     JITDUMP("\n");
 #endif
-}
-
-//------------------------------------------------------------------------
-// compareBlocksForSequencing: Compare two basic blocks for sequencing order.
-//
-// Arguments:
-//    block1            - the first block for comparison
-//    block2            - the second block for comparison
-//    useBlockWeights   - whether to use block weights for comparison
-//
-// Return Value:
-//    -1 if block1 is preferred.
-//     0 if the blocks are equivalent.
-//     1 if block2 is preferred.
-//
-// Notes:
-//    See addToBlockSequenceWorkList.
-//
-int LinearScan::compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block2, bool useBlockWeights)
-{
-    if (useBlockWeights)
-    {
-        weight_t weight1 = block1->getBBWeight(compiler);
-        weight_t weight2 = block2->getBBWeight(compiler);
-
-        if (weight1 > weight2)
-        {
-            return -1;
-        }
-        else if (weight1 < weight2)
-        {
-            return 1;
-        }
-    }
-
-    // If weights are the same prefer LOWER bbnum
-    if (block1->bbNum < block2->bbNum)
-    {
-        return -1;
-    }
-    else if (block1->bbNum == block2->bbNum)
-    {
-        return 0;
-    }
-    else
-    {
-        return 1;
-    }
-}
-
-//------------------------------------------------------------------------
-// addToBlockSequenceWorkList: Add a BasicBlock to the work list for sequencing.
-//
-// Arguments:
-//    sequencedBlockSet - the set of blocks that are already sequenced
-//    block             - the new block to be added
-//    predSet           - the buffer to save predecessors set. A block set allocated by the caller used here as a
-//    temporary block set for constructing a predecessor set. Allocated by the caller to avoid reallocating a new block
-//    set with every call to this function
-//
-// Return Value:
-//    None.
-//
-// Notes:
-//    The first block in the list will be the next one to be sequenced, as soon
-//    as we encounter a block whose successors have all been sequenced, in pred-first
-//    order, or the very next block if we are traversing in random order (once implemented).
-//    This method uses a comparison method to determine the order in which to place
-//    the blocks in the list.  This method queries whether all predecessors of the
-//    block are sequenced at the time it is added to the list and if so uses block weights
-//    for inserting the block.  A block is never inserted ahead of its predecessors.
-//    A block at the time of insertion may not have all its predecessors sequenced, in
-//    which case it will be sequenced based on its block number. Once a block is inserted,
-//    its priority\order will not be changed later once its remaining predecessors are
-//    sequenced.  This would mean that work list may not be sorted entirely based on
-//    block weights alone.
-//
-//    Note also that, when random traversal order is implemented, this method
-//    should insert the blocks into the list in random order, so that we can always
-//    simply select the first block in the list.
-//
-void LinearScan::addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlock* block, BlockSet& predSet)
-{
-    // The block that is being added is not already sequenced
-    assert(!BlockSetOps::IsMember(compiler, sequencedBlockSet, block->bbNum));
-
-    // Get predSet of block
-    BlockSetOps::ClearD(compiler, predSet);
-    for (BasicBlock* const predBlock : block->PredBlocks())
-    {
-        BlockSetOps::AddElemD(compiler, predSet, predBlock->bbNum);
-    }
-
-    // If either a rarely run block or all its preds are already sequenced, use block's weight to sequence
-    bool useBlockWeight = block->isRunRarely() || BlockSetOps::IsSubset(compiler, sequencedBlockSet, predSet);
-    JITDUMP(", Criteria: %s", useBlockWeight ? "weight" : "bbNum");
-
-    BasicBlockList* prevNode = nullptr;
-    BasicBlockList* nextNode = blockSequenceWorkList;
-    while (nextNode != nullptr)
-    {
-        int seqResult;
-
-        if (nextNode->block->isRunRarely())
-        {
-            // If the block that is yet to be sequenced is a rarely run block, always use block weights for sequencing
-            seqResult = compareBlocksForSequencing(nextNode->block, block, true);
-        }
-        else if (BlockSetOps::IsMember(compiler, predSet, nextNode->block->bbNum))
-        {
-            // always prefer unsequenced pred blocks
-            seqResult = -1;
-        }
-        else
-        {
-            seqResult = compareBlocksForSequencing(nextNode->block, block, useBlockWeight);
-        }
-
-        if (seqResult > 0)
-        {
-            break;
-        }
-
-        prevNode = nextNode;
-        nextNode = nextNode->next;
-    }
-
-    BasicBlockList* newListNode = new (compiler, CMK_LSRA) BasicBlockList(block, nextNode);
-    if (prevNode == nullptr)
-    {
-        blockSequenceWorkList = newListNode;
-    }
-    else
-    {
-        prevNode->next = newListNode;
-    }
-
-#ifdef DEBUG
-    nextNode = blockSequenceWorkList;
-    JITDUMP(", Worklist: [");
-    while (nextNode != nullptr)
-    {
-        JITDUMP(FMT_BB " ", nextNode->block->bbNum);
-        nextNode = nextNode->next;
-    }
-    JITDUMP("]\n");
-#endif
-}
-
-void LinearScan::removeFromBlockSequenceWorkList(BasicBlockList* listNode, BasicBlockList* prevNode)
-{
-    if (listNode == blockSequenceWorkList)
-    {
-        assert(prevNode == nullptr);
-        blockSequenceWorkList = listNode->next;
-    }
-    else
-    {
-        assert(prevNode != nullptr && prevNode->next == listNode);
-        prevNode->next = listNode->next;
-    }
-    // TODO-Cleanup: consider merging Compiler::BlockListNode and BasicBlockList
-    // compiler->FreeBlockListNode(listNode);
 }
 
 // Initialize the block order for allocation (called each time a new traversal begins).
