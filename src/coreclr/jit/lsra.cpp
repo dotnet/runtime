@@ -9714,18 +9714,18 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         }
     }
 
-        // kpathak
-    bool revert       = false;
-    bool startLogging = false;
-    if ((fromBlock != nullptr) && (toBlock != nullptr))
+    if (compiler->verbose)
     {
-        if ((fromBlock->bbNum == 17) && (toBlock->bbNum == 18))
+        printf("Resolving Edge: ");
+        if (fromBlock != nullptr)
         {
-            revert       = true;
-            startLogging = true;
+            printf("from: " FMT_BB " ", fromBlock->bbNum);
+        }
+        if (toBlock != nullptr)
+        {
+            printf("to: " FMT_BB, toBlock->bbNum);
         }
     }
-    revert= true;
 
     // First:
     //   - Perform all moves from reg to stack (no ordering needed on these)
@@ -9789,7 +9789,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             source[toReg]            = (regNumberSmall)fromReg;
             sourceIntervals[fromReg] = interval;
             targetRegsToDo |= genRegMask(toReg);
-            if (startLogging && genIsValidFloatReg(fromReg))
+            if (compiler->verbose)
             {
                 printf("Added ");
                 interval->tinyDump();
@@ -9846,7 +9846,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     targetRegsReady.AddRegNumInMask(targetReg);
                 }
             }
-            else if (!revert && (otherTargetInterval != nullptr) && (otherTargetInterval->registerType == TYP_DOUBLE))
+            else if ((otherTargetInterval != nullptr) && (otherTargetInterval->registerType == TYP_DOUBLE))
             {
                 // Condition 2 above.
                 assert(otherHalfTargetReg != REG_NA);
@@ -9868,25 +9868,23 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     // Perform reg to reg moves
     while (targetRegsToDo.IsNonEmpty())
     {
-        if (startLogging)
+        if (compiler->verbose)
         {
-            printf("targetRegsReady: ");
-            compiler->dumpRegMask(targetRegsReady.getLow(), TYP_FLOAT);
-            printf(", targetRegsToDo: ");
-            compiler->dumpRegMask(targetRegsToDo.getLow(), TYP_FLOAT);
+            printf("targetRegsToDo: ");
+            compiler->dumpRegMask(targetRegsToDo);
             printf("\n");
         }
         while (targetRegsReady.IsNonEmpty())
         {
             regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetRegsReady);
             targetRegsToDo.RemoveRegNumFromMask(targetReg);
-            if (startLogging)
+            if (compiler->verbose)
             {
                 printf("targetReg: %s, ", getRegName(targetReg));
                 printf("targetRegsReady: ");
-                compiler->dumpRegMask(targetRegsReady.getLow(), TYP_FLOAT);
+                compiler->dumpRegMask(targetRegsReady);
                 printf(", targetRegsToDo: ");
-                compiler->dumpRegMask(targetRegsToDo.getLow(), TYP_FLOAT);
+                compiler->dumpRegMask(targetRegsToDo);
                 printf("\n");
             }
 
@@ -9901,14 +9899,6 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             assert(interval != nullptr);
             addResolution(block, insertionPoint, interval, targetReg,
                           fromReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock) DEBUG_ARG(resolveTypeName[resolveType]));
-
-            if (startLogging && genIsValidFloatReg(sourceReg))
-            {
-                printf("***** Added resolution: %s -> %s (%s)\n", getRegName(fromReg), getRegName(targetReg), (interval->registerType == TYP_DOUBLE) ? "double" : "float");
-                printf("  Removing ");
-                interval->tinyDump();
-                printf("for %s.\n", getRegName(sourceReg));
-            }
 
             sourceIntervals[sourceReg] = nullptr;
             location[sourceReg]        = REG_NA;
@@ -9934,7 +9924,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
                         // Since we want to check if we can free upperHalfReg, only do it
                         // if lowerHalfReg is ready.
-                        if (!revert && targetRegsReady.IsRegNumInMask(fromReg))
+                        if (targetRegsReady.IsRegNumInMask(fromReg))
                         {
                             regNumber upperHalfSrcReg = (regNumber)source[upperHalfReg];
                             regNumber upperHalfSrcLoc = (regNumber)location[upperHalfReg];
@@ -10076,13 +10066,6 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                                       targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
                                           DEBUG_ARG(resolveTypeName[resolveType]));
                         location[source[otherTargetReg]] = REG_STK;
-                        if (startLogging && genIsValidFloatReg(sourceReg))
-                        {
-                            printf("***** Added resolution: %s -> %s (%s)\n", getRegName(targetReg), getRegName(REG_STK), (otherInterval->registerType == TYP_DOUBLE) ? "double" : "float");
-                            printf("  Removing ");
-                            sourceIntervals[targetReg]->tinyDump();
-                            printf("for %s.\n", getRegName(sourceReg));
-                        }
 
                         regMaskTP otherTargetRegMask = genRegMask(otherTargetReg);
                         targetRegsFromStack |= otherTargetRegMask;
@@ -10093,14 +10076,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         addResolution(block, insertionPoint, sourceIntervals[sourceReg], targetReg,
                                       fromReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
                                           DEBUG_ARG(resolveTypeName[resolveType]));
-                        if (startLogging && genIsValidFloatReg(sourceReg))
-                        {
-                            printf("***** Added resolution: %s -> %s\n", getRegName(fromReg), getRegName(targetReg),
-                                   (sourceIntervals[sourceReg]->registerType == TYP_DOUBLE) ? "double" : "float");
-                            printf("  Removing ");
-                            sourceIntervals[sourceReg]->tinyDump();
-                            printf("for %s.\n", getRegName(sourceReg));
-                        }
+
                         location[sourceReg] = REG_NA;
 
                         // Add its "fromReg" to "targetRegsReady", only if:
@@ -10147,35 +10123,20 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
                         addResolutionForDouble(block, insertionPoint, sourceIntervals, location, tempReg, targetReg,
                                                resolveType DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock));
-                        if (startLogging && genIsValidFloatReg(targetReg))
-                        {
-                            printf("***** Added resolution: %s -> %s (double)\n", getRegName(targetReg), getRegName(tempReg));
-                            printf("  Removing ");
-                            sourceIntervals[targetReg]->tinyDump();
-                            printf("for %s.\n", getRegName(targetReg));
-                        }
                     }
-                    else if (!revert && otherTargetInterval != nullptr)
+                    else if (otherTargetInterval != nullptr)
                     {
                         assert(otherHalfTargetReg != REG_NA);
                         assert(otherTargetInterval->registerType == TYP_DOUBLE);
 
                         addResolutionForDouble(block, insertionPoint, sourceIntervals, location, tempReg,
                                                otherHalfTargetReg, resolveType DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock));
-                        if (startLogging && genIsValidFloatReg(otherHalfTargetReg))
-                        {
-                            printf("***** Added resolution: %s -> %s (double)\n", getRegName(otherHalfTargetReg),
-                                   getRegName(tempReg));
-                            printf("  Removing ");
-                            sourceIntervals[otherHalfTargetReg]->tinyDump();
-                            printf("for %s.\n", getRegName(otherHalfTargetReg));
-                        }
                     }
                     else
                     {
                         assert(sourceIntervals[targetReg] != nullptr);
 
-                        if (!revert && sourceIntervals[targetReg]->registerType == TYP_DOUBLE)
+                        if (sourceIntervals[targetReg]->registerType == TYP_DOUBLE)
                         {
                             addResolutionForDouble(block, insertionPoint, sourceIntervals, location, tempReg,
                                                    targetReg, resolveType DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock));
@@ -10190,14 +10151,6 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                             addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg,
                                           targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
                                               DEBUG_ARG(resolveTypeName[resolveType]));
-                        }
-                        if (startLogging && genIsValidFloatReg(targetReg))
-                        {
-                            printf("***** Added resolution: %s -> %s (%s)\n", getRegName(targetReg), getRegName(tempReg),
-                                   (sourceIntervals[targetReg]->registerType == TYP_DOUBLE) ? "double" : "float");
-                            printf("  Removing ");
-                            sourceIntervals[targetReg]->tinyDump();
-                            printf("for %s.\n", getRegName(targetReg));
                         }
                         location[targetReg] = (regNumberSmall)tempReg;
                     }
@@ -10226,14 +10179,6 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
         addResolution(block, insertionPoint, interval, targetReg,
                       REG_STK DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock) DEBUG_ARG(resolveTypeName[resolveType]));
-        if (startLogging && genIsValidFloatReg(targetReg))
-        {
-            printf("***** Added resolution: %s -> %s (%s)\n", getRegName(REG_STK), getRegName(targetReg),
-                   (interval->registerType == TYP_DOUBLE) ? "double" : "float");
-            printf("  Removing ");
-            interval->tinyDump();
-            printf("for %s.\n", getRegName(REG_STK));
-        }
     }
 }
 
