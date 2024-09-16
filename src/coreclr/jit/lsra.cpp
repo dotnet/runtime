@@ -10076,7 +10076,6 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         addResolution(block, insertionPoint, sourceIntervals[sourceReg], targetReg,
                                       fromReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
                                           DEBUG_ARG(resolveTypeName[resolveType]));
-
                         location[sourceReg] = REG_NA;
 
                         // Add its "fromReg" to "targetRegsReady", only if:
@@ -10136,22 +10135,22 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     {
                         assert(sourceIntervals[targetReg] != nullptr);
 
+                         addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg,
+                                      targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
+                                          DEBUG_ARG(resolveTypeName[resolveType]));
+
                         if (sourceIntervals[targetReg]->registerType == TYP_DOUBLE)
                         {
-                            addResolutionForDouble(block, insertionPoint, sourceIntervals, location, tempReg,
-                                                   targetReg, resolveType DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock));
+                            // If targetReg that got freed-up held DOUBLE value, then
+                            // free up the upper half register as well, if it is a
+                            // target of some other interval.
                             regNumber upperHalfReg = REG_NEXT(targetReg);
                             if (targetRegsToDo.IsRegNumInMask(upperHalfReg))
                             {
                                 targetRegsReady |= genRegMask(upperHalfReg);
                             }
                         }
-                        else
-                        {
-                            addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg,
-                                          targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
-                                              DEBUG_ARG(resolveTypeName[resolveType]));
-                        }
+
                         location[targetReg] = (regNumberSmall)tempReg;
                     }
 #else
