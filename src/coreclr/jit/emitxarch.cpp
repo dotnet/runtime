@@ -16422,7 +16422,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
             case EA_2BYTE:
             case EA_4BYTE:
                 // Set the 'w' bit to get the large version
-                code |= 0x1;
+                code = insIsCMOV(ins)? code : (code | (0x01));
                 break;
 
 #ifdef TARGET_AMD64
@@ -16431,7 +16431,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
                 // Don't need to zero out the high bits explicitly
                 code = AddRexWPrefix(id, code); // TODO-APX : Revisit. does xor or other cases need to be handled differently? see emitOutputRR
                 // Set the 'w' bit to get the large version
-                code |= 0x1;
+                code = insIsCMOV(ins)? code : (code | (0x01));
                 break;
 
 #endif // TARGET_AMD64
