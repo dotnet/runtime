@@ -117,6 +117,17 @@ internal static class TypeNameHelpers
         Debug.Assert(payloadOptions.UndoTruncatedTypeNames);
         Debug.Assert(libraryRecord.RawLibraryName is not null);
 
+        // This is potentially a DoS vector, as somebody could submit:
+        // [1] BinaryLibraryRecord = <really long string>
+        // [2] ClassRecord (lib = [1])
+        // [3] ClassRecord (lib = [1])
+        // ...
+        // [n] ClassRecord (lib = [1])
+        //
+        // Which means somebody submits a payload of length O(long + n) and tricks us into
+        // performing O(long * n) work. For this reason, we have marked the UndoTruncatedTypeNames
+        // property as "keep this disabled unless you trust the input."
+
         // Combining type and library allows us for handling truncated generic type names that may be present in resources.
         ArraySegment<char> assemblyQualifiedName = RentAssemblyQualifiedName(rawName, libraryRecord.RawLibraryName);
         TypeName.TryParse(assemblyQualifiedName.AsSpan(), out TypeName? typeName, payloadOptions.TypeNameParseOptions);
@@ -148,6 +159,10 @@ internal static class TypeNameHelpers
 
     private static TypeName With(this TypeName typeName, AssemblyNameInfo assemblyName)
     {
+        // This is a recursive method over potentially hostile TypeName arguments.
+        // We assume the complexity of the TypeName arg was appropriately bounded.
+        // See comment in TypeName.FullName property getter for more info.
+
         if (!typeName.IsSimple)
         {
             if (typeName.IsArray)
@@ -186,6 +201,7 @@ internal static class TypeNameHelpers
         return typeName;
     }
 
+    // Complexity is O(typeName.Length + libraryName.Length)
     private static ArraySegment<char> RentAssemblyQualifiedName(string typeName, string libraryName)
     {
         int length = typeName.Length + 1 + libraryName.Length;
