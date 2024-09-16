@@ -82,7 +82,6 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="System\Collections\Immutable\ImmutableHashSet_1.HashBucketByRefEqualityComparer.cs" />
     <Compile Include="System\Collections\Immutable\IStrongEnumerable_2.cs" />
     <Compile Include="System\Collections\Immutable\IStrongEnumerator_1.cs" />
-    <Compile Include="System\Collections\Immutable\IOrderedCollection.cs" />
     <Compile Include="System\Collections\Immutable\ImmutableArray.cs" />
     <Compile Include="System\Collections\Immutable\ImmutableArray_1.Builder.cs" />
     <Compile Include="System\Collections\Immutable\ImmutableArray_1.Builder.DebuggerProxy.cs" />

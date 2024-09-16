@@ -250,7 +250,7 @@ namespace System.Collections.Immutable
             /// <param name="start">The starting index within <paramref name="items"/> that should be captured by the node tree.</param>
             /// <param name="length">The number of elements from <paramref name="items"/> that should be captured by the node tree.</param>
             /// <returns>The root of the created node tree.</returns>
-            internal static Node NodeTreeFromList(IOrderedCollection<T> items, int start, int length)
+            internal static Node NodeTreeFromList(IReadOnlyList<T> items, int start, int length)
             {
                 Requires.NotNull(items, nameof(items));
                 Requires.Range(start >= 0, nameof(start));
@@ -587,7 +587,7 @@ namespace System.Collections.Immutable
                 var array = new T[this.Count];
                 this.CopyTo(array);
                 Array.Sort(array, comparison);
-                return NodeTreeFromList(array.AsOrderedCollection(), 0, this.Count);
+                return NodeTreeFromList(array.AsReadOnlyList(), 0, this.Count);
             }
 
             /// <summary>
@@ -626,7 +626,7 @@ namespace System.Collections.Immutable
                 var array = new T[this.Count];
                 this.CopyTo(array);
                 Array.Sort(array, index, count, comparer);
-                return NodeTreeFromList(array.AsOrderedCollection(), 0, this.Count);
+                return NodeTreeFromList(array.AsReadOnlyList(), 0, this.Count);
             }
 
             /// <summary>
@@ -1568,7 +1568,7 @@ namespace System.Collections.Immutable
                     return other._root;
                 }
 
-                IOrderedCollection<T> list = keys.AsOrderedCollection();
+                IReadOnlyList<T> list = keys.AsReadOnlyList();
                 return NodeTreeFromList(list, 0, list.Count);
             }
 

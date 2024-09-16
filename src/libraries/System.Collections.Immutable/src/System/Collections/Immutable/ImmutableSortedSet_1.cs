@@ -1157,7 +1157,7 @@ namespace System.Collections.Immutable
             list.RemoveRange(index, list.Count - index);
 
             // Use the now sorted list of unique items to construct a new sorted set.
-            Node root = Node.NodeTreeFromList(list.AsOrderedCollection(), 0, list.Count);
+            Node root = Node.NodeTreeFromList(list.AsReadOnlyList(), 0, list.Count);
             return this.Wrap(root);
         }
 
@@ -1215,7 +1215,7 @@ namespace System.Collections.Immutable
             list.RemoveRange(index, list.Count - index);
 
             // Use the now sorted list of unique items to construct a new sorted set.
-            Node root = Node.NodeTreeFromList(list.AsOrderedCollection(), 0, list.Count);
+            Node root = Node.NodeTreeFromList(list.AsReadOnlyList(), 0, list.Count);
             return this.Wrap(root);
         }
 

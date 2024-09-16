@@ -734,7 +734,7 @@ namespace System.Collections.Immutable
             /// <param name="start">The starting index within <paramref name="items"/> that should be captured by the node tree.</param>
             /// <param name="length">The number of elements from <paramref name="items"/> that should be captured by the node tree.</param>
             /// <returns>The root of the created node tree.</returns>
-            internal static Node NodeTreeFromList(IOrderedCollection<T> items, int start, int length)
+            internal static Node NodeTreeFromList(IReadOnlyList<T> items, int start, int length)
             {
                 Requires.NotNull(items, nameof(items));
                 Debug.Assert(start >= 0);
