@@ -746,6 +746,12 @@ public:
         return join_struct.n_threads;
     }
 
+    // This is for instrumentation only.
+    int get_join_lock()
+    {
+        return VolatileLoadWithoutBarrier (&join_struct.join_lock);
+    }
+
     void destroy ()
     {
         dprintf (JOIN_LOG, ("Destroying join structure"));
@@ -2383,12 +2389,27 @@ last_recorded_gc_info gc_heap::last_full_blocking_gc_info;
 
 uint64_t    gc_heap::last_alloc_reset_suspended_end_time = 0;
 size_t      gc_heap::max_peak_heap_size = 0;
+VOLATILE(size_t) gc_heap::llc_size = 0;
 
 #ifdef BACKGROUND_GC
 last_recorded_gc_info gc_heap::last_bgc_info[2];
 VOLATILE(bool)        gc_heap::is_last_recorded_bgc = false;
 VOLATILE(int)         gc_heap::last_bgc_info_index = 0;
 #endif //BACKGROUND_GC
+
+#ifdef DYNAMIC_HEAP_COUNT
+size_t      gc_heap::hc_change_cancelled_count_prep = 0;
+#ifdef BACKGROUND_GC
+int         gc_heap::bgc_th_creation_hist_index = 0;
+gc_heap::bgc_thread_creation_history gc_heap::bgc_th_creation_hist[max_bgc_thread_creation_count];
+size_t      gc_heap::bgc_th_count_created = 0;
+size_t      gc_heap::bgc_th_count_created_th_existed = 0;
+size_t      gc_heap::bgc_th_count_creation_failed = 0;
+size_t      gc_heap::bgc_init_gc_index = 0;
+VOLATILE(short) gc_heap::bgc_init_n_heaps = 0;
+size_t      gc_heap::hc_change_cancelled_count_bgc = 0;
+#endif //BACKGROUND_GC
+#endif //DYNAMIC_HEAP_COUNT
 
 #if defined(HOST_64BIT)
 #define MAX_ALLOWED_MEM_LOAD 85
@@ -2861,6 +2882,8 @@ gc_heap::dynamic_heap_count_data_t SVR::gc_heap::dynamic_heap_count_data;
 size_t gc_heap::current_total_soh_stable_size = 0;
 uint64_t gc_heap::last_suspended_end_time = 0;
 uint64_t gc_heap::change_heap_count_time = 0;
+uint64_t gc_heap::total_change_heap_count = 0;
+uint64_t gc_heap::total_change_heap_count_time = 0;
 size_t gc_heap::gc_index_full_gc_end = 0;
 uint64_t gc_heap::before_distribute_free_regions_time = 0;
 bool gc_heap::trigger_initial_gen2_p = false;
@@ -7040,6 +7063,7 @@ void gc_heap::gc_thread_function ()
 #endif //BACKGROUND_GC
                     {
                         dprintf (6666, ("changing heap count due to timeout"));
+                        add_to_hc_history (hc_record_before_check_timeout);
                         check_heap_count();
                     }
                 }
@@ -7068,6 +7092,7 @@ void gc_heap::gc_thread_function ()
                 {
                     // this was a request to do a GC so make sure we follow through with one.
                     dprintf (6666, ("changing heap count at a GC start"));
+                    add_to_hc_history (hc_record_before_check_gc_start);
                     check_heap_count ();
                 }
             }
@@ -7086,6 +7111,8 @@ void gc_heap::gc_thread_function ()
                     dprintf (9999, ("heap count changed %d->%d, now idle is %d", dynamic_heap_count_data.last_n_heaps, n_heaps,
                         VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_thread_count)));
                 }
+
+                add_to_hc_history (hc_record_set_last_heaps);
 
                 dynamic_heap_count_data.last_n_heaps = n_heaps;
             }
@@ -7150,11 +7177,14 @@ void gc_heap::gc_thread_function ()
                         // only that many threads will participate in the following GCs.
                         if (heap_number < new_n_heaps)
                         {
+                            add_to_hc_history (hc_record_still_active);
                             dprintf (9999, ("h%d < %d participating (dec)", heap_number, new_n_heaps));
                         }
                         else
                         {
                             Interlocked::Increment (&dynamic_heap_count_data.idle_thread_count);
+                            add_to_hc_history (hc_record_became_inactive);
+
                             dprintf (9999, ("GC thread %d wait_on_idle(%d < %d)(gc%Id), total idle %d", heap_number, old_n_heaps, new_n_heaps,
                                 VolatileLoadWithoutBarrier (&settings.gc_index), VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_thread_count)));
                             gc_idle_thread_event.Wait (INFINITE, FALSE);
@@ -7163,12 +7193,14 @@ void gc_heap::gc_thread_function ()
                     }
                     else
                     {
+                        add_to_hc_history ((heap_number < old_n_heaps) ? hc_record_still_active : hc_record_became_active);
                         dprintf (9999, ("h%d < %d participating (inc)", heap_number, new_n_heaps));
                     }
                 }
                 else
                 {
                     Interlocked::Increment (&dynamic_heap_count_data.idle_thread_count);
+                    add_to_hc_history (hc_record_inactive_waiting);
                     dprintf (9999, ("GC thread %d wait_on_idle(< max %d)(gc%Id), total  idle %d", heap_number, num_threads_to_wake,
                         VolatileLoadWithoutBarrier (&settings.gc_index), VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_thread_count)));
                     gc_idle_thread_event.Wait (INFINITE, FALSE);
@@ -9666,7 +9698,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         dprintf (GC_TABLE_LOG, ("card table: %zx(translated: %zx), seg map: %zx, mark array: %zx",
             (size_t)ct, (size_t)translated_ct, (size_t)new_seg_mapping_table, (size_t)card_table_mark_array (ct)));
 
-        if (is_bgc_in_progress())
+        if (hp->is_bgc_in_progress())
         {
             dprintf (GC_TABLE_LOG, ("new low: %p, new high: %p, latest mark array is %p(translate: %p)",
                                     saved_g_lowest_address, saved_g_highest_address,
@@ -9793,7 +9825,7 @@ fail:
     else
     {
 #ifdef BACKGROUND_GC
-        if (is_bgc_in_progress())
+        if (hp->is_bgc_in_progress())
         {
             dprintf (GC_TABLE_LOG, ("in range new seg %p, mark_array is %p", new_seg, hp->mark_array));
             if (!commit_mark_array_new_seg (hp, new_seg))
@@ -13093,21 +13125,6 @@ void region_free_list::age_free_regions (region_free_list free_lists[count_free_
     }
 }
 
-size_t region_free_list::get_size_free_regions(int max_age)
-{
-    size_t result = 0;
-
-    for (heap_segment* region = head_free_region; region != nullptr; region = heap_segment_next (region))
-    {
-        if (heap_segment_age_in_free (region) <= max_age)
-        {
-            result += get_region_size(region);
-        }
-    }
-
-    return result;
-}
-
 void region_free_list::print (int hn, const char* msg, int* ages)
 {
     dprintf (3, ("h%2d PRINTING-------------------------------", hn));
@@ -13229,13 +13246,7 @@ void region_free_list::sort_by_committed_and_age()
 
 void gc_heap::age_free_regions (const char* msg)
 {
-    // If we are doing an ephemeral GC as a precursor to a BGC, then we will age all of the region
-    // kinds during the ephemeral GC and skip the call to age_free_regions during the BGC itself.
-    bool age_all_region_kinds = (settings.condemned_generation == max_generation) || is_bgc_in_progress();
-    if (age_all_region_kinds)
-    {
-        global_free_huge_regions.age_free_regions();
-    }
+    bool age_all_region_kinds = (settings.condemned_generation == max_generation);
 
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < n_heaps; i++)
@@ -13436,7 +13447,6 @@ void gc_heap::distribute_free_regions()
     global_free_huge_regions.transfer_regions (&global_regions_to_decommit[huge_free_region]);
 
     size_t free_space_in_huge_regions = global_free_huge_regions.get_size_free_regions();
-    size_t free_space_in_young_huge_regions = global_free_huge_regions.get_size_free_regions(MIN_AGE_TO_DECOMMIT_HUGE - 1);
 
     ptrdiff_t num_regions_to_decommit[kind_count];
     int region_factor[kind_count] = { 1, LARGE_REGION_FACTOR };
@@ -13450,7 +13460,6 @@ void gc_heap::distribute_free_regions()
 #endif //!MULTIPLE_HEAPS
 
     size_t num_huge_region_units_to_consider[kind_count] = { 0, free_space_in_huge_regions / region_size[large_free_region] };
-    size_t num_young_huge_region_units_to_consider[kind_count] = { 0, free_space_in_young_huge_regions / region_size[large_free_region] };
 
     for (int kind = basic_free_region; kind < kind_count; kind++)
     {
@@ -13469,22 +13478,9 @@ void gc_heap::distribute_free_regions()
 
         ptrdiff_t balance = total_num_free_regions[kind] + num_huge_region_units_to_consider[kind] - total_budget_in_region_units[kind];
 
-        // Ignore young huge regions if they are contributing to a surplus.
-        if (balance > 0)
-        {
-            if (balance > static_cast<ptrdiff_t>(num_young_huge_region_units_to_consider[kind]))
-            {
-                balance -= num_young_huge_region_units_to_consider[kind];
-            }
-            else
-            {
-                balance = 0;
-            }
-        }
-
         if (
 #ifdef BACKGROUND_GC
-            (background_running_p() && (settings.condemned_generation != max_generation)) ||
+            background_running_p() ||
 #endif
             (balance < 0))
         {
@@ -14990,6 +14986,14 @@ gc_heap::init_gc_heap (int h_number)
     gc_done_event_set = false;
 
 #ifdef DYNAMIC_HEAP_COUNT
+    hchist_index_per_heap = 0;
+    memset (hchist_per_heap, 0, sizeof (hchist_per_heap));
+
+#ifdef BACKGROUND_GC
+    bgc_hchist_index_per_heap = 0;
+    memset (bgc_hchist_per_heap, 0, sizeof (bgc_hchist_per_heap));
+#endif //BACKGROUND_GC
+
     if (h_number != 0)
     {
         if (!gc_idle_thread_event.CreateAutoEventNoThrow (FALSE))
@@ -24315,10 +24319,31 @@ void gc_heap::garbage_collect (int n)
 #ifdef MULTIPLE_HEAPS
         if (heap_number == 0)
         {
+#ifdef DYNAMIC_HEAP_COUNT
+            size_t current_gc_index = VolatileLoadWithoutBarrier (&settings.gc_index);
+            if (!bgc_init_gc_index)
+            {
+                assert (!bgc_init_n_heaps);
+                bgc_init_gc_index = current_gc_index;
+                bgc_init_n_heaps = (short)n_heaps;
+            }
+            size_t saved_bgc_th_count_created = bgc_th_count_created;
+            size_t saved_bgc_th_count_created_th_existed = bgc_th_count_created_th_existed;
+            size_t saved_bgc_th_count_creation_failed = bgc_th_count_creation_failed;
+#endif //DYNAMIC_HEAP_COUNT
+
             for (int i = 0; i < n_heaps; i++)
             {
                 prepare_bgc_thread (g_heaps[i]);
             }
+
+#ifdef DYNAMIC_HEAP_COUNT
+            add_to_bgc_th_creation_history (current_gc_index,
+                (bgc_th_count_created - saved_bgc_th_count_created),
+                (bgc_th_count_created_th_existed - saved_bgc_th_count_created_th_existed),
+                (bgc_th_count_creation_failed - saved_bgc_th_count_creation_failed));
+#endif //DYNAMIC_HEAP_COUNT
+
             dprintf (2, ("setting bgc_threads_sync_event"));
             bgc_threads_sync_event.Set();
         }
@@ -25835,6 +25860,8 @@ void gc_heap::check_heap_count ()
         if (gc_heap::background_running_p())
         {
             // background GC is running - reset the new heap count
+            add_to_hc_history (hc_record_check_cancelled_bgc);
+            hc_change_cancelled_count_bgc++;
             dynamic_heap_count_data.new_n_heaps = n_heaps;
             dprintf (6666, ("can't change heap count! BGC in progress"));
         }
@@ -25847,6 +25874,8 @@ void gc_heap::check_heap_count ()
         if (!prepare_to_change_heap_count (dynamic_heap_count_data.new_n_heaps))
         {
             // we don't have sufficient resources - reset the new heap count
+            add_to_hc_history (hc_record_check_cancelled_prep);
+            hc_change_cancelled_count_prep++;
             dynamic_heap_count_data.new_n_heaps = n_heaps;
         }
     }
@@ -26422,7 +26451,10 @@ bool gc_heap::change_heap_count (int new_n_heaps)
 
     if (heap_number == 0)
     {
+        add_to_hc_history (hc_record_change_done);
         change_heap_count_time = GetHighPrecisionTimeStamp() - start_time;
+        total_change_heap_count_time += change_heap_count_time;
+        total_change_heap_count++;
         dprintf (6666, ("changing HC took %I64dus", change_heap_count_time));
     }
 
@@ -26539,6 +26571,52 @@ void gc_heap::process_datas_sample()
     last_suspended_end_time = before_distribute_free_regions_time;
 }
 
+void gc_heap::add_to_hc_history_worker (hc_history* hist, int* current_index, hc_record_stage stage, const char* msg)
+{
+    dprintf (6666, ("h%d ADDING %s HC hist to entry #%d, stage %d, gc index %Id, last %d, n %d, new %d",
+        heap_number, msg, *current_index, (int)stage, VolatileLoadWithoutBarrier (&settings.gc_index),
+        dynamic_heap_count_data.last_n_heaps, n_heaps, dynamic_heap_count_data.new_n_heaps));
+    hc_history* current_hist = &hist[*current_index];
+    current_hist->gc_index = VolatileLoadWithoutBarrier (&settings.gc_index);
+    current_hist->stage = (short)stage;
+    current_hist->last_n_heaps = (short)dynamic_heap_count_data.last_n_heaps;
+    current_hist->n_heaps = (short)n_heaps;
+    current_hist->new_n_heaps = (short)dynamic_heap_count_data.new_n_heaps;
+    current_hist->idle_thread_count = (short)dynamic_heap_count_data.idle_thread_count;
+    current_hist->gc_t_join_n_threads = (short)gc_t_join.get_num_threads();
+    current_hist->gc_t_join_join_lock = (short)gc_t_join.get_join_lock();
+    current_hist->gc_t_join_joined_p = (bool)gc_t_join.joined();
+#ifdef BACKGROUND_GC
+    current_hist->bgc_t_join_n_threads = (short)bgc_t_join.get_num_threads();
+    current_hist->bgc_t_join_join_lock = (short)bgc_t_join.get_join_lock();
+    current_hist->bgc_t_join_joined_p = (bool)bgc_t_join.joined();
+    current_hist->concurrent_p = (bool)settings.concurrent;
+    current_hist->bgc_thread_running = (bool)bgc_thread_running;
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(_DEBUG)
+    int bgc_thread_os_id = 0;
+
+    if (bgc_thread)
+    {
+        bgc_thread_os_id = (int)(*(size_t*)((uint8_t*)bgc_thread + 0x130));
+    }
+
+    current_hist->bgc_thread_os_id = bgc_thread_os_id;
+#endif //TARGET_AMD64 && TARGET_WINDOWS && !_DEBUG
+#endif //BACKGROUND_GC
+
+    *current_index  = (*current_index + 1) % max_hc_history_count;
+}
+
+void gc_heap::add_to_hc_history (hc_record_stage stage)
+{
+    add_to_hc_history_worker (hchist_per_heap, &hchist_index_per_heap, stage, "GC");
+}
+
+void gc_heap::add_to_bgc_hc_history (hc_record_stage stage)
+{
+    add_to_hc_history_worker (bgc_hchist_per_heap, &bgc_hchist_index_per_heap, stage, "BGC");
+}
 #endif //DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS
 
@@ -37777,15 +37855,7 @@ void gc_heap::allow_fgc()
 
 BOOL gc_heap::is_bgc_in_progress()
 {
-#ifdef MULTIPLE_HEAPS
-    // All heaps are changed to/from the bgc_initialized state during the VM suspension at the start of BGC,
-    // so checking any heap will work.
-    gc_heap* hp = g_heaps[0];
-#else
-    gc_heap* hp = pGenGCHeap;
-#endif //MULTIPLE_HEAPS
-
-    return (background_running_p() || (hp->current_bgc_state == bgc_initialized));
+    return (background_running_p() || (current_bgc_state == bgc_initialized));
 }
 
 void gc_heap::clear_commit_flag()
@@ -38300,16 +38370,6 @@ void gc_heap::background_mark_phase ()
     if (bgc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
-#ifdef USE_REGIONS
-        // There's no need to distribute a second time if we just did an ephemeral GC, and we don't want to
-        // age the free regions twice.
-        if (!do_ephemeral_gc_p)
-        {
-            distribute_free_regions ();
-            age_free_regions ("BGC");
-        }
-#endif //USE_REGIONS
-
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         // Resetting write watch for software write watch is pretty fast, much faster than for hardware write watch. Reset
         // can be done while the runtime is suspended or after the runtime is restarted, the preference was to reset while
@@ -39338,6 +39398,27 @@ void gc_heap::mark_absorb_new_alloc()
     clear_gen0_bricks();
 }
 
+#ifdef DYNAMIC_HEAP_COUNT
+void gc_heap::add_to_bgc_th_creation_history (size_t gc_index, size_t count_created,
+                                              size_t count_created_th_existed, size_t count_creation_failed)
+{
+    if ((count_created != 0) || (count_created_th_existed != 0) || (count_creation_failed != 0))
+    {
+        dprintf (6666, ("ADDING to BGC th hist entry%d gc index %Id, created %d, %d th existed, %d failed",
+            bgc_th_creation_hist_index, gc_index, count_created, count_created_th_existed, count_creation_failed));
+
+        bgc_thread_creation_history* current_hist = &bgc_th_creation_hist[bgc_th_creation_hist_index];
+        current_hist->gc_index = gc_index;
+        current_hist->n_heaps = (short)n_heaps;
+        current_hist->count_created = (short)count_created;
+        current_hist->count_created_th_existed = (short)count_created_th_existed;
+        current_hist->count_creation_failed = (short)count_creation_failed;
+
+        bgc_th_creation_hist_index = (bgc_th_creation_hist_index + 1) % max_bgc_thread_creation_count;
+    }
+}
+#endif //DYNAMIC_HEAP_COUNT
+
 BOOL gc_heap::prepare_bgc_thread(gc_heap* gh)
 {
     BOOL success = FALSE;
@@ -39347,10 +39428,28 @@ BOOL gc_heap::prepare_bgc_thread(gc_heap* gh)
     if (!(gh->bgc_thread_running))
     {
         dprintf (2, ("GC thread not running"));
-        if ((gh->bgc_thread == 0) && create_bgc_thread(gh))
+        if (gh->bgc_thread == 0)
         {
-            success = TRUE;
-            thread_created = TRUE;
+            if (create_bgc_thread(gh))
+            {
+                success = TRUE;
+                thread_created = TRUE;
+#ifdef DYNAMIC_HEAP_COUNT
+                bgc_th_count_created++;
+#endif //DYNAMIC_HEAP_COUNT
+            }
+            else
+            {
+#ifdef DYNAMIC_HEAP_COUNT
+                bgc_th_count_creation_failed++;
+#endif //DYNAMIC_HEAP_COUNT
+            }
+        }
+        else
+        {
+#ifdef DYNAMIC_HEAP_COUNT
+            bgc_th_count_created_th_existed++;
+#endif //DYNAMIC_HEAP_COUNT
         }
     }
     else
@@ -39612,12 +39711,18 @@ void gc_heap::bgc_thread_function()
 #ifdef DYNAMIC_HEAP_COUNT
         if (n_heaps <= heap_number)
         {
+            add_to_bgc_hc_history (hc_record_bgc_inactive);
+
             // this is the case where we have more background GC threads than heaps
             // - wait until we're told to continue...
             dprintf (9999, ("BGC thread %d idle (%d heaps) (gc%Id)", heap_number, n_heaps, VolatileLoadWithoutBarrier (&settings.gc_index)));
             bgc_idle_thread_event.Wait(INFINITE, FALSE);
             dprintf (9999, ("BGC thread %d waking from idle (%d heaps) (gc%Id)", heap_number, n_heaps, VolatileLoadWithoutBarrier (&settings.gc_index)));
             continue;
+        }
+        else
+        {
+            add_to_bgc_hc_history (hc_record_bgc_active);
         }
 #endif //DYNAMIC_HEAP_COUNT
 
@@ -51497,6 +51602,8 @@ size_t gc_heap::get_gen0_min_size()
         trueSize = max(trueSize, (size_t)(256*1024));
         int n_heaps = 1;
 #endif //SERVER_GC
+
+        llc_size = trueSize;
 
 #ifdef DYNAMIC_HEAP_COUNT
         if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
