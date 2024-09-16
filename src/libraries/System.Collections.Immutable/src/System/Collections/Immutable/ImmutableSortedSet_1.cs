@@ -21,9 +21,9 @@ namespace System.Collections.Immutable
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
 #if NET
-    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlySet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
+    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, IReadOnlySet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
 #else
-    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
+    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
 #endif
     {
         /// <summary>
@@ -119,17 +119,13 @@ namespace System.Collections.Immutable
 
         #endregion
 
-        #region ISortKeyCollection<T> Properties
-
         /// <summary>
-        /// See the <see cref="ISortKeyCollection{T}"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         public IComparer<T> KeyComparer
         {
             get { return _comparer; }
         }
-
-        #endregion
 
         #region IReadOnlyList<T> Indexers
 

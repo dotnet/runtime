@@ -33,26 +33,4 @@ namespace System.Collections.Immutable
         /// </summary>
         IBinaryTree? Right { get; }
     }
-
-    /// <summary>
-    /// An interface for binary tree nodes that allow our common enumerator to walk the graph.
-    /// </summary>
-    /// <typeparam name="T">The type of value for each node.</typeparam>
-    internal interface IBinaryTree<out T> : IBinaryTree
-    {
-        /// <summary>
-        /// Gets the value represented by the current node.
-        /// </summary>
-        T Value { get; }
-
-        /// <summary>
-        /// Gets the left branch of this node.
-        /// </summary>
-        new IBinaryTree<T>? Left { get; }
-
-        /// <summary>
-        /// Gets the right branch of this node.
-        /// </summary>
-        new IBinaryTree<T>? Right { get; }
-    }
 }

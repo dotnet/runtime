@@ -16,7 +16,7 @@ namespace System.Collections.Immutable
     /// <typeparam name="TValue">The type of the value.</typeparam>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableDictionaryDebuggerProxy<,>))]
-    public sealed partial class ImmutableSortedDictionary<TKey, TValue> : IImmutableDictionary<TKey, TValue>, ISortKeyCollection<TKey>, IDictionary<TKey, TValue>, IDictionary
+    public sealed partial class ImmutableSortedDictionary<TKey, TValue> : IImmutableDictionary<TKey, TValue>, IDictionary<TKey, TValue>, IDictionary
     {
         /// <summary>
         /// An empty sorted dictionary with default sort and equality comparers.

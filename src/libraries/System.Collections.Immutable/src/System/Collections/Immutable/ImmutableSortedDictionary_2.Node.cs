@@ -14,7 +14,7 @@ namespace System.Collections.Immutable
         /// A node in the AVL tree storing this map.
         /// </summary>
         [DebuggerDisplay("{_key} = {_value}")]
-        internal sealed class Node : IBinaryTree<KeyValuePair<TKey, TValue>>, IEnumerable<KeyValuePair<TKey, TValue>>
+        internal sealed class Node : IBinaryTree, IEnumerable<KeyValuePair<TKey, TValue>>
         {
             /// <summary>
             /// The default empty node.
@@ -103,22 +103,6 @@ namespace System.Collections.Immutable
                 {
                     return _left == null;
                 }
-            }
-
-            /// <summary>
-            /// Gets the left branch of this node.
-            /// </summary>
-            IBinaryTree<KeyValuePair<TKey, TValue>>? IBinaryTree<KeyValuePair<TKey, TValue>>.Left
-            {
-                get { return _left; }
-            }
-
-            /// <summary>
-            /// Gets the right branch of this node.
-            /// </summary>
-            IBinaryTree<KeyValuePair<TKey, TValue>>? IBinaryTree<KeyValuePair<TKey, TValue>>.Right
-            {
-                get { return _right; }
             }
 
             /// <summary>
