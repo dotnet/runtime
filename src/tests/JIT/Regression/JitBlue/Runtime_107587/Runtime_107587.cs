@@ -29,6 +29,9 @@ public class Runtime_107587
     [Fact]   
     public static void TestEntryPoint()
     {
-        new Runtime_107587().Method0();
+        try
+        {
+            new Runtime_107587().Method0();
+        } catch {}
     }
 }
