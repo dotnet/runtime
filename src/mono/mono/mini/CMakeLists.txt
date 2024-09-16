@@ -337,7 +337,7 @@ endif()
 
 add_library(monosgen-static STATIC $<TARGET_OBJECTS:eglib_objects> $<TARGET_OBJECTS:utils_objects> $<TARGET_OBJECTS:sgen_objects> $<TARGET_OBJECTS:metadata_objects> $<TARGET_OBJECTS:monosgen-objects>)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
-target_link_libraries(monosgen-static PRIVATE dn-containers)
+target_link_libraries(monosgen-static PRIVATE dn-containers minipal)
 
 if(DISABLE_COMPONENTS OR AOT_COMPONENTS)
   # add component fallback stubs into static mono library when components have been disabled.

@@ -28,9 +28,11 @@ endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${RUNTIME_ARCH_ASM_OBJECTS})
 add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
+target_link_libraries(Runtime.WorkstationGC PRIVATE minipal_objects)
 
 add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
 add_dependencies(Runtime.ServerGC aot_eventing_headers)
+target_link_libraries(Runtime.ServerGC PRIVATE minipal_objects)
 
 add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
 add_dependencies(standalonegc-disabled aot_eventing_headers)
@@ -60,6 +62,7 @@ if (CLR_CMAKE_TARGET_WIN32)
   add_library(Runtime.ServerGC.GuardCF STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
   target_compile_definitions(Runtime.ServerGC.GuardCF PRIVATE -DFEATURE_SVR_GC)
   set_target_properties(Runtime.ServerGC.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
+  target_link_libraries(Runtime.ServerGC.GuardCF PRIVATE minipal_objects)
 
   if (CLR_CMAKE_TARGET_ARCH_AMD64)
     add_library(Runtime.VxsortEnabled.GuardCF STATIC ${VXSORT_SOURCES})

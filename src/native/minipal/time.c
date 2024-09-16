@@ -53,12 +53,12 @@ inline static void YieldProcessor()
 }
 
 #define tccSecondsToNanoSeconds 1000000000      // 10^9
-int64_t minipal_hires_tick_frequency()
+int64_t minipal_hires_tick_frequency(void)
 {
     return tccSecondsToNanoSeconds;
 }
 
-int64_t minipal_hires_ticks()
+int64_t minipal_hires_ticks(void)
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
     return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);

@@ -13,4 +13,8 @@ check_symbol_exists(
     time.h
     HAVE_CLOCK_GETTIME_NSEC_NP)
 
+if(CMAKE_C_BYTE_ORDER STREQUAL "BIG_ENDIAN")
+    set(BIGENDIAN 1)
+endif()
+
 configure_file(${CMAKE_CURRENT_LIST_DIR}/minipalconfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/minipalconfig.h)
