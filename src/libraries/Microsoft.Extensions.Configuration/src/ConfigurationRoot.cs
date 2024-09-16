@@ -10,7 +10,7 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// The root node for a configuration.
+    /// Represents the root node for a configuration.
     /// </summary>
     [DebuggerDisplay("{DebuggerToString(),nq}")]
     [DebuggerTypeProxy(typeof(ConfigurationRootDebugView))]
@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Gets the immediate children sub-sections.
+        /// Gets the immediate children subsections.
         /// </summary>
         /// <returns>The children.</returns>
         public IEnumerable<IConfigurationSection> GetChildren() => this.GetChildrenImplementation(null);
@@ -66,19 +66,19 @@ namespace Microsoft.Extensions.Configuration
         public IChangeToken GetReloadToken() => _changeToken;
 
         /// <summary>
-        /// Gets a configuration sub-section with the specified key.
+        /// Gets a configuration subsection with the specified key.
         /// </summary>
         /// <param name="key">The key of the configuration section.</param>
         /// <returns>The <see cref="IConfigurationSection"/>.</returns>
         /// <remarks>
-        ///     This method will never return <c>null</c>. If no matching sub-section is found with the specified key,
-        ///     an empty <see cref="IConfigurationSection"/> will be returned.
+        ///     This method will never return <c>null</c>. If no matching subsection is found with the specified key,
+        ///     an empty <see cref="IConfigurationSection"/> is returned.
         /// </remarks>
         public IConfigurationSection GetSection(string key)
             => new ConfigurationSection(this, key);
 
         /// <summary>
-        /// Force the configuration values to be reloaded from the underlying sources.
+        /// Forces the configuration values to be reloaded from the underlying sources.
         /// </summary>
         public void Reload()
         {

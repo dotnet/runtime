@@ -473,6 +473,8 @@
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true'">
     <!-- we need to re-enable BinaryFormatter within test projects since some tests exercise these code paths to ensure compat -->
     <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+    <!-- For DotNetBuildSourceOnly, only the bundled BinaryFormatter is built which does not support serialization. -->
+    <EnableUnsafeBinaryFormatterSerialization Condition="'$(DotNetBuildSourceOnly)' == 'true'">false</EnableUnsafeBinaryFormatterSerialization>
     <!-- don't warn on usage of BinaryFormatter or legacy serialization infrastructure from test projects -->
     <NoWarn>$(NoWarn);SYSLIB0011;SYSLIB0050;SYSLIB0051</NoWarn>
     <!-- don't warn about unnecessary trim warning suppressions. can be removed with preview 6. -->
