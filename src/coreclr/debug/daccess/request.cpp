@@ -2855,11 +2855,11 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
                 // The assembly list is not valid in a closed appdomain.
                 AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
                     kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-                CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+                CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-                while (i.Next(pDomainAssembly.This()))
+                while (i.Next(pAssembly.This()))
                 {
-                    if (pDomainAssembly->IsLoaded())
+                    if (pAssembly->IsLoaded())
                     {
                         appdomainData->AssemblyCount++;
                     }
@@ -2971,16 +2971,15 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
         PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
         AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
 
         int n = 0;
         if (values)
         {
-            while (i.Next(pDomainAssembly.This()) && (n < count))
+            while (i.Next(pAssembly.This()) && (n < count))
             {
-                if (pDomainAssembly->IsLoaded())
+                if (pAssembly->IsLoaded())
                 {
-                    CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
                     // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
                     values[n++] = HOST_CDADDR(pAssembly.Extract());
                 }
@@ -2988,8 +2987,8 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
         }
         else
         {
-            while (i.Next(pDomainAssembly.This()))
-                if (pDomainAssembly->IsLoaded())
+            while (i.Next(pAssembly.This()))
+                if (pAssembly->IsLoaded())
                     n++;
         }
 

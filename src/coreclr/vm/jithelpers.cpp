@@ -901,6 +901,12 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
 
     FCALL_CONTRACT;
 
+    staticBlock = GetThreadLocalStaticBaseIfExistsAndInitialized(staticBlockIndex);
+    if (staticBlock != NULL)
+    {
+        return staticBlock;
+    }
+
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
     TLSIndex tlsIndex(staticBlockIndex);
     // Check if the class constructor needs to be run
@@ -974,6 +980,12 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
     void* staticBlock = nullptr;
 
     FCALL_CONTRACT;
+
+    staticBlock = GetThreadLocalStaticBaseIfExistsAndInitialized(staticBlockIndex);
+    if (staticBlock != NULL)
+    {
+        return staticBlock;
+    }
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
 
