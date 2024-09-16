@@ -5614,31 +5614,11 @@ void emitter::emitIns_R_R_I(instruction     ins,
             isLdSt     = true;
             break;
 
-        case INS_ldapurb:
-        case INS_stlurb:
-        case INS_ldurb:
-        case INS_sturb:
-            // size is ignored
-            unscaledOp = true;
-            scale      = 0;
-            isLdSt     = true;
-            break;
-
         case INS_ldrh:
         case INS_strh:
             // size is ignored
             unscaledOp = false;
             scale      = 1;
-            isLdSt     = true;
-            break;
-
-        case INS_ldurh:
-        case INS_ldapurh:
-        case INS_sturh:
-        case INS_stlurh:
-            // size is ignored
-            unscaledOp = true;
-            scale      = 0;
             isLdSt     = true;
             break;
 
@@ -5661,24 +5641,19 @@ void emitter::emitIns_R_R_I(instruction     ins,
             isLdrStr   = true;
             break;
 
+        case INS_ldurb:
+        case INS_ldurh:
         case INS_ldur:
+        case INS_sturb:
+        case INS_sturh:
         case INS_stur:
+        case INS_ldapurb:
+        case INS_ldapurh:
         case INS_ldapur:
+        case INS_stlurb:
+        case INS_stlurh:
         case INS_stlur:
-            // Is the target a vector register?
-            if (isVectorRegister(reg1))
-            {
-                assert(isValidVectorLSDatasize(size));
-                assert(isGeneralRegisterOrSP(reg2));
-                isSIMD = true;
-            }
-            else
-            {
-                assert(isValidGeneralDatasize(size));
-            }
-            unscaledOp = true;
-            scale      = 0;
-            isLdSt     = true;
+            fmt = IF_LS_2C;
             break;
 
         case INS_ld2:
@@ -7894,6 +7869,8 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 {
     emitAttr  size         = EA_SIZE(attr);
     insFormat fmt          = IF_NONE;
+    insOpts   opt          = INS_OPTS_NONE;
+    regNumber reg3         = REG_NA;
     unsigned  scale        = 0;
     bool      isLdrStr     = false;
     bool      isSimple     = true;
@@ -7959,7 +7936,17 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             {
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
                 codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-                fmt = IF_DR_3A; // add reg1,reg2,rsvdReg
+                imm = 0;
+                if (encodingZRtoSP(reg2) == REG_SP)
+                {
+                    fmt  = IF_DR_3C; // add reg1,sp,rsvdReg
+                    opt  = INS_OPTS_LSL;
+                    reg3 = rsvdReg;
+                }
+                else
+                {
+                    fmt = IF_DR_3A; // add reg1,reg2,rsvdReg
+                }
             }
             break;
 
@@ -8068,10 +8055,11 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     id->idIns(ins);
     id->idInsFmt(fmt);
-    id->idInsOpt(INS_OPTS_NONE);
+    id->idInsOpt(opt);
 
     id->idReg1(reg1);
     id->idReg2(reg2);
+    id->idReg3(reg3);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
     id->idSetIsLclVar();
 
@@ -8110,7 +8098,6 @@ void emitter::emitIns_R_R_S_S(
 
     // TODO-ARM64-CQ: with compLocallocUsed, should we use REG_SAVED_LOCALLOC_SP instead?
     regNumber reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
-    reg3           = encodingSPtoZR(reg3);
 
     bool    useRegForAdr = true;
     ssize_t imm          = disp;
@@ -8141,6 +8128,8 @@ void emitter::emitIns_R_R_S_S(
         reg3 = rsvd;
         imm  = 0;
     }
+
+    reg3 = encodingSPtoZR(reg3);
 
     assert(fmt != IF_NONE);
 
@@ -12273,7 +12262,7 @@ SKIP_GC_UPDATE:
                 }
                 else
                 {
-                    assert(id->idReg3() == REG_SP);
+                    assert(encodingZRtoSP(id->idReg3()) == REG_SP);
                 }
                 assert(varNum2 != -1);
 #endif // DEBUG
@@ -17107,7 +17096,7 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
     }
 
     regNumber prevReg1   = emitLastIns->idReg1();
-    regNumber prevReg2   = emitLastIns->idReg2();
+    regNumber prevReg2   = encodingZRtoSP(emitLastIns->idReg2());
     insFormat lastInsFmt = emitLastIns->idInsFmt();
     emitAttr  prevSize   = emitLastIns->idOpSize();
     ssize_t   prevImm    = emitGetInsSC(emitLastIns);

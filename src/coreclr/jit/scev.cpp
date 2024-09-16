@@ -515,6 +515,11 @@ Scev* ScalarEvolutionContext::CreateScevForConstant(GenTreeIntConCommon* tree)
 //
 Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int depth)
 {
+    if (!varTypeIsIntegralOrI(tree->TypeGet()))
+    {
+        return nullptr;
+    }
+
     switch (tree->OperGet())
     {
         case GT_CNS_INT:

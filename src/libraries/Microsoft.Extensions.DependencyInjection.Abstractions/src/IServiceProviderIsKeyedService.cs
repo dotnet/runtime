@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// Optional service used to determine if the specified type with the specified service key is available
+    /// Provides methods to determine if the specified type with the specified service key is available
     /// from the <see cref="IServiceProvider"/>.
     /// </summary>
     public interface IServiceProviderIsKeyedService : IServiceProviderIsService

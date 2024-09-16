@@ -25,22 +25,6 @@
 #include "dispparammarshaler.h"
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_COMINTEROP
-    DEFINE_ASM_QUAL_TYPE_NAME(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME, g_EnumeratorToEnumClassName, g_CorelibAsmName);
-
-    static const int        ENUMERATOR_TO_ENUM_VARIANT_CM_NAME_LEN    = ARRAY_SIZE(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME);
-    static const char       ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE[]    = {""};
-    static const int        ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE_LEN  = ARRAY_SIZE(ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE);
-
-    DEFINE_ASM_QUAL_TYPE_NAME(COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME, g_ColorTranslatorClassName, g_DrawingAsmName);
-    DEFINE_ASM_QUAL_TYPE_NAME(COLOR_ASM_QUAL_TYPE_NAME, g_ColorClassName, g_DrawingAsmName);
-
-    #define OLECOLOR_TO_SYSTEMCOLOR_METH_NAME   "FromOle"
-    #define SYSTEMCOLOR_TO_OLECOLOR_METH_NAME   "ToOle"
-#endif // FEATURE_COMINTEROP
-
-
-
 #define INITIAL_NUM_STRUCT_ILSTUB_HASHTABLE_BUCKETS 32
 #define INITIAL_NUM_CMHELPER_HASHTABLE_BUCKETS 32
 #define INITIAL_NUM_CMINFO_HASHTABLE_BUCKETS 32
@@ -48,366 +32,49 @@
 
 namespace
 {
-    //-------------------------------------------------------------------------------------
-    // Return the copy ctor for a VC class (if any exists)
-    //-------------------------------------------------------------------------------------
-    void FindCopyCtor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut)
+    //==========================================================================
+    // Sets up the custom marshaler information.
+    //==========================================================================
+    CustomMarshalerInfo *SetupCustomMarshalerInfo(LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes, Assembly *pAssembly, TypeHandle hndManagedType)
     {
-        CONTRACTL
+        CONTRACT (CustomMarshalerInfo*)
         {
-            THROWS;
-            GC_TRIGGERS;    // CompareTypeTokens may trigger GC
-            MODE_ANY;
+            STANDARD_VM_CHECK;
+            PRECONDITION(CheckPointer(pAssembly));
+            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACTL_END;
+        CONTRACT_END;
 
-        *pMDOut = NULL;
+        EEMarshalingData *pMarshalingData = NULL;
 
-        HRESULT     hr;
-        mdMethodDef tk;
-        mdTypeDef cl = pMT->GetCl();
-        TypeHandle th = TypeHandle(pMT);
-        SigTypeContext typeContext(th);
+        // The assembly is not shared so we use the current app domain's marshaling data.
+        pMarshalingData = pAssembly->GetLoaderAllocator()->GetMarshalingData();
 
-        IMDInternalImport *pInternalImport = pModule->GetMDImport();
-        MDEnumHolder      hEnumMethod(pInternalImport);
-
-        //
-        // First try for the new syntax: <MarshalCopy>
-        //
-        IfFailThrow(pInternalImport->EnumInit(mdtMethodDef, cl, &hEnumMethod));
-
-        while (pInternalImport->EnumNext(&hEnumMethod, &tk))
-        {
-            _ASSERTE(TypeFromToken(tk) == mdtMethodDef);
-            DWORD dwMemberAttrs;
-            IfFailThrow(pInternalImport->GetMethodDefProps(tk, &dwMemberAttrs));
-
-            if (IsMdSpecialName(dwMemberAttrs))
-            {
-                ULONG cSig;
-                PCCOR_SIGNATURE pSig;
-                LPCSTR pName;
-                IfFailThrow(pInternalImport->GetNameAndSigOfMethodDef(tk, &pSig, &cSig, &pName));
-
-                const char *pBaseName = "<MarshalCopy>";
-                int ncBaseName = (int)strlen(pBaseName);
-                int nc = (int)strlen(pName);
-                if (nc >= ncBaseName && 0 == strcmp(pName + nc - ncBaseName, pBaseName))
-                {
-                    MetaSig msig(pSig, cSig, pModule, &typeContext);
-
-                    // Looking for the prototype   void <MarshalCopy>(Ptr VC, Ptr VC);
-                    if (msig.NumFixedArgs() == 2)
-                    {
-                        if (msig.GetReturnType() == ELEMENT_TYPE_VOID)
-                        {
-                            if (msig.NextArg() == ELEMENT_TYPE_PTR)
-                            {
-                                SigPointer sp1 = msig.GetArgProps();
-                                IfFailThrow(sp1.GetElemType(NULL));
-                                CorElementType eType;
-                                IfFailThrow(sp1.GetElemType(&eType));
-                                if (eType == ELEMENT_TYPE_VALUETYPE)
-                                {
-                                    mdToken tk1;
-                                    IfFailThrow(sp1.GetToken(&tk1));
-                                    hr = CompareTypeTokensNT(tk1, cl, pModule, pModule);
-                                    if (FAILED(hr))
-                                    {
-                                        pInternalImport->EnumClose(&hEnumMethod);
-                                        ThrowHR(hr);
-                                    }
-
-                                    if (hr == S_OK)
-                                    {
-                                        if (msig.NextArg() == ELEMENT_TYPE_PTR)
-                                        {
-                                            SigPointer sp2 = msig.GetArgProps();
-                                            IfFailThrow(sp2.GetElemType(NULL));
-                                            IfFailThrow(sp2.GetElemType(&eType));
-                                            if (eType == ELEMENT_TYPE_VALUETYPE)
-                                            {
-                                                mdToken tk2;
-                                                IfFailThrow(sp2.GetToken(&tk2));
-
-                                                hr = (tk2 == tk1) ? S_OK : CompareTypeTokensNT(tk2, cl, pModule, pModule);
-                                                if (hr == S_OK)
-                                                {
-                                                    *pMDOut = pModule->LookupMethodDef(tk);
-                                                    return;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        //
-        // Next try the old syntax: global .__ctor
-        //
-        IfFailThrow(pInternalImport->EnumGlobalFunctionsInit(&hEnumMethod));
-
-        while (pInternalImport->EnumNext(&hEnumMethod, &tk))
-        {
-            _ASSERTE(TypeFromToken(tk) == mdtMethodDef);
-            DWORD dwMemberAttrs;
-            IfFailThrow(pInternalImport->GetMethodDefProps(tk, &dwMemberAttrs));
-
-            if (IsMdSpecialName(dwMemberAttrs))
-            {
-                ULONG cSig;
-                PCCOR_SIGNATURE pSig;
-                LPCSTR pName;
-                IfFailThrow(pInternalImport->GetNameAndSigOfMethodDef(tk, &pSig, &cSig, &pName));
-
-                const char *pBaseName = ".__ctor";
-                int ncBaseName = (int)strlen(pBaseName);
-                int nc = (int)strlen(pName);
-                if (nc >= ncBaseName && 0 == strcmp(pName + nc - ncBaseName, pBaseName))
-                {
-
-                    MetaSig msig(pSig, cSig, pModule, &typeContext);
-
-                    // Looking for the prototype   Ptr VC __ctor(Ptr VC, ByRef VC);
-                    if (msig.NumFixedArgs() == 2)
-                    {
-                        if (msig.GetReturnType() == ELEMENT_TYPE_PTR)
-                        {
-                            SigPointer spret = msig.GetReturnProps();
-                            IfFailThrow(spret.GetElemType(NULL));
-                            CorElementType eType;
-                            IfFailThrow(spret.GetElemType(&eType));
-                            if (eType == ELEMENT_TYPE_VALUETYPE)
-                            {
-                                mdToken tk0;
-                                IfFailThrow(spret.GetToken(&tk0));
-                                hr = CompareTypeTokensNT(tk0, cl, pModule, pModule);
-                                if (FAILED(hr))
-                                {
-                                    pInternalImport->EnumClose(&hEnumMethod);
-                                    ThrowHR(hr);
-                                }
-
-                                if (hr == S_OK)
-                                {
-                                    if (msig.NextArg() == ELEMENT_TYPE_PTR)
-                                    {
-                                        SigPointer sp1 = msig.GetArgProps();
-                                        IfFailThrow(sp1.GetElemType(NULL));
-                                        IfFailThrow(sp1.GetElemType(&eType));
-                                        if (eType == ELEMENT_TYPE_VALUETYPE)
-                                        {
-                                            mdToken tk1;
-                                            IfFailThrow(sp1.GetToken(&tk1));
-                                            hr = (tk1 == tk0) ? S_OK : CompareTypeTokensNT(tk1, cl, pModule, pModule);
-                                            if (FAILED(hr))
-                                            {
-                                                pInternalImport->EnumClose(&hEnumMethod);
-                                                ThrowHR(hr);
-                                            }
-
-                                            if (hr == S_OK)
-                                            {
-                                                if (msig.NextArg() == ELEMENT_TYPE_PTR &&
-                                                    msig.GetArgProps().HasCustomModifier(pModule, "Microsoft.VisualC.IsCXXReferenceModifier", ELEMENT_TYPE_CMOD_OPT))
-                                                {
-                                                    SigPointer sp2 = msig.GetArgProps();
-                                                    IfFailThrow(sp2.GetElemType(NULL));
-                                                    IfFailThrow(sp2.GetElemType(&eType));
-                                                    if (eType == ELEMENT_TYPE_VALUETYPE)
-                                                    {
-                                                        mdToken tk2;
-                                                        IfFailThrow(sp2.GetToken(&tk2));
-
-                                                        hr = (tk2 == tk0) ? S_OK : CompareTypeTokensNT(tk2, cl, pModule, pModule);
-                                                        if (hr == S_OK)
-                                                        {
-                                                            *pMDOut = pModule->LookupMethodDef(tk);
-                                                            return;
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // Retrieve the custom marshaler helper from the EE marshaling data.
+        RETURN pMarshalingData->GetCustomMarshalerInfo(pAssembly, hndManagedType, strMarshalerTypeName, cMarshalerTypeNameBytes, strCookie, cCookieStrBytes);
     }
 
-
-    //-------------------------------------------------------------------------------------
-    // Return the destructor for a VC class (if any exists)
-    //-------------------------------------------------------------------------------------
-    void FindDtor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut)
+#ifdef FEATURE_COMINTEROP
+    CustomMarshalerInfo *GetIEnumeratorCustomMarshalerInfo(Assembly *pAssembly)
     {
-        CONTRACTL
+        CONTRACT (CustomMarshalerInfo*)
         {
-            THROWS;
-            GC_TRIGGERS;    // CompareTypeTokens may trigger GC
-            MODE_ANY;
+            STANDARD_VM_CHECK;
+            PRECONDITION(CheckPointer(pAssembly));
+            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACTL_END;
+        CONTRACT_END;
 
-        *pMDOut = NULL;
+        EEMarshalingData *pMarshalingData = NULL;
 
-        HRESULT     hr;
-        mdMethodDef tk;
-        mdTypeDef cl = pMT->GetCl();
-        TypeHandle th = TypeHandle(pMT);
-        SigTypeContext typeContext(th);
+        // The assembly is not shared so we use the current app domain's marshaling data.
+        pMarshalingData = pAssembly->GetLoaderAllocator()->GetMarshalingData();
 
-        IMDInternalImport *pInternalImport = pModule->GetMDImport();
-        MDEnumHolder       hEnumMethod(pInternalImport);
-
-        //
-        // First try for the new syntax: <MarshalDestroy>
-        //
-        IfFailThrow(pInternalImport->EnumInit(mdtMethodDef, cl, &hEnumMethod));
-
-        while (pInternalImport->EnumNext(&hEnumMethod, &tk))
-        {
-            _ASSERTE(TypeFromToken(tk) == mdtMethodDef);
-            DWORD dwMemberAttrs;
-            IfFailThrow(pInternalImport->GetMethodDefProps(tk, &dwMemberAttrs));
-
-            if (IsMdSpecialName(dwMemberAttrs))
-            {
-                ULONG cSig;
-                PCCOR_SIGNATURE pSig;
-                LPCSTR pName;
-                IfFailThrow(pInternalImport->GetNameAndSigOfMethodDef(tk, &pSig, &cSig, &pName));
-
-                const char *pBaseName = "<MarshalDestroy>";
-                int ncBaseName = (int)strlen(pBaseName);
-                int nc = (int)strlen(pName);
-                if (nc >= ncBaseName && 0 == strcmp(pName + nc - ncBaseName, pBaseName))
-                {
-                    MetaSig msig(pSig, cSig, pModule, &typeContext);
-
-                    // Looking for the prototype   void <MarshalDestroy>(Ptr VC);
-                    if (msig.NumFixedArgs() == 1)
-                    {
-                        if (msig.GetReturnType() == ELEMENT_TYPE_VOID)
-                        {
-                            if (msig.NextArg() == ELEMENT_TYPE_PTR)
-                            {
-                                SigPointer sp1 = msig.GetArgProps();
-                                IfFailThrow(sp1.GetElemType(NULL));
-                                CorElementType eType;
-                                IfFailThrow(sp1.GetElemType(&eType));
-                                if (eType == ELEMENT_TYPE_VALUETYPE)
-                                {
-                                    mdToken tk1;
-                                    IfFailThrow(sp1.GetToken(&tk1));
-
-                                    hr = CompareTypeTokensNT(tk1, cl, pModule, pModule);
-                                    IfFailThrow(hr);
-
-                                    if (hr == S_OK)
-                                    {
-                                        *pMDOut = pModule->LookupMethodDef(tk);
-                                        return;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-
-        //
-        // Next try the old syntax: global .__dtor
-        //
-        IfFailThrow(pInternalImport->EnumGlobalFunctionsInit(&hEnumMethod));
-
-        while (pInternalImport->EnumNext(&hEnumMethod, &tk))
-        {
-            _ASSERTE(TypeFromToken(tk) == mdtMethodDef);
-            ULONG cSig;
-            PCCOR_SIGNATURE pSig;
-            LPCSTR pName;
-            IfFailThrow(pInternalImport->GetNameAndSigOfMethodDef(tk, &pSig, &cSig, &pName));
-
-            const char *pBaseName = ".__dtor";
-            int ncBaseName = (int)strlen(pBaseName);
-            int nc = (int)strlen(pName);
-            if (nc >= ncBaseName && 0 == strcmp(pName + nc - ncBaseName, pBaseName))
-            {
-                MetaSig msig(pSig, cSig, pModule, &typeContext);
-
-                // Looking for the prototype   void __dtor(Ptr VC);
-                if (msig.NumFixedArgs() == 1)
-                {
-                    if (msig.GetReturnType() == ELEMENT_TYPE_VOID)
-                    {
-                        if (msig.NextArg() == ELEMENT_TYPE_PTR)
-                        {
-                            SigPointer sp1 = msig.GetArgProps();
-                            IfFailThrow(sp1.GetElemType(NULL));
-                            CorElementType eType;
-                            IfFailThrow(sp1.GetElemType(&eType));
-                            if (eType == ELEMENT_TYPE_VALUETYPE)
-                            {
-                                mdToken tk1;
-                                IfFailThrow(sp1.GetToken(&tk1));
-                                hr = CompareTypeTokensNT(tk1, cl, pModule, pModule);
-                                if (FAILED(hr))
-                                {
-                                    pInternalImport->EnumClose(&hEnumMethod);
-                                    ThrowHR(hr);
-                                }
-
-                                if (hr == S_OK)
-                                {
-                                    *pMDOut = pModule->LookupMethodDef(tk);
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // Retrieve the custom marshaler helper from the EE marshaling data.
+        RETURN pMarshalingData->GetIEnumeratorMarshalerInfo();
     }
-}
+#endif // FEATURE_COMINTEROP
 
-//==========================================================================
-// Set's up the custom marshaler information.
-//==========================================================================
-CustomMarshalerHelper *SetupCustomMarshalerHelper(LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes, Assembly *pAssembly, TypeHandle hndManagedType)
-{
-    CONTRACT (CustomMarshalerHelper*)
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pAssembly));
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    EEMarshalingData *pMarshalingData = NULL;
-
-    // The assembly is not shared so we use the current app domain's marshaling data.
-    pMarshalingData = pAssembly->GetLoaderAllocator()->GetMarshalingData();
-
-    // Retrieve the custom marshaler helper from the EE marshaling data.
-    RETURN pMarshalingData->GetCustomMarshalerHelper(pAssembly, hndManagedType, strMarshalerTypeName, cMarshalerTypeNameBytes, strCookie, cCookieStrBytes);
-}
-
-namespace
-{
     //==========================================================================
     // Return: S_OK if there is valid data to compress
     //         S_FALSE if at end of data block
@@ -743,69 +410,6 @@ VOID CollateParamTokens(IMDInternalImport *pInternalImport, mdMethodDef md, ULON
     }
 }
 
-
-#ifdef FEATURE_COMINTEROP
-OleColorMarshalingInfo::OleColorMarshalingInfo() :
-    m_OleColorToSystemColorMD(NULL),
-    m_SystemColorToOleColorMD(NULL)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    SString qualifiedColorTranslatorTypeName(SString::Utf8, COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME);
-
-    // Load the color translator class.
-    TypeHandle hndColorTranslatorType = TypeName::GetTypeFromAsmQualifiedName(qualifiedColorTranslatorTypeName.GetUnicode(), TRUE /* bThrowIfNotFound */);
-
-    SString qualifiedColorTypeName(SString::Utf8, COLOR_ASM_QUAL_TYPE_NAME);
-    // Load the color class.
-    m_hndColorType = TypeName::GetTypeFromAsmQualifiedName(qualifiedColorTypeName.GetUnicode(), TRUE /* bThrowIfNotFound */);
-
-    // Retrieve the method to convert an OLE_COLOR to a System.Drawing.Color.
-    m_OleColorToSystemColorMD = MemberLoader::FindMethodByName(hndColorTranslatorType.GetMethodTable(), OLECOLOR_TO_SYSTEMCOLOR_METH_NAME);
-    _ASSERTE(m_OleColorToSystemColorMD && "Unable to find the translator method to convert an OLE_COLOR to a System.Drawing.Color!");
-    _ASSERTE(m_OleColorToSystemColorMD->IsStatic() && "The translator method to convert an OLE_COLOR to a System.Drawing.Color must be static!");
-
-    // Retrieve the method to convert a System.Drawing.Color to an OLE_COLOR.
-    m_SystemColorToOleColorMD = MemberLoader::FindMethodByName(hndColorTranslatorType.GetMethodTable(), SYSTEMCOLOR_TO_OLECOLOR_METH_NAME);
-    _ASSERTE(m_SystemColorToOleColorMD && "Unable to find the translator method to convert a System.Drawing.Color to an OLE_COLOR!");
-    _ASSERTE(m_SystemColorToOleColorMD->IsStatic() && "The translator method to convert a System.Drawing.Color to an OLE_COLOR must be static!");
-}
-
-
-void *OleColorMarshalingInfo::operator new(size_t size, LoaderHeap *pHeap)
-{
-    CONTRACT (void*)
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pHeap));
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    void* mem = pHeap->AllocMem(S_SIZE_T(size));
-
-    RETURN mem;
-}
-
-
-void OleColorMarshalingInfo::operator delete(void *pMem)
-{
-    LIMITED_METHOD_CONTRACT;
-    // Instances of this class are always allocated on the loader heap so
-    // the delete operator has nothing to do.
-}
-
-#endif // FEATURE_COMINTEROP
-
 EEMarshalingData::EEMarshalingData(LoaderAllocator* pAllocator, CrstBase *pCrst) :
     m_pAllocator(pAllocator),
     m_pHeap(pAllocator->GetLowFrequencyHeap()),
@@ -821,8 +425,7 @@ EEMarshalingData::EEMarshalingData(LoaderAllocator* pAllocator, CrstBase *pCrst)
 
     LockOwner lock = {pCrst, IsOwnerOfCrst};
     m_structILStubCache.Init(INITIAL_NUM_STRUCT_ILSTUB_HASHTABLE_BUCKETS, &lock);
-    m_CMHelperHashtable.Init(INITIAL_NUM_CMHELPER_HASHTABLE_BUCKETS, &lock);
-    m_SharedCMHelperToCMInfoMap.Init(INITIAL_NUM_CMINFO_HASHTABLE_BUCKETS, &lock);
+    m_CMInfoHashTable.Init(INITIAL_NUM_CMHELPER_HASHTABLE_BUCKETS, &lock);
 }
 
 
@@ -830,22 +433,11 @@ EEMarshalingData::~EEMarshalingData()
 {
     WRAPPER_NO_CONTRACT;
 
-    CustomMarshalerInfo *pCMInfo;
-
-    // <TODO>@TODO(DM): Remove the linked list of CMInfo's and instead hang the OBJECTHANDLE
-    // contained inside the CMInfo off the AppDomain directly. The AppDomain can have
-    // a list of tasks to do when it gets teared down and we could leverage that
-    // to release the object handles.</TODO>
-
-    // Walk through the linked list and delete all the custom marshaler info's.
-    while ((pCMInfo = m_pCMInfoList.RemoveHead()) != NULL)
-        delete pCMInfo;
-
 #ifdef FEATURE_COMINTEROP
-    if (m_pOleColorInfo)
+    if (m_pIEnumeratorMarshalerInfo)
     {
-        delete m_pOleColorInfo;
-        m_pOleColorInfo = NULL;
+        delete m_pIEnumeratorMarshalerInfo;
+        m_pIEnumeratorMarshalerInfo = NULL;
     }
 #endif
 }
@@ -895,31 +487,28 @@ void EEMarshalingData::CacheStructILStub(MethodTable* pMT, MethodDesc* pStubMD)
 }
 
 
-CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes)
+CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes)
 {
-    CONTRACT (CustomMarshalerHelper*)
+    CONTRACT (CustomMarshalerInfo*)
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pAssembly));
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
 
-    CustomMarshalerHelper *pCMHelper = NULL;
-    CustomMarshalerHelper* pNewCMHelper = NULL;
+    CustomMarshalerInfo *pCMInfo = NULL;
     NewHolder<CustomMarshalerInfo> pNewCMInfo(NULL);
 
     TypeHandle hndCustomMarshalerType;
 
     // Create the key that will be used to lookup in the hashtable.
-    EECMHelperHashtableKey Key(cMarshalerTypeNameBytes, strMarshalerTypeName, cCookieStrBytes, strCookie, hndManagedType.GetInstantiation(), pAssembly);
+    EECMInfoHashtableKey Key(cMarshalerTypeNameBytes, strMarshalerTypeName, cCookieStrBytes, strCookie, hndManagedType.GetInstantiation(), pAssembly);
 
     // Lookup the custom marshaler helper in the hashtable.
-    if (m_CMHelperHashtable.GetValue(&Key, (HashDatum*)&pCMHelper))
-        RETURN pCMHelper;
+    if (m_CMInfoHashTable.GetValue(&Key, (HashDatum*)&pCMInfo))
+        RETURN pCMInfo;
 
     {
         GCX_COOP();
@@ -941,127 +530,54 @@ CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAss
 
         // Create the custom marshaler info in the specified heap.
         pNewCMInfo = new (m_pHeap) CustomMarshalerInfo(m_pAllocator, hndCustomMarshalerType, hndManagedType, strCookie, cCookieStrBytes);
-
-        // Create the custom marshaler helper in the specified heap.
-        pNewCMHelper = new (m_pHeap) NonSharedCustomMarshalerHelper(pNewCMInfo);
     }
 
     {
         CrstHolder lock(m_lock);
 
         // Verify that the custom marshaler helper has not already been added by another thread.
-        if (m_CMHelperHashtable.GetValue(&Key, (HashDatum*)&pCMHelper))
-        {
-            RETURN pCMHelper;
-        }
-
-        // Add the custom marshaler helper to the hash table.
-        m_CMHelperHashtable.InsertValue(&Key, pNewCMHelper, FALSE);
-
-        // If we create the CM info, then add it to the linked list.
-        if (pNewCMInfo)
-        {
-            m_pCMInfoList.InsertHead(pNewCMInfo);
-            pNewCMInfo.SuppressRelease();
-        }
-
-        // Release the lock and return the custom marshaler info.
-    }
-
-    RETURN pNewCMHelper;
-}
-
-CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(SharedCustomMarshalerHelper *pSharedCMHelper)
-{
-    CONTRACT (CustomMarshalerInfo*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    CustomMarshalerInfo *pCMInfo = NULL;
-    NewHolder<CustomMarshalerInfo> pNewCMInfo(NULL);
-    TypeHandle hndCustomMarshalerType;
-
-    // Lookup the custom marshaler helper in the hashtable.
-    if (m_SharedCMHelperToCMInfoMap.GetValue(pSharedCMHelper, (HashDatum*)&pCMInfo))
-        RETURN pCMInfo;
-
-    // Append a NULL terminator to the marshaler type name.
-    CQuickArray<char> strCMMarshalerTypeName;
-    DWORD strLen = pSharedCMHelper->GetMarshalerTypeNameByteCount();
-    strCMMarshalerTypeName.ReSizeThrows(pSharedCMHelper->GetMarshalerTypeNameByteCount() + 1);
-    memcpy(strCMMarshalerTypeName.Ptr(), pSharedCMHelper->GetMarshalerTypeName(), strLen);
-    strCMMarshalerTypeName[strLen] = 0;
-
-    // Load the custom marshaler class.
-    hndCustomMarshalerType = TypeName::GetTypeReferencedByCustomAttribute(strCMMarshalerTypeName.Ptr(), pSharedCMHelper->GetAssembly());
-    if (hndCustomMarshalerType.IsGenericTypeDefinition())
-    {
-        // Instantiate generic custom marshalers using the instantiation of the type being marshaled.
-        hndCustomMarshalerType = hndCustomMarshalerType.Instantiate(pSharedCMHelper->GetManagedType().GetInstantiation());
-    }
-
-    // Create the custom marshaler info in the specified heap.
-    pNewCMInfo = new (m_pHeap) CustomMarshalerInfo(m_pAllocator,
-                                                   hndCustomMarshalerType,
-                                                   pSharedCMHelper->GetManagedType(),
-                                                   pSharedCMHelper->GetCookieString(),
-                                                   pSharedCMHelper->GetCookieStringByteCount());
-
-    {
-        CrstHolder lock(m_lock);
-
-        // Verify that the custom marshaler info has not already been added by another thread.
-        if (m_SharedCMHelperToCMInfoMap.GetValue(pSharedCMHelper, (HashDatum*)&pCMInfo))
+        if (m_CMInfoHashTable.GetValue(&Key, (HashDatum*)&pCMInfo))
         {
             RETURN pCMInfo;
         }
 
         // Add the custom marshaler helper to the hash table.
-        m_SharedCMHelperToCMInfoMap.InsertValue(pSharedCMHelper, pNewCMInfo, FALSE);
+        m_CMInfoHashTable.InsertValue(&Key, pNewCMInfo);
 
-        // Add the custom marshaler into the linked list.
-        m_pCMInfoList.InsertHead(pNewCMInfo);
+        // If we create the CM info, then add it to the linked list.
+        pNewCMInfo.SuppressRelease();
 
         // Release the lock and return the custom marshaler info.
     }
 
-    pNewCMInfo.SuppressRelease();
     RETURN pNewCMInfo;
 }
 
 #ifdef FEATURE_COMINTEROP
-OleColorMarshalingInfo *EEMarshalingData::GetOleColorMarshalingInfo()
+CustomMarshalerInfo *EEMarshalingData::GetIEnumeratorMarshalerInfo()
 {
-    CONTRACT (OleColorMarshalingInfo*)
+    CONTRACT (CustomMarshalerInfo*)
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM());
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
 
-    if (m_pOleColorInfo == NULL)
+    if (m_pIEnumeratorMarshalerInfo == NULL)
     {
-        OleColorMarshalingInfo *pOleColorInfo = new (m_pHeap) OleColorMarshalingInfo();
+        CustomMarshalerInfo *pMarshalerInfo = CustomMarshalerInfo::CreateIEnumeratorMarshalerInfo(m_pHeap, m_pAllocator);
 
-    if (InterlockedCompareExchangeT(&m_pOleColorInfo, pOleColorInfo, NULL) != NULL)
+        if (InterlockedCompareExchangeT(&m_pIEnumeratorMarshalerInfo, pMarshalerInfo, NULL) != NULL)
         {
-            // Another thread beat us to it. Delete on OleColorMarshalingInfo is an empty operation
+            // Another thread beat us to it. Delete on CustomMarshalerInfo is an empty operation
             // which is OK, since the possible leak is rare, small, and constant. This is the same
             // pattern as in code:GetCustomMarshalerInfo.
-            delete pOleColorInfo;
+            delete pMarshalerInfo;
         }
     }
 
-    RETURN m_pOleColorInfo;
+    RETURN m_pIEnumeratorMarshalerInfo;
 }
 #endif // FEATURE_COMINTEROP
 
@@ -1117,6 +633,7 @@ namespace
             // Skip modreqs and modopts in the signature.
             case ELEMENT_TYPE_CMOD_OPT:
             case ELEMENT_TYPE_CMOD_REQD:
+            case ELEMENT_TYPE_CMOD_INTERNAL:
             {
                 if(FAILED(sig.GetElemType(NULL)))
                 {
@@ -1251,13 +768,14 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
     CorNativeType nativeType        = NATIVE_TYPE_DEFAULT;
     Assembly *pAssembly             = pModule->GetAssembly();
-    BOOL fNeedsCopyCtor             = FALSE;
+    Module* pCopyCtorModule         = NULL;
+    mdToken pCopyCtorModifier       = mdTokenNil;
     m_BestFit                       = BestFit;
     m_ThrowOnUnmappableChar         = ThrowOnUnmappableChar;
     m_ms                            = ms;
     m_fAnsi                         = (ms == MARSHAL_SCENARIO_NDIRECT || ms == MARSHAL_SCENARIO_FIELD) && (nlType == nltAnsi);
     m_nativeArgSize                 = 0;
-    m_pCMHelper                     = NULL;
+    m_pCMInfo                     = NULL;
     m_CMVt                          = VT_EMPTY;
     m_args.m_pMarshalInfo           = this;
     m_args.m_pMT                    = NULL;
@@ -1378,11 +896,10 @@ MarshalInfo::MarshalInfo(Module* pModule,
             // Skip ET_BYREF
             IfFailGoto(sigtmp.GetByte(NULL), lFail);
 
-            if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
-                sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD) )
+            if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModule, &pCopyCtorModifier) ||
+                sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModule, &pCopyCtorModifier) )
             {
                 mtype = ELEMENT_TYPE_VALUETYPE;
-                fNeedsCopyCtor = TRUE;
                 m_byref = FALSE;
             }
         }
@@ -1411,8 +928,8 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (!th.IsEnum())
             {
                 // Check for Copy Constructor Modifier
-                if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
-                    sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD) )
+                if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModule, &pCopyCtorModifier) ||
+                    sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModule, &pCopyCtorModifier) )
                 {
                     mtype = mtype2;
 
@@ -1420,7 +937,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     // of this method we are pretending that the parameter is a value type passed by-value.
                     IfFailGoto(sig.GetElemType(NULL), lFail);
 
-                    fNeedsCopyCtor = TRUE;
                     m_byref = FALSE;
                 }
             }
@@ -1454,7 +970,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 IfFailGoto(E_FAIL, lFail);
         }
 
-        // Set m_type to MARSHAL_TYPE_UNKNOWN in case SetupCustomMarshalerHelper throws.
+        // Set m_type to MARSHAL_TYPE_UNKNOWN in case SetupCustomMarshalerInfo throws.
         m_type = MARSHAL_TYPE_UNKNOWN;
 
         if (fLoadCustomMarshal)
@@ -1464,7 +980,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
             if (!fEmitsIL)
             {
-                m_pCMHelper = SetupCustomMarshalerHelper(ParamInfo.m_strCMMarshalerTypeName,
+                m_pCMInfo = SetupCustomMarshalerInfo(ParamInfo.m_strCMMarshalerTypeName,
                                                         ParamInfo.m_cCMMarshalerTypeNameBytes,
                                                         ParamInfo.m_strCMCookie,
                                                         ParamInfo.m_cCMCookieStrBytes,
@@ -1473,7 +989,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             }
             else
             {
-                m_pCMHelper = NULL;
+                m_pCMInfo = NULL;
                 MethodDesc* pMDforModule = pMD;
                 if (pMD->IsILStub())
                 {
@@ -1952,15 +1468,11 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     {
                         if (!fEmitsIL)
                         {
-                            m_pCMHelper = SetupCustomMarshalerHelper(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME,
-                                                                     ENUMERATOR_TO_ENUM_VARIANT_CM_NAME_LEN,
-                                                                     ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE,
-                                                                     ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE_LEN,
-                                                                     pAssembly, sigTH);
+                            m_pCMInfo = GetIEnumeratorCustomMarshalerInfo(pAssembly);
                         }
                         else
                         {
-                            m_pCMHelper = NULL;
+                            m_pCMInfo = NULL;
                             MethodDesc* pMDforModule = pMD;
                             if (pMD->IsILStub())
                             {
@@ -2295,6 +1807,14 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     IfFailGoto(E_FAIL, lFail);
                 }
 
+                GCX_COOP();
+
+                FieldDesc* pColorTypeField = CoreLibBinder::GetField(FIELD__COLORMARSHALER__COLOR_TYPE);
+                pColorTypeField->CheckRunClassInitThrowing();
+                void* colorTypeHandle = pColorTypeField->GetStaticValuePtr();
+
+                m_args.color.m_pColorType = TypeHandle::FromPtr(colorTypeHandle).GetMethodTable();
+
                 m_type = MARSHAL_TYPE_OLECOLOR;
             }
 #endif // FEATURE_COMINTEROP
@@ -2381,17 +1901,11 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     }
                     else
                     {
-                        if (fNeedsCopyCtor && !IsFieldScenario()) // We don't support automatically discovering copy constructors for fields.
+                        if (pCopyCtorModifier != mdTokenNil && !IsFieldScenario()) // We don't support automatically discovering copy constructors for fields.
                         {
 #if defined(FEATURE_IJW)
-                            MethodDesc *pCopyCtor;
-                            MethodDesc *pDtor;
-                            FindCopyCtor(pModule, m_pMT, &pCopyCtor);
-                            FindDtor(pModule, m_pMT, &pDtor);
-
+                            m_args.mm.m_pSigMod = ClassLoader::LoadTypeDefOrRefThrowing(pCopyCtorModule, pCopyCtorModifier).AsMethodTable();
                             m_args.mm.m_pMT = m_pMT;
-                            m_args.mm.m_pCopyCtor = pCopyCtor;
-                            m_args.mm.m_pDtor = pDtor;
                             m_type = MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR;
 #else // !defined(FEATURE_IJW)
                             m_resID = IDS_EE_BADMARSHAL_BADMANAGED;
@@ -2813,7 +2327,6 @@ namespace
 
 void MarshalInfo::GenerateArgumentIL(NDirectStubLinker* psl,
                                      int argOffset, // the argument's index is m_paramidx + argOffset
-                                     UINT nativeStackOffset, // offset of the argument on the native stack
                                      BOOL fMngToNative)
 {
     CONTRACTL
@@ -2841,8 +2354,7 @@ void MarshalInfo::GenerateArgumentIL(NDirectStubLinker* psl,
                                              fMngToNative,
                                              &m_args,
                                              &resID,
-                                             m_paramidx + argOffset,
-                                             nativeStackOffset);
+                                             m_paramidx + argOffset);
 
 
     if (amostat == OVERRIDDEN)
@@ -3627,7 +3139,7 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
             break;
 
         case MARSHAL_TYPE_REFERENCECUSTOMMARSHALER:
-            pDispParamMarshaler = new DispParamCustomMarshaler(m_pCMHelper, m_CMVt);
+            pDispParamMarshaler = new DispParamCustomMarshaler(m_pCMInfo, m_CMVt);
             break;
     }
 
@@ -4079,13 +3591,13 @@ bool IsUnsupportedTypedrefReturn(MetaSig& msig)
 
 #include "stubhelpers.h"
 
-extern "C" void* QCALLTYPE StubHelpers_CreateCustomMarshalerHelper(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType)
+extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject)
 {
     QCALL_CONTRACT;
 
-    CustomMarshalerHelper* pCMHelper = NULL;
-
     BEGIN_QCALL;
+
+    CustomMarshalerInfo* pCMInfo = NULL;
 
     Module* pModule = pMD->GetModule();
     Assembly* pAssembly = pModule->GetAssembly();
@@ -4094,40 +3606,37 @@ extern "C" void* QCALLTYPE StubHelpers_CreateCustomMarshalerHelper(MethodDesc* p
     if (!hndManagedType.IsTypeDesc() &&
         IsTypeRefOrDef(g_CollectionsEnumeratorClassName, hndManagedType.GetModule(), hndManagedType.GetCl()))
     {
-        pCMHelper = SetupCustomMarshalerHelper(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME,
-                                               ENUMERATOR_TO_ENUM_VARIANT_CM_NAME_LEN,
-                                               ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE,
-                                               ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE_LEN,
-                                               pAssembly, hndManagedType);
+        _ASSERTE(!"Setting the custom marshaler for IEnumerator should be done on the managed side.");
     }
-    else
 #endif // FEATURE_COMINTEROP
+
+    //
+    // Retrieve the native type for the current parameter.
+    //
+
+    BOOL result;
+    NativeTypeParamInfo ParamInfo;
+    result = ParseNativeTypeInfo(paramToken, pModule->GetMDImport(), &ParamInfo);
+
+    //
+    // this should all have been done at stub creation time
+    //
+    CONSISTENCY_CHECK(result != 0);
+    CONSISTENCY_CHECK(ParamInfo.m_NativeType == NATIVE_TYPE_CUSTOMMARSHALER);
+
+    // Set up the custom marshaler info.
+    pCMInfo = SetupCustomMarshalerInfo(ParamInfo.m_strCMMarshalerTypeName,
+                                            ParamInfo.m_cCMMarshalerTypeNameBytes,
+                                            ParamInfo.m_strCMCookie,
+                                            ParamInfo.m_cCMCookieStrBytes,
+                                            pAssembly,
+                                            hndManagedType);
+
     {
-        //
-        // Retrieve the native type for the current parameter.
-        //
-
-        BOOL result;
-        NativeTypeParamInfo ParamInfo;
-        result = ParseNativeTypeInfo(paramToken, pModule->GetMDImport(), &ParamInfo);
-
-        //
-        // this should all have been done at stub creation time
-        //
-        CONSISTENCY_CHECK(result != 0);
-        CONSISTENCY_CHECK(ParamInfo.m_NativeType == NATIVE_TYPE_CUSTOMMARSHALER);
-
-        // Set up the custom marshaler info.
-        pCMHelper = SetupCustomMarshalerHelper(ParamInfo.m_strCMMarshalerTypeName,
-                                                ParamInfo.m_cCMMarshalerTypeNameBytes,
-                                                ParamInfo.m_strCMCookie,
-                                                ParamInfo.m_cCMCookieStrBytes,
-                                                pAssembly,
-                                                hndManagedType);
+        GCX_COOP();
+        retObject.Set(pCMInfo->GetCustomMarshaler());
     }
 
     END_QCALL;
-
-    return (void*)pCMHelper;
 }
 

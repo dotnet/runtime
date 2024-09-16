@@ -119,10 +119,12 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
     }
 
     LPVOID pArg = nullptr;
+    int argSize = m_argIterator.IsArgPassedByRef() ? (int)sizeof(void*) : m_argIterator.GetArgSize();
 
     if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
     {
-        pArg = (LPBYTE)&pData->floatArgumentRegisters + (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+        int offset = argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters();
+        pArg = (LPBYTE)&pData->floatArgumentRegisters + offset;
 
         ArgLocDesc* pArgLocDesc = m_argIterator.GetArgLocDescForStructInRegs();
 
@@ -147,16 +149,18 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
                 }
                 return (LPBYTE)&pData->buffer[bufferPos];
             }
-
             _ASSERTE(pArgLocDesc->m_cFloatReg == 2);
         }
+
+        _ASSERTE(offset + argSize <= sizeof(pData->floatArgumentRegisters));
 
         return pArg;
     }
 
     if (TransitionBlock::IsArgumentRegisterOffset(argOffset))
     {
-        pArg = (LPBYTE)&pData->argumentRegisters + (argOffset - TransitionBlock::GetOffsetOfArgumentRegisters());
+        int offset = argOffset - TransitionBlock::GetOffsetOfArgumentRegisters();
+        pArg = (LPBYTE)&pData->argumentRegisters + offset;
         ArgLocDesc* pArgLocDesc = m_argIterator.GetArgLocDescForStructInRegs();
 
         if (pArgLocDesc)
@@ -175,14 +179,32 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
 
                 return (LPBYTE)&pData->buffer[bufferPos];
             }
-
             _ASSERTE(pArgLocDesc->m_cFloatReg == 0);
+        }
+
+        if (offset + argSize > (int)sizeof(pData->argumentRegisters))
+        {
+            // Struct partially spilled on stack.
+            // The first part of struct must be in last argument register.
+            const int regIndex = NUM_ARGUMENT_REGISTERS - 1;
+            _ASSERTE(regIndex == offset / sizeof(pData->argumentRegisters.a[0]));
+            _ASSERTE(argSize <= 16);
+            _ASSERTE(m_bufferPos + 16 <= sizeof(pData->buffer));
+
+            UINT32 bufferPos = m_bufferPos;
+            UINT64* dst  = (UINT64*)&pData->buffer[bufferPos];
+            m_bufferPos += 16;
+
+            *dst = *(UINT64*)pArg;
+            // spilled part must be first on stack (if we copy too much, that's ok)
+            *(dst + 1) = *(UINT64*)pData->profiledSp;
+
+            return (LPBYTE)&pData->buffer[bufferPos];
         }
     }
     else
     {
         _ASSERTE(TransitionBlock::IsStackArgumentOffset(argOffset));
-
         pArg = (LPBYTE)pData->profiledSp + (argOffset - TransitionBlock::GetOffsetOfArgs());
     }
 

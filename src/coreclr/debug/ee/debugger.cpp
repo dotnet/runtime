@@ -2832,7 +2832,7 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS_FROM_GETJITINFO;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -5134,7 +5134,7 @@ DebuggerModule * Debugger::LookupOrCreateModule(DomainAssembly * pDomainAssembly
 {
     _ASSERTE(pDomainAssembly != NULL);
     LOG((LF_CORDB, LL_INFO1000, "D::LOCM df=%p\n", pDomainAssembly));
-    DebuggerModule * pDModule = LookupOrCreateModule(pDomainAssembly->GetModule(), AppDomain::GetCurrentDomain());
+    DebuggerModule * pDModule = LookupOrCreateModule(pDomainAssembly->GetModule());
     LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p ad=%p -> dm=%p\n", pDomainAssembly->GetModule(), AppDomain::GetCurrentDomain(), pDModule));
     _ASSERTE(pDModule != NULL);
     _ASSERTE(pDModule->GetDomainAssembly() == pDomainAssembly);
@@ -5166,12 +5166,11 @@ DebuggerModule * Debugger::LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAss
 //
 // Arguments:
 //    pModule - required runtime module. May be domain netural.
-//    pAppDomain - required appdomain that the module is in.
 //
 // Returns:
 //    Debugger Module isntance for the given domain file. May be lazily created.
 //
-DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule, AppDomain *pAppDomain)
+DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule)
 {
     CONTRACTL
     {
@@ -5180,23 +5179,14 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule, AppDomain *pAppD
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p ad=%p\n", pModule, pAppDomain));
-
-    // DebuggerModules are relative to a specific AppDomain so we should always be looking up a module /
-    // AppDomain pair.
     _ASSERTE( pModule != NULL );
-    _ASSERTE( pAppDomain != NULL );
+    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p\n", pModule));
 
     // This is called from all over. We just need to lock in order to lookup. We don't need
     // the lock when actually using the DebuggerModule (since it won't be unloaded as long as there is a thread
     // in that appdomain). Many of our callers already have this lock, many don't.
     // We can take the lock anyways because it's reentrant.
     DebuggerDataLockHolder ch(g_pDebugger); // need to traverse module list
-
-    // if this is a module belonging to the system assembly, then scan
-    // the complete list of DebuggerModules looking for the one
-    // with a matching appdomain id
-    // it.
 
     DebuggerModule* dmod = NULL;
 
@@ -5208,7 +5198,7 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule, AppDomain *pAppD
     // If it doesn't exist, create it.
     if (dmod == NULL)
     {
-        LOG((LF_CORDB, LL_INFO1000, "D::LOCM dmod for m=%p ad=%p not found, creating.\n", pModule, pAppDomain));
+        LOG((LF_CORDB, LL_INFO1000, "D::LOCM dmod for m=%p not found, creating.\n", pModule));
         HRESULT hr = S_OK;
         EX_TRY
         {
@@ -5220,11 +5210,8 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule, AppDomain *pAppD
         SIMPLIFYING_ASSUMPTION(dmod != NULL); // may not be true in OOM cases; but LS doesn't handle OOM.
     }
 
-    // The module must be in the AppDomain that was requested
-    _ASSERTE( (dmod == NULL) || (dmod->GetAppDomain() == pAppDomain) );
-
-    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p ad=%p -> dm=%p(Mod=%p, DomFile=%p, AD=%p)\n",
-        pModule, pAppDomain, dmod, dmod->GetRuntimeModule(), dmod->GetDomainAssembly(), dmod->GetAppDomain()));
+    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p -> dm=%p(Mod=%p, DomFile=%p)\n",
+        pModule, dmod, dmod->GetRuntimeModule(), dmod->GetDomainAssembly()));
     return dmod;
 }
 
@@ -5249,12 +5236,11 @@ DebuggerModule* Debugger::AddDebuggerModule(DomainAssembly * pDomainAssembly)
     DebuggerDataLockHolder chInfo(this);
 
     Module *     pRuntimeModule = pDomainAssembly->GetModule();
-    AppDomain *  pAppDomain     = AppDomain::GetCurrentDomain();
 
     HRESULT hr = CheckInitModuleTable();
     IfFailThrow(hr);
 
-    DebuggerModule* pModule = new (interopsafe) DebuggerModule(pRuntimeModule, pDomainAssembly, pAppDomain);
+    DebuggerModule* pModule = new (interopsafe) DebuggerModule(pRuntimeModule, pDomainAssembly);
     _ASSERTE(pModule != NULL); // throws on oom
 
     TRACE_ALLOC(pModule);
@@ -6161,7 +6147,7 @@ void Debugger::LockAndSendEnCRemapEvent(DebuggerJitInfo * dji, SIZE_T currentIP,
 
     Module *pRuntimeModule = pMD->GetModule();
 
-    DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule, AppDomain::GetCurrentDomain());
+    DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule);
     ipce->EnCRemap.vmDomainAssembly.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
 
     LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: %s::%s dmod:%p\n",
@@ -6206,7 +6192,7 @@ void Debugger::LockAndSendEnCRemapCompleteEvent(MethodDesc *pMD)
 
     Module *pRuntimeModule = pMD->GetModule();
 
-    DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule, AppDomain::GetCurrentDomain());
+    DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule);
     ipce->EnCRemapComplete.vmDomainAssembly.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
 
     LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: %s::%s dmod:%p, methodDef:0x%08x \n",
@@ -6269,7 +6255,7 @@ void Debugger::SendEnCUpdateEvent(DebuggerIPCEventType eventType,
 
     _ASSERTE(pModule);
 
-    DebuggerModule * pDModule = LookupOrCreateModule(pModule, AppDomain::GetCurrentDomain());
+    DebuggerModule * pDModule = LookupOrCreateModule(pModule);
     event->EnCUpdate.vmDomainAssembly.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
 
     m_pRCThread->SendIPCEvent();
@@ -8849,7 +8835,7 @@ void Debugger::SendUserBreakpoint(Thread * thread)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
 
         PRECONDITION(thread != NULL);
         PRECONDITION(thread == ::GetThreadNULLOk());
@@ -9364,15 +9350,13 @@ void Debugger::UnloadAssembly(DomainAssembly * pDomainAssembly)
 
 //
 // LoadModule is called when a Runtime thread loads a new module and a debugger
-// is attached.  This also includes when a domain-neutral module is "loaded" into
-// a new domain.
+// is attached.
 //
 // TODO: remove pszModuleName and perhaps other args.
 void Debugger::LoadModule(Module* pRuntimeModule,
                           LPCWSTR pszModuleName, // module file name.
                           DWORD dwModuleName, // length of pszModuleName in chars, not including null.
                           Assembly *pAssembly,
-                          AppDomain *pAppDomain,
                           DomainAssembly *  pDomainAssembly,
                           BOOL fAttaching)
 {
@@ -9418,12 +9402,11 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     // We should simply things when we actually get rid of DebuggerModule, possibly by just passing the
     // DomainAssembly around.
     _ASSERTE(module->GetDomainAssembly()    == pDomainAssembly);
-    _ASSERTE(module->GetAppDomain()     == AppDomain::GetCurrentDomain());
     _ASSERTE(module->GetRuntimeModule() == pDomainAssembly->GetModule());
 
     // Send a load module event to the Right Side.
     ipce = m_pRCThread->GetIPCEventSendBuffer();
-    InitIPCEvent(ipce,DB_IPCE_LOAD_MODULE, pThread, pAppDomain);
+    InitIPCEvent(ipce,DB_IPCE_LOAD_MODULE, pThread, AppDomain::GetCurrentDomain());
 
     ipce->LoadModuleData.vmDomainAssembly.SetRawPtr(pDomainAssembly);
 
@@ -9484,7 +9467,7 @@ void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule, AppDomain *p
     if (pRuntimeModule->GetInMemorySymbolStream() == NULL)
         return; // Non-PDB symbols
 
-    DebuggerModule* module = LookupOrCreateModule(pRuntimeModule, pAppDomain);
+    DebuggerModule* module = LookupOrCreateModule(pRuntimeModule);
     PREFIX_ASSUME(module != NULL);
 
     DebuggerIPCEvent* ipce = NULL;
@@ -9551,16 +9534,9 @@ void Debugger::SendUpdateModuleSymsEventAndBlock(Module* pRuntimeModule, AppDoma
 
 
 //
-// UnloadModule is called by the Runtime for each module (including shared ones)
-// in an AppDomain that is being unloaded, when a debugger is attached.
-// In the EE, a module may be domain-neutral and therefore shared across all AppDomains.
-// We abstract this detail away in the Debugger and consider each such EE module to correspond
-// to multiple "Debugger Module" instances (one per AppDomain).
-// Therefore, this doesn't necessarily mean the runtime is unloading the module, just
-// that the Debugger should consider it's (per-AppDomain) DebuggerModule to be unloaded.
+// UnloadModule is called by the Runtime for each module that is being unloaded, when a debugger is attached.
 //
-void Debugger::UnloadModule(Module* pRuntimeModule,
-                            AppDomain *pAppDomain)
+void Debugger::UnloadModule(Module* pRuntimeModule)
 {
     CONTRACTL
     {
@@ -9577,23 +9553,19 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
     if (CORDBUnrecoverableError(this))
         return;
 
-
-
-    LOG((LF_CORDB, LL_INFO100, "D::UM: unload module Mod:%#08x AD:%#08x runtimeMod:%#08x modName:%s\n",
-         LookupOrCreateModule(pRuntimeModule, pAppDomain), pAppDomain, pRuntimeModule, pRuntimeModule->GetDebugName()));
-
+    LOG((LF_CORDB, LL_INFO100, "D::UM: unload module Mod:%#08x runtimeMod:%#08x modName:%s\n",
+         LookupOrCreateModule(pRuntimeModule), pRuntimeModule, pRuntimeModule->GetDebugName()));
 
     Thread *thread = g_pEEInterface->GetThread();
     SENDIPCEVENT_BEGIN(this, thread);
 
     if (CORDebuggerAttached())
     {
-
-        DebuggerModule* module = LookupOrCreateModule(pRuntimeModule, pAppDomain);
+        DebuggerModule* module = LookupOrCreateModule(pRuntimeModule);
         if (module == NULL)
         {
-            LOG((LF_CORDB, LL_INFO100, "D::UM: module already unloaded AD:%#08x runtimeMod:%#08x modName:%s\n",
-                 pAppDomain, pRuntimeModule, pRuntimeModule->GetDebugName()));
+            LOG((LF_CORDB, LL_INFO100, "D::UM: module already unloaded runtimeMod:%#08x modName:%s\n",
+                 pRuntimeModule, pRuntimeModule->GetDebugName()));
             goto LExit;
         }
         _ASSERTE(module != NULL);
@@ -9603,13 +9575,9 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
             pRuntimeModule, pRuntimeModule->GetDomainAssembly(), false,
             module, module->GetRuntimeModule(), module->GetDomainAssembly());
 
-        // Note: the appdomain the module was loaded in must match the appdomain we're unloading it from. If it doesn't,
-        // then we've either found the wrong DebuggerModule in LookupModule or we were passed bad data.
-        _ASSERTE(module->GetAppDomain() == pAppDomain);
-
         // Send the unload module event to the Right Side.
         DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
-        InitIPCEvent(ipce, DB_IPCE_UNLOAD_MODULE, thread, pAppDomain);
+        InitIPCEvent(ipce, DB_IPCE_UNLOAD_MODULE, thread, AppDomain::GetCurrentDomain());
         ipce->UnloadModuleData.vmDomainAssembly.SetRawPtr((module ? module->GetDomainAssembly() : NULL));
         ipce->UnloadModuleData.debuggerAssemblyToken.Set(pRuntimeModule->GetClassLoader()->GetAssembly());
         m_pRCThread->SendIPCEvent();
@@ -9651,7 +9619,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
         if (m_pModules != NULL)
         {
             DebuggerDataLockHolder chInfo(this);
-            m_pModules->RemoveModule(pRuntimeModule, pAppDomain);
+            m_pModules->RemoveModule(pRuntimeModule);
         }
 
         // Stop all Runtime threads
@@ -9851,7 +9819,7 @@ BOOL Debugger::SendSystemClassLoadUnloadEvent(mdTypeDef classMetadataToken,
         if (classModule->GetDomainAssembly() != NULL )
         {
             // Find the Left Side module that this class belongs in.
-            DebuggerModule* pModule = LookupOrCreateModule(classModule, pAppDomain);
+            DebuggerModule* pModule = LookupOrCreateModule(classModule);
             _ASSERTE(pModule != NULL);
 
             // Only send a class load event if they're enabled for this module.
@@ -9906,7 +9874,7 @@ BOOL  Debugger::LoadClass(TypeHandle th,
     // events for each that contain this assembly.
 
     LOG((LF_CORDB, LL_INFO10000, "D::LC: load class Tok:%#08x Mod:%#08x AD:%#08x classMod:%#08x modName:%s\n",
-         classMetadataToken, (pAppDomain == NULL) ? NULL : LookupOrCreateModule(classModule, pAppDomain),
+         classMetadataToken, (pAppDomain == NULL) ? NULL : LookupOrCreateModule(classModule),
          pAppDomain, classModule, classModule->GetDebugName()));
 
     //
@@ -9961,10 +9929,10 @@ void Debugger::UnloadClass(mdTypeDef classMetadataToken,
     }
 
     LOG((LF_CORDB, LL_INFO10000, "D::UC: unload class Tok:0x%08x Mod:%#08x AD:%#08x runtimeMod:%#08x modName:%s\n",
-         classMetadataToken, LookupOrCreateModule(classModule, pAppDomain), pAppDomain, classModule, classModule->GetDebugName()));
+         classMetadataToken, LookupOrCreateModule(classModule), pAppDomain, classModule, classModule->GetDebugName()));
 
     Assembly *pAssembly = classModule->GetClassLoader()->GetAssembly();
-    DebuggerModule *pModule = LookupOrCreateModule(classModule, pAppDomain);
+    DebuggerModule *pModule = LookupOrCreateModule(classModule);
 
     if ((pModule == NULL) || !pModule->ClassLoadCallbacksEnabled())
     {
@@ -10025,7 +9993,6 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     // because we can't prove that the AppDomain* would be valid (not unloaded).
     //
     AppDomain *pDomain = AppDomain::GetCurrentDomain();
-    AppDomain *pResultDomain = ((pDE->m_debuggerModule == NULL) ? pDomain : pDE->m_debuggerModule->GetAppDomain());
 
     // Send a func eval complete event to the Right Side.
     DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
@@ -10035,13 +10002,13 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     ipce->FuncEvalComplete.successful = pDE->m_successful;
     ipce->FuncEvalComplete.aborted = pDE->m_aborted;
     ipce->FuncEvalComplete.resultAddr = pDE->m_result;
-    ipce->FuncEvalComplete.vmAppDomain.SetRawPtr(pResultDomain);
+    ipce->FuncEvalComplete.vmAppDomain.SetRawPtr(pDomain);
     ipce->FuncEvalComplete.vmObjectHandle = pDE->m_vmObjectHandle;
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: TypeHandle is %p\n", pDE->m_resultType.AsPtr()));
 
     Debugger::TypeHandleToExpandedTypeInfo(pDE->m_retValueBoxing, // whether return values get boxed or not depends on the particular FuncEval we're doing...
-                                           pResultDomain,
+                                           pDomain,
                                            pDE->m_resultType,
                                            &ipce->FuncEvalComplete.resultType);
 
@@ -11799,7 +11766,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
             res->vmTypeHandle = th.HasInstantiation() ? WrapTypeHandle(th) : VMPTR_TypeHandle::NullPtr();
                                                                              // only set if instantiated
             res->metadataToken = th.GetCl();
-            DebuggerModule * pDModule = LookupOrCreateModule(th.GetModule(), pAppDomain);
+            DebuggerModule * pDModule = LookupOrCreateModule(th.GetModule());
             res->vmDomainAssembly.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
             break;
         }
@@ -11878,7 +11845,7 @@ void Debugger::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed,
 treatAllValuesAsBoxed:
             res->ClassTypeData.typeHandle = th.HasInstantiation() ? WrapTypeHandle(th) : VMPTR_TypeHandle::NullPtr(); // only set if instantiated
             res->ClassTypeData.metadataToken = th.GetCl();
-            DebuggerModule * pModule = LookupOrCreateModule(th.GetModule(), pAppDomain);
+            DebuggerModule * pModule = LookupOrCreateModule(th.GetModule());
             res->ClassTypeData.vmDomainAssembly.SetRawPtr((pModule ? pModule->GetDomainAssembly() : NULL));
             _ASSERTE(!res->ClassTypeData.vmDomainAssembly.IsNull());
             break;
@@ -12322,12 +12289,12 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
     }
 
     // Now deoptimize anything that has inlined it in a R2R method
-    AppDomain::AssemblyIterator domainAssemblyIterator = SystemDomain::System()->DefaultDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    AppDomain::AssemblyIterator assemblyIterator = SystemDomain::System()->DefaultDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded | kIncludeExecution));
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
     NativeImageInliningIterator inlinerIter;
-    while (domainAssemblyIterator.Next(pDomainAssembly.This()))
+    while (assemblyIterator.Next(pAssembly.This()))
     {
-        Module *pCandidateModule = pDomainAssembly->GetModule();
+        Module *pCandidateModule = pAssembly->GetModule();
         if (pCandidateModule->HasReadyToRunInlineTrackingMap())
         {
             inlinerIter.Reset(pCandidateModule, MethodInModule(pModule, methodDef));

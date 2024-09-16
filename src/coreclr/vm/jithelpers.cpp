@@ -901,6 +901,12 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
 
     FCALL_CONTRACT;
 
+    staticBlock = GetThreadLocalStaticBaseIfExistsAndInitialized(staticBlockIndex);
+    if (staticBlock != NULL)
+    {
+        return staticBlock;
+    }
+
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
     TLSIndex tlsIndex(staticBlockIndex);
     // Check if the class constructor needs to be run
@@ -974,6 +980,12 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
     void* staticBlock = nullptr;
 
     FCALL_CONTRACT;
+
+    staticBlock = GetThreadLocalStaticBaseIfExistsAndInitialized(staticBlockIndex);
+    if (staticBlock != NULL)
+    {
+        return staticBlock;
+    }
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
 
@@ -2260,26 +2272,6 @@ HCIMPLEND
 #include <optdefault.h>
 
 /*********************************************************************/
-HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodLogging, CORINFO_METHOD_HANDLE  methodHnd, LPVOID signature)
-{
-     CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(CheckPointer(signature));
-    } CONTRACTL_END;
-
-    JitGenericHandleCacheKey key(NULL, methodHnd, signature);
-    HashDatum res;
-    if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
-        return (CORINFO_GENERIC_HANDLE) (DictionaryEntry) res;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL5(JIT_GenericHandle_Framed, NULL, methodHnd, signature, -1, NULL);
-}
-HCIMPLEND
-
-/*********************************************************************/
 #include <optsmallperfcritical.h>
 HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClass, CORINFO_CLASS_HANDLE classHnd, LPVOID signature)
 {
@@ -2319,26 +2311,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO
 }
 HCIMPLEND
 #include <optdefault.h>
-
-/*********************************************************************/
-HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassLogging, CORINFO_CLASS_HANDLE classHnd, LPVOID signature)
-{
-     CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(CheckPointer(signature));
-    } CONTRACTL_END;
-
-    JitGenericHandleCacheKey key(classHnd, NULL, signature);
-    HashDatum res;
-    if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
-        return (CORINFO_GENERIC_HANDLE) (DictionaryEntry) res;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL5(JIT_GenericHandle_Framed, classHnd, NULL, signature, -1, NULL);
-}
-HCIMPLEND
 
 /*********************************************************************/
 // Resolve a virtual method at run-time, either because of
@@ -3031,7 +3003,7 @@ void ThrowNew(OBJECTREF oref)
         }
     }
 
-    DispatchManagedException(oref, /* preserveStackTrace */ false);
+    DispatchManagedException(oref);
 }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -3457,15 +3429,6 @@ HRESULT EEToProfInterfaceImpl::SetEnterLeaveFunctionHooksForJit(FunctionEnter3 *
 }
 #endif // PROFILING_SUPPORTED
 
-/*************************************************************/
-HCIMPL1(void, JIT_LogMethodEnter, CORINFO_METHOD_HANDLE methHnd_)
-    FCALL_CONTRACT;
-
-    //
-    // Record an access to this method desc
-    //
-
-HCIMPLEND
 
 
 
