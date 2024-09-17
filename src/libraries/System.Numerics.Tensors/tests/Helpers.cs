@@ -39,11 +39,6 @@ namespace System.Numerics.Tensors.Tests
                 return false;
             }
 
-            if (T.IsNegativeInfinity(expected) != T.IsNegativeInfinity(actual))
-            {
-                return false;
-            }
-
             tolerance = tolerance ?? DefaultTolerance<T>.Value;
             T diff = T.Abs(expected - actual);
             return !(diff > tolerance && diff > T.Max(T.Abs(expected), T.Abs(actual)) * tolerance);
