@@ -1955,7 +1955,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             LIR::Use use;
             GenTree* user = nullptr;
 
-            if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(embOp2Node, &use))
+            if (LIR::AsRange(getBlockFromSequence(curBBSeqNum)).TryGetUse(embOp2Node, &use))
             {
                 user = use.User();
             }

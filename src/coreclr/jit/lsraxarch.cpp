@@ -2392,7 +2392,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 LIR::Use use;
                 GenTree* user = nullptr;
 
-                if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(intrinsicTree, &use))
+                if (LIR::AsRange(getBlockFromSequence(curBBSeqNum)).TryGetUse(intrinsicTree, &use))
                 {
                     user = use.User();
                 }
@@ -2578,7 +2578,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 LIR::Use use;
                 GenTree* user = nullptr;
 
-                if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(intrinsicTree, &use))
+                if (LIR::AsRange(getBlockFromSequence(curBBSeqNum)).TryGetUse(intrinsicTree, &use))
                 {
                     user = use.User();
                 }

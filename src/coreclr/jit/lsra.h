@@ -635,13 +635,11 @@ public:
     }
 
     // Initialize the block traversal for LSRA.
-    // This resets the bbVisitedSet, and on the first invocation sets the blockSequence array,
-    // which determines the order in which blocks will be allocated (currently called during Lowering).
+    // This resets the bbVisitedSet, and on the first invocation sets the dfsTraversal array.
     BasicBlock* startBlockSequence();
     // Move to the next block in sequence, updating the current block information.
     BasicBlock* moveToNextBlock();
-    // Get the next block to be scheduled without changing the current block,
-    // but updating the blockSequence during the first iteration if it is not fully computed.
+    // Get the next block to be scheduled without changing the current block.
     BasicBlock* getNextBlock();
 
     // This is called during code generation to update the location of variables
@@ -1656,11 +1654,11 @@ private:
 
     BasicBlock* findPredBlockForLiveIn(BasicBlock* block, BasicBlock* prevBlock DEBUGARG(bool* pPredBlockIsAllocated));
 
-    // The order in which the blocks will be allocated.
-    // This is any array of BasicBlock*, in the order in which they should be traversed.
-    BasicBlock** blockSequence;
-    void            setBlockSequence();
-    bool            blockSequencingDone;
+    // We will allocate blocks in reverse post-order by iterating dfsTraversal backwards
+    BasicBlock** dfsTraversal;
+    BasicBlock*  getBlockFromSequence(unsigned index);
+    void         setBlockSequence();
+    bool         blockSequencingDone;
 #ifdef DEBUG
     // LSRA must not change number of blocks and blockEpoch that it initializes at start.
     unsigned blockEpoch;
