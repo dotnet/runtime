@@ -28,6 +28,7 @@
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs" Link="Common\System\EnumTypes.cs" />
     <Compile Include="$(CommonTestPath)System\ObjectCloner.cs" Link="Common\System\ObjectCloner.cs" />
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
+    <Compile Include="Generic\HashSet\HashSet.NonGeneric.Tests.cs" />
     <Compile Include="Generic\ReadOnlySet\ReadOnlySetTests.cs" />
     <!-- Generic tests -->
     <Compile Include="Generic\SortedSet\SortedSet.TreeSubSet.Tests.cs" />
