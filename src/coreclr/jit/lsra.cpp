@@ -10108,6 +10108,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 {
                     compiler->codeGen->regSet.rsSetRegsModified(genRegMask(tempReg) DEBUGARG(true));
 #ifdef TARGET_ARM
+                    regNumber originDoubleReg    = REG_NA;
                     Interval* otherTargetInterval = nullptr;
                     regNumber otherHalfTargetReg  = REG_NA;
                     if (genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
@@ -10122,6 +10123,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
                         addResolutionForDouble(block, insertionPoint, sourceIntervals, location, tempReg, targetReg,
                                                resolveType DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock));
+                        originDoubleReg = targetReg;
                     }
                     else if (otherTargetInterval != nullptr)
                     {
@@ -10130,6 +10132,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
                         addResolutionForDouble(block, insertionPoint, sourceIntervals, location, tempReg,
                                                otherHalfTargetReg, resolveType DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock));
+                        originDoubleReg = otherHalfTargetReg;
                     }
                     else
                     {
@@ -10141,14 +10144,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
                         if (sourceIntervals[targetReg]->registerType == TYP_DOUBLE)
                         {
-                            // If targetReg that got freed-up held DOUBLE value, then
-                            // free up the upper half register as well, if it is a
-                            // target of some other interval.
-                            regNumber upperHalfReg = REG_NEXT(targetReg);
-                            if (targetRegsToDo.IsRegNumInMask(upperHalfReg))
-                            {
-                                targetRegsReady |= genRegMask(upperHalfReg);
-                            }
+                            originDoubleReg        = targetReg;
                         }
 
                         location[targetReg] = (regNumberSmall)tempReg;
@@ -10160,6 +10156,21 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                                   targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
                                       DEBUG_ARG(resolveTypeName[resolveType]));
                     location[targetReg] = (regNumberSmall)tempReg;
+
+                    if (originDoubleReg != REG_NA)
+                    {
+                        // There was a value in originDoubleReg, which we free-up by moving it to
+                        // tempReg. As such, make sure to free-up the upper-half too, only if
+                        // originDoubleReg held DOUBLE interval.
+                        assert(genIsValidDoubleReg(originDoubleReg));
+                        targetRegMask |= genRegMask(originDoubleReg);
+
+                        regNumber upperHalfReg = REG_NEXT(originDoubleReg);
+                        if (targetRegsToDo.IsRegNumInMask(upperHalfReg))
+                        {
+                            targetRegMask |= genRegMask(upperHalfReg);
+                        }
+                    }
 #endif // TARGET_ARM
                     targetRegsReady |= targetRegMask;
                 }
