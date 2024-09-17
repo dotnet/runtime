@@ -62,7 +62,7 @@ if (CLR_CMAKE_TARGET_WIN32)
   add_library(Runtime.ServerGC.GuardCF STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
   target_compile_definitions(Runtime.ServerGC.GuardCF PRIVATE -DFEATURE_SVR_GC)
   set_target_properties(Runtime.ServerGC.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
-  target_link_libraries(Runtime.ServerGC.GuardCF PRIVATE minipal_objects)
+  target_link_libraries(Runtime.ServerGC.GuardCF PRIVATE minipal_objects.GuardCF)
 
   if (CLR_CMAKE_TARGET_ARCH_AMD64)
     add_library(Runtime.VxsortEnabled.GuardCF STATIC ${VXSORT_SOURCES})
