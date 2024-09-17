@@ -1128,7 +1128,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         // to be done before making this change.
         // Also note that we avoid setting callee-save preferences for floating point. This may need
         // revisiting, and note that it doesn't currently apply to SIMD types, only float or double.
-        // if (!getBlockFromSequence(curBBSeqNum)->isRunRarely())
+        // if (!blockSequence[curBBSeqNum]->isRunRarely())
         if (enregisterLocalVars)
         {
             VarSetOps::Iter iter(compiler, currentLiveVars);
@@ -2853,7 +2853,7 @@ void LinearScan::buildIntervals()
     // Make sure we don't have any blocks that were not visited
     for (BasicBlock* const block : compiler->Blocks())
     {
-        assert(isBlockVisited(block));
+        assert(isBlockVisited(block) || (block->bbPreds == nullptr));
     }
 
     if (VERBOSE)
