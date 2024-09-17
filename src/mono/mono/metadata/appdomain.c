@@ -635,7 +635,6 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, const M
 	gchar **path;
 	gchar *filename;
 	const gchar *local_culture;
-	size_t len;
 
 	if (!culture || *culture == '\0') {
 		local_culture = "";
@@ -644,7 +643,6 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, const M
 	}
 
 	filename =  g_strconcat (name, ".dll", (const char*)NULL);
-	len = strlen (filename);
 
 	for (path = search_path; *path; path++) {
 		if (**path == '\0') {
@@ -653,22 +651,10 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, const M
 
 		/* See test cases in bug #58992 and bug #57710 */
 		/* 1st try: [culture]/[name].dll (culture may be empty) */
-		strcpy (filename + len - 4, ".dll");
 		if (try_load_from (&result, *path, local_culture, "", filename, req))
 			break;
 
-		/* 2nd try: [culture]/[name].exe (culture may be empty) */
-		strcpy (filename + len - 4, ".exe");
-		if (try_load_from (&result, *path, local_culture, "", filename, req))
-			break;
-
-		/* 3rd try: [culture]/[name]/[name].dll (culture may be empty) */
-		strcpy (filename + len - 4, ".dll");
-		if (try_load_from (&result, *path, local_culture, name, filename, req))
-			break;
-
-		/* 4th try: [culture]/[name]/[name].exe (culture may be empty) */
-		strcpy (filename + len - 4, ".exe");
+		/* 2nd try: [culture]/[name]/[name].dll (culture may be empty) */
 		if (try_load_from (&result, *path, local_culture, name, filename, req))
 			break;
 	}
