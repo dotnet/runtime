@@ -380,6 +380,8 @@ namespace System.IO.Packaging
         /// <returns></returns>
         /// <exception cref="ObjectDisposedException">If this Package object has been disposed</exception>
         /// <exception cref="IOException">If the package is writeonly, no information can be retrieved from it</exception>
+        /// <exception cref="FileFormatException">The package has a bad format.</exception>
+        /// <exception cref="InvalidOperationException">The part name prefix exists.</exception>
         public PackagePartCollection GetParts()
         {
             ThrowIfObjectDisposed();
@@ -412,8 +414,8 @@ namespace System.IO.Packaging
                 //Note: We cannot use the _partList member variable, as that gets updated incrementally and so its
                 //not possible to find the collisions using that list.
                 //PackUriHelper.ValidatedPartUri implements the IComparable interface.
-                Dictionary<string, KeyValuePair<PackUriHelper.ValidatedPartUri, PackagePart>> partDictionary = new Dictionary<string, KeyValuePair<PackUriHelper.ValidatedPartUri, PackagePart>>(parts.Length);
-                List<string> partIndex = new List<string>(parts.Length);
+                Dictionary<string, KeyValuePair<PackUriHelper.ValidatedPartUri, PackagePart>> partDictionary = new(parts.Length);
+                List<string> partIndex = new(parts.Length);
 
                 for (int i = 0; i < parts.Length; i++)
                 {
@@ -427,7 +429,7 @@ namespace System.IO.Packaging
                     }
                     else
                     {
-                        //since we will arive to this line of code after the parts are already sorted
+                        //since we will arrive to this line of code after the parts are already sorted
                         string? precedingPartName = null;
 
                         if (partIndex.Count > 0)
@@ -456,7 +458,7 @@ namespace System.IO.Packaging
                 }
 
                 //copying parts from partdictionary to partlist
-                CopyPartDicitonaryToPartList(partDictionary, partIndex);
+                CopyPartDictionaryToPartList(partDictionary, partIndex);
 
                 _partCollection = new PackagePartCollection(_partList);
             }
@@ -1204,7 +1206,7 @@ namespace System.IO.Packaging
             return new PackageRelationshipCollection(_relationships, filterString);
         }
 
-        private void CopyPartDicitonaryToPartList(Dictionary<string, KeyValuePair<PackUriHelper.ValidatedPartUri, PackagePart>> partDictionary, List<string> partIndex)
+        private void CopyPartDictionaryToPartList(Dictionary<string, KeyValuePair<PackUriHelper.ValidatedPartUri, PackagePart>> partDictionary, List<string> partIndex)
         {
             //Clearing _partList before copying in new data. Reassigning the variable, assuming the previous object to be garbage collected.
             //ideally addition to sortedlist takes O(n) but since we have sorted data and also we defined the size, it will take O(log n) per addition
