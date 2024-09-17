@@ -1089,7 +1089,7 @@ void LinearScan::setBlockSequence()
     // Make sure that we've visited all the blocks.
     for (BasicBlock* const block : compiler->Blocks())
     {
-        assert(isBlockVisited(block) || (block->bbPreds == nullptr));
+        assert(isBlockVisited(block));
     }
 
     JITDUMP("Final LSRA Block Sequence:\n");

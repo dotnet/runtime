@@ -2853,7 +2853,7 @@ void LinearScan::buildIntervals()
     // Make sure we don't have any blocks that were not visited
     for (BasicBlock* const block : compiler->Blocks())
     {
-        assert(isBlockVisited(block) || (block->bbPreds == nullptr));
+        assert(isBlockVisited(block));
     }
 
     if (VERBOSE)
