@@ -7,5 +7,6 @@
 #cmakedefine01 HAVE_SYSCTLBYNAME
 #cmakedefine01 HAVE_CLOCK_GETTIME_NSEC_NP
 #cmakedefine01 BIGENDIAN
+#cmakedefine01 HAVE_BCRYPT_H
 
 #endif
