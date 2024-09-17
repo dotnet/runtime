@@ -612,7 +612,7 @@ internal static class __LoggerMessageGenerator
         /// Checks if variableOrTemplateName contains a special symbol ('@') as starting char
         /// </summary>
         /// <param name="variableOrTemplateName">variable that might contain '@' symbol</param>
-        /// <returns><see langword="true" /> if contains special symbol, false otherwise.</returns>
+        /// <returns><see langword="true" /> if it starts with the <c>@</c> symbol, <see langword="false"/> otherwise.</returns>
         private static bool ContainsSpecialSymbol(ReadOnlySpan<char> variableOrTemplateName)
             => variableOrTemplateName.Length > 0 && variableOrTemplateName[0] == '@';
 

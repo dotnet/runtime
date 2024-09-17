@@ -193,7 +193,7 @@ namespace Microsoft.Extensions.Primitives
         /// Indicates whether the current object is equal to another object of the same type.
         /// </summary>
         /// <param name="obj">An object to compare with this object.</param>
-        /// <returns><see langword="true" /> if the current object is equal to <paramref name="obj">; otherwise, <see langword="false" />.</returns>
+        /// <returns><see langword="true" /> if the current object is equal to <paramref name="obj"/>; otherwise, <see langword="false" />.</returns>
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is StringSegment segment && Equals(segment);

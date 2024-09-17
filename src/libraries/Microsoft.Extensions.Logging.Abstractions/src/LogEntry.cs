@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
         }
 
         /// <summary>
-        /// Gets the LogLevel.
+        /// Gets the log level.
         /// </summary>
         public LogLevel LogLevel { get; }
 

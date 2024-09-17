@@ -94,7 +94,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         /// <param name="meterName">The <see cref="Meter.Name"/> or prefix. A null value matches all meters.</param>
         /// <param name="instrumentName">The <see cref="Instrument.Name"/>. A null value matches all instruments.</param>
         /// <param name="listenerName">The <see cref="IMetricsListener"/>.Name. A null value matches all listeners.</param>
-        /// <param name="scopes">Indicates which meter scopes to consider. Default to all scopes.</param>
+        /// <param name="scopes">Indicates which meter scopes to consider. Defaults to all scopes.</param>
         /// <returns>The original <see cref="MetricsOptions"/> for chaining.</returns>
         public static MetricsOptions DisableMetrics(this MetricsOptions options, string? meterName, string? instrumentName = null, string? listenerName = null,
             MeterScope scopes = MeterScope.Global | MeterScope.Local)

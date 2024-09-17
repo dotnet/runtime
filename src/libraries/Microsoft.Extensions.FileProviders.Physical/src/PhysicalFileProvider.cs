@@ -296,10 +296,13 @@ namespace Microsoft.Extensions.FileProviders
         /// </summary>
         /// <param name="subpath">A path under the root directory. Leading slashes are ignored.</param>
         /// <returns>
-        /// The contents of the directory. Caller must check the <see cref="IDirectoryContents.Exists"/> property. Returns <see cref="NotFoundDirectoryContents" /> if
-        /// <paramref name="subpath" /> is absolute, if the directory does not exist, or <paramref name="subpath" /> has invalid
-        /// characters.
+        /// The contents of the directory.
         /// </returns>
+        /// <remarks>
+        /// <para>The caller must check the <see cref="IDirectoryContents.Exists"/> property.</para>
+        /// <para>Returns <see cref="NotFoundDirectoryContents" /> if <paramref name="subpath" /> is absolute,
+        /// if the directory does not exist, or <paramref name="subpath" /> has invalid characters.</para>
+        /// </remarks>
         public IDirectoryContents GetDirectoryContents(string subpath)
         {
             try
