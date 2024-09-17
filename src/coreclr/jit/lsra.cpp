@@ -9828,13 +9828,6 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 otherTargetInterval = sourceIntervals[otherHalfTargetReg];
             }
 
-            // if (startLogging && genIsValidFloatReg(sourceReg))
-            //{
-            //     printf("For ");
-            //     interval->tinyDump();
-            //     printf(" from %s -> %s.\n", getRegName(sourceReg), getRegName(targetReg));
-            // }
-
             if (interval->registerType == TYP_DOUBLE)
             {
                 // Condition 1 above.
@@ -10149,19 +10142,13 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
                         location[targetReg] = (regNumberSmall)tempReg;
                     }
-#else
-                    assert(sourceIntervals[targetReg] != nullptr);
-
-                    addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg,
-                                  targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
-                                      DEBUG_ARG(resolveTypeName[resolveType]));
-                    location[targetReg] = (regNumberSmall)tempReg;
 
                     if (originDoubleReg != REG_NA)
                     {
                         // There was a value in originDoubleReg, which we free-up by moving it to
                         // tempReg. As such, make sure to free-up the upper-half too, only if
-                        // originDoubleReg held DOUBLE interval.
+                        // originDoubleReg held DOUBLE interval and upper-half is target of a
+                        // different interval.
                         assert(genIsValidDoubleReg(originDoubleReg));
                         targetRegMask |= genRegMask(originDoubleReg);
 
@@ -10171,6 +10158,13 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                             targetRegMask |= genRegMask(upperHalfReg);
                         }
                     }
+#else
+                    assert(sourceIntervals[targetReg] != nullptr);
+
+                    addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg,
+                                  targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
+                                      DEBUG_ARG(resolveTypeName[resolveType]));
+                    location[targetReg] = (regNumberSmall)tempReg;
 #endif // TARGET_ARM
                     targetRegsReady |= targetRegMask;
                 }
