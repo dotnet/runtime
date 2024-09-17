@@ -13,7 +13,7 @@ namespace System.Text.Json.Nodes
     internal sealed class JsonValuePrimitive<TValue> : JsonValue<TValue>
     {
         private readonly JsonConverter<TValue> _converter;
-        private JsonValueKind? _valueKind;
+        private readonly JsonValueKind _valueKind;
 
         public JsonValuePrimitive(TValue value, JsonConverter<TValue> converter, JsonNodeOptions? options) : base(value, options)
         {
@@ -21,9 +21,10 @@ namespace System.Text.Json.Nodes
             Debug.Assert(converter is { IsInternalConverter: true, ConverterStrategy: ConverterStrategy.Value });
 
             _converter = converter;
+            _valueKind = DetermineValueKind(value);
         }
 
-        private protected override JsonValueKind GetValueKindCore() => _valueKind ??= DetermineValueKind(Value);
+        private protected override JsonValueKind GetValueKindCore() => _valueKind;
         internal override JsonNode DeepCloneCore() => new JsonValuePrimitive<TValue>(Value, _converter, Options);
 
         internal override bool DeepEqualsCore(JsonNode otherNode)
