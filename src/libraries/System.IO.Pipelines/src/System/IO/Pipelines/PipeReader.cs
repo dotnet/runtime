@@ -84,8 +84,7 @@ namespace System.IO.Pipelines
         /// <param name="consumed">Marks the extent of the data that has been successfully processed.</param>
         /// <remarks>The memory for the consumed data will be released and no longer available.
         /// The <see cref="System.IO.Pipelines.ReadResult.Buffer" /> previously returned from <see cref="System.IO.Pipelines.PipeReader.ReadAsync(System.Threading.CancellationToken)" /> must not be accessed after this call.
-        /// This is equivalent to calling <see cref="System.IO.Pipelines.PipeReader.AdvanceTo(System.SequencePosition,System.SequencePosition)" /> with identical examined and consumed positions,
-        /// unless a previous <see cref="PipeReader.AdvanceTo(SequencePosition, SequencePosition)"/> call was made with a further examined index, then it will use the further examined index.
+        /// This is equivalent to calling <see cref="System.IO.Pipelines.PipeReader.AdvanceTo(System.SequencePosition,System.SequencePosition)" /> with identical examined and consumed positions.
         /// The examined data communicates to the pipeline when it should signal more data is available.
         /// </remarks>
         public abstract void AdvanceTo(SequencePosition consumed);
@@ -95,8 +94,7 @@ namespace System.IO.Pipelines
         /// <param name="examined">Marks the extent of the data that has been read and examined.</param>
         /// <remarks>The memory for the consumed data will be released and no longer available.
         /// The <see cref="System.IO.Pipelines.ReadResult.Buffer" /> previously returned from <see cref="System.IO.Pipelines.PipeReader.ReadAsync(System.Threading.CancellationToken)" /> must not be accessed after this call.
-        /// The examined data communicates to the pipeline when it should signal more data is available.
-        /// The examined parameter should be greater than or equal to the examined position in the previous call to `AdvanceTo`. Otherwise, an <see cref="System.InvalidOperationException" /> is thrown.</remarks>
+        /// The examined data communicates to the pipeline when it should signal more data is available.</remarks>
         public abstract void AdvanceTo(SequencePosition consumed, SequencePosition examined);
 
         /// <summary>Returns a <see cref="System.IO.Stream" /> representation of the <see cref="System.IO.Pipelines.PipeReader" />.</summary>

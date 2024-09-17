@@ -447,30 +447,7 @@ namespace System.IO.Pipelines
 
         internal void AdvanceReader(in SequencePosition consumed)
         {
-            // If the reader is completed
-            if (_readerCompletion.IsCompleted)
-            {
-                ThrowHelper.ThrowInvalidOperationException_NoReadingAllowed();
-            }
-
-            long examinedIndex = consumed.GetInteger();
-            BufferSegment? examinedSegment = (BufferSegment?)consumed.GetObject();
-            if (examinedSegment != null &&
-                // Avoid the lock if we're examining the entire segment, don't need to look at the last examined index in that case
-                examinedSegment.Length - examinedIndex > 0)
-            {
-                lock (SyncObj)
-                {
-                    // If the last examined index is further than the consumed pointer, let's use the last examined index
-
-                    // _lastExaminedIndex includes the RunningIndex so we remove that to calculate how many bytes we're examining
-                    examinedIndex = Math.Max(examinedIndex, _lastExaminedIndex - examinedSegment.RunningIndex);
-                }
-            }
-
-            // TODO: Use new SequenceMarshal.TryGetReadOnlySequenceSegment to get the correct data
-            // directly casting only works because the type value in ReadOnlySequenceSegment is 0
-            AdvanceReader((BufferSegment?)consumed.GetObject(), consumed.GetInteger(), examinedSegment, (int)examinedIndex);
+            AdvanceReader(consumed, consumed);
         }
 
         internal void AdvanceReader(in SequencePosition consumed, in SequencePosition examined)
@@ -481,8 +458,6 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowInvalidOperationException_NoReadingAllowed();
             }
 
-            // TODO: Use new SequenceMarshal.TryGetReadOnlySequenceSegment to get the correct data
-            // directly casting only works because the type value in ReadOnlySequenceSegment is 0
             AdvanceReader((BufferSegment?)consumed.GetObject(), consumed.GetInteger(), (BufferSegment?)examined.GetObject(), examined.GetInteger());
         }
 
@@ -509,13 +484,10 @@ namespace System.IO.Pipelines
 
                 if (examinedSegment != null && _lastExaminedIndex >= 0)
                 {
+                    // This can be negative resulting in _unconsumedBytes increasing, this should be safe because we've already checked that
+                    // examined >= consumed above, so we can't get into a state where we un-examine too much
                     long examinedBytes = BufferSegment.GetLength(_lastExaminedIndex, examinedSegment, examinedIndex);
                     long oldLength = _unconsumedBytes;
-
-                    if (examinedBytes < 0)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_InvalidExaminedPosition();
-                    }
 
                     _unconsumedBytes -= examinedBytes;
 
@@ -528,6 +500,8 @@ namespace System.IO.Pipelines
                     if (oldLength >= ResumeWriterThreshold &&
                         _unconsumedBytes < ResumeWriterThreshold)
                     {
+                        // Should only release backpressure if we made forward progress
+                        Debug.Assert(examinedBytes > 0);
                         _writerAwaitable.Complete(out completionData);
                     }
                 }
@@ -593,7 +567,7 @@ namespace System.IO.Pipelines
                 // but only if writer is not completed yet
                 if (examinedEverything && !_writerCompletion.IsCompleted)
                 {
-                    Debug.Assert(_writerAwaitable.IsCompleted, "PipeWriter.FlushAsync is isn't completed and will deadlock");
+                    Debug.Assert(_writerAwaitable.IsCompleted, "PipeWriter.FlushAsync isn't completed and will deadlock");
 
                     _readerAwaitable.SetUncompleted();
                 }
