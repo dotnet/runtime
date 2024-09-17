@@ -814,32 +814,6 @@ private:
         return ((lsraStressMask & LSRA_SELECT_NEAREST) != 0);
     }
 
-    // This controls the order in which basic blocks are visited during allocation
-    enum LsraTraversalOrder
-    {
-        LSRA_TRAVERSE_LAYOUT     = 0x20,
-        LSRA_TRAVERSE_PRED_FIRST = 0x40,
-        LSRA_TRAVERSE_RANDOM     = 0x60, // NYI
-        LSRA_TRAVERSE_DEFAULT    = LSRA_TRAVERSE_PRED_FIRST,
-        LSRA_TRAVERSE_MASK       = 0x60
-    };
-    LsraTraversalOrder getLsraTraversalOrder()
-    {
-        if ((lsraStressMask & LSRA_TRAVERSE_MASK) == 0)
-        {
-            return LSRA_TRAVERSE_DEFAULT;
-        }
-        return (LsraTraversalOrder)(lsraStressMask & LSRA_TRAVERSE_MASK);
-    }
-    bool isTraversalLayoutOrder()
-    {
-        return getLsraTraversalOrder() == LSRA_TRAVERSE_LAYOUT;
-    }
-    bool isTraversalPredFirstOrder()
-    {
-        return getLsraTraversalOrder() == LSRA_TRAVERSE_PRED_FIRST;
-    }
-
     // This controls whether lifetimes should be extended to the entire method.
     // Note that this has no effect under MinOpts
     enum LsraExtendLifetimes
