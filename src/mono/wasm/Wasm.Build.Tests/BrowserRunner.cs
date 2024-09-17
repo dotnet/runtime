@@ -116,6 +116,7 @@ internal class BrowserRunner : IAsyncDisposable
         {
             try
             {
+                TerminateExistingChromeInstances();
                 Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
                 Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions {
                     ExecutablePath = s_chromePath.Value,
@@ -156,6 +157,25 @@ internal class BrowserRunner : IAsyncDisposable
             }
         }
         throw new Exception($"Failed to launch browser after {maxRetries} attempts");
+    }
+
+    private void TerminateExistingChromeInstances()
+    {
+        try
+        {
+            var chromeProcesses = Process.GetProcessesByName("chrome");
+            _testOutput.WriteLine($"Found {chromeProcesses.Length} old Chrome processes.");
+            foreach (var process in chromeProcesses)
+            {
+                _testOutput.WriteLine($"Terminating existing Chrome process: {process.Id}");
+                process.Kill();
+                process.WaitForExit();
+            }
+        }
+        catch (Exception ex)
+        {
+            _testOutput.WriteLine($"Failed to terminate existing Chrome instances: {ex}");
+        }
     }
 
     // FIXME: options
