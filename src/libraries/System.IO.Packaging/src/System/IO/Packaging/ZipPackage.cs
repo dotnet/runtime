@@ -739,7 +739,7 @@ namespace System.IO.Packaging
                 //with the rules for comparing/normalizing partnames.
                 //Refer to PackUriHelper.ValidatedPartUri.GetNormalizedPartUri method.
                 //Currently normalization just involves upper-casing ASCII and hence the simplification.
-                return extensionA.Equals(extensionB, StringComparison.OrdinalCultureIgnoreCase);
+                return extensionA.Equals(extensionB, StringComparison.OrdinalgnoreCase);
             }
 
             int IEqualityComparer<string>.GetHashCode(string extension)
