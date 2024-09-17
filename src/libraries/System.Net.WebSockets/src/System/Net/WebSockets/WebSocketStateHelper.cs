@@ -22,7 +22,7 @@ namespace System.Net.WebSockets
         {
             ManagedWebSocketStates state = ToFlag(currentState);
 
-            if (!validStates.HasFlag(state))
+            if ((state & validStates) == 0)
             {
                 string invalidStateMessage = SR.Format(
                     SR.net_WebSockets_InvalidState, currentState, validStates);

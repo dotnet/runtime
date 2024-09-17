@@ -788,9 +788,11 @@ namespace System.Net.WebSockets
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.ReceiveAsyncPrivateStarted(this, payloadBuffer.Length);
 
-            CancellationTokenRegistration registration = cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this);
+            CancellationTokenRegistration registration = default;
             try
             {
+                registration = cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this);
+
                 await _receiveMutex.EnterAsync(cancellationToken).ConfigureAwait(false);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(_receiveMutex);
 
