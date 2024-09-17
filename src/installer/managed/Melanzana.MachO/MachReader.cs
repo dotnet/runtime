@@ -401,7 +401,7 @@ namespace Melanzana.MachO
                 throw new ArgumentNullException(nameof(stream));
 
             Span<byte> magicBuffer = stackalloc byte[4];
-            stream.Seek(0, SeekOrigin.Begin);
+            stream.Position = 0;
             stream.ReadFully(magicBuffer);
 
             machMagic = (MachMagic)BinaryPrimitives.ReadUInt32BigEndian(magicBuffer);
@@ -425,9 +425,15 @@ namespace Melanzana.MachO
 
         public static bool IsMachOImage(Stream stream)
         {
-            bool isMach = TryReadMachMagic(stream, out _);
-            stream.Seek(0, SeekOrigin.Begin);
-            return isMach;
+            try
+            {
+                bool isMach = TryReadMachMagic(stream, out _);
+                return isMach;
+            }
+            catch (EndOfStreamException)
+            {
+                return false;
+            }
         }
 
         public static bool IsMachOImage(string filePath)

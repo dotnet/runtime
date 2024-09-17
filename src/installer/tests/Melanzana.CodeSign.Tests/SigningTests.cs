@@ -165,7 +165,7 @@ namespace Melanzana.CodeSign.Tests
                 if (Codesign.IsAvailable())
                 {
                     var (exitCode, _) = Codesign.Run("--verify", tmpFilePath);
-                    Assert.NotEqual(0, exitCode);
+                    Assert.Equal(0, exitCode);
                 }
 
             }
