@@ -57,6 +57,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_DefaultValueAttributeSupport Condition="'$(_DefaultValueAttributeSupport)' == ''">false</_DefaultValueAttributeSupport>
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">true</DynamicCodeSupport>
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
+    <_DataSetXmlSerializationSupport Condition="'$(_DataSetXmlSerializationSupport)' == ''">false</_DataSetXmlSerializationSupport>
   </PropertyGroup>
 
 
