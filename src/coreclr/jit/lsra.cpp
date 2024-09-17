@@ -9714,6 +9714,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         }
     }
 
+#ifdef DEBUG
     if (compiler->verbose)
     {
         printf("Resolving Edge: ");
@@ -9726,6 +9727,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             printf("to: " FMT_BB, toBlock->bbNum);
         }
     }
+#endif // DEBUG
 
     // First:
     //   - Perform all moves from reg to stack (no ordering needed on these)
@@ -9789,6 +9791,8 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             source[toReg]            = (regNumberSmall)fromReg;
             sourceIntervals[fromReg] = interval;
             targetRegsToDo |= genRegMask(toReg);
+
+#ifdef DEBUG
             if (compiler->verbose)
             {
                 printf("Added ");
@@ -9798,6 +9802,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 compiler->dumpRegMask(targetRegsToDo.getLow(), TYP_FLOAT);
                 printf("\n");
             }
+#endif // DEBUG
         }
     }
 
@@ -9861,16 +9866,19 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     // Perform reg to reg moves
     while (targetRegsToDo.IsNonEmpty())
     {
+#ifdef DEBUG
         if (compiler->verbose)
         {
             printf("targetRegsToDo: ");
             compiler->dumpRegMask(targetRegsToDo);
             printf("\n");
         }
+#endif // DEBUG
         while (targetRegsReady.IsNonEmpty())
         {
             regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetRegsReady);
             targetRegsToDo.RemoveRegNumFromMask(targetReg);
+#ifdef DEBUG
             if (compiler->verbose)
             {
                 printf("targetReg: %s, ", getRegName(targetReg));
@@ -9880,6 +9888,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 compiler->dumpRegMask(targetRegsToDo);
                 printf("\n");
             }
+#endif // DEBUG
 
             assert(location[targetReg] != targetReg);
             assert(targetReg < REG_COUNT);
