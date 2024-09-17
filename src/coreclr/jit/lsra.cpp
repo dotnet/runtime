@@ -913,10 +913,10 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // Note that we don't initialize the bbVisitedSet until we do the first traversal
     // This is so that any blocks that are added during the first traversal
     // are accounted for (and we don't have BasicBlockEpoch issues).
-    blockSequencingDone   = false;
-    blockSequence         = nullptr;
-    curBBSeqNum           = 0;
-    bbSeqCount            = 0;
+    blockSequencingDone = false;
+    blockSequence       = nullptr;
+    curBBSeqNum         = 0;
+    bbSeqCount          = 0;
 
     // Information about each block, including predecessor blocks used for variable locations at block entry.
     blockInfo = nullptr;
@@ -935,8 +935,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 //    None
 //
 // Notes:
-//    On return, the blockSequence array contains the blocks, in the order in which they
-//    will be allocated.
+//    On return, the blockSequence array contains the blocks in reverse post-order.
 //    This method clears the bbVisitedSet on LinearScan, and when it returns the set
 //    contains all the bbNums for the block.
 //
@@ -952,11 +951,18 @@ void LinearScan::setBlockSequence()
     // Initialize the "visited" blocks set.
     bbVisitedSet = BlockSetOps::MakeEmpty(compiler);
 
-    assert(blockSequence == nullptr && bbSeqCount == 0);
+    assert((blockSequence == nullptr) && (bbSeqCount == 0));
     FlowGraphDfsTree* const dfsTree = compiler->fgComputeDfs</* useProfile */ true>();
-    blockSequence            = new (compiler, CMK_LSRA) BasicBlock*[dfsTree->GetPostOrderCount()];
-    bbNumMaxBeforeResolution = compiler->fgBBNumMax;
-    blockInfo                = new (compiler, CMK_LSRA) LsraBlockInfo[bbNumMaxBeforeResolution + 1];
+    blockSequence                   = dfsTree->GetPostOrder();
+    bbNumMaxBeforeResolution        = compiler->fgBBNumMax;
+    blockInfo                       = new (compiler, CMK_LSRA) LsraBlockInfo[bbNumMaxBeforeResolution + 1];
+
+    // Flip the DFS traversal to get the reverse post-order traversal
+    // (this is the order in which blocks will be allocated)
+    for (unsigned left = 0, right = dfsTree->GetPostOrderCount() - 1; left < right; left++, right--)
+    {
+        std::swap(blockSequence[left], blockSequence[right]);
+    }
 
     hasCriticalEdges = false;
     // We use a bbNum of 0 for entry RefPositions.
@@ -969,14 +975,9 @@ void LinearScan::setBlockSequence()
     }
 #endif // TRACK_LSRA_STATS
 
-    JITDUMP("Start LSRA Block Sequence: \n");
-    for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
-    {
-        BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+    auto visitBlock = [this](BasicBlock* block) {
         JITDUMP("Current block: " FMT_BB "\n", block->bbNum);
-        blockSequence[bbSeqCount] = block;
         markBlockVisited(block);
-        bbSeqCount++;
 
         // Initialize the blockInfo.
         // predBBNum will be set later.
@@ -1057,7 +1058,31 @@ void LinearScan::setBlockSequence()
                 break;
             }
         }
+    };
+
+    JITDUMP("Start LSRA Block Sequence: \n");
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        visitBlock(blockSequence[i]);
     }
+
+    // If the DFS didn't visit any blocks, add them to the end of blockSequence
+    if (dfsTree->GetPostOrderCount() < compiler->fgBBcount)
+    {
+        // Unvisited blocks are more likely to be at the back of the list, so iterate backwards
+        unsigned i = dfsTree->GetPostOrderCount();
+        for (BasicBlock* block = compiler->fgLastBB; i < compiler->fgBBcount; block = block->Prev())
+        {
+            assert(block != nullptr);
+            if (!isBlockVisited(block))
+            {
+                visitBlock(block);
+                blockSequence[i++] = block;
+            }
+        }
+    }
+
+    bbSeqCount          = compiler->fgBBcount;
     blockSequencingDone = true;
 
 #ifdef DEBUG

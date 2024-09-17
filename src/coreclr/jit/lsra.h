@@ -1633,8 +1633,8 @@ private:
     // The order in which the blocks will be allocated.
     // This is any array of BasicBlock*, in the order in which they should be traversed.
     BasicBlock** blockSequence;
-    void            setBlockSequence();
-    bool            blockSequencingDone;
+    void         setBlockSequence();
+    bool         blockSequencingDone;
 #ifdef DEBUG
     // LSRA must not change number of blocks and blockEpoch that it initializes at start.
     unsigned blockEpoch;
