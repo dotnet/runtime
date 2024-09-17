@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Primitives
 {
     /// <summary>
-    /// Tokenizes a <see cref="string"/> into <see cref="StringSegment"/>StringSegments</see>.
+    /// Tokenizes a <see cref="string"/> into <see cref="StringSegment">StringSegments</see>.
     /// </summary>
     public readonly struct StringTokenizer : IEnumerable<StringSegment>
     {
