@@ -72,45 +72,10 @@ namespace System.Runtime.Intrinsics
         /// <param name="right">The vector to add with <paramref name="left" />.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The saturated sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> AddSaturate<T>(Vector64<T> left, Vector64<T> right)
         {
-            if (AdvSimd.IsSupported)
-            {
-                if (typeof(T) == typeof(byte))
-                {
-                    return AdvSimd.AddSaturate(left.AsByte(), right.AsByte()).As<byte, T>();
-                }
-                if (typeof(T) == typeof(sbyte))
-                {
-                    return AdvSimd.AddSaturate(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
-                }
-                if (typeof(T) == typeof(short))
-                {
-                    return AdvSimd.AddSaturate(left.AsInt16(), right.AsInt16()).As<short, T>();
-                }
-                if (typeof(T) == typeof(ushort))
-                {
-                    return AdvSimd.AddSaturate(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
-                }
-                if (typeof(T) == typeof(int))
-                {
-                    return AdvSimd.AddSaturate(left.AsInt32(), right.AsInt32()).As<int, T>();
-                }
-                if (typeof(T) == typeof(uint))
-                {
-                    return AdvSimd.AddSaturate(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
-                }
-                if (typeof(T) == typeof(long))
-                {
-                    return AdvSimd.AddSaturateScalar(left.AsInt64(), right.AsInt64()).As<long, T>();
-                }
-                if (typeof(T) == typeof(ulong))
-                {
-                    return AdvSimd.AddSaturateScalar(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
-                }
-            }
-
             return VectorMath.AddSaturate<Vector64<T>, T>(left, right);
         }
 
@@ -3327,45 +3292,10 @@ namespace System.Runtime.Intrinsics
         /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The saturated difference of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> SubtractSaturate<T>(Vector64<T> left, Vector64<T> right)
         {
-            if (AdvSimd.IsSupported)
-            {
-                if (typeof(T) == typeof(byte))
-                {
-                    return AdvSimd.SubtractSaturate(left.AsByte(), right.AsByte()).As<byte, T>();
-                }
-                if (typeof(T) == typeof(sbyte))
-                {
-                    return AdvSimd.SubtractSaturate(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
-                }
-                if (typeof(T) == typeof(short))
-                {
-                    return AdvSimd.SubtractSaturate(left.AsInt16(), right.AsInt16()).As<short, T>();
-                }
-                if (typeof(T) == typeof(ushort))
-                {
-                    return AdvSimd.SubtractSaturate(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
-                }
-                if (typeof(T) == typeof(int))
-                {
-                    return AdvSimd.SubtractSaturate(left.AsInt32(), right.AsInt32()).As<int, T>();
-                }
-                if (typeof(T) == typeof(uint))
-                {
-                    return AdvSimd.SubtractSaturate(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
-                }
-                if (typeof(T) == typeof(long))
-                {
-                    return AdvSimd.SubtractSaturateScalar(left.AsInt64(), right.AsInt64()).As<long, T>();
-                }
-                if (typeof(T) == typeof(ulong))
-                {
-                    return AdvSimd.SubtractSaturateScalar(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
-                }
-            }
-
             return VectorMath.SubtractSaturate<Vector64<T>, T>(left, right);
         }
 

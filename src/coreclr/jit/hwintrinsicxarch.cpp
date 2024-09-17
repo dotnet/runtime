@@ -1401,6 +1401,49 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_AddSaturate:
+        case NI_Vector256_AddSaturate:
+        case NI_Vector512_AddSaturate:
+        {
+            assert(sig->numArgs == 2);
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                op2 = impSIMDPopStack();
+                op1 = impSIMDPopStack();
+
+                retNode = gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize);
+            }
+            else if ((varTypeIsByte(simdBaseType) || varTypeIsShort(simdBaseType)))
+            {
+                NamedIntrinsic newIntrinsic;
+
+                if (simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_SSE2))
+                {
+                    newIntrinsic = NI_SSE2_AddSaturate;
+                }
+                else if (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    newIntrinsic = NI_AVX2_AddSaturate;
+                }
+                else if (simdSize == 64 && compOpportunisticallyDependsOn(InstructionSet_AVX512BW))
+                {
+                    newIntrinsic = NI_AVX512BW_AddSaturate;
+                }
+                else
+                {
+                    break;
+                }
+
+                op2 = impSIMDPopStack();
+                op1 = impSIMDPopStack();
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, newIntrinsic, simdBaseJitType, simdSize);
+            }
+
+            break;
+        }
+
         case NI_SSE_AndNot:
         case NI_SSE2_AndNot:
         case NI_AVX_AndNot:
@@ -3634,6 +3677,49 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack();
 
             retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_SubtractSaturate:
+        case NI_Vector256_SubtractSaturate:
+        case NI_Vector512_SubtractSaturate:
+        {
+            assert(sig->numArgs == 2);
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                op2 = impSIMDPopStack();
+                op1 = impSIMDPopStack();
+
+                retNode = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize);
+            }
+            else if ((varTypeIsByte(simdBaseType) || varTypeIsShort(simdBaseType)))
+            {
+                NamedIntrinsic newIntrinsic;
+
+                if (simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_SSE2))
+                {
+                    newIntrinsic = NI_SSE2_SubtractSaturate;
+                }
+                else if (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    newIntrinsic = NI_AVX2_SubtractSaturate;
+                }
+                else if (simdSize == 64 && compOpportunisticallyDependsOn(InstructionSet_AVX512BW))
+                {
+                    newIntrinsic = NI_AVX512BW_SubtractSaturate;
+                }
+                else
+                {
+                    break;
+                }
+
+                op2 = impSIMDPopStack();
+                op1 = impSIMDPopStack();
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, newIntrinsic, simdBaseJitType, simdSize);
+            }
+
             break;
         }
 

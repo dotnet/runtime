@@ -68,6 +68,7 @@ namespace System.Numerics
         /// <param name="right">The vector to add with <paramref name="left" />.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The saturated sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> AddSaturate<T>(Vector<T> left, Vector<T> right)
         {
@@ -2664,6 +2665,7 @@ namespace System.Numerics
         /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The saturated difference of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> SubtractSaturate<T>(Vector<T> left, Vector<T> right)
         {

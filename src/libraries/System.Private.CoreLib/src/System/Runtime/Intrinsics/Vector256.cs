@@ -93,29 +93,10 @@ namespace System.Runtime.Intrinsics
         /// <param name="right">The vector to add with <paramref name="left" />.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The saturated sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> AddSaturate<T>(Vector256<T> left, Vector256<T> right)
         {
-            if (Avx2.IsSupported)
-            {
-                if (typeof(T) == typeof(byte))
-                {
-                    return Avx2.AddSaturate(left.AsByte(), right.AsByte()).As<byte, T>();
-                }
-                if (typeof(T) == typeof(sbyte))
-                {
-                    return Avx2.AddSaturate(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
-                }
-                if (typeof(T) == typeof(short))
-                {
-                    return Avx2.AddSaturate(left.AsInt16(), right.AsInt16()).As<short, T>();
-                }
-                if (typeof(T) == typeof(ushort))
-                {
-                    return Avx2.AddSaturate(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
-                }
-            }
-
             if (IsHardwareAccelerated)
             {
                 return VectorMath.AddSaturate<Vector256<T>, T>(left, right);
@@ -3307,29 +3288,10 @@ namespace System.Runtime.Intrinsics
         /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The saturated difference of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> SubtractSaturate<T>(Vector256<T> left, Vector256<T> right)
         {
-            if (Avx2.IsSupported)
-            {
-                if (typeof(T) == typeof(byte))
-                {
-                    return Avx2.SubtractSaturate(left.AsByte(), right.AsByte()).As<byte, T>();
-                }
-                if (typeof(T) == typeof(sbyte))
-                {
-                    return Avx2.SubtractSaturate(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
-                }
-                if (typeof(T) == typeof(short))
-                {
-                    return Avx2.SubtractSaturate(left.AsInt16(), right.AsInt16()).As<short, T>();
-                }
-                if (typeof(T) == typeof(ushort))
-                {
-                    return Avx2.SubtractSaturate(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
-                }
-            }
-
             if (IsHardwareAccelerated)
             {
                 return VectorMath.SubtractSaturate<Vector256<T>, T>(left, right);
