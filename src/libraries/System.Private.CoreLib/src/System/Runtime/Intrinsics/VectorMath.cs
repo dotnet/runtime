@@ -1604,10 +1604,8 @@ namespace System.Runtime.Intrinsics
              || (typeof(T) == typeof(ulong))
              || (typeof(T) == typeof(nuint)))
             {
-                return TVector.ConditionalSelect(
-                    TVector.LessThan(sum, left),
-                    TVector.AllBitsSet,
-                    sum);
+                // Equivalent to sum < left ? T.MaxValue : sum
+                return TVector.LessThan(sum, left) | sum;
             }
 
             Debug.Assert((typeof(T) == typeof(sbyte))
@@ -1640,10 +1638,8 @@ namespace System.Runtime.Intrinsics
              || (typeof(T) == typeof(ulong))
              || (typeof(T) == typeof(nuint)))
             {
-                return TVector.ConditionalSelect(
-                    TVector.GreaterThan(diff, left),
-                    TVector.Zero,
-                    diff);
+                // Equivalent to diff <= left ? diff : 0
+                return TVector.LessThanOrEqual(diff, left) & diff;
             }
 
             Debug.Assert((typeof(T) == typeof(sbyte))
