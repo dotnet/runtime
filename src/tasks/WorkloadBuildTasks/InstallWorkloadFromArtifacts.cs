@@ -290,7 +290,7 @@ namespace Microsoft.Workload.Build.Tasks
 
             if (!Directory.Exists(outputDir))
             {
-                Log.LogError($"Could not find {name} directory at {outputDir}. Creating it..");
+                Log.LogMessage($"Could not find {name} directory at {outputDir}. Creating it..");
                 Directory.CreateDirectory(outputDir);
             }
 
