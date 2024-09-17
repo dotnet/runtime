@@ -42,9 +42,10 @@ namespace Microsoft.Extensions.Hosting
         public string[]? Args { get; set; }
 
         /// <summary>
-        /// Initial configuration sources to be added to the <see cref="HostApplicationBuilder.Configuration"/>. These sources can influence
-        /// the <see cref="HostApplicationBuilder.Environment"/> through the use of <see cref="HostDefaults"/> keys. Disposing the built
-        /// <see cref="IHost"/> disposes the <see cref="ConfigurationManager"/>.
+        /// Set up the configuration for the builder itself. This will be used to initialize
+        /// the <see cref="HostApplicationBuilder.Environment"/> through the use of <see cref="HostDefaults"/> keys.
+        /// The configuration is also added to the <see cref="HostApplicationBuilder.Configuration"/>.
+        /// Disposing the built <see cref="IHost"/> disposes the <see cref="ConfigurationManager"/>.
         /// </summary>
         public ConfigurationManager? Configuration { get; set; }
 
