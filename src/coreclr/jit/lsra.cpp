@@ -9828,12 +9828,12 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 otherTargetInterval = sourceIntervals[otherHalfTargetReg];
             }
 
-            //if (startLogging && genIsValidFloatReg(sourceReg))
+            // if (startLogging && genIsValidFloatReg(sourceReg))
             //{
-            //    printf("For ");
-            //    interval->tinyDump();
-            //    printf(" from %s -> %s.\n", getRegName(sourceReg), getRegName(targetReg));
-            //}
+            //     printf("For ");
+            //     interval->tinyDump();
+            //     printf(" from %s -> %s.\n", getRegName(sourceReg), getRegName(targetReg));
+            // }
 
             if (interval->registerType == TYP_DOUBLE)
             {
@@ -10108,7 +10108,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 {
                     compiler->codeGen->regSet.rsSetRegsModified(genRegMask(tempReg) DEBUGARG(true));
 #ifdef TARGET_ARM
-                    regNumber originDoubleReg    = REG_NA;
+                    regNumber originDoubleReg     = REG_NA;
                     Interval* otherTargetInterval = nullptr;
                     regNumber otherHalfTargetReg  = REG_NA;
                     if (genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
@@ -10138,13 +10138,13 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     {
                         assert(sourceIntervals[targetReg] != nullptr);
 
-                         addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg,
+                        addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg,
                                       targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
                                           DEBUG_ARG(resolveTypeName[resolveType]));
 
                         if (sourceIntervals[targetReg]->registerType == TYP_DOUBLE)
                         {
-                            originDoubleReg        = targetReg;
+                            originDoubleReg = targetReg;
                         }
 
                         location[targetReg] = (regNumberSmall)tempReg;
