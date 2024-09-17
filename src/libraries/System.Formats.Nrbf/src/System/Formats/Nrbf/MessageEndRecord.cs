@@ -24,12 +24,5 @@ internal sealed class MessageEndRecord : SerializationRecord
 
     public override SerializationRecordId Id => SerializationRecordId.NoId;
 
-    public override TypeName TypeName
-    {
-        get
-        {
-            Debug.Fail("TypeName should never be called on MessageEndRecord");
-            return TypeName.Parse(nameof(MessageEndRecord).AsSpan());
-        }
-    }
+    public override TypeName TypeName => TypeName.Parse(nameof(MessageEndRecord).AsSpan());
 }

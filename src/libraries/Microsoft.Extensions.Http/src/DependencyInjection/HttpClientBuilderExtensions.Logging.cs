@@ -21,14 +21,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
         /// <para>
-        /// If the <see paramref="wrapHandlersPipeline"/> is `true`, <see cref="IHttpClientLogger.LogRequestStart"/> and
+        /// If the <paramref name="wrapHandlersPipeline"/> is `true`, <see cref="IHttpClientLogger.LogRequestStart"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStartAsync"/> would be executed before all
         /// other additional handlers in the chain. <see cref="IHttpClientLogger.LogRequestStop"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStopAsync"/> would be executed after all
         /// other additional handlers, essentially wrapping the whole pipeline.
         /// </para>
         /// <para>
-        /// If the <see paramref="wrapHandlersPipeline"/> is `false`, <see cref="IHttpClientLogger.LogRequestStart"/> and
+        /// If the <paramref name="wrapHandlersPipeline"/> is `false`, <see cref="IHttpClientLogger.LogRequestStart"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStartAsync"/> would be executed after all
         /// other additional handlers in the chain, right before the primary handler. <see cref="IHttpClientLogger.LogRequestStop"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStopAsync"/> would be executed before all
@@ -83,14 +83,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </typeparam>
         /// <remarks>
         /// <para>
-        /// If the <see paramref="wrapHandlersPipeline"/> is `true`, <see cref="IHttpClientLogger.LogRequestStart"/> and
+        /// If the <paramref name="wrapHandlersPipeline"/> is `true`, <see cref="IHttpClientLogger.LogRequestStart"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStartAsync"/> would be executed before all
         /// other additional handlers in the chain. <see cref="IHttpClientLogger.LogRequestStop"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStopAsync"/> would be executed after all
         /// other additional handlers, essentially wrapping the whole pipeline.
         /// </para>
         /// <para>
-        /// If the <see paramref="wrapHandlersPipeline"/> is `false`, <see cref="IHttpClientLogger.LogRequestStart"/> and
+        /// If the <paramref name="wrapHandlersPipeline"/> is `false`, <see cref="IHttpClientLogger.LogRequestStart"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStartAsync"/> would be executed after all
         /// other additional handlers in the chain, right before the primary handler. <see cref="IHttpClientLogger.LogRequestStop"/> and
         /// <see cref="IHttpClientAsyncLogger.LogRequestStopAsync"/> would be executed before all
