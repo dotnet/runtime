@@ -31,6 +31,7 @@ Async methods support the following suspension points:
 Each of the above methods will have semantics analogous to the current AsyncTaskMethodBuilder.AwaitOnCompleted/AwaitUnsafeOnCompleted methods. After calling this method, in can be presumed that the task has completed.
 
 Only local variables which are "hoisted" may be used across suspension points. That is, only "hoisted" local variables will have their state preserved after returning from a suspension. On methods with the `localsinit` flag set, non-"hoisted" local variables will be initialized to their default value when resuming from suspension. Otherwise, these variables will have an undefined value. To identify "hoisted" local variables, they must have an optional custom modifier to the `System.Runtime.CompilerServices.HoistedLocal` class, which will be a new .NET runtime API. This custom modifier must be the last custom modifier on the variable. It is invalid for by-ref variables, or variables with a by-ref-like type, to be marked hoisted. Hoisted local variables are stored in managed memory and cannot be converted to unmanaged pointers without explicit pinning.
+The code generator is free to ignore the `HoistedLocal` modifier if it can prove that this makes no observable difference in the execution of the generated program. This can be observable in diagnostics since it may mean the value of a local with the `HoistedLocal` modifier will not be available after certain suspension points.
 
 Async methods have some temporary restrictions with may be lifted later:
 * The `tail` prefix is forbidden
