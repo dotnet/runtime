@@ -15,7 +15,7 @@
       <Crossgen2Tool Include="$(Crossgen2Path)"
                      TargetArch="$(TargetArchitecture)"
                      TargetOS="$(TargetOS)"
-                     DotnetHostPath="$(DotnetHostPath)"
+                     DotnetHostPath="$(R2RDotnetHostPath)"
                      PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
     </ItemGroup>
   </Target>
