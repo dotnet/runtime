@@ -23,7 +23,7 @@ namespace System.Linq
             return new ReverseIterator<TSource>(source);
         }
 
-        public static IEnumerable<TSource> Reverse<TSource>(this T[] source)
+        public static IEnumerable<TSource> Reverse<TSource>(this TSource[] source)
         {
             if (source is null)
             {
