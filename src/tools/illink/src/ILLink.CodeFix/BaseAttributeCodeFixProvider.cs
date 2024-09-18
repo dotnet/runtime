@@ -87,7 +87,7 @@ namespace ILLink.CodeFix
 			Field = 0x0004,
 			Event = 0x0008,
 			Class = 0x0010,
-			All = MethodOrConstructor | Property | Field | Event
+			All = MethodOrConstructor | Property | Field | Event | Class
 		}
 
 		private static CSharpSyntaxNode? FindAttributableParent (SyntaxNode node, AttributeableParentTargets targets)
