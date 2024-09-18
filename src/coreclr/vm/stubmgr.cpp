@@ -1292,7 +1292,7 @@ BOOL StubLinkStubManager::DoTraceStub(PCODE stubStartAddress,
         return TRUE;
     }
 
-    LOG((LF_CORDB, LL_INFO10000, "StubLinkStubManager::DoTraceStub: patch offset is 0!\n"));
+    LOG((LF_CORDB, LL_INFO10000, "StubLinkStubManager::DoTraceStub: no known target\n"));
     return FALSE;
 }
 

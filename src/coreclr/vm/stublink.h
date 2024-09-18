@@ -789,7 +789,8 @@ class Stub
         UINT32 m_numCodeBytesAndFlags;
         union
         {
-            PTR_MethodDesc  InstantiatedMethod;
+            // Stub kind specific data
+            PTR_MethodDesc  InstantiatedMethod; // Valid for IsInstantiatingStub() only
         } m_data;
 
 #ifdef _DEBUG

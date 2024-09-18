@@ -2140,7 +2140,7 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
     BEGIN_QCALL;
 
     DelegateEEClass *delegateEEClass = (DelegateEEClass*)pDelegateMT->GetClass();
-    PCODE pStub = delegateEEClass->m_pMultiCastInvokeStub;
+    pStub = delegateEEClass->m_pMultiCastInvokeStub;
     if (pStub == NULL)
     {
         MethodDesc* pMD = delegateEEClass->GetInvokeMethod();
