@@ -1,5 +1,8 @@
 {
   "version": "${WorkloadVersion}",
+  "depends-on": {
+    "Microsoft.NET.Workload.Emscripten.Current": "${EmscriptenVersion}"
+  },
   "workloads": {
     "wasm-tools": {
       "description": ".NET WebAssembly build tools for ${NetVersion}.0",
