@@ -693,6 +693,14 @@ class SuperPMICollect:
             self.pmi_location = determine_pmi_location(coreclr_args)
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
 
+        if coreclr_args.crossgen2:
+            self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
+            if coreclr_args.dotnet_tool_path is None:
+                self.crossgen2_driver_tool = self.corerun
+            else:
+                self.crossgen2_driver_tool = coreclr_args.dotnet_tool_path
+            logging.debug("Using crossgen2 driver tool %s", self.crossgen2_driver_tool)
+
         if coreclr_args.pmi or coreclr_args.crossgen2:
             self.assemblies = coreclr_args.assemblies
             self.exclude = coreclr_args.exclude
@@ -1058,7 +1066,7 @@ class SuperPMICollect:
                     #
                     # invoke with:
                     #
-                    # <Core_Root>\crossgen2\crossgen2.exe @<temp.rsp>
+                    # dotnet <Core_Root>\crossgen2\crossgen2.dll @<temp.rsp>
                     #
                     # where "dotnet" is one of:
                     # 1. <runtime_root>\dotnet.cmd/sh
@@ -1081,7 +1089,7 @@ class SuperPMICollect:
                     # Log what is in the response file
                     write_file_to_log(rsp_filepath)
 
-                    command = [self.coreclr_args.crossgen2_tool_path, "@" + rsp_filepath]
+                    command = [self.crossgen2_driver_tool, self.coreclr_args.crossgen2_tool_path, "@" + rsp_filepath]
                     command_string = " ".join(command)
                     logging.debug("%s%s", print_prefix, command_string)
 
@@ -4908,8 +4916,7 @@ def setup_args(args):
 
         if coreclr_args.crossgen2:
             # Can we find crossgen2?
-
-            crossgen2_tool_name = "crossgen2.exe" if platform.system() == "Windows" else "crossgen2"
+            crossgen2_tool_name = "crossgen2.dll"
             crossgen2_tool_path = os.path.abspath(os.path.join(coreclr_args.core_root, "crossgen2", crossgen2_tool_name))
             if not os.path.exists(crossgen2_tool_path):
                 print("`--crossgen2` is specified, but couldn't find " + crossgen2_tool_path + ". (Is it built?)")
