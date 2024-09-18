@@ -97,7 +97,7 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
     }
 #elif HAVE_BCRYPT_H
     NTSTATUS status = BCryptGenRandom(NULL, buffer, (ULONG)bufferLength, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-    return BCRYPT_SUCCESS(status) ? 1 : 0;
+    return BCRYPT_SUCCESS(status) ? 0 : -1;
 #else
 
     static volatile int rand_des = -1;
