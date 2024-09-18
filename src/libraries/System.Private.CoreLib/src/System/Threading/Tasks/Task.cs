@@ -6265,6 +6265,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when all of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of all of the supplied tasks.</returns>
         /// <remarks>
@@ -6305,6 +6306,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when all of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of all of the supplied tasks.</returns>
         /// <remarks>
@@ -6679,6 +6681,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TTask">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
         /// <remarks>
@@ -6753,6 +6756,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
         /// <remarks>
@@ -6775,6 +6779,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
         /// <remarks>
@@ -6788,6 +6793,7 @@ namespace System.Threading.Tasks
             WhenAnyCore(tasks);
 
         /// <summary>Creates a task that will complete when either of the supplied tasks have completed.</summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="task1">The first task to wait on for completion.</param>
         /// <param name="task2">The second task to wait on for completion.</param>
         /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
@@ -6804,6 +6810,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
         /// <remarks>
@@ -6837,14 +6844,18 @@ namespace System.Threading.Tasks
         }
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
+        /// <param name="tasks">The tasks to iterate through as they complete.</param>
         public static IAsyncEnumerable<Task> WhenEach(ReadOnlySpan<Task> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Add params
             WhenEachState.Iterate<Task>(WhenEachState.Create(tasks));
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
+        /// <param name="tasks">The tasks to iterate through as they complete.</param>
         public static IAsyncEnumerable<Task> WhenEach(IEnumerable<Task> tasks) =>
             WhenEachState.Iterate<Task>(WhenEachState.Create(tasks));
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
+        /// <param name="tasks">The tasks to iterate through as they complete.</param>
         public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(params Task<TResult>[] tasks)
         {
             ArgumentNullException.ThrowIfNull(tasks);
@@ -6852,10 +6863,14 @@ namespace System.Threading.Tasks
         }
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
+        /// <param name="tasks">The tasks to iterate through as they complete.</param>
         public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(ReadOnlySpan<Task<TResult>> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Add params
             WhenEachState.Iterate<Task<TResult>>(WhenEachState.Create(ReadOnlySpan<Task>.CastUp(tasks)));
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
+        /// <param name="tasks">The tasks to iterate through as they complete.</param>
         public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(IEnumerable<Task<TResult>> tasks) =>
             WhenEachState.Iterate<Task<TResult>>(WhenEachState.Create(tasks));
 
