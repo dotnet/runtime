@@ -1,5 +1,0 @@
-<linker>
-  <assembly fullname="System.Collections.Immutable">
-    <type fullname="System.Collections.Immutable.ImmutableDictionary`2" preserve="all" />
-  </assembly>
-</linker>
