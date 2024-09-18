@@ -6,7 +6,9 @@ using System.Net.Http.Headers;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Net;
 
 // keep in sync with src\mono\wasi\testassets\Http.cs
 public static class WasiMainWrapper
@@ -69,6 +71,23 @@ public static class WasiMainWrapper
         Console.WriteLine("GET "+query);
         Console.WriteLine();
         Console.WriteLine(json);
+
+        // test trailers
+        using (HttpClient httpClient = new HttpClient())
+        {
+            httpClient.DefaultRequestVersion = HttpVersion.Version20;
+            httpClient.DefaultRequestHeaders.Add("TE", "trailers");
+
+            HttpResponseMessage response = await httpClient.GetAsync("http://localhost:5001/weatherforecast");
+
+            var s = await response.Content.ReadAsStringAsync(); //right!
+            Console.WriteLine("A "+s);
+
+            foreach(var (k,v) in response.TrailingHeaders)
+            {
+                Console.WriteLine("B "+k);
+            }
+        }
 
         GC.Collect();
         return 0;

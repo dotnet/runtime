@@ -178,6 +178,16 @@ namespace System.Net.Http
             }
         }
 
+        public static HttpResponseHeaders ConvertTrailingResponseHeaders(Fields headers)
+        {
+            var result = new HttpResponseHeaders();
+            foreach ((var key, var value) in headers.Entries())
+            {
+                result.Add(key, Encoding.UTF8.GetString(value));
+            }
+            return result;
+        }
+
         private static bool IsContentHeader(string headerName)
         {
             return HeaderDescriptor.TryGet(headerName, out HeaderDescriptor descriptor) && (descriptor.HeaderType & HttpHeaderType.Content) != 0;
