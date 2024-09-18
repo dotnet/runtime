@@ -301,7 +301,8 @@ namespace Microsoft.Workload.Build.Tasks
             if (!string.IsNullOrEmpty(bandPreleaseVersion) &&
                 packagePreleaseVersion != bandPreleaseVersion &&
                 packagePreleaseVersion != "-dev" &&
-                packagePreleaseVersion != "-ci")
+                packagePreleaseVersion != "-ci" &&
+                packagePreleaseVersion != "-rtm")
             {
                 bandVersion = bandVersion.Replace (bandPreleaseVersion, packagePreleaseVersion);
             }
