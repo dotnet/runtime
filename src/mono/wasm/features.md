@@ -75,6 +75,14 @@ To reduce startup time and increase the odds that your application will work on 
 
 This property requires the [wasm-tools workload](#wasm-tools-workload) to be installed.
 
+### Maximum Memory Size
+When building an app targeting mobile device browsers, especially Safari on iOS, decreasing the maximum memory for the app may be required.
+
+The default value is `2,147,483,648 bytes`, which may be too large and result in the app failing to start, because the browser refuses to grant it.
+To set the maximum memory size, include the MSBuild property like `<EmccMaximumHeapSize>268435456<EmccMaximumHeapSize>`.
+
+This property requires the [wasm-tools workload](#wasm-tools-workload) to be installed.
+
 ### JITerpreter
 The JITerpreter is a browser-specific compiler which will optimize frequently executed code when running in interpreted (non-AOT) mode. While this significantly improves application performance, it will cause increased memory usage. You can disable it via `<BlazorWebAssemblyJiterpreter>false</BlazorWebAssemblyJiterpreter>`, and configure it in more detail via the use of runtime options.
 
@@ -417,6 +425,45 @@ In simple browser template, you can add following to your `main.js`
 import { dotnet } from './dotnet.js'
 await dotnet.withConfig({browserProfilerOptions: {}}).run();
 ```
+
+### Log Profiling for Memory Troubleshooting
+
+You can enable integration with log profiler via following elements in your .csproj:
+
+```xml
+<PropertyGroup>
+  <WasmProfilers>log;</WasmProfilers>
+  <WasmBuildNative>true</WasmBuildNative>
+</PropertyGroup>
+```
+
+In simple browser template, you can add following to your `main.js`
+
+```javascript
+import { dotnet } from './dotnet.js'
+await dotnet.withConfig({ 
+    logProfilerOptions: {
+        takeHeapshot: "MyApp.Profiling::TakeHeapshot",
+        configuration: "log:alloc,output=output.mlpd"
+    }}).run();
+```
+
+In order to trigger a heap shot, add the following:
+
+```csharp
+namespace MyApp;
+
+class Profiling
+{
+    [JSExport]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void TakeHeapshot() { }
+}
+```
+
+Invoke `MyApp.Profiling.TakeHeapshot()` from your code in order to create a memory heap shot and flush the contents of the profile to the VFS. Make sure to align the namespace and class of the `logProfilerOptions.takeHeapshot` with your class.
+
+You can download the mpld file to analyze it.
 
 ### Diagnostic tools
 

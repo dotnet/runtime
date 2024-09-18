@@ -264,6 +264,8 @@ class SegmentedHandleIndexStack
 
 public:
 
+    ~SegmentedHandleIndexStack();
+    
     // Push the value to the stack. If the push cannot be done due to OOM, return false;
     inline bool Push(DWORD value);
 
@@ -324,6 +326,9 @@ protected:
     // The LoaderAllocator specific string literal map.
     StringLiteralMap   *m_pStringLiteralMap;
     CrstExplicitInit    m_crstLoaderAllocator;
+
+    // Protect the handle table data structures, seperated from m_crstLoaderAllocator to allow thread cleanup to use the lock
+    CrstExplicitInit    m_crstLoaderAllocatorHandleTable;
     bool                m_fGCPressure;
     bool                m_fUnloaded;
     bool                m_fTerminated;
@@ -356,8 +361,6 @@ protected:
 public:
     BYTE *GetVSDHeapInitialBlock(DWORD *pSize);
     BYTE *GetCodeHeapInitialBlock(const BYTE * loAddr, const BYTE * hiAddr, DWORD minimumSize, DWORD *pSize);
-
-    BaseDomain *m_pDomain;
 
     // ExecutionManager caches
     void * m_pLastUsedCodeHeap;
@@ -649,6 +652,15 @@ public:
     LOADERALLOCATORREF GetExposedObject();
     bool IsExposedObjectLive();
 
+#ifdef _DEBUG
+    bool HasHandleTableLock()
+    {
+        WRAPPER_NO_CONTRACT;
+        if (this == NULL) return true; // During initialization of the LoaderAllocator object, callers may call this with a null this pointer.
+        return m_crstLoaderAllocatorHandleTable.OwnedByCurrentThread();
+    }
+#endif
+
 #ifndef DACCESS_COMPILE
     bool InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAllocator(OBJECTREF value, Object** pField);
     LOADERHANDLE AllocateHandle(OBJECTREF value);
@@ -723,9 +735,8 @@ public:
 
     LoaderAllocator(bool collectible);
     virtual ~LoaderAllocator();
-    BaseDomain *GetDomain() { LIMITED_METHOD_CONTRACT; return m_pDomain; }
     virtual BOOL CanUnload() = 0;
-    void Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory = NULL);
+    void Init(BYTE *pExecutableHeapMemory);
     void Terminate();
     virtual void ReleaseManagedAssemblyLoadContext() {}
 
@@ -749,8 +760,8 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_nGCCount;
     }
-    void AllocateBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cbMem);
-    void AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cSlots, MethodTable* pMTWithStaticBoxes);
+    void AllocateBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cbMem, bool isClassInitedByUpdatingStaticPointer);
+    void AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cSlots, MethodTable* pMTWithStaticBoxes, bool isClassInitedByUpdatingStaticPointer);
 
     static BOOL Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator);
 
@@ -764,7 +775,7 @@ public:
     STRINGREF *GetOrInternString(STRINGREF *pString);
     void CleanupStringLiteralMap();
 
-    void InitVirtualCallStubManager(BaseDomain *pDomain);
+    void InitVirtualCallStubManager();
     void UninitVirtualCallStubManager();
 
     inline PTR_VirtualCallStubManager GetVirtualCallStubManager()
@@ -875,7 +886,7 @@ protected:
     LoaderAllocatorID m_Id;
 
 public:
-    void Init(BaseDomain *pDomain);
+    void Init();
     GlobalLoaderAllocator() : LoaderAllocator(false), m_Id(LAT_Global, (void*)1) { LIMITED_METHOD_CONTRACT;};
     virtual LoaderAllocatorID* Id();
     virtual BOOL CanUnload();
@@ -901,7 +912,7 @@ public:
         , m_binderToRelease(NULL)
 #endif
     { LIMITED_METHOD_CONTRACT; }
-    void Init(AppDomain *pAppDomain);
+    void Init();
     virtual BOOL CanUnload();
 
     void AddDomainAssembly(DomainAssembly *pDomainAssembly)

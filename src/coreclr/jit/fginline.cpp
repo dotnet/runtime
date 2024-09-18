@@ -387,6 +387,19 @@ private:
 #endif // DEBUG
         }
 
+        // If the inline was rejected and returns a retbuffer, then mark that
+        // local as DNER now so that promotion knows to leave it up to physical
+        // promotion.
+        if ((*use)->IsCall())
+        {
+            CallArg* retBuffer = (*use)->AsCall()->gtArgs.GetRetBufferArg();
+            if ((retBuffer != nullptr) && retBuffer->GetNode()->OperIs(GT_LCL_ADDR))
+            {
+                m_compiler->lvaSetVarDoNotEnregister(retBuffer->GetNode()->AsLclVarCommon()->GetLclNum()
+                                                         DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
+            }
+        }
+
 #if FEATURE_MULTIREG_RET
         // If an inline was rejected and the call returns a struct, we may
         // have deferred some work when importing call for cases where the
@@ -1962,7 +1975,7 @@ void Compiler::fgInsertInlineeArgument(
 //    * Passing of call arguments via temps
 //
 //    Newly added statements are placed just after the original call
-//    and are are given the same inline context as the call any calls
+//    and are given the same inline context as the call any calls
 //    added here will appear to have been part of the immediate caller.
 //
 Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)

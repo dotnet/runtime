@@ -121,7 +121,11 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__GSCookie == sizeof(GSCookie));
 #define SIZEOF__Frame                 0x10
 ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 
+#if !defined(HOST_WINDOWS)
+#define SIZEOF__CONTEXT               0x3e0
+#else
 #define SIZEOF__CONTEXT               0x390
+#endif
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
 
 

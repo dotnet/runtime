@@ -229,6 +229,7 @@ public:
     // not persisted to disk.
 public:
     LightWeightMap<DWORDLONG, DWORD>* CallTargetTypes;
+    MemoryTracker* getOrCreateMemoryTracker();
 
 private:
     MemoryTracker*          memoryTracker;

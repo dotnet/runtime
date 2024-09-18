@@ -459,10 +459,10 @@ HRESULT EEClass::AddField(MethodTable* pMT, mdFieldDef fieldDef, FieldDesc** ppN
         AppDomain::AssemblyIterator appIt = pDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
 
         bool isStaticField = !!pNewFD->IsStatic();
-        CollectibleAssemblyHolder<DomainAssembly*> pDomainAssembly;
-        while (appIt.Next(pDomainAssembly.This()) && SUCCEEDED(hr))
+        CollectibleAssemblyHolder<Assembly*> pAssembly;
+        while (appIt.Next(pAssembly.This()) && SUCCEEDED(hr))
         {
-            Module* pMod = pDomainAssembly->GetModule();
+            Module* pMod = pAssembly->GetModule();
             LOG((LF_ENC, LL_INFO100, "EEClass::AddField Checking: %s mod:%p\n", pMod->GetDebugName(), pMod));
 
             EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
@@ -655,10 +655,10 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
         PTR_AppDomain pDomain = AppDomain::GetCurrentDomain();
         AppDomain::AssemblyIterator appIt = pDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
 
-        CollectibleAssemblyHolder<DomainAssembly*> pDomainAssembly;
-        while (appIt.Next(pDomainAssembly.This()) && SUCCEEDED(hr))
+        CollectibleAssemblyHolder<Assembly*> pAssembly;
+        while (appIt.Next(pAssembly.This()) && SUCCEEDED(hr))
         {
-            Module* pMod = pDomainAssembly->GetModule();
+            Module* pMod = pAssembly->GetModule();
             LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Checking: %s mod:%p\n", pMod->GetDebugName(), pMod));
 
             EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
@@ -801,7 +801,7 @@ HRESULT EEClass::AddMethodDesc(
                                 COMMA_INDEBUG(NULL)
                                 );
 
-        pNewMD->SetTemporaryEntryPoint(pAllocator, &dummyAmTracker);
+        pNewMD->SetTemporaryEntryPoint(&dummyAmTracker);
 
         // [TODO] if an exception is thrown, asserts will fire in EX_CATCH_HRESULT()
         // during an EnC operation due to the debugger thread not being able to
@@ -1407,7 +1407,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
             {
                 // The real check is that the MethodDesc's must not match, but a simple VTable check will
                 // work most of the time, and is far faster than the GetMethodDescForSlot method.
-                _ASSERTE(pMT->GetMethodDescForSlot(i) == pParentMT->GetMethodDescForSlot(i));
+                _ASSERTE(pMT->GetMethodDescForSlot_NoThrow(i) == pParentMT->GetMethodDescForSlot_NoThrow(i));
                 continue;
             }
             MethodDesc* pMD = pMT->GetMethodDescForSlot(i);
@@ -1525,7 +1525,7 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
             {
                 // The real check is that the MethodDesc's must not match, but a simple VTable check will
                 // work most of the time, and is far faster than the GetMethodDescForSlot method.
-                _ASSERTE(pMT->GetMethodDescForSlot(i) == pParentMT->GetMethodDescForSlot(i));
+                _ASSERTE(pMT->GetMethodDescForSlot_NoThrow(i) == pParentMT->GetMethodDescForSlot_NoThrow(i));
                 continue;
             }
 
@@ -1575,7 +1575,7 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
                     // This is a vtable slot that needs to be updated to the new overriding method because of the
                     // presence of the attribute.
                     pMT->SetSlot(j, pMT->GetSlot(i));
-                    _ASSERT(pMT->GetMethodDescForSlot(j) == pMD);
+                    _ASSERT(pMT->GetMethodDescForSlot_NoThrow(j) == pMD);
 
                     if (!hMTData.IsNull())
                         hMTData->UpdateImplMethodDesc(pMD, j);
@@ -2690,7 +2690,7 @@ MethodTable::DebugDumpGCDesc(
             LOG((LF_ALWAYS, LL_ALWAYS, "GC description for '%s':\n\n", pszClassName));
         }
 
-        if (ContainsPointers())
+        if (ContainsGCPointers())
         {
             CGCDescSeries *pSeries;
             CGCDescSeries *pHighest;

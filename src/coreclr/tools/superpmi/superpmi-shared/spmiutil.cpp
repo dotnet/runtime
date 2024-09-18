@@ -38,9 +38,9 @@ void DebugBreakorAV(int val)
     if (IsDebuggerPresent())
     {
         if (val == 0)
-            __debugbreak();
+            DEBUG_BREAK;
         if (BreakOnDebugBreakorAV())
-            __debugbreak();
+            DEBUG_BREAK;
     }
 
     int exception_code = EXCEPTIONCODE_DebugBreakorAV + val;

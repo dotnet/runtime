@@ -4,7 +4,7 @@
 using System.Drawing;
 using System.Linq;
 using System.Resources.Extensions.BinaryFormat;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 
 namespace System.Resources.Extensions.Tests.FormattedObject;
 
@@ -12,8 +12,7 @@ public class ArrayTests : Common.ArrayTests<FormattedObjectSerializer>
 {
     public override void Roundtrip_ArrayContainingArrayAtNonZeroLowerBound()
     {
-        Action action = base.Roundtrip_ArrayContainingArrayAtNonZeroLowerBound;
-        action.Should().Throw<NotSupportedException>();
+        Assert.Throws<NotSupportedException>(base.Roundtrip_ArrayContainingArrayAtNonZeroLowerBound);
     }
 
     [Theory]
@@ -21,8 +20,8 @@ public class ArrayTests : Common.ArrayTests<FormattedObjectSerializer>
     public void StringArray_Parse(string?[] strings)
     {
         BinaryFormattedObject format = new(Serialize(strings));
-        var arrayRecord = (ArrayRecord<string>)format.RootRecord;
-        arrayRecord.GetArray().Should().BeEquivalentTo(strings);
+        var arrayRecord = (SZArrayRecord<string>)format.RootRecord;
+        Assert.Equal(strings, arrayRecord.GetArray());
     }
 
     public static TheoryData<string?[]> StringArray_Parse_Data => new()
@@ -38,7 +37,7 @@ public class ArrayTests : Common.ArrayTests<FormattedObjectSerializer>
     {
         BinaryFormattedObject format = new(Serialize(array));
         var arrayRecord = (ArrayRecord)format.RootRecord;
-        arrayRecord.GetArray(expectedArrayType: array.GetType()).Should().BeEquivalentTo(array);
+        Assert.Equal(array, arrayRecord.GetArray(expectedArrayType: array.GetType()));
     }
 
     public static TheoryData<Array> PrimitiveArray_Parse_Data => new()

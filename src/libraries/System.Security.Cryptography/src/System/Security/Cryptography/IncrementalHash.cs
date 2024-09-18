@@ -272,6 +272,22 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// Creates a new instance of <see cref="IncrementalHash" /> with the existing appended data preserved.
+        /// </summary>
+        /// <returns>A clone of the current instance.</returns>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public IncrementalHash Clone()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            Debug.Assert((_hash != null) ^ (_hmac != null));
+
+            return _hash is not null ?
+                new IncrementalHash(_algorithmName, _hash.Clone()) :
+                new IncrementalHash(_algorithmName, _hmac!.Clone());
+        }
+
+        /// <summary>
         /// Release all resources used by the current instance of the
         /// <see cref="IncrementalHash"/> class.
         /// </summary>

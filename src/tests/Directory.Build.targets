@@ -35,7 +35,7 @@
   <!-- Default priority building values. -->
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' == 'true' and '$(HasMergedInTests)' != 'true'">true</DisableProjectBuild>
-    <OutputType Condition="('$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true') or ('$(RequiresProcessIsolation)' == 'true' and '$(CLRTestKind)' != 'SharedLibrary')">Exe</OutputType>
+    <OutputType Condition="'$(SkipInferOutputType)' != 'true' and (('$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true') or ('$(RequiresProcessIsolation)' == 'true' and '$(CLRTestKind)' != 'SharedLibrary'))">Exe</OutputType>
 
     <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">SharedLibrary</CLRTestKind>
@@ -464,7 +464,7 @@
 
     <!-- We don't want the out-of-process test marker file to be included in referencing projects, so we don't include it as content. -->
     <WriteLinesToFile
-        Condition="'$(RequiresProcessIsolation)' == 'true' and '$(BuildAsStandalone)' != 'true'"
+        Condition="'$(RequiresProcessIsolation)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true'"
         File="$(OutputPath)\$(AssemblyName).OutOfProcessTest"
         Lines="OutOfProcessTest"
         Overwrite="true"
@@ -541,6 +541,11 @@
   <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
 
   <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <!-- The test infra already sets up the environment for native compilation.
+         The ILC targets don't have to do that. The batch script to set up environment
+         variables is horribly slow (seeing 1.4 seconds on a 11th gen Intel Core i7) -->
+    <IlcUseEnvironmentalTools>true</IlcUseEnvironmentalTools>
+
     <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to tweak
          rpath so that the test can load its native library dependencies if there's any -->
     <IlcRPath Condition="'$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true'">@executable_path/..</IlcRPath>

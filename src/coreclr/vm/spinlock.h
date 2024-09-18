@@ -12,13 +12,10 @@
 //#error I am a part of util.hpp Please don't include me alone !
 //#endif
 
-
-
 #ifndef _H_SPINLOCK_
 #define _H_SPINLOCK_
 
 #include <stddef.h>
-
 
 // #SwitchToThreadSpinning
 //
@@ -112,12 +109,12 @@ public:
         return (BOOL)m_value;
     }
 
-    typedef Holder<DangerousNonHostedSpinLock *, DangerousNonHostedSpinLock::AcquireLock, DangerousNonHostedSpinLock::ReleaseLock> Holder;
-    typedef ConditionalStateHolder<DangerousNonHostedSpinLock *, DangerousNonHostedSpinLock::TryAcquireLock, DangerousNonHostedSpinLock::ReleaseLock> TryHolder;
+    typedef Holder<DangerousNonHostedSpinLock *, DangerousNonHostedSpinLock::AcquireLock, DangerousNonHostedSpinLock::ReleaseLock> LockHolder;
+    typedef ConditionalStateHolder<DangerousNonHostedSpinLock *, DangerousNonHostedSpinLock::TryAcquireLock, DangerousNonHostedSpinLock::ReleaseLock> LockTryHolder;
 };
 
-typedef DangerousNonHostedSpinLock::Holder DangerousNonHostedSpinLockHolder;
-typedef DangerousNonHostedSpinLock::TryHolder DangerousNonHostedSpinLockTryHolder;
+typedef DangerousNonHostedSpinLock::LockHolder DangerousNonHostedSpinLockHolder;
+typedef DangerousNonHostedSpinLock::LockTryHolder DangerousNonHostedSpinLockTryHolder;
 
 
 class SpinLock;

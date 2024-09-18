@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { dotnet, exit } from './_framework/dotnet.js'
+import { saveProfile } from './profiler.js'
 
 // Read test case from query string
 const params = new URLSearchParams(location.search);
@@ -14,6 +15,11 @@ function testOutput(msg) {
     console.log(`TestOutput -> ${msg}`);
 }
 
+function countChars(str) {
+    const length = str.length;
+    return length;
+}
+
 // Prepare base runtime parameters
 dotnet
     .withElementOnExit()
@@ -24,6 +30,9 @@ dotnet
 switch (testCase) {
     case "AppSettingsTest":
         dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
+        break;
+    case "LazyLoadingTest":
+        dotnet.withDiagnosticTracing(true);
         break;
     case "DownloadResourceProgressTest":
         if (params.get("failAssemblyDownload") === "true") {
@@ -93,12 +102,40 @@ switch (testCase) {
         await dotnet.download();
         testOutput("download finished");
         break;
+    case "MaxParallelDownloads":
+        const maxParallelDownloads = params.get("maxParallelDownloads");
+        let activeFetchCount = 0;
+        const originalFetch2 = globalThis.fetch;
+        globalThis.fetch = async (...args) => {
+            activeFetchCount++;
+            testOutput(`Fetch started. Active downloads: ${activeFetchCount}`);
+            try {
+                const response = await originalFetch2(...args);
+                activeFetchCount--;
+                testOutput(`Fetch completed. Active downloads: ${activeFetchCount}`);
+                return response;
+            } catch (error) {
+                activeFetchCount--;
+                testOutput(`Fetch failed. Active downloads: ${activeFetchCount}`);
+                throw error;
+            }
+        };
+        dotnet.withConfig({ maxParallelDownloads: maxParallelDownloads });
+        break;
+    case "ProfilerTest":
+        dotnet.withConfig({
+            logProfilerOptions: {
+                takeHeapshot: "ProfilerTest::TakeHeapshot",
+                configuration: "log:alloc,output=output.mlpd"
+            }
+        })
+        break;
 }
 
-const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
+const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
-const assemblyExtension = config.resources.coreAssembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
+const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith('.wasm') ? ".wasm" : ".dll";
 
 // Run the test case
 try {
@@ -109,7 +146,23 @@ try {
             break;
         case "LazyLoadingTest":
             if (params.get("loadRequiredAssembly") !== "false") {
-                await INTERNAL.loadLazyAssembly(`Json${assemblyExtension}`);
+                let lazyAssemblyExtension = assemblyExtension;
+                switch (params.get("lazyLoadingTestExtension")) {
+                    case "wasm":
+                        lazyAssemblyExtension = ".wasm";
+                        break;
+                    case "dll":
+                        lazyAssemblyExtension = ".dll";
+                        break;
+                    case "NoExtension":
+                        lazyAssemblyExtension = "";
+                        break;
+                    default:
+                        lazyAssemblyExtension = assemblyExtension;
+                        break;
+                }
+
+                await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
             }
             exports.LazyLoadingTest.Run();
             exit(0);
@@ -147,7 +200,34 @@ try {
             exit(0);
             break;
         case "DownloadThenInit":
+        case "MaxParallelDownloads":
             exit(0);
+            break;
+        case "AllocateLargeHeapThenInterop":
+            setModuleImports('main.js', {
+                countChars
+            });
+            exports.MemoryTest.Run();
+            exit(0);
+            break;
+        case "ProfilerTest":
+            console.log("not ready yet")
+            const myExports = await getAssemblyExports(config.mainAssemblyName);
+            const testMeaning = myExports.ProfilerTest.TestMeaning;
+            const takeHeapshot = myExports.ProfilerTest.TakeHeapshot;
+            console.log("ready");
+
+            dotnet.run();
+
+            const ret = testMeaning();
+            document.getElementById("out").innerHTML = ret;
+            console.debug(`ret: ${ret}`);
+
+            takeHeapshot();
+            saveProfile(Module);
+
+            let exit_code = ret == 42 ? 0 : 1;
+            exit(exit_code);
             break;
         default:
             console.error(`Unknown test case: ${testCase}`);

@@ -35,7 +35,6 @@ class ComCallMethodDesc;
 // functions implemented in AMD64 assembly
 //
 EXTERN_C void SinglecastDelegateInvokeStub();
-EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 
 #define COMMETHOD_PREPAD                        16   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
 #define COMMETHOD_CALL_PRESTUB_SIZE             6    // 32-bit indirect relative call

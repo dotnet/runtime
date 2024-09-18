@@ -17,7 +17,6 @@
 #include <openssl/dsa.h>
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
-#include <openssl/engine.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -44,8 +43,15 @@
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 #include <openssl/provider.h>
+#include <openssl/store.h>
 #include <openssl/params.h>
 #include <openssl/core_names.h>
+#include <openssl/kdf.h>
+#endif
+
+#if HAVE_OPENSSL_ENGINE
+// Some Linux distributions build without engine support.
+#include <openssl/engine.h>
 #endif
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1_RTM
@@ -86,12 +92,34 @@ void ERR_put_error(int32_t lib, int32_t func, int32_t reason, const char* file, 
 #define RSA_PSS_SALTLEN_DIGEST -1
 #endif
 
+#ifndef EVP_PKEY_RSA_PSS
+#define EVP_PKEY_RSA_PSS 912
+#endif
+
 // ERR_R_UNSUPPORTED was introduced in OpenSSL 3. We need it for building with older OpenSSLs.
 // Add a static assert so we know if OpenSSL changes the value.
 #ifndef ERR_R_UNSUPPORTED
 #define ERR_R_UNSUPPORTED 0x8010C
 #else
 c_static_assert(ERR_R_UNSUPPORTED == 0x8010C);
+#endif
+
+#ifndef EVP_KDF_HKDF_MODE_EXTRACT_AND_EXPAND
+#define EVP_KDF_HKDF_MODE_EXTRACT_AND_EXPAND 0
+#else
+c_static_assert(EVP_KDF_HKDF_MODE_EXTRACT_AND_EXPAND == 0);
+#endif
+
+#ifndef EVP_KDF_HKDF_MODE_EXTRACT_ONLY
+#define EVP_KDF_HKDF_MODE_EXTRACT_ONLY 1
+#else
+c_static_assert(EVP_KDF_HKDF_MODE_EXTRACT_ONLY == 1);
+#endif
+
+#ifndef EVP_KDF_HKDF_MODE_EXPAND_ONLY
+#define EVP_KDF_HKDF_MODE_EXPAND_ONLY 2
+#else
+c_static_assert(EVP_KDF_HKDF_MODE_EXPAND_ONLY == 2);
 #endif
 
 #if defined FEATURE_DISTRO_AGNOSTIC_SSL || OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
@@ -182,6 +210,25 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
 #undef HAVE_OPENSSL_SHA3_SQUEEZE
 #define HAVE_OPENSSL_SHA3_SQUEEZE 1
 int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out, size_t outlen);
+#endif
+
+#if !HAVE_OPENSSL_ENGINE
+#undef HAVE_OPENSSL_ENGINE
+#define HAVE_OPENSSL_ENGINE 1
+
+ENGINE *ENGINE_by_id(const char *id);
+int ENGINE_init(ENGINE *e);
+int ENGINE_finish(ENGINE *e);
+ENGINE *ENGINE_new(void);
+int ENGINE_free(ENGINE *e);
+typedef EVP_PKEY *(*ENGINE_LOAD_KEY_PTR)(ENGINE *, const char *,
+                                         UI_METHOD *ui_method,
+                                         void *callback_data);
+EVP_PKEY *ENGINE_load_private_key(ENGINE *e, const char *key_id,
+                                  UI_METHOD *ui_method, void *callback_data);
+EVP_PKEY *ENGINE_load_public_key(ENGINE *e, const char *key_id,
+                                 UI_METHOD *ui_method, void *callback_data);
+
 #endif
 
 
@@ -319,12 +366,12 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EC_POINT_mul) \
     REQUIRED_FUNCTION(EC_POINT_new) \
     REQUIRED_FUNCTION(EC_POINT_set_affine_coordinates_GFp) \
-    REQUIRED_FUNCTION(ENGINE_by_id) \
-    REQUIRED_FUNCTION(ENGINE_finish) \
-    REQUIRED_FUNCTION(ENGINE_free) \
-    REQUIRED_FUNCTION(ENGINE_init) \
-    REQUIRED_FUNCTION(ENGINE_load_public_key) \
-    REQUIRED_FUNCTION(ENGINE_load_private_key) \
+    LIGHTUP_FUNCTION(ENGINE_by_id) \
+    LIGHTUP_FUNCTION(ENGINE_finish) \
+    LIGHTUP_FUNCTION(ENGINE_free) \
+    LIGHTUP_FUNCTION(ENGINE_init) \
+    LIGHTUP_FUNCTION(ENGINE_load_public_key) \
+    LIGHTUP_FUNCTION(ENGINE_load_private_key) \
     REQUIRED_FUNCTION(ERR_clear_error) \
     REQUIRED_FUNCTION(ERR_error_string_n) \
     REQUIRED_FUNCTION(ERR_get_error) \
@@ -383,6 +430,11 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EVP_DigestSqueeze) \
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
     REQUIRED_FUNCTION(EVP_get_digestbyname) \
+    LIGHTUP_FUNCTION(EVP_KDF_CTX_free) \
+    LIGHTUP_FUNCTION(EVP_KDF_CTX_new) \
+    LIGHTUP_FUNCTION(EVP_KDF_derive) \
+    LIGHTUP_FUNCTION(EVP_KDF_fetch) \
+    LIGHTUP_FUNCTION(EVP_KDF_free) \
     LIGHTUP_FUNCTION(EVP_MAC_fetch) \
     LIGHTUP_FUNCTION(EVP_MAC_final) \
     LIGHTUP_FUNCTION(EVP_MAC_free) \
@@ -407,6 +459,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_PKEY_CTX_get0_pkey) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new_id) \
+    LIGHTUP_FUNCTION(EVP_PKEY_CTX_new_from_pkey) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_keygen_bits) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_oaep_md) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_padding) \
@@ -422,7 +475,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_PKEY_encrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_free) \
     RENAMED_FUNCTION(EVP_PKEY_get_base_id, EVP_PKEY_base_id) \
-    RENAMED_FUNCTION(EVP_PKEY_get_size, EVP_PKEY_size) \
+    RENAMED_FUNCTION(EVP_PKEY_get_bits, EVP_PKEY_bits) \
     FALLBACK_FUNCTION(EVP_PKEY_get0_RSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_EC_KEY) \
@@ -502,8 +555,22 @@ extern bool g_libSslUses32BitTime;
     RENAMED_FUNCTION(OPENSSL_sk_push, sk_push) \
     RENAMED_FUNCTION(OPENSSL_sk_value, sk_value) \
     FALLBACK_FUNCTION(OpenSSL_version_num) \
+    LIGHTUP_FUNCTION(OSSL_LIB_CTX_free) \
+    LIGHTUP_FUNCTION(OSSL_LIB_CTX_new) \
+    LIGHTUP_FUNCTION(OSSL_PROVIDER_load) \
     LIGHTUP_FUNCTION(OSSL_PROVIDER_try_load) \
+    LIGHTUP_FUNCTION(OSSL_PROVIDER_unload) \
+    LIGHTUP_FUNCTION(OSSL_STORE_close) \
+    LIGHTUP_FUNCTION(OSSL_STORE_eof) \
+    LIGHTUP_FUNCTION(OSSL_STORE_INFO_free) \
+    LIGHTUP_FUNCTION(OSSL_STORE_INFO_get_type) \
+    LIGHTUP_FUNCTION(OSSL_STORE_INFO_get1_PKEY) \
+    LIGHTUP_FUNCTION(OSSL_STORE_INFO_get1_PUBKEY) \
+    LIGHTUP_FUNCTION(OSSL_STORE_load) \
+    LIGHTUP_FUNCTION(OSSL_STORE_open_ex) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_octet_string) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_construct_utf8_string) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_construct_int) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_int32) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_end) \
     REQUIRED_FUNCTION(PKCS8_PRIV_KEY_INFO_free) \
@@ -916,6 +983,11 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
 #define EVP_md5 EVP_md5_ptr
+#define EVP_KDF_CTX_free EVP_KDF_CTX_free_ptr
+#define EVP_KDF_CTX_new EVP_KDF_CTX_new_ptr
+#define EVP_KDF_derive EVP_KDF_derive_ptr
+#define EVP_KDF_fetch EVP_KDF_fetch_ptr
+#define EVP_KDF_free EVP_KDF_free_ptr
 #define EVP_MAC_fetch EVP_MAC_fetch_ptr
 #define EVP_MAC_final EVP_MAC_final_ptr
 #define EVP_MAC_free EVP_MAC_free_ptr
@@ -954,7 +1026,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_PKEY_encrypt EVP_PKEY_encrypt_ptr
 #define EVP_PKEY_free EVP_PKEY_free_ptr
 #define EVP_PKEY_get_base_id EVP_PKEY_get_base_id_ptr
-#define EVP_PKEY_get_size EVP_PKEY_get_size_ptr
+#define EVP_PKEY_get_bits EVP_PKEY_get_bits_ptr
 #define EVP_PKEY_get0_RSA EVP_PKEY_get0_RSA_ptr
 #define EVP_PKEY_get1_DSA EVP_PKEY_get1_DSA_ptr
 #define EVP_PKEY_get1_EC_KEY EVP_PKEY_get1_EC_KEY_ptr
@@ -962,6 +1034,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_PKEY_keygen EVP_PKEY_keygen_ptr
 #define EVP_PKEY_keygen_init EVP_PKEY_keygen_init_ptr
 #define EVP_PKEY_new EVP_PKEY_new_ptr
+#define EVP_PKEY_CTX_new_from_pkey EVP_PKEY_CTX_new_from_pkey_ptr
 #define EVP_PKEY_public_check EVP_PKEY_public_check_ptr
 #define EVP_PKEY_set1_DSA EVP_PKEY_set1_DSA_ptr
 #define EVP_PKEY_set1_EC_KEY EVP_PKEY_set1_EC_KEY_ptr
@@ -1035,8 +1108,22 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define OPENSSL_sk_push OPENSSL_sk_push_ptr
 #define OPENSSL_sk_value OPENSSL_sk_value_ptr
 #define OpenSSL_version_num OpenSSL_version_num_ptr
+#define OSSL_LIB_CTX_free OSSL_LIB_CTX_free_ptr
+#define OSSL_LIB_CTX_new OSSL_LIB_CTX_new_ptr
+#define OSSL_PROVIDER_load OSSL_PROVIDER_load_ptr
 #define OSSL_PROVIDER_try_load OSSL_PROVIDER_try_load_ptr
+#define OSSL_PROVIDER_unload OSSL_PROVIDER_unload_ptr
+#define OSSL_STORE_close OSSL_STORE_close_ptr
+#define OSSL_STORE_eof OSSL_STORE_eof_ptr
+#define OSSL_STORE_INFO_free OSSL_STORE_INFO_free_ptr
+#define OSSL_STORE_INFO_get_type OSSL_STORE_INFO_get_type_ptr
+#define OSSL_STORE_INFO_get1_PKEY OSSL_STORE_INFO_get1_PKEY_ptr
+#define OSSL_STORE_INFO_get1_PUBKEY OSSL_STORE_INFO_get1_PUBKEY_ptr
+#define OSSL_STORE_load OSSL_STORE_load_ptr
+#define OSSL_STORE_open_ex OSSL_STORE_open_ex_ptr
 #define OSSL_PARAM_construct_octet_string OSSL_PARAM_construct_octet_string_ptr
+#define OSSL_PARAM_construct_utf8_string OSSL_PARAM_construct_utf8_string_ptr
+#define OSSL_PARAM_construct_int OSSL_PARAM_construct_int_ptr
 #define OSSL_PARAM_construct_int32 OSSL_PARAM_construct_int32_ptr
 #define OSSL_PARAM_construct_end OSSL_PARAM_construct_end_ptr
 #define PKCS8_PRIV_KEY_INFO_free PKCS8_PRIV_KEY_INFO_free_ptr
@@ -1309,10 +1396,9 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 // Undo renames for renamed-in-3.0
 #define EVP_MD_get_size EVP_MD_size
 #define EVP_PKEY_get_base_id EVP_PKEY_base_id
-#define EVP_PKEY_get_size EVP_PKEY_size
+#define EVP_PKEY_get_bits EVP_PKEY_bits
 #define SSL_get1_peer_certificate SSL_get_peer_certificate
 #define EVP_CIPHER_get_nid EVP_CIPHER_nid
-
 #endif
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM

@@ -10,10 +10,14 @@ steps:
   displayName: Enable python venv
 
 # Ensure the Python azure-storage-blob package is installed before doing the upload.
-- script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall
-  displayName: Upgrade Pip to latest and install azure-storage-blob Python package
+- script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
+  displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
 
-- script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitrollingbuild.py upload -build_type $(_BuildConfig) -arch $(archType) -host_os $(osGroup) -git_hash $(Build.SourceVersion) --use_latest_jit_change
-  displayName: Upload JIT to Azure Storage
-  env:
-    CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
+- task: AzureCLI@2
+  displayName: 'Upload JIT to Azure Storage'
+  inputs:
+    azureSubscription: 'superpmi-collect-rw'
+    scriptType: 'pscore'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitrollingbuild.py upload -build_type $(_BuildConfig) -arch $(archType) -host_os $(osGroup) -git_hash $(Build.SourceVersion) --use_latest_jit_change

@@ -432,8 +432,7 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
 bool ClassLayout::IsStackOnly(Compiler* comp) const
 {
     // Byref-like structs are stack only
-    if ((m_classHandle != NO_CLASS_HANDLE) &&
-        (((comp->info.compCompHnd->getClassAttribs(m_classHandle)) & CORINFO_FLG_BYREF_LIKE) != 0))
+    if ((m_classHandle != NO_CLASS_HANDLE) && comp->eeIsByrefLike(m_classHandle))
     {
         return true;
     }

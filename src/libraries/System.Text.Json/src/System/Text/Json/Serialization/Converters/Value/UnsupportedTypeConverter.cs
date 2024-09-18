@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text.Json.Schema;
+using System.Text.Json.Nodes;
+
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class UnsupportedTypeConverter<T> : JsonConverter<T>
@@ -16,5 +19,8 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options) =>
             throw new NotSupportedException(ErrorMessage);
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) =>
+            new JsonSchema { Comment = "Unsupported .NET type", Not = JsonSchema.True };
     }
 }

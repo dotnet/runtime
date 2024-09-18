@@ -80,9 +80,7 @@
 
 ;; uint64_t GetSveLengthFromOS(void);
     LEAF_ENTRY GetSveLengthFromOS
-        ;; TODO-SVE: Remove the hardcoded value 128 and uncomment once CI machines are updated to use MASM 14.4 or later
-        ;; rdvl    x0, 1
-        mov     x0, #128
+        rdvl    x0, 1
         ret     lr
     LEAF_END
 

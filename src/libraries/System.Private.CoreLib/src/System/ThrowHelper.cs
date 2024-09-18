@@ -72,18 +72,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowArrayTypeMismatchException_CantAssignType()
-        {
-            throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowInvalidCastException_DownCastArrayElement()
-        {
-            throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
-        }
-
-        [DoesNotReturn]
         internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType)
         {
             throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, targetType));
@@ -779,8 +767,6 @@ namespace System
             if (!(default(T) == null) && value == null)
                 ThrowArgumentNullException(argName);
         }
-
-
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedSimdVectorBaseType<TVector, T>()

@@ -65,6 +65,7 @@ namespace System
         public static bool IsArmOrArm64Process => IsArmProcess || IsArm64Process;
         public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
         public static bool IsS390xProcess => (int)RuntimeInformation.ProcessArchitecture == 5; // Architecture.S390x
+        public static bool IsLoongArch64Process => (int)RuntimeInformation.ProcessArchitecture == 6; // Architecture.LoongArch64;
         public static bool IsArmv6Process => (int)RuntimeInformation.ProcessArchitecture == 7; // Architecture.Armv6
         public static bool IsPpc64leProcess => (int)RuntimeInformation.ProcessArchitecture == 8; // Architecture.Ppc64le
         public static bool IsRiscV64Process => (int)RuntimeInformation.ProcessArchitecture == 9; // Architecture.RiscV64;
@@ -135,7 +136,9 @@ namespace System
         public static bool IsThreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
         public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
         public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
-        public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
+
+        private static readonly Lazy<bool> s_isBinaryFormatterSupported = new Lazy<bool>(DetermineBinaryFormatterSupport);
+        public static bool IsBinaryFormatterSupported => s_isBinaryFormatterSupported.Value;
 
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
 
@@ -721,6 +724,21 @@ namespace System
             }
 
             return false;
+        }
+
+        private static bool DetermineBinaryFormatterSupport()
+        {
+            if (IsNetFramework)
+            {
+                return true;
+            }
+            else if (IsNativeAot || IsBrowser || IsMobile)
+            {
+                return false;
+            }
+
+            return AppContext.TryGetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", out bool isBinaryFormatterEnabled)
+                && isBinaryFormatterEnabled;
         }
     }
 }

@@ -255,7 +255,7 @@ namespace Internal.ReadyToRunConstants
         GetString = 0x50,
 
         // Used by /Tuning for Profile optimizations
-        LogMethodEnter = 0x51,
+        LogMethodEnter = 0x51,  // No longer supported as of READYTORUN_MAJOR_VERSION 10.0
 
         // Reflection helpers
         GetRuntimeTypeHandle        = 0x54,
@@ -267,6 +267,7 @@ namespace Internal.ReadyToRunConstants
         Unbox                       = 0x5A,
         Unbox_Nullable              = 0x5B,
         NewMultiDimArr              = 0x5C,
+        Unbox_TypeTest              = 0x5D,
 
         // Helpers used with generic handle lookup cases
         NewObject                   = 0x60,

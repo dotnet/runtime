@@ -39,6 +39,13 @@ namespace ComInterfaceGenerator.Unit.Tests
                    .WithLocation(1)
                    .WithArguments("Event", "INativeAPI"),
             } };
+
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeMismatchInWrappers, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidOptionsOnInterface)
+                   .WithLocation(0)
+                   .WithArguments("IComInterface2", SR.BaseInterfaceMustGenerateAtLeastSameWrappers),
+            } };
         }
 
         [Theory]
@@ -558,76 +565,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(basic, new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers).WithLocation(0).WithArguments("I"));
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(containingTypeIsNotPartial, new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers).WithLocation(0).WithArguments("I"));
-        }
-
-        [Fact]
-        public async Task VerifyComInterfaceInheritingFromComInterfaceInOtherAssemblyReportsDiagnostic()
-        {
-            string additionalSource = $$"""
-                using System.Runtime.InteropServices;
-                using System.Runtime.InteropServices.Marshalling;
-
-                [GeneratedComInterface]
-                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
-                public partial interface I
-                {
-                    void Method();
-                }
-                """;
-
-            string source = $$"""
-                using System.Runtime.InteropServices;
-                using System.Runtime.InteropServices.Marshalling;
-
-                [GeneratedComInterface]
-                [Guid("0DB41042-0255-4CDD-B73A-9C5D5F31303D")]
-                partial interface {|#0:J|} : I
-                {
-                    void MethodA();
-                }
-                """;
-
-            var test = new VerifyComInterfaceGenerator.Test(referenceAncillaryInterop: false)
-            {
-                TestState =
-                {
-                    Sources =
-                    {
-                        ("Source.cs", source)
-                    },
-                    AdditionalProjects =
-                    {
-                        ["Other"] =
-                        {
-                            Sources =
-                            {
-                                ("Other.cs", additionalSource)
-                            },
-                        },
-                    },
-                    AdditionalProjectReferences =
-                    {
-                        "Other"
-                    }
-                },
-                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
-            };
-            test.TestState.AdditionalProjects["Other"].AdditionalReferences.AddRange(test.TestState.AdditionalReferences);
-
-            test.ExpectedDiagnostics.Add(
-                VerifyComInterfaceGenerator
-                    .Diagnostic(GeneratorDiagnostics.BaseInterfaceIsNotGenerated)
-                    .WithLocation(0)
-                    .WithArguments("J", "I"));
-
-            // The Roslyn SDK doesn't apply the compilation options from CreateCompilationOptions to AdditionalProjects-based projects.
-            test.SolutionTransforms.Add((sln, _) =>
-            {
-                var additionalProject = sln.Projects.First(proj => proj.Name == "Other");
-                return additionalProject.WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true)).Solution;
-            });
-
-            await test.RunAsync();
         }
 
         [Fact]

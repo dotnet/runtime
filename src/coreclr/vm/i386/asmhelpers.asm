@@ -40,7 +40,6 @@ EXTERN _NDirectImportWorker@4:PROC
 
 EXTERN _VarargPInvokeStubWorker@12:PROC
 EXTERN _GenericPInvokeCalliStubWorker@12:PROC
-EXTERN _CallCopyConstructorsWorker@4:PROC
 
 EXTERN _PreStubWorker@8:PROC
 EXTERN _TheUMEntryPrestubWorker@4:PROC
@@ -424,39 +423,6 @@ InternalExceptionWorker proc public
         push    edx             ; restore RETADDR
         jmp     @JIT_InternalThrow@4
 InternalExceptionWorker endp
-
-; EAX -> number of caller arg bytes on the stack that we must remove before going
-; to the throw helper, which assumes the stack is clean.
-_ArrayOpStubNullException proc public
-        ; kFactorReg and kTotalReg could not have been modified, but let's pop
-        ; them anyway for consistency and to avoid future bugs.
-        pop     esi
-        pop     edi
-        mov     ecx, CORINFO_NullReferenceException_ASM
-        jmp     InternalExceptionWorker
-_ArrayOpStubNullException endp
-
-; EAX -> number of caller arg bytes on the stack that we must remove before going
-; to the throw helper, which assumes the stack is clean.
-_ArrayOpStubRangeException proc public
-        ; kFactorReg and kTotalReg could not have been modified, but let's pop
-        ; them anyway for consistency and to avoid future bugs.
-        pop     esi
-        pop     edi
-        mov     ecx, CORINFO_IndexOutOfRangeException_ASM
-        jmp     InternalExceptionWorker
-_ArrayOpStubRangeException endp
-
-; EAX -> number of caller arg bytes on the stack that we must remove before going
-; to the throw helper, which assumes the stack is clean.
-_ArrayOpStubTypeMismatchException proc public
-        ; kFactorReg and kTotalReg could not have been modified, but let's pop
-        ; them anyway for consistency and to avoid future bugs.
-        pop     esi
-        pop     edi
-        mov     ecx, CORINFO_ArrayTypeMismatchException_ASM
-        jmp     InternalExceptionWorker
-_ArrayOpStubTypeMismatchException endp
 
 ;------------------------------------------------------------------------------
 ; This helper routine enregisters the appropriate arguments and makes the
@@ -1038,29 +1004,6 @@ GoCallCalliWorker:
     jmp _GenericPInvokeCalliHelper@0
 
 _GenericPInvokeCalliHelper@0 endp
-
-;==========================================================================
-; This is small stub whose purpose is to record current stack pointer and
-; call CallCopyConstructorsWorker to invoke copy constructors and destructors
-; as appropriate. This stub operates on arguments already pushed to the
-; stack by JITted IL stub and must not create a new frame, i.e. it must tail
-; call to the target for it to see the arguments that copy ctors have been
-; called on.
-;
-_CopyConstructorCallStub@0 proc public
-    ; there may be an argument in ecx - save it
-    push    ecx
-
-    ; push pointer to arguments
-    lea     edx, [esp + 8]
-    push    edx
-
-    call    _CallCopyConstructorsWorker@4
-
-    ; restore ecx and tail call to the target
-    pop     ecx
-    jmp     eax
-_CopyConstructorCallStub@0 endp
 
 ifdef FEATURE_COMINTEROP
 

@@ -98,10 +98,10 @@ bool set_root_from_app(const pal::string_t& managed_application_path,
         // for very unlikely case where the main app.dll was itself excluded from the app bundle.
         // Note that unlike non-single-file we don't want to set the app_root to the location of the app.dll
         // it needs to stay the location of the single-file bundle.
-        return pal::realpath(&args.managed_application);
+        return pal::fullpath(&args.managed_application);
     }
 
-    if (pal::realpath(&args.managed_application))
+    if (pal::fullpath(&args.managed_application))
     {
         args.app_root = get_directory(args.managed_application);
         return true;

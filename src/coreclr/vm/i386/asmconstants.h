@@ -163,12 +163,6 @@ ASMCONSTANTS_C_ASSERT(CORINFO_IndexOutOfRangeException_ASM == CORINFO_IndexOutOf
 #define CORINFO_OverflowException_ASM 4
 ASMCONSTANTS_C_ASSERT(CORINFO_OverflowException_ASM == CORINFO_OverflowException)
 
-#define CORINFO_ArrayTypeMismatchException_ASM 6
-ASMCONSTANTS_C_ASSERT(CORINFO_ArrayTypeMismatchException_ASM == CORINFO_ArrayTypeMismatchException)
-
-#define CORINFO_ArgumentNullException_ASM 8
-ASMCONSTANTS_C_ASSERT(CORINFO_ArgumentNullException_ASM == CORINFO_ArgumentNullException)
-
 #define CORINFO_ArgumentException_ASM 9
 ASMCONSTANTS_C_ASSERT(CORINFO_ArgumentException_ASM == CORINFO_ArgumentException)
 

@@ -107,10 +107,7 @@ namespace System.Collections.Generic
         {
             get
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException(nameof(key));
-                }
+                ArgumentNullException.ThrowIfNull(key);
 
                 TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
                 if (node == null)
@@ -122,10 +119,7 @@ namespace System.Collections.Generic
             }
             set
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException(nameof(key));
-                }
+                ArgumentNullException.ThrowIfNull(key);
 
                 TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
                 if (node == null)

@@ -21,9 +21,6 @@ VPTR_CLASS(EditAndContinueModule)
 VPTR_CLASS(Module)
 VPTR_CLASS(ReflectionModule)
 
-VPTR_CLASS(AppDomain)
-VPTR_CLASS(SystemDomain)
-
 VPTR_CLASS(PrecodeStubManager)
 VPTR_CLASS(StubLinkStubManager)
 VPTR_CLASS(ThePreStubManager)
@@ -68,7 +65,6 @@ VPTR_CLASS(HelperMethodFrame_PROTECTOBJ)
 VPTR_CLASS(HijackFrame)
 #endif
 VPTR_CLASS(InlinedCallFrame)
-VPTR_CLASS(MulticastFrame)
 VPTR_CLASS(PInvokeCalliFrame)
 VPTR_CLASS(PrestubMethodFrame)
 VPTR_CLASS(ProtectByRefsFrame)

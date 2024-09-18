@@ -149,15 +149,21 @@ namespace System.Threading
         }
 
 #if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_MANAGED_THREADS
+        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => true;
         internal static bool IsInternalThreadStartSupported => true;
 #elif FEATURE_WASM_PERFTRACING
+        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => false;
         internal static bool IsInternalThreadStartSupported => true;
 #else
+        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => false;
         internal static bool IsInternalThreadStartSupported => false;
 #endif
@@ -197,6 +203,9 @@ namespace System.Threading
 
         private void Start(object? parameter, bool captureContext, bool internalThread = false)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             ThrowIfNoThreadStart(internalThread);
 
             StartHelper? startHelper = _startHelper;
@@ -404,7 +413,6 @@ namespace System.Threading
             }
         }
 
-#if !CORECLR
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetThreadPoolThread()
         {
@@ -416,7 +424,6 @@ namespace System.Threading
                 ResetThreadPoolThreadSlow();
             }
         }
-#endif
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void ResetThreadPoolThreadSlow()

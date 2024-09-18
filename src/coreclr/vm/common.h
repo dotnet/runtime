@@ -101,14 +101,13 @@ using std::min;
 
 typedef VPTR(class LoaderAllocator)     PTR_LoaderAllocator;
 typedef DPTR(PTR_LoaderAllocator)       PTR_PTR_LoaderAllocator;
-typedef VPTR(class AppDomain)           PTR_AppDomain;
+typedef DPTR(class AppDomain)           PTR_AppDomain;
 typedef DPTR(class ArrayBase)           PTR_ArrayBase;
 typedef DPTR(class Assembly)            PTR_Assembly;
 typedef DPTR(class AssemblyBaseObject)  PTR_AssemblyBaseObject;
 typedef DPTR(class AssemblyLoadContextBaseObject) PTR_AssemblyLoadContextBaseObject;
 typedef DPTR(class AssemblyBinder)      PTR_AssemblyBinder;
 typedef DPTR(class AssemblyNameBaseObject) PTR_AssemblyNameBaseObject;
-typedef VPTR(class BaseDomain)          PTR_BaseDomain;
 typedef DPTR(class ClassLoader)         PTR_ClassLoader;
 typedef DPTR(class ComCallMethodDesc)   PTR_ComCallMethodDesc;
 typedef DPTR(class CLRToCOMCallMethodDesc) PTR_CLRToCOMCallMethodDesc;
@@ -200,15 +199,6 @@ Thread * const CURRENT_THREAD = NULL;
 #ifndef DACCESS_COMPILE
 EXTERN_C AppDomain* STDCALL GetAppDomain();
 #endif //!DACCESS_COMPILE
-
-inline void RetailBreak()
-{
-#ifdef TARGET_X86
-    __asm int 3
-#else
-    DebugBreak();
-#endif
-}
 
 extern BOOL isMemoryReadable(const TADDR start, unsigned len);
 

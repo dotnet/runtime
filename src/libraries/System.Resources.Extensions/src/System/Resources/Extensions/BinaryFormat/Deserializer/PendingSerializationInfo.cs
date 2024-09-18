@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Nrbf;
 using System.Reflection;
 using System.Runtime.Serialization;
 
@@ -12,12 +13,12 @@ namespace System.Resources.Extensions.BinaryFormat.Deserializer;
 
 internal sealed class PendingSerializationInfo
 {
-    internal int ObjectId { get; }
+    internal SerializationRecordId ObjectId { get; }
     private readonly ISerializationSurrogate? _surrogate;
     private readonly SerializationInfo _info;
 
     internal PendingSerializationInfo(
-        int objectId,
+        SerializationRecordId objectId,
         SerializationInfo info,
         ISerializationSurrogate? surrogate)
     {
@@ -27,7 +28,7 @@ internal sealed class PendingSerializationInfo
     }
 
     [RequiresUnreferencedCode("We can't guarantee that the ctor will be present, as the type is not known up-front.")]
-    internal void Populate(IDictionary<int, object> objects, StreamingContext context)
+    internal void Populate(IDictionary<SerializationRecordId, object> objects, StreamingContext context)
     {
         object @object = objects[ObjectId];
         Type type = @object.GetType();

@@ -8,6 +8,7 @@ using System.Runtime.Serialization;
 
 namespace System.Resources.Extensions.Tests.FormattedObject;
 
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
 public class BinaryFormattedTypes
 {
     [Theory]

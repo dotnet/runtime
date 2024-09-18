@@ -181,7 +181,7 @@ namespace System.Diagnostics
         public virtual int GetFileLineNumber() { throw null; }
         public virtual string? GetFileName() { throw null; }
         public virtual int GetILOffset() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Metadata for the method might be incomplete or removed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Metadata for the method might be incomplete or removed. Consider using DiagnosticMethodInfo.Create instead")]
         public virtual System.Reflection.MethodBase? GetMethod() { throw null; }
         public virtual int GetNativeOffset() { throw null; }
         public override string ToString() { throw null; }

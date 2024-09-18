@@ -4,7 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 
 namespace System.Resources.Extensions.BinaryFormat.Deserializer;
 
@@ -31,40 +31,40 @@ internal abstract partial class ObjectRecordDeserializer
     /// <summary>
     ///  Continue parsing.
     /// </summary>
-    /// <returns>The id that is necessary to complete parsing or <see cref="Id.Null"/> if complete.</returns>
-    internal abstract Id Continue();
+    /// <returns>The id that is necessary to complete parsing or <see cref="SerializationRecordId"/> default value if complete.</returns>
+    internal abstract SerializationRecordId Continue();
 
     /// <summary>
     ///  Gets the actual object for a member value primitive or record. Returns <see cref="s_missingValueSentinel"/> if
     ///  the object record has not been encountered yet.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected (object? value, Id id) UnwrapMemberValue(object? memberValue)
+    private protected (object? value, SerializationRecordId id) UnwrapMemberValue(object? memberValue)
     {
-        if (memberValue is null) // PayloadReader does not return NullRecord, just null
+        if (memberValue is null) // NrbfDecoder does not return NullRecord, just null
         {
-            return (null, Id.Null);
+            return (null, default(SerializationRecordId));
         }
         else if (memberValue is not SerializationRecord serializationRecord) // a primitive value
         {
-            return (memberValue, Id.Null);
+            return (memberValue, default(SerializationRecordId));
         }
-        else if (serializationRecord.RecordType is RecordType.BinaryObjectString)
+        else if (serializationRecord.RecordType is SerializationRecordType.BinaryObjectString)
         {
             PrimitiveTypeRecord<string> stringRecord = (PrimitiveTypeRecord<string>)serializationRecord;
-            return (stringRecord.Value, stringRecord.ObjectId);
+            return (stringRecord.Value, stringRecord.Id);
         }
-        else if (serializationRecord.RecordType is RecordType.MemberPrimitiveTyped)
+        else if (serializationRecord.RecordType is SerializationRecordType.MemberPrimitiveTyped)
         {
-            return (serializationRecord.GetMemberPrimitiveTypedValue(), Id.Null);
+            return (((PrimitiveTypeRecord)serializationRecord).Value, default(SerializationRecordId));
         }
         else
         {
             // ClassRecords & ArrayRecords
-            return TryGetObject(serializationRecord.ObjectId);
+            return TryGetObject(serializationRecord.Id);
         }
 
-        (object? value, Id id) TryGetObject(Id id)
+        (object? value, SerializationRecordId id) TryGetObject(SerializationRecordId id)
         {
             if (!Deserializer.DeserializedObjects.TryGetValue(id, out object? value))
             {
@@ -84,9 +84,9 @@ internal abstract partial class ObjectRecordDeserializer
     /// <summary>
     ///  Returns <see langword="true"/> if the given record's value needs an updater applied.
     /// </summary>
-    private protected bool DoesValueNeedUpdated(object value, Id valueRecord) =>
         // Null Id is a primitive value.
-        !valueRecord.IsNull
+    private protected bool DoesValueNeedUpdated(object value, SerializationRecordId valueRecord) =>
+        !valueRecord.Equals(default(SerializationRecordId))
             // IObjectReference is going to have its object replaced.
             && (value is IObjectReference
                 // Value types that aren't "complete" need to be reapplied.

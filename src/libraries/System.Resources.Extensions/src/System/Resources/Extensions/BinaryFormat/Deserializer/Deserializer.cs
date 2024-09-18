@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 
 namespace System.Resources.Extensions.BinaryFormat.Deserializer;
 
@@ -51,7 +51,7 @@ namespace System.Resources.Extensions.BinaryFormat.Deserializer;
 /// </devdoc>
 internal sealed partial class Deserializer : IDeserializer
 {
-    private readonly IReadOnlyDictionary<int, SerializationRecord> _recordMap;
+    private readonly IReadOnlyDictionary<SerializationRecordId, SerializationRecord> _recordMap;
     private readonly BinaryFormattedObject.ITypeResolver _typeResolver;
     BinaryFormattedObject.ITypeResolver IDeserializer.TypeResolver => _typeResolver;
 
@@ -60,8 +60,8 @@ internal sealed partial class Deserializer : IDeserializer
     BinaryFormattedObject.Options IDeserializer.Options => Options;
 
     /// <inheritdoc cref="IDeserializer.DeserializedObjects"/>
-    private readonly Dictionary<int, object> _deserializedObjects = [];
-    IDictionary<int, object> IDeserializer.DeserializedObjects => _deserializedObjects;
+    private readonly Dictionary<SerializationRecordId, object> _deserializedObjects = [];
+    IDictionary<SerializationRecordId, object> IDeserializer.DeserializedObjects => _deserializedObjects;
 
     // Surrogate cache.
     private readonly Dictionary<Type, ISerializationSurrogate?>? _surrogates;
@@ -75,34 +75,32 @@ internal sealed partial class Deserializer : IDeserializer
     // dictionary, to do so we'd need to know if any referenced object is going to get to this state
     // even if it hasn't finished parsing, which isn't easy to do with cycles involved.
     private Queue<PendingSerializationInfo>? _pendingSerializationInfo;
-    private HashSet<int>? _pendingSerializationInfoIds;
+    private HashSet<SerializationRecordId>? _pendingSerializationInfoIds;
 
-    // Keeping a separate stack for ids for fast infinite loop checks.
-    private readonly Stack<int> _parseStack = [];
     private readonly Stack<ObjectRecordDeserializer> _parserStack = [];
 
     /// <inheritdoc cref="IDeserializer.IncompleteObjects"/>
-    private readonly HashSet<int> _incompleteObjects = [];
-    public HashSet<int> IncompleteObjects => _incompleteObjects;
+    private readonly HashSet<SerializationRecordId> _incompleteObjects = [];
+    public HashSet<SerializationRecordId> IncompleteObjects => _incompleteObjects;
 
     // For a given object id, the set of ids that it is waiting on to complete.
-    private Dictionary<int, HashSet<int>>? _incompleteDependencies;
+    private Dictionary<SerializationRecordId, HashSet<SerializationRecordId>>? _incompleteDependencies;
 
     // The pending value updaters. Scanned each time an object is completed.
     private HashSet<ValueUpdater>? _pendingUpdates;
 
     // Kept as a field to avoid allocating a new one every time we complete objects.
-    private readonly Queue<int> _pendingCompletions = [];
+    private readonly Queue<SerializationRecordId> _pendingCompletions = [];
 
-    private readonly Id _rootId;
+    private readonly SerializationRecordId _rootId;
 
     // We group individual object events here to fire them all when we complete the graph.
     private event Action<object?>? OnDeserialization;
     private event Action<StreamingContext>? OnDeserialized;
 
     private Deserializer(
-        Id rootId,
-        IReadOnlyDictionary<int, SerializationRecord> recordMap,
+        SerializationRecordId rootId,
+        IReadOnlyDictionary<SerializationRecordId, SerializationRecord> recordMap,
         BinaryFormattedObject.ITypeResolver typeResolver,
         BinaryFormattedObject.Options options)
     {
@@ -122,8 +120,8 @@ internal sealed partial class Deserializer : IDeserializer
     /// </summary>
     [RequiresUnreferencedCode("Calls System.Windows.Forms.BinaryFormat.Deserializer.Deserializer.Deserialize()")]
     internal static object Deserialize(
-        Id rootId,
-        IReadOnlyDictionary<int, SerializationRecord> recordMap,
+        SerializationRecordId rootId,
+        IReadOnlyDictionary<SerializationRecordId, SerializationRecord> recordMap,
         BinaryFormattedObject.ITypeResolver typeResolver,
         BinaryFormattedObject.Options options)
     {
@@ -131,7 +129,7 @@ internal sealed partial class Deserializer : IDeserializer
         return deserializer.Deserialize();
     }
 
-    [RequiresUnreferencedCode("Calls System.Windows.Forms.BinaryFormat.Deserializer.Deserializer.DeserializeRoot(Id)")]
+    [RequiresUnreferencedCode("Calls System.Windows.Forms.BinaryFormat.Deserializer.Deserializer.DeserializeRoot(SerializationRecordId)")]
     private object Deserialize()
     {
         DeserializeRoot(_rootId);
@@ -146,7 +144,7 @@ internal sealed partial class Deserializer : IDeserializer
             if (--pendingCount >= 0
                 && _pendingSerializationInfo.Count != 0
                 && _incompleteDependencies is not null
-                && _incompleteDependencies.TryGetValue(pending.ObjectId, out HashSet<int>? dependencies))
+                && _incompleteDependencies.TryGetValue(pending.ObjectId, out HashSet<SerializationRecordId>? dependencies))
             {
                 // We can get here with nested ISerializable value types.
 
@@ -180,8 +178,8 @@ internal sealed partial class Deserializer : IDeserializer
         return _deserializedObjects[_rootId];
     }
 
-    [RequiresUnreferencedCode("Calls DeserializeNew(Id)")]
-    private void DeserializeRoot(Id rootId)
+    [RequiresUnreferencedCode("Calls DeserializeNew(SerializationRecordId)")]
+    private void DeserializeRoot(SerializationRecordId rootId)
     {
         object root = DeserializeNew(rootId);
         if (root is not ObjectRecordDeserializer parser)
@@ -189,35 +187,24 @@ internal sealed partial class Deserializer : IDeserializer
             return;
         }
 
-        _parseStack.Push(rootId);
         _parserStack.Push(parser);
 
         while (_parserStack.Count > 0)
         {
             ObjectRecordDeserializer? currentParser = _parserStack.Pop();
-            int currentId = _parseStack.Pop();
-            Debug.Assert(currentId == currentParser.ObjectRecord.ObjectId);
 
-            Id requiredId;
-            while (!(requiredId = currentParser.Continue()).IsNull)
+            SerializationRecordId requiredId;
+            while (!(requiredId = currentParser.Continue()).Equals(default(SerializationRecordId)))
             {
                 // Beside ObjectRecordDeserializer, DeserializeNew can return a raw value like int, string or an array.
                 if (DeserializeNew(requiredId) is ObjectRecordDeserializer requiredParser)
                 {
                     // The required object is not complete.
 
-                    if (_parseStack.Contains(requiredId))
-                    {
-                        // All objects should be available before they're asked for a second time.
-                        throw new SerializationException(SR.Serialization_Cycle);
-                    }
-
                     // Push our current parser.
-                    _parseStack.Push(currentId);
                     _parserStack.Push(currentParser);
 
                     // Push the required parser so we can complete it.
-                    _parseStack.Push(requiredId);
                     _parserStack.Push(requiredParser);
 
                     break;
@@ -226,8 +213,8 @@ internal sealed partial class Deserializer : IDeserializer
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnreferencedCode("Calls System.Windows.Forms.BinaryFormat.Deserializer.ObjectRecordParser.Create(Id, IRecord, IDeserializer)")]
-        object DeserializeNew(Id id)
+        [RequiresUnreferencedCode("Calls System.Windows.Forms.BinaryFormat.Deserializer.ObjectRecordParser.Create(SerializationRecordId, IRecord, IDeserializer)")]
+        object DeserializeNew(SerializationRecordId id)
         {
             // Strings, string arrays, and primitive arrays can be completed without creating a
             // parser object. Single primitives don't normally show up as records unless they are top
@@ -238,22 +225,26 @@ internal sealed partial class Deserializer : IDeserializer
 
             object? value = record.RecordType switch
             {
-                RecordType.BinaryObjectString => ((PrimitiveTypeRecord<string>)record).Value,
-                RecordType.MemberPrimitiveTyped => record.GetMemberPrimitiveTypedValue(),
-                RecordType.ArraySingleString => ((ArrayRecord<string>)record).GetArray(),
-                RecordType.ArraySinglePrimitive => ArrayRecordDeserializer.GetArraySinglePrimitive(record),
-                RecordType.BinaryArray => ArrayRecordDeserializer.GetSimpleBinaryArray((ArrayRecord)record, _typeResolver),
+                SerializationRecordType.BinaryObjectString => ((PrimitiveTypeRecord<string>)record).Value,
+                SerializationRecordType.MemberPrimitiveTyped => ((PrimitiveTypeRecord)record).Value,
+                SerializationRecordType.ArraySingleString => ((SZArrayRecord<string>)record).GetArray(),
+                SerializationRecordType.ArraySinglePrimitive => ArrayRecordDeserializer.GetArraySinglePrimitive(record),
+                SerializationRecordType.BinaryArray => ArrayRecordDeserializer.GetSimpleBinaryArray((ArrayRecord)record, _typeResolver),
                 _ => null
             };
 
             if (value is not null)
             {
-                _deserializedObjects.Add(record.ObjectId, value);
+                _deserializedObjects.Add(record.Id, value);
                 return value;
             }
 
             // Not a simple case, need to do a full deserialization of the record.
-            _incompleteObjects.Add(id);
+            if (!_incompleteObjects.Add(id))
+            {
+                // All objects should be available before they're asked for a second time.
+                throw new SerializationException(SR.Serialization_Cycle);
+            }
 
             var deserializer = ObjectRecordDeserializer.Create(record, this);
 
@@ -300,7 +291,7 @@ internal sealed partial class Deserializer : IDeserializer
 
         _incompleteDependencies ??= [];
 
-        if (_incompleteDependencies.TryGetValue(updater.ObjectId, out HashSet<int>? dependencies))
+        if (_incompleteDependencies.TryGetValue(updater.ObjectId, out HashSet<SerializationRecordId>? dependencies))
         {
             dependencies.Add(updater.ValueId);
         }
@@ -314,21 +305,21 @@ internal sealed partial class Deserializer : IDeserializer
         "Trimming",
         "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
         Justification = "The type is already in the cache of the TypeResolver, no need to mark this one again.")]
-    void IDeserializer.CompleteObject(Id id)
+    void IDeserializer.CompleteObject(SerializationRecordId id)
     {
         // Need to use a queue as Completion is recursive.
 
         _pendingCompletions.Enqueue(id);
-        Id completed = Id.Null;
+        SerializationRecordId completed = default(SerializationRecordId);
 
         while (_pendingCompletions.Count > 0)
         {
-            int completedId = _pendingCompletions.Dequeue();
+            SerializationRecordId completedId = _pendingCompletions.Dequeue();
             _incompleteObjects.Remove(completedId);
 
             // When we've recursed, we've done so because there are no more dependencies for the current id, so we can
             // remove it from the dictionary. We have to pend as we can't remove while we're iterating the dictionary.
-            if (!completed.IsNull)
+            if (!completed.Equals(default(SerializationRecordId)))
             {
                 _incompleteDependencies?.Remove(completed);
 
@@ -339,7 +330,7 @@ internal sealed partial class Deserializer : IDeserializer
                     continue;
                 }
 
-                completed = Id.Null;
+                completed = default(SerializationRecordId);
             }
 
             if (_recordMap[completedId] is ClassRecord classRecord
@@ -371,10 +362,10 @@ internal sealed partial class Deserializer : IDeserializer
 
             Debug.Assert(_pendingUpdates is not null);
 
-            foreach (KeyValuePair<int, HashSet<int>> pair in _incompleteDependencies)
+            foreach (KeyValuePair<SerializationRecordId, HashSet<SerializationRecordId>> pair in _incompleteDependencies)
             {
-                int incompleteId = pair.Key;
-                HashSet<int> dependencies = pair.Value;
+                SerializationRecordId incompleteId = pair.Key;
+                HashSet<SerializationRecordId> dependencies = pair.Value;
 
                 if (!dependencies.Remove(completedId))
                 {
@@ -384,7 +375,7 @@ internal sealed partial class Deserializer : IDeserializer
                 // Search for fixups that need to be applied for this dependency.
                 int removals = _pendingUpdates.RemoveWhere((ValueUpdater updater) =>
                 {
-                    if (updater.ValueId != completedId)
+                    if (!updater.ValueId.Equals(completedId))
                     {
                         return false;
                     }

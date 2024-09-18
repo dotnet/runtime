@@ -9257,6 +9257,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             DoGetArrayDataReference();
             didIntrinsic = true;
             break;
+
 #if INTERP_ILSTUBS
         case NI_System_StubHelpers_GetStubContext:
             OpStackSet<void*>(m_curStackHt, GetStubContext());
@@ -9264,6 +9265,26 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             m_curStackHt++; didIntrinsic = true;
             break;
 #endif // INTERP_ILSTUBS
+
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
+            DoIsReferenceOrContainsReferences(reinterpret_cast<CORINFO_METHOD_HANDLE>(methToCall));
+            didIntrinsic = true;
+            break;
+
+        case NI_System_Threading_Interlocked_CompareExchange:
+            // Here and in other Interlocked.* intrinsics we use sigInfo.retType to be able
+            // to detect small-integer overloads.
+            didIntrinsic = DoInterlockedCompareExchange(sigInfo.retType);
+            break;
+
+        case NI_System_Threading_Interlocked_Exchange:
+            didIntrinsic = DoInterlockedExchange(sigInfo.retType);
+            break;
+
+        case NI_System_Threading_Interlocked_ExchangeAdd:
+            didIntrinsic = DoInterlockedExchangeAdd(sigInfo.retType);
+            break;
+
         default:
 #if INTERP_TRACING
             InterlockedIncrement(&s_totalInterpCallsToIntrinsicsUnhandled);
@@ -10903,6 +10924,197 @@ void Interpreter::DoGetArrayDataReference()
     OpStackTypeSet(ind, InterpreterType(CORINFO_TYPE_BYREF));
 }
 
+static bool HasByrefFields(MethodTable* pMT)
+{
+    // Inspect all instance fields recursively
+    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc* pFD = fieldIterator.Next(); pFD != nullptr; pFD = fieldIterator.Next())
+    {
+        if (pFD->IsByRef())
+        {
+            return true;
+        }
+        if ((pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE &&
+            HasByrefFields(pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable())))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+void Interpreter::DoIsReferenceOrContainsReferences(CORINFO_METHOD_HANDLE method)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    CORINFO_SIG_INFO sigInfoFull;
+    {
+        GCX_PREEMP();
+        m_interpCeeInfo.getMethodSig(method, & sigInfoFull, nullptr);
+    }
+
+    MethodTable* typeArg = GetMethodTableFromClsHnd(sigInfoFull.sigInst.methInst[0]);
+
+    bool containsGcPtrs = typeArg->ContainsGCPointers();
+
+    // Return true for byref-like structs with ref fields (they might not have them)
+    if (!containsGcPtrs && typeArg->IsByRefLike())
+    {
+        containsGcPtrs |= HasByrefFields(typeArg);
+    }
+
+    OpStackSet<BOOL>(m_curStackHt, containsGcPtrs);
+    OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_INT));
+    m_curStackHt++;
+}
+
+bool Interpreter::DoInterlockedCompareExchange(CorInfoType retType)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    // These CompareExchange are must-expand:
+    //
+    //  long   CompareExchange(ref long location1, long value, long comparand)
+    //  int    CompareExchange(ref int location1, int value, int comparand)
+    //  ushort CompareExchange(ref ushort location1, ushort value, ushort comparand)
+    //  byte   CompareExchange(ref byte location1, byte value, byte comparand)
+    //
+    // Detect these by retType (signature)
+    unsigned comparandInd = m_curStackHt - 1;
+    unsigned valueInd = m_curStackHt - 2;
+    unsigned locationInd = m_curStackHt - 3;
+    switch (retType)
+    {
+        case CORINFO_TYPE_LONG:
+            m_curStackHt -= 3;
+            OpStackSet<int64_t>(m_curStackHt, InterlockedCompareExchange64(
+                OpStackGet<int64_t*>(locationInd),
+                OpStackGet<int64_t>(valueInd),
+                OpStackGet<int64_t>(comparandInd)));
+            OpStackTypeSet(m_curStackHt, InterpreterType(retType));
+            m_curStackHt++;
+            return true;
+
+        case CORINFO_TYPE_INT:
+            m_curStackHt -= 3;
+            OpStackSet<LONG>(m_curStackHt, InterlockedCompareExchange(
+                OpStackGet<LONG*>(locationInd),
+                OpStackGet<LONG>(valueInd),
+                OpStackGet<LONG>(comparandInd)));
+            OpStackTypeSet(m_curStackHt, InterpreterType(retType));
+            m_curStackHt++;
+            return true;
+
+        case CORINFO_TYPE_SHORT:
+        case CORINFO_TYPE_BYTE:
+            NYI_INTERP("TODO: Implement must-expand atomics for small types.");
+            return false;
+
+        default:
+            // Non must-expand intrinsics
+            return false;
+    }
+}
+
+bool Interpreter::DoInterlockedExchange(CorInfoType retType)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    // These Exchange are must-expand:
+    //
+    //  long   Exchange(ref long location1, long value)
+    //  int    Exchange(ref int location1, int value)
+    //  ushort Exchange(ref ushort location1, ushort value)
+    //  byte   Exchange(ref byte location1, byte value)
+    //
+    // Detect these by retType (signature)
+    unsigned valueInd = m_curStackHt - 1;
+    unsigned locationInd = m_curStackHt - 2;
+    switch (retType)
+    {
+        case CORINFO_TYPE_LONG:
+            m_curStackHt -= 2;
+            OpStackSet<int64_t>(m_curStackHt, InterlockedExchange64(
+                OpStackGet<int64_t*>(locationInd),
+                OpStackGet<int64_t>(valueInd)));
+            OpStackTypeSet(m_curStackHt, InterpreterType(retType));
+            m_curStackHt++;
+            return true;
+
+        case CORINFO_TYPE_INT:
+            m_curStackHt -= 2;
+            OpStackSet<LONG>(m_curStackHt, InterlockedExchange(
+                OpStackGet<LONG*>(locationInd),
+                OpStackGet<LONG>(valueInd)));
+            OpStackTypeSet(m_curStackHt, InterpreterType(retType));
+            m_curStackHt++;
+            return true;
+
+        case CORINFO_TYPE_SHORT:
+        case CORINFO_TYPE_BYTE:
+            NYI_INTERP("TODO: Implement must-expand Exchange for small types.");
+            return false;
+
+        default:
+            // Non must-expand intrinsics
+            return false;
+    }
+}
+
+bool Interpreter::DoInterlockedExchangeAdd(CorInfoType retType)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    // These ExchangeAdd are must-expand:
+    //
+    //  long ExchangeAdd(ref long location1, long value)
+    //  int  ExchangeAdd(ref int location1, int value)
+    //
+    // Detect these by retType (signature)
+    unsigned valueInd = m_curStackHt - 1;
+    unsigned locationInd = m_curStackHt - 2;
+    switch (retType)
+    {
+        case CORINFO_TYPE_LONG:
+            m_curStackHt -= 2;
+            OpStackSet<int64_t>(m_curStackHt, InterlockedExchangeAdd64(
+                OpStackGet<int64_t*>(locationInd),
+                OpStackGet<int64_t>(valueInd)));
+            OpStackTypeSet(m_curStackHt, InterpreterType(retType));
+            m_curStackHt++;
+            return true;
+
+        case CORINFO_TYPE_INT:
+            m_curStackHt -= 2;
+            OpStackSet<LONG>(m_curStackHt, InterlockedExchangeAdd(
+                OpStackGet<LONG*>(locationInd),
+                OpStackGet<LONG>(valueInd)));
+            OpStackTypeSet(m_curStackHt, InterpreterType(retType));
+            m_curStackHt++;
+            return true;
+
+        default:
+            // Non must-expand intrinsics
+            return false;
+    }
+}
+
 void Interpreter::RecordConstrainedCall()
 {
     CONTRACTL {
@@ -11760,6 +11972,34 @@ Interpreter::InterpreterNamedIntrinsics Interpreter::getNamedIntrinsicID(CEEInfo
                         {
                             result = NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference;
                         }
+                    }
+                }
+                else if (strcmp(namespaceName, "CompilerServices") == 0)
+                {
+                    if (strcmp(className, "RuntimeHelpers") == 0)
+                    {
+                        if (strcmp(methodName, "IsReferenceOrContainsReferences") == 0)
+                        {
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
+                        }
+                    }
+                }
+            }
+            else if (strncmp(namespaceName, "Threading", 8) == 0)
+            {
+                if (strcmp(className, "Interlocked") == 0)
+                {
+                    if (strcmp(methodName, "CompareExchange") == 0)
+                    {
+                        result = NI_System_Threading_Interlocked_CompareExchange;
+                    }
+                    else if (strcmp(methodName, "Exchange") == 0)
+                    {
+                        result = NI_System_Threading_Interlocked_Exchange;
+                    }
+                    else if (strcmp(methodName, "ExchangeAdd") == 0)
+                    {
+                        result = NI_System_Threading_Interlocked_ExchangeAdd;
                     }
                 }
             }

@@ -127,10 +127,7 @@ public class Tree<T>
         return
             EqualityComparer<T>.Default.Equals(Value, o.Value) &&
             EqualityComparer<Tree<T>>.Default.Equals(Left, o.Left) &&
-            EqualityComparer<Tree<T>>.Default.Equals(Right, o.Right) &&
-            // make sure the branches aren't actually the exact same object
-            (Left is null || !ReferenceEquals(Left, o.Left)) &&
-            (Right is null || !ReferenceEquals(Right, o.Right));
+            EqualityComparer<Tree<T>>.Default.Equals(Right, o.Right);
     }
 
     public override int GetHashCode() => 1;

@@ -79,11 +79,6 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
     int32_t* pValueOffset,
     uint32_t* pValueSize);
 
-class ReflectionEnum {
-public:
-    static FCDECL1(INT32, InternalGetCorElementType, MethodTable* pMT);
-};
-
 extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QCall::ObjectHandleOnStack pReturnValues, QCall::ObjectHandleOnStack pReturnNames, BOOL fGetNames);
 
 extern "C" int32_t QCALLTYPE ReflectionInvocation_SizeOf(QCall::TypeHandle pType);
