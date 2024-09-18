@@ -47,6 +47,8 @@ class CalledMethod;
 
 #include "genericdict.h"
 
+void FlushVirtualFunctionPointerCaches();
+
 inline FieldDesc* GetField(CORINFO_FIELD_HANDLE fieldHandle)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1092,8 +1094,6 @@ struct VirtualFunctionPointerArgs
     CORINFO_METHOD_HANDLE methodHnd;
 };
 
-FCDECL2(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Dynamic, Object * objectUNSAFE, VirtualFunctionPointerArgs * pArgs);
-
 typedef HCCALL1_PTR(TADDR, FnStaticBaseHelper, TADDR arg0);
 
 struct StaticFieldAddressArgs
@@ -1112,17 +1112,6 @@ struct GenericHandleArgs
     CORINFO_MODULE_HANDLE module;
     DWORD dictionaryIndexAndSlot;
 };
-
-FCDECL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodWithSlotAndModule, CORINFO_METHOD_HANDLE  methodHnd, GenericHandleArgs * pArgs);
-FCDECL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO_CLASS_HANDLE classHnd, GenericHandleArgs * pArgs);
-
-CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc   *pMD,
-                                               MethodTable  *pMT,
-                                               LPVOID        signature,
-                                               DWORD         dictionaryIndexAndSlot = -1,
-                                               Module *      pModule = NULL);
-
-void ClearJitGenericHandleCache();
 
 CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags);
 
