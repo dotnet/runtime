@@ -5299,16 +5299,15 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                             {
                                 fgCompactBlock(otherPred);
                                 fgFoldSimpleCondByForwardSub(otherPred);
+
+                                // Since compaction removes blocks, update lexical pointers
+                                bPrev = block->Prev();
+                                bNext = block->Next();
                             }
                         }
 
                         assert(block->KindIs(BBJ_ALWAYS));
                         bDest = block->GetTarget();
-                    }
-                    else
-                    {
-                        bDest      = block->GetTrueTarget();
-                        bFalseDest = block->GetFalseTarget();
                     }
                 }
             }
