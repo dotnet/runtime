@@ -2102,15 +2102,13 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		find_symbol (sofile, globals, "mono_aot_file_info", (gpointer*)&info);
 	}
 
-	// Copy aotid to MonoImage
-	memcpy(&assembly->image->aotid, info->aotid, 16);
-
 	if (version_symbol) {
 		/* Old file format */
 		version = atoi (version_symbol);
-	} else {
-		g_assert (info);
+	} else if (info) {
 		version = info->version;
+	} else {
+		version = -1;
 	}
 
 	if (version != MONO_AOT_FILE_VERSION) {
@@ -2120,6 +2118,11 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		guint8 *blob;
 		void *handle;
 
+		g_assert (info);
+		
+		// Copy aotid to MonoImage
+		memcpy(&assembly->image->aotid, info->aotid, 16);
+		
 		if (info->flags & MONO_AOT_FILE_FLAG_SEPARATE_DATA) {
 			aot_data = open_aot_data (assembly, info, &handle);
 
@@ -4438,16 +4441,15 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 		g_free (full_name);
 	}
 
-	if (mono_llvm_only) {
-		guint8 flags = amodule->method_flags_table [method_index];
-		/* The caller needs to looks this up, but its hard to do without constructing the full MonoJitInfo, so save it here */
-		if (flags & (MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE | MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY)) {
-			mono_aot_lock ();
-			if (!code_to_method_flags)
-				code_to_method_flags = g_hash_table_new (NULL, NULL);
-			g_hash_table_insert (code_to_method_flags, code, GUINT_TO_POINTER (flags));
-			mono_aot_unlock ();
-		}
+	guint8 flags = amodule->method_flags_table [method_index];
+	/* The caller needs to looks this up, but its hard to do without constructing the full MonoJitInfo, so save it here */
+	if ((mono_llvm_only && (flags & (MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE | MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY))) ||
+			(flags & MONO_AOT_METHOD_FLAG_HAS_LLVM_INTRINSICS)) {
+		mono_aot_lock ();
+		if (!code_to_method_flags)
+			code_to_method_flags = g_hash_table_new (NULL, NULL);
+		g_hash_table_insert (code_to_method_flags, code, GUINT_TO_POINTER (flags));
+		mono_aot_unlock ();
 	}
 
 	init_plt (amodule);
@@ -6544,6 +6546,12 @@ mono_aot_get_method_flags (guint8 *code)
 	return (MonoAotMethodFlags)flags;
 }
 
+MonoAotFileFlags
+mono_aot_get_module_flags (gpointer aot_module)
+{
+	return ((MonoAotModule*)aot_module)->info.flags;
+}
+
 #else
 /* AOT disabled */
 
@@ -6742,6 +6750,12 @@ MonoAotMethodFlags
 mono_aot_get_method_flags (guint8 *code)
 {
 	return MONO_AOT_METHOD_FLAG_NONE;
+}
+
+MonoAotFileFlags
+mono_aot_get_module_flags (gpointer aot_module)
+{
+	return 0;
 }
 
 #endif

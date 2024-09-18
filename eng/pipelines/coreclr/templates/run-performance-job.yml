@@ -22,12 +22,11 @@ parameters:
   experimentName: ''              # optional -- name of the experiment
   runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
-  projectFile: 'microbenchmarks.proj'   # optional -- project file to build helix workitems
+  projectFile: '$(Agent.BuildDirectory)/performance/eng/performance/helix.proj'   # optional -- project file to build helix workitems
   runKind: ''                     # required -- test category
   logicalMachine: ''              # required -- Used to specify a which pool of machines the test should run against
   javascriptEngine: 'NoJS'
   helixTypeSuffix: ''             # optional -- appends to HelixType
-  collectHelixLogsScript: ''      # optional -- script to collect the logs, and artifacts helpful for debugging failures
   additionalSetupParameters: ''   # optional -- additional setup parameters that are job-specific
 
 jobs:
@@ -57,107 +56,14 @@ jobs:
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
 
-    - IsInternal: ''
-    - HelixApiAccessToken: ''
-    - ${{ if and(eq(parameters.runtimeType, 'wasm'), in(variables['Build.Reason'], 'PullRequest')) }}:
-      - HelixPerfUploadTokenValue: ''
-    - ${{ if and(notin(variables['Build.Reason'], 'PullRequest'), ne(parameters.osGroup, 'windows')) }}:
-      - HelixPerfUploadTokenValue: '$(PerfCommandUploadTokenLinux)'
-    - ${{ if and(notin(variables['Build.Reason'], 'PullRequest'), eq(parameters.osGroup, 'windows')) }}:
-      - HelixPerfUploadTokenValue: '$(PerfCommandUploadToken)'
-    - ${{ if eq(parameters.runtimeType, 'wasm') }}:
-      # nodejs installation steps from https://github.com/nodesource/distributions
-      - HelixPreCommandsWasmOnLinux: >-
-          export RestoreAdditionalProjectSources=$HELIX_CORRELATION_PAYLOAD/built-nugets &&
-          sudo apt-get -y remove nodejs &&
-          sudo apt-get update &&
-          sudo apt-get install -y ca-certificates curl gnupg &&
-          sudo mkdir -p /etc/apt/keyrings &&
-          sudo rm -f /etc/apt/keyrings/nodesource.gpg &&
-          curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor --batch -o /etc/apt/keyrings/nodesource.gpg &&
-          export NODE_MAJOR=18 &&
-          echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list &&
-          sudo apt-get update &&
-          sudo apt-get install nodejs -y &&
-          test -n "$(V8Version)" &&
-          npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g &&
-          $HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 v8@$(V8Version) &&
-          export V8_ENGINE_PATH=~/.jsvu/bin/v8-$(V8Version) &&
-          ${V8_ENGINE_PATH} -e 'console.log(`V8 version: ${this.version()}`)'
-    - ${{ if ne(parameters.runtimeType, 'wasm') }}:
-      - HelixPreCommandsWasmOnLinux: echo
-    - HelixPreCommandStemWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -m pip install -U pip;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;echo on;set PYTHONPATH=;python -m pip install -U pip;python -m pip install urllib3==1.26.15;python -m pip install azure.storage.blob==12.13.0;python -m pip install azure.storage.queue==12.4.0;python -m pip install azure.identity==1.16.1;set "PERFLAB_UPLOAD_TOKEN=$(HelixPerfUploadTokenValue)"'
-    - HelixPreCommandStemLinux: >-
-        export ORIGPYPATH=$PYTHONPATH
-        export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;
-        echo "** Installing prerequistes **";
-        echo "** Waiting for dpkg to unlock (up to 2 minutes) **" &&
-        timeout 2m bash -c 'while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do if [ -z "$printed" ]; then echo "Waiting for dpkg lock to be released... Lock is held by: $(ps -o cmd= -p $(sudo fuser /var/lib/dpkg/lock-frontend))"; printed=1; fi; echo "Waiting 5 seconds to check again"; sleep 5; done;' &&
-        sudo apt-get remove -y lttng-modules-dkms &&
-        sudo apt-get -y install python3-pip &&
-        python3 -m pip install --user -U pip &&
-        sudo apt-get -y install python3-venv &&
-        python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv &&
-        ls -l $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate &&
-        export PYTHONPATH= &&
-        python3 -m pip install --user -U pip &&
-        pip3 install urllib3==1.26.15 &&
-        pip3 install --user azure.storage.blob==12.13.0 &&
-        pip3 install --user azure.storage.queue==12.4.0 &&
-        pip3 install --user azure.identity==1.16.1 &&
-        sudo apt-get update &&
-        sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates &&
-        $(HelixPreCommandsWasmOnLinux) &&
-        export PERFLAB_UPLOAD_TOKEN="$(HelixPerfUploadTokenValue)"
-        || export PERF_PREREQS_INSTALL_FAILED=1;
-        test "x$PERF_PREREQS_INSTALL_FAILED" = "x1" && echo "** Error: Failed to install prerequites **"
-    - HelixPreCommandStemMusl: 'ulimit -n 4096;export ORIGPYPATH=$PYTHONPATH;sudo apk add icu-libs krb5-libs libgcc libintl libssl1.1 libstdc++ zlib cargo;sudo apk add libgdiplus --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing; python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install urllib3==1.26.15;pip3 install azure.storage.blob==12.13.0;pip3 install azure.storage.queue==12.4.0;pip3 install azure.identity==1.16.1;export PERFLAB_UPLOAD_TOKEN="$(HelixPerfUploadTokenValue)"'
-    - ExtraMSBuildLogsWindows: 'set MSBUILDDEBUGCOMM=1;set "MSBUILDDEBUGPATH=%HELIX_WORKITEM_UPLOAD_ROOT%"'
-    - ExtraMSBuildLogsLinux: 'export MSBUILDDEBUGCOMM=1;export "MSBUILDDEBUGPATH=$HELIX_WORKITEM_UPLOAD_ROOT"'
-    - HelixPreCommand: ''
-    - HelixPostCommand: ''
-    - Interpreter: ''
+    - name: internalParam
+      value: ''
 
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - ${{ if eq( parameters.osGroup, 'windows') }}:
-        - HelixPreCommand: $(HelixPreCommandStemWindows);$(ExtraMSBuildLogsWindows)
-        - HelixPostCommand: 'set PYTHONPATH=%ORIGPYPATH%'
-        - IsInternal: -Internal
-      - ${{ if ne(parameters.osGroup, 'windows') }}:
-        - ${{ if eq(parameters.osSubGroup, '_musl') }}:
-          - HelixPreCommand: $(HelixPreCommandStemMusl);$(ExtraMSBuildLogsLinux)
-          - HelixPostCommand: 'export PYTHONPATH=$ORIGPYPATH'
-          - IsInternal: --internal
-        - ${{ if ne(parameters.osSubGroup, '_musl') }}:
-          - HelixPreCommand: $(HelixPreCommandStemLinux);$(ExtraMSBuildLogsLinux)
-          - HelixPostCommand: 'export PYTHONPATH=$ORIGPYPATH;${{ parameters.collectHelixLogsScript }}'
-          - IsInternal: --internal
+      - name: internalParam
+        value: --internal
       - group: DotNet-HelixApi-Access
       - group: dotnet-benchview
-
-    - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
-      - ${{ if eq( parameters.osGroup, 'windows') }}:
-        - HelixPreCommand: $(HelixPreCommandStemWindows);$(ExtraMSBuildLogsWindows)
-        - HelixPostCommand: 'export PYTHONPATH=$ORIGPYPATH;${{ parameters.collectHelixLogsScript }}'
-      - ${{ if ne(parameters.osGroup, 'windows') }}:
-        - HelixPreCommand: $(HelixPreCommandStemLinux);$(ExtraMSBuildLogsLinux);
-        - HelixPostCommand: 'export PYTHONPATH=$ORIGPYPATH;${{ parameters.collectHelixLogsScript }}'
-
-    - ${{ if and(eq(parameters.codeGenType, 'Interpreter'), eq(parameters.runtimeType, 'mono')) }}:
-      - ${{ if eq( parameters.osGroup, 'windows') }}:
-        - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-          - HelixPreCommand: '$(HelixPreCommandStemWindows);set MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsWindows)'
-          - Interpreter: ' -MonoInterpreter'
-        - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
-          - HelixPreCommand: 'set MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsWindows)'
-          - Interpreter: ' -MonoInterpreter'
-      - ${{ if ne(parameters.osGroup, 'windows') }}:
-        - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-          - HelixPreCommand: '$(HelixPreCommandStemLinux);export MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsLinux)'
-          - Interpreter: ' --monointerpreter'
-        - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
-          - HelixPreCommand: 'export MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsLinux)'
-          - Interpreter: ' --monointerpreter'
 
     workspace:
       clean: all
@@ -172,28 +78,14 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
-    - powershell: $(Build.SourcesDirectory)\eng\testing\performance\performance-setup.ps1 $(IsInternal)$(Interpreter) -Framework $(_Framework) -Kind ${{ parameters.runKind }} -LogicalMachine ${{ parameters.logicalMachine }} ${{ parameters.pgoRunType }} ${{ parameters.physicalPromotionRunType }} ${{ parameters.r2rRunType }} -ExperimentName '${{ parameters.experimentName }}' -UseLocalCommitTime ${{ parameters.extraSetupParameters }}
-      displayName: Performance Setup (Windows)
-      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-      continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Build.SourcesDirectory)/eng/testing/performance/performance-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} --logicalmachine ${{ parameters.logicalMachine }} ${{ parameters.pgoRunType }} ${{ parameters.physicalPromotionRunType }} ${{ parameters.r2rRunType }} --experimentname '${{ parameters.experimentName }}' --uselocalcommittime ${{ parameters.extraSetupParameters }}
-      displayName: Performance Setup (Unix)
-      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
-      continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) ${{ parameters.additionalSetupParameters }}
-      displayName: Run ci setup script
+    - script: $(Python) $(Agent.BuildDirectory)/performance/scripts/run_performance_job.py --framework $(_Framework) $(internalParam) ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
+      displayName: Run performance job script
+      env:
+        HelixAccessToken: '$(HelixApiAccessToken)'
+        PerfCommandUploadToken: '$(PerfCommandUploadToken)'
+        PerfCommandUploadTokenLinux: '$(PerfCommandUploadTokenLinux)'
       # Run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml
       parameters:
-        HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
-        HelixType: 'test/performance/$(Kind)/$(_Framework)/$(Architecture)${{ parameters.helixTypeSuffix }}'
-        HelixAccessToken: $(HelixApiAccessToken)
-        HelixTargetQueues: $(Queue)
-        HelixPreCommands: $(HelixPreCommand)
-        HelixPostCommands: $(HelixPostCommand)
-        Creator: $(Creator)
-        WorkItemTimeout: 4:00 # 4 hours
-        WorkItemDirectory: '$(WorkItemDirectory)' # WorkItemDirectory can not be empty, so we send it some docs to keep it happy
-        CorrelationPayloadDirectory: '$(PayloadDirectory)' # it gets checked out to a folder with shorter path than WorkItemDirectory so we can avoid file name too long exceptions
         ProjectFile: ${{ parameters.projectFile }}
         osGroup: ${{ parameters.osGroup }}

@@ -291,7 +291,8 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_LZCNT_X64_LeadingZeroCount:
                 case NI_POPCNT_PopCount:
                 case NI_POPCNT_X64_PopCount:
-                    // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
+                    // Note: No advantage in using a precise range for IntegralRange.
+                    // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #elif defined(TARGET_ARM64)
                 case NI_Vector64_op_Equality:
@@ -317,7 +318,8 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_ArmBase_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingSignCount:
-                    // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
+                    // Note: No advantage in using a precise range for IntegralRange.
+                    // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #else
 #error Unsupported platform
@@ -4409,7 +4411,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         }
     }
     // If the assertion involves "op2" and "op1" is also a local var, then just morph the tree.
-    else if (op2->gtOper == GT_LCL_VAR)
+    else if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR))
     {
 #ifdef DEBUG
         if (verbose)
@@ -6254,13 +6256,7 @@ GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
         // Do a sanity check to ensure persistent side effects aren't discarded and
         // tell gtExtractSideEffList to ignore the root of the tree.
         // We are relying here on an invariant that VN will only fold non-throwing expressions.
-        const bool ignoreExceptions = true;
-        const bool ignoreCctors     = false;
-        // We have to check "AsCall()->HasSideEffects()" here separately because "gtNodeHasSideEffects"
-        // also checks for side effects that arguments introduce (incosistently so, it otherwise only
-        // checks for the side effects the node itself has). TODO-Cleanup: change it to not do that?
-        assert(!gtNodeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS) ||
-               (tree->IsCall() && !tree->AsCall()->HasSideEffects(this, ignoreExceptions, ignoreCctors)));
+        assert(!gtNodeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS));
 
         // Exception side effects may be ignored because the root is known to be a constant
         // (e.g. VN may evaluate a DIV/MOD node to a constant and the node may still
@@ -6487,9 +6483,6 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
         // Not propagated, keep going.
         return WALK_CONTINUE;
     }
-
-    // TODO https://github.com/dotnet/runtime/issues/10450:
-    // at that moment stmt could be already removed from the stmt list.
 
     optAssertionProp_Update(newTree, tree, stmt);
 

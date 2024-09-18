@@ -27,6 +27,7 @@ public enum DataType
     ExceptionInfo,
     RuntimeThreadLocals,
     Module,
+    ModuleLookupMap,
     MethodTable,
     EEClass,
     ArrayClass,
@@ -42,4 +43,10 @@ public enum DataType
     MethodDesc,
     MethodDescChunk,
     Array,
+    SyncBlock,
+    SyncTableEntry,
+    InteropSyncBlockInfo,
+    InstantiatedMethodDesc,
+    DynamicMethodDesc,
+    StoredSigMethodDesc,
 }

@@ -9913,6 +9913,7 @@ namespace System.IO
         public virtual int Read(char[] buffer, int index, int count) { throw null; }
         public virtual int Read(System.Span<byte> buffer) { throw null; }
         public virtual int Read(System.Span<char> buffer) { throw null; }
+        public virtual void ReadExactly(System.Span<byte> buffer) { throw null; }
         public int Read7BitEncodedInt() { throw null; }
         public long Read7BitEncodedInt64() { throw null; }
         public virtual bool ReadBoolean() { throw null; }
@@ -10749,15 +10750,15 @@ namespace System.IO
     {
         public static readonly new System.IO.StreamWriter Null;
         public StreamWriter(System.IO.Stream stream) { }
-        public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding) { }
-        public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding, int bufferSize) { }
+        public StreamWriter(System.IO.Stream stream, System.Text.Encoding? encoding) { }
+        public StreamWriter(System.IO.Stream stream, System.Text.Encoding? encoding, int bufferSize) { }
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding? encoding = null, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamWriter(string path) { }
         public StreamWriter(string path, bool append) { }
-        public StreamWriter(string path, bool append, System.Text.Encoding encoding) { }
-        public StreamWriter(string path, bool append, System.Text.Encoding encoding, int bufferSize) { }
+        public StreamWriter(string path, bool append, System.Text.Encoding? encoding) { }
+        public StreamWriter(string path, bool append, System.Text.Encoding? encoding, int bufferSize) { }
         public StreamWriter(string path, System.IO.FileStreamOptions options) { }
-        public StreamWriter(string path, System.Text.Encoding encoding, System.IO.FileStreamOptions options) { }
+        public StreamWriter(string path, System.Text.Encoding? encoding, System.IO.FileStreamOptions options) { }
         public virtual bool AutoFlush { get { throw null; } set { } }
         public virtual System.IO.Stream BaseStream { get { throw null; } }
         public override System.Text.Encoding Encoding { get { throw null; } }
@@ -14033,6 +14034,36 @@ namespace System.Runtime.InteropServices
         Sequential = 0,
         Explicit = 2,
         Auto = 3,
+    }
+    public static partial class MemoryMarshal
+    {
+        public static System.ReadOnlySpan<byte> AsBytes<T>(System.ReadOnlySpan<T> span) where T : struct { throw null; }
+        public static System.Span<byte> AsBytes<T>(System.Span<T> span) where T : struct { throw null; }
+        public static System.Memory<T> AsMemory<T>(System.ReadOnlyMemory<T> memory) { throw null; }
+        public static ref readonly T AsRef<T>(System.ReadOnlySpan<byte> span) where T : struct { throw null; }
+        public static ref T AsRef<T>(System.Span<byte> span) where T : struct { throw null; }
+        public static System.ReadOnlySpan<TTo> Cast<TFrom, TTo>(System.ReadOnlySpan<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
+        public static System.Span<TTo> Cast<TFrom, TTo>(System.Span<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
+        public static System.Memory<T> CreateFromPinnedArray<T>(T[]? array, int start, int length) { throw null; }
+        public static System.ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref readonly T reference, int length) { throw null; }
+        [System.CLSCompliant(false)]
+        public static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) { throw null; }
+        [System.CLSCompliant(false)]
+        public static unsafe ReadOnlySpan<char> CreateReadOnlySpanFromNullTerminated(char* value) { throw null; }
+        public static System.Span<T> CreateSpan<T>(scoped ref T reference, int length) { throw null; }
+        public static ref T GetArrayDataReference<T>(T[] array) { throw null; }
+        public static ref byte GetArrayDataReference(System.Array array) { throw null; }
+        public static ref T GetReference<T>(System.ReadOnlySpan<T> span) { throw null; }
+        public static ref T GetReference<T>(System.Span<T> span) { throw null; }
+        public static T Read<T>(System.ReadOnlySpan<byte> source) where T : struct { throw null; }
+        public static System.Collections.Generic.IEnumerable<T> ToEnumerable<T>(System.ReadOnlyMemory<T> memory) { throw null; }
+        public static bool TryGetArray<T>(System.ReadOnlyMemory<T> memory, out System.ArraySegment<T> segment) { throw null; }
+        public static bool TryGetMemoryManager<T, TManager>(System.ReadOnlyMemory<T> memory, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TManager? manager) where TManager : System.Buffers.MemoryManager<T> { throw null; }
+        public static bool TryGetMemoryManager<T, TManager>(System.ReadOnlyMemory<T> memory, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TManager? manager, out int start, out int length) where TManager : System.Buffers.MemoryManager<T> { throw null; }
+        public static bool TryGetString(System.ReadOnlyMemory<char> memory, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? text, out int start, out int length) { throw null; }
+        public static bool TryRead<T>(System.ReadOnlySpan<byte> source, out T value) where T : struct { throw null; }
+        public static bool TryWrite<T>(System.Span<byte> destination, in T value) where T : struct { throw null; }
+        public static void Write<T>(System.Span<byte> destination, in T value) where T : struct { }
     }
     public readonly partial struct OSPlatform : System.IEquatable<System.Runtime.InteropServices.OSPlatform>
     {

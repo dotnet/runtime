@@ -207,7 +207,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         const char* namespaceName;
         const char* className;
         const char* methodName =
-            info.compCompHnd->getMethodNameFromMetadata(methHnd, &className, &namespaceName, nullptr);
+            info.compCompHnd->getMethodNameFromMetadata(methHnd, &className, &namespaceName, nullptr, 0);
         if ((namespaceName != nullptr) && (className != nullptr) && (methodName != nullptr) &&
             (strcmp(namespaceName, "System.Runtime.CompilerServices") == 0) &&
             (strcmp(className, "JitTestLabel") == 0) && (strcmp(methodName, "Mark") == 0))
@@ -2046,9 +2046,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
 //    call - The call
 //
 // Remarks:
-//   This makes use of the fact that TYP_I_IMPL <-> TYP_BYREF casts are
-//   implicit in JIT IR, allowing us to change the types directly without
-//   inserting a cast node.
+//   Make the "casting away" of GC explicit here instead of retyping.
 //
 void Compiler::impRetypeUnmanagedCallArgs(GenTreeCall* call)
 {
@@ -2059,7 +2057,7 @@ void Compiler::impRetypeUnmanagedCallArgs(GenTreeCall* call)
         // We should not be passing gc typed args to an unmanaged call.
         if (varTypeIsGC(argNode->TypeGet()))
         {
-            // Tolerate byrefs by retyping to native int.
+            // Tolerate byrefs by casting to native int.
             //
             // This is needed or we'll generate inconsistent GC info
             // for this arg at the call site (gc info says byref,
@@ -2067,7 +2065,8 @@ void Compiler::impRetypeUnmanagedCallArgs(GenTreeCall* call)
             //
             if (argNode->TypeGet() == TYP_BYREF)
             {
-                argNode->ChangeType(TYP_I_IMPL);
+                GenTree* cast = gtNewCastNode(TYP_I_IMPL, argNode, false, TYP_I_IMPL);
+                arg.SetEarlyNode(cast);
             }
             else
             {
@@ -2908,12 +2907,9 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
         return nullptr;
     }
 
-    CORINFO_CLASS_HANDLE fieldOwnerHnd = info.compCompHnd->getFieldClass(fieldToken);
-
     CORINFO_CLASS_HANDLE fieldClsHnd;
-    var_types            fieldElementType =
-        JITtype2varType(info.compCompHnd->getFieldType(fieldToken, &fieldClsHnd, fieldOwnerHnd));
-    unsigned totalFieldSize;
+    var_types            fieldElementType = JITtype2varType(info.compCompHnd->getFieldType(fieldToken, &fieldClsHnd));
+    unsigned             totalFieldSize;
 
     // Most static initialization data fields are of some structure, but it is possible for them to be of various
     // primitive types as well
@@ -3558,6 +3554,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                 bool refOrContains = varTypeIsGC(fromType) || (fromLayout != nullptr && fromLayout->HasGCPtr());
                 retNode            = refOrContains ? gtNewIconNode(1) : gtNewIconNode(0);
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable:
+            {
+                retNode = gtNewMethodTableLookup(impPopStack().val);
                 break;
             }
 
@@ -6184,6 +6186,18 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             argNode = impImplicitR4orR8Cast(argNode, jitSigType);
             // insert any widening or narrowing casts for backwards compatibility
             argNode = impImplicitIorI4Cast(argNode, jitSigType);
+
+            if ((compAppleArm64Abi() || TargetArchitecture::IsArm32) && call->IsUnmanaged() &&
+                varTypeIsSmall(jitSigType))
+            {
+                // Apple arm64 and arm32 ABIs require arguments to be zero/sign
+                // extended up to 32 bit. The managed ABI does not require
+                // this.
+                if (fgCastNeeded(argNode, jitSigType))
+                {
+                    argNode = gtNewCastNode(TYP_INT, argNode, false, jitSigType);
+                }
+            }
         }
 
         NewCallArg arg;
@@ -9862,11 +9876,12 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 //
 NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 {
-    const char* className          = nullptr;
-    const char* namespaceName      = nullptr;
-    const char* enclosingClassName = nullptr;
+    const char* className              = nullptr;
+    const char* namespaceName          = nullptr;
+    const char* enclosingClassNames[2] = {nullptr};
     const char* methodName =
-        info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, &enclosingClassName);
+        info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, enclosingClassNames,
+                                                    ArrLen(enclosingClassNames));
 
     JITDUMP("Named Intrinsic ");
 
@@ -9874,9 +9889,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     {
         JITDUMP("%s.", namespaceName);
     }
-    if (enclosingClassName != nullptr)
+    if (enclosingClassNames[1] != nullptr)
     {
-        JITDUMP("%s.", enclosingClassName);
+        JITDUMP("%s.", enclosingClassNames[1]);
+    }
+    if (enclosingClassNames[0] != nullptr)
+    {
+        JITDUMP("%s.", enclosingClassNames[0]);
     }
     if (className != nullptr)
     {
@@ -10328,7 +10347,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         CORINFO_SIG_INFO sig;
                         info.compCompHnd->getMethodSig(method, &sig);
 
-                        result = SimdAsHWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName);
+                        result =
+                            SimdAsHWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassNames[0]);
 #endif // FEATURE_HW_INTRINSICS
 
                         if (result == NI_Illegal)
@@ -10391,6 +10411,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result =
                                     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
+                            }
+                            else if (strcmp(methodName, "GetMethodTable") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
                             }
                         }
                         else if (strcmp(className, "Unsafe") == 0)
@@ -10567,7 +10591,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             CORINFO_SIG_INFO sig;
                             info.compCompHnd->getMethodSig(method, &sig);
 
-                            result = HWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName);
+                            result = HWIntrinsicInfo::lookupId(this, &sig, className, methodName,
+                                                               enclosingClassNames[0], enclosingClassNames[1]);
                         }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -10641,7 +10666,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     {
                         if (strcmp(methodName, "ReadUtf8") == 0)
                         {
-                            assert(strcmp(enclosingClassName, "UTF8Encoding") == 0);
+                            assert(strcmp(enclosingClassNames[0], "UTF8Encoding") == 0);
                             result = NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8;
                         }
                     }

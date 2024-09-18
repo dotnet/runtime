@@ -103,14 +103,14 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// This method registers the controlGuid of this class with ETW.
+        /// This method registers the provider with the backing tracing mechanism, either ETW or EventPipe.
         /// </summary>
-        internal unsafe void Register(EventSource eventSource)
+        internal unsafe void Register(Guid id, string name)
         {
-            _providerName = eventSource.Name;
-            _providerId = eventSource.Guid;
+            _providerName = name;
+            _providerId = id;
 
-            _eventProvider.Register(eventSource);
+            _eventProvider.Register(id, name);
         }
 
         //
@@ -827,13 +827,13 @@ namespace System.Diagnostics.Tracing
 
 
         // Register an event provider.
-        internal override unsafe void Register(EventSource eventSource)
+        internal override unsafe void Register(Guid id, string name)
         {
             Debug.Assert(!_gcHandle.IsAllocated);
             _gcHandle = GCHandle.Alloc(this);
 
             long registrationHandle = 0;
-            _providerId = eventSource.Guid;
+            _providerId = id;
             Guid providerId = _providerId;
             uint status = Interop.Advapi32.EventRegister(
                 &providerId,
@@ -1235,7 +1235,7 @@ namespace System.Diagnostics.Tracing
             _allKeywordMask = 0;
         }
 
-        internal virtual void Register(EventSource eventSource)
+        internal virtual void Register(Guid id, string name)
         {
         }
 

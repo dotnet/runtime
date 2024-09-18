@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class TimeOnlyConverter : JsonPrimitiveConverter<TimeOnly>
     {
-        private const int MinimumTimeOnlyFormatLength = 8; // hh:mm:ss
+        private const int MinimumTimeOnlyFormatLength = 3; // h:m
         private const int MaximumTimeOnlyFormatLength = 16; // hh:mm:ss.fffffff
         private const int MaximumEscapedTimeOnlyFormatLength = JsonConstants.MaxExpansionFactorWhileEscaping * MaximumTimeOnlyFormatLength;
 

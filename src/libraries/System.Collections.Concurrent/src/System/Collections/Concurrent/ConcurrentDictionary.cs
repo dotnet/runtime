@@ -329,7 +329,10 @@ namespace System.Collections.Concurrent
         {
             foreach (KeyValuePair<TKey, TValue> pair in collection)
             {
-                ArgumentNullException.ThrowIfNull(pair.Key, "key");
+                if (pair.Key is null)
+                {
+                    ThrowHelper.ThrowKeyNullException();
+                }
 
                 if (!TryAddInternal(_tables, pair.Key, null, pair.Value, updateIfExists: false, acquireLock: false, out _))
                 {
@@ -357,7 +360,10 @@ namespace System.Collections.Concurrent
         /// <exception cref="OverflowException">The <see cref="ConcurrentDictionary{TKey, TValue}"/> contains too many elements.</exception>
         public bool TryAdd(TKey key, TValue value)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
 
             return TryAddInternal(_tables, key, null, value, updateIfExists: false, acquireLock: true, out _);
         }
@@ -383,7 +389,10 @@ namespace System.Collections.Concurrent
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is a null reference (Nothing in Visual Basic).</exception>
         public bool TryRemove(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
 
             return TryRemoveInternal(key, out value, matchValue: false, default);
         }
@@ -405,7 +414,10 @@ namespace System.Collections.Concurrent
         /// </exception>
         public bool TryRemove(KeyValuePair<TKey, TValue> item)
         {
-            ArgumentNullException.ThrowIfNull(item.Key);
+            if (item.Key is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(item), SR.ConcurrentDictionary_ItemKeyIsNull);
+            }
 
             return TryRemoveInternal(item.Key, out _, matchValue: true, item.Value);
         }
@@ -431,57 +443,52 @@ namespace System.Collections.Concurrent
                 object[] locks = tables._locks;
                 ref Node? bucket = ref GetBucketAndLock(tables, hashcode, out uint lockNo);
 
-                // Do a hot read on number of items stored in the bucket.  If it's empty, we can avoid
-                // taking the lock and fail fast.
-                if (tables._countPerLock[lockNo] != 0)
+                lock (locks[lockNo])
                 {
-                    lock (locks[lockNo])
+                    // If the table just got resized, we may not be holding the right lock, and must retry.
+                    // This should be a rare occurrence.
+                    if (tables != _tables)
                     {
-                        // If the table just got resized, we may not be holding the right lock, and must retry.
-                        // This should be a rare occurrence.
-                        if (tables != _tables)
+                        tables = _tables;
+                        if (!ReferenceEquals(comparer, tables._comparer))
                         {
-                            tables = _tables;
-                            if (!ReferenceEquals(comparer, tables._comparer))
-                            {
-                                comparer = tables._comparer;
-                                hashcode = GetHashCode(comparer, key);
-                            }
-                            continue;
+                            comparer = tables._comparer;
+                            hashcode = GetHashCode(comparer, key);
                         }
+                        continue;
+                    }
 
-                        Node? prev = null;
-                        for (Node? curr = bucket; curr is not null; curr = curr._next)
+                    Node? prev = null;
+                    for (Node? curr = bucket; curr is not null; curr = curr._next)
+                    {
+                        Debug.Assert((prev is null && curr == bucket) || prev!._next == curr);
+
+                        if (hashcode == curr._hashcode && NodeEqualsKey(comparer, curr, key))
                         {
-                            Debug.Assert((prev is null && curr == bucket) || prev!._next == curr);
-
-                            if (hashcode == curr._hashcode && NodeEqualsKey(comparer, curr, key))
+                            if (matchValue)
                             {
-                                if (matchValue)
+                                bool valuesMatch = EqualityComparer<TValue>.Default.Equals(oldValue, curr._value);
+                                if (!valuesMatch)
                                 {
-                                    bool valuesMatch = EqualityComparer<TValue>.Default.Equals(oldValue, curr._value);
-                                    if (!valuesMatch)
-                                    {
-                                        value = default;
-                                        return false;
-                                    }
+                                    value = default;
+                                    return false;
                                 }
-
-                                if (prev is null)
-                                {
-                                    Volatile.Write(ref bucket, curr._next);
-                                }
-                                else
-                                {
-                                    prev._next = curr._next;
-                                }
-
-                                value = curr._value;
-                                tables._countPerLock[lockNo]--;
-                                return true;
                             }
-                            prev = curr;
+
+                            if (prev is null)
+                            {
+                                Volatile.Write(ref bucket, curr._next);
+                            }
+                            else
+                            {
+                                prev._next = curr._next;
+                            }
+
+                            value = curr._value;
+                            tables._countPerLock[lockNo]--;
+                            return true;
                         }
+                        prev = curr;
                     }
                 }
 
@@ -503,7 +510,10 @@ namespace System.Collections.Concurrent
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is a null reference (Nothing in Visual Basic).</exception>
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
 
             Tables tables = _tables;
 
@@ -589,7 +599,10 @@ namespace System.Collections.Concurrent
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is a null reference.</exception>
         public bool TryUpdate(TKey key, TValue newValue, TValue comparisonValue)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
 
             return TryUpdateInternal(_tables, key, null, newValue, comparisonValue);
         }
@@ -1080,7 +1093,10 @@ namespace System.Collections.Concurrent
             }
             set
             {
-                ArgumentNullException.ThrowIfNull(key);
+                if (key is null)
+                {
+                    ThrowHelper.ThrowKeyNullException();
+                }
 
                 TryAddInternal(_tables, key, null, value, updateIfExists: true, acquireLock: true, out _);
             }
@@ -1184,8 +1200,15 @@ namespace System.Collections.Concurrent
         /// if the key was not in the dictionary.</returns>
         public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(valueFactory);
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
+
+            if (valueFactory is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(valueFactory));
+            }
 
             Tables tables = _tables;
 
@@ -1219,8 +1242,15 @@ namespace System.Collections.Concurrent
         public TValue GetOrAdd<TArg>(TKey key, Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument)
             where TArg : allows ref struct
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(valueFactory);
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
+
+            if (valueFactory is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(valueFactory));
+            }
 
             Tables tables = _tables;
 
@@ -1249,7 +1279,10 @@ namespace System.Collections.Concurrent
         /// key is already in the dictionary, or the new value if the key was not in the dictionary.</returns>
         public TValue GetOrAdd(TKey key, TValue value)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
 
             Tables tables = _tables;
 
@@ -1288,9 +1321,20 @@ namespace System.Collections.Concurrent
             TKey key, Func<TKey, TArg, TValue> addValueFactory, Func<TKey, TValue, TArg, TValue> updateValueFactory, TArg factoryArgument)
             where TArg : allows ref struct
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(addValueFactory);
-            ArgumentNullException.ThrowIfNull(updateValueFactory);
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
+
+            if (addValueFactory is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(addValueFactory));
+            }
+
+            if (updateValueFactory is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(updateValueFactory));
+            }
 
             Tables tables = _tables;
 
@@ -1350,9 +1394,20 @@ namespace System.Collections.Concurrent
         /// absent) or the result of updateValueFactory (if the key was present).</returns>
         public TValue AddOrUpdate(TKey key, Func<TKey, TValue> addValueFactory, Func<TKey, TValue, TValue> updateValueFactory)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(addValueFactory);
-            ArgumentNullException.ThrowIfNull(updateValueFactory);
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
+
+            if (addValueFactory is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(addValueFactory));
+            }
+
+            if (updateValueFactory is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(updateValueFactory));
+            }
 
             Tables tables = _tables;
 
@@ -1410,8 +1465,15 @@ namespace System.Collections.Concurrent
         /// absent) or the result of updateValueFactory (if the key was present).</returns>
         public TValue AddOrUpdate(TKey key, TValue addValue, Func<TKey, TValue, TValue> updateValueFactory)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(updateValueFactory);
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
+
+            if (updateValueFactory is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(updateValueFactory));
+            }
 
             Tables tables = _tables;
 
@@ -1632,7 +1694,11 @@ namespace System.Collections.Concurrent
         /// </exception>
         void IDictionary.Add(object key, object? value)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
+
             if (!(key is TKey))
             {
                 throw new ArgumentException(SR.ConcurrentDictionary_TypeOfKeyIncorrect);
@@ -1655,7 +1721,10 @@ namespace System.Collections.Concurrent
         /// (Nothing in Visual Basic).</exception>
         bool IDictionary.Contains(object key)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
 
             return key is TKey tkey && ContainsKey(tkey);
         }
@@ -1703,7 +1772,10 @@ namespace System.Collections.Concurrent
         /// (Nothing in Visual Basic).</exception>
         void IDictionary.Remove(object key)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
 
             if (key is TKey tkey)
             {
@@ -1741,7 +1813,10 @@ namespace System.Collections.Concurrent
         {
             get
             {
-                ArgumentNullException.ThrowIfNull(key);
+                if (key is null)
+                {
+                    ThrowHelper.ThrowKeyNullException();
+                }
 
                 if (key is TKey tkey && TryGetValue(tkey, out TValue? value))
                 {
@@ -1752,7 +1827,10 @@ namespace System.Collections.Concurrent
             }
             set
             {
-                ArgumentNullException.ThrowIfNull(key);
+                if (key is null)
+                {
+                    ThrowHelper.ThrowKeyNullException();
+                }
 
                 if (!(key is TKey))
                 {
@@ -2408,7 +2486,10 @@ namespace System.Collections.Concurrent
                         }
 
                         TKey actualKey = comparer.Create(key);
-                        ArgumentNullException.ThrowIfNull(actualKey, nameof(key));
+                        if (actualKey is null)
+                        {
+                            ThrowHelper.ThrowKeyNullException();
+                        }
 
                         // The key was not found in the bucket. Insert the key-value pair.
                         var resultNode = new Node(actualKey, value, hashcode, bucket);
@@ -2461,6 +2542,7 @@ namespace System.Collections.Concurrent
             /// When this method returns, contains the value associated with the specified key, if the key is found;
             /// otherwise, the default value for the type of the value parameter.
             /// </param>
+            /// <returns><see langword="true"/> if an entry was found; otherwise, <see langword="false"/>.</returns>
             /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
             public bool TryGetValue(TAlternateKey key, [MaybeNullWhen(false)] out TValue value) =>
                 TryGetValue(key, out _, out value);
@@ -2475,6 +2557,7 @@ namespace System.Collections.Concurrent
             /// When this method returns, contains the value associated with the specified key, if the key is found;
             /// otherwise, the default value for the type of the value parameter.
             /// </param>
+            /// <returns><see langword="true"/> if an entry was found; otherwise, <see langword="false"/>.</returns>
             /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
             public bool TryGetValue(TAlternateKey key, [MaybeNullWhen(false)] out TKey actualKey, [MaybeNullWhen(false)] out TValue value)
             {
@@ -2638,7 +2721,10 @@ namespace System.Collections.Concurrent
 
         public IDictionaryDebugView(IDictionary<TKey, TValue> dictionary)
         {
-            ArgumentNullException.ThrowIfNull(dictionary);
+            if (dictionary is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(dictionary));
+            }
 
             _dictionary = dictionary;
         }

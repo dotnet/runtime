@@ -27,7 +27,7 @@
 //
 //
 // The preferred type of QCall arguments is primitive types that efficiently handled by the P/Invoke marshaler (INT32, LPCWSTR, BOOL).
-// (Notice that BOOL is the correct boolean flavor for QCall arguments. CLR_BOOL is the correct boolean flavor for FCall arguments.)
+// (Notice that BOOL is the correct boolean flavor for QCall arguments. FC_BOOL_ARG is the correct boolean flavor for FCall arguments.)
 //
 // The pointers to common unmanaged EE structures should be wrapped into helper handle types. This is to make the managed implementation
 // type safe and avoid falling into unsafe C# everywhere. See the AssemblyHandle below for a good example.
@@ -248,15 +248,15 @@ public:
     struct AssemblyHandle
     {
         Object ** m_ppObject;
-        DomainAssembly * m_pAssembly;
+        Assembly * m_pAssembly;
 
-        operator DomainAssembly * ()
+        operator Assembly * ()
         {
             LIMITED_METHOD_CONTRACT;
             return m_pAssembly;
         }
 
-        DomainAssembly * operator->() const
+        Assembly * operator->() const
         {
             LIMITED_METHOD_CONTRACT;
             return m_pAssembly;

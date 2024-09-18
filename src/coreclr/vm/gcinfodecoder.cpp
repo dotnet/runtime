@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef SOS_INCLUDE
 #include "common.h"
+#endif
 
 #include "gcinfodecoder.h"
 
@@ -1802,7 +1804,7 @@ void GcInfoDecoder::ReportRegisterToGC( // ARM64
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_ARM64)
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
     // pointers for some nonvolatile registers are NULL.
@@ -1955,7 +1957,7 @@ void GcInfoDecoder::ReportRegisterToGC(
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_LOONGARCH64)
 
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
@@ -1976,7 +1978,7 @@ void GcInfoDecoder::ReportRegisterToGC(
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // TARGET_UNIX && !SOS_TARGET_ARM64
+#endif // TARGET_UNIX && !SOS_TARGET_LOONGARCH64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
@@ -2093,7 +2095,7 @@ void GcInfoDecoder::ReportRegisterToGC(
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_RISCV64)
 
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
@@ -2114,7 +2116,7 @@ void GcInfoDecoder::ReportRegisterToGC(
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // TARGET_UNIX && !SOS_TARGET_ARM64
+#endif // TARGET_UNIX && !SOS_TARGET_RISCV64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))

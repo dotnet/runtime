@@ -528,14 +528,12 @@ struct ProcessModIter
                 kIncludeLoaded | kIncludeExecution));
         }
 
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        if (!m_assemIter.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        if (!m_assemIter.Next(pAssembly.This()))
         {
             return NULL;
         }
 
-        // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-        CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
         return pAssembly;
     }
 
@@ -1061,7 +1059,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *data);
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyList(CLRDATA_ADDRESS appDomain, int count, CLRDATA_ADDRESS values[], int *fetched);
-    virtual HRESULT STDMETHODCALLTYPE GetAssemblyData(CLRDATA_ADDRESS baseDomainPtr, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *data);
+    virtual HRESULT STDMETHODCALLTYPE GetAssemblyData(CLRDATA_ADDRESS domainPtr, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *data);
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetThreadData(CLRDATA_ADDRESS thread, struct DacpThreadData *data);
     virtual HRESULT STDMETHODCALLTYPE GetThreadFromThinlockID(UINT thinLockId, CLRDATA_ADDRESS *pThread);
@@ -1243,8 +1241,10 @@ public:
     HRESULT GetObjectDataImpl(CLRDATA_ADDRESS addr, struct DacpObjectData *objectData);
     HRESULT GetObjectExceptionDataImpl(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data);
     HRESULT GetObjectStringDataImpl(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR *stringData, unsigned int *pNeeded);
+    HRESULT GetPEFileNameImpl(CLRDATA_ADDRESS moduleAddr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded);
     HRESULT GetUsefulGlobalsImpl(struct DacpUsefulGlobalsData *globalsData);
     HRESULT GetMethodDescDataImpl(CLRDATA_ADDRESS methodDesc, CLRDATA_ADDRESS ip, struct DacpMethodDescData *data, ULONG cRevertedRejitVersions, DacpReJitData * rgRevertedRejitData, ULONG * pcNeededRevertedRejitData);
+    HRESULT GetMethodDescNameImpl(CLRDATA_ADDRESS methodDesc, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
 
     BOOL IsExceptionFromManagedCode(EXCEPTION_RECORD * pExceptionRecord);
 #ifndef TARGET_UNIX
@@ -2169,7 +2169,7 @@ private:
     void WalkHandles();
     static inline bool IsAlwaysStrongReference(unsigned int type)
     {
-        return type == HNDTYPE_STRONG || type == HNDTYPE_PINNED || type == HNDTYPE_SIZEDREF;
+        return type == HNDTYPE_STRONG || type == HNDTYPE_PINNED;
     }
 
 private:

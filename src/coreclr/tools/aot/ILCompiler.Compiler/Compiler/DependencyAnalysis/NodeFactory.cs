@@ -241,9 +241,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeThreadStaticIndexNode(type, null);
             });
 
-            _GCStaticEETypes = new NodeCache<GCPointerMap, GCStaticEETypeNode>((GCPointerMap gcMap) =>
+            _GCStaticEETypes = new NodeCache<(GCPointerMap, bool), GCStaticEETypeNode>(((GCPointerMap gcMap, bool requiresAlign8) key) =>
             {
-                return new GCStaticEETypeNode(Target, gcMap);
+                return new GCStaticEETypeNode(Target, key.gcMap, key.requiresAlign8);
             });
 
             _readOnlyDataBlobs = new NodeCache<ReadOnlyDataBlobKey, BlobNode>(key =>
@@ -810,11 +810,12 @@ namespace ILCompiler.DependencyAnalysis
             return _embeddedTrimmingDescriptors.GetOrAdd(module);
         }
 
-        private NodeCache<GCPointerMap, GCStaticEETypeNode> _GCStaticEETypes;
+        private NodeCache<(GCPointerMap, bool), GCStaticEETypeNode> _GCStaticEETypes;
 
-        public ISymbolNode GCStaticEEType(GCPointerMap gcMap)
+        public ISymbolNode GCStaticEEType(GCPointerMap gcMap, bool requiredAlign8)
         {
-            return _GCStaticEETypes.GetOrAdd(gcMap);
+            requiredAlign8 &= Target.SupportsAlign8;
+            return _GCStaticEETypes.GetOrAdd((gcMap, requiredAlign8));
         }
 
         private NodeCache<ReadOnlyDataBlobKey, BlobNode> _readOnlyDataBlobs;

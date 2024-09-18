@@ -17,6 +17,8 @@ System.Resources.Extensions.DeserializingResourceReader
 System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
     <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
     <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
+    <!-- SYSLIB5005: System.Formats.Nrbf is experimental -->
+    <NoWarn>$(NoWarn);SYSLIB5005</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -86,6 +88,10 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '9.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
   </ItemGroup>
 
   <Target Name="GeneratePackageTargetsFile" 

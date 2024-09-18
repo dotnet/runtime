@@ -1954,7 +1954,6 @@ private:
 
     DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
     unsigned char   m_rank;
-    CorElementType  m_ElementType;// Cache of element type in m_ElementTypeHnd
 
 public:
     DWORD GetRank() {
@@ -1969,16 +1968,6 @@ public:
         _ASSERTE((Rank <= MAX_RANK) && (Rank <= (unsigned char)(-1)));
         m_rank = (unsigned char)Rank;
     }
-
-    CorElementType GetArrayElementType() {
-        LIMITED_METHOD_CONTRACT;
-        return m_ElementType;
-    }
-    void SetArrayElementType(CorElementType ElementType) {
-        LIMITED_METHOD_CONTRACT;
-        m_ElementType = ElementType;
-    }
-
 
     // Allocate a new MethodDesc for the methods we add to this class
     void InitArrayMethodDesc(

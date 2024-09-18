@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import {
-    WasmOpcode, WasmSimdOpcode, JiterpSpecialOpcode
+    WasmOpcode, WasmSimdOpcode, WasmAtomicOpcode, JiterpSpecialOpcode
 } from "./jiterpreter-opcodes";
 import {
     MintOpcode, SimdIntrinsic2, SimdIntrinsic3, SimdIntrinsic4
@@ -194,16 +194,16 @@ export const binopTable: { [opcode: number]: OpRec3 | OpRec4 | undefined } = {
 };
 
 export const relopbranchTable: { [opcode: number]: [comparisonOpcode: MintOpcode, immediateOpcode: WasmOpcode | false, isSafepoint: boolean] | MintOpcode | undefined } = {
-    [MintOpcode.MINT_BEQ_I4]: MintOpcode.MINT_CEQ_I4,
-    [MintOpcode.MINT_BNE_UN_I4]: MintOpcode.MINT_CNE_I4,
-    [MintOpcode.MINT_BGT_I4]: MintOpcode.MINT_CGT_I4,
-    [MintOpcode.MINT_BGT_UN_I4]: MintOpcode.MINT_CGT_UN_I4,
-    [MintOpcode.MINT_BLT_I4]: MintOpcode.MINT_CLT_I4,
-    [MintOpcode.MINT_BLT_UN_I4]: MintOpcode.MINT_CLT_UN_I4,
-    [MintOpcode.MINT_BGE_I4]: MintOpcode.MINT_CGE_I4,
-    [MintOpcode.MINT_BGE_UN_I4]: MintOpcode.MINT_CGE_UN_I4,
-    [MintOpcode.MINT_BLE_I4]: MintOpcode.MINT_CLE_I4,
-    [MintOpcode.MINT_BLE_UN_I4]: MintOpcode.MINT_CLE_UN_I4,
+    [MintOpcode.MINT_BEQ_I4_S]: MintOpcode.MINT_CEQ_I4,
+    [MintOpcode.MINT_BNE_UN_I4_S]: MintOpcode.MINT_CNE_I4,
+    [MintOpcode.MINT_BGT_I4_S]: MintOpcode.MINT_CGT_I4,
+    [MintOpcode.MINT_BGT_UN_I4_S]: MintOpcode.MINT_CGT_UN_I4,
+    [MintOpcode.MINT_BLT_I4_S]: MintOpcode.MINT_CLT_I4,
+    [MintOpcode.MINT_BLT_UN_I4_S]: MintOpcode.MINT_CLT_UN_I4,
+    [MintOpcode.MINT_BGE_I4_S]: MintOpcode.MINT_CGE_I4,
+    [MintOpcode.MINT_BGE_UN_I4_S]: MintOpcode.MINT_CGE_UN_I4,
+    [MintOpcode.MINT_BLE_I4_S]: MintOpcode.MINT_CLE_I4,
+    [MintOpcode.MINT_BLE_UN_I4_S]: MintOpcode.MINT_CLE_UN_I4,
 
     [MintOpcode.MINT_BEQ_I4_SP]: [MintOpcode.MINT_CEQ_I4, false, true],
     [MintOpcode.MINT_BNE_UN_I4_SP]: [MintOpcode.MINT_CNE_I4, false, true],
@@ -227,16 +227,16 @@ export const relopbranchTable: { [opcode: number]: [comparisonOpcode: MintOpcode
     [MintOpcode.MINT_BLE_I4_IMM_SP]: [MintOpcode.MINT_CLE_I4, WasmOpcode.i32_const, true],
     [MintOpcode.MINT_BLE_UN_I4_IMM_SP]: [MintOpcode.MINT_CLE_UN_I4, WasmOpcode.i32_const, true],
 
-    [MintOpcode.MINT_BEQ_I8]: MintOpcode.MINT_CEQ_I8,
-    [MintOpcode.MINT_BNE_UN_I8]: MintOpcode.MINT_CNE_I8,
-    [MintOpcode.MINT_BGT_I8]: MintOpcode.MINT_CGT_I8,
-    [MintOpcode.MINT_BGT_UN_I8]: MintOpcode.MINT_CGT_UN_I8,
-    [MintOpcode.MINT_BLT_I8]: MintOpcode.MINT_CLT_I8,
-    [MintOpcode.MINT_BLT_UN_I8]: MintOpcode.MINT_CLT_UN_I8,
-    [MintOpcode.MINT_BGE_I8]: MintOpcode.MINT_CGE_I8,
-    [MintOpcode.MINT_BGE_UN_I8]: MintOpcode.MINT_CGE_UN_I8,
-    [MintOpcode.MINT_BLE_I8]: MintOpcode.MINT_CLE_I8,
-    [MintOpcode.MINT_BLE_UN_I8]: MintOpcode.MINT_CLE_UN_I8,
+    [MintOpcode.MINT_BEQ_I8_S]: MintOpcode.MINT_CEQ_I8,
+    [MintOpcode.MINT_BNE_UN_I8_S]: MintOpcode.MINT_CNE_I8,
+    [MintOpcode.MINT_BGT_I8_S]: MintOpcode.MINT_CGT_I8,
+    [MintOpcode.MINT_BGT_UN_I8_S]: MintOpcode.MINT_CGT_UN_I8,
+    [MintOpcode.MINT_BLT_I8_S]: MintOpcode.MINT_CLT_I8,
+    [MintOpcode.MINT_BLT_UN_I8_S]: MintOpcode.MINT_CLT_UN_I8,
+    [MintOpcode.MINT_BGE_I8_S]: MintOpcode.MINT_CGE_I8,
+    [MintOpcode.MINT_BGE_UN_I8_S]: MintOpcode.MINT_CGE_UN_I8,
+    [MintOpcode.MINT_BLE_I8_S]: MintOpcode.MINT_CLE_I8,
+    [MintOpcode.MINT_BLE_UN_I8_S]: MintOpcode.MINT_CLE_UN_I8,
 
     [MintOpcode.MINT_BEQ_I8_IMM_SP]: [MintOpcode.MINT_CEQ_I8, WasmOpcode.i64_const, true],
     // FIXME: Missing compare opcode
@@ -250,27 +250,27 @@ export const relopbranchTable: { [opcode: number]: [comparisonOpcode: MintOpcode
     [MintOpcode.MINT_BLE_I8_IMM_SP]: [MintOpcode.MINT_CLE_I8, WasmOpcode.i64_const, true],
     [MintOpcode.MINT_BLE_UN_I8_IMM_SP]: [MintOpcode.MINT_CLE_UN_I8, WasmOpcode.i64_const, true],
 
-    [MintOpcode.MINT_BEQ_R4]: MintOpcode.MINT_CEQ_R4,
-    [MintOpcode.MINT_BNE_UN_R4]: <any>JiterpSpecialOpcode.CNE_UN_R4,
-    [MintOpcode.MINT_BGT_R4]: MintOpcode.MINT_CGT_R4,
-    [MintOpcode.MINT_BGT_UN_R4]: MintOpcode.MINT_CGT_UN_R4,
-    [MintOpcode.MINT_BLT_R4]: MintOpcode.MINT_CLT_R4,
-    [MintOpcode.MINT_BLT_UN_R4]: MintOpcode.MINT_CLT_UN_R4,
-    [MintOpcode.MINT_BGE_R4]: MintOpcode.MINT_CGE_R4,
-    [MintOpcode.MINT_BGE_UN_R4]: <any>JiterpSpecialOpcode.CGE_UN_R4,
-    [MintOpcode.MINT_BLE_R4]: MintOpcode.MINT_CLE_R4,
-    [MintOpcode.MINT_BLE_UN_R4]: <any>JiterpSpecialOpcode.CLE_UN_R4,
+    [MintOpcode.MINT_BEQ_R4_S]: MintOpcode.MINT_CEQ_R4,
+    [MintOpcode.MINT_BNE_UN_R4_S]: <any>JiterpSpecialOpcode.CNE_UN_R4,
+    [MintOpcode.MINT_BGT_R4_S]: MintOpcode.MINT_CGT_R4,
+    [MintOpcode.MINT_BGT_UN_R4_S]: MintOpcode.MINT_CGT_UN_R4,
+    [MintOpcode.MINT_BLT_R4_S]: MintOpcode.MINT_CLT_R4,
+    [MintOpcode.MINT_BLT_UN_R4_S]: MintOpcode.MINT_CLT_UN_R4,
+    [MintOpcode.MINT_BGE_R4_S]: MintOpcode.MINT_CGE_R4,
+    [MintOpcode.MINT_BGE_UN_R4_S]: <any>JiterpSpecialOpcode.CGE_UN_R4,
+    [MintOpcode.MINT_BLE_R4_S]: MintOpcode.MINT_CLE_R4,
+    [MintOpcode.MINT_BLE_UN_R4_S]: <any>JiterpSpecialOpcode.CLE_UN_R4,
 
-    [MintOpcode.MINT_BEQ_R8]: MintOpcode.MINT_CEQ_R8,
-    [MintOpcode.MINT_BNE_UN_R8]: <any>JiterpSpecialOpcode.CNE_UN_R8,
-    [MintOpcode.MINT_BGT_R8]: MintOpcode.MINT_CGT_R8,
-    [MintOpcode.MINT_BGT_UN_R8]: MintOpcode.MINT_CGT_UN_R8,
-    [MintOpcode.MINT_BLT_R8]: MintOpcode.MINT_CLT_R8,
-    [MintOpcode.MINT_BLT_UN_R8]: MintOpcode.MINT_CLT_UN_R8,
-    [MintOpcode.MINT_BGE_R8]: MintOpcode.MINT_CGE_R8,
-    [MintOpcode.MINT_BGE_UN_R8]: <any>JiterpSpecialOpcode.CGE_UN_R8,
-    [MintOpcode.MINT_BLE_R8]: MintOpcode.MINT_CLE_R8,
-    [MintOpcode.MINT_BLE_UN_R8]: <any>JiterpSpecialOpcode.CLE_UN_R8,
+    [MintOpcode.MINT_BEQ_R8_S]: MintOpcode.MINT_CEQ_R8,
+    [MintOpcode.MINT_BNE_UN_R8_S]: <any>JiterpSpecialOpcode.CNE_UN_R8,
+    [MintOpcode.MINT_BGT_R8_S]: MintOpcode.MINT_CGT_R8,
+    [MintOpcode.MINT_BGT_UN_R8_S]: MintOpcode.MINT_CGT_UN_R8,
+    [MintOpcode.MINT_BLT_R8_S]: MintOpcode.MINT_CLT_R8,
+    [MintOpcode.MINT_BLT_UN_R8_S]: MintOpcode.MINT_CLT_UN_R8,
+    [MintOpcode.MINT_BGE_R8_S]: MintOpcode.MINT_CGE_R8,
+    [MintOpcode.MINT_BGE_UN_R8_S]: <any>JiterpSpecialOpcode.CGE_UN_R8,
+    [MintOpcode.MINT_BLE_R8_S]: MintOpcode.MINT_CLE_R8,
+    [MintOpcode.MINT_BLE_UN_R8_S]: <any>JiterpSpecialOpcode.CLE_UN_R8,
 };
 
 export const mathIntrinsicTable: { [opcode: number]: [isUnary: boolean, isF32: boolean, opcodeOrFuncName: WasmOpcode | string] } = {
@@ -323,6 +323,24 @@ export const mathIntrinsicTable: { [opcode: number]: [isUnary: boolean, isF32: b
     [MintOpcode.MINT_POWF]:     [false, true, "powf"],
     [MintOpcode.MINT_REM_R8]:   [false, false, "fmod"],
     [MintOpcode.MINT_REM_R4]:   [false, true, "fmodf"],
+};
+
+export const xchgTable: { [opcode: number]: [wasmOpcode: WasmAtomicOpcode, resultFixupOpcode: WasmOpcode, alignmentPower: number] } = {
+    [MintOpcode.MINT_MONO_EXCHANGE_U1]: [WasmAtomicOpcode.i32_atomic_rmw8_xchg_u, WasmOpcode.unreachable, 0],
+    [MintOpcode.MINT_MONO_EXCHANGE_I1]: [WasmAtomicOpcode.i32_atomic_rmw8_xchg_u, WasmOpcode.i32_extend_8_s, 0],
+    [MintOpcode.MINT_MONO_EXCHANGE_U2]: [WasmAtomicOpcode.i32_atomic_rmw16_xchg_u, WasmOpcode.unreachable, 1],
+    [MintOpcode.MINT_MONO_EXCHANGE_I2]: [WasmAtomicOpcode.i32_atomic_rmw16_xchg_u, WasmOpcode.i32_extend_16_s, 1],
+    [MintOpcode.MINT_MONO_EXCHANGE_I4]: [WasmAtomicOpcode.i32_atomic_rmw_xchg, WasmOpcode.unreachable, 2],
+    [MintOpcode.MINT_MONO_EXCHANGE_I8]: [WasmAtomicOpcode.i64_atomic_rmw_xchg, WasmOpcode.unreachable, 3],
+};
+
+export const cmpxchgTable: { [opcode: number]: [wasmOpcode: WasmAtomicOpcode, resultFixupOpcode: WasmOpcode, alignmentPower: number] } = {
+    [MintOpcode.MINT_MONO_CMPXCHG_U1]: [WasmAtomicOpcode.i32_atomic_rmw8_cmpxchg_u, WasmOpcode.unreachable, 0],
+    [MintOpcode.MINT_MONO_CMPXCHG_I1]: [WasmAtomicOpcode.i32_atomic_rmw8_cmpxchg_u, WasmOpcode.i32_extend_8_s, 0],
+    [MintOpcode.MINT_MONO_CMPXCHG_U2]: [WasmAtomicOpcode.i32_atomic_rmw16_cmpxchg_u, WasmOpcode.unreachable, 1],
+    [MintOpcode.MINT_MONO_CMPXCHG_I2]: [WasmAtomicOpcode.i32_atomic_rmw16_cmpxchg_u, WasmOpcode.i32_extend_16_s, 1],
+    [MintOpcode.MINT_MONO_CMPXCHG_I4]: [WasmAtomicOpcode.i32_atomic_rmw_cmpxchg, WasmOpcode.unreachable, 2],
+    [MintOpcode.MINT_MONO_CMPXCHG_I8]: [WasmAtomicOpcode.i64_atomic_rmw_cmpxchg, WasmOpcode.unreachable, 3],
 };
 
 export const simdCreateSizes = {

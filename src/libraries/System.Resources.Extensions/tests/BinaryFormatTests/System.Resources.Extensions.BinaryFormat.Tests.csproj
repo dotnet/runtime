@@ -8,8 +8,9 @@
      SYSLIB0011: BinaryFormatter obsolete
      SYSLIB0050: Obsolete attribute
      SYSLIB0051: Formatters obsolete
+     SYSLIB5005: System.Formats.Nrbf experimental
     -->
-    <NoWarn>$(NoWarn);CS1574;CS1580;CA1036;CA1051;CA1066;SYSLIB0011;SYSLIB0050;SYSLIB0051;xUnit1013;CS0649</NoWarn>
+    <NoWarn>$(NoWarn);CS1574;CS1580;CA1036;CA1051;CA1066;SYSLIB0011;SYSLIB0050;SYSLIB0051;SYSLIB5005;xUnit1013;CS0649</NoWarn>
     <StringResourcesPath>$(LibrariesProjectRoot)\System.Resources.Extensions\src\Resources\Strings.resx</StringResourcesPath>
   </PropertyGroup>
 
@@ -32,12 +33,15 @@
     </EmbeddedResource>
     <EmbeddedResource Include="TestResources.resx" LogicalName="TestResources.resources" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" />
     <ProjectReference Include="..\..\src\System.Resources.Extensions.csproj" />
     <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
-    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="$(SystemRuntimeSerializationFormattersVersion)" />
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
   </ItemGroup>
 
   <ItemGroup>

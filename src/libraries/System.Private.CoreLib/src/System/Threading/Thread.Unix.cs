@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+using System.Threading.Tasks;
 
 namespace System.Threading
 {
@@ -12,16 +13,21 @@ namespace System.Threading
     {
         // these methods are temporarily accessed via UnsafeAccessor from generated code until we have it in public API, probably in WASI preview3 and promises
 #if TARGET_WASI
-        internal static System.Threading.Tasks.Task RegisterWasiPollable(int handle)
+        internal static System.Threading.Tasks.Task RegisterWasiPollableHandle(int handle, CancellationToken cancellationToken)
         {
-            return WasiEventLoop.RegisterWasiPollable(handle);
+            return WasiEventLoop.RegisterWasiPollableHandle(handle, cancellationToken);
         }
 
-        internal static void DispatchWasiEventLoop()
+        internal static T PollWasiEventLoopUntilResolved<T>(Task<T> mainTask)
         {
-            WasiEventLoop.DispatchWasiEventLoop();
+            return WasiEventLoop.PollWasiEventLoopUntilResolved<T>(mainTask);
         }
-#endif
+
+        internal static void PollWasiEventLoopUntilResolvedVoid(Task mainTask)
+        {
+            WasiEventLoop.PollWasiEventLoopUntilResolvedVoid(mainTask);
+        }
+#endif // TARGET_WASI
 
         // the closest analog to Sleep(0) on Unix is sched_yield
         internal static void UninterruptibleSleep0() => Thread.Yield();
