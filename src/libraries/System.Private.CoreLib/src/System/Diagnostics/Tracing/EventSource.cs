@@ -188,7 +188,7 @@ namespace System.Diagnostics.Tracing
     /// The attribute indicates that events will be automatically generated
     /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
-    public sealed class EventSourceEventGenerateAttribute : Attribute
+    public sealed class GeneratedEventSourceEventAttribute : Attribute
     {
     }
     /// <summary>

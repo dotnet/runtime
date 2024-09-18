@@ -19,7 +19,7 @@ namespace Generators
 
         //Writing code...
 
-        [EventSourceEventGenerate]
+        [GeneratedEventSourceEvent]
         internal sealed unsafe /*It's mandatory or in method write unsafe*/ partial class RuntimeEventSource : EventSource
         {
             [Event(1)]
@@ -55,7 +55,7 @@ namespace Generators
         {
             IncrementalValuesProvider<EventMethodsParsedResult> eventSourceClasses =
                 context.SyntaxProvider.ForAttributeWithMetadataName(
-                    KnowsAttributeNames.EventSourceEventGenerateAttribute,
+                    KnowsAttributeNames.GeneratedEventSourceEventAttribute,
                     (node, _) => node is ClassDeclarationSyntax,
                     (context, token) =>
                     {

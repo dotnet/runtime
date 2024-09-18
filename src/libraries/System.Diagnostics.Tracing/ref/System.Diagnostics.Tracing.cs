@@ -15,7 +15,7 @@ namespace System.Diagnostics.Tracing
         Detachable = 8,
     }
     [AttributeUsage(System.AttributeTargets.Class)]
-    public sealed class EventSourceEventGenerateAttribute : Attribute
+    public sealed class GeneratedEventSourceEventAttribute : Attribute
     {
     }
 

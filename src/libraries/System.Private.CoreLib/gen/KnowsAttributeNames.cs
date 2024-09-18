@@ -6,6 +6,6 @@ namespace Generators
     internal static class KnowsAttributeNames
     {
         public const string EventSourceAutoGenerateAttribute = "System.Diagnostics.Tracing.EventSourceAutoGenerateAttribute";
-        public const string EventSourceEventGenerateAttribute = "System.Diagnostics.Tracing.EventSourceEventGenerateAttribute";
+        public const string GeneratedEventSourceEventAttribute = "System.Diagnostics.Tracing.GeneratedEventSourceEventAttribute";
     }
 }
