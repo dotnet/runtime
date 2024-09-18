@@ -13,9 +13,9 @@ namespace System.Threading
     {
         // these methods are temporarily accessed via UnsafeAccessor from generated code until we have it in public API, probably in WASI preview3 and promises
 #if TARGET_WASI
-        internal static System.Threading.Tasks.Task RegisterWasiPollableHandle(int handle, CancellationToken cancellationToken)
+        internal static System.Threading.Tasks.Task RegisterWasiPollableHandle(int handle, bool ownsPollable, CancellationToken cancellationToken)
         {
-            return WasiEventLoop.RegisterWasiPollableHandle(handle, cancellationToken);
+            return WasiEventLoop.RegisterWasiPollableHandle(handle, ownsPollable, cancellationToken);
         }
 
         internal static T PollWasiEventLoopUntilResolved<T>(Task<T> mainTask)
