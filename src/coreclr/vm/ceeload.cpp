@@ -2327,10 +2327,10 @@ Module::GetAssemblyIfLoaded(
             spec.SetBinder(pBinderForLoadedAssembly);
         }
 
-        DomainAssembly * pDomainAssembly = AppDomain::GetCurrentDomain()->FindCachedAssembly(&spec, FALSE /*fThrow*/);
+        Assembly * pCachedAssembly = AppDomain::GetCurrentDomain()->FindCachedAssembly(&spec, FALSE /*fThrow*/);
 
-        if (pDomainAssembly && pDomainAssembly->GetAssembly()->IsLoaded())
-            pAssembly = pDomainAssembly->GetAssembly();
+        if (pCachedAssembly && pCachedAssembly->IsLoaded())
+            pAssembly = pCachedAssembly;
 
         // Only store in the rid map if working with the current AppDomain.
         if (fCanUseRidMap && pAssembly)
@@ -2906,7 +2906,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
 
 #endif // DEBUGGING_SUPPORTED
 
-BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAssembly, int flags, BOOL attaching)
+BOOL Module::NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -2921,10 +2921,10 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAsse
         pModule->UpdateDynamicMetadataIfNeeded();
     }
 
-
     //
     // Remaining work is only needed if a debugger is attached
     //
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
     if (!attaching && !pDomain->IsDebuggerAttached())
         return FALSE;
 
@@ -2937,7 +2937,6 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAsse
                                       m_pPEAssembly->GetPath(),
                                       m_pPEAssembly->GetPath().GetCount(),
                                       GetAssembly(),
-                                      pDomain,
                                       pDomainAssembly,
                                       attaching);
 
@@ -2960,10 +2959,11 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAsse
     return result;
 }
 
-void Module::NotifyDebuggerUnload(AppDomain *pDomain)
+void Module::NotifyDebuggerUnload()
 {
     LIMITED_METHOD_CONTRACT;
 
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
     if (!pDomain->IsDebuggerAttached())
         return;
 
@@ -2981,7 +2981,7 @@ void Module::NotifyDebuggerUnload(AppDomain *pDomain)
         }
     }
 
-    g_pDebugInterface->UnloadModule(this, pDomain);
+    g_pDebugInterface->UnloadModule(this);
 }
 
 using GetTokenForVTableEntry_t = mdToken(STDMETHODCALLTYPE*)(HMODULE module, BYTE**ppVTEntry);
