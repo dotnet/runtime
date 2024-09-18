@@ -1066,19 +1066,12 @@ void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
 
     // Since ADDIW use sign extension for immediate
     // we have to adjust higher 19 bit loaded by LUI
-    // for case when low part is bigger than 0x800.
+    // for case when the low 12-bit part is negative.
     UINT32 high19 = (high31 + 0x800) >> 12;
 
     EmitLuImm(reg, high19);
-    if (high31 & 0x800)
-    {
-        // EmitAddImm does not allow negative immediate values, so use EmitSubImm.
-        EmitSubImm(reg, reg, (~high31 + 1) & 0xFFF);
-    }
-    else
-    {
-        EmitAddImm(reg, reg, high31 & 0x7FF);
-    }
+    int low12 = int(high31) << (32-12) >> (32-12);
+    EmitAddImm(reg, reg, low12);
 
     // And load remaining part by batches of 11 bits size.
     INT32 remainingShift = msb - 30;
