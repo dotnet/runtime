@@ -12,6 +12,69 @@ GPTR_DECL(IGCHeap, g_pGCHeap);
 #ifndef DACCESS_COMPILE
 extern "C" {
 #endif // !DACCESS_COMPILE
+
+// This struct allows adding some state that is only visible to the EE onto the standard gc_alloc_context
+struct ee_alloc_context
+{
+    // Any allocation that would overlap m_CombinedLimit needs to be handled by the allocation slow path.
+    // m_CombinedLimit is the minimum of:
+    //  - gc_alloc_context.alloc_limit (the end of the current AC)
+    //  - the sampling_limit
+    //
+    // In the simple case that randomized sampling is disabled, m_CombinedLimit is always equal to alloc_limit.
+    //
+    // There are two different useful interpretations for the sampling_limit. One is to treat the sampling_limit
+    // as an address and when we allocate an object that overlaps that address we should emit a sampling event.
+    // The other is that we can treat (sampling_limit - alloc_ptr) as a budget of how many bytes we can allocate
+    // before emitting a sampling event. If we always allocated objects contiguously in the AC and incremented
+    // alloc_ptr by the size of the object, these two interpretations would be equivalent. However, when objects
+    // don't fit in the AC we allocate them in some other address range. The budget interpretation is more
+    // flexible to handle those cases.
+    //
+    // The sampling limit isn't stored in any separate field explicitly, instead it is implied:
+    // - if m_CombinedLimit == alloc_limit there is no sampled byte in the AC. In the budget interpretation
+    //   we can allocate (alloc_limit - alloc_ptr) unsampled bytes. We'll need a new random number after
+    //   that to determine whether future allocated bytes should be sampled.
+    //   This occurs either because the sampling feature is disabled, or because the randomized selection
+    //   of sampled bytes didn't select a byte in this AC.
+    // - if m_CombinedLimit < alloc_limit there is a sample limit in the AC. sample_limit = m_CombinedLimit.
+    uint8_t* m_CombinedLimit;
+    gc_alloc_context m_GCAllocContext;
+
+    void init()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_CombinedLimit = 0;
+        m_GCAllocContext.init();
+    }
+
+    uint8_t* getCombinedLimit()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_CombinedLimit;
+    }
+
+    static size_t getAllocPtrFieldOffset()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return offsetof(ee_alloc_context, m_GCAllocContext) + offsetof(gc_alloc_context, alloc_ptr);
+    }
+
+    static size_t getCombinedLimitFieldOffset()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return offsetof(ee_alloc_context, m_CombinedLimit);
+    }
+
+    // Regenerate the randomized sampling limit and update the m_CombinedLimit field.
+    inline void UpdateCombinedLimit()
+    {
+        // The randomized sampling feature is being submitted in stages. At this point the sampling is never
+        // activated so m_CombinedLimit is always equal to alloc_limit.
+        m_CombinedLimit = m_GCAllocContext.alloc_limit;
+    }
+};
+
 GPTR_DECL(uint8_t,g_lowest_address);
 GPTR_DECL(uint8_t,g_highest_address);
 GPTR_DECL(uint32_t,g_card_table);
@@ -21,7 +84,8 @@ GVAL_DECL(GCHeapType, g_heap_type);
 // for all allocations. In order to avoid extra indirections in assembly
 // allocation helpers, the EE owns the global allocation context and the
 // GC will update it when it needs to.
-GVAL_DECL(gc_alloc_context, g_global_alloc_context);
+GVAL_DECL(ee_alloc_context, g_global_alloc_context);
+
 #ifndef DACCESS_COMPILE
 }
 #endif // !DACCESS_COMPILE
