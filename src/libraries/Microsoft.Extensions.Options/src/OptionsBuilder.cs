@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Options
         public IServiceCollection Services { get; }
 
         /// <summary>
-        /// Creates a new instance of the <see cref="OptionsBuilder{TOptions}" class/>.
+        /// Creates a new instance of the <see cref="OptionsBuilder{TOptions}" /> class.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> for the options being configured.</param>
         /// <param name="name">The default name of the <typeparamref name="TOptions"/> instance; if <see langword="null"/>, <see cref="Options.DefaultName"/> is used.</param>
