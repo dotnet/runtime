@@ -5168,7 +5168,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	guint32 token;
 	int in_offset;
 	const unsigned char *end;
-	MonoSimpleBasicBlock *bb = NULL, *original_bb = NULL;
 	gboolean sym_seq_points = FALSE;
 	MonoBitSet *seq_point_locs = NULL;
 	MonoBitSet *il_targets = NULL;
@@ -5194,10 +5193,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	gboolean inlining = td->method != method;
 	gboolean generate_enc_seq_points_without_debug_info = FALSE;
 	InterpBasicBlock *exit_bb = NULL;
-
-	original_bb = bb = mono_basic_block_split (method, error, header);
-	goto_if_nok (error, exit);
-	g_assert (bb);
 
 	td->il_code = header->code;
 	td->in_start = td->ip = header->code;
@@ -5445,9 +5440,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		td->offset_to_bb [in_offset] = td->cbb;
 		td->in_start = td->ip;
 
-		if (in_offset == bb->end)
-			bb = bb->next;
-
 		/* Checks that a jump target isn't in the middle of opcode offset */
 		int op_size = mono_opcode_size (td->ip, end);
 		for (int i = 1; i < op_size; i++) {
@@ -5456,7 +5448,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				goto exit;
 			}
 		}
-		if (bb->dead || td->cbb->dead) {
+		if (td->cbb->dead) {
 			g_assert (op_size > 0); /* The BB formation pass must catch all bad ops */
 
 			if (td->verbose_level > 1)
@@ -8683,7 +8675,6 @@ exit_ret:
 	g_free (arg_locals);
 	g_free (local_locals);
 	mono_bitset_free (il_targets);
-	mono_basic_block_free (original_bb);
 	td->dont_inline = g_list_remove (td->dont_inline, method);
 
 	return ret;
