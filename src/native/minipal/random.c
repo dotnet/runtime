@@ -21,6 +21,10 @@
 #include <CommonCrypto/CommonRandom.h>
 #endif
 
+#if HAVE_GETRANDOM
+#include <sys/random.h>
+#endif
+
 #include "random.h"
 
 /*
@@ -102,6 +106,53 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
 
     static volatile int rand_des = -1;
     static bool sMissingDevURandom;
+
+#if HAVE_GETRANDOM
+    static bool sMissingGetRandomSysCall = false;
+
+    if (!sMissingGetRandomSysCall)
+    {
+        ssize_t written = 0;
+
+        while (written < bufferLength)
+        {
+            ssize_t getrandomret = getrandom(buffer, (size_t)bufferLength, GRND_NONBLOCK);
+
+            if (getrandomret == -1)
+            {
+                switch (errno)
+                {
+                    case EAGAIN:
+                        // Older linuxes may do this if they believe the pool is not properly seeded yet.
+                        // In this case, we go back to the file-based random. Eventually the pool should be
+                        // properly seeded and the fallback should not be taken anymore.
+                        goto devicerandom;
+                    case EINTR:
+                        continue;
+                    case EPERM:
+                        // Can occur if the syscall is blocked. Some older linuxes also return this instead of ENOSYS.
+                        // Let this fall through to ENOSYS and treat the syscall as missing.
+                    case ENOSYS:
+                        sMissingGetRandomSysCall = true;
+                        assert(written == 0); // The syscall shouldn't magically disappear.
+                        goto devicerandom;
+                    default:
+                        return -1;
+                }
+            }
+            else
+            {
+                written += getrandomret;
+            }
+        }
+
+        assert(written == bufferLength);
+        return 0;
+    }
+
+#endif
+
+devicerandom:
 
     if (!sMissingDevURandom)
     {
