@@ -1945,19 +1945,8 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
     }
     else
     {
-
-        // Since we do not support asynchronous delegates in CoreCLR, we much ensure that it was indeed a async delegate call
-        // and not an invalid-delegate-layout condition.
-        //
-        // If the call was indeed for async delegate invocation, we will just throw an exception.
-        if ((pMD == pClass->GetBeginInvokeMethod()) || (pMD == pClass->GetEndInvokeMethod()))
-        {
-            COMPlusThrow(kPlatformNotSupportedException);
-        }
-
-
-        _ASSERTE(!"Bad Delegate layout");
-        COMPlusThrow(kInvalidProgramException);
+        // We do not support asynchronous delegates in CoreCLR
+        COMPlusThrow(kPlatformNotSupportedException);
     }
 
     RETURN ret;
@@ -2137,8 +2126,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, MethodTable* pDelegateMT)
     _ASSERTE(pDelegateMT != NULL);
 
     DelegateEEClass* delegateEEClass = (DelegateEEClass*)pDelegateMT->GetClass();
-    Stub *pStub = delegateEEClass->m_pMultiCastInvokeStub;
-    return (pStub != NULL) ? pStub->GetEntryPoint() : (PCODE)NULL;
+    return delegateEEClass->m_pMultiCastInvokeStub;
 }
 FCIMPLEND
 
@@ -2147,13 +2135,13 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
     QCALL_CONTRACT;
     _ASSERTE(pDelegateMT != NULL);
 
-    PCODE fptr = (PCODE)NULL;
+    PCODE pStub = (PCODE)NULL;
 
     BEGIN_QCALL;
 
     DelegateEEClass *delegateEEClass = (DelegateEEClass*)pDelegateMT->GetClass();
-    Stub *pStub = delegateEEClass->m_pMultiCastInvokeStub;
-    if (pStub == NULL)
+    pStub = delegateEEClass->m_pMultiCastInvokeStub;
+    if (pStub == (PCODE)NULL)
     {
         MethodDesc* pMD = delegateEEClass->GetInvokeMethod();
 
@@ -2263,17 +2251,15 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
                                                                pSig, cbSig,
                                                                NULL,
                                                                &sl);
-        pStub = Stub::NewStub(JitILStub(pStubMD));
+        pStub = JitILStub(pStubMD);
 
-        InterlockedCompareExchangeT<PTR_Stub>(&delegateEEClass->m_pMultiCastInvokeStub, pStub, NULL);
+        InterlockedCompareExchangeT<PCODE>(&delegateEEClass->m_pMultiCastInvokeStub, pStub, (PCODE)NULL);
         pStub = delegateEEClass->m_pMultiCastInvokeStub;
     }
 
-    fptr = pStub->GetEntryPoint();
-
     END_QCALL;
 
-    return fptr;
+    return pStub;
 }
 
 PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
@@ -2288,11 +2274,10 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
 
     MethodTable *       pDelegateMT = pMD->GetMethodTable();
     DelegateEEClass*    delegateEEClass = (DelegateEEClass*) pDelegateMT->GetClass();
-    Stub *pStub = delegateEEClass->m_pWrapperDelegateInvokeStub;
+    PCODE pStub = delegateEEClass->m_pWrapperDelegateInvokeStub;
 
-    if (pStub == NULL)
+    if (pStub == (PCODE)NULL)
     {
-
         GCX_PREEMP();
 
         MetaSig sig(pMD);
@@ -2333,12 +2318,12 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
                                                           NULL,
                                                           &sl);
 
-        pStub = Stub::NewStub(JitILStub(pStubMD));
+        pStub = JitILStub(pStubMD);
 
-        InterlockedCompareExchangeT<PTR_Stub>(&delegateEEClass->m_pWrapperDelegateInvokeStub, pStub, NULL);
-
+        InterlockedCompareExchangeT<PCODE>(&delegateEEClass->m_pWrapperDelegateInvokeStub, pStub, (PCODE)NULL);
+        pStub = delegateEEClass->m_pWrapperDelegateInvokeStub;
     }
-    return pStub->GetEntryPoint();
+    return pStub;
 }
 
 

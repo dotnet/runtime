@@ -350,7 +350,6 @@ StubLinker::StubLinker()
     m_pCodeElements     = NULL;
     m_pFirstCodeLabel   = NULL;
     m_pFirstLabelRef    = NULL;
-    m_pPatchLabel       = NULL;
     m_pTargetMethod     = NULL;
     m_stackSize         = 0;
     m_fDataOnly         = FALSE;
@@ -621,26 +620,6 @@ CodeLabel* StubLinker::EmitNewCodeLabel()
     return label;
 }
 
-
-//---------------------------------------------------------------
-// Creates & emits the patch offset label for the stub
-//---------------------------------------------------------------
-VOID StubLinker::EmitPatchLabel()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    //
-    // Note that it's OK to have re-emit the patch label,
-    // just use the later one.
-    //
-
-    m_pPatchLabel = EmitNewCodeLabel();
-}
 
 //---------------------------------------------------------------
 // Returns final location of label as an offset from the start
@@ -1099,30 +1078,14 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap
             ZeroMemory(pCodeRW + lastCodeOffset, globalsize - lastCodeOffset);
     }
 
-    // Set additional stub data.
-    // - Fill in the target method for the Instantiating stub.
-    //
-    // - Fill in patch offset, if we have one
-    //      Note that these offsets are relative to the start of the stub,
-    //      not the code, so you'll have to add sizeof(Stub) to get to the
-    //      right spot.
+    // Fill in the target method for the Instantiating stub.
     if (pStubRW->IsInstantiatingStub())
     {
         _ASSERTE(m_pTargetMethod != NULL);
-        _ASSERTE(m_pPatchLabel == NULL);
         pStubRW->SetInstantiatedMethodDesc(m_pTargetMethod);
 
         LOG((LF_CORDB, LL_INFO100, "SL::ES: InstantiatedMethod fd:0x%x\n",
             pStub->GetInstantiatedMethodDesc()));
-    }
-    else if (m_pPatchLabel != NULL)
-    {
-        UINT32 uLabelOffset = GetLabelOffset(m_pPatchLabel);
-        _ASSERTE(FitsIn<USHORT>(uLabelOffset));
-        pStubRW->SetPatchOffset(static_cast<USHORT>(uLabelOffset));
-
-        LOG((LF_CORDB, LL_INFO100, "SL::ES: patch offset:0x%x\n",
-            pStub->GetPatchOffset()));
     }
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
@@ -2260,8 +2223,8 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags
             m_numCodeBytesAndFlags |= EXTERNAL_ENTRY_BIT;
         if ((flags & NEWSTUB_FL_INSTANTIATING_METHOD) != 0)
             m_numCodeBytesAndFlags |= INSTANTIATING_STUB_BIT;
-        if ((flags & NEWSTUB_FL_THUNK) != 0)
-            m_numCodeBytesAndFlags |= THUNK_BIT;
+        if ((flags & NEWSTUB_FL_SHUFFLE_THUNK) != 0)
+            m_numCodeBytesAndFlags |= SHUFFLE_THUNK_BIT;
     }
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO

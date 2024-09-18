@@ -213,7 +213,7 @@ private:
         STANDARD_VM_CONTRACT;
 
         ((CPUSTUBLINKER*)pstublinker)->EmitShuffleThunk((ShuffleEntry*)pRawStub);
-        return NEWSTUB_FL_THUNK;
+        return NEWSTUB_FL_SHUFFLE_THUNK;
     }
 
     //---------------------------------------------------------

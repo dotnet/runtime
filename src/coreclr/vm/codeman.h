@@ -108,9 +108,6 @@ enum StubCodeBlockKind : int
     STUB_CODE_BLOCK_NOCODE,
     STUB_CODE_BLOCK_MANAGED,
     STUB_CODE_BLOCK_STUBLINK,
-    // Placeholdes used by NGen images
-    STUB_CODE_BLOCK_VIRTUAL_METHOD_THUNK,
-    STUB_CODE_BLOCK_EXTERNAL_METHOD_THUNK,
     // Placeholdes used by ReadyToRun images
     STUB_CODE_BLOCK_METHOD_CALL_THUNK,
 };
