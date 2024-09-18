@@ -6837,7 +6837,7 @@ namespace System.Threading.Tasks
         }
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
-        public static IAsyncEnumerable<Task> WhenEach(ReadOnlySpan<Task> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Add params
+        public static IAsyncEnumerable<Task> WhenEach(params ReadOnlySpan<Task> tasks) =>
             WhenEachState.Iterate<Task>(WhenEachState.Create(tasks));
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
@@ -6852,7 +6852,7 @@ namespace System.Threading.Tasks
         }
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
-        public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(ReadOnlySpan<Task<TResult>> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Add params
+        public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(params ReadOnlySpan<Task<TResult>> tasks) =>
             WhenEachState.Iterate<Task<TResult>>(WhenEachState.Create(ReadOnlySpan<Task>.CastUp(tasks)));
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
