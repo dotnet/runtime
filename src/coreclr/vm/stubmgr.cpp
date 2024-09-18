@@ -1288,7 +1288,7 @@ BOOL StubLinkStubManager::DoTraceStub(PCODE stubStartAddress,
     else if (stub->IsShuffleThunk())
     {
         trace->InitForManagerPush(stubStartAddress, this);
-        LOG_TRACE_DESTINATION(trace, stubStartAddress, "StubLinkStubManager(ManagedThunk)::DoTraceStub");
+        LOG_TRACE_DESTINATION(trace, stubStartAddress, "StubLinkStubManager(ShuffleThunk)::DoTraceStub");
         return TRUE;
     }
 
