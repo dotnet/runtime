@@ -1507,6 +1507,9 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
 /* Emit the shuffling from the first lowered FP struct onwards
 
+Note: here "lowering" refers to loading struct fields from its original layout in memory to be passed like scalars,
+each in one register. "Delowering" is the reverse, storing fields from registers back to memory.
+
 The floating field of the first lowered FP struct displaces all subsequent arguments passed in FP registers which sets
 off the shuffling merry-go-round. An outline of the most involved shuffling goes like this:
 
