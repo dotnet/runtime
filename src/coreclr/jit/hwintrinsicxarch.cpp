@@ -1409,38 +1409,33 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsFloating(simdBaseType))
             {
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
-
+                op2     = impSIMDPopStack();
+                op1     = impSIMDPopStack();
                 retNode = gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize);
             }
-            else if ((varTypeIsByte(simdBaseType) || varTypeIsShort(simdBaseType)))
+            else if (varTypeIsByte(simdBaseType) || varTypeIsShort(simdBaseType))
             {
-                NamedIntrinsic newIntrinsic;
-
+                intrinsic = NI_Illegal;
                 if (simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_SSE2))
                 {
-                    newIntrinsic = NI_SSE2_AddSaturate;
+                    intrinsic = NI_SSE2_AddSaturate;
                 }
                 else if (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
-                    newIntrinsic = NI_AVX2_AddSaturate;
+                    intrinsic = NI_AVX2_AddSaturate;
                 }
                 else if (simdSize == 64 && compOpportunisticallyDependsOn(InstructionSet_AVX512BW))
                 {
-                    newIntrinsic = NI_AVX512BW_AddSaturate;
+                    intrinsic = NI_AVX512BW_AddSaturate;
                 }
-                else
+
+                if (intrinsic != NI_Illegal)
                 {
-                    break;
+                    op2     = impSIMDPopStack();
+                    op1     = impSIMDPopStack();
+                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
                 }
-
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
-
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, newIntrinsic, simdBaseJitType, simdSize);
             }
-
             break;
         }
 
@@ -3691,38 +3686,33 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsFloating(simdBaseType))
             {
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
-
+                op2     = impSIMDPopStack();
+                op1     = impSIMDPopStack();
                 retNode = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize);
             }
-            else if ((varTypeIsByte(simdBaseType) || varTypeIsShort(simdBaseType)))
+            else if (varTypeIsByte(simdBaseType) || varTypeIsShort(simdBaseType))
             {
-                NamedIntrinsic newIntrinsic;
-
+                intrinsic = NI_Illegal;
                 if (simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_SSE2))
                 {
-                    newIntrinsic = NI_SSE2_SubtractSaturate;
+                    intrinsic = NI_SSE2_SubtractSaturate;
                 }
                 else if (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
-                    newIntrinsic = NI_AVX2_SubtractSaturate;
+                    intrinsic = NI_AVX2_SubtractSaturate;
                 }
                 else if (simdSize == 64 && compOpportunisticallyDependsOn(InstructionSet_AVX512BW))
                 {
-                    newIntrinsic = NI_AVX512BW_SubtractSaturate;
+                    intrinsic = NI_AVX512BW_SubtractSaturate;
                 }
-                else
+
+                if (intrinsic != NI_Illegal)
                 {
-                    break;
+                    op2     = impSIMDPopStack();
+                    op1     = impSIMDPopStack();
+                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
                 }
-
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
-
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, newIntrinsic, simdBaseJitType, simdSize);
             }
-
             break;
         }
 

@@ -714,18 +714,22 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
+            if (simdSize == 8 && varTypeIsLong(simdBaseType))
+            {
+                break;
+            }
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
-
             if (varTypeIsFloating(simdBaseType))
             {
                 retNode = gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize);
             }
             else
             {
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_AdvSimd_AddSaturate, simdBaseJitType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_AdvSimd_AddSaturate, simdBaseJitType,
+                                                   simdSize);
             }
-
             break;
         }
 
@@ -2121,20 +2125,23 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_SubtractSaturate:
         {
             assert(sig->numArgs == 2);
+            
+            if (simdSize == 8 && varTypeIsLong(simdBaseType))
+            {
+                break;
+            }
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
-
             if (varTypeIsFloating(simdBaseType))
             {
                 retNode = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize);
             }
             else
             {
-                retNode =
-                    gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_AdvSimd_SubtractSaturate, simdBaseJitType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_AdvSimd_SubtractSaturate, simdBaseJitType,
+                                                   simdSize);
             }
-
             break;
         }
 
