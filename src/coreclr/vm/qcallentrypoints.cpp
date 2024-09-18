@@ -477,8 +477,8 @@ static const Entry s_QCall[] =
     DllImportEntry(EHEnumNext)
     DllImportEntry(AppendExceptionStackFrame)
 #endif // FEATURE_EH_FUNCLETS
-    DllImportEntry(JIT_ResolveVirtualFunctionPointer)
-    DllImportEntry(JIT_GenericHandleWorker)
+    DllImportEntry(ResolveVirtualFunctionPointer)
+    DllImportEntry(GenericHandleWorker)
 };
 
 const void* QCallResolveDllImport(const char* name)

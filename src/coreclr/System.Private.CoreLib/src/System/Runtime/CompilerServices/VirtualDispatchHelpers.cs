@@ -14,30 +14,31 @@ internal static unsafe partial class VirtualDispatchHelpers
 {
     private struct VirtualResolutionData : IEquatable<VirtualResolutionData>
     {
+        public int _hashCode;
+        public MethodTable* _objectMethodTable;
+        public IntPtr _classHandle;
+        public IntPtr _methodHandle;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public VirtualResolutionData(MethodTable* methodTable, IntPtr classHandleTargetMethod, IntPtr methodHandle)
+        public VirtualResolutionData(MethodTable* objectMethodTable, IntPtr classHandle, IntPtr methodHandle)
         {
-            HashCode = (int) ((uint)methodTable + (BitOperations.RotateLeft((uint)classHandleTargetMethod, 5)) + (BitOperations.RotateRight((uint)methodHandle, 5)));
-            MethodTable = methodTable;
-            ClassHandleTargetMethod = classHandleTargetMethod;
-            MethodHandle = methodHandle;
+            _hashCode = (int) ((uint)objectMethodTable + (BitOperations.RotateLeft((uint)classHandle, 5)) + (BitOperations.RotateRight((uint)methodHandle, 5)));
+            _objectMethodTable = objectMethodTable;
+            _classHandle = classHandle;
+            _methodHandle = methodHandle;
         }
-        public int HashCode;
-        public MethodTable* MethodTable;
-        public IntPtr ClassHandleTargetMethod;
-        public IntPtr MethodHandle;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(VirtualResolutionData other) =>
-            HashCode == other.HashCode &&
-            MethodTable == other.MethodTable &&
-            ClassHandleTargetMethod == other.ClassHandleTargetMethod &&
-            MethodHandle == other.MethodHandle;
+            _hashCode == other._hashCode &&
+            (((nint)_objectMethodTable - (nint)other._objectMethodTable) |
+            (_classHandle - other._classHandle) |
+            (_methodHandle - other._methodHandle)) == 0;
 
         public override bool Equals(object? obj) => obj is VirtualResolutionData other && Equals(other);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode() => HashCode;
+        public override int GetHashCode() => _hashCode;
     }
 
     private struct VirtualFunctionPointerArgs
@@ -58,13 +59,13 @@ internal static unsafe partial class VirtualDispatchHelpers
     private static GenericCache<VirtualResolutionData, IntPtr> s_virtualFunctionPointerCache = new GenericCache<VirtualResolutionData, IntPtr>(InitialCacheSize, MaximumCacheSize);
 
     [LibraryImport(RuntimeHelpers.QCall)]
-    private static unsafe partial IntPtr JIT_ResolveVirtualFunctionPointer(ObjectHandleOnStack obj, IntPtr classHandle, IntPtr methodHandle);
+    private static unsafe partial IntPtr ResolveVirtualFunctionPointer(ObjectHandleOnStack obj, IntPtr classHandle, IntPtr methodHandle);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     [DebuggerHidden]
-    private static unsafe IntPtr VirtualFunctionPointerSlowpath(object obj, IntPtr classHandle, IntPtr methodHandle)
+    private static unsafe IntPtr VirtualFunctionPointerSlow(object obj, IntPtr classHandle, IntPtr methodHandle)
     {
-        IntPtr result = JIT_ResolveVirtualFunctionPointer(ObjectHandleOnStack.Create(ref obj), classHandle, methodHandle);
+        IntPtr result = ResolveVirtualFunctionPointer(ObjectHandleOnStack.Create(ref obj), classHandle, methodHandle);
         s_virtualFunctionPointerCache.TrySet(new VirtualResolutionData(RuntimeHelpers.GetMethodTable(obj), classHandle, methodHandle), result);
         GC.KeepAlive(obj);
         return result;
@@ -77,7 +78,7 @@ internal static unsafe partial class VirtualDispatchHelpers
         {
             return result;
         }
-        return VirtualFunctionPointerSlowpath(obj, classHandle, methodHandle);
+        return VirtualFunctionPointerSlow(obj, classHandle, methodHandle);
     }
 
     [DebuggerHidden]
@@ -90,6 +91,6 @@ internal static unsafe partial class VirtualDispatchHelpers
         {
             return result;
         }
-        return VirtualFunctionPointerSlowpath(obj, classHandle, methodHandle);
+        return VirtualFunctionPointerSlow(obj, classHandle, methodHandle);
     }
 }

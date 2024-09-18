@@ -1913,10 +1913,7 @@ HCIMPLEND
 //
 //========================================================================
 
-
-// Factored out most of the body of JIT_GenericHandle so it could be called easily from the CER reliability code to pre-populate the
-// cache.
-extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
+extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
 {
     QCALL_CONTRACT;
 
@@ -1989,10 +1986,9 @@ extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE JIT_GenericHandleWorker(MethodDesc *
     END_QCALL;
 
     return result;
-} // JIT_GenericHandleWorker
+} // GenericHandleWorker
 
-Volatile<FieldDesc*> g_VirtualCache;
-bool g_fVirtualCacheHandleInited = false;
+FieldDesc* g_pVirtualFunctionPointerCache;
 
 void FlushGenericCache(PTR_GenericCacheStruct genericCache)
 {
@@ -2028,13 +2024,14 @@ void FlushVirtualFunctionPointerCaches()
     }
     CONTRACTL_END;
 
-    if (VolatileLoad(&g_fVirtualCacheHandleInited))
+    FieldDesc *virtualCache = VolatileLoad(&g_pVirtualFunctionPointerCache);
+
+    if (virtualCache != NULL)
     {
         // We can't use GetCurrentStaticAddress, as that may throw, since it will attempt to
         // allocate memory for statics if that hasn't happened yet. But, since we force the
-        // statics memory to be allocated before initializing g_VirtualCache or g_hVirtualCache2
+        // statics memory to be allocated before initializing g_pVirtualFunctionPointerCache
         // we can safely use the combo of GetBase and GetStaticAddress here.
-        FieldDesc *virtualCache = g_VirtualCache;
         FlushGenericCache((PTR_GenericCacheStruct)virtualCache->GetStaticAddress(virtualCache->GetBase()));
     }
 }
@@ -2048,8 +2045,8 @@ void FlushVirtualFunctionPointerCaches()
 // methodHnd is the exact (instantiated) method descriptor corresponding to the
 // static method signature (i.e. might be for a superclass of classHnd)
 
-// slow helper to tail call from the fast one
-extern "C" void* QCALLTYPE JIT_ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj,
+// slow helper to call from the fast one
+extern "C" void* QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj,
                                                        CORINFO_CLASS_HANDLE classHnd,
                                                        CORINFO_METHOD_HANDLE methodHnd)
 {
@@ -2060,19 +2057,18 @@ extern "C" void* QCALLTYPE JIT_ResolveVirtualFunctionPointer(QCall::ObjectHandle
 
     BEGIN_QCALL;
 
-    if (!g_fVirtualCacheHandleInited)
+    if (VolatileLoadWithoutBarrier(&g_pVirtualFunctionPointerCache) == NULL)
     {
         {
             GCX_COOP();
             CoreLibBinder::GetClass(CLASS__VIRTUALDISPATCHHELPERS)->CheckRunClassInitThrowing();
         }
 
-        g_VirtualCache = CoreLibBinder::GetField(FIELD__VIRTUALDISPATCHHELPERS__CACHE);
+        VolatileStore(&g_pVirtualFunctionPointerCache, CoreLibBinder::GetField(FIELD__VIRTUALDISPATCHHELPERS__CACHE));
 #ifdef DEBUG
-        FieldDesc *virtualCache = g_VirtualCache;
+        FieldDesc *virtualCache = VolatileLoad(&g_pVirtualFunctionPointerCache);
         GenericCacheStruct::ValidateLayout(virtualCache->GetApproxFieldTypeHandleThrowing().GetMethodTable());
 #endif
-        VolatileStore(&g_fVirtualCacheHandleInited, true);
     }
 
     GCX_COOP();
@@ -2100,11 +2096,11 @@ extern "C" void* QCALLTYPE JIT_ResolveVirtualFunctionPointer(QCall::ObjectHandle
 
     pStaticMD->CheckRestore();
 
-    // MDIL: If IL specifies callvirt/ldvirtftn it remains a "virtual" instruction
-    // even if the target is an instance method at MDIL generation time because
-    // we want to keep MDIL as resilient as IL. Right now we can end up here with
-    // non-virtual generic methods called from a "shared generic code".
-    // As soon as this deficiency is fixed in the binder we can get rid of this test.
+    // ReadyToRun: If the method was compiled using ldvirtftn to reference a non-virtual method
+    // resolve without using the VirtualizedCode call path here.
+    // This can happen if the method was converted from virtual to non-virtual after the R2R image was created.
+    // While this is not a common scenario and is documented as a breaking change, we should still handle it
+    // as we have no good scheme for reporting an actionable error here.
     if (!pStaticMD->IsVtableMethod())
     {
         addr = (CORINFO_MethodPtr) pStaticMD->GetMultiCallableAddrOfCode();
