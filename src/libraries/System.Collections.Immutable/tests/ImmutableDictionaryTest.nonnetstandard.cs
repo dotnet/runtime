@@ -22,7 +22,7 @@ namespace System.Collections.Immutable.Tests
             this.EnumeratorTestHelper(emptyMap);
         }
 
-        internal override IBinaryTree GetRootNode<TKey, TValue>(IImmutableDictionary<TKey, TValue> dictionary)
+        internal override BinaryTreeProxy GetRootNode<TKey, TValue>(IImmutableDictionary<TKey, TValue> dictionary)
         {
             return ((ImmutableDictionary<TKey, TValue>)dictionary).GetBinaryTreeProxy();
         }

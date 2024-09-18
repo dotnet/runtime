@@ -14,7 +14,7 @@ namespace System.Collections.Immutable
         /// A node in the AVL tree storing this set.
         /// </summary>
         [DebuggerDisplay("{_key}")]
-        internal sealed class Node : IBinaryTree, IEnumerable<T>
+        internal sealed class Node : IEnumerable<T>
         {
             /// <summary>
             /// The default empty node.
@@ -121,19 +121,9 @@ namespace System.Collections.Immutable
             public Node? Left => _left;
 
             /// <summary>
-            /// Gets the left branch of this node.
-            /// </summary>
-            IBinaryTree? IBinaryTree.Left => _left;
-
-            /// <summary>
             /// Gets the right branch of this node.
             /// </summary>
             public Node? Right => _right;
-
-            /// <summary>
-            /// Gets the right branch of this node.
-            /// </summary>
-            IBinaryTree? IBinaryTree.Right => _right;
 
             /// <summary>
             /// Gets the value represented by the current node.

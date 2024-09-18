@@ -35,7 +35,7 @@ namespace System.Collections.Immutable.Tests
             throw ThrowsException.ForNoException(typeof(NullReferenceException));
         }
 
-        internal static IBinaryTree GetBinaryTreeProxy<T>(this IReadOnlyCollection<T> value)
+        internal static BinaryTreeProxy GetBinaryTreeProxy<T>(this IReadOnlyCollection<T> value)
         {
             FieldInfo rootField = value.GetType().GetField("_root", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(rootField);
@@ -43,24 +43,7 @@ namespace System.Collections.Immutable.Tests
             object root = rootField.GetValue(value);
             Assert.NotNull(root);
 
-            return new BinaryTreeReflectionProxy(root, root.GetType());
-        }
-
-        private sealed class BinaryTreeReflectionProxy(object underlyingValue, Type underlyingType) : IBinaryTree
-        {
-            private TValue GetProperty<TValue>(string propertyName)
-                => (TValue)underlyingType.GetProperty(propertyName)!.GetValue(underlyingValue);
-
-            public int Height => GetProperty<int>(nameof(Height));
-            public bool IsEmpty => GetProperty<bool>(nameof(IsEmpty));
-            public int Count => GetProperty<int>(nameof(Count));
-            public IBinaryTree? Left => GetProperty<object?>(nameof(Left)) is { } leftValue
-                ? new BinaryTreeReflectionProxy(leftValue, underlyingType)
-                : null;
-
-            public IBinaryTree? Right => GetProperty<object?>(nameof(Right)) is { } rightValue
-                ? new BinaryTreeReflectionProxy(rightValue, underlyingType)
-                : null;
+            return new BinaryTreeProxy(root, root.GetType());
         }
     }
 }

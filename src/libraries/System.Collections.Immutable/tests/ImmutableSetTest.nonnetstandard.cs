@@ -50,7 +50,7 @@ namespace System.Collections.Immutable.Tests
             this.UnionTestHelper(this.Empty<int>().Union(new[] { 2 }), Enumerable.Range(0, 1000).ToArray());
         }
 
-        internal abstract IBinaryTree GetRootNode<T>(IImmutableSet<T> set);
+        internal abstract BinaryTreeProxy GetRootNode<T>(IImmutableSet<T> set);
 
         protected void TryGetValueTestHelper(IImmutableSet<string> set)
         {
@@ -130,7 +130,7 @@ namespace System.Collections.Immutable.Tests
 
         private void VerifyAvlTreeState<T>(IImmutableSet<T> set)
         {
-            IBinaryTree rootNode = this.GetRootNode(set);
+            BinaryTreeProxy rootNode = this.GetRootNode(set);
             rootNode.VerifyBalanced();
             rootNode.VerifyHeightIsWithinTolerance(set.Count);
         }

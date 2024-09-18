@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
 using Xunit;
 
 namespace System.Collections.Immutable.Tests
@@ -24,7 +21,7 @@ namespace System.Collections.Immutable.Tests
             this.TryGetValueTestHelper(ImmutableHashSet<string>.Empty.WithComparer(StringComparer.OrdinalIgnoreCase));
         }
 
-        internal override IBinaryTree GetRootNode<T>(IImmutableSet<T> set)
+        internal override BinaryTreeProxy GetRootNode<T>(IImmutableSet<T> set)
         {
             return ((ImmutableHashSet<T>)set).GetBinaryTreeProxy();
         }

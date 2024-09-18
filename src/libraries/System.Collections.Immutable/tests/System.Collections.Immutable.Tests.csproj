@@ -15,9 +15,9 @@
     <Compile Include="..\src\System\Polyfills.cs" />
     <Compile Include="..\src\System\Collections\Frozen\String\Hashing.cs" Link="System\Collections\Frozen\String\Hashing.cs" />
     <Compile Include="..\src\System\Collections\Frozen\String\KeyAnalyzer.cs" Link="System\Collections\Frozen\String\KeyAnalyzer.cs" />
-    <Compile Include="..\src\System\Collections\Immutable\IBinaryTree.cs" Link="System\Collections\Immutable\IBinaryTree.cs" />
     <Compile Include="..\src\Validation\Requires.cs" Link="Validation\Requires.cs" />
     <Compile Include="BadHasher.cs" />
+    <Compile Include="BinaryTreeProxy.cs" />
     <Compile Include="EverythingEqual.cs" />
     <Compile Include="Frozen\FrozenFromKnownValuesTests.cs" />
     <Compile Include="Frozen\KeyAnalyzerTests.cs" />

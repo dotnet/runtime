@@ -26,7 +26,7 @@ namespace System.Collections.Immutable.Tests
             this.TryGetValueTestHelper(ImmutableSortedSet<string>.Empty.WithComparer(StringComparer.OrdinalIgnoreCase));
         }
 
-        internal override IBinaryTree GetRootNode<T>(IImmutableSet<T> set)
+        internal override BinaryTreeProxy GetRootNode<T>(IImmutableSet<T> set)
         {
             return ((ImmutableSortedSet<T>)set).GetBinaryTreeProxy();
         }
