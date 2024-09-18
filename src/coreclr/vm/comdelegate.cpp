@@ -2141,7 +2141,7 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
 
     DelegateEEClass *delegateEEClass = (DelegateEEClass*)pDelegateMT->GetClass();
     pStub = delegateEEClass->m_pMultiCastInvokeStub;
-    if (pStub == NULL)
+    if (pStub == (PCODE)NULL)
     {
         MethodDesc* pMD = delegateEEClass->GetInvokeMethod();
 
@@ -2253,7 +2253,7 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
                                                                &sl);
         pStub = JitILStub(pStubMD);
 
-        InterlockedCompareExchangeT<PCODE>(&delegateEEClass->m_pMultiCastInvokeStub, pStub, NULL);
+        InterlockedCompareExchangeT<PCODE>(&delegateEEClass->m_pMultiCastInvokeStub, pStub, (PCODE)NULL);
         pStub = delegateEEClass->m_pMultiCastInvokeStub;
     }
 
@@ -2276,7 +2276,7 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
     DelegateEEClass*    delegateEEClass = (DelegateEEClass*) pDelegateMT->GetClass();
     PCODE pStub = delegateEEClass->m_pWrapperDelegateInvokeStub;
 
-    if (pStub == NULL)
+    if (pStub == (PCODE)NULL)
     {
         GCX_PREEMP();
 
@@ -2320,7 +2320,7 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
 
         pStub = JitILStub(pStubMD);
 
-        InterlockedCompareExchangeT<PCODE>(&delegateEEClass->m_pWrapperDelegateInvokeStub, pStub, NULL);
+        InterlockedCompareExchangeT<PCODE>(&delegateEEClass->m_pWrapperDelegateInvokeStub, pStub, (PCODE)NULL);
         pStub = delegateEEClass->m_pWrapperDelegateInvokeStub;
     }
     return pStub;
