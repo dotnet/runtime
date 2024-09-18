@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Gets a <see cref="ReadOnlySpan{T}"/> view over the raw JSON data of the given <see cref="JsonProperty"/>.
+        /// Gets a <see cref="ReadOnlySpan{T}"/> view over the raw JSON data of the given <see cref="JsonProperty"/> name.
         /// </summary>
         /// <param name="property">The JSON property from which to extract the span.</param>
         /// <returns>The span containing the raw JSON data of the <paramref name="property"/> name. This will not include the enclosing quotes.</returns>
