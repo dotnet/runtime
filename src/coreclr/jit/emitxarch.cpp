@@ -309,6 +309,49 @@ bool emitter::IsApxNDDEncodableInstruction(instruction ins) const
 }
 
 //------------------------------------------------------------------------
+// IsShiftInstruction: Answer the question- is this instruction a shift instruction.
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if ins is a shift instruction.
+//
+bool emitter::IsShiftInstruction(instruction ins) const
+{
+    switch (ins)
+    {
+        case INS_rcl_1:
+        case INS_rcr_1:
+        case INS_rol_1:
+        case INS_ror_1:
+        case INS_shl_1:
+        case INS_shr_1:
+        case INS_sar_1:
+
+        case INS_rcl:
+        case INS_rcr:
+        case INS_rol:
+        case INS_ror:
+        case INS_shl:
+        case INS_shr:
+        case INS_sar:
+
+        case INS_rcl_N:
+        case INS_rcr_N:
+        case INS_rol_N:
+        case INS_ror_N:
+        case INS_shl_N:
+        case INS_shr_N:
+        case INS_sar_N:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
 // IsLegacyMap1: Answer the question- Is this instruction on legacy-map-1
 //
 // Arguments:
@@ -14610,7 +14653,6 @@ DONE:
 #ifdef DEBUG
                 emitDispIns(id, false, false, false);
 #endif
-                printf("Ruihan: unhandled InsFmt: %d\n", (int)(id->idInsFmt()));
                 assert(!"unexpected GC ref instruction format");
         }
 
@@ -16035,7 +16077,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeMRreg(id, code);
 
-        if (ins != INS_test)
+        if (ins != INS_test && !IsShiftInstruction(ins))
         {
             code |= 2;
         }

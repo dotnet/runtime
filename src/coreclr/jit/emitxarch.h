@@ -139,6 +139,7 @@ bool IsVexEncodableInstruction(instruction ins) const;
 bool IsEvexEncodableInstruction(instruction ins) const;
 bool IsRex2EncodableInstruction(instruction ins) const;
 bool IsApxNDDEncodableInstruction(instruction ins) const;
+bool IsShiftInstruction(instruction ins) const;
 bool IsLegacyMap1(code_t code) const;
 bool IsVexOrEvexEncodableInstruction(instruction ins) const;
 
