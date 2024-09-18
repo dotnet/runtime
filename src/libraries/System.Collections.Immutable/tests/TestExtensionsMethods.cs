@@ -43,26 +43,23 @@ namespace System.Collections.Immutable.Tests
             object root = rootField.GetValue(value);
             Assert.NotNull(root);
 
-            Type interfaceType = root.GetType().GetInterface(nameof(IBinaryTree));
-            Assert.NotNull(interfaceType);
-
-            return new BinaryTreeReflectionProxy(root, interfaceType);
+            return new BinaryTreeReflectionProxy(root, root.GetType());
         }
 
-        private sealed class BinaryTreeReflectionProxy(object underlyingValue, Type interfaceType) : IBinaryTree
+        private sealed class BinaryTreeReflectionProxy(object underlyingValue, Type underlyingType) : IBinaryTree
         {
             private TValue GetProperty<TValue>(string propertyName)
-                => (TValue)interfaceType.GetProperty(propertyName)!.GetValue(underlyingValue);
+                => (TValue)underlyingType.GetProperty(propertyName)!.GetValue(underlyingValue);
 
             public int Height => GetProperty<int>(nameof(Height));
             public bool IsEmpty => GetProperty<bool>(nameof(IsEmpty));
             public int Count => GetProperty<int>(nameof(Count));
             public IBinaryTree? Left => GetProperty<object?>(nameof(Left)) is { } leftValue
-                ? new BinaryTreeReflectionProxy(leftValue, interfaceType)
+                ? new BinaryTreeReflectionProxy(leftValue, underlyingType)
                 : null;
 
             public IBinaryTree? Right => GetProperty<object?>(nameof(Right)) is { } rightValue
-                ? new BinaryTreeReflectionProxy(rightValue, interfaceType)
+                ? new BinaryTreeReflectionProxy(rightValue, underlyingType)
                 : null;
         }
     }
