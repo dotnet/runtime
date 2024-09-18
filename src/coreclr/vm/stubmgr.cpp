@@ -1393,7 +1393,7 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
     }
     else if (stub->IsShuffleThunk())
     {
-        LOG((LF_CORDB,LL_INFO10000, "SLSM:TM ManagedThunk\n"));
+        LOG((LF_CORDB,LL_INFO10000, "SLSM:TM ShuffleThunk\n"));
         return TraceShuffleThunk(trace, pContext, pRetAddr);
     }
 
