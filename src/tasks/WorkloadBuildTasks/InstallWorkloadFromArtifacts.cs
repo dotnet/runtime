@@ -56,7 +56,7 @@ namespace Microsoft.Workload.Build.Tasks
             ReadCommentHandling = JsonCommentHandling.Skip
         };
 
-        [GeneratedRegex(@"^\d+\.\d+\.\d+(-[A-z]*\.*\d*)?")]
+        [GeneratedRegex(@"^\d+\.\d+\.\d+(-(?!rtm)[A-z]*\.*\d*)?")]
         private static partial Regex bandVersionRegex();
 
         public override bool Execute()
