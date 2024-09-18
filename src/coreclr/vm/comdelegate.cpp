@@ -1886,18 +1886,10 @@ BOOL COMDelegate::IsTrueMulticastDelegate(OBJECTREF delegate)
 }
 
 // Get the cpu stub for a delegate invoke.
-PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
+Stub* COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
 {
-    CONTRACT(PCODE)
-    {
-        STANDARD_VM_CHECK;
-        POSTCONDITION(RETVAL != NULL);
+    STANDARD_VM_CONTRACT;
 
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACT_END;
-
-    PCODE               ret = (PCODE)NULL;
     MethodTable *       pDelMT = pMD->GetMethodTable();
     DelegateEEClass*    pClass = (DelegateEEClass*) pDelMT->GetClass();
 
@@ -1908,56 +1900,47 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
         if (*pMD->GetSig() != (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_DEFAULT))
             COMPlusThrow(kInvalidProgramException);
 
-        Stub *pStub = pClass->m_pSingleCastInvokeStub;
-        if (pStub == NULL)
-        {
-            MetaSig sig(pMD);
+        MetaSig sig(pMD);
 
-            BOOL fReturnVal = !sig.IsReturnTypeVoid();
+        BOOL fReturnVal = !sig.IsReturnTypeVoid();
 
-            SigTypeContext emptyContext;
-            ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
+        SigTypeContext emptyContext;
+        ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
 
-            ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+        ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-            // This stub is only used for rare indirect cases, for example
-            // when Delegate.Invoke method is wrapped into another delegate.
-            // Direct invocation of delegate is expanded by JIT.
-            // Emit a recursive call here to let JIT handle complex cases like
-            // virtual dispatch and GC safety.
+        // This stub is only used for rare indirect cases, for example
+        // when Delegate.Invoke method is wrapped into another delegate.
+        // Direct invocation of delegate is expanded by JIT.
+        // Emit a recursive call here to let JIT handle complex cases like
+        // virtual dispatch and GC safety.
 
-            // Load the delegate object
-            pCode->EmitLoadThis();
+        // Load the delegate object
+        pCode->EmitLoadThis();
 
-            // Load the arguments
-            for (UINT paramCount = 0; paramCount < sig.NumFixedArgs(); paramCount++)
-                pCode->EmitLDARG(paramCount);
+        // Load the arguments
+        for (UINT paramCount = 0; paramCount < sig.NumFixedArgs(); paramCount++)
+            pCode->EmitLDARG(paramCount);
 
-            // recursively call the delegate itself
-            pCode->EmitCALL(pCode->GetToken(pMD), sig.NumFixedArgs(), fReturnVal);
+        // recursively call the delegate itself
+        pCode->EmitCALL(pCode->GetToken(pMD), sig.NumFixedArgs(), fReturnVal);
 
-            // return
-            pCode->EmitRET();
+        // return
+        pCode->EmitRET();
 
-            PCCOR_SIGNATURE pSig;
-            DWORD cbSig;
-            pMD->GetSig(&pSig,&cbSig);
+        PCCOR_SIGNATURE pSig;
+        DWORD cbSig;
+        pMD->GetSig(&pSig,&cbSig);
 
-            MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
-                                                                   pMD->GetMethodTable(),
-                                                                   ILSTUB_SINGLECASTDELEGATE_INVOKE,
-                                                                   pMD->GetModule(),
-                                                                   pSig, cbSig,
-                                                                   NULL,
-                                                                   &sl);
+        MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
+                                                                pMD->GetMethodTable(),
+                                                                ILSTUB_SINGLECASTDELEGATE_INVOKE,
+                                                                pMD->GetModule(),
+                                                                pSig, cbSig,
+                                                                NULL,
+                                                                &sl);
 
-            pStub = Stub::NewStub(JitILStub(pStubMD));
-
-            InterlockedCompareExchangeT<PTR_Stub>(&pClass->m_pSingleCastInvokeStub, pStub, NULL);
-            pStub = pClass->m_pSingleCastInvokeStub;
-        }
-
-        ret = pStub->GetEntryPoint();
+        return Stub::NewStub(JitILStub(pStubMD));
     }
     else
     {
@@ -1975,8 +1958,6 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
         _ASSERTE(!"Bad Delegate layout");
         COMPlusThrow(kInvalidProgramException);
     }
-
-    RETURN ret;
 }
 
 extern "C" void QCALLTYPE Delegate_InternalAlloc(QCall::TypeHandle pType, QCall::ObjectHandleOnStack d)

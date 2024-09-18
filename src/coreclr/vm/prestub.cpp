@@ -2949,8 +2949,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     else if (IsEEImpl())
     {
         _ASSERTE(GetMethodTable()->IsDelegate());
-        pCode = COMDelegate::GetInvokeMethodStub((EEImplMethodDesc*)this);
-        GetOrCreatePrecode();
+        pStub = COMDelegate::GetInvokeMethodStub((EEImplMethodDesc*)this);
     }
     else
     {
