@@ -104,7 +104,7 @@ namespace ILLink.CodeFix
 				case PropertyDeclarationSyntax:
 				case EventDeclarationSyntax:
 					// If the attribute can be placed on a method but not directly on a property/event, we don't want to keep walking up
-					// the syntax tree to annotate the class. Instead the correct thing to do is to add accessor methods and annotatet those.
+					// the syntax tree to annotate the class. Instead the correct thing to do is to add accessor methods and annotate those.
 					// The code fixer doesn't support doing this automatically, so return null to indicate that the attribute can't be added.
 					if (targets.HasFlag (AttributeableParentTargets.MethodOrConstructor))
 						return null;
