@@ -2662,7 +2662,7 @@ public:
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubMulticastDelegate;
     }
-    bool IsSinglecastStub() const
+    bool IsDelegateInvokeMethodStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
