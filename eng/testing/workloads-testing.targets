@@ -19,6 +19,7 @@
     <!-- Required for running apps built with 10.0 sdk, but the sdk does
          not yet support *running* with 10.0 sdk -->
     <AdditionalSharedFrameworkToInstallArguments Include="-Version latest -Channel 9.0 -Quality daily" />
+    <AdditionalSharedFrameworkToInstallArguments Include="-Version latest -Channel 8.0 -Quality daily" />
 
     <DefaultPropertiesForNuGetBuild Include="TargetOS=$(TargetOSForWorkload)" />
     <DefaultPropertiesForNuGetBuild Include="TargetArchitecture=$(TargetArchitectureForWorkload)" />
