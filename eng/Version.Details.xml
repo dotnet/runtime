@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-rc.2.24467.2">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-rtm.24466.4">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>cef40623c3515ff9b92b9cf292b9a7c3349a2edb</Sha>
+      <Sha>a811ac5e4b91afb162a547bf1932e473411388e1</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="9.0.0-alpha.1.24167.3">
       <Uri>https://github.com/dotnet/msquic</Uri>
@@ -54,14 +54,14 @@
       <Sha>803d8598f98fb4efd94604b32627ee9407f246db</Sha>
       <SourceBuild RepoName="command-line-api" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.24460.1">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.24467.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>1541df9c44ff8da964b2946e18655c2e37e4a198</Sha>
+      <Sha>526b22d829bc9b420dff6ef70877a67053b66e0f</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.5-alpha.24460.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.5-alpha.24467.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>1541df9c44ff8da964b2946e18655c2e37e4a198</Sha>
+      <Sha>526b22d829bc9b420dff6ef70877a67053b66e0f</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-rc.2.24468.8">
@@ -81,9 +81,9 @@
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.24459.2">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.24467.1">
       <Uri>https://github.com/dotnet/source-build-externals</Uri>
-      <Sha>71b0a48963717f08dc2d3d26527a2587316170fc</Sha>
+      <Sha>4e60131607fd144eb86fe4487f1a37da940ca990</Sha>
       <SourceBuild RepoName="source-build-externals" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
@@ -348,9 +348,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>8674aaa459d33551d419fece377f5512a1d93689</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="9.0.0-alpha.0.24459.2">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="9.0.0-alpha.0.24467.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>7ff7b02ec46216eb41d1674d38f087f7e086ded8</Sha>
+      <Sha>2a5c6e56551930ae44071d4f152d769825c38b58</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="9.0.0-beta.24459.2">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
