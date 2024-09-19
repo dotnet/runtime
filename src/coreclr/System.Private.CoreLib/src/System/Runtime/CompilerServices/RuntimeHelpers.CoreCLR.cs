@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
@@ -586,7 +587,7 @@ namespace System.Runtime.CompilerServices
     }
 
     // Subset of src\vm\methoddesc.hpp
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct MethodDesc
     {
         public ushort Flags3AndTokenRemainder;
@@ -597,9 +598,9 @@ namespace System.Runtime.CompilerServices
         public IntPtr CodeData;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        MethodDescChunk* MethodDescChunk => (MethodDescChunk*)((byte*)this - (sizeof(MethodDescChunk) + ChunkIndex * sizeof(IntPtr)));
+        private MethodDescChunk* GetMethodDescChunk() => (MethodDescChunk*)(((byte*)Unsafe.AsPointer<MethodDesc>(ref this)) - (sizeof(MethodDescChunk) + ChunkIndex * sizeof(IntPtr)));
 
-        MethodTable* MethodTable => MethodDescChunk->MethodTable;
+        public MethodTable* MethodTable => GetMethodDescChunk()->MethodTable;
     }
 
     internal unsafe struct MethodDescChunk
@@ -830,24 +831,6 @@ namespace System.Runtime.CompilerServices
 
         public bool ContainsGenericVariables => (Flags & enum_flag_ContainsGenericVariables) != 0;
 
-        public uint TypeDefRid => Flags2 >> 8;
-
-        public bool HasSameTypeDefAs(MethodTable* pOtherMT)
-        {
-            if (this == pOtherMT)
-                return true;
-
-            // optimize for the negative case where we expect RID mismatch
-            if (pOtherMT->TypeDefRid != TypeDefRid)
-                return false;
-
-            // Types without RIDs are unrelated to each other. This case is taken for arrays.
-            if (TypeDefRid == 0)
-                return false;
-
-            return Module == pOtherMT->Module;
-        }
-
         /// <summary>
         /// Gets a <see cref="TypeHandle"/> for the element type of the current type.
         /// </summary>
@@ -874,7 +857,7 @@ namespace System.Runtime.CompilerServices
         /// Get the MethodTable in the type hierarchy of this MethodTable that has the same TypeDef/Module as parent.
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
+        public extern MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
     }
 
     // Subset of src\vm\methodtable.h
@@ -934,9 +917,9 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public bool IsClassInited => (Volatile.Read(ref Flags) & enum_flag_Initialized) != 0
+        public bool IsClassInited => (Volatile.Read(ref Flags) & enum_flag_Initialized) != 0;
 
-        public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
+        public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive)) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
     }
 
     /// <summary>

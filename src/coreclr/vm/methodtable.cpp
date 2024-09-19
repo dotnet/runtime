@@ -7440,7 +7440,7 @@ VOID MethodTable::EnsureInstanceActive()
     // to FILE_ACTIVE. In that case, it isn't safe to record that the MethodTable instance is active.
     if (shouldEnsureInstanceActiveBeRecorded.ShouldRecord)
     {
-        GetAuxiliaryDataForWrite()->SetIsEnsuredInstanceActive();
+        GetAuxiliaryDataForWrite()->SetEnsuredInstanceActive();
     }
 }
 #endif //!DACCESS_COMPILE

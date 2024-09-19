@@ -545,7 +545,6 @@ extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT)
     END_QCALL;
 }
 
-
 //========================================================================
 //
 //      SHARED STATIC FIELD HELPERS
