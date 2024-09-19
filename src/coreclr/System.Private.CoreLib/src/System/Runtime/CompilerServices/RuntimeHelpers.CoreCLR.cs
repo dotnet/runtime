@@ -634,12 +634,6 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(4)]
         public uint BaseSize;
 
-        /// <summary>
-        /// More flags for the current method table.
-        /// </summary>
-        [FieldOffset(8)]
-        public uint Flags2;
-
         // See additional native members in methodtable.h, not needed here yet.
         // 0x8: m_dwFlags2 (additional flags and token in upper 24 bits)
         // 0xC: m_wNumVirtuals
@@ -660,11 +654,7 @@ namespace System.Runtime.CompilerServices
         public MethodTable* ParentMethodTable;
 
         // Additional conditional fields (see methodtable.h).
-        /// <summary>
-        /// A pointer to the Module for the current one.
-        /// </summary>
-        [FieldOffset(ModuleOffset)]
-        public IntPtr Module;
+        // m_pModule
 
         /// <summary>
         /// A pointer to auxiliary data that is cold for method table.
@@ -732,12 +722,6 @@ namespace System.Runtime.CompilerServices
             ;
 
         private const int ParentMethodTableOffset = 0x10 + DebugClassNamePtr;
-
-#if TARGET_64BIT
-        private const int ModuleOffset = 0x18 + DebugClassNamePtr;
-#else
-        private const int ModuleOffset = 0x14 + DebugClassNamePtr;
-#endif
 
 #if TARGET_64BIT
         private const int AuxiliaryDataOffset = 0x20 + DebugClassNamePtr;
