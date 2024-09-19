@@ -335,9 +335,9 @@ if(NOT HOST_WIN32)
     target_compile_definitions(monosgen-objects PRIVATE -DMONO_DLL_EXPORT)
 endif()
 
-add_library(monosgen-static STATIC $<TARGET_OBJECTS:eglib_objects> $<TARGET_OBJECTS:utils_objects> $<TARGET_OBJECTS:sgen_objects> $<TARGET_OBJECTS:metadata_objects> $<TARGET_OBJECTS:monosgen-objects>)
+add_library(monosgen-static STATIC $<TARGET_OBJECTS:eglib_objects> $<TARGET_OBJECTS:utils_objects> $<TARGET_OBJECTS:sgen_objects> $<TARGET_OBJECTS:metadata_objects> $<TARGET_OBJECTS:monosgen-objects> $<TARGET_OBJECTS:minipal_objects>)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
-target_link_libraries(monosgen-static PRIVATE dn-containers minipal_objects)
+target_link_libraries(monosgen-static PRIVATE dn-containers)
 
 if(DISABLE_COMPONENTS OR AOT_COMPONENTS)
   # add component fallback stubs into static mono library when components have been disabled.
