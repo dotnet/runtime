@@ -304,10 +304,6 @@
       <Sha>f1bcbeb5fa2fe84698b62d88dd35199f0d7fbedb</Sha>
       <SourceBuild RepoName="runtime" ManagedOnly="false" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ILCompiler" Version="10.0.0-alpha.1.24463.8">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>f1bcbeb5fa2fe84698b62d88dd35199f0d7fbedb</Sha>
-    </Dependency>
     <Dependency Name="System.Reflection.Metadata" Version="10.0.0-alpha.1.24463.8">
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>f1bcbeb5fa2fe84698b62d88dd35199f0d7fbedb</Sha>
