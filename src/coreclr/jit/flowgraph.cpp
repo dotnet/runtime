@@ -3773,6 +3773,37 @@ Compiler::AddCodeDscKey::AddCodeDscKey(AddCodeDsc* add)
     }
 }
 
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// Dump: dump info about an AddCodeDesc
+//
+void Compiler::AddCodeDsc::Dump()
+{
+    printf("ACD%u %s ", acdNum, sckName(acdKind));
+    switch (acdKeyDsg)
+    {
+        case AcdKeyDesignator::KD_NONE:
+            printf("in method region");
+            break;
+        case AcdKeyDesignator::KD_TRY:
+            printf("in try region of EH#%u", acdTryIndex - 1);
+            break;
+        case AcdKeyDesignator::KD_HND:
+            printf("in handler region of EH#%u", acdHndIndex - 1);
+            break;
+        case AcdKeyDesignator::KD_FLT:
+            printf("in filter region of EH#%u", acdHndIndex - 1);
+            break;
+        default:
+            printf("(unexpected region)");
+            break;
+    }
+
+    AddCodeDscKey key(this);
+    printf(" map key 0x%x\n", key.Data());
+}
+#endif
+
 //------------------------------------------------------------------------
 // fgSetTreeSeq: Sequence the tree, setting the "gtPrev" and "gtNext" links.
 //

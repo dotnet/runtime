@@ -6801,9 +6801,6 @@ public:
         // we jump to raise the exception.
         BasicBlock*     acdDstBlk;
 
-        // EH region key used to look up this dsc in the map
-        unsigned        acdData;
-
         // EH regions for this dsc
         unsigned short acdTryIndex;
         unsigned short acdHndIndex;
@@ -6819,7 +6816,10 @@ public:
         unsigned acdStkLvl;     // stack level in stack slots.
 #endif                          // !FEATURE_FIXED_OUT_ARGS
 
-        INDEBUG(unsigned acdNum);
+#ifdef DEBUG
+        unsigned acdNum;
+        void Dump();
+#endif;
     };
 
     unsigned acdCount = 0;
