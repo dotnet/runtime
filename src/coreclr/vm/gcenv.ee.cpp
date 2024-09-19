@@ -203,8 +203,9 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 #if defined(FEATURE_EH_FUNCLETS)
         flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
 #endif // defined(FEATURE_EH_FUNCLETS)
-        doubleReportTrackingIndex = 0;
+        gcctx.pScannedSlots = new SetSHash<Object**, PtrSetSHashTraits<Object**> >();
         pThread->StackWalkFrames( GcStackCrawlCallBack, &gcctx, flagsStackWalk);
+        delete gcctx.pScannedSlots;
     }
 
     GCFrame* pGCFrame = pThread->GetGCFrame();

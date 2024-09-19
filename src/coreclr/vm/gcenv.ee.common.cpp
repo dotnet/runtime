@@ -137,10 +137,22 @@ inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
     return true;
 }
 
-thread_local void **doubleReportTracking = NULL;
-thread_local int doubleReportTrackingSize = 0;
-thread_local int doubleReportTrackingIndex = 0;
-static const int DoubleReportTrackingInitialSize = 256;
+/*
+ * CheckDoubleReporting()
+ *
+ * This function is used to check for double reporting of the same stack slot or register.
+ * Double reporting is not allowed unless the reference is pinned, since it would
+ * result in incorrect updating of a reference in the slot in case the GC moves the
+ * object.
+ */
+void CheckDoubleReporting(GCCONTEXT *pCtx, Object **ppObj, uint32_t flags)
+{
+    if ((GCStress<cfg_any>::IsEnabled() || g_pConfig->GetEnableGCHoleMonitoring()) && ((flags & GC_CALL_PINNED) == 0) && pCtx->sc->promotion)
+    {
+        _ASSERTE_ALL_BUILDS(pCtx->pScannedSlots->Lookup(ppObj) == NULL);
+        pCtx->pScannedSlots->AddNoThrow(ppObj);
+    }
+}
 
 /*
  * GcEnumObject()
@@ -154,21 +166,7 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
     Object ** ppObj = (Object **)pObj;
     GCCONTEXT   * pCtx  = (GCCONTEXT *) pData;
 
-    if (g_pConfig->GetEnableGCHoleMonitoring() && ((flags & GC_CALL_PINNED) == 0) && pCtx->sc->promotion)
-    {
-        if (doubleReportTrackingIndex == doubleReportTrackingSize)
-        {
-            doubleReportTrackingSize = (doubleReportTrackingSize == 0) ? DoubleReportTrackingInitialSize : doubleReportTrackingSize * 2;
-            doubleReportTracking = (void**)realloc(doubleReportTracking, doubleReportTrackingSize * sizeof(void*));
-        }
-        for (int i = 0; i < doubleReportTrackingIndex; i++)
-        {
-            // Double reporting of the same slot detected
-            _ASSERTE_ALL_BUILDS(doubleReportTracking[i] != pObj);
-        }
-
-        doubleReportTracking[doubleReportTrackingIndex++] = pObj;
-    }
+    CheckDoubleReporting(pCtx, ppObj, flags);
 
     // Since we may be asynchronously walking another thread's stack,
     // check (frequently) for stack-buffer-overrun corruptions after
