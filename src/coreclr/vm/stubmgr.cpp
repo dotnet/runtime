@@ -1270,16 +1270,7 @@ BOOL StubLinkStubManager::DoTraceStub(PCODE stubStartAddress,
          "StubLinkStubManager::DoTraceStub: stub=%p\n", stub));
 
     TADDR pRealAddr = 0;
-    if (stub->IsMulticastDelegate())
-    {
-        // If it's a MC delegate, then we want to set a BP & do a context-ful
-        // manager push, so that we can figure out if this call will be to a
-        // single multicast delegate or a multi multicast delegate
-        trace->InitForManagerPush(stubStartAddress, this);
-        LOG_TRACE_DESTINATION(trace, stubStartAddress, "StubLinkStubManager(MCDel)::DoTraceStub");
-        return TRUE;
-    }
-    else if (stub->IsInstantiatingStub())
+    if (stub->IsInstantiatingStub())
     {
         trace->InitForManagerPush(stubStartAddress, this);
         LOG_TRACE_DESTINATION(trace, stubStartAddress, "StubLinkStubManager(InstantiatingMethod)::DoTraceStub");
@@ -1384,12 +1375,6 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
 
         trace->InitForManaged(target);
         return TRUE;
-    }
-    else if (stub->IsMulticastDelegate())
-    {
-        LOG((LF_CORDB,LL_INFO10000, "SLSM:TM MultiCastDelegate\n"));
-        BYTE *pbDel = (BYTE *)StubManagerHelpers::GetThisPtr(pContext);
-        return TraceDelegateObject(pbDel, trace);
     }
     else if (stub->IsShuffleThunk())
     {
@@ -1912,6 +1897,14 @@ BOOL ILStubManager::TraceManager(Thread *thread,
             }
         }
 #endif // FEATURE_COMINTEROP
+    }
+    else if (pStubMD->IsDelegateInvokeMethodStub())
+    {
+        if (pThis == NULL)
+            return FALSE;
+
+        LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Delegate Invoke Method\n"));
+        return StubLinkStubManager::TraceDelegateObject((BYTE*)pThis, trace);
     }
     else
     {
