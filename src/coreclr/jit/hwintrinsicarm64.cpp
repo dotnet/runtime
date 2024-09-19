@@ -727,8 +727,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
             else
             {
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_AdvSimd_AddSaturate, simdBaseJitType,
-                                                   simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_AdvSimd_AddSaturate, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -2125,7 +2125,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_SubtractSaturate:
         {
             assert(sig->numArgs == 2);
-            
+
             if (simdSize == 8 && varTypeIsLong(simdBaseType))
             {
                 break;
@@ -2139,8 +2139,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
             else
             {
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_AdvSimd_SubtractSaturate, simdBaseJitType,
-                                                   simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_AdvSimd_SubtractSaturate, simdBaseJitType, simdSize);
             }
             break;
         }
