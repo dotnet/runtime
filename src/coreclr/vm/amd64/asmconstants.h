@@ -124,12 +124,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadExceptionState__m_pCurrentTracker
 
 
 
-#define           OFFSETOF__DelegateObject___methodPtr      0x18
-ASMCONSTANT_OFFSETOF_ASSERT(DelegateObject, _methodPtr);
-
-#define           OFFSETOF__DelegateObject___target         0x08
-ASMCONSTANT_OFFSETOF_ASSERT(DelegateObject, _target);
-
 #define               OFFSETOF__MethodTable__m_dwFlags              0x00
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_dwFlags
                     == offsetof(MethodTable, m_dwFlags));
@@ -197,18 +191,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
 #define                OFFSETOF__DynamicStaticsInfo__m_pGCStatics 0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
                     == offsetof(DynamicStaticsInfo, m_pGCStatics));
-
-#define                  CORINFO_NullReferenceException_ASM 0
-ASMCONSTANTS_C_ASSERT(   CORINFO_NullReferenceException_ASM
-                      == CORINFO_NullReferenceException);
-
-#define                  CORINFO_IndexOutOfRangeException_ASM 3
-ASMCONSTANTS_C_ASSERT(   CORINFO_IndexOutOfRangeException_ASM
-                      == CORINFO_IndexOutOfRangeException);
-
-#define                  CORINFO_ArgumentException_ASM 9
-ASMCONSTANTS_C_ASSERT(   CORINFO_ArgumentException_ASM
-                      == CORINFO_ArgumentException);
 
 
 // MachState offsets (AMD64\gmscpu.h)
