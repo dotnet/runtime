@@ -125,6 +125,7 @@ namespace System.Numerics
         /// <summary>Creates an instance of the current type from a value, truncating any values that fall outside the representable range of the current type.</summary>
         /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
         /// <param name="value">The value which is used to create the instance of <typeparamref name="TSelf" />.</param>
+        /// <param name="signPropagation"></param>
         /// <returns>An instance of <typeparamref name="TSelf" /> created from <paramref name="value" />, truncating if <paramref name="value" /> falls outside the representable range of <typeparamref name="TSelf" />.</returns>
         /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -414,7 +415,9 @@ namespace System.Numerics
         {
             if (signPropagation || !TOther.IsNegative(value))
                 return TSelf.TryConvertFromTruncating(value, out result);
-            throw new NotImplementedException();
+
+            result = default;
+            return false;
         }
 
         /// <summary>Tries to convert an instance of the current type to another type, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
@@ -461,8 +464,9 @@ namespace System.Numerics
         {
             if (signPropagation || !TSelf.IsNegative(value))
                 return TSelf.TryConvertToTruncating(value, out result);
-            throw new NotImplementedException();
 
+            result = default;
+            return false;
         }
 
         /// <summary>Tries to parse a string into a value.</summary>
