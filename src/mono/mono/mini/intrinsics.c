@@ -1960,9 +1960,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 
 		if (strcmp (cmethod->name, "ReadBarrier") == 0 && fsig->param_count == 0) {
-			return mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
+			return mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
 		} else if (strcmp (cmethod->name, "WriteBarrier") == 0 && fsig->param_count == 0) {
-			return mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
+			return mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 		}
 
 		if (ins)

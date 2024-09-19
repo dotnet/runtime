@@ -11077,7 +11077,7 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 // instGen_MemoryBarrier: Emit a MemoryBarrier instruction
 //
 // Arguments:
-//     barrierKind - kind of barrier to emit (Load-only and Store-only is no-op on xarch)
+//     barrierKind - kind of barrier to emit (Load-only and Store-only are no-ops on xarch)
 //
 // Notes:
 //     All MemoryBarriers instructions can be removed by DOTNET_JitNoMemoryBarriers=1
@@ -11091,7 +11091,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     }
 #endif // DEBUG
 
-    // only full barriers need to be emitted on Xarch
+    // only fulls barrier need to be emitted on Xarch
     if (barrierKind == BARRIER_FULL)
     {
         instGen(INS_lock);
