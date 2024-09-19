@@ -1934,7 +1934,7 @@ Stub* COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
 
         MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
                                                                 pMD->GetMethodTable(),
-                                                                ILSTUB_SINGLECASTDELEGATE_INVOKE,
+                                                                ILSTUB_DELEGATE_INVOKE_METHOD,
                                                                 pMD->GetModule(),
                                                                 pSig, cbSig,
                                                                 NULL,
