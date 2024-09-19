@@ -3073,10 +3073,6 @@ void emitter::emitSplit(emitLocation*         startLoc,
 
     if ((igLastCandidate != nullptr) && (curSize == candidateSize))
     {
-        // TODO: This scenario may be possible (but very unlikely) when using the default fragment size.
-        // Fixing this would likely require padding out the last fragment to not be zero-sized, and doing the split.
-        // For now, assume this only occurs under stress modes, or when using DOTNET_JitSplitFunctionSize.
-        assert(maxSplitSize != UW_MAX_FRAGMENT_SIZE_BYTES);
         JITDUMP("emitSplit: can't split at last candidate IG%02u because it would create a zero-sized fragment\n",
                 igLastCandidate->igNum);
     }
