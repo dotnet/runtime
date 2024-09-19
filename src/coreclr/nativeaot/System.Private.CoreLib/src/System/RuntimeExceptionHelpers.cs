@@ -97,7 +97,15 @@ namespace System
                         return null;
 
                     case ExceptionIDs.IllegalInstruction:
-                        FailFast("Illegal instruction.");
+                        FailFast("Illegal instruction: Attempted to execute an instruction code not defined by the processor.");
+                        return null;
+
+                    case ExceptionIDs.PrivilegedInstruction:
+                        FailFast("Privileged instruction: Attempted to execute an instruction code that cannot be executed in user mode.");
+                        return null;
+
+                    case ExceptionIDs.InPageError:
+                        FailFast("In page error: Attempted to access a memory page that is not present, and the system is unable to load the page. For example, this exception might occur if a network connection is lost while running a program over a network.");
                         return null;
 
                     case ExceptionIDs.DataMisaligned:
