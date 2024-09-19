@@ -1898,6 +1898,14 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         }
 #endif // FEATURE_COMINTEROP
     }
+    else if (pStubMD->IsDelegateInvokeMethodStub())
+    {
+        if (pThis == NULL)
+            return FALSE;
+
+        LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Delegate Invoke Method\n"));
+        return StubLinkStubManager::TraceDelegateObject((BYTE*)pThis, trace);
+    }
     else
     {
         LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: No known target, IL Stub is a leaf\n"));
