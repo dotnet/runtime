@@ -212,8 +212,6 @@
     <MicrosoftPrivateIntellisenseVersion>8.0.0-preview-20230918.1</MicrosoftPrivateIntellisenseVersion>
     <!-- Mono Cecil -->
     <MicrosoftDotNetCecilVersion>0.11.5-alpha.24467.1</MicrosoftDotNetCecilVersion>
-    <!-- ILCompiler -->
-    <MicrosoftDotNetILCompilerVersion>10.0.0-alpha.1.24463.8</MicrosoftDotNetILCompilerVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>10.0.0-alpha.1.24466.3</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
