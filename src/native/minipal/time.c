@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <minipal/time.h>
 
-#ifdef HAVE_WINDOWS_H
+#if HAVE_WINDOWS_H
 
 #include <Windows.h>
 
@@ -78,7 +78,7 @@ int64_t minipal_hires_ticks(void)
 
 void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
 {
-#ifdef HAVE_WINDOWS_H
+#if HAVE_WINDOWS_H
     if (usecs > 1000)
     {
         SleepEx(usecs / 1000, FALSE);
