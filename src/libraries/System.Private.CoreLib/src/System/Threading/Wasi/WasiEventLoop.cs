@@ -3,9 +3,9 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using WasiPollWorld.wit.imports.wasi.io.v0_2_1;
-using Pollable = WasiPollWorld.wit.imports.wasi.io.v0_2_1.IPoll.Pollable;
-using MonotonicClockInterop = WasiPollWorld.wit.imports.wasi.clocks.v0_2_1.MonotonicClockInterop;
+using WasiPollWorld.wit.imports.wasi.io.v0_2_0;
+using Pollable = WasiPollWorld.wit.imports.wasi.io.v0_2_0.IPoll.Pollable;
+using MonotonicClockInterop = WasiPollWorld.wit.imports.wasi.clocks.v0_2_0.MonotonicClockInterop;
 
 namespace System.Threading
 {
@@ -19,18 +19,18 @@ namespace System.Threading
         private static Pollable? s_resolvedPollable;
         private static Task? s_mainTask;
 
-        internal static Task RegisterWasiPollableHandle(int handle, CancellationToken cancellationToken)
+        internal static Task RegisterWasiPollableHandle(int handle, bool ownsPollable, CancellationToken cancellationToken)
         {
             // note that this is duplicate of the original Pollable
             // the original should have been neutralized without disposing the handle
             var pollableCpy = new Pollable(new Pollable.THandle(handle));
-            return RegisterWasiPollable(pollableCpy, cancellationToken);
+            return RegisterWasiPollable(pollableCpy, ownsPollable, cancellationToken);
         }
 
-        internal static Task RegisterWasiPollable(Pollable pollable, CancellationToken cancellationToken)
+        internal static Task RegisterWasiPollable(Pollable pollable, bool ownsPollable, CancellationToken cancellationToken)
         {
             // this will register the pollable holder into s_pollables
-            var holder = new PollableHolder(pollable, cancellationToken);
+            var holder = new PollableHolder(pollable, ownsPollable, cancellationToken);
             s_pollables.Add(holder);
 
             ScheduleCheck();
@@ -151,14 +151,16 @@ namespace System.Threading
         private sealed class PollableHolder
         {
             public bool isDisposed;
+            public bool ownsPollable;
             public readonly Pollable pollable;
             public readonly TaskCompletionSource taskCompletionSource;
             public readonly CancellationTokenRegistration cancellationTokenRegistration;
             public readonly CancellationToken cancellationToken;
 
-            public PollableHolder(Pollable pollable, CancellationToken cancellationToken)
+            public PollableHolder(Pollable pollable, bool ownsPollable, CancellationToken cancellationToken)
             {
                 this.pollable = pollable;
+                this.ownsPollable = ownsPollable;
                 this.cancellationToken = cancellationToken;
 
                 // this means that taskCompletionSource.Task.AsyncState -> this;
@@ -178,7 +180,9 @@ namespace System.Threading
 
                 // no need to unregister the holder from s_pollables, when this is called
                 isDisposed = true;
-                pollable.Dispose();
+                if (ownsPollable){
+                    pollable.Dispose();
+                }
                 cancellationTokenRegistration.Dispose();
                 taskCompletionSource.TrySetResult();
             }
@@ -194,7 +198,9 @@ namespace System.Threading
 
                 // it will be removed from s_pollables on the next run
                 self.isDisposed = true;
-                self.pollable.Dispose();
+                if (self.ownsPollable){
+                    self.pollable.Dispose();
+                }
                 self.cancellationTokenRegistration.Dispose();
                 self.taskCompletionSource.TrySetCanceled(self.cancellationToken);
             }
