@@ -2217,8 +2217,6 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags
     {
         if((flags & NEWSTUB_FL_LOADERHEAP) != 0)
             m_numCodeBytesAndFlags |= LOADER_HEAP_BIT;
-        if((flags & NEWSTUB_FL_MULTICAST) != 0)
-            m_numCodeBytesAndFlags |= MULTICAST_DELEGATE_BIT;
         if ((flags & NEWSTUB_FL_EXTERNAL) != 0)
             m_numCodeBytesAndFlags |= EXTERNAL_ENTRY_BIT;
         if ((flags & NEWSTUB_FL_INSTANTIATING_METHOD) != 0)

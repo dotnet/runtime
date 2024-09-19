@@ -1885,52 +1885,11 @@ BOOL COMDelegate::IsTrueMulticastDelegate(OBJECTREF delegate)
     return isMulticast;
 }
 
-PCODE COMDelegate::TheDelegateInvokeStub()
-{
-    CONTRACT(PCODE)
-    {
-        STANDARD_VM_CHECK;
-        POSTCONDITION(RETVAL != NULL);
-    }
-    CONTRACT_END;
-
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-    static PCODE s_pInvokeStub;
-
-    if (s_pInvokeStub == NULL)
-    {
-        CPUSTUBLINKER sl;
-        sl.EmitDelegateInvoke();
-        // Process-wide singleton stub that never unloads
-        Stub *pCandidate = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_MULTICAST);
-
-        if (InterlockedCompareExchangeT<PCODE>(&s_pInvokeStub, pCandidate->GetEntryPoint(), NULL) != NULL)
-        {
-            // if we are here someone managed to set the stub before us so we release the current
-            ExecutableWriterHolder<Stub> candidateWriterHolder(pCandidate, sizeof(Stub));
-            candidateWriterHolder.GetRW()->DecRef();
-        }
-    }
-
-    RETURN s_pInvokeStub;
-#else
-    RETURN GetEEFuncEntryPoint(SinglecastDelegateInvokeStub);
-#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
-}
-
 // Get the cpu stub for a delegate invoke.
-PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
+Stub* COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
 {
-    CONTRACT(PCODE)
-    {
-        STANDARD_VM_CHECK;
-        POSTCONDITION(RETVAL != NULL);
+    STANDARD_VM_CONTRACT;
 
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACT_END;
-
-    PCODE               ret = (PCODE)NULL;
     MethodTable *       pDelMT = pMD->GetMethodTable();
     DelegateEEClass*    pClass = (DelegateEEClass*) pDelMT->GetClass();
 
@@ -1941,15 +1900,53 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
         if (*pMD->GetSig() != (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_DEFAULT))
             COMPlusThrow(kInvalidProgramException);
 
-        ret = COMDelegate::TheDelegateInvokeStub();
+        MetaSig sig(pMD);
+
+        BOOL fReturnVal = !sig.IsReturnTypeVoid();
+
+        SigTypeContext emptyContext;
+        ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
+
+        ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+
+        // This stub is only used for rare indirect cases, for example
+        // when Delegate.Invoke method is wrapped into another delegate.
+        // Direct invocation of delegate is expanded by JIT.
+        // Emit a recursive call here to let JIT handle complex cases like
+        // virtual dispatch and GC safety.
+
+        // Load the delegate object
+        pCode->EmitLoadThis();
+
+        // Load the arguments
+        for (UINT paramCount = 0; paramCount < sig.NumFixedArgs(); paramCount++)
+            pCode->EmitLDARG(paramCount);
+
+        // recursively call the delegate itself
+        pCode->EmitCALL(pCode->GetToken(pMD), sig.NumFixedArgs(), fReturnVal);
+
+        // return
+        pCode->EmitRET();
+
+        PCCOR_SIGNATURE pSig;
+        DWORD cbSig;
+        pMD->GetSig(&pSig,&cbSig);
+
+        MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
+                                                                pMD->GetMethodTable(),
+                                                                ILSTUB_DELEGATE_INVOKE_METHOD,
+                                                                pMD->GetModule(),
+                                                                pSig, cbSig,
+                                                                NULL,
+                                                                &sl);
+
+        return Stub::NewStub(JitILStub(pStubMD));
     }
     else
     {
         // We do not support asynchronous delegates in CoreCLR
         COMPlusThrow(kPlatformNotSupportedException);
     }
-
-    RETURN ret;
 }
 
 extern "C" void QCALLTYPE Delegate_InternalAlloc(QCall::TypeHandle pType, QCall::ObjectHandleOnStack d)

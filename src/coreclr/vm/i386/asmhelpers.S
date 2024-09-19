@@ -737,27 +737,6 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     jmp         eax // continue on into the method
 NESTED_END ResolveWorkerAsmStub, _TEXT
 
-#ifdef FEATURE_STUBS_AS_IL
-// ==========================================================================
-// void SinglecastDelegateInvokeStub();
-//
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-
-    test        ecx, ecx
-    jz          LOCAL_LABEL(NullObject)
-
-    mov         eax, [ecx + DelegateObject___methodPtr]
-    mov         ecx, [ecx + DelegateObject___target]    // replace "this" pointer
-    jmp         eax
-
-LOCAL_LABEL(NullObject):
-
-    mov         ecx, CORINFO_NullReferenceException_ASM
-    jmp         C_FUNC(JIT_InternalThrow)
-
-LEAF_END SinglecastDelegateInvokeStub, _TEXT
-#endif // FEATURE_STUBS_AS_IL
-
 // =======================================================================================
 // void ResolveWorkerChainLookupAsmStub();
 //
