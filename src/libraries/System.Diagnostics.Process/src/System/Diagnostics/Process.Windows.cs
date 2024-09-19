@@ -16,7 +16,9 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-        private static readonly ReaderWriterLockSlim s_createProcessLock = new();
+        // We use ReaderWriterLock instead of the newer ReaderWriterLockSlim for more fairness between the
+        // read and write sides of the lock.
+        private static readonly ReaderWriterLock s_createProcessLock = new();
 
         private string? _processName;
 
@@ -438,26 +440,26 @@ namespace System.Diagnostics
                 // calls. We do not want one process to inherit the handles created concurrently for another
                 // process, as that will impact the ownership and lifetimes of those handles now inherited
                 // into multiple child processes.
-                s_createProcessLock.EnterWriteLock();
+                s_createProcessLock.AcquireWriterLock(Timeout.Infinite);
                 try
                 {
                     return StartWithCreateProcessCore(startInfo, inheritHandles, hasRedirection);
                 }
                 finally
                 {
-                    s_createProcessLock.ExitWriteLock();
+                    s_createProcessLock.ReleaseWriterLock();
                 }
             }
             else
             {
-                s_createProcessLock.EnterReadLock();
+                s_createProcessLock.AcquireReaderLock(Timeout.Infinite);
                 try
                 {
                     return StartWithCreateProcessCore(startInfo, inheritHandles, hasRedirection);
                 }
                 finally
                 {
-                    s_createProcessLock.ExitReadLock();
+                    s_createProcessLock.ReleaseReaderLock();
                 }
 
             }
