@@ -754,6 +754,7 @@ namespace System.Text.Json.SourceGeneration
                             Name = {{FormatStringLiteral(spec.Name)}},
                             ParameterType = typeof({{spec.ParameterType.FullyQualifiedName}}),
                             Position = {{spec.ParameterIndex}},
+                            IsNullable = {{FormatBoolLiteral(spec.IsNullable)}},
                             IsMemberInitializer = true,
                         },
                         """);
