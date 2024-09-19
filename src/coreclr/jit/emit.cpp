@@ -3071,6 +3071,14 @@ void emitter::emitSplit(emitLocation*         startLoc,
 
     } // end for loop
 
+    // It's possible to have zero-sized IGs at this point in the emitter.
+    // For example, the JIT may create an IG to align a loop,
+    // but then later walk back this decision after other alignment decisions,
+    // which means it will zero out the new IG.
+    // If a zero-sized IG precedes a populated IG, it will be included in the latter's fragment.
+    // However, if the last IG candidate is a zero-sized IG, splitting would create a zero-sized fragment,
+    // so skip the last split in such cases.
+    // (The last IG in the main method body can be zero-sized if it was created to align a loop in the first funclet.)
     if ((igLastCandidate != nullptr) && (curSize == candidateSize))
     {
         JITDUMP("emitSplit: can't split at last candidate IG%02u because it would create a zero-sized fragment\n",
