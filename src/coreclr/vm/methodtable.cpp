@@ -7346,6 +7346,47 @@ CHECK MethodTable::CheckActivated()
 //==========================================================================================
 
 #ifndef DACCESS_COMPILE
+
+struct ShouldEnsureInstanceActiveBeRecorded
+{
+    bool ShouldRecord = true;
+    ShouldEnsureInstanceActiveBeRecorded *Next;
+
+    ShouldEnsureInstanceActiveBeRecorded();
+    ~ShouldEnsureInstanceActiveBeRecorded();
+};
+
+static thread_local ShouldEnsureInstanceActiveBeRecorded* t_shouldEnsureInstanceActiveBeRecorded = nullptr;
+
+ShouldEnsureInstanceActiveBeRecorded::ShouldEnsureInstanceActiveBeRecorded()
+{
+    Next = t_shouldEnsureInstanceActiveBeRecorded;
+    t_shouldEnsureInstanceActiveBeRecorded = this;
+}
+
+ShouldEnsureInstanceActiveBeRecorded::~ShouldEnsureInstanceActiveBeRecorded()
+{
+    if (ShouldRecord)
+    {
+        t_shouldEnsureInstanceActiveBeRecorded = Next;
+    }
+}
+
+void DoNotRecordTheResultOfEnsureLoadLevel()
+{
+    // Mark all current ensure instance active calls on the stack as not to be recorded, and
+    // then remove them all from the stack, so that later calls to the this function don't need
+    // to walk the list.
+    ShouldEnsureInstanceActiveBeRecorded* current = t_shouldEnsureInstanceActiveBeRecorded;
+    while (current != NULL)
+    {
+        current->ShouldRecord = false;
+        current = current->Next;
+    }
+
+    t_shouldEnsureInstanceActiveBeRecorded = NULL;
+}
+
 VOID MethodTable::EnsureInstanceActive()
 {
     CONTRACTL
@@ -7356,6 +7397,12 @@ VOID MethodTable::EnsureInstanceActive()
     }
     CONTRACTL_END;
 
+    if (GetAuxiliaryData()->IsEnsuredInstanceActive())
+    {
+        return;
+    }
+
+    ShouldEnsureInstanceActiveBeRecorded shouldEnsureInstanceActiveBeRecorded;
     Module * pModule = GetModule();
     pModule->EnsureActive();
 
@@ -7388,6 +7435,13 @@ VOID MethodTable::EnsureInstanceActive()
         }
     }
 
+    // The EnsureInstanceActive function may be called during the final stage of assembly load
+    // in which case we are permitted to not actually raise the load level of an assembly all the way
+    // to FILE_ACTIVE. In that case, it isn't safe to record that the MethodTable instance is active.
+    if (shouldEnsureInstanceActiveBeRecorded.ShouldRecord)
+    {
+        GetAuxiliaryDataForWrite()->SetEnsuredInstanceActive();
+    }
 }
 #endif //!DACCESS_COMPILE
 
