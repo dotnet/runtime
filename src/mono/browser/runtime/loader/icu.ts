@@ -67,7 +67,7 @@ export function getIcuResourceName (config: MonoConfig): string | null {
         let icuFile = null;
         if (config.globalizationMode === GlobalizationMode.Custom) {
             // custom ICU file is saved in the resources with fingerprinting and does not require mapping
-            if (icuFiles.length === 1) {
+            if (icuFiles.length >= 1) {
                 return icuFiles[0];
             }
         } else if (config.globalizationMode === GlobalizationMode.Hybrid) {
