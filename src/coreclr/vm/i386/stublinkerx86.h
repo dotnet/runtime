@@ -330,11 +330,9 @@ class StubLinkerCPU : public StubLinker
 
         VOID EmitSetup(CodeLabel *pForwardRef);
         VOID EmitRareSetup(CodeLabel* pRejoinPoint, BOOL fThrow);
-#endif // FEATURE_COMINTEROP && TARGET_X86
 
-#ifndef FEATURE_STUBS_AS_IL
         VOID EmitCheckGSCookie(X86Reg frameReg, int gsCookieOffset);
-#endif // !FEATURE_STUBS_AS_IL
+#endif // FEATURE_COMINTEROP && TARGET_X86
 
 #ifdef TARGET_X86
         VOID EmitUnboxMethodStub(MethodDesc* pRealMD);
@@ -359,9 +357,6 @@ class StubLinkerCPU : public StubLinker
 #endif // PROFILING_SUPPORTED
 
         void EmitComMethodStubProlog(TADDR pFrameVptr, CodeLabel** rgRareLabels,
-            CodeLabel** rgRejoinLabels, BOOL bShouldProfile);
-
-        void EmitComMethodStubEpilog(TADDR pFrameVptr, CodeLabel** rgRareLabels,
             CodeLabel** rgRejoinLabels, BOOL bShouldProfile);
 
         //========================================================================

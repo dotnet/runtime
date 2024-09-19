@@ -2641,76 +2641,6 @@ void StubLinkerCPU::EmitComMethodStubProlog(TADDR pFrameVptr,
 #endif
 }
 
-//========================================================================
-//  Epilog for stubs that enter managed code from COM
-//
-//  At this point of the stub, the state should be as follows:
-//  ESI holds the ComMethodFrame or UMThkCallFrame ptr
-//  EBX holds the result of GetThread()
-//  EDI holds the previous Frame ptr
-//
-void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
-                                            CodeLabel** rgRareLabels,
-                                            CodeLabel** rgRejoinLabels,
-                                            BOOL bShouldProfile)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-        PRECONDITION(rgRareLabels != NULL);
-        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL);
-        PRECONDITION(rgRejoinLabels != NULL);
-        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL);
-        PRECONDITION(4 == sizeof( ((Thread*)0)->m_State ));
-        PRECONDITION(4 == sizeof( ((Thread*)0)->m_fPreemptiveGCDisabled ));
-    }
-    CONTRACTL_END;
-
-    EmitCheckGSCookie(kESI, UnmanagedToManagedFrame::GetOffsetOfGSCookie());
-
-    // mov [ebx + Thread.GetFrame()], edi  ;; restore previous frame
-    X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kEDI);
-
-    // move byte ptr [ebx + Thread.m_fPreemptiveGCDisabled],0
-    X86EmitOffsetModRM(0xc6, (X86Reg)0, kEBX, Thread::GetOffsetOfGCFlag());
-    Emit8(0);
-
-    // add esp, popstack
-    X86EmitAddEsp(sizeof(GSCookie) + UnmanagedToManagedFrame::GetOffsetOfCalleeSavedRegisters());
-
-    // pop edi        ; restore callee-saved registers
-    // pop esi
-    // pop ebx
-    // pop ebp
-    X86EmitPopReg(kEDI);
-    X86EmitPopReg(kESI);
-    X86EmitPopReg(kEBX);
-    X86EmitPopReg(kEBP);
-
-    //    jmp eax //reexecute!
-    X86EmitR2ROp(0xff, (X86Reg)4, kEAX);
-
-    // ret
-    // This will never be executed. It is just to help out stack-walking logic
-    // which disassembles the epilog to unwind the stack. A "ret" instruction
-    // indicates that no more code needs to be disassembled, if the stack-walker
-    // keeps on going past the previous "jmp eax".
-    X86EmitReturn(0);
-
-    //-----------------------------------------------------------------------
-    // The out-of-line portion of disabling preemptive GC - rarely executed
-    //-----------------------------------------------------------------------
-    EmitLabel(rgRareLabels[1]);  // label for rare disable gc
-    EmitRareDisable(rgRejoinLabels[1]); // emit rare disable gc
-
-    //-----------------------------------------------------------------------
-    // The out-of-line portion of setup thread - rarely executed
-    //-----------------------------------------------------------------------
-    EmitLabel(rgRareLabels[0]);  // label for rare setup thread
-    EmitRareSetup(rgRejoinLabels[0], /*fThrow*/ TRUE); // emit rare setup thread
-}
-
 //---------------------------------------------------------------
 // Emit code to store the setup current Thread structure in eax.
 // TRASHES  eax,ecx&edx.
@@ -2857,10 +2787,6 @@ void StubLinkerCPU::EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
     EmitRareSetup(rgRejoinLabels[0],/*fThrow*/ FALSE); // emit rare setup thread
 }
 
-#endif // defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
-
-
-#if !defined(FEATURE_STUBS_AS_IL) && defined(TARGET_X86)
 VOID StubLinkerCPU::EmitCheckGSCookie(X86Reg frameReg, int gsCookieOffset)
 {
     STANDARD_VM_CONTRACT;
@@ -2877,7 +2803,7 @@ VOID StubLinkerCPU::EmitCheckGSCookie(X86Reg frameReg, int gsCookieOffset)
     EmitLabel(pLabel);
 #endif
 }
-#endif // !defined(FEATURE_STUBS_AS_IL) && defined(TARGET_X86)
+#endif // defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 
 #ifdef TARGET_X86
 // This method unboxes the THIS pointer and then calls pRealMD
@@ -3590,9 +3516,6 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 #endif // TARGET_AMD64
 }
 
-
-#if !defined(FEATURE_STUBS_AS_IL)
-
 #if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 
 #ifdef _MSC_VER
@@ -3655,8 +3578,6 @@ ThreadPointer __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
 #endif
 
 #endif // FEATURE_COMINTEROP && TARGET_X86
-
-#endif // !FEATURE_STUBS_AS_IL
 
 #endif // !DACCESS_COMPILE
 
