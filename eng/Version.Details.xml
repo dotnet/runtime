@@ -69,9 +69,9 @@
       <Sha>1bae950c11b816447d9810d4361d5c6cd2e19fe0</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="10.0.0-alpha.1.24467.3">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="10.0.0-alpha.1.24468.9">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>9f69e94cad2b99c3695242c1194cf38f0506da26</Sha>
+      <Sha>affb1823f4444a47529d649689a7a9b955fedf95</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
