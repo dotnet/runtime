@@ -3486,10 +3486,6 @@ inline bool hasCodeMI(instruction ins)
 inline size_t insCodeMI(instruction ins)
 {
     assert((unsigned)ins < ArrLen(insCodesMI));
-    if (insCodesMI[ins] == BAD_CODE)
-    {
-        printf("Ruihan: %d\n", ins);
-    }
     assert((insCodesMI[ins] != BAD_CODE));
 
     return insCodesMI[ins];
@@ -5647,12 +5643,12 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     if (useNDD)
     {
         assert(IsApxNDDEncodableInstruction(ins));
+        // targetReg has to be an actual register if using NDD.
         assert(targetReg < REG_STK);
-        assert(dst->isUsedFromReg());
         // make sure target register is not either of the src registers.
+        assert(dst->isUsedFromReg());
         regNumber dstreg = dst->GetRegNum();
         regNumber srcreg = src->isUsedFromReg() ? src->GetRegNum() : REG_NA;
-        // targetReg has to be an actual register if using NDD.
         assert(targetReg != dstreg);
         assert(targetReg != srcreg);
     }
