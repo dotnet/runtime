@@ -14,7 +14,7 @@ namespace System.Collections.Immutable
         /// A node in the AVL tree storing this map.
         /// </summary>
         [DebuggerDisplay("{_key} = {_value}")]
-        internal sealed class Node : IBinaryTree<KeyValuePair<TKey, TValue>>, IEnumerable<KeyValuePair<TKey, TValue>>
+        internal sealed class Node : IEnumerable<KeyValuePair<TKey, TValue>>
         {
             /// <summary>
             /// The default empty node.
@@ -106,22 +106,6 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Gets the left branch of this node.
-            /// </summary>
-            IBinaryTree<KeyValuePair<TKey, TValue>>? IBinaryTree<KeyValuePair<TKey, TValue>>.Left
-            {
-                get { return _left; }
-            }
-
-            /// <summary>
-            /// Gets the right branch of this node.
-            /// </summary>
-            IBinaryTree<KeyValuePair<TKey, TValue>>? IBinaryTree<KeyValuePair<TKey, TValue>>.Right
-            {
-                get { return _right; }
-            }
-
-            /// <summary>
             /// Gets the height of the tree beneath this node.
             /// </summary>
             public int Height { get { return _height; } }
@@ -132,25 +116,9 @@ namespace System.Collections.Immutable
             public Node? Left { get { return _left; } }
 
             /// <summary>
-            /// Gets the left branch of this node.
-            /// </summary>
-            IBinaryTree? IBinaryTree.Left
-            {
-                get { return _left; }
-            }
-
-            /// <summary>
             /// Gets the right branch of this node.
             /// </summary>
             public Node? Right { get { return _right; } }
-
-            /// <summary>
-            /// Gets the right branch of this node.
-            /// </summary>
-            IBinaryTree? IBinaryTree.Right
-            {
-                get { return _right; }
-            }
 
             /// <summary>
             /// Gets the value represented by the current node.
@@ -158,14 +126,6 @@ namespace System.Collections.Immutable
             public KeyValuePair<TKey, TValue> Value
             {
                 get { return new KeyValuePair<TKey, TValue>(_key, _value); }
-            }
-
-            /// <summary>
-            /// Gets the number of elements contained by this node and below.
-            /// </summary>
-            int IBinaryTree.Count
-            {
-                get { throw new NotSupportedException(); }
             }
 
             /// <summary>
@@ -272,7 +232,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(dictionary, nameof(dictionary));
 
-                IOrderedCollection<KeyValuePair<TKey, TValue>> list = dictionary.AsOrderedCollection();
+                IReadOnlyList<KeyValuePair<TKey, TValue>> list = dictionary.AsReadOnlyList();
                 return NodeTreeFromList(list, 0, list.Count);
             }
 
@@ -626,7 +586,7 @@ namespace System.Collections.Immutable
             /// <param name="start">The starting index within <paramref name="items"/> that should be captured by the node tree.</param>
             /// <param name="length">The number of elements from <paramref name="items"/> that should be captured by the node tree.</param>
             /// <returns>The root of the created node tree.</returns>
-            private static Node NodeTreeFromList(IOrderedCollection<KeyValuePair<TKey, TValue>> items, int start, int length)
+            private static Node NodeTreeFromList(IReadOnlyList<KeyValuePair<TKey, TValue>> items, int start, int length)
             {
                 Requires.NotNull(items, nameof(items));
                 Requires.Range(start >= 0, nameof(start));

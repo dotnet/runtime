@@ -2834,19 +2834,17 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
     }
     else
     {
-        PTR_BaseDomain pBaseDomain = PTR_BaseDomain(TO_TADDR(addr));
-
         ZeroMemory(appdomainData, sizeof(DacpAppDomainData));
-        appdomainData->AppDomainPtr = PTR_CDADDR(pBaseDomain);
+        appdomainData->AppDomainPtr = addr;
         PTR_LoaderAllocator pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         appdomainData->pHighFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
         appdomainData->pLowFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
         appdomainData->pStubHeap = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
         appdomainData->appDomainStage = STAGE_OPEN;
 
-        if (pBaseDomain->IsAppDomain())
+        if (addr != HOST_CDADDR(SystemDomain::System()))
         {
-            AppDomain * pAppDomain = pBaseDomain->AsAppDomain();
+            PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
             appdomainData->DomainLocalBlock = 0;
             appdomainData->pDomainLocalModules = 0;
 
@@ -2857,11 +2855,11 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
                 // The assembly list is not valid in a closed appdomain.
                 AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
                     kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-                CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+                CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-                while (i.Next(pDomainAssembly.This()))
+                while (i.Next(pAssembly.This()))
                 {
-                    if (pDomainAssembly->IsLoaded())
+                    if (pAssembly->IsLoaded())
                     {
                         appdomainData->AssemblyCount++;
                     }
@@ -2963,22 +2961,25 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
 
     SOSDacEnter();
 
-    BaseDomain* pBaseDomain = PTR_BaseDomain(TO_TADDR(addr));
-
-    int n=0;
-    if (pBaseDomain->IsAppDomain())
+    if (addr == HOST_CDADDR(SystemDomain::System()))
     {
-        AppDomain::AssemblyIterator i = pBaseDomain->AsAppDomain()->IterateAssembliesEx(
+        // We shouldn't be asking for the assemblies in SystemDomain
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
+        AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
 
+        int n = 0;
         if (values)
         {
-            while (i.Next(pDomainAssembly.This()) && (n < count))
+            while (i.Next(pAssembly.This()) && (n < count))
             {
-                if (pDomainAssembly->IsLoaded())
+                if (pAssembly->IsLoaded())
                 {
-                    CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
                     // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
                     values[n++] = HOST_CDADDR(pAssembly.Extract());
                 }
@@ -2986,20 +2987,13 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
         }
         else
         {
-            while (i.Next(pDomainAssembly.This()))
-                if (pDomainAssembly->IsLoaded())
+            while (i.Next(pAssembly.This()))
+                if (pAssembly->IsLoaded())
                     n++;
         }
 
         if (pNeeded)
             *pNeeded = n;
-    }
-    else
-    {
-        // The only other type of BaseDomain is the SystemDomain, and we shouldn't be asking
-        // for the assemblies in it.
-        _ASSERTE(false);
-        hr = E_INVALIDARG;
     }
 
     SOSDacLeave();
@@ -3040,31 +3034,44 @@ ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout
 {
     SOSDacEnter();
 
-    PTR_BaseDomain pBaseDomain = PTR_BaseDomain(TO_TADDR(addr));
-    if (!pBaseDomain->IsAppDomain())
+    if (addr == HOST_CDADDR(SystemDomain::System()))
     {
-        // Shared domain and SystemDomain don't have this field.
+        // SystemDomain doesn't have this field.
         if (pNeeded)
             *pNeeded = 1;
-        if (name)
+        if (name && count > 0)
             name[0] = 0;
     }
     else
     {
-        AppDomain* pAppDomain = pBaseDomain->AsAppDomain();
+        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
 
-        if (!pAppDomain->m_friendlyName.IsEmpty())
+        size_t countAsSizeT = count;
+        if (pAppDomain->m_friendlyName.IsValid())
         {
-            if (!pAppDomain->m_friendlyName.DacGetUnicode(count, name, pNeeded))
+            LPCWSTR friendlyName = (LPCWSTR)pAppDomain->m_friendlyName;
+            size_t friendlyNameLen = u16_strlen(friendlyName);
+
+            if (pNeeded)
             {
-                hr =  E_FAIL;
+                *pNeeded = (unsigned int)(friendlyNameLen + 1);
+            }
+
+            if (name && count > 0)
+            {
+                if (countAsSizeT > (friendlyNameLen + 1))
+                {
+                    countAsSizeT = friendlyNameLen + 1;
+                }
+                memcpy(name, friendlyName, countAsSizeT * sizeof(WCHAR));
+                name[countAsSizeT - 1] = 0;
             }
         }
         else
         {
             if (pNeeded)
                 *pNeeded = 1;
-            if (name)
+            if (name && count > 0)
                 name[0] = 0;
 
             hr = S_OK;
@@ -3103,9 +3110,9 @@ ClrDataAccess::GetAppDomainConfigFile(CLRDATA_ADDRESS appDomain, int count,
 }
 
 HRESULT
-ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *assemblyData)
+ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS domain, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *assemblyData)
 {
-    if (assembly == (CLRDATA_ADDRESS)NULL && cdBaseDomainPtr == (CLRDATA_ADDRESS)NULL)
+    if (assembly == (CLRDATA_ADDRESS)NULL && domain == (CLRDATA_ADDRESS)NULL)
     {
         return E_INVALIDARG;
     }
@@ -3117,14 +3124,9 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
     // Make sure conditionally-assigned fields like AssemblySecDesc, LoadContext, etc. are zeroed
     ZeroMemory(assemblyData, sizeof(DacpAssemblyData));
 
-    // If the specified BaseDomain is an AppDomain, get a pointer to it
-    AppDomain * pDomain = NULL;
-    if (cdBaseDomainPtr != (CLRDATA_ADDRESS)NULL)
+    if (domain != (CLRDATA_ADDRESS)NULL)
     {
-        assemblyData->BaseDomainPtr = cdBaseDomainPtr;
-        PTR_BaseDomain baseDomain = PTR_BaseDomain(TO_TADDR(cdBaseDomainPtr));
-        if( baseDomain->IsAppDomain() )
-            pDomain = baseDomain->AsAppDomain();
+        assemblyData->DomainPtr = domain;
     }
 
     assemblyData->AssemblyPtr = HOST_CDADDR(pAssembly);

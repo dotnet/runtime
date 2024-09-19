@@ -1534,6 +1534,7 @@ namespace System.Text.Json.SourceGeneration
                                 ParameterType = property.PropertyType,
                                 MatchesConstructorParameter = matchingConstructorParameter is not null,
                                 ParameterIndex = matchingConstructorParameter?.ParameterIndex ?? paramCount++,
+                                IsNullable = property.PropertyType.CanBeNull && !property.IsSetterNonNullableAnnotation,
                             };
 
                             (propertyInitializers ??= new()).Add(propertyInitializer);
