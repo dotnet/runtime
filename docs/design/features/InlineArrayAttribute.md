@@ -51,7 +51,18 @@ struct MyArray<T>
 ```
 ### Memory layout of an inline array instance.
 
-TBD
+The memory layout of a struct instance decorated with `InlineArray` attribute closely matches the layout of the element sequence of an array `T[]` with length == `Length`.
+In particular (using the `MyArray<T>` example defined above):
+* In unboxed form there is no object header or any other data before the first element. 
+Example: assuming the instance is not GC-movable, the following holds: `(byte*)*inst == (byte*)inst._element0`
+* There is no additional padding between elements.
+Example: assuming the instance is not GC-movable and `Length > 1`, the following will yield a pointer to the second element: `(byte*)inst._element0 + sizeof(T)`
+* The size of the entire instance is the size of its element type multiplied by the `Length`
+Example: the following holds: `sizeof(MyArray<T>) == Length * sizeof(T)`
+* Just like with any other struct, the boxed form will contain the regular object header followed by an entire unboxed instance.
+Example: boxing/unboxing will result in exact copy on an entire instance: `object o = inst; MyArray<T> inst1copy = (MyArray<T>)o`
+
+Type T can be a reference type and can contain managed references. The runtime will ensure that objects reachable through elements of an inline array instance can be accessed in a type-safe manner.
      
 ### Special note on scenario when the element is readonly.
 
