@@ -55,7 +55,8 @@ TBD
      
 ### Special note on scenario when the element is readonly.
 
-TBD
+There is a scenario where the element field in a struct decorated with `InlineArrayAttribute` is `readonly`. 
+The `readonly` part in such scenario has no special semantics and as such the scenario is unsupported and is not recommended.
 
 ### FAQ: 
 
