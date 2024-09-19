@@ -585,6 +585,32 @@ namespace System.Runtime.CompilerServices
         public byte Data;
     }
 
+    // Subset of src\vm\methoddesc.hpp
+    [StructLayout(LayoutKind.Explicit)]
+    internal unsafe struct MethodDesc
+    {
+        public ushort Flags3AndTokenRemainder;
+        public byte ChunkIndex;
+        public byte Flags4; // Used to hold more flags
+        public ushort SlotNumber; // The slot number of this MethodDesc in the vtable array.
+        public ushort Flags; // See MethodDescFlags
+        public IntPtr CodeData;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        MethodDescChunk* MethodDescChunk => (MethodDescChunk*)((byte*)this - (sizeof(MethodDescChunk) + ChunkIndex * sizeof(IntPtr)));
+
+        MethodTable* MethodTable => MethodDescChunk->MethodTable;
+    }
+
+    internal unsafe struct MethodDescChunk
+    {
+        public MethodTable* MethodTable;
+        public MethodDescChunk*  Next;
+        public byte Size;        // The size of this chunk minus 1 (in multiples of MethodDesc::ALIGNMENT)
+        public byte Count;       // The number of MethodDescs in this chunk minus 1
+        public ushort FlagsAndTokenRange;
+    }
+
     // Subset of src\vm\methodtable.h
     [StructLayout(LayoutKind.Explicit)]
     internal unsafe struct MethodTable
@@ -607,6 +633,12 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(4)]
         public uint BaseSize;
 
+        /// <summary>
+        /// More flags for the current method table.
+        /// </summary>
+        [FieldOffset(8)]
+        public uint Flags2;
+
         // See additional native members in methodtable.h, not needed here yet.
         // 0x8: m_dwFlags2 (additional flags and token in upper 24 bits)
         // 0xC: m_wNumVirtuals
@@ -627,7 +659,11 @@ namespace System.Runtime.CompilerServices
         public MethodTable* ParentMethodTable;
 
         // Additional conditional fields (see methodtable.h).
-        // m_pModule
+        /// <summary>
+        /// A pointer to the Module for the current one.
+        /// </summary>
+        [FieldOffset(ModuleOffset)]
+        public IntPtr Module;
 
         /// <summary>
         /// A pointer to auxiliary data that is cold for method table.
@@ -695,6 +731,12 @@ namespace System.Runtime.CompilerServices
             ;
 
         private const int ParentMethodTableOffset = 0x10 + DebugClassNamePtr;
+
+#if TARGET_64BIT
+        private const int ModuleOffset = 0x18 + DebugClassNamePtr;
+#else
+        private const int ModuleOffset = 0x14 + DebugClassNamePtr;
+#endif
 
 #if TARGET_64BIT
         private const int AuxiliaryDataOffset = 0x20 + DebugClassNamePtr;
@@ -777,7 +819,34 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        public bool IsSharedByGenericInstantiations
+        {
+            get
+            {
+                uint genericsFlags = Flags & (enum_flag_HasComponentSize | enum_flag_GenericsMask);
+                return genericsFlags == enum_flag_GenericsMask_SharedInst;
+            }
+        }
+
         public bool ContainsGenericVariables => (Flags & enum_flag_ContainsGenericVariables) != 0;
+
+        public uint TypeDefRid => Flags2 >> 8;
+
+        public bool HasSameTypeDefAs(MethodTable* pOtherMT)
+        {
+            if (this == pOtherMT)
+                return true;
+
+            // optimize for the negative case where we expect RID mismatch
+            if (pOtherMT->TypeDefRid != TypeDefRid)
+                return false;
+
+            // Types without RIDs are unrelated to each other. This case is taken for arrays.
+            if (TypeDefRid == 0)
+                return false;
+
+            return Module == pOtherMT->Module;
+        }
 
         /// <summary>
         /// Gets a <see cref="TypeHandle"/> for the element type of the current type.
@@ -800,6 +869,12 @@ namespace System.Runtime.CompilerServices
         /// <remarks>This method should only be called when <see cref="IsPrimitive"/> returns <see langword="true"/>.</remarks>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern CorElementType GetPrimitiveCorElementType();
+
+        /// <summary>
+        /// Get the MethodTable in the type hierarchy of this MethodTable that has the same TypeDef/Module as parent.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
     }
 
     // Subset of src\vm\methodtable.h
@@ -813,9 +888,12 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
         private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
 
+        private const uint enum_flag_Initialized                = 0x0001;
         private const uint enum_flag_HasCheckedStreamOverride   = 0x0400;
         private const uint enum_flag_StreamOverriddenRead       = 0x0800;
         private const uint enum_flag_StreamOverriddenWrite      = 0x1000;
+        private const uint enum_flag_EnsuredInstanceActive      = 0x2000;
+
 
         public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
 
@@ -855,6 +933,10 @@ namespace System.Runtime.CompilerServices
                 return *(RuntimeType*)Unsafe.AsPointer(ref ExposedClassObjectRaw);
             }
         }
+
+        public bool IsClassInited => (Volatile.Read(ref Flags) & enum_flag_Initialized) != 0
+
+        public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
     }
 
     /// <summary>

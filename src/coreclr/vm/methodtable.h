@@ -340,7 +340,7 @@ struct MethodTableAuxiliaryData
         enum_flag_HasCheckedStreamOverride  = 0x0400,
         enum_flag_StreamOverriddenRead      = 0x0800,
         enum_flag_StreamOverriddenWrite     = 0x1000,
-        // unused enum                      = 0x2000,
+        enum_flag_EnsuredInstanceActive     = 0x2000,
         // unused enum                      = 0x4000,
         // unused enum                      = 0x8000,
     };
@@ -457,6 +457,12 @@ public:
         return VolatileLoad(&m_dwFlags) & enum_flag_Initialized;
     }
 
+    inline BOOL IsEnsuredInstanceActive() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return VolatileLoad(&m_dwFlags) & enum_flag_EnsuredInstanceActive;
+    }
+
     inline bool IsClassInitedOrPreinitedDecided(bool *initResult) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -471,6 +477,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         InterlockedOr((LONG*)&m_dwFlags, (LONG)enum_flag_Initialized);
+    }
+
+    inline void SetEnsuredInstanceActive()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedOr((LONG*)&m_dwFlags, (LONG)enum_flag_EnsuredInstanceActive);
     }
 #endif
 
@@ -4029,5 +4041,10 @@ void ThrowAmbiguousResolutionException(
     MethodTable* pTargetClass,
     MethodTable* pInterfaceMT,
     MethodDesc* pInterfaceMD);
+
+
+#ifndef DACCESS_COMPILE
+void DoNotRecordTheResultOfEnsureLoadLevel();
+#endif
 
 #endif // !_METHODTABLE_H_

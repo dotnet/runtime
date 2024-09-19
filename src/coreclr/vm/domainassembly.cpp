@@ -99,6 +99,11 @@ void Assembly::EnsureLoadLevel(FileLoadLevel targetLevel)
         // may be off by one which is OK.  (At this point if we are short of targetLevel we know
         // we have done so because of reentrancy constraints.)
 
+        if (GetLoadLevel() < targetLevel)
+        {
+            DoNotRecordTheResultOfEnsureLoadLevel();
+        }
+
         RequireLoadLevel((FileLoadLevel)(targetLevel-1));
     }
     else
