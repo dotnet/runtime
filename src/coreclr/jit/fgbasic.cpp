@@ -4938,23 +4938,13 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
     // Set weight for newBlock
     //
-    if (curr->KindIs(BBJ_ALWAYS))
+    FlowEdge* const currNewEdge = fgGetPredForBlock(newBlock, curr);
+    newBlock->bbWeight          = currNewEdge->getLikelyWeight();
+    newBlock->CopyFlags(curr, BBF_PROF_WEIGHT);
+
+    if (newBlock->bbWeight == BB_ZERO_WEIGHT)
     {
-        newBlock->inheritWeight(curr);
-    }
-    else
-    {
-        if (curr->hasProfileWeight())
-        {
-            FlowEdge* const currNewEdge = fgGetPredForBlock(newBlock, curr);
-            newBlock->setBBProfileWeight(currNewEdge->getLikelyWeight());
-        }
-        else
-        {
-            // Todo: use likelihood even w/o profile?
-            //
-            newBlock->inheritWeightPercentage(curr, 50);
-        }
+        newBlock->bbSetRunRarely();
     }
 
     // The bbLiveIn and bbLiveOut are both equal to the bbLiveIn of 'succ'
