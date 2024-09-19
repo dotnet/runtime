@@ -1220,7 +1220,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
                 }
             }
 
-            emit->emitInsNddBinary(ins, emitTypeSize(treeNode), targetReg, treeNode);
+            assert(op1reg != targetReg);
+            assert(op2reg != targetReg);
+            emit->emitInsBinary(ins, emitTypeSize(treeNode), op1, op2, targetReg);
             if (treeNode->gtOverflowEx())
             {
                 assert(oper == GT_ADD || oper == GT_SUB);
@@ -1229,7 +1231,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             genProduceReg(treeNode);
             return;
         }
-        else {
+        else 
+        {
             var_types op1Type = op1->TypeGet();
             inst_Mov(op1Type, targetReg, op1reg, /* canSkip */ false);
             regSet.verifyRegUsed(targetReg);
@@ -1256,8 +1259,6 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         }
     }
 
-    // TODO-XArch-apx:
-    // NDD form need to be handled in emitInsBinary
     regNumber r = emit->emitInsBinary(ins, emitTypeSize(treeNode), dst, src);
     noway_assert(r == targetReg);
 
@@ -1377,7 +1378,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
             // mov  targetReg, regOp
             // imul targetReg, rmOp
             // to imul targetReg, regOp rmOp.
-            emit->emitInsNddBinary(ins, size, mulTargetReg, treeNode);
+            emit->emitInsBinary(ins, size, regOp, rmOp, mulTargetReg);
             if (requiresOverflowCheck)
             {
                 // Overflow checking is only used for non-floating point types

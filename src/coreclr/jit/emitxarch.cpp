@@ -5627,16 +5627,36 @@ void emitter::emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommo
 //    attr - the instruction operand size
 //    dst - the destination and first source operand
 //    src - the second source operand
+//    targetReg - target register of this binary node (only used for APX-NDD form)
 //
 // Assumptions:
 //  i) caller of this routine needs to call genConsumeReg()
 // ii) caller of this routine needs to call genProduceReg()
-regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src)
+regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src, regNumber targetReg)
 {
     // We can only have one memory operand and only src can be a constant operand
     // However, the handling for a given operand type (mem, cns, or other) is fairly
     // consistent regardless of whether they are src or dst. As such, we will find
     // the type of each operand and only check them against src/dst where relevant.
+
+    bool useNDD = UsePromotedEVEXEncoding() && (targetReg != REG_NA);
+#if !defined(TARGET_AMD64)
+    // APX does not support 32-bit system.
+    assert(!useNDD);
+#else
+    if (useNDD)
+    {
+        assert(IsApxNDDEncodableInstruction(ins));
+        assert(targetReg < REG_STK);
+        assert(dst->isUsedFromReg());
+        // make sure target register is not either of the src registers.
+        regNumber dstreg = dst->GetRegNum();
+        regNumber srcreg = src->isUsedFromReg() ? src->GetRegNum() : REG_NA;
+        // targetReg has to be an actual register if using NDD.
+        assert(targetReg != dstreg);
+        assert(targetReg != srcreg);
+    }
+#endif
 
     GenTree* memOp   = nullptr;
     GenTree* cnsOp   = nullptr;
@@ -5648,6 +5668,9 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         // dst on 3opImul isn't really the dst
         assert(dst->isUsedFromMemory() || (dst->GetRegNum() == REG_NA) || instrIs3opImul(ins));
         assert(!src->isUsedFromMemory());
+
+        // APX code cannot hit this path.
+        assert(!useNDD);
 
         memOp = dst;
 
@@ -5756,6 +5779,9 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                         assert(otherOp == nullptr);
                         assert(src->IsCnsIntOrI());
 
+                        // APX code cannot hit this path.
+                        assert(!useNDD);
+
                         id = emitNewInstrAmdCns(attr, memIndir->Offset(), (int)src->AsIntConCommon()->IconValue());
                     }
                     else
@@ -5773,6 +5799,13 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                     assert(id != nullptr);
 
                     id->idIns(ins); // Set the instruction.
+                    if(useNDD)
+                    {
+                        assert(memOp == src);
+                        id->idReg1(targetReg);
+                        id->idReg2(dst->GetRegNum());
+                        id->idSetEvexNdContext();
+                    }
 
                     // Determine the instruction format
                     insFormat fmt = IF_NONE;
@@ -5788,12 +5821,13 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                         }
                         else
                         {
-                            fmt = emitInsModeFormat(ins, IF_RRD_ARD);
+                            fmt = useNDD ? emitInsModeFormat(ins, IF_RWR_RRD_ARD) : emitInsModeFormat(ins, IF_RRD_ARD);
                         }
                     }
                     else
                     {
                         assert(memOp == dst);
+                        assert(!useNDD);
 
                         if (cnsOp != nullptr)
                         {
@@ -5832,6 +5866,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                     else
                     {
                         assert(memOp == dst);
+                        assert(!useNDD);
 
                         if (cnsOp != nullptr)
                         {
@@ -5854,7 +5889,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                     dispIns(id);
                     emitCurIGsize += sz;
 
-                    return (memOp == src) ? dst->GetRegNum() : REG_NA;
+                    return (memOp == src) ? (useNDD ? targetReg : dst->GetRegNum()) : REG_NA;
                 }
             }
         }
@@ -5902,15 +5937,24 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
             }
             else
             {
-                // src is a stack based local variable
-                // dst is a register
-                emitIns_R_S(ins, attr, dst->GetRegNum(), varNum, offset);
+                if(useNDD)
+                {
+                    emitIns_R_R_S(ins, attr, targetReg, dst->GetRegNum(), varNum, offset, INS_OPTS_EVEX_nd);
+                    return targetReg;
+                }
+                else
+                {
+                    // src is a stack based local variable
+                    // dst is a register
+                    emitIns_R_S(ins, attr, dst->GetRegNum(), varNum, offset);
+                }
             }
         }
         else
         {
             assert(memOp == dst);
             assert((dst->GetRegNum() == REG_NA) || dst->IsRegOptional());
+            assert(!useNDD);
 
             if (cnsOp != nullptr)
             {
@@ -5942,10 +5986,20 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         {
             assert(!dst->isContained());
             GenTreeIntConCommon* intCns = src->AsIntConCommon();
-            emitIns_R_I(ins, attr, dst->GetRegNum(), intCns->IconValue());
+            
+            if(useNDD)
+            {
+                emitIns_R_R_I(ins, attr, targetReg, dst->GetRegNum(), (int)intCns->IconValue(), INS_OPTS_EVEX_nd);
+                return targetReg;
+            }
+            else
+            {
+                emitIns_R_I(ins, attr, dst->GetRegNum(), intCns->IconValue());
+            }
         }
         else
         {
+            assert(!useNDD);
             assert(src->IsCnsFltOrDbl());
             GenTreeDblCon* dblCns = src->AsDblCon();
 
@@ -5964,222 +6018,19 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         }
         else
         {
-            emitIns_R_R(ins, attr, dst->GetRegNum(), src->GetRegNum());
+            if (useNDD)
+            {
+                emitIns_R_R_R(ins, attr, targetReg, dst->GetRegNum(), src->GetRegNum(), INS_OPTS_EVEX_nd);
+                return targetReg;
+            }
+            else
+            {
+                emitIns_R_R(ins, attr, dst->GetRegNum(), src->GetRegNum());
+            }
         }
     }
 
     return dst->GetRegNum();
-}
-
-//------------------------------------------------------------------------
-// emitInsNddBinary: Emits an instruction for a node which takes two operands with NDD form
-//
-// Arguments:
-//    ins - the instruction to emit
-//    attr - the instruction operand size
-//    targetReg - target register number
-//    treeNode - the binary tree node
-//
-// Assumptions:
-//  i) caller of this routine needs to call genConsumeReg()
-// ii) caller of this routine needs to call genProduceReg()
-void emitter::emitInsNddBinary(instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode)
-{
-    assert(IsApxNDDEncodableInstruction(ins));
-    assert(UsePromotedEVEXEncoding());
-    assert(targetReg != REG_NA);
-
-    GenTree* op1 = treeNode->gtGetOp1();
-    GenTree* op2 = treeNode->gtGetOp2();
-
-    // Commutative operations can mark op1 as contained or reg-optional to generate "op reg, memop/immed"
-    if (!op1->isUsedFromReg())
-    {
-        assert(treeNode->OperIsCommutative());
-        assert(op1->isMemoryOp() || op1->IsLocal() || op1->IsCnsNonZeroFltOrDbl() || op1->IsIntCnsFitsInI32() ||
-               op1->IsRegOptional());
-
-        op1 = treeNode->gtGetOp2();
-        op2 = treeNode->gtGetOp1();
-    }
-
-    regNumber op1Reg = op1->isUsedFromReg() ? op1->GetRegNum() : REG_NA;
-    regNumber op2Reg = op2->isUsedFromReg() ? op2->GetRegNum() : REG_NA;
-
-    // For the senario of NDD, we can make sure target and op1 are registered.
-    assert(op1Reg != REG_NA);
-
-    // NDD form is for instructions with target register different with operand registers, otherwise
-    // legacy encoding with smaller code size is preferred.
-    assert(targetReg != op1Reg);
-    assert(targetReg != op2Reg);
-
-    GenTree* memOp   = nullptr;
-    GenTree* cnsOp   = nullptr;
-    GenTree* otherOp = nullptr;
-
-    if (op2->isContained() || op2->isUsedFromSpillTemp())
-    {
-        assert(!op1->isUsedFromMemory());
-        otherOp = op1;
-
-        if(op2->IsCnsIntOrI())
-        {
-            assert(!op2->isUsedFromMemory());
-            cnsOp = op2;
-        }
-        else
-        {
-            assert(op2->isUsedFromMemory());
-            memOp = op2;
-        }
-    }
-
-    assert(memOp != op1);
-    
-    if (memOp != nullptr)
-    {
-        TempDsc* tmpDsc = nullptr;
-        unsigned varNum = BAD_VAR_NUM;
-        unsigned offset = (unsigned)-1;
-
-        if (memOp->isUsedFromSpillTemp())
-        {
-            assert(memOp->IsRegOptional());
-
-            tmpDsc = codeGen->getSpillTempDsc(memOp);
-            varNum = tmpDsc->tdTempNum();
-            offset = 0;
-
-            codeGen->regSet.tmpRlsTemp(tmpDsc);
-        }
-        else if (memOp->isIndir())
-        {
-            GenTreeIndir* memIndir = memOp->AsIndir();
-            GenTree*      memBase  = memIndir->gtOp1;
-
-            switch (memBase->OperGet())
-            {
-                case GT_LCL_ADDR:
-                    if (memBase->isContained())
-                    {
-                        varNum = memBase->AsLclFld()->GetLclNum();
-                        offset = memBase->AsLclFld()->GetLclOffs();
-
-                        // Ensure that all the GenTreeIndir values are set to their defaults.
-                        assert(!memIndir->HasIndex());
-                        assert(memIndir->Scale() == 1);
-                        assert(memIndir->Offset() == 0);
-                        break;
-                    }
-                    FALLTHROUGH;
-
-                default: // Addressing mode [base + index * scale + offset]
-                {
-                    instrDesc* id = nullptr;
-
-                    assert(cnsOp == nullptr);
-                    
-                    ssize_t offset = memIndir->Offset();
-                    id             = emitNewInstrAmd(attr, offset);
-                    id->idIns(ins);
-
-                    GenTree* regTree = (memOp == op2) ? op1 : op2;
-
-                    // there must be one non-contained op
-                    assert(!regTree->isContained());
-                    id->idReg1(targetReg);
-                    id->idReg2(regTree->GetRegNum());
-                    id->idSetEvexNdContext();
-                    
-                    assert(id != nullptr);
-
-                    id->idIns(ins); // Set the instruction.
-
-                    // Determine the instruction format
-                    insFormat fmt = IF_NONE;
-
-                    assert(memOp == op2);
-                    assert(cnsOp == nullptr);
-                    assert(otherOp == op1);
-
-                    fmt = emitInsModeFormat(ins, IF_RWR_RRD_ARD);
-                    assert(fmt != IF_NONE);
-                    emitHandleMemOp(memIndir, id, fmt, ins);
-
-                    // Determine the instruction size
-                    UNATIVE_OFFSET sz = 0;
-                    assert(otherOp == op1);
-                    assert(cnsOp == nullptr);
-                    sz = emitInsSizeAM(id, insCodeRM(ins));
-
-                    assert(sz != 0);
-
-                    id->idCodeSize(sz);
-
-                    dispIns(id);
-                    emitCurIGsize += sz;
-
-                    return;
-                }
-            }
-        }
-        else
-        {
-            switch (memOp->OperGet())
-            {
-                case GT_LCL_FLD:
-                case GT_STORE_LCL_FLD:
-                    varNum = memOp->AsLclFld()->GetLclNum();
-                    offset = memOp->AsLclFld()->GetLclOffs();
-                    break;
-
-                case GT_LCL_VAR:
-                {
-                    assert(memOp->IsRegOptional() ||
-                           !emitComp->lvaTable[memOp->AsLclVar()->GetLclNum()].lvIsRegCandidate());
-                    varNum = memOp->AsLclVar()->GetLclNum();
-                    offset = 0;
-                    break;
-                }
-
-                default:
-                    unreached();
-                    break;
-            }
-        }
-
-        // Ensure we got a good varNum and offset.
-        // We also need to check for `tmpDsc != nullptr` since spill temp numbers
-        // are negative and start with -1, which also happens to be BAD_VAR_NUM.
-        assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
-        assert(offset != (unsigned)-1);
-
-        assert(memOp == op2);
-        assert(otherOp == op1);
-        assert(cnsOp == nullptr);
-
-        // op2 is a stack based local variable
-        // op1 is a register
-        emitIns_R_R_S(ins, attr, targetReg, op1Reg, varNum, offset, INS_OPTS_EVEX_nd);
-
-    }
-    else if (cnsOp != nullptr) // reg, immed
-    {
-        assert(cnsOp == op2);
-        assert(otherOp == op1);
-
-        assert(op2->IsCnsIntOrI());
-        assert(!op1->isContained());
-        GenTreeIntConCommon* intCns = op2->AsIntConCommon();
-        emitIns_R_R_I(ins, attr, targetReg, op1Reg, (int)intCns->IconValue(), INS_OPTS_EVEX_nd);
-    }
-    else // reg, reg
-    {
-        assert(otherOp == nullptr);
-        assert(!op2->isContained() && !op1->isContained());
-        emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, INS_OPTS_EVEX_nd);
-    }
 }
 
 //------------------------------------------------------------------------

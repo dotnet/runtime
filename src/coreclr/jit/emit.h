@@ -2546,7 +2546,12 @@ private:
     CORINFO_FIELD_HANDLE emitSimdMaskConst(simdmask_t constValue);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
+
+#if defined(TARGET_XARCH)
+    regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src, regNumber targetReg = REG_NA);
+#else
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
+#endif
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
     void      emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
     void      emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);
@@ -2557,7 +2562,6 @@ private:
     void      spillIntArgRegsToShadowSlots();
 
 #ifdef TARGET_XARCH
-    void emitInsNddBinary(instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode);
     bool emitIsInstrWritingToReg(instrDesc* id, regNumber reg);
     bool emitDoesInsModifyFlags(instruction ins);
 #endif // TARGET_XARCH
