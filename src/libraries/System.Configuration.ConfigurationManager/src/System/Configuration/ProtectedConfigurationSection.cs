@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Xml;
 
 namespace System.Configuration
 {
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     public sealed class ProtectedConfigurationSection : ConfigurationSection
     {
         private const string EncryptedSectionTemplate = "<{0} {1}=\"{2}\"> {3} </{0}>";
@@ -33,9 +35,13 @@ namespace System.Configuration
 
         private ProtectedProviderSettings ProtectedProviders => (ProtectedProviderSettings)base[s_propProviders];
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("providers")]
         public ProviderSettingsCollection Providers => ProtectedProviders.Providers;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("defaultProvider", DefaultValue = "RsaProtectedConfigurationProvider")]
         public string DefaultProvider
         {
@@ -61,7 +67,10 @@ namespace System.Configuration
             return coll;
         }
 
-        private static ProtectedConfigurationProvider CreateAndInitializeProviderWithAssert(Type t, ProviderSettings pn)
+        private static ProtectedConfigurationProvider CreateAndInitializeProviderWithAssert(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type t,
+            ProviderSettings pn)
         {
             ProtectedConfigurationProvider provider =
                 (ProtectedConfigurationProvider)TypeUtil.CreateInstance(t);

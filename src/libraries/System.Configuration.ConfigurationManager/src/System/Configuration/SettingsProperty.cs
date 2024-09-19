@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Configuration
 {
     public class SettingsProperty
@@ -10,6 +12,7 @@ namespace System.Configuration
         public virtual string Name { get; set; }
         public virtual bool IsReadOnly { get; set; }
         public virtual object DefaultValue { get; set; }
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public virtual Type PropertyType { get; set; }
         public virtual SettingsSerializeAs SerializeAs { get; set; }
         public virtual SettingsProvider Provider { get; set; }
@@ -25,6 +28,7 @@ namespace System.Configuration
 
         public SettingsProperty(
             string name,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type propertyType,
             SettingsProvider provider,
             bool isReadOnly,

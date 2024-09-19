@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Configuration.Internal;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Configuration
 {
@@ -9,6 +10,10 @@ namespace System.Configuration
     {
         private static volatile IConfigurationManagerInternal s_instance;
 
-        internal static IConfigurationManagerInternal Instance => s_instance ??= new ConfigurationManagerInternal();
+        internal static IConfigurationManagerInternal Instance
+        {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
+            get => s_instance ??= new ConfigurationManagerInternal();
+        }
     }
 }

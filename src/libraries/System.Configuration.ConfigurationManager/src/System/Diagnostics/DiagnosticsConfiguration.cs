@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Configuration;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
 namespace System.Diagnostics
@@ -14,6 +15,7 @@ namespace System.Diagnostics
         // Setting for Switch.switchSetting
         internal static SwitchElementsCollection SwitchSettings
         {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 Initialize();
@@ -26,6 +28,7 @@ namespace System.Diagnostics
         {
             [ResourceExposure(ResourceScope.Machine)]
             [ResourceConsumption(ResourceScope.Machine)]
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 Initialize();
@@ -42,6 +45,7 @@ namespace System.Diagnostics
         // Setting for TraceInternal.AutoFlush
         internal static bool AutoFlush
         {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 Initialize();
@@ -58,6 +62,7 @@ namespace System.Diagnostics
         // Setting for TraceInternal.UseGlobalLock
         internal static bool UseGlobalLock
         {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 Initialize();
@@ -74,6 +79,7 @@ namespace System.Diagnostics
         // Setting for TraceInternal.IndentSize
         internal static int IndentSize
         {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 Initialize();
@@ -89,6 +95,7 @@ namespace System.Diagnostics
 
         internal static ListenerElementsCollection SharedListeners
         {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 Initialize();
@@ -99,6 +106,7 @@ namespace System.Diagnostics
 
         internal static SourceElementsCollection Sources
         {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 Initialize();
@@ -109,6 +117,7 @@ namespace System.Diagnostics
 
         internal static SystemDiagnosticsSection SystemDiagnosticsSection
         {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 Initialize();
@@ -116,6 +125,7 @@ namespace System.Diagnostics
             }
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private static SystemDiagnosticsSection GetConfigSection()
         {
             return s_configSection ??= (SystemDiagnosticsSection)PrivilegedConfigurationManager.GetSection("system.diagnostics");
@@ -124,9 +134,11 @@ namespace System.Diagnostics
         internal static bool IsInitializing() => s_initState == InitState.Initializing;
         internal static bool IsInitialized() => s_initState == InitState.Initialized;
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal static bool CanInitialize() => (s_initState != InitState.Initializing) &&
             !ConfigurationManagerInternalFactory.Instance.SetConfigurationSystemInProgress;
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal static void Initialize()
         {
             // Ported from https://referencesource.microsoft.com/#System/compmod/system/diagnostics/DiagnosticsConfiguration.cs,188
@@ -153,6 +165,7 @@ namespace System.Diagnostics
             }
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal static void Refresh()
         {
             ConfigurationManager.RefreshSection("system.diagnostics");

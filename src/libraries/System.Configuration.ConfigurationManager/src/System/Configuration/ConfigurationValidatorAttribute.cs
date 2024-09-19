@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Configuration
 {
@@ -12,7 +13,9 @@ namespace System.Configuration
 
         protected ConfigurationValidatorAttribute() { }
 
-        public ConfigurationValidatorAttribute(Type validator)
+        public ConfigurationValidatorAttribute(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type validator)
         {
             if (validator == null) throw new ArgumentNullException(nameof(validator));
 
@@ -28,6 +31,7 @@ namespace System.Configuration
         public virtual ConfigurationValidatorBase ValidatorInstance
             => (ConfigurationValidatorBase)TypeUtil.CreateInstance(ValidatorType);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public Type ValidatorType { get; }
 
         // Used for limiting the visibility of types that can be accessed in the reflection

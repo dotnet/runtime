@@ -3,11 +3,14 @@
 
 using System.Collections.Specialized;
 using System.Configuration.Internal;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Configuration
 {
     public static class ConfigurationManager
     {
+        internal const string TrimWarning = "System.Configuration.ConfigurationManager relies on reflection-based serialization. Required types may be removed when trimming. Consider using the configuration-binding source generator instead.";
+
         // The Configuration System
         private static volatile IInternalConfigSystem s_configSystem;
 
@@ -22,6 +25,7 @@ namespace System.Configuration
 
         internal static bool SupportsUserConfig
         {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 PrepareConfigSystem();
@@ -32,6 +36,7 @@ namespace System.Configuration
 
         public static NameValueCollection AppSettings
         {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 object section = GetSection("appSettings");
@@ -48,6 +53,7 @@ namespace System.Configuration
 
         public static ConnectionStringSettingsCollection ConnectionStrings
         {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 object section = GetSection("connectionStrings");
@@ -79,6 +85,7 @@ namespace System.Configuration
             }
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private static void EnsureConfigurationSystem()
         {
             // If a configuration system has not yet been set,
@@ -134,6 +141,7 @@ namespace System.Configuration
         }
 
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private static void PrepareConfigSystem()
         {
             // Ensure the configuration system is usable.
@@ -143,6 +151,7 @@ namespace System.Configuration
             if (s_initError != null) throw s_initError;
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public static object GetSection(string sectionName)
         {
             // Avoid unintended AV's by ensuring sectionName is not empty.
@@ -155,6 +164,7 @@ namespace System.Configuration
             return section;
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public static void RefreshSection(string sectionName)
         {
             // Avoid unintended AV's by ensuring sectionName is not empty.
@@ -166,38 +176,45 @@ namespace System.Configuration
             s_configSystem.RefreshConfig(sectionName);
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public static Configuration OpenMachineConfiguration()
         {
             return OpenExeConfigurationImpl(null, true, ConfigurationUserLevel.None, null);
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public static Configuration OpenMappedMachineConfiguration(ConfigurationFileMap fileMap)
         {
             return OpenExeConfigurationImpl(fileMap, true, ConfigurationUserLevel.None, null);
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public static Configuration OpenExeConfiguration(ConfigurationUserLevel userLevel)
         {
             return OpenExeConfigurationImpl(null, false, userLevel, null);
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public static Configuration OpenExeConfiguration(string exePath)
         {
             return OpenExeConfigurationImpl(null, false, ConfigurationUserLevel.None, exePath);
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public static Configuration OpenMappedExeConfiguration(ExeConfigurationFileMap fileMap,
             ConfigurationUserLevel userLevel)
         {
             return OpenExeConfigurationImpl(fileMap, false, userLevel, null);
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public static Configuration OpenMappedExeConfiguration(ExeConfigurationFileMap fileMap,
             ConfigurationUserLevel userLevel, bool preLoad)
         {
             return OpenExeConfigurationImpl(fileMap, false, userLevel, null, preLoad);
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private static Configuration OpenExeConfigurationImpl(ConfigurationFileMap fileMap, bool isMachine,
             ConfigurationUserLevel userLevel, string exePath, bool preLoad = false)
         {
@@ -219,6 +236,7 @@ namespace System.Configuration
         /// <summary>
         ///     Recursively loads configuration section groups and sections belonging to a configuration object.
         /// </summary>
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private static void PreloadConfiguration(Configuration configuration)
         {
             if (null == configuration) return;
@@ -231,6 +249,7 @@ namespace System.Configuration
                 PreloadConfigurationSectionGroup(sectionGroup);
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private static void PreloadConfigurationSectionGroup(ConfigurationSectionGroup sectionGroup)
         {
             if (null == sectionGroup) return;
