@@ -449,9 +449,9 @@ enum NewStubFlags
 {
     NEWSTUB_FL_NONE                 = 0x00000000,
     NEWSTUB_FL_INSTANTIATING_METHOD = 0x00000001,
-    NEWSTUB_FL_EXTERNAL             = 0x00000004,
-    NEWSTUB_FL_LOADERHEAP           = 0x00000008,
-    NEWSTUB_FL_THUNK                = 0x00000010
+    NEWSTUB_FL_EXTERNAL             = 0x00000002,
+    NEWSTUB_FL_LOADERHEAP           = 0x00000004,
+    NEWSTUB_FL_THUNK                = 0x00000008
 };
 
 
@@ -471,11 +471,11 @@ class Stub
     protected:
     enum
     {
-        EXTERNAL_ENTRY_BIT      = 0x40000000,
-        LOADER_HEAP_BIT         = 0x20000000,
-        INSTANTIATING_STUB_BIT  = 0x10000000,
-        UNWIND_INFO_BIT         = 0x08000000,
-        THUNK_BIT               = 0x04000000,
+        EXTERNAL_ENTRY_BIT      = 0x80000000,
+        LOADER_HEAP_BIT         = 0x40000000,
+        INSTANTIATING_STUB_BIT  = 0x20000000,
+        UNWIND_INFO_BIT         = 0x10000000,
+        THUNK_BIT               = 0x08000000,
 
         CODEBYTES_MASK          = THUNK_BIT - 1,
         MAX_CODEBYTES           = CODEBYTES_MASK + 1,
