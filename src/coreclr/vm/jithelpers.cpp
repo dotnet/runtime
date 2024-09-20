@@ -4072,6 +4072,12 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     bool isNewMethod = false;
     CONTEXT* pFrameContext = NULL;
 
+#if !defined(TARGET_WINDOWS) || !defined(TARGET_AMD64)
+    CONTEXT originalFrameContext;
+    originalFrameContext.ContextFlags = CONTEXT_FULL;
+    pFrameContext = &originalFrameContext;
+#endif
+
     // Patchpoint identity is the helper return address
     PCODE ip = (PCODE)_ReturnAddress();
 
@@ -4199,9 +4205,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
         InitializeContext(pBuffer, contextFlags, &pFrameContext, &contextSize);
     _ASSERTE(success);
 #else // TARGET_WINDOWS && TARGET_AMD64
-    CONTEXT frameContext;
-    frameContext.ContextFlags = CONTEXT_FULL;
-    pFrameContext = &frameContext;
+    _ASSERTE(pFrameContext != nullptr);
 #endif // TARGET_WINDOWS && TARGET_AMD64
 
     // Find context for the original method
@@ -4217,7 +4221,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
 #endif // TARGET_WINDOWS && TARGET_AMD64
 
     // Walk back to the original method frame
-    pThread->VirtualUnwindToFirstManagedCallFrame(pFrameContext);
+    Thread::VirtualUnwindToFirstManagedCallFrame(pFrameContext);
 
     // Remember original method FP and SP because new method will inherit them.
     UINT_PTR currentSP = GetSP(pFrameContext);
