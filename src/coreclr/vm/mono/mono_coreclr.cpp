@@ -102,6 +102,32 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_from_mono_type(MonoType *i
     return (MonoClass*)klass;
 }
 
+extern "C" EXPORT_API int EXPORT_CC coreclr_unity_array_element_size(MonoClass* classOfArray)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(classOfArray != NULL);
+    }
+    CONTRACTL_END;
+
+    return reinterpret_cast<MonoClass_clr*>(classOfArray)->GetArrayElementTypeHandle().GetSize();
+}
+
+extern "C" EXPORT_API gint32 EXPORT_CC coreclr_unity_class_array_element_size(MonoClass *ac)
+{
+    CONTRACTL{
+        STANDARD_VM_CHECK;
+        PRECONDITION(ac != nullptr);
+    } CONTRACTL_END;
+    auto ac_clr = (MonoClass_clr*)ac;
+
+    // TODO: Is it really the method to use?
+    DWORD s = ac_clr->IsValueType() ? ac_clr->GetNumInstanceFieldBytes() : sizeof(void*);// ac_clr->GetBaseSize();
+    return s;
+}
+
 // remove once usages in this file are removed
 static MonoClass* mono_class_get_element_class(MonoClass *klass) // mono_class_get_name still uses this
 {
