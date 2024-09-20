@@ -4161,15 +4161,13 @@ FlowGraphDfsTree* Compiler::fgComputeLoopAwareDfs()
     const unsigned numBlocks          = m_dfsTree->GetPostOrderCount();
     unsigned       newIndex           = numBlocks - 1;
 
-    auto visitBlock = [this, loopAwarePostOrder, &visitedBlocks, &newIndex,
-                       numBlocks](BasicBlock* block) -> BasicBlockVisit {
+    auto visitBlock = [this, loopAwarePostOrder, &visitedBlocks, &newIndex](BasicBlock* block) -> BasicBlockVisit {
         // If this block is in a loop, we will try to visit it more than once
         // (first when we visit its containing loop, and then later as we iterate
         // through the initial RPO).
         // Thus, we need to keep track of visited blocks.
         if (!BlockSetOps::IsMember(this, visitedBlocks, block->bbNum))
         {
-            assert(newIndex < numBlocks);
             loopAwarePostOrder[newIndex--] = block;
             BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
         }
