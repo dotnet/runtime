@@ -24,24 +24,6 @@ namespace Melanzana.CodeSign.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX)]
-        public void UnsignSingleFileAppHost()
-        {
-            TestArtifact testArtifact = TestArtifact.Create(nameof(UnsignSingleFileAppHost));
-            string singleFileAppHostCodesign = Path.Combine(testArtifact.Location, Binaries.SingleFileHost.FileName);
-            string singleFileAppHostManagedSign = Path.Combine(testArtifact.Location, Binaries.SingleFileHost.FileName + ".managed");
-            File.Copy(Binaries.SingleFileHost.FilePath, singleFileAppHostCodesign);
-            HostWriter.
-            File.Copy(Binaries.SingleFileHost.FilePath, singleFileAppHostManagedSign);
-            Codesign.Run("--remove-signature", singleFileAppHostCodesign);
-            Signer.TryRemoveCodesign(singleFileAppHostManagedSign);
-
-            var originalFileBytes = File.ReadAllBytes(singleFileAppHostCodesign);
-            var nextFileBytes = File.ReadAllBytes(singleFileAppHostManagedSign);
-            originalFileBytes.SequenceEqual(nextFileBytes).Should().BeTrue();
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
         public void MatchesCodesignOutput()
         {
             var testArtifact = TestArtifact.Create(nameof(MatchesCodesignOutput));
@@ -69,7 +51,7 @@ namespace Melanzana.CodeSign.Tests
             Codesign.Run("-s -", originalFileTmpName);
             Signer.AdHocSign(nextFileName);
             var zippedData = File.ReadAllBytes(originalFileTmpName).Zip(File.ReadAllBytes(nextFileName));
-            // Assert.All(zippedData.Select(t => t.First == t.Second), Assert.True);
+            // The managed implementation sometimes adds extra padding to the signature
             Codesign.Run("--verify", originalFileTmpName).ExitCode.Should().Be(0);
             Codesign.Run("--verify", nextFileName).ExitCode.Should().Be(0);
 

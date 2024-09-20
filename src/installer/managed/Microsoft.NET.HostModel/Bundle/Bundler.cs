@@ -9,8 +9,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
-using Melanzana.CodeSign;
-using Melanzana.MachO;
+using Microsoft.DotNet.CoreSetup;
 using Microsoft.NET.HostModel.AppHost;
 
 namespace Microsoft.NET.HostModel.Bundle
@@ -44,7 +43,7 @@ namespace Microsoft.NET.HostModel.Bundle
                        Version targetFrameworkVersion = null,
                        bool diagnosticOutput = false,
                        string appAssemblyName = null,
-                       bool? macosCodesign = null)
+                       bool macosCodesign = true)
         {
             _tracer = new Trace(diagnosticOutput);
 
@@ -65,11 +64,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
             BundleManifest = new Manifest(_target.BundleMajorVersion, netcoreapp3CompatMode: options.HasFlag(BundleOptions.BundleAllContent));
             _options = _target.DefaultOptions | options;
-            if (macosCodesign == true && !_target.IsOSX)
-            {
-                throw new ArgumentException("macosCodesign should only be set to true when publishing for OSX", nameof(macosCodesign));
-            }
-            _macosCodesign = macosCodesign ?? _target.IsOSX;
+            _macosCodesign = macosCodesign;
         }
 
         private bool ShouldCompress(FileType type)
@@ -278,10 +273,11 @@ namespace Microsoft.NET.HostModel.Bundle
 
             BinaryUtils.CopyFile(hostSource, bundlePath);
 
-            if (_target.IsOSX)
+            if (_target.IsOSX && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && Codesign.IsAvailable())
             {
-                Codesign
+                Codesign.Run("--remove-signature", bundlePath);
             }
+
             // Note: We're comparing file paths both on the OS we're running on as well as on the target OS for the app
             // We can't really make assumptions about the file systems (even on Linux there can be case insensitive file systems
             // and vice versa for Windows). So it's safer to do case sensitive comparison everywhere.
@@ -351,9 +347,13 @@ namespace Microsoft.NET.HostModel.Bundle
             HostWriter.SetAsBundle(bundlePath, headerOffset);
 
             // Sign the bundle if requested
-            if (_macosCodesign)
+            if (_macosCodesign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && Codesign.IsAvailable())
             {
-                Signer.AdHocSign(bundlePath);
+                var (exitCode, stdErr) = Codesign.Run("-s -", bundlePath);
+                if (exitCode != 0)
+                {
+                    throw new InvalidOperationException($"Failed to codesign '{bundlePath}': {stdErr}");
+                }
             }
 
             return bundlePath;

@@ -27,15 +27,14 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         }
 
         private static string BundlerHostName = Binaries.GetExeName(SharedTestState.AppName);
-        private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, OSPlatform? targetOS = null, bool? macosCodesign = null)
+        private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, OSPlatform? targetOS = null)
         {
             return new Bundler(
                 BundlerHostName,
                 sharedTestState.App.GetUniqueSubdirectory("bundle"),
                 bundleOptions,
                 targetOS: targetOS,
-                targetFrameworkVersion: version,
-                macosCodesign: macosCodesign);
+                targetFrameworkVersion: version);
         }
 
         OSPlatform CurrentOS => OperatingSystem.IsWindows() ? OSPlatform.Windows :
@@ -342,7 +341,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                     new FileSpec(app.RuntimeConfigJson, Path.GetRelativePath(app.Location, app.RuntimeConfigJson)),
                 };
 
-                Bundler bundler = CreateBundlerInstance(targetOS: OSPlatform.OSX, macosCodesign: shouldCodesign);
+                Bundler bundler = CreateBundlerInstance(targetOS: OSPlatform.OSX);
                 string bundledApp = bundler.GenerateBundle(fileSpecs);
 
                 if (!Codesign.IsAvailable())
@@ -381,7 +380,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                 new FileSpec(app.RuntimeConfigJson, Path.GetRelativePath(app.Location, app.RuntimeConfigJson)),
             };
 
-            Bundler bundler = CreateBundlerInstance(macosCodesign: shouldCodesign);
+            Bundler bundler = CreateBundlerInstance();
             string bundledApp = bundler.GenerateBundle(fileSpecs);
 
             // Check if the file is signed
