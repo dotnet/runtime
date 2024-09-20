@@ -67,7 +67,6 @@ public:
                             LPCWSTR      psModuleName,    // module file name
                             DWORD        dwModuleName,    // number of characters in file name excludign null
                             Assembly *   pAssembly,       // the assembly the module belongs to
-                            AppDomain *  pAppDomain,      // the AppDomain the module is being loaded into
                             DomainAssembly * pDomainAssembly,
                             BOOL         fAttaching) = 0; // true if this notification is due to a debugger
                                                           // being attached to the process
@@ -78,7 +77,7 @@ public:
     // calls and before any UnloadAssembly or RemoveAppDomainFromIPCBlock calls realted
     // to this module.  On CLR shutdown, we are not guaranteed to get UnloadModule calls for
     // all outstanding loaded modules.
-    virtual void UnloadModule(Module* pRuntimeModule, AppDomain *pAppDomain) = 0;
+    virtual void UnloadModule(Module* pRuntimeModule) = 0;
 
     // Called when a Module* is being destroyed.
     // Specifically, the Module has completed unloading (which may have been done asyncronously), all resources

@@ -477,19 +477,6 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
     EPILOG_BRANCH_REG  t4
 NESTED_END NDirectImportThunk, _TEXT
 
-// void SinglecastDelegateInvokeStub(Delegate *pThis)
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-    beq  a0, zero, LOCAL_LABEL(LNullThis)
-
-    ld  t4, (DelegateObject___methodPtr)(a0)
-    ld  a0, (DelegateObject___target)(a0)
-    jr  t4
-
-LOCAL_LABEL(LNullThis):
-    addi  a0, zero, CORINFO_NullReferenceException_ASM
-    tail JIT_InternalThrow
-LEAF_END SinglecastDelegateInvokeStub, _TEXT
-
 // ------------------------------------------------------------------
 // ThePreStubPatch()
 LEAF_ENTRY ThePreStubPatch, _TEXT

@@ -491,29 +491,12 @@ uint32_t interceptor_ICJI::getClassAttribs(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
-CORINFO_MODULE_HANDLE interceptor_ICJI::getClassModule(CORINFO_CLASS_HANDLE cls)
+// Returns the assembly name of the class "cls".
+const char* interceptor_ICJI::getClassAssemblyName(CORINFO_CLASS_HANDLE cls)
 {
-    mc->cr->AddCall("getClassModule");
-    CORINFO_MODULE_HANDLE temp = original_ICorJitInfo->getClassModule(cls);
-    mc->recGetClassModule(cls, temp);
-    return temp;
-}
-
-// Returns the assembly that contains the module "mod".
-CORINFO_ASSEMBLY_HANDLE interceptor_ICJI::getModuleAssembly(CORINFO_MODULE_HANDLE mod)
-{
-    mc->cr->AddCall("getModuleAssembly");
-    CORINFO_ASSEMBLY_HANDLE temp = original_ICorJitInfo->getModuleAssembly(mod);
-    mc->recGetModuleAssembly(mod, temp);
-    return temp;
-}
-
-// Returns the name of the assembly "assem".
-const char* interceptor_ICJI::getAssemblyName(CORINFO_ASSEMBLY_HANDLE assem)
-{
-    mc->cr->AddCall("getAssemblyName");
-    const char* temp = original_ICorJitInfo->getAssemblyName(assem);
-    mc->recGetAssemblyName(assem, temp);
+    mc->cr->AddCall("getClassAssemblyName");
+    const char* temp = original_ICorJitInfo->getClassAssemblyName(cls);
+    mc->recGetClassAssemblyName(cls, temp);
     return temp;
 }
 

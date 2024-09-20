@@ -1895,11 +1895,9 @@ public:
     PTR_Stub                         m_pStaticCallStub;
     PTR_Stub                         m_pInstRetBuffCallStub;
     PTR_MethodDesc                   m_pInvokeMethod;
-    PTR_Stub                         m_pMultiCastInvokeStub;
-    PTR_Stub                         m_pWrapperDelegateInvokeStub;
+    PCODE                            m_pMultiCastInvokeStub;
+    PCODE                            m_pWrapperDelegateInvokeStub;
     UMThunkMarshInfo*                m_pUMThunkMarshInfo;
-    PTR_MethodDesc                   m_pBeginInvokeMethod;
-    PTR_MethodDesc                   m_pEndInvokeMethod;
     Volatile<PCODE>                  m_pMarshalStub;
 
 #ifdef FEATURE_COMINTEROP
@@ -1909,16 +1907,6 @@ public:
     PTR_MethodDesc GetInvokeMethod()
     {
         return m_pInvokeMethod;
-    }
-
-    PTR_MethodDesc GetBeginInvokeMethod()
-    {
-        return m_pBeginInvokeMethod;
-    }
-
-    PTR_MethodDesc GetEndInvokeMethod()
-    {
-        return m_pEndInvokeMethod;
     }
 
 #ifndef DACCESS_COMPILE

@@ -8,23 +8,18 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int WaitOneCore(IntPtr waitHandle, int millisecondsTimeout, bool useTrivialWaits);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WaitHandle_WaitOneCore")]
+        private static partial int WaitOneCore(IntPtr waitHandle, int millisecondsTimeout, [MarshalAs(UnmanagedType.Bool)] bool useTrivialWaits);
 
         private static unsafe int WaitMultipleIgnoringSyncContextCore(ReadOnlySpan<IntPtr> waitHandles, bool waitAll, int millisecondsTimeout)
-        {
-            fixed (IntPtr* pWaitHandles = &MemoryMarshal.GetReference(waitHandles))
-            {
-                return WaitMultipleIgnoringSyncContext(pWaitHandles, waitHandles.Length, waitAll, millisecondsTimeout);
-            }
-        }
+            => WaitMultipleIgnoringSyncContext(waitHandles, waitHandles.Length, waitAll, millisecondsTimeout);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe int WaitMultipleIgnoringSyncContext(IntPtr* waitHandles, int numHandles, bool waitAll, int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WaitHandle_WaitMultipleIgnoringSyncContext")]
+        private static partial int WaitMultipleIgnoringSyncContext(ReadOnlySpan<IntPtr> waitHandles, int numHandles, [MarshalAs(UnmanagedType.Bool)] bool waitAll, int millisecondsTimeout);
 
         private static int SignalAndWaitCore(IntPtr waitHandleToSignal, IntPtr waitHandleToWaitOn, int millisecondsTimeout)
         {
-            int ret = SignalAndWaitNative(waitHandleToSignal, waitHandleToWaitOn, millisecondsTimeout);
+            int ret = SignalAndWait(waitHandleToSignal, waitHandleToWaitOn, millisecondsTimeout);
 
             if (ret == Interop.Errors.ERROR_TOO_MANY_POSTS)
             {
@@ -34,7 +29,7 @@ namespace System.Threading
             return ret;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int SignalAndWaitNative(IntPtr waitHandleToSignal, IntPtr waitHandleToWaitOn, int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WaitHandle_SignalAndWait")]
+        private static partial int SignalAndWait(IntPtr waitHandleToSignal, IntPtr waitHandleToWaitOn, int millisecondsTimeout);
     }
 }

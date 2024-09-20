@@ -69,14 +69,14 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAsync<ArgumentNullException>(() => Dns.GetHostAddressesAsync(null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void DnsBeginGetHostAddresses_BadName_Throws()
         {
             IAsyncResult asyncObject = Dns.BeginGetHostAddresses("BadName", null, null);
             Assert.ThrowsAny<SocketException>(() => Dns.EndGetHostAddresses(asyncObject));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void DnsBeginGetHostAddresses_BadIpString_ReturnsAddress()
         {
             IAsyncResult asyncObject = Dns.BeginGetHostAddresses("0.0.1.1", null, null);
@@ -86,7 +86,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal(IPAddress.Parse("0.0.1.1"), results[0]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void DnsBeginGetHostAddresses_MachineName_MatchesGetHostAddresses()
         {
             IAsyncResult asyncObject = Dns.BeginGetHostAddresses(TestSettings.LocalHost, null, null);

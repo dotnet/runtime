@@ -3,8 +3,6 @@
 
 using System.Buffers;
 using System.Reflection.Metadata;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 namespace DotnetFuzzing.Fuzzers
@@ -55,7 +53,7 @@ namespace DotnetFuzzing.Fuzzers
                 try
                 {
                     TypeName.Parse(testSpan);
-                    Assert.Equal(true, false); // should never succeed
+                    throw new Exception("Parsing was supposed to fail!");
                 }
                 catch (ArgumentException) { }
                 catch (InvalidOperationException) { }

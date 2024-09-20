@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
@@ -955,6 +956,42 @@ namespace System.Diagnostics.Tests
                     eventSourceListener.Enable("TestMessagesSource/TestEvent1:-cls.Url");
                     Assert.Equal(0, eventSourceListener.EventCount);
                     Assert.True(3 <= messages.Count);
+                }
+            }).Dispose();
+        }
+
+        // Tests that version event from DiagnosticSourceEventSource is fired.
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestVersion()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                Activity a = new Activity("test"); // we need this to ensure DiagnosticSourceEventSource.Logger creation.
+
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                {
+                    Assert.Equal(0, eventSourceListener.EventCount);
+
+                    Version? version = null;
+
+                    eventSourceListener.OtherEventWritten += delegate (EventWrittenEventArgs evnt)
+                    {
+                        if (evnt.EventName == "Version")
+                        {
+                            version = new(
+                                (int)evnt.Payload[0],
+                                (int)evnt.Payload[1],
+                                (int)evnt.Payload[2]);
+                        }
+                    };
+
+                    eventSourceListener.Enable("");
+                    Assert.Equal(0, eventSourceListener.EventCount);
+
+                    Assert.NotNull(version);
+                    Assert.Equal(
+                        new Version(typeof(Activity).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version ?? "0.0.0").ToString(3),
+                        version.ToString());
                 }
             }).Dispose();
         }

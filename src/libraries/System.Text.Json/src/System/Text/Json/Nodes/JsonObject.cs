@@ -248,17 +248,21 @@ namespace System.Text.Json.Nodes
 
             OrderedDictionary<string, JsonNode?> dict = Dictionary;
 
-            if (dict.TryGetValue(propertyName, out JsonNode? replacedValue))
+            if (!dict.TryAdd(propertyName, value))
             {
+                int index = dict.IndexOf(propertyName);
+                Debug.Assert(index >= 0);
+                JsonNode? replacedValue = dict.GetAt(index).Value;
+
                 if (ReferenceEquals(value, replacedValue))
                 {
                     return;
                 }
 
                 DetachParent(replacedValue);
+                dict.SetAt(index, value);
             }
 
-            dict[propertyName] = value;
             value?.AssignParent(this);
         }
 

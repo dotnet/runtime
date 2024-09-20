@@ -67,7 +67,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [SkipOnCoreClr("Takes too long on Checked", ~RuntimeConfiguration.Release)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/105020", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsPpc64leProcess))]
         [MemberData(nameof(SerializableObjects_MemberData))]
         public void ValidateAgainstBlobs(object obj, TypeSerializableValue[] blobs)
             => ValidateAndRoundtrip(obj, blobs, false);

@@ -2513,6 +2513,8 @@ public:
 
         StubVirtualStaticMethodDispatch,
 
+        StubDelegateInvokeMethod,
+
         StubLast
     };
 
@@ -2659,6 +2661,12 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubMulticastDelegate;
+    }
+    bool IsDelegateInvokeMethodStub() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        return GetILStubType() == DynamicMethodDesc::StubDelegateInvokeMethod;
     }
     bool IsWrapperDelegateStub() const
     {

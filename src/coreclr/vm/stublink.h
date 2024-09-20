@@ -185,12 +185,6 @@ class StubLinker
         VOID EmitLabel(CodeLabel* pCodeLabel);
 
         //---------------------------------------------------------------
-        // Emits the patch label for the stub.
-        // Throws exception on failure.
-        //---------------------------------------------------------------
-        void EmitPatchLabel();
-
-        //---------------------------------------------------------------
         // Create a new label to an external address.
         // Throws exception on failure.
         //---------------------------------------------------------------
@@ -280,9 +274,6 @@ public:
         CodeElement   *m_pCodeElements;     // stored in *reverse* order
         CodeLabel     *m_pFirstCodeLabel;   // linked list of CodeLabels
         LabelRef      *m_pFirstLabelRef;    // linked list of references
-        CodeLabel     *m_pPatchLabel;       // label of stub patch offset
-                                            // currently just for multicast
-                                            // frames.
         PTR_MethodDesc m_pTargetMethod;     // Used for instantiating stubs.
         SHORT         m_stackSize;          // count of pushes/pops
         CQuickHeap    m_quickHeap;          // throwaway heap for
@@ -449,10 +440,9 @@ enum NewStubFlags
 {
     NEWSTUB_FL_NONE                 = 0x00000000,
     NEWSTUB_FL_INSTANTIATING_METHOD = 0x00000001,
-    NEWSTUB_FL_MULTICAST            = 0x00000002,
-    NEWSTUB_FL_EXTERNAL             = 0x00000004,
-    NEWSTUB_FL_LOADERHEAP           = 0x00000008,
-    NEWSTUB_FL_THUNK                = 0x00000010
+    NEWSTUB_FL_EXTERNAL             = 0x00000002,
+    NEWSTUB_FL_LOADERHEAP           = 0x00000004,
+    NEWSTUB_FL_SHUFFLE_THUNK        = 0x00000008
 };
 
 
@@ -472,17 +462,16 @@ class Stub
     protected:
     enum
     {
-        MULTICAST_DELEGATE_BIT  = 0x80000000,
-        EXTERNAL_ENTRY_BIT      = 0x40000000,
-        LOADER_HEAP_BIT         = 0x20000000,
-        INSTANTIATING_STUB_BIT  = 0x10000000,
-        UNWIND_INFO_BIT         = 0x08000000,
-        THUNK_BIT               = 0x04000000,
+        EXTERNAL_ENTRY_BIT      = 0x80000000,
+        LOADER_HEAP_BIT         = 0x40000000,
+        INSTANTIATING_STUB_BIT  = 0x20000000,
+        UNWIND_INFO_BIT         = 0x10000000,
+        SHUFFLE_THUNK_BIT       = 0x08000000,
 
-        CODEBYTES_MASK          = THUNK_BIT - 1,
+        CODEBYTES_MASK          = SHUFFLE_THUNK_BIT - 1,
         MAX_CODEBYTES           = CODEBYTES_MASK + 1,
     };
-    static_assert_no_msg(CODEBYTES_MASK < THUNK_BIT);
+    static_assert_no_msg(CODEBYTES_MASK < SHUFFLE_THUNK_BIT);
 
     public:
         //-------------------------------------------------------------------
@@ -512,15 +501,6 @@ class Stub
         //-------------------------------------------------------------------
         // Used by the debugger to help step through stubs
         //-------------------------------------------------------------------
-        BOOL IsMulticastDelegate()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return (m_numCodeBytesAndFlags & MULTICAST_DELEGATE_BIT) != 0;
-        }
-
-        //-------------------------------------------------------------------
-        // Used by the debugger to help step through stubs
-        //-------------------------------------------------------------------
         BOOL IsInstantiatingStub()
         {
             LIMITED_METHOD_CONTRACT;
@@ -530,46 +510,10 @@ class Stub
         //-------------------------------------------------------------------
         // Used by the debugger to help step through stubs
         //-------------------------------------------------------------------
-        BOOL IsManagedThunk()
+        BOOL IsShuffleThunk()
         {
             LIMITED_METHOD_CONTRACT;
-            return (m_numCodeBytesAndFlags & THUNK_BIT) != 0;
-        }
-
-        //-------------------------------------------------------------------
-        // For stubs which execute user code, a patch offset needs to be set
-        // to tell the debugger how far into the stub code the debugger has
-        // to step until the frame is set up.
-        //-------------------------------------------------------------------
-        void SetPatchOffset(USHORT offset)
-        {
-            LIMITED_METHOD_CONTRACT;
-            _ASSERTE(!IsInstantiatingStub());
-            m_data.PatchOffset = offset;
-        }
-
-        //-------------------------------------------------------------------
-        // For stubs which execute user code, a patch offset needs to be set
-        // to tell the debugger how far into the stub code the debugger has
-        // to step until the frame is set up.
-        //-------------------------------------------------------------------
-        USHORT GetPatchOffset()
-        {
-            LIMITED_METHOD_CONTRACT;
-            _ASSERTE(!IsInstantiatingStub());
-            return m_data.PatchOffset;
-        }
-
-        //-------------------------------------------------------------------
-        // For stubs which execute user code, a patch offset needs to be set
-        // to tell the debugger how far into the stub code the debugger has
-        // to step until the frame is set up.
-        //-------------------------------------------------------------------
-        TADDR GetPatchAddress()
-        {
-            LIMITED_METHOD_CONTRACT;
-            _ASSERTE(!IsInstantiatingStub());
-            return dac_cast<TADDR>(GetEntryPointInternal()) + GetPatchOffset();
+            return (m_numCodeBytesAndFlags & SHUFFLE_THUNK_BIT) != 0;
         }
 
         //-------------------------------------------------------------------
@@ -834,8 +778,8 @@ class Stub
         UINT32 m_numCodeBytesAndFlags;
         union
         {
-            USHORT          PatchOffset;
-            PTR_MethodDesc  InstantiatedMethod;
+            // Stub kind specific data
+            PTR_MethodDesc  InstantiatedMethod; // Valid for IsInstantiatingStub() only
         } m_data;
 
 #ifdef _DEBUG

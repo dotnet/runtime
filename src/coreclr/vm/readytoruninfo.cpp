@@ -17,6 +17,38 @@
 #include "wellknownattributes.h"
 #include "nativeimage.h"
 
+#ifndef DACCESS_COMPILE
+static PCODE g_pMethodWithSlotAndModule = (PCODE)NULL;
+static PCODE g_pClassWithSlotAndModule = (PCODE)NULL;
+
+PCODE DynamicHelpers::GetDictionaryLookupHelper(CorInfoHelpFunc jitHelper)
+{
+    _ASSERTE(jitHelper == CORINFO_HELP_RUNTIMEHANDLE_METHOD || jitHelper == CORINFO_HELP_RUNTIMEHANDLE_CLASS);
+    if (jitHelper == CORINFO_HELP_RUNTIMEHANDLE_METHOD)
+    {
+        PCODE pFunc = VolatileLoadWithoutBarrier(&g_pMethodWithSlotAndModule);
+        if (pFunc == (PCODE)NULL)
+        {
+            pFunc = CoreLibBinder::GetMethod(METHOD__GENERICSHELPERS__METHODWITHSLOTANDMODULE)->GetMultiCallableAddrOfCode();
+            VolatileStore(&g_pMethodWithSlotAndModule, pFunc);
+        }
+
+        return pFunc;
+    }
+    else
+    {
+        PCODE pFunc = VolatileLoadWithoutBarrier(&g_pClassWithSlotAndModule);
+        if (pFunc == (PCODE)NULL)
+        {
+            pFunc = CoreLibBinder::GetMethod(METHOD__GENERICSHELPERS__CLASSWITHSLOTANDMODULE)->GetMultiCallableAddrOfCode();
+            VolatileStore(&g_pClassWithSlotAndModule, pFunc);
+        }
+
+        return pFunc;
+    }
+}
+#endif // DACCESS_COMPILE
+
 using namespace NativeFormat;
 
 ReadyToRunCoreInfo::ReadyToRunCoreInfo()
@@ -1526,7 +1558,7 @@ public:
         return GetModuleIfLoaded(kFile);
     }
 
-    DomainAssembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final
+    Assembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final
     {
         STANDARD_VM_CONTRACT;
         // Since we can only load via ModuleRef, this should never fail unless the module is improperly formatted

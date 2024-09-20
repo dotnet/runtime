@@ -12,12 +12,5 @@ internal abstract class NullsRecord : SerializationRecord
 
     public override SerializationRecordId Id => SerializationRecordId.NoId;
 
-    public override TypeName TypeName
-    {
-        get
-        {
-            Debug.Fail($"TypeName should never be called on {GetType().Name}");
-            return TypeName.Parse(GetType().Name.AsSpan());
-        }
-    }
+    public override TypeName TypeName => TypeName.Parse(GetType().Name.AsSpan());
 }

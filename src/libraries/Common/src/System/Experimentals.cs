@@ -28,6 +28,9 @@ namespace System
         // X86Base.DivRem is experimental in .NET 9 since performance is not as optimized as T.DivRem
         internal const string X86BaseDivRemDiagId = "SYSLIB5004";
 
+        // System.Formats.Nrbf is experimental in .NET 9
+        internal const string NrbfDecoderDiagId = "SYSLIB5005";
+
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.
     }

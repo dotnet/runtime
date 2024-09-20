@@ -20,7 +20,6 @@ public partial class BinaryFormatterTests
 {
     [Theory]
     [MemberData(nameof(SerializableObjects_MemberData))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/105020", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsPpc64leProcess))]
     public void ValidateAgainstBlobs(object obj, TypeSerializableValue[] blobs)
         => ValidateAndRoundtrip(obj, blobs, isEqualityComparer: false);
 
