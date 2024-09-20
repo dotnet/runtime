@@ -1,6 +1,6 @@
 ### Background and motivation
 
-There were multiple proposals and ideas in the past asking for a no-indirection primitive for inline data. [Example1(inline strings)](https://github.com/dotnet/csharplang/issues/2099),  [Example2(inline arrays)](https://github.com/dotnet/runtime/issues/12320), [Example3(generalized fixed-buffers)](https://github.com/dotnet/csharplang/blob/main/proposals/low-level-struct-improvements.md#safe-fixed-size-buffers)
+There were multiple proposals and ideas in the past asking for a no-indirection primitive for inline data. [Example1(inline strings)](https://github.com/dotnet/csharplang/issues/2099),  [Example2(inline arrays)](https://github.com/dotnet/runtime/issues/12320), [Example3(generalized fixed-buffers)](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-11.0/low-level-struct-improvements.md#safe-fixed-size-buffers)
 Our preexisting offering in this area – [unsafe fixed-sized buffers](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/unsafe-code#fixed-size-buffers) has multiple constraints, in particular it works only with blittable value types and provides no overrun/type safety, which considerably limits its use.
 
 *The InlineArrayAttribute is a building block to allow efficient, type-safe, overrun-safe indexable/sliceable inline data.*
