@@ -512,11 +512,12 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
 
-            for (int i = 0; i < _size; i++)
+            ReadOnlySpan<T> span = new ReadOnlySpan<T>(_items);
+            foreach (T element in span)
             {
-                if (match(_items[i]))
+                if (match(element))
                 {
-                    return _items[i];
+                    return element;
                 }
             }
             return default;
@@ -530,11 +531,12 @@ namespace System.Collections.Generic
             }
 
             List<T> list = new List<T>();
-            for (int i = 0; i < _size; i++)
+            ReadOnlySpan<T> span = new ReadOnlySpan<T>(_items);
+            foreach (T element in span)
             {
-                if (match(_items[i]))
+                if (match(element))
                 {
-                    list.Add(_items[i]);
+                    list.Add(element);
                 }
             }
             return list;
