@@ -1235,6 +1235,12 @@ _GenericCLRToCOMCallStub@0 proc public
     ret
 
 _GenericCLRToCOMCallStub@0 endp
+
+_GenericComCallStub@0 proc public
+    int 3
+
+_GenericComCallStub@0 endp
+
 endif ; FEATURE_COMINTEROP
 
 
