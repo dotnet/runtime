@@ -1094,7 +1094,7 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 LEAF_ENTRY GetThreadStaticsVariableOffset, _TEXT
         PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16
-        la.tls.ie   $a0, t_ThreadStatics
+        la.tls.desc   $a0, t_ThreadStatics
         EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 16
         EPILOG_RETURN
 LEAF_END GetThreadStaticsVariableOffset, _TEXT
