@@ -4227,7 +4227,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     if ((UINT_PTR)ip != GetIP(pFrameContext))
     {
         // Should be fatal
-        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
+        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "Jit_PartialCompilationPatchpoint: patchpoint (0x%p) TRANSITION"
             " unexpected context IP 0x%p\n", ip, GetIP(pFrameContext));
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
