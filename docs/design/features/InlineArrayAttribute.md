@@ -5,6 +5,8 @@ Our preexisting offering in this area – [unsafe fixed-sized buffers](https://d
 
 *The InlineArrayAttribute is a building block to allow efficient, type-safe, overrun-safe indexable/sliceable inline data.*
 
+An example of one such feature is [`Inline Arrays` in C# 12.0](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-12.0/inline-arrays.md).
+
 ### API
 
 ```C#
