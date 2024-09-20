@@ -25,8 +25,7 @@ namespace System.Runtime.CompilerServices
 
 When `InlineArray` attribute is applied to a struct with one instance field, it is interpreted by the runtime as a directive to replicate the layout of the struct `Length` times. That includes replicating GC tracking information if the struct happens to contain managed pointers.
 
-Unlike "filed0; field1; field2;..." approach, the resulting layout would be guaranteed to have the same order and packing details as elements of an array with element `[0]` matching the location of the single specified field. 
-That will allow the whole aggregate to be safely indexable/sliceable.
+Unlike "filed0; field1; field2;..." approach, the resulting layout would be guaranteed to have the same order and packing details as elements of an array with element `[0]` matching the location of the single specified field. That will allow the whole aggregate to be safely indexable/sliceable.
 
 `Length` must be greater than 0.
 
@@ -58,7 +57,7 @@ In particular (using the `MyArray<T>` example defined above):
 Example: assuming the instance is not GC-movable, the following holds: `(byte*)*inst == (byte*)inst._element0`
 
 * There is no additional padding between elements.
-  
+
 Example: assuming the instance is not GC-movable and `Length > 1`, the following will yield a pointer to the second element: `(byte*)inst._element0 + sizeof(T)`
 
 * The size of the entire instance is the size of its element type multiplied by the `Length`
@@ -66,23 +65,24 @@ Example: assuming the instance is not GC-movable and `Length > 1`, the following
 Example: the following holds: `sizeof(MyArray<T>) == Length * sizeof(T)`
 
 * Just like with any other struct, the boxed form will contain the regular object header followed by an entire unboxed instance.
-  
+
 Example: boxing/unboxing will result in exact copy on an entire instance: `object o = inst; MyArray<T> inst1copy = (MyArray<T>)o`
 
 Type T can be a reference type and can contain managed references. The runtime will ensure that objects reachable through elements of an inline array instance can be accessed in a type-safe manner.
 
 ### Size limits for inline array instances.
+
 The size limits for inline array instances will match the size limits of structs on a given runtime implementation.
 Generally this is a very large size imposed by the type system implementation and is rarely reachable in actual applications due to other limitations such as max stack size, max size of an object, and similar.
-     
+
 ### Special note on scenario when the element is readonly.
 
 There is a scenario where the element field in a struct decorated with `InlineArrayAttribute` is `readonly`. 
 The `readonly` part in such scenario has no special semantics and as such the scenario is unsupported and is not recommended.
 
-### FAQ: 
+### FAQ:
 
-**Why do we put the attribute on the struct and not on the field?** 
+**Why do we put the attribute on the struct and not on the field?**
 
 Allowing the attribute on individual fields introduces numerous additional scenarios and combinations that make the feature considerably more complex.
 - we would need to rationalize or somehow forbid the attribute usage on static, threadstatic, RVA fields
