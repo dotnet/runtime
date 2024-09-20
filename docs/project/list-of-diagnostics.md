@@ -306,8 +306,8 @@ Diagnostic id values for experimental APIs must not be recycled, as that could s
 
 | Diagnostic ID     | Introduced | Removed | Description |
 | :---------------- | ---------: | ------: | :---------- |
-|  __`SYSLIB5001`__ |     .NET 9 |     TBD | `Tensor<T>` and related APIs in System.Numerics.Tensors are experimental in .NET 9 |
-|  __`SYSLIB5002`__ |     .NET 9 |     TBD | `SystemColors` alternate colors are experimental in .NET 9 |
-|  __`SYSLIB5003`__ |     .NET 9 |     TBD | `System.Runtime.Intrinsics.Arm.Sve` is experimental in .NET 9 |
-|  __`SYSLIB5004`__ |     .NET 9 |     TBD | `X86Base.DivRem` is experimental in .NET 9 since performance is not as optimized as `T.DivRem` |
-|  __`SYSLIB5005`__ |     .NET 9 |     TBD | `System.Formats.Nrbf` is experimental in .NET 9 |
+|  __`SYSLIB5001`__ |     .NET 9 |     TBD | `Tensor<T>` and related APIs in System.Numerics.Tensors are experimental |
+|  __`SYSLIB5002`__ |     .NET 9 |     TBD | `SystemColors` alternate colors are experimental |
+|  __`SYSLIB5003`__ |     .NET 9 |     TBD | `System.Runtime.Intrinsics.Arm.Sve` is experimental |
+|  __`SYSLIB5004`__ |     .NET 9 |     TBD | `X86Base.DivRem` is experimental since performance is not as optimized as `T.DivRem` |
+|  __`SYSLIB5005`__ |     .NET 9 |     TBD | `System.Formats.Nrbf` is experimental |
