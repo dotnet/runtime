@@ -249,23 +249,23 @@ namespace System.IO.Pipelines.Tests
             ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
 
             ReadResult result = _pipe.Reader.ReadAsync().GetAwaiter().GetResult();
-            SequencePosition consumed = result.Buffer.GetPosition(2);
+            SequencePosition examined = result.Buffer.GetPosition(2);
             // Examine 2, don't advance consumed
-            _pipe.Reader.AdvanceTo(result.Buffer.Start, consumed);
+            _pipe.Reader.AdvanceTo(result.Buffer.Start, examined);
 
             Assert.False(flushAsync.IsCompleted);
 
             result = _pipe.Reader.ReadAsync().GetAwaiter().GetResult();
             // Examine 1 which is less than the previous examined index of 2
-            consumed = result.Buffer.GetPosition(1);
-            _pipe.Reader.AdvanceTo(result.Buffer.Start, consumed);
+            examined = result.Buffer.GetPosition(1);
+            _pipe.Reader.AdvanceTo(result.Buffer.Start, examined);
 
             Assert.False(flushAsync.IsCompleted);
 
             // Just make sure we can still release backpressure
             result = _pipe.Reader.ReadAsync().GetAwaiter().GetResult();
-            consumed = result.Buffer.GetPosition(ResumeWriterThreshold + 1);
-            _pipe.Reader.AdvanceTo(consumed, consumed);
+            examined = result.Buffer.GetPosition(ResumeWriterThreshold + 1);
+            _pipe.Reader.AdvanceTo(examined, examined);
 
             Assert.True(flushAsync.IsCompleted);
         }
