@@ -495,8 +495,6 @@ enum CorInfoHelpFunc
 
     /* Miscellaneous */
 
-    CORINFO_HELP_BBT_FCN_ENTER,         // record the entry to a method for collecting Tuning data
-
     CORINFO_HELP_PINVOKE_CALLI,         // Indirect pinvoke call
     CORINFO_HELP_TAILCALL,              // Perform a tail call
 
@@ -511,9 +509,7 @@ enum CorInfoHelpFunc
                                         // not safe for unbounded size, does not trigger GC)
 
     CORINFO_HELP_RUNTIMEHANDLE_METHOD,          // determine a type/field/method handle at run-time
-    CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG,      // determine a type/field/method handle at run-time, with IBC logging
     CORINFO_HELP_RUNTIMEHANDLE_CLASS,           // determine a type/field/method handle at run-time
-    CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG,       // determine a type/field/method handle at run-time, with IBC logging
 
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time, the type may be null
@@ -830,22 +826,6 @@ enum CORINFO_EH_CLAUSE_FLAGS
     CORINFO_EH_CLAUSE_SAMETRY   = 0x0010, // This clause covers same try block as the previous one
 };
 
-// This enumeration is passed to InternalThrow
-enum CorInfoException
-{
-    CORINFO_NullReferenceException,
-    CORINFO_DivideByZeroException,
-    CORINFO_InvalidCastException,
-    CORINFO_IndexOutOfRangeException,
-    CORINFO_OverflowException,
-    CORINFO_SynchronizationLockException,
-    CORINFO_ArrayTypeMismatchException,
-    CORINFO_RankException,
-    CORINFO_ArgumentNullException,
-    CORINFO_ArgumentException,
-    CORINFO_Exception_Count,
-};
-
 // These are used to detect array methods as NamedIntrinsic in JIT importer,
 // which otherwise don't have a name.
 enum class CorInfoArrayIntrinsic
@@ -934,7 +914,6 @@ struct PatchpointInfo;
 // Cookie types consumed by the code generator (these are opaque values
 // not inspected by the code generator):
 
-typedef struct CORINFO_ASSEMBLY_STRUCT_*    CORINFO_ASSEMBLY_HANDLE;
 typedef struct CORINFO_MODULE_STRUCT_*      CORINFO_MODULE_HANDLE;
 typedef struct CORINFO_DEPENDENCY_STRUCT_*  CORINFO_DEPENDENCY_HANDLE;
 typedef struct CORINFO_CLASS_STRUCT_*       CORINFO_CLASS_HANDLE;
@@ -2325,18 +2304,9 @@ public:
             CORINFO_CLASS_HANDLE    cls
             ) = 0;
 
-    virtual CORINFO_MODULE_HANDLE getClassModule (
-            CORINFO_CLASS_HANDLE    cls
-            ) = 0;
-
-    // Returns the assembly that contains the module "mod".
-    virtual CORINFO_ASSEMBLY_HANDLE getModuleAssembly (
-            CORINFO_MODULE_HANDLE   mod
-            ) = 0;
-
-    // Returns the name of the assembly "assem".
-    virtual const char* getAssemblyName (
-            CORINFO_ASSEMBLY_HANDLE assem
+    // Returns the assembly name of the class "cls", or nullptr if there is none.    
+    virtual const char* getClassAssemblyName (
+            CORINFO_CLASS_HANDLE cls
             ) = 0;
 
     // Allocate and delete process-lifetime objects.  Should only be
@@ -2754,12 +2724,12 @@ public:
     // the field's value class (if 'structType' == 0, then don't bother
     // the structure info).
     //
-    // 'memberParent' is typically only set when verifying.  It should be the
-    // result of calling getMemberParent.
+    // 'fieldOwnerHint' is, potentially, a more exact owner of the field.
+    // it's fine for it to be non-precise, it's just a hint.
     virtual CorInfoType getFieldType(
             CORINFO_FIELD_HANDLE        field,
             CORINFO_CLASS_HANDLE *      structType = NULL,
-            CORINFO_CLASS_HANDLE        memberParent = NULL /* IN */
+            CORINFO_CLASS_HANDLE        fieldOwnerHint = NULL /* IN */
             ) = 0;
 
     // return the data member's instance offset

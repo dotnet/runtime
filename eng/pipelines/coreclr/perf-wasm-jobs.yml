@@ -7,7 +7,7 @@ parameters:
   onlySanityCheck: false
   downloadSpecificBuild: null # { buildId, pipeline, branchName, project }
   collectHelixLogsScript: ''
-  perfForkToUse: {} # url, branch
+  perfBranch: 'main'
 
 jobs:
 
@@ -43,14 +43,14 @@ jobs:
         liveLibrariesBuildConfig: Release
         runtimeType: wasm
         codeGenType: 'wasm'
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         javascriptEngine: 'javascriptcore'
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
-        perfForkToUse: ${{ parameters.perfForkToUse }}
+        perfBranch: ${{ parameters.perfBranch }}
         #downloadSpecificBuild:
           #buildId: '1693181'
           #pipeline: 'perf-wasm'
@@ -69,14 +69,14 @@ jobs:
         livelibrariesbuildconfig: Release
         runtimetype: wasm
         codegentype: 'aot'
-        projectfile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runkind: micro
         runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         javascriptengine: 'javascriptcore'
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
-        perfForkToUse: ${{ parameters.perfForkToUse }}
+        perfBranch: ${{ parameters.perfBranch }}
 
 - ${{ if eq(parameters.runProfile, 'v8') }}:
   - ${{ if eq(parameters.downloadSpecificBuild.buildId, '') }}:
@@ -110,7 +110,7 @@ jobs:
         liveLibrariesBuildConfig: Release
         runtimeType: wasm
         codeGenType: 'wasm'
-        projectFile: microbenchmarks.proj
+        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
@@ -121,7 +121,7 @@ jobs:
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
-        perfForkToUse: ${{ parameters.perfForkToUse }}
+        perfBranch: ${{ parameters.perfBranch }}
 
   #run mono wasm aot microbenchmarks perf job
   # Disabled for runtime-wasm-perf on PRs due to https://github.com/dotnet/runtime/issues/95101
@@ -138,7 +138,7 @@ jobs:
           livelibrariesbuildconfig: Release
           runtimetype: wasm
           codegentype: 'aot'
-          projectfile: microbenchmarks.proj
+          projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
           runkind: micro
           runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
           logicalmachine: 'perftiger'
@@ -149,7 +149,7 @@ jobs:
           compare: ${{ parameters.compare }}
           onlySanityCheck: ${{ parameters.onlySanityCheck }}
           downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
-          perfForkToUse: ${{ parameters.perfForkToUse }}
+          perfBranch: ${{ parameters.perfBranch }}
 
   # run mono wasm blazor perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -163,14 +163,14 @@ jobs:
         testGroup: perf
         liveLibrariesBuildConfig: Release
         runtimeType: wasm
-        projectFile: blazor_perf.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/blazor_perf.proj
         runKind: blazor_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         # For working with a newer sdk, and previous tfm (eg. 9.0 sdk, and net8.0 tfm)
-        #additionalSetupParameters: '--dotnetversions 8.0.0' # passed to performance-setup.sh
+        #additionalSetupParameters: '--dotnetversions 8.0.0' # passed to run-performance-job.py
         logicalmachine: 'perftiger'
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
-        perfForkToUse: ${{ parameters.perfForkToUse }}
+        perfBranch: ${{ parameters.perfBranch }}
 
 - ${{if or(and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')), in(variables['Build.DefinitionName'], 'runtime-wasm-perf')) }}:
   # run mono wasm blazor perf job
@@ -185,12 +185,12 @@ jobs:
         testGroup: perf
         liveLibrariesBuildConfig: Release
         runtimeType: wasm
-        projectFile: blazor_perf.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/blazor_perf.proj
         runKind: blazor_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         # For working with a newer sdk, and previous tfm (eg. 9.0 sdk, and net8.0 tfm)
-        #additionalSetupParameters: '--dotnetversions 8.0.0' # passed to performance-setup.sh
+        #additionalSetupParameters: '--dotnetversions 8.0.0' # passed to run-performance-job.py
         logicalmachine: 'perftiger'
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
-        perfForkToUse: ${{ parameters.perfForkToUse }}
         hybridGlobalization: True
+        perfBranch: ${{ parameters.perfBranch }}

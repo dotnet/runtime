@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-browser;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-browser;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- CS3011: Only CLS-compliant members can be abstract -->

@@ -1427,7 +1427,14 @@ PTR_TableSegment CALLBACK StandardSegmentIterator(PTR_HandleTable pTable, PTR_Ta
 #ifndef DACCESS_COMPILE
     // re-sort the block chains if necessary
     if (pNextSegment && pNextSegment->fResortChains)
+    {
+        // Since this operation can rewrite segment state, it needs to synchronize with any racing
+        // threads that might be concurrently allocating null handle table slots while running in
+        // preemptive mode (which happens, e.g., during Thread construction when a native thread
+        // first enters the runtime).
+        CrstHolder ch(&pTable->Lock);
         SegmentResortChains(pNextSegment);
+    }
 #endif
 
     // return the segment we found
