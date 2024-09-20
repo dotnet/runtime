@@ -50,7 +50,7 @@ static void ValidatePEFileMachineType(PEAssembly *pPEAssembly)
         //
         // Though this bypass kicks in for all Load() flavors, the other Load() flavors did detect cpu-matches through various other code paths that still exist.
         // Or to put it another way, this #ifdef makes the (4.5 only) ValidatePEFileMachineType() a NOP for x64, hence preserving 4.0 compatibility.
-        if (actualMachineType == IMAGE_FILE_MACHINE_I386 || actualMachineType == IMAGE_FILE_MACHINE_IA64)
+        if (actualMachineType == IMAGE_FILE_MACHINE_I386)
             return;
 #endif // BIT64_
 
