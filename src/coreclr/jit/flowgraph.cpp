@@ -4120,6 +4120,62 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
 template FlowGraphDfsTree* Compiler::fgComputeDfs<false>();
 template FlowGraphDfsTree* Compiler::fgComputeDfs<true>();
 
+FlowGraphDfsTree* Compiler::fgComputeLoopAwareDfs()
+{
+    if (m_dfsTree == nullptr)
+    {
+        m_dfsTree = fgComputeDfs</* useProfile */ true>();
+    }
+
+    if (!m_dfsTree->HasCycle())
+    {
+        return m_dfsTree;
+    }
+
+    if (m_loops == nullptr)
+    {
+        m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
+    }
+
+    m_blockToLoop = BlockToNaturalLoopMap::Build(m_loops);
+
+    EnsureBasicBlockEpoch();
+    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
+
+    BasicBlock**   loopAwarePostOrder = new (this, CMK_DepthFirstSearch) BasicBlock*[fgBBcount];
+    const unsigned numBlocks          = m_dfsTree->GetPostOrderCount();
+    unsigned       newIndex           = numBlocks - 1;
+
+    auto visitBlock = [this, loopAwarePostOrder, &visitedBlocks, &newIndex,
+                       numBlocks](BasicBlock* block) -> BasicBlockVisit {
+        if (!BlockSetOps::IsMember(this, visitedBlocks, block->bbNum))
+        {
+            assert(newIndex < numBlocks);
+            loopAwarePostOrder[newIndex--] = block;
+            BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
+        }
+
+        return BasicBlockVisit::Continue;
+    };
+
+    for (unsigned i = numBlocks; i != 0; i--)
+    {
+        BasicBlock* const           block = m_dfsTree->GetPostOrder(i - 1);
+        FlowGraphNaturalLoop* const loop  = m_blockToLoop->GetLoop(block);
+
+        if ((loop != nullptr) && (block == loop->GetHeader()))
+        {
+            loop->VisitLoopBlocksReversePostOrder(visitBlock);
+        }
+        else
+        {
+            visitBlock(block);
+        }
+    }
+
+    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, loopAwarePostOrder, numBlocks, /* hasCycle */ true);
+}
+
 //------------------------------------------------------------------------
 // fgInvalidateDfsTree: Invalidate computed DFS tree and dependent annotations
 // (like loops, dominators and SSA).

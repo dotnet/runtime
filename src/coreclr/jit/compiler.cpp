@@ -4524,7 +4524,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     compFunctionTraceStart();
 
     // Enable flow graph checks
-    activePhaseChecks |= PhaseChecks::CHECK_FG;
+    activePhaseChecks |= PhaseChecks::CHECK_FG | PhaseChecks::CHECK_FG_ANNOTATIONS;
 
     // Prepare for importation
     //
@@ -5238,6 +5238,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed                    = true;
     const unsigned numBlocksBeforeLSRA = fgBBcount;
+
+    // Backend phases will use a loop-aware RPO traversal of the flowgraph,
+    // so skip checking pre/postorder numbers for correctness.
+    activePhaseChecks &= ~PhaseChecks::CHECK_FG_ANNOTATIONS;
 
     // Now that lowering is completed we can proceed to perform register allocation
     //

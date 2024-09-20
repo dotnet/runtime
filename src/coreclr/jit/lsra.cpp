@@ -949,10 +949,11 @@ void LinearScan::setBlockSequence()
 #endif // DEBUG
 
     // Initialize the "visited" blocks set.
-    bbVisitedSet = BlockSetOps::MakeEmpty(compiler);
+    bbVisitedSet        = BlockSetOps::MakeEmpty(compiler);
+    compiler->m_dfsTree = compiler->fgComputeLoopAwareDfs();
 
     assert((blockSequence == nullptr) && (bbSeqCount == 0));
-    FlowGraphDfsTree* const dfsTree = compiler->fgComputeDfs</* useProfile */ true>();
+    FlowGraphDfsTree* const dfsTree = compiler->m_dfsTree;
     blockSequence                   = dfsTree->GetPostOrder();
     bbNumMaxBeforeResolution        = compiler->fgBBNumMax;
     blockInfo                       = new (compiler, CMK_LSRA) LsraBlockInfo[bbNumMaxBeforeResolution + 1];

@@ -189,7 +189,10 @@ void Phase::PostPhase(PhaseStatus status)
             comp->fgDebugCheckLinkedLocals();
         }
 
-        comp->fgDebugCheckFlowGraphAnnotations();
+        if (hasFlag(checks, PhaseChecks::CHECK_FG_ANNOTATIONS))
+        {
+            comp->fgDebugCheckFlowGraphAnnotations();
+        }
     }
 #endif // DEBUG
 }
