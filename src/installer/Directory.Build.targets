@@ -12,8 +12,8 @@
       <Output TaskParameter="InPath" ItemName="LibrariesProjectReference" />
     </FindUnderPath>
     <ItemGroup>
-      <ProjectReference Update="@(ProjectLibrariesProjectReferenceReference)"
-                  SetConfiguration="Configuration=$(LibrariesConfiguration)"/>
+      <ProjectReference Remove="@(LibrariesProjectReference)" />
+      <ProjectReference Include="@(LibrariesProjectReference)" SetConfiguration="Configuration=$(LibrariesConfiguration)"/>
     </ItemGroup>
   </Target>
 
