@@ -4279,7 +4279,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
 
     // Transition!
     __asan_handle_no_return();
-    ClrRestoreNonvolatileContext(pFrameContext, NULL);
+    ClrRestoreNonvolatileContext(pFrameContext);
 }
 HCIMPLEND
 
