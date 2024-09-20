@@ -24,10 +24,6 @@ EXTERN __imp__RtlUnwind@16:DWORD
 ifdef _DEBUG
 EXTERN _HelperMethodFrameConfirmState@20:PROC
 endif
-ifdef FEATURE_COMINTEROP
-EXTERN _StubRareDisableHRWorker@4:PROC
-endif ; FEATURE_COMINTEROP
-EXTERN _StubRareDisableTHROWWorker@4:PROC
 ifdef FEATURE_HIJACK
 EXTERN _OnHijackWorker@4:PROC
 endif ;FEATURE_HIJACK
@@ -390,31 +386,6 @@ endif
         pop     ebp ; don't use 'leave' here, as ebp as been trashed
         retn    8
 _CallJitEHFinallyHelper@8 ENDP
-
-ifdef FEATURE_COMINTEROP
-_StubRareDisableHR proc public
-        push    edx
-
-        push    ebx     ; Thread
-        call    _StubRareDisableHRWorker@4
-
-        pop     edx
-        retn
-_StubRareDisableHR ENDP
-endif ; FEATURE_COMINTEROP
-
-_StubRareDisableTHROW proc public
-        push    eax
-        push    edx
-
-        push    ebx     ; Thread
-        call    _StubRareDisableTHROWWorker@4
-
-        pop     edx
-        pop     eax
-        retn
-_StubRareDisableTHROW endp
-
 
 ;------------------------------------------------------------------------------
 ; This helper routine enregisters the appropriate arguments and makes the

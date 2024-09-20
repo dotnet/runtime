@@ -42,7 +42,7 @@ void FieldCallWorkerBody(Thread *pThread, ComMethodFrame* pFrame);
 // The sole purpose of this helper is to transition into preemptive mode
 // and then call the profiler transition callbacks.  We can't use the GCX_PREEMP
 // in a function with SEH (such as COMToCLRWorkerBody()).
-NOINLINE
+static NOINLINE
 void ProfilerTransitionCallbackHelper(MethodDesc* pMD, Thread* pThread, COR_PRF_TRANSITION_REASON reason)
 {
     CONTRACTL
@@ -70,7 +70,7 @@ void ProfilerTransitionCallbackHelper(MethodDesc* pMD, Thread* pThread, COR_PRF_
 #endif // PROFILING_SUPPORTED
 
 // Disable when calling into managed code from a place that fails via HRESULT
-extern "C" HRESULT STDCALL StubRareDisableHRWorker(Thread *pThread)
+static HRESULT StubRareDisableHRWorker(Thread *pThread)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -203,7 +203,7 @@ inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJ
 #pragma optimize("t", on)   // optimize for speed
 #endif
 
-OBJECTREF COMToCLRGetObjectAndTarget_Delegate(ComCallWrapper * pWrap, PCODE * ppManagedTargetOut)
+static OBJECTREF COMToCLRGetObjectAndTarget_Delegate(ComCallWrapper * pWrap, PCODE * ppManagedTargetOut)
 {
     CONTRACTL
     {
@@ -222,7 +222,7 @@ OBJECTREF COMToCLRGetObjectAndTarget_Delegate(ComCallWrapper * pWrap, PCODE * pp
     return pDelObj->GetTarget();
 }
 
-FORCEINLINE_NONDEBUG
+static FORCEINLINE_NONDEBUG
 OBJECTREF COMToCLRGetObjectAndTarget_Virtual(ComCallWrapper * pWrap, MethodDesc * pRealMD, ComCallMethodDesc * pCMD, PCODE * ppManagedTargetOut)
 {
     CONTRACTL
@@ -253,7 +253,7 @@ OBJECTREF COMToCLRGetObjectAndTarget_Virtual(ComCallWrapper * pWrap, MethodDesc 
     return pObject;
 }
 
-FORCEINLINE_NONDEBUG
+static FORCEINLINE_NONDEBUG
 OBJECTREF COMToCLRGetObjectAndTarget_NonVirtual(ComCallWrapper * pWrap, MethodDesc * pRealMD, ComCallMethodDesc * pCMD, PCODE * ppManagedTargetOut)
 {
     CONTRACTL
@@ -270,7 +270,7 @@ OBJECTREF COMToCLRGetObjectAndTarget_NonVirtual(ComCallWrapper * pWrap, MethodDe
     return pWrap->GetObjectRef();
 }
 
-FORCEINLINE_NONDEBUG
+static FORCEINLINE_NONDEBUG
 void COMToCLRInvokeTarget(PCODE pManagedTarget, OBJECTREF pObject, ComCallMethodDesc * pCMD,
                           ComMethodFrame * pFrame, Thread * pThread, UINT64* pRetValOut)
 {
@@ -292,7 +292,7 @@ void COMToCLRInvokeTarget(PCODE pManagedTarget, OBJECTREF pObject, ComCallMethod
     InvokeStub(pCMD, pManagedTarget, pObject, pFrame, pThread, pRetValOut);
 }
 
-NOINLINE
+static NOINLINE
 void COMToCLRWorkerBody_Rare(Thread * pThread, ComMethodFrame * pFrame, ComCallWrapper * pWrap,
                              MethodDesc * pRealMD, ComCallMethodDesc * pCMD, DWORD maskedFlags,
                              UINT64 * pRetValOut)
@@ -343,7 +343,7 @@ void COMToCLRWorkerBody_Rare(Thread * pThread, ComMethodFrame * pFrame, ComCallW
 
 
 // This is the factored out body of COMToCLRWorker.
-FORCEINLINE_NONDEBUG
+static FORCEINLINE_NONDEBUG
 void COMToCLRWorkerBody(
     Thread * pThread,
     ComMethodFrame * pFrame,
