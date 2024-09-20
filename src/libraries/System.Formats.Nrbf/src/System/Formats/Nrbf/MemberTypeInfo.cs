@@ -53,10 +53,14 @@ internal readonly struct MemberTypeInfo
                 case BinaryType.Class:
                     info[i] = (type, ClassTypeInfo.Decode(reader, options, recordMap));
                     break;
-                default:
-                    // Other types have no additional data.
-                    Debug.Assert(type is BinaryType.String or BinaryType.ObjectArray or BinaryType.StringArray or BinaryType.Object);
+                case BinaryType.String:
+                case BinaryType.StringArray:
+                case BinaryType.Object:
+                case BinaryType.ObjectArray:
+                    // These types have no additional data.
                     break;
+                default:
+                    throw new InvalidOperationException();
             }
         }
 
@@ -97,7 +101,8 @@ internal readonly struct MemberTypeInfo
             BinaryType.PrimitiveArray => (PrimitiveArray, default),
             BinaryType.Class => (NonSystemClass, default),
             BinaryType.SystemClass => (SystemClass, default),
-            _ => (ObjectArray, default)
+            BinaryType.ObjectArray => (ObjectArray, default),
+            _ => throw new InvalidOperationException()
         };
     }
 
@@ -105,7 +110,7 @@ internal readonly struct MemberTypeInfo
     {
         // This library tries to minimize the number of concepts the users need to learn to use it.
         // Since SZArrays are most common, it provides an SZArrayRecord<T> abstraction.
-        // Every other array (jagged, multi-dimensional etc) is represented using SZArrayRecord.
+        // Every other array (jagged, multi-dimensional etc) is represented using ArrayRecord.
         // The goal of this method is to determine whether given array can be represented as SZArrayRecord<ClassRecord>.
 
         (BinaryType binaryType, object? additionalInfo) = Infos[0];
@@ -144,15 +149,15 @@ internal readonly struct MemberTypeInfo
 
         TypeName elementTypeName = binaryType switch
         {
-            BinaryType.String => TypeNameHelpers.GetPrimitiveTypeName(PrimitiveType.String),
-            BinaryType.StringArray => TypeNameHelpers.GetPrimitiveSZArrayTypeName(PrimitiveType.String),
+            BinaryType.String => TypeNameHelpers.GetPrimitiveTypeName(TypeNameHelpers.StringPrimitiveType),
+            BinaryType.StringArray => TypeNameHelpers.GetPrimitiveSZArrayTypeName(TypeNameHelpers.StringPrimitiveType),
             BinaryType.Primitive => TypeNameHelpers.GetPrimitiveTypeName((PrimitiveType)additionalInfo!),
             BinaryType.PrimitiveArray => TypeNameHelpers.GetPrimitiveSZArrayTypeName((PrimitiveType)additionalInfo!),
             BinaryType.Object => TypeNameHelpers.GetPrimitiveTypeName(TypeNameHelpers.ObjectPrimitiveType),
             BinaryType.ObjectArray => TypeNameHelpers.GetPrimitiveSZArrayTypeName(TypeNameHelpers.ObjectPrimitiveType),
             BinaryType.SystemClass => (TypeName)additionalInfo!,
             BinaryType.Class => ((ClassTypeInfo)additionalInfo!).TypeName,
-            _ => throw new ArgumentOutOfRangeException(paramName: nameof(binaryType), actualValue: binaryType, message: null)
+            _ => throw new InvalidOperationException()
         };
 
         // In general, arrayRank == 1 may have two different meanings:
