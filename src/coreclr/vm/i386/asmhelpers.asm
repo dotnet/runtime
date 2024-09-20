@@ -1242,6 +1242,8 @@ _GenericComCallStub@0 proc public
     ; Pop ComCallMethodDesc* pushed by prestub
     pop         eax
 
+    ; Create UnmanagedToManagedFrame on stack
+
     ; push ebp-frame
     push        ebp
     mov         ebp,esp
@@ -1251,15 +1253,15 @@ _GenericComCallStub@0 proc public
     push        esi
     push        edi
 
-    push        eax         ; datum
-    sub         esp, 3*4    ; next, vtable, gscookie
+    push        eax         ; UnmanagedToManagedFrame::m_pvDatum = ComCallMethodDesc*
+    sub         esp, (SIZEOF_GSCookie + OFFSETOF__UnmanagedToManagedFrame__m_pvDatum)
 
-    lea         eax, [esp+4]
+    lea         eax, [esp+SIZEOF_GSCookie]
 
     push        eax
     call        _COMToCLRWorker@4
 
-    add         esp, 3*4
+    add         esp, (SIZEOF_GSCookie + OFFSETOF__UnmanagedToManagedFrame__m_pvDatum)
 
     ; pop the MethodDesc*
     pop         ecx
