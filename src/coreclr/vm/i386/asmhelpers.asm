@@ -1263,7 +1263,7 @@ _GenericComCallStub@0 proc public
 
     add         esp, (SIZEOF_GSCookie + OFFSETOF__UnmanagedToManagedFrame__m_pvDatum)
 
-    ; pop the MethodDesc*
+    ; pop the ComCallMethodDesc*
     pop         ecx
 
     ; pop CalleeSavedRegisters
