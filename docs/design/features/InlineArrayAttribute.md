@@ -63,6 +63,10 @@ Example: the following holds: `sizeof(MyArray<T>) == Length * sizeof(T)`
 Example: boxing/unboxing will result in exact copy on an entire instance: `object o = inst; MyArray<T> inst1copy = (MyArray<T>)o`
 
 Type T can be a reference type and can contain managed references. The runtime will ensure that objects reachable through elements of an inline array instance can be accessed in a type-safe manner.
+
+### Size limits for inline array instances.
+The size limits for inline array instances will match the size limits of structs on a given runtime implementation. 
+Generally this is a very large size imposed by the type system implementation and is rarely reachable in actual applications due to other limitations such as max stack size, max size of an object, and similar.
      
 ### Special note on scenario when the element is readonly.
 
