@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <minipal/time.h>
+#include "minipalconfig.h"
 
 #if HAVE_WINDOWS_H
 
