@@ -149,6 +149,14 @@ void CheckDoubleReporting(GCCONTEXT *pCtx, Object **ppObj, uint32_t flags)
 {
     if ((GCStress<cfg_any>::IsEnabled() || g_pConfig->GetEnableGCHoleMonitoring()) && ((flags & GC_CALL_PINNED) == 0) && pCtx->sc->promotion)
     {
+        if (pCtx->pScannedSlots == NULL)
+        {
+            pCtx->pScannedSlots = new (nothrow) SetSHash<Object**, PtrSetSHashTraits<Object**> >();
+            if (pCtx->pScannedSlots == NULL)
+            {
+                return;
+            }
+        }
         _ASSERTE_ALL_BUILDS(pCtx->pScannedSlots->Lookup(ppObj) == NULL);
         pCtx->pScannedSlots->AddNoThrow(ppObj);
     }
