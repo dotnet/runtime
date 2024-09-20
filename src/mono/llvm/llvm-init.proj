@@ -88,7 +88,7 @@
     <ItemGroup>
       <LLVMFiles Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(MonoLLVMHostOS)-%(PackageReference.PackageArch)\**"
                  FileArch="%(PackageReference.PackageArch)"  Condition="'$(_LocalLLVMArtifacts)' == ''" />
-      <LLVMFiles Include="$(LocalLLVMArtifacts)\obj\InstallRoot-$(BuildArchitecture)\**"
+      <LLVMFiles Include="$(_LocalLLVMArtifacts)\obj\InstallRoot-$(BuildArchitecture)\**"
                  FileArch="%(PackageReference.PackageArch)"  Condition="'$(_LocalLLVMArtifacts)' != ''" />
     </ItemGroup>
     <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(LLVMFiles.FileArch)\%(RecursiveDir)">
