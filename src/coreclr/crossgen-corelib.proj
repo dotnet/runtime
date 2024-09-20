@@ -5,8 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Condition="'$(UseCrossArchCrossgen2)' != 'true'" Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2.csproj" OutputItemType="Crossgen2" />
-    <ProjectReference Condition="'$(UseCrossArchCrossgen2)' == 'true'" Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_crossarch.csproj" OutputItemType="Crossgen2" />
+    <ProjectReference Condition="'$(UseCrossArchCrossgen2)' != 'true'" Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_publish.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Condition="'$(UseCrossArchCrossgen2)' == 'true'" Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_crossarch.csproj" />
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/dotnet-pgo/dotnet-pgo.csproj" OutputItemType="DotNetPgo" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
     <ProjectReference Include="$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))" OutputItemType="CoreLib" />
   </ItemGroup>
@@ -100,10 +100,14 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <Crossgen2OutputPath>%(Crossgen2.RootDir)%(Crossgen2.Directory)</Crossgen2OutputPath>
+      <Crossgen2OutputPath>$(Crossgen2Dir)</Crossgen2OutputPath>
+      <Crossgen2OutputPath Condition="'$(UseCrossArchCrossgen2)' == 'true'">$(Crossgen2CrossDir)</Crossgen2OutputPath>
     </PropertyGroup>
     <ItemGroup>
-      <Crossgen2Files Include="$(Crossgen2OutputPath)/*.dll;$(Crossgen2OutputPath)/*.so;$(Crossgen2OutputPath)/*.dylib" />
+      <Crossgen2Files Include="$(Crossgen2OutputPath)/crossgen2$(ExeSuffix)" />
+      <Crossgen2Files Include="$(Crossgen2OutputPath)/*.dll" />
+      <Crossgen2Files Include="$(Crossgen2OutputPath)/*.so" />
+      <Crossgen2Files Include="$(Crossgen2OutputPath)/*.dylib" />
     </ItemGroup>
   </Target>
 
@@ -120,7 +124,8 @@
       Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
 
     <PropertyGroup>
-      <CrossGenDllCmd>$(DotNetCli) @(Crossgen2)</CrossGenDllCmd>
+      <CrossGenDllCmd>$(Crossgen2OutputPath)/crossgen2$(ExeSuffix)</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="'$(UseCrossArchCrossgen2)' == 'true'">$(DotNetCli) "$(Crossgen2OutputPath)/crossgen2.dll"</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CoreLibOutputPath)</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
