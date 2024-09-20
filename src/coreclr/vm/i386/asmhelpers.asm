@@ -46,6 +46,7 @@ EXTERN _TheUMEntryPrestubWorker@4:PROC
 
 ifdef FEATURE_COMINTEROP
 EXTERN _CLRToCOMWorker@8:PROC
+EXTERN _COMToCLRWorker@4:PROC
 endif
 
 EXTERN _ExternalMethodFixupWorker@16:PROC
@@ -1237,7 +1238,44 @@ _GenericCLRToCOMCallStub@0 proc public
 _GenericCLRToCOMCallStub@0 endp
 
 _GenericComCallStub@0 proc public
-    int 3
+
+    ; Pop ComCallMethodDesc* pushed by prestub
+    pop         eax
+
+    ; push ebp-frame
+    push        ebp
+    mov         ebp,esp
+
+    ; save CalleeSavedRegisters
+    push        ebx
+    push        esi
+    push        edi
+
+    push        eax         ; datum
+    sub         esp, 3*4    ; next, vtable, gscookie
+
+    lea         eax, [esp+4]
+
+    push        eax
+    call        _COMToCLRWorker@4
+
+    add         esp, 3*4
+
+    ; pop the MethodDesc*
+    pop         ecx
+
+    ; pop CalleeSavedRegisters
+    pop         edi
+    pop         esi
+    pop         ebx
+    pop         ebp
+
+    sub         ecx, COMMETHOD_PREPAD_ASM
+    jmp         ecx
+
+    ; This will never be executed. It is just to help out stack-walking logic
+    ; which disassembles the epilog to unwind the stack.
+    ret
 
 _GenericComCallStub@0 endp
 

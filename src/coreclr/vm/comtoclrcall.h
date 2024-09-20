@@ -325,12 +325,6 @@ public:
         return -COMMETHOD_PREPAD;
     }
 
-    static DWORD GetOffsetOfMethodDesc()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ((DWORD) offsetof(class ComCallMethodDesc, m_pMD));
-    }
-
     //get call sig
     PCCOR_SIGNATURE GetSig(DWORD *pcbSigSize = NULL)
     {
