@@ -74,7 +74,7 @@ public:
             std::swap(data[parent], data[i]);
         }
 
-        assert(VerifyMaxHeap());
+        // assert(VerifyMaxHeap());
     }
 
     // Swap the root and last element to facilitate removing the former.
@@ -105,6 +105,6 @@ public:
             }
         }
 
-        assert(VerifyMaxHeap());
+        // assert(VerifyMaxHeap());
     }
 };

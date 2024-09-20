@@ -5213,7 +5213,7 @@ void Compiler::fgSearchImprovedLayout()
     const unsigned firstColdIndex = numHotBlocks;
 
     weight_t cost;
-    auto getEdgeAndUpdateCost = [this, &cost, blockOrder, firstColdIndex] (unsigned srcPos, unsigned dstPos) -> FlowEdge* {
+    auto getEdgeAndUpdateCost = [this, &cost, &blockOrder, firstColdIndex] (unsigned srcPos, unsigned dstPos) -> FlowEdge* {
         if ((srcPos > firstColdIndex) || (dstPos > firstColdIndex))
         {
             return nullptr;
@@ -5244,11 +5244,23 @@ void Compiler::fgSearchImprovedLayout()
         BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
         const unsigned srcPos = ordinals[srcBlk->bbNum];
         const unsigned dstPos = ordinals[dstBlk->bbNum];
-        assert((srcPos + 1) != dstPos);
-        assert(srcPos < numHotBlocks);
-        assert(dstPos < numHotBlocks);
 
+        // Why are we considering an edge from a block that isn't hot?
+        assert(srcPos < numHotBlocks);
+
+        // Why are we considering an edge that already falls through?
+        assert((srcPos + 1) != dstPos);
+
+        // Don't consider backedges for single-block loops
         if (srcPos == dstPos)
+        {
+            continue;
+        }
+
+        // Don't consider jumps from hot blocks to cold blocks.
+        // We can get such candidates if the edge has a low likelihood,
+        // or if weight wasn't propagated correctly from srcBlk to dstBlk.
+        if (dstPos >= numHotBlocks)
         {
             continue;
         }
@@ -5259,6 +5271,10 @@ void Compiler::fgSearchImprovedLayout()
             // TODO: Move backward jumps
             continue;
         }
+
+        // Before getting any edges, make sure 'ordinals' is up-to-date
+        assert(blockOrder[srcPos] == srcBlk);
+        assert(blockOrder[dstPos] == dstBlk);
 
         FlowEdge* const srcNextEdge = getEdgeAndUpdateCost(srcPos, srcPos + 1);
         FlowEdge* const dstPrevEdge = getEdgeAndUpdateCost(dstPos - 1, dstPos);
@@ -5289,6 +5305,7 @@ void Compiler::fgSearchImprovedLayout()
             ordinals[blockOrder[i]->bbNum] = i;
         }
 
+        // Ensure this move created fallthrough from srcBlk to dstBlk
         assert((ordinals[srcBlk->bbNum] + 1) == ordinals[dstBlk->bbNum]);
 
         if (srcNextEdge != nullptr)
