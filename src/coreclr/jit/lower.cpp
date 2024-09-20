@@ -7861,6 +7861,7 @@ PhaseStatus Lowering::DoPhase()
         // Don't churn the flowgraph with aggressive compaction since we've already run block layout
         bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false,
                                                 /* doAggressiveCompaction */ false);
+
         if (modified)
         {
             comp->fgDfsBlocksAndRemove();
