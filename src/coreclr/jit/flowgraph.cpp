@@ -4120,15 +4120,30 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
 template FlowGraphDfsTree* Compiler::fgComputeDfs<false>();
 template FlowGraphDfsTree* Compiler::fgComputeDfs<true>();
 
+//------------------------------------------------------------------------
+// fgComputeLoopAwareDfs: Compute a depth-first search tree for the flow graph
+// where in the RPO traversal, loop bodies are visited before loop successors.
+//
+// Returns:
+//   The tree.
+//
+// Notes:
+//   If the flow graph has loops, the DFS will be reordered such that loop bodies are compact.
+//   This will invalidate BasicBlock::bbPreorderNum and BasicBlock::bbPostorderNum.
+//
 FlowGraphDfsTree* Compiler::fgComputeLoopAwareDfs()
 {
     if (m_dfsTree == nullptr)
     {
+        // Computing a profile-aware RPO means the DFS computation won't match the debug check's expectations,
+        // so make sure these checks have already been disabled.
+        assert(!hasFlag(activePhaseChecks, PhaseChecks::CHECK_FG_ANNOTATIONS));
         m_dfsTree = fgComputeDfs</* useProfile */ true>();
     }
 
     if (!m_dfsTree->HasCycle())
     {
+        // No need to search for loops
         return m_dfsTree;
     }
 
@@ -4148,6 +4163,10 @@ FlowGraphDfsTree* Compiler::fgComputeLoopAwareDfs()
 
     auto visitBlock = [this, loopAwarePostOrder, &visitedBlocks, &newIndex,
                        numBlocks](BasicBlock* block) -> BasicBlockVisit {
+        // If this block is in a loop, we will try to visit it more than once
+        // (first when we visit its containing loop, and then later as we iterate
+        // through the initial RPO).
+        // Thus, we need to keep track of visited blocks.
         if (!BlockSetOps::IsMember(this, visitedBlocks, block->bbNum))
         {
             assert(newIndex < numBlocks);
@@ -4163,6 +4182,7 @@ FlowGraphDfsTree* Compiler::fgComputeLoopAwareDfs()
         BasicBlock* const           block = m_dfsTree->GetPostOrder(i - 1);
         FlowGraphNaturalLoop* const loop  = m_blockToLoop->GetLoop(block);
 
+        // If this block is a loop header, visit the entire loop before moving on
         if ((loop != nullptr) && (block == loop->GetHeader()))
         {
             loop->VisitLoopBlocksReversePostOrder(visitBlock);
