@@ -144,10 +144,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
             ExecutableWriterHolder<Stub> stubWriterHolder(pDelegateEEClass->m_pInstRetBuffCallStub, sizeof(Stub));
             stubWriterHolder.GetRW()->DecRef();
         }
-        // While m_pMultiCastInvokeStub is also a member,
-        // it is owned by the m_pMulticastStubCache, not by the class
-        // - it is shared across classes. So we don't decrement
-        // its ref count here
     }
 
 #ifdef FEATURE_COMINTEROP

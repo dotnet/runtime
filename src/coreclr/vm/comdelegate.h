@@ -77,10 +77,7 @@ public:
     static BOOL IsWrapperDelegate(DELEGATEREF dRef);
 
     // Get the cpu stub for a delegate invoke.
-    static PCODE GetInvokeMethodStub(EEImplMethodDesc* pMD);
-
-    // get the one single delegate invoke stub
-    static PCODE TheDelegateInvokeStub();
+    static Stub* GetInvokeMethodStub(EEImplMethodDesc* pMD);
 
     static MethodDesc * __fastcall GetMethodDesc(OBJECTREF obj);
     static OBJECTREF GetTargetObject(OBJECTREF obj);
@@ -213,7 +210,7 @@ private:
         STANDARD_VM_CONTRACT;
 
         ((CPUSTUBLINKER*)pstublinker)->EmitShuffleThunk((ShuffleEntry*)pRawStub);
-        return NEWSTUB_FL_THUNK;
+        return NEWSTUB_FL_SHUFFLE_THUNK;
     }
 
     //---------------------------------------------------------
