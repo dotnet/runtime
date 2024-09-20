@@ -214,7 +214,7 @@ extends:
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
-              pgoRunType: --nodynamicpgo
+              pgoRunType: nodynamicpgo
               perfBranch: ${{ parameters.perfBranch }}
 
       #run coreclr Linux arm64 ampere no R2R microbenchmarks perf job
@@ -233,7 +233,7 @@ extends:
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
-              r2rRunType: --nor2r
+              r2rRunType: nor2r
               perfBranch: ${{ parameters.perfBranch }}
 
       # run coreclr Windows arm64 microbenchmarks perf job
@@ -286,7 +286,7 @@ extends:
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
-              pgoRunType: -NoDynamicPGO
+              pgoRunType: nodynamicpgo
               timeoutInMinutes: 780
               perfBranch: ${{ parameters.perfBranch }}
 
@@ -305,7 +305,7 @@ extends:
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
-              r2rRunType: -NoR2R
+              r2rRunType: nor2r
               timeoutInMinutes: 780
               perfBranch: ${{ parameters.perfBranch }}
 
