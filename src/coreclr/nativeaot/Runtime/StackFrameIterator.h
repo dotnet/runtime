@@ -53,6 +53,7 @@ public:
     bool             IsActiveStackFrame();
     bool             GetHijackedReturnValueLocation(PTR_OBJECTREF * pLocation, GCRefKind * pKind);
     void             SetControlPC(PTR_VOID controlPC);
+    PTR_VOID         GetControlPC() { return m_ControlPC; }
 
     static bool     IsValidReturnAddress(PTR_VOID pvAddress);
 
