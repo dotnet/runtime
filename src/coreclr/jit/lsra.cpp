@@ -949,8 +949,13 @@ void LinearScan::setBlockSequence()
 #endif // DEBUG
 
     // Initialize the "visited" blocks set.
-    bbVisitedSet        = BlockSetOps::MakeEmpty(compiler);
-    compiler->m_dfsTree = compiler->fgComputeLoopAwareDfs();
+    bbVisitedSet = BlockSetOps::MakeEmpty(compiler);
+
+    // fgComputeLoopAwareDfs already bails on the "loop-aware" part early if the DFS doesn't have any cycles,
+    // but in MinOpts, we'd prefer to skip the extra computation in cases where there are loops.
+    // If we aren't optimizing, we would've skipped optFindLoopsPhase, so fgMightHaveNaturalLoops should be false.
+    compiler->m_dfsTree = compiler->fgMightHaveNaturalLoops ? compiler->fgComputeLoopAwareDfs()
+                                                            : compiler->fgComputeDfs</* useProfile */ true>();
 
     assert((blockSequence == nullptr) && (bbSeqCount == 0));
     FlowGraphDfsTree* const dfsTree = compiler->m_dfsTree;
