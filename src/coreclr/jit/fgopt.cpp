@@ -5128,6 +5128,195 @@ void Compiler::fgMoveColdBlocks()
     ehUpdateTryLasts<decltype(getTryLast), decltype(setTryLast)>(getTryLast, setTryLast);
 }
 
+template <bool hasEH>
+void Compiler::fgSearchImprovedLayout()
+{
+    if (hasEH)
+    {
+        return;
+    }
+
+    auto edgeWeightComp = [](const FlowEdge* left, const FlowEdge* right) -> bool {
+        return left->getLikelyWeight() < right->getLikelyWeight();
+    };
+
+    unsigned numHotBlocks = 0;
+    unsigned maxBBNum = 0;
+    PriorityQueue<FlowEdge*, decltype(edgeWeightComp)> cutPoints(getAllocator(CMK_FlowEdge), edgeWeightComp);
+    BasicBlock* finalBlock = fgLastBBInMainFunction();
+
+    for (BasicBlock* const block : Blocks(fgFirstBB, finalBlock))
+    {
+        if (block->isBBWeightCold(this))
+        {
+            finalBlock = block->Prev();
+            break;
+        }
+
+        maxBBNum = max(maxBBNum, block->bbNum);
+        numHotBlocks++;
+
+        if (block->KindIs(BBJ_ALWAYS) && !block->JumpsToNext())
+        {
+            cutPoints.Push(block->GetTargetEdge());
+        }
+        // else if (block->KindIs(BBJ_COND))
+        // {
+        //     FlowEdge* likelyEdge;
+        //     FlowEdge* unlikelyEdge;
+
+        //     if (block->GetTrueEdge()->getLikelihood() > 0.5)
+        //     {
+        //         likelyEdge = block->GetTrueEdge();
+        //         unlikelyEdge = block->GetFalseEdge();
+        //     }
+        //     else
+        //     {
+        //         likelyEdge = block->GetFalseEdge();
+        //         unlikelyEdge = block->GetTrueEdge();
+        //     }
+
+        //     if (!block->NextIs(likelyEdge->getDestinationBlock()))
+        //     {
+        //         if ((likelyEdge->getLikelihood() > 0.5) || !block->NextIs())
+        //     }
+        // }
+    }
+
+    if (numHotBlocks < 3)
+    {
+        JITDUMP("Not enough hot blocks; skipping reordering\n");
+        return;
+    }
+
+    assert(finalBlock != nullptr);
+    const bool hasExitBlock = !finalBlock->IsLast();
+    unsigned* const ordinals = new unsigned[maxBBNum + 1];
+    BasicBlock** blockOrder = new BasicBlock*[numHotBlocks + (int)hasExitBlock];
+    BasicBlock** tempOrder = new BasicBlock*[numHotBlocks + (int)hasExitBlock];
+    unsigned position = 0;
+
+    for (BasicBlock* const block : Blocks(fgFirstBB, finalBlock))
+    {
+        blockOrder[position] = tempOrder[position] = block;
+        ordinals[block->bbNum] = position++;
+    }
+
+    assert(position == numHotBlocks);
+
+    if (hasExitBlock)
+    {
+        blockOrder[numHotBlocks] = tempOrder[numHotBlocks] = finalBlock->Next();
+    }
+
+    const unsigned lastHotIndex = numHotBlocks - 1;
+    const unsigned firstColdIndex = numHotBlocks;
+
+    weight_t cost;
+    auto getEdgeAndUpdateCost = [this, &cost, blockOrder, firstColdIndex] (unsigned srcPos, unsigned dstPos) -> FlowEdge* {
+        if ((srcPos > firstColdIndex) || (dstPos > firstColdIndex))
+        {
+            return nullptr;
+        }
+
+        FlowEdge* const edge = fgGetPredForBlock(blockOrder[dstPos], blockOrder[srcPos]);
+
+        if (edge != nullptr)
+        {
+            cost += edge->getLikelyWeight();
+        }
+
+        return edge;
+    };
+
+    // S ~~~~ s | ~~~~ | d ~~~~ E
+    // S ~~~~ s | d ~~~~ | ~~~~ E
+    bool modified = false;
+
+    while (!cutPoints.Empty())
+    {
+        FlowEdge* const candidateEdge = cutPoints.Top();
+        cutPoints.Pop();
+        const weight_t improvement = candidateEdge->getLikelyWeight();
+        cost = 0.0;
+
+        BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
+        BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
+        const unsigned srcPos = ordinals[srcBlk->bbNum];
+        const unsigned dstPos = ordinals[dstBlk->bbNum];
+        assert((srcPos + 1) != dstPos);
+        assert(srcPos < numHotBlocks);
+        assert(dstPos < numHotBlocks);
+
+        if (srcPos == dstPos)
+        {
+            continue;
+        }
+
+        const bool isForwardJump = (srcPos < dstPos);
+        if (!isForwardJump)
+        {
+            // TODO: Move backward jumps
+            continue;
+        }
+
+        FlowEdge* const srcNextEdge = getEdgeAndUpdateCost(srcPos, srcPos + 1);
+        FlowEdge* const dstPrevEdge = getEdgeAndUpdateCost(dstPos - 1, dstPos);
+
+        if (hasExitBlock)
+        {
+            getEdgeAndUpdateCost(lastHotIndex, firstColdIndex);
+        }
+
+        if ((improvement <= cost) || Compiler::fgProfileWeightsEqual(improvement, cost, 0.001))
+        {
+            continue;
+        }
+
+        modified = true;
+
+        const unsigned part1Size = srcPos + 1;
+        const unsigned part2Size = dstPos - srcPos - 1;
+        const unsigned part3Size = numHotBlocks - dstPos;
+
+        memcpy(tempOrder, blockOrder, sizeof(BasicBlock*) * part1Size);
+        memcpy(tempOrder + part1Size, blockOrder + part1Size + part2Size, sizeof(BasicBlock*) * part3Size);
+        memcpy(tempOrder + part1Size + part3Size, blockOrder + part1Size, sizeof(BasicBlock*) * part2Size);
+        std::swap(blockOrder, tempOrder);
+
+        for (unsigned i = part1Size; i < numHotBlocks; i++)
+        {
+            ordinals[blockOrder[i]->bbNum] = i;
+        }
+
+        assert((ordinals[srcBlk->bbNum] + 1) == ordinals[dstBlk->bbNum]);
+
+        if (srcNextEdge != nullptr)
+        {
+            cutPoints.Push(srcNextEdge);
+        }
+
+        if (dstPrevEdge != nullptr)
+        {
+            cutPoints.Push(dstPrevEdge);
+        }
+    }
+
+    if (modified)
+    {
+        for (unsigned i = 1; i < numHotBlocks; i++)
+        {
+            BasicBlock* const block = blockOrder[i - 1];
+            BasicBlock* const next  = blockOrder[i];
+            if (!block->NextIs(next))
+            {
+                fgUnlinkBlock(next);
+                fgInsertBBafter(block, next);
+            }
+        }
+    }
+}
+
 //-----------------------------------------------------------------------------
 // fgSearchImprovedLayout: Try to improve upon RPO-based layout with the 3-opt method:
 //   - Identify a subset of "interesting" (not cold, has branches, etc.) blocks to move
@@ -5139,224 +5328,225 @@ void Compiler::fgMoveColdBlocks()
 // Template parameters:
 //    hasEH - If true, method has EH regions, so check that we don't try to move blocks in different regions
 //
-template <bool hasEH>
-void Compiler::fgSearchImprovedLayout()
-{
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgSearchImprovedLayout()\n");
+// template <bool hasEH>
+// void Compiler::fgSearchImprovedLayout()
+// {
+// #ifdef DEBUG
+//     if (verbose)
+//     {
+//         printf("*************** In fgSearchImprovedLayout()\n");
 
-        printf("\nInitial BasicBlocks");
-        fgDispBasicBlocks(verboseTrees);
-        printf("\n");
-    }
-#endif // DEBUG
+//         printf("\nInitial BasicBlocks");
+//         fgDispBasicBlocks(verboseTrees);
+//         printf("\n");
+//     }
+// #endif // DEBUG
 
-    BlockSet    visitedBlocks(BlockSetOps::MakeEmpty(this));
-    BasicBlock* startBlock = nullptr;
+//     BlockSet    visitedBlocks(BlockSetOps::MakeEmpty(this));
+//     BasicBlock* startBlock = nullptr;
 
-    // Find the first block that doesn't fall into its hottest successor.
-    // This will be our first "interesting" block.
-    //
-    for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
-    {
-        // Ignore try/handler blocks
-        if (hasEH && (block->hasTryIndex() || block->hasHndIndex()))
-        {
-            continue;
-        }
+//     // Find the first block that doesn't fall into its hottest successor.
+//     // This will be our first "interesting" block.
+//     //
+//     for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
+//     {
+//         // Ignore try/handler blocks
+//         if (hasEH && (block->hasTryIndex() || block->hasHndIndex()))
+//         {
+//             continue;
+//         }
 
-        BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
-        FlowEdge* hottestSuccEdge = nullptr;
+//         BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
+//         FlowEdge* hottestSuccEdge = nullptr;
 
-        for (FlowEdge* const succEdge : block->SuccEdges(this))
-        {
-            BasicBlock* const succ = succEdge->getDestinationBlock();
+//         for (FlowEdge* const succEdge : block->SuccEdges(this))
+//         {
+//             BasicBlock* const succ = succEdge->getDestinationBlock();
 
-            // Ignore try/handler successors
-            //
-            if (hasEH && (succ->hasTryIndex() || succ->hasHndIndex()))
-            {
-                continue;
-            }
+//             // Ignore try/handler successors
+//             //
+//             if (hasEH && (succ->hasTryIndex() || succ->hasHndIndex()))
+//             {
+//                 continue;
+//             }
 
-            const bool isForwardJump = !BlockSetOps::IsMember(this, visitedBlocks, succ->bbNum);
+//             const bool isForwardJump = !BlockSetOps::IsMember(this, visitedBlocks, succ->bbNum);
 
-            if (isForwardJump &&
-                ((hottestSuccEdge == nullptr) || (succEdge->getLikelihood() > hottestSuccEdge->getLikelihood())))
-            {
-                hottestSuccEdge = succEdge;
-            }
-        }
+//             if (isForwardJump &&
+//                 ((hottestSuccEdge == nullptr) || (succEdge->getLikelihood() > hottestSuccEdge->getLikelihood())))
+//             {
+//                 hottestSuccEdge = succEdge;
+//             }
+//         }
 
-        if ((hottestSuccEdge != nullptr) && !block->NextIs(hottestSuccEdge->getDestinationBlock()))
-        {
-            // We found the first "interesting" block that doesn't fall into its hottest successor
-            //
-            startBlock = block;
-            break;
-        }
-    }
+//         if ((hottestSuccEdge != nullptr) && !block->NextIs(hottestSuccEdge->getDestinationBlock()))
+//         {
+//             // We found the first "interesting" block that doesn't fall into its hottest successor
+//             //
+//             startBlock = block;
+//             break;
+//         }
+//     }
 
-    if (startBlock == nullptr)
-    {
-        JITDUMP("\nSkipping reordering");
-        return;
-    }
+//     if (startBlock == nullptr)
+//     {
+//         JITDUMP("\nSkipping reordering");
+//         return;
+//     }
 
-    // blockVector will contain the set of interesting blocks to move.
-    // tempBlockVector will assist with moving segments of interesting blocks.
-    //
-    BasicBlock**                blockVector     = new BasicBlock*[fgBBNumMax];
-    BasicBlock**                tempBlockVector = new BasicBlock*[fgBBNumMax];
-    unsigned                    blockCount      = 0;
-    ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator(), hasEH ? ArrayStack<CallFinallyPair>::builtinSize : 0);
+//     // blockVector will contain the set of interesting blocks to move.
+//     // tempBlockVector will assist with moving segments of interesting blocks.
+//     //
+//     BasicBlock**                blockVector     = new BasicBlock*[fgBBNumMax];
+//     BasicBlock**                tempBlockVector = new BasicBlock*[fgBBNumMax];
+//     unsigned                    blockCount      = 0;
+//     ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator(), hasEH ? ArrayStack<CallFinallyPair>::builtinSize :
+//     0);
 
-    for (BasicBlock* const block : Blocks(startBlock, fgLastBBInMainFunction()))
-    {
-        // Don't consider blocks in EH regions
-        //
-        if (block->hasTryIndex() || block->hasHndIndex())
-        {
-            continue;
-        }
+//     for (BasicBlock* const block : Blocks(startBlock, fgLastBBInMainFunction()))
+//     {
+//         // Don't consider blocks in EH regions
+//         //
+//         if (block->hasTryIndex() || block->hasHndIndex())
+//         {
+//             continue;
+//         }
 
-        // We've reached the cold section of the main method body;
-        // nothing is interesting at this point
-        //
-        if (block->isRunRarely())
-        {
-            break;
-        }
+//         // We've reached the cold section of the main method body;
+//         // nothing is interesting at this point
+//         //
+//         if (block->isRunRarely())
+//         {
+//             break;
+//         }
 
-        blockVector[blockCount]       = block;
-        tempBlockVector[blockCount++] = block;
+//         blockVector[blockCount]       = block;
+//         tempBlockVector[blockCount++] = block;
 
-        if (hasEH && block->isBBCallFinallyPair())
-        {
-            callFinallyPairs.Emplace(block, block->Next());
-        }
-    }
+//         if (hasEH && block->isBBCallFinallyPair())
+//         {
+//             callFinallyPairs.Emplace(block, block->Next());
+//         }
+//     }
 
-    if (blockCount < 3)
-    {
-        JITDUMP("\nNot enough interesting blocks; skipping reordering");
-        return;
-    }
+//     if (blockCount < 3)
+//     {
+//         JITDUMP("\nNot enough interesting blocks; skipping reordering");
+//         return;
+//     }
 
-    JITDUMP("\nInteresting blocks: [" FMT_BB "-" FMT_BB "]", startBlock->bbNum, blockVector[blockCount - 1]->bbNum);
+//     JITDUMP("\nInteresting blocks: [" FMT_BB "-" FMT_BB "]", startBlock->bbNum, blockVector[blockCount - 1]->bbNum);
 
-    auto evaluateCost = [](BasicBlock* const block, BasicBlock* const next) -> weight_t {
-        assert(block != nullptr);
+    // auto evaluateCost = [](BasicBlock* const block, BasicBlock* const next) -> weight_t {
+    //     assert(block != nullptr);
 
-        if ((block->NumSucc() == 0) || (next == nullptr))
-        {
-            return 0.0;
-        }
+    //     if ((block->NumSucc() == 0) || (next == nullptr))
+    //     {
+    //         return 0.0;
+    //     }
 
-        const weight_t cost = block->bbWeight;
+    //     const weight_t cost = block->bbWeight;
 
-        for (FlowEdge* const edge : block->SuccEdges())
-        {
-            if (edge->getDestinationBlock() == next)
-            {
-                return cost - edge->getLikelyWeight();
-            }
-        }
+    //     for (FlowEdge* const edge : block->SuccEdges())
+    //     {
+    //         if (edge->getDestinationBlock() == next)
+    //         {
+    //             return cost - edge->getLikelyWeight();
+    //         }
+    //     }
 
-        return cost;
-    };
+//         return cost;
+//     };
 
-    // finalBlock is the first block after the set of interesting blocks.
-    // We will need to keep track of it to compute the cost of creating/breaking fallthrough into it.
-    // finalBlock can be null.
-    //
-    BasicBlock* const  finalBlock     = blockVector[blockCount - 1]->Next();
-    bool               improvedLayout = true;
-    constexpr unsigned maxIter        = 5; // TODO: Reconsider?
+//     // finalBlock is the first block after the set of interesting blocks.
+//     // We will need to keep track of it to compute the cost of creating/breaking fallthrough into it.
+//     // finalBlock can be null.
+//     //
+//     BasicBlock* const  finalBlock     = blockVector[blockCount - 1]->Next();
+//     bool               improvedLayout = true;
+//     constexpr unsigned maxIter        = 5; // TODO: Reconsider?
 
-    for (unsigned numIter = 0; improvedLayout && (numIter < maxIter); numIter++)
-    {
-        JITDUMP("\n\n--Iteration %d--", (numIter + 1));
-        improvedLayout              = false;
-        BasicBlock* const exitBlock = blockVector[blockCount - 1];
+//     for (unsigned numIter = 0; improvedLayout && (numIter < maxIter); numIter++)
+//     {
+//         JITDUMP("\n\n--Iteration %d--", (numIter + 1));
+//         improvedLayout              = false;
+//         BasicBlock* const exitBlock = blockVector[blockCount - 1];
 
-        for (unsigned i = 1; i < (blockCount - 1); i++)
-        {
-            BasicBlock* const blockI     = blockVector[i];
-            BasicBlock* const blockIPrev = blockVector[i - 1];
+//         for (unsigned i = 1; i < (blockCount - 1); i++)
+//         {
+//             BasicBlock* const blockI     = blockVector[i];
+//             BasicBlock* const blockIPrev = blockVector[i - 1];
 
-            for (unsigned j = i + 1; j < blockCount; j++)
-            {
-                // Evaluate the current partition at (i,j)
-                // S1: 0 ~ i-1
-                // S2: i ~ j-1
-                // S3: j ~ exitBlock
+//             for (unsigned j = i + 1; j < blockCount; j++)
+//             {
+//                 // Evaluate the current partition at (i,j)
+//                 // S1: 0 ~ i-1
+//                 // S2: i ~ j-1
+//                 // S3: j ~ exitBlock
 
-                BasicBlock* const blockJ     = blockVector[j];
-                BasicBlock* const blockJPrev = blockVector[j - 1];
+//                 BasicBlock* const blockJ     = blockVector[j];
+//                 BasicBlock* const blockJPrev = blockVector[j - 1];
 
-                const weight_t oldScore = evaluateCost(blockIPrev, blockI) + evaluateCost(blockJPrev, blockJ) +
-                                          evaluateCost(exitBlock, finalBlock);
-                const weight_t newScore = evaluateCost(blockIPrev, blockJ) + evaluateCost(exitBlock, blockI) +
-                                          evaluateCost(blockJPrev, finalBlock);
+//                 const weight_t oldScore = evaluateCost(blockIPrev, blockI) + evaluateCost(blockJPrev, blockJ) +
+//                                           evaluateCost(exitBlock, finalBlock);
+//                 const weight_t newScore = evaluateCost(blockIPrev, blockJ) + evaluateCost(exitBlock, blockI) +
+//                                           evaluateCost(blockJPrev, finalBlock);
 
-                if ((newScore < oldScore) && !Compiler::fgProfileWeightsEqual(oldScore, newScore, 0.001))
-                {
-                    JITDUMP("\nFound better layout by partitioning at i=%d, j=%d", i, j);
-                    JITDUMP("\nOld score: %f, New score: %f", oldScore, newScore);
-                    const unsigned part1Size = i;
-                    const unsigned part2Size = j - i;
-                    const unsigned part3Size = blockCount - j;
+//                 if ((newScore < oldScore) && !Compiler::fgProfileWeightsEqual(oldScore, newScore, 0.001))
+//                 {
+//                     JITDUMP("\nFound better layout by partitioning at i=%d, j=%d", i, j);
+//                     JITDUMP("\nOld score: %f, New score: %f", oldScore, newScore);
+//                     const unsigned part1Size = i;
+//                     const unsigned part2Size = j - i;
+//                     const unsigned part3Size = blockCount - j;
 
-                    memcpy(tempBlockVector, blockVector, sizeof(BasicBlock*) * part1Size);
-                    memcpy(tempBlockVector + part1Size, blockVector + part1Size + part2Size,
-                           sizeof(BasicBlock*) * part3Size);
-                    memcpy(tempBlockVector + part1Size + part3Size, blockVector + part1Size,
-                           sizeof(BasicBlock*) * part2Size);
+//                     memcpy(tempBlockVector, blockVector, sizeof(BasicBlock*) * part1Size);
+//                     memcpy(tempBlockVector + part1Size, blockVector + part1Size + part2Size,
+//                            sizeof(BasicBlock*) * part3Size);
+//                     memcpy(tempBlockVector + part1Size + part3Size, blockVector + part1Size,
+//                            sizeof(BasicBlock*) * part2Size);
 
-                    std::swap(blockVector, tempBlockVector);
-                    improvedLayout = true;
-                    break;
-                }
-            }
+//                     std::swap(blockVector, tempBlockVector);
+//                     improvedLayout = true;
+//                     break;
+//                 }
+//             }
 
-            if (improvedLayout)
-            {
-                break;
-            }
-        }
-    }
+//             if (improvedLayout)
+//             {
+//                 break;
+//             }
+//         }
+//     }
 
-    // Rearrange blocks
-    //
-    for (unsigned i = 1; i < blockCount; i++)
-    {
-        BasicBlock* const block = blockVector[i - 1];
-        BasicBlock* const next  = blockVector[i];
-        assert(BasicBlock::sameEHRegion(block, next));
+//     // Rearrange blocks
+//     //
+//     for (unsigned i = 1; i < blockCount; i++)
+//     {
+//         BasicBlock* const block = blockVector[i - 1];
+//         BasicBlock* const next  = blockVector[i];
+//         assert(BasicBlock::sameEHRegion(block, next));
 
-        if (!block->NextIs(next))
-        {
-            fgUnlinkBlock(next);
-            fgInsertBBafter(block, next);
-        }
-    }
+//         if (!block->NextIs(next))
+//         {
+//             fgUnlinkBlock(next);
+//             fgInsertBBafter(block, next);
+//         }
+//     }
 
-    // Fix call-finally pairs
-    //
-    for (int i = 0; hasEH && (i < callFinallyPairs.Height()); i++)
-    {
-        const CallFinallyPair& pair = callFinallyPairs.BottomRef(i);
+//     // Fix call-finally pairs
+//     //
+//     for (int i = 0; hasEH && (i < callFinallyPairs.Height()); i++)
+//     {
+//         const CallFinallyPair& pair = callFinallyPairs.BottomRef(i);
 
-        if (!pair.callFinally->NextIs(pair.callFinallyRet))
-        {
-            fgUnlinkBlock(pair.callFinallyRet);
-            fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
-        }
-    }
-}
+//         if (!pair.callFinally->NextIs(pair.callFinallyRet))
+//         {
+//             fgUnlinkBlock(pair.callFinallyRet);
+//             fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
+//         }
+//     }
+// }
 
 //-------------------------------------------------------------
 // ehUpdateTryLasts: Iterates EH descriptors, updating each try region's

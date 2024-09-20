@@ -11,8 +11,9 @@ private:
     jitstd::vector<T> data;
     Compare           comp;
 
+#ifdef DEBUG
     // Returns true only if each element has a higher priority than its children.
-    bool verifyMaxHeap() const
+    bool VerifyMaxHeap() const
     {
         for (size_t i = 0; i < data.size(); i++)
         {
@@ -37,6 +38,7 @@ private:
 
         return true;
     }
+#endif // DEBUG
 
 public:
     PriorityQueue(const jitstd::allocator<T>& allocator, const Compare& compare)
@@ -45,25 +47,20 @@ public:
     {
     }
 
-    const T& top() const
+    const T& Top() const
     {
         assert(!data.empty());
         return data.front();
     }
 
-    bool empty() const
+    bool Empty() const
     {
         return data.empty();
     }
 
-    size_t size() const
-    {
-        return data.size();
-    }
-
     // Insert new element at the back of the vector.
     // Then, while the new element has a higher priority than its parent, swap them.
-    void push(const T& value)
+    void Push(const T& value)
     {
         size_t i = data.size();
         data.push_back(value);
@@ -77,13 +74,13 @@ public:
             std::swap(data[parent], data[i]);
         }
 
-        assert(verifyMaxHeap());
+        assert(VerifyMaxHeap());
     }
 
     // Swap the root and last element to facilitate removing the former.
     // Then, while the new root element has a lower priority than its children,
     // swap the element with its highest-priority child.
-    void pop()
+    void Pop()
     {
         assert(!data.empty());
         std::swap(data.front(), data.back());
@@ -108,6 +105,6 @@ public:
             }
         }
 
-        assert(verifyMaxHeap());
+        assert(VerifyMaxHeap());
     }
 };
