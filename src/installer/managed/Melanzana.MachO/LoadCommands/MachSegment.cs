@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Numerics;
 using Melanzana.Streams;
 
 namespace Melanzana.MachO
@@ -65,12 +66,13 @@ namespace Melanzana.MachO
             {
                 if (IsLinkEditSegment)
                 {
-                    return objectFile.LinkEditData.Select(d => d.FileOffset + d.Size).Max() - FileOffset;
+                    ulong linkEditDataRequirement = objectFile.LinkEditData.Select(d => d.FileOffset + d.Size).Max() - FileOffset;
+                    return Math.Max(linkEditDataRequirement, fileSize);
                 }
 
                 return Sections.Count > 0 ? fileSize : (ulong)(dataStream?.Length ?? 0);
             }
-            internal set
+            set
             {
                 // Used by MachReader and MachObjectFile.UpdateLayout
                 fileSize = value;
@@ -97,7 +99,8 @@ namespace Melanzana.MachO
                 if (IsLinkEditSegment)
                 {
                     const uint pageAlignment = 0x4000 - 1;
-                    return (FileSize + pageAlignment) & ~pageAlignment;
+                    ulong requiredSpace = Math.Max(FileSize, size);
+                    return (requiredSpace + pageAlignment) & ~pageAlignment;
                 }
 
                 return size;

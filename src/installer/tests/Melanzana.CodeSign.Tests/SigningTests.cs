@@ -6,6 +6,9 @@ using Melanzana.Streams;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using Microsoft.DotNet.CoreSetup.Test;
+using System;
+using FluentAssertions;
+using Microsoft.NET.HostModel.AppHost;
 
 namespace Melanzana.CodeSign.Tests
 {
@@ -17,6 +20,69 @@ namespace Melanzana.CodeSign.Tests
             var objectFile = MachReader.Read(aOutStream).FirstOrDefault();
             Assert.NotNull(objectFile);
             return objectFile;
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void UnsignSingleFileAppHost()
+        {
+            TestArtifact testArtifact = TestArtifact.Create(nameof(UnsignSingleFileAppHost));
+            string singleFileAppHostCodesign = Path.Combine(testArtifact.Location, Binaries.SingleFileHost.FileName);
+            string singleFileAppHostManagedSign = Path.Combine(testArtifact.Location, Binaries.SingleFileHost.FileName + ".managed");
+            File.Copy(Binaries.SingleFileHost.FilePath, singleFileAppHostCodesign);
+            HostWriter.
+            File.Copy(Binaries.SingleFileHost.FilePath, singleFileAppHostManagedSign);
+            Codesign.Run("--remove-signature", singleFileAppHostCodesign);
+            Signer.TryRemoveCodesign(singleFileAppHostManagedSign);
+
+            var originalFileBytes = File.ReadAllBytes(singleFileAppHostCodesign);
+            var nextFileBytes = File.ReadAllBytes(singleFileAppHostManagedSign);
+            originalFileBytes.SequenceEqual(nextFileBytes).Should().BeTrue();
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void MatchesCodesignOutput()
+        {
+            var testArtifact = TestArtifact.Create(nameof(MatchesCodesignOutput));
+            var aOutStream = typeof(SigningTests).Assembly.GetManifestResourceStream("Melanzana.CodeSign.Tests.Data.a.out")!;
+            Span<byte> aOut = new byte[aOutStream.Length];
+            aOutStream.ReadFully(aOut);
+            var originalFileTmpName = Path.Combine(testArtifact.Location, "a.out");
+            var nextFileName = Path.Combine(testArtifact.Location, "b.out");
+            File.WriteAllBytes(originalFileTmpName, aOut);
+            File.WriteAllBytes(nextFileName, aOut);
+
+            var (exitCode, output) = Codesign.Run("--verify", originalFileTmpName);
+            if (exitCode == 0)
+            {
+                // Unsign if necessary and ensure identical
+                Codesign.Run("--remove-signature", originalFileTmpName);
+                Signer.TryRemoveCodesign(nextFileName);
+
+                var originalFileBytes = File.ReadAllBytes(originalFileTmpName);
+                var nextFileBytes = File.ReadAllBytes(nextFileName);
+                originalFileBytes.SequenceEqual(nextFileBytes).Should().BeTrue();
+            }
+
+            // Re-sign and compare
+            Codesign.Run("-s -", originalFileTmpName);
+            Signer.AdHocSign(nextFileName);
+            var zippedData = File.ReadAllBytes(originalFileTmpName).Zip(File.ReadAllBytes(nextFileName));
+            // Assert.All(zippedData.Select(t => t.First == t.Second), Assert.True);
+            Codesign.Run("--verify", originalFileTmpName).ExitCode.Should().Be(0);
+            Codesign.Run("--verify", nextFileName).ExitCode.Should().Be(0);
+
+            // Unsign twice and ensure identical
+            Codesign.Run("--remove-signature", originalFileTmpName);
+            Signer.TryRemoveCodesign(nextFileName).Should().BeTrue();
+            zippedData = File.ReadAllBytes(originalFileTmpName).Zip(File.ReadAllBytes(nextFileName));
+            Assert.All(zippedData.Select(t => t.First == t.Second), Assert.True);
+
+            Codesign.Run("--remove-signature", originalFileTmpName);
+            Signer.TryRemoveCodesign(nextFileName).Should().BeFalse();
+            zippedData = File.ReadAllBytes(originalFileTmpName).Zip(File.ReadAllBytes(nextFileName));
+            Assert.All(zippedData.Select(t => t.First == t.Second), Assert.True);
         }
 
         [Fact]

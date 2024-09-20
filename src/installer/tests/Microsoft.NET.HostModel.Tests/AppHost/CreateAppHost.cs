@@ -13,10 +13,12 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 using FluentAssertions;
+using Melanzana.CodeSign;
 using Melanzana.CodeSign.Blobs;
 using Melanzana.MachO;
 using Melanzana.MachO.Tests;
 using Melanzana.Streams;
+using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Helpers;
 using Xunit;
@@ -440,6 +442,40 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             using (TestApp app = TestApp.CreateFromBuiltAssets("AppWithUnknownLanguageResource"))
             {
                 app.CreateAppHost();
+            }
+        }
+
+        [Fact]
+        public void SigningAppHostRuns()
+        {
+            using (var testAppHost = TestArtifact.Create("SigningAppHost"))
+            {
+                var tmpAppHostPath = Path.Combine(testAppHost.Location, Path.GetFileName(Binaries.SingleFileHost.FilePath));
+                File.Copy(Binaries.SingleFileHost.FilePath, Path.Combine(testAppHost.Location, tmpAppHostPath));
+                long preRemovalSize = new FileInfo(testAppHost.Location).Length;
+                if (Signer.TryRemoveCodesign(tmpAppHostPath))
+                {
+                    Assert.True(preRemovalSize > new FileInfo(testAppHost.Location).Length);
+                }
+                else
+                {
+                    Assert.Equal(preRemovalSize, new FileInfo(testAppHost.Location).Length);
+                }
+                Signer.AdHocSign(tmpAppHostPath);
+                File.SetUnixFileMode(tmpAppHostPath, UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+                var executedCommand = Command.Create(tmpAppHostPath)
+                    .CaptureStdErr()
+                    .CaptureStdOut()
+                    .Execute();
+                executedCommand.ExitCode.Should().NotBe(139);
+                Signer.TryRemoveCodesign(tmpAppHostPath);
+                Signer.AdHocSign(tmpAppHostPath);
+                File.SetUnixFileMode(tmpAppHostPath, UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+                executedCommand = Command.Create(tmpAppHostPath)
+                    .CaptureStdErr()
+                    .CaptureStdOut()
+                    .Execute();
+                executedCommand.ExitCode.Should().NotBe(139);
             }
         }
 

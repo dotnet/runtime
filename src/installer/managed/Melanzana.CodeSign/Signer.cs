@@ -163,7 +163,6 @@ namespace Melanzana.CodeSign
         {
             var attributes = File.GetAttributes(path);
 
-            // Assume a directory is a bundle
             if (attributes.HasFlag(FileAttributes.Directory))
             {
                 throw new NotImplementedException("Signing bundles is not yet supported");
@@ -180,15 +179,43 @@ namespace Melanzana.CodeSign
             }
             MachObjectFile objectFile = MachReader.Read(inputStream).Single();
 
-            MachCodeSignature? codeSignature = objectFile.LoadCommands.OfType<MachCodeSignature>().FirstOrDefault();
+            MachCodeSignature? codeSignature = null;
+            MachSegment? linkEditSegment = null;
+            foreach(var loadCommand in objectFile.LoadCommands)
+            {
+                if (loadCommand is MachCodeSignature lccs)
+                {
+                    codeSignature = lccs;
+                }
+                if (loadCommand is MachSegment segment && segment.IsLinkEditSegment)
+                {
+                    linkEditSegment = segment;
+                }
+            }
             if (codeSignature is null)
             {
                 return false;
             }
-            objectFile!.LoadCommands.Remove(codeSignature!);
+            objectFile.LoadCommands.Remove(codeSignature);
+
             outputStream.Position = 0;
-            MachWriter.Write(outputStream, objectFile);
-            outputStream.SetLength(outputStream.Position);
+            if (linkEditSegment is not null)
+            {
+                linkEditSegment.FileSize -= codeSignature.FileSize;
+            }
+            using (var tmpMemoryStream = new MemoryStream())
+            {
+                MachWriter.Write(tmpMemoryStream, objectFile);
+                tmpMemoryStream.Position = 0;
+                outputStream.Position = 0;
+                tmpMemoryStream.CopyTo(outputStream);
+                outputStream.SetLength(tmpMemoryStream.Length);
+            }
+
+            if (linkEditSegment is not null)
+            {
+                outputStream.SetLength((long)(linkEditSegment.FileOffset + linkEditSegment.FileSize));
+            }
             return true;
         }
 
@@ -199,13 +226,21 @@ namespace Melanzana.CodeSign
         {
             outputPath ??= inputPath;
 
-            using FileStream inputStream = File.Open(inputPath, FileMode.Open, FileAccess.ReadWrite);
             if (inputPath == outputPath)
             {
-                return TryRemoveCodesign(inputStream, inputStream);
+                string tmpFileName = Path.GetTempFileName();
+                bool removed;
+                using (FileStream inputStream = File.Open(inputPath, FileMode.Open, FileAccess.ReadWrite))
+                using (FileStream tmpStream = File.Open(tmpFileName, FileMode.Open, FileAccess.Write))
+                {
+                    removed = TryRemoveCodesign(inputStream, tmpStream);
+                }
+                File.Copy(tmpFileName, outputPath, true);
+                return removed;
             }
-            using FileStream outputStream = File.Open(outputPath, FileMode.Create, FileAccess.Write);
-            return TryRemoveCodesign(inputStream, outputStream);
+            using (FileStream outputStream = File.Open(outputPath, FileMode.Create, FileAccess.Write))
+            using (FileStream inputStream = File.Open(inputPath, FileMode.Open, FileAccess.ReadWrite))
+                return TryRemoveCodesign(inputStream, outputStream);
         }
     }
 }

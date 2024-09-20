@@ -67,9 +67,9 @@ namespace Microsoft.NET.HostModel.Bundle
             _options = _target.DefaultOptions | options;
             if (macosCodesign == true && !_target.IsOSX)
             {
-                throw new ArgumentException("macosCodesign can only be set to true when publishing for OSX", nameof(macosCodesign));
+                throw new ArgumentException("macosCodesign should only be set to true when publishing for OSX", nameof(macosCodesign));
             }
-            _macosCodesign = macosCodesign ?? targetOS == OSPlatform.OSX;
+            _macosCodesign = macosCodesign ?? _target.IsOSX;
         }
 
         private bool ShouldCompress(FileType type)
@@ -278,11 +278,10 @@ namespace Microsoft.NET.HostModel.Bundle
 
             BinaryUtils.CopyFile(hostSource, bundlePath);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (_target.IsOSX)
             {
-                Signer.TryRemoveCodesign(bundlePath);
+                Codesign
             }
-
             // Note: We're comparing file paths both on the OS we're running on as well as on the target OS for the app
             // We can't really make assumptions about the file systems (even on Linux there can be case insensitive file systems
             // and vice versa for Windows). So it's safer to do case sensitive comparison everywhere.

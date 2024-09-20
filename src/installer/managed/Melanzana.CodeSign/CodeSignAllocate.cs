@@ -22,7 +22,7 @@ namespace Melanzana.CodeSign
         public void SetArchSize(MachObjectFile machO, uint codeSignatureSize)
         {
             // Page alignment
-            codeSignatureSize = (codeSignatureSize + 0x3fffu) & ~0x3fffu;
+            // codeSignatureSize = (codeSignatureSize + 0x3fffu) & ~0x3fffu;
 
             UpdateCodeSignatureLayout(machO, codeSignatureSize);
         }
