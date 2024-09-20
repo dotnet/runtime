@@ -901,6 +901,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                     case ComplexTypeSpec complexType:
                         {
+                            // Early detection of types we cannot bind to and skip it.
+                            if (!_typeIndex.HasBindableMembers(complexType) &&
+                                !_typeIndex.GetEffectiveTypeSpec(complexType).IsValueType &&
+                                complexType is not CollectionSpec &&
+                                ((ObjectSpec)complexType).InstantiationStrategy == ObjectInstantiationStrategy.ParameterizedConstructor)
+                            {
+                                return false;
+                            }
+
                             string sectionValidationCall = $"{MethodsToGen_CoreBindingHelper.AsConfigWithChildren}({sectionParseExpr})";
                             string sectionIdentifier = GetIncrementalIdentifier(Identifier.section);
 
