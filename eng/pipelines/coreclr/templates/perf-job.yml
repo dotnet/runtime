@@ -168,7 +168,7 @@ jobs:
       - script: |
           set -x
           pwd
-          git clone https://github.com/dotnet/performance.git --depth 1 -b ${{ parameters.perfBranch }} --single-branch
+          git clone https://github.com/am11/performance.git --depth 1 -b patch-1 --single-branch
         displayName:  Clone performance
         workingDirectory: $(Agent.BuildDirectory)
     - ${{ if ne(variables['System.TeamProject'], 'public') }}:
