@@ -1840,6 +1840,24 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
+      #
+      # Build CoreCLR GC with TRACE_GC
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Checked
+          runtimeFlavor: coreclr
+          platforms:
+            - linux_x64
+          jobParameters:
+            nameSuffix: CoreCLR_GC_TRACE_GC
+            buildArgs: -s clr.runtime -c $(_BuildConfig) -cmakeargs -DTRACE_GC=1
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr_GC.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
     - stage: SourceBuild
       displayName: Source Build Validation
       dependsOn: []

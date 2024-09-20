@@ -100,6 +100,10 @@ list(APPEND GC_SOURCES ${GC_HEADERS})
 
 convert_to_absolute_path(GC_SOURCES ${GC_SOURCES})
 
+if (TRACE_GC)
+  add_compile_definitions(TRACE_GC)
+endif (TRACE_GC)
+
 # clrgcexp is build with standalone+regions
 if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   add_library_clr(clrgcexp SHARED ${GC_SOURCES})
