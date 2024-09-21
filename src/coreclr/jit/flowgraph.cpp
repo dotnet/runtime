@@ -3384,6 +3384,11 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
         return;
     }
 
+    // Fetch block data and designator
+    //
+    AcdKeyDesignator dsg     = AcdKeyDesignator::KD_NONE;
+    unsigned const   refData = (kind == SCK_FAIL_FAST) ? 0 : bbThrowIndex(srcBlk, &dsg);
+
     // Look for an existing entry that matches what we're looking for
     //
     AddCodeDsc* add = fgFindExcptnTarget(kind, srcBlk);
@@ -3391,16 +3396,11 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     if (add != nullptr)
     {
         JITDUMP(FMT_BB " requires throw helper block for %s, sharing ACD%u (data 0x%08x)\n", srcBlk->bbNum,
-                sckName(kind), add->acdNum, add->refData);
+                sckName(kind), add->acdNum, refData);
         return;
     }
 
     assert(!fgRngChkThrowAdded);
-
-    // Fetch block data and designator
-    //
-    AcdKeyDesignator dsg     = AcdKeyDesignator::KD_NONE;
-    unsigned const   refData = (kind == SCK_FAIL_FAST) ? 0 : bbThrowIndex(srcBlk, &dsg);
 
     // Allocate a new entry and prepend it to the list
     //
