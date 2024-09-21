@@ -5316,6 +5316,8 @@ public:
                                       unsigned    xcptnIndex,
                                       bool        putInTryRegion);
 
+    BasicBlock* fgNewBBatTryRegionEnd(BBKinds jumpKind, unsigned tryIndex);
+
     void fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk);
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
     void fgUnlinkBlock(BasicBlock* block);
@@ -7051,6 +7053,7 @@ public:
     PhaseStatus optSwitchRecognition();
     bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, weight_t falseLikelihood, GenTree* nodeToTest);
     bool optSwitchDetectAndConvert(BasicBlock* firstBlock);
+    bool optExtendSwitch(BasicBlock* block);
 
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication
@@ -8334,6 +8337,8 @@ public:
 
     void        eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle);
     const char* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
+
+    const char* eeGetClassAssemblyName(CORINFO_CLASS_HANDLE clsHnd);
 
 #if defined(DEBUG)
     unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
@@ -10505,6 +10510,7 @@ public:
         STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
         STRESS_MODE(STORE_BLOCK_UNROLLING)                                                      \
+        STRESS_MODE(DONT_LIMIT_JUMP_TABLE)                                                      \
         STRESS_MODE(COUNT)
 
     enum                compStressArea

@@ -77,7 +77,6 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
 
 class MethodTable;
 class Thread;
-class BaseDomain;
 class Assembly;
 class DomainAssembly;
 class AssemblyNative;
@@ -1219,13 +1218,6 @@ class ReflectModuleBaseObject : public Object
     }
 };
 
-NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pModule, OBJECTREF keepAlive);
-#define FC_RETURN_MODULE_OBJECT(pModule, refKeepAlive) FC_INNER_RETURN(ReflectModuleBaseObject*, GetRuntimeModuleHelper(__me, pModule, refKeepAlive))
-
-
-
-
-
 class ThreadBaseObject;
 class SynchronizationContextObject: public Object
 {
@@ -1302,7 +1294,6 @@ typedef DPTR(class ThreadBaseObject) PTR_ThreadBaseObject;
 class ThreadBaseObject : public Object
 {
     friend class ClrDataAccess;
-    friend class ThreadNative;
     friend class CoreLibBinder;
     friend class Object;
 
@@ -1439,8 +1430,6 @@ class AssemblyBaseObject : public Object
         SetObjectReference(&m_pSyncRoot, pSyncRoot);
     }
 };
-NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, Assembly *pAssembly, OBJECTREF keepAlive);
-#define FC_RETURN_ASSEMBLY_OBJECT(pAssembly, refKeepAlive) FC_INNER_RETURN(AssemblyBaseObject*, GetRuntimeAssemblyHelper(__me, pAssembly, refKeepAlive))
 
 // AssemblyLoadContextBaseObject
 // This class is the base class for AssemblyLoadContext
@@ -2172,6 +2161,64 @@ typedef PTR_LoaderAllocatorObject LOADERALLOCATORREF;
 #endif // USE_CHECKED_OBJECTREFS
 
 #endif // FEATURE_COLLECTIBLE_TYPES
+
+typedef DPTR(class GenericCacheStruct) PTR_GenericCacheStruct;
+class GenericCacheStruct
+{
+    friend class CoreLibBinder;
+    public:
+
+    ARRAYBASEREF GetTable() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _table;
+    }
+
+    int32_t CacheElementCount() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return GetTable()->GetNumComponents() - 1;
+    }
+
+    ARRAYBASEREF GetSentinelTable() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _sentinelTable;
+    }
+
+    void SetTable(ARRAYBASEREF table)
+    {
+        WRAPPER_NO_CONTRACT;
+        SetObjectReference((OBJECTREF*)&_table, (OBJECTREF)table);
+    }
+
+    void SetLastFlushSize(int32_t lastFlushSize)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _lastFlushSize = lastFlushSize;
+    }
+
+    int32_t GetInitialCacheSize() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _initialCacheSize;
+    }
+
+#ifdef DEBUG
+    static void ValidateLayout(MethodTable* pMTOfInstantiation);
+#endif
+
+    private:
+    // README:
+    // If you modify the order of these fields, make sure to update the definition in
+    // BCL for this object.
+
+    ARRAYBASEREF _table;
+    ARRAYBASEREF _sentinelTable;
+    int32_t _lastFlushSize;
+    int32_t _initialCacheSize;
+    int32_t _maxCacheSize;
+};
 
 // This class corresponds to Exception on the managed side.
 typedef DPTR(class ExceptionObject) PTR_ExceptionObject;

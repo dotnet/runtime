@@ -323,19 +323,6 @@ class StubLinkerCPU : public StubLinker
 #endif
         }
 
-#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
-        VOID EmitDisable(CodeLabel *pForwardRef, BOOL fCallIn, X86Reg ThreadReg);
-        VOID EmitRareDisable(CodeLabel *pRejoinPoint);
-        VOID EmitRareDisableHRESULT(CodeLabel *pRejoinPoint, CodeLabel *pExitPoint);
-
-        VOID EmitSetup(CodeLabel *pForwardRef);
-        VOID EmitRareSetup(CodeLabel* pRejoinPoint, BOOL fThrow);
-#endif // FEATURE_COMINTEROP && TARGET_X86
-
-#ifndef FEATURE_STUBS_AS_IL
-        VOID EmitCheckGSCookie(X86Reg frameReg, int gsCookieOffset);
-#endif // !FEATURE_STUBS_AS_IL
-
 #ifdef TARGET_X86
         VOID EmitUnboxMethodStub(MethodDesc* pRealMD);
 #endif // TARGET_X86
@@ -349,51 +336,10 @@ class StubLinkerCPU : public StubLinker
 #endif // FEATURE_SHARE_GENERIC_CODE
         VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 
-#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
-
-#if defined(PROFILING_SUPPORTED)
-        // These are used to emit calls to notify the profiler of transitions in and out of
-        // managed code through COM->COM+ interop or N/Direct
-        VOID EmitProfilerComCallProlog(TADDR pFrameVptr, X86Reg regFrame);
-        VOID EmitProfilerComCallEpilog(TADDR pFrameVptr, X86Reg regFrame);
-#endif // PROFILING_SUPPORTED
-
-        void EmitComMethodStubProlog(TADDR pFrameVptr, CodeLabel** rgRareLabels,
-            CodeLabel** rgRejoinLabels, BOOL bShouldProfile);
-
-        void EmitComMethodStubEpilog(TADDR pFrameVptr, CodeLabel** rgRareLabels,
-            CodeLabel** rgRejoinLabels, BOOL bShouldProfile);
-
-        //========================================================================
-        //  shared Epilog for stubs that enter managed code from COM
-        //  uses a return thunk within the method desc
-        void EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
-                                           CodeLabel** rgRareLabels,
-                                           CodeLabel** rgRejoinLabels,
-                                           unsigned offsetReturnThunk,
-                                           BOOL bShouldProfile);
-#endif // FEATURE_COMINTEROP && TARGET_X86
-
-#ifndef FEATURE_STUBS_AS_IL
-
-#ifdef TARGET_X86
-        //===========================================================================
-        // Emits code for Delegate.Invoke() any delegate type
-        VOID EmitDelegateInvoke();
-#endif // TARGET_X86
-
-#endif // !FEATURE_STUBS_AS_IL
-
         //===========================================================================
         // Emits code to adjust for a static delegate target.
         VOID EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
 
-
-#ifndef FEATURE_STUBS_AS_IL
-        //===========================================================================
-        // Emits code to break into debugger
-        VOID EmitDebugBreak();
-#endif // !FEATURE_STUBS_AS_IL
 
 #if defined(_DEBUG) && !defined(TARGET_UNIX)
         //===========================================================================

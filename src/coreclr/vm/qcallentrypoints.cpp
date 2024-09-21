@@ -67,6 +67,7 @@
 #endif //FEATURE_PERFTRACING
 
 #include "tailcallhelp.h"
+#include "JitQCallHelpers.h"
 
 #include <minipal/entrypoints.h>
 
@@ -118,6 +119,8 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_MakeArray)
     DllImportEntry(RuntimeTypeHandle_IsCollectible)
     DllImportEntry(RuntimeTypeHandle_GetConstraints)
+    DllImportEntry(RuntimeTypeHandle_GetAssemblySlow)
+    DllImportEntry(RuntimeTypeHandle_GetModuleSlow)
     DllImportEntry(RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals)
     DllImportEntry(RuntimeTypeHandle_VerifyInterfaceIsImplemented)
     DllImportEntry(RuntimeTypeHandle_GetInterfaceMethodImplementation)
@@ -158,6 +161,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ModuleHandle_ResolveMethod)
     DllImportEntry(ModuleHandle_ResolveField)
     DllImportEntry(ModuleHandle_GetPEKind)
+    DllImportEntry(AssemblyHandle_GetManifestModuleSlow)
     DllImportEntry(TypeBuilder_DefineGenericParam)
     DllImportEntry(TypeBuilder_DefineType)
     DllImportEntry(TypeBuilder_SetParentType)
@@ -235,10 +239,13 @@ static const Entry s_QCall[] =
     DllImportEntry(AppDomain_CreateDynamicAssembly)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
+    DllImportEntry(ThreadNative_GetCurrentThread)
     DllImportEntry(ThreadNative_SetIsBackground)
     DllImportEntry(ThreadNative_InformThreadNameChange)
     DllImportEntry(ThreadNative_YieldThread)
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
+    DllImportEntry(ThreadNative_Initialize)
+    DllImportEntry(ThreadNative_GetThreadState)
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     DllImportEntry(ThreadNative_GetApartmentState)
     DllImportEntry(ThreadNative_SetApartmentState)
@@ -252,9 +259,12 @@ static const Entry s_QCall[] =
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
 #endif // FEATURE_COMINTEROP
+    DllImportEntry(WaitHandle_WaitOneCore)
+    DllImportEntry(WaitHandle_WaitMultipleIgnoringSyncContext)
+    DllImportEntry(WaitHandle_SignalAndWait)
 #ifdef TARGET_UNIX
-    DllImportEntry(WaitHandle_CorWaitOnePrioritizedNative)
-#endif
+    DllImportEntry(WaitHandle_WaitOnePrioritized)
+#endif // TARGET_UNIX
     DllImportEntry(ClrConfig_GetConfigBoolValue)
     DllImportEntry(Buffer_Clear)
     DllImportEntry(Buffer_MemMove)
@@ -467,6 +477,8 @@ static const Entry s_QCall[] =
     DllImportEntry(EHEnumNext)
     DllImportEntry(AppendExceptionStackFrame)
 #endif // FEATURE_EH_FUNCLETS
+    DllImportEntry(ResolveVirtualFunctionPointer)
+    DllImportEntry(GenericHandleWorker)
 };
 
 const void* QCallResolveDllImport(const char* name)
