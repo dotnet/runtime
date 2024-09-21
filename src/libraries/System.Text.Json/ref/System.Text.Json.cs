@@ -8,6 +8,7 @@ namespace System.Runtime.InteropServices
 {
     public static partial class JsonMarshal
     {
+        public static System.ReadOnlySpan<byte> GetRawUtf8PropertyName(System.Text.Json.JsonProperty property) { throw null; }
         public static System.ReadOnlySpan<byte> GetRawUtf8Value(System.Text.Json.JsonElement element) { throw null; }
     }
 }
