@@ -126,20 +126,6 @@ LEAF_ENTRY RestoreFPUContext, _TEXT
     ret     4
 LEAF_END RestoreFPUContext, _TEXT
 
-NESTED_ENTRY StubRareDisableTHROW, _TEXT, NoHandler
-    push    eax
-    push    edx
-
-    push    ebx     // Thread
-
-    CHECK_STACK_ALIGNMENT
-    call    C_FUNC(StubRareDisableTHROWWorker)
-
-    pop     edx
-    pop     eax
-    ret
-NESTED_END StubRareDisableTHROW, _TEXT
-
 // ------------------------------------------------------------------------------
 //  This helper routine enregisters the appropriate arguments and makes the
 //  actual call.

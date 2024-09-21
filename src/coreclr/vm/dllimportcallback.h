@@ -308,12 +308,6 @@ public:
         RETURN m_pMD;
     }
 
-    static DWORD GetOffsetOfMethodDesc()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return offsetof(class UMEntryThunk, m_pMD);
-    }
-
     static DWORD GetCodeOffset()
     {
         LIMITED_METHOD_CONTRACT;
