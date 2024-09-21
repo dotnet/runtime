@@ -2,12 +2,7 @@
   <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <PropertyGroup>
       <PublishReadyToRunPerfmapFormatVersion Condition="'$(PublishReadyToRunPerfmapFormatVersion)' == ''">1</PublishReadyToRunPerfmapFormatVersion>
-      <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2Dir)', 'crossgen2$(ExeSuffix)'))</Crossgen2Path>
-      <R2RDotnetHostPath></R2RDotnetHostPath>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(CrossBuild)' == 'true' or '$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(EnableNativeSanitizers)' != ''">
-      <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2CrossDir)', 'crossgen2.dll'))</Crossgen2Path>
+      <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2.dll'))</Crossgen2Path>
       <R2RDotnetHostPath>$(DotNetTool)</R2RDotnetHostPath>
     </PropertyGroup>
 
