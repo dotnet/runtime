@@ -5705,9 +5705,6 @@ void AdjustContextForThreadStop(Thread* pThread,
 
     pThread->ResetThrowControlForThread();
 
-    // Should never get here if we're already throwing an exception.
-    _ASSERTE(!pThread->IsExceptionInProgress() || pThread->IsRudeAbort());
-
     // Should never get here if we're already abort initiated.
     _ASSERTE(!pThread->IsAbortInitiated() || pThread->IsRudeAbort());
 
@@ -6363,6 +6360,11 @@ void FaultingExceptionFrame::Init(CONTEXT *pContext)
     m_ReturnAddress = ::GetIP(pContext);
     CopyOSContext(&m_ctx, pContext);
 #endif // !FEATURE_EH_FUNCLETS
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    m_SSP = 0;
+#endif
+
 }
 
 //

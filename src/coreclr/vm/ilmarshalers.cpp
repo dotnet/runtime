@@ -1477,25 +1477,19 @@ LocalDesc ILOleColorMarshaler::GetManagedType()
 {
     STANDARD_VM_CONTRACT;
 
-    LoaderAllocator* pLoader = m_pargs->m_pMarshalInfo->GetModule()->GetLoaderAllocator();
-    TypeHandle  hndColorType = pLoader->GetMarshalingData()->GetOleColorMarshalingInfo()->GetColorType();
-
     //
     // value class
     //
-    return LocalDesc(hndColorType); // System.Drawing.Color
+    return LocalDesc(m_pargs->color.m_pColorType);
 }
 
 void ILOleColorMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    LoaderAllocator* pLoader = m_pargs->m_pMarshalInfo->GetModule()->GetLoaderAllocator();
-    MethodDesc* pConvertMD = pLoader->GetMarshalingData()->GetOleColorMarshalingInfo()->GetSystemColorToOleColorMD();
-
     EmitLoadManagedValue(pslILEmit);
-    // int System.Drawing.ColorTranslator.ToOle(System.Drawing.Color c)
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertMD), 1, 1);
+    pslILEmit->EmitBOX(pslILEmit->GetToken(m_pargs->color.m_pColorType));
+    pslILEmit->EmitCALL(METHOD__COLORMARSHALER__CONVERT_TO_NATIVE, 1, 1);
     EmitStoreNativeValue(pslILEmit);
 }
 
@@ -1503,12 +1497,9 @@ void ILOleColorMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit
 {
     STANDARD_VM_CONTRACT;
 
-    LoaderAllocator* pLoader = m_pargs->m_pMarshalInfo->GetModule()->GetLoaderAllocator();
-    MethodDesc* pConvertMD = pLoader->GetMarshalingData()->GetOleColorMarshalingInfo()->GetOleColorToSystemColorMD();
-
     EmitLoadNativeValue(pslILEmit);
-    // System.Drawing.Color System.Drawing.ColorTranslator.FromOle(int oleColor)
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertMD), 1, 1);
+    pslILEmit->EmitCALL(METHOD__COLORMARSHALER__CONVERT_TO_MANAGED, 1, 1);
+    pslILEmit->EmitUNBOX_ANY(pslILEmit->GetToken(m_pargs->color.m_pColorType));
     EmitStoreManagedValue(pslILEmit);
 }
 
@@ -4935,7 +4926,7 @@ void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__ICUSTOM_MARSHALER)));
 
     //
-    // call CreateCustomMarshalerHelper
+    // call CreateCustomMarshaler
     //
 
     pslILEmit->EmitLDTOKEN(pslILEmit->GetToken(m_pargs->rcm.m_pMD));
@@ -4946,10 +4937,7 @@ void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit
     pslILEmit->EmitLDTOKEN(pslILEmit->GetToken(TypeHandle::FromPtr(m_pargs->rcm.m_hndManagedType)));
     pslILEmit->EmitCALL(METHOD__RT_TYPE_HANDLE__TO_INTPTR, 1, 1);
 
-    pslILEmit->EmitCALL(METHOD__STUBHELPERS__CREATE_CUSTOM_MARSHALER_HELPER, 3, 1);  // Create the CustomMarshalerHelper
-
-    // Get the managed ICustomMarshaler object from the helper
-    pslILEmit->EmitCALL(METHOD__MNGD_REF_CUSTOM_MARSHALER__GET_MARSHALER, 1, 1);
+    pslILEmit->EmitCALL(METHOD__STUBHELPERS__CREATE_CUSTOM_MARSHALER, 3, 1);  // Create the ICustomMarshaler
 
     pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum); // Store the ICustomMarshaler as our marshaler state
 }
