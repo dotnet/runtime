@@ -681,7 +681,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 //
 // Arguments:
 //    newArr       - GT_CALL that will be replaced by helper call.
-//    clsHndclsHnd - class representing the type of the array
+//    clsHnd       - class representing the type of the array
 //    length       - length of the array
 //    blockSize    - size of the layout
 //    block        - a basic block where newArr is

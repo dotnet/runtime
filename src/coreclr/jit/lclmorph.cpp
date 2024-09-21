@@ -1109,11 +1109,13 @@ public:
                 assert(TopValue(1).Node() == node->gtGetOp1());
                 assert(TopValue(0).Node() == node->gtGetOp2());
 
+                // We only expect TopValue(1).IsAddress() to be true for stack allocated arrays
                 if (node->gtGetOp2()->IsCnsIntOrI() && TopValue(1).IsAddress())
                 {
                     ssize_t offset = node->AsIndexAddr()->gtElemOffset +
                                      node->gtGetOp2()->AsIntCon()->IconValue() * node->AsIndexAddr()->gtElemSize;
 
+                    // For stack allocated arrays the local size is the size of the entire array
                     if (!node->AsIndexAddr()->IsBoundsChecked() ||
                         (static_cast<ssize_t>(node->AsIndexAddr()->gtElemOffset) <= offset &&
                          offset < static_cast<ssize_t>(m_compiler->lvaLclExactSize(TopValue(1).LclNum()))))
