@@ -618,7 +618,7 @@ struct hc_history
     // invalid fields on the Thread object such as m_OSThreadId. This is to help with debugging that problem so I
     // only enable it for retail builds on Windows. We can extend this with a GCToEEInterface interface method to get the offset
     // of that particular field on the Thread object.
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(_DEBUG)
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(_DEBUG) && !defined(FEATURE_NATIVEAOT)
     int bgc_thread_os_id;
 #endif
     short bgc_t_join_join_lock;

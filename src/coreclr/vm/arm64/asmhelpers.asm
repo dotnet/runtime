@@ -523,7 +523,7 @@ GenericComCallStub_FirstStackAdjust     SETA GenericComCallStub_FirstStackAdjust
     SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0
 
     str x12, [sp, #(GenericComCallStub_FrameOffset + UnmanagedToManagedFrame__m_pvDatum)]
-    add x1, sp, #GenericComCallStub_FrameOffset
+    add x0, sp, #GenericComCallStub_FrameOffset
     bl COMToCLRWorker
 
     ; pop the stack

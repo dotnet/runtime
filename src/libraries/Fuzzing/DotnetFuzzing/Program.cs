@@ -180,6 +180,13 @@ public static class Program
 
         if (instrumentCoreLib)
         {
+            // The instrumentation itself uses 'Marshal.AllocHGlobal', so attempting to instrument it will result in a stackoverflow at runtime.
+            if (fuzzer.TargetCoreLibPrefixes.FirstOrDefault(prefix => "System.Runtime.InteropServices.Marshal".StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) is { } invalidPrefix)
+            {
+                throw new Exception($"Please specify a more specific prefix than '{invalidPrefix}'. " +
+                    "For example, if you want to instrument 'System.Convert', specify the full type name instead of 'System'.");
+            }
+
             yield return ("System.Private.CoreLib.dll", string.Join(' ', fuzzer.TargetCoreLibPrefixes));
         }
     }
