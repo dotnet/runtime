@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CrossHostArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">$(BuildArchitecture)</CrossHostArch>
+    <CrossHostArch Condition="'$(CrossBuild)' == 'true' or '$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">$(BuildArchitecture)</CrossHostArch>
     <OutputPath>$(RuntimeBinDir)/$(BuildArchitecture)/crossgen2/</OutputPath>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <UseAppHost>false</UseAppHost>
   </PropertyGroup>
   <Import Project="crossgen2.props" />
