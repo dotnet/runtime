@@ -469,15 +469,6 @@ void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
         else
         {
             _ASSERTE(!"Not expected multi reg return with pointers.");
-            if (!protectRegister[0] && protectRegister[1])
-            {
-                *instrToReplace = INTERRUPT_INSTR_PROTECT_SECOND_RET;
-            }
-            else
-            {
-                _ASSERTE(protectRegister[0] && protectRegister[1]);
-                *instrToReplace = INTERRUPT_INSTR_PROTECT_BOTH_RET;
-            }
         }
     }
     else
@@ -670,22 +661,14 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // `if (!IsGcCoverageInterruptInstruction(instrPtr))` after we read `*instrPtr`.
 
     bool atCall;
-    bool afterCallProtect[2] = { false, false };
+    bool afterCallProtect = false;
 
     BYTE instrVal = *instrPtr;
     atCall = (instrVal == INTERRUPT_INSTR_CALL);
 
-    if (instrVal == INTERRUPT_INSTR_PROTECT_BOTH_RET)
+    if (instrVal == INTERRUPT_INSTR_PROTECT_FIRST_RET)
     {
-        afterCallProtect[0] = afterCallProtect[1] = true;
-    }
-    else if (instrVal == INTERRUPT_INSTR_PROTECT_FIRST_RET)
-    {
-        afterCallProtect[0] = true;
-    }
-    else if (instrVal == INTERRUPT_INSTR_PROTECT_SECOND_RET)
-    {
-        afterCallProtect[1] = true;
+        afterCallProtect = true;
     }
 
     if (!IsGcCoverageInterruptInstruction(instrPtr))
@@ -889,7 +872,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // call sites, so we must add an extra frame to protect returns.
     DWORD_PTR retValReg = 0;
 
-    if (afterCallProtect[0])
+    if (afterCallProtect)
     {
         retValReg = regs->Eax;
     }
@@ -921,7 +904,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 
     CONSISTENCY_CHECK(!pThread->HasPendingGCStressInstructionUpdate());
 
-    if (afterCallProtect[0])
+    if (afterCallProtect)
     {
         regs->Eax = retValReg;
     }

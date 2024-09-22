@@ -59,8 +59,6 @@ typedef DPTR(GCCoverageInfo) PTR_GCCoverageInfo; // see code:GCCoverageInfo::sav
 #if defined(TARGET_X86)
 #define INTERRUPT_INSTR_CALL                   0xFA    // X86 CLI instruction
 #define INTERRUPT_INSTR_PROTECT_FIRST_RET      0xFB    // X86 STI instruction, protect the first return register
-#define INTERRUPT_INSTR_PROTECT_SECOND_RET     0xEC    // X86 IN instruction, protect the second return register
-#define INTERRUPT_INSTR_PROTECT_BOTH_RET       0xED    // X86 IN instruction, protect both return registers
 #endif
 
 #elif defined(TARGET_ARM)
@@ -110,32 +108,9 @@ inline bool IsGcCoverageInterruptInstructionVal(UINT32 instrVal)
     UINT16 instrVal16 = static_cast<UINT16>(instrVal);
     size_t instrLen = GetARMInstructionLength(instrVal16);
 
-    if (instrLen == 2)
-    {
-        switch (instrVal16)
-        {
-        case INTERRUPT_INSTR:
-        case INTERRUPT_INSTR_CALL:
-        case INTERRUPT_INSTR_PROTECT_RET:
-            return true;
-        default:
-            return false;
-        }
-    }
-    else
-    {
-        _ASSERTE(instrLen == 4);
+    return (instrLen == 2 && instrVal16 == INTERRUPT_INSTR) ||
+        (instrLen == 4 && instrVal16 == INTERRUPT_INSTR_32);
 
-        switch (instrVal)
-        {
-        case INTERRUPT_INSTR_32:
-        case INTERRUPT_INSTR_CALL_32:
-        case INTERRUPT_INSTR_PROTECT_RET_32:
-            return true;
-        default:
-            return false;
-        }
-    }
 #elif defined(TARGET_X86)
 
     switch (instrVal)
@@ -143,8 +118,6 @@ inline bool IsGcCoverageInterruptInstructionVal(UINT32 instrVal)
     case INTERRUPT_INSTR:
     case INTERRUPT_INSTR_CALL:
     case INTERRUPT_INSTR_PROTECT_FIRST_RET:
-    case INTERRUPT_INSTR_PROTECT_SECOND_RET:
-    case INTERRUPT_INSTR_PROTECT_BOTH_RET:
         return true;
     default:
         return false;
