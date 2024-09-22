@@ -2290,7 +2290,11 @@ SString &MethodTable::_GetFullyQualifiedNameForClassNestedAwareInternal(SString 
             ns::MakePath(ssPath,
                 StackSString(SString::Utf8, redirectFunctor(szEnclNameSpace)),
                 StackSString(SString::Utf8, szEnclName));
-            ns::MakeNestedTypeName(ssFullyQualifiedName, ssPath, ssName);
+
+            ssFullyQualifiedName.Clear();
+            ssFullyQualifiedName.Append(ssPath);
+            ssFullyQualifiedName.Append('+');
+            ssFullyQualifiedName.Append(ssName);
 
             ssName = ssFullyQualifiedName;
         }
@@ -3291,4 +3295,3 @@ EEClass::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, MethodTable * pMT)
 }
 
 #endif // DACCESS_COMPILE
-
