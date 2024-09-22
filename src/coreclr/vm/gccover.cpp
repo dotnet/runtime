@@ -1317,6 +1317,15 @@ void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder* decoder, UINT32
 //Replaces the provided interruptible range with corresponding 2 or 4 byte gcStress illegal instruction
 bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 stopOffset, LPVOID pGCCover)
 {
+#if defined(TARGET_AMD64)
+#if defined(USE_DISASSEMBLER)
+    Disassembler disassembler;
+#else
+    // we can't instrument fully interruptible ranges in x64 without disassembling
+    return;
+#endif // USE_DISASSEMBLER
+#endif // TARGET_AMD64
+
     PCODE pCode = (PCODE)NULL;
     PBYTE rangeStart = NULL;
     PBYTE rangeStop = NULL;
@@ -1356,10 +1365,6 @@ bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 sto
         pCode = ptr->coldStartAddress + coldOffset;
         rangeStop = (BYTE*)PCODEToPINSTR(pCode);
     }
-
-#if defined(TARGET_AMD64)
-    Disassembler disassembler;
-#endif
 
     // Need to do two iterations if interruptible range spans across hot & cold region
     while(acrossHotRegion--)
