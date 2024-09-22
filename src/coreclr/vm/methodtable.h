@@ -3038,9 +3038,6 @@ public :
     SString &_GetFullyQualifiedNameForClass(SString &ssBuf);
     LPCUTF8 GetFullyQualifiedNameInfo(LPCUTF8 *ppszNamespace);
 
-private:
-    template<typename RedirectFunctor> SString &_GetFullyQualifiedNameForClassNestedAwareInternal(SString &ssBuf);
-
 public :
     //-------------------------------------------------------------------
     // Debug Info
