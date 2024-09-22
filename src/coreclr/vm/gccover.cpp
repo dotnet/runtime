@@ -1778,25 +1778,6 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         enableWhenDone = true;
     }
 
-
-#if 0
-    // TODO currently disabled.  we only do a GC once per instruction location.
-
-  /* note that for multiple threads, we can loose track and
-       forget to set reset the interrupt after we executed
-       an instruction, so some instruction points will not be
-       executed twice, but we still ge350t very good coverage
-       (perfect for single threaded cases) */
-
-    /* if we have not run this instruction in the past */
-    /* remember to wack it to an INTERUPT_INSTR again */
-
-    if (!gcCover->IsBitSetForOffset(offset))  {
-        // gcCover->curInstr = instrPtr;
-        gcCover->SetBitForOffset(offset);
-    }
-#endif // 0
-
     //
     // If we redirect for gc stress, we don't need this frame on the stack,
     // the redirection will push a resumable frame.
