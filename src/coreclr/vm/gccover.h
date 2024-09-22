@@ -43,20 +43,7 @@ public:
                                         // marshal over the bytes properly.
     };
 
-    // Sloppy bitsets (will wrap, and not threadsafe) but best effort is OK
-    // since we just need half decent coverage.
-    BOOL IsBitSetForOffset(unsigned offset) {
-        unsigned dword = hasExecuted[(offset >> 5) % hasExecutedSize];
-        return(dword & (1 << (offset & 0x1F)));
-    }
-
-    void SetBitForOffset(unsigned offset) {
-        unsigned* dword = &hasExecuted[(offset >> 5) % hasExecutedSize];
-        *dword |= (1 << (offset & 0x1F)) ;
-    }
-
     void SprinkleBreakpoints(BYTE * saveAddr, PCODE codeStart, size_t codeSize, size_t regionOffsetAdj, BOOL fZapped);
-
 };
 
 typedef DPTR(GCCoverageInfo) PTR_GCCoverageInfo; // see code:GCCoverageInfo::savedCode
