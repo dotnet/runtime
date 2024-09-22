@@ -95,6 +95,8 @@ void SetupAndSprinkleBreakpoints(
 {
     _ASSERTE(!nativeCodeVersion.IsNull());
 
+    // TODO: VS does anyone call this with fZapped == true ?
+
     // Allocate room for the GCCoverageInfo and copy of the method instructions
     MethodDesc *pMD = nativeCodeVersion.GetMethodDesc();
     size_t memSize = sizeof(GCCoverageInfo) + methodRegionInfo.hotSize + methodRegionInfo.coldSize;
@@ -194,7 +196,7 @@ void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* methodStartPtr)
     SetupAndSprinkleBreakpointsForJittedMethod(nativeCodeVersion, codeStart);
 }
 
-// There are some code path in DoGcStress to return without doing a GC but we
+// There are some code path in DoGcStress to return without doing a GC but
 // now relies on EE suspension to update the GC STRESS instruction.
 // We need to do a extra EE suspension/resume even without GC.
 FORCEINLINE void UpdateGCStressInstructionWithoutGC ()
@@ -561,6 +563,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
             break;
 
         case InstructionType::Call_DirectUnconditional:
+            // NB: turned off by default
             if(fGcStressOnDirectCalls.val(CLRConfig::INTERNAL_GcStressOnDirectCalls))
             {
                 PBYTE nextInstr;
@@ -572,7 +575,6 @@ void GCCoverageInfo::SprinkleBreakpoints(
                 }
             }
             break;
-
 
         default:
             // Clang issues an error saying that some enum values are not handled in the switch, that's intended
@@ -615,6 +617,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
 
 #endif // USE_DISASSEMBLER
 }
+
 void checkAndUpdateReg(DWORD& origVal, DWORD curVal, bool gcHappened) {
     if (origVal == curVal)
         return;
@@ -945,6 +948,8 @@ void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder* decoder, UINT32
     }
     else
     {
+        // TODO: VS is this still possible?
+        // 
         //For some methods( eg MCCTest.MyClass.GetSum2 in test file jit\jit64\mcc\interop\mcc_i07.il) gcinfo points to a safepoint
         //beyond the length of the method. So commenting the below assert.
         //_ASSERTE(safePointOffset - ptr->hotSize < ptr->coldSize);
@@ -1307,7 +1312,8 @@ void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr, GCCoverageI
     FlushInstructionCache(GetCurrentProcess(), (LPCVOID)instrPtr, 4);
 }
 
-// TODO: VS revisit
+// TODO: VS revisit. is this still relevant?
+ 
 // A managed thread (T) can race with the GC as follows:
 // 1) At the first safepoint, we notice that T is in preemptive mode during the call for GCStress
 //    So, it is put it in cooperative mode for the purpose of GCStress(fPreemptiveGcDisabledForGcStress)
