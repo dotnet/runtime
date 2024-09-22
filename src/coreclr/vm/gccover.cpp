@@ -927,8 +927,6 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
     BYTE instrVal = *instrPtr;
-    forceStack[6] = &instrVal;            // This is so I can see it fastchecked
-
     atCall = (instrVal == INTERRUPT_INSTR_CALL);
 
     if (instrVal == INTERRUPT_INSTR_PROTECT_BOTH_RET)
@@ -945,8 +943,6 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     }
 
 #elif defined(TARGET_ARM)
-
-    forceStack[6] = (WORD*)instrPtr;            // This is so I can see it fastchecked
 
     size_t instrLen = GetARMInstructionLength(instrPtr);
 
@@ -969,22 +965,16 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 #elif defined(TARGET_ARM64)
 
     DWORD instrVal = *(DWORD *)instrPtr;
-    forceStack[6] = &instrVal;            // This is so I can see it fastchecked
-
     atCall = (instrVal == INTERRUPT_INSTR_CALL);
     afterCallProtect[0] = (instrVal == INTERRUPT_INSTR_PROTECT_RET);
 
 #elif defined(TARGET_LOONGARCH64)
     DWORD instrVal = *(DWORD *)instrPtr;
-    forceStack[6] = &instrVal;            // This is so I can see it fastchecked
-
     atCall = (instrVal == INTERRUPT_INSTR_CALL);
     afterCallProtect[0] = (instrVal == INTERRUPT_INSTR_PROTECT_RET);
 #elif defined(TARGET_RISCV64)
 
     DWORD instrVal = *(DWORD *)instrPtr;
-    forceStack[6] = &instrVal;            // This is so I can see it fastchecked
-
     atCall = (instrVal == INTERRUPT_INSTR_CALL);
     afterCallProtect[0] = (instrVal == INTERRUPT_INSTR_PROTECT_RET);
 #endif // _TARGET_*
@@ -1662,35 +1652,19 @@ void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr, GCCoverageI
 //
 // This race is now mitigated below. Where we won't initiate a stress mode GC
 // for a thread in cooperative mode with an active ICF, if g_TrapReturningThreads is true.
-
-int GCcoverCount = 0;
-void* forceStack[8];
-
 BOOL OnGcCoverageInterrupt(PCONTEXT regs)
 {
-    // So that you can set counted breakpoint easily;
-    GCcoverCount++;
-    forceStack[0]= &regs;                // This is so I can see it fastchecked
-
     PCODE controlPc = GetIP(regs);
     TADDR instrPtr = PCODEToPINSTR(controlPc);
-
-    forceStack[0] = &instrPtr;            // This is so I can see it fastchecked
-
     EECodeInfo codeInfo(controlPc);
     if (!codeInfo.IsValid())
         return(FALSE);
 
     MethodDesc* pMD = codeInfo.GetMethodDesc();
     DWORD offset = codeInfo.GetRelOffset();
-
-    forceStack[1] = &pMD;                // This is so I can see it fastchecked
-    forceStack[2] = &offset;             // This is so I can see it fastchecked
-
     NativeCodeVersion nativeCodeVersion = codeInfo.GetNativeCodeVersion();
     _ASSERTE(!nativeCodeVersion.IsNull());
     GCCoverageInfo* gcCover = nativeCodeVersion.GetGCCoverageInfo();
-    forceStack[3] = &gcCover;            // This is so I can see it fastchecked
     if (gcCover == 0)
         return(FALSE);        // we aren't doing code gcCoverage on this function
 
