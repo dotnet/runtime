@@ -441,7 +441,7 @@ bool GcInfoDecoder::HasMethodTableGenericsInstContext()
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
-// This is used for gccoverage: is the given offset
+// This is used for gcinfodumper: is the given offset
 //  a call-return offset with partially-interruptible GC info?
 bool GcInfoDecoder::IsSafePoint(UINT32 codeOffset)
 {
