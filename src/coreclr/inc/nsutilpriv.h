@@ -150,15 +150,11 @@ bool MakeAssemblyQualifiedName(                                        // true o
     ns::MakePath(toptr, __i##toptr, pnamespace, pname); \
 }
 
-#ifdef _PREFAST_
-// need to set ptr=NULL so we don't get a build error because ptr isn't inited in a couple cases
-#define MAKE_FULLY_QUALIFIED_MEMBER_NAME(ptr, pszNameSpace, pszClassName, pszMemberName, pszSig) ptr=NULL;
-#else //_PREFAST_
 #define MAKE_FULLY_QUALIFIED_MEMBER_NAME(ptr, pszNameSpace, pszClassName, pszMemberName, pszSig) \
 { \
     int __i##ptr = ns::GetFullLength(pszNameSpace, pszClassName); \
     __i##ptr += (pszMemberName ? (int) strlen(pszMemberName) : 0); \
-    __i##ptr += (int)strlen(NAMESPACE_SEPARATOR_STR) + 1; \
+    __i##ptr += (int)strlen(NAMESPACE_SEPARATOR_STR) * 2; \
     __i##ptr += (pszSig ? (int) strlen(pszSig) : 0); \
     ptr = (LPUTF8) alloca(__i##ptr); \
     ns::MakePath(ptr, __i##ptr, pszNameSpace, pszClassName); \
@@ -172,7 +168,5 @@ bool MakeAssemblyQualifiedName(                                        // true o
         strcat_s(ptr, __i##ptr, pszSig); \
     } \
 }
-
-#endif // _PREFAST_
 
 #endif // __NSUTILPRIV_H__
