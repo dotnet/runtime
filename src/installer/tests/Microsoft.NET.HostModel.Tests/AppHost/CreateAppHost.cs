@@ -6,21 +6,16 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 using FluentAssertions;
 using Melanzana.CodeSign;
-using Melanzana.CodeSign.Blobs;
 using Melanzana.MachO;
-using Melanzana.Streams;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup;
 using Microsoft.DotNet.CoreSetup.Test;
-using Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Helpers;
 using Xunit;
 
 namespace Microsoft.NET.HostModel.AppHost.Tests
@@ -272,7 +267,6 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 string testDirectory = Path.Combine(artifact.Location, subdir);
                 Directory.CreateDirectory(testDirectory);
                 string sourceAppHostMock = PrepareMockMachAppHostFile(testDirectory);
-                // File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
                 string destinationFilePath = Path.Combine(testDirectory, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
                 HostWriter.CreateAppHost(
@@ -482,7 +476,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             }
         }
 
-        private static byte[] s_placeholderData = AppBinaryPathPlaceholderSearchValue.Concat(DotNetSearchPlaceholderValue).ToArray();
+        private static readonly byte[] s_placeholderData = AppBinaryPathPlaceholderSearchValue.Concat(DotNetSearchPlaceholderValue).ToArray();
         public static string PrepareMockMachAppHostFile(string directory)
         {
             var objectFile = Melanzana.MachO.Tests.ReadTests.GetMachExecutable();
@@ -494,7 +488,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             {
                 textStream.Write(s_placeholderData);
             }
-            // The __TEXT segment has it's sections at the end of the segment, with padding at the beginning
+            // The __TEXT segment has its sections at the end of the segment, with padding at the beginning
             // We can move the file offset back
             textSection.FileOffset -= (uint)(AppBinaryPathPlaceholderSearchValue.Length + DotNetSearchPlaceholderValue.Length);
             string outputFilePath = Path.Combine(directory, "SourceAppHost.mach.o.mock");

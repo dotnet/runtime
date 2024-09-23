@@ -8,10 +8,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 
 using FluentAssertions;
-using Melanzana.MachO;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
-using Microsoft.NET.HostModel.AppHost.Tests;
 using Xunit;
 
 namespace Microsoft.NET.HostModel.Bundle.Tests
@@ -26,19 +24,8 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         }
 
         private static string BundlerHostName = Binaries.GetExeName(SharedTestState.AppName);
-        private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, OSPlatform? targetOS = null)
-        {
-            return new Bundler(
-                BundlerHostName,
-                sharedTestState.App.GetUniqueSubdirectory("bundle"),
-                bundleOptions,
-                targetOS: targetOS,
-                targetFrameworkVersion: version);
-        }
-
-        OSPlatform CurrentOS => OperatingSystem.IsWindows() ? OSPlatform.Windows :
-            OperatingSystem.IsLinux() ? OSPlatform.Linux :
-            OperatingSystem.IsMacOS() ? OSPlatform.OSX : throw new PlatformNotSupportedException();
+        private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, bool macosCodesign = true)
+            => new Bundler(BundlerHostName, sharedTestState.App.GetUniqueSubdirectory("bundle"), bundleOptions, targetFrameworkVersion: version, macosCodesign: macosCodesign);
 
         [Fact]
         public void EnableCompression_Before60_Fails()
@@ -323,17 +310,39 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                 Assert.True((file.Type != FileType.Assembly) || (file.Offset % alignment == 0)));
         }
 
-        static readonly byte[] BundleHeaderPlaceholder = {
-            // 8 bytes represent the bundle header-offset
-            // Zero for non-bundle apphosts (default).
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            // 32 bytes represent the bundle signature: SHA-256 for ".net core bundle"
-            0x8b, 0x12, 0x02, 0xb9, 0x6a, 0x61, 0x20, 0x38,
-            0x72, 0x7b, 0x93, 0x02, 0x14, 0xd7, 0xa0, 0x32,
-            0x13, 0xf5, 0xb9, 0xe6, 0xef, 0xae, 0x33, 0x18,
-            0xee, 0x3b, 0x2d, 0xce, 0x24, 0xb3, 0x6a, 0xae
-        };
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void Codesign(bool shouldCodesign)
+        {
+            TestApp app = sharedTestState.App;
+            FileSpec[] fileSpecs = new FileSpec[]
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(app.AppDll, Path.GetRelativePath(app.Location, app.AppDll)),
+                new FileSpec(app.DepsJson, Path.GetRelativePath(app.Location, app.DepsJson)),
+                new FileSpec(app.RuntimeConfigJson, Path.GetRelativePath(app.Location, app.RuntimeConfigJson)),
+            };
 
+            Bundler bundler = CreateBundlerInstance(macosCodesign: shouldCodesign);
+            string bundledApp = bundler.GenerateBundle(fileSpecs);
+
+            // Check if the file is signed
+            CommandResult result = Command.Create("codesign", $"-v {bundledApp}")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute(expectedToFail: !shouldCodesign);
+
+            if (shouldCodesign)
+            {
+                result.Should().Pass();
+            }
+            else
+            {
+                result.Should().Fail();
+            }
+        }
 
         public class SharedTestState : IDisposable
         {
