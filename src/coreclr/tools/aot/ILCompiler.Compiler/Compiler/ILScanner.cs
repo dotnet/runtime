@@ -428,7 +428,7 @@ namespace ILCompiler
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
             private Dictionary<TypeDesc, HashSet<TypeDesc>> _implementators = new();
             private HashSet<TypeDesc> _disqualifiedTypes = new();
-            private HashSet<MethodDesc> _overridenMethods = new();
+            private HashSet<MethodDesc> _overriddenMethods = new();
             private HashSet<MethodDesc> _generatedVirtualMethods = new();
 
             public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
@@ -583,7 +583,7 @@ namespace ILCompiler
                                 for (int i = 0; i < baseVtable.Count; i++)
                                 {
                                     if (baseVtable[i] != vtable[i])
-                                        _overridenMethods.Add(baseVtable[i]);
+                                        _overriddenMethods.Add(baseVtable[i]);
                                 }
                             }
                         }
@@ -681,7 +681,7 @@ namespace ILCompiler
                     return false;
 
                 // If we haven't seen any other method override this, this method is sealed
-                return !_overridenMethods.Contains(canonMethod);
+                return !_overriddenMethods.Contains(canonMethod);
             }
 
             protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)

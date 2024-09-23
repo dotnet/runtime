@@ -48839,7 +48839,7 @@ HRESULT GCHeap::Initialize()
 
     nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
 
-    // The CPU count may be overriden by the user. Ensure that we create no more than g_num_processors
+    // The CPU count may be overridden by the user. Ensure that we create no more than g_num_processors
     // heaps as that is the number of slots we have allocated for handle tables.
     g_num_active_processors = min (GCToEEInterface::GetCurrentProcessCpuCount(), g_num_processors);
 

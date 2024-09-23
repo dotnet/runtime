@@ -400,10 +400,10 @@ namespace ILCompiler.DependencyAnalysis
 
                         // If this is an abstract type, only request a tentative entrypoint (whose body
                         // might just be stubbed out). This lets us avoid generating method bodies for
-                        // virtual method on abstract types that are overriden in all their children.
+                        // virtual method on abstract types that are overridden in all their children.
                         //
                         // We don't do this if the method can be placed in the sealed vtable since
-                        // those can never be overriden by children anyway.
+                        // those can never be overridden by children anyway.
                         bool canUseTentativeMethod = isNonInterfaceAbstractType
                             && !decl.CanMethodBeInSealedVTable(factory)
                             && factory.CompilationModuleGroup.AllowVirtualMethodOnAbstractTypeOptimization(canonImpl);
@@ -1031,7 +1031,7 @@ namespace ILCompiler.DependencyAnalysis
                     // If the type we're generating now is abstract, and the implementation comes from an abstract type,
                     // only use a tentative method entrypoint that can have its body replaced by a throwing stub
                     // if no "hard" reference to that entrypoint exists in the program.
-                    // This helps us to eliminate method bodies for virtual methods on abstract types that are fully overriden
+                    // This helps us to eliminate method bodies for virtual methods on abstract types that are fully overridden
                     // in the children of that abstract type.
                     bool canUseTentativeEntrypoint = implType is MetadataType mdImplType && mdImplType.IsAbstract && !mdImplType.IsInterface
                         && implMethod.OwningType is MetadataType mdImplMethodType && mdImplMethodType.IsAbstract
