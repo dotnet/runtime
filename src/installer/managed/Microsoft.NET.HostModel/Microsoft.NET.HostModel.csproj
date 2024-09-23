@@ -19,9 +19,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- SDK pins this to a lower version https://github.com/dotnet/sdk/issues/43325 -->
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
+    <!-- The SDK provides these assemblies for tasks.  JSON is latest, while SRM is pinned to the version in MSBuild / VS -->
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" PrivateAssets="All" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj"  PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
