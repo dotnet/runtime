@@ -29,6 +29,7 @@ namespace System.Security.Cryptography.X509Certificates
                 publicKey = Interop.AppleCrypto.ImportEphemeralKey(_certData.SubjectPublicKeyInfo, false);
             }
 
+            privateKey.SetParentHandle(_certHandle);
             return new DSAImplementation.DSASecurityTransforms(publicKey, privateKey);
         }
 

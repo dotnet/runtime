@@ -5,6 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <LinuxPackageDependency Include="openssl-libs;icu;krb5" />
+    <LinuxPackageDependency Include="openssl-libs;icu;krb5;ca-certificates" />
   </ItemGroup>
 </Project>

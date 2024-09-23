@@ -284,6 +284,7 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
     add_compile_options(/GL)   # whole program optimization
     add_link_options(/LTCG)    # link-time code generation
     add_link_options(/DEBUG)   # enable debugging information
+    add_link_options(/DEBUGTYPE:CV,FIXUP)   # enable fixup debug information
     add_link_options(/OPT:REF) # optimize: remove unreferenced functions & data
     add_link_options(/OPT:ICF) # optimize: enable COMDAT folding
     # the combination of /Zi compiler flag and /DEBUG /OPT:REF /OPT:ICF

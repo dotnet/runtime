@@ -14,7 +14,7 @@ System.TimeProvider
 System.ITimer</PackageDescription>
     <!-- This library uses IsPartialFacadeAssembly for which the compiler doesn't produce any XML documentation. -->
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <ServicingVersion>1</ServicingVersion>
   </PropertyGroup>
 

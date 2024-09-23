@@ -412,6 +412,17 @@ create_interp_dummy_var (TransformData *td)
 	td->locals [td->dummy_var].flags = INTERP_LOCAL_FLAG_GLOBAL;
 }
 
+static int alloc_global_var_offset (TransformData *td, int var);
+
+static void
+interp_create_ref_handle_var (TransformData *td)
+{
+	int var = create_interp_local_explicit (td, m_class_get_byval_arg (mono_defaults.int_class), sizeof (gpointer));
+	td->locals [var].flags = INTERP_LOCAL_FLAG_GLOBAL;
+	alloc_global_var_offset (td, var);
+	td->ref_handle_var = var;
+}
+
 static int
 get_tos_offset (TransformData *td)
 {
@@ -1220,7 +1231,8 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 	if (!interp_jit_call_can_be_supported (method, sig, mono_llvm_only))
 		return FALSE;
 
-	if (mono_aot_only && m_class_get_image (method->klass)->aot_module && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
+	MonoAotModule *amodule = m_class_get_image (method->klass)->aot_module;
+	if (mono_aot_only && amodule && (amodule != AOT_MODULE_NOT_FOUND) && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
 		ERROR_DECL (error);
 		mono_class_init_internal (method->klass);
 		gpointer addr = mono_aot_get_method (method, error);
@@ -3798,6 +3810,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (target_method));
 	} else {
 		if (is_delegate_invoke) {
+			// MINT_CALL_DELEGATE will store the delegate object into this slot so it is kept alive
+			// while the method is invoked
+			if (td->ref_handle_var == -1)
+				interp_create_ref_handle_var (td);
 			interp_add_ins (td, MINT_CALL_DELEGATE);
 			interp_ins_set_dreg (td->last_ins, dreg);
 			interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
@@ -4787,6 +4803,19 @@ is_ip_protected (MonoMethodHeader *header, int offset)
 }
 
 static gboolean
+should_insert_seq_point (TransformData *td)
+{
+	//following the CoreCLR's algorithm for adding the sequence points
+	if ((*td->ip == CEE_NOP) ||
+		(*td->ip == CEE_CALLVIRT) ||
+		(*td->ip == CEE_CALLI) ||
+		(*td->ip == CEE_CALL) ||
+		(GPTRDIFF_TO_INT (td->sp - td->stack) == 0))
+		return TRUE;
+	return FALSE;
+}
+
+static gboolean
 generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error)
 {
 	int mt, i32;
@@ -4817,6 +4846,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	gboolean save_last_error = FALSE;
 	gboolean link_bblocks = TRUE;
 	gboolean inlining = td->method != method;
+	gboolean generate_enc_seq_points_without_debug_info = FALSE;
 	InterpBasicBlock *exit_bb = NULL;
 
 	original_bb = bb = mono_basic_block_split (method, error, header);
@@ -4863,6 +4893,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			int n_il_offsets;
 
 			mono_debug_get_seq_points (minfo, NULL, NULL, NULL, &sps, &n_il_offsets);
+			if (n_il_offsets == 0)
+				generate_enc_seq_points_without_debug_info = mono_debug_generate_enc_seq_points_without_debug_info (minfo);
 			// FIXME: Free
 			seq_point_locs = mono_bitset_mem_new (mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (header->code_size, 0)), header->code_size, 0);
 			sym_seq_points = TRUE;
@@ -4967,7 +4999,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		arg_locals = (guint32*) g_malloc ((!!signature->hasthis + signature->param_count) * sizeof (guint32));
 		/* Allocate locals to store inlined method args from stack */
 		for (int i = signature->param_count - 1; i >= 0; i--) {
-			MonoType *type = td->locals [td->sp [-1].local].type;
+			MonoType *type = get_type_from_stack (td->sp [-1].type, td->sp [-1].klass);
 			local = create_interp_local (td, type);
 			arg_locals [i + !!signature->hasthis] = local;
 			store_local (td, local);
@@ -5091,6 +5123,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			interp_add_ins (td, MINT_PROF_COVERAGE_STORE);
 			WRITE64_INS (td->last_ins, 0, &counter);
 		}
+
+		if (G_UNLIKELY (generate_enc_seq_points_without_debug_info) && should_insert_seq_point (td))
+			last_seq_point = interp_add_ins (td, MINT_SDB_SEQ_POINT);
 
 		switch (*td->ip) {
 		case CEE_NOP:
@@ -5361,7 +5396,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			if (!interp_transform_call (td, method, NULL, generic_context, constrained_class, readonly, error, TRUE, save_last_error, tailcall))
 				goto exit;
 
-			if (need_seq_point) {
+			if (need_seq_point && !generate_enc_seq_points_without_debug_info) {
 				// check if it is a nested call and remove the MONO_INST_NONEMPTY_STACK of the last breakpoint, only for non native methods
 				if (!(method->flags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
 					if (emitted_funccall_seq_point)	{
@@ -7999,7 +8034,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				} else {
 					int loc_n = arg_locals [n];
 					interp_add_ins (td, MINT_LDLOCA_S);
-					interp_ins_set_sreg (td->last_ins, n);
+					interp_ins_set_sreg (td->last_ins, loc_n);
 					td->locals [loc_n].indirects++;
 				}
 				push_simple_type (td, STACK_TYPE_MP);
@@ -11130,6 +11165,7 @@ retry:
 	td->n_data_items = 0;
 	td->max_data_items = 0;
 	td->dummy_var = -1;
+	td->ref_handle_var = -1;
 	td->data_items = NULL;
 	td->data_hash = g_hash_table_new (NULL, NULL);
 #ifdef ENABLE_EXPERIMENT_TIERED
@@ -11267,6 +11303,11 @@ retry:
 
 	mono_interp_register_imethod_data_items (rtm->data_items, td->imethod_items);
 	rtm->patchpoint_data = td->patchpoint_data;
+
+	if (td->ref_handle_var != -1)
+		rtm->ref_slot_offset = td->locals [td->ref_handle_var].offset;
+	else
+		rtm->ref_slot_offset = -1;
 
 	/* Save debug info */
 	interp_save_debug_info (rtm, header, td, td->line_numbers);

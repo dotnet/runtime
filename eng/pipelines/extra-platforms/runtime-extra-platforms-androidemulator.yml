@@ -40,10 +40,11 @@ jobs:
       buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 240
       # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
@@ -78,10 +79,11 @@ jobs:
       buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 240
       # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
@@ -111,7 +113,8 @@ jobs:
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
       timeoutInMinutes: 180
       # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: Mono_$(_BuildConfig)

@@ -38,7 +38,11 @@ namespace ILCompiler
         public CliOption<bool> SplitExeInitialization { get; } =
             new("--splitinit") { Description = "Split initialization of an executable between the library entrypoint and a main entrypoint" };
         public CliOption<string> ExportsFile { get; } =
-            new("--exportsfile") { Description = "File to write exported method definitions" };
+            new("--exportsfile") { Description = "File to write exported symbol and method definitions" };
+        public CliOption<bool> ExportUnmanagedEntryPoints { get; } =
+            new("--export-unmanaged-entrypoints") { Description = "Controls whether the named UnmanagedCallersOnly methods are exported" };
+        public CliOption<string[]> ExportDynamicSymbols { get; } =
+            new("--export-dynamic-symbol") { Description = "Add dynamic export symbol to exports file" };
         public CliOption<string> DgmlLogFileName { get; } =
             new("--dgmllog") { Description = "Save result of dependency analysis as DGML" };
         public CliOption<bool> GenerateFullDgmlLog { get; } =
@@ -176,6 +180,8 @@ namespace ILCompiler
             Options.Add(NativeLib);
             Options.Add(SplitExeInitialization);
             Options.Add(ExportsFile);
+            Options.Add(ExportDynamicSymbols);
+            Options.Add(ExportUnmanagedEntryPoints);
             Options.Add(DgmlLogFileName);
             Options.Add(GenerateFullDgmlLog);
             Options.Add(ScanDgmlLogFileName);

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Xml.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
@@ -76,9 +77,17 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA1032Parameters);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalFact]
+        [OuterLoop("RSA 16384 takes considerable time.")]
         public static void TestRead16384Parameters_Public()
         {
+            // Do not move this to the [ConditionalFact], otherwise the platform will check if RSA 16384 is supported
+            // during test discovery for innerloop, and the check itself is expensive.
+            if (!ImportExport.Supports16384)
+            {
+                throw new SkipTestException("Platform does not support RSA 16384");
+            }
+
             RSAParameters expectedParameters = ImportExport.MakePublic(TestData.RSA16384Params);
 
             // Bonus trait of this XML: the Modulus and Exponent parameters
@@ -157,9 +166,16 @@ zM=
                 expectedParameters);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalFact]
         public static void TestRead16384Parameters_Private()
         {
+            // Do not move this to the [ConditionalFact], otherwise the platform will check if RSA 16384 is supported
+            // during test discovery for innerloop, and the check itself is expensive.
+            if (!ImportExport.Supports16384)
+            {
+                throw new SkipTestException("Platform does not support RSA 16384");
+            }
+
             // Bonus trait of this XML: the D parameter is not in
             // canonical order.
             TestReadXml(
@@ -634,11 +650,19 @@ zM=
                 ));
         }
 
-        [ConditionalTheory(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
+        [OuterLoop("RSA 16384 takes considerable time for primality tests.")]
         public static void TestWrite16384Parameters(bool includePrivateParameters)
         {
+            // Do not move this to the [ConditionalFact], otherwise the platform will check if RSA 16384 is supported
+            // during test discovery for innerloop, and the check itself is expensive.
+            if (!ImportExport.Supports16384)
+            {
+                throw new SkipTestException("Platform does not support RSA 16384");
+            }
+
             TestWriteXml(
                 TestData.RSA16384Params,
                 includePrivateParameters,

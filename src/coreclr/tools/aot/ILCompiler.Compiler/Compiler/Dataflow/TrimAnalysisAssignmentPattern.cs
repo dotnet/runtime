@@ -48,9 +48,9 @@ namespace ILCompiler.Dataflow
                 logger.ShouldSuppressAnalysisWarningsForRequires(Origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
                 logger);
 
-            foreach (var sourceValue in Source)
+            foreach (var sourceValue in Source.AsEnumerable ())
             {
-                foreach (var targetValue in Target)
+                foreach (var targetValue in Target.AsEnumerable ())
                 {
                     if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
                         throw new NotImplementedException();

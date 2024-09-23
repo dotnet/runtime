@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
@@ -188,7 +189,8 @@ namespace System.Net.Security.Tests
         private async Task ConnectWithRevocation_WithCallback_Core(
             X509RevocationMode revocationMode,
             bool? offlineContext = false,
-            bool noIntermediates = false)
+            bool noIntermediates = false,
+            [CallerMemberName] string testName = null)
         {
             string offlinePart = offlineContext.HasValue ? offlineContext.GetValueOrDefault().ToString().ToLower() : "null";
             string serverName = $"{revocationMode.ToString().ToLower()}.{offlinePart}.server.example";
@@ -201,6 +203,7 @@ namespace System.Net.Security.Tests
                 out CertificateAuthority rootAuthority,
                 out CertificateAuthority[] intermediateAuthorities,
                 out X509Certificate2 serverCert,
+                testName: testName,
                 intermediateAuthorityCount: noIntermediates ? 0 : 1,
                 subjectName: serverName,
                 keySize: 2048,

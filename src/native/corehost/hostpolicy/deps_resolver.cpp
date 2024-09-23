@@ -280,7 +280,8 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
 
     for (const auto& config : m_probes)
     {
-        trace::verbose(_X("  Using probe config: %s"), config.as_str().c_str());
+        if (trace::is_enabled())
+            trace::verbose(_X("  Using probe config: %s"), config.as_str().c_str());
 
         if (config.is_servicing() && !entry.is_serviceable)
         {

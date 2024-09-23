@@ -59,13 +59,6 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
         }
     }
 
-    // Turn off exception processing, because if some other random DLL has a
-    //  fault in DLL_PROCESS_DETACH, we could get called for exception handling.
-    //  Since we've turned off part of the runtime, we can't, for instance,
-    //  properly execute the GC that handling an exception might trigger.
-    g_fNoExceptions = true;
-    LOG((LF_EH, LL_INFO10, "SafeExitProcess: turning off exceptions\n"));
-
     if (sca == SCA_TerminateProcessWhenShutdownComplete)
     {
         // disabled because if we fault in this code path we will trigger our Watson code

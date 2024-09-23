@@ -1331,9 +1331,6 @@ part2:
                 // Shutdown finalizer before we suspend all background threads. Otherwise we
                 // never get to finalize anything.
 
-                // No longer process exceptions
-                g_fNoExceptions = true;
-
                 // <TODO>@TODO: This does things which shouldn't occur in part 2.  Namely,
                 // calling managed dll main callbacks (AppDomain::SignalProcessDetach), and
                 // RemoveAppDomainFromIPC.
@@ -1752,9 +1749,9 @@ struct TlsDestructionMonitor
                     GCX_COOP_NO_DTOR_END();
                 }
                 thread->DetachThread(TRUE);
-                DeleteThreadLocalMemory();
             }
 
+            DeleteThreadLocalMemory();
             ThreadDetaching();
         }
     }
@@ -1786,16 +1783,11 @@ void DeleteThreadLocalMemory()
     t_ThreadStatics.NonGCMaxThreadStaticBlocks = 0;
     t_ThreadStatics.GCMaxThreadStaticBlocks = 0;
 
-    if (t_ThreadStatics.NonGCThreadStaticBlocks != nullptr)
-    {
-        delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
-        t_ThreadStatics.NonGCThreadStaticBlocks = nullptr;
-    }
-    if (t_ThreadStatics.GCThreadStaticBlocks != nullptr)
-    {
-        delete[] t_ThreadStatics.GCThreadStaticBlocks;
-        t_ThreadStatics.GCThreadStaticBlocks = nullptr;
-    }
+    delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
+    t_ThreadStatics.NonGCThreadStaticBlocks = nullptr;
+
+    delete[] t_ThreadStatics.GCThreadStaticBlocks;
+    t_ThreadStatics.GCThreadStaticBlocks = nullptr;
 }
 
 #ifdef DEBUGGING_SUPPORTED

@@ -5540,6 +5540,22 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector256SingleCreateFromArrayTest()
+        {
+            float[] array = [1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f];
+            Vector256<float> vector = Vector256.Create(array);
+            Assert.Equal(Vector256.Create(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f), vector);
+        }
+
+        [Fact]
+        public void Vector256SingleCreateFromArrayOffsetTest()
+        {
+            float[] array = [1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f];
+            Vector256<float> vector = Vector256.Create(array, 1);
+            Assert.Equal(Vector256.Create(2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f), vector);
+        }
+
+        [Fact]
         public void Vector256SingleCopyToTest()
         {
             float[] array = new float[8];

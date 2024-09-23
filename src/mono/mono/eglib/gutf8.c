@@ -30,8 +30,8 @@ const guchar g_utf8_jump_table[256] = {
 	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3, 4,4,4,4,4,4,4,4,5,5,5,5,6,6,1,1
 };
 
-static gboolean
-utf8_validate (const unsigned char *inptr, size_t len)
+gboolean
+g_utf8_validate_part (const unsigned char *inptr, size_t len)
 {
 	const unsigned char *ptr = inptr + len;
 	unsigned char c;
@@ -105,7 +105,7 @@ g_utf8_validate (const gchar *str, gssize max_len, const gchar **end)
 	if (max_len < 0) {
 		while (*inptr != 0) {
 			length = g_utf8_jump_table[*inptr];
-			if (!utf8_validate (inptr, length)) {
+			if (!g_utf8_validate_part (inptr, length)) {
 				valid = FALSE;
 				break;
 			}
@@ -124,7 +124,7 @@ g_utf8_validate (const gchar *str, gssize max_len, const gchar **end)
 			length = g_utf8_jump_table[*inptr];
 			min = MIN (length, GSSIZE_TO_UINT (max_len - n));
 
-			if (!utf8_validate (inptr, min)) {
+			if (!g_utf8_validate_part (inptr, min)) {
 				valid = FALSE;
 				break;
 			}
@@ -180,13 +180,13 @@ g_utf8_get_char_validated (const gchar *str, gssize max_len)
 	}
 
 	if (max_len > 0) {
-		if (!utf8_validate (inptr, MIN (max_len, n)))
+		if (!g_utf8_validate_part (inptr, MIN (max_len, n)))
 			return -1;
 
 		if (max_len < n)
 			return -2;
 	} else {
-		if (!utf8_validate (inptr, n))
+		if (!g_utf8_validate_part (inptr, n))
 			return -1;
 	}
 

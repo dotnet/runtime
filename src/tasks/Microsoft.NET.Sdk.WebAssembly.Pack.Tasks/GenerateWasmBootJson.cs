@@ -71,6 +71,8 @@ public class GenerateWasmBootJson : Task
 
     public ITaskItem[] LazyLoadedAssemblies { get; set; }
 
+    public bool IsPublish { get; set; }
+
     public override bool Execute()
     {
         using var fileStream = File.Create(OutputPath);
@@ -91,17 +93,16 @@ public class GenerateWasmBootJson : Task
     // Internal for tests
     public void WriteBootJson(Stream output, string entryAssemblyName)
     {
-        var helper = new BootJsonBuilderHelper(Log);
+        var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsPublish);
 
         var result = new BootJsonData
         {
             resources = new ResourcesData(),
-            startupMemoryCache = ParseOptionalBool(StartupMemoryCache),
+            startupMemoryCache = helper.ParseOptionalBool(StartupMemoryCache),
         };
 
         if (IsTargeting80OrLater())
         {
-            result.debugLevel = ParseOptionalInt(DebugLevel) ?? (DebugBuild ? 1 : 0);
             result.mainAssemblyName = entryAssemblyName;
             result.globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant();
 
@@ -127,7 +128,7 @@ public class GenerateWasmBootJson : Task
             result.runtimeOptions = runtimeOptions;
         }
 
-        bool? jiterpreter = ParseOptionalBool(Jiterpreter);
+        bool? jiterpreter = helper.ParseOptionalBool(Jiterpreter);
         if (jiterpreter != null)
         {
             var runtimeOptions = result.runtimeOptions?.ToHashSet() ?? new HashSet<string>(3);
@@ -329,6 +330,20 @@ public class GenerateWasmBootJson : Task
             }
         }
 
+        if (IsTargeting80OrLater())
+        {
+            int? debugLevel = helper.ParseOptionalInt(DebugLevel);
+
+            // If user didn't give us a value, check if we have any PDB.
+            if (debugLevel == null && result.resources?.pdb?.Count > 0)
+                debugLevel = -1;
+
+            // Fallback to -1 for build, or 0 for publish
+            debugLevel ??= IsPublish ? 0 : -1;
+
+            result.debugLevel = debugLevel.Value;
+        }
+
         if (ConfigurationFiles != null)
         {
             foreach (var configFile in ConfigurationFiles)
@@ -392,22 +407,6 @@ public class GenerateWasmBootJson : Task
             return GlobalizationMode.Custom;
 
         return GlobalizationMode.Sharded;
-    }
-
-    private static bool? ParseOptionalBool(string value)
-    {
-        if (string.IsNullOrEmpty(value) || !bool.TryParse(value, out var boolValue))
-            return null;
-
-        return boolValue;
-    }
-
-    private static int? ParseOptionalInt(string value)
-    {
-        if (string.IsNullOrEmpty(value) || !int.TryParse(value, out var intValue))
-            return null;
-
-        return intValue;
     }
 
     private void AddToAdditionalResources(ITaskItem resource, Dictionary<string, AdditionalAsset> additionalResources, string resourceName, string behavior)

@@ -3185,6 +3185,58 @@ namespace System.Tests
             Assert.NotEqual(TimeZoneInfo.Utc.StandardName, TimeZoneInfo.Local.StandardName);
         }
 
+        private static bool SupportICUAndRemoteExecution => PlatformDetection.IsIcuGlobalization && RemoteExecutor.IsSupported;
+
+        [InlineData("Pacific Standard Time")]
+        [InlineData("America/Los_Angeles")]
+        [ConditionalTheory(nameof(SupportICUAndRemoteExecution))]
+        public static void TestZoneNamesUsingAlternativeId(string zoneId)
+        {
+            RemoteExecutor.Invoke(id =>
+            {
+                TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById(id);
+                Assert.False(string.IsNullOrEmpty(tzi.StandardName), $"StandardName for '{id}' is null or empty.");
+                Assert.False(string.IsNullOrEmpty(tzi.DaylightName), $"DaylightName for '{id}' is null or empty.");
+                Assert.False(string.IsNullOrEmpty(tzi.DisplayName), $"DisplayName for '{id}' is null or empty.");
+            }, zoneId).Dispose();
+        }
+
+        [Fact]
+        public static void TestCustomTimeZonesWithNullNames()
+        {
+            TimeZoneInfo custom = TimeZoneInfo.CreateCustomTimeZone("Custom Time Zone With Null Names", TimeSpan.FromHours(-8), null, null);
+            Assert.Equal("Custom Time Zone With Null Names", custom.Id);
+            Assert.Equal(string.Empty, custom.StandardName);
+            Assert.Equal(string.Empty, custom.DaylightName);
+            Assert.Equal(string.Empty, custom.DisplayName);
+        }
+
+        [InlineData("Eastern Standard Time", "America/New_York")]
+        [InlineData("Central Standard Time", "America/Chicago")]
+        [InlineData("Mountain Standard Time", "America/Denver")]
+        [InlineData("Pacific Standard Time", "America/Los_Angeles")]
+        [ConditionalTheory(nameof(SupportICUAndRemoteExecution))]
+        public static void TestTimeZoneNames(string windowsId, string ianaId)
+        {
+            RemoteExecutor.Invoke(static (wId, iId) =>
+            {
+                TimeZoneInfo info1, info2;
+                if (PlatformDetection.IsWindows)
+                {
+                    info1 = TimeZoneInfo.FindSystemTimeZoneById(iId);
+                    info2 = TimeZoneInfo.FindSystemTimeZoneById(wId);
+                }
+                else
+                {
+                    info1 = TimeZoneInfo.FindSystemTimeZoneById(wId);
+                    info2 = TimeZoneInfo.FindSystemTimeZoneById(iId);
+                }
+                Assert.Equal(info1.StandardName, info2.StandardName);
+                Assert.Equal(info1.DaylightName, info2.DaylightName);
+                Assert.Equal(info1.DisplayName, info2.DisplayName);
+            }, windowsId, ianaId).Dispose();
+        }
+
         private static bool IsEnglishUILanguage => CultureInfo.CurrentUICulture.Name.Length == 0 || CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
 
         private static bool IsEnglishUILanguageAndRemoteExecutorSupported => IsEnglishUILanguage && RemoteExecutor.IsSupported;

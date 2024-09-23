@@ -12,6 +12,7 @@ import { mono_exit } from "./exit";
 import { addCachedReponse, findCachedResponse } from "./assetsCache";
 import { getIcuResourceName } from "./icu";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
+import { mono_log_info } from "./logging";
 
 
 let throttlingPromise: PromiseAndController<void> | undefined;
@@ -146,8 +147,6 @@ export function resolve_single_asset_path(behavior: SingleAssetBehaviors): Asset
 
 export async function mono_download_assets(): Promise<void> {
     mono_log_debug("mono_download_assets");
-    loaderHelpers.maxParallelDownloads = loaderHelpers.config.maxParallelDownloads || loaderHelpers.maxParallelDownloads;
-    loaderHelpers.enableDownloadRetry = loaderHelpers.config.enableDownloadRetry || loaderHelpers.enableDownloadRetry;
     try {
         const promises_of_assets: Promise<AssetEntryInternal>[] = [];
 
@@ -297,7 +296,7 @@ export function prepareAssets() {
             }
         }
 
-        if (config.debugLevel != 0 && resources.pdb) {
+        if (config.debugLevel != 0 && loaderHelpers.isDebuggingSupported() && resources.pdb) {
             for (const name in resources.pdb) {
                 containedInSnapshotAssets.push({
                     name,
@@ -547,7 +546,7 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
         err.status = response.status;
         throw err;
     } else {
-        loaderHelpers.out(`optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+        mono_log_info(`optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
         return undefined;
     }
 }
@@ -600,7 +599,7 @@ function download_resource(asset: AssetEntryInternal): LoadingResource {
         totalResources.add(asset.name!);
         response.response.then(() => {
             if (asset.behavior == "assembly") {
-                loaderHelpers.loadedAssemblies.push(asset.resolvedUrl!);
+                loaderHelpers.loadedAssemblies.push(asset.name);
             }
 
             resourcesLoaded++;

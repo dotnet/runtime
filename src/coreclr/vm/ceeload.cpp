@@ -1550,29 +1550,25 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
     }
     CONTRACTL_END;
 
-    DWORD newId = InterlockedExchangeAdd((LONG*)&m_cDynamicEntries, 1);
+    CrstHolder ch(&m_Crst);
+    DWORD newId = (LONG)m_cDynamicEntries++;
 
-    if (newId >= VolatileLoad(&m_maxDynamicEntries))
+    if (newId >= m_maxDynamicEntries)
     {
-        CrstHolder ch(&m_Crst);
-
-        if (newId >= m_maxDynamicEntries)
+        SIZE_T maxDynamicEntries = max(16, m_maxDynamicEntries);
+        while (maxDynamicEntries <= newId)
         {
-            SIZE_T maxDynamicEntries = max(16, m_maxDynamicEntries);
-            while (maxDynamicEntries <= newId)
-            {
-                maxDynamicEntries *= 2;
-            }
-
-            DynamicStaticsInfo* pNewDynamicStaticsInfo = (DynamicStaticsInfo*)
-                (void*)GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DynamicStaticsInfo)) * S_SIZE_T(maxDynamicEntries));
-
-            if (m_pDynamicStaticsInfo)
-                memcpy(pNewDynamicStaticsInfo, m_pDynamicStaticsInfo, sizeof(DynamicStaticsInfo) * m_maxDynamicEntries);
-
-            m_pDynamicStaticsInfo = pNewDynamicStaticsInfo;
-            VolatileStore(&m_maxDynamicEntries, maxDynamicEntries);
+            maxDynamicEntries *= 2;
         }
+
+        DynamicStaticsInfo* pNewDynamicStaticsInfo = (DynamicStaticsInfo*)
+            (void*)GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DynamicStaticsInfo)) * S_SIZE_T(maxDynamicEntries));
+
+        if (m_pDynamicStaticsInfo)
+            memcpy(pNewDynamicStaticsInfo, m_pDynamicStaticsInfo, sizeof(DynamicStaticsInfo) * m_maxDynamicEntries);
+
+        VolatileStore(&m_pDynamicStaticsInfo, pNewDynamicStaticsInfo);
+        m_maxDynamicEntries = maxDynamicEntries;
     }
 
     m_pDynamicStaticsInfo[newId].pEnclosingMT = pMT;

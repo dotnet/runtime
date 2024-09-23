@@ -423,6 +423,8 @@ struct MonoSpillInfo {
 	int offset;
 };
 
+#define AOT_MODULE_NOT_FOUND GINT_TO_POINTER (-1)
+
 /*
  * Information about a call site for the GC map creation code
  */

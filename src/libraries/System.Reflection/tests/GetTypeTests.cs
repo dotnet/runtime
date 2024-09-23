@@ -262,6 +262,14 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void TestAssemblyNameWithInternationalChar()
+        {
+            Type testObj = typeof(Hello工程123.Program);
+            var t = Type.GetType(testObj.AssemblyQualifiedName);
+            Assert.NotNull(t);
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37871", TestRuntimes.Mono)]
         public void GetType_GenericTypeArgumentList()
         {

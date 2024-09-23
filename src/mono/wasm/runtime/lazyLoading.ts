@@ -21,12 +21,12 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
         behavior: "assembly",
     };
 
-    if (loaderHelpers.loadedAssemblies.some(f => f.includes(assemblyNameToLoad))) {
+    if (loaderHelpers.loadedAssemblies.includes(assemblyNameToLoad)) {
         return false;
     }
 
     const pdbNameToLoad = changeExtension(dllAsset.name, ".pdb");
-    const shouldLoadPdb = loaderHelpers.hasDebuggingEnabled(loaderHelpers.config) && Object.prototype.hasOwnProperty.call(lazyAssemblies, pdbNameToLoad);
+    const shouldLoadPdb = loaderHelpers.config.debugLevel != 0 && loaderHelpers.isDebuggingSupported() && Object.prototype.hasOwnProperty.call(lazyAssemblies, pdbNameToLoad);
 
     const dllBytesPromise = loaderHelpers.retrieve_asset_download(dllAsset);
 

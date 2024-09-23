@@ -8,6 +8,11 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsWindows)' == 'true'">
+    <ControlFlowGuard>guard</ControlFlowGuard>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
     <ProjectReference Include="../common/common.csproj" />

@@ -250,7 +250,7 @@ namespace LibraryImportGenerator.UnitTests
                     public static partial void {|#0:Method1|}(string s);
 
                     [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Native))]
-                    public static partial void Method2(string {|#1:s|});
+                    public static partial void {|#2:Method2|}(string {|#1:s|});
 
                     struct Native
                     {
@@ -266,7 +266,13 @@ namespace LibraryImportGenerator.UnitTests
                     .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Utf8)}"),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(1)
-                    .WithArguments("Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.", "s")
+                    .WithArguments("Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.", "s"),
+                VerifyCS.Diagnostic(GeneratorDiagnostics.CannotForwardToDllImport)
+                    .WithLocation(2)
+                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}"),
+                VerifyCS.Diagnostic(GeneratorDiagnostics.CannotForwardToDllImport)
+                    .WithLocation(2)
+                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(LibraryImportAttribute.StringMarshallingCustomType)}")
             };
 
             var test = new VerifyCS.Test(TestTargetFramework.Standard)
@@ -289,10 +295,10 @@ namespace LibraryImportGenerator.UnitTests
                 {
                     [{|#0:LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Custom)|}]
                     public static partial void Method1(out int i);
-                
+
                     [{|#1:LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Utf8, StringMarshallingCustomType = typeof(Native))|}]
                     public static partial void Method2(out int i);
-                
+
                     struct Native
                     {
                         public Native(string s) { }

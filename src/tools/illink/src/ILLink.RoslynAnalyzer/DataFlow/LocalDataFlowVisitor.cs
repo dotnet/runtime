@@ -253,7 +253,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 						// Single captured reference. Treat this as an overwriting assignment,
 						// unless the caller already told us to merge values because this is an
 						// assignment to one of multiple captured array element references.
-						var enumerator = capturedReferences.GetEnumerator ();
+						var enumerator = capturedReferences.GetKnownValues ().GetEnumerator ();
 						enumerator.MoveNext ();
 						var capture = enumerator.Current;
 						arrayRef = Visit (capture.Reference, state);
@@ -266,7 +266,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					// We treat this as possible write to each of the captured references,
 					// which requires merging with the previous values of each.
 
-					foreach (var capture in state.Current.CapturedReferences.Get (captureReference.Id)) {
+					Debug.Assert (!capturedReferences.IsUnknown ());
+					foreach (var capture in capturedReferences.GetKnownValues ()) {
 						arrayRef = Visit (capture.Reference, state);
 						HandleArrayElementWrite (arrayRef, index, value, operation, merge: true);
 					}
@@ -330,9 +331,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			Debug.Assert (IsLValueFlowCapture (flowCaptureReference.Id));
 			Debug.Assert (!flowCaptureReference.GetValueUsageInfo (Method).HasFlag (ValueUsageInfo.Read));
 			var capturedReferences = state.Current.CapturedReferences.Get (flowCaptureReference.Id);
+			Debug.Assert (!capturedReferences.IsUnknown ());
 			if (!capturedReferences.HasMultipleValues) {
 				// Single captured reference. Treat this as an overwriting assignment.
-				var enumerator = capturedReferences.GetEnumerator ();
+				var enumerator = capturedReferences.GetKnownValues ().GetEnumerator ();
 				enumerator.MoveNext ();
 				targetOperation = enumerator.Current.Reference;
 				return ProcessSingleTargetAssignment (targetOperation, operation, state, merge: false);
@@ -349,7 +351,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// if the RHS has dataflow warnings.
 
 			TValue value = TopValue;
-			foreach (var capturedReference in capturedReferences) {
+			foreach (var capturedReference in capturedReferences.GetKnownValues ()) {
 				targetOperation = capturedReference.Reference;
 				var singleValue = ProcessSingleTargetAssignment (targetOperation, operation, state, merge: true);
 				value = LocalStateLattice.Lattice.ValueLattice.Meet (value, singleValue);

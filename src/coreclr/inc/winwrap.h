@@ -204,9 +204,6 @@
 //Can not use extended syntax
 #define WszGetFullPathName     GetFullPathNameW
 
-//Long Files will not work on these till redstone
-#define WszGetTempPath         GetTempPathWrapper
-
 //APIS which have a buffer as an out parameter
 #define WszGetEnvironmentVariable GetEnvironmentVariableWrapper
 #define WszSearchPath          SearchPathWrapper
