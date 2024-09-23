@@ -337,7 +337,7 @@ FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("GetSegmentSize", GCInterface::GetSegmentSize)
     FCFuncElement("GetLastGCPercentTimeInGC", GCInterface::GetLastGCPercentTimeInGC)
     FCFuncElement("GetGenerationSize", GCInterface::GetGenerationSize)
-    FCFuncElement("GetGenerationWorker", GCInterface::GetGenerationWorker)
+    FCFuncElement("GetGenerationInternal", GCInterface::GetGenerationInternal)
     FCFuncElement("GetMaxGeneration", GCInterface::GetMaxGeneration)
     FCFuncElement("_SuppressFinalize", GCInterface::SuppressFinalize)
 

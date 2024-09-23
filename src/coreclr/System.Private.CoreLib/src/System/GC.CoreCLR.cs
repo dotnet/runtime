@@ -160,11 +160,11 @@ namespace System
         public static int GetGeneration(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
-            return GetGenerationWorker(obj);
+            return GetGenerationInternal(obj);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int GetGenerationWorker(object obj);
+        private static extern int GetGenerationInternal(object obj);
 
         // Forces a collection of all generations from 0 through Generation.
         //

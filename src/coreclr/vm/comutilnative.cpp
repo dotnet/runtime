@@ -688,12 +688,12 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeo
     return result;
 }
 
-/*================================GetGenerationWorker=================================
+/*================================GetGenerationInternal=================================
 **Action: Returns the generation in which args->obj is found.
 **Returns: The generation in which args->obj is found.
 **Arguments: args->obj -- The object to locate.
 ==============================================================================*/
-FCIMPL1(int, GCInterface::GetGenerationWorker, Object* objUNSAFE)
+FCIMPL1(int, GCInterface::GetGenerationInternal, Object* objUNSAFE)
 {
     FCALL_CONTRACT;
     _ASSERTE(objUNSAFE != NULL);
