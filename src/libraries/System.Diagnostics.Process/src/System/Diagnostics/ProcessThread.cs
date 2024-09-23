@@ -121,7 +121,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public ThreadState ThreadState
         {
-            get { return _threadInfo._threadState; }
+            get => ThreadStateCore;
         }
 
         /// <devdoc>
@@ -131,7 +131,8 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_threadInfo._threadState != ThreadState.Wait)
+                // Use the property to ensure _threadWaitReason is initialized.
+                if (ThreadState != ThreadState.Wait)
                 {
                     throw new InvalidOperationException(SR.WaitReasonUnavailable);
                 }

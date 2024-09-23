@@ -585,25 +585,19 @@ namespace System.Diagnostics
         ///       process.
         ///    </para>
         /// </devdoc>
-        public ProcessThreadCollection Threads
-        {
-            get
-            {
-                if (_threads == null)
-                {
-                    EnsureState(State.HaveProcessInfo);
-                    int count = _processInfo!._threadInfoList.Count;
-                    ProcessThread[] newThreadsArray = new ProcessThread[count];
-                    for (int i = 0; i < count; i++)
-                    {
-                        newThreadsArray[i] = new ProcessThread(_isRemoteMachine, _processId, (ThreadInfo)_processInfo._threadInfoList[i]);
-                    }
+        public ProcessThreadCollection Threads => _threads ??= EnumerateThreadsCore();
 
-                    ProcessThreadCollection newThreads = new ProcessThreadCollection(newThreadsArray);
-                    _threads = newThreads;
-                }
-                return _threads;
+        private ProcessThreadCollection EnumerateThreadsCoreFallback()
+        {
+            EnsureState(State.HaveProcessInfo);
+            int count = _processInfo!._threadInfoList.Count;
+            ProcessThread[] newThreadsArray = new ProcessThread[count];
+            for (int i = 0; i < count; i++)
+            {
+                newThreadsArray[i] = new ProcessThread(_isRemoteMachine, _processId, (ThreadInfo)_processInfo._threadInfoList[i]);
             }
+
+            return new ProcessThreadCollection(newThreadsArray);
         }
 
         public int HandleCount

@@ -56,6 +56,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtQueryInformationProcess.cs"
              Link="Common\Interop\Windows\NtDll\Interop.NtQueryInformationProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtQueryInformationThread.cs"
+             Link="Common\Interop\Windows\NtDll\Interop.NtQueryInformationThread.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs"
              Link="Common\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.PROCESS_BASIC_INFORMATION.cs"
@@ -110,6 +112,8 @@
              Link="Common\Interop\Windows\kernel32\Interop.GetCurrentProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OpenProcess.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.OpenProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ProcessSnapshot.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.ProcessSnapshot.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.EnumProcesses.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.EnumProcesses.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleInformation.cs"
@@ -225,6 +229,7 @@
     <Compile Include="System\Diagnostics\ProcessStartInfo.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessThreadTimes.cs" />
+    <Compile Include="System\Diagnostics\Process.EnumerateThreads.Windows.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
@@ -235,6 +240,8 @@
     <Compile Include="System\Diagnostics\ProcessStartInfo.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitHandle.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitState.Unix.cs" />
+    <Compile Include="System\Diagnostics\Process.EnumerateThreads.NonWindows.cs" />
+    <Compile Include="System\Diagnostics\ProcesseThread.NonWindows.cs" />
     <Compile Include="$(CommonPath)System\IO\StringParser.cs"
              Link="Common\System\IO\StringParser.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"

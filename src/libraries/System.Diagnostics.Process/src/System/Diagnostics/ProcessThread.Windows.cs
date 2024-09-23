@@ -176,5 +176,48 @@ namespace System.Diagnostics
             EnsureState(State.IsLocal);
             return ProcessManager.OpenThread((int)_threadInfo._threadId, access);
         }
+
+        internal bool StateRequiresLazyEvaluation { get; set; }
+
+        /// <summary>
+        /// If the object is populated from ProcessSnapshot,
+        /// ThreadState and ThreadWaitReason need to be lazily evaluated.
+        /// </summary>
+        private ThreadState ThreadStateCore
+        {
+            get
+            {
+                if (StateRequiresLazyEvaluation)
+                {
+                    EnsureStateAndWaitReason();
+                }
+                return _threadInfo._threadState;
+            }
+        }
+
+        private unsafe void EnsureStateAndWaitReason()
+        {
+            // Risk: This method is calling an *undocumented* THREADINFOCLASS on NtQueryInformationThread
+            // and it is the only way to retrieve thread state & wait reasons without re-enumerating.
+            // See the original PR to check for alternative solutions.
+
+            // However, the 0x28 value is available since 10, higher than Process Snapshot APIs.
+
+            using SafeThreadHandle threadHandle = OpenThreadHandle(Interop.Kernel32.ThreadOptions.THREAD_QUERY_INFORMATION);
+
+            const int ThreadInfoClass_ThreadSystemThreadInformation = 0x28;
+
+            Interop.NtDll.SYSTEM_THREAD_INFORMATION threadInfo;
+            if (Interop.NtDll.NtQueryInformationThread(threadHandle, ThreadInfoClass_ThreadSystemThreadInformation,
+                &threadInfo, (uint)sizeof(Interop.NtDll.SYSTEM_THREAD_INFORMATION), out _) != 0)
+            {
+                throw new Win32Exception();
+            }
+
+            _threadInfo._threadState = (ThreadState)threadInfo.ThreadState;
+            _threadInfo._threadWaitReason = NtProcessManager.GetThreadWaitReason((int)threadInfo.WaitReason);
+
+            StateRequiresLazyEvaluation = false;
+        }
     }
 }
