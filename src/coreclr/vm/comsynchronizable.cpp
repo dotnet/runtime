@@ -223,10 +223,13 @@ static ULONG WINAPI KickOffThread(void* pass)
     return 0;
 }
 
-static void StartThread(Thread* pNewThread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName)
+extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName)
 {
-    STANDARD_VM_CONTRACT;
+    QCALL_CONTRACT;
 
+    BEGIN_QCALL;
+
+    Thread* pNewThread = thread;
     _ASSERTE(pNewThread != NULL);
 
     // Is the thread already started?  You can't restart a thread.
@@ -303,15 +306,6 @@ static void StartThread(Thread* pNewThread, int threadStackSize, int priority, B
         PulseAllHelper(pNewThread);
         pNewThread->HandleThreadStartupFailure();
     }
-}
-
-extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    StartThread(thread, threadStackSize, priority, isThreadPool, pThreadName);
 
     END_QCALL;
 }
