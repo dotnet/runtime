@@ -7,14 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- reference nuget binaries directly to avoid restoring it's package dependency closure -->    
-    <PackageDownloadAndReference Include="NuGet.Common" Version="$(NugetFrameworksVersion)" Folder="lib/netstandard2.0" Private="true" />
-    <PackageDownloadAndReference Include="NuGet.Frameworks" Version="$(NugetFrameworksVersion)" Folder="lib/netstandard2.0" Private="true" />
-    <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/netstandard2.0"  Private="true"  />
-    <PackageDownloadAndReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" Folder="lib/netstandard2.0"  Private="true" />
-    <PackageDownloadAndReference Include="NuGet.Versioning" Version="$(NugetVersioningVersion)" Folder="lib/netstandard2.0"  Private="true" />
+    <PackageReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" />
+    <!-- Upgrade to a non-vulnerable version of Asn1 - which will be ignored in favor of the framework copy  -->
+    <PackageReference Include="System.Formats.Asn1" Version="$(SystemFormatsAsn1Version)" ExcludeAssets="All" />
   </ItemGroup>
-  
+
   <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
 
   <ItemGroup>
