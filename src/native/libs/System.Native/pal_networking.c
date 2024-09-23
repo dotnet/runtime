@@ -1553,15 +1553,18 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
     }
 
     ssize_t res;
-#if !defined(CMSG_SPACE)
-    // TODO https://github.com/dotnet/runtime/issues/98957
-    return Error_ENOTSUP;
-#else // !CMSG_SPACE
+#if defined(CMSG_SPACE)
     struct msghdr header;
     ConvertMessageHeaderToMsghdr(&header, messageHeader, fd);
 
     while ((res = recvmsg(fd, &header, socketFlags)) < 0 && errno == EINTR);
+#else // CMSG_SPACE
+    // we will only use 0th buffer
+    struct iovec* msg_iov = (struct iovec*)messageHeader->IOVectors;
+    while ((res = recvfrom(fd, msg_iov[0].iov_base, msg_iov[0].iov_len, socketFlags, (sockaddr *)messageHeader->SocketAddress, (socklen_t*) &(messageHeader->SocketAddressLen))) < 0 && errno == EINTR);
+#endif // CMSG_SPACE
 
+#if defined(CMSG_SPACE)
     assert(header.msg_name == messageHeader->SocketAddress); // should still be the same location as set in ConvertMessageHeaderToMsghdr
     assert(header.msg_control == messageHeader->ControlBuffer);
 
@@ -1572,6 +1575,7 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
     messageHeader->ControlBufferLen = Min((int32_t)header.msg_controllen, messageHeader->ControlBufferLen);
 
     messageHeader->Flags = ConvertSocketFlagsPlatformToPal(header.msg_flags);
+#endif // CMSG_SPACE
 
     if (res != -1)
     {
@@ -1581,7 +1585,6 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
 
     *received = 0;
     return SystemNative_ConvertErrorPlatformToPal(errno);
-#endif // !CMSG_SPACE
 }
 
 int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* sent)
@@ -1635,11 +1638,8 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
         return Error_ENOTSUP;
     }
 
-#if !defined(CMSG_SPACE)
-    // TODO https://github.com/dotnet/runtime/issues/98957
-    return Error_ENOTSUP;
-#else // !CMSG_SPACE
     ssize_t res;
+#if defined(CMSG_SPACE)
     struct msghdr header;
     ConvertMessageHeaderToMsghdr(&header, messageHeader, fd);
 
@@ -1652,6 +1652,12 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
 #else
     while ((res = sendmsg(fd, &header, socketFlags)) < 0 && errno == EINTR);
 #endif
+#else // CMSG_SPACE
+    // we will only use 0th buffer
+    struct iovec* msg_iov = (struct iovec*)messageHeader->IOVectors;
+    while ((res = sendto(fd, msg_iov[0].iov_base, msg_iov[0].iov_len, socketFlags, (sockaddr *)messageHeader->SocketAddress, (socklen_t)messageHeader->SocketAddressLen)) < 0 && errno == EINTR);
+#endif // CMSG_SPACE
+
     if (res != -1)
     {
         *sent = res;
@@ -1660,7 +1666,6 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
 
     *sent = 0;
     return SystemNative_ConvertErrorPlatformToPal(errno);
-#endif // !CMSG_SPACE
 }
 
 int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, intptr_t* acceptedSocket)
@@ -1678,6 +1683,7 @@ int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* so
     while ((accepted = accept4(fd, (struct sockaddr*)socketAddress, &addrLen, SOCK_CLOEXEC)) < 0 && errno == EINTR);
 #else
     while ((accepted = accept(fd, (struct sockaddr*)socketAddress, &addrLen)) < 0 && errno == EINTR);
+#if !defined(TARGET_WASI) // WASI is always FD_CLOEXEC and non-blocking
 #if defined(FD_CLOEXEC)
     // macOS does not have accept4 but it can set _CLOEXEC on descriptor.
     // Unlike accept4 it is not atomic and the fd can leak child process.
@@ -1701,6 +1707,7 @@ int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* so
         accepted = -1;
         errno = oldErrno;
     }
+#endif
 #endif
     if (accepted == -1)
     {
@@ -2779,6 +2786,9 @@ int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t p
 #ifdef SOCK_CLOEXEC
     platformSocketType |= SOCK_CLOEXEC;
 #endif
+#if defined(TARGET_WASI)
+    platformSocketType |= SOCK_NONBLOCK; // WASI sockets are always non-blocking, because in ST we don't have another thread which could be blocked
+#endif
     *createdSocket = socket(platformAddressFamily, platformSocketType, platformProtocolType);
     if (*createdSocket == -1)
     {
@@ -2841,6 +2851,11 @@ int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int3
         !TryConvertSocketTypePlatformToPal(typeValue, socketType))
 #endif
     {
+#if defined(TARGET_WASI)
+        if (errno == EBADF){
+            return Error_ENOTSOCK;
+        }
+#endif // TARGET_WASI
         *socketType = SocketType_UNKNOWN;
     }
 
@@ -3303,7 +3318,8 @@ static int32_t WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32
     return Error_SUCCESS;
 }
 
-#else
+#else // !HAVE_KQUEUE !HAVE_EPOLL
+
 static const size_t SocketEventBufferElementSize = 0;
 
 static int32_t CloseSocketEventPortInner(int32_t port)
@@ -3324,8 +3340,32 @@ static int32_t WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32
 {
     return Error_ENOSYS;
 }
+#endif  // !HAVE_KQUEUE !HAVE_EPOLL
 
-#endif
+#if defined(TARGET_WASI)
+// from https://github.com/WebAssembly/wasi-libc/blob/230d4be6c54bec93181050f9e25c87150506bdd0/libc-bottom-half/headers/private/wasi/descriptor_table.h
+bool descriptor_table_get_ref(int fd, void **entry);
+
+int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry)
+{
+    if (entry == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd = ToFileDescriptor(socket);
+    if(!descriptor_table_get_ref(fd, entry))
+    {
+        return Error_EFAULT;
+    }
+    return Error_SUCCESS;
+}
+#else
+int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry)
+{
+    return Error_ENOSYS;
+}
+#endif  // TARGET_WASI
 
 int32_t SystemNative_CreateSocketEventPort(intptr_t* port)
 {
