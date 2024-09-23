@@ -44,7 +44,7 @@ namespace Mono.Linker
 		public static TypeDefinition? FindPredefinedType (WellKnownType type, LinkContext context)
 		{
 			var (ns, name) = type.GetNamespaceAndName ();
-			foreach (var corlibName in [
+			foreach (var corlibName in (string[])[
 				"System.Private.CoreLib",
 				"mscorlib",
 				"System.Runtime",
