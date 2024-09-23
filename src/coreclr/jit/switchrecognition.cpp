@@ -266,10 +266,24 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
 
     // We're less conservative than Roslyn, but we still have some limits (unless stress mode is enabled)
 
-    if ((static_cast<size_t>(cns + switchTargetOffset) > SWITCH_MAX_DISTANCE) &&
-        !compStressCompile(STRESS_DONT_LIMIT_JUMP_TABLE, 50))
+    if (CheckedOps::AddOverflows(cns, switchTargetOffset, false) || (cns + switchTargetOffset < 0))
     {
-        JITDUMP("Switch value is out of range - bail out.\n");
+        JITDUMP("Normalized switch value is negative - bail out.\n");
+        return false;
+    }
+
+    size_t maxSwitchDistance = SWITCH_MAX_DISTANCE;
+    static_assert_no_msg(SWITCH_MAX_DISTANCE < 1024);
+    if (compStressCompile(STRESS_DONT_LIMIT_JUMP_TABLE, 50))
+    {
+        // Allow more tests under stress mode
+        maxSwitchDistance = 1024;
+    }
+
+    if (CheckedOps::AddOverflows(cns, switchTargetOffset, false) ||
+        (static_cast<size_t>(cns + switchTargetOffset) > maxSwitchDistance))
+    {
+        JITDUMP("Normalized switch value is out of range - bail out.\n");
         return false;
     }
 
@@ -309,6 +323,9 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
     //
     // Create the new jump table
     //
+    INDEBUG(bool testsPassesAdded = false);
+    INDEBUG(bool testsFailsAdded = false);
+    INDEBUG(bool defaultRemoved = false);
     for (unsigned i = 0; i < newJumpCnt; i++)
     {
         if (i < oldJumpCnt)
@@ -316,6 +333,7 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
             // Not only the default case can point to edgeToExpandDst
             if (oldJumpTab[i]->getDestinationBlock() == edgeToExpandDst)
             {
+                INDEBUG(defaultRemoved = true);
                 fgRemoveRefPred(oldJumpTab[i]);
             }
             else
@@ -328,15 +346,21 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
 
         if (i == (unsigned)newTestValue)
         {
+            INDEBUG(testsPassesAdded = true);
             newJumpTab[i] = fgAddRefPred(testPassesBb, block);
             newJumpTab[i]->setLikelihood(newTestLikelihood);
         }
         else
         {
+            INDEBUG(testsFailsAdded = true);
             newJumpTab[i] = fgAddRefPred(testFailsBb, block);
             newJumpTab[i]->setLikelihood(newDefLikelihood);
         }
     }
+
+    assert(defaultRemoved);
+    assert(testsPassesAdded);
+    assert(testsFailsAdded);
 
     switchTargets->bbsCount  = newJumpCnt;
     switchTargets->bbsDstTab = newJumpTab;
