@@ -1293,21 +1293,6 @@ void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr, GCCoverageI
     FlushInstructionCache(GetCurrentProcess(), (LPCVOID)instrPtr, 4);
 }
 
-// TODO: VS revisit. is this still relevant?
- 
-// A managed thread (T) can race with the GC as follows:
-// 1) At the first safepoint, we notice that T is in preemptive mode during the call for GCStress
-//    So, it is put it in cooperative mode for the purpose of GCStress(fPreemptiveGcDisabledForGcStress)
-// 2) We DoGCStress(). Start off background GC in a different thread.
-// 3) Then the thread T is put back to preemptive mode (because that's where it was).
-//    Thread T continues execution along with the GC thread.
-// 4) The Jitted code puts thread T to cooperative mode, as part of PInvoke epilog
-// 5) Now instead of CORINFO_HELP_STOP_FOR_GC(), we hit the GCStress trap and start
-//    another round of GCStress while in Cooperative mode.
-// 6) Now, thread T can modify the stack (ex: RedirectionFrame setup) while the GC thread is scanning it.
-//
-// This race is now mitigated below. Where we won't initiate a stress mode GC
-// for a thread in cooperative mode with an active ICF, if g_TrapReturningThreads is true.
 BOOL OnGcCoverageInterrupt(PCONTEXT regs)
 {
     PCODE controlPc = GetIP(regs);
@@ -1345,21 +1330,8 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         return TRUE;
     }
 
-    // If we're in cooperative mode, we're supposed to stop for GC,
-    // and there's an active ICF, don't initiate a stress GC.
-    if (g_TrapReturningThreads && pThread->PreemptiveGCDisabled())
-    {
-        Frame* pFrame = pThread->GetFrame();
-        if (InlinedCallFrame::FrameHasActiveCall(pFrame))
-        {
-            RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
-            return TRUE;
-        }
-    }
-
 #if defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX)
-    // If we're unable to redirect, then we simply won't test GC at this
-    // location.
+    // If we're unable to redirect, then we simply won't test GC at this location.
     if (Thread::UseRedirectForGcStress())
     {
         if (!pThread->CheckForAndDoRedirectForGCStress(regs))
