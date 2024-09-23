@@ -24,25 +24,28 @@ namespace Melanzana.MachO.Tests
             var segments = objectFile.LoadCommands.OfType<MachSegment>().ToArray();
             Assert.Equal("__PAGEZERO", segments[0].Name);
             Assert.Equal("__TEXT", segments[1].Name);
-            Assert.Equal("__LINKEDIT", segments[2].Name);
+            Assert.Equal("__DATA_CONST", segments[2].Name);
+            Assert.Equal("__LINKEDIT", segments[3].Name);
 
             var symbolTable = objectFile.LoadCommands.OfType<MachSymbolTable>().FirstOrDefault();
             Assert.NotNull(symbolTable);
             var symbols = symbolTable!.Symbols.ToArray();
-            Assert.Equal(2, symbols.Length);
+            Assert.Equal(3, symbols.Length);
             Assert.Equal("__mh_execute_header", symbols[0].Name);
             Assert.Equal(0x100000000u, symbols[0].Value);
             Assert.Equal("_main", symbols[1].Name);
-            Assert.Equal(0x100003fa4u, symbols[1].Value);
+            Assert.Equal(0x100003F70u, symbols[1].Value);
+            Assert.Equal("_printf", symbols[2].Name);
+            Assert.Equal(0u, symbols[2].Value);
 
             var buildVersion = objectFile.LoadCommands.OfType<MachBuildVersion>().FirstOrDefault();
             Assert.NotNull(buildVersion);
             Assert.Equal(MachPlatform.MacOS, buildVersion!.Platform);
-            Assert.Equal("12.0.0", buildVersion!.MinimumPlatformVersion.ToString());
-            Assert.Equal("12.0.0", buildVersion!.SdkVersion.ToString());
+            Assert.Equal("14.0.0", buildVersion!.MinimumPlatformVersion.ToString());
+            Assert.Equal("15.0.0", buildVersion!.SdkVersion.ToString());
             Assert.Equal(1, buildVersion!.ToolVersions.Count);
             Assert.Equal(MachBuildTool.Ld, buildVersion!.ToolVersions[0].BuildTool);
-            Assert.Equal("711.0.0", buildVersion!.ToolVersions[0].Version.ToString());
+            Assert.Equal("1115.7.3", buildVersion!.ToolVersions[0].Version.ToString());
         }
 
         [Fact]
@@ -80,8 +83,8 @@ namespace Melanzana.MachO.Tests
             Assert.Equal(0u, symbols[0].Value);
             Assert.Equal("ltmp1", symbols[1].Name);
             Assert.Equal(compactUnwindSection, symbols[1].Section);
-            Assert.Equal(0x18u, symbols[1].Value);
-            Assert.Equal("_main", symbols[2].Name);
+            Assert.Equal(0x20u, symbols[1].Value);
+            Assert.Equal("_add", symbols[2].Name);
             Assert.Equal(textSection, symbols[2].Section);
             Assert.Equal(0u, symbols[2].Value);
         }

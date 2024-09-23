@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -263,32 +262,6 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 .Be(expectedPermissions);
         }
 
-
-        [Fact]
-        public void DoesNotCodeSignAppHostByDefault()
-        {
-            using (TestArtifact artifact = CreateTestDirectory())
-            {
-                string sourceAppHostMock = PrepareMockMachAppHostFile(artifact.Location);
-                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
-                string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
-                string appBinaryFilePath = "Test/App/Binary/Path.dll";
-                HostWriter.CreateAppHost(
-                   sourceAppHostMock,
-                   destinationFilePath,
-                   appBinaryFilePath,
-                   windowsGraphicalUserInterface: false);
-
-                if (!Codesign.IsAvailable())
-                {
-                    return;
-                }
-
-                var (exitCode, stdErr) = Codesign.Run("-d", destinationFilePath);
-                stdErr.Should().Contain($"{Path.GetFullPath(destinationFilePath)}: code object is not signed at all");
-            }
-        }
-
         [Theory]
         [InlineData("")]
         [InlineData("dir with spaces")]
@@ -339,6 +312,32 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 }
             }
         }
+
+        [Fact]
+        public void DoesNotCodeSignAppHostByDefault()
+        {
+            using (TestArtifact artifact = CreateTestDirectory())
+            {
+                string sourceAppHostMock = PrepareMockMachAppHostFile(artifact.Location);
+                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
+                string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false);
+
+                if (!Codesign.IsAvailable())
+                {
+                    return;
+                }
+
+                var (exitCode, stdErr) = Codesign.Run("-d", destinationFilePath);
+                stdErr.Should().Contain($"{Path.GetFullPath(destinationFilePath)}: code object is not signed at all");
+            }
+        }
+
         [Fact]
         public void CodeSigningFailuresThrow()
         {
