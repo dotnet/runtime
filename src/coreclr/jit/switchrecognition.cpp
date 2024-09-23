@@ -266,12 +266,6 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
 
     // We're less conservative than Roslyn, but we still have some limits (unless stress mode is enabled)
 
-    if (CheckedOps::AddOverflows(cns, switchTargetOffset, false) || (cns + switchTargetOffset < 0))
-    {
-        JITDUMP("Normalized switch value is negative - bail out.\n");
-        return false;
-    }
-
     size_t maxSwitchDistance = SWITCH_MAX_DISTANCE;
     static_assert_no_msg(SWITCH_MAX_DISTANCE < 1024);
     if (compStressCompile(STRESS_DONT_LIMIT_JUMP_TABLE, 50))
