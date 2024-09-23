@@ -1925,192 +1925,19 @@ HCIMPLEND
 //
 //========================================================================
 
-/***********************************************************************/
-// JIT_GenericHandle and its cache
-//
-// Perform a "polytypic" operation related to shared generic code at runtime, possibly filling in an entry in
-// either a generic dictionary cache associated with a descriptor or placing an entry in the global
-// JitGenericHandle cache.
-//
-// A polytypic operation is one such as
-//      * new List<T>
-//      * castclass List<T>
-// where the code being executed is shared generic code. In these cases the outcome of the operation depends
-// on the exact value for T, which is acquired from a dynamic parameter.
-//
-// The actual operation always boils down to finding a "handle" (TypeHandle, MethodDesc, call address,
-// dispatch stub address etc.) based on some static information (passed as tokens) and on the exact runtime
-// type context (passed as one or two parameters classHnd and methodHnd).
-//
-// The static information specifies which polytypic operation (and thus which kind of handle) we're
-// interested in.
-//
-// The dynamic information (the type context, i.e. the exact instantiation of class and method type
-// parameters is specified in one of two ways:
-// * If classHnd is null then the methodHnd should be an exact method descriptor wrapping shared code that
-//     satisfies SharedByGenericMethodInstantiations().
-//
-//     For example:
-//         * We may be running the shared code for a generic method instantiation C::m<object>. The methodHnd
-//             will carry the exact instantiation, e.g. C::m<string>
-//
-// * If classHnd is non-null (e.g. a type D<exact>) then:
-//     * methodHnd will indicate the representative code being run (which will be
-//         !SharedByGenericMethodInstantiations but will be SharedByGenericClassInstantiations). Let's say
-//         this code is C<repr>::m().
-//     * the type D will be a descendent of type C. In particular D<exact> will relate to some type C<exact'>
-//         where C<repr> is the representative instantiation of C<exact>'
-//     * the relevant dictionary will be the one attached to C<exact'>.
-//
-// The JitGenericHandleCache is a global data structure shared across all application domains. It is only
-// used if generic dictionaries have overflowed. It is flushed each time an application domain is unloaded.
-
-struct JitGenericHandleCacheKey
+extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
 {
-    JitGenericHandleCacheKey(CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd, void *signature)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Data1 = (size_t)classHnd;
-        m_Data2 = (size_t)methodHnd;
-        m_Data3 = (size_t)signature;
-        m_type = 0;
-    }
+    QCALL_CONTRACT;
 
-    JitGenericHandleCacheKey(MethodTable* pMT, CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Data1 = (size_t)pMT;
-        m_Data2 = (size_t)classHnd;
-        m_Data3 = (size_t)methodHnd;
-        m_type = 1;
-    }
+    CORINFO_GENERIC_HANDLE result = NULL;
 
-    size_t  m_Data1;
-    size_t  m_Data2;
-    size_t  m_Data3;
+    BEGIN_QCALL;
 
-    // The type of the entry:
-    //  0 - JIT_GenericHandle entry
-    //  1 - JIT_VirtualFunctionPointer entry
-    unsigned char m_type;
-};
+    _ASSERTE(pMT != NULL || pMD != NULL);
+    _ASSERTE(pMT == NULL || pMD == NULL);
 
-class JitGenericHandleCacheTraits
-{
-public:
-    static EEHashEntry_t *AllocateEntry(const JitGenericHandleCacheKey *pKey, BOOL bDeepCopy, AllocationHeap pHeap = 0)
-    {
-        LIMITED_METHOD_CONTRACT;
-        EEHashEntry_t *pEntry = (EEHashEntry_t *) new (nothrow) BYTE[SIZEOF_EEHASH_ENTRY + sizeof(JitGenericHandleCacheKey)];
-        if (!pEntry)
-            return NULL;
-        *((JitGenericHandleCacheKey*)pEntry->Key) = *pKey;
-        return pEntry;
-    }
-
-    static void DeleteEntry(EEHashEntry_t *pEntry, AllocationHeap pHeap = 0)
-    {
-        LIMITED_METHOD_CONTRACT;
-        delete [] (BYTE*)pEntry;
-    }
-
-    static BOOL CompareKeys(EEHashEntry_t *pEntry, const JitGenericHandleCacheKey *e2)
-    {
-        LIMITED_METHOD_CONTRACT;
-        const JitGenericHandleCacheKey *e1 = (const JitGenericHandleCacheKey*)&pEntry->Key;
-        return (e1->m_Data1 == e2->m_Data1) && (e1->m_Data2 == e2->m_Data2) && (e1->m_Data3 == e2->m_Data3) &&
-            (e1->m_type == e2->m_type);
-    }
-
-    static DWORD Hash(const JitGenericHandleCacheKey *k)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (DWORD)k->m_Data1 + _rotl((DWORD)k->m_Data2,5) + _rotr((DWORD)k->m_Data3,5);
-    }
-
-    static const JitGenericHandleCacheKey *GetKey(EEHashEntry_t *pEntry)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (const JitGenericHandleCacheKey*)&pEntry->Key;
-    }
-};
-
-typedef EEHashTable<const JitGenericHandleCacheKey *, JitGenericHandleCacheTraits, FALSE> JitGenericHandleCache;
-
-JitGenericHandleCache *g_pJitGenericHandleCache = NULL;    //cache of calls to JIT_GenericHandle
-CrstStatic g_pJitGenericHandleCacheCrst;
-
-void AddToGenericHandleCache(JitGenericHandleCacheKey* pKey, HashDatum datum)
-{
-     CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pKey));
-        PRECONDITION(CheckPointer(datum));
-    } CONTRACTL_END;
-
-    EX_TRY
-    {
-        GCX_COOP();
-
-        CrstHolder lock(&g_pJitGenericHandleCacheCrst);
-
-        HashDatum entry;
-        if (!g_pJitGenericHandleCache->GetValue(pKey,&entry))
-            g_pJitGenericHandleCache->InsertValue(pKey,datum);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions)  // Swallow OOM
-}
-
-/* static */
-void ClearJitGenericHandleCache()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-
-    // We call this on every ALC unload, because entries in the cache might include
-    // pointers into the ALC being unloaded.  We would prefer to
-    // only flush entries that have that are no longer valid, but the entries don't yet contain
-    // enough information to do that.  However everything in the cache can be found again by calling
-    // loader functions, and the total number of entries in the cache is typically very small (indeed
-    // normally the cache is not used at all - it is only used when the generic dictionaries overflow).
-    if (g_pJitGenericHandleCache)
-    {
-        // It's not necessary to take the lock here because this function should only be called when EE is suspended,
-        // the lock is only taken to fulfill the threadsafety check and to be consistent. If the lock becomes a problem, we
-        // could put it in a "ifdef _DEBUG" block
-        CrstHolder lock(&g_pJitGenericHandleCacheCrst);
-        EEHashTableIteration iter;
-        g_pJitGenericHandleCache->IterateStart(&iter);
-        BOOL keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
-        while(keepGoing)
-        {
-            const JitGenericHandleCacheKey *key = g_pJitGenericHandleCache->IterateGetKey(&iter);
-            // Advance the iterator before we delete!!  See notes in EEHash.h
-            keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
-            g_pJitGenericHandleCache->DeleteValue(key);
-        }
-    }
-}
-
-// Factored out most of the body of JIT_GenericHandle so it could be called easily from the CER reliability code to pre-populate the
-// cache.
-CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
-{
-     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-     uint32_t dictionaryIndex = 0;
-     MethodTable * pDeclaringMT = NULL;
+    uint32_t dictionaryIndex = 0;
+    MethodTable * pDeclaringMT = NULL;
 
     if (pMT != NULL)
     {
@@ -2149,33 +1976,10 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
                 break;
             pDeclaringMT = pParentMT;
         }
-
-        if (pDeclaringMT != pMT)
-        {
-            JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, NULL, signature);
-            HashDatum res;
-            if (g_pJitGenericHandleCache->GetValue(&key,&res))
-            {
-                // Add the denormalized key for faster lookup next time. This is not a critical entry - no need
-                // to specify appdomain affinity.
-                JitGenericHandleCacheKey denormKey((CORINFO_CLASS_HANDLE)pMT, NULL, signature);
-                AddToGenericHandleCache(&denormKey, res);
-                return (CORINFO_GENERIC_HANDLE) (DictionaryEntry) res;
-            }
-        }
     }
 
     DictionaryEntry * pSlot;
-    CORINFO_GENERIC_HANDLE result = (CORINFO_GENERIC_HANDLE)Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, FALSE, &pSlot, dictionaryIndexAndSlot, pModule);
-
-    if (pSlot == NULL)
-    {
-        // If we've overflowed the dictionary write the result to the cache.
-        // Add the normalized key (pDeclaringMT) here so that future lookups of any
-        // inherited types are faster next time rather than just just for this specific pMT.
-        JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, (CORINFO_METHOD_HANDLE)pMD, signature);
-        AddToGenericHandleCache(&key, (HashDatum)result);
-    }
+    result = (CORINFO_GENERIC_HANDLE)Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, FALSE, &pSlot, dictionaryIndexAndSlot, pModule);
 
     if (pMT != NULL && pDeclaringMT != pMT)
     {
@@ -2191,149 +1995,97 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         }
     }
 
+    END_QCALL;
+
     return result;
-} // JIT_GenericHandleWorker
+} // GenericHandleWorker
 
-/*********************************************************************/
-// slow helper to tail call from the fast one
-NOINLINE HCIMPL5(CORINFO_GENERIC_HANDLE, JIT_GenericHandle_Framed,
-        CORINFO_CLASS_HANDLE classHnd,
-        CORINFO_METHOD_HANDLE methodHnd,
-        LPVOID signature,
-        DWORD dictionaryIndexAndSlot,
-        CORINFO_MODULE_HANDLE moduleHnd)
+FieldDesc* g_pVirtualFunctionPointerCache;
+
+void FlushGenericCache(PTR_GenericCacheStruct genericCache)
 {
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(classHnd != NULL || methodHnd != NULL);
-        PRECONDITION(classHnd == NULL || methodHnd == NULL);
-    } CONTRACTL_END;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
-    // Result is a generic handle (in fact, a CORINFO_CLASS_HANDLE, CORINFO_METHOD_HANDLE, or a code pointer)
-    CORINFO_GENERIC_HANDLE result = NULL;
+    int32_t lastSize = genericCache->CacheElementCount();
+    if (lastSize < genericCache->GetInitialCacheSize())
+    {
+        lastSize = genericCache->GetInitialCacheSize();
+    }
 
-    MethodDesc * pMD = GetMethod(methodHnd);
-    MethodTable * pMT = TypeHandle(classHnd).AsMethodTable();
-    Module * pModule = GetModule(moduleHnd);
-
-    // Set up a frame
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    result = JIT_GenericHandleWorker(pMD, pMT, signature, dictionaryIndexAndSlot, pModule);
-
-    HELPER_METHOD_FRAME_END();
-
-    _ASSERTE(result != NULL);
-
-    // Return the handle
-    return result;
+    // store the last size to use when creating a new table
+    // it is just a hint, not needed for correctness, so no synchronization
+    // with the writing of the table
+    genericCache->SetLastFlushSize(lastSize);
+    // flushing is just replacing the table with a sentinel.
+    genericCache->SetTable(genericCache->GetSentinelTable());
 }
-HCIMPLEND
 
-/*********************************************************************/
-#include <optsmallperfcritical.h>
-HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethod, CORINFO_METHOD_HANDLE  methodHnd, LPVOID signature)
+void FlushVirtualFunctionPointerCaches()
 {
-     CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(CheckPointer(signature));
-    } CONTRACTL_END;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
-    JitGenericHandleCacheKey key(NULL, methodHnd, signature);
-    HashDatum res;
-    if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
-        return (CORINFO_GENERIC_HANDLE) (DictionaryEntry) res;
+    FieldDesc *virtualCache = VolatileLoad(&g_pVirtualFunctionPointerCache);
 
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL5(JIT_GenericHandle_Framed, NULL, methodHnd, signature, -1, NULL);
+    if (virtualCache != NULL)
+    {
+        // We can't use GetCurrentStaticAddress, as that may throw, since it will attempt to
+        // allocate memory for statics if that hasn't happened yet. But, since we force the
+        // statics memory to be allocated before initializing g_pVirtualFunctionPointerCache
+        // we can safely use the combo of GetBase and GetStaticAddress here.
+        FlushGenericCache((PTR_GenericCacheStruct)virtualCache->GetStaticAddress(virtualCache->GetBase()));
+    }
 }
-HCIMPLEND
-
-HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodWithSlotAndModule, CORINFO_METHOD_HANDLE  methodHnd, GenericHandleArgs * pArgs)
-{
-    CONTRACTL{
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(CheckPointer(pArgs));
-    } CONTRACTL_END;
-
-    JitGenericHandleCacheKey key(NULL, methodHnd, pArgs->signature);
-    HashDatum res;
-    if (g_pJitGenericHandleCache->GetValueSpeculative(&key, &res))
-        return (CORINFO_GENERIC_HANDLE)(DictionaryEntry)res;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL5(JIT_GenericHandle_Framed, NULL, methodHnd, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*********************************************************************/
-#include <optsmallperfcritical.h>
-HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClass, CORINFO_CLASS_HANDLE classHnd, LPVOID signature)
-{
-     CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(CheckPointer(signature));
-    } CONTRACTL_END;
-
-    JitGenericHandleCacheKey key(classHnd, NULL, signature);
-    HashDatum res;
-    if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
-        return (CORINFO_GENERIC_HANDLE) (DictionaryEntry) res;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL5(JIT_GenericHandle_Framed, classHnd, NULL, signature, -1, NULL);
-}
-HCIMPLEND
-
-HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO_CLASS_HANDLE classHnd, GenericHandleArgs * pArgs)
-{
-    CONTRACTL{
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(CheckPointer(pArgs));
-    } CONTRACTL_END;
-
-    JitGenericHandleCacheKey key(classHnd, NULL, pArgs->signature);
-    HashDatum res;
-    if (g_pJitGenericHandleCache->GetValueSpeculative(&key, &res))
-        return (CORINFO_GENERIC_HANDLE)(DictionaryEntry)res;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL5(JIT_GenericHandle_Framed, classHnd, NULL, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
-}
-HCIMPLEND
-#include <optdefault.h>
 
 /*********************************************************************/
 // Resolve a virtual method at run-time, either because of
 // aggressive backpatching or because the call is to a generic
 // method which is itself virtual.
 //
-// classHnd is the actual run-time type for the call is made.
+// classHnd is the actual run-time type for the call is made. (May be NULL for cases where methodHnd describes an interface)
 // methodHnd is the exact (instantiated) method descriptor corresponding to the
 // static method signature (i.e. might be for a superclass of classHnd)
 
-// slow helper to tail call from the fast one
-NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * objectUNSAFE,
+// slow helper to call from the fast one
+extern "C" void* QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj,
                                                        CORINFO_CLASS_HANDLE classHnd,
                                                        CORINFO_METHOD_HANDLE methodHnd)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-        // The address of the method that's returned.
+    // The address of the method that's returned.
     CORINFO_MethodPtr   addr = NULL;
 
-    OBJECTREF objRef = ObjectToOBJECTREF(objectUNSAFE);
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);    // Set up a frame
+    if (VolatileLoadWithoutBarrier(&g_pVirtualFunctionPointerCache) == NULL)
+    {
+        {
+            GCX_COOP();
+            CoreLibBinder::GetClass(CLASS__VIRTUALDISPATCHHELPERS)->CheckRunClassInitThrowing();
+        }
+
+        VolatileStore(&g_pVirtualFunctionPointerCache, CoreLibBinder::GetField(FIELD__VIRTUALDISPATCHHELPERS__CACHE));
+#ifdef DEBUG
+        FieldDesc *virtualCache = VolatileLoad(&g_pVirtualFunctionPointerCache);
+        GenericCacheStruct::ValidateLayout(virtualCache->GetApproxFieldTypeHandleThrowing().GetMethodTable());
+#endif
+    }
+
+    GCX_COOP();
+    OBJECTREF objRef = obj.Get();
+    GCPROTECT_BEGIN(objRef);
 
     if (objRef == NULL)
         COMPlusThrow(kNullReferenceException);
@@ -2343,13 +2095,24 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
     MethodDesc* pStaticMD = (MethodDesc*) methodHnd;
     TypeHandle staticTH(classHnd);
 
+    if (staticTH.IsNull())
+    {
+        // This may be NULL on input for cases where the methodHnd is not an interface method, or if getting the method table from the 
+        // MethodDesc will return an exact type.
+        if (pStaticMD->IsInterface())
+        {
+            staticTH = pStaticMD->GetMethodTable();
+            _ASSERTE(!staticTH.IsCanonicalSubtype());
+        }
+    }
+
     pStaticMD->CheckRestore();
 
-    // MDIL: If IL specifies callvirt/ldvirtftn it remains a "virtual" instruction
-    // even if the target is an instance method at MDIL generation time because
-    // we want to keep MDIL as resilient as IL. Right now we can end up here with
-    // non-virtual generic methods called from a "shared generic code".
-    // As soon as this deficiency is fixed in the binder we can get rid of this test.
+    // ReadyToRun: If the method was compiled using ldvirtftn to reference a non-virtual method
+    // resolve without using the VirtualizedCode call path here.
+    // This can happen if the method was converted from virtual to non-virtual after the R2R image was created.
+    // While this is not a common scenario and is documented as a breaking change, we should still handle it
+    // as we have no good scheme for reporting an actionable error here.
     if (!pStaticMD->IsVtableMethod())
     {
         addr = (CORINFO_MethodPtr) pStaticMD->GetMultiCallableAddrOfCode();
@@ -2361,17 +2124,13 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
         // The code is now also used by reflection, remoting etc.
         addr = (CORINFO_MethodPtr) pStaticMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, staticTH);
         _ASSERTE(addr);
-
-        // This is not a critical entry - no need to specify appdomain affinity
-        JitGenericHandleCacheKey key(objRef->GetMethodTable(), classHnd, methodHnd);
-        AddToGenericHandleCache(&key, (HashDatum)addr);
     }
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+    END_QCALL;
 
     return addr;
 }
-HCIMPLEND
 
 HCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)
 {
@@ -2470,51 +2229,6 @@ HCIMPL1(Object*, JIT_GetRuntimeType_MaybeNull, CORINFO_CLASS_HANDLE type)
 HCIMPLEND
 #include <optdefault.h>
 
-/*********************************************************************/
-#include <optsmallperfcritical.h>
-HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer, Object * objectUNSAFE,
-                                                       CORINFO_CLASS_HANDLE classHnd,
-                                                       CORINFO_METHOD_HANDLE methodHnd)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF objRef = ObjectToOBJECTREF(objectUNSAFE);
-
-    if (objRef != NULL)
-    {
-        JitGenericHandleCacheKey key(objRef->GetMethodTable(), classHnd, methodHnd);
-        HashDatum res;
-        if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
-            return (CORINFO_GENERIC_HANDLE)res;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL3(JIT_VirtualFunctionPointer_Framed, OBJECTREFToObject(objRef), classHnd, methodHnd);
-}
-HCIMPLEND
-
-HCIMPL2(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Dynamic, Object * objectUNSAFE, VirtualFunctionPointerArgs * pArgs)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF objRef = ObjectToOBJECTREF(objectUNSAFE);
-
-    if (objRef != NULL)
-    {
-        JitGenericHandleCacheKey key(objRef->GetMethodTable(), pArgs->classHnd, pArgs->methodHnd);
-        HashDatum res;
-        if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
-            return (CORINFO_GENERIC_HANDLE)res;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL3(JIT_VirtualFunctionPointer_Framed, OBJECTREFToObject(objRef), pArgs->classHnd, pArgs->methodHnd);
-}
-HCIMPLEND
-
-#include <optdefault.h>
 
 // Helper for synchronized static methods in shared generics code
 #include <optsmallperfcritical.h>
@@ -3123,66 +2837,6 @@ HCIMPL0(void, IL_Rethrow)
     }
 
     HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-static RuntimeExceptionKind MapCorInfoExceptionToRuntimeExceptionKind(unsigned exceptNum)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    static const RuntimeExceptionKind map[CORINFO_Exception_Count] =
-    {
-        kNullReferenceException,
-        kDivideByZeroException,
-        kInvalidCastException,
-        kIndexOutOfRangeException,
-        kOverflowException,
-        kSynchronizationLockException,
-        kArrayTypeMismatchException,
-        kRankException,
-        kArgumentNullException,
-        kArgumentException,
-    };
-
-        // spot check of the array above
-    _ASSERTE(map[CORINFO_NullReferenceException] == kNullReferenceException);
-    _ASSERTE(map[CORINFO_DivideByZeroException] == kDivideByZeroException);
-    _ASSERTE(map[CORINFO_IndexOutOfRangeException] == kIndexOutOfRangeException);
-    _ASSERTE(map[CORINFO_OverflowException] == kOverflowException);
-    _ASSERTE(map[CORINFO_SynchronizationLockException] == kSynchronizationLockException);
-    _ASSERTE(map[CORINFO_ArrayTypeMismatchException] == kArrayTypeMismatchException);
-    _ASSERTE(map[CORINFO_RankException] == kRankException);
-    _ASSERTE(map[CORINFO_ArgumentNullException] == kArgumentNullException);
-    _ASSERTE(map[CORINFO_ArgumentException] == kArgumentException);
-
-    PREFIX_ASSUME(exceptNum < CORINFO_Exception_Count);
-    return map[exceptNum];
-}
-
-/*********************************************************************/
-HCIMPL1(void, JIT_InternalThrow, unsigned exceptNum)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXACT_DEPTH);
-    COMPlusThrow(MapCorInfoExceptionToRuntimeExceptionKind(exceptNum));
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1(void*, JIT_InternalThrowFromHelper, unsigned exceptNum)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_NOPOLL(Frame::FRAME_ATTR_CAPTURE_DEPTH_2|Frame::FRAME_ATTR_EXACT_DEPTH);
-    COMPlusThrow(MapCorInfoExceptionToRuntimeExceptionKind(exceptNum));
-    HELPER_METHOD_FRAME_END();
-    return NULL;
 }
 HCIMPLEND
 
@@ -5039,15 +4693,6 @@ void InitJITHelpers2()
 #endif // TARGET_X86 || TARGET_ARM
 
     InitJitHelperLogging();
-
-    g_pJitGenericHandleCacheCrst.Init(CrstJitGenericHandleCache, CRST_UNSAFE_COOPGC);
-
-    // Allocate and initialize the generic handle cache
-    NewHolder <JitGenericHandleCache> tempGenericHandleCache (new JitGenericHandleCache());
-    LockOwner sLock = {&g_pJitGenericHandleCacheCrst, IsOwnerOfCrst};
-    if (!tempGenericHandleCache->Init(59, &sLock))
-        COMPlusThrowOM();
-    g_pJitGenericHandleCache = tempGenericHandleCache.Extract();
 }
 
 //========================================================================

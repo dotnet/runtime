@@ -31,5 +31,7 @@ namespace System.Text.Json.SourceGeneration
         public required int ParameterIndex { get; init; }
 
         public required bool MatchesConstructorParameter { get; init; }
+
+        public required bool IsNullable { get; init; }
     }
 }
