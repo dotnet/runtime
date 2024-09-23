@@ -48,7 +48,7 @@ namespace Mono.Linker
 				"System.Private.CoreLib",
 				"mscorlib",
 				"System.Runtime",
-				"netstandard"
+				"netstandard",
 			]) {
 				AssemblyDefinition? corlib = context.TryResolve (corlibName);
 				if (corlib == null)
