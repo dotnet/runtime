@@ -4,9 +4,7 @@
 using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Linq;
 using System.Text;
-using Melanzana.MachO;
 
 namespace Microsoft.NET.HostModel.AppHost
 {

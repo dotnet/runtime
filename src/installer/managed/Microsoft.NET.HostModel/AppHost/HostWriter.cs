@@ -8,7 +8,6 @@ using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Text;
 using Melanzana.CodeSign;
-using Melanzana.MachO;
 
 namespace Microsoft.NET.HostModel.AppHost
 {
