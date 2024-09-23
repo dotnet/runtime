@@ -3851,6 +3851,9 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
     bool addDelayFreeUses = false;
     // Multi register nodes should not go via this route.
     assert(!node->IsMultiRegNode());
+    // Multi register nodes should always use fp registers (this includes vectors).
+    assert(rmwNode == nullptr || varTypeUsesFloatReg(rmwNode->TypeGet()) || !rmwNode->IsMultiRegNode());
+    assert(varTypeUsesFloatReg(node->TypeGet()) || !node->IsMultiRegNode());
     if (rmwNode == nullptr || varTypeUsesSameRegType(rmwNode->TypeGet(), node->TypeGet()) ||
         (rmwNode->IsMultiRegNode() && varTypeUsesFloatReg(node->TypeGet())))
     {

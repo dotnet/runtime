@@ -1663,12 +1663,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             assert(isRMW);
             assert(intrin.op1->OperIs(GT_FIELD_LIST));
+
             GenTreeFieldList* op1 = intrin.op1->AsFieldList();
             assert(compiler->info.compNeedsConsecutiveRegisters);
 
             for (GenTreeFieldList::Use& use : op1->Uses())
             {
-                BuildDelayFreeUses(use.GetNode(), intrinsicTree);
+                BuildDelayFreeUses(use.GetNode(), intrin.op1);
                 srcCount++;
             }
         }
