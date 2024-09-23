@@ -60,6 +60,7 @@ namespace System.Threading
 
         // Set in unmanaged and read in managed code.
         private bool _isDead;
+        private bool _isThreadPool;
 
         private Thread() { }
 
@@ -89,13 +90,13 @@ namespace System.Threading
             {
                 fixed (char* pThreadName = _name)
                 {
-                    StartInternal(GetNativeHandle(), _startHelper?._maxStackSize ?? 0, _priority, pThreadName);
+                    StartInternal(GetNativeHandle(), _startHelper?._maxStackSize ?? 0, _priority, _isThreadPool ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, pThreadName);
                 }
             }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
-        private static unsafe partial void StartInternal(ThreadHandle t, int stackSize, int priority, char* pThreadName);
+        private static unsafe partial void StartInternal(ThreadHandle t, int stackSize, int priority, Interop.BOOL isThreadPool, char* pThreadName);
 
         // Called from the runtime
         private void StartCallback()
@@ -196,12 +197,22 @@ namespace System.Threading
         {
             get
             {
+                if (_isDead)
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_State);
+                }
+
                 Interop.BOOL res = GetIsBackground(GetNativeHandle());
                 GC.KeepAlive(this);
                 return res != Interop.BOOL.FALSE;
             }
             set
             {
+                if (_isDead)
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_State);
+                }
+
                 SetIsBackground(GetNativeHandle(), value ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
                 GC.KeepAlive(this);
                 if (!value)
@@ -211,6 +222,7 @@ namespace System.Threading
             }
         }
 
+        [SuppressGCTransition]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetIsBackground")]
         private static partial Interop.BOOL GetIsBackground(ThreadHandle t);
 
@@ -222,23 +234,21 @@ namespace System.Threading
         {
             get
             {
-                Interop.BOOL res = GetIsThreadPoolThread(GetNativeHandle());
-                GC.KeepAlive(this);
-                return res != Interop.BOOL.FALSE;
+                if (_isDead)
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_State);
+                }
+
+                return _isThreadPool;
             }
             internal set
             {
                 Debug.Assert(value);
-                SetIsThreadPoolThread(GetNativeHandle());
-                GC.KeepAlive(this);
+                Debug.Assert(!_isDead);
+                Debug.Assert((ThreadState & ThreadState.Unstarted) != 0);
+                _isThreadPool = value;
             }
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetIsThreadPoolThread")]
-        private static partial Interop.BOOL GetIsThreadPoolThread(ThreadHandle t);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetIsThreadPoolThread")]
-        private static partial void SetIsThreadPoolThread(ThreadHandle t);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetPriority")]
         [return: MarshalAs(UnmanagedType.Bool)]

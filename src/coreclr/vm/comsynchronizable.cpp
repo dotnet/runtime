@@ -127,19 +127,16 @@ INT32 MapFromNTPriority(INT32 NTPriority)
     return ours;
 }
 
-
-void ThreadNative::KickOffThread_Worker(LPVOID ptr)
+static void KickOffThread_Worker(LPVOID ptr)
 {
     CONTRACTL
     {
         GC_TRIGGERS;
         THROWS;
         MODE_COOPERATIVE;
+        PRECONDITION(ptr == NULL);
     }
     CONTRACTL_END;
-
-    KickOffThread_Args *pKickOffArgs = (KickOffThread_Args *) ptr;
-    pKickOffArgs->retVal = 0;
 
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__START_CALLBACK);
     DECLARE_ARGHOLDER_ARRAY(args, 1);
@@ -175,7 +172,7 @@ static void PulseAllHelper(Thread* pThread)
 }
 
 // When an exposed thread is started by Win32, this is where it starts.
-ULONG WINAPI ThreadNative::KickOffThread(void* pass)
+static ULONG WINAPI KickOffThread(void* pass)
 {
 
     CONTRACTL
@@ -212,11 +209,7 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
 
         _ASSERTE(GetThread() == pThread);        // Now that it's started
 
-        KickOffThread_Args args;
-        args.share = NULL;
-        args.pThread = pThread;
-
-        ManagedThreadBase::KickOff(KickOffThread_Worker, &args);
+        ManagedThreadBase::KickOff(KickOffThread_Worker, NULL);
 
         PulseAllHelper(pThread);
 
@@ -230,18 +223,7 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
     return 0;
 }
 
-extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, PCWSTR pThreadName)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    ThreadNative::Start(thread, threadStackSize, priority, pThreadName);
-
-    END_QCALL;
-}
-
-void ThreadNative::Start(Thread* pNewThread, int threadStackSize, int priority, PCWSTR pThreadName)
+static void StartThread(Thread* pNewThread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName)
 {
     STANDARD_VM_CONTRACT;
 
@@ -291,6 +273,8 @@ void ThreadNative::Start(Thread* pNewThread, int threadStackSize, int priority, 
     pNewThread->ChooseThreadCPUGroupAffinity();
 
     pNewThread->SetThreadState(Thread::TS_LegalToJoin);
+    if (isThreadPool)
+        pNewThread->SetIsThreadPoolThread();
 
     DWORD ret = pNewThread->StartThread();
 
@@ -319,6 +303,17 @@ void ThreadNative::Start(Thread* pNewThread, int threadStackSize, int priority, 
         PulseAllHelper(pNewThread);
         pNewThread->HandleThreadStartupFailure();
     }
+}
+
+extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    StartThread(thread, threadStackSize, priority, isThreadPool, pThreadName);
+
+    END_QCALL;
 }
 
 extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack thread, INT32 iPriority)
@@ -716,7 +711,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle threa
 {
     CONTRACTL
     {
-        QCALL_CHECK;
+        QCALL_CHECK_NO_GC_TRANSITION;
         PRECONDITION(thread != NULL);
     }
     CONTRACTL_END;
@@ -724,9 +719,6 @@ extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle threa
     BOOL res = FALSE;
 
     BEGIN_QCALL;
-
-    if (ThreadIsDead(thread))
-        COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
 
     res = thread->IsBackground();
 
@@ -747,9 +739,6 @@ extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle threa
 
     BEGIN_QCALL;
 
-    if (ThreadIsDead(thread))
-        COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
-
     thread->SetBackground(value);
 
     END_QCALL;
@@ -761,16 +750,10 @@ extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandl
 
     BEGIN_QCALL;
 
-    ThreadNative::InformThreadNameChange(thread, name, len);
+    Thread* pThread = thread;
 
-    END_QCALL;
-}
-
-void ThreadNative::InformThreadNameChange(Thread* pThread, LPCWSTR name, INT32 len)
-{
-    // Set on Windows 10 Creators Update and later machines the unmanaged thread name as well. That will show up in ETW traces and debuggers which is very helpful
-    // if more and more threads get a meaningful name
-    // Will also show up in Linux in gdb and such.
+    // The name will show up in ETW traces and debuggers which is very helpful if more and more threads
+    // get a meaningful name. Will also show up in Linux in gdb and such.
     if (len > 0 && name != NULL && pThread->GetThreadHandle() != INVALID_HANDLE_VALUE)
     {
         SetThreadName(pThread->GetThreadHandle(), name);
@@ -791,7 +774,6 @@ void ThreadNative::InformThreadNameChange(Thread* pThread, LPCWSTR name, INT32 l
     }
 #endif // PROFILING_SUPPORTED
 
-
 #ifdef DEBUGGING_SUPPORTED
     if (CORDebuggerAttached())
     {
@@ -799,48 +781,6 @@ void ThreadNative::InformThreadNameChange(Thread* pThread, LPCWSTR name, INT32 l
         g_pDebugInterface->NameChangeEvent(NULL, pThread);
     }
 #endif // DEBUGGING_SUPPORTED
-}
-
-// Get whether or not this is a threadpool thread.
-extern "C" BOOL QCALLTYPE ThreadNative_GetIsThreadPoolThread(QCall::ThreadHandle thread)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(thread != NULL);
-    }
-    CONTRACTL_END;
-
-    BOOL res = FALSE;
-
-    BEGIN_QCALL;
-
-    if (ThreadIsDead(thread))
-        COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
-
-    res = thread->IsThreadPoolThread();
-
-    END_QCALL;
-
-    return res;
-}
-
-// Set thread as a threadpool thread.
-extern "C" void QCALLTYPE ThreadNative_SetIsThreadPoolThread(QCall::ThreadHandle thread)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(thread != NULL);
-    }
-    CONTRACTL_END;
-
-    BEGIN_QCALL;
-
-    if (ThreadIsDead(thread))
-        COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
-
-    thread->SetIsThreadPoolThread();
 
     END_QCALL;
 }

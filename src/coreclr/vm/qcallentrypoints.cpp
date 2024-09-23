@@ -253,8 +253,6 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_Join)
     DllImportEntry(ThreadNative_Abort)
     DllImportEntry(ThreadNative_ResetAbort)
-    DllImportEntry(ThreadNative_GetIsThreadPoolThread)
-    DllImportEntry(ThreadNative_SetIsThreadPoolThread)
     DllImportEntry(ThreadNative_SpinWait)
     DllImportEntry(ThreadNative_Interrupt)
     DllImportEntry(ThreadNative_Sleep)
