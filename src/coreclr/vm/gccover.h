@@ -109,7 +109,7 @@ inline bool IsGcCoverageInterruptInstructionVal(UINT32 instrVal)
     size_t instrLen = GetARMInstructionLength(instrVal16);
 
     return (instrLen == 2 && instrVal16 == INTERRUPT_INSTR) ||
-        (instrLen == 4 && instrVal16 == INTERRUPT_INSTR_32);
+        (instrLen == 4 && instrVal == INTERRUPT_INSTR_32);
 
 #elif defined(TARGET_X86)
 
