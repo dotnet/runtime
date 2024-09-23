@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using Microsoft.Playwright;
 using Wasm.Tests.Internal;
 using Xunit.Abstractions;
@@ -20,6 +21,7 @@ internal class BrowserRunner : IAsyncDisposable
     private static Regex s_blazorUrlRegex = new Regex("Now listening on: (?<url>https?://.*$)");
     private static Regex s_appHostUrlRegex = new Regex("^App url: (?<url>https?://.*$)");
     private static Regex s_exitRegex = new Regex("WASM EXIT (?<exitCode>[0-9]+)$");
+    private static bool s_runsOnWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
     private static readonly Lazy<string> s_chromePath = new(() =>
     {
         string artifactsBinDir = Path.Combine(Path.GetDirectoryName(typeof(BuildTestBase).Assembly.Location)!, "..", "..", "..", "..");
@@ -117,7 +119,11 @@ internal class BrowserRunner : IAsyncDisposable
         {
             try
             {
-                TerminateExistingChromeInstances();
+                // widnows runs are sequential, we cannot terminate when we run in parallel
+                if (s_runsOnWindows)
+                {
+                    TerminateExistingChromeInstances();
+                }
                 Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
                 Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions {
                     ExecutablePath = s_chromePath.Value,
