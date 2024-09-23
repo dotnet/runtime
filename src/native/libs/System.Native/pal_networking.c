@@ -3363,6 +3363,8 @@ int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry)
 #else
 int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry)
 {
+    (void)socket;
+    (void)entry;
     return Error_ENOSYS;
 }
 #endif  // TARGET_WASI
