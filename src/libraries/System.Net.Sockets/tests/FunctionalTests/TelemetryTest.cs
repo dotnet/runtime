@@ -60,9 +60,9 @@ namespace System.Net.Sockets.Tests
 
         public static IEnumerable<object[]> SocketMethods_MemberData()
         {
-            yield return new[] { "Sync" };
+            if (!OperatingSystem.IsWasi()) yield return new[] { "Sync" };
             yield return new[] { "Task" };
-            yield return new[] { "Apm" };
+            if (!OperatingSystem.IsWasi()) yield return new[] { "Apm" };
             yield return new[] { "Eap" };
         }
 

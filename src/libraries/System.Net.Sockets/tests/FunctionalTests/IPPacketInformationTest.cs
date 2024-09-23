@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support IPPacketInformation")]
     public class IPPacketInformationTest
     {
         [Fact]

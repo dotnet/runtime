@@ -20,17 +20,17 @@ namespace System.Net.Sockets.Tests
         protected override bool FlushRequiredToWriteData => false;
         protected override Type UnsupportedConcurrentExceptionType => null;
         protected override bool ReadWriteValueTasksProtectSingleConsumption => true;
-        protected override Task<StreamPair> CreateConnectedStreamsAsync()
+        protected override async Task<StreamPair> CreateConnectedStreamsAsync()
         {
             using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
             listener.Listen();
 
             var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            client.Connect(listener.LocalEndPoint);
-            Socket server = listener.Accept();
+            await client.ConnectAsync(listener.LocalEndPoint);
+            Socket server = await listener.AcceptAsync();
 
-            return Task.FromResult<StreamPair>((new NetworkStream(client, ownsSocket: true), new NetworkStream(server, ownsSocket: true)));
+            return (new NetworkStream(client, ownsSocket: true), new NetworkStream(server, ownsSocket: true));
         }
 
         [Fact]
@@ -75,7 +75,7 @@ namespace System.Net.Sockets.Tests
                 using (Socket server = await acceptTask)
                 {
                     server.Blocking = false;
-                    Assert.Throws<IOException>(() => new NetworkStream(server));
+                    if (!OperatingSystem.IsWasi()) Assert.Throws<IOException>(() => new NetworkStream(server));
                 }
             }
         }
@@ -246,8 +246,11 @@ namespace System.Net.Sockets.Tests
                             Assert.Equal(1, await clientStream.ReadAsync(buffer, 0, 1));
                             Assert.Equal('a', (char)buffer[0]);
 
-                            Assert.Throws<InvalidOperationException>(() => { serverStream.BeginRead(buffer, 0, 1, null, null); });
-                            Assert.Throws<InvalidOperationException>(() => { clientStream.BeginWrite(buffer, 0, 1, null, null); });
+                            if (!OperatingSystem.IsWasi()) 
+                            {
+                                Assert.Throws<InvalidOperationException>(() => { serverStream.BeginRead(buffer, 0, 1, null, null); });
+                                Assert.Throws<InvalidOperationException>(() => { clientStream.BeginWrite(buffer, 0, 1, null, null); });
+                            }
 
                             Assert.Throws<InvalidOperationException>(() => { serverStream.ReadAsync(buffer, 0, 1); });
                             Assert.Throws<InvalidOperationException>(() => { clientStream.WriteAsync(buffer, 0, 1); });
@@ -326,14 +329,14 @@ namespace System.Net.Sockets.Tests
 
                 serverSocket.Dispose();
 
-                ExpectIOException(() => server.Read(new byte[1], 0, 1));
-                ExpectIOException(() => server.Write(new byte[1], 0, 1));
+                if (!OperatingSystem.IsWasi()) ExpectIOException(() => server.Read(new byte[1], 0, 1));
+                if (!OperatingSystem.IsWasi()) ExpectIOException(() => server.Write(new byte[1], 0, 1));
 
-                ExpectIOException(() => server.Read((Span<byte>)new byte[1]));
-                ExpectIOException(() => server.Write((ReadOnlySpan<byte>)new byte[1]));
+                if (!OperatingSystem.IsWasi()) ExpectIOException(() => server.Read((Span<byte>)new byte[1]));
+                if (!OperatingSystem.IsWasi()) ExpectIOException(() => server.Write((ReadOnlySpan<byte>)new byte[1]));
 
-                ExpectIOException(() => server.BeginRead(new byte[1], 0, 1, null, null));
-                ExpectIOException(() => server.BeginWrite(new byte[1], 0, 1, null, null));
+                if (!OperatingSystem.IsWasi()) ExpectIOException(() => server.BeginRead(new byte[1], 0, 1, null, null));
+                if (!OperatingSystem.IsWasi()) ExpectIOException(() => server.BeginWrite(new byte[1], 0, 1, null, null));
 
                 ExpectIOException(() => { _ = server.ReadAsync(new byte[1], 0, 1); });
                 ExpectIOException(() => { _ = server.WriteAsync(new byte[1], 0, 1); });
@@ -377,7 +380,7 @@ namespace System.Net.Sockets.Tests
                     serverStream.Readable = false;
                     Assert.False(serverStream.Readable);
                     Assert.False(serverStream.CanRead);
-                    Assert.Throws<InvalidOperationException>(() => serverStream.Read(new byte[1], 0, 1));
+                    await Assert.ThrowsAsync<InvalidOperationException>(() => serverStream.ReadAsync(new byte[1], 0, 1));
 
                     serverStream.Readable = true;
                     Assert.True(serverStream.Readable);
@@ -388,7 +391,7 @@ namespace System.Net.Sockets.Tests
                     serverStream.Writeable = false;
                     Assert.False(serverStream.Writeable);
                     Assert.False(serverStream.CanWrite);
-                    Assert.Throws<InvalidOperationException>(() => serverStream.Write(new byte[1], 0, 1));
+                    await Assert.ThrowsAsync<InvalidOperationException>(() => serverStream.WriteAsync(new byte[1], 0, 1));
 
                     serverStream.Writeable = true;
                     Assert.True(serverStream.Writeable);
@@ -400,6 +403,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task CopyToAsync_DisposedSourceStream_ThrowsOnWindows_NoThrowOnUnix()
         {
             await RunWithConnectedNetworkStreamsAsync(async (stream, _) =>
@@ -437,6 +441,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task ReadAsync_MultipleConcurrentValueTaskReads_Success()
         {
             await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
@@ -457,6 +462,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task ReadAsync_MultipleConcurrentValueTaskReads_AsTask_Success()
         {
             await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
@@ -477,6 +483,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task WriteAsync_MultipleConcurrentValueTaskWrites_Success()
         {
             await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
@@ -503,6 +510,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task WriteAsync_MultipleConcurrentValueTaskWrites_AsTask_Success()
         {
             await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
@@ -561,6 +569,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/WebAssembly/wasi-libc/issues/539", TestPlatforms.Wasi)]
         public async Task NetworkStream_ReadTimeout_RemainUseable()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
