@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 
 using FluentAssertions;
 using Melanzana.MachO;
-using Melanzana.MachO.Tests;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.AppHost.Tests;
@@ -322,101 +321,6 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             var alignment = OperatingSystem.IsLinux() && RuntimeInformation.OSArchitecture == Architecture.Arm64 ? 4096 : 16;
             bundler.BundleManifest.Files.ForEach(file =>
                 Assert.True((file.Type != FileType.Assembly) || (file.Offset % alignment == 0)));
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void CodesignMachOBundle(bool shouldCodesign)
-        {
-            var appHostMockFile = PrepareMockMachAppHostFile(Path.GetTempPath());
-            try
-            {
-                TestApp app = sharedTestState.App;
-                FileSpec[] fileSpecs = new FileSpec[]
-                {
-                    new FileSpec(appHostMockFile, BundlerHostName),
-                    new FileSpec(app.AppDll, Path.GetRelativePath(app.Location, app.AppDll)),
-                    new FileSpec(app.DepsJson, Path.GetRelativePath(app.Location, app.DepsJson)),
-                    new FileSpec(app.RuntimeConfigJson, Path.GetRelativePath(app.Location, app.RuntimeConfigJson)),
-                };
-
-                Bundler bundler = CreateBundlerInstance(targetOS: OSPlatform.OSX);
-                string bundledApp = bundler.GenerateBundle(fileSpecs);
-
-                if (!Codesign.IsAvailable())
-                {
-                    return;
-                }
-                // Check if the file is signed
-                var (exitCode, stdErr) = Codesign.Run($"--verify", bundledApp);
-                if (shouldCodesign)
-                {
-                    exitCode.Should().Be(0);
-                }
-                else
-                {
-                    exitCode.Should().Be(1);
-                }
-            }
-            finally
-            {
-                File.Delete(appHostMockFile);
-            }
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.OSX)]
-        public void CodesignBundle(bool shouldCodesign)
-        {
-            TestApp app = sharedTestState.App;
-            FileSpec[] fileSpecs = new FileSpec[]
-            {
-                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
-                new FileSpec(app.AppDll, Path.GetRelativePath(app.Location, app.AppDll)),
-                new FileSpec(app.DepsJson, Path.GetRelativePath(app.Location, app.DepsJson)),
-                new FileSpec(app.RuntimeConfigJson, Path.GetRelativePath(app.Location, app.RuntimeConfigJson)),
-            };
-
-            Bundler bundler = CreateBundlerInstance();
-            string bundledApp = bundler.GenerateBundle(fileSpecs);
-
-            // Check if the file is signed
-            if (!Codesign.IsAvailable())
-            {
-                return;
-            }
-            // Check if the file is signed
-            var (exitCode, stdErr) = Codesign.Run($"--verify", bundledApp);
-            if (shouldCodesign)
-            {
-                exitCode.Should().Be(0);
-            }
-            else
-            {
-                exitCode.Should().Be(1);
-            }
-        }
-
-        static string PrepareMockMachAppHostFile(string directory)
-        {
-            var objectFile = ReadTests.GetMachExecutable();
-            var segments = objectFile.LoadCommands.OfType<MachSegment>().ToArray();
-            var textSegment = segments.Single(s => s.Name == "__TEXT");
-            var textSection = textSegment.Sections.First();
-            using (var textStream = textSection.GetWriteStream())
-            {
-                textStream.Write(BundleHeaderPlaceholder);
-            }
-            // The __TEXT segment has it's sections at the end of the segment, with padding at the beginning
-            // We can move the file offset back to accomodate for the size of the header.
-            textSection.FileOffset -= (uint)BundleHeaderPlaceholder.Length;
-            string outputFilePath = Path.Combine(directory, "SourceAppHost.mach.o.mock");
-            using var outputFileStream = File.OpenWrite(outputFilePath);
-            MachWriter.Write(outputFileStream, objectFile);
-            return outputFilePath;
         }
 
         static readonly byte[] BundleHeaderPlaceholder = {

@@ -188,6 +188,9 @@ namespace Microsoft.NET.HostModel.AppHost
         ///    - The additional bytes were successfully accommodated within the MachO segments.
         ///   False otherwise
         /// </returns>
+        /// <exception cref="AppHostMachOFormatException">
+        /// The input is a MachO file, but doesn't match the expect format of the AppHost.
+        /// </exception>
         public static unsafe bool AdjustHeadersForBundle(string filePath)
         {
             ulong fileLength = (ulong)new FileInfo(filePath).Length;

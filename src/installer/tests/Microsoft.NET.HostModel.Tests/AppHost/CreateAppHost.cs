@@ -10,15 +10,16 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using FluentAssertions;
 using Melanzana.CodeSign;
 using Melanzana.CodeSign.Blobs;
 using Melanzana.MachO;
-using Melanzana.MachO.Tests;
 using Melanzana.Streams;
 using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Helpers;
 using Xunit;
@@ -446,43 +447,46 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         }
 
         [Fact]
-        public void SigningAppHostRuns()
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void SignedAppHostRuns()
         {
-            using (var testAppHost = TestArtifact.Create("SigningAppHost"))
+            using (var testDirectory = TestArtifact.Create(nameof(SignedAppHostRuns)))
             {
-                var tmpAppHostPath = Path.Combine(testAppHost.Location, Path.GetFileName(Binaries.SingleFileHost.FilePath));
-                File.Copy(Binaries.SingleFileHost.FilePath, Path.Combine(testAppHost.Location, tmpAppHostPath));
-                long preRemovalSize = new FileInfo(testAppHost.Location).Length;
-                if (Signer.TryRemoveCodesign(tmpAppHostPath))
+                var testAppHostPath = Path.Combine(testDirectory.Location, Path.GetFileName(Binaries.AppHost.FilePath));
+                File.Copy(Binaries.SingleFileHost.FilePath, testAppHostPath);
+                long preRemovalSize = new FileInfo(testAppHostPath).Length;
+                if (Signer.TryRemoveCodesign(testAppHostPath))
                 {
-                    Assert.True(preRemovalSize > new FileInfo(testAppHost.Location).Length);
+                    Assert.True(preRemovalSize > new FileInfo(testAppHostPath).Length);
                 }
                 else
                 {
-                    Assert.Equal(preRemovalSize, new FileInfo(testAppHost.Location).Length);
+                    Assert.Equal(preRemovalSize, new FileInfo(testAppHostPath).Length);
                 }
-                Signer.AdHocSign(tmpAppHostPath);
-                File.SetUnixFileMode(tmpAppHostPath, UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
-                var executedCommand = Command.Create(tmpAppHostPath)
+                Signer.AdHocSign(testAppHostPath);
+                File.SetUnixFileMode(testAppHostPath, UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+                var executedCommand = Command.Create(testAppHostPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .Execute();
-                executedCommand.ExitCode.Should().NotBe(139);
-                Signer.TryRemoveCodesign(tmpAppHostPath);
-                Signer.AdHocSign(tmpAppHostPath);
-                File.SetUnixFileMode(tmpAppHostPath, UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
-                executedCommand = Command.Create(tmpAppHostPath)
+                // AppHost exit code should be 149 when the apphost runs properly but cannot find the appliation/runtime
+                executedCommand.ExitCode.Should().Be(149);
+                Signer.TryRemoveCodesign(testAppHostPath);
+                Signer.AdHocSign(testAppHostPath);
+                File.SetUnixFileMode(testAppHostPath, UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+                executedCommand = Command.Create(testAppHostPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .Execute();
-                executedCommand.ExitCode.Should().NotBe(139);
+                // AppHost exit code should be 149 when the apphost runs properly but cannot find the appliation/runtime
+                executedCommand.ExitCode.Should().Be(149);
             }
         }
 
         private static byte[] s_placeholderData = AppBinaryPathPlaceholderSearchValue.Concat(DotNetSearchPlaceholderValue).ToArray();
         public static string PrepareMockMachAppHostFile(string directory)
         {
-            var objectFile = ReadTests.GetMachExecutable();
+            var objectFile = Melanzana.MachO.Tests.ReadTests.GetMachExecutable();
             var segments = objectFile.LoadCommands.OfType<MachSegment>().ToArray();
 
             var textSegment = segments.Single(s => s.Name == "__TEXT");

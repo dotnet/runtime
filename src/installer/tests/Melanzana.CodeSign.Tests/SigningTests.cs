@@ -9,6 +9,7 @@ using Microsoft.DotNet.CoreSetup.Test;
 using System;
 using FluentAssertions;
 using Microsoft.NET.HostModel.AppHost;
+using Microsoft.DotNet.CoreSetup;
 
 namespace Melanzana.CodeSign.Tests
 {
