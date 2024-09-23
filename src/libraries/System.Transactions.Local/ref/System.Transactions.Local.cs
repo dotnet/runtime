@@ -9,6 +9,7 @@ using System.Runtime.Versioning;
 namespace System.Transactions
 {
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed partial class CommittableTransaction : System.Transactions.Transaction, System.IAsyncResult
     {
         public CommittableTransaction() { }
@@ -234,6 +235,7 @@ namespace System.Transactions
         public TransactionPromotionException(string? message, System.Exception? innerException) { }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed partial class TransactionScope : System.IDisposable
     {
         public TransactionScope() { }

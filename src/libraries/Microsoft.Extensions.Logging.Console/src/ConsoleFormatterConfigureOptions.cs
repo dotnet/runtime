@@ -21,6 +21,7 @@ namespace Microsoft.Extensions.Logging
         private readonly IConfiguration _configuration;
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public ConsoleFormatterConfigureOptions(ILoggerProviderConfiguration<ConsoleLoggerProvider> providerConfiguration)
         {
             _configuration = providerConfiguration.GetFormatterOptionsSection();

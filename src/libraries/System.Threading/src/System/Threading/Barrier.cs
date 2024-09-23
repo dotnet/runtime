@@ -286,6 +286,7 @@ namespace System.Threading
         /// disposed.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public long AddParticipant()
         {
@@ -317,6 +318,7 @@ namespace System.Threading
         /// disposed.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public long AddParticipants(int participantCount)
         {
@@ -477,6 +479,7 @@ namespace System.Threading
         /// disposed.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public void SignalAndWait()
         {
@@ -500,6 +503,7 @@ namespace System.Threading
         /// disposed.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public void SignalAndWait(CancellationToken cancellationToken)
         {
@@ -532,6 +536,7 @@ namespace System.Threading
         /// disposed.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public bool SignalAndWait(TimeSpan timeout)
         {
@@ -562,6 +567,7 @@ namespace System.Threading
         /// disposed.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public bool SignalAndWait(TimeSpan timeout, CancellationToken cancellationToken)
         {
@@ -592,6 +598,7 @@ namespace System.Threading
         /// disposed.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public bool SignalAndWait(int millisecondsTimeout)
         {
@@ -621,6 +628,7 @@ namespace System.Threading
         /// disposed.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public bool SignalAndWait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
@@ -863,6 +871,7 @@ namespace System.Threading
         /// <returns>True if the event is set or the phase number changed, false if the timeout expired</returns>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         private bool DiscontinuousWait(ManualResetEventSlim currentPhaseEvent, int totalTimeout, CancellationToken token, long observedPhase)
         {

@@ -334,6 +334,7 @@ namespace System.Runtime.InteropServices.Marshalling
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     [System.CLSCompliantAttribute(false)]
@@ -493,6 +494,7 @@ namespace System.Runtime.InteropServices.Marshalling
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     [System.CLSCompliantAttribute(false)]
@@ -744,6 +746,7 @@ namespace System.Runtime.InteropServices
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     [System.CLSCompliantAttribute(false)]
@@ -1587,6 +1590,7 @@ namespace System.Runtime.InteropServices
         internal PosixSignalRegistration() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Runtime.InteropServices.PosixSignalRegistration Create(System.Runtime.InteropServices.PosixSignal signal, System.Action<System.Runtime.InteropServices.PosixSignalContext> handler) { throw null; }

@@ -116,6 +116,7 @@ namespace System.ComponentModel
         /// as the context in which the licensed instance can be used.
         /// </summary>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public static object? CreateWithContext(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type,
             LicenseContext creationContext)
@@ -129,6 +130,7 @@ namespace System.ComponentModel
         /// instance can be used.
         /// </summary>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public static object? CreateWithContext(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type,
             LicenseContext creationContext,

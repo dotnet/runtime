@@ -25,6 +25,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="configure">A delegate that is used to modify a <see cref="SocketsHttpHandler"/>.</param>
         /// <returns>An <see cref="ISocketsHttpHandlerBuilder"/> that can be used to configure the handler.</returns>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")] // We can support SocketsHttpHandler on top of wasi-socket, once we have it working https://github.com/dotnet/runtime/issues/98957
         public static ISocketsHttpHandlerBuilder Configure(this ISocketsHttpHandlerBuilder builder, Action<SocketsHttpHandler, IServiceProvider> configure)
         {
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
@@ -59,6 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public static ISocketsHttpHandlerBuilder Configure(this ISocketsHttpHandlerBuilder builder, IConfiguration configuration)
         {
             SocketsHttpHandlerConfiguration parsedConfig = ParseSocketsHttpHandlerConfiguration(configuration);
@@ -66,6 +68,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         private static void FillFromConfig(SocketsHttpHandler handler, in SocketsHttpHandlerConfiguration config)
         {
             if (config.PooledConnectionIdleTimeout is not null)
@@ -188,6 +191,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         private static SocketsHttpHandlerConfiguration ParseSocketsHttpHandlerConfiguration(IConfiguration config)
         {
             return new SocketsHttpHandlerConfiguration()

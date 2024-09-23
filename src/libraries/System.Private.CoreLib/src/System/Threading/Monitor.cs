@@ -15,17 +15,20 @@ namespace System.Threading
 
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public static bool Wait(object obj, TimeSpan timeout) => Wait(obj, WaitHandle.ToTimeoutMilliseconds(timeout));
 
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public static bool Wait(object obj) => Wait(obj, Timeout.Infinite);
 
         // Remoting is not supported, exitContext argument is unused
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public static bool Wait(object obj, int millisecondsTimeout, bool exitContext)
             => Wait(obj, millisecondsTimeout);
@@ -33,6 +36,7 @@ namespace System.Threading
         // Remoting is not supported, exitContext argument is unused
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public static bool Wait(object obj, TimeSpan timeout, bool exitContext)
             => Wait(obj, WaitHandle.ToTimeoutMilliseconds(timeout));

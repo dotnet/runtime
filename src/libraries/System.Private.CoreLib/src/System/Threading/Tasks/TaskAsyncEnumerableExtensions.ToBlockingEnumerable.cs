@@ -24,11 +24,9 @@ namespace System.Threading.Tasks
         /// Async enumeration does not happen in the background; each MoveNext call will invoke the underlying <see cref="IAsyncEnumerator{T}.MoveNextAsync"/> exactly once.
         /// </remarks>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public static IEnumerable<T> ToBlockingEnumerable<T>(this IAsyncEnumerable<T> source, CancellationToken cancellationToken = default)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
             IAsyncEnumerator<T> enumerator = source.GetAsyncEnumerator(cancellationToken);
             // A ManualResetEventSlim variant that lets us reuse the same
             // awaiter callback allocation across the entire enumeration.
@@ -80,11 +78,9 @@ namespace System.Threading.Tasks
             }
 
             [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("wasi")]
             public void Wait<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
             {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
                 awaiter.UnsafeOnCompleted(_onCompleted);
                 Wait();
                 Reset();

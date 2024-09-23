@@ -405,6 +405,7 @@ namespace System.Threading
         /// disposed.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public void Wait()
         {
@@ -431,6 +432,7 @@ namespace System.Threading
         /// disposed.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public void Wait(CancellationToken cancellationToken)
         {
@@ -453,6 +455,7 @@ namespace System.Threading
         /// disposed.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public bool Wait(TimeSpan timeout)
         {
@@ -484,6 +487,7 @@ namespace System.Threading
         /// been canceled.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
@@ -508,6 +512,7 @@ namespace System.Threading
         /// disposed.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public bool Wait(int millisecondsTimeout)
         {
@@ -533,6 +538,7 @@ namespace System.Threading
         /// been canceled.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {

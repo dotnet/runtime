@@ -367,6 +367,7 @@ namespace System
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [SupportedOSPlatform("maccatalyst")]
         public static ProcessCpuUsage CpuUsage
         {

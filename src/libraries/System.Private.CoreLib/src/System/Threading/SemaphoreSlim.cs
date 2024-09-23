@@ -172,11 +172,9 @@ namespace System.Threading
         /// <exception cref="ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public void Wait()
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
             // Call wait with infinite timeout
             Wait(Timeout.Infinite, CancellationToken.None);
         }
@@ -192,11 +190,9 @@ namespace System.Threading
         /// <exception cref="ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public void Wait(CancellationToken cancellationToken)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
             // Call wait with infinite timeout
             Wait(Timeout.Infinite, cancellationToken);
         }
@@ -214,11 +210,9 @@ namespace System.Threading
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
         /// than <see cref="int.MaxValue"/>.</exception>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public bool Wait(TimeSpan timeout)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
             // Validate the timeout
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
@@ -248,11 +242,9 @@ namespace System.Threading
         /// than <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
             // Validate the timeout
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
@@ -276,11 +268,9 @@ namespace System.Threading
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is a
         /// negative number other than -1, which represents an infinite time-out.</exception>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public bool Wait(int millisecondsTimeout)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
             return Wait(millisecondsTimeout, CancellationToken.None);
         }
 
@@ -297,11 +287,9 @@ namespace System.Threading
         /// which represents an infinite time-out.</exception>
         /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
             CheckDispose();
 #if FEATURE_WASM_MANAGED_THREADS
             Thread.AssureBlockingPossible();
@@ -449,11 +437,9 @@ namespace System.Threading
         /// <param name="cancellationToken">The CancellationToken to observe.</param>
         /// <returns>true if the monitor received a signal, false if the timeout expired</returns>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         private bool WaitUntilCountOrTimeout(int millisecondsTimeout, uint startTime, CancellationToken cancellationToken)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
             int remainingWaitMilliseconds = Timeout.Infinite;
 
             // Wait on the monitor as long as the count is zero

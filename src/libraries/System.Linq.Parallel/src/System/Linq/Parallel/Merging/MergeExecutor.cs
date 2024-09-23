@@ -143,6 +143,7 @@ namespace System.Linq.Parallel
 
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
 #endif
         internal static AsynchronousChannel<TInputOutput>[] MakeAsynchronousChannels(int partitionCount, ParallelMergeOptions options, IntValueEvent? consumerEvent, CancellationToken cancellationToken)
         {

@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 namespace System.Diagnostics.Metrics
 {
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
     [SecuritySafeCritical]
     internal sealed class AggregationManager
     {

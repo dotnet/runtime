@@ -184,6 +184,7 @@ namespace System.Threading
         /// <exception cref="InvalidOperationException">This thread was created using a <see cref="ThreadStart"/> delegate instead of a <see cref="ParameterizedThreadStart"/> delegate.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public void Start(object? parameter) => Start(parameter, captureContext: true);
 
@@ -198,14 +199,12 @@ namespace System.Threading
         /// </remarks>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public void UnsafeStart(object? parameter) => Start(parameter, captureContext: false);
 
         private void Start(object? parameter, bool captureContext, bool internalThread = false)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
             ThrowIfNoThreadStart(internalThread);
 
             StartHelper? startHelper = _startHelper;
@@ -232,6 +231,7 @@ namespace System.Threading
         /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public void Start() => Start(captureContext: true);
 
@@ -244,6 +244,7 @@ namespace System.Threading
         /// </remarks>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public void UnsafeStart() => Start(captureContext: false);
 

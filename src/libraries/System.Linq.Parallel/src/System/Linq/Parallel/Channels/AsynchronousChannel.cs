@@ -19,6 +19,7 @@ namespace System.Linq.Parallel
     /// <typeparam name="T">Specifies the type of data in the channel.</typeparam>
 #if !FEATURE_WASM_MANAGED_THREADS
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
 #endif
     internal sealed class AsynchronousChannel<T> : IDisposable
     {

@@ -171,6 +171,7 @@ namespace System.Diagnostics.Metrics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [SupportedOSPlatform("maccatalyst")]
         private static IEnumerable<Measurement<double>> GetCpuTime()
         {

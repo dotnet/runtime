@@ -73,6 +73,7 @@ namespace System.Threading
 
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public static bool Wait(object obj, int millisecondsTimeout)
         {

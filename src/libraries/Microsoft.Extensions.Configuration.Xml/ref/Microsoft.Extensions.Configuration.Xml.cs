@@ -54,6 +54,7 @@ namespace Microsoft.Extensions.Configuration.Xml
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Microsoft.Extensions.Configuration.Xml can use EncryptedXml which may contain XSLTs in the xml. XSLTs require dynamic code.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Microsoft.Extensions.Configuration.Xml can use EncryptedXml. If you use encrypted XML files, your application might not have the algorithm implementations it needs. To avoid this problem, one option you can use is a DynamicDependency attribute to keep the algorithm implementations in your application.")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         protected virtual System.Xml.XmlReader DecryptDocumentAndCreateXmlReader(System.Xml.XmlDocument document) { throw null; }
     }
     [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Microsoft.Extensions.Configuration.Xml can use EncryptedXml which may contain XSLTs in the xml. XSLTs require dynamic code.")]

@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.Logging.Console
     /// A logger that writes messages in the console.
     /// </summary>
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
     internal sealed class ConsoleLogger : ILogger, IBufferedLogger
     {
         private readonly string _name;

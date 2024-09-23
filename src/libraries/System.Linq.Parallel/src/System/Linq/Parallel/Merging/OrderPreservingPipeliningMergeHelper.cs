@@ -38,6 +38,7 @@ namespace System.Linq.Parallel
     /// </summary>
 #if !FEATURE_WASM_MANAGED_THREADS
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
 #endif
     internal sealed class OrderPreservingPipeliningMergeHelper<TOutput, TKey> : IMergeHelper<TOutput>
     {
