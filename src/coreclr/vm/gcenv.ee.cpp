@@ -1791,3 +1791,8 @@ void GCToEEInterface::LogErrorToHost(const char *message)
 {
     ::LogErrorToHost("GC: %s", message);
 }
+
+uint64_t GCToEEInterface::GetThreadIdForLogging(Thread* thread)
+{
+    return thread->GetOSThreadId64();
+}
