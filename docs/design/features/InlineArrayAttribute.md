@@ -40,7 +40,7 @@ Generally, it would be a `TypeLoadException` thrown at the time of layout constr
 
 ```C#
 // runtime replicates the layout of the struct 42 times 
-[InlineArray(Length = 42)] 
+[InlineArray(length: 42)] 
 struct MyArray<T> 
 { 
     private T _element0; 
@@ -56,11 +56,11 @@ The memory layout of a struct instance decorated with `InlineArray` attribute cl
 In particular (using the `MyArray<T>` example defined above):
 * In unboxed form there is no object header or any other data before the first element.
 
-Example: assuming the instance is not GC-movable, the following holds: `(byte*)*inst == (byte*)inst._element0`
+Example: assuming the instance is not GC-movable, the following holds: `(byte*)&inst == (byte*)&inst._element0`
 
 * There is no additional padding between elements.
 
-Example: assuming the instance is not GC-movable and `Length > 1`, the following will yield a pointer to the second element: `(byte*)inst._element0 + sizeof(T)`
+Example: assuming the instance is not GC-movable and `Length > 1`, the following will yield a pointer to the second element: `(byte*)&inst._element0 + sizeof(T)`
 
 * The size of the entire instance is the size of its element type multiplied by the `Length`
 
