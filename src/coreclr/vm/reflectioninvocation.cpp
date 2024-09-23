@@ -1332,12 +1332,12 @@ extern "C" void QCALLTYPE ReflectionInvocation_RunModuleConstructor(QCall::Modul
 {
     QCALL_CONTRACT;
 
-    DomainAssembly *pDomainAssembly = pModule->GetDomainAssembly();
-    if (pDomainAssembly != NULL && pDomainAssembly->IsActive())
+    Assembly *pAssembly = pModule->GetAssembly();
+    if (pAssembly != NULL && pAssembly->IsActive())
         return;
 
     BEGIN_QCALL;
-    pDomainAssembly->EnsureActive();
+    pAssembly->EnsureActive();
     END_QCALL;
 }
 

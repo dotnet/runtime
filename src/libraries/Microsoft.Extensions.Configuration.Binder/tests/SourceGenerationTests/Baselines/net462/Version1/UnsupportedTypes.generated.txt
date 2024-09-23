@@ -143,7 +143,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            if (configuration["Age"] is string value3)
+            if (configuration["Age"] is string value3 && !string.IsNullOrEmpty(value3))
             {
                 instance.Age = ParseInt(value3, configuration.GetSection("Age").Path);
             }
@@ -192,7 +192,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public static global::Record<global::System.Action> InitializeRecordAction(IConfiguration configuration, BinderOptions? binderOptions)
         {
             int x = (int)(10);
-            if (configuration["x"] is string value13)
+            if (configuration["x"] is string value13 && !string.IsNullOrEmpty(value13))
             {
                 x = ParseInt(value13, configuration.GetSection("x").Path);
             }
