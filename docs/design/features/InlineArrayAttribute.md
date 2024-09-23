@@ -77,6 +77,15 @@ Type T can be a reference type and can contain managed references. The runtime w
 The size limits for inline array instances will match the size limits of structs on a given runtime implementation.
 Generally this is a very large size imposed by the type system implementation and is rarely reachable in actual applications due to other limitations such as max stack size, max size of an object, and similar.
 
+### Default behavior of of `Equals()` and `GetHashCode()`
+
+In .NET 9 and later, the default implementations of `Equals()` and `GetHashCode()` for types marked with `InlineArray` attribute throw `NotSupportedException`.
+Prior to .NET 9 the default behavior of these members was undefined.
+
+User is expected to override both `Equals()` and `GetHashCode` if they will be used.
+
+For more details see: https://learn.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.inlinearrayattribute
+
 ### Special note on scenario when the element is readonly.
 
 There is a scenario where the element field in a struct decorated with `InlineArrayAttribute` is `readonly`.
