@@ -526,6 +526,7 @@ namespace System.Collections.Generic
             uint hashCode = (uint)((typeof(TKey).IsValueType && comparer == null) ? key.GetHashCode() : comparer!.GetHashCode(key));
 
             uint collisionCount = 0;
+            uint entriesLength = (uint)entries.Length;
             ref int bucket = ref GetBucket(hashCode);
             int i = bucket - 1; // Value in _buckets is 1-based
 
@@ -533,13 +534,14 @@ namespace System.Collections.Generic
                 comparer == null)
             {
                 // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
-                while ((uint)i < (uint)entries.Length)
+                while ((uint)i < entriesLength)
                 {
-                    if (entries[i].hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].key, key))
+                    ref Entry e = ref entries[i];
+                    if (e.hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(e.key, key))
                     {
                         if (behavior == InsertionBehavior.OverwriteExisting)
                         {
-                            entries[i].value = value;
+                            e.value = value;
                             return true;
                         }
 
@@ -551,10 +553,10 @@ namespace System.Collections.Generic
                         return false;
                     }
 
-                    i = entries[i].next;
+                    i = e.next;
 
                     collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
+                    if (collisionCount > entriesLength)
                     {
                         // The chain of entries forms a loop; which means a concurrent update has happened.
                         // Break out of the loop and throw, rather than looping forever.
@@ -565,13 +567,14 @@ namespace System.Collections.Generic
             else
             {
                 Debug.Assert(comparer is not null);
-                while ((uint)i < (uint)entries.Length)
+                while ((uint)i < entriesLength)
                 {
-                    if (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key))
+                    ref Entry e = ref entries[i];
+                    if (e.hashCode == hashCode && comparer.Equals(e.key, key))
                     {
                         if (behavior == InsertionBehavior.OverwriteExisting)
                         {
-                            entries[i].value = value;
+                            e.value = value;
                             return true;
                         }
 
@@ -583,10 +586,10 @@ namespace System.Collections.Generic
                         return false;
                     }
 
-                    i = entries[i].next;
+                    i = e.next;
 
                     collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
+                    if (collisionCount > entriesLength)
                     {
                         // The chain of entries forms a loop; which means a concurrent update has happened.
                         // Break out of the loop and throw, rather than looping forever.
@@ -1091,6 +1094,7 @@ namespace System.Collections.Generic
                 uint hashCode = (uint)((typeof(TKey).IsValueType && comparer == null) ? key.GetHashCode() : comparer!.GetHashCode(key));
 
                 uint collisionCount = 0;
+                uint entriesLength = (uint)entries.Length;
                 ref int bucket = ref dictionary.GetBucket(hashCode);
                 int i = bucket - 1; // Value in _buckets is 1-based
 
@@ -1098,19 +1102,20 @@ namespace System.Collections.Generic
                     comparer == null)
                 {
                     // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
-                    while ((uint)i < (uint)entries.Length)
+                    while ((uint)i < entriesLength)
                     {
-                        if (entries[i].hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].key, key))
+                        ref Entry e = ref entries[i];
+                        if (e.hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(e.key, key))
                         {
                             exists = true;
 
-                            return ref entries[i].value!;
+                            return ref e.value!;
                         }
 
-                        i = entries[i].next;
+                        i = e.next;
 
                         collisionCount++;
-                        if (collisionCount > (uint)entries.Length)
+                        if (collisionCount > entriesLength)
                         {
                             // The chain of entries forms a loop; which means a concurrent update has happened.
                             // Break out of the loop and throw, rather than looping forever.
@@ -1121,19 +1126,20 @@ namespace System.Collections.Generic
                 else
                 {
                     Debug.Assert(comparer is not null);
-                    while ((uint)i < (uint)entries.Length)
+                    while ((uint)i < entriesLength)
                     {
-                        if (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key))
+                        ref Entry e = ref entries[i];
+                        if (e.hashCode == hashCode && comparer.Equals(e.key, key))
                         {
                             exists = true;
 
-                            return ref entries[i].value!;
+                            return ref e.value!;
                         }
 
-                        i = entries[i].next;
+                        i = e.next;
 
                         collisionCount++;
-                        if (collisionCount > (uint)entries.Length)
+                        if (collisionCount > entriesLength)
                         {
                             // The chain of entries forms a loop; which means a concurrent update has happened.
                             // Break out of the loop and throw, rather than looping forever.
