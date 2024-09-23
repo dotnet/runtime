@@ -338,75 +338,14 @@ struct ShuffleGraphNode
 BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<ShuffleEntry> * pShuffleEntryArray, ShuffleComputationType shuffleType)
 {
 #if defined(TARGET_RISCV64)
-    if (sArgSrc.m_structFields.flags != sArgDst.m_structFields.flags) // transfer argument between calling conventions
+    if (sArgSrc.m_structFields.flags != sArgDst.m_structFields.flags)
     {
-        // Instantiating Stub shuffles only support general register to register moves. More complex cases are handled by IL stubs
-        if (shuffleType == ShuffleComputationType::InstantiatingStub)
-            return FALSE;
-
-        bool isLowered = (sArgDst.m_structFields.flags != FpStruct::UseIntCallConv);
-        ArgLocDesc* fpStructArg = isLowered ? &sArgDst : &sArgSrc;
-        ArgLocDesc* stackArg    = isLowered ? &sArgSrc : &sArgDst;
-        _ASSERTE(stackArg->m_structFields.flags == FpStruct::UseIntCallConv);
-        ShuffleIterator iteratorFpStruct(fpStructArg);
-        ShuffleIterator iteratorStack(stackArg);
-        FpStructInRegistersInfo fpInfo = fpStructArg->m_structFields;
-
-        UINT16 stackOfs = iteratorStack.GetNextOfs();
-        _ASSERTE(!(stackOfs & ShuffleEntry::REGMASK));
-        if (iteratorStack.HasNextOfs())
-        {
-            // Just sanity-check the second slot. We use the first stack slot for both fields
-            _ASSERTE(iteratorStack.GetNextOfs() == stackOfs + 1);
-            _ASSERTE(!iteratorStack.HasNextOfs());
-        }
-        if (isLowered)
-        {
-            // First lowered argument takes advantage of the freed last integer register so must have an integer field.
-            static const int first = FpStruct::FloatInt | FpStruct::IntFloat;
-
-            // Second (last) lowered argument happens iff the delowering below freed two FP registers; one was taken
-            // by the first lowering so we have only one left.
-            static const int second = FpStruct::OnlyOne;
-
-            _ASSERTE(fpInfo.flags & (stackOfs == 0 ? first : second));
-        }
-        else
-        {
-            // The (only) delowered argument is placed after the first lowered argument (which took the last integer
-            // register), so it must be all-floating.
-            _ASSERTE(fpInfo.flags & (FpStruct::OnlyOne | FpStruct::BothFloat));
-        }
-
-        int fieldCount = (fpInfo.flags & FpStruct::OnlyOne) ? 1 : 2;
-        for (int i = 0; i < fieldCount; ++i)
-        {
-            UINT16 fieldRegOfs = iteratorFpStruct.GetNextOfs();
-            _ASSERTE(fieldRegOfs & ShuffleEntry::REGMASK);
-            bool isFloatField = (fpInfo.flags & (FpStruct::OnlyOne | FpStruct::BothFloat))
-                || (i == ((fpInfo.flags & FpStruct::IntFloat) ? 1 : 0));
-            bool isFloatReg = fieldRegOfs & ShuffleEntry::FPREGMASK;
-            _ASSERTE(isFloatField == isFloatReg);
-
-            unsigned sizeShift = (i == 0) ? fpInfo.SizeShift1st() : fpInfo.SizeShift2nd();
-            unsigned offset = (i == 0) ? fpInfo.offset1st : fpInfo.offset2nd;
-            _ASSERTE((1u << sizeShift) + offset <= ENREGISTERED_PARAMTYPE_MAXSIZE);
-
-            sizeShift <<= ShuffleEntry::FIELDSIZESHIFTPOS;
-            offset <<= ShuffleEntry::FIELDOFFSETPOS;
-            _ASSERTE((sizeShift & ShuffleEntry::FIELDSIZESHIFTMASK) == sizeShift);
-            _ASSERTE((offset & ShuffleEntry::FIELDOFFSETMASK) == offset);
-
-            _ASSERTE((fieldRegOfs & (ShuffleEntry::FIELDSIZESHIFTMASK | ShuffleEntry::FIELDOFFSETMASK)) == 0);
-            fieldRegOfs |= ShuffleEntry::CALLCONVTRANSFERMASK | sizeShift | offset;
-            ShuffleEntry entry = isLowered
-                ? ShuffleEntry{stackOfs, {fieldRegOfs}}
-                : ShuffleEntry{fieldRegOfs, {stackOfs}};
-            pShuffleEntryArray->Append(entry);
-        }
-        _ASSERTE(!iteratorFpStruct.HasNextOfs());
-
-        return TRUE;
+        _ASSERT(sArgSrc.m_structFields.flags == FpStruct::UseIntCallConv
+            || sArgDst.m_structFields.flags == FpStruct::UseIntCallConv);
+        // StubLinkerCPU::EmitShuffleThunk supports shuffles only within the integer calling convention (floating-point
+        // arguments may be passed in registers but these are not shuffled then). Transferring arguments between
+        // calling conventions is handled by IL stubs.
+        return FALSE;
     }
 #endif // TARGET_RISCV64
 
@@ -567,22 +506,6 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
         // a stack slot.
         sArgPlacerSrc.GetArgLoc(ofsSrc, &sArgSrc);
         sArgPlacerDst.GetArgLoc(ofsDst, &sArgDst);
-
-#if defined(TARGET_RISCV64)
-        // For shuffling purposes treat floats and doubles like single-field FpStructs with zero field offset
-        auto fixFpStructFieldsForStandaloneFloats = [](const ArgIterator& argPlacer, ArgLocDesc& arg)
-        {
-            if (arg.m_cFloatReg == 1 && arg.m_structFields.flags == FpStruct::UseIntCallConv)
-            {
-                CorElementType srcType = argPlacer.GetArgType();
-                _ASSERTE(CorTypeInfo::IsFloat_NoThrow(srcType));
-                int sizeShift = (srcType == ELEMENT_TYPE_R4) ? 2 : 3;
-                arg.m_structFields = { FpStruct::Flags(FpStruct::OnlyOne | (sizeShift << FpStruct::PosSizeShift1st)) };
-            }
-        };
-        fixFpStructFieldsForStandaloneFloats(sArgPlacerSrc, sArgSrc);
-        fixFpStructFieldsForStandaloneFloats(sArgPlacerDst, sArgDst);
-#endif
 
         if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
             return FALSE;
@@ -833,45 +756,27 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
                 break;
             }
 
-            using SE = ShuffleEntry;
             struct ShuffleInfo { const char* type; int offset; };
             auto getShuffleInfo = [](UINT16 offset) -> ShuffleInfo {
-                if (offset == SE::HELPERREG)
+                if (offset == ShuffleEntry::HELPERREG)
                 {
                     return { "helper register" };
                 }
-                else if (offset & SE::REGMASK)
+                else if (offset & ShuffleEntry::REGMASK)
                 {
-                    const char* type = (offset & SE::FPREGMASK)
-                        ? (NOT_RISCV64((offset & SE::FPSINGLEMASK) ? "single-FP register" :) "FP register")
+                    const char* type = (offset & ShuffleEntry::FPREGMASK)
+                        ? ((offset & ShuffleEntry::FPSINGLEMASK) ? "single-FP register" : "FP register")
                         : "integer register";
-                    return { type, offset & SE::OFSREGMASK };
+                    return { type, offset & ShuffleEntry::OFSREGMASK };
                 }
                 else
                 {
-                    return {"stack slot", offset & SE::OFSMASK };
+                    return {"stack slot", offset & ShuffleEntry::OFSMASK };
                 }
             };
             ShuffleInfo src = getShuffleInfo(entry.srcofs);
             ShuffleInfo dst = getShuffleInfo(entry.dstofs);
-#if defined(TARGET_RISCV64)
-            static const int regCCTransferMask = SE::REGMASK | SE::CALLCONVTRANSFERMASK;
-            bool isDelowered = ((entry.srcofs & regCCTransferMask) == regCCTransferMask);
-            bool isLowered   = ((entry.dstofs & regCCTransferMask) == regCCTransferMask);
-            if (isDelowered || isLowered)
-            {
-                _ASSERTE(isDelowered != isLowered);
-                UINT16 ofs = isDelowered ? entry.srcofs : entry.dstofs;
-                int fieldSize = 1 << ((ofs & SE::FIELDSIZESHIFTMASK) >> SE::FIELDSIZESHIFTPOS);
-                int fieldOffset = (ofs & SE::FIELDOFFSETMASK) >> SE::FIELDOFFSETPOS;
-                LOGALWAYS(("    [%u] %s %i -> %s %i (%slowered field size: %i, offset: %i)\n",
-                    i, src.type, src.offset, dst.type, dst.offset, (isDelowered ? "de" : ""), fieldSize, fieldOffset));
-            }
-            else
-#endif // TARGET_RISCV64
-            {
-                LOGALWAYS(("    [%u] %s %i -> %s %i\n", i, src.type, src.offset, dst.type, dst.offset));
-            }
+            LOGALWAYS(("    [%u] %s %i -> %s %i\n", i, src.type, src.offset, dst.type, dst.offset));
         }
     }
     return TRUE;
@@ -947,7 +852,6 @@ static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* p
 {
     // TODO: Stack growing is a rare case but if thunk duplication turns out to be an issue, optimize by cooking
     // a stripped signature similar to GenerateShuffleArray and use call target from DelegateObject::GetMethodPtrAux()
-    _ASSERTE(pDelegateMD->SizeOfArgStack() < pTargetMD->SizeOfArgStack()); // IL thunk handle stack growing only
     SigTypeContext typeContext(pDelegateMD);
     MetaSig delegateSig(pDelegateMD);
     INDEBUG(MetaSig targetSig(pTargetMD));

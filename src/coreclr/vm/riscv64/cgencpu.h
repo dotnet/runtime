@@ -383,7 +383,6 @@ public:
     void EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect);
 
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
-    void EmitShufflingWithCallingConventionTransfers(const struct ShuffleEntry *pShuffleEntryArray);
 
 #if defined(FEATURE_SHARE_GENERIC_CODE)
     void EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
@@ -392,7 +391,6 @@ public:
     void EmitMovConstant(IntReg target, UINT64 constant);
     void EmitJumpRegister(IntReg regTarget);
     void EmitMovReg(IntReg dest, IntReg source);
-    void EmitMovReg(FloatReg dest, FloatReg source);
 
     void EmitSubImm(IntReg Xd, IntReg Xn, int value);
     void EmitAddImm(IntReg Xd, IntReg Xn, int value);
@@ -401,11 +399,9 @@ public:
 
     void EmitLoad(IntReg dest, IntReg srcAddr, int offset = 0);
     void EmitLoad(FloatReg dest, IntReg srcAddr, int offset = 0);
-    void EmitAnyLoad(bool isFloat, unsigned int sizeShift, int destReg, IntReg srcAddr, int offset = 0);
 
     void EmitStore(IntReg src, IntReg destAddr, int offset = 0);
     void EmitStore(FloatReg src, IntReg destAddr, int offset = 0);
-    void EmitAnyStore(bool isFloat, unsigned int sizeShift, int srcReg, IntReg destAddr, int offset = 0);
 
     void EmitProlog(unsigned short cIntRegArgs, unsigned short cFpRegArgs, unsigned short cbStackSpace = 0);
     void EmitEpilog();
