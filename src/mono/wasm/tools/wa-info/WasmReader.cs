@@ -449,11 +449,9 @@ namespace WebAssemblyInfo
                     break;
                 case Opcode.Catch:
                 case Opcode.Catch_All:
-                    // DumpBytes(16);
                     if (opcode != Opcode.Catch_All)
                     {
                         instruction.I32 = ReadI32();
-                        Console.WriteLine($"i32: {instruction.I32}");
                     }
                     break;
                 case Opcode.Throw:
