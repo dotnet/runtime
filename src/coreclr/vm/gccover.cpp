@@ -95,7 +95,8 @@ void SetupAndSprinkleBreakpoints(
 {
     _ASSERTE(!nativeCodeVersion.IsNull());
 
-    // TODO: VS does anyone call this with fZapped == true ?
+    // CONSIDER: does anyone call this with fZapped == true ? are there plans?
+    _ASSERTE(!fZapped);
 
     // Allocate room for the GCCoverageInfo and copy of the method instructions
     MethodDesc *pMD = nativeCodeVersion.GetMethodDesc();
@@ -711,8 +712,6 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
             gcCover->doingEpilogChecks = false;
     }
 
-    instrVal = gcCover->savedCode[offset];
-
     // <GCStress instruction update race>
     // Remove the interrupt instruction the next time we suspend the EE,
     // which should happen below in the call to StressHeap().  This is
@@ -948,11 +947,7 @@ void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder* decoder, UINT32
     }
     else
     {
-        // TODO: VS is this still possible?
-        // 
-        //For some methods( eg MCCTest.MyClass.GetSum2 in test file jit\jit64\mcc\interop\mcc_i07.il) gcinfo points to a safepoint
-        //beyond the length of the method. So commenting the below assert.
-        //_ASSERTE(safePointOffset - ptr->hotSize < ptr->coldSize);
+        _ASSERTE(safePointOffset - ptr->hotSize < ptr->coldSize);
         return;
     }
 
@@ -1156,13 +1151,11 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 
     if (!IsGcCoverageInterruptInstruction(instrPtr))
     {
-        // TODO: VS can this happen?
-        // This assert can fail if another thread changed original instruction to
-        // GCCoverage Interrupt instruction between these two commands. Uncomment it
-        // when threading issue gets resolved.
-        // _ASSERTE(IsOriginalInstruction(instrPtr, gcCover, offset));
+        _ASSERTE(IsOriginalInstruction(instrPtr, gcCover, offset));
 
         // Someone beat us to it, just go on running.
+        // one reason for this race is RemoveGcCoverageInterrupt case
+        // where we find us unable to do stress.
         return;
     }
 
@@ -1179,13 +1172,8 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // code and it will just raise a STATUS_ACCESS_VIOLATION.
     pThread->PostGCStressInstructionUpdate((BYTE*)instrPtr, &gcCover->savedCode[offset]);
 
-    // TODO: VS both cases possible?
-    bool enableWhenDone = false;
-    if (!pThread->PreemptiveGCDisabled())
-    {
-        pThread->DisablePreemptiveGC();
-        enableWhenDone = true;
-    }
+    // we should be in coop mode.
+    _ASSERTE(pThread->PreemptiveGCDisabled());
 
     //
     // If we redirect for gc stress, we don't need this frame on the stack,
@@ -1224,13 +1212,6 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     if (!Thread::UseRedirectForGcStress())
     {
         frame.Pop(pThread);
-    }
-
-    if (enableWhenDone)
-    {
-        BOOL b = GC_ON_TRANSITIONS(FALSE);      // Don't do a GCStress 3 GC here
-        pThread->EnablePreemptiveGC();
-        GC_ON_TRANSITIONS(b);
     }
 
     return;
@@ -1386,15 +1367,17 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
             RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
         }
     }
-    else
 #endif // !USE_REDIRECT_FOR_GCSTRESS
-    {
-#ifdef _DEBUG
-        if (!g_pConfig->SkipGCCoverage(pMD->GetModule()->GetSimpleName()))
-#endif
-        DoGcStress(regs, codeInfo.GetNativeCodeVersion());
-    }
 
+#ifdef _DEBUG
+    if (g_pConfig->SkipGCCoverage(pMD->GetModule()->GetSimpleName()))
+    {
+        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
+        return TRUE;
+    }
+#endif
+
+    DoGcStress(regs, codeInfo.GetNativeCodeVersion());
     return TRUE;
 }
 
