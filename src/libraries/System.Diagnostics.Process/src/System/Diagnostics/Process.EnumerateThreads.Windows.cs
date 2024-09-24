@@ -13,8 +13,8 @@ namespace System.Diagnostics
     {
         private readonly struct ProcessSnapshot : IDisposable
         {
-            static readonly IntPtr CurrentProcessHandle = Interop.Kernel32.GetCurrentProcess();
-            
+            private static readonly IntPtr CurrentProcessHandle = Interop.Kernel32.GetCurrentProcess();
+
             public readonly Interop.Kernel32.HPSS Handle;
 
             public ProcessSnapshot(SafeProcessHandle process, Interop.Kernel32.PSS_CAPTURE_FLAGS captureFlags, int threadContextFlags = 0)
