@@ -40,15 +40,7 @@
 static inline BOOL ThreadNotStarted(Thread *t)
 {
     WRAPPER_NO_CONTRACT;
-    return (t && t->IsUnstarted() && !t->HasValidThreadHandle());
-}
-
-static inline BOOL ThreadIsRunning(Thread *t)
-{
-    WRAPPER_NO_CONTRACT;
-    return (t &&
-            (t->m_State & (Thread::TS_ReportDead|Thread::TS_Dead)) == 0 &&
-            (t->HasValidThreadHandle()));
+    return (t && t->IsUnstarted());
 }
 
 static inline BOOL ThreadIsDead(Thread *t)
@@ -255,10 +247,10 @@ void ThreadNative::Start(Thread* pNewThread, int threadStackSize, int priority, 
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // Attempt to eagerly set the apartment state during thread startup.
-    Thread::ApartmentState as = pNewThread->GetExplicitApartment();
+    Thread::ApartmentState as = pNewThread->GetApartmentOfUnstartedThread();
     if (as == Thread::AS_Unknown)
     {
-        pNewThread->SetApartment(Thread::AS_InMTA);
+        pNewThread->SetApartmentOfUnstartedThread(Thread::AS_InMTA);
     }
 #endif
 
@@ -553,13 +545,23 @@ extern "C" INT32 QCALLTYPE ThreadNative_SetApartmentState(QCall::ObjectHandleOnS
     // We can only change the apartment if the thread is unstarted or
     // running, and if it's running we have to be in the thread's
     // context.
-    if (!ThreadNotStarted(thread)
-        && (!ThreadIsRunning(thread) || (GetThread() != thread)))
+    if (ThreadNotStarted(thread))
     {
-        COMPlusThrow(kThreadStateException);
-    }
+        // Compat: Disallow resetting the initial apartment state
+        if (thread->GetApartmentOfUnstartedThread() == Thread::AS_Unknown)
+            thread->SetApartmentOfUnstartedThread((Thread::ApartmentState)iState);
 
-    retVal = thread->SetApartment((Thread::ApartmentState)iState);
+        retVal = thread->GetApartmentOfUnstartedThread();
+    }
+    else
+    {
+        if (GetThread() != thread)
+        {
+            COMPlusThrow(kThreadStateException);
+        }
+
+        retVal = thread->SetApartment((Thread::ApartmentState)iState);
+    }
 
     END_QCALL;
     return retVal;
@@ -713,19 +715,31 @@ void ThreadBaseObject::InitExisting()
         m_Priority = ThreadNative::PRIORITY_NORMAL;
         break;
     }
-
 }
 
 FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
 {
     FCALL_CONTRACT;
 
-    // This function is intentionally blank.
-    // See comment in code:MethodTable::CallFinalizer.
+    THREADBASEREF   refThis = (THREADBASEREF)pThisUNSAFE;
+    Thread*         thread  = refThis->GetInternal();
 
-    _ASSERTE (!"Should not be called");
+    // Prevent multiple calls to Finalize
+    // Objects can be resurrected after being finalized.  However, there is no
+    // race condition here.  We always check whether an exposed thread object is
+    // still attached to the internal Thread object, before proceeding.
+    if (thread)
+    {
+        refThis->ResetStartHelper();
 
-    FCUnique(0x21);
+        if (GetThreadNULLOk() != thread)
+        {
+            refThis->ClearInternal();
+        }
+
+        thread->SetThreadState(Thread::TS_Finalized);
+        Thread::SetCleanupNeededForFinalizedThread();
+    }
 }
 FCIMPLEND
 
