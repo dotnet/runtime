@@ -92,11 +92,11 @@
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100" Version="8.0.10">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>91b783edc518e9ea0c0e883016b02261893389db</Sha>
+      <Sha>8f6987b032026c7cbe9dde4c5c1d8909ca884bd7</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="8.0.10-servicing.24452.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="8.0.10-servicing.24466.5">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>91b783edc518e9ea0c0e883016b02261893389db</Sha>
+      <Sha>8f6987b032026c7cbe9dde4c5c1d8909ca884bd7</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="8.0.0-alpha.1.24415.1">
