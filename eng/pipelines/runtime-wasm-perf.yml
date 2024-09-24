@@ -39,9 +39,6 @@ extends:
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
           onlySanityCheck: true
           perfBranch: ${{ parameters.perfBranch }}
-          perfForkToUse: # dummy change
-            url: https://github.com/am11/performance
-            branch: patch-1
           #downloadSpecificBuild:
             #buildId: '1878694'
             #pipeline: 'perf-wasm'
