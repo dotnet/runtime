@@ -85,7 +85,7 @@ internal static partial class Interop
         internal static partial int PssCaptureSnapshot(SafeProcessHandle ProcessHandle, PSS_CAPTURE_FLAGS CaptureFlags, int ThreadContextFlags, out HPSS SnapshotHandle);
 
         [LibraryImport(Libraries.Kernel32)]
-        internal static partial int PssFreeSnapshot(SafeProcessHandle ProcessHandle, HPSS SnapshotHandle);
+        internal static partial int PssFreeSnapshot(IntPtr ProcessHandle, HPSS SnapshotHandle);
 
         [LibraryImport(Libraries.Kernel32)]
         internal static partial int PssQuerySnapshot(HPSS SnapshotHandle, PSS_QUERY_INFORMATION_CLASS InformationClass, void* Buffer, int BufferLength);
