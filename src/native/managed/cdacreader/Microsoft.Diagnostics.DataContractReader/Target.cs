@@ -212,6 +212,7 @@ internal sealed unsafe class Target : ITarget
     }
 
     public int PointerSize => _config.PointerSize;
+    public bool IsLittleEndian => _config.IsLittleEndian;
 
     /// <summary>
     /// Read a value from the target in target endianness

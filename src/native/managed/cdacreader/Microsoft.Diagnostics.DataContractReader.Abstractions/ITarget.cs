@@ -19,8 +19,20 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// </remarks>
 internal interface ITarget
 {
+    /// <summary>
+    /// Pointer size of the target
+    /// </summary>
     int PointerSize { get; }
+    /// <summary>
+    ///  Endianness of the target
+    /// </summary>
+    bool IsLittleEndian { get; }
 
+    /// <summary>
+    /// Reads a well-known global pointer value from the target process
+    /// </summary>
+    /// <param name="global">The name of the global</param>
+    /// <returns>The value of the global</returns>
     TargetPointer ReadGlobalPointer(string global);
 
     /// <summary>
@@ -30,6 +42,11 @@ internal interface ITarget
     /// <returns>Pointer read from the target</returns>}
     TargetPointer ReadPointer(ulong address);
 
+    /// <summary>
+    /// Read some bytes from the target
+    /// </summary>
+    /// <param name="address">The address where to start reading</param>
+    /// <param name="buffer">Destination to copy the bytes, the number of bytes to read is the span length</param>
     void ReadBuffer(ulong address, Span<byte> buffer);
 
     /// <summary>
@@ -37,22 +54,28 @@ internal interface ITarget
     /// </summary>
     /// <param name="address">Address to start reading from</param>
     /// <returns>String read from the target</returns>}
-    public string ReadUtf8String(ulong address);
+    string ReadUtf8String(ulong address);
 
     /// <summary>
     /// Read a null-terminated UTF-16 string from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
     /// <returns>String read from the target</returns>}
-    public string ReadUtf16String(ulong address);
+    string ReadUtf16String(ulong address);
 
     /// <summary>
     /// Read a native unsigned integer from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
     /// <returns>Value read from the target</returns>
-    public TargetNUInt ReadNUInt(ulong address);
+    TargetNUInt ReadNUInt(ulong address);
 
+    /// <summary>
+    /// Read a well known global from the target process as a number in the target endianness
+    /// </summary>
+    /// <typeparam name="T">The numeric type to be read</typeparam>
+    /// <param name="name">The name of the global</param>
+    /// <returns>A numeric value</returns>
     T ReadGlobal<T>(string name) where T : struct, INumber<T>;
 
     /// <summary>
@@ -61,23 +84,62 @@ internal interface ITarget
     /// <typeparam name="T">Type of value to read</typeparam>
     /// <param name="address">Address to start reading from</param>
     /// <returns>Value read from the target</returns>
-    public T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
+    T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
 
-    public bool IsAlignedToPointerSize(TargetPointer pointer);
+    /// <summary>
+    /// Returns true if the given pointer is aligned to the pointer size of the target
+    /// </summary>
+    /// <param name="pointer">A target pointer value</param>
+    /// <returns></returns>
+    bool IsAlignedToPointerSize(TargetPointer pointer);
 
+    /// <summary>
+    /// Returns the information about the given well-known data type in the target process
+    /// </summary>
+    /// <param name="type">The name of the well known type</param>
+    /// <returns>The information about the given type in the target process</returns>
     TypeInfo GetTypeInfo(DataType type);
 
+    /// <summary>
+    /// Get the data cache for the target
+    /// </summary>
     IDataCache ProcessedData { get; }
 
+    /// <summary>
+    /// Holds a snapshot of the target's structured data
+    /// </summary>
     public interface IDataCache
     {
+        /// <summary>
+        /// Read a value from the target and cache it, or return the currently cached value
+        /// </summary>
+        /// <typeparam name="T">The type  of data to be read</typeparam>
+        /// <param name="address">The address in the target where the data resides</param>
+        /// <returns>The value that has been read from the target</returns>
         T GetOrAdd<T>(TargetPointer address) where T : Data.IData<T>;
+        /// <summary>
+        /// Return the cached value for the given address, or null if no value is cached
+        /// </summary>
+        /// <typeparam name="T">The type of the data to be read</typeparam>
+        /// <param name="address">The address in the target where the data resides</param>
+        /// <param name="data">On return, set to the cached data value, or null if the data hasn't been cached yet.</param>
+        /// <returns>True if a copy of the data is cached, or false otherwise</returns>
         bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data);
     }
 
+    /// <summary>
+    /// Information about a well-known data type in the target process
+    /// </summary>
     public readonly record struct TypeInfo
     {
+        /// <summary>
+        /// The stride of the type in the target process.
+        /// This is a value that can be used to calculate the byte offset of an element in an array of this type.
+        /// </summary>
         public uint? Size { get; init; }
+        /// <summary>
+        /// Information about the well-known fields of the type in the target process
+        /// </summary>
         public readonly IReadOnlyDictionary<string, FieldInfo> Fields
         {
             get;
@@ -90,12 +152,28 @@ internal interface ITarget
         }
     }
 
+    /// <summary>
+    /// Information about a well-known field of a well-known data type in the target process
+    /// </summary>
     public readonly record struct FieldInfo
     {
+        /// <summary>
+        /// The byte offset of the field in an instance of the type in the target process
+        /// </summary>
         public int Offset {get; init; }
+        /// <summary>
+        /// The well known data type of the field in the target process
+        /// </summary>
         public readonly DataType Type {get; init;}
+        /// <summary>
+        /// The name of the well known data type of the field in the target process, or null
+        /// if the target data descriptor did not record a name
+        /// </summary>
         public readonly string? TypeName {get; init; }
     }
 
+    /// <summary>
+    /// A cache of the contracts for the target process
+    /// </summary>
     Contracts.IRegistry Contracts { get; }
 }
