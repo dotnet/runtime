@@ -2243,8 +2243,7 @@ CorNativeLinkType MethodTable::GetCharSet()
 // Helper routines for the macros defined at the top of this class.
 // You probably should not use these functions directly.
 //
-template<typename RedirectFunctor>
-SString &MethodTable::_GetFullyQualifiedNameForClassNestedAwareInternal(SString &ssBuf)
+SString &MethodTable::_GetFullyQualifiedNameForClassNestedAware(SString &ssBuf)
 {
     CONTRACTL {
         THROWS;
@@ -2271,10 +2270,8 @@ SString &MethodTable::_GetFullyQualifiedNameForClassNestedAwareInternal(SString 
     DWORD dwAttr;
     IfFailThrow(pImport->GetTypeDefProps(GetCl(), &dwAttr, NULL));
 
-    RedirectFunctor redirectFunctor;
     if (IsTdNested(dwAttr))
     {
-        StackSString ssFullyQualifiedName;
         StackSString ssPath;
 
         // Build the nesting chain.
@@ -2288,37 +2285,21 @@ SString &MethodTable::_GetFullyQualifiedNameForClassNestedAwareInternal(SString 
                 &szEnclNameSpace));
 
             ns::MakePath(ssPath,
-                StackSString(SString::Utf8, redirectFunctor(szEnclNameSpace)),
+                StackSString(SString::Utf8, szEnclNameSpace),
                 StackSString(SString::Utf8, szEnclName));
-            ns::MakeNestedTypeName(ssFullyQualifiedName, ssPath, ssName);
 
-            ssName = ssFullyQualifiedName;
+            ssPath.Append('+');
+            ssPath.Append(ssName);
+
+            ssName = ssPath;
         }
     }
 
     ns::MakePath(
         ssBuf,
-        StackSString(SString::Utf8, redirectFunctor(pszNamespace)), ssName);
+        StackSString(SString::Utf8, pszNamespace), ssName);
 
     return ssBuf;
-}
-
-class PassThrough
-{
-public :
-    LPCUTF8 operator() (LPCUTF8 szEnclNamespace)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return szEnclNamespace;
-    }
-};
-
-SString &MethodTable::_GetFullyQualifiedNameForClassNestedAware(SString &ssBuf)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return _GetFullyQualifiedNameForClassNestedAwareInternal<PassThrough>(ssBuf);
 }
 
 //*******************************************************************************
@@ -3291,4 +3272,3 @@ EEClass::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, MethodTable * pMT)
 }
 
 #endif // DACCESS_COMPILE
-
