@@ -32,8 +32,6 @@ extern void FinalizeWeakReference(Object* obj);
 extern GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
 extern bool g_gcHeapHardLimitInfoSpecified;
 
-extern thread_local int doubleReportTrackingIndex;
-
 #include <generatedumpflags.h>
 #include "gcrefmap.h"
 

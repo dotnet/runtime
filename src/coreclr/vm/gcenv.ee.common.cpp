@@ -147,19 +147,16 @@ inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
  */
 void CheckDoubleReporting(GCCONTEXT *pCtx, Object **ppObj, uint32_t flags)
 {
-    if ((GCStress<cfg_any>::IsEnabled() || g_pConfig->GetEnableGCHoleMonitoring()) && ((flags & GC_CALL_PINNED) == 0) && pCtx->sc->promotion)
+    if (pCtx->pScannedSlots == NULL)
     {
+        pCtx->pScannedSlots = new (nothrow) SetSHash<Object**, PtrSetSHashTraits<Object**> >();
         if (pCtx->pScannedSlots == NULL)
         {
-            pCtx->pScannedSlots = new (nothrow) SetSHash<Object**, PtrSetSHashTraits<Object**> >();
-            if (pCtx->pScannedSlots == NULL)
-            {
-                return;
-            }
+            return;
         }
-        _ASSERTE_ALL_BUILDS(pCtx->pScannedSlots->Lookup(ppObj) == NULL);
-        pCtx->pScannedSlots->AddNoThrow(ppObj);
     }
+    _ASSERTE_ALL_BUILDS(pCtx->pScannedSlots->Lookup(ppObj) == NULL);
+    pCtx->pScannedSlots->AddNoThrow(ppObj);
 }
 
 /*
@@ -174,7 +171,10 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
     Object ** ppObj = (Object **)pObj;
     GCCONTEXT   * pCtx  = (GCCONTEXT *) pData;
 
-    CheckDoubleReporting(pCtx, ppObj, flags);
+    if ((GCStress<cfg_any>::IsEnabled() || g_pConfig->GetEnableGCHoleMonitoring()) && ((flags & GC_CALL_PINNED) == 0) && pCtx->sc->promotion)
+    {
+        CheckDoubleReporting(pCtx, ppObj, flags);
+    }
 
     // Since we may be asynchronously walking another thread's stack,
     // check (frequently) for stack-buffer-overrun corruptions after
