@@ -8746,8 +8746,14 @@ mono_aot_split_options (const char *aot_options)
 	g_return_val_if_fail (aot_options != NULL, NULL);
 
 	while ((cur = *aot_options) != '\0') {
-		if (state == MONO_AOT_OPTION_STATE_ESCAPE)
+		if (state == MONO_AOT_OPTION_STATE_ESCAPE) {
+			// After the escaped character, we're back inside quotes
+			//
+			// Note: we don't seem to remove the "" or the \ from the option here.
+			// Perhaps the caller is expected to take care of it?
+			state = MONO_AOT_OPTION_STATE_STRING;
 			goto next;
+		}
 
 		switch (cur) {
 		case '"':
