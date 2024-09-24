@@ -7005,6 +7005,14 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     unsigned              likelihoods[MAX_GDV_TYPE_CHECKS]   = {};
     int                   candidatesCount                    = 0;
 
+    // Remember the original context, if any.
+    //
+    CORINFO_CONTEXT_HANDLE originalContext = nullptr;
+    if (pContextHandle != nullptr)
+    {
+        originalContext = *pContextHandle;
+    }
+
     // We currently only get likely class guesses when there is PGO data
     // with class profiles.
     //
@@ -7066,8 +7074,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 CORINFO_DEVIRTUALIZATION_INFO dvInfo;
                 dvInfo.virtualMethod               = baseMethod;
                 dvInfo.objClass                    = exactCls;
-                dvInfo.context                     = *pContextHandle;
-                dvInfo.exactContext                = *pContextHandle;
+                dvInfo.context                     = originalContext;
+                dvInfo.exactContext                = originalContext;
                 dvInfo.pResolvedTokenVirtualMethod = nullptr;
 
                 if (!info.compCompHnd->resolveVirtualMethod(&dvInfo))
@@ -7076,6 +7084,14 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                     // Maybe other candidates will be resolved.
                     // Although, we no longer can remove the fallback (we never do it currently anyway)
                     break;
+                }
+
+                // If this was not an array interface devirt, propagate the updated context.
+                //
+                CORINFO_CONTEXT_HANDLE context = originalContext;
+                if (!dvInfo.wasArrayInterfaceDevirt)
+                {
+                    context = dvInfo.exactContext;
                 }
 
                 CORINFO_METHOD_HANDLE exactMethod      = dvInfo.devirtualizedMethod;
@@ -7093,8 +7109,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                     likelyHood += 100 - likelyHood * numExactClasses;
                 }
 
-                addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, dvInfo.exactContext, exactMethodAttrs,
-                                                    clsAttrs, likelyHood);
+                addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, context, exactMethodAttrs, clsAttrs,
+                                                    likelyHood, dvInfo.wasArrayInterfaceDevirt);
             }
 
             if (call->GetInlineCandidatesCount() == numExactClasses)
@@ -7117,11 +7133,12 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     // Iterate over the guesses
     for (int candidateId = 0; candidateId < candidatesCount; candidateId++)
     {
-        CORINFO_CLASS_HANDLE  likelyClass  = likelyClasses[candidateId];
-        CORINFO_METHOD_HANDLE likelyMethod = likelyMethods[candidateId];
-        unsigned              likelihood   = likelihoods[candidateId];
+        CORINFO_CLASS_HANDLE  likelyClass    = likelyClasses[candidateId];
+        CORINFO_METHOD_HANDLE likelyMethod   = likelyMethods[candidateId];
+        unsigned              likelihood     = likelihoods[candidateId];
+        bool                  arrayInterface = false;
 
-        CORINFO_CONTEXT_HANDLE likelyContext = NULL;
+        CORINFO_CONTEXT_HANDLE likelyContext = originalContext;
 
         uint32_t likelyClassAttribs = 0;
         if (likelyClass != NO_CLASS_HANDLE)
@@ -7144,8 +7161,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
             CORINFO_DEVIRTUALIZATION_INFO dvInfo;
             dvInfo.virtualMethod               = baseMethod;
             dvInfo.objClass                    = likelyClass;
-            dvInfo.context                     = *pContextHandle;
-            dvInfo.exactContext                = *pContextHandle;
+            dvInfo.context                     = originalContext;
+            dvInfo.exactContext                = originalContext;
             dvInfo.pResolvedTokenVirtualMethod = nullptr;
 
             const bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
@@ -7158,8 +7175,15 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 break;
             }
 
-            likelyContext = dvInfo.exactContext;
-            likelyMethod  = dvInfo.devirtualizedMethod;
+            // If this was not an array interface devirt, propagate the updated context.
+            //
+            if (!dvInfo.wasArrayInterfaceDevirt)
+            {
+                likelyContext = dvInfo.exactContext;
+            }
+
+            likelyMethod   = dvInfo.devirtualizedMethod;
+            arrayInterface = dvInfo.wasArrayInterfaceDevirt;
         }
         else
         {
@@ -7234,7 +7258,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         // Add this as a potential candidate.
         //
         addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyContext, likelyMethodAttribs,
-                                            likelyClassAttribs, likelihood);
+                                            likelyClassAttribs, likelihood, arrayInterface);
     }
 }
 
@@ -7258,6 +7282,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 //    methodAttr - attributes of the method
 //    classAttr - attributes of the class
 //    likelihood - odds that this class is the class seen at runtime
+//    arrayInterface - devirtualization of an array interface call
 //
 void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
                                                    CORINFO_METHOD_HANDLE  methodHandle,
@@ -7265,7 +7290,8 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
                                                    CORINFO_CONTEXT_HANDLE contextHandle,
                                                    unsigned               methodAttr,
                                                    unsigned               classAttr,
-                                                   unsigned               likelihood)
+                                                   unsigned               likelihood,
+                                                   bool                   arrayInterface)
 {
     // This transformation only makes sense for delegate and virtual calls
     assert(call->IsDelegateInvoke() || call->IsVirtual());
@@ -7339,6 +7365,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
     pInfo->likelihood                      = likelihood;
     pInfo->requiresInstMethodTableArg      = false;
     pInfo->exactContextHnd                 = contextHandle;
+    pInfo->arrayInterface                  = arrayInterface;
 
     // If the guarded class is a value class, look for an unboxed entry point.
     //
@@ -7997,8 +8024,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // might become virtual in some update.
     //
     // In non-R2R modes CALLVIRT <nonvirtual> will be turned into a
-    // regular call+nullcheck upstream, so we won't reach this
-    // point.
+    // regular call+nullcheck by normal call importation.
+    //
     if ((baseMethodAttribs & CORINFO_FLG_VIRTUAL) == 0)
     {
         assert(call->IsVirtualStub());
@@ -8120,12 +8147,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
         {
+            assert(!dvInfo.wasArrayInterfaceDevirt);
             derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
         }
         else
         {
-            // Array interface devirt can return a generic method of the non-generic SZArrayHelper class.
+            // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
             //
+            assert(dvInfo.wasArrayInterfaceDevirt);
             assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
             derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
         }
@@ -9089,6 +9118,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             pInfo->guardedMethodUnboxedEntryHandle = nullptr;
             pInfo->likelihood                      = 0;
             pInfo->requiresInstMethodTableArg      = false;
+            pInfo->arrayInterface                  = false;
         }
 
         pInfo->methInfo                       = methInfo;

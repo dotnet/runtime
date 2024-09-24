@@ -902,6 +902,14 @@ private:
             CORINFO_CONTEXT_HANDLE context   = inlineInfo->exactContextHnd;
             if (clsHnd != NO_CLASS_HANDLE)
             {
+                // If we devirtualized an array interface call,
+                // pass the original method handle to the devirtualizer.
+                //
+                if (inlineInfo->arrayInterface)
+                {
+                    methodHnd = call->gtCallMethHnd;
+                }
+
                 // Then invoke impDevirtualizeCall to actually transform the call for us,
                 // given the original (base) method and the exact guarded class. It should succeed.
                 //
