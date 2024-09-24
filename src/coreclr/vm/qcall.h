@@ -232,6 +232,35 @@ public:
     };
 
     //
+    // ObjectHandleOnStack type is used for managed objects
+    //
+    struct RefHandleOnStack
+    {
+        void ** m_ppRefHandle;
+
+        void* Get()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return *m_ppRefHandle;
+        }
+
+#ifndef DACCESS_COMPILE
+        //
+        // Helpers for returning common managed types from QCall
+        //
+        void Set(void* value)
+        {
+            LIMITED_METHOD_CONTRACT;
+
+            // The space for the return value has to be on the stack
+            _ASSERTE(Thread::IsAddressInCurrentStack(m_ppRefHandle));
+
+            *m_ppRefHandle = value;
+        }
+#endif // !DACCESS_COMPILE
+    };
+
+    //
     // StackCrawlMarkHandle is used for passing StackCrawlMark into QCalls
     //
     struct StackCrawlMarkHandle

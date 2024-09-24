@@ -55,6 +55,7 @@ public:
     static FCDECL1(FC_BOOL_RET, GetIsBackground,  ThreadBaseObject* pThisUNSAFE);
 
     static FCDECL0(INT32,   GetOptimalMaxSpinWaitsPerSpinIteration);
+    static FCDECL0(void*,   GetThreadLocalStaticBase);
     static FCDECL1(void,    Finalize,                       ThreadBaseObject* pThis);
     static FCDECL1(FC_BOOL_RET,IsThreadpoolThread,          ThreadBaseObject* thread);
     static FCDECL1(void,    SetIsThreadpoolThread,          ThreadBaseObject* thread);

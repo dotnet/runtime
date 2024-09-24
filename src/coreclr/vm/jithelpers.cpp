@@ -23,6 +23,7 @@
 #include "corprof.h"
 #include "eeprofinterfaces.h"
 #include "dynamicinterfacecastable.h"
+#include "comsynchronizable.h"
 
 #ifndef TARGET_UNIX
 // Included for referencing __report_gsfailure
@@ -648,123 +649,58 @@ FORCEINLINE void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index)
     return reinterpret_cast<void*>(pTLSBaseAddress);
 }
 
-// *** These framed helpers get called if allocation needs to occur or
-//     if the class constructor needs to run
-
-HCIMPL1(void*, JIT_GetNonGCThreadStaticBase_Helper, MethodTable * pMT)
+FCIMPL0(void*, ThreadNative::GetThreadLocalStaticBase)
 {
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-    } CONTRACTL_END;
+    FCALL_CONTRACT;
 
-    void* base = NULL;
+    return &t_ThreadStatics;
+}
+FCIMPLEND
 
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::RefHandleOnStack refHandle, MethodTable* pMT, bool gcStatic)
+{
+    QCALL_CONTRACT;
 
-    // Check if the class constructor needs to be run
+    BEGIN_QCALL;
+
     pMT->CheckRunClassInitThrowing();
 
-    // Lookup the non-GC statics base pointer
-    base = (void*) pMT->GetNonGCThreadStaticsBasePointer();
-    CONSISTENCY_CHECK(base != NULL);
-
-    HELPER_METHOD_FRAME_END();
-
-    return base;
-}
-HCIMPLEND
-
-HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-    } CONTRACTL_END;
-
-    void* base = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    // Check if the class constructor needs to be run
-    pMT->CheckRunClassInitThrowing();
-
-    // Lookup the GC statics base pointer
-    base = (void*) pMT->GetGCThreadStaticsBasePointer();
-    CONSISTENCY_CHECK(base != NULL);
-
-    HELPER_METHOD_FRAME_END();
-
-    return base;
-}
-HCIMPLEND
-
-// *** This helper corresponds to both CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE and
-//     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR. Even though we always check
-//     if the class constructor has been run, we have a separate helper ID for the "no ctor"
-//     version because it allows the JIT to do some reordering that otherwise wouldn't be
-//     possible.
-
-#include <optsmallperfcritical.h>
-HCIMPL1(void*, JIT_GetNonGCThreadStaticBase, MethodTable *pMT)
-{
-    FCALL_CONTRACT;
-
-    void* pThreadStaticBase = GetThreadLocalStaticBaseIfExistsAndInitialized(pMT->GetThreadStaticsInfo()->NonGCTlsIndex);
-    if (pThreadStaticBase != NULL)
+    GCX_COOP();
+    if (gcStatic)
     {
-        return pThreadStaticBase;
+        refHandle.Set(pMT->GetGCThreadStaticsBasePointer());
+    }
+    else
+    {
+        refHandle.Set(pMT->GetNonGCThreadStaticsBasePointer());
     }
 
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
+    END_QCALL;
 }
-HCIMPLEND
 
-HCIMPL1(void*, JIT_GetDynamicNonGCThreadStaticBase, ThreadStaticsInfo *pThreadStaticsInfo)
+extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::RefHandleOnStack refHandle, uint32_t staticBlockIndex, bool gcStatic)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    void* pThreadStaticBase = GetThreadLocalStaticBaseIfExistsAndInitialized(pThreadStaticsInfo->NonGCTlsIndex);
-    if (pThreadStaticBase != NULL)
-    {
-        return pThreadStaticBase;
-    }
+    BEGIN_QCALL;
 
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pThreadStaticsInfo->m_genericStatics.m_DynamicStatics.GetMethodTable());
-}
-HCIMPLEND
-
-// *** This helper corresponds CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED.
-//      Even though we always check if the class constructor has been run, we have a separate
-//      helper ID for the "no ctor" version because it allows the JIT to do some reordering that
-//      otherwise wouldn't be possible.
-HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
-{
-    void* staticBlock = nullptr;
-
-    FCALL_CONTRACT;
-
-    staticBlock = GetThreadLocalStaticBaseIfExistsAndInitialized(staticBlockIndex);
-    if (staticBlock != NULL)
-    {
-        return staticBlock;
-    }
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
     TLSIndex tlsIndex(staticBlockIndex);
     // Check if the class constructor needs to be run
     MethodTable *pMT = LookupMethodTableForThreadStaticKnownToBeAllocated(tlsIndex);
     pMT->CheckRunClassInitThrowing();
 
-    // Lookup the non-GC statics base pointer
-    staticBlock = (void*) pMT->GetNonGCThreadStaticsBasePointer();
-    HELPER_METHOD_FRAME_END();
+    GCX_COOP();
+    if (gcStatic)
+    {
+        refHandle.Set(pMT->GetGCThreadStaticsBasePointer());
+    }
+    else
+    {
+        refHandle.Set(pMT->GetNonGCThreadStaticsBasePointer());
+    }
 
-    return staticBlock;
+    END_QCALL;
 }
-HCIMPLEND
 
 // *** This helper corresponds CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2.
 HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized2, UINT32 staticBlockIndex)
@@ -776,76 +712,6 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized2, UINT32 staticBlockIndex)
 HCIMPLEND
 
 #include <optdefault.h>
-
-// *** This helper corresponds to both CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE and
-//     CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR. Even though we always check
-//     if the class constructor has been run, we have a separate helper ID for the "no ctor"
-//     version because it allows the JIT to do some reordering that otherwise wouldn't be
-//     possible.
-
-#include <optsmallperfcritical.h>
-HCIMPL1(void*, JIT_GetGCThreadStaticBase, MethodTable *pMT)
-{
-    FCALL_CONTRACT;
-
-    void* pThreadStaticBase = GetThreadLocalStaticBaseIfExistsAndInitialized(pMT->GetThreadStaticsInfo()->GCTlsIndex);
-    if (pThreadStaticBase != NULL)
-    {
-        return pThreadStaticBase;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetGCThreadStaticBase_Helper, pMT);
-}
-HCIMPLEND
-
-HCIMPL1(void*, JIT_GetDynamicGCThreadStaticBase, ThreadStaticsInfo *pThreadStaticsInfo)
-{
-    FCALL_CONTRACT;
-
-    void* pThreadStaticBase = GetThreadLocalStaticBaseIfExistsAndInitialized(pThreadStaticsInfo->GCTlsIndex);
-    if (pThreadStaticBase != NULL)
-    {
-        return pThreadStaticBase;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetGCThreadStaticBase_Helper, pThreadStaticsInfo->m_genericStatics.m_DynamicStatics.GetMethodTable());
-}
-HCIMPLEND
-
-#include <optdefault.h>
-
-// *** This helper corresponds CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED.
-//      Even though we always check if the class constructor has been run, we have a separate
-//      helper ID for the "no ctor" version because it allows the JIT to do some reordering that
-//      otherwise wouldn't be possible.
-HCIMPL1(void*, JIT_GetGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
-{
-    void* staticBlock = nullptr;
-
-    FCALL_CONTRACT;
-
-    staticBlock = GetThreadLocalStaticBaseIfExistsAndInitialized(staticBlockIndex);
-    if (staticBlock != NULL)
-    {
-        return staticBlock;
-    }
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-
-    TLSIndex tlsIndex(staticBlockIndex);
-    // Check if the class constructor needs to be run
-    MethodTable *pMT = LookupMethodTableForThreadStaticKnownToBeAllocated(tlsIndex);
-    pMT->CheckRunClassInitThrowing();
-
-    // Lookup the non-GC statics base pointer
-    staticBlock = (void*) pMT->GetGCThreadStaticsBasePointer();
-    HELPER_METHOD_FRAME_END();
-
-    return staticBlock;
-}
-HCIMPLEND
 
 //========================================================================
 //

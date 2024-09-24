@@ -859,6 +859,23 @@ namespace System.Runtime.CompilerServices
         public unsafe MethodTable* _methodTable;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe ref struct GenericsStaticsInfo
+    {
+        // Pointer to field descs for statics
+        public IntPtr _pFieldDescs;
+        public DynamicStaticsInfo _dynamicStatics;
+    };  // struct GenericsStaticsInfo
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe ref struct ThreadStaticsInfo
+    {
+        public int NonGCTlsIndex;
+        public int GCTlsIndex;
+        public GenericsStaticsInfo _genericStatics;
+    }
+
+
     // Subset of src\vm\methodtable.h
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct MethodTableAuxiliaryData
@@ -926,6 +943,15 @@ namespace System.Runtime.CompilerServices
             get
             {
                 return ref Unsafe.AddByteOffset(ref Unsafe.As<uint, DynamicStaticsInfo>(ref Flags), -sizeof(DynamicStaticsInfo));
+            }
+        }
+
+        public ref ThreadStaticsInfo ThreadStaticsInfo
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return ref Unsafe.AddByteOffset(ref Unsafe.As<uint, ThreadStaticsInfo>(ref Flags), -sizeof(ThreadStaticsInfo));
             }
         }
     }

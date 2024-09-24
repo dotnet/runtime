@@ -34,6 +34,27 @@ namespace System.Runtime.CompilerServices
         }
     }
 
+    internal ref struct RefHandle<T>
+    {
+        public ref T Reference;
+    }
+
+    // Wrapper for address of a object variable on stack
+    internal unsafe ref struct RefHandleOnStack
+    {
+        private void* _ptr;
+
+        private RefHandleOnStack(void* pObject)
+        {
+            _ptr = pObject;
+        }
+
+        internal static RefHandleOnStack Create<T>(ref RefHandle<T> o)
+        {
+            return new RefHandleOnStack(Unsafe.AsPointer(ref o));
+        }
+    }
+
     // Wrapper for StackCrawlMark
     internal unsafe ref struct StackCrawlMarkHandle
     {

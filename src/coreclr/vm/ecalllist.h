@@ -303,6 +303,7 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("get_IsThreadPoolThread", ThreadNative::IsThreadpoolThread)
     FCFuncElement("set_IsThreadPoolThread", ThreadNative::SetIsThreadpoolThread)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
+    FCFuncElement("GetThreadStaticsBase", ThreadNative::GetThreadLocalStaticBase)
 FCFuncEnd()
 
 FCFuncStart(gThreadPoolFuncs)
