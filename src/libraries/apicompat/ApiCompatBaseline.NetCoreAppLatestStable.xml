@@ -2,6 +2,7 @@
 <!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
+  <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Console.SetWindowSize(System.Int32,System.Int32):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
     <Left>net8.0/mscorlib.dll</Left>
