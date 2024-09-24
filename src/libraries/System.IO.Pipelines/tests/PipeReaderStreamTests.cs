@@ -38,7 +38,7 @@ namespace System.IO.Pipelines.Tests
             for (int i = 0; i < 2; i++)
             {
                 s.Dispose();
-#if NETCOREAPP
+#if NET
                 await s.DisposeAsync();
 #endif
             }

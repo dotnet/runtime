@@ -44,9 +44,9 @@
     <Compile Include="StreamPipeWriterTests.cs" />
     <Compile Include="Infrastructure\ThrowAfterNWritesStream.cs" />
     <Compile Include="UnflushedBytesTests.cs" />
+    <Compile Include="PipeLengthTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="PipeLengthTests.cs" />
     <Compile Include="BufferSegmentPoolTest.cs" />
     <Compile Include="PipeReaderWriterFacts.nonnetstandard.cs" />
     <Compile Include="PipeResetTests.nonnetstandard.cs" />
