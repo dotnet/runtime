@@ -1011,7 +1011,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public static void CompareToNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -1037,22 +1036,25 @@ namespace System.Tests
 
                     // Due to differences in the implementation, the exact result of CompareTo will not necessarily match with string.Compare.
                     // However, the sign will match, which is what defines correctness.
-                    Assert.Equal(
-                        Math.Sign(string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.OrdinalIgnoreCase)),
-                        Math.Sign(firstSpan.CompareTo(secondSpan, StringComparison.OrdinalIgnoreCase)));
+                    if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                    {
+                        Assert.Equal(
+                            Math.Sign(string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.OrdinalIgnoreCase)),
+                            Math.Sign(firstSpan.CompareTo(secondSpan, StringComparison.OrdinalIgnoreCase)));
 
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCulture),
-                        firstSpan.CompareTo(secondSpan, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        firstSpan.CompareTo(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCulture),
-                        firstSpan.CompareTo(secondSpan, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        firstSpan.CompareTo(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCulture),
+                            firstSpan.CompareTo(secondSpan, StringComparison.CurrentCulture));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                            firstSpan.CompareTo(secondSpan, StringComparison.CurrentCultureIgnoreCase));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCulture),
+                            firstSpan.CompareTo(secondSpan, StringComparison.InvariantCulture));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                            firstSpan.CompareTo(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    }
                 }
             }
         }
@@ -1286,7 +1288,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public static void ContainsNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -1313,18 +1314,21 @@ namespace System.Tests
                     Assert.False(firstSpan.Contains(secondSpan, StringComparison.OrdinalIgnoreCase));
 
                     // Different behavior depending on OS
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
-                        firstSpan.Contains(secondSpan, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        firstSpan.Contains(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
-                        firstSpan.Contains(secondSpan, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        firstSpan.Contains(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                    {
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
+                            firstSpan.Contains(secondSpan, StringComparison.CurrentCulture));
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                            firstSpan.Contains(secondSpan, StringComparison.CurrentCultureIgnoreCase));
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
+                            firstSpan.Contains(secondSpan, StringComparison.InvariantCulture));
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                            firstSpan.Contains(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    }
                 }
             }
         }
@@ -2113,7 +2117,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public static void EndsWithNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -7379,7 +7382,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public static void StartsWithNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
