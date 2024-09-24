@@ -68,7 +68,6 @@ namespace System.Diagnostics
                 using SafeProcessHandle hProcess = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION, true);
                 using var hSnapshot = new ProcessSnapshot(hProcess, Interop.Kernel32.PSS_CAPTURE_FLAGS.PSS_CAPTURE_THREADS);
 
-                // get length of thread array. can be omitted if we are inserting into a List<>
                 Interop.Kernel32.PSS_THREAD_INFORMATION info;
                 ThrowIfFailure(Interop.Kernel32.PssQuerySnapshot(hSnapshot.Handle, Interop.Kernel32.PSS_QUERY_INFORMATION_CLASS.PSS_QUERY_THREAD_INFORMATION,
                     &info, sizeof(Interop.Kernel32.PSS_THREAD_INFORMATION)));
@@ -101,12 +100,13 @@ namespace System.Diagnostics
                 return new ProcessThreadCollection(processThreads);
             }
             catch
+            (Win32Exception
 #if DEBUG
-            (Exception ex)
+            ex)
 #endif
             {
 #if DEBUG
-                Debug.Assert(false, $"Throws during enumerating threads by process snapshot: {ex}");
+                Debug.Assert(false, $"Win32Exception during enumerating threads by process snapshot: {ex}");
 #endif
                 // We did something wrong. Revert to the original method for compatibility.
                 return null;

@@ -197,11 +197,11 @@ namespace System.Diagnostics
 
         private unsafe void EnsureStateAndWaitReason()
         {
-            // Risk: This method is calling an *undocumented* THREADINFOCLASS on NtQueryInformationThread
-            // and it is the only way to retrieve thread state & wait reasons without re-enumerating.
-            // See the original PR to check for alternative solutions.
+            // Risk: This method calls NtQueryInformationThread with an *undocumented* THREADINFOCLASS
+            // as it is the only way to retrieve ThreadState & WaitReason without re-enumerating.
+            // See the original PR for alternative solutions.
 
-            // However, the 0x28 value is available since 10, higher than Process Snapshot APIs.
+            // The 0x28 value is available since 10, higher than Process Snapshot APIs (8.1).
 
             using SafeThreadHandle threadHandle = OpenThreadHandle(Interop.Kernel32.ThreadOptions.THREAD_QUERY_INFORMATION);
 
