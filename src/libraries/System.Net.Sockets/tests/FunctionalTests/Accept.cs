@@ -264,7 +264,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task AcceptAsync_MultipleAcceptsThenDispose_AcceptsThrowAfterDispose()
         {
             if (UsesSync)
@@ -391,6 +390,7 @@ namespace System.Net.Sockets.Tests
         public AcceptSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class AcceptApm : Accept<SocketHelperApm>
     {
         public AcceptApm(ITestOutputHelper output) : base(output) {}

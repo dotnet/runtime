@@ -143,7 +143,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)] // see also https://github.com/WebAssembly/wasi-libc/issues/540
         public async Task TcpAcceptSocket_WhenServerBoundToWildcardAddress_LocalEPIsSpecific()
         {
             using (Socket server = CreateTcpSocket())
