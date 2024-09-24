@@ -1330,6 +1330,14 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         return TRUE;
     }
 
+#ifdef _DEBUG
+    if (g_pConfig->SkipGCCoverage(pMD->GetModule()->GetSimpleName()))
+    {
+        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
+        return TRUE;
+    }
+#endif
+
 #if defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX)
     // If we're unable to redirect, then we simply won't test GC at this location.
     if (Thread::UseRedirectForGcStress())
@@ -1338,16 +1346,10 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         {
             RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
         }
-    }
-#endif // !USE_REDIRECT_FOR_GCSTRESS
 
-#ifdef _DEBUG
-    if (g_pConfig->SkipGCCoverage(pMD->GetModule()->GetSimpleName()))
-    {
-        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
         return TRUE;
     }
-#endif
+#endif // !USE_REDIRECT_FOR_GCSTRESS
 
     DoGcStress(regs, codeInfo.GetNativeCodeVersion());
     return TRUE;
