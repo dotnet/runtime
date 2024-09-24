@@ -51,7 +51,7 @@ internal unsafe static class MockMemorySpace
 
         }
 
-        public Builder SetDescriptor(scoped ReadOnlySpan<byte> descriptor)
+        internal Builder SetDescriptor(scoped ReadOnlySpan<byte> descriptor)
         {
             const ulong ContractDescriptorAddr = 0xaaaaaaaa;
 
@@ -112,6 +112,14 @@ internal unsafe static class MockMemorySpace
                 // add fragments one at a time to check for overlaps
                 AddHeapFragment(f);
             }
+            return this;
+        }
+
+        public Builder FillDescriptor(TargetTestHelpers targetTestHelpers)
+        {
+            Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
+            targetTestHelpers.ContractDescriptorFill(descriptor, _jsonLength, _pointerDataLength / targetTestHelpers.PointerSize);
+            SetDescriptor(descriptor);
             return this;
         }
 

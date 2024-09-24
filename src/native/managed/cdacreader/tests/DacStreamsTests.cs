@@ -47,8 +47,6 @@ public class DacStreamsTests
             "globals": { {{metadataGlobalsJson}} }
         }
         """);
-        Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
-        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, DacStreamsGlobals.Length);
 
         int pointerSize = targetTestHelpers.PointerSize;
         Span<byte> pointerData = stackalloc byte[DacStreamsGlobals.Length * pointerSize];
@@ -60,9 +58,10 @@ public class DacStreamsTests
 
         MockMemorySpace.Builder builder = new();
 
-        builder = builder.SetDescriptor(descriptor)
+        builder = builder
                 .SetJson(json)
-                .SetPointerData(pointerData);
+                .SetPointerData(pointerData)
+                .FillDescriptor(targetTestHelpers);
 
         if (configure != null)
         {

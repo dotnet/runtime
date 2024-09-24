@@ -31,8 +31,6 @@ public unsafe class MethodTableTests
             "globals": { {{metadataGlobalsJson}} }
         }
         """);
-        Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
-        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, MockRTS.Globals.Length);
 
         int pointerSize = targetTestHelpers.PointerSize;
         Span<byte> pointerData = stackalloc byte[MockRTS.Globals.Length * pointerSize];
@@ -44,9 +42,10 @@ public unsafe class MethodTableTests
 
         MockMemorySpace.Builder builder = new();
 
-        builder = builder.SetDescriptor(descriptor)
+        builder = builder
                 .SetJson(json)
-                .SetPointerData(pointerData);
+                .SetPointerData(pointerData)
+                .FillDescriptor(targetTestHelpers);
 
         builder = MockRTS.AddGlobalPointers(targetTestHelpers, builder);
 

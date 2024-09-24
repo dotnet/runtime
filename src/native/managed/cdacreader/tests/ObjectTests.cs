@@ -33,8 +33,6 @@ public unsafe class ObjectTests
             "globals": { {{globalsJson}} }
         }
         """);
-        Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
-        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, globals.Length);
 
         int pointerSize = targetTestHelpers.PointerSize;
         Span<byte> pointerData = stackalloc byte[globals.Length * pointerSize];
@@ -45,9 +43,10 @@ public unsafe class ObjectTests
         }
 
         MockMemorySpace.Builder builder = new();
-        builder = builder.SetDescriptor(descriptor)
+        builder = builder
                 .SetJson(json)
-                .SetPointerData(pointerData);
+                .SetPointerData(pointerData)
+                .FillDescriptor(targetTestHelpers);
 
         builder = MockObject.AddGlobalPointers(targetTestHelpers, builder);
 
