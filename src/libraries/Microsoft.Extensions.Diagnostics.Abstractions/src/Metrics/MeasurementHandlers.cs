@@ -11,37 +11,37 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     public class MeasurementHandlers
     {
         /// <summary>
-        /// Gets or sets a <see cref="MeasurementCallback{T}"/> for <see cref="byte"/>. If null, byte measurements are skipped.
+        /// Gets or sets a <see cref="MeasurementCallback{T}"/> for <see cref="byte"/>. If <see langword="null"/>, byte measurements are skipped.
         /// </summary>
         public MeasurementCallback<byte>? ByteHandler { get; set; }
 
         /// <summary>
-        /// Gets or sets a <see cref="MeasurementCallback{T}"/> for <see cref="short"/>. If null, short measurements are skipped.
+        /// Gets or sets a <see cref="MeasurementCallback{T}"/> for <see cref="short"/>. If <see langword="null"/>, short measurements are skipped.
         /// </summary>
         public MeasurementCallback<short>? ShortHandler { get; set; }
 
         /// <summary>
-        /// Gets or sets a <see cref="MeasurementCallback{T}"/> for <see cref="int"/>. If null, int measurements are skipped.
+        /// Gets or sets a <see cref="MeasurementCallback{T}"/> for <see cref="int"/>. If <see langword="null"/>, int measurements are skipped.
         /// </summary>
         public MeasurementCallback<int>? IntHandler { get; set; }
 
         /// <summary>
-        /// Gets or sets a <see cref="MeasurementCallback{T}"/> for <see cref="long"/>. If null, long measurements are skipped.
+        /// Gets or sets a <see cref="MeasurementCallback{T}"/> for <see cref="long"/>. If <see langword="null"/>, long measurements are skipped.
         /// </summary>
         public MeasurementCallback<long>? LongHandler { get; set; }
 
         /// <summary>
-        /// Gets or sets a <see cref="MeasurementCallback{T}"/> for <see cref="float"/>. If null, float measurements are skipped.
+        /// Gets or sets a <see cref="MeasurementCallback{T}"/> for <see cref="float"/>. If <see langword="null"/>, float measurements are skipped.
         /// </summary>
         public MeasurementCallback<float>? FloatHandler { get; set; }
 
         /// <summary>
-        /// Gets or sets a <see cref="MeasurementCallback{T}"/> for <see cref="double"/>. If null, double measurements are skipped.
+        /// Gets or sets a <see cref="MeasurementCallback{T}"/> for <see cref="double"/>. If <see langword="null"/>, double measurements are skipped.
         /// </summary>
         public MeasurementCallback<double>? DoubleHandler { get; set; }
 
         /// <summary>
-        /// Gets or sets a <see cref="MeasurementCallback{T}"/> for <see cref="decimal"/>. If null, decimal measurements are skipped.
+        /// Gets or sets a <see cref="MeasurementCallback{T}"/> for <see cref="decimal"/>. If <see langword="null"/>, decimal measurements are skipped.
         /// </summary>
         public MeasurementCallback<decimal>? DecimalHandler { get; set; }
     }

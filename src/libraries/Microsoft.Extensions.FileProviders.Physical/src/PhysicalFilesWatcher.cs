@@ -124,7 +124,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <see cref="PhysicalFilesWatcher(string, FileSystemWatcher, bool)" />. Globbing patterns
         /// are interpreted by <see cref="Matcher" />.
         /// </remarks>
-        /// <exception cref="ArgumentNullException"><paramref name="filter" /> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="filter" /> is <see langword="null"/>.</exception>
         public IChangeToken CreateFileChangeToken(string filter)
         {
             ThrowHelper.ThrowIfNull(filter);

@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.FileProviders
         long Length { get; }
 
         /// <summary>
-        /// Gets the path to the file, including the file name. Returns null if the file is not directly accessible.
+        /// Gets the path to the file, including the file name. Returns <see langword="null"/> if the file is not directly accessible.
         /// </summary>
         string? PhysicalPath { get; }
 
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.FileProviders
         DateTimeOffset LastModified { get; }
 
         /// <summary>
-        /// Gets a value that indicates whether TryGetDirectoryContents has enumerated a subdirectory.
+        /// Gets a value that indicates whether <c>TryGetDirectoryContents</c> has enumerated a subdirectory.
         /// </summary>
         bool IsDirectory { get; }
 

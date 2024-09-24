@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
     /// <remarks>
     /// <para>Polling occurs every 4 seconds.</para>
     /// <para>This change token does not raise any change callbacks. Callers should watch for <see cref="HasChanged" /> to turn
-    /// from false to true and dispose the token after this happens.</para>
+    /// from <see langword="false"/> to <see langword="true"/> and dispose the token after this happens.</para>
     /// </remarks>
     public class PollingFileChangeToken : IPollingChangeToken
     {

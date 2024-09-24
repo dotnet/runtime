@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     /// <param name="instrumentName">The <see cref="Instrument.Name">Instrument.Name</see>.</param>
     /// <param name="listenerName">The <see cref="IMetricsListener.Name">IMetricsListener.Name</see>.</param>
     /// <param name="scopes">A bitwise combination of the enumeration values that specifies the scopes to consider.</param>
-    /// <param name="enable"><see langword="true" />to enable the matched instrument for this listener; otherwise, <see langword="false" />.</param>
+    /// <param name="enable"><see langword="true" /> to enable the matched instrument for this listener; otherwise, <see langword="false" />.</param>
     public class InstrumentRule(string? meterName, string? instrumentName, string? listenerName, MeterScope scopes, bool enable)
     {
         /// <summary>

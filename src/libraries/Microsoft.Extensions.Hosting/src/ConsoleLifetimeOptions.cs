@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Hosting
         /// </summary>
         /// <value>
         /// <see langword="true"/> if host lifetime status messages should be suppressed.
-        /// The default is <see cref="false"/>.
+        /// The default is <see langword="false"/>.
         /// </value>
         public bool SuppressStatusMessages { get; set; }
     }
