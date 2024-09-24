@@ -53,9 +53,9 @@ public unsafe class TargetTests
         targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, 0);
         fixed (byte* jsonPtr = json)
         {
-            using MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json);
+            MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json);
 
-            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
+            bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
             Assert.True(success);
 
             foreach ((DataType type, Target.TypeInfo info) in TestTypes)
@@ -111,9 +111,9 @@ public unsafe class TargetTests
         targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, 0);
         fixed (byte* jsonPtr = json)
         {
-            using MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json);
+            MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json);
 
-            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
+            bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
             Assert.True(success);
 
             ValidateGlobals(target, TestGlobals);
@@ -147,9 +147,9 @@ public unsafe class TargetTests
         targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, pointerData.Length / pointerSize);
         fixed (byte* jsonPtr = json)
         {
-            using MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json, pointerData);
+            MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json, pointerData);
 
-            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
+            bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
             Assert.True(success);
 
             // Indirect values are pointer-sized, so max 32-bits for a 32-bit target

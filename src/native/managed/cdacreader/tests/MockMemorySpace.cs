@@ -41,12 +41,12 @@ internal unsafe static class MockMemorySpace
     internal unsafe ref struct Builder
     {
         private bool _created = false;
-        private byte* _descriptor = null;
-        private int _descriptorLength = 0;
-        private byte* _json = null;
-        private int _jsonLength = 0;
-        private byte* _pointerData = null;
-        private int _pointerDataLength = 0;
+        private HeapFragment _descriptor;
+        private int _descriptorLength => _descriptor.Data.Length;
+        private HeapFragment _json;
+        private int _jsonLength => _json.Data.Length;
+        private HeapFragment _pointerData;
+        private int _pointerDataLength => _pointerData.Data.Length;
         private List<HeapFragment> _heapFragments = new();
 
         public Builder()
@@ -58,8 +58,12 @@ internal unsafe static class MockMemorySpace
         {
             if (_created)
                 throw new InvalidOperationException("Context already created");
-            _descriptor = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(descriptor));
-            _descriptorLength = descriptor.Length;
+            _descriptor = new HeapFragment
+            {
+                Address = ContractDescriptorAddr,
+                Data = descriptor.ToArray(),
+                Name = "ContractDescriptor"
+            };
             return this;
         }
 
@@ -67,8 +71,12 @@ internal unsafe static class MockMemorySpace
         {
             if (_created)
                 throw new InvalidOperationException("Context already created");
-            _json = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(json));
-            _jsonLength = json.Length;
+            _json = new HeapFragment
+            {
+                Address = JsonDescriptorAddr,
+                Data = json.ToArray(),
+                Name = "JsonDescriptor"
+            };
             return this;
         }
 
@@ -78,8 +86,21 @@ internal unsafe static class MockMemorySpace
                 throw new InvalidOperationException("Context already created");
             if (pointerData.Length >= 0)
             {
-                _pointerData = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(pointerData));
-                _pointerDataLength = pointerData.Length;
+                _pointerData = new HeapFragment
+                {
+                    Address = ContractPointerDataAddr,
+                    Data = pointerData.ToArray(),
+                    Name = "PointerData"
+                };
+            }
+            else
+            {
+                _pointerData = new HeapFragment
+                {
+                    Address = ContractPointerDataAddr,
+                    Data = Array.Empty<byte>(),
+                    Name = "PointerData"
+                };
             }
             return this;
         }
@@ -110,20 +131,12 @@ internal unsafe static class MockMemorySpace
         {
             if (_created)
                 throw new InvalidOperationException("Context already created");
-            GCHandle fragmentReaderHandle = default; ;
-            if (_heapFragments.Count > 0)
-            {
-                fragmentReaderHandle = GCHandle.Alloc(new HeapFragmentReader(_heapFragments));
-            }
             ReadContext context = new ReadContext
             {
                 ContractDescriptor = _descriptor,
-                ContractDescriptorLength = _descriptorLength,
                 JsonDescriptor = _json,
-                JsonDescriptorLength = _jsonLength,
                 PointerData = _pointerData,
-                PointerDataLength = _pointerDataLength,
-                HeapFragmentReader = GCHandle.ToIntPtr(fragmentReaderHandle)
+                HeapFragments = _heapFragments,
             };
             _created = true;
             return context;
@@ -157,78 +170,53 @@ internal unsafe static class MockMemorySpace
         return builder.Create();
     }
 
-    public static bool TryCreateTarget(ReadContext* context, out Target? target)
+    public static bool TryCreateTarget(ReadContext context, out Target? target)
     {
-        return Target.TryCreate(ContractDescriptorAddr, (address, buffer) => ReadFromTarget(address, buffer, context), out target);
-    }
-
-    private static int ReadFromTarget(ulong address, Span<byte> span, ReadContext* readContext)
-    {
-        // Populate the span with the requested portion of the contract descriptor
-        if (address >= ContractDescriptorAddr && address <= ContractDescriptorAddr + (ulong)readContext->ContractDescriptorLength - (uint)span.Length)
-        {
-            ulong offset = address - ContractDescriptorAddr;
-            new ReadOnlySpan<byte>(readContext->ContractDescriptor + offset, span.Length).CopyTo(span);
-            return 0;
-        }
-
-        // Populate the span with the JSON descriptor - this assumes the product will read it all at once.
-        if (address == JsonDescriptorAddr)
-        {
-            new ReadOnlySpan<byte>(readContext->JsonDescriptor, readContext->JsonDescriptorLength).CopyTo(span);
-            return 0;
-        }
-
-        // Populate the span with the requested portion of the pointer data
-        if (address >= ContractPointerDataAddr && address <= ContractPointerDataAddr + (ulong)readContext->PointerDataLength - (uint)span.Length)
-        {
-            ulong offset = address - ContractPointerDataAddr;
-            new ReadOnlySpan<byte>(readContext->PointerData + offset, span.Length).CopyTo(span);
-            return 0;
-        }
-
-        HeapFragmentReader? heapFragmentReader = GCHandle.FromIntPtr(readContext->HeapFragmentReader).Target as HeapFragmentReader;
-        if (heapFragmentReader is not null)
-        {
-            return heapFragmentReader.ReadFragment(address, span);
-        }
-
-        return -1;
+        return Target.TryCreate(ContractDescriptorAddr, context.ReadFromTarget, out target);
     }
 
     // Used by ReadFromTarget to return the appropriate bytes
-    internal ref struct ReadContext : IDisposable
+    internal class ReadContext
     {
-        public byte* ContractDescriptor;
-        public int ContractDescriptorLength;
+        public HeapFragment ContractDescriptor { get; init;}
+        public int ContractDescriptorLength => ContractDescriptor.Data.Length;
 
-        public byte* JsonDescriptor;
-        public int JsonDescriptorLength;
+        public HeapFragment JsonDescriptor { get; init; }
+        public int JsonDescriptorLength => JsonDescriptor.Data.Length;
 
-        public byte* PointerData;
-        public int PointerDataLength;
+        public HeapFragment PointerData { get; init;}
+        public int PointerDataLength => PointerData.Data.Length;
+        public IReadOnlyList<HeapFragment> HeapFragments { get; init; }
 
-        public IntPtr HeapFragmentReader;
-
-        public void Dispose()
+        internal int ReadFromTarget(ulong address, Span<byte> span)
         {
-            if (HeapFragmentReader != IntPtr.Zero)
+            // Populate the span with the requested portion of the contract descriptor
+            if (address >= ContractDescriptorAddr && address <= ContractDescriptorAddr + (ulong)ContractDescriptorLength - (uint)span.Length)
             {
-                GCHandle.FromIntPtr(HeapFragmentReader).Free();
-                HeapFragmentReader = IntPtr.Zero;
+                int offset = checked ((int)(address - ContractDescriptorAddr));
+                ContractDescriptor.Data.AsSpan(offset, span.Length).CopyTo(span);
+                return 0;
             }
-        }
-    }
 
-    private class HeapFragmentReader
-    {
-        private readonly IReadOnlyList<HeapFragment> _fragments;
-        public HeapFragmentReader(IReadOnlyList<HeapFragment> fragments)
-        {
-            _fragments = fragments;
+            // Populate the span with the JSON descriptor - this assumes the product will read it all at once.
+            if (address == JsonDescriptorAddr)
+            {
+                JsonDescriptor.Data.AsSpan().CopyTo(span);
+                return 0;
+            }
+
+            // Populate the span with the requested portion of the pointer data
+            if (address >= ContractPointerDataAddr && address <= ContractPointerDataAddr + (ulong)PointerDataLength - (uint)span.Length)
+            {
+                int offset = checked((int)(address - ContractPointerDataAddr));
+                PointerData.Data.AsSpan(offset, span.Length).CopyTo(span);
+                return 0;
+            }
+
+            return ReadFragment(address, span);
         }
 
-        public int ReadFragment(ulong address, Span<byte> buffer)
+        private int ReadFragment(ulong address, Span<byte> buffer)
         {
             bool partialReadOcurred = false;
             HeapFragment lastHeapFragment = default;
@@ -236,7 +224,7 @@ internal unsafe static class MockMemorySpace
             while (true)
             {
                 bool tryAgain = false;
-                foreach (var fragment in _fragments)
+                foreach (var fragment in HeapFragments)
                 {
                     if (address >= fragment.Address && address < fragment.Address + (ulong)fragment.Data.Length)
                     {

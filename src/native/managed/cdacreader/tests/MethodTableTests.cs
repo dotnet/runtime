@@ -57,9 +57,9 @@ public unsafe class MethodTableTests
                 builder = configure(builder);
             }
 
-            using MockMemorySpace.ReadContext context = builder.Create();
+            MockMemorySpace.ReadContext context = builder.Create();
 
-            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
+            bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
             Assert.True(success);
 
             testCase(target);
