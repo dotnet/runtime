@@ -5244,7 +5244,6 @@ void Compiler::fgSearchImprovedLayout()
         FlowEdge* const candidateEdge = cutPoints.Top();
         cutPoints.Pop();
         const weight_t improvement = candidateEdge->getLikelyWeight();
-        printf("%f\n", improvement);
         cost = 0.0;
 
         BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
