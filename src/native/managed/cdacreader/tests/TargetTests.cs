@@ -51,27 +51,24 @@ public unsafe class TargetTests
     """);
         Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
         targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, 0);
-        fixed (byte* jsonPtr = json)
+        MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json);
+
+        bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
+        Assert.True(success);
+
+        foreach ((DataType type, ITarget.TypeInfo info) in TestTypes)
         {
-            MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json);
-
-            bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
-            Assert.True(success);
-
-            foreach ((DataType type, Target.TypeInfo info) in TestTypes)
             {
-                {
-                    // By known type
-                    Target.TypeInfo actual = target.GetTypeInfo(type);
-                    Assert.Equal(info.Size, actual.Size);
-                    Assert.Equal(info.Fields, actual.Fields);
-                }
-                {
-                    // By name
-                    Target.TypeInfo actual = target.GetTypeInfo(type.ToString());
-                    Assert.Equal(info.Size, actual.Size);
-                    Assert.Equal(info.Fields, actual.Fields);
-                }
+                // By known type
+                ITarget.TypeInfo actual = target.GetTypeInfo(type);
+                Assert.Equal(info.Size, actual.Size);
+                Assert.Equal(info.Fields, actual.Fields);
+            }
+            {
+                // By name
+                ITarget.TypeInfo actual = target.GetTypeInfo(type.ToString());
+                Assert.Equal(info.Size, actual.Size);
+                Assert.Equal(info.Fields, actual.Fields);
             }
         }
     }
@@ -109,15 +106,12 @@ public unsafe class TargetTests
         """);
         Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
         targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, 0);
-        fixed (byte* jsonPtr = json)
-        {
-            MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json);
+        MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json);
 
-            bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
-            Assert.True(success);
+        bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
+        Assert.True(success);
 
-            ValidateGlobals(target, TestGlobals);
-        }
+        ValidateGlobals(target, TestGlobals);
     }
 
     [Theory]
@@ -145,20 +139,17 @@ public unsafe class TargetTests
         """);
         Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
         targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, pointerData.Length / pointerSize);
-        fixed (byte* jsonPtr = json)
-        {
-            MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json, pointerData);
+        MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json, pointerData);
 
-            bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
-            Assert.True(success);
+        bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
+        Assert.True(success);
 
-            // Indirect values are pointer-sized, so max 32-bits for a 32-bit target
-            var expected = arch.Is64Bit
-                ? TestGlobals
-                : TestGlobals.Select(g => (g.Name, g.Value & 0xffffffff, g.Type)).ToArray();
+        // Indirect values are pointer-sized, so max 32-bits for a 32-bit target
+        var expected = arch.Is64Bit
+            ? TestGlobals
+            : TestGlobals.Select(g => (g.Name, g.Value & 0xffffffff, g.Type)).ToArray();
 
-            ValidateGlobals(target, expected);
-        }
+        ValidateGlobals(target, expected);
     }
 
     private static void ValidateGlobals(

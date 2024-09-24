@@ -44,28 +44,23 @@ public unsafe class ObjectTests
             targetTestHelpers.WritePointer(pointerData.Slice(i * pointerSize), value);
         }
 
-        fixed (byte* jsonPtr = json)
+        MockMemorySpace.Builder builder = new();
+        builder = builder.SetDescriptor(descriptor)
+                .SetJson(json)
+                .SetPointerData(pointerData);
+
+        builder = MockObject.AddGlobalPointers(targetTestHelpers, builder);
+
+        if (configure != null)
         {
-            MockMemorySpace.Builder builder = new();
-            builder = builder.SetDescriptor(descriptor)
-                    .SetJson(json)
-                    .SetPointerData(pointerData);
-
-            builder = MockObject.AddGlobalPointers(targetTestHelpers, builder);
-
-            if (configure != null)
-            {
-                builder = configure(builder);
-            }
-
-            MockMemorySpace.ReadContext context = builder.Create();
-
-            bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
-            Assert.True(success);
-            testCase(target);
+            builder = configure(builder);
         }
 
-        GC.KeepAlive(json);
+        MockMemorySpace.ReadContext context = builder.Create();
+
+        bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
+        Assert.True(success);
+        testCase(target);
     }
 
     [Theory]
