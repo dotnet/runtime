@@ -245,7 +245,7 @@ namespace System.Threading
             {
                 Debug.Assert(value);
                 Debug.Assert(!_isDead);
-                Debug.Assert((ThreadState & ThreadState.Unstarted) != 0);
+                Debug.Assert(_isThreadPool || ((ThreadState & ThreadState.Unstarted) != 0));
                 _isThreadPool = value;
             }
         }
