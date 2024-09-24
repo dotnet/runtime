@@ -234,11 +234,6 @@ FCFuncEnd()
 FCFuncStart(gDelegateFuncs)
     FCFuncElement("GetMulticastInvoke", COMDelegate::GetMulticastInvoke)
     FCFuncElement("GetInvokeMethod", COMDelegate::GetInvokeMethod)
-
-    // The FCall mechanism knows how to wire multiple different constructor calls into a
-    // single entrypoint, without the following entry.  But we need this entry to satisfy
-    // frame creation within the body:
-    FCFuncElement("DelegateConstruct", COMDelegate::DelegateConstruct)
 FCFuncEnd()
 
 FCFuncStart(gMathFuncs)
