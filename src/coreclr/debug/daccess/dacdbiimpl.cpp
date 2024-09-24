@@ -4421,17 +4421,12 @@ void  DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(
 
     // Pass the magical flags to the loader enumerator to get all Execution-only assemblies.
     iterator = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-    while (iterator.Next(pDomainAssembly.This()))
+    while (iterator.Next(pAssembly.This()))
     {
-        if (!pDomainAssembly->IsVisibleToDebugger())
-        {
-            continue;
-        }
-
         VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
-        vmDomainAssembly.SetHostPtr(pDomainAssembly);
+        vmDomainAssembly.SetHostPtr(pAssembly->GetDomainAssembly());
 
         fpCallback(vmDomainAssembly, pUserData);
     }
@@ -4454,7 +4449,7 @@ void DacDbiInterfaceImpl::EnumerateModulesInAssembly(
     if (pDomainAssembly->GetModule()->IsVisibleToDebugger())
     {
         // If domain assembly isn't yet loaded, just return
-        if (!pDomainAssembly->IsLoaded())
+        if (!pDomainAssembly->GetAssembly()->IsLoaded())
             return;
 
         VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();

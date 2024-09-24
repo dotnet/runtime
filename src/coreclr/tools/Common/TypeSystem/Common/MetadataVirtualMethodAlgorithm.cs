@@ -465,7 +465,7 @@ namespace Internal.TypeSystem
                 // We may want to build up a unification group for the base just to check the further MethodImpl case here.
                 FindBaseUnificationGroup(baseType, unificationGroup);
 
-                // We should check to see if a the DefiningMethod on the base unification group is overriden via MethodImpl
+                // We should check to see if a the DefiningMethod on the base unification group is overridden via MethodImpl
                 // TODO! check to see if we need to check for MethodImpls affecting other members of the unification group
                 // other than the defining method
                 if (unificationGroup.DefiningMethod != null)

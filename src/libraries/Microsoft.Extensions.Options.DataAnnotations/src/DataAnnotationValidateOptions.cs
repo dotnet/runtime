@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Options
         : IValidateOptions<TOptions> where TOptions : class
     {
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of <see cref="DataAnnotationValidateOptions{TOptions}"/> .
         /// </summary>
         /// <param name="name">The name of the option.</param>
         [RequiresUnreferencedCode("The implementation of Validate method on this type will walk through all properties of the passed in options object, and its type cannot be " +
@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The options name.
+        /// Gets the options name.
         /// </summary>
         public string? Name { get; }
 

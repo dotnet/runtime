@@ -1820,20 +1820,6 @@ public:
         return m_pvDatum;
     }
 
-    static int GetOffsetOfDatum()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return offsetof(UnmanagedToManagedFrame, m_pvDatum);
-    }
-
-#ifdef TARGET_X86
-    static int GetOffsetOfCalleeSavedRegisters()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return offsetof(UnmanagedToManagedFrame, m_calleeSavedRegisters);
-    }
-#endif
-
     int GetFrameType()
     {
         LIMITED_METHOD_DAC_CONTRACT;
