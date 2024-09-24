@@ -403,7 +403,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task CopyToAsync_DisposedSourceStream_ThrowsOnWindows_NoThrowOnUnix()
         {
             await RunWithConnectedNetworkStreamsAsync(async (stream, _) =>
@@ -441,7 +440,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task ReadAsync_MultipleConcurrentValueTaskReads_Success()
         {
             await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
@@ -462,7 +460,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task ReadAsync_MultipleConcurrentValueTaskReads_AsTask_Success()
         {
             await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
@@ -483,7 +480,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task WriteAsync_MultipleConcurrentValueTaskWrites_Success()
         {
             await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
@@ -510,7 +506,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task WriteAsync_MultipleConcurrentValueTaskWrites_AsTask_Success()
         {
             await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
@@ -568,8 +563,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/WebAssembly/wasi-libc/issues/539", TestPlatforms.Wasi)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task NetworkStream_ReadTimeout_RemainUseable()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();

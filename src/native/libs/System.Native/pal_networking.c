@@ -1680,10 +1680,13 @@ int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* so
     socklen_t addrLen = (socklen_t)*socketAddressLen;
     int accepted;
 #if HAVE_ACCEPT4 && defined(SOCK_CLOEXEC)
+#if defined(TARGET_WASI) // WASI is always FD_CLOEXEC and we always need SOCK_NONBLOCK. SOCK_CLOEXEC doesn't make sense in WASI.
+    while ((accepted = accept4(fd, (struct sockaddr*)socketAddress, &addrLen, SOCK_NONBLOCK)) < 0 && errno == EINTR);
+#else // !TARGET_WASI
     while ((accepted = accept4(fd, (struct sockaddr*)socketAddress, &addrLen, SOCK_CLOEXEC)) < 0 && errno == EINTR);
+#endif // !TARGET_WASI
 #else
     while ((accepted = accept(fd, (struct sockaddr*)socketAddress, &addrLen)) < 0 && errno == EINTR);
-#if !defined(TARGET_WASI) // WASI is always FD_CLOEXEC and non-blocking
 #if defined(FD_CLOEXEC)
     // macOS does not have accept4 but it can set _CLOEXEC on descriptor.
     // Unlike accept4 it is not atomic and the fd can leak child process.
@@ -1695,7 +1698,6 @@ int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* so
         accepted = -1;
         errno = oldErrno;
     }
-#endif
 #endif
 #if !defined(__linux__)
     // On macOS and FreeBSD new socket inherits flags from accepting fd.
