@@ -20,7 +20,6 @@ namespace System.Diagnostics
             public ProcessSnapshot(SafeProcessHandle process, Interop.Kernel32.PSS_CAPTURE_FLAGS captureFlags, int threadContextFlags = 0)
             {
                 ThrowIfFailure(Interop.Kernel32.PssCaptureSnapshot(process, captureFlags, threadContextFlags, out var handle));
-                Process = process;
                 Handle = handle;
             }
             public void Dispose()
