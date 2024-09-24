@@ -13,7 +13,7 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 /// </summary>
 public class TestPlaceholderTarget : ITarget
 {
-    private protected Contracts.IRegistry contractRegistry;
+    private protected Contracts.IContractRegistry contractRegistry;
     private protected ITarget.IDataCache dataCache;
     private protected Dictionary<DataType, ITarget.TypeInfo> typeInfoCache;
 
@@ -27,7 +27,7 @@ public class TestPlaceholderTarget : ITarget
         typeInfoCache = null;
     }
 
-    internal void SetContracts(Contracts.IRegistry contracts)
+    internal void SetContracts(Contracts.IContractRegistry contracts)
     {
         contractRegistry = contracts;
     }
@@ -73,9 +73,9 @@ public class TestPlaceholderTarget : ITarget
     }
 
     ITarget.IDataCache ITarget.ProcessedData => dataCache;
-    Contracts.IRegistry ITarget.Contracts => contractRegistry;
+    Contracts.IContractRegistry ITarget.Contracts => contractRegistry;
 
-    internal class TestRegistry : Contracts.IRegistry
+    internal class TestRegistry : Contracts.IContractRegistry
     {
         public TestRegistry() { }
         internal Contracts.IException? ExceptionContract { get; set; }
@@ -90,17 +90,17 @@ public class TestPlaceholderTarget : ITarget
         internal Contracts.IExecutionManager? ExecutionManagerContract { get; set; }
         internal Contracts.IReJIT? ReJITContract { get; set; }
 
-        Contracts.IException Contracts.IRegistry.Exception => ExceptionContract ?? throw new NotImplementedException();
-        Contracts.ILoader Contracts.IRegistry.Loader => LoaderContract ?? throw new NotImplementedException();
-        Contracts.IEcmaMetadata Contracts.IRegistry.EcmaMetadata => EcmaMetadataContract ?? throw new NotImplementedException();
-        Contracts.IObject Contracts.IRegistry.Object => ObjectContract ?? throw new NotImplementedException();
-        Contracts.IThread Contracts.IRegistry.Thread => ThreadContract ?? throw new NotImplementedException();
-        Contracts.IRuntimeTypeSystem Contracts.IRegistry.RuntimeTypeSystem => RuntimeTypeSystemContract ?? throw new NotImplementedException();
-        Contracts.IDacStreams Contracts.IRegistry.DacStreams => DacStreamsContract ?? throw new NotImplementedException();
-        Contracts.ICodeVersions Contracts.IRegistry.CodeVersions => CodeVersionsContract ?? throw new NotImplementedException();
-        Contracts.IPrecodeStubs Contracts.IRegistry.PrecodeStubs => PrecodeStubsContract ?? throw new NotImplementedException();
-        Contracts.IExecutionManager Contracts.IRegistry.ExecutionManager => ExecutionManagerContract ?? throw new NotImplementedException();
-        Contracts.IReJIT Contracts.IRegistry.ReJIT => ReJITContract ?? throw new NotImplementedException();
+        Contracts.IException Contracts.IContractRegistry.Exception => ExceptionContract ?? throw new NotImplementedException();
+        Contracts.ILoader Contracts.IContractRegistry.Loader => LoaderContract ?? throw new NotImplementedException();
+        Contracts.IEcmaMetadata Contracts.IContractRegistry.EcmaMetadata => EcmaMetadataContract ?? throw new NotImplementedException();
+        Contracts.IObject Contracts.IContractRegistry.Object => ObjectContract ?? throw new NotImplementedException();
+        Contracts.IThread Contracts.IContractRegistry.Thread => ThreadContract ?? throw new NotImplementedException();
+        Contracts.IRuntimeTypeSystem Contracts.IContractRegistry.RuntimeTypeSystem => RuntimeTypeSystemContract ?? throw new NotImplementedException();
+        Contracts.IDacStreams Contracts.IContractRegistry.DacStreams => DacStreamsContract ?? throw new NotImplementedException();
+        Contracts.ICodeVersions Contracts.IContractRegistry.CodeVersions => CodeVersionsContract ?? throw new NotImplementedException();
+        Contracts.IPrecodeStubs Contracts.IContractRegistry.PrecodeStubs => PrecodeStubsContract ?? throw new NotImplementedException();
+        Contracts.IExecutionManager Contracts.IContractRegistry.ExecutionManager => ExecutionManagerContract ?? throw new NotImplementedException();
+        Contracts.IReJIT Contracts.IContractRegistry.ReJIT => ReJITContract ?? throw new NotImplementedException();
     }
 
     internal class TestDataCache : ITarget.IDataCache
