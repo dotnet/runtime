@@ -12597,7 +12597,7 @@ bool Debugger::IsThreadAtSafePlace(Thread *thread)
 
     // On the Stack Overflow code path calling IsThreadAtSafePlaceWorker as it is
     // currently implemented is way too stack intensive. Conservatively we assume that
-    // any thread handling an SO is not at a safe place.
+    // any thread handling a SO is not at a safe place.
     // NOTE: don't check for thread->IsExceptionInProgress(), SO has special handling
     // that directly sets the last thrown object without ever creating a tracker.
     // (Tracker is what thread->IsExceptionInProgress() checks for)   
