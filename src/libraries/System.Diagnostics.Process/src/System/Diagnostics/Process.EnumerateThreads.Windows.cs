@@ -13,7 +13,8 @@ namespace System.Diagnostics
     {
         private readonly struct ProcessSnapshot : IDisposable
         {
-            public readonly SafeProcessHandle Process;
+            static readonly IntPtr CurrentProcessHandle = Interop.Kernel32.GetCurrentProcess();
+            
             public readonly Interop.Kernel32.HPSS Handle;
 
             public ProcessSnapshot(SafeProcessHandle process, Interop.Kernel32.PSS_CAPTURE_FLAGS captureFlags, int threadContextFlags = 0)
@@ -26,7 +27,7 @@ namespace System.Diagnostics
             {
                 if (Handle.IsValid)
                 {
-                    ThrowIfFailure(Interop.Kernel32.PssFreeSnapshot(Process, Handle));
+                    ThrowIfFailure(Interop.Kernel32.PssFreeSnapshot(CurrentProcessHandle, Handle));
                 }
             }
         }
