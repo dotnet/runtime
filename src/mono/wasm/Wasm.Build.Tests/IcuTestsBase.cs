@@ -3,6 +3,8 @@
 
 using System;
 using System.IO;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -10,7 +12,7 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests;
 
-public abstract class IcuTestsBase : TestMainJsTestBase
+public abstract class IcuTestsBase : WasmTemplateTestsBase
 {
     public IcuTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) { }
@@ -56,74 +58,108 @@ public abstract class IcuTestsBase : TestMainJsTestBase
         using System;
         using System.Globalization;
 
-        Console.WriteLine($""Current culture: '{{CultureInfo.CurrentCulture.Name}}'"");
-
-        string fallbackSundayName = ""{fallbackSundayName}"";
-        bool onlyPredefinedCultures = {(onlyPredefinedCultures ? "true" : "false")};
-        Locale[] localesToTest = {testedLocales};
-
-        bool fail = false;
-        foreach (var testLocale in localesToTest)
+        public class Program
         {{
-            bool expectMissing = string.IsNullOrEmpty(testLocale.SundayName);
-            bool ctorShouldFail = expectMissing && onlyPredefinedCultures;
-            CultureInfo culture;
-
-            try
+            public static int Main(string[] args)
             {{
-                culture = new CultureInfo(testLocale.Code);
-                if (ctorShouldFail)
+                Console.WriteLine($""Current culture: '{{CultureInfo.CurrentCulture.Name}}'"");
+                
+                string fallbackSundayName = ""{fallbackSundayName}"";
+                bool onlyPredefinedCultures = {(onlyPredefinedCultures ? "true" : "false")};
+                Locale[] localesToTest = {testedLocales};
+
+                bool fail = false;
+                foreach (var testLocale in localesToTest)
                 {{
-                    Console.WriteLine($""CultureInfo..ctor did not throw an exception for {{testLocale.Code}} as was expected."");
-                    fail = true;
-                    continue;
-                }}
-            }}
-            catch(CultureNotFoundException cnfe) when (ctorShouldFail && cnfe.Message.Contains($""{{testLocale.Code}} is an invalid culture identifier.""))
-            {{
-                Console.WriteLine($""{{testLocale.Code}}: Success. .ctor failed as expected."");
-                continue;
-            }}
+                    bool expectMissing = string.IsNullOrEmpty(testLocale.SundayName);
+                    bool ctorShouldFail = expectMissing && onlyPredefinedCultures;
+                    CultureInfo culture;
 
-            string expectedSundayName = (expectMissing && !onlyPredefinedCultures)
+                    try
+                    {{
+                        culture = new CultureInfo(testLocale.Code);
+                        if (ctorShouldFail)
+                        {{
+                            Console.WriteLine($""CultureInfo..ctor did not throw an exception for {{testLocale.Code}} as was expected."");
+                            fail = true;
+                            continue;
+                        }}
+                    }}
+                    catch(CultureNotFoundException cnfe) when (ctorShouldFail && cnfe.Message.Contains($""{{testLocale.Code}} is an invalid culture identifier.""))
+                    {{
+                        Console.WriteLine($""{{testLocale.Code}}: Success. .ctor failed as expected."");
+                        continue;
+                    }}
+
+                    string expectedSundayName = (expectMissing && !onlyPredefinedCultures)
                                             ? fallbackSundayName
-                                            : testLocale.SundayName;
-            var actualLocalizedSundayName = culture.DateTimeFormat.GetDayName(new DateTime(2000,01,02).DayOfWeek);
-            if (expectedSundayName != actualLocalizedSundayName)
-            {{
-                Console.WriteLine($""Error: incorrect localized value for Sunday in locale {{testLocale.Code}}. Expected '{{expectedSundayName}}' but got '{{actualLocalizedSundayName}}'."");
-                fail = true;
-                continue;
+                                            : testLocale.SundayName ?? fallbackSundayName;
+                    var actualLocalizedSundayName = culture.DateTimeFormat.GetDayName(new DateTime(2000,01,02).DayOfWeek);
+                    if (expectedSundayName != actualLocalizedSundayName)
+                    {{
+                        Console.WriteLine($""Error: incorrect localized value for Sunday in locale {{testLocale.Code}}. Expected '{{expectedSundayName}}' but got '{{actualLocalizedSundayName}}'."");
+                        fail = true;
+                        continue;
+                    }}
+                    Console.WriteLine($""{{testLocale.Code}}: Success. Sunday name: {{actualLocalizedSundayName}}"");
+                }}
+                return fail ? -1 : 42;
             }}
-            Console.WriteLine($""{{testLocale.Code}}: Success. Sunday name: {{actualLocalizedSundayName}}"");
         }}
-        return fail ? -1 : 42;
 
         public record Locale(string Code, string? SundayName);
         ";
 
-    protected void TestIcuShards(BuildArgs buildArgs, string shardName, string testedLocales, RunHost host, string id, bool onlyPredefinedCultures=false)
+    protected async Task TestIcuShards(string config, string templateType, bool aot, string shardName, string testedLocales, GlobalizationMode globalizationMode, bool onlyPredefinedCultures=false)
     {
-        string projectName = $"shard_{Path.GetFileName(shardName)}_{buildArgs.Config}_{buildArgs.AOT}";
-        bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
+        string id = $"icu_{config}_{aot}_{GetRandomId()}";
+        string projectFile = CreateWasmTemplateProject(id, templateType);
+        string projectDirectory = Path.GetDirectoryName(projectFile)!;
+        string projectName = Path.GetFileNameWithoutExtension(projectFile);
+        var buildArgs = new BuildArgs(projectName, config, aot, id, null);
+        buildArgs = ExpandBuildArgs(buildArgs);
 
-        buildArgs = buildArgs with { ProjectName = projectName };
         // by default, we remove resource strings from an app. ICU tests are checking exception messages contents -> resource string keys are not enough
-        string extraProperties = $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName><UseSystemResourceKeys>false</UseSystemResourceKeys>";
+        // WHY blazor when it's not a blazor app?
+        // boot.json is fine but the app is still in invariant mode, why? Let's check the binlog OR icu.ts
+        string extraProperties = $"<BlazorIcuDataFileName>{shardName}</BlazorIcuDataFileName><UseSystemResourceKeys>false</UseSystemResourceKeys><RunAOTCompilation>{aot}</RunAOTCompilation>";
         if (onlyPredefinedCultures)
             extraProperties = $"{extraProperties}<PredefinedCulturesOnly>true</PredefinedCulturesOnly>";
-        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: extraProperties);
+        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
+        string programPath = Path.Combine(projectDirectory, "Program.cs");
         string programText = GetProgramText(testedLocales, onlyPredefinedCultures);
+        File.WriteAllText(programPath, programText);
         _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
-        (_, string output) = BuildProject(buildArgs,
+
+        UpdateProjectFile(Path.Combine("wwwroot", "main.js"), new Dictionary<string, string> { 
+            { "runMain", "runMainAndExit" },
+            { ".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()" }
+            });
+        RemoveContentsFromProjectFile(Path.Combine("wwwroot", "main.js"), "const config", "further API calls");
+
+        bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
+        BuildTemplateProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
-                            InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                             DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                            GlobalizationMode: GlobalizationMode.PredefinedIcu,
-                            PredefinedIcudt: shardName));
-
-        string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+                            CreateProject: false,
+                            HasV8Script: false,
+                            MainJS: "main.js",
+                            Publish: true,
+                            TargetFramework: BuildTestBase.DefaultTargetFramework,
+                            UseCache: false,
+                            IsBrowserProject: templateType == "wasmbrowser",
+                            GlobalizationMode: globalizationMode,
+                            CustomIcuFile: shardName
+                        ));
+        if (templateType == "wasmbrowser")
+        {
+            await RunBrowser(buildArgs.Config, projectFile);
+        }
+        else
+        {
+            RunConsole(buildArgs);
+        }
     }
 }

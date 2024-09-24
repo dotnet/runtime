@@ -42,6 +42,7 @@ internal class BrowserRunner : IAsyncDisposable
         TaskCompletionSource<string> urlAvailable = new();
         Action<string?> outputHandler = msg =>
         {
+            Console.WriteLine($"ILONA: {msg}");
             if (string.IsNullOrEmpty(msg))
                 return;
 
@@ -65,6 +66,7 @@ internal class BrowserRunner : IAsyncDisposable
             }
 
             m = s_exitRegex.Match(msg);
+            Console.WriteLine($"ILONA: {m.Success}");
             if (m.Success)
             {
                 _exited.TrySetResult(int.Parse(m.Groups["exitCode"].Value));

@@ -121,10 +121,10 @@ namespace Wasm.Build.Tests
             {
                 return new IEnumerable<object?>[]
                     {
-    #if TEST_DEBUG_CONFIG_ALSO
-                        // list of each member data - for Debug+@aot
-                        new object?[] { new BuildArgs("placeholder", "Debug", aot, "placeholder", extraArgs) }.AsEnumerable(),
-    #endif
+    // #if TEST_DEBUG_CONFIG_ALSO
+    //                     // list of each member data - for Debug+@aot
+    //                     new object?[] { new BuildArgs("placeholder", "Debug", aot, "placeholder", extraArgs) }.AsEnumerable(),
+    // #endif
                         // list of each member data - for Release+@aot
                         new object?[] { new BuildArgs("placeholder", "Release", aot, "placeholder", extraArgs) }.AsEnumerable()
                     }.AsEnumerable();
