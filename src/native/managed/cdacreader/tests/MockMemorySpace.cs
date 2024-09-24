@@ -20,10 +20,8 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 /// </remarks>
 internal unsafe static class MockMemorySpace
 {
-    internal const ulong ContractDescriptorAddr = 0xaaaaaaaa;
     internal const uint JsonDescriptorAddr = 0xdddddddd;
     internal const uint ContractPointerDataAddr = 0xeeeeeeee;
-
 
     internal struct HeapFragment
     {
@@ -38,7 +36,7 @@ internal unsafe static class MockMemorySpace
     /// <remarks>
     /// All the spans should be stackalloc or pinned while the context is being used.
     /// </remarks>
-    internal unsafe ref struct Builder
+    internal class Builder
     {
         private bool _created = false;
         private HeapFragment _descriptor;
@@ -56,6 +54,8 @@ internal unsafe static class MockMemorySpace
 
         public Builder SetDescriptor(scoped ReadOnlySpan<byte> descriptor)
         {
+            const ulong ContractDescriptorAddr = 0xaaaaaaaa;
+
             if (_created)
                 throw new InvalidOperationException("Context already created");
             _descriptor = new HeapFragment
@@ -82,26 +82,15 @@ internal unsafe static class MockMemorySpace
 
         public Builder SetPointerData(scoped ReadOnlySpan<byte> pointerData)
         {
+
             if (_created)
                 throw new InvalidOperationException("Context already created");
-            if (pointerData.Length >= 0)
+            _pointerData = new HeapFragment
             {
-                _pointerData = new HeapFragment
-                {
-                    Address = ContractPointerDataAddr,
-                    Data = pointerData.ToArray(),
-                    Name = "PointerData"
-                };
-            }
-            else
-            {
-                _pointerData = new HeapFragment
-                {
-                    Address = ContractPointerDataAddr,
-                    Data = Array.Empty<byte>(),
-                    Name = "PointerData"
-                };
-            }
+                Address = ContractPointerDataAddr,
+                Data = pointerData.Length >= 0 ? pointerData.ToArray() : Array.Empty<byte>(),
+                Name = "PointerData"
+            };
             return this;
         }
 
@@ -172,7 +161,7 @@ internal unsafe static class MockMemorySpace
 
     public static bool TryCreateTarget(ReadContext context, out Target? target)
     {
-        return Target.TryCreate(ContractDescriptorAddr, context.ReadFromTarget, out target);
+        return Target.TryCreate(context.ContractDescriptor.Address, context.ReadFromTarget, out target);
     }
 
     // Used by ReadFromTarget to return the appropriate bytes
@@ -191,24 +180,24 @@ internal unsafe static class MockMemorySpace
         internal int ReadFromTarget(ulong address, Span<byte> span)
         {
             // Populate the span with the requested portion of the contract descriptor
-            if (address >= ContractDescriptorAddr && address <= ContractDescriptorAddr + (ulong)ContractDescriptorLength - (uint)span.Length)
+            if (address >= ContractDescriptor.Address && address <= ContractDescriptor.Address + (ulong)ContractDescriptorLength - (uint)span.Length)
             {
-                int offset = checked ((int)(address - ContractDescriptorAddr));
+                int offset = checked ((int)(address - ContractDescriptor.Address));
                 ContractDescriptor.Data.AsSpan(offset, span.Length).CopyTo(span);
                 return 0;
             }
 
             // Populate the span with the JSON descriptor - this assumes the product will read it all at once.
-            if (address == JsonDescriptorAddr)
+            if (address == JsonDescriptor.Address)
             {
                 JsonDescriptor.Data.AsSpan().CopyTo(span);
                 return 0;
             }
 
             // Populate the span with the requested portion of the pointer data
-            if (address >= ContractPointerDataAddr && address <= ContractPointerDataAddr + (ulong)PointerDataLength - (uint)span.Length)
+            if (address >= PointerData.Address && address <= PointerData.Address + (ulong)PointerDataLength - (uint)span.Length)
             {
-                int offset = checked((int)(address - ContractPointerDataAddr));
+                int offset = checked((int)(address - PointerData.Address));
                 PointerData.Data.AsSpan(offset, span.Length).CopyTo(span);
                 return 0;
             }
