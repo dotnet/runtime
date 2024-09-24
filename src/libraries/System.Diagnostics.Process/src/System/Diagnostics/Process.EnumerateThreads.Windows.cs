@@ -102,8 +102,9 @@ namespace System.Diagnostics
             catch
             (Win32Exception
 #if DEBUG
-            ex)
+            ex
 #endif
+            )
             {
 #if DEBUG
                 Debug.Assert(false, $"Win32Exception during enumerating threads by process snapshot: {ex}");
