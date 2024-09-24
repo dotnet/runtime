@@ -246,7 +246,7 @@ namespace System.Threading
                 Debug.Assert(value);
                 Debug.Assert(!_isDead);
                 Debug.Assert(((ThreadState & ThreadState.Unstarted) != 0)
-#if WINDOWS
+#if TARGET_WINDOWS
                     || ThreadPool.UseWindowsThreadPool
 #endif
                 );
