@@ -97,7 +97,7 @@ public:
 
     static void LogErrorToHost(const char *message);
 
-    static uint64_t GetThreadIdForLogging(Thread* thread);
+    static uint64_t GetThreadOSThreadId(Thread* thread);
 };
 
 #endif // __GCENV_EE_H__

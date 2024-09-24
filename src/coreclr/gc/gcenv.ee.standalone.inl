@@ -325,11 +325,11 @@ inline void GCToEEInterface::LogErrorToHost(const char *message)
     }
 }
 
-inline uint64_t GCToEEInterface::GetThreadIdForLogging(Thread* thread)
+inline uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
 {
     if (g_runtimeSupportedVersion.MajorVersion >= 3)
     {
-        return g_theGCToCLR->GetThreadIdForLogging(thread);
+        return g_theGCToCLR->GetThreadOSThreadId(thread);
     }
     else
     {

@@ -461,7 +461,7 @@ public:
     void LogErrorToHost(const char *message) PURE_VIRTUAL
 
     virtual
-    uint64_t GetThreadIdForLogging(Thread* thread) PURE_VIRTUAL;
+    uint64_t GetThreadOSThreadId(Thread* thread) PURE_VIRTUAL;
 };
 
 #endif // _GCINTERFACE_EE_H_

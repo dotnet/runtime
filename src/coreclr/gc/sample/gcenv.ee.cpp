@@ -363,7 +363,7 @@ void GCToEEInterface::LogErrorToHost(const char *message)
 {
 }
 
-uint64_t GCToEEInterface::GetThreadIdForLogging(Thread* thread)
+uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
 {
     return 0;
 }
