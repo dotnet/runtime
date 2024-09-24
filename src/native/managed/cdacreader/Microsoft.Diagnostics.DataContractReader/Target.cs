@@ -39,7 +39,7 @@ internal sealed unsafe class Target : ITarget
     private readonly Dictionary<DataType, ITarget.TypeInfo> _knownTypes = [];
     private readonly Dictionary<string, ITarget.TypeInfo> _types = [];
 
-    public Contracts.IRegistry Contracts { get; }
+    public Contracts.IContractRegistry Contracts { get; }
     internal DataCache ProcessedData { get; }
     ITarget.IDataCache ITarget.ProcessedData => ProcessedData;
 
@@ -60,7 +60,7 @@ internal sealed unsafe class Target : ITarget
 
     private Target(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
     {
-        Contracts = new Contracts.Registry(this);
+        Contracts = new Contracts.ContractRegistry(this);
         ProcessedData = new DataCache(this);
         _config = config;
         _reader = reader;
@@ -212,6 +212,7 @@ internal sealed unsafe class Target : ITarget
     }
 
     public int PointerSize => _config.PointerSize;
+    public bool IsLittleEndian => _config.IsLittleEndian;
 
     /// <summary>
     /// Read a value from the target in target endianness

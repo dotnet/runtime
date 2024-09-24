@@ -3,10 +3,6 @@
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;

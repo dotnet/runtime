@@ -155,7 +155,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         }
 
-
         internal static MethodTable GetMethodTableData(ITarget target, TargetPointer methodTablePointer)
         {
             return new MethodTable(target, methodTablePointer);
