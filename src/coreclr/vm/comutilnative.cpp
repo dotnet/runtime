@@ -1822,6 +1822,14 @@ FCIMPL2(MethodTable*, MethodTableNative::GetMethodTableMatchingParentClass, Meth
 }
 FCIMPLEND
 
+FCIMPL1(void*, MethodTableNative::MaskStaticsPointer, void *valueToMask)
+{
+    FCALL_CONTRACT;
+
+    return (void*)(((size_t)valueToMask) & DynamicStaticsInfo::STATICSPOINTERMASK);
+}
+FCIMPLEND
+
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb)
 {
     QCALL_CONTRACT;

@@ -553,38 +553,6 @@ extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT)
 
 #include <optsmallperfcritical.h>
 
-HCIMPL1(void*, JIT_GetNonGCStaticBase_Portable, MethodTable* pMT)
-{
-    FCALL_CONTRACT;
-
-    PTR_BYTE pBase;
-    if (pMT->GetDynamicStaticsInfo()->GetIsInitedAndNonGCStaticsPointerIfInited(&pBase))
-    {
-        return pBase;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetNonGCStaticBase_Helper, pMT);
-}
-HCIMPLEND
-
-
-HCIMPL1(void*, JIT_GetDynamicNonGCStaticBase_Portable, DynamicStaticsInfo* pStaticsInfo)
-{
-    FCALL_CONTRACT;
-
-    PTR_BYTE pBase;
-    if (pStaticsInfo->GetIsInitedAndNonGCStaticsPointerIfInited(&pBase))
-    {
-        return pBase;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetNonGCStaticBase_Helper, pStaticsInfo->GetMethodTable());
-}
-HCIMPLEND
 // No constructor version of JIT_GetSharedNonGCStaticBase.  Does not check if class has
 // been initialized.
 HCIMPL1(void*, JIT_GetNonGCStaticBaseNoCtor_Portable, MethodTable* pMT)
@@ -602,38 +570,6 @@ HCIMPL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicStaticsInfo*
     FCALL_CONTRACT;
 
     return pDynamicStaticsInfo->GetNonGCStaticsPointerAssumeIsInited();
-}
-HCIMPLEND
-
-HCIMPL1(void*, JIT_GetGCStaticBase_Portable, MethodTable* pMT)
-{
-    FCALL_CONTRACT;
-
-    PTR_OBJECTREF pBase;
-    if (pMT->GetDynamicStaticsInfo()->GetIsInitedAndGCStaticsPointerIfInited(&pBase))
-    {
-        return pBase;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetGCStaticBase_Helper, pMT);
-}
-HCIMPLEND
-
-HCIMPL1(void*, JIT_GetDynamicGCStaticBase_Portable, DynamicStaticsInfo* pStaticsInfo)
-{
-    FCALL_CONTRACT;
-
-    PTR_OBJECTREF pBase;
-    if (pStaticsInfo->GetIsInitedAndGCStaticsPointerIfInited(&pBase))
-    {
-        return pBase;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetGCStaticBase_Helper, pStaticsInfo->GetMethodTable());
 }
 HCIMPLEND
 
@@ -658,37 +594,6 @@ HCIMPL1(void*, JIT_GetDynamicGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pD
 HCIMPLEND
 
 #include <optdefault.h>
-
-
-// The following two functions can be tail called from platform dependent versions of
-// JIT_GetSharedGCStaticBase and JIT_GetShareNonGCStaticBase
-HCIMPL1(void*, JIT_GetNonGCStaticBase_Helper, MethodTable* pMT)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    PREFIX_ASSUME(pMT != NULL);
-    pMT->CheckRunClassInitThrowing();
-    HELPER_METHOD_FRAME_END();
-
-    return (void*)pMT->GetDynamicStaticsInfo()->GetNonGCStaticsPointer();
-}
-HCIMPLEND
-
-HCIMPL1(void*, JIT_GetGCStaticBase_Helper, MethodTable* pMT)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    PREFIX_ASSUME(pMT != NULL);
-    pMT->CheckRunClassInitThrowing();
-    HELPER_METHOD_FRAME_END();
-
-    return (void*)pMT->GetDynamicStaticsInfo()->GetGCStaticsPointer();
-}
-HCIMPLEND
 
 //========================================================================
 //

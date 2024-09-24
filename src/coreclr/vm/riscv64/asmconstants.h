@@ -159,6 +159,10 @@ ASMCONSTANTS_C_ASSERT(MethodDesc_ALIGNMENT_SHIFT == MethodDesc::ALIGNMENT_SHIFT)
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target == offsetof(ResolveCacheElem, target));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext == offsetof(ResolveCacheElem, pNext));
 
+#define                OFFSETOF__DynamicStaticsInfo__m_pMethodTable 0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pMethodTable
+                    == offsetof(DynamicStaticsInfo, m_pMethodTable));
+
 #define                OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics 0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
                     == offsetof(DynamicStaticsInfo, m_pNonGCStatics));

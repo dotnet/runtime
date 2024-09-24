@@ -11,8 +11,8 @@ include asmconstants.inc
 ; Min amount of stack space that a nested function should allocate.
 MIN_SIZE equ 28h
 
-extern JIT_GetDynamicNonGCStaticBase_Portable:proc
-extern JIT_GetDynamicGCStaticBase_Portable:proc
+EXTERN  g_pGetGCStaticBase:QWORD
+EXTERN  g_pGetNonGCStaticBase:QWORD
 
 LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
         ; If class is not initialized, bail to C++ helper
@@ -23,8 +23,9 @@ LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
     align 16
     CallHelper:
-        ; Tail call JIT_GetDynamicNonGCStaticBase_Portable
-        jmp     JIT_GetDynamicNonGCStaticBase_Portable
+        mov     rcx, [rcx + OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+        mov     rax, g_pGetNonGCStaticBase
+        TAILJMP_RAX
 LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
 LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
@@ -36,8 +37,9 @@ LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
     align 16
     CallHelper:
-        ; Tail call JIT_GetDynamicGCStaticBase_Portable
-        jmp     JIT_GetDynamicGCStaticBase_Portable
+        mov     rcx, [rcx + OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+        mov     rax, g_pGetGCStaticBase
+        TAILJMP_RAX
 LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
         end

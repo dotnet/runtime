@@ -942,8 +942,10 @@ LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
     jirl $r0, $ra, 0
 
 LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call JIT_GetDynamicNonGCStaticBase_Portable
-    b JIT_GetDynamicNonGCStaticBase_Portable
+    ; Tail call GetNonGCStaticBase
+    ld.d $a0, $a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable
+    PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, $t4
+    EPILOG_BRANCH_REG        $t4
 LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
 // ------------------------------------------------------------------
@@ -957,8 +959,10 @@ LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
     jirl $r0, $ra, 0
 
 LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call JIT_GetDynamicGCStaticBase_Portable
-    b JIT_GetDynamicGCStaticBase_Portable
+    ; Tail call GetGCStaticBase
+    ld.d $a0, $a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable
+    PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, $t4
+    EPILOG_BRANCH_REG        $t4
 LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
 #ifdef FEATURE_READYTORUN

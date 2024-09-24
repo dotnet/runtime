@@ -842,6 +842,21 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
+
+        /// <summary>
+        /// Given a statics pointer in the DynamicStaticsInfo, get the actual statics pointer.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern ref byte MaskStaticsPointer(ref byte staticsPtr);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe ref struct DynamicStaticsInfo
+    {
+        static const int ISCLASSINITED = 1;
+        public ref byte _pGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
+        public ref byte _pNonGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
+        public unsafe MethodTable* _methodTable;
     }
 
     // Subset of src\vm\methodtable.h
@@ -904,6 +919,15 @@ namespace System.Runtime.CompilerServices
         public bool IsClassInited => (Volatile.Read(ref Flags) & enum_flag_Initialized) != 0;
 
         public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive)) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
+
+        public ref DynamicStaticsInfo DynamicStaticsInfo
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return ref Unsafe.AddByteOffset(ref Unsafe.As<uint, DynamicStaticsInfo>(ref Flags), -sizeof(DynamicStaticsInfo));
+            }
+        }
     }
 
     /// <summary>
