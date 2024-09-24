@@ -1293,6 +1293,16 @@ void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr, GCCoverageI
     FlushInstructionCache(GetCurrentProcess(), (LPCVOID)instrPtr, 4);
 }
 
+// A managed thread (T) can race with the GC as follows:
+// 1) Current thread T is in preemptive mode, GC happens, starts scanning T's stack.
+// 2) The Jitted code puts thread T to cooperative mode, as part of PInvoke epilog.
+// 3) Jitted code checks g_TrapReturningThreads, calls CORINFO_HELP_STOP_FOR_GC()
+// 4) If any of the code that does #3 is interruptible, we may hit GCStress trap and start
+//    another round of GCStress while in Cooperative mode.
+// 5) Now, thread T can modify the stack (ex: RedirectionFrame setup) while the GC thread is scanning it.
+//
+// This race is now mitigated below. Where we won't initiate a stress mode GC
+// for a thread in cooperative mode with an active ICF, if g_TrapReturningThreads is true.
 BOOL OnGcCoverageInterrupt(PCONTEXT regs)
 {
     PCODE controlPc = GetIP(regs);
@@ -1324,7 +1334,17 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
     }
     
     // The thread is in preemptive mode. Normally, it should not be able to trigger GC.
+    // Besides the GC may be already happening and scanning our stack.
     if (!pThread->PreemptiveGCDisabled())
+    {
+        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
+        return TRUE;
+    }
+
+    // If we're supposed to stop for GC,
+    // and there's an active ICF, don't initiate a stress GC.
+    Frame* pFrame = pThread->GetFrame();
+    if (g_TrapReturningThreads && InlinedCallFrame::FrameHasActiveCall(pFrame))
     {
         RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
         return TRUE;
@@ -1338,7 +1358,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
     }
 #endif
 
-#if defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX)
+#ifdef USE_REDIRECT_FOR_GCSTRESS
     // If we're unable to redirect, then we simply won't test GC at this location.
     if (Thread::UseRedirectForGcStress())
     {
