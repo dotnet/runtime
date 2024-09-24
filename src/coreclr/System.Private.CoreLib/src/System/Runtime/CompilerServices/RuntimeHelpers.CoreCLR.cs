@@ -847,13 +847,13 @@ namespace System.Runtime.CompilerServices
         /// Given a statics pointer in the DynamicStaticsInfo, get the actual statics pointer.
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern ref byte MaskStaticsPointer(ref byte staticsPtr);
+        public static extern ref byte MaskStaticsPointer(ref byte staticsPtr);
     }
 
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe ref struct DynamicStaticsInfo
     {
-        static const int ISCLASSINITED = 1;
+        public const int ISCLASSINITED = 1;
         public ref byte _pGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
         public ref byte _pNonGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
         public unsafe MethodTable* _methodTable;

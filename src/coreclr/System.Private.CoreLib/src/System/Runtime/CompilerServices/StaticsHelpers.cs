@@ -15,7 +15,7 @@ namespace System.Runtime.CompilerServices
         private static ref byte GetNonGCStaticBaseSlow(MethodTable* mt)
         {
             InitHelpers.InitClassSlow(mt);
-            return ref MethodTable.MaskStaticsPointer(mt->AuxiliaryData->DynamicStaticsInfo._pNonGCStatics);
+            return ref MethodTable.MaskStaticsPointer(ref mt->AuxiliaryData->DynamicStaticsInfo._pNonGCStatics);
         }
 
         [DebuggerHidden]
@@ -45,7 +45,7 @@ namespace System.Runtime.CompilerServices
         private static ref byte GetGCStaticBaseSlow(MethodTable* mt)
         {
             InitHelpers.InitClassSlow(mt);
-            return ref MethodTable.MaskStaticsPointer(mt->AuxiliaryData->DynamicStaticsInfo._pGCStatics);
+            return ref MethodTable.MaskStaticsPointer(ref mt->AuxiliaryData->DynamicStaticsInfo._pGCStatics);
         }
 
         [DebuggerHidden]
@@ -54,7 +54,7 @@ namespace System.Runtime.CompilerServices
             ref byte gcStaticBase = ref mt->AuxiliaryData->DynamicStaticsInfo._pNonGCStatics;
 
             if ((((nuint)Unsafe.AsPointer(ref gcStaticBase)) & DynamicStaticsInfo.ISCLASSINITED) != 0)
-                return ref GetGCStaticBaseSlow(dynamicStaticsInfo->_methodTable);
+                return ref GetGCStaticBaseSlow(mt);
             else
                 return ref gcStaticBase;
         }
