@@ -1669,7 +1669,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             for (GenTreeFieldList::Use& use : op1->Uses())
             {
-                BuildDelayFreeUses(use.GetNode(), intrin.op1);
+                BuildDelayFreeUses(use.GetNode(), intrinsicTree);
                 srcCount++;
             }
         }
