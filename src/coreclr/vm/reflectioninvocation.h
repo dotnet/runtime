@@ -47,7 +47,6 @@ class ReflectionInvocation {
 public:
 
     static FCDECL1(void, PrepareDelegate, Object* delegateUNSAFE);
-    static FCDECL0(void, EnsureSufficientExecutionStack);
     static FCDECL0(FC_BOOL_RET, TryEnsureSufficientExecutionStack);
 
     // TypedReference functions, should go somewhere else

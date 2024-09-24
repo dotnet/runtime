@@ -688,19 +688,15 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeo
     return result;
 }
 
-/*================================GetGeneration=================================
+/*================================GetGenerationInternal=================================
 **Action: Returns the generation in which args->obj is found.
 **Returns: The generation in which args->obj is found.
 **Arguments: args->obj -- The object to locate.
-**Exceptions: ArgumentException if args->obj is null.
 ==============================================================================*/
-FCIMPL1(int, GCInterface::GetGeneration, Object* objUNSAFE)
+FCIMPL1(int, GCInterface::GetGenerationInternal, Object* objUNSAFE)
 {
     FCALL_CONTRACT;
-
-    if (objUNSAFE == NULL)
-        FCThrowArgumentNull(W("obj"));
-
+    _ASSERTE(objUNSAFE != NULL);
     int result = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(objUNSAFE);
     FC_GC_POLL_RET();
     return result;
