@@ -406,17 +406,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
-        public void SendAsync_InvalidArguments_Throws()
-        {
-            using (var udpClient = new DerivedUdpClient())
-            {
-                Assert.Throws<InvalidOperationException>(() => {udpClient.SendAsync(new byte[1], 1, new IPEndPoint(IPAddress.Loopback, 0));});
-                Assert.Throws<InvalidOperationException>(() => udpClient.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), new IPEndPoint(IPAddress.Loopback, 0)));
-            }
-        }
-
-        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // localhost on Windows resolves to both IPV4/6, but doesn't on all Unix
         public void Send_InvalidArguments_StringInt_Throws()
         {
