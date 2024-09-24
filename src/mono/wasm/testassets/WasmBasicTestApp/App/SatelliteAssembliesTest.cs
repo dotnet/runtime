@@ -8,11 +8,12 @@ using System.Threading.Tasks;
 public partial class SatelliteAssembliesTest
 {
     [JSExport]
-    public static async Task Run()
+    public static async Task Run(bool loadSatelliteAssemblies)
     {
         ResourceLibrary.ResourceAccessor.Read(TestOutput.WriteLine, false);
 
-        await LoadSatelliteAssemblies(new[] { "es-ES" });
+        if (loadSatelliteAssemblies)
+            await LoadSatelliteAssemblies(new[] { "es-ES" });
 
         ResourceLibrary.ResourceAccessor.Read(TestOutput.WriteLine, true);
     }

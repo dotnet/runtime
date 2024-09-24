@@ -24,13 +24,19 @@ public class SatelliteLoadingTests : AppTestBase
     {
     }
 
-    [Fact, TestCategory("no-fingerprinting")]
-    public async Task LoadSatelliteAssembly()
+    [Theory, TestCategory("no-fingerprinting")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LoadSatelliteAssembly(bool loadAllSatelliteResources)
     {
         CopyTestAsset("WasmBasicTestApp", "SatelliteLoadingTests", "App");
         BuildProject("Debug");
 
-        var result = await RunSdkStyleAppForBuild(new(Configuration: "Debug", TestScenario: "SatelliteAssembliesTest"));
+        var result = await RunSdkStyleAppForBuild(new(
+            Configuration: "Debug", 
+            TestScenario: "SatelliteAssembliesTest",
+            BrowserQueryString: new Dictionary<string, string> { ["loadAllSatelliteResources"] = loadAllSatelliteResources.ToString() }
+        ));
         Assert.Collection(
             result.TestOutput,
             m => Assert.Equal("default: hello", m),
