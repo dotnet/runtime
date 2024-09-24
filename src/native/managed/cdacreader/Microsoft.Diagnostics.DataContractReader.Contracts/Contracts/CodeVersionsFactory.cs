@@ -2,18 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class FLoader : IContractFactory<ILoader>
+internal sealed class CodeVersionsFactory : IContractFactory<ICodeVersions>
 {
-    ILoader IContractFactory<ILoader>.CreateContract(ITarget target, int version)
+    ICodeVersions IContractFactory<ICodeVersions>.CreateContract(ITarget target, int version)
     {
         return version switch
         {
-            1 => new Loader_1(target),
-            _ => default(Loader),
+            1 => new CodeVersions_1(target),
+            _ => default(CodeVersions),
         };
     }
 }

@@ -39,4 +39,8 @@ internal interface IContractRegistry
     /// Gets an instance of the DacStreams contract for the target.
     /// </summary>
     IDacStreams DacStreams { get; }
+    IExecutionManager ExecutionManager { get; }
+    ICodeVersions CodeVersions { get; }
+    IPrecodeStubs PrecodeStubs { get; }
+    IReJIT ReJIT { get;  }
 }

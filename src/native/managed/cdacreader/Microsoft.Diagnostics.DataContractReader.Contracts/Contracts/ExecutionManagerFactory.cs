@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class FExecutionManager : IContractFactory<IExecutionManager>
+internal sealed class ExecutionManagerFactory : IContractFactory<IExecutionManager>
 {
     IExecutionManager IContractFactory<IExecutionManager>.CreateContract(ITarget target, int version)
     {

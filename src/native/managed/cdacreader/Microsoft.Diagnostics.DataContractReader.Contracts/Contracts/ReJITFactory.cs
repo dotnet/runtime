@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class FReJIT : IContractFactory<IReJIT>
+internal sealed class ReJITFactory : IContractFactory<IReJIT>
 {
     IReJIT IContractFactory<IReJIT>.CreateContract(ITarget target, int version)
     {

@@ -25,6 +25,10 @@ internal sealed class ContractRegistry : IContractRegistry
             [typeof(IThread)] = new ThreadFactory(),
             [typeof(IRuntimeTypeSystem)] = new RuntimeTypeSystemFactory(),
             [typeof(IDacStreams)] = new DacStreamsFactory(),
+            [typeof(IExecutionManager)] = new ExecutionManagerFactory(),
+            [typeof(ICodeVersions)] = new CodeVersionsFactory(),
+            [typeof(IPrecodeStubs)] = new PrecodeStubsFactory(),
+            [typeof(IReJIT)] = new ReJITFactory(),
         };
         configureFactories?.Invoke(_factories);
     }
@@ -36,6 +40,10 @@ internal sealed class ContractRegistry : IContractRegistry
     public IThread Thread => GetContract<IThread>();
     public IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IRuntimeTypeSystem>();
     public IDacStreams DacStreams => GetContract<IDacStreams>();
+    public IExecutionManager ExecutionManager => GetContract<IExecutionManager>();
+    public ICodeVersions CodeVersions => GetContract<ICodeVersions>();
+    public IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
+    public IReJIT ReJIT => GetContract<IReJIT>();
 
     private TProduct GetContract<TProduct>() where TProduct : IContract
     {
