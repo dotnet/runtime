@@ -35,7 +35,7 @@ public class SatelliteLoadingTests : AppTestBase
         var result = await RunSdkStyleAppForBuild(new(
             Configuration: "Debug", 
             TestScenario: "SatelliteAssembliesTest",
-            BrowserQueryString: new Dictionary<string, string> { ["loadAllSatelliteResources"] = loadAllSatelliteResources.ToString() }
+            BrowserQueryString: new Dictionary<string, string> { ["loadAllSatelliteResources"] = loadAllSatelliteResources.ToString().ToLowerInvariant() }
         ));
         Assert.Collection(
             result.TestOutput,
