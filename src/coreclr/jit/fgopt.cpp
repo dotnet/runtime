@@ -5140,10 +5140,9 @@ void Compiler::fgSearchImprovedLayout()
         return left->getLikelyWeight() < right->getLikelyWeight();
     };
 
-    unsigned numHotBlocks = 0;
-    unsigned maxBBNum = 0;
+    unsigned                                           numHotBlocks = 0;
     PriorityQueue<FlowEdge*, decltype(edgeWeightComp)> cutPoints(getAllocator(CMK_FlowEdge), edgeWeightComp);
-    BasicBlock* finalBlock = fgLastBBInMainFunction();
+    BasicBlock*                                        finalBlock = fgLastBBInMainFunction();
 
     for (BasicBlock* const block : Blocks(fgFirstBB, finalBlock))
     {
@@ -5153,34 +5152,40 @@ void Compiler::fgSearchImprovedLayout()
             break;
         }
 
-        maxBBNum = max(maxBBNum, block->bbNum);
         numHotBlocks++;
 
         if (block->KindIs(BBJ_ALWAYS) && !block->JumpsToNext())
         {
             cutPoints.Push(block->GetTargetEdge());
         }
-        // else if (block->KindIs(BBJ_COND))
-        // {
-        //     FlowEdge* likelyEdge;
-        //     FlowEdge* unlikelyEdge;
+        else if (block->KindIs(BBJ_COND))
+        {
+            FlowEdge* likelyEdge;
+            FlowEdge* unlikelyEdge;
 
-        //     if (block->GetTrueEdge()->getLikelihood() > 0.5)
-        //     {
-        //         likelyEdge = block->GetTrueEdge();
-        //         unlikelyEdge = block->GetFalseEdge();
-        //     }
-        //     else
-        //     {
-        //         likelyEdge = block->GetFalseEdge();
-        //         unlikelyEdge = block->GetTrueEdge();
-        //     }
+            if (block->GetTrueEdge()->getLikelihood() > 0.5)
+            {
+                likelyEdge   = block->GetTrueEdge();
+                unlikelyEdge = block->GetFalseEdge();
+            }
+            else
+            {
+                likelyEdge   = block->GetFalseEdge();
+                unlikelyEdge = block->GetTrueEdge();
+            }
 
-        //     if (!block->NextIs(likelyEdge->getDestinationBlock()))
-        //     {
-        //         if ((likelyEdge->getLikelihood() > 0.5) || !block->NextIs())
-        //     }
-        // }
+            assert(likelyEdge != unlikelyEdge);
+
+            if (!block->NextIs(likelyEdge->getDestinationBlock()))
+            {
+                cutPoints.Push(likelyEdge);
+
+                if (!block->NextIs(unlikelyEdge->getDestinationBlock()))
+                {
+                    cutPoints.Push(unlikelyEdge);
+                }
+            }
+        }
     }
 
     if (numHotBlocks < 3)
@@ -5190,16 +5195,16 @@ void Compiler::fgSearchImprovedLayout()
     }
 
     assert(finalBlock != nullptr);
-    const bool hasExitBlock = !finalBlock->IsLast();
-    unsigned* const ordinals = new unsigned[maxBBNum + 1];
-    BasicBlock** blockOrder = new BasicBlock*[numHotBlocks + (int)hasExitBlock];
-    BasicBlock** tempOrder = new BasicBlock*[numHotBlocks + (int)hasExitBlock];
-    unsigned position = 0;
+    const bool      hasExitBlock = !finalBlock->IsLast();
+    unsigned* const ordinals     = new (this, CMK_Generic) unsigned[fgBBNumMax + 1]{};
+    BasicBlock**    blockOrder   = new (this, CMK_BasicBlock) BasicBlock*[numHotBlocks + (int)hasExitBlock];
+    BasicBlock**    tempOrder    = new (this, CMK_BasicBlock) BasicBlock*[numHotBlocks + (int)hasExitBlock];
+    unsigned        position     = 0;
 
     for (BasicBlock* const block : Blocks(fgFirstBB, finalBlock))
     {
         blockOrder[position] = tempOrder[position] = block;
-        ordinals[block->bbNum] = position++;
+        ordinals[block->bbNum]                     = position++;
     }
 
     assert(position == numHotBlocks);
@@ -5209,11 +5214,12 @@ void Compiler::fgSearchImprovedLayout()
         blockOrder[numHotBlocks] = tempOrder[numHotBlocks] = finalBlock->Next();
     }
 
-    const unsigned lastHotIndex = numHotBlocks - 1;
+    const unsigned lastHotIndex   = numHotBlocks - 1;
     const unsigned firstColdIndex = numHotBlocks;
+    weight_t       cost;
 
-    weight_t cost;
-    auto getEdgeAndUpdateCost = [this, &cost, &blockOrder, firstColdIndex] (unsigned srcPos, unsigned dstPos) -> FlowEdge* {
+    auto getEdgeAndUpdateCost = [this, &cost, &blockOrder, firstColdIndex](unsigned srcPos,
+                                                                           unsigned dstPos) -> FlowEdge* {
         if ((srcPos > firstColdIndex) || (dstPos > firstColdIndex))
         {
             return nullptr;
@@ -5238,18 +5244,26 @@ void Compiler::fgSearchImprovedLayout()
         FlowEdge* const candidateEdge = cutPoints.Top();
         cutPoints.Pop();
         const weight_t improvement = candidateEdge->getLikelyWeight();
+        printf("%f\n", improvement);
         cost = 0.0;
 
         BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
         BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
-        const unsigned srcPos = ordinals[srcBlk->bbNum];
-        const unsigned dstPos = ordinals[dstBlk->bbNum];
+        const unsigned    srcPos = ordinals[srcBlk->bbNum];
+        const unsigned    dstPos = ordinals[dstBlk->bbNum];
 
-        // Why are we considering an edge from a block that isn't hot?
         assert(srcPos < numHotBlocks);
+        assert(dstPos < numHotBlocks);
 
-        // Why are we considering an edge that already falls through?
-        assert((srcPos + 1) != dstPos);
+        // Don't consider jumps from hot blocks to cold blocks.
+        // We can get such candidates if weight wasn't propagated correctly from 'srcBlk' to 'dstBlk'.
+        // We know 'dstPos' is cold if its position is not set in 'ordinals'.
+        // ('fgFirstBB' has a position of 0 too, but we don't want to change the entry point anyway,
+        // so skip any attempts to do so here)
+        if ((dstPos == 0) && !dstBlk->IsFirst())
+        {
+            continue;
+        }
 
         // Don't consider backedges for single-block loops
         if (srcPos == dstPos)
@@ -5257,11 +5271,11 @@ void Compiler::fgSearchImprovedLayout()
             continue;
         }
 
-        // Don't consider jumps from hot blocks to cold blocks.
-        // We can get such candidates if the edge has a low likelihood,
-        // or if weight wasn't propagated correctly from srcBlk to dstBlk.
-        if (dstPos >= numHotBlocks)
+        // Previous moves might have inadvertently created fallthrough from srcBlk to dstBlk,
+        // so there's nothing to do this round.
+        if ((srcPos + 1) == dstPos)
         {
+            assert(modified);
             continue;
         }
 
@@ -5454,23 +5468,23 @@ void Compiler::fgSearchImprovedLayout()
 
 //     JITDUMP("\nInteresting blocks: [" FMT_BB "-" FMT_BB "]", startBlock->bbNum, blockVector[blockCount - 1]->bbNum);
 
-    // auto evaluateCost = [](BasicBlock* const block, BasicBlock* const next) -> weight_t {
-    //     assert(block != nullptr);
+// auto evaluateCost = [](BasicBlock* const block, BasicBlock* const next) -> weight_t {
+//     assert(block != nullptr);
 
-    //     if ((block->NumSucc() == 0) || (next == nullptr))
-    //     {
-    //         return 0.0;
-    //     }
+//     if ((block->NumSucc() == 0) || (next == nullptr))
+//     {
+//         return 0.0;
+//     }
 
-    //     const weight_t cost = block->bbWeight;
+//     const weight_t cost = block->bbWeight;
 
-    //     for (FlowEdge* const edge : block->SuccEdges())
-    //     {
-    //         if (edge->getDestinationBlock() == next)
-    //         {
-    //             return cost - edge->getLikelyWeight();
-    //         }
-    //     }
+//     for (FlowEdge* const edge : block->SuccEdges())
+//     {
+//         if (edge->getDestinationBlock() == next)
+//         {
+//             return cost - edge->getLikelyWeight();
+//         }
+//     }
 
 //         return cost;
 //     };
