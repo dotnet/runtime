@@ -175,5 +175,5 @@ internal interface ITarget
     /// <summary>
     /// A cache of the contracts for the target process
     /// </summary>
-    Contracts.IRegistry Contracts { get; }
+    Contracts.IContractRegistry Contracts { get; }
 }

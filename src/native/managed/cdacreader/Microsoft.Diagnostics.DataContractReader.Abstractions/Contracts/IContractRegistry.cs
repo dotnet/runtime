@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 /// <summary>
 /// A registry of all the contracts that may be provided by a target.
 /// </summary>
-internal interface IRegistry
+internal interface IContractRegistry
 {
     /// <summary>
     /// Gets an instance of the Exception contract for the target.
