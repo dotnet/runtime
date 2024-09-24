@@ -240,10 +240,7 @@ namespace System.Threading
             {
                 Thread _this = this;
                 SetPriority(ObjectHandleOnStack.Create(ref _this), (int)value);
-                if (value != ThreadPriority.Normal)
-                {
-                    _mayNeedResetForThreadPool = true;
-                }
+                _mayNeedResetForThreadPool = true;
             }
         }
 

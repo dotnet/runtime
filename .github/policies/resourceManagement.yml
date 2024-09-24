@@ -946,9 +946,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - davoudeshtehari
+            - cheenamalhotra
             - david-engel
-            - jrahnama
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 

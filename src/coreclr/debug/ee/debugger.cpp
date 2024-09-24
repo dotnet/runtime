@@ -12595,21 +12595,16 @@ bool Debugger::IsThreadAtSafePlace(Thread *thread)
         return true;
     }
 
-    // <TODO>
-    //
-    // Make sure this fix is evaluated when doing real work for debugging SO handling.
-    //
     // On the Stack Overflow code path calling IsThreadAtSafePlaceWorker as it is
-    // currently implemented is way too stack intensive. For now we cheat and just
-    // say that if a thread is in the middle of handling a SO it is NOT at a safe
-    // place. This is a reasonably safe assumption to make and hopefully shouldn't
-    // result in deadlocking the debugger.
-    if ( (thread->IsExceptionInProgress()) &&
-         (g_pEEInterface->GetThreadException(thread) == CLRException::GetPreallocatedStackOverflowExceptionHandle()) )
+    // currently implemented is way too stack intensive. Conservatively we assume that
+    // any thread handling a SO is not at a safe place.
+    // NOTE: don't check for thread->IsExceptionInProgress(), SO has special handling
+    // that directly sets the last thrown object without ever creating a tracker.
+    // (Tracker is what thread->IsExceptionInProgress() checks for)   
+    if (g_pEEInterface->GetThreadException(thread) == CLRException::GetPreallocatedStackOverflowExceptionHandle())
     {
         return false;
     }
-    // </TODO>
     else
     {
         return IsThreadAtSafePlaceWorker(thread);

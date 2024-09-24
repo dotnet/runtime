@@ -2158,8 +2158,7 @@ public:
     enum ApartmentState { AS_InSTA, AS_InMTA, AS_Unknown };
 
     ApartmentState GetApartment();
-    ApartmentState GetApartmentRare(Thread::ApartmentState as);
-    ApartmentState GetExplicitApartment();
+    ApartmentState GetApartmentFromOS();
 
     // Sets the apartment state if it has not already been set and
     // returns the state.
@@ -2170,6 +2169,10 @@ public:
     // call CoInitializeEx on this thread first (note that calls to SetApartment made
     // before the thread has started are guaranteed to succeed).
     ApartmentState SetApartment(ApartmentState state);
+
+    // Get/set apartment of a thread that was not started yet
+    ApartmentState GetApartmentOfUnstartedThread();
+    void SetApartmentOfUnstartedThread(ApartmentState state);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
     // Either perform WaitForSingleObject or MsgWaitForSingleObject as appropriate.
