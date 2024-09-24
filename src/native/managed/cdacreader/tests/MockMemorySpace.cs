@@ -3,8 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
@@ -33,9 +35,6 @@ internal unsafe static class MockMemorySpace
     /// <summary>
     ///  Helper to populate a virtual memory space for reading from a target.
     /// </summary>
-    /// <remarks>
-    /// All the spans should be stackalloc or pinned while the context is being used.
-    /// </remarks>
     internal class Builder
     {
         private bool _created = false;
@@ -116,7 +115,7 @@ internal unsafe static class MockMemorySpace
             return this;
         }
 
-        public ReadContext Create()
+        private ReadContext CreateContext()
         {
             if (_created)
                 throw new InvalidOperationException("Context already created");
@@ -147,10 +146,15 @@ internal unsafe static class MockMemorySpace
             }
             return true;
         }
+
+        public bool TryCreateTarget([NotNullWhen(true)] out Target? target)
+        {
+            ReadContext context = CreateContext();
+            return Target.TryCreate(context.ContractDescriptor.Address, context.ReadFromTarget, out target);
+        }
     }
 
-    // Note: all the spans should be stackalloc or pinned.
-    public static ReadContext CreateContext(ReadOnlySpan<byte> descriptor, ReadOnlySpan<byte> json, ReadOnlySpan<byte> pointerData = default)
+    public static Target CreateTarget(ReadOnlySpan<byte> descriptor, ReadOnlySpan<byte> json, ReadOnlySpan<byte> pointerData = default)
     {
         Builder builder = new Builder()
         .SetJson(json)

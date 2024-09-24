@@ -56,9 +56,7 @@ public unsafe class ObjectTests
             builder = configure(builder);
         }
 
-        MockMemorySpace.ReadContext context = builder.Create();
-
-        bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
+        bool success = builder.TryCreateTarget(out Target? target);
         Assert.True(success);
         testCase(target);
     }

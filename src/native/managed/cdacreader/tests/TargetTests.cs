@@ -51,10 +51,8 @@ public unsafe class TargetTests
     """);
         Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
         targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, 0);
-        MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json);
 
-        bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
-        Assert.True(success);
+        Target target = MockMemorySpace.CreateTarget(descriptor, json);
 
         foreach ((DataType type, ITarget.TypeInfo info) in TestTypes)
         {
@@ -106,10 +104,8 @@ public unsafe class TargetTests
         """);
         Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
         targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, 0);
-        MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json);
 
-        bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
-        Assert.True(success);
+        Target target = MockMemorySpace.CreateTarget(descriptor, json);
 
         ValidateGlobals(target, TestGlobals);
     }
@@ -139,10 +135,8 @@ public unsafe class TargetTests
         """);
         Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
         targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, pointerData.Length / pointerSize);
-        MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json, pointerData);
 
-        bool success = MockMemorySpace.TryCreateTarget(context, out Target? target);
-        Assert.True(success);
+        Target target = MockMemorySpace.CreateTarget(descriptor, json, pointerData);
 
         // Indirect values are pointer-sized, so max 32-bits for a 32-bit target
         var expected = arch.Is64Bit
