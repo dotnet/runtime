@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class FDacStreams : IContractFactory<IDacStreams>
+internal sealed class DacStreamsFactory : IContractFactory<IDacStreams>
 {
     IDacStreams IContractFactory<IDacStreams>.CreateContract(ITarget target, int version)
     {

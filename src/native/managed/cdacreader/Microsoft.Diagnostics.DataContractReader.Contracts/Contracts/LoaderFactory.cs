@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class FLoader : IContractFactory<ILoader>
+internal sealed class LoaderFactory : IContractFactory<ILoader>
 {
     ILoader IContractFactory<ILoader>.CreateContract(ITarget target, int version)
     {

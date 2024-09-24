@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class FThread : IContractFactory<IThread>
+internal sealed class ThreadFactory : IContractFactory<IThread>
 {
     IThread IContractFactory<IThread>.CreateContract(ITarget target, int version)
     {

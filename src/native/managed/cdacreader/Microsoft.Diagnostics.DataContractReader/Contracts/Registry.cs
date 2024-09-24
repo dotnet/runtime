@@ -18,13 +18,13 @@ internal sealed class Registry : IRegistry
     {
         _target = target;
         _factories = new () {
-            [typeof(IException)] = new FException(),
-            [typeof(ILoader)] = new FLoader(),
-            [typeof(IEcmaMetadata)] = new FEcmaMetadata(),
-            [typeof(IObject)] = new FObject(),
-            [typeof(IThread)] = new FThread(),
-            [typeof(IRuntimeTypeSystem)] = new FRuntimeTypeSystem(),
-            [typeof(IDacStreams)] = new FDacStreams(),
+            [typeof(IException)] = new ExceptionFactory(),
+            [typeof(ILoader)] = new LoaderFactory(),
+            [typeof(IEcmaMetadata)] = new EcmaMetadataFactory(),
+            [typeof(IObject)] = new ObjectFactory(),
+            [typeof(IThread)] = new ThreadFactory(),
+            [typeof(IRuntimeTypeSystem)] = new RuntimeTypeSystemFactory(),
+            [typeof(IDacStreams)] = new DacStreamsFactory(),
         };
         configureFactories?.Invoke(_factories);
     }
