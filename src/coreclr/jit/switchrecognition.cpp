@@ -274,8 +274,7 @@ bool Compiler::optExtendSwitch(BasicBlock* block)
         maxSwitchDistance = 1024;
     }
 
-    if (CheckedOps::AddOverflows<ssize_t>(cns, switchTargetOffset, false) ||
-        (static_cast<size_t>(cns + switchTargetOffset) > maxSwitchDistance))
+    if (static_cast<size_t>(cns + switchTargetOffset) > maxSwitchDistance)
     {
         JITDUMP("Normalized switch value is out of range - bail out.\n");
         return false;
