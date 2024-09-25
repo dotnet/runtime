@@ -1838,19 +1838,7 @@ namespace System.Numerics.Tensors.Tests
             leftSpan = leftData.AsTensorSpan(9);
             tensor = Tensor.Create<int>(dims.AsSpan(), false);
             success = leftSpan.TryCopyTo(tensor);
-            leftEnum = leftSpan.GetEnumerator();
-            tensorEnum = tensor.GetEnumerator();
-            Assert.True(success);
-            // Make sure the first 9 spots are equal after copy
-            while (leftEnum.MoveNext() && tensorEnum.MoveNext())
-            {
-                Assert.Equal(leftEnum.Current, tensorEnum.Current);
-            }
-            // The rest of the slots shouldn't have been touched.
-            while (tensorEnum.MoveNext())
-            {
-                Assert.Equal(0, tensorEnum.Current);
-            }
+            Assert.False(success);
 
             leftData = [.. Enumerable.Range(0, 27)];
             var l = leftData.AsTensorSpan(3, 3, 3);

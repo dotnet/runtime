@@ -59,7 +59,7 @@ namespace System.Numerics.Tensors
                 else
                     s2 = lengths2[lengths2Index--];
 
-                if (s1 == s2 || (s1 == 1 && s2 != 1) || (s2 == 1 && s1 != 1)) { }
+                if (s1 == s2 || (s1 == 1 && s2 > 1) || (s2 == 1 && s1 > 1)) { }
                 else
                 {
                     areCompatible = false;
