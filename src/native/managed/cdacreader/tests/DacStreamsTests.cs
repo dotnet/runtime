@@ -21,7 +21,7 @@ public class DacStreamsTests
 
     const uint MiniMetaDataStreamsHeaderSize = 12;
 
-    private static readonly Dictionary<DataType, AbstractTarget.TypeInfo> DacStreamsTypes =
+    private static readonly Dictionary<DataType, Target.TypeInfo> DacStreamsTypes =
     [
     ];
 
@@ -31,7 +31,7 @@ public class DacStreamsTests
         (nameof(Constants.Globals.MiniMetaDataBuffMaxSize), TestMiniMetaDataBuffGlobalMaxSize, null),
     ];
 
-    private static unsafe void DacStreamsContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
+    private static unsafe void DacStreamsContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<ContractDescriptorTarget> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
         string metadataTypesJson = TargetTestHelpers.MakeTypesJson(DacStreamsTypes);
@@ -73,7 +73,7 @@ public class DacStreamsTests
 
             using MockMemorySpace.ReadContext context = builder.Create();
 
-            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
+            bool success = MockMemorySpace.TryCreateTarget(&context, out ContractDescriptorTarget? target);
             Assert.True(success);
 
             testCase(target);

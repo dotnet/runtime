@@ -5,12 +5,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class SyncTableEntry : IData<SyncTableEntry>
 {
-    static SyncTableEntry IData<SyncTableEntry>.Create(AbstractTarget target, TargetPointer address)
+    static SyncTableEntry IData<SyncTableEntry>.Create(Target target, TargetPointer address)
         => new SyncTableEntry(target, address);
 
-    public SyncTableEntry(AbstractTarget target, TargetPointer address)
+    public SyncTableEntry(Target target, TargetPointer address)
     {
-        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.SyncTableEntry);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.SyncTableEntry);
 
         TargetPointer syncBlockPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(SyncBlock)].Offset);
         if (syncBlockPointer != TargetPointer.Null)

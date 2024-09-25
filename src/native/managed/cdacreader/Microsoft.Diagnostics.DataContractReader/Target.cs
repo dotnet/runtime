@@ -21,7 +21,7 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// these are throwing APIs. Any callers at the boundaries (for example, unmanaged entry points, COM)
 /// should handle any exceptions.
 /// </remarks>
-internal sealed unsafe class Target : AbstractTarget
+internal sealed unsafe class ContractDescriptorTarget : Target
 {
     private const int StackAllocByteThreshold = 1024;
 
@@ -36,20 +36,20 @@ internal sealed unsafe class Target : AbstractTarget
 
     private readonly Dictionary<string, int> _contracts = [];
     private readonly IReadOnlyDictionary<string, (ulong Value, string? Type)> _globals = new Dictionary<string, (ulong, string?)>();
-    private readonly Dictionary<DataType, AbstractTarget.TypeInfo> _knownTypes = [];
-    private readonly Dictionary<string, AbstractTarget.TypeInfo> _types = [];
+    private readonly Dictionary<DataType, Target.TypeInfo> _knownTypes = [];
+    private readonly Dictionary<string, Target.TypeInfo> _types = [];
 
     public override Contracts.AbstractContractRegistry Contracts { get; }
     public override DataCache ProcessedData { get; }
 
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
 
-    public static bool TryCreate(ulong contractDescriptor, ReadFromTargetDelegate readFromTarget, out Target? target)
+    public static bool TryCreate(ulong contractDescriptor, ReadFromTargetDelegate readFromTarget, out ContractDescriptorTarget? target)
     {
         Reader reader = new Reader(readFromTarget);
         if (TryReadContractDescriptor(contractDescriptor, reader, out Configuration config, out ContractDescriptorParser.ContractDescriptor? descriptor, out TargetPointer[] pointerData))
         {
-            target = new Target(config, descriptor!, pointerData, reader);
+            target = new ContractDescriptorTarget(config, descriptor!, pointerData, reader);
             return true;
         }
 
@@ -57,7 +57,7 @@ internal sealed unsafe class Target : AbstractTarget
         return false;
     }
 
-    private Target(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
+    private ContractDescriptorTarget(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
     {
         Contracts = new Contracts.ContractRegistry(this);
         ProcessedData = new DataCache(this);
@@ -71,12 +71,12 @@ internal sealed unsafe class Target : AbstractTarget
         {
             foreach ((string name, ContractDescriptorParser.TypeDescriptor type) in descriptor.Types)
             {
-                Dictionary<string, AbstractTarget.FieldInfo> fieldInfos = [];
+                Dictionary<string, Target.FieldInfo> fieldInfos = [];
                 if (type.Fields is not null)
                 {
                     foreach ((string fieldName, ContractDescriptorParser.FieldDescriptor field) in type.Fields)
                     {
-                        fieldInfos[fieldName] = new AbstractTarget.FieldInfo()
+                        fieldInfos[fieldName] = new Target.FieldInfo()
                         {
                             Offset = field.Offset,
                             Type = field.Type is null ? DataType.Unknown : GetDataType(field.Type),
@@ -84,7 +84,7 @@ internal sealed unsafe class Target : AbstractTarget
                         };
                     }
                 }
-                AbstractTarget.TypeInfo typeInfo = new() { Size = type.Size, Fields = fieldInfos };
+                Target.TypeInfo typeInfo = new() { Size = type.Size, Fields = fieldInfos };
 
                 DataType dataType = GetDataType(name);
                 if (dataType is not DataType.Unknown)
@@ -444,15 +444,15 @@ internal sealed unsafe class Target : AbstractTarget
 
     public override TypeInfo GetTypeInfo(DataType type)
     {
-        if (!_knownTypes.TryGetValue(type, out AbstractTarget.TypeInfo typeInfo))
+        if (!_knownTypes.TryGetValue(type, out Target.TypeInfo typeInfo))
             throw new InvalidOperationException($"Failed to get type info for '{type}'");
 
         return typeInfo;
     }
 
-    public AbstractTarget.TypeInfo GetTypeInfo(string type)
+    public Target.TypeInfo GetTypeInfo(string type)
     {
-        if (_types.TryGetValue(type, out AbstractTarget.TypeInfo typeInfo))
+        if (_types.TryGetValue(type, out Target.TypeInfo typeInfo))
         return typeInfo;
 
         DataType dataType = GetDataType(type);
@@ -469,12 +469,12 @@ internal sealed unsafe class Target : AbstractTarget
     /// Store of addresses that have already been read into corresponding data models.
     /// This is simply used to avoid re-processing data on every request.
     /// </summary>
-    internal sealed class DataCache : AbstractTarget.IDataCache
+    internal sealed class DataCache : Target.IDataCache
     {
-        private readonly Target _target;
+        private readonly ContractDescriptorTarget _target;
         private readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
 
-        public DataCache(Target target)
+        public DataCache(ContractDescriptorTarget target)
         {
             _target = target;
         }

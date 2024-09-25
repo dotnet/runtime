@@ -5,12 +5,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class SyncBlock : IData<SyncBlock>
 {
-    static SyncBlock IData<SyncBlock>.Create(AbstractTarget target, TargetPointer address)
+    static SyncBlock IData<SyncBlock>.Create(Target target, TargetPointer address)
         => new SyncBlock(target, address);
 
-    public SyncBlock(AbstractTarget target, TargetPointer address)
+    public SyncBlock(Target target, TargetPointer address)
     {
-        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.SyncBlock);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.SyncBlock);
 
         TargetPointer interopInfoPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(InteropInfo)].Offset);
         if (interopInfoPointer != TargetPointer.Null)

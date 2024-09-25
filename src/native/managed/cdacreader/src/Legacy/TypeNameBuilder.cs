@@ -35,7 +35,7 @@ internal struct TypeNameBuilder
         Error
     }
     private StringBuilder TypeString;
-    private Target Target;
+    private ContractDescriptorTarget Target;
 
     private ParseState State;
     private bool UseAngleBracketsForGenerics { get; init; }
@@ -45,7 +45,7 @@ internal struct TypeNameBuilder
     private int InstNesting;
     private Stack<int>? GenericStartsStack;
 
-    private TypeNameBuilder(StringBuilder typeString, Target target, TypeNameFormat format, bool initialStateIsName = false)
+    private TypeNameBuilder(StringBuilder typeString, ContractDescriptorTarget target, TypeNameFormat format, bool initialStateIsName = false)
     {
         TypeString = typeString;
         Target = target;
@@ -56,12 +56,12 @@ internal struct TypeNameBuilder
             State = ParseState.Start;
     }
 
-    public static void AppendMethodInternal(Target target, StringBuilder stringBuilder, Contracts.MethodDescHandle method, TypeNameFormat format)
+    public static void AppendMethodInternal(ContractDescriptorTarget target, StringBuilder stringBuilder, Contracts.MethodDescHandle method, TypeNameFormat format)
     {
         AppendMethodImpl(target, stringBuilder, method, default, format);
     }
 
-    public static void AppendMethodImpl(Target target, StringBuilder stringBuilder, Contracts.MethodDescHandle method, ReadOnlySpan<TypeHandle> typeInstantiation, TypeNameFormat format)
+    public static void AppendMethodImpl(ContractDescriptorTarget target, StringBuilder stringBuilder, Contracts.MethodDescHandle method, ReadOnlySpan<TypeHandle> typeInstantiation, TypeNameFormat format)
     {
         IRuntimeTypeSystem runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
         ILoader loader = target.Contracts.Loader;
@@ -187,12 +187,12 @@ internal struct TypeNameBuilder
         } while (true);
     }
 
-    public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.TypeHandle typeHandle, TypeNameFormat format)
+    public static void AppendType(ContractDescriptorTarget target, StringBuilder stringBuilder, Contracts.TypeHandle typeHandle, TypeNameFormat format)
     {
         AppendType(target, stringBuilder, typeHandle, default, format);
     }
 
-    public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.TypeHandle typeHandle, ReadOnlySpan<TypeHandle> typeInstantiation, TypeNameFormat format)
+    public static void AppendType(ContractDescriptorTarget target, StringBuilder stringBuilder, Contracts.TypeHandle typeHandle, ReadOnlySpan<TypeHandle> typeInstantiation, TypeNameFormat format)
     {
         TypeNameBuilder builder = new(stringBuilder, target, format);
         AppendTypeCore(ref builder, typeHandle, typeInstantiation, format);
@@ -325,7 +325,7 @@ internal struct TypeNameBuilder
     // Append a square-bracket-enclosed, comma-separated list of n type parameters in inst to the string s
     // and enclose each parameter in square brackets to disambiguate the commas
     // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
-    private static void AppendInst(Target target, StringBuilder stringBuilder, ReadOnlySpan<TypeHandle> inst, TypeNameFormat format)
+    private static void AppendInst(ContractDescriptorTarget target, StringBuilder stringBuilder, ReadOnlySpan<TypeHandle> inst, TypeNameFormat format)
     {
         TypeNameBuilder tnb = new (stringBuilder, target, format, initialStateIsName: true);
         AppendInst(ref tnb, inst, format);

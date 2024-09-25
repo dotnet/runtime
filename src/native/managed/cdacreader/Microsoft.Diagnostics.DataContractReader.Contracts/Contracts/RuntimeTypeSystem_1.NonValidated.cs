@@ -19,13 +19,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         // a NonValidatedMethodTable for too long
         internal struct MethodTable
         {
-            private readonly AbstractTarget _target;
-            private readonly AbstractTarget.TypeInfo _type;
+            private readonly Target _target;
+            private readonly Target.TypeInfo _type;
             internal TargetPointer Address { get; init; }
 
             private MethodTableFlags? _methodTableFlags;
 
-            internal MethodTable(AbstractTarget target, TargetPointer methodTablePointer)
+            internal MethodTable(Target target, TargetPointer methodTablePointer)
             {
                 _target = target;
                 _type = target.GetTypeInfo(DataType.MethodTable);
@@ -71,12 +71,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         internal struct EEClass
         {
-            public readonly AbstractTarget _target;
-            private readonly AbstractTarget.TypeInfo _type;
+            public readonly Target _target;
+            private readonly Target.TypeInfo _type;
 
             internal TargetPointer Address { get; init; }
 
-            internal EEClass(AbstractTarget target, TargetPointer eeClassPointer)
+            internal EEClass(Target target, TargetPointer eeClassPointer)
             {
                 _target = target;
                 Address = eeClassPointer;
@@ -88,10 +88,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         internal struct MethodDesc
         {
-            private readonly AbstractTarget _target;
+            private readonly Target _target;
             private readonly Data.MethodDesc _desc;
             private readonly Data.MethodDescChunk _chunk;
-            internal MethodDesc(AbstractTarget target, Data.MethodDesc desc, Data.MethodDescChunk chunk)
+            internal MethodDesc(Target target, Data.MethodDesc desc, Data.MethodDescChunk chunk)
             {
                 _target = target;
                 _desc = desc;
@@ -106,12 +106,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             internal bool HasNonVtableSlot => HasFlag(MethodDescFlags.HasNonVtableSlot);
         }
 
-        internal static MethodTable GetMethodTableData(AbstractTarget target, TargetPointer methodTablePointer)
+        internal static MethodTable GetMethodTableData(Target target, TargetPointer methodTablePointer)
         {
             return new MethodTable(target, methodTablePointer);
         }
 
-        internal static EEClass GetEEClassData(AbstractTarget target, TargetPointer eeClassPointer)
+        internal static EEClass GetEEClassData(Target target, TargetPointer eeClassPointer)
         {
             return new EEClass(target, eeClassPointer);
         }

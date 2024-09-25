@@ -5,17 +5,17 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class InteropSyncBlockInfo : IData<InteropSyncBlockInfo>
 {
-    static InteropSyncBlockInfo IData<InteropSyncBlockInfo>.Create(AbstractTarget target, TargetPointer address)
+    static InteropSyncBlockInfo IData<InteropSyncBlockInfo>.Create(Target target, TargetPointer address)
         => new InteropSyncBlockInfo(target, address);
 
-    public InteropSyncBlockInfo(AbstractTarget target, TargetPointer address)
+    public InteropSyncBlockInfo(Target target, TargetPointer address)
     {
-        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.InteropSyncBlockInfo);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.InteropSyncBlockInfo);
 
-        RCW = type.Fields.TryGetValue(nameof(RCW), out AbstractTarget.FieldInfo rcwField)
+        RCW = type.Fields.TryGetValue(nameof(RCW), out Target.FieldInfo rcwField)
             ? target.ReadPointer(address + (ulong)rcwField.Offset)
             : TargetPointer.Null;
-        CCW = type.Fields.TryGetValue(nameof(CCW), out AbstractTarget.FieldInfo ccwField)
+        CCW = type.Fields.TryGetValue(nameof(CCW), out Target.FieldInfo ccwField)
             ? target.ReadPointer(address + (ulong)ccwField.Offset)
             : TargetPointer.Null;
     }

@@ -5,12 +5,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class String : IData<String>
 {
-    static String IData<String>.Create(AbstractTarget target, TargetPointer address)
+    static String IData<String>.Create(Target target, TargetPointer address)
         => new String(target, address);
 
-    public String(AbstractTarget target, TargetPointer address)
+    public String(Target target, TargetPointer address)
     {
-        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.String);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.String);
 
         FirstChar = address + (ulong)type.Fields["m_FirstChar"].Offset;
         StringLength = target.Read<uint>(address + (ulong)type.Fields["m_StringLength"].Offset);

@@ -13,7 +13,7 @@ public unsafe class ObjectTests
 {
     private delegate MockMemorySpace.Builder ConfigureContextBuilder(MockMemorySpace.Builder builder);
 
-    private static void ObjectContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
+    private static void ObjectContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<ContractDescriptorTarget> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
 
@@ -60,7 +60,7 @@ public unsafe class ObjectTests
 
             using MockMemorySpace.ReadContext context = builder.Create();
 
-            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
+            bool success = MockMemorySpace.TryCreateTarget(&context, out ContractDescriptorTarget? target);
             Assert.True(success);
             testCase(target);
         }

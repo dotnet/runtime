@@ -5,11 +5,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class ModuleLookupMap : IData<ModuleLookupMap>
 {
-    static ModuleLookupMap IData<ModuleLookupMap>.Create(AbstractTarget target, TargetPointer address) => new ModuleLookupMap(target, address);
+    static ModuleLookupMap IData<ModuleLookupMap>.Create(Target target, TargetPointer address) => new ModuleLookupMap(target, address);
 
-    private ModuleLookupMap(AbstractTarget target, TargetPointer address)
+    private ModuleLookupMap(Target target, TargetPointer address)
     {
-        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.ModuleLookupMap);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.ModuleLookupMap);
 
         TableData = target.ReadPointer(address + (ulong)type.Fields[nameof(TableData)].Offset);
     }

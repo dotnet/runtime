@@ -12,9 +12,9 @@ internal sealed class ContractRegistry : AbstractContractRegistry
     // Items should not be removed from this, only added.
     private readonly Dictionary<Type, IContract> _contracts = [];
     private readonly Dictionary<Type, IContractFactory<IContract>> _factories;
-    private readonly Target _target;
+    private readonly ContractDescriptorTarget _target;
 
-    public ContractRegistry(Target target, Action<Dictionary<Type, IContractFactory<IContract>>>? configureFactories = null)
+    public ContractRegistry(ContractDescriptorTarget target, Action<Dictionary<Type, IContractFactory<IContract>>>? configureFactories = null)
     {
         _target = target;
         _factories = new () {

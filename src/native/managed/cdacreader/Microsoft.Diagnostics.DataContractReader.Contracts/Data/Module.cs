@@ -7,15 +7,15 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class Module : IData<Module>
 {
-    static Module IData<Module>.Create(AbstractTarget target, TargetPointer address)
+    static Module IData<Module>.Create(Target target, TargetPointer address)
         => new Module(target, address);
 
-    private readonly AbstractTarget _target;
+    private readonly Target _target;
 
-    public Module(AbstractTarget target, TargetPointer address)
+    public Module(Target target, TargetPointer address)
     {
         _target = target;
-        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.Module);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.Module);
 
         Flags = target.Read<uint>(address + (ulong)type.Fields[nameof(Flags)].Offset);
         Assembly = target.ReadPointer(address + (ulong)type.Fields[nameof(Assembly)].Offset);

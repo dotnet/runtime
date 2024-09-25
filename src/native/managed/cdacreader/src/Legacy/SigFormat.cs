@@ -11,7 +11,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
 {
     internal static class SigFormat
     {
-        public static unsafe void AppendSigFormat(Target target,
+        public static unsafe void AppendSigFormat(ContractDescriptorTarget target,
             StringBuilder stringBuilder,
             ReadOnlySpan<byte> signature,
             MetadataReader? metadata,
@@ -29,7 +29,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
             }
         }
 
-        public static void AppendSigFormat(Target target,
+        public static void AppendSigFormat(ContractDescriptorTarget target,
             StringBuilder stringBuilder,
             BlobReader signature,
             MetadataReader? metadata,
@@ -92,7 +92,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
             stringBuilder.Append(')');
         }
 
-        private static unsafe void AddTypeString(Target target,
+        private static unsafe void AddTypeString(ContractDescriptorTarget target,
             StringBuilder stringBuilder,
             ref BlobReader signature,
             ReadOnlySpan<TypeHandle> typeInstantiation,
@@ -308,7 +308,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
             }
         }
 
-        private static void AddType(Target target, StringBuilder stringBuilder, TypeHandle typeHandle)
+        private static void AddType(ContractDescriptorTarget target, StringBuilder stringBuilder, TypeHandle typeHandle)
         {
             IRuntimeTypeSystem runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
 

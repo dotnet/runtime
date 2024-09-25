@@ -11,9 +11,9 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public class MockDescriptors
 {
-    private static readonly AbstractTarget.TypeInfo MethodTableTypeInfo = new()
+    private static readonly Target.TypeInfo MethodTableTypeInfo = new()
     {
-        Fields = new Dictionary<string, AbstractTarget.FieldInfo> {
+        Fields = new Dictionary<string, Target.FieldInfo> {
             { nameof(Data.MethodTable.MTFlags), new() { Offset = 4, Type = DataType.uint32}},
             { nameof(Data.MethodTable.BaseSize), new() { Offset = 8, Type = DataType.uint32}},
             { nameof(Data.MethodTable.MTFlags2), new() { Offset = 12, Type = DataType.uint32}},
@@ -26,9 +26,9 @@ public class MockDescriptors
         }
     };
 
-    private static readonly AbstractTarget.TypeInfo EEClassTypeInfo = new AbstractTarget.TypeInfo()
+    private static readonly Target.TypeInfo EEClassTypeInfo = new Target.TypeInfo()
     {
-        Fields = new Dictionary<string, AbstractTarget.FieldInfo> {
+        Fields = new Dictionary<string, Target.FieldInfo> {
             { nameof (Data.EEClass.MethodTable), new () { Offset = 8, Type = DataType.pointer}},
             { nameof (Data.EEClass.CorTypeAttr), new () { Offset = 16, Type = DataType.uint32}},
             { nameof (Data.EEClass.NumMethods), new () { Offset = 20, Type = DataType.uint16}},
@@ -37,52 +37,52 @@ public class MockDescriptors
         }
     };
 
-    private static readonly AbstractTarget.TypeInfo ArrayClassTypeInfo = new AbstractTarget.TypeInfo()
+    private static readonly Target.TypeInfo ArrayClassTypeInfo = new Target.TypeInfo()
     {
-        Fields = new Dictionary<string, AbstractTarget.FieldInfo> {
+        Fields = new Dictionary<string, Target.FieldInfo> {
             { nameof (Data.ArrayClass.Rank), new () { Offset = 0x70, Type = DataType.uint8}},
         }
     };
 
-    private static readonly AbstractTarget.TypeInfo ObjectTypeInfo = new()
+    private static readonly Target.TypeInfo ObjectTypeInfo = new()
     {
-        Fields = new Dictionary<string, AbstractTarget.FieldInfo> {
+        Fields = new Dictionary<string, Target.FieldInfo> {
             { "m_pMethTab", new() { Offset = 0, Type = DataType.pointer} },
         }
     };
 
-    private static readonly AbstractTarget.TypeInfo StringTypeInfo = new AbstractTarget.TypeInfo()
+    private static readonly Target.TypeInfo StringTypeInfo = new Target.TypeInfo()
     {
-        Fields = new Dictionary<string, AbstractTarget.FieldInfo> {
+        Fields = new Dictionary<string, Target.FieldInfo> {
             { "m_StringLength", new() { Offset = 0x8, Type = DataType.uint32} },
             { "m_FirstChar", new() { Offset = 0xc, Type = DataType.uint16} },
         }
     };
 
-    private static readonly AbstractTarget.TypeInfo ArrayTypeInfo = new AbstractTarget.TypeInfo()
+    private static readonly Target.TypeInfo ArrayTypeInfo = new Target.TypeInfo()
     {
-        Fields = new Dictionary<string, AbstractTarget.FieldInfo> {
+        Fields = new Dictionary<string, Target.FieldInfo> {
             { "m_NumComponents", new() { Offset = 0x8, Type = DataType.uint32} },
         },
     };
 
-    private static readonly AbstractTarget.TypeInfo SyncTableEntryInfo = new AbstractTarget.TypeInfo()
+    private static readonly Target.TypeInfo SyncTableEntryInfo = new Target.TypeInfo()
     {
-        Fields = new Dictionary<string, AbstractTarget.FieldInfo> {
+        Fields = new Dictionary<string, Target.FieldInfo> {
             { nameof(Data.SyncTableEntry.SyncBlock), new() { Offset = 0, Type = DataType.pointer} },
         },
     };
 
-    private static readonly AbstractTarget.TypeInfo SyncBlockTypeInfo = new AbstractTarget.TypeInfo()
+    private static readonly Target.TypeInfo SyncBlockTypeInfo = new Target.TypeInfo()
     {
-        Fields = new Dictionary<string, AbstractTarget.FieldInfo> {
+        Fields = new Dictionary<string, Target.FieldInfo> {
             { nameof(Data.SyncBlock.InteropInfo), new() { Offset = 0, Type = DataType.pointer} },
         },
     };
 
-    private static readonly AbstractTarget.TypeInfo InteropSyncBlockTypeInfo = new AbstractTarget.TypeInfo()
+    private static readonly Target.TypeInfo InteropSyncBlockTypeInfo = new Target.TypeInfo()
     {
-        Fields = new Dictionary<string, AbstractTarget.FieldInfo> {
+        Fields = new Dictionary<string, Target.FieldInfo> {
             { nameof(Data.InteropSyncBlockInfo.RCW), new() { Offset = 0, Type = DataType.pointer} },
             { nameof(Data.InteropSyncBlockInfo.CCW), new() { Offset = 0x8, Type = DataType.pointer} },
         },
@@ -93,7 +93,7 @@ public class MockDescriptors
         internal const ulong TestFreeObjectMethodTableGlobalAddress = 0x00000000_7a0000a0;
         internal const ulong TestFreeObjectMethodTableAddress = 0x00000000_7a0000a8;
 
-        internal static readonly Dictionary<DataType, AbstractTarget.TypeInfo> Types = new()
+        internal static readonly Dictionary<DataType, Target.TypeInfo> Types = new()
         {
             [DataType.MethodTable] = MethodTableTypeInfo,
             [DataType.EEClass] = EEClassTypeInfo,
@@ -176,8 +176,8 @@ public class MockDescriptors
         internal const ulong TestObjectToMethodTableUnmask = 0x7;
         internal const ulong TestSyncBlockValueToObjectOffset = sizeof(uint);
 
-        internal static Dictionary<DataType, AbstractTarget.TypeInfo> Types(TargetTestHelpers helpers) => RuntimeTypeSystem.Types.Concat(
-        new Dictionary<DataType, AbstractTarget.TypeInfo>()
+        internal static Dictionary<DataType, Target.TypeInfo> Types(TargetTestHelpers helpers) => RuntimeTypeSystem.Types.Concat(
+        new Dictionary<DataType, Target.TypeInfo>()
         {
             [DataType.Object] = ObjectTypeInfo,
             [DataType.String] = StringTypeInfo,

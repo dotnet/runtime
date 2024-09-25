@@ -5,10 +5,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class MethodTable : IData<MethodTable>
 {
-    static MethodTable IData<MethodTable>.Create(AbstractTarget target, TargetPointer address) => new MethodTable(target, address);
-    public MethodTable(AbstractTarget target, TargetPointer address)
+    static MethodTable IData<MethodTable>.Create(Target target, TargetPointer address) => new MethodTable(target, address);
+    public MethodTable(Target target, TargetPointer address)
     {
-        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.MethodTable);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.MethodTable);
 
         MTFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(MTFlags)].Offset);
         BaseSize = target.Read<uint>(address + (ulong)type.Fields[nameof(BaseSize)].Offset);

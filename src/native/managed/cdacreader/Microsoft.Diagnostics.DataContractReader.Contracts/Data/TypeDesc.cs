@@ -5,10 +5,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal class TypeDesc : IData<TypeDesc>
 {
-    static TypeDesc IData<TypeDesc>.Create(AbstractTarget target, TargetPointer address) => new TypeDesc(target, address);
-    public TypeDesc(AbstractTarget target, TargetPointer address)
+    static TypeDesc IData<TypeDesc>.Create(Target target, TargetPointer address) => new TypeDesc(target, address);
+    public TypeDesc(Target target, TargetPointer address)
     {
-        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
         TypeAndFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(TypeAndFlags)].Offset);
     }
 
@@ -17,10 +17,10 @@ internal class TypeDesc : IData<TypeDesc>
 
 internal class ParamTypeDesc : IData<ParamTypeDesc>
 {
-    static ParamTypeDesc IData<ParamTypeDesc>.Create(AbstractTarget target, TargetPointer address) => new ParamTypeDesc(target, address);
-    public ParamTypeDesc(AbstractTarget target, TargetPointer address)
+    static ParamTypeDesc IData<ParamTypeDesc>.Create(Target target, TargetPointer address) => new ParamTypeDesc(target, address);
+    public ParamTypeDesc(Target target, TargetPointer address)
     {
-        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
         TypeAndFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(TypeAndFlags)].Offset);
 
         type = target.GetTypeInfo(DataType.ParamTypeDesc);
@@ -33,10 +33,10 @@ internal class ParamTypeDesc : IData<ParamTypeDesc>
 
 internal class TypeVarTypeDesc : IData<TypeVarTypeDesc>
 {
-    static TypeVarTypeDesc IData<TypeVarTypeDesc>.Create(AbstractTarget target, TargetPointer address) => new TypeVarTypeDesc(target, address);
-    public TypeVarTypeDesc(AbstractTarget target, TargetPointer address)
+    static TypeVarTypeDesc IData<TypeVarTypeDesc>.Create(Target target, TargetPointer address) => new TypeVarTypeDesc(target, address);
+    public TypeVarTypeDesc(Target target, TargetPointer address)
     {
-        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
         TypeAndFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(TypeAndFlags)].Offset);
 
         type = target.GetTypeInfo(DataType.TypeVarTypeDesc);
@@ -52,10 +52,10 @@ internal class TypeVarTypeDesc : IData<TypeVarTypeDesc>
 
 internal class FnPtrTypeDesc : IData<FnPtrTypeDesc>
 {
-    static FnPtrTypeDesc IData<FnPtrTypeDesc>.Create(AbstractTarget target, TargetPointer address) => new FnPtrTypeDesc(target, address);
-    public FnPtrTypeDesc(AbstractTarget target, TargetPointer address)
+    static FnPtrTypeDesc IData<FnPtrTypeDesc>.Create(Target target, TargetPointer address) => new FnPtrTypeDesc(target, address);
+    public FnPtrTypeDesc(Target target, TargetPointer address)
     {
-        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
         TypeAndFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(TypeAndFlags)].Offset);
 
         type = target.GetTypeInfo(DataType.FnPtrTypeDesc);

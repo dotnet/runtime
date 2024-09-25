@@ -5,10 +5,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal class DynamicMetadata : IData<DynamicMetadata>
 {
-    static DynamicMetadata IData<DynamicMetadata>.Create(AbstractTarget target, TargetPointer address) => new DynamicMetadata(target, address);
-    public DynamicMetadata(AbstractTarget target, TargetPointer address)
+    static DynamicMetadata IData<DynamicMetadata>.Create(Target target, TargetPointer address) => new DynamicMetadata(target, address);
+    public DynamicMetadata(Target target, TargetPointer address)
     {
-        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.DynamicMetadata);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.DynamicMetadata);
 
         Size = target.Read<uint>(address + (ulong)type.Fields[nameof(Size)].Offset);
         Data = address + (ulong)type.Fields[nameof(Data)].Offset;

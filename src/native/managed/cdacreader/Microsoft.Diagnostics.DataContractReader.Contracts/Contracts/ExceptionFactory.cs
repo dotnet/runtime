@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class ExceptionFactory : IContractFactory<IException>
 {
-    IException IContractFactory<IException>.CreateContract(AbstractTarget target, int version)
+    IException IContractFactory<IException>.CreateContract(Target target, int version)
     {
         return version switch
         {
