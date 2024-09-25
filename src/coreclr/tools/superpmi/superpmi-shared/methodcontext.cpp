@@ -3293,6 +3293,7 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     result.requiresInstMethodTableArg = info->requiresInstMethodTableArg;
     result.exactContext               = CastHandle(info->exactContext);
     result.detail                     = (DWORD) info->detail;
+    result.wasArrayInterfaceDevirt    = info->wasArrayInterfaceDevirt;
 
     if (returnValue)
     {
@@ -3317,10 +3318,11 @@ void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodK
         key.context,
         key.pResolvedTokenVirtualMethodNonNull,
         key.pResolvedTokenVirtualMethodNonNull ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.pResolvedTokenVirtualMethod).c_str() : "???");
-    printf(", value returnValue-%s, devirtMethod-%016" PRIX64 ", requiresInstArg-%s, exactContext-%016" PRIX64 ", detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}",
+    printf(", value returnValue-%s, devirtMethod-%016" PRIX64 ", requiresInstArg-%s, wasArrayInterfaceDevirt-%s, exactContext-%016" PRIX64 ", detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}",
         result.returnValue ? "true" : "false",
         result.devirtualizedMethod,
         result.requiresInstMethodTableArg ? "true" : "false",
+        result.wasArrayInterfaceDevirt ? "true" : "false",
         result.exactContext,
         result.detail,
         result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedMethod).c_str() : "???",
@@ -3345,6 +3347,7 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
 
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) result.devirtualizedMethod;
     info->requiresInstMethodTableArg = result.requiresInstMethodTableArg;
+    info->wasArrayInterfaceDevirt = result.wasArrayInterfaceDevirt;
     info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
     info->detail = (CORINFO_DEVIRTUALIZATION_DETAIL) result.detail;
     if (result.returnValue)
