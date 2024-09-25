@@ -21,6 +21,9 @@ extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
     sdl:
+      codeql:
+        compiled: false
+        justificationForDisabling: 'CodeQL is run on the runtime-codeql pipeline'
       credscan:
         suppressionsFile: $(Build.SourcesDirectory)/.config/CredScanSuppressions.json
     pool:
