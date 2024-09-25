@@ -65,6 +65,7 @@ namespace System
         public static bool IsArmOrArm64Process => IsArmProcess || IsArm64Process;
         public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
         public static bool IsS390xProcess => (int)RuntimeInformation.ProcessArchitecture == 5; // Architecture.S390x
+        public static bool IsLoongArch64Process => (int)RuntimeInformation.ProcessArchitecture == 6; // Architecture.LoongArch64;
         public static bool IsArmv6Process => (int)RuntimeInformation.ProcessArchitecture == 7; // Architecture.Armv6
         public static bool IsPpc64leProcess => (int)RuntimeInformation.ProcessArchitecture == 8; // Architecture.Ppc64le
         public static bool IsRiscV64Process => (int)RuntimeInformation.ProcessArchitecture == 9; // Architecture.RiscV64;
@@ -735,23 +736,9 @@ namespace System
             {
                 return false;
             }
-            
-            Assembly assembly = typeof(System.Runtime.Serialization.Formatters.Binary.BinaryFormatter).Assembly;
-            AssemblyName name = assembly.GetName();
-            Version assemblyVersion = name.Version;
 
-            bool isSupported = true;
-
-            // Version 8.1 is the version in the shared runtime (.NET 9+) that has the type disabled with no config.
-            // Assembly versions beyond 8.1 are the fully functional version from NuGet.
-            // Assembly versions before 8.1 probably won't be encountered, since that's the past.
-
-            if (assemblyVersion.Major == 8 && assemblyVersion.Minor == 1)
-            {
-                isSupported = false;
-            }
-
-            return isSupported;
+            return AppContext.TryGetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", out bool isBinaryFormatterEnabled)
+                && isBinaryFormatterEnabled;
         }
     }
 }

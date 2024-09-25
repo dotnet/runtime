@@ -167,8 +167,7 @@ namespace System.Runtime.CompilerServices
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
-            RuntimeType rt = type.GetRuntimeType();
-            if (rt is null)
+            RuntimeType rt = type.GetRuntimeType() ??
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(type));
 
             RunClassConstructor(new QCallTypeHandle(ref rt));
@@ -187,8 +186,7 @@ namespace System.Runtime.CompilerServices
 
         public static void RunModuleConstructor(ModuleHandle module)
         {
-            RuntimeModule rm = module.GetRuntimeModule();
-            if (rm is null)
+            RuntimeModule rm = module.GetRuntimeModule() ??
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(module));
 
             RunModuleConstructor(new QCallModule(ref rm));
@@ -204,8 +202,7 @@ namespace System.Runtime.CompilerServices
 
         public static unsafe void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[]? instantiation)
         {
-            IRuntimeMethodInfo methodInfo = method.GetMethodInfo();
-            if (methodInfo == null)
+            IRuntimeMethodInfo methodInfo = method.GetMethodInfo() ??
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(method));
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
@@ -223,19 +220,35 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void PrepareDelegate(Delegate d);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetHashCode(object? o);
-
         /// <summary>
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
         /// returned.
         /// </summary>
-        /// <remarks>
-        /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
-        /// code to the object if it does not already have one.
-        /// </remarks>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int TryGetHashCode(object o);
+        internal static extern int TryGetHashCode(object? o);
+
+        [LibraryImport(QCall, EntryPoint = "ObjectNative_GetHashCodeSlow")]
+        private static partial int GetHashCodeSlow(ObjectHandleOnStack o);
+
+        public static int GetHashCode(object? o)
+        {
+            int hashCode = TryGetHashCode(o);
+            if (hashCode == 0)
+            {
+                return GetHashCodeWorker(o);
+            }
+            return hashCode;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static int GetHashCodeWorker(object? o)
+            {
+                if (o is null)
+                {
+                    return 0;
+                }
+                return GetHashCodeSlow(ObjectHandleOnStack.Create(ref o));
+            }
+        }
 
         public static new unsafe bool Equals(object? o1, object? o2)
         {
@@ -288,13 +301,18 @@ namespace System.Runtime.CompilerServices
 
         // This method ensures that there is sufficient stack to execute the average Framework function.
         // If there is not enough stack, then it throws System.InsufficientExecutionStackException.
-        // Note: this method is not part of the CER support, and is not to be confused with ProbeForSufficientStack.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void EnsureSufficientExecutionStack();
+        // Note: this method is not to be confused with ProbeForSufficientStack.
+        public static void EnsureSufficientExecutionStack()
+        {
+            if (!TryEnsureSufficientExecutionStack())
+            {
+                throw new InsufficientExecutionStackException();
+            }
+        }
 
         // This method ensures that there is sufficient stack to execute the average Framework function.
         // If there is not enough stack, then it return false.
-        // Note: this method is not part of the CER support, and is not to be confused with ProbeForSufficientStack.
+        // Note: this method is not to be confused with ProbeForSufficientStack.
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool TryEnsureSufficientExecutionStack();
 
@@ -346,6 +364,11 @@ namespace System.Runtime.CompilerServices
             // See getILIntrinsicImplementation for how this happens.
             return x.CompareTo(y);
         }
+
+        // The body of this function will be created by the EE for the specific type.
+        // See getILIntrinsicImplementation for how this happens.
+        [Intrinsic]
+        internal static extern unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged;
 
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
@@ -423,16 +446,8 @@ namespace System.Runtime.CompilerServices
         //
         // GC.KeepAlive(o);
         //
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Intrinsic]
-        internal static unsafe MethodTable* GetMethodTable(object obj)
-        {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
-
-            return (MethodTable*)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
-        }
-
+        internal static unsafe MethodTable* GetMethodTable(object obj) => GetMethodTable(obj);
 
         [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -459,7 +474,17 @@ namespace System.Runtime.CompilerServices
         private static partial IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc);
+        private static extern IntPtr AllocTailCallArgBufferWorker(int size, IntPtr gcDesc);
+
+        private static IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc)
+        {
+            IntPtr buffer = AllocTailCallArgBufferWorker(size, gcDesc);
+            if (buffer == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+            return buffer;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
@@ -669,7 +694,6 @@ namespace System.Runtime.CompilerServices
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
-                                                             | 0x00400000 // enum_flag_ICastable;
                                                              | 0x10000000 // enum_flag_IDynamicInterfaceCastable;
                                                              | 0x00040000; // enum_flag_Category_ValueType
 
@@ -794,14 +818,19 @@ namespace System.Runtime.CompilerServices
     }
 
     // Subset of src\vm\methodtable.h
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct MethodTableAuxiliaryData
     {
-        [FieldOffset(0)]
         private uint Flags;
+        private void* LoaderModule;
+        private nint ExposedClassObjectRaw;
 
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
         private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
+
+        private const uint enum_flag_HasCheckedStreamOverride   = 0x0400;
+        private const uint enum_flag_StreamOverriddenRead       = 0x0800;
+        private const uint enum_flag_StreamOverriddenWrite      = 0x1000;
 
         public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
 
@@ -811,6 +840,34 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(HasCheckedCanCompareBitsOrUseFastGetHashCode);
                 return (Flags & enum_flag_CanCompareBitsOrUseFastGetHashCode) != 0;
+            }
+        }
+
+        public bool HasCheckedStreamOverride => (Flags & enum_flag_HasCheckedStreamOverride) != 0;
+
+        public bool IsStreamOverriddenRead
+        {
+            get
+            {
+                Debug.Assert(HasCheckedStreamOverride);
+                return (Flags & enum_flag_StreamOverriddenRead) != 0;
+            }
+        }
+
+        public bool IsStreamOverriddenWrite
+        {
+            get
+            {
+                Debug.Assert(HasCheckedStreamOverride);
+                return (Flags & enum_flag_StreamOverriddenWrite) != 0;
+            }
+        }
+
+        public RuntimeType? ExposedClassObject
+        {
+            get
+            {
+                return *(RuntimeType*)Unsafe.AsPointer(ref ExposedClassObjectRaw);
             }
         }
     }

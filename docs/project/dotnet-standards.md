@@ -33,12 +33,12 @@ ECMA 335 - CLI
 
 **ECMA 335 Partitions with added Microsoft Specific Implementation Notes**
 
-- [Partition I: Concepts and Architecture](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20I.pdf)
-- [Partition II: Meta Data Definition and Semantics](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20II.pdf)
-- [Partition III: CIL Instruction Set](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20III.pdf)
-- [Partition IV: Profiles and Libraries](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20IV.pdf)
-- [Partition V: Debug Interchange Format](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20V.pdf)
-- [Partition VI: Annexes](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20VI.pdf)
+- [Partition I: Concepts and Architecture](https://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20I.pdf)
+- [Partition II: Meta Data Definition and Semantics](https://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20II.pdf)
+- [Partition III: CIL Instruction Set](https://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20III.pdf)
+- [Partition IV: Profiles and Libraries](https://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20IV.pdf)
+- [Partition V: Debug Interchange Format](https://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20V.pdf)
+- [Partition VI: Annexes](https://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20VI.pdf)
 
 **ECMA Technical Report 084: Information Derived from Partition IV XML File**
 

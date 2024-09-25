@@ -197,7 +197,7 @@ namespace System.Net
                     SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
                     X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
 
-                    Debug.Assert(certList != null, "certList != null");
+                    Debug.Assert(certList != null);
                     Span<IntPtr> handles = certList.Count <= 256
                         ? stackalloc IntPtr[256]
                         : new IntPtr[certList.Count];
@@ -653,7 +653,7 @@ namespace System.Net
 
         internal static void SetCertificate(SafeSslHandle sslContext, SslStreamCertificateContext context)
         {
-            Debug.Assert(sslContext != null, "sslContext != null");
+            Debug.Assert(sslContext != null);
 
             IntPtr[] ptrs = new IntPtr[context!.IntermediateCertificates.Count + 1];
 

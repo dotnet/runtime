@@ -188,6 +188,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <summary>
             /// Returns the managed value representing the native array.
             /// </summary>
+            /// <returns>A span over managed values of the array.</returns>
             public ReadOnlySpan<T> ToManaged()
             {
                 return new ReadOnlySpan<T>(_managedValues!);
@@ -196,6 +197,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <summary>
             /// Returns a span that points to the memory where the unmanaged elements of the array are stored.
             /// </summary>
+            /// <param name="numElements">The number of elements in the array.</param>
             /// <returns>A span over unmanaged values of the array.</returns>
             public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements)
             {
@@ -205,6 +207,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <summary>
             /// Returns a span that points to the memory where the managed elements of the array should be stored.
             /// </summary>
+            /// <param name="numElements">The number of elements in the array.</param>
             /// <returns>A span where managed values of the array should be stored.</returns>
             public Span<T> GetManagedValuesDestination(int numElements)
             {

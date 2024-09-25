@@ -9,23 +9,29 @@ namespace System.Buffers.Text
     {
         internal static bool IsValid<T, TBase64Validatable>(TBase64Validatable validatable, ReadOnlySpan<T> base64Text, out int decodedLength)
             where TBase64Validatable : IBase64Validatable<T>
+            where T : struct
         {
             int length = 0, paddingCount = 0;
+            T lastChar = default;
 
             if (!base64Text.IsEmpty)
             {
 #if NET
-                while (true)
+                while (!base64Text.IsEmpty)
                 {
-
                     int index = validatable.IndexOfAnyExcept(base64Text);
                     if ((uint)index >= (uint)base64Text.Length)
                     {
                         length += base64Text.Length;
+                        lastChar = base64Text[base64Text.Length - 1];
                         break;
                     }
 
                     length += index;
+                    if (index != 0)
+                    {
+                        lastChar = base64Text[index - 1];
+                    }
 
                     T charToValidate = base64Text[index];
                     base64Text = base64Text.Slice(index + 1);
@@ -65,6 +71,7 @@ namespace System.Buffers.Text
                     if (value >= 0) // valid char
                     {
                         length++;
+                        lastChar = charToValidate;
                         continue;
                     }
                     if (validatable.IsWhiteSpace(charToValidate))
@@ -105,7 +112,7 @@ namespace System.Buffers.Text
                     break;
                 }
 
-                if (!validatable.ValidateAndDecodeLength(length, paddingCount, out decodedLength))
+                if (!validatable.ValidateAndDecodeLength(lastChar, length, paddingCount, out decodedLength))
                 {
                     goto Fail;
                 }
@@ -130,7 +137,7 @@ namespace System.Buffers.Text
 #endif
             bool IsWhiteSpace(T value);
             bool IsEncodingPad(T value);
-            bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength);
+            bool ValidateAndDecodeLength(T lastChar, int length, int paddingCount, out int decodedLength);
         }
 
         internal readonly struct Base64CharValidatable : IBase64Validatable<char>
@@ -140,6 +147,7 @@ namespace System.Buffers.Text
 
             public int IndexOfAnyExcept(ReadOnlySpan<char> span) => span.IndexOfAnyExcept(s_validBase64Chars);
 #else
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int DecodeValue(char value)
             {
                 if (value > byte.MaxValue)
@@ -153,8 +161,8 @@ namespace System.Buffers.Text
 #endif
             public bool IsWhiteSpace(char value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(char value) => value == EncodingPad;
-            public bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength) =>
-                default(Base64ByteValidatable).ValidateAndDecodeLength(length, paddingCount, out decodedLength);
+            public bool ValidateAndDecodeLength(char lastChar, int length, int paddingCount, out int decodedLength) =>
+                default(Base64ByteValidatable).ValidateAndDecodeLength((byte)lastChar, length, paddingCount, out decodedLength);
         }
 
         internal readonly struct Base64ByteValidatable : IBase64Validatable<byte>
@@ -169,10 +177,19 @@ namespace System.Buffers.Text
             public bool IsWhiteSpace(byte value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(byte value) => value == EncodingPad;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength)
+            public bool ValidateAndDecodeLength(byte lastChar, int length, int paddingCount, out int decodedLength)
             {
                 if (length % 4 == 0)
                 {
+                    int decoded = default(Base64DecoderByte).DecodingMap[lastChar];
+                    if ((paddingCount == 1 && (decoded & 0x03) != 0) ||
+                        (paddingCount == 2 && (decoded & 0x0F) != 0))
+                    {
+                        // unused lower bits are not 0, reject input
+                        decodedLength = 0;
+                        return false;
+                    }
+
                     // Remove padding to get exact length.
                     decodedLength = (int)((uint)length / 4 * 3) - paddingCount;
                     return true;

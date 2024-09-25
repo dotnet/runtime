@@ -338,6 +338,8 @@ CONFIG_STRING_INFO(INTERNAL_TailCallMax, W("TailCallMax"), "")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_TailCallOpt, W("TailCallOpt"), "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TailCallLoopOpt, W("TailCallLoopOpt"), 1, "Convert recursive tail calls to loops")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Jit_NetFx40PInvokeStackResilience, W("NetFx40_PInvokeStackResilience"), (DWORD)-1, "Makes P/Invoke resilient against mismatched signature and calling convention (significant perf penalty).")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DisableOptimizedThreadStaticAccess, W("DisableOptimizedThreadStaticAccess"), (DWORD)0, "Disable the OptimizedThreadStaticAccess feature.")
+CONFIG_DWORD_INFO(EXTERNAL_AssertNotStaticTlsResolver, W("AssertNotStaticTlsResolver"), (DWORD)0, "Assert if we attempt to use the static tls resolver path.")
 
 // AltJitAssertOnNYI should be 0 on targets where JIT is under development or bring up stage, so as to facilitate fallback to main JIT on hitting a NYI.
 #if defined(TARGET_X86)

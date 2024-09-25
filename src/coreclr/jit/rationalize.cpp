@@ -505,7 +505,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
                                                    immUpperBound, hasFullRangeImm, &useFallback))
                 {
                     // We're already in the right shape, so just stop tracking ourselves as a user call
-                    hwintrinsic->gtFlags &= ~GTF_HW_USER_CALL;
+                    hwintrinsic->gtFlags &= ~(GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
                     return;
                 }
             }

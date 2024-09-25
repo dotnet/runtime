@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Compression
@@ -13,9 +15,24 @@ namespace System.IO.Compression
         public override Stream CreateStream(Stream stream, CompressionMode mode, bool leaveOpen) => new BrotliStream(stream, mode, leaveOpen);
         public override Stream CreateStream(Stream stream, CompressionLevel level) => new BrotliStream(stream, level);
         public override Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen) => new BrotliStream(stream, level, leaveOpen);
+        public override Stream CreateStream(Stream stream, ZLibCompressionOptions options, bool leaveOpen) =>
+            new BrotliStream(stream, options == null ? null : new BrotliCompressionOptions() { Quality = options.CompressionLevel }, leaveOpen);
         public override Stream BaseStream(Stream stream) => ((BrotliStream)stream).BaseStream;
 
         protected override bool FlushGuaranteesAllDataWritten => false;
+
+        public static IEnumerable<object[]> UncompressedTestFilesBrotli()
+        {
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "TestDocument.txt") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "alice29.txt") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "asyoulik.txt") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "cp.html") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "fields.c") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "lcet10.txt") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "plrabn12.txt") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "sum") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "xargs.1") };
+        }
 
         // The tests are relying on an implementation detail of BrotliStream, using knowledge of its internal buffer size
         // in various test calculations.  Currently the implementation is using the ArrayPool, which will round up to a
@@ -64,6 +81,42 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentOutOfRangeException>("inputSize", () => BrotliEncoder.GetMaxCompressedLength(2147483133));
             Assert.InRange(BrotliEncoder.GetMaxCompressedLength(2147483132), 0, int.MaxValue);
             Assert.Equal(1, BrotliEncoder.GetMaxCompressedLength(0));
+        }
+
+        [Fact]
+        public void InvalidBrotliCompressionQuality()
+        {
+            BrotliCompressionOptions options = new();
+
+            Assert.Equal(4, options.Quality); // default value
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.Quality = -1);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.Quality = 12);
+        }
+
+        [Theory]
+        [MemberData(nameof(UncompressedTestFilesBrotli))]
+        public async void BrotliCompressionQuality_SizeInOrder(string testFile)
+        {
+            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+
+            async Task<long> GetLengthAsync(int compressionQuality)
+            {
+                uncompressedStream.Position = 0;
+                using var mms = new MemoryStream();
+                using var compressor = new BrotliStream(mms, new BrotliCompressionOptions() { Quality = compressionQuality });
+                await uncompressedStream.CopyToAsync(compressor);
+                await compressor.FlushAsync();
+                await uncompressedStream.FlushAsync();
+                return mms.Length;
+            }
+
+            long prev = await GetLengthAsync(0);
+            for (int i = 1; i < 12; i++)
+            {
+                long cur = await GetLengthAsync(i);
+                Assert.True(cur <= prev, $"Expected {cur} <= {prev} for quality {i}");
+                prev = cur;
+            }
         }
 
         [Fact]

@@ -462,7 +462,7 @@ namespace System.Threading.Tasks
                 return null;
 
             // If it can be cast to an array, use it directly
-            if (!(activeTasksSource is Task[] activeTasksArray))
+            if (activeTasksSource is not Task[] activeTasksArray)
             {
                 activeTasksArray = (new List<Task>(activeTasksSource)).ToArray();
             }

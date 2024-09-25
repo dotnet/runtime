@@ -71,7 +71,15 @@ WebSocket support in NodeJS hosts requires the `ws` npm package.
 ### Initial Memory Size
 By default the .NET runtime will reserve a small amount of memory at startup, and as your application allocates more objects the runtime will attempt to "grow" this memory. This growth operation takes time and could fail if your device's memory is limited, which would result in an application error or "tab crash".
 
-To reduce startup time and increase the odds that your application will work on devices with limited memory, you can set an initial size for the memory allocation, based on an estimate of how much memory your application typically uses. To set an initial memory size, include an MSBuild property like `<EmccInitialHeapSize>16777216</EmccInitialHeapSize>`, where you have changed the number of bytes to an appropriate value for your application. This value must be a multiple of 16384. The default value is `2,147,483,648 bytes`, which may be too large and result in the app failing to start, because the browser refuses to grant it.
+To reduce startup time and increase the odds that your application will work on devices with limited memory, you can set an initial size for the memory allocation, based on an estimate of how much memory your application typically uses. To set an initial memory size, include an MSBuild property like `<EmccInitialHeapSize>16777216</EmccInitialHeapSize>`, where you have changed the number of bytes to an appropriate value for your application. This value must be a multiple of 16384.
+
+This property requires the [wasm-tools workload](#wasm-tools-workload) to be installed.
+
+### Maximum Memory Size
+When building an app targeting mobile device browsers, especially Safari on iOS, decreasing the maximum memory for the app may be required.
+
+The default value is `2,147,483,648 bytes`, which may be too large and result in the app failing to start, because the browser refuses to grant it.
+To set the maximum memory size, include the MSBuild property like `<EmccMaximumHeapSize>268435456<EmccMaximumHeapSize>`.
 
 This property requires the [wasm-tools workload](#wasm-tools-workload) to be installed.
 
@@ -417,6 +425,45 @@ In simple browser template, you can add following to your `main.js`
 import { dotnet } from './dotnet.js'
 await dotnet.withConfig({browserProfilerOptions: {}}).run();
 ```
+
+### Log Profiling for Memory Troubleshooting
+
+You can enable integration with log profiler via following elements in your .csproj:
+
+```xml
+<PropertyGroup>
+  <WasmProfilers>log;</WasmProfilers>
+  <WasmBuildNative>true</WasmBuildNative>
+</PropertyGroup>
+```
+
+In simple browser template, you can add following to your `main.js`
+
+```javascript
+import { dotnet } from './dotnet.js'
+await dotnet.withConfig({ 
+    logProfilerOptions: {
+        takeHeapshot: "MyApp.Profiling::TakeHeapshot",
+        configuration: "log:alloc,output=output.mlpd"
+    }}).run();
+```
+
+In order to trigger a heap shot, add the following:
+
+```csharp
+namespace MyApp;
+
+class Profiling
+{
+    [JSExport]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void TakeHeapshot() { }
+}
+```
+
+Invoke `MyApp.Profiling.TakeHeapshot()` from your code in order to create a memory heap shot and flush the contents of the profile to the VFS. Make sure to align the namespace and class of the `logProfilerOptions.takeHeapshot` with your class.
+
+You can download the mpld file to analyze it.
 
 ### Diagnostic tools
 

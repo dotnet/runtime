@@ -304,7 +304,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     void Set(TLSIndex index, PTR_MethodTable pMT, bool isGCStatic);
-    bool FindClearedIndex(uint8_t whenClearedMarkerToAvoid, TLSIndex* pIndex);
+    bool FindClearedIndex(TLSIndex* pIndex);
     void Clear(TLSIndex index, uint8_t whenCleared);
 #endif // !DACCESS_COMPILE
 

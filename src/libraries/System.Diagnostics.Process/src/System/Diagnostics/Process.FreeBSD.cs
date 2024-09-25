@@ -34,6 +34,11 @@ namespace System.Diagnostics
         {
             get
             {
+                if (IsCurrentProcess)
+                {
+                    return Environment.CpuUsage.TotalTime;
+                }
+
                 EnsureState(State.HaveNonExitedId);
                 Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, 0);
                 return Process.TicksToTimeSpan(stat.userTime + stat.systemTime);
@@ -51,6 +56,11 @@ namespace System.Diagnostics
         {
             get
             {
+                if (IsCurrentProcess)
+                {
+                    return Environment.CpuUsage.UserTime;
+                }
+
                 EnsureState(State.HaveNonExitedId);
 
                 Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, 0);
@@ -66,6 +76,11 @@ namespace System.Diagnostics
         {
             get
             {
+                if (IsCurrentProcess)
+                {
+                    return Environment.CpuUsage.PrivilegedTime;
+                }
+
                 EnsureState(State.HaveNonExitedId);
 
                 Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, 0);

@@ -191,12 +191,7 @@ namespace System.Collections.ObjectModel
                 }
                 else
                 {
-                    object[]? objects = array as object[];
-                    if (objects == null)
-                    {
-                        throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
-                    }
-
+                    object[] objects = array as object[] ?? throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                     try
                     {
                         foreach (var item in m_dictionary)
@@ -216,7 +211,7 @@ namespace System.Collections.ObjectModel
 
         object ICollection.SyncRoot => (m_dictionary is ICollection coll) ? coll.SyncRoot : this;
 
-        private struct DictionaryEnumerator : IDictionaryEnumerator
+        private readonly struct DictionaryEnumerator : IDictionaryEnumerator
         {
             private readonly IDictionary<TKey, TValue> _dictionary;
             private readonly IEnumerator<KeyValuePair<TKey, TValue>> _enumerator;

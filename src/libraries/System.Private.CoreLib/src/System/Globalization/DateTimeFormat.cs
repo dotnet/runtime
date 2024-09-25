@@ -206,7 +206,7 @@ namespace System
 
         private static string FormatDayOfWeek(int dayOfWeek, int repeat, DateTimeFormatInfo dtfi)
         {
-            Debug.Assert(dayOfWeek >= 0 && dayOfWeek <= 6, "dayOfWeek >= 0 && dayOfWeek <= 6");
+            Debug.Assert(dayOfWeek >= 0 && dayOfWeek <= 6);
             if (repeat == 3)
             {
                 return dtfi.GetAbbreviatedDayName((DayOfWeek)dayOfWeek);

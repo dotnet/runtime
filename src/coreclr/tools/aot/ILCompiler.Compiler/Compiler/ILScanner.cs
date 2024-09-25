@@ -428,7 +428,7 @@ namespace ILCompiler
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
             private Dictionary<TypeDesc, HashSet<TypeDesc>> _implementators = new();
             private HashSet<TypeDesc> _disqualifiedTypes = new();
-            private HashSet<MethodDesc> _overridenMethods = new();
+            private HashSet<MethodDesc> _overriddenMethods = new();
             private HashSet<MethodDesc> _generatedVirtualMethods = new();
 
             public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
@@ -583,7 +583,7 @@ namespace ILCompiler
                                 for (int i = 0; i < baseVtable.Count; i++)
                                 {
                                     if (baseVtable[i] != vtable[i])
-                                        _overridenMethods.Add(baseVtable[i]);
+                                        _overriddenMethods.Add(baseVtable[i]);
                                 }
                             }
                         }
@@ -681,7 +681,7 @@ namespace ILCompiler
                     return false;
 
                 // If we haven't seen any other method override this, this method is sealed
-                return !_overridenMethods.Contains(canonMethod);
+                return !_overriddenMethods.Contains(canonMethod);
             }
 
             protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
@@ -850,8 +850,9 @@ namespace ILCompiler
 
                         types.Add(t);
 
-                        // N.B. for ARM32, we would need to deal with > PointerSize alignments.
-                        //      GCStaticEEType does not currently set RequiresAlign8Flag
+                        // N.B. for ARM32, we would need to deal with > PointerSize alignments. We
+                        // currently don't support inlined thread statics on ARM32, regular GCStaticEEType
+                        // handles this with RequiresAlign8Flag
                         Debug.Assert(t.ThreadGcStaticFieldAlignment.AsInt <= factory.Target.PointerSize);
                         nextDataOffset = nextDataOffset.AlignUp(t.ThreadGcStaticFieldAlignment.AsInt);
 

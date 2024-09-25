@@ -185,7 +185,7 @@ jobs:
       shouldContinueOnError: ${{ not(parameters.isWasmOnlyBuild) }}
       alwaysRun: ${{ variables.isRollingBuild }}
       scenarios:
-        - WasmTestOnV8
+        - WasmTestOnWasmtime
 
   # Hybrid Globalization tests
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml

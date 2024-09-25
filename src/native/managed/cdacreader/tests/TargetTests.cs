@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -11,28 +12,27 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public unsafe class TargetTests
 {
-
-    private static readonly (DataType Type, Target.TypeInfo Info)[] TestTypes =
-   [
+    private static readonly Dictionary<DataType, Target.TypeInfo> TestTypes = new()
+    {
         // Size and fields
-        (DataType.Thread, new(){
+        [DataType.Thread] = new(){
             Size = 56,
             Fields = {
                 { "Field1", new(){ Offset = 8, Type = DataType.uint16, TypeName = DataType.uint16.ToString() }},
                 { "Field2", new(){ Offset = 16, Type = DataType.GCHandle, TypeName = DataType.GCHandle.ToString() }},
                 { "Field3", new(){ Offset = 32 }}
-            }}),
+            }},
         // Fields only
-        (DataType.ThreadStore, new(){
+        [DataType.ThreadStore] = new(){
             Fields = {
                 { "Field1", new(){ Offset = 0, TypeName = "FieldType" }},
                 { "Field2", new(){ Offset = 8 }}
-            }}),
+            }},
         // Size only
-        (DataType.GCHandle, new(){
+        [DataType.GCHandle] = new(){
             Size = 8
-        })
-    ];
+        }
+    };
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]

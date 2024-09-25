@@ -45,8 +45,8 @@ public:
     static FCDECL3(void, DelegateConstruct, Object* refThis, Object* target, PCODE method);
 
     // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
-    static FCDECL1(PCODE, GetMulticastInvoke, Object* refThis);
-    static FCDECL1(MethodDesc*, GetInvokeMethod, Object* refThis);
+    static FCDECL1(PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
+    static FCDECL1(MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
     static PCODE GetWrapperInvoke(MethodDesc* pMD);
     // determines where the delegate needs to be wrapped for non-security reason
     static BOOL NeedsWrapperDelegate(MethodDesc* pTargetMD);
@@ -77,10 +77,7 @@ public:
     static BOOL IsWrapperDelegate(DELEGATEREF dRef);
 
     // Get the cpu stub for a delegate invoke.
-    static PCODE GetInvokeMethodStub(EEImplMethodDesc* pMD);
-
-    // get the one single delegate invoke stub
-    static PCODE TheDelegateInvokeStub();
+    static Stub* GetInvokeMethodStub(EEImplMethodDesc* pMD);
 
     static MethodDesc * __fastcall GetMethodDesc(OBJECTREF obj);
     static OBJECTREF GetTargetObject(OBJECTREF obj);
@@ -113,6 +110,8 @@ public:
                              MethodTable   *pExactMethodType,
                              BOOL           fIsOpenDelegate);
 };
+
+extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegateMT);
 
 extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(QCall::ObjectHandleOnStack target, PCODE method);
 
@@ -211,7 +210,7 @@ private:
         STANDARD_VM_CONTRACT;
 
         ((CPUSTUBLINKER*)pstublinker)->EmitShuffleThunk((ShuffleEntry*)pRawStub);
-        return NEWSTUB_FL_THUNK;
+        return NEWSTUB_FL_SHUFFLE_THUNK;
     }
 
     //---------------------------------------------------------

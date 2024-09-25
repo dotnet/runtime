@@ -4041,7 +4041,7 @@ public:
         if (igOffs > m_uninterruptibleEnd)
         {
             // Once the first instruction in IG executes, we cannot have GC.
-            // But it is ok to have GC while the IP is on the first instruction, unless we are in prolog/epilog.
+            // But it is ok to have GC while the IP is on the first instruction, unless we are in prolog.
             unsigned interruptibleEnd = igOffs;
             if (!isInProlog)
             {

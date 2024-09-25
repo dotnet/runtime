@@ -38,7 +38,7 @@ steps:
       displayName: clean bindir
 
   - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.nameSuffix, 'iOSMono')) }}:
-    - script: make build-appbundle TARGET=ios MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
@@ -60,7 +60,7 @@ steps:
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
       displayName: Clean bindir
-    - script: make build-appbundle TARGET=ios MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
@@ -82,7 +82,7 @@ steps:
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
       displayName: Clean bindir
-    - script: make build-appbundle TARGET=ios MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=True DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=True DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
@@ -104,7 +104,7 @@ steps:
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
       displayName: Clean bindir
-    - script: make build-appbundle TARGET=ios MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=True DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=True DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS

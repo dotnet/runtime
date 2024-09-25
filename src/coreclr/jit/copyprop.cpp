@@ -296,7 +296,7 @@ bool Compiler::optCopyProp(
                 JITDUMP(" Updating COMMA parent VN [%06u]\n", dspTreeID(parent));
                 ValueNumPair op1Xvnp = vnStore->VNPExceptionSet(parent->AsOp()->gtOp1->gtVNPair);
                 parent->SetVNs(vnStore->VNPWithExc(parent->AsOp()->gtOp2->gtVNPair, op1Xvnp));
-                parent = tree->gtGetParent(nullptr);
+                parent = parent->gtGetParent(nullptr);
             }
         }
         gtUpdateSideEffects(stmt, tree);

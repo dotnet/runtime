@@ -203,7 +203,7 @@ namespace System.Globalization
             {
                 if (typeof(TChar) == typeof(char))
                 {
-                    TChar last = outputBuffer[outputBuffer.Length - 1];
+                    TChar last = outputBuffer[^1];
                     outputBuffer.Length--;
                     outputBuffer.Append(TChar.CastFrom('"'));
                     outputBuffer.Append(last);

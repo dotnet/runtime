@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Xunit.Abstractions;
 using Xunit;
+using System.Xml.Linq;
 
 #nullable enable
 
@@ -23,13 +24,59 @@ public class SatelliteLoadingTests : AppTestBase
     {
     }
 
-    [Fact]
-    public async Task LoadSatelliteAssembly()
+    [Theory, TestCategory("no-fingerprinting")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LoadSatelliteAssembly(bool loadAllSatelliteResources)
     {
         CopyTestAsset("WasmBasicTestApp", "SatelliteLoadingTests", "App");
         BuildProject("Debug");
 
-        var result = await RunSdkStyleAppForBuild(new(Configuration: "Debug", TestScenario: "SatelliteAssembliesTest"));
+        var result = await RunSdkStyleAppForBuild(new(
+            Configuration: "Debug", 
+            TestScenario: "SatelliteAssembliesTest",
+            BrowserQueryString: new Dictionary<string, string> { ["loadAllSatelliteResources"] = loadAllSatelliteResources.ToString() }
+        ));
+        Assert.Collection(
+            result.TestOutput,
+            m => Assert.Equal("default: hello", m),
+            m => Assert.Equal("es-ES without satellite: hello", m),
+            m => Assert.Equal("default: hello", m),
+            m => Assert.Equal("es-ES with satellite: hola", m)
+        );
+    }
+
+    [Fact]
+    public async Task LoadSatelliteAssemblyFromReference()
+    {
+        CopyTestAsset("WasmBasicTestApp", "SatelliteLoadingTestsFromReference", "App");
+
+        // Replace ProjectReference with Reference
+        var appCsprojPath = Path.Combine(_projectDir!, "WasmBasicTestApp.csproj");
+        var appCsproj = XDocument.Load(appCsprojPath);
+
+        var projectReference = appCsproj.Descendants("ProjectReference").Where(pr => pr.Attribute("Include")?.Value?.Contains("ResourceLibrary") ?? false).Single();
+        var itemGroup = projectReference.Parent!;
+        projectReference.Remove();
+
+        var reference = new XElement("Reference");
+        reference.SetAttributeValue("Include", "..\\ResourceLibrary\\bin\\Release\\net9.0\\ResourceLibrary.dll");
+        itemGroup.Add(reference);
+
+        appCsproj.Save(appCsprojPath);
+
+        // Build the library
+        var libraryCsprojPath = Path.GetFullPath(Path.Combine(_projectDir!, "..", "ResourceLibrary"));
+        new DotNetCommand(s_buildEnv, _testOutput)
+            .WithWorkingDirectory(libraryCsprojPath)
+            .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+            .ExecuteWithCapturedOutput("build -c Release")
+            .EnsureSuccessful();
+
+        // Publish the app and assert
+        PublishProject("Release");
+
+        var result = await RunSdkStyleAppForPublish(new(Configuration: "Release", TestScenario: "SatelliteAssembliesTest"));
         Assert.Collection(
             result.TestOutput,
             m => Assert.Equal("default: hello", m),

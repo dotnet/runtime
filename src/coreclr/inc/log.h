@@ -47,6 +47,10 @@ enum {
 #define ERROR       0
 #define FATALERROR  0
 
+#ifdef _DEBUG
+#define _LOGALLOC
+#endif
+
 #ifndef LOGGING
 
 #define LOG(x)
