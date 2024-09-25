@@ -5,12 +5,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class ExceptionInfo : IData<ExceptionInfo>
 {
-    static ExceptionInfo IData<ExceptionInfo>.Create(ITarget target, TargetPointer address)
+    static ExceptionInfo IData<ExceptionInfo>.Create(AbstractTarget target, TargetPointer address)
         => new ExceptionInfo(target, address);
 
-    public ExceptionInfo(ITarget target, TargetPointer address)
+    public ExceptionInfo(AbstractTarget target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.ExceptionInfo);
+        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.ExceptionInfo);
 
         PreviousNestedInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(PreviousNestedInfo)].Offset);
         ThrownObject = target.ProcessedData.GetOrAdd<ObjectHandle>(

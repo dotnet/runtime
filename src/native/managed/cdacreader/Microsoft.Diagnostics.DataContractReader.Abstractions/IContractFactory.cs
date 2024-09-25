@@ -7,5 +7,5 @@ namespace Microsoft.Diagnostics.DataContractReader;
 
 internal interface IContractFactory<out TProduct> where TProduct : Contracts.IContract
 {
-    TProduct CreateContract(ITarget target, int version);
+    TProduct CreateContract(AbstractTarget target, int version);
 }

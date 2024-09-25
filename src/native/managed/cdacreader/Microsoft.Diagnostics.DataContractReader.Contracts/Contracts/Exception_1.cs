@@ -7,9 +7,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Exception_1 : IException
 {
-    private readonly ITarget _target;
+    private readonly AbstractTarget _target;
 
-    internal Exception_1(ITarget target)
+    internal Exception_1(AbstractTarget target)
     {
         _target = target;
     }

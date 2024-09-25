@@ -7,10 +7,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class MethodDesc : IData<MethodDesc>
 {
-    static MethodDesc IData<MethodDesc>.Create(ITarget target, TargetPointer address) => new MethodDesc(target, address);
-    public MethodDesc(ITarget target, TargetPointer address)
+    static MethodDesc IData<MethodDesc>.Create(AbstractTarget target, TargetPointer address) => new MethodDesc(target, address);
+    public MethodDesc(AbstractTarget target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.MethodDesc);
+        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.MethodDesc);
 
         ChunkIndex = target.Read<byte>(address + (ulong)type.Fields[nameof(ChunkIndex)].Offset);
         Slot = target.Read<ushort>(address + (ulong)type.Fields[nameof(Slot)].Offset);
@@ -26,10 +26,10 @@ internal sealed class MethodDesc : IData<MethodDesc>
 
 internal sealed class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>
 {
-    static InstantiatedMethodDesc IData<InstantiatedMethodDesc>.Create(ITarget target, TargetPointer address) => new InstantiatedMethodDesc(target, address);
-    public InstantiatedMethodDesc(ITarget target, TargetPointer address)
+    static InstantiatedMethodDesc IData<InstantiatedMethodDesc>.Create(AbstractTarget target, TargetPointer address) => new InstantiatedMethodDesc(target, address);
+    public InstantiatedMethodDesc(AbstractTarget target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.InstantiatedMethodDesc);
+        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.InstantiatedMethodDesc);
 
         PerInstInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(PerInstInfo)].Offset);
         NumGenericArgs = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumGenericArgs)].Offset);
@@ -43,10 +43,10 @@ internal sealed class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>
 
 internal sealed class DynamicMethodDesc : IData<DynamicMethodDesc>
 {
-    static DynamicMethodDesc IData<DynamicMethodDesc>.Create(ITarget target, TargetPointer address) => new DynamicMethodDesc(target, address);
-    public DynamicMethodDesc(ITarget target, TargetPointer address)
+    static DynamicMethodDesc IData<DynamicMethodDesc>.Create(AbstractTarget target, TargetPointer address) => new DynamicMethodDesc(target, address);
+    public DynamicMethodDesc(AbstractTarget target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.DynamicMethodDesc);
+        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.DynamicMethodDesc);
 
         MethodName = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodName)].Offset);
     }
@@ -56,10 +56,10 @@ internal sealed class DynamicMethodDesc : IData<DynamicMethodDesc>
 
 internal sealed class StoredSigMethodDesc : IData<StoredSigMethodDesc>
 {
-    static StoredSigMethodDesc IData<StoredSigMethodDesc>.Create(ITarget target, TargetPointer address) => new StoredSigMethodDesc(target, address);
-    public StoredSigMethodDesc(ITarget target, TargetPointer address)
+    static StoredSigMethodDesc IData<StoredSigMethodDesc>.Create(AbstractTarget target, TargetPointer address) => new StoredSigMethodDesc(target, address);
+    public StoredSigMethodDesc(AbstractTarget target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.StoredSigMethodDesc);
+        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.StoredSigMethodDesc);
 
         Sig = target.ReadPointer(address + (ulong)type.Fields[nameof(Sig)].Offset);
         cSig = target.Read<uint>(address + (ulong)type.Fields[nameof(cSig)].Offset);

@@ -5,10 +5,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal class GenericsDictInfo : IData<GenericsDictInfo>
 {
-    static GenericsDictInfo IData<GenericsDictInfo>.Create(ITarget target, TargetPointer address) => new GenericsDictInfo(target, address);
-    public GenericsDictInfo(ITarget target, TargetPointer address)
+    static GenericsDictInfo IData<GenericsDictInfo>.Create(AbstractTarget target, TargetPointer address) => new GenericsDictInfo(target, address);
+    public GenericsDictInfo(AbstractTarget target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.GenericsDictInfo);
+        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.GenericsDictInfo);
 
         NumDicts = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumDicts)].Offset);
         NumTypeArgs = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumTypeArgs)].Offset);

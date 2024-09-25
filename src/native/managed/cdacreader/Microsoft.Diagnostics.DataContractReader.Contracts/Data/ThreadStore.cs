@@ -5,12 +5,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class ThreadStore : IData<ThreadStore>
 {
-    static ThreadStore IData<ThreadStore>.Create(ITarget target, TargetPointer address)
+    static ThreadStore IData<ThreadStore>.Create(AbstractTarget target, TargetPointer address)
         => new ThreadStore(target, address);
 
-    public ThreadStore(ITarget target, TargetPointer address)
+    public ThreadStore(AbstractTarget target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.ThreadStore);
+        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.ThreadStore);
 
         ThreadCount = target.Read<int>(address + (ulong)type.Fields[nameof(ThreadCount)].Offset);
         FirstThreadLink = target.ReadPointer(address + (ulong)type.Fields[nameof(FirstThreadLink)].Offset);

@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class ThreadFactory : IContractFactory<IThread>
 {
-    IThread IContractFactory<IThread>.CreateContract(ITarget target, int version)
+    IThread IContractFactory<IThread>.CreateContract(AbstractTarget target, int version)
     {
         TargetPointer threadStorePointer = target.ReadGlobalPointer(Constants.Globals.ThreadStore);
         TargetPointer threadStore = target.ReadPointer(threadStorePointer);
@@ -21,18 +21,18 @@ internal sealed class ThreadFactory : IContractFactory<IThread>
 
 internal readonly struct Thread_1 : IThread
 {
-    private readonly ITarget _target;
+    private readonly AbstractTarget _target;
     private readonly TargetPointer _threadStoreAddr;
     private readonly ulong _threadLinkOffset;
 
-    internal Thread_1(ITarget target, TargetPointer threadStore)
+    internal Thread_1(AbstractTarget target, TargetPointer threadStore)
     {
         _target = target;
         _threadStoreAddr = threadStore;
 
         // Get the offset into Thread of the SLink. We use this to find the actual
         // first thread from the linked list node contained by the first thread.
-        ITarget.TypeInfo type = _target.GetTypeInfo(DataType.Thread);
+        AbstractTarget.TypeInfo type = _target.GetTypeInfo(DataType.Thread);
         _threadLinkOffset = (ulong)type.Fields[nameof(Data.Thread.LinkNext)].Offset;
     }
 

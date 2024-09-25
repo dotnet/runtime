@@ -345,7 +345,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             data->LoaderAllocator = contract.GetLoaderAllocator(handle);
             data->ThunkHeap = contract.GetThunkHeap(handle);
 
-            ITarget.TypeInfo lookupMapTypeInfo = _target.GetTypeInfo(DataType.ModuleLookupMap);
+            AbstractTarget.TypeInfo lookupMapTypeInfo = _target.GetTypeInfo(DataType.ModuleLookupMap);
             ulong tableDataOffset = (ulong)lookupMapTypeInfo.Fields[nameof(Data.ModuleLookupMap.TableData)].Offset;
 
             Contracts.ModuleLookupTables tables = contract.GetLookupTables(handle);
@@ -408,7 +408,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
 
                 // Free objects have their component count explicitly set at the same offset as that for arrays
                 // Update the size to include those components
-                ITarget.TypeInfo arrayTypeInfo = _target.GetTypeInfo(DataType.Array);
+                AbstractTarget.TypeInfo arrayTypeInfo = _target.GetTypeInfo(DataType.Array);
                 ulong numComponentsOffset = (ulong)_target.GetTypeInfo(DataType.Array).Fields[Data.Array.FieldNames.NumComponents].Offset;
                 data->Size += _target.Read<uint>(objAddr + numComponentsOffset) * data->dwComponentSize;
             }

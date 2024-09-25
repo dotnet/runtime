@@ -5,11 +5,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class MethodTableAuxiliaryData : IData<MethodTableAuxiliaryData>
 {
-    static MethodTableAuxiliaryData IData<MethodTableAuxiliaryData>.Create(ITarget target, TargetPointer address) => new MethodTableAuxiliaryData(target, address);
+    static MethodTableAuxiliaryData IData<MethodTableAuxiliaryData>.Create(AbstractTarget target, TargetPointer address) => new MethodTableAuxiliaryData(target, address);
 
-    private MethodTableAuxiliaryData(ITarget target, TargetPointer address)
+    private MethodTableAuxiliaryData(AbstractTarget target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.MethodTableAuxiliaryData);
+        AbstractTarget.TypeInfo type = target.GetTypeInfo(DataType.MethodTableAuxiliaryData);
 
         AuxFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(AuxFlags)].Offset);
 

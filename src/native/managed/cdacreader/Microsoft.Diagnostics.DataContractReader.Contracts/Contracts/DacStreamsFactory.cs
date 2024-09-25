@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class DacStreamsFactory : IContractFactory<IDacStreams>
 {
-    IDacStreams IContractFactory<IDacStreams>.CreateContract(ITarget target, int version)
+    IDacStreams IContractFactory<IDacStreams>.CreateContract(AbstractTarget target, int version)
     {
         return version switch
         {
