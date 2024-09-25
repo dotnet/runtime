@@ -4726,6 +4726,7 @@ void Compiler::fgDoReversePostOrderLayout()
         {
         }
     };
+
     ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator());
 
     for (EHblkDsc* const HBtab : EHClauses(this))
