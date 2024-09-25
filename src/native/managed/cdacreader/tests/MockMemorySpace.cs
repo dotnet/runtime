@@ -46,9 +46,13 @@ internal unsafe static class MockMemorySpace
         private int _pointerDataLength => _pointerData.Data.Length;
         private List<HeapFragment> _heapFragments = new();
 
-        public Builder()
-        {
+        private bool _setDescriptor = false;
 
+        private TargetTestHelpers _targetTestHelpers;
+
+        public Builder(TargetTestHelpers targetTestHelpers)
+        {
+            _targetTestHelpers = targetTestHelpers;
         }
 
         internal Builder SetDescriptor(scoped ReadOnlySpan<byte> descriptor)
@@ -57,12 +61,15 @@ internal unsafe static class MockMemorySpace
 
             if (_created)
                 throw new InvalidOperationException("Context already created");
+            if (_setDescriptor)
+                throw new InvalidOperationException("Descriptor already set");
             _descriptor = new HeapFragment
             {
                 Address = ContractDescriptorAddr,
                 Data = descriptor.ToArray(),
                 Name = "ContractDescriptor"
             };
+            _setDescriptor = true;
             return this;
         }
 
@@ -115,10 +122,10 @@ internal unsafe static class MockMemorySpace
             return this;
         }
 
-        public Builder FillDescriptor(TargetTestHelpers targetTestHelpers)
+        private Builder FillDescriptor()
         {
-            Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
-            targetTestHelpers.ContractDescriptorFill(descriptor, _jsonLength, _pointerDataLength / targetTestHelpers.PointerSize);
+            Span<byte> descriptor = stackalloc byte[_targetTestHelpers.ContractDescriptorSize];
+            _targetTestHelpers.ContractDescriptorFill(descriptor, _jsonLength, _pointerDataLength / _targetTestHelpers.PointerSize);
             SetDescriptor(descriptor);
             return this;
         }
@@ -127,6 +134,8 @@ internal unsafe static class MockMemorySpace
         {
             if (_created)
                 throw new InvalidOperationException("Context already created");
+            if (!_setDescriptor)
+                FillDescriptor();
             ReadContext context = new ReadContext
             {
                 ContractDescriptor = _descriptor,
@@ -162,11 +171,10 @@ internal unsafe static class MockMemorySpace
         }
     }
 
-    public static ContractDescriptorTarget CreateTarget(ReadOnlySpan<byte> descriptor, ReadOnlySpan<byte> json, ReadOnlySpan<byte> pointerData = default)
+    public static Target CreateTarget(TargetTestHelpers targetTestHelpers, ReadOnlySpan<byte> json, ReadOnlySpan<byte> pointerData = default)
     {
-        Builder builder = new Builder()
+        Builder builder = new Builder(targetTestHelpers)
         .SetJson(json)
-        .SetDescriptor(descriptor)
         .SetPointerData(pointerData);
         bool success = builder.TryCreateTarget(out var target);
         Assert.True(success);
@@ -175,7 +183,7 @@ internal unsafe static class MockMemorySpace
 
     public static bool TryCreateTarget(ReadContext context, out Target? target)
     {
-        return ContractDescriptorTarget.TryCreate(context.ContractDescriptor.Address, context.ReadFromTarget, out target);
+        return Target.TryCreate(context.ContractDescriptor.Address, context.ReadFromTarget, out target);
     }
 
     // Used by ReadFromTarget to return the appropriate bytes

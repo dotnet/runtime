@@ -56,12 +56,11 @@ public class DacStreamsTests
             targetTestHelpers.WritePointer(pointerData.Slice(i * pointerSize), value);
         }
 
-        MockMemorySpace.Builder builder = new();
+        MockMemorySpace.Builder builder = new(targetTestHelpers);
 
         builder = builder
                 .SetJson(json)
-                .SetPointerData(pointerData)
-                .FillDescriptor(targetTestHelpers);
+                .SetPointerData(pointerData);
 
         if (configure != null)
         {

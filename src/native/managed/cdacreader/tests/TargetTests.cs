@@ -49,10 +49,8 @@ public unsafe class TargetTests
         "globals": {}
     }
     """);
-        Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
-        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, 0);
 
-        Target target = MockMemorySpace.CreateTarget(descriptor, json);
+        Target target = MockMemorySpace.CreateTarget(targetTestHelpers, json);
 
         foreach ((DataType type, Target.TypeInfo info) in TestTypes)
         {
@@ -102,10 +100,8 @@ public unsafe class TargetTests
             "globals": { {{globalsJson}} }
         }
         """);
-        Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
-        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, 0);
 
-        Target target = MockMemorySpace.CreateTarget(descriptor, json);
+        Target target = MockMemorySpace.CreateTarget(targetTestHelpers, json);
 
         ValidateGlobals(target, TestGlobals);
     }
@@ -133,10 +129,8 @@ public unsafe class TargetTests
             "globals": { {{globalsJson}} }
         }
         """);
-        Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
-        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, pointerData.Length / pointerSize);
 
-        Target target = MockMemorySpace.CreateTarget(descriptor, json, pointerData);
+        Target target = MockMemorySpace.CreateTarget(targetTestHelpers, json, pointerData);
 
         // Indirect values are pointer-sized, so max 32-bits for a 32-bit target
         var expected = arch.Is64Bit
