@@ -37,7 +37,12 @@ public static class WasiMainWrapper
         impatientClient1.Timeout = TimeSpan.FromMilliseconds(10);
         try {
             await impatientClient1.GetAsync("https://corefx-net-http11.azurewebsites.net/Echo.ashx?delay10sec");
-            throw new Exception("request should have timed out");
+            // in reality server side doesn't delay because it doesn't implement it. So 10ms is bit fragile.
+            // TODO: remove this once we have real WASI HTTP library unit tests with local server loop in Xharness.
+            // https://github.com/dotnet/xharness/pull/1244
+
+            // https://github.com/dotnet/runtime/issues/107530
+            // TODO throw new Exception("request should have timed out");
         } catch (TaskCanceledException) {
             Console.WriteLine("1st impatientClient was canceled as expected");
         }
@@ -48,11 +53,9 @@ public static class WasiMainWrapper
         impatientClient2.DefaultRequestHeaders.Add("User-Agent", "dotnet WASI unit test");
         var cts = new CancellationTokenSource(10);
         try {
-            // in reality server side doesn't delay because it doesn't implement it. So 10ms is bit fragile.
-            // TODO: remove this once we have real WASI HTTP library unit tests with local server loop in Xharness.
-            // https://github.com/dotnet/xharness/pull/1244
             await impatientClient2.GetAsync("https://corefx-net-http11.azurewebsites.net/Echo.ashx?delay10sec", cts.Token);
-            throw new Exception("request should have timed out");
+            // https://github.com/dotnet/runtime/issues/107530
+            // TODO throw new Exception("request should have timed out");
         } catch (TaskCanceledException tce) {
             if (cts.Token != tce.CancellationToken)
             {
@@ -64,7 +67,7 @@ public static class WasiMainWrapper
         using HttpClient client = new();
         client.DefaultRequestHeaders.Accept.Clear();
         client.DefaultRequestHeaders.Add("User-Agent", "dotnet WASI unit test");
-        
+
         var query="https://corefx-net-http11.azurewebsites.net/Echo.ashx";
         var json = await client.GetStringAsync(query);
 
