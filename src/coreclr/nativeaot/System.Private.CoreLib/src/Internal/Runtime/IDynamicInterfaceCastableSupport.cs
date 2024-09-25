@@ -4,6 +4,11 @@
 using System;
 using System.Runtime;
 using System.Runtime.InteropServices;
+using System.Threading;
+
+using Internal.Runtime.Augments;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Runtime
 {
@@ -14,6 +19,8 @@ namespace Internal.Runtime
         {
             return instance.IsInterfaceImplemented(new RuntimeTypeHandle(interfaceType), throwIfNotImplemented);
         }
+
+        private static object s_thunkPoolHeap;
 
         [RuntimeExport("IDynamicCastableGetInterfaceImplementation")]
         internal static IntPtr IDynamicCastableGetInterfaceImplementation(IDynamicInterfaceCastable instance, MethodTable* interfaceType, ushort slot)
@@ -28,10 +35,31 @@ namespace Internal.Runtime
             {
                 ThrowInvalidOperationException(implType);
             }
-            IntPtr result = RuntimeImports.RhResolveDispatchOnType(implType, interfaceType, slot);
+
+            MethodTable* genericContext = null;
+            IntPtr result = RuntimeImports.RhResolveDynamicInterfaceCastableDispatchOnType(implType, interfaceType, slot, &genericContext);
             if (result == IntPtr.Zero)
             {
                 IDynamicCastableGetInterfaceImplementationFailure(instance, interfaceType, implType);
+            }
+
+            if (genericContext != null)
+            {
+                if (s_thunkPoolHeap == null)
+                {
+                    // TODO: Free s_thunkPoolHeap if the thread lose the race
+                    Interlocked.CompareExchange(
+                        ref s_thunkPoolHeap,
+                        RuntimeAugments.CreateThunksHeap(RuntimeImports.GetInteropCommonStubAddress()),
+                        null
+                    );
+                    Debug.Assert(s_thunkPoolHeap != null);
+                }
+
+                nint thunk = RuntimeAugments.AllocateThunk(s_thunkPoolHeap);
+                RuntimeAugments.SetThunkData(s_thunkPoolHeap, thunk, (nint)genericContext, result);
+
+                result = thunk;
             }
             return result;
         }
