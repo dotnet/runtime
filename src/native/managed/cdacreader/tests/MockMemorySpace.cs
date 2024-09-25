@@ -3,9 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System.Text;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
@@ -48,6 +48,20 @@ internal unsafe static class MockMemorySpace
 
         private bool _setDescriptor = false;
 
+        private Mode _mode = Mode.Indeterminate;
+
+        private IReadOnlyCollection<string> _contracts;
+        private IDictionary<DataType, Target.TypeInfo> _types;
+        private IReadOnlyCollection<(string Name, ulong Value, string? TypeName)> _globals;
+
+        // builder is either taking low level inputs (json, pointer data) or high level inputs (contracts, types, globals)
+        private enum Mode
+        {
+            Indeterminate,
+            ExplicitJson,
+            HighLevel,
+        }
+
         private TargetTestHelpers _targetTestHelpers;
 
         public Builder(TargetTestHelpers targetTestHelpers)
@@ -75,6 +89,14 @@ internal unsafe static class MockMemorySpace
 
         public Builder SetJson(scoped ReadOnlySpan<byte> json)
         {
+            if (_mode == Mode.HighLevel)
+                throw new InvalidOperationException("HighLevel mode does not support setting JSON");
+            _mode = Mode.ExplicitJson;
+            return SetJsonInternal(json);
+        }
+
+        private Builder SetJsonInternal(scoped ReadOnlySpan<byte> json)
+        {
             if (_created)
                 throw new InvalidOperationException("Context already created");
             _json = new HeapFragment
@@ -91,12 +113,54 @@ internal unsafe static class MockMemorySpace
 
             if (_created)
                 throw new InvalidOperationException("Context already created");
+            if (_mode == Mode.HighLevel)
+                throw new InvalidOperationException("HighLevel mode does not support setting pointer data");
+            _mode = Mode.ExplicitJson;
+            return SetPointerDataInternal(pointerData);
+        }
+
+        private Builder SetPointerDataInternal(scoped ReadOnlySpan<byte> pointerData)
+        {
             _pointerData = new HeapFragment
             {
                 Address = ContractPointerDataAddr,
                 Data = pointerData.Length >= 0 ? pointerData.ToArray() : Array.Empty<byte>(),
                 Name = "PointerData"
             };
+            return this;
+        }
+
+        // TODO: contracts with versions
+        public Builder SetContracts(IReadOnlyCollection<string> contracts)
+        {
+            if (_created)
+                throw new InvalidOperationException("Context already created");
+            if (_mode == Mode.ExplicitJson)
+                throw new InvalidOperationException("Explicit JSON mode does not support setting contracts");
+            _mode = Mode.HighLevel;
+            _contracts = contracts;
+            return this;
+        }
+
+        public Builder SetTypes(IDictionary<DataType, Target.TypeInfo> types)
+        {
+            if (_created)
+                throw new InvalidOperationException("Context already created");
+            if (_mode == Mode.ExplicitJson)
+                throw new InvalidOperationException("Explicit JSON mode does not support setting types");
+            _mode = Mode.HighLevel;
+            _types = types;
+            return this;
+        }
+
+        public Builder SetGlobals(IReadOnlyCollection<(string Name, ulong Value, string? TypeName)> globals)
+        {
+            if (_created)
+                throw new InvalidOperationException("Context already created");
+            if (_mode == Mode.ExplicitJson)
+                throw new InvalidOperationException("Explicit JSON mode does not support setting globals");
+            _mode = Mode.HighLevel;
+            _globals = globals;
             return this;
         }
 
@@ -130,10 +194,58 @@ internal unsafe static class MockMemorySpace
             return this;
         }
 
+        private string MakeContractsJson()
+        {
+            if (_contracts.Count == 0)
+                return string.Empty;
+            StringBuilder sb = new ();
+            foreach (var c in _contracts)
+            {
+                sb.Append($"\"{c}\": 1,");
+            }
+            Debug.Assert(sb.Length > 0);
+            sb.Length--; // remove trailing comma
+            return sb.ToString();
+        }
+
+        private void FillHighLevel()
+        {
+            string metadataTypesJson = TargetTestHelpers.MakeTypesJson(_types);
+            string metadataGlobalsJson = TargetTestHelpers.MakeGlobalsJson(_globals);
+            string interpolatedContracts = MakeContractsJson();
+            byte[] json = Encoding.UTF8.GetBytes($$"""
+            {
+                "version": 0,
+                "baseline": "empty",
+                "contracts": { {{ interpolatedContracts }} },
+                "types": { {{metadataTypesJson}} },
+                "globals": { {{metadataGlobalsJson}} }
+            }
+            """);
+            SetJsonInternal(json);
+
+            int pointerSize = _targetTestHelpers.PointerSize;
+            Span<byte> pointerData = stackalloc byte[_globals.Count * pointerSize];
+            int offset = 0;
+            foreach (var (_, value, _) in _globals)
+            {
+                _targetTestHelpers.WritePointer(pointerData.Slice(offset), value);
+                offset += pointerSize;
+            }
+            SetPointerDataInternal(pointerData);
+        }
+
         private ReadContext CreateContext()
         {
             if (_created)
                 throw new InvalidOperationException("Context already created");
+            if (_mode == Mode.Indeterminate)
+                throw new InvalidOperationException("No input data provided");
+            if (_mode == Mode.HighLevel)
+            {
+                FillHighLevel();
+            }
+
             if (!_setDescriptor)
                 FillDescriptor();
             ReadContext context = new ReadContext

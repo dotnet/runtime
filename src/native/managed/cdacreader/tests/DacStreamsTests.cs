@@ -34,33 +34,13 @@ public class DacStreamsTests
     private static unsafe void DacStreamsContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-        string metadataTypesJson = TargetTestHelpers.MakeTypesJson(DacStreamsTypes);
-        string metadataGlobalsJson = TargetTestHelpers.MakeGlobalsJson(DacStreamsGlobals);
-        byte[] json = Encoding.UTF8.GetBytes($$"""
-        {
-            "version": 0,
-            "baseline": "empty",
-            "contracts": {
-                "{{nameof(Contracts.DacStreams)}}": 1
-            },
-            "types": { {{metadataTypesJson}} },
-            "globals": { {{metadataGlobalsJson}} }
-        }
-        """);
-
-        int pointerSize = targetTestHelpers.PointerSize;
-        Span<byte> pointerData = stackalloc byte[DacStreamsGlobals.Length * pointerSize];
-        for (int i = 0; i < DacStreamsGlobals.Length; i++)
-        {
-            var (_, value, _) = DacStreamsGlobals[i];
-            targetTestHelpers.WritePointer(pointerData.Slice(i * pointerSize), value);
-        }
 
         MockMemorySpace.Builder builder = new(targetTestHelpers);
 
         builder = builder
-                .SetJson(json)
-                .SetPointerData(pointerData);
+                .SetContracts([nameof(Contracts.DacStreams)])
+                .SetTypes(DacStreamsTypes)
+                .SetGlobals(DacStreamsGlobals);
 
         if (configure != null)
         {
