@@ -13,7 +13,7 @@ public unsafe class ObjectTests
 {
     private delegate MockMemorySpace.Builder ConfigureContextBuilder(MockMemorySpace.Builder builder);
 
-    private static void ObjectContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<ContractDescriptorTarget> testCase)
+    private static void ObjectContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
 

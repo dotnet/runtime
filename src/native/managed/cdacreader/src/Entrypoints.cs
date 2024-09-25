@@ -47,7 +47,7 @@ internal static class Entrypoints
     private static unsafe int GetSOSInterface(IntPtr handle, nint* obj)
     {
         ComWrappers cw = new StrategyBasedComWrappers();
-        ContractDescriptorTarget? target = GCHandle.FromIntPtr(handle).Target as ContractDescriptorTarget;
+        Target? target = GCHandle.FromIntPtr(handle).Target as Target;
         if (target == null)
             return -1;
 

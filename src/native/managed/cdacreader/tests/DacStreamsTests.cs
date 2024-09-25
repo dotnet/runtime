@@ -31,7 +31,7 @@ public class DacStreamsTests
         (nameof(Constants.Globals.MiniMetaDataBuffMaxSize), TestMiniMetaDataBuffGlobalMaxSize, null),
     ];
 
-    private static unsafe void DacStreamsContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<ContractDescriptorTarget> testCase)
+    private static unsafe void DacStreamsContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
         string metadataTypesJson = TargetTestHelpers.MakeTypesJson(DacStreamsTypes);

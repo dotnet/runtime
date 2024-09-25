@@ -15,7 +15,7 @@ public unsafe class MethodTableTests
     // a delegate for adding more heap fragments to the context builder
     private delegate MockMemorySpace.Builder ConfigureContextBuilder(MockMemorySpace.Builder builder);
 
-    private static void RTSContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<ContractDescriptorTarget> testCase)
+    private static void RTSContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
         string metadataTypesJson = TargetTestHelpers.MakeTypesJson(MockRTS.Types);
