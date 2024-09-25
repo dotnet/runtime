@@ -425,7 +425,7 @@ HRESULT EEConfig::sync()
     iGCConservative =  (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConservative) != 0);
 #endif // FEATURE_CONSERVATIVE_GC
 
-    fEnableGCHoleMonitoring = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_EnableGCHoleMonitoring) != 0);
+    fCheckDoubleReporting = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_CheckDoubleReporting, iGCStress ? 1 : 0) != 0);
 
 #ifdef HOST_64BIT
     iGCAllowVeryLargeObjects = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_gcAllowVeryLargeObjects) != 0);

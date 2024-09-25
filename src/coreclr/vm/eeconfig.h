@@ -389,7 +389,7 @@ public:
 #ifdef FEATURE_CONSERVATIVE_GC
     bool    GetGCConservative()             const {LIMITED_METHOD_CONTRACT; return iGCConservative;}
 #endif
-    bool    GetEnableGCHoleMonitoring()     const {LIMITED_METHOD_CONTRACT; return fEnableGCHoleMonitoring; }
+    bool    GetCheckDoubleReporting()       const {LIMITED_METHOD_CONTRACT; return fCheckDoubleReporting; }
 #ifdef HOST_64BIT
     bool    GetGCAllowVeryLargeObjects()    const {LIMITED_METHOD_CONTRACT; return iGCAllowVeryLargeObjects;}
 #endif
@@ -573,7 +573,7 @@ private: //----------------------------------------------------------------
     bool iGCAllowVeryLargeObjects;
 #endif // HOST_64BIT
 
-    bool fEnableGCHoleMonitoring;
+    bool fCheckDoubleReporting;
 
     bool fGCBreakOnOOM;
 
