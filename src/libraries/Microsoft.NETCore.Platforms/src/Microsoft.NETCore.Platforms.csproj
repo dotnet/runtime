@@ -43,6 +43,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+
+    <!-- To satisfy CG alerts -->
+    <PackageReference Include="Microsoft.IO.Redist" Version="$(MicrosoftIORedistVersion)" />
   </ItemGroup>
   
   <UsingTask TaskName="UpdateRuntimeIdentifierGraph" AssemblyFile="$(_generateRuntimeGraphTask)"/>
