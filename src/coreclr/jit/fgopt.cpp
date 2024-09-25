@@ -5205,6 +5205,30 @@ void Compiler::fgSearchImprovedLayout()
         cutPoints.Push(edge);
     };
 
+    auto addNonFallthroughSuccs = [this, considerEdge](BasicBlock* block, BasicBlock* next) {
+        assert(block != nullptr);
+
+        for (FlowEdge* const succEdge : block->SuccEdges(this))
+        {
+            if (succEdge->getDestinationBlock() != next)
+            {
+                considerEdge(succEdge);
+            }
+        }
+    };
+
+    auto addNonFallthroughPreds = [considerEdge](BasicBlock* block, BasicBlock* prev) {
+        assert(block != nullptr);
+
+        for (FlowEdge* const predEdge : block->PredEdges())
+        {
+            if (predEdge->getSourceBlock() != prev)
+            {
+                considerEdge(predEdge);
+            }
+        }
+    };
+
     assert(finalBlock != nullptr);
     BasicBlock** blockOrder = new (this, CMK_BasicBlock) BasicBlock*[numHotBlocks];
     BasicBlock** tempOrder  = new (this, CMK_BasicBlock) BasicBlock*[numHotBlocks];
@@ -5215,14 +5239,7 @@ void Compiler::fgSearchImprovedLayout()
     {
         blockOrder[position] = block;
         position++;
-
-        for (FlowEdge* const succEdge : block->SuccEdges(this))
-        {
-            if (!block->NextIs(succEdge->getDestinationBlock()))
-            {
-                considerEdge(succEdge);
-            }
-        }
+        addNonFallthroughSuccs(block, block->Next());
     }
 
     assert(position == numHotBlocks);
@@ -5347,67 +5364,25 @@ void Compiler::fgSearchImprovedLayout()
 
         // We've found a profitable cut point. Continue with the swap.
 
-        auto getHottestPred = [](BasicBlock* block) -> FlowEdge* {
-            assert(block != nullptr);
-            FlowEdge* hottestPred = block->bbPreds;
-
-            for (FlowEdge* const predEdge : block->PredEdges())
-            {
-                if (predEdge->getLikelyWeight() > hottestPred->getLikelyWeight())
-                {
-                    hottestPred = predEdge;
-                }
-            }
-
-            return hottestPred;
-        };
-
-        auto getHottestSucc = [](BasicBlock* block) -> FlowEdge* {
-            assert(block != nullptr);
-            FlowEdge* hottestSucc = nullptr;
-
-            for (FlowEdge* const succEdge : block->SuccEdges())
-            {
-                if ((hottestSucc == nullptr) || (succEdge->getLikelihood() > hottestSucc->getLikelihood()))
-                {
-                    hottestSucc = succEdge;
-                }
-            }
-
-            return hottestSucc;
-        };
-
-        // If we're going to incur cost from moving srcBlk,
-        // find a hot edge out of srcBlk's predecessor to consider
+        // If we're going to break up fallthrough into 'srcBlk',
+        // consider all other edges out of 'srcBlk''s current fallthrough predecessor
         if (srcPrevCost != 0.0)
         {
-            FlowEdge* const hottestSucc = getHottestSucc(blockOrder[srcPos - 1]);
-            if ((hottestSucc != nullptr) && (hottestSucc->getDestinationBlock() != srcBlk))
-            {
-                considerEdge(hottestSucc);
-            }
+            addNonFallthroughSuccs(blockOrder[srcPos - 1], srcBlk);
         }
 
-        // If we're going to break up fallthrough out of srcBlk,
-        // find a hot predecessor for the current fallthrough successor to consider
+        // If we're going to break up fallthrough out of 'srcBlk',
+        // consider all other edges into 'srcBlk''s current fallthrough successor
         if (srcNextCost != 0.0)
         {
-            FlowEdge* const hottestPred = getHottestPred(blockOrder[srcPos + 1]);
-            if ((hottestPred != nullptr) && (hottestPred->getSourceBlock() != srcBlk))
-            {
-                considerEdge(hottestPred);
-            }
+            addNonFallthroughPreds(blockOrder[srcPos + 1], srcBlk);
         }
 
-        // If we're going to break up fallthrough into dstBlk,
-        // find a hot successor for the current fallthrough predecessor to consider
+        // If we're going to break up fallthrough into 'dstBlk',
+        // consider all other edges out of 'dstBlk''s current fallthrough predecessor
         if (dstPrevCost != 0.0)
         {
-            FlowEdge* const hottestSucc = getHottestSucc(blockOrder[dstPos - 1]);
-            if ((hottestSucc != nullptr) && (hottestSucc->getDestinationBlock() != dstBlk))
-            {
-                considerEdge(hottestSucc);
-            }
+            addNonFallthroughSuccs(blockOrder[dstPos - 1], dstBlk);
         }
 
         // Swap the partitions
