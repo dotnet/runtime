@@ -21,11 +21,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface9
 {
-    private readonly ContractDescriptorTarget _target;
+    private readonly Target _target;
     private readonly TargetPointer _stringMethodTable;
     private readonly TargetPointer _objectMethodTable;
 
-    public SOSDacImpl(ContractDescriptorTarget target)
+    public SOSDacImpl(Target target)
     {
         _target = target;
         _stringMethodTable = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
@@ -156,7 +156,9 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
                         Contracts.ModuleHandle module = _target.Contracts.Loader.GetModuleHandle(modulePtr);
                         string modulePath = _target.Contracts.Loader.GetPath(module);
                         ReadOnlySpan<char> moduleSpan = modulePath.AsSpan();
-                        int pathNameSpanIndex = moduleSpan.LastIndexOf(_target.DirectorySeparator);
+                        char directorySeparator = (char)_target.ReadGlobal<byte>(Constants.Globals.DirectorySeparator);
+
+                        int pathNameSpanIndex = moduleSpan.LastIndexOf(directorySeparator);
                         if (pathNameSpanIndex != -1)
                         {
                             moduleSpan = moduleSpan.Slice(pathNameSpanIndex + 1);

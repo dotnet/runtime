@@ -416,8 +416,6 @@ internal sealed unsafe class ContractDescriptorTarget : Target
     public override bool IsAlignedToPointerSize(TargetPointer pointer)
         => IsAligned(pointer.Value, _config.PointerSize);
 
-    public char DirectorySeparator => (char)ReadGlobal<byte>(Constants.Globals.DirectorySeparator);
-
     public override T ReadGlobal<T>(string name)
         => ReadGlobal<T>(name, out _);
 
