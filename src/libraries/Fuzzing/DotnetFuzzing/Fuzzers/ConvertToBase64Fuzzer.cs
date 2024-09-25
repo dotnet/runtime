@@ -1,57 +1,27 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Text;
 using System.Buffers;
-using System.Diagnostics;
-using System.Text;
 
 namespace DotnetFuzzing.Fuzzers
 {
     internal sealed class ConvertToBase64Fuzzer : IFuzzer
     {
         private const int Base64LineBreakPosition = 76;
-        private static readonly SearchValues<char> s_validBase64Chars = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=");
 
         public string[] TargetAssemblies => [];
 
         public string[] TargetCoreLibPrefixes { get; } = ["System.Convert"];
 
-        public string Dictionary => "base64.dict";
-
         public void FuzzTarget(ReadOnlySpan<byte> bytes)
         {
-            Test(bytes, PoisonPagePlacement.Before);
-            Test(bytes, PoisonPagePlacement.After);
+            TestToStringToCharArray(bytes, Base64FormattingOptions.None, PoisonPagePlacement.Before);
+            TestToStringToCharArray(bytes, Base64FormattingOptions.InsertLineBreaks, PoisonPagePlacement.Before);
+            TestToStringToCharArray(bytes, Base64FormattingOptions.None, PoisonPagePlacement.After);
+            TestToStringToCharArray(bytes, Base64FormattingOptions.InsertLineBreaks, PoisonPagePlacement.After);
         }
 
-        private void Test(ReadOnlySpan<byte> bytes, PoisonPagePlacement poison)
-        { 
-            string noLineBreakString = TestToStringToCharArray(bytes, Base64FormattingOptions.None, poison);
-            string lineBreakString = TestToStringToCharArray(bytes, Base64FormattingOptions.InsertLineBreaks, poison);
-
-            Assert.Equal(-1, noLineBreakString.AsSpan().IndexOfAnyExcept(s_validBase64Chars));
-
-            while (true)
-            {
-                int index = lineBreakString.AsSpan().IndexOfAnyExcept(s_validBase64Chars);
-                if (index < 0)
-                {
-                    break;
-                }
-
-                if (!IsWhiteSpace(lineBreakString[index]))
-                {
-                    throw new Exception($"Non Base64 char: {lineBreakString}, {index}");
-                }
-
-                lineBreakString = lineBreakString.Remove(index, 2); // \r\n
-            }
-
-            Assert.Equal(noLineBreakString, lineBreakString);
-        }
-
-        private static string TestToStringToCharArray(ReadOnlySpan<byte> bytes, Base64FormattingOptions options, PoisonPagePlacement poison)
+        private static void TestToStringToCharArray(ReadOnlySpan<byte> bytes, Base64FormattingOptions options, PoisonPagePlacement poison)
         { 
             using PooledBoundedMemory<byte> inputPoisoned = PooledBoundedMemory<byte>.Rent(bytes, poison);
             int encodedLength = ToBase64_CalculateOutputLength(bytes.Length, options == Base64FormattingOptions.InsertLineBreaks);
@@ -69,8 +39,6 @@ namespace DotnetFuzzing.Fuzzers
 
             Assert.SequenceEqual(input, decoded);
             Assert.Equal(toStringResult, new string(dest, 0, written));
-
-            return toStringResult;
         }
 
         private static int ToBase64_CalculateOutputLength(int inputLength, bool insertLineBreaks)
@@ -92,7 +60,5 @@ namespace DotnetFuzzing.Fuzzers
 
             return (int)outlen;
         }
-
-        private static bool IsWhiteSpace(char value) => value == '\r' || value == '\n';
     }
 }
