@@ -850,8 +850,6 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
 #if defined(TARGET_RISCV64)
 static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* pTargetMD)
 {
-    // TODO: Stack growing is a rare case but if thunk duplication turns out to be an issue, optimize by cooking
-    // a stripped signature similar to GenerateShuffleArray and use call target from DelegateObject::GetMethodPtrAux()
     SigTypeContext typeContext(pDelegateMD);
     MetaSig delegateSig(pDelegateMD);
     INDEBUG(MetaSig targetSig(pTargetMD));

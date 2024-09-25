@@ -1388,8 +1388,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     EmitAddImm(t5, a0, DelegateObject::GetOffsetOfMethodPtrAux());
 
     const ShuffleEntry* entry = pShuffleEntryArray;
-
-    // First, shuffle plain integer registers
+    // Shuffle integer argument registers
     for (; entry->srcofs != ShuffleEntry::SENTINEL && InRegister(entry->dstofs) && InRegister(entry->srcofs); ++entry)
     {
         _ASSERTE(!IsRegisterFloating(entry->srcofs));
@@ -1408,10 +1407,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
         EmitLoad(lastIntArgReg, RegSp, 0);
         ++entry;
 
-        // All transfers between integer and floating-point calling conventions are caused by an FP struct lowered
-        // to the last integer register and a floating register; these cases are handled by IL stubs. Here the last
-        // integer register is taken by a stack slot passed according to integer calling convention so all further
-        // shuffling is (stack) <- (stack+1).
+        // All further shuffling is (stack) <- (stack+1)
         for (unsigned dst = 0; entry->srcofs != ShuffleEntry::SENTINEL; ++entry, ++dst)
         {
             unsigned src = dst + 1;
