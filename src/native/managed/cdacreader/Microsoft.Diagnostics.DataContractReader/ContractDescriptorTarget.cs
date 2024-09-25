@@ -39,7 +39,7 @@ internal sealed unsafe class ContractDescriptorTarget : Target
     private readonly Dictionary<DataType, Target.TypeInfo> _knownTypes = [];
     private readonly Dictionary<string, Target.TypeInfo> _types = [];
 
-    public override Contracts.AbstractContractRegistry Contracts { get; }
+    public override Contracts.ContractRegistry Contracts { get; }
     public override DataCache ProcessedData { get; }
 
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
@@ -59,7 +59,7 @@ internal sealed unsafe class ContractDescriptorTarget : Target
 
     private ContractDescriptorTarget(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
     {
-        Contracts = new Contracts.ContractRegistry(this);
+        Contracts = new Contracts.CachingContractRegistry(this, this.TryGetContractVersion);
         ProcessedData = new DataCache(this);
         _config = config;
         _reader = reader;
