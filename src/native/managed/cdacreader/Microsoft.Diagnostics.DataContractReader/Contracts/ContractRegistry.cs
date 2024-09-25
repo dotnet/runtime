@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class ContractRegistry : IContractRegistry
+internal sealed class ContractRegistry : AbstractContractRegistry
 {
     // Contracts that have already been created for a target.
     // Items should not be removed from this, only added.
@@ -29,13 +29,13 @@ internal sealed class ContractRegistry : IContractRegistry
         configureFactories?.Invoke(_factories);
     }
 
-    public IException Exception => GetContract<IException>();
-    public ILoader Loader => GetContract<ILoader>();
-    public IEcmaMetadata EcmaMetadata => GetContract<IEcmaMetadata>();
-    public IObject Object => GetContract<IObject>();
-    public IThread Thread => GetContract<IThread>();
-    public IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IRuntimeTypeSystem>();
-    public IDacStreams DacStreams => GetContract<IDacStreams>();
+    public override IException Exception => GetContract<IException>();
+    public override ILoader Loader => GetContract<ILoader>();
+    public override IEcmaMetadata EcmaMetadata => GetContract<IEcmaMetadata>();
+    public override IObject Object => GetContract<IObject>();
+    public override IThread Thread => GetContract<IThread>();
+    public override IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IRuntimeTypeSystem>();
+    public override IDacStreams DacStreams => GetContract<IDacStreams>();
 
     private TProduct GetContract<TProduct>() where TProduct : IContract
     {

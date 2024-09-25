@@ -39,7 +39,7 @@ internal sealed unsafe class Target : AbstractTarget
     private readonly Dictionary<DataType, AbstractTarget.TypeInfo> _knownTypes = [];
     private readonly Dictionary<string, AbstractTarget.TypeInfo> _types = [];
 
-    public override Contracts.IContractRegistry Contracts { get; }
+    public override Contracts.AbstractContractRegistry Contracts { get; }
     public override DataCache ProcessedData { get; }
 
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);

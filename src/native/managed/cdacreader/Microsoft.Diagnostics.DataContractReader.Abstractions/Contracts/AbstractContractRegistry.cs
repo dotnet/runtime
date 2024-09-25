@@ -9,34 +9,34 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 /// <summary>
 /// A registry of all the contracts that may be provided by a target.
 /// </summary>
-internal interface IContractRegistry
+internal abstract class AbstractContractRegistry
 {
     /// <summary>
     /// Gets an instance of the Exception contract for the target.
     /// </summary>
-    IException Exception { get;}
+    public abstract IException Exception { get;}
     /// <summary>
     /// Gets an instance of the Loader contract for the target.
     /// </summary>
-    ILoader Loader { get; }
+    public abstract ILoader Loader { get; }
     /// <summary>
     /// Gets an instance of the EcmaMetadata contract for the target.
     /// </summary>
-    IEcmaMetadata EcmaMetadata { get; }
+    public abstract IEcmaMetadata EcmaMetadata { get; }
     /// <summary>
     /// Gets an instance of the Object contract for the target.
     /// </summary>
-    IObject Object { get; }
+    public abstract IObject Object { get; }
     /// <summary>
     /// Gets an instance of the Thread contract for the target.
     /// </summary>
-    IThread Thread { get; }
+    public abstract IThread Thread { get; }
     /// <summary>
     /// Gets an instance of the RuntimeTypeSystem contract for the target.
     /// </summary>
-    IRuntimeTypeSystem RuntimeTypeSystem { get; }
+    public abstract IRuntimeTypeSystem RuntimeTypeSystem { get; }
     /// <summary>
     /// Gets an instance of the DacStreams contract for the target.
     /// </summary>
-    IDacStreams DacStreams { get; }
+    public abstract IDacStreams DacStreams { get; }
 }
