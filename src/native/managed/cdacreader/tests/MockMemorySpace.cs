@@ -158,22 +158,24 @@ internal unsafe static class MockMemorySpace
         public bool TryCreateTarget([NotNullWhen(true)] out Target? target)
         {
             ReadContext context = CreateContext();
-            return Target.TryCreate(context.ContractDescriptor.Address, context.ReadFromTarget, out target);
+            return ContractDescriptorTarget.TryCreate(context.ContractDescriptor.Address, context.ReadFromTarget, out target);
         }
     }
 
-    public static Target CreateTarget(ReadOnlySpan<byte> descriptor, ReadOnlySpan<byte> json, ReadOnlySpan<byte> pointerData = default)
+    public static ContractDescriptorTarget CreateTarget(ReadOnlySpan<byte> descriptor, ReadOnlySpan<byte> json, ReadOnlySpan<byte> pointerData = default)
     {
         Builder builder = new Builder()
         .SetJson(json)
         .SetDescriptor(descriptor)
         .SetPointerData(pointerData);
-        return builder.Create();
+        bool success = builder.TryCreateTarget(out var target);
+        Assert.True(success);
+        return target;
     }
 
     public static bool TryCreateTarget(ReadContext context, out Target? target)
     {
-        return Target.TryCreate(context.ContractDescriptor.Address, context.ReadFromTarget, out target);
+        return ContractDescriptorTarget.TryCreate(context.ContractDescriptor.Address, context.ReadFromTarget, out target);
     }
 
     // Used by ReadFromTarget to return the appropriate bytes

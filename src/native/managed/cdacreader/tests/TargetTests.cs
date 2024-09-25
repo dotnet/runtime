@@ -54,17 +54,17 @@ public unsafe class TargetTests
 
         Target target = MockMemorySpace.CreateTarget(descriptor, json);
 
-        foreach ((DataType type, ITarget.TypeInfo info) in TestTypes)
+        foreach ((DataType type, Target.TypeInfo info) in TestTypes)
         {
             {
                 // By known type
-                ITarget.TypeInfo actual = target.GetTypeInfo(type);
+                Target.TypeInfo actual = target.GetTypeInfo(type);
                 Assert.Equal(info.Size, actual.Size);
                 Assert.Equal(info.Fields, actual.Fields);
             }
             {
                 // By name
-                ITarget.TypeInfo actual = target.GetTypeInfo(type.ToString());
+                Target.TypeInfo actual = target.GetTypeInfo(type.ToString());
                 Assert.Equal(info.Size, actual.Size);
                 Assert.Equal(info.Fields, actual.Fields);
             }
