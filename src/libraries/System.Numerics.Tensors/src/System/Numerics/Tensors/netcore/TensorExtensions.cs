@@ -2832,7 +2832,9 @@ namespace System.Numerics.Tensors
                 for (int i = 0; i < arrLengths.Length; i++)
                 {
                     if (lengthOffset < tensor.Rank && arrLengths[i] == tensor.Lengths[lengthOffset])
+                    {
                         lengthOffset++;
+                    }
                     else if (arrLengths[i] == 1)
                     {
                         if (lengthOffset == tensor.Rank)
