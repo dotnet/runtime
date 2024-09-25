@@ -4658,20 +4658,6 @@ void Compiler::fgMoveHotJumps()
     }
 }
 
-struct CallFinallyPair
-{
-    BasicBlock* callFinally;
-    BasicBlock* callFinallyRet;
-
-    // Constructor provided so we can call ArrayStack::Emplace
-    //
-    CallFinallyPair(BasicBlock* first, BasicBlock* second)
-        : callFinally(first)
-        , callFinallyRet(second)
-    {
-    }
-};
-
 //-----------------------------------------------------------------------------
 // fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO traversal.
 //
@@ -4700,12 +4686,8 @@ void Compiler::fgDoReversePostOrderLayout()
         {
             BasicBlock* const block       = dfsTree->GetPostOrder(i);
             BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
-
-            if (!block->NextIs(blockToMove))
-            {
-                fgUnlinkBlock(blockToMove);
-                fgInsertBBafter(block, blockToMove);
-            }
+            fgUnlinkBlock(blockToMove);
+            fgInsertBBafter(block, blockToMove);
         }
 
         fgMoveHotJumps</* hasEH */ false>();
@@ -4731,6 +4713,19 @@ void Compiler::fgDoReversePostOrderLayout()
 
     // The RPO will break up call-finally pairs, so save them before re-ordering
     //
+    struct CallFinallyPair
+    {
+        BasicBlock* callFinally;
+        BasicBlock* callFinallyRet;
+
+        // Constructor provided so we can call ArrayStack::Emplace
+        //
+        CallFinallyPair(BasicBlock* first, BasicBlock* second)
+            : callFinally(first)
+            , callFinallyRet(second)
+        {
+        }
+    };
     ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator());
 
     for (EHblkDsc* const HBtab : EHClauses(this))
@@ -4769,16 +4764,12 @@ void Compiler::fgDoReversePostOrderLayout()
                 continue;
             }
 
-            if (!block->NextIs(blockToMove))
-            {
-                fgUnlinkBlock(blockToMove);
-                fgInsertBBafter(block, blockToMove);
-            }
+            fgUnlinkBlock(blockToMove);
+            fgInsertBBafter(block, blockToMove);
         }
     }
 
     // Fix up call-finally pairs
-    // (We assume the RPO will mess these up, so don't bother checking if the blocks are still adjacent)
     //
     for (int i = 0; i < callFinallyPairs.Height(); i++)
     {
