@@ -764,6 +764,11 @@ void GCToEEInterface::LogErrorToHost(const char *message)
 {
 }
 
+uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
+{
+    return (uint64_t)thread->GetPalThreadIdForLogging();
+}
+
 bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
     UNREFERENCED_PARAMETER(privateKey);
