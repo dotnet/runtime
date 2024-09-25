@@ -1720,23 +1720,8 @@ namespace System.Numerics.Tensors.Tests
             leftSpan = leftData.AsTensorSpan(9);
             rightSpan = rightData.AsTensorSpan(15);
             success = leftSpan.TryCopyTo(rightSpan);
-            leftEnum = leftSpan.GetEnumerator();
-            rightEnum = rightSpan.GetEnumerator();
-            Assert.True(success);
-            // Make sure the first 9 spots are equal after copy
-            while (leftEnum.MoveNext() && rightEnum.MoveNext())
-            {
-                Assert.Equal(leftEnum.Current, rightEnum.Current);
-            }
-            // The rest of the slots shouldn't have been touched.
-            while (rightEnum.MoveNext())
-            {
-                Assert.Equal(0, rightEnum.Current);
-            }
 
-            //Make sure its a copy
-            leftSpan[0] = 100;
-            Assert.NotEqual(leftSpan[0], rightSpan[0]);
+            Assert.False(success);
 
             leftData = [.. Enumerable.Range(0, 27)];
             rightData = [.. Enumerable.Range(0, 27)];
