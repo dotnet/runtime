@@ -5127,6 +5127,17 @@ void Compiler::fgSearchImprovedLayout()
         return;
     }
 
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgSearchImprovedLayout()\n");
+
+        printf("\nInitial BasicBlocks");
+        fgDispBasicBlocks(verboseTrees);
+        printf("\n");
+    }
+#endif // DEBUG
+
     // Note that we're default-initializing 'ordinals' with zeros.
     // Block reordering shouldn't change the method's entry point,
     // so if a block has an ordinal of zero and it's not 'fgFirstBB',
