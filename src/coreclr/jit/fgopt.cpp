@@ -3348,15 +3348,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         {
             fgDoReversePostOrderLayout();
             fgMoveColdBlocks();
-
-            if (compHndBBtabCount != 0)
-            {
-                fgSearchImprovedLayout<true>();
-            }
-            else
-            {
-                fgSearchImprovedLayout<false>();
-            }
+            fgSearchImprovedLayout();
 
             // Renumber blocks to facilitate LSRA's order of block visitation
             // TODO: Consider removing this, and using traversal order in lSRA
@@ -5128,64 +5120,40 @@ void Compiler::fgMoveColdBlocks()
     ehUpdateTryLasts<decltype(getTryLast), decltype(setTryLast)>(getTryLast, setTryLast);
 }
 
-template <bool hasEH>
+//-----------------------------------------------------------------------------
+// fgSearchImprovedLayout: Try to improve upon RPO-based layout with the 3-opt method:
+//   - Identify a range of hot blocks to reorder within
+//   - Partition this set into three segments: S1 - S2 - S3
+//   - Evaluate cost of swapped layout: S1 - S3 - S2
+//   - If the cost improves, keep this layout
+//
 void Compiler::fgSearchImprovedLayout()
 {
-    if (hasEH)
+    if (compHndBBtabCount != 0)
     {
+        // TODO: Reorder methods with EH regions
         return;
     }
 
-    auto edgeWeightComp = [](const FlowEdge* left, const FlowEdge* right) -> bool {
-        return left->getLikelyWeight() < right->getLikelyWeight();
-    };
-
-    unsigned                                           numHotBlocks = 0;
-    PriorityQueue<FlowEdge*, decltype(edgeWeightComp)> cutPoints(getAllocator(CMK_FlowEdge), edgeWeightComp);
-    BasicBlock*                                        finalBlock = fgLastBBInMainFunction();
+    // Note that we're default-initializing 'ordinals' with zeros.
+    // Block reordering shouldn't change the method's entry point,
+    // so if a block has an ordinal of zero and it's not 'fgFirstBB',
+    // the block wasn't visited below, so it's not in the range of hot blocks.
+    unsigned* const ordinals       = new (this, CMK_Generic) unsigned[fgBBNumMax + 1]{};
+    unsigned        numHotBlocks   = 0;
+    BasicBlock*     finalBlock     = fgLastBBInMainFunction();
+    BasicBlock*     firstColdBlock = nullptr;
 
     for (BasicBlock* const block : Blocks(fgFirstBB, finalBlock))
     {
         if (block->isBBWeightCold(this))
         {
-            finalBlock = block->Prev();
+            firstColdBlock = block;
+            finalBlock     = block->Prev();
             break;
         }
 
-        numHotBlocks++;
-
-        if (block->KindIs(BBJ_ALWAYS) && !block->JumpsToNext())
-        {
-            cutPoints.Push(block->GetTargetEdge());
-        }
-        else if (block->KindIs(BBJ_COND))
-        {
-            FlowEdge* likelyEdge;
-            FlowEdge* unlikelyEdge;
-
-            if (block->GetTrueEdge()->getLikelihood() > 0.5)
-            {
-                likelyEdge   = block->GetTrueEdge();
-                unlikelyEdge = block->GetFalseEdge();
-            }
-            else
-            {
-                likelyEdge   = block->GetFalseEdge();
-                unlikelyEdge = block->GetTrueEdge();
-            }
-
-            assert(likelyEdge != unlikelyEdge);
-
-            if (!block->NextIs(likelyEdge->getDestinationBlock()))
-            {
-                cutPoints.Push(likelyEdge);
-
-                if (!block->NextIs(unlikelyEdge->getDestinationBlock()))
-                {
-                    cutPoints.Push(unlikelyEdge);
-                }
-            }
-        }
+        ordinals[block->bbNum] = numHotBlocks++;
     }
 
     if (numHotBlocks < 3)
@@ -5194,57 +5162,78 @@ void Compiler::fgSearchImprovedLayout()
         return;
     }
 
-    assert(finalBlock != nullptr);
-    const bool      hasExitBlock = !finalBlock->IsLast();
-    unsigned* const ordinals     = new (this, CMK_Generic) unsigned[fgBBNumMax + 1]{};
-    BasicBlock**    blockOrder   = new (this, CMK_BasicBlock) BasicBlock*[numHotBlocks + (int)hasExitBlock];
-    BasicBlock**    tempOrder    = new (this, CMK_BasicBlock) BasicBlock*[numHotBlocks + (int)hasExitBlock];
-    unsigned        position     = 0;
+    // We will use a priority queue to greedily get the next hottest edge to try to create fallthrough for
+    auto edgeWeightComp = [](const FlowEdge* left, const FlowEdge* right) -> bool {
+        return left->getLikelyWeight() < right->getLikelyWeight();
+    };
+    PriorityQueue<FlowEdge*, decltype(edgeWeightComp)> cutPoints(getAllocator(CMK_FlowEdge), edgeWeightComp);
 
+    // Since adding to priority queues has logarithmic time complexity,
+    // try to avoid adding edges that we obviously won't consider when reordering.
+    auto considerEdge = [&cutPoints, ordinals](FlowEdge* edge) {
+        assert(edge != nullptr);
+
+        BasicBlock* const srcBlk = edge->getSourceBlock();
+        BasicBlock* const dstBlk = edge->getDestinationBlock();
+        const unsigned    srcPos = ordinals[srcBlk->bbNum];
+        const unsigned    dstPos = ordinals[dstBlk->bbNum];
+
+        // Don't consider edges from outside the hot range.
+        // If 'srcBlk' has an ordinal of zero and it isn't the first block,
+        // it's not tracked by 'ordinals', so it's not in the hot section.
+        if ((srcPos == 0) && !srcBlk->IsFirst())
+        {
+            return;
+        }
+
+        // Don't consider edges to blocks outside the hot range,
+        // or backedges to 'fgFirstBB'; we don't want to change the entry point.
+        if (dstPos == 0)
+        {
+            return;
+        }
+
+        // Don't consider backedges for single-block loops
+        if (srcPos == dstPos)
+        {
+            return;
+        }
+
+        cutPoints.Push(edge);
+    };
+
+    assert(finalBlock != nullptr);
+    BasicBlock** blockOrder = new (this, CMK_BasicBlock) BasicBlock*[numHotBlocks];
+    BasicBlock** tempOrder  = new (this, CMK_BasicBlock) BasicBlock*[numHotBlocks];
+    unsigned     position   = 0;
+
+    // Initialize current block order, and find potential cut points in the hot section
     for (BasicBlock* const block : Blocks(fgFirstBB, finalBlock))
     {
-        blockOrder[position] = tempOrder[position] = block;
-        ordinals[block->bbNum]                     = position++;
+        blockOrder[position] = block;
+        position++;
+
+        for (FlowEdge* const succEdge : block->SuccEdges(this))
+        {
+            if (!block->NextIs(succEdge->getDestinationBlock()))
+            {
+                considerEdge(succEdge);
+            }
+        }
     }
 
     assert(position == numHotBlocks);
+    const unsigned lastHotIndex = numHotBlocks - 1;
+    bool           modified     = false;
 
-    if (hasExitBlock)
-    {
-        blockOrder[numHotBlocks] = tempOrder[numHotBlocks] = finalBlock->Next();
-    }
-
-    const unsigned lastHotIndex   = numHotBlocks - 1;
-    const unsigned firstColdIndex = numHotBlocks;
-    weight_t       cost;
-
-    auto getEdgeAndUpdateCost = [this, &cost, &blockOrder, firstColdIndex](unsigned srcPos,
-                                                                           unsigned dstPos) -> FlowEdge* {
-        if ((srcPos > firstColdIndex) || (dstPos > firstColdIndex))
-        {
-            return nullptr;
-        }
-
-        FlowEdge* const edge = fgGetPredForBlock(blockOrder[dstPos], blockOrder[srcPos]);
-
-        if (edge != nullptr)
-        {
-            cost += edge->getLikelyWeight();
-        }
-
-        return edge;
-    };
-
-    // S ~~~~ s | ~~~~ | d ~~~~ E
-    // S ~~~~ s | d ~~~~ | ~~~~ E
-    bool modified = false;
-
+    // For each candidate edge, determine if it's profitable to partition after the source block
+    // and before the destination block, and swapping the partitions to create fallthrough.
+    // If it is, do the swap, and for the blocks before/after each cut point that lost fallthrough,
+    // consider adding their successors/predecessors to the worklist.
     while (!cutPoints.Empty())
     {
         FlowEdge* const candidateEdge = cutPoints.Top();
         cutPoints.Pop();
-        const weight_t improvement = candidateEdge->getLikelyWeight();
-        cost = 0.0;
 
         BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
         BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
@@ -5254,21 +5243,12 @@ void Compiler::fgSearchImprovedLayout()
         assert(srcPos < numHotBlocks);
         assert(dstPos < numHotBlocks);
 
-        // Don't consider jumps from hot blocks to cold blocks.
-        // We can get such candidates if weight wasn't propagated correctly from 'srcBlk' to 'dstBlk'.
-        // We know 'dstPos' is cold if its position is not set in 'ordinals'.
-        // ('fgFirstBB' has a position of 0 too, but we don't want to change the entry point anyway,
-        // so skip any attempts to do so here)
-        if ((dstPos == 0) && !dstBlk->IsFirst())
-        {
-            continue;
-        }
+        // 'dstBlk' better be hot, and better not be 'fgFirstBB'
+        // (we don't want to change the entry point)
+        assert(dstPos != 0);
 
-        // Don't consider backedges for single-block loops
-        if (srcPos == dstPos)
-        {
-            continue;
-        }
+        // 'srcBlk' and 'dstBlk' better be distinct
+        assert(srcPos != dstPos);
 
         // Previous moves might have inadvertently created fallthrough from srcBlk to dstBlk,
         // so there's nothing to do this round.
@@ -5278,41 +5258,180 @@ void Compiler::fgSearchImprovedLayout()
             continue;
         }
 
-        const bool isForwardJump = (srcPos < dstPos);
-        if (!isForwardJump)
-        {
-            // TODO: Move backward jumps
-            continue;
-        }
-
-        // Before getting any edges, make sure 'ordinals' is up-to-date
+        // Before getting any edges, make sure 'ordinals' is accurate
         assert(blockOrder[srcPos] == srcBlk);
         assert(blockOrder[dstPos] == dstBlk);
 
-        FlowEdge* const srcNextEdge = getEdgeAndUpdateCost(srcPos, srcPos + 1);
-        FlowEdge* const dstPrevEdge = getEdgeAndUpdateCost(dstPos - 1, dstPos);
+        auto getCost = [this](BasicBlock* srcBlk, BasicBlock* dstBlk) -> weight_t {
+            assert(srcBlk != nullptr);
+            assert(dstBlk != nullptr);
+            FlowEdge* const edge = fgGetPredForBlock(dstBlk, srcBlk);
+            return (edge != nullptr) ? edge->getLikelyWeight() : 0.0;
+        };
 
-        if (hasExitBlock)
+        const bool isForwardJump = (srcPos < dstPos);
+        weight_t   srcPrevCost   = 0.0;
+        weight_t   srcNextCost   = 0.0;
+        weight_t   dstPrevCost   = 0.0;
+        weight_t   cost, improvement;
+        unsigned   part1Size, part2Size, part3Size;
+
+        if (isForwardJump)
         {
-            getEdgeAndUpdateCost(lastHotIndex, firstColdIndex);
+            // Here is the proposed partition:
+            // S1: 0 ~ srcPos
+            // S2: srcPos+1 ~ dstPos-1
+            // S3: dstPos ~ lastHotIndex
+            // S4: cold section
+            //
+            // After the swap:
+            // S1: 0 ~ srcPos
+            // S3: dstPos ~ lastHotIndex
+            // S2: srcPos+1 ~ dstPos-1
+            // S4: cold section
+            part1Size = srcPos + 1;
+            part2Size = dstPos - srcPos - 1;
+            part3Size = numHotBlocks - dstPos;
+
+            srcNextCost = getCost(srcBlk, blockOrder[srcPos + 1]);
+            dstPrevCost = getCost(blockOrder[dstPos - 1], dstBlk);
+            cost        = srcNextCost + dstPrevCost;
+            improvement = candidateEdge->getLikelyWeight() + getCost(blockOrder[lastHotIndex], blockOrder[srcPos + 1]);
+
+            if (firstColdBlock != nullptr)
+            {
+                cost += getCost(blockOrder[lastHotIndex], firstColdBlock);
+                improvement += getCost(blockOrder[dstPos - 1], firstColdBlock);
+            }
+        }
+        else
+        {
+            assert(dstPos < srcPos);
+
+            // Here is the proposed partition:
+            // S1: 0 ~ dstPos-1
+            // S2: dstPos ~ srcPos-1
+            // S3: srcPos
+            // S4: srcPos+1 ~ remaining code
+            //
+            // After the swap:
+            // S1: 0 ~ dstPos-1
+            // S3: srcPos
+            // S2: dstPos ~ srcPos-1
+            // S4: srcPos+1 ~ remaining code
+            part1Size = dstPos;
+            part2Size = srcPos - dstPos;
+            part3Size = 1;
+
+            srcPrevCost = getCost(blockOrder[srcPos - 1], srcBlk);
+            dstPrevCost = getCost(blockOrder[dstPos - 1], dstBlk);
+            cost        = srcPrevCost + dstPrevCost;
+            improvement = candidateEdge->getLikelyWeight() + getCost(blockOrder[dstPos - 1], srcBlk);
+
+            if (srcPos != lastHotIndex)
+            {
+                srcNextCost = getCost(srcBlk, blockOrder[srcPos + 1]);
+                cost += srcNextCost;
+                improvement += getCost(blockOrder[srcPos - 1], blockOrder[srcPos + 1]);
+            }
         }
 
+        // Continue evaluating candidates if this one isn't profitable
         if ((improvement <= cost) || Compiler::fgProfileWeightsEqual(improvement, cost, 0.001))
         {
             continue;
         }
 
-        modified = true;
+        // We've found a profitable cut point. Continue with the swap.
 
-        const unsigned part1Size = srcPos + 1;
-        const unsigned part2Size = dstPos - srcPos - 1;
-        const unsigned part3Size = numHotBlocks - dstPos;
+        auto getHottestPred = [](BasicBlock* block) -> FlowEdge* {
+            assert(block != nullptr);
+            FlowEdge* hottestPred = block->bbPreds;
 
+            for (FlowEdge* const predEdge : block->PredEdges())
+            {
+                if (predEdge->getLikelyWeight() > hottestPred->getLikelyWeight())
+                {
+                    hottestPred = predEdge;
+                }
+            }
+
+            return hottestPred;
+        };
+
+        auto getHottestSucc = [](BasicBlock* block) -> FlowEdge* {
+            assert(block != nullptr);
+            FlowEdge* hottestSucc = nullptr;
+
+            for (FlowEdge* const succEdge : block->SuccEdges())
+            {
+                if ((hottestSucc == nullptr) || (succEdge->getLikelihood() > hottestSucc->getLikelihood()))
+                {
+                    hottestSucc = succEdge;
+                }
+            }
+
+            return hottestSucc;
+        };
+
+        // If we're going to incur cost from moving srcBlk,
+        // find a hot edge out of srcBlk's predecessor to consider
+        if (srcPrevCost != 0.0)
+        {
+            FlowEdge* const hottestSucc = getHottestSucc(blockOrder[srcPos - 1]);
+            if ((hottestSucc != nullptr) && (hottestSucc->getDestinationBlock() != srcBlk))
+            {
+                considerEdge(hottestSucc);
+            }
+        }
+
+        // If we're going to break up fallthrough out of srcBlk,
+        // find a hot predecessor for the current fallthrough successor to consider
+        if (srcNextCost != 0.0)
+        {
+            FlowEdge* const hottestPred = getHottestPred(blockOrder[srcPos + 1]);
+            if ((hottestPred != nullptr) && (hottestPred->getSourceBlock() != srcBlk))
+            {
+                considerEdge(hottestPred);
+            }
+        }
+
+        // If we're going to break up fallthrough into dstBlk,
+        // find a hot successor for the current fallthrough predecessor to consider
+        if (dstPrevCost != 0.0)
+        {
+            FlowEdge* const hottestSucc = getHottestSucc(blockOrder[dstPos - 1]);
+            if ((hottestSucc != nullptr) && (hottestSucc->getDestinationBlock() != dstBlk))
+            {
+                considerEdge(hottestSucc);
+            }
+        }
+
+        // Swap the partitions
         memcpy(tempOrder, blockOrder, sizeof(BasicBlock*) * part1Size);
         memcpy(tempOrder + part1Size, blockOrder + part1Size + part2Size, sizeof(BasicBlock*) * part3Size);
         memcpy(tempOrder + part1Size + part3Size, blockOrder + part1Size, sizeof(BasicBlock*) * part2Size);
+
+        if (!isForwardJump)
+        {
+            const unsigned remainingCodeSize = numHotBlocks - srcPos - 1;
+            if (remainingCodeSize != 0)
+            {
+                memcpy(tempOrder + srcPos + 1, blockOrder + srcPos + 1, sizeof(BasicBlock*) * remainingCodeSize);
+            }
+            else
+            {
+                assert(srcPos == lastHotIndex);
+            }
+        }
+        else
+        {
+            assert((part1Size + part2Size + part3Size) == numHotBlocks);
+        }
+
         std::swap(blockOrder, tempOrder);
 
+        // Update the positions of the blocks we moved
         for (unsigned i = part1Size; i < numHotBlocks; i++)
         {
             ordinals[blockOrder[i]->bbNum] = i;
@@ -5320,16 +5439,7 @@ void Compiler::fgSearchImprovedLayout()
 
         // Ensure this move created fallthrough from srcBlk to dstBlk
         assert((ordinals[srcBlk->bbNum] + 1) == ordinals[dstBlk->bbNum]);
-
-        if (srcNextEdge != nullptr)
-        {
-            cutPoints.Push(srcNextEdge);
-        }
-
-        if (dstPrevEdge != nullptr)
-        {
-            cutPoints.Push(dstPrevEdge);
-        }
+        modified = true;
     }
 
     if (modified)
@@ -5346,237 +5456,6 @@ void Compiler::fgSearchImprovedLayout()
         }
     }
 }
-
-//-----------------------------------------------------------------------------
-// fgSearchImprovedLayout: Try to improve upon RPO-based layout with the 3-opt method:
-//   - Identify a subset of "interesting" (not cold, has branches, etc.) blocks to move
-//   - Partition this set into three segments: S1 - S2 - S3
-//   - Evaluate cost of swapped layout: S1 - S3 - S2
-//   - If the cost improves, keep this layout
-//   - Repeat for a certain number of iterations, or until no improvements are made
-//
-// Template parameters:
-//    hasEH - If true, method has EH regions, so check that we don't try to move blocks in different regions
-//
-// template <bool hasEH>
-// void Compiler::fgSearchImprovedLayout()
-// {
-// #ifdef DEBUG
-//     if (verbose)
-//     {
-//         printf("*************** In fgSearchImprovedLayout()\n");
-
-//         printf("\nInitial BasicBlocks");
-//         fgDispBasicBlocks(verboseTrees);
-//         printf("\n");
-//     }
-// #endif // DEBUG
-
-//     BlockSet    visitedBlocks(BlockSetOps::MakeEmpty(this));
-//     BasicBlock* startBlock = nullptr;
-
-//     // Find the first block that doesn't fall into its hottest successor.
-//     // This will be our first "interesting" block.
-//     //
-//     for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
-//     {
-//         // Ignore try/handler blocks
-//         if (hasEH && (block->hasTryIndex() || block->hasHndIndex()))
-//         {
-//             continue;
-//         }
-
-//         BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
-//         FlowEdge* hottestSuccEdge = nullptr;
-
-//         for (FlowEdge* const succEdge : block->SuccEdges(this))
-//         {
-//             BasicBlock* const succ = succEdge->getDestinationBlock();
-
-//             // Ignore try/handler successors
-//             //
-//             if (hasEH && (succ->hasTryIndex() || succ->hasHndIndex()))
-//             {
-//                 continue;
-//             }
-
-//             const bool isForwardJump = !BlockSetOps::IsMember(this, visitedBlocks, succ->bbNum);
-
-//             if (isForwardJump &&
-//                 ((hottestSuccEdge == nullptr) || (succEdge->getLikelihood() > hottestSuccEdge->getLikelihood())))
-//             {
-//                 hottestSuccEdge = succEdge;
-//             }
-//         }
-
-//         if ((hottestSuccEdge != nullptr) && !block->NextIs(hottestSuccEdge->getDestinationBlock()))
-//         {
-//             // We found the first "interesting" block that doesn't fall into its hottest successor
-//             //
-//             startBlock = block;
-//             break;
-//         }
-//     }
-
-//     if (startBlock == nullptr)
-//     {
-//         JITDUMP("\nSkipping reordering");
-//         return;
-//     }
-
-//     // blockVector will contain the set of interesting blocks to move.
-//     // tempBlockVector will assist with moving segments of interesting blocks.
-//     //
-//     BasicBlock**                blockVector     = new BasicBlock*[fgBBNumMax];
-//     BasicBlock**                tempBlockVector = new BasicBlock*[fgBBNumMax];
-//     unsigned                    blockCount      = 0;
-//     ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator(), hasEH ? ArrayStack<CallFinallyPair>::builtinSize :
-//     0);
-
-//     for (BasicBlock* const block : Blocks(startBlock, fgLastBBInMainFunction()))
-//     {
-//         // Don't consider blocks in EH regions
-//         //
-//         if (block->hasTryIndex() || block->hasHndIndex())
-//         {
-//             continue;
-//         }
-
-//         // We've reached the cold section of the main method body;
-//         // nothing is interesting at this point
-//         //
-//         if (block->isRunRarely())
-//         {
-//             break;
-//         }
-
-//         blockVector[blockCount]       = block;
-//         tempBlockVector[blockCount++] = block;
-
-//         if (hasEH && block->isBBCallFinallyPair())
-//         {
-//             callFinallyPairs.Emplace(block, block->Next());
-//         }
-//     }
-
-//     if (blockCount < 3)
-//     {
-//         JITDUMP("\nNot enough interesting blocks; skipping reordering");
-//         return;
-//     }
-
-//     JITDUMP("\nInteresting blocks: [" FMT_BB "-" FMT_BB "]", startBlock->bbNum, blockVector[blockCount - 1]->bbNum);
-
-// auto evaluateCost = [](BasicBlock* const block, BasicBlock* const next) -> weight_t {
-//     assert(block != nullptr);
-
-//     if ((block->NumSucc() == 0) || (next == nullptr))
-//     {
-//         return 0.0;
-//     }
-
-//     const weight_t cost = block->bbWeight;
-
-//     for (FlowEdge* const edge : block->SuccEdges())
-//     {
-//         if (edge->getDestinationBlock() == next)
-//         {
-//             return cost - edge->getLikelyWeight();
-//         }
-//     }
-
-//         return cost;
-//     };
-
-//     // finalBlock is the first block after the set of interesting blocks.
-//     // We will need to keep track of it to compute the cost of creating/breaking fallthrough into it.
-//     // finalBlock can be null.
-//     //
-//     BasicBlock* const  finalBlock     = blockVector[blockCount - 1]->Next();
-//     bool               improvedLayout = true;
-//     constexpr unsigned maxIter        = 5; // TODO: Reconsider?
-
-//     for (unsigned numIter = 0; improvedLayout && (numIter < maxIter); numIter++)
-//     {
-//         JITDUMP("\n\n--Iteration %d--", (numIter + 1));
-//         improvedLayout              = false;
-//         BasicBlock* const exitBlock = blockVector[blockCount - 1];
-
-//         for (unsigned i = 1; i < (blockCount - 1); i++)
-//         {
-//             BasicBlock* const blockI     = blockVector[i];
-//             BasicBlock* const blockIPrev = blockVector[i - 1];
-
-//             for (unsigned j = i + 1; j < blockCount; j++)
-//             {
-//                 // Evaluate the current partition at (i,j)
-//                 // S1: 0 ~ i-1
-//                 // S2: i ~ j-1
-//                 // S3: j ~ exitBlock
-
-//                 BasicBlock* const blockJ     = blockVector[j];
-//                 BasicBlock* const blockJPrev = blockVector[j - 1];
-
-//                 const weight_t oldScore = evaluateCost(blockIPrev, blockI) + evaluateCost(blockJPrev, blockJ) +
-//                                           evaluateCost(exitBlock, finalBlock);
-//                 const weight_t newScore = evaluateCost(blockIPrev, blockJ) + evaluateCost(exitBlock, blockI) +
-//                                           evaluateCost(blockJPrev, finalBlock);
-
-//                 if ((newScore < oldScore) && !Compiler::fgProfileWeightsEqual(oldScore, newScore, 0.001))
-//                 {
-//                     JITDUMP("\nFound better layout by partitioning at i=%d, j=%d", i, j);
-//                     JITDUMP("\nOld score: %f, New score: %f", oldScore, newScore);
-//                     const unsigned part1Size = i;
-//                     const unsigned part2Size = j - i;
-//                     const unsigned part3Size = blockCount - j;
-
-//                     memcpy(tempBlockVector, blockVector, sizeof(BasicBlock*) * part1Size);
-//                     memcpy(tempBlockVector + part1Size, blockVector + part1Size + part2Size,
-//                            sizeof(BasicBlock*) * part3Size);
-//                     memcpy(tempBlockVector + part1Size + part3Size, blockVector + part1Size,
-//                            sizeof(BasicBlock*) * part2Size);
-
-//                     std::swap(blockVector, tempBlockVector);
-//                     improvedLayout = true;
-//                     break;
-//                 }
-//             }
-
-//             if (improvedLayout)
-//             {
-//                 break;
-//             }
-//         }
-//     }
-
-//     // Rearrange blocks
-//     //
-//     for (unsigned i = 1; i < blockCount; i++)
-//     {
-//         BasicBlock* const block = blockVector[i - 1];
-//         BasicBlock* const next  = blockVector[i];
-//         assert(BasicBlock::sameEHRegion(block, next));
-
-//         if (!block->NextIs(next))
-//         {
-//             fgUnlinkBlock(next);
-//             fgInsertBBafter(block, next);
-//         }
-//     }
-
-//     // Fix call-finally pairs
-//     //
-//     for (int i = 0; hasEH && (i < callFinallyPairs.Height()); i++)
-//     {
-//         const CallFinallyPair& pair = callFinallyPairs.BottomRef(i);
-
-//         if (!pair.callFinally->NextIs(pair.callFinallyRet))
-//         {
-//             fgUnlinkBlock(pair.callFinallyRet);
-//             fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
-//         }
-//     }
-// }
 
 //-------------------------------------------------------------
 // ehUpdateTryLasts: Iterates EH descriptors, updating each try region's

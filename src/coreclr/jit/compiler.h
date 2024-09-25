@@ -6258,8 +6258,6 @@ public:
     bool fgReorderBlocks(bool useProfile);
     void fgDoReversePostOrderLayout();
     void fgMoveColdBlocks();
-
-    template <bool hasEH>
     void fgSearchImprovedLayout();
 
     template <bool hasEH>
