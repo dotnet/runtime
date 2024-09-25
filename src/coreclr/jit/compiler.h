@@ -7552,7 +7552,8 @@ public:
                                              unsigned               methodAttr,
                                              unsigned               classAttr,
                                              unsigned               likelihood,
-                                             bool                   arrayInterface);
+                                             bool                   arrayInterface,
+                                             CORINFO_CONTEXT_HANDLE originalContextHandle);
 
     int getGDVMaxTypeChecks()
     {
