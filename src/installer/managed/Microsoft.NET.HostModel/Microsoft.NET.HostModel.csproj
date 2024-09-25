@@ -19,8 +19,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- SDK pins this to a lower version https://github.com/dotnet/sdk/issues/43325 -->
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
 
   <ItemGroup>
