@@ -3087,9 +3087,11 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
         else if(TakesApxExtendedEvexPrefix(id))
         {
             prefixAdjustedSize = 4;
-            // TODO-XArch-apx:
-            // At this point, we are only handling the R_R_R form, meaning only binary instrcution falls into this branch.
-            // Revisit this part, when we need to enable unary instruction NDD form.
+            // If the opcode will be prefixed by EVEX, then all the map-1-legacy instructions can remove the escape prefix
+            if(IsLegacyMap1(code))
+            {
+                prefixAdjustedSize -= 1;
+            }
         }
 
         adjustedSize = prefixAdjustedSize;
@@ -4361,7 +4363,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 
     if ((code & 0xFF00) != 0)
     {
-        sz += IsAvx512OrPriorInstruction(ins) ? emitInsSize(id, code, includeRexPrefixSize) : 5;
+        sz += (IsAvx512OrPriorInstruction(ins) || TakesApxExtendedEvexPrefix(id)) ? emitInsSize(id, code, includeRexPrefixSize) : 5;
     }
     else
     {
