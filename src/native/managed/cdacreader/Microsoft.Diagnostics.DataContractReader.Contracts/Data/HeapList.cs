@@ -5,12 +5,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class HeapList : IData<HeapList>
 {
-    static HeapList IData<HeapList>.Create(ITarget target, TargetPointer address)
+    static HeapList IData<HeapList>.Create(Target target, TargetPointer address)
         => new HeapList(target, address);
 
-    public HeapList(ITarget target, TargetPointer address)
+    public HeapList(Target target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.HeapList);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.HeapList);
         Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
         StartAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(StartAddress)].Offset);
         EndAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(EndAddress)].Offset);

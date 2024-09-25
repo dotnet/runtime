@@ -7,10 +7,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class LoaderAllocator : IData<LoaderAllocator>
 {
-    static LoaderAllocator IData<LoaderAllocator>.Create(ITarget target, TargetPointer address) => new LoaderAllocator(target, address);
-    public LoaderAllocator(ITarget target, TargetPointer address)
+    static LoaderAllocator IData<LoaderAllocator>.Create(Target target, TargetPointer address) => new LoaderAllocator(target, address);
+    public LoaderAllocator(Target target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.LoaderAllocator);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.LoaderAllocator);
 
         IsCollectible = target.Read<byte>(address + (ulong)type.Fields[nameof(IsCollectible)].Offset);
     }

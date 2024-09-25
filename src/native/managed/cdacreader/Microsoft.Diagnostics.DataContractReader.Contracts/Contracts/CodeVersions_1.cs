@@ -7,10 +7,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly partial struct CodeVersions_1 : ICodeVersions
 {
-    private readonly ITarget _target;
+    private readonly Target _target;
 
 
-    public CodeVersions_1(ITarget target)
+    public CodeVersions_1(Target target)
     {
         _target = target;
     }

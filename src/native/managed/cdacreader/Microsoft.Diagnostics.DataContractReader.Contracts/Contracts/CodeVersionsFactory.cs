@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class CodeVersionsFactory : IContractFactory<ICodeVersions>
 {
-    ICodeVersions IContractFactory<ICodeVersions>.CreateContract(ITarget target, int version)
+    ICodeVersions IContractFactory<ICodeVersions>.CreateContract(Target target, int version)
     {
         return version switch
         {

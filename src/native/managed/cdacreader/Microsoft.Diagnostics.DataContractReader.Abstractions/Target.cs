@@ -46,7 +46,7 @@ internal abstract class Target
     /// </summary>
     /// <param name="address">Address to start reading from</param>
     /// <returns>Pointer read from the target</returns>}
-    TargetCodePointer ReadCodePointer(ulong address);
+    public abstract TargetCodePointer ReadCodePointer(ulong address);
 
     /// <summary>
     /// Read some bytes from the target

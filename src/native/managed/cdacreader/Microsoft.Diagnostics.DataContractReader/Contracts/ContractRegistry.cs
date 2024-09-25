@@ -43,7 +43,7 @@ internal sealed class ContractRegistry : AbstractContractRegistry
     public override IExecutionManager ExecutionManager => GetContract<IExecutionManager>();
     public override ICodeVersions CodeVersions => GetContract<ICodeVersions>();
     public override IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
-    public ovrride IReJIT ReJIT => GetContract<IReJIT>();
+    public override IReJIT ReJIT => GetContract<IReJIT>();
 
     private TProduct GetContract<TProduct>() where TProduct : IContract
     {

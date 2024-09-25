@@ -6,10 +6,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class MethodDescCodeData : IData<MethodDescCodeData>
 {
-    static MethodDescCodeData IData<MethodDescCodeData>.Create(ITarget target, TargetPointer address) => new MethodDescCodeData(target, address);
-    public MethodDescCodeData(ITarget target, TargetPointer address)
+    static MethodDescCodeData IData<MethodDescCodeData>.Create(Target target, TargetPointer address) => new MethodDescCodeData(target, address);
+    public MethodDescCodeData(Target target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.MethodDescCodeData);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.MethodDescCodeData);
 
         TemporaryEntryPoint = target.ReadCodePointer(address + (ulong)type.Fields[nameof(TemporaryEntryPoint)].Offset);
         VersioningState = target.ReadPointer(address + (ulong)type.Fields[nameof(VersioningState)].Offset);

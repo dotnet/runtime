@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct PrecodeStubs_1 : IPrecodeStubs
 {
-    private readonly ITarget _target;
+    private readonly Target _target;
     internal readonly Data.PrecodeMachineDescriptor MachineDescriptor;
 
     internal enum KnownPrecodeType
@@ -29,7 +29,7 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
             PrecodeType = precodeType;
         }
 
-        internal abstract TargetPointer GetMethodDesc(ITarget target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
+        internal abstract TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
 
     }
 
@@ -37,7 +37,7 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
     {
         internal StubPrecode(TargetPointer instrPointer, KnownPrecodeType type = KnownPrecodeType.Stub) : base(instrPointer, type) { }
 
-        internal override TargetPointer GetMethodDesc(ITarget target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+        internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
         {
             TargetPointer stubPrecodeDataAddress = InstrPointer + precodeMachineDescriptor.StubCodePageSize;
             Data.StubPrecodeData stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData>(stubPrecodeDataAddress);
@@ -53,7 +53,7 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
     internal sealed class FixupPrecode : ValidPrecode
     {
         internal FixupPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.Fixup) { }
-        internal override TargetPointer GetMethodDesc(ITarget target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+        internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
         {
             TargetPointer fixupPrecodeDataAddress = InstrPointer + precodeMachineDescriptor.StubCodePageSize;
             Data.FixupPrecodeData fixupPrecodeData = target.ProcessedData.GetOrAdd<Data.FixupPrecodeData>(fixupPrecodeDataAddress);
@@ -66,7 +66,7 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
     {
         internal ThisPtrRetBufPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.ThisPtrRetBuf) { }
 
-        internal override TargetPointer GetMethodDesc(ITarget target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+        internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
         {
             throw new NotImplementedException(); // TODO(cdac)
         }
@@ -157,7 +157,7 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
         }
         throw new InvalidOperationException($"Invalid precode type 0x{instrPointer:x16}");
     }
-    public PrecodeStubs_1(ITarget target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    public PrecodeStubs_1(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
     {
         _target = target;
         MachineDescriptor = precodeMachineDescriptor;

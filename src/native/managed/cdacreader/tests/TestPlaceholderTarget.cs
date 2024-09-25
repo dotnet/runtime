@@ -9,13 +9,13 @@ using System.Numerics;
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 /// <summary>
-/// A base class implementation of ITarget that throws NotImplementedException for all methods.
+/// A base class implementation of Target that throws NotImplementedException for all methods.
 /// </summary>
-public class TestPlaceholderTarget : ITarget
+public class TestPlaceholderTarget : Target
 {
     private protected Contracts.IContractRegistry contractRegistry;
-    private protected ITarget.IDataCache dataCache;
-    private protected Dictionary<DataType, ITarget.TypeInfo> typeInfoCache;
+    private protected Target.IDataCache dataCache;
+    private protected Dictionary<DataType, Target.TypeInfo> typeInfoCache;
 
 #region Setup
     public TestPlaceholderTarget(MockTarget.Architecture arch)
@@ -32,12 +32,12 @@ public class TestPlaceholderTarget : ITarget
         contractRegistry = contracts;
     }
 
-    internal void SetDataCache(ITarget.IDataCache cache)
+    internal void SetDataCache(Target.IDataCache cache)
     {
         dataCache = cache;
     }
 
-    internal void SetTypeInfoCache(Dictionary<DataType, ITarget.TypeInfo> cache)
+    internal void SetTypeInfoCache(Dictionary<DataType, Target.TypeInfo> cache)
     {
         typeInfoCache = cache;
     }
@@ -61,9 +61,9 @@ public class TestPlaceholderTarget : ITarget
     public virtual T ReadGlobal<T>(string name) where T : struct, INumber<T> => throw new NotImplementedException();
     public virtual T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T> => throw new NotImplementedException();
 
-    ITarget.TypeInfo ITarget.GetTypeInfo(DataType dataType) => typeInfoCache != null ? GetTypeInfoImpl(dataType) : throw new NotImplementedException();
+    Target.TypeInfo Target.GetTypeInfo(DataType dataType) => typeInfoCache != null ? GetTypeInfoImpl(dataType) : throw new NotImplementedException();
 
-    private protected virtual ITarget.TypeInfo GetTypeInfoImpl(DataType dataType)
+    private protected virtual Target.TypeInfo GetTypeInfoImpl(DataType dataType)
     {
         if (typeInfoCache!.TryGetValue(dataType, out var info))
         {
@@ -72,8 +72,8 @@ public class TestPlaceholderTarget : ITarget
         throw new NotImplementedException();
     }
 
-    ITarget.IDataCache ITarget.ProcessedData => dataCache;
-    Contracts.IContractRegistry ITarget.Contracts => contractRegistry;
+    Target.IDataCache Target.ProcessedData => dataCache;
+    Contracts.IContractRegistry Target.Contracts => contractRegistry;
 
     internal class TestRegistry : Contracts.IContractRegistry
     {
@@ -103,7 +103,7 @@ public class TestPlaceholderTarget : ITarget
         Contracts.IReJIT Contracts.IContractRegistry.ReJIT => ReJITContract ?? throw new NotImplementedException();
     }
 
-    internal class TestDataCache : ITarget.IDataCache
+    internal class TestDataCache : Target.IDataCache
     {
         public TestDataCache() {}
 

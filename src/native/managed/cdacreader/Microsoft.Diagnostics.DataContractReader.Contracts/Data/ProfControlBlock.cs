@@ -5,12 +5,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class ProfControlBlock : IData<ProfControlBlock>
 {
-    static ProfControlBlock IData<ProfControlBlock>.Create(ITarget target, TargetPointer address)
+    static ProfControlBlock IData<ProfControlBlock>.Create(Target target, TargetPointer address)
         => new ProfControlBlock(target, address);
 
-    public ProfControlBlock(ITarget target, TargetPointer address)
+    public ProfControlBlock(Target target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.ProfControlBlock);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.ProfControlBlock);
         GlobalEventMask = target.Read<ulong>(address + (ulong)type.Fields[nameof(GlobalEventMask)].Offset);
     }
 

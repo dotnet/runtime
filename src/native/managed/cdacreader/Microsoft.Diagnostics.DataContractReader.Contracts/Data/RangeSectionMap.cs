@@ -5,12 +5,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class RangeSectionMap : IData<RangeSectionMap>
 {
-    static RangeSectionMap IData<RangeSectionMap>.Create(ITarget target, TargetPointer address)
+    static RangeSectionMap IData<RangeSectionMap>.Create(Target target, TargetPointer address)
         => new RangeSectionMap(target, address);
 
-    public RangeSectionMap(ITarget target, TargetPointer address)
+    public RangeSectionMap(Target target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.RangeSectionMap);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.RangeSectionMap);
         TopLevelData = new TargetPointer(address + (ulong)type.Fields[nameof(TopLevelData)].Offset);
     }
 

@@ -5,12 +5,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class ILCodeVersioningState : IData<ILCodeVersioningState>
 {
-    static ILCodeVersioningState IData<ILCodeVersioningState>.Create(ITarget target, TargetPointer address)
+    static ILCodeVersioningState IData<ILCodeVersioningState>.Create(Target target, TargetPointer address)
         => new ILCodeVersioningState(target, address);
 
-    public ILCodeVersioningState(ITarget target, TargetPointer address)
+    public ILCodeVersioningState(Target target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.ILCodeVersioningState);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.ILCodeVersioningState);
 
         Node = target.ReadPointer(address + (ulong)type.Fields[nameof(Node)].Offset);
         ActiveVersionKind = target.Read<uint>(address + (ulong)type.Fields[nameof(ActiveVersionKind)].Offset);

@@ -5,12 +5,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class RealCodeHeader : IData<RealCodeHeader>
 {
-    static RealCodeHeader IData<RealCodeHeader>.Create(ITarget target, TargetPointer address)
+    static RealCodeHeader IData<RealCodeHeader>.Create(Target target, TargetPointer address)
         => new RealCodeHeader(target, address);
 
-    public RealCodeHeader(ITarget target, TargetPointer address)
+    public RealCodeHeader(Target target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.RealCodeHeader);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.RealCodeHeader);
         MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
     }
 

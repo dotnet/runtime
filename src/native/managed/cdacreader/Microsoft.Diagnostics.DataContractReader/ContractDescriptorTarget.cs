@@ -298,9 +298,9 @@ internal sealed unsafe class ContractDescriptorTarget : Target
         }
     }
 
-    public TargetCodePointer ReadCodePointer(ulong address)
+    public override TargetCodePointer ReadCodePointer(ulong address)
     {
-        ITarget.TypeInfo codePointerTypeInfo = GetTypeInfo(DataType.CodePointer);
+        TypeInfo codePointerTypeInfo = GetTypeInfo(DataType.CodePointer);
         if (codePointerTypeInfo.Size is sizeof(uint))
         {
             return new TargetCodePointer(Read<uint>(address));
