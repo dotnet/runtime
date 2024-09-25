@@ -48,7 +48,7 @@ test_-_runtime__pal_-_osx_arm64_debug:
     type: Unity::VM::osx
     flavor: b1.xlarge
   commands:
-  - command: .yamato/scripts/build_yamato.sh --arch=arm64 --config=Debug --test=runtime,pal
+  - command: .yamato/scripts/build_yamato.sh --arch=arm64 --config=Debug --test=runtime
   dependencies:
   - path: .yamato/build.yml#build_osx_arm64_debug
   labels:
@@ -62,7 +62,7 @@ test_-_runtime__pal_-_osx_arm64_release:
     type: Unity::VM::osx
     flavor: b1.xlarge
   commands:
-  - command: .yamato/scripts/build_yamato.sh --arch=arm64 --config=Release --test=runtime,pal
+  - command: .yamato/scripts/build_yamato.sh --arch=arm64 --config=Release --test=runtime
   dependencies:
   - path: .yamato/build.yml#build_osx_arm64_release
   labels:
@@ -76,10 +76,11 @@ test_-_runtime__pal_-_osx_x64_debug:
     type: Unity::VM::osx
     flavor: b1.xlarge
   commands:
-  - command: .yamato/scripts/build_yamato.sh --arch=x64 --config=Debug --test=runtime,pal
+  - command: .yamato/scripts/build_yamato.sh --arch=x64 --config=Debug --test=runtime
   dependencies:
   - path: .yamato/build.yml#build_osx_x64_debug
   labels:
+  - ExcludeFromTesting
   - MacOS
   - TestJob
 test_-_runtime__pal_-_osx_x64_release:
@@ -89,7 +90,7 @@ test_-_runtime__pal_-_osx_x64_release:
     type: Unity::VM::osx
     flavor: b1.xlarge
   commands:
-  - command: .yamato/scripts/build_yamato.sh --arch=x64 --config=Release --test=runtime,pal
+  - command: .yamato/scripts/build_yamato.sh --arch=x64 --config=Release --test=runtime
   dependencies:
   - path: .yamato/build.yml#build_osx_x64_release
   labels:

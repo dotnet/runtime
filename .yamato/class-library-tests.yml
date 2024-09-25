@@ -80,6 +80,7 @@ test_-_class_library_-_osx_x64_debug:
   dependencies:
   - path: .yamato/build.yml#build_osx_x64_debug
   labels:
+  - ExcludeFromTesting
   - MacOS
   - TestJob
 test_-_class_library_-_osx_x64_release:

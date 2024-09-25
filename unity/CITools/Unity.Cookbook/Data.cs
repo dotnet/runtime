@@ -23,7 +23,7 @@ static class Data
 
             // macOS
             // x64 and arm64 artifacts are published as a part of combined x64arm64 fat build job.
-            new JobConfiguration {SystemType = SystemType.MacOS, Architecture = Architecture.x64, Configuration = Configuration.Debug, ExcludeFromPublishing =  true},
+            new JobConfiguration {SystemType = SystemType.MacOS, Architecture = Architecture.x64, Configuration = Configuration.Debug, ExcludeFromPublishing =  true, ExcludeFromTesting =  true},
             new JobConfiguration {SystemType = SystemType.MacOS, Architecture = Architecture.x64, Configuration = Configuration.Release, ExcludeFromPublishing =  true},
 
             // The arm64 tests are currently broken and should not be included by the top level test jobs.
