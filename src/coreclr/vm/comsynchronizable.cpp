@@ -119,19 +119,16 @@ INT32 MapFromNTPriority(INT32 NTPriority)
     return ours;
 }
 
-
-void ThreadNative::KickOffThread_Worker(LPVOID ptr)
+static void KickOffThread_Worker(LPVOID ptr)
 {
     CONTRACTL
     {
         GC_TRIGGERS;
         THROWS;
         MODE_COOPERATIVE;
+        PRECONDITION(ptr == NULL);
     }
     CONTRACTL_END;
-
-    KickOffThread_Args *pKickOffArgs = (KickOffThread_Args *) ptr;
-    pKickOffArgs->retVal = 0;
 
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__START_CALLBACK);
     DECLARE_ARGHOLDER_ARRAY(args, 1);
@@ -167,7 +164,7 @@ static void PulseAllHelper(Thread* pThread)
 }
 
 // When an exposed thread is started by Win32, this is where it starts.
-ULONG WINAPI ThreadNative::KickOffThread(void* pass)
+static ULONG WINAPI KickOffThread(void* pass)
 {
 
     CONTRACTL
@@ -204,11 +201,7 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
 
         _ASSERTE(GetThread() == pThread);        // Now that it's started
 
-        KickOffThread_Args args;
-        args.share = NULL;
-        args.pThread = pThread;
-
-        ManagedThreadBase::KickOff(KickOffThread_Worker, &args);
+        ManagedThreadBase::KickOff(KickOffThread_Worker, NULL);
 
         PulseAllHelper(pThread);
 
@@ -222,21 +215,13 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
     return 0;
 }
 
-extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, PCWSTR pThreadName)
+extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    ThreadNative::Start(thread, threadStackSize, priority, pThreadName);
-
-    END_QCALL;
-}
-
-void ThreadNative::Start(Thread* pNewThread, int threadStackSize, int priority, PCWSTR pThreadName)
-{
-    STANDARD_VM_CONTRACT;
-
+    Thread* pNewThread = thread;
     _ASSERTE(pNewThread != NULL);
 
     // Is the thread already started?  You can't restart a thread.
@@ -283,6 +268,8 @@ void ThreadNative::Start(Thread* pNewThread, int threadStackSize, int priority, 
     pNewThread->ChooseThreadCPUGroupAffinity();
 
     pNewThread->SetThreadState(Thread::TS_LegalToJoin);
+    if (isThreadPool)
+        pNewThread->SetIsThreadPoolThread();
 
     DWORD ret = pNewThread->StartThread();
 
@@ -311,6 +298,8 @@ void ThreadNative::Start(Thread* pNewThread, int threadStackSize, int priority, 
         PulseAllHelper(pNewThread);
         pNewThread->HandleThreadStartupFailure();
     }
+
+    END_QCALL;
 }
 
 extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack thread, INT32 iPriority)
@@ -418,24 +407,6 @@ extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t)
     GCPROTECT_END();
     END_QCALL;
 }
-
-// Return whether or not this is a background thread.
-FCIMPL1(FC_BOOL_RET, ThreadNative::GetIsBackground, ThreadBaseObject* pThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    if (pThisUNSAFE==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
-
-    // validate the thread
-    Thread  *thread = pThisUNSAFE->GetInternal();
-
-    if (ThreadIsDead(thread))
-        FCThrowRes(kThreadStateException, W("ThreadState_Dead_State"));
-
-    FC_RETURN_BOOL(thread->IsBackground());
-}
-FCIMPLEND
 
 // Deliver the state of the thread as a consistent set of bits.
 // Duplicate logic in DacDbiInterfaceImpl::GetPartialUserState()
@@ -743,6 +714,27 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
 }
 FCIMPLEND
 
+// Get whether or not this is a background thread.
+extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle thread)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK_NO_GC_TRANSITION;
+        PRECONDITION(thread != NULL);
+    }
+    CONTRACTL_END;
+
+    BOOL res = FALSE;
+
+    BEGIN_QCALL;
+
+    res = thread->IsBackground();
+
+    END_QCALL;
+
+    return res;
+}
+
 // Set whether or not this is a background thread.
 extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value)
 {
@@ -755,9 +747,6 @@ extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle threa
 
     BEGIN_QCALL;
 
-    if (ThreadIsDead(thread))
-        COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
-
     thread->SetBackground(value);
 
     END_QCALL;
@@ -769,16 +758,10 @@ extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandl
 
     BEGIN_QCALL;
 
-    ThreadNative::InformThreadNameChange(thread, name, len);
+    Thread* pThread = thread;
 
-    END_QCALL;
-}
-
-void ThreadNative::InformThreadNameChange(Thread* pThread, LPCWSTR name, INT32 len)
-{
-    // Set on Windows 10 Creators Update and later machines the unmanaged thread name as well. That will show up in ETW traces and debuggers which is very helpful
-    // if more and more threads get a meaningful name
-    // Will also show up in Linux in gdb and such.
+    // The name will show up in ETW traces and debuggers which is very helpful if more and more threads
+    // get a meaningful name. Will also show up in Linux in gdb and such.
     if (len > 0 && name != NULL && pThread->GetThreadHandle() != INVALID_HANDLE_VALUE)
     {
         SetThreadName(pThread->GetThreadHandle(), name);
@@ -799,7 +782,6 @@ void ThreadNative::InformThreadNameChange(Thread* pThread, LPCWSTR name, INT32 l
     }
 #endif // PROFILING_SUPPORTED
 
-
 #ifdef DEBUGGING_SUPPORTED
     if (CORDebuggerAttached())
     {
@@ -807,43 +789,9 @@ void ThreadNative::InformThreadNameChange(Thread* pThread, LPCWSTR name, INT32 l
         g_pDebugInterface->NameChangeEvent(NULL, pThread);
     }
 #endif // DEBUGGING_SUPPORTED
+
+    END_QCALL;
 }
-
-FCIMPL1(FC_BOOL_RET, ThreadNative::IsThreadpoolThread, ThreadBaseObject* thread)
-{
-    FCALL_CONTRACT;
-
-    if (thread==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
-
-    Thread *pThread = thread->GetInternal();
-
-    if (pThread == NULL)
-        FCThrowRes(kThreadStateException, W("ThreadState_Dead_State"));
-
-    BOOL ret = pThread->IsThreadPoolThread();
-
-    FC_GC_POLL_RET();
-
-    FC_RETURN_BOOL(ret);
-}
-FCIMPLEND
-
-FCIMPL1(void, ThreadNative::SetIsThreadpoolThread, ThreadBaseObject* thread)
-{
-    FCALL_CONTRACT;
-
-    if (thread == NULL)
-        FCThrowResVoid(kNullReferenceException, W("NullReference_This"));
-
-    Thread *pThread = thread->GetInternal();
-
-    if (pThread == NULL)
-        FCThrowResVoid(kThreadStateException, W("ThreadState_Dead_State"));
-
-    pThread->SetIsThreadPoolThread();
-}
-FCIMPLEND
 
 FCIMPL0(INT32, ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 {
