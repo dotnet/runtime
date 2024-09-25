@@ -29,22 +29,8 @@ internal static class Assert
             throw new Exception("Value is  null");
     }
 
-    public static void SequenceEqual<T>(Span<T> expected, Span<T> actual)
-    {
-        if (!expected.SequenceEqual(actual))
-        {
-            Throw(expected, actual);
-        }
-
-        static void Throw(Span<T> expected, Span<T> actual)
-        {
-            Equal(expected.Length, actual.Length);
-
-            int diffIndex = expected.CommonPrefixLength(actual);
-
-            throw new Exception($"Expected={expected[diffIndex]} Actual={actual[diffIndex]} at index {diffIndex}");
-        }
-    }
+    public static void SequenceEqual<T>(Span<T> expected, Span<T> actual) =>
+        SequenceEqual((ReadOnlySpan<T>)expected, (ReadOnlySpan<T>)actual);
 
     public static void SequenceEqual<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual)
     {

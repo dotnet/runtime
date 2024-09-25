@@ -25,9 +25,8 @@ namespace DotnetFuzzing.Fuzzers
         { 
             using PooledBoundedMemory<byte> inputPoisoned = PooledBoundedMemory<byte>.Rent(bytes, poison);
             int encodedLength = ToBase64_CalculateOutputLength(bytes.Length, options == Base64FormattingOptions.InsertLineBreaks);
-            using PooledBoundedMemory<char> destPoisoned = PooledBoundedMemory<char>.Rent(encodedLength, poison);
             Span<byte> input = inputPoisoned.Span;
-            char[] dest = destPoisoned.Span.ToArray();
+            char[] dest = new char[encodedLength];
 
             string toStringResult = Convert.ToBase64String(input, options);
             byte[] decoded = Convert.FromBase64String(toStringResult);
@@ -38,7 +37,7 @@ namespace DotnetFuzzing.Fuzzers
             decoded = Convert.FromBase64CharArray(dest, 0, written);
 
             Assert.SequenceEqual(input, decoded);
-            Assert.Equal(toStringResult, new string(dest, 0, written));
+            Assert.SequenceEqual(toStringResult, dest.AsSpan(0, written));
         }
 
         private static int ToBase64_CalculateOutputLength(int inputLength, bool insertLineBreaks)
