@@ -6,8 +6,6 @@
     <NoWarn>$(NoWarn),CA1050</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
-
     <Compile Include="..\Common\LogAsErrorException.cs" />
   </ItemGroup>
 
