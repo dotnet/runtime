@@ -7,9 +7,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Loader_1 : ILoader
 {
-    private readonly ITarget _target;
+    private readonly Target _target;
 
-    internal Loader_1(ITarget target)
+    internal Loader_1(Target target)
     {
         _target = target;
     }

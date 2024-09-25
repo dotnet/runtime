@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Object_1 : IObject
 {
-    private readonly ITarget _target;
+    private readonly Target _target;
     private readonly ulong _methodTableOffset;
     private readonly byte _objectToMethodTableUnmask;
     private readonly TargetPointer _stringMethodTable;
@@ -30,7 +30,7 @@ internal readonly struct Object_1 : IObject
         public const uint SyncBlockIndexMask = (1 << 26) - 1;
     }
 
-    internal Object_1(ITarget target, ulong methodTableOffset, byte objectToMethodTableUnmask, TargetPointer stringMethodTable, TargetPointer syncTableEntries)
+    internal Object_1(Target target, ulong methodTableOffset, byte objectToMethodTableUnmask, TargetPointer stringMethodTable, TargetPointer syncTableEntries)
     {
         _target = target;
         _methodTableOffset = methodTableOffset;
@@ -72,7 +72,7 @@ internal readonly struct Object_1 : IObject
         Data.Array array = _target.ProcessedData.GetOrAdd<Data.Array>(address);
         count = array.NumComponents;
 
-        ITarget.TypeInfo arrayTypeInfo = _target.GetTypeInfo(DataType.Array);
+        Target.TypeInfo arrayTypeInfo = _target.GetTypeInfo(DataType.Array);
         CorElementType corType = typeSystemContract.GetSignatureCorElementType(typeHandle);
         Debug.Assert(corType is CorElementType.Array or CorElementType.SzArray);
         if (corType == CorElementType.Array)

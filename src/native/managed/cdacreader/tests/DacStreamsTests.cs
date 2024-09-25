@@ -21,7 +21,7 @@ public class DacStreamsTests
 
     const uint MiniMetaDataStreamsHeaderSize = 12;
 
-    private static readonly Dictionary<DataType, ITarget.TypeInfo> DacStreamsTypes =
+    private static readonly Dictionary<DataType, Target.TypeInfo> DacStreamsTypes =
     [
     ];
 
@@ -73,7 +73,7 @@ public class DacStreamsTests
 
             using MockMemorySpace.ReadContext context = builder.Create();
 
-            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
+            bool success = MockMemorySpace.TryCreateTarget(&context, out ContractDescriptorTarget? target);
             Assert.True(success);
 
             testCase(target);

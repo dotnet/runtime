@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class LoaderFactory : IContractFactory<ILoader>
 {
-    ILoader IContractFactory<ILoader>.CreateContract(ITarget target, int version)
+    ILoader IContractFactory<ILoader>.CreateContract(Target target, int version)
     {
         return version switch
         {

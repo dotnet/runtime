@@ -5,12 +5,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class Exception : IData<Exception>
 {
-    static Exception IData<Exception>.Create(ITarget target, TargetPointer address)
+    static Exception IData<Exception>.Create(Target target, TargetPointer address)
         => new Exception(target, address);
 
-    public Exception(ITarget target, TargetPointer address)
+    public Exception(Target target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.Exception);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.Exception);
 
         Message = target.ReadPointer(address + (ulong)type.Fields["_message"].Offset);
         InnerException = target.ReadPointer(address + (ulong)type.Fields["_innerException"].Offset);

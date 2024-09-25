@@ -12,19 +12,19 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public unsafe class TargetTests
 {
-    private static readonly Dictionary<DataType, ITarget.TypeInfo> TestTypes = new()
+    private static readonly Dictionary<DataType, Target.TypeInfo> TestTypes = new()
     {
         // Size and fields
         [DataType.Thread] = new(){
             Size = 56,
-            Fields = new Dictionary<string, ITarget.FieldInfo> {
+            Fields = new Dictionary<string, Target.FieldInfo> {
                 { "Field1", new(){ Offset = 8, Type = DataType.uint16, TypeName = DataType.uint16.ToString() }},
                 { "Field2", new(){ Offset = 16, Type = DataType.GCHandle, TypeName = DataType.GCHandle.ToString() }},
                 { "Field3", new(){ Offset = 32 }}
             }},
         // Fields only
         [DataType.ThreadStore] = new(){
-            Fields = new Dictionary<string, ITarget.FieldInfo> {
+            Fields = new Dictionary<string, Target.FieldInfo> {
                 { "Field1", new(){ Offset = 0, TypeName = "FieldType" }},
                 { "Field2", new(){ Offset = 8 }}
             }},
@@ -55,20 +55,20 @@ public unsafe class TargetTests
         {
             using MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json);
 
-            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
+            bool success = MockMemorySpace.TryCreateTarget(&context, out ContractDescriptorTarget? target);
             Assert.True(success);
 
-            foreach ((DataType type, ITarget.TypeInfo info) in TestTypes)
+            foreach ((DataType type, Target.TypeInfo info) in TestTypes)
             {
                 {
                     // By known type
-                    ITarget.TypeInfo actual = target.GetTypeInfo(type);
+                    Target.TypeInfo actual = target.GetTypeInfo(type);
                     Assert.Equal(info.Size, actual.Size);
                     Assert.Equal(info.Fields, actual.Fields);
                 }
                 {
                     // By name
-                    ITarget.TypeInfo actual = target.GetTypeInfo(type.ToString());
+                    Target.TypeInfo actual = target.GetTypeInfo(type.ToString());
                     Assert.Equal(info.Size, actual.Size);
                     Assert.Equal(info.Fields, actual.Fields);
                 }
@@ -113,7 +113,7 @@ public unsafe class TargetTests
         {
             using MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json);
 
-            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
+            bool success = MockMemorySpace.TryCreateTarget(&context, out ContractDescriptorTarget? target);
             Assert.True(success);
 
             ValidateGlobals(target, TestGlobals);
@@ -149,7 +149,7 @@ public unsafe class TargetTests
         {
             using MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json, pointerData);
 
-            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
+            bool success = MockMemorySpace.TryCreateTarget(&context, out ContractDescriptorTarget? target);
             Assert.True(success);
 
             // Indirect values are pointer-sized, so max 32-bits for a 32-bit target
@@ -162,7 +162,7 @@ public unsafe class TargetTests
     }
 
     private static void ValidateGlobals(
-        Target target,
+        ContractDescriptorTarget target,
         (string Name, ulong Value, string? Type)[] globals,
         [CallerMemberName] string caller = "",
         [CallerFilePath] string filePath = "",

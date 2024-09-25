@@ -6,15 +6,15 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class ContractRegistry : IContractRegistry
+internal sealed class ContractRegistry : AbstractContractRegistry
 {
     // Contracts that have already been created for a target.
     // Items should not be removed from this, only added.
     private readonly Dictionary<Type, IContract> _contracts = [];
     private readonly Dictionary<Type, IContractFactory<IContract>> _factories;
-    private readonly Target _target;
+    private readonly ContractDescriptorTarget _target;
 
-    public ContractRegistry(Target target, Action<Dictionary<Type, IContractFactory<IContract>>>? configureFactories = null)
+    public ContractRegistry(ContractDescriptorTarget target, Action<Dictionary<Type, IContractFactory<IContract>>>? configureFactories = null)
     {
         _target = target;
         _factories = new () {
@@ -33,17 +33,17 @@ internal sealed class ContractRegistry : IContractRegistry
         configureFactories?.Invoke(_factories);
     }
 
-    public IException Exception => GetContract<IException>();
-    public ILoader Loader => GetContract<ILoader>();
-    public IEcmaMetadata EcmaMetadata => GetContract<IEcmaMetadata>();
-    public IObject Object => GetContract<IObject>();
-    public IThread Thread => GetContract<IThread>();
-    public IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IRuntimeTypeSystem>();
-    public IDacStreams DacStreams => GetContract<IDacStreams>();
-    public IExecutionManager ExecutionManager => GetContract<IExecutionManager>();
-    public ICodeVersions CodeVersions => GetContract<ICodeVersions>();
-    public IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
-    public IReJIT ReJIT => GetContract<IReJIT>();
+    public override IException Exception => GetContract<IException>();
+    public override ILoader Loader => GetContract<ILoader>();
+    public override IEcmaMetadata EcmaMetadata => GetContract<IEcmaMetadata>();
+    public override IObject Object => GetContract<IObject>();
+    public override IThread Thread => GetContract<IThread>();
+    public override IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IRuntimeTypeSystem>();
+    public override IDacStreams DacStreams => GetContract<IDacStreams>();
+    public override IExecutionManager ExecutionManager => GetContract<IExecutionManager>();
+    public override ICodeVersions CodeVersions => GetContract<ICodeVersions>();
+    public override IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
+    public ovrride IReJIT ReJIT => GetContract<IReJIT>();
 
     private TProduct GetContract<TProduct>() where TProduct : IContract
     {

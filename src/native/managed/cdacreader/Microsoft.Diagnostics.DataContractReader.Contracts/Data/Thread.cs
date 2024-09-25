@@ -5,12 +5,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class Thread : IData<Thread>
 {
-    static Thread IData<Thread>.Create(ITarget target, TargetPointer address)
+    static Thread IData<Thread>.Create(Target target, TargetPointer address)
         => new Thread(target, address);
 
-    public Thread(ITarget target, TargetPointer address)
+    public Thread(Target target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.Thread);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.Thread);
 
         Id = target.Read<uint>(address + (ulong)type.Fields[nameof(Id)].Offset);
         OSId = target.ReadNUInt(address + (ulong)type.Fields[nameof(OSId)].Offset);
@@ -24,7 +24,7 @@ internal sealed class Thread : IData<Thread>
         Frame = target.ReadPointer(address + (ulong)type.Fields[nameof(Frame)].Offset);
 
         // TEB does not exist on certain platforms
-        TEB = type.Fields.TryGetValue(nameof(TEB), out ITarget.FieldInfo fieldInfo)
+        TEB = type.Fields.TryGetValue(nameof(TEB), out Target.FieldInfo fieldInfo)
             ? target.ReadPointer(address + (ulong)fieldInfo.Offset)
             : TargetPointer.Null;
         LastThrownObject = target.ProcessedData.GetOrAdd<ObjectHandle>(

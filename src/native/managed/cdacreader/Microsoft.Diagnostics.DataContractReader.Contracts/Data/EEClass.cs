@@ -5,10 +5,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class EEClass : IData<EEClass>
 {
-    static EEClass IData<EEClass>.Create(ITarget target, TargetPointer address) => new EEClass(target, address);
-    public EEClass(ITarget target, TargetPointer address)
+    static EEClass IData<EEClass>.Create(Target target, TargetPointer address) => new EEClass(target, address);
+    public EEClass(Target target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.EEClass);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.EEClass);
 
         MethodTable = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodTable)].Offset);
         NumMethods = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumMethods)].Offset);
@@ -35,10 +35,10 @@ internal sealed class EEClass : IData<EEClass>
 
 internal sealed class ArrayClass : IData<ArrayClass>
 {
-    static ArrayClass IData<ArrayClass>.Create(ITarget target, TargetPointer address) => new ArrayClass(target, address);
-    public ArrayClass(ITarget target, TargetPointer address)
+    static ArrayClass IData<ArrayClass>.Create(Target target, TargetPointer address) => new ArrayClass(target, address);
+    public ArrayClass(Target target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.ArrayClass);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.ArrayClass);
 
         Rank = target.Read<byte>(address + (ulong)type.Fields[nameof(Rank)].Offset);
     }

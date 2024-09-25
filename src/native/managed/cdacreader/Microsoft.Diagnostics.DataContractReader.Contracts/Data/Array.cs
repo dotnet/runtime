@@ -5,12 +5,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class Array : IData<Array>
 {
-    static Array IData<Array>.Create(ITarget target, TargetPointer address)
+    static Array IData<Array>.Create(Target target, TargetPointer address)
         => new Array(target, address);
 
-    public Array(ITarget target, TargetPointer address)
+    public Array(Target target, TargetPointer address)
     {
-        ITarget.TypeInfo type = target.GetTypeInfo(DataType.Array);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.Array);
 
         NumComponents = target.Read<uint>(address + (ulong)type.Fields[FieldNames.NumComponents].Offset);
     }

@@ -13,34 +13,33 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// </summary>
 /// <remarks>
 /// This class provides APIs used by contracts for reading from the target and getting type and globals
-/// information based on the target's contract descriptor. Like the contracts themselves in cdacreader,
-/// these are throwing APIs. Any callers at the boundaries (for example, unmanaged entry points, COM)
-/// should handle any exceptions.
+/// information. Like the contracts themselves in cdacreader, these are throwing APIs. Any callers at the boundaries
+/// (for example, unmanaged entry points, COM) should handle any exceptions.
 /// </remarks>
-internal interface ITarget
+internal abstract class Target
 {
     /// <summary>
     /// Pointer size of the target
     /// </summary>
-    int PointerSize { get; }
+    public abstract int PointerSize { get; }
     /// <summary>
     ///  Endianness of the target
     /// </summary>
-    bool IsLittleEndian { get; }
+    public abstract bool IsLittleEndian { get; }
 
     /// <summary>
     /// Reads a well-known global pointer value from the target process
     /// </summary>
     /// <param name="global">The name of the global</param>
     /// <returns>The value of the global</returns>
-    TargetPointer ReadGlobalPointer(string global);
+    public abstract TargetPointer ReadGlobalPointer(string global);
 
     /// <summary>
     /// Read a pointer from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
     /// <returns>Pointer read from the target</returns>}
-    TargetPointer ReadPointer(ulong address);
+    public abstract TargetPointer ReadPointer(ulong address);
 
     /// <summary>
     /// Read a code pointer from the target in target endianness
@@ -54,28 +53,28 @@ internal interface ITarget
     /// </summary>
     /// <param name="address">The address where to start reading</param>
     /// <param name="buffer">Destination to copy the bytes, the number of bytes to read is the span length</param>
-    void ReadBuffer(ulong address, Span<byte> buffer);
+    public abstract void ReadBuffer(ulong address, Span<byte> buffer);
 
     /// <summary>
     /// Read a null-terminated UTF-8 string from the target
     /// </summary>
     /// <param name="address">Address to start reading from</param>
     /// <returns>String read from the target</returns>}
-    string ReadUtf8String(ulong address);
+    public abstract string ReadUtf8String(ulong address);
 
     /// <summary>
     /// Read a null-terminated UTF-16 string from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
     /// <returns>String read from the target</returns>}
-    string ReadUtf16String(ulong address);
+    public abstract string ReadUtf16String(ulong address);
 
     /// <summary>
     /// Read a native unsigned integer from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
     /// <returns>Value read from the target</returns>
-    TargetNUInt ReadNUInt(ulong address);
+    public abstract TargetNUInt ReadNUInt(ulong address);
 
     /// <summary>
     /// Read a well known global from the target process as a number in the target endianness
@@ -83,7 +82,7 @@ internal interface ITarget
     /// <typeparam name="T">The numeric type to be read</typeparam>
     /// <param name="name">The name of the global</param>
     /// <returns>A numeric value</returns>
-    T ReadGlobal<T>(string name) where T : struct, INumber<T>;
+    public abstract T ReadGlobal<T>(string name) where T : struct, INumber<T>;
 
     /// <summary>
     /// Read a value from the target in target endianness
@@ -91,26 +90,34 @@ internal interface ITarget
     /// <typeparam name="T">Type of value to read</typeparam>
     /// <param name="address">Address to start reading from</param>
     /// <returns>Value read from the target</returns>
-    T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
+    public abstract T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
+
+    /// <summary>
+    /// Read a target pointer from a span of bytes
+    /// </summary>
+    /// <param name="bytes">The span of bytes to read from</param>
+    /// <returns>The target pointer read from the span</returns>
+    public abstract TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes);
+
 
     /// <summary>
     /// Returns true if the given pointer is aligned to the pointer size of the target
     /// </summary>
     /// <param name="pointer">A target pointer value</param>
     /// <returns></returns>
-    bool IsAlignedToPointerSize(TargetPointer pointer);
+    public abstract bool IsAlignedToPointerSize(TargetPointer pointer);
 
     /// <summary>
     /// Returns the information about the given well-known data type in the target process
     /// </summary>
     /// <param name="type">The name of the well known type</param>
     /// <returns>The information about the given type in the target process</returns>
-    TypeInfo GetTypeInfo(DataType type);
+    public abstract TypeInfo GetTypeInfo(DataType type);
 
     /// <summary>
     /// Get the data cache for the target
     /// </summary>
-    IDataCache ProcessedData { get; }
+    public abstract IDataCache ProcessedData { get; }
 
     /// <summary>
     /// Holds a snapshot of the target's structured data
@@ -182,5 +189,5 @@ internal interface ITarget
     /// <summary>
     /// A cache of the contracts for the target process
     /// </summary>
-    Contracts.IContractRegistry Contracts { get; }
+    public abstract Contracts.AbstractContractRegistry Contracts { get; }
 }

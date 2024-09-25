@@ -10,7 +10,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal class DacStreams_1 : IDacStreams
 {
-    private readonly ITarget _target;
+    private readonly Target _target;
 
     private const uint MiniMetadataSignature = 0x6d727473;
     private const uint EENameStreamSignature = 0x614e4545;
@@ -24,7 +24,7 @@ internal class DacStreams_1 : IDacStreams
     private const uint EENameStream_EENameStreamSignature_Offset = 0;
     private const uint EENameStream_CountOfNames_Offset = 4;
 
-    internal DacStreams_1(ITarget target)
+    internal DacStreams_1(Target target)
     {
         _target = target;
     }
@@ -40,16 +40,16 @@ internal class DacStreams_1 : IDacStreams
 
     internal class DacStreams_1_Data : IData<DacStreams_1_Data>
     {
-        static DacStreams_1_Data IData<DacStreams_1_Data>.Create(ITarget target, TargetPointer address) => new DacStreams_1_Data(target);
+        static DacStreams_1_Data IData<DacStreams_1_Data>.Create(Target target, TargetPointer address) => new DacStreams_1_Data(target);
 
-        public DacStreams_1_Data(ITarget target)
+        public DacStreams_1_Data(Target target)
         {
             EEObjectToString = GetEEAddressToStringMap(target);
         }
 
         public readonly Dictionary<TargetPointer, string> EEObjectToString;
 
-        internal static Dictionary<TargetPointer, string> GetEEAddressToStringMap(ITarget target)
+        internal static Dictionary<TargetPointer, string> GetEEAddressToStringMap(Target target)
         {
             TargetPointer miniMetaDataBuffAddress = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.MiniMetaDataBuffAddress));
             uint miniMetaDataBuffMaxSize = target.Read<uint>(target.ReadGlobalPointer(Constants.Globals.MiniMetaDataBuffMaxSize));

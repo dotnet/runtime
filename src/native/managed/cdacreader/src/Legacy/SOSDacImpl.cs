@@ -236,7 +236,9 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
                         Contracts.ModuleHandle module = _target.Contracts.Loader.GetModuleHandle(modulePtr);
                         string modulePath = _target.Contracts.Loader.GetPath(module);
                         ReadOnlySpan<char> moduleSpan = modulePath.AsSpan();
-                        int pathNameSpanIndex = moduleSpan.LastIndexOf(_target.DirectorySeparator);
+                        char directorySeparator = (char)_target.ReadGlobal<byte>(Constants.Globals.DirectorySeparator);
+
+                        int pathNameSpanIndex = moduleSpan.LastIndexOf(directorySeparator);
                         if (pathNameSpanIndex != -1)
                         {
                             moduleSpan = moduleSpan.Slice(pathNameSpanIndex + 1);
@@ -425,7 +427,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             data->LoaderAllocator = contract.GetLoaderAllocator(handle);
             data->ThunkHeap = contract.GetThunkHeap(handle);
 
-            ITarget.TypeInfo lookupMapTypeInfo = _target.GetTypeInfo(DataType.ModuleLookupMap);
+            Target.TypeInfo lookupMapTypeInfo = _target.GetTypeInfo(DataType.ModuleLookupMap);
             ulong tableDataOffset = (ulong)lookupMapTypeInfo.Fields[nameof(Data.ModuleLookupMap.TableData)].Offset;
 
             Contracts.ModuleLookupTables tables = contract.GetLookupTables(handle);
@@ -488,7 +490,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
 
                 // Free objects have their component count explicitly set at the same offset as that for arrays
                 // Update the size to include those components
-                ITarget.TypeInfo arrayTypeInfo = _target.GetTypeInfo(DataType.Array);
+                Target.TypeInfo arrayTypeInfo = _target.GetTypeInfo(DataType.Array);
                 ulong numComponentsOffset = (ulong)_target.GetTypeInfo(DataType.Array).Fields[Data.Array.FieldNames.NumComponents].Offset;
                 data->Size += _target.Read<uint>(objAddr + numComponentsOffset) * data->dwComponentSize;
             }
