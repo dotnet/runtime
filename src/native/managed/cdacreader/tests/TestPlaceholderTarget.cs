@@ -11,9 +11,9 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 /// <summary>
 /// A base class implementation of Target that throws NotImplementedException for all methods.
 /// </summary>
-public class TestPlaceholderTarget : Target
+internal class TestPlaceholderTarget : Target
 {
-    private protected Contracts.IContractRegistry contractRegistry;
+    private protected Contracts.AbstractContractRegistry contractRegistry;
     private protected Target.IDataCache dataCache;
     private protected Dictionary<DataType, Target.TypeInfo> typeInfoCache;
 
@@ -27,7 +27,7 @@ public class TestPlaceholderTarget : Target
         typeInfoCache = null;
     }
 
-    internal void SetContracts(Contracts.IContractRegistry contracts)
+    internal void SetContracts(Contracts.AbstractContractRegistry contracts)
     {
         contractRegistry = contracts;
     }
@@ -43,25 +43,27 @@ public class TestPlaceholderTarget : Target
     }
 #endregion Setup
 
-    public int PointerSize { get; }
-    public bool IsLittleEndian { get; }
+    public override int PointerSize { get; }
+    public override bool IsLittleEndian { get; }
 
-    public bool IsAlignedToPointerSize(TargetPointer pointer)
+    public override bool IsAlignedToPointerSize(TargetPointer pointer)
     {
         return (pointer.Value & (ulong)(PointerSize - 1)) == 0;
     }
 
-    public virtual TargetPointer ReadGlobalPointer(string global) => throw new NotImplementedException();
-    public virtual TargetPointer ReadPointer(ulong address) => throw new NotImplementedException();
-    public virtual TargetCodePointer ReadCodePointer(ulong address) => throw new NotImplementedException();
-    public virtual void ReadBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
-    public virtual string ReadUtf8String(ulong address) => throw new NotImplementedException();
-    public virtual string ReadUtf16String(ulong address) => throw new NotImplementedException();
-    public virtual TargetNUInt ReadNUInt(ulong address) => throw new NotImplementedException();
-    public virtual T ReadGlobal<T>(string name) where T : struct, INumber<T> => throw new NotImplementedException();
-    public virtual T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T> => throw new NotImplementedException();
+    public override TargetPointer ReadGlobalPointer(string global) => throw new NotImplementedException();
+    public override TargetPointer ReadPointer(ulong address) => throw new NotImplementedException();
+    public override TargetCodePointer ReadCodePointer(ulong address) => throw new NotImplementedException();
+    public override void ReadBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
+    public override string ReadUtf8String(ulong address) => throw new NotImplementedException();
+    public override string ReadUtf16String(ulong address) => throw new NotImplementedException();
+    public override TargetNUInt ReadNUInt(ulong address) => throw new NotImplementedException();
+    public override T ReadGlobal<T>(string name) => throw new NotImplementedException();
+    public override T Read<T>(ulong address) => throw new NotImplementedException();
 
-    Target.TypeInfo Target.GetTypeInfo(DataType dataType) => typeInfoCache != null ? GetTypeInfoImpl(dataType) : throw new NotImplementedException();
+    public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
+
+    public override Target.TypeInfo GetTypeInfo(DataType dataType) => typeInfoCache != null ? GetTypeInfoImpl(dataType) : throw new NotImplementedException();
 
     private protected virtual Target.TypeInfo GetTypeInfoImpl(DataType dataType)
     {
@@ -72,10 +74,10 @@ public class TestPlaceholderTarget : Target
         throw new NotImplementedException();
     }
 
-    Target.IDataCache Target.ProcessedData => dataCache;
-    Contracts.IContractRegistry Target.Contracts => contractRegistry;
+    public override Target.IDataCache ProcessedData => dataCache;
+    public override Contracts.AbstractContractRegistry Contracts => contractRegistry;
 
-    internal class TestRegistry : Contracts.IContractRegistry
+    internal class TestRegistry : Contracts.AbstractContractRegistry
     {
         public TestRegistry() { }
         internal Contracts.IException? ExceptionContract { get; set; }
@@ -90,17 +92,17 @@ public class TestPlaceholderTarget : Target
         internal Contracts.IExecutionManager? ExecutionManagerContract { get; set; }
         internal Contracts.IReJIT? ReJITContract { get; set; }
 
-        Contracts.IException Contracts.IContractRegistry.Exception => ExceptionContract ?? throw new NotImplementedException();
-        Contracts.ILoader Contracts.IContractRegistry.Loader => LoaderContract ?? throw new NotImplementedException();
-        Contracts.IEcmaMetadata Contracts.IContractRegistry.EcmaMetadata => EcmaMetadataContract ?? throw new NotImplementedException();
-        Contracts.IObject Contracts.IContractRegistry.Object => ObjectContract ?? throw new NotImplementedException();
-        Contracts.IThread Contracts.IContractRegistry.Thread => ThreadContract ?? throw new NotImplementedException();
-        Contracts.IRuntimeTypeSystem Contracts.IContractRegistry.RuntimeTypeSystem => RuntimeTypeSystemContract ?? throw new NotImplementedException();
-        Contracts.IDacStreams Contracts.IContractRegistry.DacStreams => DacStreamsContract ?? throw new NotImplementedException();
-        Contracts.ICodeVersions Contracts.IContractRegistry.CodeVersions => CodeVersionsContract ?? throw new NotImplementedException();
-        Contracts.IPrecodeStubs Contracts.IContractRegistry.PrecodeStubs => PrecodeStubsContract ?? throw new NotImplementedException();
-        Contracts.IExecutionManager Contracts.IContractRegistry.ExecutionManager => ExecutionManagerContract ?? throw new NotImplementedException();
-        Contracts.IReJIT Contracts.IContractRegistry.ReJIT => ReJITContract ?? throw new NotImplementedException();
+        public override Contracts.IException Exception => ExceptionContract ?? throw new NotImplementedException();
+        public override Contracts.ILoader Loader => LoaderContract ?? throw new NotImplementedException();
+        public override Contracts.IEcmaMetadata EcmaMetadata => EcmaMetadataContract ?? throw new NotImplementedException();
+        public override Contracts.IObject Object => ObjectContract ?? throw new NotImplementedException();
+        public override Contracts.IThread Thread => ThreadContract ?? throw new NotImplementedException();
+        public override Contracts.IRuntimeTypeSystem RuntimeTypeSystem => RuntimeTypeSystemContract ?? throw new NotImplementedException();
+        public override Contracts.IDacStreams DacStreams => DacStreamsContract ?? throw new NotImplementedException();
+        public override Contracts.ICodeVersions CodeVersions => CodeVersionsContract ?? throw new NotImplementedException();
+        public override Contracts.IPrecodeStubs PrecodeStubs => PrecodeStubsContract ?? throw new NotImplementedException();
+        public override Contracts.IExecutionManager ExecutionManager => ExecutionManagerContract ?? throw new NotImplementedException();
+        public override Contracts.IReJIT ReJIT => ReJITContract ?? throw new NotImplementedException();
     }
 
     internal class TestDataCache : Target.IDataCache
