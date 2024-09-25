@@ -836,7 +836,5 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Diagnostics.DiagnosticMethodInfo.#ctor(System.String,System.String,System.String)</Target>
-    <Left>ref/net9.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net9.0/System.Private.CoreLib.dll</Right>
   </Suppression>
 </Suppressions>

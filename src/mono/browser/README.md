@@ -121,7 +121,7 @@ XHarness consists of two pieces for WASM
 
 #### 1. CLI/host
 
-* set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/net7.0/Microsoft.DotNet.XHarness.CLI.dll`
+* set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/net9.0/Microsoft.DotNet.XHarness.CLI.dll`
 
 **Note:** Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
 
@@ -198,7 +198,7 @@ Example use of the `wasmconsole` template:
 ```console
 > dotnet new wasmconsole
 > dotnet publish
-> cd bin/Debug/net7.0/browser-wasm/AppBundle
+> cd bin/Debug/net9.0/browser-wasm/AppBundle
 > node main.mjs
 Hello World!
 Args:
