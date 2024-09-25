@@ -7602,7 +7602,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
             fncHandle = gdvCandidate->guardedMethodHandle;
         }
         exactContextHnd = gdvCandidate->exactContextHandle;
-        methAttr = info.compCompHnd->getMethodAttribs(fncHandle);
+        methAttr        = info.compCompHnd->getMethodAttribs(fncHandle);
     }
     else
     {
