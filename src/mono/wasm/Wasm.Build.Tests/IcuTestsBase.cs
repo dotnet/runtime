@@ -60,54 +60,48 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
         using System;
         using System.Globalization;
 
-        public class Program
-        {{
-            public static int Main(string[] args)
-            {{
-                Console.WriteLine($""Current culture: '{{CultureInfo.CurrentCulture.Name}}'"");
+        Console.WriteLine($""Current culture: '{{CultureInfo.CurrentCulture.Name}}'"");
                 
-                string fallbackSundayName = ""{fallbackSundayName}"";
-                bool onlyPredefinedCultures = {(onlyPredefinedCultures ? "true" : "false")};
-                Locale[] localesToTest = {testedLocales};
+        string fallbackSundayName = ""{fallbackSundayName}"";
+        bool onlyPredefinedCultures = {(onlyPredefinedCultures ? "true" : "false")};
+        Locale[] localesToTest = {testedLocales};
 
-                bool fail = false;
-                foreach (var testLocale in localesToTest)
+        bool fail = false;
+        foreach (var testLocale in localesToTest)
+        {{
+            bool expectMissing = string.IsNullOrEmpty(testLocale.SundayName);
+            bool ctorShouldFail = expectMissing && onlyPredefinedCultures;
+            CultureInfo culture;
+
+            try
+            {{
+                culture = new CultureInfo(testLocale.Code);
+                if (ctorShouldFail)
                 {{
-                    bool expectMissing = string.IsNullOrEmpty(testLocale.SundayName);
-                    bool ctorShouldFail = expectMissing && onlyPredefinedCultures;
-                    CultureInfo culture;
+                    Console.WriteLine($""CultureInfo..ctor did not throw an exception for {{testLocale.Code}} as was expected."");
+                    fail = true;
+                    continue;
+                }}
+            }}
+            catch(CultureNotFoundException cnfe) when (ctorShouldFail && cnfe.Message.Contains($""{{testLocale.Code}} is an invalid culture identifier.""))
+            {{
+                Console.WriteLine($""{{testLocale.Code}}: Success. .ctor failed as expected."");
+                continue;
+            }}
 
-                    try
-                    {{
-                        culture = new CultureInfo(testLocale.Code);
-                        if (ctorShouldFail)
-                        {{
-                            Console.WriteLine($""CultureInfo..ctor did not throw an exception for {{testLocale.Code}} as was expected."");
-                            fail = true;
-                            continue;
-                        }}
-                    }}
-                    catch(CultureNotFoundException cnfe) when (ctorShouldFail && cnfe.Message.Contains($""{{testLocale.Code}} is an invalid culture identifier.""))
-                    {{
-                        Console.WriteLine($""{{testLocale.Code}}: Success. .ctor failed as expected."");
-                        continue;
-                    }}
-
-                    string expectedSundayName = (expectMissing && !onlyPredefinedCultures)
+            string expectedSundayName = (expectMissing && !onlyPredefinedCultures)
                                             ? fallbackSundayName
                                             : testLocale.SundayName ?? fallbackSundayName;
-                    var actualLocalizedSundayName = culture.DateTimeFormat.GetDayName(new DateTime(2000,01,02).DayOfWeek);
-                    if (expectedSundayName != actualLocalizedSundayName)
-                    {{
-                        Console.WriteLine($""Error: incorrect localized value for Sunday in locale {{testLocale.Code}}. Expected '{{expectedSundayName}}' but got '{{actualLocalizedSundayName}}'."");
-                        fail = true;
-                        continue;
-                    }}
-                    Console.WriteLine($""{{testLocale.Code}}: Success. Sunday name: {{actualLocalizedSundayName}}"");
-                }}
-                return fail ? -1 : 42;
+            var actualLocalizedSundayName = culture.DateTimeFormat.GetDayName(new DateTime(2000,01,02).DayOfWeek);
+            if (expectedSundayName != actualLocalizedSundayName)
+            {{
+                Console.WriteLine($""Error: incorrect localized value for Sunday in locale {{testLocale.Code}}. Expected '{{expectedSundayName}}' but got '{{actualLocalizedSundayName}}'."");
+                fail = true;
+                continue;
             }}
+            Console.WriteLine($""{{testLocale.Code}}: Success. Sunday name: {{actualLocalizedSundayName}}"");
         }}
+        return fail ? -1 : 42;
 
         public record Locale(string Code, string? SundayName);
         ";

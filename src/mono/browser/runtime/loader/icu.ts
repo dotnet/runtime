@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -48,13 +47,11 @@ export function init_globalization () {
 }
 
 export function getIcuResourceName (config: MonoConfig): string | null {
-    console.log(`getIcuResourceName: config.globalizationMode=${config.globalizationMode}`);
     if (config.resources?.icu && config.globalizationMode != GlobalizationMode.Invariant) {
         // TODO: when starting on sidecar, we should pass default culture from UI thread
         const culture = config.applicationCulture || (ENVIRONMENT_IS_WEB ? (globalThis.navigator && globalThis.navigator.languages && globalThis.navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
 
         const icuFiles = Object.keys(config.resources.icu);
-        console.log(`getIcuResourceName: icuFiles=${icuFiles}`);
         const fileMapping: {
             [k: string]: string
         } = {};
