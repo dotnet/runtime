@@ -42,16 +42,18 @@ namespace Wasm.Build.Tests
             File.WriteAllText(path, text);
         }
 
-        protected void RemoveContentsFromProjectFile(string pathRelativeToProjectDir, string startMarker, string endMarker)
+        protected void RemoveContentsFromProjectFile(string pathRelativeToProjectDir, string afterMarker, string beforeMarker)
         {
             var path = Path.Combine(_projectDir!, pathRelativeToProjectDir);
             string text = File.ReadAllText(path);
-            int start = text.IndexOf(startMarker);
-            int end = text.IndexOf(endMarker, start);
+            int start = text.IndexOf(afterMarker);
+            int end = text.IndexOf(beforeMarker, start);
             if (start == -1 || end == -1)
                 throw new XunitException($"Start or end marker not found in '{path}'");
-
-            text = text.Remove(start, end - start + endMarker.Length);
+            start += afterMarker.Length;
+            text = text.Remove(start, end - start);
+            // separate the markers with a new line
+            text = text.Insert(start, "\n");
             File.WriteAllText(path, text);
         }
 
@@ -98,32 +100,24 @@ namespace Wasm.Build.Tests
             File.WriteAllText(mainJsPath, mainJsContent);
         }
 
-        protected CommandResult RunConsole(BuildArgs buildArgs, int expectedExitCode = 42)
+        protected CommandResult RunConsole(BuildArgs buildArgs, int expectedExitCode = 42, string language = "en-US")
         {
             return new RunCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(_projectDir!)
-                                        .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {buildArgs.Config}")
-                                        .EnsureExitCode(expectedExitCode);
-            
+                .WithWorkingDirectory(_projectDir!)
+                .WithEnvironmentVariable("LANG", language)
+                .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {buildArgs.Config}")
+                .EnsureExitCode(expectedExitCode);
         }
 
-        protected async Task RunBrowser(string config, string projectFile)
+        protected async Task RunBrowser(string config, string projectFile, string language = "en-US")
         {
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                             .WithWorkingDirectory(_projectDir!);
 
             await using var runner = new BrowserRunner(_testOutput);
-            try
-            {
-                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console");
-                await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
-                Assert.Contains("WASM EXIT 42", string.Join(Environment.NewLine, runner.OutputLines));
-            }
-            catch(Exception ex)
-            {
-                Console.WriteLine($"Exception: {ex}");
-                throw;
-            }
+            var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console", language: language);
+            await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
+            Assert.Contains("WASM EXIT 42", string.Join(Environment.NewLine, runner.OutputLines));
         }
     }
 }

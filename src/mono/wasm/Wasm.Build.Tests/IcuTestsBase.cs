@@ -18,6 +18,8 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
         : base(output, buildContext) { }
 
     private const string _fallbackSundayNameEnUS = "Sunday";
+    protected static string[] templateTypes = { "wasmconsole", "wasmbrowser" };
+    protected static bool[] boolOptions =  { false, true };
 
     protected record SundayNames
     {
@@ -112,31 +114,49 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
 
     protected async Task TestIcuShards(string config, string templateType, bool aot, string shardName, string testedLocales, GlobalizationMode globalizationMode, bool onlyPredefinedCultures=false)
     {
+        bool isBrowser = templateType == "wasmbrowser";
+        string icuProperty = isBrowser ? "BlazorIcuDataFileName" : "WasmIcuDataFileName"; // WHY? it should be "WasmIcuDataFileName" for both
+        // by default, we remove resource strings from an app. ICU tests are checking exception messages contents -> resource string keys are not enough
+        string extraProperties = $"<{icuProperty}>{shardName}</{icuProperty}><UseSystemResourceKeys>false</UseSystemResourceKeys><RunAOTCompilation>{aot}</RunAOTCompilation>";
+        if (onlyPredefinedCultures)
+            extraProperties = $"{extraProperties}<PredefinedCulturesOnly>true</PredefinedCulturesOnly>";
+        await BuildAndRunIcuTest(config, templateType, aot, testedLocales, globalizationMode, extraProperties, onlyPredefinedCultures, icuFileName: shardName);
+    }
+
+    protected async Task BuildAndRunIcuTest(
+        string config,
+        string templateType,
+        bool aot,
+        string testedLocales,
+        GlobalizationMode globalizationMode,
+        string extraProperties = "",
+        bool onlyPredefinedCultures=false,
+        string language = "en-US",
+        string? icuFileName = null)
+    {
         string id = $"icu_{config}_{aot}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, templateType);
         string projectDirectory = Path.GetDirectoryName(projectFile)!;
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         var buildArgs = new BuildArgs(projectName, config, aot, id, null);
         buildArgs = ExpandBuildArgs(buildArgs);
-
-        // by default, we remove resource strings from an app. ICU tests are checking exception messages contents -> resource string keys are not enough
-        // WHY blazor when it's not a blazor app?
-        // boot.json is fine but the app is still in invariant mode, why? Let's check the binlog OR icu.ts
-        string extraProperties = $"<BlazorIcuDataFileName>{shardName}</BlazorIcuDataFileName><UseSystemResourceKeys>false</UseSystemResourceKeys><RunAOTCompilation>{aot}</RunAOTCompilation>";
-        if (onlyPredefinedCultures)
-            extraProperties = $"{extraProperties}<PredefinedCulturesOnly>true</PredefinedCulturesOnly>";
         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
-
+        
         string programPath = Path.Combine(projectDirectory, "Program.cs");
         string programText = GetProgramText(testedLocales, onlyPredefinedCultures);
         File.WriteAllText(programPath, programText);
         _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
 
-        UpdateProjectFile(Path.Combine("wwwroot", "main.js"), new Dictionary<string, string> { 
-            { "runMain", "runMainAndExit" },
-            { ".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()" }
-            });
-        RemoveContentsFromProjectFile(Path.Combine("wwwroot", "main.js"), "const config", "further API calls");
+        bool isBrowser = templateType == "wasmbrowser";
+        string mainPath = isBrowser ? Path.Combine("wwwroot", "main.js") : "main.mjs";
+        var replacements = isBrowser ? new Dictionary<string, string> { 
+                { "runMain", "runMainAndExit" },
+                { ".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()" }
+            } : new Dictionary<string, string> { 
+                { ".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()" }
+            };
+        UpdateProjectFile(mainPath, replacements);
+        RemoveContentsFromProjectFile(mainPath, ".create();", "await runMainAndExit();");
 
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
         BuildTemplateProject(buildArgs,
@@ -145,21 +165,32 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
                             DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                             CreateProject: false,
                             HasV8Script: false,
-                            MainJS: "main.js",
+                            MainJS: isBrowser ? "main.js" : "main.mjs",
                             Publish: true,
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false,
-                            IsBrowserProject: templateType == "wasmbrowser",
+                            IsBrowserProject: isBrowser,
                             GlobalizationMode: globalizationMode,
-                            CustomIcuFile: shardName
+                            CustomIcuFile: icuFileName
                         ));
-        if (templateType == "wasmbrowser")
+        try
         {
-            await RunBrowser(buildArgs.Config, projectFile);
+            switch (templateType)
+            {
+                case "wasmbrowser":
+                    await RunBrowser(buildArgs.Config, projectFile, language);
+                    break;
+                case "wasmconsole":
+                    RunConsole(buildArgs, language: language);
+                    break;
+                default:
+                    throw new Exception($"Unknown template type: {templateType}");
+            }
         }
-        else
+        catch(Exception ex)
         {
-            RunConsole(buildArgs);
+            Console.WriteLine($"Exception: {ex}; _testOutput={_testOutput}");
+            throw;
         }
     }
 }

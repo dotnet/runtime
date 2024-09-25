@@ -18,7 +18,7 @@ internal class BrowserRunner : IAsyncDisposable
 {
     private static Regex s_blazorUrlRegex = new Regex("Now listening on: (?<url>https?://.*$)");
     private static Regex s_appHostUrlRegex = new Regex("^App url: (?<url>https?://.*$)");
-    private static Regex s_exitRegex = new Regex("WASM EXIT (?<exitCode>[0-9]+)$");
+    private static Regex s_exitRegex = new Regex("WASM EXIT (?<exitCode>-?[0-9]+)$");
     private static readonly Lazy<string> s_chromePath = new(() =>
     {
         string artifactsBinDir = Path.Combine(Path.GetDirectoryName(typeof(BuildTestBase).Assembly.Location)!, "..", "..", "..", "..");
@@ -42,7 +42,6 @@ internal class BrowserRunner : IAsyncDisposable
         TaskCompletionSource<string> urlAvailable = new();
         Action<string?> outputHandler = msg =>
         {
-            Console.WriteLine($"ILONA: {msg}");
             if (string.IsNullOrEmpty(msg))
                 return;
 
@@ -66,7 +65,6 @@ internal class BrowserRunner : IAsyncDisposable
             }
 
             m = s_exitRegex.Match(msg);
-            Console.WriteLine($"ILONA: {m.Success}");
             if (m.Success)
             {
                 _exited.TrySetResult(int.Parse(m.Groups["exitCode"].Value));
@@ -106,12 +104,13 @@ internal class BrowserRunner : IAsyncDisposable
         string browserUrl,
         bool headless = true,
         int timeout = 10000,
-        int maxRetries = 3
+        int maxRetries = 3,
+        string language = "en-US"
     ) {
         var url = new Uri(browserUrl);
         Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
         // codespaces: ignore certificate error -> Microsoft.Playwright.PlaywrightException : net::ERR_CERT_AUTHORITY_INVALID
-        string[] chromeArgs = new[] { $"--explicitly-allowed-ports={url.Port}", "--ignore-certificate-errors" };
+        string[] chromeArgs = new[] { $"--explicitly-allowed-ports={url.Port}", "--ignore-certificate-errors", $"--lang={language}" };
         _testOutput.WriteLine($"Launching chrome ('{s_chromePath.Value}') via playwright with args = {string.Join(',', chromeArgs)}");
 
         int attempt = 0;
@@ -148,14 +147,15 @@ internal class BrowserRunner : IAsyncDisposable
         ToolCommand cmd,
         string args,
         bool headless = true,
+        string language = "en-US",
         Action<IPage, IConsoleMessage>? onConsoleMessage = null,
         Action<string>? onServerMessage = null,
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null)
     {
         var urlString = await StartServerAndGetUrlAsync(cmd, args, onServerMessage);
-        var browser = await SpawnBrowserAsync(urlString, headless);
-        var context = await browser.NewContextAsync();
+        var browser = await SpawnBrowserAsync(urlString, headless, language: language);
+        var context = await browser.NewContextAsync(new BrowserNewContextOptions { Locale = language });
         return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
     }
 
