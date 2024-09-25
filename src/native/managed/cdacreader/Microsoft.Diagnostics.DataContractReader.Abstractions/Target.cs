@@ -86,6 +86,14 @@ internal abstract class Target
     public abstract T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
 
     /// <summary>
+    /// Read a target pointer from a span of bytes
+    /// </summary>
+    /// <param name="bytes">The span of bytes to read from</param>
+    /// <returns>The target pointer read from the span</returns>
+    public abstract TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes);
+
+
+    /// <summary>
     /// Returns true if the given pointer is aligned to the pointer size of the target
     /// </summary>
     /// <param name="pointer">A target pointer value</param>

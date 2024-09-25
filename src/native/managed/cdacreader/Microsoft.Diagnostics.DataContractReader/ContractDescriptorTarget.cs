@@ -286,7 +286,7 @@ internal sealed unsafe class ContractDescriptorTarget : Target
         return pointer;
     }
 
-    public TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes)
+    public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes)
     {
         if (_config.PointerSize == sizeof(uint))
         {
