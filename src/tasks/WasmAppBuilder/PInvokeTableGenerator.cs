@@ -26,14 +26,12 @@ internal sealed class PInvokeTableGenerator
     private readonly List<PInvokeCallback> callbacks = new();
     private readonly PInvokeCollector _pinvokeCollector;
     private readonly bool _isLibraryMode;
-    private readonly string _runtimeIdentifier;
 
-    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, string runtimeIdentifier, bool isLibraryMode = false)
+    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode = false)
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
         _pinvokeCollector = new(log);
-        _runtimeIdentifier = runtimeIdentifier;
         _isLibraryMode = isLibraryMode;
     }
 
@@ -379,7 +377,7 @@ internal sealed class PInvokeTableGenerator
                     (!cb.IsVoid ? $"{w.NewLine}    {MapType(cb.ReturnType)} result;" : "")}}
 
                     if (!(InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) {{{
-                        (cb.IsExport && _isLibraryMode && _runtimeIdentifier == "wasi-wasm" ? $"initialize_runtime();{w.NewLine}" : "")}}
+                        (cb.IsExport && _isLibraryMode ? $"initialize_runtime();{w.NewLine}" : "")}}
                         mono_wasm_marshal_get_managed_wrapper ("{{EscapeLiteral(cb.AssemblyName)}}", "{{EscapeLiteral(cb.Namespace)}}", "{{EscapeLiteral(cb.TypeName)}}", "{{EscapeLiteral(cb.MethodName)}}", {{cb.Token}}, {{cb.Parameters.Length}});
                     }
 
