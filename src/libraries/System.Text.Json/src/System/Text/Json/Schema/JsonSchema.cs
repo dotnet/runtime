@@ -260,6 +260,19 @@ namespace System.Text.Json.Schema
             }
         }
 
+        public static void EnsureMutable(ref JsonSchema schema)
+        {
+            switch (schema._trueOrFalse)
+            {
+                case false:
+                    schema = new JsonSchema { Not = True };
+                    break;
+                case true:
+                    schema = new JsonSchema();
+                    break;
+            }
+        }
+
         private static ReadOnlySpan<JsonSchemaType> s_schemaValues =>
         [
             // NB the order of these values influences order of types in the rendered schema
