@@ -6,17 +6,23 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class ContractRegistry : AbstractContractRegistry
+/// <summary>
+/// Contract registry that caches contracts for a target
+/// </summary>
+internal sealed class CachingContractRegistry : ContractRegistry
 {
+    public delegate bool TryGetContractVersionDelegate(string contractName, out int version);
     // Contracts that have already been created for a target.
     // Items should not be removed from this, only added.
     private readonly Dictionary<Type, IContract> _contracts = [];
     private readonly Dictionary<Type, IContractFactory<IContract>> _factories;
-    private readonly ContractDescriptorTarget _target;
+    private readonly Target _target;
+    private readonly TryGetContractVersionDelegate _tryGetContractVersion;
 
-    public ContractRegistry(ContractDescriptorTarget target, Action<Dictionary<Type, IContractFactory<IContract>>>? configureFactories = null)
+    public CachingContractRegistry(Target target, TryGetContractVersionDelegate tryGetContractVersion, Action<Dictionary<Type, IContractFactory<IContract>>>? configureFactories = null)
     {
         _target = target;
+        _tryGetContractVersion = tryGetContractVersion;
         _factories = new () {
             [typeof(IException)] = new ExceptionFactory(),
             [typeof(ILoader)] = new LoaderFactory(),
@@ -45,22 +51,22 @@ internal sealed class ContractRegistry : AbstractContractRegistry
     public override IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
     public override IReJIT ReJIT => GetContract<IReJIT>();
 
-    private TProduct GetContract<TProduct>() where TProduct : IContract
+    private TContract GetContract<TContract>() where TContract : IContract
     {
-        if (_contracts.TryGetValue(typeof(TProduct), out IContract? contractMaybe))
-            return (TProduct)contractMaybe;
+        if (_contracts.TryGetValue(typeof(TContract), out IContract? contractMaybe))
+            return (TContract)contractMaybe;
 
-        if (!_target.TryGetContractVersion(TProduct.Name, out int version))
+        if (!_tryGetContractVersion(TContract.Name, out int version))
             throw new NotImplementedException();
 
-        if (!_factories.TryGetValue(typeof(TProduct), out IContractFactory<IContract>? factory))
+        if (!_factories.TryGetValue(typeof(TContract), out IContractFactory<IContract>? factory))
             throw new NotImplementedException();
         // Create and register the contract
-        TProduct contract = (TProduct)factory.CreateContract(_target, version);
-        if (_contracts.TryAdd(typeof(TProduct), contract))
+        TContract contract = (TContract)factory.CreateContract(_target, version);
+        if (_contracts.TryAdd(typeof(TContract), contract))
             return contract;
 
         // Contract was already registered by someone else
-        return (TProduct)_contracts[typeof(TProduct)];
+        return (TContract)_contracts[typeof(TContract)];
     }
 }

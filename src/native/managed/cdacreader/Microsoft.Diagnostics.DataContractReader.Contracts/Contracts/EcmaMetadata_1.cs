@@ -10,15 +10,9 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal class EcmaMetadata_1 : IEcmaMetadata
+internal class EcmaMetadata_1(Target target) : IEcmaMetadata
 {
-    private readonly Target target;
     private Dictionary<ModuleHandle, MetadataReaderProvider?> _metadata = new();
-
-    public EcmaMetadata_1(Target target)
-    {
-        this.target = target;
-    }
 
     public TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)
     {
