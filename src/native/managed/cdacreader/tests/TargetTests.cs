@@ -39,18 +39,13 @@ public unsafe class TargetTests
     public void GetTypeInfo(MockTarget.Architecture arch)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-        string typesJson = TargetTestHelpers.MakeTypesJson(TestTypes);
-        byte[] json = Encoding.UTF8.GetBytes($$"""
-    {
-        "version": 0,
-        "baseline": "empty",
-        "contracts": {},
-        "types": { {{typesJson}} },
-        "globals": {}
-    }
-    """);
+        MockMemorySpace.Builder builder = new (targetTestHelpers);
+        builder.SetTypes(TestTypes)
+            .SetGlobals(Array.Empty<(string, ulong, string?)>())
+            .SetContracts(Array.Empty<string>());
 
-        Target target = MockMemorySpace.CreateTarget(targetTestHelpers, json);
+        bool success = builder.TryCreateTarget(out Target? target);
+        Assert.True(success);
 
         foreach ((DataType type, Target.TypeInfo info) in TestTypes)
         {
@@ -90,18 +85,13 @@ public unsafe class TargetTests
     public void ReadGlobalValue(MockTarget.Architecture arch)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-        string globalsJson = TargetTestHelpers.MakeGlobalsJson(TestGlobals);
-        byte[] json = Encoding.UTF8.GetBytes($$"""
-        {
-            "version": 0,
-            "baseline": "empty",
-            "contracts": {},
-            "types": {},
-            "globals": { {{globalsJson}} }
-        }
-        """);
+        MockMemorySpace.Builder builder = new (targetTestHelpers);
+        builder.SetTypes(new Dictionary<DataType, Target.TypeInfo>())
+            .SetGlobals(TestGlobals)
+            .SetContracts([]);
 
-        Target target = MockMemorySpace.CreateTarget(targetTestHelpers, json);
+        bool success = builder.TryCreateTarget(out Target? target);
+        Assert.True(success);
 
         ValidateGlobals(target, TestGlobals);
     }
@@ -111,26 +101,14 @@ public unsafe class TargetTests
     public void ReadIndirectGlobalValue(MockTarget.Architecture arch)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-        int pointerSize = targetTestHelpers.PointerSize;
-        Span<byte> pointerData = stackalloc byte[TestGlobals.Length * pointerSize];
-        for (int i = 0; i < TestGlobals.Length; i++)
-        {
-            var (_, value, _) = TestGlobals[i];
-            targetTestHelpers.WritePointer(pointerData.Slice(i * pointerSize), value);
-        }
+        MockMemorySpace.Builder builder = new (targetTestHelpers);
+        builder.SetTypes(new Dictionary<DataType, Target.TypeInfo>())
+            .SetContracts([])
+            .SetGlobals(TestGlobals.Select(MakeGlobalToIndirect).ToArray(),
+                        TestGlobals.Select((g) => g.Value).ToArray());
 
-        string globalsJson = string.Join(',', TestGlobals.Select((g, i) => $"\"{g.Name}\": {(g.Type is null ? $"[{i}]" : $"[[{i}], \"{g.Type}\"]")}"));
-        byte[] json = Encoding.UTF8.GetBytes($$"""
-        {
-            "version": 0,
-            "baseline": "empty",
-            "contracts": {},
-            "types": {},
-            "globals": { {{globalsJson}} }
-        }
-        """);
-
-        Target target = MockMemorySpace.CreateTarget(targetTestHelpers, json, pointerData);
+        bool success = builder.TryCreateTarget(out Target? target);
+        Assert.True(success);
 
         // Indirect values are pointer-sized, so max 32-bits for a 32-bit target
         var expected = arch.Is64Bit
@@ -138,6 +116,11 @@ public unsafe class TargetTests
             : TestGlobals.Select(g => (g.Name, g.Value & 0xffffffff, g.Type)).ToArray();
 
         ValidateGlobals(target, expected);
+
+        static (string Name, ulong? Value, uint? IndirectIndex, string? Type) MakeGlobalToIndirect((string Name, ulong Value, string? Type) global, int index)
+        {
+            return (global.Name, null, (uint?)index, global.Type);
+        }
     }
 
     private static void ValidateGlobals(
