@@ -89,7 +89,7 @@ public:
     static void ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD);
 
 private:
-    static Stub* SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth);
+    static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth);
 
 public:
     static MethodDesc* FindDelegateInvokeMethod(MethodTable *pMT);

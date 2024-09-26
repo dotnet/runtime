@@ -848,7 +848,7 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
 }
 
 #if defined(TARGET_RISCV64)
-static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* pTargetMD)
+static PCODE CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* pTargetMD)
 {
     SigTypeContext typeContext(pDelegateMD);
     MetaSig delegateSig(pDelegateMD);
@@ -885,11 +885,11 @@ static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* p
         &typeContext,
         &stubLinker);
 
-    return Stub::NewStub(JitILStub(pStubMD));
+    return JitILStub(pStubMD);
 }
 #endif // TARGET_RISCV64
 
-Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
+PCODE COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 {
     CONTRACTL
     {
@@ -941,7 +941,7 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
                 pShuffleThunk = pClass->m_pStaticCallStub;
             }
         }
-        return pShuffleThunk;
+        return pShuffleThunk->GetEntryPoint();
     }
     else
     {
@@ -1222,11 +1222,12 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
             pShuffleThunk = pDelegateClass->m_pStaticCallStub;
 
         // If we haven't already setup a shuffle thunk go do it now (which will cache the result automatically).
-        if (!pShuffleThunk)
-            pShuffleThunk = SetupShuffleThunk(pDelegateMT, pTargetMethod);
+        PCODE pEntryPoint = (pShuffleThunk == NULL)
+            ? SetupShuffleThunk(pDelegateMT, pTargetMethod)
+            : pShuffleThunk->GetEntryPoint();
 
         // Indicate that the delegate will jump to the shuffle thunk rather than directly to the target method.
-        refRealDelegate->SetMethodPtr(pShuffleThunk->GetEntryPoint());
+        refRealDelegate->SetMethodPtr(pEntryPoint);
 
         // Use stub dispatch for all virtuals.
         // <TODO> Investigate not using this for non-interface virtuals. </TODO>
@@ -1765,10 +1766,12 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
             pShuffleThunk = pDelCls->m_pInstRetBuffCallStub;
         else
             pShuffleThunk = pDelCls->m_pStaticCallStub;
-        if (!pShuffleThunk)
-            pShuffleThunk = SetupShuffleThunk(pDelMT, pMeth);
 
-        gc.refThis->SetMethodPtr(pShuffleThunk->GetEntryPoint());
+        PCODE pEntryPoint = (pShuffleThunk == NULL)
+            ? SetupShuffleThunk(pDelMT, pMeth)
+            : pShuffleThunk->GetEntryPoint();
+
+        gc.refThis->SetMethodPtr(pEntryPoint);
 
         // set the ptr aux according to what is needed, if virtual need to call make virtual stub dispatch
         if (!pMeth->IsStatic() && pMeth->IsVirtual() && !pMeth->GetMethodTable()->IsValueType())
@@ -2988,9 +2991,11 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
         else
             pShuffleThunk = pDelCls->m_pStaticCallStub;
 
-        if (!pShuffleThunk)
-            pShuffleThunk = SetupShuffleThunk(pDelMT, pTargetMethod);
-        pCtorData->pArg3 = (void*)pShuffleThunk->GetEntryPoint();
+        PCODE pEntryPoint = (pShuffleThunk == NULL)
+            ? SetupShuffleThunk(pDelMT, pTargetMethod)
+            : pShuffleThunk->GetEntryPoint();
+
+        pCtorData->pArg3 = (void*)pEntryPoint;
         if (isCollectible)
         {
             pCtorData->pArg4 = pTargetMethodLoaderAllocator->GetLoaderAllocatorObjectHandle();
