@@ -607,7 +607,7 @@ def setup_coredump_generation(host_os):
     """
     global coredump_pattern
 
-    if host_os == "osx":
+    if host_os == "osx" or "freebsd":
         coredump_pattern = subprocess.check_output("sysctl -n kern.corefile", shell=True).rstrip()
     elif host_os == "linux":
         with open("/proc/sys/kernel/core_pattern", "r") as f:
@@ -683,7 +683,7 @@ def print_info_from_coredump_file(host_os, arch, coredump_name, executable_name)
 
     command = ""
 
-    if host_os == "osx":
+    if host_os == "osx" or "freebsd":
         command = "lldb -c %s -b -o 'bt all' -o 'disassemble -b -p'" % coredump_name
     elif host_os == "linux":
         command = "gdb --batch -ex \"thread apply all bt full\" -ex \"disassemble /r $pc\" -ex \"quit\" %s %s" % (executable_name, coredump_name)

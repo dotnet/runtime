@@ -836,6 +836,7 @@ DEFINE_FIELD_U(_startHelper,              ThreadBaseObject,   m_StartHelper)
 DEFINE_FIELD_U(_DONT_USE_InternalThread,  ThreadBaseObject,   m_InternalThread)
 DEFINE_FIELD_U(_priority,                 ThreadBaseObject,   m_Priority)
 DEFINE_FIELD_U(_isDead,                   ThreadBaseObject,   m_IsDead)
+DEFINE_FIELD_U(_isThreadPool,             ThreadBaseObject,   m_IsThreadPool)
 DEFINE_CLASS(THREAD,                Threading,              Thread)
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                               IM_RetVoid)
 #ifdef FEATURE_OBJCMARSHAL
@@ -1142,6 +1143,17 @@ DEFINE_CLASS(INATTRIBUTE, Interop, InAttribute)
 DEFINE_CLASS(CASTCACHE, CompilerServices, CastHelpers)
 DEFINE_FIELD(CASTCACHE, TABLE, s_table)
 
+#ifdef DEBUG
+// GenericCache is generic, so we can't check layout with DEFINE_FIELD_U
+// Instead we do an ad hoc check
+DEFINE_CLASS(GENERICCACHE, CompilerServices, GenericCache`2)
+DEFINE_FIELD(GENERICCACHE, TABLE, _table)
+DEFINE_FIELD(GENERICCACHE, SENTINEL_TABLE, _sentinelTable)
+DEFINE_FIELD(GENERICCACHE, LAST_FLUSH_SIZE, _lastFlushSize)
+DEFINE_FIELD(GENERICCACHE, INITIAL_CACHE_SIZE, _initialCacheSize)
+DEFINE_FIELD(GENERICCACHE, MAX_CACHE_SIZE, _maxCacheSize)
+#endif
+
 DEFINE_CLASS(CASTHELPERS, CompilerServices, CastHelpers)
 DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFANY,  IsInstanceOfAny,             SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFCLASS,IsInstanceOfClass,           SM_PtrVoid_Obj_RetObj)
@@ -1154,6 +1166,26 @@ DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       SM_Ptr
 DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_ArrObject_IntPtr_Obj_RetVoid)
 DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_ArrObject_IntPtr_PtrVoid_RetRefObj)
 DEFINE_METHOD(CASTHELPERS, ARRAYTYPECHECK,   ArrayTypeCheck,              SM_Obj_Array_RetVoid)
+
+DEFINE_CLASS(VIRTUALDISPATCHHELPERS, CompilerServices, VirtualDispatchHelpers)
+DEFINE_METHOD(VIRTUALDISPATCHHELPERS, VIRTUALFUNCTIONPOINTER, VirtualFunctionPointer, NoSig)
+DEFINE_METHOD(VIRTUALDISPATCHHELPERS, VIRTUALFUNCTIONPOINTER_DYNAMIC, VirtualFunctionPointer_Dynamic, NoSig)
+DEFINE_FIELD(VIRTUALDISPATCHHELPERS, CACHE, s_virtualFunctionPointerCache)
+
+DEFINE_CLASS_U(CompilerServices, VirtualDispatchHelpers+VirtualFunctionPointerArgs, VirtualFunctionPointerArgs)
+DEFINE_FIELD_U(classHnd, VirtualFunctionPointerArgs, classHnd)
+DEFINE_FIELD_U(methodHnd, VirtualFunctionPointerArgs, methodHnd)
+
+DEFINE_CLASS(GENERICSHELPERS, CompilerServices, GenericsHelpers)
+DEFINE_METHOD(GENERICSHELPERS, METHOD, Method, NoSig)
+DEFINE_METHOD(GENERICSHELPERS, CLASS, Class, NoSig)
+DEFINE_METHOD(GENERICSHELPERS, METHODWITHSLOTANDMODULE, MethodWithSlotAndModule, NoSig)
+DEFINE_METHOD(GENERICSHELPERS, CLASSWITHSLOTANDMODULE, ClassWithSlotAndModule, NoSig)
+
+DEFINE_CLASS_U(CompilerServices, GenericsHelpers+GenericHandleArgs, GenericHandleArgs)
+DEFINE_FIELD_U(signature, GenericHandleArgs, signature)
+DEFINE_FIELD_U(module, GenericHandleArgs, module)
+DEFINE_FIELD_U(dictionaryIndexAndSlot, GenericHandleArgs, dictionaryIndexAndSlot)
 
 #ifdef FEATURE_EH_FUNCLETS
 DEFINE_CLASS(EH, Runtime, EH)

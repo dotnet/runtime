@@ -1176,6 +1176,11 @@
     <Comment> This object belongs to a non-gc heap </Comment>
 </HRESULT>
 
+<HRESULT NumericValue="0x8013138a">
+    <SymbolicName>CORPROF_E_MODULE_IS_ENC</SymbolicName>
+    <Comment> The module is EnC </Comment>
+</HRESULT>
+
 <HRESULT NumericValue="0x80131416">
 	<SymbolicName>CORSEC_E_POLICY_EXCEPTION</SymbolicName>
 	<Message>"PolicyException thrown."</Message>
