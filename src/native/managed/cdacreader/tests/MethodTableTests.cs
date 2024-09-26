@@ -18,53 +18,24 @@ public unsafe class MethodTableTests
     private static void RTSContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-        string metadataTypesJson = TargetTestHelpers.MakeTypesJson(MockRTS.Types);
-        string metadataGlobalsJson = TargetTestHelpers.MakeGlobalsJson(MockRTS.Globals);
-        byte[] json = Encoding.UTF8.GetBytes($$"""
-        {
-            "version": 0,
-            "baseline": "empty",
-            "contracts": {
-                "{{nameof(Contracts.RuntimeTypeSystem)}}": 1
-            },
-            "types": { {{metadataTypesJson}} },
-            "globals": { {{metadataGlobalsJson}} }
-        }
-        """);
-        Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
-        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, MockRTS.Globals.Length);
+        MockMemorySpace.Builder builder = new(targetTestHelpers);
 
-        int pointerSize = targetTestHelpers.PointerSize;
-        Span<byte> pointerData = stackalloc byte[MockRTS.Globals.Length * pointerSize];
-        for (int i = 0; i < MockRTS.Globals.Length; i++)
+        builder = builder
+                .SetContracts ([ nameof(Contracts.RuntimeTypeSystem) ])
+                .SetTypes (MockRTS.Types)
+                .SetGlobals (MockRTS.Globals);
+
+        builder = MockRTS.AddGlobalPointers(targetTestHelpers, builder);
+
+        if (configure != null)
         {
-            var (_, value, _) = MockRTS.Globals[i];
-            targetTestHelpers.WritePointer(pointerData.Slice(i * pointerSize), value);
+            builder = configure(builder);
         }
 
-        fixed (byte* jsonPtr = json)
-        {
-            MockMemorySpace.Builder builder = new();
+        bool success = builder.TryCreateTarget(out Target? target);
+        Assert.True(success);
 
-            builder = builder.SetDescriptor(descriptor)
-                    .SetJson(json)
-                    .SetPointerData(pointerData);
-
-            builder = MockRTS.AddGlobalPointers(targetTestHelpers, builder);
-
-            if (configure != null)
-            {
-                builder = configure(builder);
-            }
-
-            using MockMemorySpace.ReadContext context = builder.Create();
-
-            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
-            Assert.True(success);
-
-            testCase(target);
-        }
-        GC.KeepAlive(json);
+        testCase(target);
     }
 
     [Theory]
