@@ -294,10 +294,6 @@ const CLONE_QUEUE_USER_APC_FLAGS SpecialUserModeApcWithContextFlags =
 //      void    DetachThread()          - the underlying logical thread is going
 //                                        away but we don't want to destroy it yet.
 //
-// Public functions for ASM code generators
-//
-//      Thread* __stdcall CreateThreadBlockThrow() - creates new Thread on reverse p-invoke
-//
 // Public functions for one-time init/cleanup
 //
 //      void InitThreadManager()      - onetime init
@@ -336,8 +332,6 @@ Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags = SUTF_Default);
 void    DestroyThread(Thread *th);
 
 DWORD GetRuntimeId();
-
-EXTERN_C Thread* WINAPI CreateThreadBlockThrow();
 
 #define CREATETHREAD_IF_NULL_FAILFAST(__thread, __msg)                  \
 {                                                                       \
@@ -2423,7 +2417,7 @@ public:
     // These access the stack base and limit values for this thread. (They are cached during InitThread.) The
     // "stack base" is the "upper bound", i.e., where the stack starts growing from. (Main's call frame is at the
     // upper bound.) The "stack limit" is the "lower bound", i.e., how far the stack can grow down to.
-    // The "stack sufficient execution limit" is used by EnsureSufficientExecutionStack() to limit how much stack
+    // The "stack sufficient execution limit" is used by TryEnsureSufficientExecutionStack() to limit how much stack
     // should remain to execute the average Framework method.
     PTR_VOID GetCachedStackBase() {LIMITED_METHOD_DAC_CONTRACT;  return m_CacheStackBase; }
     PTR_VOID GetCachedStackLimit() {LIMITED_METHOD_DAC_CONTRACT;  return m_CacheStackLimit;}

@@ -3846,9 +3846,25 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
             return 0;
         }
     }
+
+    // Don't mark as delay free if there is a mismatch in register types
+    bool addDelayFreeUses = false;
+    // Multi register nodes should not go via this route.
+    assert(!node->IsMultiRegNode());
+    // Multi register nodes should always use fp registers (this includes vectors).
+    assert(varTypeUsesFloatReg(node->TypeGet()) || !node->IsMultiRegNode());
+    if (rmwNode == nullptr || varTypeUsesSameRegType(rmwNode->TypeGet(), node->TypeGet()) ||
+        (rmwNode->IsMultiRegNode() && varTypeUsesFloatReg(node->TypeGet())))
+    {
+        addDelayFreeUses = true;
+    }
+
     if (use != nullptr)
     {
-        AddDelayFreeUses(use, rmwNode);
+        if (addDelayFreeUses)
+        {
+            AddDelayFreeUses(use, rmwNode);
+        }
         if (useRefPositionRef != nullptr)
         {
             *useRefPositionRef = use;
@@ -3864,15 +3880,20 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
     if (addrMode->HasBase() && !addrMode->Base()->isContained())
     {
         use = BuildUse(addrMode->Base(), candidates);
-        AddDelayFreeUses(use, rmwNode);
-
+        if (addDelayFreeUses)
+        {
+            AddDelayFreeUses(use, rmwNode);
+        }
         srcCount++;
     }
+
     if (addrMode->HasIndex() && !addrMode->Index()->isContained())
     {
         use = BuildUse(addrMode->Index(), candidates);
-        AddDelayFreeUses(use, rmwNode);
-
+        if (addDelayFreeUses)
+        {
+            AddDelayFreeUses(use, rmwNode);
+        }
         srcCount++;
     }
 
