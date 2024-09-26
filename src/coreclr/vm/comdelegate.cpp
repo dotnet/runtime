@@ -420,7 +420,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
             return FALSE;
     }
 
-#if (defined(TARGET_X86) && !defined(UNIX_X86_ABI)) || defined(TARGET_RISCV64)
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
     {
         UINT stackSizeSrc = sArgPlacerSrc.SizeOfArgStack();
         UINT stackSizeDst = sArgPlacerDst.SizeOfArgStack();
@@ -429,16 +429,11 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
         // arguments, as it is callee pop
         if (stackSizeDst > stackSizeSrc)
         {
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
             // we can drop arguments but we can never make them up - this is definitely not allowed
             COMPlusThrow(kVerificationException);
-#else // TARGET_RISCV64
-            _ASSERTE(shuffleType == ShuffleComputationType::DelegateShuffleThunk);
-            return FALSE; // stack growing is handled by IL stubs on RISC-V
-#endif
         }
     }
-#endif // (Callee pop architectures - defined(TARGET_X86) && !defined(UNIX_X86_ABI)) || defined(TARGET_RISCV64)
+#endif // Callee pop architectures - defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 
     INT ofsSrc;
     INT ofsDst;
