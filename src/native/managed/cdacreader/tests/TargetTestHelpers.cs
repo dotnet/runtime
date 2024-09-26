@@ -137,7 +137,36 @@ internal unsafe class TargetTestHelpers
 
     public static string MakeGlobalsJson(IEnumerable<(string Name, ulong Value, string? Type)> globals)
     {
-        return string.Join(',', globals.Select(i => $"\"{i.Name}\": {(i.Type is null ? i.Value.ToString() : $"[{i.Value}, \"{i.Type}\"]")}"));
+        return MakeGlobalsJson (globals.Select(g => (g.Name, (ulong?)g.Value, (uint?)null, g.Type)));
+    }
+    public static string MakeGlobalsJson(IEnumerable<(string Name, ulong? Value, uint? IndirectIndex, string? Type)> globals)
+    {
+        return string.Join(',', globals.Select(FormatGlobal));
+
+        static string FormatGlobal((string Name, ulong? Value, uint? IndirectIndex, string? Type) global)
+        {
+            if (global.Value is ulong value)
+            {
+                return $"\"{global.Name}\": {FormatValue(value, global.Type)}";
+            }
+            else if (global.IndirectIndex is uint index)
+            {
+                return $"\"{global.Name}\": {FormatIndirect(index, global.Type)}";
+            }
+            else
+            {
+                throw new InvalidOperationException("Global must have a value or indirect index");
+            }
+
+        }
+        static string FormatValue(ulong value, string? type)
+        {
+            return type is null ? $"{value}" : $"[{value},\"{type}\"]";
+        }
+        static string FormatIndirect(uint value, string? type)
+        {
+            return type is null ? $"[{value}]" : $"[[{value}],\"{type}\"]";
+        }
     }
 
     #endregion Data descriptor json formatting

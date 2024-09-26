@@ -34,51 +34,23 @@ public class DacStreamsTests
     private static unsafe void DacStreamsContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-        string metadataTypesJson = TargetTestHelpers.MakeTypesJson(DacStreamsTypes);
-        string metadataGlobalsJson = TargetTestHelpers.MakeGlobalsJson(DacStreamsGlobals);
-        byte[] json = Encoding.UTF8.GetBytes($$"""
-        {
-            "version": 0,
-            "baseline": "empty",
-            "contracts": {
-                "{{nameof(Contracts.DacStreams)}}": 1
-            },
-            "types": { {{metadataTypesJson}} },
-            "globals": { {{metadataGlobalsJson}} }
-        }
-        """);
-        Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
-        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, DacStreamsGlobals.Length);
 
-        int pointerSize = targetTestHelpers.PointerSize;
-        Span<byte> pointerData = stackalloc byte[DacStreamsGlobals.Length * pointerSize];
-        for (int i = 0; i < DacStreamsGlobals.Length; i++)
+        MockMemorySpace.Builder builder = new(targetTestHelpers);
+
+        builder = builder
+                .SetContracts([nameof(Contracts.DacStreams)])
+                .SetTypes(DacStreamsTypes)
+                .SetGlobals(DacStreamsGlobals);
+
+        if (configure != null)
         {
-            var (_, value, _) = DacStreamsGlobals[i];
-            targetTestHelpers.WritePointer(pointerData.Slice(i * pointerSize), value);
+            builder = configure(builder);
         }
 
-        fixed (byte* jsonPtr = json)
-        {
-            MockMemorySpace.Builder builder = new();
+        bool success = builder.TryCreateTarget(out Target? target);
+        Assert.True(success);
 
-            builder = builder.SetDescriptor(descriptor)
-                    .SetJson(json)
-                    .SetPointerData(pointerData);
-
-            if (configure != null)
-            {
-                builder = configure(builder);
-            }
-
-            using MockMemorySpace.ReadContext context = builder.Create();
-
-            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
-            Assert.True(success);
-
-            testCase(target);
-        }
-        GC.KeepAlive(json);
+        testCase(target);
     }
 
     MockMemorySpace.Builder AddMiniMetaDataBuffMaxSize(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, uint maxSize)
