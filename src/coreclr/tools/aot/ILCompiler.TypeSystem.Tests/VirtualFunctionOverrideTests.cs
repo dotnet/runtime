@@ -435,7 +435,7 @@ namespace TypeSystemTests
         [InlineData("Impl", "ImplCovariant")]
         [InlineData("SubImpl", "SubImplCovariant")]
         [InlineData("SubImpl_OverrideViaNameSig", "SubImplCovariant2")]
-        [InlineData("SubImpl_OverrideViaNameSig_OverridenViaMethodImpl", "SubSubImplCovariant")]
+        [InlineData("SubImpl_OverrideViaNameSig_OverriddenViaMethodImpl", "SubSubImplCovariant")]
         public void TestSubImplCovariant(string exactScenarioName, string typeToConstruct)
         {
             this._logger.WriteLine(exactScenarioName);
