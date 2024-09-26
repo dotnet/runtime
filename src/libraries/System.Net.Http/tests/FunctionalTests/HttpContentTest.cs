@@ -299,6 +299,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support Synchronous reads")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

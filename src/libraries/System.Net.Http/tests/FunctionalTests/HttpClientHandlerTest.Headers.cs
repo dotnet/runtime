@@ -49,6 +49,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "User-Agent is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
         public async Task SendAsync_UserAgent_CorrectlyWritten()
         {
             string userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.18 Safari/537.36";
@@ -139,6 +140,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("\u05D1\u05F1")]
         [InlineData("jp\u30A5")]
         [SkipOnPlatform(TestPlatforms.Browser, "Browser is relaxed about validating HTTP headers")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
         public async Task SendAsync_InvalidCharactersInHeader_Throw(string value)
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -388,6 +390,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
         public async Task SendAsync_GetWithInvalidHostHeader_ThrowsException()
         {
             if (LoopbackServerFactory.Version >= HttpVersion.Version20)
@@ -408,6 +411,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Browser is relaxed about validating HTTP headers")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
         public async Task SendAsync_WithZeroLengthHeaderName_Throws()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -452,6 +456,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
         public async Task SendAsync_CustomRequestEncodingSelector_CanSendNonAsciiHeaderValues()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -507,6 +512,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
         public async Task SendAsync_CustomResponseEncodingSelector_CanReceiveNonAsciiHeaderValues()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(

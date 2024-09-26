@@ -130,7 +130,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             var handler = new HttpClientHandler();
 
-            if (PlatformDetection.IsNotBrowser)
+            if (PlatformDetection.IsNotWasm)
             {
                 handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
             }

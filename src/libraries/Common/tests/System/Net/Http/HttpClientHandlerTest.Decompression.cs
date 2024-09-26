@@ -37,6 +37,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(DecompressedResponse_MethodSpecified_DecompressedContentReturned_MemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "AutomaticDecompression not supported on Wasi")]
         public async Task DecompressedResponse_MethodSpecified_DecompressedContentReturned(string compressionName, bool all, bool useCopyTo, int contentLength)
         {
             if (IsWinHttpHandler &&
@@ -140,6 +141,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(DecompressedResponse_MethodNotSpecified_OriginalContentReturned_MemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "AutomaticDecompression not supported on Wasi")]
         public async Task DecompressedResponse_MethodNotSpecified_OriginalContentReturned(
             string encodingName, Func<Stream, Stream> compress, DecompressionMethods methods, bool useCopyTo)
         {
@@ -179,6 +181,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("br", DecompressionMethods.Brotli)]
 #endif
         [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "AutomaticDecompression not supported on Wasi")]
         public async Task DecompressedResponse_EmptyBody_Success(string encodingName, DecompressionMethods methods)
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -270,6 +273,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip; q=1.0, deflate; q=1.0", "")]
         [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip; q=1.0", "deflate")]
         [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "AutomaticDecompression not supported on Wasi")]
         public async Task GetAsync_SetAutomaticDecompression_AcceptEncodingHeaderSentWithQualityWeightingsNoDuplicates(
             DecompressionMethods methods,
             string manualAcceptEncodingHeaderValues,

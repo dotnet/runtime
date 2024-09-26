@@ -52,7 +52,7 @@ namespace System.Net.Http.Functional.Tests
             HttpClientHandler handler = (PlatformDetection.SupportsAlpn && useVersion != HttpVersion.Version30) ? new HttpClientHandler() : new VersionHttpClientHandler(useVersion);
 
             // Browser doesn't support ServerCertificateCustomValidationCallback
-            if (allowAllCertificates && PlatformDetection.IsNotBrowser)
+            if (allowAllCertificates && PlatformDetection.IsNotWasm)
             {
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }
