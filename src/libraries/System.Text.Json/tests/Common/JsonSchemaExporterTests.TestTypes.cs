@@ -1034,6 +1034,18 @@ namespace System.Text.Json.Schema.Tests
                 }
                 """);
 
+            yield return new TestData<ClassWithOptionalObjectParameter>(
+                Value: new(value: null),
+                AdditionalValues: [new(true), new(42), new(""), new(new object()), new(Array.Empty<int>())],
+                ExpectedJsonSchema: """
+                        {
+                            "type": ["object","null"],
+                            "properties": {
+                              "Value": { "default": null }
+                            }
+                        }
+                        """);
+
             // Collection types
             yield return new TestData<int[]>([1, 2, 3], ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":"integer"}}""");
             yield return new TestData<List<bool>>([false, true, false], ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":"boolean"}}""");
@@ -1439,6 +1451,11 @@ namespace System.Text.Json.Schema.Tests
         {
             [JsonPropertyName("~/path/to/value")]
             public PocoWithRecursiveMembers Value { get; set; }
+        }
+
+        public class ClassWithOptionalObjectParameter(object? value = null)
+        {
+            public object? Value { get; } = value;
         }
 
         public readonly struct StructDictionary<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> values)
