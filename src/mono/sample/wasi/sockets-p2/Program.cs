@@ -35,9 +35,7 @@ Accept: */*
         while (start < messageBytes.Length)
         {
             start += await client.SendAsync(messageBytes.AsMemory(start), SocketFlags.None);
-            Console.WriteLine("TODO poll here");
         }
-        Console.WriteLine("GET sent");
 
         // Receive ack.
         var buffer = new byte[2048];
