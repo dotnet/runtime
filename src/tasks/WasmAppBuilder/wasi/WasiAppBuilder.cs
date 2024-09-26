@@ -11,6 +11,7 @@ namespace Microsoft.WebAssembly.Build.Tasks;
 public class WasiAppBuilder : WasmAppBuilderBaseTask
 {
     public bool IsSingleFileBundle { get; set; }
+    public bool OutputSymbolsToAppBundle { get; set; }
 
     protected override bool ValidateArguments()
     {
@@ -53,7 +54,7 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
             {
                 FileCopyChecked(assembly, Path.Combine(asmRootPath, Path.GetFileName(assembly)), "Assemblies");
 
-                if (DebugLevel != 0)
+                if (OutputSymbolsToAppBundle)
                 {
                     string pdb = Path.ChangeExtension(assembly, ".pdb");
                     if (File.Exists(pdb))

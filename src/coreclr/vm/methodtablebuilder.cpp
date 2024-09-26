@@ -9341,6 +9341,10 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     // to represent a type instantiated over its own generic variables, and the special marker type is currently the open type
     // and we make this case distinguishable by simply disallowing the optimization in those cases.
     bool retryWithExactInterfaces = !pMT->IsValueType() || pMT->IsSharedByGenericInstantiations() || pMT->ContainsGenericVariables();
+    if (retryWithExactInterfaces)
+    {
+        pMT->GetWriteableDataForWrite()->SetMayHaveOpenInterfacesInInterfaceMap();
+    }
 
     DWORD nAssigned = 0;
     do
@@ -9407,6 +9411,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 
         if (retry)
         {
+            pMT->GetWriteableDataForWrite()->SetMayHaveOpenInterfacesInInterfaceMap();
             retryWithExactInterfaces = true;
         }
     } while (retry);

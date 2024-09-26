@@ -27,13 +27,27 @@ internal static class ThrowHelper
         return new QuicException(QuicError.OperationAborted, null, message ?? SR.net_quic_operationaborted);
     }
 
-    internal static bool TryGetStreamExceptionForMsQuicStatus(int status, [NotNullWhen(true)] out Exception? exception)
+    internal static bool TryGetStreamExceptionForMsQuicStatus(int status, [NotNullWhen(true)] out Exception? exception, bool streamWasSuccessfullyStarted = true, string? message = null)
     {
         if (status == QUIC_STATUS_ABORTED)
         {
-            // If status == QUIC_STATUS_ABORTED, we will receive an event later, which will complete the task source.
-            exception = null;
-            return false;
+            // Connection has been closed by the peer (either at transport or application level),
+            if (streamWasSuccessfullyStarted)
+            {
+                // we will receive an event later, which will complete the stream with concrete
+                // information why the connection was aborted.
+                exception = null;
+                return false;
+            }
+            else
+            {
+                // we won't be receiving any event callback for shutdown on this stream, so we don't
+                // necessarily know which error to report. So we throw an exception which we can distinguish
+                // at the caller (ConnectionAborted normally has App error code) and throw the correct
+                // exception from there.
+                exception = new QuicException(QuicError.ConnectionAborted, null, "");
+                return true;
+            }
         }
         else if (status == QUIC_STATUS_INVALID_STATE)
         {
@@ -43,12 +57,15 @@ internal static class ThrowHelper
         }
         else if (StatusFailed(status))
         {
-            exception = GetExceptionForMsQuicStatus(status);
+            exception = GetExceptionForMsQuicStatus(status, message: message);
             return true;
         }
         exception = null;
         return false;
     }
+
+    // see TryGetStreamExceptionForMsQuicStatus for explanation
+    internal static bool IsConnectionAbortedWhenStartingStreamException(Exception ex) => ex is QuicException qe && qe.QuicError == QuicError.ConnectionAborted && qe.ApplicationErrorCode is null;
 
     internal static Exception GetExceptionForMsQuicStatus(int status, long? errorCode = default, string? message = null)
     {

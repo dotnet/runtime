@@ -20,6 +20,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override Type? KeyType => Converter.KeyType;
         internal override Type? ElementType => Converter.ElementType;
+        public override bool HandleNull { get; }
 
         internal override bool ConstructorIsParameterized => Converter.ConstructorIsParameterized;
         internal override bool SupportsCreateObjectDelegate => Converter.SupportsCreateObjectDelegate;
@@ -29,8 +30,16 @@ namespace System.Text.Json.Serialization.Converters
 
         public JsonMetadataServicesConverter(JsonConverter<T> converter)
         {
-            ConverterStrategy = converter.ConverterStrategy;
             Converter = converter;
+            ConverterStrategy = converter.ConverterStrategy;
+            IsInternalConverter = converter.IsInternalConverter;
+            IsInternalConverterForNumberType = converter.IsInternalConverterForNumberType;
+            CanBePolymorphic = converter.CanBePolymorphic;
+
+            // Ensure HandleNull values reflect the exact configuration of the source converter
+            HandleNullOnRead = converter.HandleNullOnRead;
+            HandleNullOnWrite = converter.HandleNullOnWrite;
+            HandleNull = converter.HandleNullOnWrite;
         }
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)

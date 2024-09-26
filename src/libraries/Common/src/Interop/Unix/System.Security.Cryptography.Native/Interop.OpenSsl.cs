@@ -694,9 +694,6 @@ internal static partial class Interop
                 return Ssl.SSL_TLSEXT_ERR_ALERT_FATAL;
             }
 
-            // reset application data to avoid dangling pointer.
-            Ssl.SslSetData(ssl, IntPtr.Zero);
-
             GCHandle protocolHandle = GCHandle.FromIntPtr(sslData);
             if (!(protocolHandle.Target is List<SslApplicationProtocol> protocolList))
             {
@@ -790,7 +787,7 @@ internal static partial class Interop
 
             IntPtr name = Ssl.SessionGetHostname(session);
             Debug.Assert(name != IntPtr.Zero);
-            ctxHandle.RemoveSession(name);
+            ctxHandle.RemoveSession(name, session);
         }
 
 #if DEBUG

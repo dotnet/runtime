@@ -1496,6 +1496,12 @@ CONTEXT_GetThreadContextFromThreadState(
 
                 // AMD64's FLOATING_POINT includes the xmm registers.
                 memcpy(&lpContext->Xmm0, &pState->__fpu_xmm0, 16 * 16);
+
+                if (threadStateFlavor == x86_FLOAT_STATE64)
+                {
+                     // There was just a floating point state, so make sure the CONTEXT_XSTATE is not set
+                     lpContext->ContextFlags &= ~(CONTEXT_XSTATE & CONTEXT_AREA_MASK);
+                }
             }
             break;
         }
@@ -1511,6 +1517,18 @@ CONTEXT_GetThreadContextFromThreadState(
         {
             x86_float_state_t *pState = (x86_float_state_t *)threadState;
             CONTEXT_GetThreadContextFromThreadState((thread_state_flavor_t)pState->fsh.flavor, (thread_state_t)&pState->ufs, lpContext);
+        }
+        break;
+        case x86_AVX_STATE:
+        {
+            x86_avx_state_t *pState = (x86_avx_state_t *)threadState;
+            CONTEXT_GetThreadContextFromThreadState((thread_state_flavor_t)pState->ash.flavor, (thread_state_t)&pState->ufs, lpContext);
+        }
+        break;
+        case x86_AVX512_STATE:
+        {
+            x86_avx512_state_t *pState = (x86_avx512_state_t *)threadState;
+            CONTEXT_GetThreadContextFromThreadState((thread_state_flavor_t)pState->ash.flavor, (thread_state_t)&pState->ufs, lpContext);
         }
         break;
 #elif defined(HOST_ARM64)

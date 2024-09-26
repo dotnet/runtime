@@ -1,2 +1,3 @@
 mono_crash*
 wasi-sdk
+browser/emsdk/**

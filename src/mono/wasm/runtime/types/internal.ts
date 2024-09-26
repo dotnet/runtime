@@ -145,7 +145,6 @@ export type LoaderHelpers = {
     out(message: string): void;
     err(message: string): void;
 
-    hasDebuggingEnabled(config: MonoConfig): boolean,
     retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
     logDownloadStatsToConsole: () => void;
@@ -155,6 +154,7 @@ export type LoaderHelpers = {
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
     libraryInitializers?: { scriptName: string, exports: any }[];
 
+    isDebuggingSupported(): boolean,
     isChromium: boolean,
     isFirefox: boolean
 
@@ -464,6 +464,8 @@ export declare interface EmscriptenModuleInternal {
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
     maybeExit(): void;
+    print(message: string): void;
+    printErr(message: string): void;
 }
 
 /// A PromiseController encapsulates a Promise together with easy access to its resolve and reject functions.
@@ -492,7 +494,7 @@ export type setGlobalObjectsType = (globalObjects: GlobalObjects) => void;
 export type initializeExportsType = (globalObjects: GlobalObjects) => RuntimeAPI;
 export type initializeReplacementsType = (replacements: EmscriptenReplacements) => void;
 export type configureEmscriptenStartupType = (module: DotnetModuleInternal) => void;
-export type configureRuntimeStartupType = () => Promise<void>;
+export type configureRuntimeStartupType = (module: DotnetModuleInternal) => Promise<void>;
 export type configureWorkerStartupType = (module: DotnetModuleInternal) => Promise<void>
 
 

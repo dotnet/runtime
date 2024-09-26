@@ -4623,12 +4623,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
     }
 #endif
 
-    // This shouldn't be possible, but MSVC re-installs us... for now, just bail if this happens.
-    if (g_fNoExceptions)
-    {
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-
     // Are we looking at a stack overflow here?
     if ((pThread !=  NULL) && !pThread->DetermineIfGuardPagePresent())
     {
@@ -5342,6 +5336,10 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
     FlushLogging();     // Flush any logging output
     GCPROTECT_END();
 
+#ifdef HOST_WINDOWS
+    CreateCrashDumpIfEnabled();
+#endif
+
 #ifdef _DEBUG
     // Do not care about lock check for unhandled exception.
     while (unbreakableLockCount)
@@ -5532,8 +5530,6 @@ static LONG ThreadBaseExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo,
 
     ThreadBaseExceptionFilterParam *pParam = (ThreadBaseExceptionFilterParam *) pvParam;
     UnhandledExceptionLocation location = pParam->location;
-
-    _ASSERTE(!g_fNoExceptions);
 
     Thread* pThread = GetThread();
 
@@ -6704,14 +6700,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
 
 VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
 {
-    // It is not safe to execute code inside VM after we shutdown EE.  One example is DisablePreemptiveGC
-    // will block forever.
-    if (g_fForbidEnterEE)
-    {
-        return VEH_CONTINUE_SEARCH;
-    }
-
-
     //
     // DO NOT USE CONTRACTS HERE AS THIS ROUTINE MAY NEVER RETURN.  You can use
     // static contracts, but currently this is all WRAPPER_NO_CONTRACT.
@@ -7392,12 +7380,6 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     //
     // WARNING WARNING WARNING WARNING WARNING WARNING WARNING
     //
-
-    // If exceptions (or runtime) have been disabled, then simply return.
-    if (g_fForbidEnterEE || g_fNoExceptions)
-    {
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
 
     // WARNING
     //

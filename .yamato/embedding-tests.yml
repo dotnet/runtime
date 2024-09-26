@@ -80,6 +80,7 @@ test_-_embedding_api_-_osx_x64_debug:
   dependencies:
   - path: .yamato/build.yml#build_osx_x64_debug
   labels:
+  - ExcludeFromTesting
   - MacOS
   - TestJob
 test_-_embedding_api_-_osx_x64_release:

@@ -5,6 +5,8 @@
     <DefaultLanguage>en-US</DefaultLanguage>
     <CLSCompliant>false</CLSCompliant>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>This package provides a low-level .NET (ECMA-335) metadata reader and writer. It's geared for performance and is the ideal choice for building higher-level libraries that intend to provide their own object model, such as compilers. The metadata format is defined by the ECMA-335 - Common Language Infrastructure (CLI) specification.
 
 The System.Reflection.Metadata library is built-in as part of the shared framework in .NET Runtime. The package can be installed when you need to use it in other target frameworks.</PackageDescription>
@@ -251,7 +253,7 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
   </ItemGroup>
 
@@ -261,6 +263,7 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Immutable" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.MemoryMappedFiles" />
     <Reference Include="System.Memory" />

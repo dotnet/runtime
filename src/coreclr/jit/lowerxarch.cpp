@@ -310,6 +310,16 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
     if (blkNode->OperIsInitBlkOp())
     {
+#ifdef DEBUG
+        // Use BlkOpKindLoop for more cases under stress mode
+        if (comp->compStressCompile(Compiler::STRESS_STORE_BLOCK_UNROLLING, 50) && blkNode->OperIs(GT_STORE_BLK) &&
+            ((blkNode->GetLayout()->GetSize() % TARGET_POINTER_SIZE) == 0) && src->IsIntegralConst(0))
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+            return;
+        }
+#endif
+
         if (src->OperIs(GT_INIT_VAL))
         {
             src->SetContained();
@@ -375,10 +385,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
         TOO_BIG_TO_UNROLL:
 #ifdef TARGET_AMD64
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            blkNode->gtBlkOpKind =
+                blkNode->IsZeroingGcPointersOnHeap() ? GenTreeBlk::BlkOpKindLoop : GenTreeBlk::BlkOpKindHelper;
 #else
             // TODO-X86-CQ: Investigate whether a helper call would be beneficial on x86
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindRepInstr;
+            blkNode->gtBlkOpKind =
+                blkNode->IsZeroingGcPointersOnHeap() ? GenTreeBlk::BlkOpKindLoop : GenTreeBlk::BlkOpKindRepInstr;
 #endif
         }
     }
@@ -4853,8 +4865,9 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                 horizontalAdd = NI_SSE3_HorizontalAdd;
 
-                if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE3))
+                if ((simdSize == 8) || !comp->compOpportunisticallyDependsOn(InstructionSet_SSE3))
                 {
+                    // We also do this for simdSize == 8 to ensure we broadcast the result as expected
                     shuffle = NI_SSE_Shuffle;
                 }
                 break;
@@ -4905,10 +4918,8 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                 horizontalAdd = NI_SSE3_HorizontalAdd;
 
-                if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE3))
-                {
-                    shuffle = NI_SSE2_Shuffle;
-                }
+                // We need to ensure we broadcast the result as expected
+                shuffle = NI_SSE2_Shuffle;
                 break;
             }
 
@@ -7640,15 +7651,17 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 }
 
                 case NI_SSE2_ConvertToVector128Double:
-                case NI_SSE3_MoveAndDuplicate:
                 case NI_AVX_ConvertToVector256Double:
+                case NI_AVX512F_ConvertToVector512Double:
+                case NI_AVX512F_VL_ConvertToVector128Double:
+                case NI_AVX512F_VL_ConvertToVector256Double:
                 {
                     assert(!supportsSIMDScalarLoads);
 
                     // Most instructions under the non-VEX encoding require aligned operands.
                     // Those used for Sse2.ConvertToVector128Double (CVTDQ2PD and CVTPS2PD)
-                    // and Sse3.MoveAndDuplicate (MOVDDUP) are exceptions and don't fail for
-                    // unaligned inputs as they read mem64 (half the vector width) instead
+                    // are exceptions and don't fail for unaligned inputs as they read half
+                    // the vector width instead
 
                     supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
                     supportsUnalignedSIMDLoads = true;
@@ -7656,7 +7669,29 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     const unsigned expectedSize = genTypeSize(parentNode->TypeGet()) / 2;
                     const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
-                    supportsGeneralLoads = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    if (childNode->OperIsConst() || childNode->isMemoryOp())
+                    {
+                        // For broadcasts we can only optimize constants and memory operands
+                        // since we're going from a smaller base type to a larger base type
+                        supportsGeneralLoads = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    }
+                    break;
+                }
+
+                case NI_SSE3_MoveAndDuplicate:
+                {
+                    // Most instructions under the non-VEX encoding require aligned operands.
+                    // Those used for Sse3.MoveAndDuplicate (MOVDDUP) are exceptions and don't
+                    // fail for unaligned inputs as they read half the vector width instead
+
+                    supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
+                    supportsUnalignedSIMDLoads = true;
+
+                    const unsigned expectedSize = genTypeSize(parentNode->TypeGet()) / 2;
+                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
+
+                    supportsGeneralLoads    = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    supportsSIMDScalarLoads = true;
                     break;
                 }
 
@@ -7682,8 +7717,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     break;
                 }
             }
-
-            assert(supportsSIMDScalarLoads == false);
             break;
         }
 
@@ -8258,7 +8291,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 return false;
             }
 
-            return parentNode->OperIsEmbBroadcastCompatible();
+            return parentNode->OperIsEmbBroadcastCompatible() && comp->canUseEvexEncoding();
         }
 
         default:

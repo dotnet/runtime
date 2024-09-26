@@ -1149,6 +1149,21 @@ mono_debug_enabled (void)
 	return mono_debug_format != MONO_DEBUG_FORMAT_NONE;
 }
 
+
+//Returns true if the method has updates but doesn't have ppdb information then we should generate the seq points using the coreclr rules
+mono_bool
+mono_debug_generate_enc_seq_points_without_debug_info (MonoDebugMethodInfo *minfo)
+{
+	MonoImage* img = m_class_get_image (minfo->method->klass);
+	if (G_UNLIKELY (img->has_updates)) {
+		guint32 idx = mono_metadata_token_index (minfo->method->token);
+		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
+		if (mdie == NULL)
+			return TRUE;
+	}
+	return FALSE;
+}
+
 void
 mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points)
 {

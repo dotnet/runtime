@@ -4518,6 +4518,22 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector128SingleCreateFromArrayTest()
+        {
+            float[] array = [1.0f, 2.0f, 3.0f, 4.0f, 5.0f];
+            Vector128<float> vector = Vector128.Create(array);
+            Assert.Equal(Vector128.Create(1.0f, 2.0f, 3.0f, 4.0f), vector);
+        }
+
+        [Fact]
+        public void Vector128SingleCreateFromArrayOffsetTest()
+        {
+            float[] array = [1.0f, 2.0f, 3.0f, 4.0f, 5.0f];
+            Vector128<float> vector = Vector128.Create(array, 1);
+            Assert.Equal(Vector128.Create(2.0f, 3.0f, 4.0f, 5.0f), vector);
+        }
+
+        [Fact]
         public void Vector128SingleCopyToTest()
         {
             float[] array = new float[4];

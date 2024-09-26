@@ -111,6 +111,7 @@ namespace System.Security.Cryptography.X509Certificates
             public X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
             {
                 const int errSecUnknownFormat = -25257;
+
                 if (rawData.IsEmpty)
                 {
                     // Throw to match Windows and Unix behavior.
@@ -119,7 +120,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 X509ContentType contentType = Interop.AppleCrypto.X509GetContentType(rawData);
 
-                // Apple doesn't seem to recognize PFX files with no MAC, so try a quick maybe-it's-a-PFX test
+                // Apple's native check can't check for PKCS12, so do a quick decode test to see if it is PKCS12 / PFX.
                 if (contentType == X509ContentType.Unknown)
                 {
                     try
@@ -128,9 +129,11 @@ namespace System.Security.Cryptography.X509Certificates
                         {
                             fixed (byte* pin = rawData)
                             {
+                                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.BER);
+
                                 using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
                                 {
-                                    PfxAsn.Decode(manager.Memory, AsnEncodingRules.BER);
+                                    PfxAsn.Decode(ref reader, manager.Memory, out _);
                                 }
 
                                 contentType = X509ContentType.Pkcs12;

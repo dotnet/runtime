@@ -39,7 +39,7 @@ public abstract class BaseTestRecipe : RecipeBase
     Job CreateTestJob(JobConfiguration configuration)
         => CreateTestJob(_platformSet.Platforms[configuration.SystemType], configuration.Architecture, configuration.Configuration, configuration.ExcludeFromTesting);
 
-    Job CreateTestJob(Platform platform, Architecture architecture, Configuration configuration, bool excludeFromTesting)
+    protected virtual Job CreateTestJob(Platform platform, Architecture architecture, Configuration configuration, bool excludeFromTesting)
     {
         return JobBuilder.Create($"Test - {DisplayName} - {platform.System.JobDisplayName()} {architecture} {configuration}")
             .WithAgent(platform.Agent)

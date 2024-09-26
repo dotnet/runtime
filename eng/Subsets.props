@@ -342,7 +342,7 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
 
     <ProjectToBuild Condition="'$(NativeAotSupported)' == 'true' and ('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != '')" Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_crossarch.csproj" Category="clr" />
-    <ProjectToBuild Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_inbuild.csproj" Category="clr" />
 
     <ProjectToBuild Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'linux' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')) or '$(TargetOS)' == 'osx'" Include="$(CoreClrProjectRoot)tools\SuperFileCheck\SuperFileCheck.csproj" Category="clr" />
   </ItemGroup>
@@ -504,9 +504,10 @@
       </ItemGroup>
       <ItemGroup Condition="'$(BuildNativeAOTRuntimePack)' != 'true' and '$(PgoInstrument)' != 'true'">
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Host.sfxproj" />
-        <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
+        <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono' and '$(PgoInstrument)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-host.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-hostfxr.proj" />
+        <SharedFrameworkProjectToBuild Condition="'$(BuildNETStandard21TargetingPack)' == 'true' and '$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'" Include="$(InstallerProjectRoot)pkg\sfx\installers\netstandard2.1.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-runtime-deps\*.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'" Include="$(InstallerProjectRoot)pkg\archives\dotnet-nethost.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" Pack="true" />

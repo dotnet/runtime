@@ -5,6 +5,8 @@
     <RootNamespace>Microsoft.Extensions.Hosting</RootNamespace>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Hosting and startup abstractions for applications.</PackageDescription>
   </PropertyGroup>
 

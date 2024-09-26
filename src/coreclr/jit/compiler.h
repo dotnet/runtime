@@ -6334,7 +6334,7 @@ public:
     PhaseStatus optCloneLoops();
     void optCloneLoop(unsigned loopInd, LoopCloneContext* context);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
-    void        optRemoveRedundantZeroInits();
+    void        optRemoveRedundantZeroInits(bool hasCycle);
     PhaseStatus optIfConversion(); // If conversion
 
 protected:
@@ -9905,6 +9905,7 @@ public:
         STRESS_MODE(IF_CONVERSION_COST)                                                         \
         STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
+        STRESS_MODE(STORE_BLOCK_UNROLLING)                                                      \
         STRESS_MODE(COUNT)
 
     enum                compStressArea

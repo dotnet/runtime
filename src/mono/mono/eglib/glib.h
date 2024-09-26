@@ -1165,6 +1165,7 @@ int          g_mkdir_with_parents (const gchar *pathname, int mode);
  */
 extern const guchar g_utf8_jump_table[256];
 
+gboolean  g_utf8_validate_part (const unsigned char *inptr, size_t len);
 gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **end);
 gunichar  g_utf8_get_char_validated (const gchar *str, gssize max_len);
 #define   g_utf8_next_char(p)  ((p) + g_utf8_jump_table[(guchar)(*p)])

@@ -41,11 +41,12 @@ jobs:
           eq(variables['alwaysRunVar'], true),
           eq(variables['isDefaultPipeline'], variables['shouldRunWasmBuildTestsOnDefaultPipeline']))
       # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
-        extraHelixArguments: /p:BrowserHost=$(_hostedOs)
-        scenarios:
-        - buildwasmapps
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
+            extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+            scenarios:
+            - buildwasmapps
 

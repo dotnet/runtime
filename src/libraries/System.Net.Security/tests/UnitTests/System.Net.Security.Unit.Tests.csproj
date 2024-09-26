@@ -74,6 +74,8 @@
              Link="ProductionCode\System\Net\Security\ReadWriteAdapter.cs" />
     <Compile Include="..\..\src\System\Net\SslStreamContext.cs"
              Link="ProductionCode\System\Net\SslStreamContext.cs" />
+    <Compile Include="..\..\src\System\Net\Security\SslCertificateTrust.cs"
+             Link="ProductionCode\System\Net\Security\SslCertificateTrust.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
              Link="ProductionCode\Common\System\Net\SecurityProtocol.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsAlertType.cs"

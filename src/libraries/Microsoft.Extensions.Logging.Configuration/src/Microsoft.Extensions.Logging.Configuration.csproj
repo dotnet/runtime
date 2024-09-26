@@ -8,6 +8,8 @@
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Configuration support for Microsoft.Extensions.Logging.</PackageDescription>
   </PropertyGroup>
 

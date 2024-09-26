@@ -217,7 +217,8 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_LoadPrivateKeyFromEngine(
             string engineName,
-            string keyName);
+            string keyName,
+            [MarshalAs(UnmanagedType.Bool)] out bool haveEngine);
 
         internal static SafeEvpPKeyHandle LoadPrivateKeyFromEngine(
             string engineName,
@@ -226,7 +227,13 @@ internal static partial class Interop
             Debug.Assert(engineName is not null);
             Debug.Assert(keyName is not null);
 
-            SafeEvpPKeyHandle pkey = CryptoNative_LoadPrivateKeyFromEngine(engineName, keyName);
+            SafeEvpPKeyHandle pkey = CryptoNative_LoadPrivateKeyFromEngine(engineName, keyName, out bool haveEngine);
+
+            if (!haveEngine)
+            {
+                pkey.Dispose();
+                throw new CryptographicException(SR.Cryptography_EnginesNotSupported);
+            }
 
             if (pkey.IsInvalid)
             {
@@ -240,7 +247,8 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_LoadPublicKeyFromEngine(
             string engineName,
-            string keyName);
+            string keyName,
+            [MarshalAs(UnmanagedType.Bool)] out bool haveEngine);
 
         internal static SafeEvpPKeyHandle LoadPublicKeyFromEngine(
             string engineName,
@@ -249,7 +257,13 @@ internal static partial class Interop
             Debug.Assert(engineName is not null);
             Debug.Assert(keyName is not null);
 
-            SafeEvpPKeyHandle pkey = CryptoNative_LoadPublicKeyFromEngine(engineName, keyName);
+            SafeEvpPKeyHandle pkey = CryptoNative_LoadPublicKeyFromEngine(engineName, keyName, out bool haveEngine);
+
+            if (!haveEngine)
+            {
+                pkey.Dispose();
+                throw new CryptographicException(SR.Cryptography_EnginesNotSupported);
+            }
 
             if (pkey.IsInvalid)
             {

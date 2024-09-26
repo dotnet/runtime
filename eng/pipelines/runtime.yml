@@ -52,6 +52,7 @@ variables:
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
+    isOfficialBuild: false
     stages:
     - stage: Build
       jobs:
@@ -70,7 +71,6 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: checked
           platforms:
-          - linux_x86
           - linux_x64
           - linux_arm
           - linux_arm64
@@ -79,7 +79,6 @@ extends:
           - linux_musl_arm64
           - linux_musl_x64
           - osx_arm64
-          - tizen_armel
           - windows_x86
           - windows_x64
           - windows_arm64
@@ -105,9 +104,10 @@ extends:
             testGroup: innerloop
             nameSuffix: Native_GCC
             buildArgs: -s clr.native+libs.native+mono+host.native -c $(_BuildConfig) -gcc
-            extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
-            extraStepsParameters:
-              testBuildArgs: skipmanaged skipgeneratelayout skiprestorepackages -gcc
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
+                parameters:
+                  testBuildArgs: skipmanaged skipgeneratelayout skiprestorepackages -gcc
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -156,7 +156,6 @@ extends:
           - windows_x64
           - windows_x86
           - windows_arm64
-          - freebsd_x64
           jobParameters:
             testGroup: innerloop
             # Mono/runtimetests also need this, but skip for wasm
@@ -209,12 +208,13 @@ extends:
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
-            extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testBuildArgs: nativeaot tree nativeaot
-              liveLibrariesBuildConfig: Release
-            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: nativeaot tree nativeaot
+                  liveLibrariesBuildConfig: Release
+                  testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -246,12 +246,13 @@ extends:
             timeoutInMinutes: 180
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
-            extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;tracing;" /p:BuildNativeAotFrameworkObjects=true'
-              liveLibrariesBuildConfig: Release
-            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;tracing;" /p:BuildNativeAotFrameworkObjects=true'
+                  liveLibrariesBuildConfig: Release
+                  testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -289,12 +290,13 @@ extends:
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release -hc Release
-            extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testBuildArgs: 'nativeaot tree ";nativeaot;tracing/eventpipe/providervalidation;"'
-              liveLibrariesBuildConfig: Release
-            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: 'nativeaot tree ";nativeaot;tracing/eventpipe/providervalidation;"'
+                  liveLibrariesBuildConfig: Release
+                  testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -326,10 +328,11 @@ extends:
             buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
             # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -355,6 +358,27 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
+      #
+      # Build CrossDacs
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          variables:
+            - name: _archParameter
+              value: -arch x64,x86,arm,arm64
+          jobParameters:
+            buildArgs: -s linuxdac+alpinedac -c Checked,$(_BuildConfig)
+            nameSuffix: CrossDac
+            isOfficialBuild: false
+            timeoutInMinutes: 60
+            postBuildSteps:
+            - publish: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+              displayName: Publish CrossDacs for diagnostics
+              artifact: CoreCLRCrossDacArtifacts
 
       # Build Mono AOT offset headers once, for consumption elsewhere
       # Only when mono changed
@@ -362,6 +386,7 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/mono/templates/generate-offsets.yml
+          templatePath: 'templates'
           buildConfig: release
           platforms:
           - android_x64
@@ -370,7 +395,7 @@ extends:
           - ios_arm64
           - maccatalyst_x64
           jobParameters:
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            isOfficialBuild: false
             # needed by crossaot
             condition: >-
               or(
@@ -587,15 +612,16 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-              condition: >-
-                or(
-                eq(variables['librariesContainsChange'], true),
-                eq(variables['monoContainsChange'], true),
-                eq(variables['isRollingBuild'], true))
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+                  condition: >-
+                    or(
+                    eq(variables['librariesContainsChange'], true),
+                    eq(variables['monoContainsChange'], true),
+                    eq(variables['isRollingBuild'], true))
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
@@ -628,16 +654,17 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-              extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
-              condition: >-
-                or(
-                eq(variables['librariesContainsChange'], true),
-                eq(variables['monoContainsChange'], true),
-                eq(variables['isRollingBuild'], true))
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+                  extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+                  condition: >-
+                    or(
+                    eq(variables['librariesContainsChange'], true),
+                    eq(variables['monoContainsChange'], true),
+                    eq(variables['isRollingBuild'], true))
 
       #
       # iOS/tvOS devices
@@ -670,16 +697,17 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-              extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
-              condition: >-
-                or(
-                eq(variables['librariesContainsChange'], true),
-                eq(variables['coreclrContainsChange'], true),
-                eq(variables['isRollingBuild'], true))
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+                  condition: >-
+                    or(
+                    eq(variables['librariesContainsChange'], true),
+                    eq(variables['coreclrContainsChange'], true),
+                    eq(variables['isRollingBuild'], true))
 
       #
       # MacCatalyst interp - requires AOT Compilation and Interp flags
@@ -713,15 +741,16 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-              condition: >-
-                or(
-                  eq(variables['librariesContainsChange'], true),
-                  eq(variables['monoContainsChange'], true),
-                  eq(variables['isRollingBuild'], true))
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+                  condition: >-
+                    or(
+                      eq(variables['librariesContainsChange'], true),
+                      eq(variables['monoContainsChange'], true),
+                      eq(variables['isRollingBuild'], true))
 
       #
       # Build Mono and Installer on LLVMJIT mode
@@ -989,7 +1018,6 @@ extends:
           - osx_arm64
           - osx_x64
           - windows_x64
-          - freebsd_x64
           jobParameters:
             testScope: innerloop
             condition:
@@ -1033,32 +1061,45 @@ extends:
               condition: >-
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true)
 
+      #
+      # Build and test libraries for .NET Framework
+      #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/libraries/build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: Release
           platforms:
           - windows_x86
           helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
           jobParameters:
             framework: net48
-            runTests: true
-            testScope: innerloop
+            buildArgs: -s tools+libs+libs.tests -framework net48 -c $(_BuildConfig) -testscope innerloop /p:ArchiveTests=true
+            nameSuffix: Libraries_NET48
+            timeoutInMinutes: 150
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: NET48_$(_BuildConfig)
+                  extraHelixArguments: /p:BuildTargetFramework=net48
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
+      #
+      # Build and test libraries AllConfigurations
+      #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/libraries/build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - windows_x64
           jobParameters:
-            framework: allConfigurations
-            runTests: true
-            useHelix: false
+            buildArgs: -test -s tools+libs+libs.tests -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+            nameSuffix: Libraries_AllConfigurations
+            timeoutInMinutes: 150
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1100,7 +1141,6 @@ extends:
             - linux_arm64
             - linux_musl_x64
             - windows_x64
-            - freebsd_x64
           jobParameters:
             liveRuntimeBuildConfig: release
             liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -1254,10 +1294,11 @@ extends:
                     eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                     eq(variables['isRollingBuild'], true))
 
-            extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_Release
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: Mono_Release
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
@@ -1289,10 +1330,11 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-            extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_Release
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: Mono_Release
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
       #
@@ -1326,11 +1368,12 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-            extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              llvmAotStepContainer: linux_x64_llvmaot
-            testRunNamePrefixSuffix: Mono_Release
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  llvmAotStepContainer: linux_x64_llvmaot
+                  testRunNamePrefixSuffix: Mono_Release
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
@@ -1525,8 +1568,6 @@ extends:
           - SourceBuild_centos8_x64
           jobParameters:
             nameSuffix: centos8SourceBuild
-            extraStepsParameters:
-              name: SourceBuildPackages
             timeoutInMinutes: 95
             condition: eq(variables['isRollingBuild'], true)
 
@@ -1539,7 +1580,5 @@ extends:
           - SourceBuild_banana24_x64
           jobParameters:
             nameSuffix: banana24SourceBuild
-            extraStepsParameters:
-              name: SourceBuildPackages
             timeoutInMinutes: 95
             condition: eq(variables['isRollingBuild'], true)

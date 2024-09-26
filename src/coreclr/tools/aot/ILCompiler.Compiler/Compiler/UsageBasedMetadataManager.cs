@@ -50,7 +50,7 @@ namespace ILCompiler
             };
 
         private readonly List<TypeDesc> _typesWithForcedEEType = new List<TypeDesc>();
-        private readonly List<ModuleDesc> _modulesWithMetadata = new List<ModuleDesc>();
+        private readonly SortedSet<ModuleDesc> _modulesWithMetadata = new SortedSet<ModuleDesc>(CompilerComparer.Instance);
         private readonly List<FieldDesc> _fieldsWithMetadata = new List<FieldDesc>();
         private readonly List<MethodDesc> _methodsWithMetadata = new List<MethodDesc>();
         private readonly List<MetadataType> _typesWithMetadata = new List<MetadataType>();

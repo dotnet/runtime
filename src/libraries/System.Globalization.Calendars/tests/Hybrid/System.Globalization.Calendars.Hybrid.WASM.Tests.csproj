@@ -5,6 +5,14 @@
     <TestRuntime>true</TestRuntime>
     <HybridGlobalization>true</HybridGlobalization>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <!-- This doesn't run on V8 because https://github.com/dotnet/runtime/pull/101671 -->
+    <Scenario>WasmTestOnBrowser</Scenario>
+    <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
+    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+    <XunitShowProgress>true</XunitShowProgress>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\System\Globalization\CalendarTestBase.cs" />
     <Compile Include="..\System\Globalization\ChineseLunisolarCalendarTests.cs" />

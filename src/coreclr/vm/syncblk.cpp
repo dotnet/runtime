@@ -69,6 +69,10 @@ InteropSyncBlockInfo::~InteropSyncBlockInfo()
     CONTRACTL_END;
 
     FreeUMEntryThunk();
+
+#if defined(FEATURE_COMWRAPPERS)
+    delete m_managedObjectComWrapperMap;
+#endif // FEATURE_COMWRAPPERS
 }
 
 #ifndef TARGET_UNIX

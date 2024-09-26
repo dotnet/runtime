@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text.Json.Tests;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -102,6 +101,22 @@ namespace System.Text.Json.Serialization.Tests
 
             ReadOnlyMemory<byte> readOnlyMemory = await Serializer.DeserializeWrapper<ReadOnlyMemory<byte>>("\"VGhpcyBpcyBzb21lIHRlc3QgZGF0YSEhIQ==\"");
             AssertExtensions.SequenceEqual(s_testData, readOnlyMemory.Span);
+        }
+
+        [Fact]
+        public async Task DeserializeNullAsMemory()
+        {
+            ReadOnlyMemory<int> readOnlyMemOfInt = await Serializer.DeserializeWrapper<ReadOnlyMemory<int>>("null");
+            Assert.True(readOnlyMemOfInt.IsEmpty);
+
+            Memory<int> memOfInt = await Serializer.DeserializeWrapper<Memory<int>>("null");
+            Assert.True(memOfInt.IsEmpty);
+
+            ReadOnlyMemory<byte> readOnlyMemOfByte = await Serializer.DeserializeWrapper<ReadOnlyMemory<byte>>("null");
+            Assert.True(readOnlyMemOfByte.IsEmpty);
+
+            Memory<byte> memOfByte = await Serializer.DeserializeWrapper<Memory<byte>>("null");
+            Assert.True(memOfByte.IsEmpty);
         }
 
         [Fact]

@@ -453,7 +453,23 @@ void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* 
 template <typename TBase>
 TBase EvaluateBinaryScalarRSZ(TBase arg0, TBase arg1)
 {
-    return arg0 >> (arg1 & ((sizeof(TBase) * 8) - 1));
+#if defined(TARGET_XARCH)
+    if ((arg1 < 0) || (arg1 >= (sizeof(TBase) * 8)))
+    {
+        // For SIMD, xarch allows overshifting and treats
+        // it as zeroing. So ensure we do the same here.
+        //
+        // The xplat APIs ensure the shiftAmount is masked
+        // to be within range, so we can't hit this for them.
+
+        return static_cast<TBase>(0);
+    }
+#else
+    // Other platforms enforce masking in their encoding
+    assert((arg1 >= 0) && (arg1 < (sizeof(TBase) * 8)));
+#endif
+
+    return arg0 >> arg1;
 }
 
 template <>
@@ -513,7 +529,22 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
 
         case GT_LSH:
         {
-            return arg0 << (arg1 & ((sizeof(TBase) * 8) - 1));
+#if defined(TARGET_XARCH)
+            if ((arg1 < 0) || (arg1 >= (sizeof(TBase) * 8)))
+            {
+                // For SIMD, xarch allows overshifting and treats
+                // it as zeroing. So ensure we do the same here.
+                //
+                // The xplat APIs ensure the shiftAmount is masked
+                // to be within range, so we can't hit this for them.
+
+                return static_cast<TBase>(0);
+            }
+#else
+            // Other platforms enforce masking in their encoding
+            assert((arg1 >= 0) && (arg1 < (sizeof(TBase) * 8)));
+#endif
+            return arg0 << arg1;
         }
 
         case GT_OR:
@@ -535,7 +566,24 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
 
         case GT_RSH:
         {
-            return arg0 >> (arg1 & ((sizeof(TBase) * 8) - 1));
+#if defined(TARGET_XARCH)
+            if ((arg1 < 0) || (arg1 >= (sizeof(TBase) * 8)))
+            {
+                // For SIMD, xarch allows overshifting and treats
+                // it as propagating the sign bit (returning Zero
+                // or AllBitsSet). So ensure we do the same here.
+                //
+                // The xplat APIs ensure the shiftAmount is masked
+                // to be within range, so we can't hit this for them.
+
+                arg0 >>= ((sizeof(TBase) * 8) - 1);
+                arg1 = static_cast<TBase>(1);
+            }
+#else
+            // Other platforms enforce masking in their encoding
+            assert((arg1 >= 0) && (arg1 < (sizeof(TBase) * 8)));
+#endif
+            return arg0 >> arg1;
         }
 
         case GT_RSZ:

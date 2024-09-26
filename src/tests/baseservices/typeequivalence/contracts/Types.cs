@@ -61,6 +61,12 @@ namespace TypeEquivalenceTypes
         int MultiplyBy20(int a);
     }
 
+    [Guid("BD752276-52DF-4CD1-8C62-49D202F15C8D")]
+    public struct TestValueType
+    {
+        public int Field;
+    }
+
     //
     // Below types are used in type punning tests and shouldn't be used anywhere else.
     //

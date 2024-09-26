@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel.Design;
 using System.Diagnostics;
@@ -26,9 +28,25 @@ namespace System.ComponentModel
         // lock on it for thread safety. It is used from nearly
         // every call to this class, so it will be created soon after
         // class load anyway.
-        private static readonly WeakHashtable s_providerTable = new WeakHashtable();     // mapping of type or object hash to a provider list
-        private static readonly Hashtable s_providerTypeTable = new Hashtable();         // A direct mapping from type to provider.
-        private static readonly Hashtable s_defaultProviders = new Hashtable(); // A table of type -> default provider to track DefaultTypeDescriptionProviderAttributes.
+        private static readonly WeakHashtable s_providerTable = new WeakHashtable();
+
+        // This lock object protects access to several thread-unsafe areas below, and is a single lock object to prevent deadlocks.
+        // - During s_providerTypeTable access.
+        // - To act as a mutex for CheckDefaultProvider() when it needs to create the default provider, which may re-enter the above case.
+        // - For cache access in the ReflectTypeDescriptionProvider class which may re-enter the above case.
+        // - For logic added by consumers, such as custom provider, constructor and property logic, which may re-enter the above cases in unexpected ways.
+        internal static readonly object s_commonSyncObject = new object();
+
+        // A direct mapping from type to provider.
+        private static readonly ConcurrentDictionary<Type, TypeDescriptionNode> s_providerTypeTable = new ConcurrentDictionary<Type, TypeDescriptionNode>();
+
+        // Tracks DefaultTypeDescriptionProviderAttributes.
+        // A value of `null` indicates initialization is in progress.
+        // A value of s_initializedDefaultProvider indicates the provider is initialized.
+        private static readonly ConcurrentDictionary<Type, object?> s_defaultProviderInitialized = new ConcurrentDictionary<Type, object?>();
+
+        private static readonly object s_initializedDefaultProvider = new object();
+
         private static WeakHashtable? s_associationTable;
         private static int s_metadataVersion;                          // a version stamp for our metadata. Used by property descriptors to know when to rebuild attributes.
 
@@ -74,8 +92,6 @@ namespace System.ComponentModel
             Guid.NewGuid(), // properties
             Guid.NewGuid()  // events
         };
-
-        private static readonly object s_internalSyncObject = new object();
 
         private TypeDescriptor()
         {
@@ -176,7 +192,7 @@ namespace System.ComponentModel
             ArgumentNullException.ThrowIfNull(provider);
             ArgumentNullException.ThrowIfNull(type);
 
-            lock (s_providerTable)
+            lock (s_commonSyncObject)
             {
                 // Get the root node, hook it up, and stuff it back into
                 // the provider cache.
@@ -206,7 +222,7 @@ namespace System.ComponentModel
 
             // Get the root node, hook it up, and stuff it back into
             // the provider cache.
-            lock (s_providerTable)
+            lock (s_commonSyncObject)
             {
                 refreshNeeded = s_providerTable.ContainsKey(instance);
                 TypeDescriptionNode node = NodeFor(instance, true);
@@ -262,32 +278,40 @@ namespace System.ComponentModel
         /// </summary>
         private static void CheckDefaultProvider(Type type)
         {
-            if (s_defaultProviders.ContainsKey(type))
+            if (s_defaultProviderInitialized.TryGetValue(type, out object? provider) && provider == s_initializedDefaultProvider)
             {
                 return;
             }
 
-            lock (s_internalSyncObject)
+            lock (s_commonSyncObject)
             {
-                if (s_defaultProviders.ContainsKey(type))
-                {
-                    return;
-                }
+                AddDefaultProvider(type);
+            }
+        }
 
-                // Immediately clear this. If we find a default provider
-                // and it starts messing around with type information,
-                // this could infinitely recurse.
-                s_defaultProviders[type] = null;
+        /// <summary>
+        /// Add the default provider, if it exists.
+        /// For threading, this is always called under a 'lock (s_commonSyncObject)'.
+        /// </summary>
+        private static void AddDefaultProvider(Type type)
+        {
+            bool providerAdded = false;
+
+            if (s_defaultProviderInitialized.ContainsKey(type))
+            {
+                // Either another thread finished initializing for this type, or we are recursing on the same thread.
+                return;
             }
 
-            // Always use core reflection when checking for
-            // the default provider attribute. If there is a
-            // provider, we probably don't want to build up our
-            // own cache state against the type. There shouldn't be
-            // more than one of these, but walk anyway. Walk in
-            // reverse order so that the most derived takes precidence.
+            // Immediately set this to null to indicate we are in progress setting the default provider for a type.
+            // This prevents re-entrance to this method.
+            s_defaultProviderInitialized.TryAdd(type, null);
+
+            // Always use core reflection when checking for the default provider attribute.
+            // If there is a provider, we probably don't want to build up our own cache state against the type.
+            // There shouldn't be more than one of these, but walk anyway.
+            // Walk in reverse order so that the most derived takes precedence.
             object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false);
-            bool providerAdded = false;
             for (int idx = attrs.Length - 1; idx >= 0; idx--)
             {
                 TypeDescriptionProviderAttribute pa = (TypeDescriptionProviderAttribute)attrs[idx];
@@ -306,17 +330,19 @@ namespace System.ComponentModel
                 Type? baseType = type.BaseType;
                 if (baseType != null && baseType != type)
                 {
-                    CheckDefaultProvider(baseType);
+                    AddDefaultProvider(baseType);
                 }
             }
+
+            s_defaultProviderInitialized[type] = s_initializedDefaultProvider;
         }
 
         /// <summary>
-        /// The CreateAssocation method creates an association between two objects.
+        /// The CreateAssociation method creates an association between two objects.
         /// Once an association is created, a designer or other filtering mechanism
         /// can add properties that route to either object into the primary object's
         /// property set. When a property invocation is made against the primary
-        /// object, GetAssocation will be called to resolve the actual object
+        /// object, GetAssociation will be called to resolve the actual object
         /// instance that is related to its type parameter.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -1459,8 +1485,10 @@ namespace System.ComponentModel
 
             while (node == null)
             {
-                node = (TypeDescriptionNode?)s_providerTypeTable[searchType] ??
-                       (TypeDescriptionNode?)s_providerTable[searchType];
+                if (!s_providerTypeTable.TryGetValue(searchType, out node))
+                {
+                    node = (TypeDescriptionNode?)s_providerTable[searchType];
+                }
 
                 if (node == null)
                 {
@@ -1468,7 +1496,7 @@ namespace System.ComponentModel
 
                     if (searchType == typeof(object) || baseType == null)
                     {
-                        lock (s_providerTable)
+                        lock (s_commonSyncObject)
                         {
                             node = (TypeDescriptionNode?)s_providerTable[searchType];
 
@@ -1484,9 +1512,9 @@ namespace System.ComponentModel
                     else if (createDelegator)
                     {
                         node = new TypeDescriptionNode(new DelegatingTypeDescriptionProvider(baseType));
-                        lock (s_providerTable)
+                        lock (s_commonSyncObject)
                         {
-                            s_providerTypeTable[searchType] = node;
+                            s_providerTypeTable.TryAdd(searchType, node);
                         }
                     }
                     else
@@ -1587,7 +1615,7 @@ namespace System.ComponentModel
         /// </summary>
         private static void NodeRemove(object key, TypeDescriptionProvider provider)
         {
-            lock (s_providerTable)
+            lock (s_commonSyncObject)
             {
                 TypeDescriptionNode? head = (TypeDescriptionNode?)s_providerTable[key];
                 TypeDescriptionNode? target = head;
@@ -2108,7 +2136,7 @@ namespace System.ComponentModel
             {
                 Type type = component.GetType();
 
-                lock (s_providerTable)
+                lock (s_commonSyncObject)
                 {
                     // ReflectTypeDescritionProvider is only bound to object, but we
                     // need go to through the entire table to try to find custom
@@ -2192,7 +2220,7 @@ namespace System.ComponentModel
 
             bool found = false;
 
-            lock (s_providerTable)
+            lock (s_commonSyncObject)
             {
                 // ReflectTypeDescritionProvider is only bound to object, but we
                 // need go to through the entire table to try to find custom
@@ -2257,7 +2285,7 @@ namespace System.ComponentModel
             // each of these levels.
             Hashtable? refreshedTypes = null;
 
-            lock (s_providerTable)
+            lock (s_commonSyncObject)
             {
                 // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
                 IDictionaryEnumerator e = s_providerTable.GetEnumerator();

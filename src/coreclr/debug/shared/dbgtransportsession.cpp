@@ -2499,9 +2499,11 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
         break;
 
     case DB_IPCE_DISABLE_OPTS:
+        cbAdditionalSize = sizeof(pEvent->DisableOptData);
+        break;
 
     default:
-        printf("Unknown debugger event type: 0x%x\n", (pEvent->type & DB_IPCE_TYPE_MASK));
+        STRESS_LOG1(LF_CORDB, LL_INFO1000, "Unknown debugger event type: 0x%x\n", (pEvent->type & DB_IPCE_TYPE_MASK));
         _ASSERTE(!"Unknown debugger event type");
     }
 

@@ -186,13 +186,6 @@ export function normalizeConfig() {
         config.cachedResourcesPurgeDelay = 10000;
     }
 
-    // Default values (when WasmDebugLevel is not set)
-    // - Build   (debug)    => debugBuild=true  & debugLevel=-1 => -1
-    // - Build   (release)  => debugBuild=true  & debugLevel=0  => 0
-    // - Publish (debug)    => debugBuild=false & debugLevel=-1 => 0
-    // - Publish (release)  => debugBuild=false & debugLevel=0  => 0
-    config.debugLevel = hasDebuggingEnabled(config) ? config.debugLevel : 0;
-
     if (config.diagnosticTracing === undefined && BuildConfiguration === "Debug") {
         config.diagnosticTracing = true;
     }
@@ -212,6 +205,9 @@ export function normalizeConfig() {
     runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
         && globalThis.performance
         && typeof globalThis.performance.measure === "function";
+
+    loaderHelpers.maxParallelDownloads = config.maxParallelDownloads || loaderHelpers.maxParallelDownloads;
+    loaderHelpers.enableDownloadRetry = config.enableDownloadRetry !== undefined ? config.enableDownloadRetry : loaderHelpers.enableDownloadRetry;
 }
 
 let configLoaded = false;
@@ -261,14 +257,13 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
     }
 }
 
-export function hasDebuggingEnabled(config: MonoConfigInternal): boolean {
+export function isDebuggingSupported(): boolean {
     // Copied from blazor MonoDebugger.ts/attachDebuggerHotkey
     if (!globalThis.navigator) {
         return false;
     }
 
-    const hasReferencedPdbs = !!config.resources!.pdb;
-    return (hasReferencedPdbs || config.debugLevel != 0) && (loaderHelpers.isChromium || loaderHelpers.isFirefox);
+    return loaderHelpers.isChromium || loaderHelpers.isFirefox;
 }
 
 async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {

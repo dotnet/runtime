@@ -23,11 +23,8 @@ all_linux_tests:
 all_osx_tests:
   name: All OSX Tests
   dependencies:
-  - path: .yamato/class-library-tests.yml#test_-_class_library_-_osx_x64_debug
   - path: .yamato/class-library-tests.yml#test_-_class_library_-_osx_x64_release
-  - path: .yamato/embedding-tests.yml#test_-_embedding_api_-_osx_x64_debug
   - path: .yamato/embedding-tests.yml#test_-_embedding_api_-_osx_x64_release
-  - path: .yamato/runtime-and-pal-tests.yml#test_-_runtime__pal_-_osx_x64_debug
   - path: .yamato/runtime-and-pal-tests.yml#test_-_runtime__pal_-_osx_x64_release
 all_windows_tests:
   name: All Windows Tests

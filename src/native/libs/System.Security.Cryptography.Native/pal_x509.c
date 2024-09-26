@@ -948,7 +948,8 @@ static X509VerifyStatusCode CheckOcspGetExpiry(OCSP_REQUEST* req,
         int nonceCheck = req == NULL ? 1 : OCSP_check_nonce(req, basicResp);
 
         // Treat "response has no nonce" as success, since not all responders set the nonce.
-        if (nonceCheck == -1)
+        // Treat "neither has a nonce" as success, since we do not send nonces in our requests.
+        if (nonceCheck == -1 || nonceCheck == 2)
         {
             nonceCheck = 1;
         }
@@ -1181,8 +1182,9 @@ static OCSP_REQUEST* BuildOcspRequest(X509* subject, X509* issuer)
     // Ownership was successfully transferred to req
     certId = NULL;
 
-    // Add a random nonce.
-    OCSP_request_add1_nonce(req, NULL, -1);
+    // We return the request without setting a nonce on it. Most public CA OCSP responders ignore the nonce, and in some
+    // cases flat out error when presented with a nonce.
+    // This behavior also matches Windows and Apple platforms.
     return req;
 }
 
@@ -1302,11 +1304,11 @@ CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OC
     return X509ChainVerifyOcsp(storeCtx, subject, issuer, req, resp, cachePath);
 }
 
-int32_t CryptoNative_X509DecodeOcspToExpiration(const uint8_t* buf, int32_t len, OCSP_REQUEST* req, X509* subject, X509* issuer, int64_t* expiration)
+int32_t CryptoNative_X509DecodeOcspToExpiration(const uint8_t* buf, int32_t len, OCSP_REQUEST* req, X509* subject, X509** issuers, int issuersLen, int64_t* expiration)
 {
     ERR_clear_error();
 
-    if (buf == NULL || len == 0)
+    if (buf == NULL || len == 0 || issuersLen == 0)
     {
         return 0;
     }
@@ -1329,7 +1331,16 @@ int32_t CryptoNative_X509DecodeOcspToExpiration(const uint8_t* buf, int32_t len,
 
     if (bag != NULL)
     {
-        if (X509_STORE_add_cert(store, issuer) && sk_X509_push(bag, issuer))
+        int i;
+        for (i = 0; i < issuersLen; i++)
+        {
+            if (!X509_STORE_add_cert(store, issuers[i]) || !sk_X509_push(bag, issuers[i]))
+            {
+                break;
+            }
+        }
+
+        if (i == issuersLen)
         {
             ctx = X509_STORE_CTX_new();
         }
@@ -1343,7 +1354,7 @@ int32_t CryptoNative_X509DecodeOcspToExpiration(const uint8_t* buf, int32_t len,
         {
             int canCache = 0;
             time_t expiration_t = 0;
-            X509VerifyStatusCode code = CheckOcspGetExpiry(req, resp, subject, issuer, ctx, &canCache, &expiration_t);
+            X509VerifyStatusCode code = CheckOcspGetExpiry(req, resp, subject, issuers[0], ctx, &canCache, &expiration_t);
 
             if (sizeof(time_t) == sizeof(int64_t))
             {

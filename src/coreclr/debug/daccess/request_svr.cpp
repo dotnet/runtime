@@ -335,7 +335,7 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
     for (int i = 0; i < heaps; ++i)
     {
         // Basic heap info.
-        TADDR heapAddress = HeapTableIndex(g_gcDacGlobals->g_heaps, i);    
+        TADDR heapAddress = HeapTableIndex(g_gcDacGlobals->g_heaps, i);
         dac_gc_heap heap = LoadGcHeapData(heapAddress);
         dac_gc_heap* pHeap = &heap;
         dac_generation gen0 = ServerGenerationTableIndex(heapAddress, 0);
@@ -395,17 +395,16 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
             seg = gen0.start_segment;
             for (; seg && (j < count); ++j)
             {
+                pHeaps[i].Segments[j].Generation = CorDebug_Gen0;
                 pHeaps[i].Segments[j].Start = (CORDB_ADDRESS)seg->mem;
                 if (seg.GetAddr() == pHeap->ephemeral_heap_segment.GetAddr())
                 {
                     pHeaps[i].Segments[j].End = (CORDB_ADDRESS)pHeap->alloc_allocated;
                     pHeaps[i].EphemeralSegment = j;
-                    pHeaps[i].Segments[j].Generation = CorDebug_Gen0;
                 }
                 else
                 {
                     pHeaps[i].Segments[j].End = (CORDB_ADDRESS)seg->allocated;
-                    pHeaps[i].Segments[j].Generation = seg->flags & HEAP_SEGMENT_FLAGS_READONLY ? CorDebug_NonGC : CorDebug_Gen2;;
                 }
 
                 seg = seg->next;
@@ -471,11 +470,11 @@ void DacFreeRegionEnumerator::AddServerRegions()
         TADDR heapAddress = (TADDR)HeapTableIndex(g_gcDacGlobals->g_heaps, i);
         if (heapAddress == 0)
             continue;
-        
+
         dac_gc_heap heap = LoadGcHeapData(heapAddress);
         for (int i = 0; i < count_free_region_kinds; i++)
             AddSegmentList(heap.free_regions[i].head_free_region, FreeRegionKind::FreeRegion, i);
-        
+
         AddSegmentList(heap.freeable_soh_segment, FreeRegionKind::FreeSohSegment, i);
         AddSegmentList(heap.freeable_uoh_segment, FreeRegionKind::FreeUohSegment, i);
     }

@@ -24,8 +24,6 @@ namespace System.Net.Http
         private readonly SafeWinHttpHandle _requestHandle;
         private readonly WinHttpChunkMode _chunkedMode;
 
-        private GCHandle _cachedSendPinnedBuffer;
-
         internal WinHttpRequestStream(WinHttpRequestState state, WinHttpChunkMode chunkedMode)
         {
             _state = state;
@@ -182,15 +180,7 @@ namespace System.Net.Http
 
         protected override void Dispose(bool disposing)
         {
-            if (!_disposed)
-            {
-                _disposed = true;
-                if (_cachedSendPinnedBuffer.IsAllocated)
-                {
-                    _cachedSendPinnedBuffer.Free();
-                }
-            }
-
+            _disposed = true;
             base.Dispose(disposing);
         }
 
@@ -234,16 +224,7 @@ namespace System.Net.Http
         {
             Debug.Assert(count > 0);
 
-            if (!_cachedSendPinnedBuffer.IsAllocated || _cachedSendPinnedBuffer.Target != buffer)
-            {
-                if (_cachedSendPinnedBuffer.IsAllocated)
-                {
-                    _cachedSendPinnedBuffer.Free();
-                }
-
-                _cachedSendPinnedBuffer = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            }
-
+            _state.PinSendBuffer(buffer);
             _state.TcsInternalWriteDataToRequestStream =
                 new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 

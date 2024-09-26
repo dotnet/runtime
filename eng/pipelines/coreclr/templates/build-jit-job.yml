@@ -132,6 +132,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '$(publishLogsArtifactPrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: '$(publishLogsArtifactPrefix)_Attempt$(System.JobAttempt)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()

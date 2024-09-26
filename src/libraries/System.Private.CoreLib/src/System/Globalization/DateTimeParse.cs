@@ -1547,7 +1547,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             result.flags |= ParseFlags.YearDefault;
         }
 
-        // Processing teriminal case: DS.DX_NN
+        // Processing terminal case: DS.DX_NN
         private static bool GetDayOfNN(ref DateTimeResult result, scoped ref DateTimeStyles styles, scoped ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
@@ -1589,7 +1589,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return false;
         }
 
-        // Processing teriminal case: DS.DX_NNN
+        // Processing terminal case: DS.DX_NNN
         private static bool GetDayOfNNN(ref DateTimeResult result, scoped ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
@@ -5183,7 +5183,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 case ParseFailureKind.Format_BadDatePattern:
                     return new FormatException(SR.Format(SR.Format_BadDatePattern, result.failureMessageFormatArgument));
                 case ParseFailureKind.Format_BadDateTime:
-                    return new FormatException(SR.Format(SR.Format_BadDateTime, result.failureMessageFormatArgument));
+                    return new FormatException(SR.Format(SR.Format_BadDateTime, new string(result.originalDateTimeString)));
                 case ParseFailureKind.Format_BadDateTimeCalendar:
                     return new FormatException(SR.Format(SR.Format_BadDateTimeCalendar, new string(result.originalDateTimeString), result.calendar));
                 case ParseFailureKind.Format_BadDayOfWeek:
@@ -6124,7 +6124,6 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         internal void SetBadDateTimeFailure()
         {
             this.failure = ParseFailureKind.Format_BadDateTime;
-            this.failureMessageFormatArgument = null;
         }
 
         internal void SetFailure(ParseFailureKind failure)
