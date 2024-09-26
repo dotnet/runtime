@@ -886,6 +886,16 @@ public class Interfaces
         [DynamicInterfaceCastableImplementation]
         interface IInterfaceIndirectCastableImpl : IInterfaceImpl { }
 
+        interface IInterfaceImpl<T> : IInterface
+        {
+            string IInterface.GetCookie() => typeof(T).Name;
+        }
+
+        [DynamicInterfaceCastableImplementation]
+        interface IInterfaceIndirectCastableImpl<T> : IInterfaceImpl<T> { }
+
+        class Atom { }
+
         public static void Run()
         {
             Console.WriteLine("Testing IDynamicInterfaceCastable...");
@@ -920,6 +930,18 @@ public class Interfaces
             {
                 IInterface o = (IInterface)new CastableClass<IInterface, IInterfaceCastableImpl<int>>();
                 if (o.GetCookie() != "Int32")
+                    throw new Exception();
+            }
+
+            {
+                IInterface o = (IInterface)new CastableClass<IInterface, IInterfaceCastableImpl<Atom>>();
+                if (o.GetCookie() != "Atom")
+                    throw new Exception();
+            }
+
+            {
+                IInterface o = (IInterface)new CastableClass<IInterface, IInterfaceIndirectCastableImpl<Atom>>();
+                if (o.GetCookie() != "Atom")
                     throw new Exception();
             }
         }
