@@ -18,33 +18,12 @@ public unsafe class MethodTableTests
     private static void RTSContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-        string metadataTypesJson = TargetTestHelpers.MakeTypesJson(MockRTS.Types);
-        string metadataGlobalsJson = TargetTestHelpers.MakeGlobalsJson(MockRTS.Globals);
-        byte[] json = Encoding.UTF8.GetBytes($$"""
-        {
-            "version": 0,
-            "baseline": "empty",
-            "contracts": {
-                "{{nameof(Contracts.RuntimeTypeSystem)}}": 1
-            },
-            "types": { {{metadataTypesJson}} },
-            "globals": { {{metadataGlobalsJson}} }
-        }
-        """);
-
-        int pointerSize = targetTestHelpers.PointerSize;
-        Span<byte> pointerData = stackalloc byte[MockRTS.Globals.Length * pointerSize];
-        for (int i = 0; i < MockRTS.Globals.Length; i++)
-        {
-            var (_, value, _) = MockRTS.Globals[i];
-            targetTestHelpers.WritePointer(pointerData.Slice(i * pointerSize), value);
-        }
-
         MockMemorySpace.Builder builder = new(targetTestHelpers);
 
         builder = builder
-                .SetJson(json)
-                .SetPointerData(pointerData);
+                .SetContracts ([ nameof(Contracts.RuntimeTypeSystem) ])
+                .SetTypes (MockRTS.Types)
+                .SetGlobals (MockRTS.Globals);
 
         builder = MockRTS.AddGlobalPointers(targetTestHelpers, builder);
 

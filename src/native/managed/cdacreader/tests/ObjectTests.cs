@@ -17,35 +17,11 @@ public unsafe class ObjectTests
     {
         TargetTestHelpers targetTestHelpers = new(arch);
 
-        (string Name, ulong Value, string? Type)[] globals = MockObject.Globals(targetTestHelpers);
-
-        string typesJson = TargetTestHelpers.MakeTypesJson(MockObject.Types(targetTestHelpers));
-        string globalsJson = TargetTestHelpers.MakeGlobalsJson(globals);
-        byte[] json = Encoding.UTF8.GetBytes($$"""
-        {
-            "version": 0,
-            "baseline": "empty",
-            "contracts": {
-                "{{nameof(Contracts.Object)}}": 1,
-                "{{nameof(Contracts.RuntimeTypeSystem)}}": 1
-            },
-            "types": { {{typesJson}} },
-            "globals": { {{globalsJson}} }
-        }
-        """);
-
-        int pointerSize = targetTestHelpers.PointerSize;
-        Span<byte> pointerData = stackalloc byte[globals.Length * pointerSize];
-        for (int i = 0; i < globals.Length; i++)
-        {
-            var (_, value, _) = globals[i];
-            targetTestHelpers.WritePointer(pointerData.Slice(i * pointerSize), value);
-        }
-
         MockMemorySpace.Builder builder = new(targetTestHelpers);
         builder = builder
-                .SetJson(json)
-                .SetPointerData(pointerData);
+            .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem) ])
+            .SetGlobals(MockObject.Globals(targetTestHelpers))
+            .SetTypes(MockObject.Types(targetTestHelpers));
 
         builder = MockObject.AddGlobalPointers(targetTestHelpers, builder);
 
