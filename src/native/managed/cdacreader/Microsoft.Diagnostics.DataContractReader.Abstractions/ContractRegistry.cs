@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts;
+
+namespace Microsoft.Diagnostics.DataContractReader;
 
 /// <summary>
 /// A registry of all the contracts that may be provided by a target.

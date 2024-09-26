@@ -189,5 +189,5 @@ internal abstract class Target
     /// <summary>
     /// A cache of the contracts for the target process
     /// </summary>
-    public abstract Contracts.ContractRegistry Contracts { get; }
+    public abstract ContractRegistry Contracts { get; }
 }
