@@ -372,11 +372,6 @@ public:
     OBJECTHANDLE GetLoaderAllocatorObjectHandle() { WRAPPER_NO_CONTRACT; return GetLoaderAllocator()->GetLoaderAllocatorObjectHandle(); }
 #endif // FEATURE_COLLECTIBLE_TYPES
 
-#ifdef FEATURE_READYTORUN
-    BOOL IsInstrumented();
-    BOOL IsInstrumentedHelper();
-#endif // FEATURE_READYTORUN
-
 #ifdef FEATURE_COMINTEROP
     static ITypeLib * const InvalidTypeLib;
 

@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Http.Logging
         /// Logs before sending an HTTP request.
         /// </summary>
         /// <param name="request">The HTTP request message that will be sent.</param>
-        /// <returns>A context object that will be passed to a corresponding <see cref="LogRequestStop"/> or <see cref="LogRequestFailed"/>. Can be `null`
+        /// <returns>A context object that will be passed to a corresponding <see cref="LogRequestStop"/> or <see cref="LogRequestFailed"/>. Can be <see langword="null" />
         /// if no context object is needed by the implementation.</returns>
         object? LogRequestStart(HttpRequestMessage request);
 
@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Http.Logging
         /// </summary>
         /// <param name="context">The context object that was previously returned by <see cref="LogRequestStart"/>.</param>
         /// <param name="request">The HTTP request message that was sent.</param>
-        /// <param name="response">If available, the HTTP response message that was received, and `null` otherwise.</param>
+        /// <param name="response">If available, the HTTP response message that was received, and <see langword="null" /> otherwise.</param>
         /// <param name="exception">Exception that happened during processing the HTTP request.</param>
         /// <param name="elapsed">Time elapsed since calling <see cref="LogRequestStart"/>.</param>
         void LogRequestFailed(object? context, HttpRequestMessage request, HttpResponseMessage? response, Exception exception, TimeSpan elapsed);
