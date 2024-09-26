@@ -19,11 +19,12 @@ public class IcuShardingTests : IcuTestsBase
     public IcuShardingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) { }
 
-    // isOnlyPredefinedCultures = true fails with wasmbrowser
     public static IEnumerable<object[]> IcuExpectedAndMissingCustomShardTestData(string config) =>
         from templateType in templateTypes
             from aot in boolOptions
             from onlyPredefinedCultures in boolOptions
+            // issue: isOnlyPredefinedCultures = true fails with wasmbrowser
+            where !(onlyPredefinedCultures && templateType == "wasmbrowser")
             select new object[] { config, templateType, aot, CustomIcuPath, s_customIcuTestedLocales, onlyPredefinedCultures };
 
     public static IEnumerable<object[]> IcuExpectedAndMissingAutomaticShardTestData(string config)
