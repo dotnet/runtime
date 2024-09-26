@@ -19,11 +19,4 @@
   <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <BaselineManifestResourcePrefix>Microsoft.DotNet.Diagnostics.DataContract.Baseline:</BaselineManifestResourcePrefix>
-  </PropertyGroup>
-  <ItemGroup>
-      <EmbeddedResource Include="Resources/contract-descriptor.c.in" WithCulture="false" />
-  </ItemGroup>
 </Project>
