@@ -61,7 +61,7 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
         using System.Globalization;
 
         Console.WriteLine($""Current culture: '{{CultureInfo.CurrentCulture.Name}}'"");
-                
+
         string fallbackSundayName = ""{fallbackSundayName}"";
         bool onlyPredefinedCultures = {(onlyPredefinedCultures ? "true" : "false")};
         Locale[] localesToTest = {testedLocales};
@@ -117,16 +117,13 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
         await BuildAndRunIcuTest(config, templateType, aot, testedLocales, globalizationMode, extraProperties, onlyPredefinedCultures, icuFileName: shardName);
     }
 
-    protected async Task BuildAndRunIcuTest(
+    protected (BuildArgs buildArgs, string projectFile) CreateIcuProject(
         string config,
         string templateType,
         bool aot,
         string testedLocales,
-        GlobalizationMode globalizationMode,
         string extraProperties = "",
-        bool onlyPredefinedCultures=false,
-        string language = "en-US",
-        string? icuFileName = null)
+        bool onlyPredefinedCultures=false)
     {
         string id = $"icu_{config}_{aot}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, templateType);
@@ -151,10 +148,20 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
             };
         UpdateProjectFile(mainPath, replacements);
         RemoveContentsFromProjectFile(mainPath, ".create();", "await runMainAndExit();");
+        return (buildArgs, projectFile);
+    }
 
+    protected string BuildIcuTest(
+        BuildArgs buildArgs,
+        bool isBrowser,
+        GlobalizationMode globalizationMode,
+        string icuFileName = "",
+        bool expectSuccess = true,
+        bool assertAppBundle = true)
+    {
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
-        BuildTemplateProject(buildArgs,
-                        id: id,
+        (string _, string buildOutput) = BuildTemplateProject(buildArgs,
+                        id: buildArgs.Id,
                         new BuildProjectOptions(
                             DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                             CreateProject: false,
@@ -165,21 +172,34 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
                             UseCache: false,
                             IsBrowserProject: isBrowser,
                             GlobalizationMode: globalizationMode,
-                            CustomIcuFile: icuFileName
+                            CustomIcuFile: icuFileName,
+                            ExpectSuccess: expectSuccess,
+                            AssertAppBundle: assertAppBundle
                         ));
+        return buildOutput;
+    }
+
+    protected async Task<string> BuildAndRunIcuTest(
+        string config,
+        string templateType,
+        bool aot,
+        string testedLocales,
+        GlobalizationMode globalizationMode,
+        string extraProperties = "",
+        bool onlyPredefinedCultures=false,
+        string language = "en-US",
+        string icuFileName = "")
+    {
         try
         {
-            switch (templateType)
-            {
-                case "wasmbrowser":
-                    await RunBrowser(buildArgs.Config, projectFile, language);
-                    break;
-                case "wasmconsole":
-                    RunConsole(buildArgs, language: language);
-                    break;
-                default:
-                    throw new Exception($"Unknown template type: {templateType}");
-            }
+            bool isBrowser = templateType == "wasmbrowser";
+            (BuildArgs buildArgs, string projectFile) = CreateIcuProject(
+                config, templateType, aot, testedLocales, extraProperties, onlyPredefinedCultures);
+            string buildOutput = BuildIcuTest(buildArgs, isBrowser, globalizationMode, icuFileName);
+            string runOutput = isBrowser ?
+                await RunBrowser(buildArgs.Config, projectFile, language) :
+                RunConsole(buildArgs, language: language);
+            return $"{buildOutput}\n{runOutput}";
         }
         catch(Exception ex)
         {

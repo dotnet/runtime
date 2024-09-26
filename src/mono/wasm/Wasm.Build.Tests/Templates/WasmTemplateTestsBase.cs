@@ -100,16 +100,17 @@ namespace Wasm.Build.Tests
             File.WriteAllText(mainJsPath, mainJsContent);
         }
 
-        protected CommandResult RunConsole(BuildArgs buildArgs, int expectedExitCode = 42, string language = "en-US")
+        protected string RunConsole(BuildArgs buildArgs, int expectedExitCode = 42, string language = "en-US")
         {
-            return new RunCommand(s_buildEnv, _testOutput)
+            CommandResult res = new RunCommand(s_buildEnv, _testOutput)
                 .WithWorkingDirectory(_projectDir!)
                 .WithEnvironmentVariable("LANG", language)
                 .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {buildArgs.Config}")
                 .EnsureExitCode(expectedExitCode);
+            return res.Output;
         }
 
-        protected async Task RunBrowser(string config, string projectFile, string language = "en-US")
+        protected async Task<string> RunBrowser(string config, string projectFile, string language = "en-US")
         {
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                             .WithWorkingDirectory(_projectDir!);
@@ -118,6 +119,7 @@ namespace Wasm.Build.Tests
             var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console", language: language);
             await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
             Assert.Contains("WASM EXIT 42", string.Join(Environment.NewLine, runner.OutputLines));
+            return string.Join("\n", runner.OutputLines);
         }
     }
 }
