@@ -30,11 +30,12 @@ public class IcuShardingTests2 : IcuTestsBase
             { "icudt_CJK.dat", GetCjkTestedLocales() },
             { "icudt_no_CJK.dat", GetNocjkTestedLocales() }
         }; 
-        // "wasmconsole": https://github.com/dotnet/runtime/issues/82593
-        return from templateType in templateTypes
+        return
+            // "wasmconsole": https://github.com/dotnet/runtime/issues/82593
+            // from templateType in templateTypes
             from aot in boolOptions
             from locale in locales
-            select new object[] { config, templateType, aot, locale.Key, locale.Value };
+            select new object[] { config, "wasmbrowser", aot, locale.Key, locale.Value };
     }
 
     [Theory]
