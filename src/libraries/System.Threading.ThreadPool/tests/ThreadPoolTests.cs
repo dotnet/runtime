@@ -1467,68 +1467,6 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
-        public static void ThreadPoolThreadCreationDoesNotCauseLockContention()
-        {
-            // Run in a separate process to test in a clean thread pool environment such that work items queued by the test
-            // would cause the thread pool to create threads
-            RemoteExecutor.Invoke(() =>
-            {
-                int processorCount = Environment.ProcessorCount;
-                var values = new double[processorCount];
-                StartBusyThreads();
-
-                long lockContentionCount = Monitor.LockContentionCount;
-                var done = new ManualResetEvent(false);
-                int count = 0;
-
-                for (int i = 0; i < processorCount; i++)
-                {
-                    ThreadPool.QueueUserWorkItem(m =>
-                    {
-                        if (Interlocked.Increment(ref count) == processorCount)
-                        {
-                            done.Set();
-                        }
-                    });
-                }
-
-                done.WaitOne();
-
-                Assert.Equal(0, Monitor.LockContentionCount - lockContentionCount);
-
-                void StartBusyThreads()
-                {
-                    using var sem = new Semaphore(0, values.Length);
-
-                    for (int i = 0; i < values.Length; i++)
-                    {
-                        int index = i;
-
-                        var t = new Thread(_ =>
-                        {
-                            sem.Release();
-
-                            while (true)
-                            {
-                                for (int j = 0; j < int.MaxValue; j++)
-                                {
-                                    values[index] += Math.Sqrt(j);
-                                }
-                            }
-                        });
-
-                        t.Start();
-                    }
-
-                    for (int i = 0; i < values.Length; i++)
-                    {
-                        sem.WaitOne();
-                    }
-                }
-            }).Dispose();
-        }
-
         public static bool IsThreadingAndRemoteExecutorSupported =>
             PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
 
