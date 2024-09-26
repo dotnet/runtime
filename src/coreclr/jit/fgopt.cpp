@@ -5171,9 +5171,13 @@ void Compiler::fgSearchImprovedLayout()
     };
     PriorityQueue<FlowEdge*, decltype(edgeWeightComp)> cutPoints(getAllocator(CMK_FlowEdge), edgeWeightComp);
 
+    // We will also maintain a set of candidate edges to avoid adding duplicate edges to cutPoints.
+    // For large flowgraphs, we risk exploding 'cutPoints' with duplicate edges.
+    JitHashTable<FlowEdge*, JitPtrKeyFuncs<FlowEdge>, bool> candidateSet(getAllocator(CMK_FlowEdge));
+
     // Since adding to priority queues has logarithmic time complexity,
     // try to avoid adding edges that we obviously won't consider when reordering.
-    auto considerEdge = [&cutPoints, ordinals](FlowEdge* edge) {
+    auto considerEdge = [&cutPoints, &candidateSet, ordinals](FlowEdge* edge) {
         assert(edge != nullptr);
 
         BasicBlock* const srcBlk = edge->getSourceBlock();
@@ -5198,6 +5202,22 @@ void Compiler::fgSearchImprovedLayout()
 
         // Don't consider backedges for single-block loops
         if (srcPos == dstPos)
+        {
+            return;
+        }
+
+        // Check if the edge is already in 'cutPoints'.
+        // If it isn't, update the set.
+        bool* const lookupPtr = candidateSet.LookupPointer(edge);
+        if (lookupPtr == nullptr)
+        {
+            candidateSet.Set(edge, true);
+        }
+        else if (*lookupPtr == false)
+        {
+            *lookupPtr = true;
+        }
+        else
         {
             return;
         }
@@ -5254,6 +5274,8 @@ void Compiler::fgSearchImprovedLayout()
     {
         FlowEdge* const candidateEdge = cutPoints.Top();
         cutPoints.Pop();
+        assert(candidateSet[candidateEdge]);
+        candidateSet[candidateEdge] = false;
 
         BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
         BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
@@ -5363,6 +5385,8 @@ void Compiler::fgSearchImprovedLayout()
         }
 
         // We've found a profitable cut point. Continue with the swap.
+        JITDUMP("Creating fallthrough for " FMT_BB " -> " FMT_BB " (cost=%f, improvement=%f)\n", srcBlk->bbNum,
+                dstBlk->bbNum, cost, improvement);
 
         // If we're going to break up fallthrough into 'srcBlk',
         // consider all other edges out of 'srcBlk''s current fallthrough predecessor
