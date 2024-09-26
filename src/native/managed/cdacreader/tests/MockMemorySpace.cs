@@ -18,9 +18,6 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 /// Use MockMemorySpace.CreateContext to create a mostly empty context for reading from the target.
 /// Use MockMemorySpace.ContextBuilder to create a context with additional MockMemorySpace.HeapFragment data.
 /// </remarks>
-/// <remarks>
-/// All the spans should be stackalloc or pinned while the context is being used.
-/// </remarks>
 internal unsafe static class MockMemorySpace
 {
     internal const uint JsonDescriptorAddr = 0xdddddddd;
@@ -116,13 +113,13 @@ internal unsafe static class MockMemorySpace
 
         private HeapFragment CreateContractDescriptor(int jsonLength, int pointerDataCount)
         {
-            Span<byte> descriptor = stackalloc byte[_targetTestHelpers.ContractDescriptorSize];
+            byte[] descriptor = new byte[_targetTestHelpers.ContractDescriptorSize];
             _targetTestHelpers.ContractDescriptorFill(descriptor, jsonLength, pointerDataCount);
             const ulong ContractDescriptorAddr = 0xaaaaaaaa;
             return new HeapFragment
             {
                 Address = ContractDescriptorAddr,
-                Data = descriptor.ToArray(),
+                Data = descriptor,
                 Name = "ContractDescriptor"
             };
         }
@@ -165,16 +162,16 @@ internal unsafe static class MockMemorySpace
             if (_indirectValues != null)
             {
                 int pointerSize = _targetTestHelpers.PointerSize;
-                Span<byte> pointerDataBytes = stackalloc byte[_indirectValues.Count * pointerSize];
+                byte[] pointerDataBytes = new byte[_indirectValues.Count * pointerSize];
                 int offset = 0;
                 foreach (var value in _indirectValues)
                 {
-                    _targetTestHelpers.WritePointer(pointerDataBytes.Slice(offset), value);
+                    _targetTestHelpers.WritePointer(pointerDataBytes.AsSpan(offset, pointerSize), value);
                     offset += pointerSize;
                 }
                 pointerData =new HeapFragment {
                     Address = ContractPointerDataAddr,
-                    Data = pointerDataBytes.ToArray(),
+                    Data = pointerDataBytes,
                     Name = "PointerData"
                 };
             } else {
