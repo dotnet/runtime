@@ -110,9 +110,9 @@ namespace System.Runtime
                                                                                     DispatchResolve.ResolveFlags.IDynamicInterfaceCastable,
                                                                                     ppGenericContext);
 
-            if ((result & DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag) != 0)
+            if ((result & (nint)DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag) != 0)
             {
-                result &= ~DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag;
+                result &= ~(nint)DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag;
             }
             else
             {

@@ -45,16 +45,7 @@ namespace Internal.Runtime
 
     internal static class DispatchMapCodePointerFlags
     {
-        public const int WasmRequiresInstantiatingThunkFlag = 1 << 31;
-        public const int NonWasmRequiresInstantiatingThunkFlag = 2;
-
-#if NATIVEAOT
-#if TARGET_WASM
-        public const nint RequiresInstantiatingThunkFlag = WasmRequiresInstantiatingThunkFlag;
-#else
-        public const nint RequiresInstantiatingThunkFlag = NonWasmRequiresInstantiatingThunkFlag;
-#endif
-#endif
+        public const int RequiresInstantiatingThunkFlag = 2;
     }
 
     internal static class SpecialGVMInterfaceEntry
