@@ -1034,10 +1034,12 @@ namespace System.Tests
                     var secondSpan = new ReadOnlySpan<char>(second);
                     Assert.True(0 > firstSpan.CompareTo(secondSpan, StringComparison.Ordinal));
 
-                    // Due to differences in the implementation, the exact result of CompareTo will not necessarily match with string.Compare.
-                    // However, the sign will match, which is what defines correctness.
+                    // On Apple platforms, string comparison is handled by native Apple functions, which apply normalization techniques 
+                    // like `precomposedStringWithCanonicalMapping`. This can lead to differences in behavior compared to other platforms.
                     if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                     {
+                        // Due to differences in the implementation, the exact result of CompareTo will not necessarily match with string.Compare.
+                        // However, the sign will match, which is what defines correctness.
                         Assert.Equal(
                             Math.Sign(string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.OrdinalIgnoreCase)),
                             Math.Sign(firstSpan.CompareTo(secondSpan, StringComparison.OrdinalIgnoreCase)));
@@ -1313,9 +1315,11 @@ namespace System.Tests
 
                     Assert.False(firstSpan.Contains(secondSpan, StringComparison.OrdinalIgnoreCase));
 
-                    // Different behavior depending on OS
+                    // On Apple platforms, string comparison is handled by native Apple functions, which apply normalization techniques 
+                    // like `precomposedStringWithCanonicalMapping`. This can lead to differences in behavior compared to other platforms.
                     if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                     {
+                        // Different behavior depending on OS
                         Assert.Equal(
                             firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
                             firstSpan.Contains(secondSpan, StringComparison.CurrentCulture));

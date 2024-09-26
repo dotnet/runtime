@@ -1982,6 +1982,9 @@ namespace System.Tests
             yield return new object[] { "#2020-5-7T09:37:00.0000000+00:00#\0", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2020, 5, 7, 9, 37, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
             yield return new object[] { "2020-5-7T09:37:00.0000000+00:00", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2020, 5, 7, 9, 37, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
 
+            // On Apple platforms, the handling  calendars relies on native Apple APIs (NSCalendar).
+            // These APIs can cause differences in behavior when parsing or formatting dates compared to other platforms.
+            // Specifically, the way Apple handles calendar identifiers and date formats for cultures like "he-IL" may lead to variations in the output.
             if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 DateTime today = DateTime.Today;

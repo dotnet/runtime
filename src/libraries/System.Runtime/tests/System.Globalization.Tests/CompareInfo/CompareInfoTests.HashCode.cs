@@ -14,6 +14,8 @@ namespace System.Globalization.Tests
     {
 
         [OuterLoop]
+        // On Apple platforms, string comparison is handled by native Apple functions, which apply normalization techniques 
+        // like `precomposedStringWithCanonicalMapping`. This can lead to differences in behavior compared to other platforms.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         public void CheckHashingInLineWithEqual()
         {
