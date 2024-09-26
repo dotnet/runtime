@@ -961,32 +961,6 @@ DWORD GetRuntimeId()
 #endif
 }
 
-//---------------------------------------------------------------------------
-// Creates new Thread for reverse p-invoke calls.
-//---------------------------------------------------------------------------
-Thread* WINAPI CreateThreadBlockThrow()
-{
-
-    WRAPPER_NO_CONTRACT;
-
-    // This is a workaround to disable our check for throwing exception in SetupThread.
-    // We want to throw an exception for reverse p-invoke, and our assertion may fire if
-    // a unmanaged caller does not setup an exception handler.
-    CONTRACT_VIOLATION(ThrowsViolation); // WON'T FIX - This enables catastrophic failure exception in reverse P/Invoke - the only way we can communicate an error to legacy code.
-
-    HRESULT hr = S_OK;
-    Thread* pThread = SetupThreadNoThrow(&hr);
-    if (pThread == NULL)
-    {
-        // Creating Thread failed, and we need to throw an exception to report status.
-        // It is misleading to use our COM+ exception code, since this is not a managed exception.
-        ULONG_PTR arg = hr;
-        RaiseException(EXCEPTION_EXX, 0, 1, &arg);
-    }
-
-    return pThread;
-}
-
 #ifdef _DEBUG
 DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 #endif
@@ -2187,19 +2161,11 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
 // object.  We also place a reference count on it when we construct it, and we lose
 // that count when the thread finishes doing useful work (OnThreadTerminate).
 //
-// One way OnThreadTerminate() is called is when the thread finishes doing useful
-// work.  This case always happens on the correct thread.
-//
-// The other way OnThreadTerminate()  is called is during product shutdown.  We do
-// a "best effort" to eliminate all threads except the Main thread before shutdown
-// happens.  But there may be some background threads or external threads still
-// running.
+// OnThreadTerminate() is called is when the thread finishes doing useful
+// work.
 //
 // When the final reference count disappears, we destruct.  Until then, the thread
 // remains in the ThreadStore, but is marked as "Dead".
-//<TODO>
-// @TODO cwb: for a typical shutdown, only background threads are still around.
-// Should we interrupt them?  What about the non-typical shutdown?</TODO>
 
 int Thread::IncExternalCount()
 {

@@ -294,10 +294,6 @@ const CLONE_QUEUE_USER_APC_FLAGS SpecialUserModeApcWithContextFlags =
 //      void    DetachThread()          - the underlying logical thread is going
 //                                        away but we don't want to destroy it yet.
 //
-// Public functions for ASM code generators
-//
-//      Thread* __stdcall CreateThreadBlockThrow() - creates new Thread on reverse p-invoke
-//
 // Public functions for one-time init/cleanup
 //
 //      void InitThreadManager()      - onetime init
@@ -336,8 +332,6 @@ Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags = SUTF_Default);
 void    DestroyThread(Thread *th);
 
 DWORD GetRuntimeId();
-
-EXTERN_C Thread* WINAPI CreateThreadBlockThrow();
 
 #define CREATETHREAD_IF_NULL_FAILFAST(__thread, __msg)                  \
 {                                                                       \
