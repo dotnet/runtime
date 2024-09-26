@@ -6664,9 +6664,15 @@ namespace System.Data
             return type;
         }
 
-#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
-        XmlSchema? IXmlSerializable.GetSchema() => GetXmlSchema();
-#pragma warning restore IL2026
+        XmlSchema? IXmlSerializable.GetSchema()
+        {
+            if (!DataSet.XmlSerializationIsSupported)
+            {
+                throw new NotSupportedException(SR.DataSet_XmlSerializationUnsupported);
+            }
+
+            return GetXmlSchema();
+        }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2046:UnrecognizedReflectionPattern",
@@ -6693,6 +6699,11 @@ namespace System.Data
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
+            if (!DataSet.XmlSerializationIsSupported)
+            {
+                throw new NotSupportedException(SR.DataSet_XmlSerializationUnsupported);
+            }
+
             IXmlTextParser? textReader = reader as IXmlTextParser;
             bool fNormalization = true;
             if (textReader != null)
@@ -6700,9 +6711,7 @@ namespace System.Data
                 fNormalization = textReader.Normalized;
                 textReader.Normalized = false;
             }
-#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             ReadXmlSerializableInternal(reader);
-#pragma warning restore IL2026
 
             if (textReader != null)
             {
@@ -6718,9 +6727,12 @@ namespace System.Data
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
+            if (!DataSet.XmlSerializationIsSupported)
+            {
+                throw new NotSupportedException(SR.DataSet_XmlSerializationUnsupported);
+            }
+
             WriteXmlInternal(writer);
-#pragma warning restore IL2026
         }
 
         [RequiresUnreferencedCode("DataTable.WriteXml uses XmlSerialization underneath which is not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]
