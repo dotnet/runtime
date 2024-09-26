@@ -23,7 +23,7 @@ public class IcuShardingTests : IcuTestsBase
         from templateType in templateTypes
             from aot in boolOptions
             from onlyPredefinedCultures in boolOptions
-            // issue: isOnlyPredefinedCultures = true fails with wasmbrowser
+            // isOnlyPredefinedCultures = true fails with wasmbrowser: https://github.com/dotnet/runtime/issues/108272
             where !(onlyPredefinedCultures && templateType == "wasmbrowser")
             select new object[] { config, templateType, aot, CustomIcuPath, s_customIcuTestedLocales, onlyPredefinedCultures };
 
