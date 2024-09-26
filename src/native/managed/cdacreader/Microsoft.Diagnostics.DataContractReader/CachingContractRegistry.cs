@@ -3,8 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts;
+namespace Microsoft.Diagnostics.DataContractReader;
 
 /// <summary>
 /// Contract registry that caches contracts for a target
