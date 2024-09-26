@@ -109,7 +109,7 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
     protected async Task TestIcuShards(string config, string templateType, bool aot, string shardName, string testedLocales, GlobalizationMode globalizationMode, bool onlyPredefinedCultures=false)
     {
         bool isBrowser = templateType == "wasmbrowser";
-        string icuProperty = isBrowser ? "BlazorIcuDataFileName" : "WasmIcuDataFileName"; // WHY? it should be "WasmIcuDataFileName" for both
+        string icuProperty = isBrowser ? "BlazorIcuDataFileName" : "WasmIcuDataFileName"; // issue: it should be "WasmIcuDataFileName" for both
         // by default, we remove resource strings from an app. ICU tests are checking exception messages contents -> resource string keys are not enough
         string extraProperties = $"<{icuProperty}>{shardName}</{icuProperty}><UseSystemResourceKeys>false</UseSystemResourceKeys><RunAOTCompilation>{aot}</RunAOTCompilation>";
         if (onlyPredefinedCultures)
