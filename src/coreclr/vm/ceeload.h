@@ -52,7 +52,6 @@ class EEStringData;
 class MethodDescChunk;
 class SigTypeContext;
 class Assembly;
-class BaseDomain;
 class AppDomain;
 class SystemDomain;
 class Module;
@@ -1334,8 +1333,8 @@ private:
 public:
 
     // Debugger stuff
-    BOOL NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAssembly, int level, BOOL attaching);
-    void NotifyDebuggerUnload(AppDomain *pDomain);
+    BOOL NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int level, BOOL attaching);
+    void NotifyDebuggerUnload();
 
     void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits);
 
