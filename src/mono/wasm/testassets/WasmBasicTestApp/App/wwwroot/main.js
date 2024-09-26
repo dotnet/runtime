@@ -28,6 +28,11 @@ dotnet
 
 // Modify runtime start based on test case
 switch (testCase) {
+    case "SatelliteAssembliesTest":
+        if (params.get("loadAllSatelliteResources") === "true") {
+            dotnet.withConfig({ loadAllSatelliteResources: true });
+        }
+        break;
     case "AppSettingsTest":
         dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
         break;
@@ -141,7 +146,7 @@ const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith
 try {
     switch (testCase) {
         case "SatelliteAssembliesTest":
-            await exports.SatelliteAssembliesTest.Run();
+            await exports.SatelliteAssembliesTest.Run(params.get("loadAllSatelliteResources") !== "true");
             exit(0);
             break;
         case "LazyLoadingTest":
