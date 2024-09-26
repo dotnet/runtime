@@ -501,7 +501,6 @@ namespace System.Net.Sockets
                 {
                     throw new InvalidOperationException(SR.net_sockets_mustnotbebound);
                 }
-                if (OperatingSystem.IsWasi() && value) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
                 SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ExclusiveAddressUse, value ? 1 : 0);
             }
         }

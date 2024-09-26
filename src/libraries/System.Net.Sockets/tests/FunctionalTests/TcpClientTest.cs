@@ -287,7 +287,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support ExclusiveAddressUse")]
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet_True()
         {
             using (TcpClient client = new TcpClient())

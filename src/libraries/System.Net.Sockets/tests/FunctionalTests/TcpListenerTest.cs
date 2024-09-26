@@ -237,7 +237,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support ExclusiveAddressUse")]
         public void ExclusiveAddressUse_ListenerNotStarted_SetAndReadSuccessfully()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -249,7 +248,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support ExclusiveAddressUse")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "In wasi-libc ExclusiveAddressUse is emulated by fake SO_REUSEADDR")]
         public void ExclusiveAddressUse_SetStartListenerThenRead_ReadSuccessfully()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -264,7 +263,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support ExclusiveAddressUse")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "In wasi-libc ExclusiveAddressUse is emulated by fake SO_REUSEADDR")]
         public void ExclusiveAddressUse_SetStartAndStopListenerThenRead_ReadSuccessfully()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);

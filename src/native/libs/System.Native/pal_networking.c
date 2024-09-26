@@ -2248,7 +2248,11 @@ int32_t SystemNative_GetSockOpt(
             socklen_t optLen = (socklen_t)*optionLen;
             // On Unix, SO_REUSEPORT controls the ability to bind multiple sockets to the same address.
             int err = getsockopt(fd, SOL_SOCKET, SO_REUSEPORT, optionValue, &optLen);
-
+#elif defined(SO_REUSEADDR)
+            socklen_t optLen = (socklen_t)*optionLen;
+            int err = getsockopt(fd, SOL_SOCKET, SO_REUSEADDR, optionValue, &optLen);
+#endif
+#if defined(SO_REUSEPORT) || defined(SO_REUSEADDR)
             if (err != 0)
             {
                 return SystemNative_ConvertErrorPlatformToPal(errno);
@@ -2265,7 +2269,7 @@ int32_t SystemNative_GetSockOpt(
                 value = value == 0 ? 1 : 0;
             }
             *(int32_t*)optionValue = value;
-#else // !SO_REUSEPORT
+#else // !SO_REUSEPORT !SO_REUSEADDR
             *optionValue = 0;
 #endif
             return Error_SUCCESS;
@@ -2385,7 +2389,6 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
         // We make both SocketOptionName_SO_REUSEADDR and SocketOptionName_SO_EXCLUSIVEADDRUSE control SO_REUSEPORT/SO_REUSEADDR.
         if (socketOptionName == SocketOptionName_SO_EXCLUSIVEADDRUSE || socketOptionName == SocketOptionName_SO_REUSEADDR)
         {
-#ifdef SO_REUSEPORT
             if (optionLen != sizeof(int32_t))
             {
                 return Error_EINVAL;
@@ -2406,6 +2409,7 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
                 }
             }
 
+#ifdef SO_REUSEPORT
             // An application that sets SO_REUSEPORT/SO_REUSEADDR can reuse the endpoint with another
             // application that sets the same option. If one application sets SO_REUSEPORT and another
             // sets SO_REUSEADDR the second application will fail to bind. We set both options, this
@@ -2416,7 +2420,10 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
                 err = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &value, (socklen_t)optionLen);
             }
             return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
-#else // !SO_REUSEPORT
+#elif defined(SO_REUSEADDR)
+            int err = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &value, (socklen_t)optionLen);
+            return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+#else // !SO_REUSEPORT !SO_REUSEADDR
             return Error_SUCCESS;
 #endif
         }

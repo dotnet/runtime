@@ -385,7 +385,10 @@ namespace System.Net.Sockets.Tests
             AssertEqualOrSameException(() => orig.NoDelay, () => copy.NoDelay);
 
             if (!OperatingSystem.IsWasi()) Assert.Equal(orig.Available, copy.Available);
-            if (!OperatingSystem.IsWasi()) Assert.Equal(orig.ExclusiveAddressUse, copy.ExclusiveAddressUse);
+            if (!OperatingSystem.IsWasi() || protocolType != ProtocolType.Udp)
+            {
+                Assert.Equal(orig.ExclusiveAddressUse, copy.ExclusiveAddressUse);
+            }
             Assert.Equal(orig.Handle, copy.Handle);
             Assert.Equal(orig.ReceiveBufferSize, copy.ReceiveBufferSize);
             if (!OperatingSystem.IsWasi()) Assert.Equal(orig.ReceiveTimeout, copy.ReceiveTimeout);
@@ -427,7 +430,7 @@ namespace System.Net.Sockets.Tests
             if (!OperatingSystem.IsWasi()) Assert.True(client.Blocking);
             AssertEqualOrSameException(() => orig.DontFragment, () => client.DontFragment);
             AssertEqualOrSameException(() => orig.EnableBroadcast, () => client.EnableBroadcast);
-            if (!OperatingSystem.IsWasi()) Assert.Equal(orig.ExclusiveAddressUse, client.ExclusiveAddressUse);
+            Assert.Equal(orig.ExclusiveAddressUse, client.ExclusiveAddressUse);
             Assert.Equal(orig.Handle, client.Handle);
             Assert.Equal(orig.IsBound, client.IsBound);
             if (!OperatingSystem.IsWasi()) Assert.Equal(orig.LingerState.Enabled, client.LingerState.Enabled);
