@@ -229,7 +229,7 @@ internal unsafe static class MockMemorySpace
         public bool TryCreateTarget([NotNullWhen(true)] out Target? target)
         {
             ReadContext context = CreateContext();
-            return ContractDescriptorTarget.TryCreate(context.ContractDescriptor.Address, context.ReadFromTarget, out target);
+            return Target.TryCreate(context.ContractDescriptor.Address, context.ReadFromTarget, out target);
         }
     }
 
