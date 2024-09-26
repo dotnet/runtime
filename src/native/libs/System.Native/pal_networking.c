@@ -1054,7 +1054,6 @@ static struct cmsghdr* GET_CMSG_NXTHDR(struct msghdr* mhdr, struct cmsghdr* cmsg
 #pragma clang diagnostic pop
 #endif
 }
-#endif // CMSG_SPACE
 
 int32_t
 SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo)
@@ -1064,7 +1063,6 @@ SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isI
         return 0;
     }
 
-#if defined(CMSG_SPACE)
     struct msghdr header;
     ConvertMessageHeaderToMsghdr(&header, messageHeader, -1);
 
@@ -1093,13 +1091,35 @@ SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isI
     }
 
     return 0;
-#else // CMSG_SPACE
-    (void)messageHeader;
-    (void)isIPv4;
-    (void)packetInfo;
-    return Error_ENOTSUP;
-#endif // CMSG_SPACE
 }
+#else // !CMSG_SPACE
+int32_t
+SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo)
+{
+    if (messageHeader == NULL || packetInfo == NULL)
+    {
+        return 0;
+    }
+
+    if (isIPv4 != 0)
+    {
+        struct sockaddr_in* inetSockAddr = (struct sockaddr_in*)messageHeader->SocketAddress;
+
+        ConvertInAddrToByteArray(&packetInfo->Address.Address[0], NUM_BYTES_IN_IPV4_ADDRESS, &inetSockAddr->sin_addr);
+        packetInfo->Address.IsIPv6 = 0;
+    }
+    else
+    {
+        struct sockaddr_in6* inet6SockAddr = (struct sockaddr_in6*)messageHeader->SocketAddress;
+
+        ConvertIn6AddrToByteArray(&packetInfo->Address.Address[0], NUM_BYTES_IN_IPV6_ADDRESS, &inet6SockAddr->sin6_addr);
+        packetInfo->Address.IsIPv6 = 1;
+        packetInfo->Address.ScopeId = inet6SockAddr->sin6_scope_id;
+    }
+    packetInfo->InterfaceIndex = 0;
+    return 1;
+}
+#endif // !CMSG_SPACE
 
 static int8_t GetMulticastOptionName(int32_t multicastOption, int8_t isIPv6, int* optionName)
 {
@@ -1553,18 +1573,16 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
     }
 
     ssize_t res;
-#if defined(CMSG_SPACE)
+#if !defined(CMSG_SPACE)
+    // we will only use 0th buffer
+    struct iovec* msg_iov = (struct iovec*)messageHeader->IOVectors;
+    while ((res = recvfrom(fd, msg_iov[0].iov_base, msg_iov[0].iov_len, socketFlags, (sockaddr *)messageHeader->SocketAddress, (socklen_t*) &(messageHeader->SocketAddressLen))) < 0 && errno == EINTR);
+#else // CMSG_SPACE
     struct msghdr header;
     ConvertMessageHeaderToMsghdr(&header, messageHeader, fd);
 
     while ((res = recvmsg(fd, &header, socketFlags)) < 0 && errno == EINTR);
-#else // CMSG_SPACE
-    // we will only use 0th buffer
-    struct iovec* msg_iov = (struct iovec*)messageHeader->IOVectors;
-    while ((res = recvfrom(fd, msg_iov[0].iov_base, msg_iov[0].iov_len, socketFlags, (sockaddr *)messageHeader->SocketAddress, (socklen_t*) &(messageHeader->SocketAddressLen))) < 0 && errno == EINTR);
-#endif // CMSG_SPACE
 
-#if defined(CMSG_SPACE)
     assert(header.msg_name == messageHeader->SocketAddress); // should still be the same location as set in ConvertMessageHeaderToMsghdr
     assert(header.msg_control == messageHeader->ControlBuffer);
 

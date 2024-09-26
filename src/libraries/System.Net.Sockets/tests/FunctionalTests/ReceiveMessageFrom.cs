@@ -127,7 +127,7 @@ namespace System.Net.Sockets.Tests
             using Socket receiver = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
             using Socket sender = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
 
-            if (!OperatingSystem.IsWasi()) receiver.SetSocketOption(ipv4 ? SocketOptionLevel.IP : SocketOptionLevel.IPv6, SocketOptionName.PacketInformation, true);
+            receiver.SetSocketOption(ipv4 ? SocketOptionLevel.IP : SocketOptionLevel.IPv6, SocketOptionName.PacketInformation, true);
             ConfigureNonBlocking(sender);
             ConfigureNonBlocking(receiver);
 
@@ -154,11 +154,8 @@ namespace System.Net.Sockets.Tests
                 AssertExtensions.SequenceEqual(emptyBuffer, new ReadOnlySpan<byte>(receiveInternalBuffer, 0, Offset));
                 AssertExtensions.SequenceEqual(sendBuffer, new ReadOnlySpan<byte>(receiveInternalBuffer, Offset, DatagramSize));
                 Assert.Equal(sender.LocalEndPoint, result.RemoteEndPoint);
-                if (!OperatingSystem.IsWasi())
-                {
-                    IPPacketInformation packetInformation = result.PacketInformation;
-                    Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, packetInformation.Address);
-                }
+                IPPacketInformation packetInformation = result.PacketInformation;
+                Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, packetInformation.Address);
             }
         }
 

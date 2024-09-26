@@ -64,7 +64,7 @@ namespace System.Net.Sockets
         private ProtocolType _protocolType;
 
         // Bool marked true if the native socket option IP_PKTINFO or IPV6_PKTINFO has been set.
-        private bool _receivingPacketInformation;
+        private bool _receivingPacketInformation = OperatingSystem.IsWasi();
 
         private int _closeTimeout = Socket.DefaultCloseTimeout;
         private bool _disposed;
@@ -3166,7 +3166,7 @@ namespace System.Net.Sockets
             // e.m_SocketAddres for Create to work later.
             e.RemoteEndPoint = endPointSnapshot;
 
-            if (!OperatingSystem.IsWasi()) SetReceivingPacketInformation();
+            SetReceivingPacketInformation();
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.ReceiveMessageFrom);
@@ -3559,6 +3559,8 @@ namespace System.Net.Sockets
         {
             if (!_receivingPacketInformation)
             {
+                if (OperatingSystem.IsWasi()) return; // WASI is always set to receive PacketInformation
+
                 // DualMode: When bound to IPv6Any you must enable both socket options.
                 // When bound to an IPv4 mapped IPv6 address you must enable the IPv4 socket option.
                 IPEndPoint? ipEndPoint = _rightEndPoint as IPEndPoint;
@@ -3586,6 +3588,16 @@ namespace System.Net.Sockets
 
         internal unsafe void SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, int optionValue, bool silent)
         {
+            // WASI is always set to receive PacketInformation
+            if (OperatingSystem.IsWasi() && optionName == SocketOptionName.PacketInformation)
+            {
+                if (optionValue == 0)
+                {
+                    UpdateStatusAfterSocketOptionErrorAndThrowException(SocketError.ProtocolOption);
+                }
+                return;
+            }
+
             if (silent && (Disposed || _handle.IsInvalid))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "skipping the call");
