@@ -2691,15 +2691,6 @@ public:
     void DebugDumpGCDesc(LPCUTF8 pszClassName, BOOL debug);
 #endif //_DEBUG
 
-    inline BOOL IsAgileAndFinalizable()
-    {
-        LIMITED_METHOD_CONTRACT;
-        // Right now, System.Thread is the only cases of this.
-        // Things should stay this way - please don't change without talking to EE team.
-        return this == g_pThreadClass;
-    }
-
-
     //-------------------------------------------------------------------
     // ENUMS, DELEGATES, VALUE TYPES, ARRAYS
     //
@@ -3037,9 +3028,6 @@ public :
     SString &_GetFullyQualifiedNameForClassNestedAware(SString &ssBuf);
     SString &_GetFullyQualifiedNameForClass(SString &ssBuf);
     LPCUTF8 GetFullyQualifiedNameInfo(LPCUTF8 *ppszNamespace);
-
-private:
-    template<typename RedirectFunctor> SString &_GetFullyQualifiedNameForClassNestedAwareInternal(SString &ssBuf);
 
 public :
     //-------------------------------------------------------------------
