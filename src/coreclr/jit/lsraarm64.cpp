@@ -1468,7 +1468,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
             }
         }
-        else if (delayFreeOp != nullptr)
+        // Only build as delay free use if register types match
+        else if ((delayFreeOp != nullptr) &&
+                 (varTypeUsesSameRegType(delayFreeOp->TypeGet(), operand->TypeGet()) ||
+                  (delayFreeOp->IsMultiRegNode() && varTypeUsesFloatReg(operand->TypeGet()))))
         {
             srcCount += BuildDelayFreeUses(operand, delayFreeOp, candidates);
         }
