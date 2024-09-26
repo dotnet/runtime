@@ -39,30 +39,12 @@ internal unsafe static class MockMemorySpace
     internal class Builder
     {
         private bool _created = false;
-        private HeapFragment _descriptor;
-        private int _descriptorLength => _descriptor.Data.Length;
-        private HeapFragment _json;
-        private int _jsonLength => _json.Data.Length;
-        private HeapFragment _pointerData;
-        private int _pointerDataLength => _pointerData.Data.Length;
         private List<HeapFragment> _heapFragments = new();
-
-        private bool _setDescriptor = false;
-
-        private Mode _mode = Mode.Indeterminate;
 
         private IReadOnlyCollection<string> _contracts;
         private IDictionary<DataType, Target.TypeInfo> _types;
         private IReadOnlyCollection<(string Name, ulong? Value, uint? IndirectIndex, string? TypeName)> _globals;
         private IReadOnlyCollection<ulong> _indirectValues;
-
-        // builder is either taking low level inputs (json, pointer data) or high level inputs (contracts, types, globals)
-        private enum Mode
-        {
-            Indeterminate,
-            ExplicitJson,
-            HighLevel,
-        }
 
         private TargetTestHelpers _targetTestHelpers;
 
@@ -71,75 +53,11 @@ internal unsafe static class MockMemorySpace
             _targetTestHelpers = targetTestHelpers;
         }
 
-        internal Builder SetDescriptor(scoped ReadOnlySpan<byte> descriptor)
-        {
-            const ulong ContractDescriptorAddr = 0xaaaaaaaa;
-
-            if (_created)
-                throw new InvalidOperationException("Context already created");
-            if (_setDescriptor)
-                throw new InvalidOperationException("Descriptor already set");
-            _descriptor = new HeapFragment
-            {
-                Address = ContractDescriptorAddr,
-                Data = descriptor.ToArray(),
-                Name = "ContractDescriptor"
-            };
-            _setDescriptor = true;
-            return this;
-        }
-
-        public Builder SetJson(scoped ReadOnlySpan<byte> json)
-        {
-            if (_mode == Mode.HighLevel)
-                throw new InvalidOperationException("HighLevel mode does not support setting JSON");
-            _mode = Mode.ExplicitJson;
-            return SetJsonInternal(json);
-        }
-
-        private Builder SetJsonInternal(scoped ReadOnlySpan<byte> json)
-        {
-            if (_created)
-                throw new InvalidOperationException("Context already created");
-            _json = new HeapFragment
-            {
-                Address = JsonDescriptorAddr,
-                Data = json.ToArray(),
-                Name = "JsonDescriptor"
-            };
-            return this;
-        }
-
-        public Builder SetPointerData(scoped ReadOnlySpan<byte> pointerData)
-        {
-
-            if (_created)
-                throw new InvalidOperationException("Context already created");
-            if (_mode == Mode.HighLevel)
-                throw new InvalidOperationException("HighLevel mode does not support setting pointer data");
-            _mode = Mode.ExplicitJson;
-            return SetPointerDataInternal(pointerData);
-        }
-
-        private Builder SetPointerDataInternal(scoped ReadOnlySpan<byte> pointerData)
-        {
-            _pointerData = new HeapFragment
-            {
-                Address = ContractPointerDataAddr,
-                Data = pointerData.Length >= 0 ? pointerData.ToArray() : Array.Empty<byte>(),
-                Name = "PointerData"
-            };
-            return this;
-        }
-
         // TODO: contracts with versions
         public Builder SetContracts(IReadOnlyCollection<string> contracts)
         {
             if (_created)
                 throw new InvalidOperationException("Context already created");
-            if (_mode == Mode.ExplicitJson)
-                throw new InvalidOperationException("Explicit JSON mode does not support setting contracts");
-            _mode = Mode.HighLevel;
             _contracts = contracts;
             return this;
         }
@@ -148,9 +66,6 @@ internal unsafe static class MockMemorySpace
         {
             if (_created)
                 throw new InvalidOperationException("Context already created");
-            if (_mode == Mode.ExplicitJson)
-                throw new InvalidOperationException("Explicit JSON mode does not support setting types");
-            _mode = Mode.HighLevel;
             _types = types;
             return this;
         }
@@ -159,11 +74,8 @@ internal unsafe static class MockMemorySpace
         {
             if (_created)
                 throw new InvalidOperationException("Context already created");
-            if (_mode == Mode.ExplicitJson)
-                throw new InvalidOperationException("Explicit JSON mode does not support setting globals");
             if (_globals != null)
                 throw new InvalidOperationException("Globals already set");
-            _mode = Mode.HighLevel;
             _globals = globals.Select(g => (g.Name, (ulong?)g.Value, (uint?)null, g.TypeName)).ToArray();
             _indirectValues = null;
             return this;
@@ -173,11 +85,8 @@ internal unsafe static class MockMemorySpace
         {
             if (_created)
                 throw new InvalidOperationException("Context already created");
-            if (_mode == Mode.ExplicitJson)
-                throw new InvalidOperationException("Explicit JSON mode does not support setting globals");
             if (_globals != null)
                 throw new InvalidOperationException("Globals already set");
-            _mode = Mode.HighLevel;
             _globals = globals;
             _indirectValues = indirectValues;
             return this;
@@ -205,13 +114,17 @@ internal unsafe static class MockMemorySpace
             return this;
         }
 
-        private Builder FillDescriptor()
+        private HeapFragment CreateContractDescriptor(int jsonLength, int pointerDataCount)
         {
             Span<byte> descriptor = stackalloc byte[_targetTestHelpers.ContractDescriptorSize];
-            int pointerDataCount = _pointerData.Data is null ? 0 : _pointerDataLength / _targetTestHelpers.PointerSize;
-            _targetTestHelpers.ContractDescriptorFill(descriptor, _jsonLength, pointerDataCount);
-            SetDescriptor(descriptor);
-            return this;
+            _targetTestHelpers.ContractDescriptorFill(descriptor, jsonLength, pointerDataCount);
+            const ulong ContractDescriptorAddr = 0xaaaaaaaa;
+            return new HeapFragment
+            {
+                Address = ContractDescriptorAddr,
+                Data = descriptor.ToArray(),
+                Name = "ContractDescriptor"
+            };
         }
 
         private string MakeContractsJson()
@@ -228,12 +141,12 @@ internal unsafe static class MockMemorySpace
             return sb.ToString();
         }
 
-        private void FillHighLevel()
+        private (HeapFragment json, HeapFragment pointerData) CreateDataDescriptor()
         {
             string metadataTypesJson = TargetTestHelpers.MakeTypesJson(_types);
             string metadataGlobalsJson = TargetTestHelpers.MakeGlobalsJson(_globals);
             string interpolatedContracts = MakeContractsJson();
-            byte[] json = Encoding.UTF8.GetBytes($$"""
+            byte[] jsonBytes = Encoding.UTF8.GetBytes($$"""
             {
                 "version": 0,
                 "baseline": "empty",
@@ -242,40 +155,54 @@ internal unsafe static class MockMemorySpace
                 "globals": { {{metadataGlobalsJson}} }
             }
             """);
-            SetJsonInternal(json);
+            HeapFragment json = new () {
+                Address = JsonDescriptorAddr,
+                Data = jsonBytes,
+                Name = "JsonDescriptor"
+            };
 
+            HeapFragment pointerData;
             if (_indirectValues != null)
             {
                 int pointerSize = _targetTestHelpers.PointerSize;
-                Span<byte> pointerData = stackalloc byte[_indirectValues.Count * pointerSize];
+                Span<byte> pointerDataBytes = stackalloc byte[_indirectValues.Count * pointerSize];
                 int offset = 0;
                 foreach (var value in _indirectValues)
                 {
-                    _targetTestHelpers.WritePointer(pointerData.Slice(offset), value);
+                    _targetTestHelpers.WritePointer(pointerDataBytes.Slice(offset), value);
                     offset += pointerSize;
                 }
-                SetPointerDataInternal(pointerData);
+                pointerData =new HeapFragment {
+                    Address = ContractPointerDataAddr,
+                    Data = pointerDataBytes.ToArray(),
+                    Name = "PointerData"
+                };
+            } else {
+                pointerData = new HeapFragment
+                {
+                    Address = ContractPointerDataAddr,
+                    Data = Array.Empty<byte>(),
+                    Name = "PointerData"
+                };
             }
+            return (json, pointerData);
         }
 
         private ReadContext CreateContext()
         {
             if (_created)
                 throw new InvalidOperationException("Context already created");
-            if (_mode == Mode.Indeterminate)
-                throw new InvalidOperationException("No input data provided");
-            if (_mode == Mode.HighLevel)
-            {
-                FillHighLevel();
-            }
+            (var json, var pointerData) = CreateDataDescriptor();
 
-            if (!_setDescriptor)
-                FillDescriptor();
+            int pointerDataCount = pointerData.Data is null ? 0 : pointerData.Data.Length / _targetTestHelpers.PointerSize;
+
+            HeapFragment descriptor = CreateContractDescriptor(json.Data.Length, pointerDataCount);
+
             ReadContext context = new ReadContext
             {
-                ContractDescriptor = _descriptor,
-                JsonDescriptor = _json,
-                PointerData = _pointerData,
+                ContractDescriptor = descriptor,
+                JsonDescriptor = json,
+                PointerData = pointerData,
                 HeapFragments = _heapFragments,
             };
             _created = true;
@@ -306,32 +233,14 @@ internal unsafe static class MockMemorySpace
         }
     }
 
-    public static Target CreateTarget(TargetTestHelpers targetTestHelpers, ReadOnlySpan<byte> json, ReadOnlySpan<byte> pointerData = default)
-    {
-        Builder builder = new Builder(targetTestHelpers)
-        .SetJson(json)
-        .SetPointerData(pointerData);
-        bool success = builder.TryCreateTarget(out var target);
-        Assert.True(success);
-        return target;
-    }
-
-    public static bool TryCreateTarget(ReadContext context, out Target? target)
-    {
-        return Target.TryCreate(context.ContractDescriptor.Address, context.ReadFromTarget, out target);
-    }
-
     // Used by ReadFromTarget to return the appropriate bytes
     internal class ReadContext
     {
         public HeapFragment ContractDescriptor { get; init;}
-        public int ContractDescriptorLength => ContractDescriptor.Data.Length;
 
         public HeapFragment JsonDescriptor { get; init; }
-        public int JsonDescriptorLength => JsonDescriptor.Data.Length;
 
         public HeapFragment PointerData { get; init;}
-        public int PointerDataLength => PointerData.Data?.Length ?? 0;
         public IReadOnlyList<HeapFragment> HeapFragments { get; init; }
 
         internal int ReadFromTarget(ulong address, Span<byte> span)
@@ -339,7 +248,7 @@ internal unsafe static class MockMemorySpace
             if (address == 0)
                 return -1;
             // Populate the span with the requested portion of the contract descriptor
-            if (address >= ContractDescriptor.Address && address + (uint)span.Length <= ContractDescriptor.Address + (ulong)ContractDescriptorLength)
+            if (address >= ContractDescriptor.Address && address + (uint)span.Length <= ContractDescriptor.Address + (ulong)ContractDescriptor.Data.Length)
             {
                 int offset = checked ((int)(address - ContractDescriptor.Address));
                 ContractDescriptor.Data.AsSpan(offset, span.Length).CopyTo(span);
@@ -354,7 +263,7 @@ internal unsafe static class MockMemorySpace
             }
 
             // Populate the span with the requested portion of the pointer data
-            if (address >= PointerData.Address && address + (uint)span.Length <= PointerData.Address + (ulong)PointerDataLength)
+            if (address >= PointerData.Address && address + (uint)span.Length <= PointerData.Address + (ulong)PointerData.Data.Length)
             {
                 int offset = checked((int)(address - PointerData.Address));
                 PointerData.Data.AsSpan(offset, span.Length).CopyTo(span);
