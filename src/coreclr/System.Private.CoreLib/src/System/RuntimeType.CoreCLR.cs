@@ -3677,13 +3677,48 @@ namespace System
         #region Invoke Member
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType);
+        private static extern bool CanPrimitiveWiden(CorElementType valueType, CorElementType targetType);
+
+        private static bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType)
+        {
+            Debug.Assert(targetType.IsPointer || targetType.IsEnum || targetType.IsPrimitive || targetType.IsFunctionPointer);
+
+            CorElementType targetCorElement = RuntimeTypeHandle.GetVerifierCorElementType(targetType);
+            if (targetCorElement is CorElementType.ELEMENT_TYPE_PTR or CorElementType.ELEMENT_TYPE_FNPTR)
+            {
+                // The object must be an IntPtr or a System.Reflection.Pointer
+                if (valueType == typeof(IntPtr))
+                {
+                    // It's an IntPtr, it's good.
+                    return true;
+                }
+
+                // void* assigns to any pointer
+                if (IsVoidPtr(targetType))
+                {
+                    return true;
+                }
+
+                // otherwise the type of the pointer must match.
+                return valueType.IsAssignableTo(targetType);
+            }
+            else
+            {
+                // The type is an enum or a primitive. To have any chance of assignment
+                // the object type must be an enum or primitive as well.
+                // So get the internal cor element and that must be the same or widen.
+                CorElementType valueCorElement = RuntimeTypeHandle.GetVerifierCorElementType(valueType);
+                return CanPrimitiveWiden(valueCorElement, targetCorElement);
+            }
+
+            static bool IsVoidPtr(RuntimeType type)
+                => type.IsPointer && type.GetElementType() == typeof(void);
+        }
 
         private CheckValueStatus TryChangeTypeSpecial(ref object value)
         {
             Pointer? pointer = value as Pointer;
             RuntimeType srcType = pointer != null ? pointer.GetPointerType() : (RuntimeType)value.GetType();
-
             if (!CanValueSpecialCast(srcType, this))
             {
                 return CheckValueStatus.ArgumentException;

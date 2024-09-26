@@ -58,7 +58,7 @@ public:
     static FCDECL2(void, GetGUID, ReflectClassBaseObject* refThisUNSAFE, GUID * result);
 
     // helper fcalls for invocation
-    static FCDECL2(FC_BOOL_RET, CanValueSpecialCast, ReflectClassBaseObject *valueType, ReflectClassBaseObject *targetType);
+    static FCDECL2(FC_BOOL_RET, CanPrimitiveWiden, CorElementType valueCorElement, CorElementType targetCorElement);
 };
 
 extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD);

@@ -304,7 +304,28 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern CorElementType GetCorElementType(RuntimeType type);
+        private static extern CorElementType GetCorElementTypeInternal(RuntimeType type);
+
+        internal static CorElementType GetCorElementType(RuntimeType type)
+        {
+            if (type is null)
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+            return GetCorElementTypeInternal(type);
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern CorElementType GetVerifierCorElementTypeInternal(RuntimeType type);
+
+        internal static CorElementType GetVerifierCorElementType(RuntimeType type)
+        {
+            if (type is null)
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+            return GetVerifierCorElementTypeInternal(type);
+        }
 
         internal static RuntimeAssembly GetAssembly(RuntimeType type)
         {
