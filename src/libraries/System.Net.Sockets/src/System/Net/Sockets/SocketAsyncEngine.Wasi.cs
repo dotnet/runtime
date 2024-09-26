@@ -132,7 +132,10 @@ namespace System.Net.Sockets
             SocketAsyncContext ctx = (SocketAsyncContext)state!;
             try
             {
-                ctx.HandleEventsInline(Sys.SocketEvents.Write | Sys.SocketEvents.Read);
+                using (ExecutionContext.SuppressFlow())
+                {
+                    ctx.HandleEventsInline(Sys.SocketEvents.Write | Sys.SocketEvents.Read);
+                }
             }
             catch (Exception e)
             {
