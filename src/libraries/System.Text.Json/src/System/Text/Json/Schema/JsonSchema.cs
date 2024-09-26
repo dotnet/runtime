@@ -34,6 +34,14 @@ namespace System.Text.Json.Schema
 
         public bool IsTrue => _trueOrFalse is true;
         public bool IsFalse => _trueOrFalse is false;
+
+        /// <summary>
+        /// Per the JSON schema core specification section 4.3
+        /// (https://json-schema.org/draft/2020-12/json-schema-core#name-json-schema-documents)
+        /// A JSON schema must either be an object or a boolean.
+        /// We represent false and true schemas using this flag.
+        /// It is not possible to specify keywords in boolean schemas.
+        /// </summary>
         private readonly bool? _trueOrFalse;
 
         public string? Ref { get => _ref; set { VerifyMutable(); _ref = value; } }
@@ -95,6 +103,7 @@ namespace System.Text.Json.Schema
             {
                 if (_trueOrFalse != null)
                 {
+                    // Boolean schemas admit no keywords
                     return 0;
                 }
 
@@ -129,6 +138,7 @@ namespace System.Text.Json.Schema
         {
             if (_trueOrFalse != null)
             {
+                // boolean schemas do not admit type keywords.
                 return;
             }
 
@@ -257,6 +267,23 @@ namespace System.Text.Json.Schema
                 }
 
                 return schema;
+            }
+        }
+
+        /// <summary>
+        /// If the schema is boolean, replaces it with a semantically
+        /// equivalent object schema that allows appending keywords.
+        /// </summary>
+        public static void EnsureMutable(ref JsonSchema schema)
+        {
+            switch (schema._trueOrFalse)
+            {
+                case false:
+                    schema = new JsonSchema { Not = True };
+                    break;
+                case true:
+                    schema = new JsonSchema();
+                    break;
             }
         }
 
