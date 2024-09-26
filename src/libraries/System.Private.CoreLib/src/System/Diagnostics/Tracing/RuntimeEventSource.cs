@@ -23,7 +23,7 @@ namespace System.Diagnostics.Tracing
             public const EventKeywords ProcessorCount = (EventKeywords)0x2;
         }
 
-        internal static RuntimeEventSource? Log => new RuntimeEventSource();
+        internal static RuntimeEventSource? Log = new RuntimeEventSource();
         private PollingCounter? _gcHeapSizeCounter;
         private IncrementingPollingCounter? _gen0GCCounter;
         private IncrementingPollingCounter? _gen1GCCounter;
