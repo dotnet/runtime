@@ -836,6 +836,7 @@ DEFINE_FIELD_U(_startHelper,              ThreadBaseObject,   m_StartHelper)
 DEFINE_FIELD_U(_DONT_USE_InternalThread,  ThreadBaseObject,   m_InternalThread)
 DEFINE_FIELD_U(_priority,                 ThreadBaseObject,   m_Priority)
 DEFINE_FIELD_U(_isDead,                   ThreadBaseObject,   m_IsDead)
+DEFINE_FIELD_U(_isThreadPool,             ThreadBaseObject,   m_IsThreadPool)
 DEFINE_CLASS(THREAD,                Threading,              Thread)
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                               IM_RetVoid)
 #ifdef FEATURE_OBJCMARSHAL
