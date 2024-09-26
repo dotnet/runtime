@@ -23,6 +23,21 @@ namespace System.Linq
             return new ReverseIterator<TSource>(source);
         }
 
+        public static IEnumerable<TSource> Reverse<TSource>(this TSource[] source)
+        {
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (source.Length == 0)
+            {
+                return [];
+            }
+
+            return new ReverseIterator<TSource>(source);
+        }
+
         /// <summary>
         /// An iterator that yields the items of an <see cref="IEnumerable{TSource}"/> in reverse.
         /// </summary>
