@@ -20,6 +20,10 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 /// </remarks>
 internal unsafe static class MockMemorySpace
 {
+    // These addresses are arbitrary and are used to store the contract descriptor components.
+    // They should not overlap with any other heap fragment addresses.
+    private const ulong ContractDescriptorAddr = 0xaaaaaaaa;
+    // TODO: remove the references to these from TargetTestHelpers.ContractDescriptorFill
     internal const uint JsonDescriptorAddr = 0xdddddddd;
     internal const uint ContractPointerDataAddr = 0xeeeeeeee;
 
@@ -115,7 +119,6 @@ internal unsafe static class MockMemorySpace
         {
             byte[] descriptor = new byte[_targetTestHelpers.ContractDescriptorSize];
             _targetTestHelpers.ContractDescriptorFill(descriptor, jsonLength, pointerDataCount);
-            const ulong ContractDescriptorAddr = 0xaaaaaaaa;
             return new HeapFragment
             {
                 Address = ContractDescriptorAddr,
