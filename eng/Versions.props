@@ -216,6 +216,7 @@
     <!-- ILCompiler -->
     <MicrosoftDotNetILCompilerVersion>9.0.0-rtm.24473.2</MicrosoftDotNetILCompilerVersion>
     <!-- ICU -->
+    <MicrosoftNETCoreRuntimeICUTransportVersion>9.0.0-rc.2.24467.2</MicrosoftNETCoreRuntimeICUTransportVersion>
     <MicrosoftNETCoreRuntimeICUTransportVersion>9.0.0-rtm.24466.4</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.3</MicrosoftNativeQuicMsQuicSchannelVersion>
