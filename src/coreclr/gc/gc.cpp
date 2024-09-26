@@ -26684,20 +26684,12 @@ void gc_heap::add_to_hc_history_worker (hc_history* hist, int* current_index, hc
     current_hist->bgc_t_join_joined_p = (bool)bgc_t_join.joined();
     current_hist->concurrent_p = (bool)settings.concurrent;
     current_hist->bgc_thread_running = (bool)bgc_thread_running;
-
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(_DEBUG) && !defined(FEATURE_NATIVEAOT)
-    if (GCConfig::GetGCLogBGCThreadId())
+    int bgc_thread_os_id = 0;
+    if (bgc_thread)
     {
-        int bgc_thread_os_id = 0;
-
-        if (bgc_thread)
-        {
-            bgc_thread_os_id = (int)(*(size_t*)((uint8_t*)bgc_thread + 0x130));
-        }
-
-        current_hist->bgc_thread_os_id = bgc_thread_os_id;
+        bgc_thread_os_id = (int) GCToEEInterface::GetThreadOSThreadId(bgc_thread);
     }
-#endif //TARGET_AMD64 && TARGET_WINDOWS && !_DEBUG && !FEATURE_NATIVEAOT
+    current_hist->bgc_thread_os_id = bgc_thread_os_id;
 #endif //BACKGROUND_GC
 
     *current_index  = (*current_index + 1) % max_hc_history_count;
@@ -48839,7 +48831,7 @@ HRESULT GCHeap::Initialize()
 
     nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
 
-    // The CPU count may be overriden by the user. Ensure that we create no more than g_num_processors
+    // The CPU count may be overridden by the user. Ensure that we create no more than g_num_processors
     // heaps as that is the number of slots we have allocated for handle tables.
     g_num_active_processors = min (GCToEEInterface::GetCurrentProcessCpuCount(), g_num_processors);
 
