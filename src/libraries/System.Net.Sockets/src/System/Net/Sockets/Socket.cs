@@ -70,9 +70,9 @@ namespace System.Net.Sockets
         private bool _disposed;
 
         public Socket(SocketType socketType, ProtocolType protocolType)
-            : this(OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, socketType, protocolType)
+            : this(OSSupportsIPv6DualMode ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, socketType, protocolType)
         {
-            if (!OperatingSystem.IsWasi() && OSSupportsIPv6)
+            if (OSSupportsIPv6DualMode)
             {
                 DualMode = true;
             }
@@ -259,6 +259,7 @@ namespace System.Net.Sockets
 
         public static bool OSSupportsIPv4 => SocketProtocolSupportPal.OSSupportsIPv4;
         public static bool OSSupportsIPv6 => SocketProtocolSupportPal.OSSupportsIPv6;
+        internal static bool OSSupportsIPv6DualMode => !OperatingSystem.IsWasi() && OSSupportsIPv6;
         public static bool OSSupportsUnixDomainSockets => SocketProtocolSupportPal.OSSupportsUnixDomainSockets;
 
         // Gets the amount of data pending in the network's input buffer that can be
@@ -745,7 +746,7 @@ namespace System.Net.Sockets
                 {
                     return false;
                 }
-                if (OperatingSystem.IsWasi())
+                if (!OSSupportsIPv6DualMode)
                 {
                     return false;
                 }
@@ -758,7 +759,7 @@ namespace System.Net.Sockets
                     throw new NotSupportedException(SR.net_invalidversion);
                 }
 
-                if (OperatingSystem.IsWasi() && value) throw new PlatformNotSupportedException();
+                if (!OSSupportsIPv6DualMode && value) throw new PlatformNotSupportedException();
 
                 SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, value ? 0 : 1);
             }
