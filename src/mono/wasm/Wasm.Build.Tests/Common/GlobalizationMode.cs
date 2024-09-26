@@ -10,5 +10,5 @@ public enum GlobalizationMode
     Invariant,       // no icu
     FullIcu,         // full icu data: icudt.dat is loaded
     Custom,          // user set WasmIcuDataFileName/BlazorIcuDataFileName value and we are loading that file
-    Hybrid           // reduced icu, missing data is provided by platform-native functions (web api for wasm)    
+    Hybrid           // reduced icu, missing data is provided by platform-native functions (web api for wasm)
 };
