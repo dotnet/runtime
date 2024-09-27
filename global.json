@@ -1,11 +1,11 @@
 {
   "sdk": {
-    "version": "9.0.100-rc.1.24452.12",
+    "version": "9.0.100-rc.2.24474.30",
     "allowPrerelease": true,
     "rollForward": "major"
   },
   "tools": {
-    "dotnet": "9.0.100-rc.1.24452.12"
+    "dotnet": "9.0.100-rc.2.24474.30"
   },
   "msbuild-sdks": {
     "Microsoft.DotNet.Arcade.Sdk": "10.0.0-beta.24475.5",
