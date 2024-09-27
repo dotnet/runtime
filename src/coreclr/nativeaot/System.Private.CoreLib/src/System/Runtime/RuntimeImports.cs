@@ -877,5 +877,13 @@ namespace System.Runtime
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial void RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId);
 #endif
+
+#if TARGET_UNIX
+        [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf8)]
+        internal static partial void RhSetCurrentThreadName(string name);
+#else
+        [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial void RhSetCurrentThreadName(string name);
+#endif
     }
 }

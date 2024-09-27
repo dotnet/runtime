@@ -1393,6 +1393,9 @@ struct SuspendableThreadStubArguments
     class Thread* Thread;
     bool HasStarted;
     CLREvent ThreadStartedEvent;
+#ifdef __APPLE__
+    const WCHAR* name;
+#endif //__APPLE__
 };
 
 struct ThreadStubArguments
@@ -1402,6 +1405,9 @@ struct ThreadStubArguments
     HANDLE Thread;
     bool HasStarted;
     CLREvent ThreadStartedEvent;
+#ifdef __APPLE__
+    const WCHAR* name;
+#endif //__APPLE__
 };
 
 namespace
@@ -1420,6 +1426,9 @@ namespace
         args.ThreadStart = threadStart;
         args.Thread = nullptr;
         args.HasStarted = false;
+#ifdef __APPLE__
+        args.name = name;
+#endif //__APPLE__
         if (!args.ThreadStartedEvent.CreateAutoEventNoThrow(FALSE))
         {
             return false;
@@ -1444,6 +1453,10 @@ namespace
         {
             SuspendableThreadStubArguments* args = static_cast<SuspendableThreadStubArguments*>(argument);
             assert(args != nullptr);
+
+#ifdef __APPLE__
+            SetThreadName(GetCurrentThread(), args->name);
+#endif //__APPLE__
 
             ClrFlsSetThreadType(ThreadType_GC);
             args->Thread->SetGCSpecial();
@@ -1502,6 +1515,9 @@ namespace
         args.Argument = argument;
         args.ThreadStart = threadStart;
         args.Thread = INVALID_HANDLE_VALUE;
+#ifdef __APPLE__
+        args.name = name;
+#endif //__APPLE__
         if (!args.ThreadStartedEvent.CreateAutoEventNoThrow(FALSE))
         {
             return false;
@@ -1511,6 +1527,10 @@ namespace
         {
             ThreadStubArguments* args = static_cast<ThreadStubArguments*>(argument);
             assert(args != nullptr);
+
+#ifdef __APPLE__
+            SetThreadName(GetCurrentThread(), args->name);
+#endif //__APPLE__
 
             ClrFlsSetThreadType(ThreadType_GC);
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
