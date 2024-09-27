@@ -3377,25 +3377,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (varTypeIsByte(simdBaseType) && retType == TYP_SIMD16 && simdSize == 16)
+            if (varTypeIsByte(simdBaseType))
             {
                 op2 = impPopStack().val;
                 op1 = impSIMDPopStack();
 
-                GenTree* const7      = gtNewIconNode(0x7);
-                GenTree* constFF     = gtNewIconNode(0xFF);
-                GenTree* andShiftVal = gtNewOperNode(GT_AND, op2->TypeGet(), op2, const7);
-                op3                  = gtNewSimdBinOpNode(GT_LSH, TYP_SIMD16, op1, andShiftVal,
+                GenTree* andShiftVal = gtNewOperNode(GT_AND, op2->TypeGet(), op2, gtNewIconNode(0x7));
+                op3                  = gtNewSimdBinOpNode(GT_LSH, retType, op1, andShiftVal,
                                          varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_USHORT : CORINFO_TYPE_SHORT,
                                                           simdSize);
                 GenTree* maskElement =
                     gtNewOperNode(GT_LSH, andShiftVal->TypeGet(), gtNewIconNode(0xFF), gtCloneExpr(andShiftVal));
-                GenTree* mask        = gtNewSimdCreateBroadcastNode(TYP_SIMD16, maskElement, simdBaseJitType, simdSize);
+                GenTree* mask        = gtNewSimdCreateBroadcastNode(retType, maskElement, simdBaseJitType, simdSize);
                 retNode              = gtNewSimdBinOpNode(GT_AND, retType, op3, mask, simdBaseJitType, simdSize);
-                break;
-            }
-            else if (varTypeIsByte(simdBaseType))
-            {
                 break;
             }
 
