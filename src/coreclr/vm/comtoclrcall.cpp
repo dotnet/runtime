@@ -34,53 +34,15 @@
 
 #if !defined(DACCESS_COMPILE)
 
-#ifdef TARGET_X86
-static PCODE g_pGenericComCallStubFields = NULL;
-static PCODE g_pGenericComCallStub       = NULL;
-#endif
-
 UINT64 FieldCallWorker(Thread *pThread, ComMethodFrame* pFrame);
 void FieldCallWorkerDebuggerWrapper(Thread *pThread, ComMethodFrame* pFrame);
 void FieldCallWorkerBody(Thread *pThread, ComMethodFrame* pFrame);
-
-//---------------------------------------------------------
-// void SetupGenericStubs()
-//
-//  Throws on failure
-//---------------------------------------------------------
-static void SetupGenericStubs()
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef TARGET_X86
-    if ( (g_pGenericComCallStubFields != NULL) && (g_pGenericComCallStub != NULL))
-        return;
-
-    StubHolder<Stub> candidateCall, candidateFields;
-
-    // Build each one.  If we get a collision on replacement, favor the one that's
-    // already there.  (We have lifetime issues with these, because they are used
-    // in every VTable without refcounting, so we don't want them to change
-    // underneath us).
-
-    // Allocate all three before setting - if an error occurs, we'll free the
-    //  memory via holder objects and throw.
-    candidateCall = ComCall::CreateGenericComCallStub(FALSE/*notField*/);
-    candidateFields = ComCall::CreateGenericComCallStub(TRUE/*Field*/);
-
-    if (InterlockedCompareExchangeT<PCODE>(&g_pGenericComCallStub, candidateCall->GetEntryPoint(), 0) == 0)
-        candidateCall.SuppressRelease();
-
-    if (InterlockedCompareExchangeT<PCODE>(&g_pGenericComCallStubFields, candidateFields->GetEntryPoint(), 0) == 0)
-        candidateFields.SuppressRelease();
-#endif // TARGET_X86
-}
 
 #ifdef PROFILING_SUPPORTED
 // The sole purpose of this helper is to transition into preemptive mode
 // and then call the profiler transition callbacks.  We can't use the GCX_PREEMP
 // in a function with SEH (such as COMToCLRWorkerBody()).
-NOINLINE
+static NOINLINE
 void ProfilerTransitionCallbackHelper(MethodDesc* pMD, Thread* pThread, COR_PRF_TRANSITION_REASON reason)
 {
     CONTRACTL
@@ -108,7 +70,7 @@ void ProfilerTransitionCallbackHelper(MethodDesc* pMD, Thread* pThread, COR_PRF_
 #endif // PROFILING_SUPPORTED
 
 // Disable when calling into managed code from a place that fails via HRESULT
-extern "C" HRESULT STDCALL StubRareDisableHRWorker(Thread *pThread)
+static HRESULT StubRareDisableHRWorker(Thread *pThread)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -241,7 +203,7 @@ inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJ
 #pragma optimize("t", on)   // optimize for speed
 #endif
 
-OBJECTREF COMToCLRGetObjectAndTarget_Delegate(ComCallWrapper * pWrap, PCODE * ppManagedTargetOut)
+static OBJECTREF COMToCLRGetObjectAndTarget_Delegate(ComCallWrapper * pWrap, PCODE * ppManagedTargetOut)
 {
     CONTRACTL
     {
@@ -260,7 +222,7 @@ OBJECTREF COMToCLRGetObjectAndTarget_Delegate(ComCallWrapper * pWrap, PCODE * pp
     return pDelObj->GetTarget();
 }
 
-FORCEINLINE_NONDEBUG
+static FORCEINLINE_NONDEBUG
 OBJECTREF COMToCLRGetObjectAndTarget_Virtual(ComCallWrapper * pWrap, MethodDesc * pRealMD, ComCallMethodDesc * pCMD, PCODE * ppManagedTargetOut)
 {
     CONTRACTL
@@ -291,7 +253,7 @@ OBJECTREF COMToCLRGetObjectAndTarget_Virtual(ComCallWrapper * pWrap, MethodDesc 
     return pObject;
 }
 
-FORCEINLINE_NONDEBUG
+static FORCEINLINE_NONDEBUG
 OBJECTREF COMToCLRGetObjectAndTarget_NonVirtual(ComCallWrapper * pWrap, MethodDesc * pRealMD, ComCallMethodDesc * pCMD, PCODE * ppManagedTargetOut)
 {
     CONTRACTL
@@ -308,7 +270,7 @@ OBJECTREF COMToCLRGetObjectAndTarget_NonVirtual(ComCallWrapper * pWrap, MethodDe
     return pWrap->GetObjectRef();
 }
 
-FORCEINLINE_NONDEBUG
+static FORCEINLINE_NONDEBUG
 void COMToCLRInvokeTarget(PCODE pManagedTarget, OBJECTREF pObject, ComCallMethodDesc * pCMD,
                           ComMethodFrame * pFrame, Thread * pThread, UINT64* pRetValOut)
 {
@@ -330,7 +292,7 @@ void COMToCLRInvokeTarget(PCODE pManagedTarget, OBJECTREF pObject, ComCallMethod
     InvokeStub(pCMD, pManagedTarget, pObject, pFrame, pThread, pRetValOut);
 }
 
-NOINLINE
+static NOINLINE
 void COMToCLRWorkerBody_Rare(Thread * pThread, ComMethodFrame * pFrame, ComCallWrapper * pWrap,
                              MethodDesc * pRealMD, ComCallMethodDesc * pCMD, DWORD maskedFlags,
                              UINT64 * pRetValOut)
@@ -381,7 +343,7 @@ void COMToCLRWorkerBody_Rare(Thread * pThread, ComMethodFrame * pFrame, ComCallW
 
 
 // This is the factored out body of COMToCLRWorker.
-FORCEINLINE_NONDEBUG
+static FORCEINLINE_NONDEBUG
 void COMToCLRWorkerBody(
     Thread * pThread,
     ComMethodFrame * pFrame,
@@ -456,26 +418,20 @@ void COMToCLRWorkerBody(
 }
 
 //------------------------------------------------------------------
-// UINT64 __stdcall COMToCLRWorker(Thread *pThread,
-//                                  ComMethodFrame* pFrame)
+// UINT64 __stdcall COMToCLRWorker(ComMethodFrame* pFrame)
 //------------------------------------------------------------------
-extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFrame)
+extern "C" UINT64 __stdcall COMToCLRWorker(ComMethodFrame* pFrame)
 {
     CONTRACTL
     {
         NOTHROW; // Although CSE can be thrown
         GC_TRIGGERS;
-#if defined(TARGET_X86)
-        MODE_COOPERATIVE; // X86 sets up COOP in stublinker-generated stub
-#else
         // This contract is disabled because user code can illegally reenter here through no fault of the
         // CLR (i.e. it's a user code bug), so we shouldn't be popping ASSERT dialogs in those cases.  Note
         // that this reentrancy check is already done by the stublinker-generated stub on x86, so it's OK
         // to leave the MODE_ contract enabled on x86.
         DISABLED(MODE_PREEMPTIVE);
-#endif
         PRECONDITION(CheckPointer(pFrame));
-        PRECONDITION(CheckPointer(pThread, NULL_OK));
     }
     CONTRACTL_END;
 
@@ -483,17 +439,9 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
 
     ComCallMethodDesc* pCMD = pFrame->GetComCallMethodDesc();
 
-#if !defined(TARGET_X86)
-    //
-    // The following code is a transcription of the code that is generated by CreateGenericComCallStub.  The
-    // idea is that we needn't really do this work either in static assembly code nor in dynamically
-    // generated code since the benefit/cost ratio is low.  There are some minor differences in the below
-    // code, compared to x86.
-    // We must check each time at runtime here because we're using static code.
-    //
     HRESULT hr = S_OK;
 
-    pThread = GetThreadNULLOk();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         pThread = SetupThreadNoThrow();
@@ -528,8 +476,6 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
     // Link frame into the chain.
     pFrame->Push(pThread);
 
-#endif // !TARGET_X86
-
     _ASSERTE(pThread);
 
     // At this point we should be in preemptive GC mode (regardless of if it happened
@@ -537,13 +483,11 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
     _ASSERTE(pThread->PreemptiveGCDisabled());
 
     {
-#ifndef TARGET_X86
         if (pCMD->IsFieldCall())
         {
             retVal = FieldCallWorker(pThread, pFrame);
         }
         else
-#endif // !TARGET_X86
         {
             IUnknown **pip = (IUnknown **)pFrame->GetPointerToArguments();
             IUnknown *pUnk = (IUnknown *)*pip;
@@ -555,12 +499,10 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
         }
     }
 
-#ifndef TARGET_X86
     // Note: the EH subsystem will handle resetting the frame chain and setting
     // the correct GC mode on exception.
     pFrame->Pop(pThread);
     pThread->EnablePreemptiveGC();
-#endif
 
     LOG((LF_STUBS, LL_INFO1000000, "COMToCLRWorker leave\n"));
 
@@ -575,7 +517,6 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
     }
     return retVal;
 
-#ifndef TARGET_X86
 ErrorExit:
     if (pThread != NULL && pThread->PreemptiveGCDisabled())
         pThread->EnablePreemptiveGC();
@@ -604,7 +545,6 @@ ErrorExit:
     }
 
     return retVal;
-#endif // TARGET_X86
 }
 
 #if defined(_MSC_VER) && !defined(_DEBUG)
@@ -1314,74 +1254,6 @@ void ComCall::PopulateComCallMethodDesc(ComCallMethodDesc *pCMD, DWORD *pdwStubF
     *pdwStubFlags = dwStubFlags;
 }
 
-#ifdef TARGET_X86
-//---------------------------------------------------------
-// Creates the generic ComCall stub.
-//
-//  Throws in case of error.
-//---------------------------------------------------------
-/*static*/
-Stub* ComCall::CreateGenericComCallStub(BOOL isFieldAccess)
-{
-    CONTRACT (Stub*)
-    {
-        STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    CPUSTUBLINKER sl;
-    CPUSTUBLINKER *psl = &sl;
-
-    // These new CodeLabels are allocated on a
-    //  "throwaway" heap.  Do not worry about
-    //  deallocating them if one of the allocations
-    //  ends up throwing an OOM exception.
-
-    CodeLabel* rgRareLabels[] = {
-                                  psl->NewCodeLabel(),
-                                  psl->NewCodeLabel()
-                                };
-
-
-    CodeLabel* rgRejoinLabels[] = {
-                                    psl->NewCodeLabel(),
-                                    psl->NewCodeLabel()
-                                  };
-
-    // Pop ComCallMethodDesc* pushed by prestub
-    psl->X86EmitPopReg(kEAX);
-
-    // emit the initial prolog
-    // NOTE: Don't profile field accesses yet.
-    psl->EmitComMethodStubProlog(ComMethodFrame::GetMethodFrameVPtr(),
-                                 rgRareLabels,
-                                 rgRejoinLabels,
-                                 !isFieldAccess);
-
-    // ******* NOTE ********
-    // We now have a frame on the stack that is unproctected by an SEH handler.  If we take an
-    // SO before getting into the target, we'll have a corrupted frame chain.  In EmitComMethodStubProlog
-    // we probe-by-touch for 4 DWORDS to ensure that can set up the SEH handler before linking in
-    // the frame.   So long as we don't use more than that here (currently 3 DWORDS - for the two args plus
-    // the return address, we are OK.  If we decrement ESP more than an additional DWORD here before
-    // calling the target, we will need to probe farther.
-
-    psl->X86EmitPushReg(kESI);      // push frame as an ARG
-    psl->X86EmitPushReg(kEBX);      // push ebx (push current thread as ARG)
-    LPVOID pTarget = isFieldAccess ? (LPVOID)FieldCallWorker : (LPVOID)COMToCLRWorker;
-    psl->X86EmitCall(psl->NewExternalCodeLabel(pTarget), 8);
-
-    // emit the epilog
-    // NOTE: Don't profile field accesses yet.
-    psl->EmitSharedComMethodStubEpilog(ComMethodFrame::GetMethodFrameVPtr(), rgRareLabels, rgRejoinLabels,
-                                       ComCallMethodDesc::GetOffsetOfReturnThunk(), !isFieldAccess);
-
-    // Process-wide stubs that never unload.
-    RETURN (psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap()));
-}
-#endif // TARGET_X86
-
 //---------------------------------------------------------
 // Either creates or retrieves from the cache, a stub to
 // invoke ComCall methods. Each call refcounts the returned stub.
@@ -1398,8 +1270,6 @@ PCODE ComCall::GetComCallMethodStub(ComCallMethodDesc *pCMD)
         POSTCONDITION(RETVAL != NULL);
     }
     CONTRACT_END;
-
-    SetupGenericStubs();
 
     // The stub style we return is to a single generic stub for method calls and to
     // a single generic stub for field accesses.  The generic stub parameterizes
@@ -1419,13 +1289,7 @@ PCODE ComCall::GetComCallMethodStub(ComCallMethodDesc *pCMD)
     ExecutableWriterHolder<PCODE> addrOfILStubWriterHolder(pCMD->GetAddrOfILStubField(), sizeof(PCODE));
     InterlockedCompareExchangeT<PCODE>(addrOfILStubWriterHolder.GetRW(), pTempILStub, NULL);
 
-#ifdef TARGET_X86
-    // Finally, we need to build a stub that represents the entire call.  This
-    // is always generic.
-    RETURN (pCMD->IsFieldCall() ? g_pGenericComCallStubFields : g_pGenericComCallStub);
-#else
     RETURN GetEEFuncEntryPoint(GenericComCallStub);
-#endif
 }
 
 // Called both at run-time and by NGEN - generates method stub.

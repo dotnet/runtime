@@ -7869,6 +7869,8 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 {
     emitAttr  size         = EA_SIZE(attr);
     insFormat fmt          = IF_NONE;
+    insOpts   opt          = INS_OPTS_NONE;
+    regNumber reg3         = REG_NA;
     unsigned  scale        = 0;
     bool      isLdrStr     = false;
     bool      isSimple     = true;
@@ -7934,7 +7936,17 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             {
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
                 codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-                fmt = IF_DR_3A; // add reg1,reg2,rsvdReg
+                imm = 0;
+                if (encodingZRtoSP(reg2) == REG_SP)
+                {
+                    fmt  = IF_DR_3C; // add reg1,sp,rsvdReg
+                    opt  = INS_OPTS_LSL;
+                    reg3 = rsvdReg;
+                }
+                else
+                {
+                    fmt = IF_DR_3A; // add reg1,reg2,rsvdReg
+                }
             }
             break;
 
@@ -8043,10 +8055,11 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     id->idIns(ins);
     id->idInsFmt(fmt);
-    id->idInsOpt(INS_OPTS_NONE);
+    id->idInsOpt(opt);
 
     id->idReg1(reg1);
     id->idReg2(reg2);
+    id->idReg3(reg3);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
     id->idSetIsLclVar();
 
@@ -8085,7 +8098,6 @@ void emitter::emitIns_R_R_S_S(
 
     // TODO-ARM64-CQ: with compLocallocUsed, should we use REG_SAVED_LOCALLOC_SP instead?
     regNumber reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
-    reg3           = encodingSPtoZR(reg3);
 
     bool    useRegForAdr = true;
     ssize_t imm          = disp;
@@ -8116,6 +8128,8 @@ void emitter::emitIns_R_R_S_S(
         reg3 = rsvd;
         imm  = 0;
     }
+
+    reg3 = encodingSPtoZR(reg3);
 
     assert(fmt != IF_NONE);
 
