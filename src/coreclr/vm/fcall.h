@@ -799,6 +799,22 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 #define HELPER_METHOD_FRAME_GET_RETURN_ADDRESS()                                        \
     ( static_cast<UINT_PTR>( (__helperframe.InsureInit(NULL)), (__helperframe.MachineState()->GetRetAddr()) ) )
 
+#define EXCEPTION_METHOD_FRAME_BEGIN(funCallDepth) \
+        do \
+        { \
+            FrameWithCookie<SoftwareExceptionFrame> __exceptionFrame; \
+            *(&__exceptionFrame)->GetGSCookiePtr() = GetProcessGSCookie(); \
+            RtlCaptureContext(__exceptionFrame.GetContext()); \
+            __exceptionFrame.InitAndLink(GET_THREAD(), funCallDepth); \
+            FC_CAN_TRIGGER_GC_HAVE_THREAD(GET_THREAD())
+
+#define EXCEPTION_METHOD_FRAME_END() \
+            FC_CAN_TRIGGER_GC_HAVE_THREADEND(GET_THREAD()) \
+        } \
+        while (0)
+
+#define EXCEPTION_METHOD_FRAME_GET_CONTEXT() (__exceptionFrame.GetContext())
+
     // Very short routines, or routines that are guaranteed to force GC or EH
     // don't need to poll the GC.  USE VERY SPARINGLY!!!
 #define FC_GC_POLL_NOT_NEEDED()    INCONTRACT(__fCallCheck.SetNotNeeded())
@@ -889,6 +905,8 @@ void HCallAssert(void*& cache, void* target);
 #define FC_COMMON_PROLOG(target, assertFn) FCALL_TRANSITION_BEGIN()
 #define FC_CAN_TRIGGER_GC()
 #define FC_CAN_TRIGGER_GC_END()
+#define FC_CAN_TRIGGER_GC_HAVE_THREAD(thread)
+#define FC_CAN_TRIGGER_GC_HAVE_THREADEND(thread)
 #endif // ENABLE_CONTRACTS
 
 // #FC_INNER

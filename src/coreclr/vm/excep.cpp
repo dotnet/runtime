@@ -11553,3 +11553,95 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
 #endif // FEATURE_COMINTEROP
     return pUserMD;
 }
+
+
+#ifdef FEATURE_EH_FUNCLETS
+
+void SoftwareExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *dac_cast<PTR_SIZE_T>((TADDR)m_ContextPointers.regname);
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = m_ContextPointers.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = m_Context.regname;
+    ENUM_FP_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    SetIP(pRD->pCurrentContext, ::GetIP(&m_Context));
+    SetSP(pRD->pCurrentContext, ::GetSP(&m_Context));
+
+    pRD->ControlPC = ::GetIP(&m_Context);
+    pRD->SP = ::GetSP(&m_Context);
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+}
+
+#ifndef DACCESS_COMPILE
+//
+// Init a new frame
+// funcCallDepth: the number of frames to skip when looking for the return address.
+//                0 means unwind till a managed frame is found.
+//
+void SoftwareExceptionFrame::Init(int funCallDepth)
+{
+    WRAPPER_NO_CONTRACT;
+
+#define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = &m_Context.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    do
+    {
+#ifndef TARGET_UNIX
+        Thread::VirtualUnwindCallFrame(&m_Context, &m_ContextPointers);
+#else // !TARGET_UNIX
+        BOOL success = PAL_VirtualUnwind(&m_Context, &m_ContextPointers);
+        if (!success)
+        {
+            _ASSERTE(!"SoftwareExceptionFrame::Init failed");
+            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+        }
+#endif // !TARGET_UNIX
+
+        if (funCallDepth == 0)
+        {
+            // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
+            // Use it now to see if we've unwound to managed code yet.
+            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(::GetIP(&m_Context));
+
+            if (fIsManagedCode)
+            {
+                break;
+            }
+        }
+        else
+        {
+            funCallDepth--;
+        }
+    }
+    while (funCallDepth > 0);
+
+    m_ReturnAddress = ::GetIP(&m_Context);
+}
+
+//
+// Init and Link in a new frame
+//
+void SoftwareExceptionFrame::InitAndLink(Thread *pThread, int funCallDepth)
+{
+    WRAPPER_NO_CONTRACT;
+
+    Init(funCallDepth);
+
+    Push(pThread);
+}
+
+#endif // DACCESS_COMPILE
+#endif // FEATURE_EH_FUNCLETS

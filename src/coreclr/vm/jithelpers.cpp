@@ -2675,39 +2675,6 @@ HCIMPLEND
 
 /*************************************************************/
 
-#ifdef FEATURE_EH_FUNCLETS
-void ThrowNew(OBJECTREF oref)
-{
-    if (oref == 0)
-        DispatchManagedException(kNullReferenceException);
-    else
-    if (!IsException(oref->GetMethodTable()))
-    {
-        GCPROTECT_BEGIN(oref);
-
-        WrapNonCompliantException(&oref);
-
-        GCPROTECT_END();
-    }
-    else
-    {   // We know that the object derives from System.Exception
-
-        // If the flag indicating ForeignExceptionRaise has been set,
-        // then do not clear the "_stackTrace" field of the exception object.
-        if (GetThread()->GetExceptionState()->IsRaisingForeignException())
-        {
-            ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
-        }
-        else
-        {
-            ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
-        }
-    }
-
-    DispatchManagedException(oref);
-}
-#endif // FEATURE_EH_FUNCLETS
-
 HCIMPL1(void, IL_Throw,  Object* obj)
 {
     FCALL_CONTRACT;
@@ -2717,22 +2684,53 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
     FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
 
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
     OBJECTREF oref = ObjectToOBJECTREF(obj);
+
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        MAKE_CURRENT_THREAD_AVAILABLE();
+
+        EXCEPTION_METHOD_FRAME_BEGIN(1);
+
+        if (oref == 0)
+            DispatchManagedException(kNullReferenceException);
+        else
+        if (!IsException(oref->GetMethodTable()))
+        {
+            GCPROTECT_BEGIN(oref);
+
+            WrapNonCompliantException(&oref);
+
+            GCPROTECT_END();
+        }
+        else
+        {   // We know that the object derives from System.Exception
+
+            // If the flag indicating ForeignExceptionRaise has been set,
+            // then do not clear the "_stackTrace" field of the exception object.
+            if (GET_THREAD()->GetExceptionState()->IsRaisingForeignException())
+            {
+                ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
+            }
+            else
+            {
+                ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
+            }
+        }
+
+        DispatchManagedException(oref, EXCEPTION_METHOD_FRAME_GET_CONTEXT());
+        EXCEPTION_METHOD_FRAME_END();
+        UNREACHABLE();
+    }
+#endif // FEATURE_EH_FUNCLETS
+
+    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
 
 #if defined(_DEBUG) && defined(TARGET_X86)
     __helperframe.InsureInit(NULL);
     g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
 #endif // defined(_DEBUG) && defined(TARGET_X86)
-
-#ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        ThrowNew(oref);
-        UNREACHABLE();
-    }
-#endif
 
     if (oref == 0)
         COMPlusThrow(kNullReferenceException);
@@ -2768,48 +2766,47 @@ HCIMPLEND
 
 /*************************************************************/
 
-#ifdef FEATURE_EH_FUNCLETS
-void RethrowNew()
-{
-    Thread *pThread = GetThread();
-
-    ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
-
-    CONTEXT exceptionContext;
-    RtlCaptureContext(&exceptionContext);
-
-    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, &exceptionContext, ExKind::None);
-
-    GCPROTECT_BEGIN(exInfo.m_exception);
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
-
-    pThread->IncPreventAbort();
-
-    //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
-    CALL_MANAGED_METHOD_NORET(args)
-    GCPROTECT_END();
-}
-#endif // FEATURE_EH_FUNCLETS
-
 HCIMPL0(void, IL_Rethrow)
 {
     FCALL_CONTRACT;
 
     FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
 
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
 #ifdef FEATURE_EH_FUNCLETS
     if (g_isNewExceptionHandlingEnabled)
     {
-        RethrowNew();
+        MAKE_CURRENT_THREAD_AVAILABLE();
+
+        EXCEPTION_METHOD_FRAME_BEGIN(1);
+
+        Thread *pThread = GET_THREAD();
+
+        ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+
+        CONTEXT exceptionContext;
+        RtlCaptureContext(&exceptionContext);
+
+        ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, &exceptionContext, ExKind::None);
+
+        GCPROTECT_BEGIN(exInfo.m_exception);
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
+        DECLARE_ARGHOLDER_ARRAY(args, 2);
+
+        args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
+        args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+        pThread->IncPreventAbort();
+
+        //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
+        CALL_MANAGED_METHOD_NORET(args)
+        GCPROTECT_END();
+
+        EXCEPTION_METHOD_FRAME_END();
         UNREACHABLE();
     }
 #endif
+
+    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
 
     OBJECTREF throwable = GetThread()->GetThrowable();
     if (throwable != NULL)
