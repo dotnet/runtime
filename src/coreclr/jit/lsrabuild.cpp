@@ -3847,11 +3847,13 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
         }
     }
 
+#ifdef TARGET_ARM64
     // Multi register nodes should not go via this route.
     assert(!node->IsMultiRegNode());
     // The rmwNode should have the same register type as the node
     assert(rmwNode == nullptr || varTypeUsesSameRegType(rmwNode->TypeGet(), node->TypeGet()) ||
            (rmwNode->IsMultiRegNode() && varTypeUsesFloatReg(node->TypeGet())));
+#endif
 
     if (use != nullptr)
     {
