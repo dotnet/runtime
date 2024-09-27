@@ -259,19 +259,6 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetCorElementTypeInternal, ReflectClassBaseObj
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetVerifierCorElementTypeInternal, ReflectClassBaseObject *pTypeUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(pTypeUNSAFE != NULL);
-    }
-    CONTRACTL_END;
-
-    return ((REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE))->GetType().GetVerifierCorElementType();
-}
-FCIMPLEND
-
 FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssemblyIfExists, ReflectClassBaseObject *pTypeUNSAFE)
 {
     FCALL_CONTRACT;

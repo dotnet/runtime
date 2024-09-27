@@ -3676,14 +3676,11 @@ namespace System
 
         #region Invoke Member
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool CanPrimitiveWiden(CorElementType valueType, CorElementType targetType);
-
         private static bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType)
         {
             Debug.Assert(targetType.IsPointer || targetType.IsEnum || targetType.IsPrimitive || targetType.IsFunctionPointer);
 
-            CorElementType targetCorElement = RuntimeTypeHandle.GetVerifierCorElementType(targetType);
+            CorElementType targetCorElement = GetUnderlyingCorElementType(targetType);
             if (targetCorElement is CorElementType.ELEMENT_TYPE_PTR or CorElementType.ELEMENT_TYPE_FNPTR)
             {
                 // The object must be an IntPtr or a System.Reflection.Pointer
@@ -3694,7 +3691,7 @@ namespace System
                 }
 
                 // void* assigns to any pointer
-                if (IsVoidPtr(targetType))
+                if (targetType == typeof(void*))
                 {
                     return true;
                 }
@@ -3707,12 +3704,9 @@ namespace System
                 // The type is an enum or a primitive. To have any chance of assignment
                 // the object type must be an enum or primitive as well.
                 // So get the internal cor element and that must be the same or widen.
-                CorElementType valueCorElement = RuntimeTypeHandle.GetVerifierCorElementType(valueType);
-                return CanPrimitiveWiden(valueCorElement, targetCorElement);
+                CorElementType valueCorElement = GetUnderlyingCorElementType(valueType);
+                return valueCorElement.IsPrimitiveType() && RuntimeHelpers.CanPrimitiveWiden(valueCorElement, targetCorElement);
             }
-
-            static bool IsVoidPtr(RuntimeType type)
-                => type.IsPointer && type.GetElementType() == typeof(void);
         }
 
         private CheckValueStatus TryChangeTypeSpecial(ref object value)
@@ -3730,8 +3724,8 @@ namespace System
             }
             else
             {
-                CorElementType srcElementType = GetUnderlyingType(srcType);
-                CorElementType dstElementType = GetUnderlyingType(this);
+                CorElementType srcElementType = GetUnderlyingCorElementType(srcType);
+                CorElementType dstElementType = GetUnderlyingCorElementType(this);
                 if (dstElementType != srcElementType)
                 {
                     value = InvokeUtils.ConvertOrWiden(srcType, value, this, dstElementType);

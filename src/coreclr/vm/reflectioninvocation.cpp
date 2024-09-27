@@ -62,19 +62,6 @@ FCIMPL5(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE,
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, ReflectionInvocation::CanPrimitiveWiden, CorElementType valueCorElement, CorElementType targetCorElement)
-{
-    FCALL_CONTRACT;
-
-    // We are here only if the target type is a primitive, or an enum 
-    _ASSERTE(targetCorElement != ELEMENT_TYPE_PTR && targetCorElement != ELEMENT_TYPE_FNPTR);
-    BOOL ret = (InvokeUtil::IsPrimitiveType(valueCorElement) && InvokeUtil::CanPrimitiveWiden(targetCorElement, valueCorElement))
-        ? TRUE
-        : FALSE;
-    FC_RETURN_BOOL(ret);
-}
-FCIMPLEND
-
 FCIMPL6(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Object *targetUNSAFE, Object *valueUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE, CLR_BOOL *pIsClassInitialized) {
     CONTRACTL
     {

@@ -315,18 +315,6 @@ namespace System
             return GetCorElementTypeInternal(type);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern CorElementType GetVerifierCorElementTypeInternal(RuntimeType type);
-
-        internal static CorElementType GetVerifierCorElementType(RuntimeType type)
-        {
-            if (type is null)
-            {
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
-            }
-            return GetVerifierCorElementTypeInternal(type);
-        }
-
         internal static RuntimeAssembly GetAssembly(RuntimeType type)
         {
             return GetAssemblyIfExists(type) ?? GetAssemblyWorker(type);

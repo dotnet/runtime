@@ -737,7 +737,7 @@ namespace System
                     SR.Format(SR.Argument_NotEnoughGenArguments, genericArguments.Length, genericParameters.Length));
         }
 
-        internal static CorElementType GetUnderlyingType(RuntimeType type)
+        internal static CorElementType GetUnderlyingCorElementType(RuntimeType type)
         {
             if (type.IsActualEnum)
             {
