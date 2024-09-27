@@ -3687,8 +3687,7 @@ namespace System
         {
             Debug.Assert(targetType.IsPointer || targetType.IsEnum || targetType.IsPrimitive || targetType.IsFunctionPointer);
 
-            CorElementType targetCorElement = targetType.GetUnderlyingCorElementType();
-            if (targetCorElement is CorElementType.ELEMENT_TYPE_PTR or CorElementType.ELEMENT_TYPE_FNPTR)
+            if (targetType.IsPointer || targetType.IsFunctionPointer)
             {
                 // The object must be an IntPtr or a System.Reflection.Pointer
                 if (valueType == typeof(IntPtr))
@@ -3712,6 +3711,7 @@ namespace System
                 // the object type must be an enum or primitive as well.
                 // So get the internal cor element and that must be the same or widen.
                 CorElementType valueCorElement = valueType.GetUnderlyingCorElementType();
+                CorElementType targetCorElement = targetType.GetUnderlyingCorElementType();
                 return valueCorElement.IsPrimitiveType() && RuntimeHelpers.CanPrimitiveWiden(valueCorElement, targetCorElement);
             }
         }
