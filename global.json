@@ -8,9 +8,9 @@
     "dotnet": "9.0.100-rc.1.24452.12"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Arcade.Sdk": "10.0.0-beta.24474.1",
-    "Microsoft.DotNet.Helix.Sdk": "10.0.0-beta.24474.1",
-    "Microsoft.DotNet.SharedFramework.Sdk": "10.0.0-beta.24474.1",
+    "Microsoft.DotNet.Arcade.Sdk": "10.0.0-beta.24475.5",
+    "Microsoft.DotNet.Helix.Sdk": "10.0.0-beta.24475.5",
+    "Microsoft.DotNet.SharedFramework.Sdk": "10.0.0-beta.24475.5",
     "Microsoft.Build.NoTargets": "3.7.0",
     "Microsoft.Build.Traversal": "3.4.0",
     "Microsoft.NET.Sdk.IL": "10.0.0-alpha.1.24472.5"
