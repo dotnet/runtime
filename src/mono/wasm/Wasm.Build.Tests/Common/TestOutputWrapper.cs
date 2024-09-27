@@ -15,18 +15,32 @@ public class TestOutputWrapper(ITestOutputHelper baseOutput) : ITestOutputHelper
 
     public void WriteLine(string message)
     {
-        baseOutput.WriteLine(message);
-        _outputBuffer.AppendLine(message);
-        if (EnvironmentVariables.ShowBuildOutput)
-            Console.WriteLine(message);
+        try
+        {
+            baseOutput.WriteLine(message);
+            _outputBuffer.AppendLine(message);
+            if (EnvironmentVariables.ShowBuildOutput)
+                Console.WriteLine(message);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in TestOutputWrapper.WriteLine: {ex}");
+        }        
     }
 
     public void WriteLine(string format, params object[] args)
     {
-        baseOutput.WriteLine(format, args);
-        _outputBuffer.AppendFormat(format, args).AppendLine();
-        if (EnvironmentVariables.ShowBuildOutput)
-            Console.WriteLine(format, args);
+        try
+        {
+            baseOutput.WriteLine(format, args);
+            _outputBuffer.AppendFormat(format, args).AppendLine();
+            if (EnvironmentVariables.ShowBuildOutput)
+                Console.WriteLine(format, args);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in TestOutputWrapper.WriteLine: {ex}");
+        }
     }
 
     public override string ToString() => _outputBuffer.ToString();
