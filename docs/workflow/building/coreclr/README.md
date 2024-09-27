@@ -55,6 +55,8 @@ Once you have both subsets built, you can generate the *Core_Root*, which as men
 
 Since this is more related to testing, you can find the full details and instructions in the CoreCLR testing doc [over here](/docs/workflow/testing/coreclr/testing.md).
 
+**WARNING:** When building CoreCLR, the `apphost` will also get constructed as part of the build. However, `apphost` belongs to the `host` subset. This means that if you only pass the `runtimeConfiguration` and/or the `librariesConfiguration` flag to your builds, then the `apphost` will get built in `Debug`. This will result in issues when trying to build the tests. Because of this, it is highly recommended to always also include the `-c` or `-hc` flags when building `clr` to ensure all of its related components are constructed in the same configuration.
+
 #### The Dev Shipping Packs
 
 It is also possible to generate the full runtime NuGet packages and installer that you can use to test in a more production-esque scenario. To generate these shipping artifacts, you have to build the `clr`, `libs`, `host`, and `packs` subsets:
