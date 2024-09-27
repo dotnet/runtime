@@ -82,7 +82,7 @@ namespace System
 
         internal static bool IsTypeDefinition(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             if (!((corElemType >= CorElementType.ELEMENT_TYPE_VOID && corElemType < CorElementType.ELEMENT_TYPE_PTR) ||
                     corElemType == CorElementType.ELEMENT_TYPE_VALUETYPE ||
                     corElemType == CorElementType.ELEMENT_TYPE_CLASS ||
@@ -100,42 +100,42 @@ namespace System
 
         internal static bool IsPrimitive(RuntimeType type)
         {
-            return RuntimeHelpers.IsPrimitiveType(GetCorElementType(type));
+            return RuntimeHelpers.IsPrimitiveType(type.GetCorElementType());
         }
 
         internal static bool IsByRef(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_BYREF;
         }
 
         internal static bool IsPointer(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_PTR;
         }
 
         internal static bool IsArray(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_ARRAY || corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
         }
 
         internal static bool IsSZArray(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
         }
 
         internal static bool IsFunctionPointer(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_FNPTR;
         }
 
         internal static bool HasElementType(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
 
             return corElemType == CorElementType.ELEMENT_TYPE_ARRAY || corElemType == CorElementType.ELEMENT_TYPE_SZARRAY // IsArray
                    || (corElemType == CorElementType.ELEMENT_TYPE_PTR)                                          // IsPointer
@@ -301,18 +301,6 @@ namespace System
         internal RuntimeType GetRuntimeType()
         {
             return m_type;
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern CorElementType GetCorElementTypeInternal(RuntimeType type);
-
-        internal static CorElementType GetCorElementType(RuntimeType type)
-        {
-            if (type is null)
-            {
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
-            }
-            return GetCorElementTypeInternal(type);
         }
 
         internal static RuntimeAssembly GetAssembly(RuntimeType type)

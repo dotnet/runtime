@@ -246,19 +246,6 @@ FCIMPL1(void, RuntimeTypeHandle::GetNextIntroducedMethod, MethodDesc ** ppMethod
 FCIMPLEND
 #include <optdefault.h>
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetCorElementTypeInternal, ReflectClassBaseObject *pTypeUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(pTypeUNSAFE != NULL);
-    }
-    CONTRACTL_END;
-
-    return ((REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE))->GetType().GetSignatureCorElementType();
-}
-FCIMPLEND
-
 FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssemblyIfExists, ReflectClassBaseObject *pTypeUNSAFE)
 {
     FCALL_CONTRACT;

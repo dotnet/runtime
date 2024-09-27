@@ -3654,6 +3654,24 @@ namespace System
             }
         }
 
+        internal CorElementType GetCorElementType()
+        {
+            CorElementType ret = (CorElementType)GetNativeTypeHandle().GetCorElementType();
+            GC.KeepAlive(this);
+            return ret;
+        }
+
+        internal CorElementType GetUnderlyingCorElementType()
+        {
+            RuntimeType type = this;
+            if (type.IsActualEnum)
+            {
+                type = (RuntimeType)Enum.GetUnderlyingType(type);
+            }
+
+            return type.GetCorElementType();
+        }
+
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeType>(other);
 
         public override Type MakePointerType() => new RuntimeTypeHandle(this).MakePointer();
@@ -3680,7 +3698,7 @@ namespace System
         {
             Debug.Assert(targetType.IsPointer || targetType.IsEnum || targetType.IsPrimitive || targetType.IsFunctionPointer);
 
-            CorElementType targetCorElement = GetUnderlyingCorElementType(targetType);
+            CorElementType targetCorElement = targetType.GetUnderlyingCorElementType();
             if (targetCorElement is CorElementType.ELEMENT_TYPE_PTR or CorElementType.ELEMENT_TYPE_FNPTR)
             {
                 // The object must be an IntPtr or a System.Reflection.Pointer
@@ -3704,7 +3722,7 @@ namespace System
                 // The type is an enum or a primitive. To have any chance of assignment
                 // the object type must be an enum or primitive as well.
                 // So get the internal cor element and that must be the same or widen.
-                CorElementType valueCorElement = GetUnderlyingCorElementType(valueType);
+                CorElementType valueCorElement = valueType.GetUnderlyingCorElementType();
                 return valueCorElement.IsPrimitiveType() && RuntimeHelpers.CanPrimitiveWiden(valueCorElement, targetCorElement);
             }
         }
@@ -3724,8 +3742,8 @@ namespace System
             }
             else
             {
-                CorElementType srcElementType = GetUnderlyingCorElementType(srcType);
-                CorElementType dstElementType = GetUnderlyingCorElementType(this);
+                CorElementType srcElementType = srcType.GetUnderlyingCorElementType();
+                CorElementType dstElementType = GetUnderlyingCorElementType();
                 if (dstElementType != srcElementType)
                 {
                     value = InvokeUtils.ConvertOrWiden(srcType, value, this, dstElementType);
