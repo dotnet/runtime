@@ -630,8 +630,9 @@ namespace Wasm.Build.Tests
     public record BuildArgs(string ProjectName,
                             string Config,
                             bool AOT,
-                            string ProjectFileContents,
-                            string? ExtraBuildArgs);
+                            string Id,
+                            string? ExtraBuildArgs,
+                            string? ProjectFileContents=null);
     public record BuildProduct(string ProjectDir, string LogFile, bool Result, string BuildOutput);
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
