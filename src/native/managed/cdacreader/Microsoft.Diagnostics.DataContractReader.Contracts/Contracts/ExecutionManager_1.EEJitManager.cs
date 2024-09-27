@@ -12,8 +12,8 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
 {
     private class EEJitManager : JitManager
     {
-        private readonly NibbleMap _nibbleMap;
-        public EEJitManager(Target target, NibbleMap nibbleMap) : base(target)
+        private readonly ExecutionManagerHelpers.NibbleMap _nibbleMap;
+        public EEJitManager(Target target, ExecutionManagerHelpers.NibbleMap nibbleMap) : base(target)
         {
             _nibbleMap = nibbleMap;
         }

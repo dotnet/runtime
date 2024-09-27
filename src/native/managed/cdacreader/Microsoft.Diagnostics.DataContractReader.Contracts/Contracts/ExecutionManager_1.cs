@@ -23,7 +23,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
         _target = target;
         _topRangeSectionMap = topRangeSectionMap;
         _rangeSectionLookupAlgorithm = RangeSectionLookupAlgorithm.Create(_target);
-        NibbleMap nibbleMap = NibbleMap.Create(_target);
+        ExecutionManagerHelpers.NibbleMap nibbleMap = ExecutionManagerHelpers.NibbleMap.Create(_target);
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
     }

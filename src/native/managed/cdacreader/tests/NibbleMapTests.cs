@@ -4,9 +4,9 @@
 using System;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
-using NibbleMap = Contracts.ExecutionManager_1.NibbleMap;
+namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public class NibbleMapTests
 {
