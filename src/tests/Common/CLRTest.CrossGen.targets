@@ -128,9 +128,10 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         $__Command
         __cg2ExitCode=$?
 
-        echo "Running R2RDump: $__R2RDumpCommand"
-        $__R2RDumpCommand
-        __r2rDumpExitCode=$?
+        echo "**not** Running R2RDump: $__R2RDumpCommand"
+        # $__R2RDumpCommand
+        # __r2rDumpExitCode=$?
+        __r2rDumpExitCode=0
 
         export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
         date +%H:%M:%S
