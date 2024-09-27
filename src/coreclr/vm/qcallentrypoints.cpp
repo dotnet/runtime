@@ -93,6 +93,7 @@ static const Entry s_QCall[] =
     DllImportEntry(Delegate_InitializeVirtualCallStub)
     DllImportEntry(Delegate_GetMulticastInvokeSlow)
     DllImportEntry(Delegate_AdjustTarget)
+    DllImportEntry(Delegate_Construct)
     DllImportEntry(Delegate_InternalAlloc)
     DllImportEntry(Delegate_InternalAllocLike)
     DllImportEntry(Delegate_FindMethodHandle)

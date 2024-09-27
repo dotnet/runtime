@@ -4017,7 +4017,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 }
                 else
                 {
-                    target = ECall::GetFCallImpl(CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
+                    target = CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE)->GetMultiCallableAddrOfCode();
                     ctorData.pArg3 = NULL;
                 }
 

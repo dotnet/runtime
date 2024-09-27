@@ -29,20 +29,9 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 // This class represents the native methods for the Delegate class
 class COMDelegate
 {
-private:
-    // friend VOID CPUSTUBLINKER::EmitShuffleThunk(...);
-    friend class CPUSTUBLINKER;
-
-    static CrstStatic   s_DelegateToFPtrHashCrst;   // Lock for the following hash.
-    static PtrHashMap*  s_pDelegateToFPtrHash;      // Hash table containing the Delegate->FPtr pairs
-                                                    // passed out to unmanaged code.
 public:
-    static ShuffleThunkCache *m_pShuffleThunkCache;
-
     // One time init.
     static void Init();
-
-    static FCDECL3(void, DelegateConstruct, Object* refThis, Object* target, PCODE method);
 
     // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
     static FCDECL1(PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
@@ -88,10 +77,6 @@ public:
     // for UnmanagedCallersOnlyAttribute.
     static void ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD);
 
-private:
-    static Stub* SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth);
-
-public:
     static MethodDesc* FindDelegateInvokeMethod(MethodTable *pMT);
     static BOOL IsDelegateInvokeMethod(MethodDesc *pMD);
 
@@ -110,6 +95,8 @@ public:
                              MethodTable   *pExactMethodType,
                              BOOL           fIsOpenDelegate);
 };
+
+extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, QCall::ObjectHandleOnStack target, PCODE method);
 
 extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegateMT);
 

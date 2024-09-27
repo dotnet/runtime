@@ -478,8 +478,21 @@ namespace System
 
         // Used by the ctor. Do not call directly.
         // The name of this function will appear in managed stacktraces as delegate constructor.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void DelegateConstruct(object target, IntPtr slot);
+        private void DelegateConstruct(object target, IntPtr method)
+        {
+            // Via reflection you can pass in just about any value for the method.
+            // We can do some basic verification up front to prevent EE exceptions.
+            if (method == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(method));
+            }
+
+            Delegate _this = this;
+            Construct(ObjectHandleOnStack.Create(ref _this), ObjectHandleOnStack.Create(ref target), method);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_Construct")]
+        private static partial void Construct(ObjectHandleOnStack _this, ObjectHandleOnStack target, IntPtr method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void* GetMulticastInvoke(MethodTable* pMT);
