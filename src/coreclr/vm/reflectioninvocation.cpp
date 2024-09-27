@@ -66,7 +66,7 @@ FCIMPL2(FC_BOOL_RET, ReflectionInvocation::CanPrimitiveWiden, CorElementType val
 {
     FCALL_CONTRACT;
 
-    // We are here only if the target type is a primitive, an enum or a pointer
+    // We are here only if the target type is a primitive, or an enum 
     _ASSERTE(targetCorElement != ELEMENT_TYPE_PTR && targetCorElement != ELEMENT_TYPE_FNPTR);
     BOOL ret = (InvokeUtil::IsPrimitiveType(valueCorElement) && InvokeUtil::CanPrimitiveWiden(targetCorElement, valueCorElement))
         ? TRUE
