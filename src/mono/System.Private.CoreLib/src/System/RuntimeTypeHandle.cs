@@ -302,7 +302,7 @@ namespace System
 
         internal static bool IsGenericVariable(RuntimeType type)
         {
-            CorElementType corElemType = type.GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_VAR || corElemType == CorElementType.ELEMENT_TYPE_MVAR;
         }
 
