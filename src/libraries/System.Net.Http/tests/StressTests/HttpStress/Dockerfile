@@ -2,23 +2,23 @@ ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:8.0
 FROM $SDK_BASE_IMAGE
 
 # Build latest msquic locally
-# WORKDIR /msquic
-# RUN apt-get update -y && \
-#     apt-get upgrade -y && \
-#     apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev && \
-#     gem install fpm
-# RUN git clone --depth 1 --single-branch --branch v2.4.4 --recursive https://github.com/microsoft/msquic
-# RUN cd msquic/ && \
-#     mkdir build && \
-#     cmake -B build -DCMAKE_BUILD_TYPE=Debug -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off -DQUIC_TLS=openssl3 -DQUIC_ENABLE_SANITIZERS=on && \
-#     cd build && \
-#     cmake --build . --config Debug
-# RUN cd msquic/build/bin/Debug && \
-#     rm libmsquic.so && \
-#     fpm -f -s dir -t deb -n libmsquic -v $( find -type f | cut -d "." -f 4- ) \
-#     --license MIT --url https://github.com/microsoft/msquic --log error \
-#     $( ls ./* | cut -d "/" -f 2 | sed -r "s/(.*)/\1=\/usr\/lib\/\1/g" ) && \
-#     dpkg -i libmsquic_*.deb
+WORKDIR /msquic
+RUN apt-get update -y && \
+    apt-get upgrade -y && \
+    apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev && \
+    gem install fpm
+RUN git clone --depth 1 --single-branch --branch v2.4.4 --recursive https://github.com/microsoft/msquic
+RUN cd msquic/ && \
+    mkdir build && \
+    cmake -B build -DCMAKE_BUILD_TYPE=Debug -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off -DQUIC_TLS=openssl3 -DQUIC_ENABLE_SANITIZERS=on && \
+    cd build && \
+    cmake --build . --config Debug
+RUN cd msquic/build/bin/Debug && \
+    rm libmsquic.so && \
+    fpm -f -s dir -t deb -n libmsquic -v $( find -type f | cut -d "." -f 4- ) \
+    --license MIT --url https://github.com/microsoft/msquic --log error \
+    $( ls ./* | cut -d "/" -f 2 | sed -r "s/(.*)/\1=\/usr\/lib\/\1/g" ) && \
+    dpkg -i libmsquic_*.deb
 
 ARG VERSION
 ARG CONFIGURATION
