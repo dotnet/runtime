@@ -34,14 +34,14 @@ public class NibbleMapTests
         // this is the target memory representation of the nibble map itself
         public readonly MockMemorySpace.HeapFragment NibbleMapFragment;
 
-        public NibbleMapTestBuilder(TargetPointer mapBase, TargetPointer mapStart, MockTarget.Architecture arch)
+        public NibbleMapTestBuilder(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart,MockTarget.Architecture arch)
         {
             MapBase = mapBase;
             Arch = arch;
-            const uint NibbleMapSize = 0x1000;
+            int nibbleMapSize = (int)(Addr2Pos(mapRangeSize) >> Log2NibblesPerDword);
             NibbleMapFragment = new MockMemorySpace.HeapFragment {
                 Address = mapStart,
-                Data = new byte[NibbleMapSize],
+                Data = new byte[nibbleMapSize],
                 Name = "Nibble Map",
             };
         }
@@ -115,7 +115,7 @@ public class NibbleMapTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void TestNibbleMapOneItem(MockTarget.Architecture arch)
+    public void NibbleMapOneItemLookupOk(MockTarget.Architecture arch)
     {
         // SETUP:
 
@@ -123,10 +123,13 @@ public class NibbleMapTests
         TargetPointer mapBase = new(0x5f5f_0000u);
         // this is the beginning of the nibble map itself
         TargetPointer mapStart = new(0x0456_1000u);
-        NibbleMapTestBuilder builder = new(mapBase, mapStart, arch);
+        /// this is how big the address space is that the map covers
+        const uint MapRangeSize = 0x1000;
+        NibbleMapTestBuilder builder = new(mapBase, MapRangeSize, mapStart, arch);
 
-        TargetCodePointer inputPC = new(0x5f5f_0030u);
-        int codeSize = 0x80;
+        // don't put the code too close to the start - the NibbleMap bails if the code is too close to the start of the range
+        TargetCodePointer inputPC = new(mapBase + 0x0200u);
+        int codeSize = 0x80; // doesn't matter
         builder.AllocateCodeChunk (inputPC, codeSize); // 128 bytes
         NibbleMapTestTarget target = builder.Create();
 
@@ -141,6 +144,7 @@ public class NibbleMapTests
         TargetPointer methodCode = map.FindMethodCode(mapBase, mapStart, inputPC);
         Assert.Equal(inputPC.Value, methodCode.Value);
 
+        // All addresses in the code chunk should map to the same method
         for (int i = 0; i < codeSize; i++)
         {
             methodCode = map.FindMethodCode(mapBase, mapStart, inputPC.Value + (uint)i);
@@ -148,5 +152,25 @@ public class NibbleMapTests
             Assert.Equal(inputPC.Value, methodCode.Value);
         }
 
+        // All addresses before the code chunk should return null
+        for (ulong i = mapBase; i < inputPC; i++)
+        {
+            methodCode = map.FindMethodCode(mapBase, mapStart, i);
+            Assert.Equal(0u, methodCode.Value);
+        }
+
+#if false // FIXME: for expected 5f5f0200, found 5f5f0120 input address 5f5f0300
+
+        // interestingly, all addresses after the code chunk should also return the beginning of the method
+        // we don't track how long the method is, so we can't tell if we're past the end
+        for (ulong i = inputPC + (uint)codeSize; i < mapBase + MapRangeSize; i++)
+        {
+            methodCode = map.FindMethodCode(mapBase, mapStart, i);
+            Assert.True(inputPC.Value == methodCode.Value, $"for expected {inputPC.Value:x}, found {methodCode.Value:x} input address {i:x}");
+        }
+#endif
+
     }
+
+
 }
