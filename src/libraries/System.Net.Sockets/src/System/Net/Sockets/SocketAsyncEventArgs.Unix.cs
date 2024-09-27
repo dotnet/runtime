@@ -350,7 +350,7 @@ namespace System.Net.Sockets
 
             Socket acceptedSocket = _currentSocket!.CreateAcceptSocket(
                 SocketPal.CreateSocket(_acceptedFileDescriptor),
-                _currentSocket._rightEndPoint!.Create(remoteSocketAddress));
+                remoteSocketAddress.Size > 0 ? _currentSocket._rightEndPoint!.Create(remoteSocketAddress) : null);
             if (_acceptSocket is null)
             {
                 // Store the accepted socket
