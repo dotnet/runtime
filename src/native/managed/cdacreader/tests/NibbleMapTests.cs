@@ -75,7 +75,7 @@ public class NibbleMapTests
         TargetPointer methodCode = map.FindMethodCode(mapBase, mapStart, inputPC);
         Assert.Equal(inputPC.Value, methodCode.Value);
 
-        for (int i = 0; i < codeSize)
+        for (int i = 0; i < codeSize; i++)
         {
             methodCode = map.FindMethodCode(mapBase, mapStart, inputPC.Value + (uint)i);
             // we should always find the beginning of the method
