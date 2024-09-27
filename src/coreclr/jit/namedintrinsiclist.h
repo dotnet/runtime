@@ -256,6 +256,7 @@ enum NamedIntrinsic : unsigned short
     // Array Intrinsics
     //
     NI_System_SZArrayHelper_GetEnumerator,
+    NI_System_Array_T_GetEnumerator,
 };
 
 #endif // _NAMEDINTRINSICLIST_H_
