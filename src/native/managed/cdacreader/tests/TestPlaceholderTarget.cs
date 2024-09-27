@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
@@ -16,6 +17,10 @@ internal class TestPlaceholderTarget : Target
     private protected ContractRegistry contractRegistry;
     private protected Target.IDataCache dataCache;
     private protected Dictionary<DataType, Target.TypeInfo> typeInfoCache;
+
+    internal delegate int ReadFromTargetDelegate(ulong address, Span<byte> buffer);
+
+    protected ReadFromTargetDelegate _dataReader = (address, buffer) => throw new NotImplementedException();
 
 #region Setup
     public TestPlaceholderTarget(MockTarget.Architecture arch)
@@ -41,6 +46,11 @@ internal class TestPlaceholderTarget : Target
     {
         typeInfoCache = cache;
     }
+
+    internal void SetDataReader(ReadFromTargetDelegate reader)
+    {
+        _dataReader = reader;
+    }
 #endregion Setup
 
     public override int PointerSize { get; }
@@ -52,14 +62,121 @@ internal class TestPlaceholderTarget : Target
     }
 
     public override TargetPointer ReadGlobalPointer(string global) => throw new NotImplementedException();
-    public override TargetPointer ReadPointer(ulong address) => throw new NotImplementedException();
+    public override TargetPointer ReadPointer(ulong address) => DefaultReadPointer(address);
     public override TargetCodePointer ReadCodePointer(ulong address) => throw new NotImplementedException();
     public override void ReadBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
     public override string ReadUtf8String(ulong address) => throw new NotImplementedException();
     public override string ReadUtf16String(ulong address) => throw new NotImplementedException();
-    public override TargetNUInt ReadNUInt(ulong address) => throw new NotImplementedException();
+    public override TargetNUInt ReadNUInt(ulong address) => DefaultReadNUInt(address);
     public override T ReadGlobal<T>(string name) => throw new NotImplementedException();
-    public override T Read<T>(ulong address) => throw new NotImplementedException();
+    public override T Read<T>(ulong address) => DefaultRead<T>(address);
+
+#region subclass reader helpers
+
+    /// <summary>
+    /// Basic utility to read a value from memory, all the DefaultReadXXX methods call this.
+    /// </summary>
+    protected unsafe bool DefaultTryRead<T>(ulong address, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        value = default;
+        Span<byte> buffer = stackalloc byte[sizeof(T)];
+        if (_dataReader(address, buffer) < 0)
+            return false;
+
+        value = ReadFromSpan<T>(buffer, IsLittleEndian);
+        return true;
+    }
+
+    internal unsafe static T ReadFromSpan<T>(ReadOnlySpan<byte> bytes, bool isLittleEndian) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        if (sizeof(T) != bytes.Length)
+            throw new ArgumentException(nameof(bytes));
+
+        T value;
+        if (isLittleEndian)
+        {
+            T.TryReadLittleEndian(bytes, !IsSigned<T>(), out value);
+        }
+        else
+        {
+            T.TryReadBigEndian(bytes, !IsSigned<T>(), out value);
+        }
+        return value;
+    }
+
+    internal unsafe static void WriteToSpan<T>(T value, bool isLittleEndian, Span<byte> dest) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        if (sizeof(T) != dest.Length)
+            throw new ArgumentException(nameof(dest));
+
+        if (isLittleEndian)
+        {
+            value.WriteLittleEndian(dest);
+        }
+        else
+        {
+            value.WriteBigEndian(dest);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected static bool IsSigned<T>() where T : struct, INumberBase<T>, IMinMaxValue<T>
+    {
+        return T.IsNegative(T.MinValue);
+    }
+
+    protected T DefaultRead<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        if (!DefaultTryRead(address, out T value))
+            throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+        return value;
+    }
+
+    protected TargetPointer DefaultReadPointer (ulong address)
+    {
+        if (!DefaultTryReadPointer(address, out TargetPointer pointer))
+            throw new InvalidOperationException($"Failed to read pointer at 0x{address:x8}.");
+
+        return pointer;
+    }
+
+    protected bool DefaultTryReadPointer(ulong address, out TargetPointer pointer)
+    {
+        pointer = TargetPointer.Null;
+        if (!DefaultTryReadNUInt(address, out ulong value))
+            return false;
+
+        pointer = new TargetPointer(value);
+        return true;
+    }
+
+    protected bool DefaultTryReadNUInt(ulong address, out ulong value)
+    {
+        value = 0;
+        if (PointerSize == sizeof(uint)
+            && DefaultTryRead(address, out uint value32))
+        {
+            value = value32;
+            return true;
+        }
+        else if (PointerSize == sizeof(ulong)
+            && DefaultTryRead(address, out ulong value64))
+        {
+            value = value64;
+            return true;
+        }
+
+        return false;
+    }
+
+    protected TargetNUInt DefaultReadNUInt(ulong address)
+    {
+        if (!DefaultTryReadNUInt(address, out ulong value))
+            throw new InvalidOperationException($"Failed to read nuint at 0x{address:x8}.");
+
+        return new TargetNUInt(value);
+    }
+#endregion subclass reader helpers
 
     public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
 
