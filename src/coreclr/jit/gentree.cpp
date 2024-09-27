@@ -21020,8 +21020,9 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
         case GT_LSH:
         {
-            assert(varTypeIsByte(simdBaseType)) unsigned shiftCountMask = (genTypeSize(simdBaseType) * 8) - 1;
-            GenTree*                                     andShiftVal =
+            assert(varTypeIsByte(simdBaseType));
+            unsigned shiftCountMask = (genTypeSize(simdBaseType) * 8) - 1;
+            GenTree* andShiftVal =
                 gtNewOperNode(GT_AND, op2ForLookup->TypeGet(), op2ForLookup, gtNewIconNode(shiftCountMask));
             GenTree* op3 =
                 gtNewSimdBinOpNode(GT_LSH, type, op1, andShiftVal,
