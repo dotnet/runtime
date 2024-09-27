@@ -175,8 +175,8 @@ namespace System.Tests
             {
                 Guid guid = new Guid($"00000000-0000-{i:X}000-{i:X}000-000000000000");
 
-                Assert.True(i == guid.Version, $"Assertion failed for Version with i = {i:X}");
-                Assert.True(i == guid.Variant, $"Assertion failed for Variant with i = {i:X}");
+                Assert.Equal(i, guid.Version);
+                Assert.Equal(i, guid.Variant);
             }
         }
 
