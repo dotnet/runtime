@@ -1,0 +1,274 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Swift;
+
+#pragma warning disable CS3016 // Arrays as attribute arguments are not CLS Compliant
+#pragma warning disable SYSLIB1051
+
+namespace Swift.Runtime
+{
+    /// <summary>
+    /// Represents ChaChaPoly in C#.
+    /// </summary>
+    internal unsafe partial struct ChaChaPoly
+    {
+        /// <summary>
+        /// Represents Nonce in C#.
+        /// </summary>
+        internal sealed unsafe partial class Nonce
+        {
+            private const int _payloadSize = 16;
+            internal void* payload;
+
+            internal Nonce()
+            {
+                payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
+                SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
+                CryptoKit.PInvoke_ChaChaPoly_Nonce_Init(swiftIndirectResult);
+            }
+
+            internal Nonce(Data data)
+            {
+                payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
+                SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
+                void* dataPtr = &data;
+
+                CryptoKit.PInvoke_ChaChaPoly_Nonce_Init2(swiftIndirectResult, dataPtr, data.Metadata(), default(DataProtocol).WitnessTable(data), out SwiftError error);
+
+                if (error.Value != null) // Should throw when nonce is not 12 bytes
+                {
+                    throw new Exception();
+                }
+            }
+
+            ~Nonce()
+            {
+                Marshal.FreeHGlobal(new IntPtr(payload));
+            }
+        }
+
+        /// <summary>
+        /// Represents SealedBox in C#.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential, Size = 16)]
+        internal unsafe partial struct SealedBox
+        {
+            internal Data combined;
+            internal readonly Data Ciphertext { get => CryptoKit.PInvoke_ChaChaPoly_SealedBox_GetCiphertext(this); }
+            internal readonly Data Tag { get => CryptoKit.PInvoke_ChaChaPoly_SealedBox_GetTag(this); }
+
+            internal SealedBox(ChaChaPoly.Nonce nonce, Data ciphertext, Data tag)
+            {
+                void* tagPtr = &tag;
+                void* ciphertextPtr = &ciphertext;
+                this = CryptoKit.PInvoke_ChaChaPoly_SealedBox_Init(nonce.payload, ciphertextPtr, tagPtr, ciphertext.Metadata(), tag.Metadata(), default(DataProtocol).WitnessTable(ciphertext), default(DataProtocol).WitnessTable(tag), out SwiftError error);
+
+                if (error.Value != null)
+                {
+                    throw new Exception();
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Represents AesGcm in C#.
+    /// </summary>
+    internal unsafe partial struct AesGcm
+    {
+        /// <summary>
+        /// Represents Nonce in C#.
+        /// </summary>
+        internal sealed unsafe partial class Nonce
+        {
+            private const int _payloadSize = 16;
+            internal void* payload;
+
+            internal Nonce()
+            {
+                payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
+                SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
+                CryptoKit.PInvoke_AesGcm_Nonce_Init(swiftIndirectResult);
+            }
+
+            internal Nonce(Data data)
+            {
+                payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
+                SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
+                void* dataPtr = &data;
+                CryptoKit.PInvoke_AesGcm_Nonce_Init2(swiftIndirectResult, dataPtr, data.Metadata(), default(DataProtocol).WitnessTable(data), out SwiftError error);
+
+                if (error.Value != null) // Should throw when nonce is not 12 bytes
+                {
+                    throw new Exception();
+                }
+            }
+
+            ~Nonce()
+            {
+                Marshal.FreeHGlobal(new IntPtr(payload));
+            }
+        }
+
+        /// <summary>
+        /// Represents SealedBox in C#.
+        /// </summary>
+        internal sealed unsafe partial class SealedBox
+        {
+            private const int _payloadSize = 24;
+            internal void* payload;
+            public Data Ciphertext { get => CryptoKit.PInvoke_AesGcm_SealedBox_GetCiphertext(new SwiftSelf(payload)); }
+            public Data Tag { get => CryptoKit.PInvoke_AesGcm_SealedBox_GetTag(new SwiftSelf(payload)); }
+            internal SealedBox(AesGcm.Nonce nonce, Data ciphertext, Data tag)
+            {
+                payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
+                SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
+                void* tagPtr = &tag;
+                void* ciphertextPtr = &ciphertext;
+
+                CryptoKit.PInvoke_AesGcm_SealedBox_Init(swiftIndirectResult, nonce.payload, ciphertextPtr, tagPtr, ciphertext.Metadata(), tag.Metadata(), default(DataProtocol).WitnessTable(ciphertext), default(DataProtocol).WitnessTable(tag), out SwiftError error);
+
+                if (error.Value != null)
+                {
+                    throw new Exception();
+                }
+            }
+
+            internal SealedBox()
+            {
+                payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
+            }
+
+            ~SealedBox()
+            {
+                Marshal.FreeHGlobal(new IntPtr(payload));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Represents SymmetricKey in C#.
+    /// </summary>
+    internal sealed unsafe partial class SymmetricKey
+    {
+        private const int _payloadSize = 8;
+        internal void* payload;
+
+        internal SymmetricKey(SymmetricKeySize symmetricKeySize)
+        {
+            payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
+            SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
+            CryptoKit.PInvoke_SymmetricKey_Init(swiftIndirectResult, &symmetricKeySize);
+        }
+
+        internal SymmetricKey(Data data)
+        {
+            payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
+            SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
+            void* dataPtr = &data;
+            CryptoKit.PInvoke_SymmetricKey_Init2(swiftIndirectResult, dataPtr, data.Metadata(), default(ContiguousBytes).WitnessTable(data));
+        }
+
+        ~SymmetricKey()
+        {
+            Marshal.FreeHGlobal(new IntPtr(payload));
+        }
+    }
+
+    /// <summary>
+    /// Represents SymmetricKeySize in C#.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, Size = 8)]
+    internal unsafe partial struct SymmetricKeySize
+    {
+        internal const string AppleCryptoKit = "/System/Library/Frameworks/CryptoKit.framework/CryptoKit";
+        internal nint bitCount;
+
+        [LibraryImport(AppleCryptoKit, EntryPoint = "$s9CryptoKit16SymmetricKeySizeV8bitCountACSi_tcfC")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial void PInvoke_init(SwiftIndirectResult result, nint bitCount);
+        internal SymmetricKeySize(nint bitCount)
+        {
+            SymmetricKeySize instance;
+            PInvoke_init(new SwiftIndirectResult(&instance), bitCount);
+            this = instance;
+        }
+    }
+
+    /// <summary>
+    /// Swift CryptoKit PInvoke methods in C#.
+    /// </summary>
+    internal static partial class CryptoKit
+    {
+        internal const string Path = "/System/Library/Frameworks/CryptoKit.framework/CryptoKit";
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit03ChaC4PolyO5NonceVAEycfC")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial void PInvoke_ChaChaPoly_Nonce_Init(SwiftIndirectResult result);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit03ChaC4PolyO5NonceV4dataAEx_tKc10Foundation12DataProtocolRzlufC")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial void PInvoke_ChaChaPoly_Nonce_Init2(SwiftIndirectResult result, void* data, void* metadata, void* witnessTable, out SwiftError error);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit03ChaC4PolyO9SealedBoxV10ciphertext10Foundation4DataVvg")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial Data PInvoke_ChaChaPoly_SealedBox_GetCiphertext(ChaChaPoly.SealedBox sealedBox);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit03ChaC4PolyO9SealedBoxV3tag10Foundation4DataVvg")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial Data PInvoke_ChaChaPoly_SealedBox_GetTag(ChaChaPoly.SealedBox sealedBox);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit03ChaC4PolyO9SealedBoxV5nonce10ciphertext3tagAeC5NonceV_xq_tKc10Foundation12DataProtocolRzAkLR_r0_lufC")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial ChaChaPoly.SealedBox PInvoke_ChaChaPoly_SealedBox_Init(void* nonce, void* ciphertext, void* tag, void* metadata1, void* metadata2, void* witnessTable1, void*witnessTable2, out SwiftError error);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit3AESO3GCMO5NonceVAGycfC")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial void PInvoke_AesGcm_Nonce_Init(SwiftIndirectResult result);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit3AESO3GCMO5NonceV4dataAGx_tKc10Foundation12DataProtocolRzlufC")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial void PInvoke_AesGcm_Nonce_Init2(SwiftIndirectResult result, void* data, void* metadata, void* witnessTable, out SwiftError error);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit3AESO3GCMO9SealedBoxV10ciphertext10Foundation4DataVvg")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial  Data PInvoke_AesGcm_SealedBox_GetCiphertext(SwiftSelf sealedBox);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit3AESO3GCMO9SealedBoxV3tag10Foundation4DataVvg")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial  Data PInvoke_AesGcm_SealedBox_GetTag(SwiftSelf sealedBox);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit3AESO3GCMO9SealedBoxV5nonce10ciphertext3tagAgE5NonceV_xq_tKc10Foundation12DataProtocolRzAmNR_r0_lufC")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial void PInvoke_AesGcm_SealedBox_Init(SwiftIndirectResult result, void* nonce, void* ciphertext, void* tag, void* metadata1, void* metadata2, void* witnessTable1, void*witnessTable2, out SwiftError error);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit12SymmetricKeyV4sizeAcA0cD4SizeV_tcfC")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial void PInvoke_SymmetricKey_Init(SwiftIndirectResult result, SymmetricKeySize* symmetricKeySize);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit12SymmetricKeyV4dataACx_tc10Foundation15ContiguousBytesRzlufC")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial void PInvoke_SymmetricKey_Init2(SwiftIndirectResult result, void* data, void* md, void* pwt);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit03ChaC4PolyO4seal_5using5nonce14authenticatingAC9SealedBoxVx_AA12SymmetricKeyVAC5NonceVSgq_tK10Foundation12DataProtocolRzAoPR_r0_lFZ")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial ChaChaPoly.SealedBox PInvoke_ChaChaPoly_Seal(void* messagePtr, void* key, void* nonce, void* authenticatedData, void* metadata1, void* metadata2, void* witnessTable1, void* witnessTable2, out SwiftError error);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit03ChaC4PolyO4open_5using14authenticating10Foundation4DataVAC9SealedBoxV_AA12SymmetricKeyVxtKAG0I8ProtocolRzlFZ")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial Data PInvoke_ChaChaPoly_Open(ChaChaPoly.SealedBox sealedBox, void* key, void* authenticatedData, void* metadata, void* witnessTable, out SwiftError error);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit3AESO3GCMO4seal_5using5nonce14authenticatingAE9SealedBoxVx_AA12SymmetricKeyVAE5NonceVSgq_tK10Foundation12DataProtocolRzAqRR_r0_lFZ")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial void PInvoke_AesGcm_Seal(SwiftIndirectResult result, void* messagePtr, void* key, void* nonce, void* authenticatedData, void* metadata1, void* metadata2, void* witnessTable1, void* witnessTable2, out SwiftError error);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit3AESO3GCMO4open_5using14authenticating10Foundation4DataVAE9SealedBoxV_AA12SymmetricKeyVxtKAI0I8ProtocolRzlFZ")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial Data PInvoke_AesGcm_Open(void* sealedBox, void* key, void* authenticatedData, void* metadata, void* witnessTable, out SwiftError error);
+    }
+}
