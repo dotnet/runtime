@@ -13,7 +13,7 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 /// </summary>
 internal class TestPlaceholderTarget : Target
 {
-    private protected Contracts.ContractRegistry contractRegistry;
+    private protected ContractRegistry contractRegistry;
     private protected Target.IDataCache dataCache;
     private protected Dictionary<DataType, Target.TypeInfo> typeInfoCache;
 
@@ -27,7 +27,7 @@ internal class TestPlaceholderTarget : Target
         typeInfoCache = null;
     }
 
-    internal void SetContracts(Contracts.ContractRegistry contracts)
+    internal void SetContracts(ContractRegistry contracts)
     {
         contractRegistry = contracts;
     }
@@ -75,9 +75,9 @@ internal class TestPlaceholderTarget : Target
     }
 
     public override Target.IDataCache ProcessedData => dataCache;
-    public override Contracts.ContractRegistry Contracts => contractRegistry;
+    public override ContractRegistry Contracts => contractRegistry;
 
-    internal class TestRegistry : Contracts.ContractRegistry
+    internal class TestRegistry : ContractRegistry
     {
         public TestRegistry() { }
         internal Contracts.IException? ExceptionContract { get; set; }
