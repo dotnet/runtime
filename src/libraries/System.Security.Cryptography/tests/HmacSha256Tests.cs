@@ -146,7 +146,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void HmacSha256_Stream_MultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl sha256 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             VerifyRepeating(
                 input: "0102030405060708",
@@ -158,7 +158,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void HmacSha256_Stream_NotMultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl sha256 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             VerifyRepeating(
                 input: "0102030405060708",
@@ -170,7 +170,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void HmacSha256_Stream_Empty()
         {
-            // Verfied with:
+            // Verified with:
             // echo -n "" | openssl sha256 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             VerifyRepeating(
                 input: "",
@@ -182,7 +182,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public async Task HmacSha256_Stream_MultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl sha256 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             await VerifyRepeatingAsync(
                 input: "0102030405060708",
@@ -194,7 +194,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public async Task HmacSha256_Stream_NotMultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl sha256 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             await VerifyRepeatingAsync(
                 input: "0102030405060708",
@@ -206,7 +206,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public async Task HmacSha256_Stream_Empty_Async()
         {
-            // Verfied with:
+            // Verified with:
             // echo -n "" | openssl sha256 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             await VerifyRepeatingAsync(
                 input: "",

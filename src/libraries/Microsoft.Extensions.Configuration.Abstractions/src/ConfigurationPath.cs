@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Utility methods and constants for manipulating Configuration paths
+    /// Provides utility methods and constants for manipulating Configuration paths.
     /// </summary>
     public static class ConfigurationPath
     {
