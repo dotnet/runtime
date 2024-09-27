@@ -10,25 +10,24 @@ namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
 public partial class ContractDescriptorSourceFileEmitter
 {
-    public const string TemplateResourceName = "Microsoft.DotNet.Diagnostics.DataContract.Resources.contract-descriptor.c.in";
     private const string JsonDescriptorKey = "jsonDescriptor";
     private const string JsonDescriptorSizeKey = "jsonDescriptorSize";
     private const string PointerDataCount = "pointerDataCount";
     private const string PlatformFlags = "platformFlags";
 
+    private readonly string _templateFilePath;
+
+    public ContractDescriptorSourceFileEmitter(string templateFilePath)
+    {
+        _templateFilePath = templateFilePath;
+    }
 
     [GeneratedRegex("%%([a-zA-Z0-9_]+)%%", RegexOptions.CultureInvariant)]
     private static partial Regex FindTemplatePlaceholderRegex();
 
-    internal static Stream GetTemplateStream()
+    private string GetTemplateString()
     {
-        return typeof(ContractDescriptorSourceFileEmitter).Assembly.GetManifestResourceStream(TemplateResourceName)!;
-    }
-
-    internal static string GetTemplateString()
-    {
-        using var reader = new StreamReader(GetTemplateStream(), System.Text.Encoding.UTF8);
-        return reader.ReadToEnd();
+        return File.ReadAllText(_templateFilePath);
     }
 
     public void SetPointerDataCount(int count)

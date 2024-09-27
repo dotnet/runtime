@@ -3391,7 +3391,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject, Delega
     // - System.Private.CoreLib!System.Delegate.GetMethodImpl and System.Private.CoreLib!System.MulticastDelegate.GetMethodImpl
     // - System.Private.CoreLib!System.Delegate.GetTarget and System.Private.CoreLib!System.MulticastDelegate.GetTarget
     // - coreclr!COMDelegate::GetMethodDesc and coreclr!COMDelegate::FindMethodHandle
-    // - coreclr!COMDelegate::DelegateConstruct and the delegate type table in
+    // - coreclr!Delegate_Construct and the delegate type table in
     // - DELEGATE KINDS TABLE in comdelegate.cpp
 
     *delegateType = DelegateType::kUnknownDelegateType;
