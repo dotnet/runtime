@@ -3,6 +3,8 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json.Nodes
 {
@@ -112,6 +114,113 @@ namespace System.Text.Json.Nodes
             JsonNode? item = List[index];
             List.RemoveAt(index);
             DetachParent(item);
+        }
+
+        /// <summary>
+        ///   Removes all the elements that match the conditions defined by the specified predicate.
+        /// </summary>
+        /// <param name="match">The predicate that defines the conditions of the elements to remove.</param>
+        /// <returns>The number of elements removed from the <see cref="JsonArray"/>.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="match"/> is <see langword="null"/>.
+        /// </exception>
+        public int RemoveAll(Func<JsonNode?, bool> match)
+        {
+            if (match == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(match));
+            }
+
+            List<JsonNode?>? list = _list;
+            if (list is null)
+            {
+                return 0;
+            }
+
+            int size = list.Count;
+            int freeIndex = 0;   // the first free slot in items array
+
+            // Find the first item which needs to be removed.
+            while (freeIndex < size && !match(list[freeIndex])) freeIndex++;
+            if (freeIndex >= size) return 0;
+
+            int current = freeIndex + 1;
+            while (current < size)
+            {
+                // Find the first item which needs to be kept.
+                while (current < size && match(list[current])) current++;
+
+                if (current < size)
+                {
+                    DetachParent(list[freeIndex]);
+
+                    // copy item to the free slot.
+                    list[freeIndex++] = list[current];
+                    list[current] = null; // prevent it from being detached from the parent in the following for-loop
+                    ++current;
+                }
+            }
+
+            int removedLength = size - freeIndex;
+            for (int i = 0; i < removedLength; i++)
+            {
+                DetachParent(list[freeIndex + removedLength]);
+            }
+            list.RemoveRange(freeIndex, removedLength);
+            return removedLength;
+        }
+
+        /// <summary>
+        ///   Removes a range of elements from the <see cref="JsonArray"/>.
+        /// </summary>
+        /// <param name="index">The zero-based starting index of the range of elements to remove.</param>
+        /// <param name="count">The number of elements to remove.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="index"/> or <paramref name="count"/> is less than 0.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="index"/> and <paramref name="count"/> do not denote a valid range of elements in the <see cref="JsonArray"/>.
+        /// </exception>
+        public void RemoveRange(int index, int count)
+        {
+            if (index < 0)
+            {
+                ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
+            }
+
+            if (count < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            List<JsonNode?>? list = _list;
+            if (list is null)
+            {
+                if (index == 0 && count == 0)
+                {
+                    return;
+                }
+                else
+                {
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
+                    return;
+                }
+            }
+
+            int size = list.Count;
+
+            if (size - index < count)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
+
+            if (count > 0)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    DetachParent(list[index + i]);
+                }
+
+                list.RemoveRange(index, count);
+            }
         }
 
         #region Explicit interface implementation
