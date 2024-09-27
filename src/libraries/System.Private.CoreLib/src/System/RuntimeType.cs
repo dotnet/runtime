@@ -737,6 +737,17 @@ namespace System
                     SR.Format(SR.Argument_NotEnoughGenArguments, genericArguments.Length, genericParameters.Length));
         }
 
+        internal CorElementType GetUnderlyingCorElementType()
+        {
+            RuntimeType type = this;
+            if (type.IsActualEnum)
+            {
+                type = (RuntimeType)Enum.GetUnderlyingType(type);
+            }
+
+            return type.GetCorElementType();
+        }
+
         // AggressiveInlining used since on hot path for reflection.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool TryGetByRefElementType(RuntimeType type, [NotNullWhen(true)] out RuntimeType? elementType)

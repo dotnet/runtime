@@ -3661,17 +3661,6 @@ namespace System
             return ret;
         }
 
-        internal CorElementType GetUnderlyingCorElementType()
-        {
-            RuntimeType type = this;
-            if (type.IsActualEnum)
-            {
-                type = (RuntimeType)Enum.GetUnderlyingType(type);
-            }
-
-            return type.GetCorElementType();
-        }
-
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeType>(other);
 
         public override Type MakePointerType() => new RuntimeTypeHandle(this).MakePointer();
