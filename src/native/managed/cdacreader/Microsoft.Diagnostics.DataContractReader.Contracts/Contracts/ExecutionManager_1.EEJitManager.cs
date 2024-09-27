@@ -57,14 +57,8 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
                 throw new InvalidOperationException("RangeSection is not a code heap");
             }
             TargetPointer heapListAddress = rangeSection.Data.HeapList;
-            Data.HeapList heapList = Target.ProcessedData.GetOrAdd<Data.HeapList>(heapListAddress);
-            if (jittedCodeAddress < heapList.StartAddress || jittedCodeAddress > heapList.EndAddress)
-            {
-                return TargetPointer.Null;
-            }
-            TargetPointer mapBase = heapList.MapBase;
-            TargetPointer mapStart = heapList.HeaderMap;
-            return _nibbleMap.FindMethodCode(mapBase, mapStart, jittedCodeAddress);
+            Data.CodeHeapListNode heapListNode = Target.ProcessedData.GetOrAdd<Data.CodeHeapListNode>(heapListAddress);
+            return _nibbleMap.FindMethodCode(heapListNode, jittedCodeAddress);
         }
 
     }

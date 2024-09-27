@@ -93,7 +93,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             return mapStart + (mapIdx / NibblesPerMapUnit) * MapUnitBytes;
         }
 
-        public TargetPointer FindMethodCode(TargetPointer mapBase, TargetPointer mapStart, TargetCodePointer currentPC)
+        internal TargetPointer FindMethodCode(TargetPointer mapBase, TargetPointer mapStart, TargetCodePointer currentPC)
         {
             TargetNUInt relativeAddress = new TargetNUInt(currentPC.Value - mapBase.Value);
             DecomposeAddress(relativeAddress, out ulong mapIdx, out uint bucketByteIndex);
@@ -169,7 +169,17 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             nibble = t & NibbleMask;
             return GetAbsoluteAddress(mapBase, mapIdx, nibble);
         }
+        public TargetPointer FindMethodCode(Data.CodeHeapListNode heapListNode, TargetCodePointer jittedCodeAddress)
+        {
+            if (jittedCodeAddress < heapListNode.StartAddress || jittedCodeAddress > heapListNode.EndAddress)
+            {
+                return TargetPointer.Null;
+            }
+
+            return FindMethodCode(heapListNode.MapBase, heapListNode.HeaderMap, jittedCodeAddress);
+        }
 
     }
+
 }
 #pragma warning restore SA1121 // Use built in alias

@@ -3,12 +3,12 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class HeapList : IData<HeapList>
+internal sealed class CodeHeapListNode : IData<CodeHeapListNode>
 {
-    static HeapList IData<HeapList>.Create(Target target, TargetPointer address)
-        => new HeapList(target, address);
+    static CodeHeapListNode IData<CodeHeapListNode>.Create(Target target, TargetPointer address)
+        => new CodeHeapListNode(target, address);
 
-    public HeapList(Target target, TargetPointer address)
+    public CodeHeapListNode(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.HeapList);
         Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
