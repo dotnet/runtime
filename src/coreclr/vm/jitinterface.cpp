@@ -3586,9 +3586,12 @@ bool CEEInfo::getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_
     {
         GCX_COOP();
         pMT->EnsureStaticDataAllocated();
-        addr->addr = isGc ? pMT->GetGCStaticsBasePointer() : pMT->GetNonGCStaticsBasePointer();
-        addr->accessType = IAT_VALUE;
-        result = true;
+        if (pMT->IsClassInitedOrPreinited())
+        {
+            addr->addr = isGc ? pMT->GetGCStaticsBasePointer() : pMT->GetNonGCStaticsBasePointer();
+            addr->accessType = IAT_VALUE;
+            result = true;
+        }
     }
 
     EE_TO_JIT_TRANSITION();
