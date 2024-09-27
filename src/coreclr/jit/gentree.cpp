@@ -21017,6 +21017,24 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
             return gtNewSimdBinOpNode(GT_AND, type, shiftOp, maskOp, simdBaseJitType, simdSize);
         }
+
+        case GT_LSH:
+        {
+            if (varTypeIsByte(simdBaseType))
+            {
+                unsigned shiftCountMask = (genTypeSize(simdBaseType) * 8) - 1;
+                GenTree* andShiftVal =
+                    gtNewOperNode(GT_AND, op2ForLookup->TypeGet(), op2ForLookup, gtNewIconNode(shiftCountMask));
+                GenTree* op3 =
+                    gtNewSimdBinOpNode(GT_LSH, type, op1, andShiftVal,
+                                       varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_USHORT : CORINFO_TYPE_SHORT,
+                                       simdSize);
+                GenTree* maskElement =
+                    gtNewOperNode(GT_LSH, andShiftVal->TypeGet(), gtNewIconNode(0xFF), gtCloneExpr(andShiftVal));
+                GenTree* mask = gtNewSimdCreateBroadcastNode(type, maskElement, simdBaseJitType, simdSize);
+                return gtNewSimdBinOpNode(GT_AND, type, op3, mask, simdBaseJitType, simdSize);
+            }
+        }
 #endif // TARGET_XARCH
 
         case GT_MUL:

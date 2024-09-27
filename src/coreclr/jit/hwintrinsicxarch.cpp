@@ -3377,22 +3377,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (varTypeIsByte(simdBaseType))
-            {
-                op2 = impPopStack().val;
-                op1 = impSIMDPopStack();
-
-                GenTree* andShiftVal = gtNewOperNode(GT_AND, op2->TypeGet(), op2, gtNewIconNode(0x7));
-                op3                  = gtNewSimdBinOpNode(GT_LSH, retType, op1, andShiftVal,
-                                         varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_USHORT : CORINFO_TYPE_SHORT,
-                                                          simdSize);
-                GenTree* maskElement =
-                    gtNewOperNode(GT_LSH, andShiftVal->TypeGet(), gtNewIconNode(0xFF), gtCloneExpr(andShiftVal));
-                GenTree* mask = gtNewSimdCreateBroadcastNode(retType, maskElement, simdBaseJitType, simdSize);
-                retNode       = gtNewSimdBinOpNode(GT_AND, retType, op3, mask, simdBaseJitType, simdSize);
-                break;
-            }
-
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
                 op2 = impPopStack().val;
