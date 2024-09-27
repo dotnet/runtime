@@ -3388,8 +3388,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                                           simdSize);
                 GenTree* maskElement =
                     gtNewOperNode(GT_LSH, andShiftVal->TypeGet(), gtNewIconNode(0xFF), gtCloneExpr(andShiftVal));
-                GenTree* mask        = gtNewSimdCreateBroadcastNode(retType, maskElement, simdBaseJitType, simdSize);
-                retNode              = gtNewSimdBinOpNode(GT_AND, retType, op3, mask, simdBaseJitType, simdSize);
+                GenTree* mask = gtNewSimdCreateBroadcastNode(retType, maskElement, simdBaseJitType, simdSize);
+                retNode       = gtNewSimdBinOpNode(GT_AND, retType, op3, mask, simdBaseJitType, simdSize);
                 break;
             }
 
