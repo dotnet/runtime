@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.Extensions.Caching.Distributed
 {
     /// <summary>
-    /// An implementation of <see cref="IDistributedCache"/> using <see cref="IMemoryCache"/>.
+    /// Implements <see cref="IDistributedCache"/> using <see cref="IMemoryCache"/>.
     /// </summary>
     public class MemoryDistributedCache : IDistributedCache
     {

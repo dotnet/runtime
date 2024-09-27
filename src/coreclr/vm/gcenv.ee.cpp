@@ -201,7 +201,9 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 #if defined(FEATURE_EH_FUNCLETS)
         flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
 #endif // defined(FEATURE_EH_FUNCLETS)
+        gcctx.pScannedSlots = NULL;
         pThread->StackWalkFrames( GcStackCrawlCallBack, &gcctx, flagsStackWalk);
+        delete gcctx.pScannedSlots;
     }
 
     GCFrame* pGCFrame = pThread->GetGCFrame();
@@ -1790,4 +1792,9 @@ void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint
 void GCToEEInterface::LogErrorToHost(const char *message)
 {
     ::LogErrorToHost("GC: %s", message);
+}
+
+uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
+{
+    return thread->GetOSThreadId64();
 }

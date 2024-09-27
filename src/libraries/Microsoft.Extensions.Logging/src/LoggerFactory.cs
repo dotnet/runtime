@@ -256,7 +256,7 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Check if the factory has been disposed.
         /// </summary>
-        /// <returns>True when <see cref="Dispose()"/> as been called</returns>
+        /// <returns><see langword="true" /> when <see cref="Dispose()"/> as been called</returns>
         protected virtual bool CheckDisposed() => _disposed;
 
         /// <inheritdoc/>

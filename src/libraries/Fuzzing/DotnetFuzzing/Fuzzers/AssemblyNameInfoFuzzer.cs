@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Globalization;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -24,15 +25,15 @@ namespace DotnetFuzzing.Fuzzers
             using PooledBoundedMemory<char> inputPoisonedBefore = PooledBoundedMemory<char>.Rent(chars, PoisonPagePlacement.Before);
             using PooledBoundedMemory<char> inputPoisonedAfter = PooledBoundedMemory<char>.Rent(chars, PoisonPagePlacement.After);
 
-            Test(inputPoisonedBefore);
-            Test(inputPoisonedAfter);
+            Test(inputPoisonedBefore.Span);
+            Test(inputPoisonedAfter.Span);
         }
 
-        private static void Test(PooledBoundedMemory<char> inputPoisoned)
+        private static void Test(Span<char> span)
         {
-            if (AssemblyNameInfo.TryParse(inputPoisoned.Span, out AssemblyNameInfo? fromTryParse))
+            if (AssemblyNameInfo.TryParse(span, out AssemblyNameInfo? fromTryParse))
             {
-                AssemblyNameInfo fromParse = AssemblyNameInfo.Parse(inputPoisoned.Span);
+                AssemblyNameInfo fromParse = AssemblyNameInfo.Parse(span);
 
                 Assert.Equal(fromTryParse.Name, fromParse.Name);
                 Assert.Equal(fromTryParse.FullName, fromParse.FullName);
@@ -40,6 +41,19 @@ namespace DotnetFuzzing.Fuzzers
                 Assert.Equal(fromTryParse.Flags, fromParse.Flags);
                 Assert.Equal(fromTryParse.Version, fromParse.Version);
                 Assert.SequenceEqual(fromTryParse.PublicKeyOrToken.AsSpan(), fromParse.PublicKeyOrToken.AsSpan());
+
+                if (!string.IsNullOrEmpty(fromParse.CultureName))
+                {
+                    try
+                    {
+                        _ = CultureInfo.GetCultureInfo(fromParse.CultureName);
+                    }
+                    catch (CultureNotFoundException)
+                    {
+                        // ToAssemblyName would try to create such a culture and fail.
+                        return;
+                    }
+                }
 
                 Assert.Equal(fromTryParse.ToAssemblyName().Name, fromParse.ToAssemblyName().Name);
                 Assert.Equal(fromTryParse.ToAssemblyName().Version, fromParse.ToAssemblyName().Version);
@@ -66,7 +80,7 @@ namespace DotnetFuzzing.Fuzzers
             {
                 try
                 {
-                    _ = AssemblyNameInfo.Parse(inputPoisoned.Span);
+                    _ = AssemblyNameInfo.Parse(span);
                 }
                 catch (ArgumentException)
                 {
