@@ -12,7 +12,8 @@ namespace System.Formats.Nrbf.Utils;
 
 internal static class TypeNameHelpers
 {
-    // PrimitiveType does not define Object, IntPtr or UIntPtr
+    // PrimitiveType does not define Object, IntPtr or UIntPtr.
+    internal const PrimitiveType StringPrimitiveType = (PrimitiveType)18;
     internal const PrimitiveType ObjectPrimitiveType = (PrimitiveType)19;
     internal const PrimitiveType IntPtrPrimitiveType = (PrimitiveType)20;
     internal const PrimitiveType UIntPtrPrimitiveType = (PrimitiveType)21;
@@ -22,8 +23,6 @@ internal static class TypeNameHelpers
 
     internal static TypeName GetPrimitiveTypeName(PrimitiveType primitiveType)
     {
-        Debug.Assert(primitiveType is not (PrimitiveType.None or PrimitiveType.Null));
-
         TypeName? typeName = s_primitiveTypeNames[(int)primitiveType];
         if (typeName is null)
         {
@@ -44,11 +43,11 @@ internal static class TypeNameHelpers
                 PrimitiveType.Decimal => "System.Decimal",
                 PrimitiveType.TimeSpan => "System.TimeSpan",
                 PrimitiveType.DateTime => "System.DateTime",
-                PrimitiveType.String => "System.String",
+                StringPrimitiveType => "System.String",
                 ObjectPrimitiveType => "System.Object",
                 IntPtrPrimitiveType => "System.IntPtr",
                 UIntPtrPrimitiveType => "System.UIntPtr",
-                _ => throw new ArgumentOutOfRangeException(paramName: nameof(primitiveType), actualValue: primitiveType, message: null)
+                _ => throw new InvalidOperationException()
             };
 
             s_primitiveTypeNames[(int)primitiveType] = typeName = TypeName.Parse(fullName.AsSpan()).WithCoreLibAssemblyName();
@@ -99,7 +98,7 @@ internal static class TypeNameHelpers
         else if (typeof(T) == typeof(TimeSpan))
             return PrimitiveType.TimeSpan;
         else if (typeof(T) == typeof(string))
-            return PrimitiveType.String;
+            return StringPrimitiveType;
         else if (typeof(T) == typeof(IntPtr))
             return IntPtrPrimitiveType;
         else if (typeof(T) == typeof(UIntPtr))
@@ -118,6 +117,17 @@ internal static class TypeNameHelpers
         Debug.Assert(payloadOptions.UndoTruncatedTypeNames);
         Debug.Assert(libraryRecord.RawLibraryName is not null);
 
+        // This is potentially a DoS vector, as somebody could submit:
+        // [1] BinaryLibraryRecord = <really long string>
+        // [2] ClassRecord (lib = [1])
+        // [3] ClassRecord (lib = [1])
+        // ...
+        // [n] ClassRecord (lib = [1])
+        //
+        // Which means somebody submits a payload of length O(long + n) and tricks us into
+        // performing O(long * n) work. For this reason, we have marked the UndoTruncatedTypeNames
+        // property as "keep this disabled unless you trust the input."
+
         // Combining type and library allows us for handling truncated generic type names that may be present in resources.
         ArraySegment<char> assemblyQualifiedName = RentAssemblyQualifiedName(rawName, libraryRecord.RawLibraryName);
         TypeName.TryParse(assemblyQualifiedName.AsSpan(), out TypeName? typeName, payloadOptions.TypeNameParseOptions);
@@ -125,7 +135,7 @@ internal static class TypeNameHelpers
 
         if (typeName is null)
         {
-            throw new SerializationException(SR.Format(SR.Serialization_InvalidTypeOrAssemblyName, rawName, libraryRecord.RawLibraryName));
+            throw new SerializationException(SR.Serialization_InvalidTypeOrAssemblyName);
         }
 
         if (typeName.AssemblyName is null)
@@ -149,6 +159,10 @@ internal static class TypeNameHelpers
 
     private static TypeName With(this TypeName typeName, AssemblyNameInfo assemblyName)
     {
+        // This is a recursive method over potentially hostile TypeName arguments.
+        // We assume the complexity of the TypeName arg was appropriately bounded.
+        // See comment in TypeName.FullName property getter for more info.
+
         if (!typeName.IsSimple)
         {
             if (typeName.IsArray)
@@ -169,7 +183,7 @@ internal static class TypeNameHelpers
             else
             {
                 // BinaryFormatter can not serialize pointers or references.
-                ThrowHelper.ThrowInvalidTypeName(typeName.FullName);
+                ThrowHelper.ThrowInvalidTypeName();
             }
         }
 
@@ -187,6 +201,7 @@ internal static class TypeNameHelpers
         return typeName;
     }
 
+    // Complexity is O(typeName.Length + libraryName.Length)
     private static ArraySegment<char> RentAssemblyQualifiedName(string typeName, string libraryName)
     {
         int length = typeName.Length + 1 + libraryName.Length;
