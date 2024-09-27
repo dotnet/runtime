@@ -234,11 +234,6 @@ FCFuncEnd()
 FCFuncStart(gDelegateFuncs)
     FCFuncElement("GetMulticastInvoke", COMDelegate::GetMulticastInvoke)
     FCFuncElement("GetInvokeMethod", COMDelegate::GetInvokeMethod)
-
-    // The FCall mechanism knows how to wire multiple different constructor calls into a
-    // single entrypoint, without the following entry.  But we need this entry to satisfy
-    // frame creation within the body:
-    FCFuncElement("DelegateConstruct", COMDelegate::DelegateConstruct)
 FCFuncEnd()
 
 FCFuncStart(gMathFuncs)
@@ -299,9 +294,6 @@ FCFuncEnd()
 
 FCFuncStart(gThreadFuncs)
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
-    FCFuncElement("GetIsBackground", ThreadNative::GetIsBackground)
-    FCFuncElement("get_IsThreadPoolThread", ThreadNative::IsThreadpoolThread)
-    FCFuncElement("set_IsThreadPoolThread", ThreadNative::SetIsThreadpoolThread)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()
 
@@ -340,7 +332,7 @@ FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("GetSegmentSize", GCInterface::GetSegmentSize)
     FCFuncElement("GetLastGCPercentTimeInGC", GCInterface::GetLastGCPercentTimeInGC)
     FCFuncElement("GetGenerationSize", GCInterface::GetGenerationSize)
-    FCFuncElement("GetGeneration", GCInterface::GetGeneration)
+    FCFuncElement("GetGenerationInternal", GCInterface::GetGenerationInternal)
     FCFuncElement("GetMaxGeneration", GCInterface::GetMaxGeneration)
     FCFuncElement("_SuppressFinalize", GCInterface::SuppressFinalize)
 
@@ -396,9 +388,8 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("PrepareDelegate", ReflectionInvocation::PrepareDelegate)
     FCFuncElement("TryGetHashCode", ObjectNative::TryGetHashCode)
     FCFuncElement("ContentEquals", ObjectNative::ContentEquals)
-    FCFuncElement("EnsureSufficientExecutionStack", ReflectionInvocation::EnsureSufficientExecutionStack)
     FCFuncElement("TryEnsureSufficientExecutionStack", ReflectionInvocation::TryEnsureSufficientExecutionStack)
-    FCFuncElement("AllocTailCallArgBuffer", TailCallHelp::AllocTailCallArgBuffer)
+    FCFuncElement("AllocTailCallArgBufferWorker", TailCallHelp::AllocTailCallArgBufferWorker)
     FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
     FCFuncElement("Box", JIT_Box)
     FCFuncElement("Unbox_Nullable", JIT_Unbox_Nullable)
