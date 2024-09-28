@@ -48,11 +48,27 @@
     <Compile Include="CustomEventSources\SimpleEventSource.cs" />
     <Compile Include="CustomEventSources\UseAbstractEventSource.cs" />
     <Compile Include="CustomEventSources\UseInterfaceEventSource.cs" />
+    <Compile Include="GenerateTest\Baselines.cs" />
+    <Compile Include="GenerateTest\Compiler.cs" />
+    <Compile Include="GenerateTest\EventSourceGeneratedTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="GenerateTest\Baselines\TestEventSource.Event0.txt" />
+    <EmbeddedResource Include="GenerateTest\Baselines\TestEventSource.Event1.txt" />
+    <EmbeddedResource Include="GenerateTest\Baselines\TestEventSource.Event2.txt" />
+    <EmbeddedResource Include="GenerateTest\Baselines\TestEventSource.Event3.txt" />
+    <EmbeddedResource Include="GenerateTest\Baselines\TestEventSource.Event4.txt" />
+    <EmbeddedResource Include="GenerateTest\Baselines\TestEventSource.NoNs.Event0.txt" />
+    <EmbeddedResource Include="GenerateTest\Baselines\TestEventSource.NoNs.Event1.txt" />
+    <EmbeddedResource Include="GenerateTest\Baselines\TestEventSource.NoNs.Event2.txt" />
+    <EmbeddedResource Include="GenerateTest\Baselines\TestEventSource.NoNs.Event3.txt" />
+    <EmbeddedResource Include="GenerateTest\Baselines\TestEventSource.NoNs.Event4.txt" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion_4_8)" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj" />
   </ItemGroup>
 </Project>

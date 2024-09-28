@@ -65,6 +65,14 @@ namespace Generators
 
             context.RegisterSourceOutput(eventSourceClasses, (ctx, source) =>
             {
+                if (source.Diagnostics.Length != 0)
+                {
+                    foreach (Diagnostic item in source.Diagnostics)
+                    {
+                        ctx.ReportDiagnostic(item);
+                    }
+                    return;
+                }
                 var code = new StringBuilder();
                 Emiitter.Emit(source, code);
                 if (code.Length != 0)
