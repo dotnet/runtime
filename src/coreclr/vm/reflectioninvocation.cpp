@@ -62,57 +62,6 @@ FCIMPL5(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE,
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, ReflectionInvocation::CanValueSpecialCast, ReflectClassBaseObject *pValueTypeUNSAFE, ReflectClassBaseObject *pTargetTypeUNSAFE) {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pValueTypeUNSAFE));
-        PRECONDITION(CheckPointer(pTargetTypeUNSAFE));
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refValueType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pValueTypeUNSAFE);
-    REFLECTCLASSBASEREF refTargetType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTargetTypeUNSAFE);
-
-    TypeHandle valueType = refValueType->GetType();
-    TypeHandle targetType = refTargetType->GetType();
-
-    // we are here only if the target type is a primitive, an enum or a pointer
-
-    CorElementType targetCorElement = targetType.GetVerifierCorElementType();
-
-    BOOL ret = TRUE;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refValueType, refTargetType);
-    // the field type is a pointer
-    if (targetCorElement == ELEMENT_TYPE_PTR || targetCorElement == ELEMENT_TYPE_FNPTR) {
-        // the object must be an IntPtr or a System.Reflection.Pointer
-        if (valueType == TypeHandle(CoreLibBinder::GetClass(CLASS__INTPTR))) {
-            //
-            // it's an IntPtr, it's good.
-        }
-        //
-        // it's a System.Reflection.Pointer object
-
-        // void* assigns to any pointer. Otherwise the type of the pointer must match
-        else if (!InvokeUtil::IsVoidPtr(targetType)) {
-            if (!valueType.CanCastTo(targetType))
-                ret = FALSE;
-        }
-    } else {
-        // the field type is an enum or a primitive. To have any chance of assignement the object type must
-        // be an enum or primitive as well.
-        // So get the internal cor element and that must be the same or widen
-        CorElementType valueCorElement = valueType.GetVerifierCorElementType();
-        if (InvokeUtil::IsPrimitiveType(valueCorElement))
-            ret = (InvokeUtil::CanPrimitiveWiden(targetCorElement, valueCorElement)) ? TRUE : FALSE;
-        else
-            ret = FALSE;
-    }
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(ret);
-}
-FCIMPLEND
-
 FCIMPL6(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Object *targetUNSAFE, Object *valueUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE, CLR_BOOL *pIsClassInitialized) {
     CONTRACTL
     {

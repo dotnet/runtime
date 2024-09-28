@@ -3654,6 +3654,13 @@ namespace System
             }
         }
 
+        internal CorElementType GetCorElementType()
+        {
+            CorElementType ret = (CorElementType)GetNativeTypeHandle().GetCorElementType();
+            GC.KeepAlive(this);
+            return ret;
+        }
+
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeType>(other);
 
         public override Type MakePointerType() => new RuntimeTypeHandle(this).MakePointer();
@@ -3676,14 +3683,43 @@ namespace System
 
         #region Invoke Member
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType);
+        private static bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType)
+        {
+            Debug.Assert(targetType.IsPointer || targetType.IsEnum || targetType.IsPrimitive || targetType.IsFunctionPointer);
+
+            if (targetType.IsPointer || targetType.IsFunctionPointer)
+            {
+                // The object must be an IntPtr or a System.Reflection.Pointer
+                if (valueType == typeof(IntPtr))
+                {
+                    // It's an IntPtr, it's good.
+                    return true;
+                }
+
+                // void* assigns to any pointer
+                if (targetType == typeof(void*))
+                {
+                    return true;
+                }
+
+                // otherwise the type of the pointer must match.
+                return valueType.IsAssignableTo(targetType);
+            }
+            else
+            {
+                // The type is an enum or a primitive. To have any chance of assignment
+                // the object type must be an enum or primitive as well.
+                // So get the internal cor element and that must be the same or widen.
+                CorElementType valueCorElement = valueType.GetUnderlyingCorElementType();
+                CorElementType targetCorElement = targetType.GetUnderlyingCorElementType();
+                return valueCorElement.IsPrimitiveType() && RuntimeHelpers.CanPrimitiveWiden(valueCorElement, targetCorElement);
+            }
+        }
 
         private CheckValueStatus TryChangeTypeSpecial(ref object value)
         {
             Pointer? pointer = value as Pointer;
             RuntimeType srcType = pointer != null ? pointer.GetPointerType() : (RuntimeType)value.GetType();
-
             if (!CanValueSpecialCast(srcType, this))
             {
                 return CheckValueStatus.ArgumentException;
@@ -3695,8 +3731,8 @@ namespace System
             }
             else
             {
-                CorElementType srcElementType = GetUnderlyingType(srcType);
-                CorElementType dstElementType = GetUnderlyingType(this);
+                CorElementType srcElementType = srcType.GetUnderlyingCorElementType();
+                CorElementType dstElementType = GetUnderlyingCorElementType();
                 if (dstElementType != srcElementType)
                 {
                     value = InvokeUtils.ConvertOrWiden(srcType, value, this, dstElementType);
