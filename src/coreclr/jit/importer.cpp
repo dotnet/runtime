@@ -5496,6 +5496,9 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
     GenTree*  op1  = *pOp1;
     GenTree*  op2  = *pOp2;
 
+    assert(op1 != nullptr);
+    assert(op2 != nullptr);
+
     // Arithmetic operations are generally only allowed with primitive types, but certain operations are allowed
     // with byrefs.
     //
@@ -5607,6 +5610,10 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
             type = TYP_DOUBLE;
         }
     }
+
+    // Try to fold the introduced casts
+    *pOp1 = gtFoldExpr(*pOp1);
+    *pOp2 = gtFoldExpr(*pOp2);
 
     assert(TypeIs(type, TYP_BYREF, TYP_DOUBLE, TYP_FLOAT, TYP_LONG, TYP_INT));
     return type;
