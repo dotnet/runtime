@@ -5612,8 +5612,14 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
     }
 
     // Try to fold the introduced casts
-    *pOp1 = gtFoldExpr(*pOp1);
-    *pOp2 = gtFoldExpr(*pOp2);
+    if ((*pOp1)->OperIs(GT_CAST) && (*pOp1)->gtGetOp1()->OperIsConst())
+    {
+        *pOp1 = gtFoldExprConst(*pOp1);
+    }
+    if ((*pOp2)->OperIs(GT_CAST) && (*pOp2)->gtGetOp1()->OperIsConst())
+    {
+        *pOp2 = gtFoldExprConst(*pOp2);
+    }
 
     assert(TypeIs(type, TYP_BYREF, TYP_DOUBLE, TYP_FLOAT, TYP_LONG, TYP_INT));
     return type;
