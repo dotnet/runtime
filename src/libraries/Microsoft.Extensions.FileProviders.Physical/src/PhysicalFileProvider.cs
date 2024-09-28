@@ -14,7 +14,7 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.FileProviders
 {
     /// <summary>
-    /// Looks up files using the on-disk file system
+    /// Looks up files using the on-disk file system.
     /// </summary>
     /// <remarks>
     /// When the environment variable "DOTNET_USE_POLLING_FILE_WATCHER" is set to "1" or "true", calls to
@@ -73,17 +73,17 @@ namespace Microsoft.Extensions.FileProviders
         /// <summary>
         /// Gets or sets a value that determines if this instance of <see cref="PhysicalFileProvider"/>
         /// uses polling to determine file changes.
-        /// <para>
-        /// By default, <see cref="PhysicalFileProvider"/>  uses <see cref="FileSystemWatcher"/> to listen to file change events
-        /// for <see cref="Watch(string)"/>. <see cref="FileSystemWatcher"/> is ineffective in some scenarios such as mounted drives.
-        /// Polling is required to effectively watch for file changes.
-        /// </para>
-        /// <seealso cref="UseActivePolling"/>.
         /// </summary>
         /// <value>
         /// The default value of this property is determined by the value of environment variable named <c>DOTNET_USE_POLLING_FILE_WATCHER</c>.
-        /// When <c>true</c> or <c>1</c>, this property defaults to <c>true</c>; otherwise false.
+        /// When <see langword="true"/> or <c>1</c>, this property defaults to <see langword="true"/>; otherwise <see langword="false"/>.
         /// </value>
+        /// <remarks>
+        /// By default, <see cref="PhysicalFileProvider"/>  uses <see cref="FileSystemWatcher"/> to listen to file change events
+        /// for <see cref="Watch(string)"/>. <see cref="FileSystemWatcher"/> is ineffective in some scenarios such as mounted drives.
+        /// Polling is required to effectively watch for file changes.
+        /// </remarks>
+        /// <seealso cref="UseActivePolling"/>
         public bool UsePollingFileWatcher
         {
             get
@@ -111,18 +111,18 @@ namespace Microsoft.Extensions.FileProviders
         /// <summary>
         /// Gets or sets a value that determines if this instance of <see cref="PhysicalFileProvider"/>
         /// actively polls for file changes.
-        /// <para>
-        /// When <see langword="true"/>, <see cref="IChangeToken"/> returned by <see cref="Watch(string)"/> will actively poll for file changes
+        /// </summary>
+        /// <value>
+        /// <see langword="true"/> if the <see cref="IChangeToken"/> returned by <see cref="Watch(string)"/> actively polls for file changes
         /// (<see cref="IChangeToken.ActiveChangeCallbacks"/> will be <see langword="true"/>) instead of being passive.
-        /// </para>
+        /// The default value of this property is determined by the value of environment variable named <c>DOTNET_USE_POLLING_FILE_WATCHER</c>.
+        /// When <see langword="true"/> or <c>1</c>, this property defaults to <see langword="true"/>; otherwise <see langword="false"/>.
+        /// </value>
+        /// <remarks>
         /// <para>
         /// This property is only effective when <see cref="UsePollingFileWatcher"/> is set.
         /// </para>
-        /// </summary>
-        /// <value>
-        /// The default value of this property is determined by the value of environment variable named <c>DOTNET_USE_POLLING_FILE_WATCHER</c>.
-        /// When <c>true</c> or <c>1</c>, this property defaults to <c>true</c>; otherwise false.
-        /// </value>
+        /// </remarks>
         public bool UseActivePolling
         {
             get
@@ -164,7 +164,7 @@ namespace Microsoft.Extensions.FileProviders
             FileSystemWatcher? watcher;
 #if NET
             //  For browser/iOS/tvOS we will proactively fallback to polling since FileSystemWatcher is not supported.
-            if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
+            if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
             {
                 UsePollingFileWatcher = true;
                 UseActivePolling = true;
@@ -221,7 +221,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         /// <summary>
-        /// The root directory for this instance.
+        /// Gets the root directory for this instance.
         /// </summary>
         public string Root { get; }
 
@@ -256,10 +256,10 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         /// <summary>
-        /// Locate a file at the given path by directly mapping path segments to physical directories.
+        /// Locates a file at the given path by directly mapping path segments to physical directories.
         /// </summary>
-        /// <param name="subpath">A path under the root directory</param>
-        /// <returns>The file information. Caller must check <see cref="IFileInfo.Exists"/> property. </returns>
+        /// <param name="subpath">A path under the root directory.</param>
+        /// <returns>The file information. Caller must check the <see cref="IFileInfo.Exists"/> property.</returns>
         public IFileInfo GetFileInfo(string subpath)
         {
             if (string.IsNullOrEmpty(subpath) || PathUtils.HasInvalidPathChars(subpath))
@@ -292,14 +292,17 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         /// <summary>
-        /// Enumerate a directory at the given path, if any.
+        /// Enumerates a directory at the given path, if any.
         /// </summary>
         /// <param name="subpath">A path under the root directory. Leading slashes are ignored.</param>
         /// <returns>
-        /// Contents of the directory. Caller must check <see cref="IDirectoryContents.Exists"/> property. <see cref="NotFoundDirectoryContents" /> if
-        /// <paramref name="subpath" /> is absolute, if the directory does not exist, or <paramref name="subpath" /> has invalid
-        /// characters.
+        /// The contents of the directory.
         /// </returns>
+        /// <remarks>
+        /// <para>The caller must check the <see cref="IDirectoryContents.Exists"/> property.</para>
+        /// <para>Returns <see cref="NotFoundDirectoryContents" /> if <paramref name="subpath" /> is absolute,
+        /// if the directory does not exist, or <paramref name="subpath" /> has invalid characters.</para>
+        /// </remarks>
         public IDirectoryContents GetDirectoryContents(string subpath)
         {
             try
@@ -345,7 +348,7 @@ namespace Microsoft.Extensions.FileProviders
         /// </param>
         /// <returns>
         /// An <see cref="IChangeToken" /> that is notified when a file matching <paramref name="filter" /> is added,
-        /// modified or deleted. Returns a <see cref="NullChangeToken" /> if <paramref name="filter" /> has invalid filter
+        /// modified, or deleted. Returns a <see cref="NullChangeToken" /> if <paramref name="filter" /> has invalid filter
         /// characters or if <paramref name="filter" /> is an absolute path or outside the root directory specified in the
         /// constructor <seealso cref="PhysicalFileProvider(string)" />.
         /// </returns>

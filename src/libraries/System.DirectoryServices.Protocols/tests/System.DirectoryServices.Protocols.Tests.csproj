@@ -9,10 +9,13 @@
     <Compile Include="ModifyDNRequestTests.cs" />
     <Compile Include="ModifyRequestTests.cs" />
     <Compile Include="PageResultRequestControlTests.cs" />
+    <Compile Include="PageResultResponseControlTests.cs" />
     <Compile Include="SortRequestControlTests.cs" />
+    <Compile Include="SortResponseControlTests.cs" />
     <Compile Include="SortKeyTests.cs" />
     <Compile Include="ReferralCallbackTests.cs" />
     <Compile Include="VlvRequestControlTests.cs" />
+    <Compile Include="VlvResponseControlTests.cs" />
     <Compile Include="VerifyNameControlTests.cs" />
     <Compile Include="TreeDeleteControlTests.cs" />
     <Compile Include="ShowDeletedControlTests.cs" />
@@ -29,6 +32,7 @@
     <Compile Include="DsmlAuthRequestTests.cs" />
     <Compile Include="DomainScopeControlTests.cs" />
     <Compile Include="DirSyncRequestControlTests.cs" />
+    <Compile Include="DirSyncResponseControlTests.cs" />
     <Compile Include="LdapDirectoryIdentifierTests.cs" />
     <Compile Include="DirectoryNotificationControlTests.cs" />
     <Compile Include="DirectoryControlCollectionTests.cs" />
@@ -45,6 +49,7 @@
     <Compile Include="DirectoryExceptionTests.cs" />
     <Compile Include="BerConversionExceptionTests.cs" />
     <Compile Include="AsqRequestControlTests.cs" />
+    <Compile Include="AsqResponseControlTests.cs" />
     <Compile Include="AddRequestTests.cs" />
     <Compile Include="DirectoryServicesProtocolsTests.cs" />
     <Compile Include="DirectoryServicesTestHelpers.cs" />

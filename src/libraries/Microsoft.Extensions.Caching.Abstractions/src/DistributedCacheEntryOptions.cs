@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Caching.Distributed
         }
 
         /// <summary>
-        /// Gets or sets how long a cache entry can be inactive (e.g. not accessed) before it will be removed.
+        /// Gets or sets how long a cache entry can be inactive (for example, not accessed) before it will be removed.
         /// This will not extend the entry lifetime beyond the absolute expiration (if set).
         /// </summary>
         public TimeSpan? SlidingExpiration

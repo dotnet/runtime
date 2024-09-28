@@ -271,6 +271,8 @@ namespace Wasm.Build.Tests
             args.Append($" --output-directory={testLogPath}");
             args.Append($" --expected-exit-code={expectedAppExitCode}");
             args.Append($" {extraXHarnessArgs ?? string.Empty}");
+            args.Append(" --browser-arg=--disable-gpu");
+            args.Append(" --pageLoadStrategy=none");
 
             // `/.dockerenv` - is to check if this is running in a codespace
             if (File.Exists("/.dockerenv"))
@@ -628,8 +630,9 @@ namespace Wasm.Build.Tests
     public record BuildArgs(string ProjectName,
                             string Config,
                             bool AOT,
-                            string ProjectFileContents,
-                            string? ExtraBuildArgs);
+                            string Id,
+                            string? ExtraBuildArgs,
+                            string? ProjectFileContents=null);
     public record BuildProduct(string ProjectDir, string LogFile, bool Result, string BuildOutput);
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
