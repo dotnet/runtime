@@ -5572,13 +5572,21 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
         if (genActualType(op1) != TYP_I_IMPL)
         {
             // insert an explicit upcast
-            op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, TYP_I_IMPL);
+            op1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, TYP_I_IMPL);
         }
         else if (genActualType(op2) != TYP_I_IMPL)
         {
             // insert an explicit upcast
-            op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, TYP_I_IMPL);
+            op2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, TYP_I_IMPL);
         }
+
+        if (opts.OptimizationEnabled())
+        {
+            op1 = gtFoldExpr(op1);
+            op2 = gtFoldExpr(op2);
+        }
+        *pOp1 = op1;
+        *pOp2 = op2;
 
         type = TYP_I_IMPL;
     }
@@ -5609,16 +5617,6 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
 
             type = TYP_DOUBLE;
         }
-    }
-
-    // Try to fold the introduced casts
-    if ((*pOp1)->OperIs(GT_CAST) && (*pOp1)->gtGetOp1()->OperIsConst())
-    {
-        *pOp1 = gtFoldExprConst(*pOp1);
-    }
-    if ((*pOp2)->OperIs(GT_CAST) && (*pOp2)->gtGetOp1()->OperIsConst())
-    {
-        *pOp2 = gtFoldExprConst(*pOp2);
     }
 
     assert(TypeIs(type, TYP_BYREF, TYP_DOUBLE, TYP_FLOAT, TYP_LONG, TYP_INT));
