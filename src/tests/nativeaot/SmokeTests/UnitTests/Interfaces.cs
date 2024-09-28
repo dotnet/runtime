@@ -42,6 +42,7 @@ public class Interfaces
         TestVariantInterfaceOptimizations.Run();
         TestSharedInterfaceMethods.Run();
         TestGenericAnalysis.Run();
+        TestRuntime108229Regression.Run();
         TestCovariantReturns.Run();
         TestDynamicInterfaceCastable.Run();
         TestStaticInterfaceMethodsAnalysis.Run();
@@ -701,6 +702,27 @@ public class Interfaces
             if (s_c3a.Method(null) != "Method(T)")
                 throw new Exception();
             if (s_c3b.Method(null) != "Method(object)")
+                throw new Exception();
+        }
+    }
+
+    class TestRuntime108229Regression
+    {
+        class Shapeshifter : IDynamicInterfaceCastable
+        {
+            public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType) => throw new NotImplementedException();
+            public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented) => true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool Is(object o) => o is IEnumerable<object>;
+
+        public static void Run()
+        {
+            object o = new Shapeshifter();
+
+            // Call multiple times in case we just flushed the cast cache (when we flush we don't store).
+            if (!Is(o) || !Is(o) || !Is(o))
                 throw new Exception();
         }
     }
