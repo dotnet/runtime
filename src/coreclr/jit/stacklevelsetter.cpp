@@ -268,7 +268,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 //
 void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* block)
 {
-    Compiler::AddCodeDsc* add = comp->fgFindExcptnTarget(kind, comp->bbThrowIndex(block));
+    Compiler::AddCodeDsc* add = comp->fgFindExcptnTarget(kind, block);
     assert(add != nullptr);
 
     // We expect we'll actually need this helper.
