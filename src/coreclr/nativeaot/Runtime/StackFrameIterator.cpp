@@ -770,7 +770,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.pR20 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R20);
     m_RegDisplay.pR21 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R21);
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_RISCV64)
 
     //
     // preserved regs
