@@ -718,10 +718,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCall
 
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetCurrentThreadName(const char* name)
 {
-    if (!name)
-    {
-        return true;
-    }
     const int MAX_THREAD_NAME_SIZE = 15;
     char name_copy[MAX_THREAD_NAME_SIZE + 1];
     strncpy(name_copy, name, MAX_THREAD_NAME_SIZE);
