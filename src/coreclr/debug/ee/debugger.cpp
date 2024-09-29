@@ -5462,6 +5462,7 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
     }
 
     bool retVal;
+    DebuggerPatchSkip *pDebuggerPatchSkip = nullptr;
 
     {
         // Don't stop for native debugging anywhere inside our inproc-Filters.
@@ -5470,7 +5471,7 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
         if (!CORDBUnrecoverableError(this))
         {
             retVal = DebuggerController::DispatchNativeException(exception, context,
-                                                               code, thread);
+                                                               code, thread, &pDebuggerPatchSkip);
         }
         else
         {
@@ -5481,7 +5482,14 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
     if (retVal && fIsVEH)
     {
-        SendSetThreadContextNeeded(context);
+        if (pDebuggerPatchSkip != nullptr && pDebuggerPatchSkip->IsInPlaceSingleStep())
+        {
+            SendSetThreadContextNeeded(context, pDebuggerPatchSkip);
+        }
+        else
+        {
+            SendSetThreadContextNeeded(context);
+        }
     }
 #endif
     return retVal;
@@ -16691,7 +16699,7 @@ void Debugger::StartCanaryThread()
 
 #ifndef DACCESS_COMPILE
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-void Debugger::SendSetThreadContextNeeded(CONTEXT *context)
+void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerPatchSkip *patchSkip)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -16742,11 +16750,29 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context)
     // adjust context size if the context pointer is not aligned with the buffer we allocated
     contextSize -= (DWORD)((BYTE*)pContext-(BYTE*)pBuffer);
 
+    bool fIsInPlaceSingleStep = patchSkip != nullptr && patchSkip->IsInPlaceSingleStep();
+    CORDB_ADDRESS_TYPE *patchSkipAddr = patchSkip != nullptr && fIsInPlaceSingleStep ? patchSkip->GetAddress() : nullptr;
+    _ASSERTE(!fIsInPlaceSingleStep || pContext->Rip == patchSkipAddr);
+
+    PRD_TYPE opcode = 0xcc;
+    if (fIsInPlaceSingleStep)
+    {
+        DebuggerControllerPatch *patch = DebuggerController::GetPatchTable()->GetPatch((CORDB_ADDRESS_TYPE *)pContext->Rip);
+        if (patch != NULL)
+        {
+            LOG((LF_CORDB, LL_INFO10000, "D::SSTCN Patch found at address 0x%p  opcode=0x%x\n", pContext->Rip, patch->opcode));
+            opcode = patch->opcode;
+        }
+    }
+
     // send the context to the right side
     LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d..\n", contextFlags, contextSize));
     EX_TRY
     {
-        SetThreadContextNeededFlare((TADDR)pContext, contextSize, pContext->Rip, pContext->Rsp);
+        SetThreadContextNeededFlare((TADDR)pContext, 
+                                    contextSize, 
+                                    patchSkipAddr, 
+                                    (((fIsInPlaceSingleStep&0x1)<<8)|(opcode&0xFF)));
     }
     EX_CATCH
     {

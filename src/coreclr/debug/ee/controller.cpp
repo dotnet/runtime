@@ -2838,7 +2838,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
 // DebuggerController's TriggerPatch).  Put any DCs that are interested into a queue and then calls
 // SendEvent on each.
 // Note that control will not return from this function in the case of EnC remap
-DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTEXT *context, CORDB_ADDRESS_TYPE *address, SCAN_TRIGGER which)
+DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTEXT *context, CORDB_ADDRESS_TYPE *address, SCAN_TRIGGER which, DebuggerPatchSkip **ppDebuggerPatchSkip)
 {
     CONTRACT(DPOSS_ACTION)
     {
@@ -3032,7 +3032,11 @@ Exit:
     }
 #endif
 
-    ActivatePatchSkip(thread, dac_cast<PTR_CBYTE>(GetIP(pCtx)), FALSE);
+    DebuggerPatchSkip* pDebuggerPatchSkip = ActivatePatchSkip(thread, dac_cast<PTR_CBYTE>(GetIP(pCtx)), FALSE);
+    if (ppDebuggerPatchSkip != nullptr)
+    {
+        *ppDebuggerPatchSkip = pDebuggerPatchSkip;
+    }
 
     lockController.Release();
 
@@ -4132,7 +4136,8 @@ void ThisFunctionMayHaveTriggerAGC()
 bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
                                                  CONTEXT *pContext,
                                                  DWORD dwCode,
-                                                 Thread *pCurThread)
+                                                 Thread *pCurThread,
+                                                 DebuggerPatchSkip **ppDebuggerPatchSkip)
 {
     CONTRACTL
     {
@@ -4303,7 +4308,8 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
             result = DebuggerController::DispatchPatchOrSingleStep(pCurThread,
                                                        pContext,
                                                        ip,
-                                                       ST_PATCH);
+                                                       ST_PATCH,
+                                                       ppDebuggerPatchSkip);
             LOG((LF_CORDB, LL_EVERYTHING, "DC::DNE DispatchPatch call returned\n"));
 
             // If we detached, we should remove all our breakpoints. So if we try
@@ -4434,12 +4440,23 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
 
     NativeWalker::DecodeInstructionForPatchSkip(patchBypassRX, &(m_instrAttrib));
 
+#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+    if (g_pDebugInterface->IsOutOfProcessSetContextEnabled() && m_instrAttrib.m_fIsCall)
+    {
+        m_instrAttrib.m_fInPlaceSS = true;
+    }
+#endif // !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+
 #if defined(TARGET_AMD64)
 
     // The code below handles RIP-relative addressing on AMD64. The original implementation made the assumption that
     // we are only using RIP-relative addressing to access read-only data (see VSW 246145 for more information). This
     // has since been expanded to handle RIP-relative writes as well.
-    if (m_instrAttrib.m_dwOffsetToDisp != 0)
+    if (m_instrAttrib.m_dwOffsetToDisp != 0
+#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+        && (!m_instrAttrib.m_fInPlaceSS || !m_instrAttrib.m_fIsCall)
+#endif
+    )
     {
         _ASSERTE(m_instrAttrib.m_cbInstr != 0);
 
@@ -4545,13 +4562,18 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
     patchBypassRX = NativeWalker::SetupOrSimulateInstructionForPatchSkip(context, m_pSharedPatchBypassBuffer, (const BYTE *)patch->address, patch->opcode);
 #endif //TARGET_ARM64
 
-    //set eip to point to buffer...
-    SetIP(context, (PCODE)patchBypassRX);
+#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+    if (!m_instrAttrib.m_fInPlaceSS || !m_instrAttrib.m_fIsCall)
+#endif // !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+    {
+        //set eip to point to buffer...
+        SetIP(context, (PCODE)patchBypassRX);
 
-    if (context ==(T_CONTEXT*) &c)
-        thread->SetThreadContext(&c);
+        if (context ==(T_CONTEXT*) &c)
+            thread->SetThreadContext(&c);
 
-    LOG((LF_CORDB, LL_INFO10000, "DPS::DPS Bypass at %p for opcode 0x%zx \n", patchBypassRX, patch->opcode));
+        LOG((LF_CORDB, LL_INFO10000, "DPS::DPS Bypass at %p for opcode 0x%zx \n", patchBypassRX, patch->opcode));
+    }
 
     //
     // Turn on single step (if the platform supports it) so we can
@@ -4770,14 +4792,20 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
     {
         // Fixup return address on stack
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-        SIZE_T *sp = (SIZE_T *) GetSP(context);
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+        if (!m_instrAttrib.m_fInPlaceSS)
+#endif
+        {
+            // Fixup return address on stack
+            SIZE_T *sp = (SIZE_T *) GetSP(context);
 
-        LOG((LF_CORDB, LL_INFO10000,
-             "Bypass call return address redirected from %p\n", *sp));
+            LOG((LF_CORDB, LL_INFO10000,
+                "Bypass call return address redirected from %p\n", *sp));
 
-        *sp -= patchBypass - (BYTE*)m_address;
+            *sp -= patchBypass - (BYTE*)m_address;
 
-        LOG((LF_CORDB, LL_INFO10000, "to %p\n", *sp));
+            LOG((LF_CORDB, LL_INFO10000, "to %p\n", *sp));
+        }
 #else
         PORTABILITY_ASSERT("DebuggerPatchSkip::TriggerExceptionHook -- return address fixup NYI");
 #endif
@@ -4797,10 +4825,17 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
                 ((size_t)GetIP(context) >  (size_t)patchBypass &&
                  (size_t)GetIP(context) <= (size_t)(patchBypass + MAX_INSTRUCTION_LENGTH + 1)))
             {
-                LOG((LF_CORDB, LL_INFO10000, "Bypass instruction redirected because still in skip area.\n"
-                    "\tm_fIsCall = %s, patchBypass = %p, m_address = %p\n",
-                    (m_instrAttrib.m_fIsCall ? "true" : "false"), patchBypass, m_address));
-                SetIP(context, (PCODE)((BYTE *)GetIP(context) - (patchBypass - (BYTE *)m_address)));
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                if (!m_instrAttrib.m_fInPlaceSS || !m_instrAttrib.m_fIsCall)
+                {
+#endif
+                    LOG((LF_CORDB, LL_INFO10000, "Bypass instruction redirected because still in skip area.\n"
+                        "\tm_fIsCall = %s, patchBypass = %p, m_address = %p\n",
+                        (m_instrAttrib.m_fIsCall ? "true" : "false"), patchBypass, m_address));
+                    SetIP(context, (PCODE)((BYTE *)GetIP(context) - (patchBypass - (BYTE *)m_address)));
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                }
+#endif
             }
             else
             {
@@ -4865,47 +4900,90 @@ bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
     LOG((LF_CORDB,LL_INFO10000, "DPS::TSS: basically a no-op\n"));
 
 #if defined(TARGET_AMD64)
-    // Dev11 91932: for RIP-relative writes we need to copy the value that was written in our buffer to the actual address
-    _ASSERTE(m_pSharedPatchBypassBuffer);
-    if (m_pSharedPatchBypassBuffer->RipTargetFixup)
+#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+    if (!m_instrAttrib.m_fInPlaceSS || !m_instrAttrib.m_fIsCall)
+#endif // !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
     {
-        _ASSERTE(m_pSharedPatchBypassBuffer->RipTargetFixupSize);
-
-        BYTE* bufferBypass = m_pSharedPatchBypassBuffer->BypassBuffer;
-        BYTE fixupSize = m_pSharedPatchBypassBuffer->RipTargetFixupSize;
-        UINT_PTR targetFixup = m_pSharedPatchBypassBuffer->RipTargetFixup;
-
-        switch (fixupSize)
+        // Dev11 91932: for RIP-relative writes we need to copy the value that was written in our buffer to the actual address
+        _ASSERTE(m_pSharedPatchBypassBuffer);
+        if (m_pSharedPatchBypassBuffer->RipTargetFixup)
         {
-        case 1:
-            *(reinterpret_cast<BYTE*>(targetFixup)) = *(reinterpret_cast<BYTE*>(bufferBypass));
-            break;
+            _ASSERTE(m_pSharedPatchBypassBuffer->RipTargetFixupSize);
 
-        case 2:
-            *(reinterpret_cast<WORD*>(targetFixup)) = *(reinterpret_cast<WORD*>(bufferBypass));
-            break;
+            BYTE* bufferBypass = m_pSharedPatchBypassBuffer->BypassBuffer;
+            BYTE fixupSize = m_pSharedPatchBypassBuffer->RipTargetFixupSize;
+            UINT_PTR targetFixup = m_pSharedPatchBypassBuffer->RipTargetFixup;
 
-        case 4:
-            *(reinterpret_cast<DWORD*>(targetFixup)) = *(reinterpret_cast<DWORD*>(bufferBypass));
-            break;
+            switch (fixupSize)
+            {
+            case 1:
+                *(reinterpret_cast<BYTE*>(targetFixup)) = *(reinterpret_cast<BYTE*>(bufferBypass));
+                break;
 
-        case 8:
-            *(reinterpret_cast<ULONGLONG*>(targetFixup)) = *(reinterpret_cast<ULONGLONG*>(bufferBypass));
-            break;
+            case 2:
+                *(reinterpret_cast<WORD*>(targetFixup)) = *(reinterpret_cast<WORD*>(bufferBypass));
+                break;
 
-        case 16:
-        case 32:
-        case 64:
-            memcpy(reinterpret_cast<void*>(targetFixup), bufferBypass, fixupSize);
-            break;
+            case 4:
+                *(reinterpret_cast<DWORD*>(targetFixup)) = *(reinterpret_cast<DWORD*>(bufferBypass));
+                break;
 
-        default:
-            _ASSERTE(!"bad operand size. If you hit this and it was because we need to process instructions with larger \
-                relative immediates, make sure to update the SharedPatchBypassBuffer size, the DebuggerHeapExecutableMemoryAllocator, \
-                and structures depending on DBG_MAX_EXECUTABLE_ALLOC_SIZE.");
+            case 8:
+                *(reinterpret_cast<ULONGLONG*>(targetFixup)) = *(reinterpret_cast<ULONGLONG*>(bufferBypass));
+                break;
+
+            case 16:
+            case 32:
+            case 64:
+                memcpy(reinterpret_cast<void*>(targetFixup), bufferBypass, fixupSize);
+                break;
+
+            default:
+                _ASSERTE(!"bad operand size. If you hit this and it was because we need to process instructions with larger \
+                    relative immediates, make sure to update the SharedPatchBypassBuffer size, the DebuggerHeapExecutableMemoryAllocator, \
+                    and structures depending on DBG_MAX_EXECUTABLE_ALLOC_SIZE.");
+            }
         }
     }
-#endif
+#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+    else if (m_instrAttrib.m_fInPlaceSS && m_instrAttrib.m_fIsCall)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "This is an in-place single-step, all we want to do is back-patch the breakpoint\n"));
+        {
+            LPVOID baseAddress = (LPVOID)m_address;
+            DWORD oldProt;
+
+            if (!VirtualProtect(baseAddress,
+                                CORDbg_BREAK_INSTRUCTION_SIZE,
+                                PAGE_EXECUTE_READWRITE, &oldProt))
+            {
+                // we may be seeing unwriteable directly mapped executable memory.
+                // let's try copy-on-write instead,
+                if (!VirtualProtect(baseAddress,
+                    CORDbg_BREAK_INSTRUCTION_SIZE,
+                    PAGE_EXECUTE_WRITECOPY, &oldProt))
+                {
+                    _ASSERTE(!"VirtualProtect of code page failed");
+                    goto Error;
+                }
+            }
+
+            CORDbgInsertBreakpoint(m_address);
+            LOG((LF_CORDB, LL_EVERYTHING, "DPS::TriggerSingleStep Breakpoint was re-inserted at %p\n",
+                m_address));
+
+            if (!VirtualProtect(baseAddress,
+                                CORDbg_BREAK_INSTRUCTION_SIZE,
+                                oldProt, &oldProt))
+            {
+                _ASSERTE(!"VirtualProtect of code page failed");
+                goto Error;
+            }
+        }
+    }
+Error:
+#endif // !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+#endif // defined(TARGET_AMD64)
     LOG((LF_CORDB,LL_INFO10000, "DPS::TSS: triggered, about to delete\n"));
 
     TRACE_FREE(this);

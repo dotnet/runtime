@@ -11224,10 +11224,9 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     TADDR lsContextAddr = (TADDR)context.Rcx;
     DWORD contextSize = (DWORD)context.Rdx;
 
-    // Read the expected Rip and Rsp from the thread context.  This is used to 
-    // validate the context read from the left-side.
-    TADDR expectedRip = (TADDR)context.R8;
-    TADDR expectedRsp = (TADDR)context.R9;
+    CORDB_ADDRESS_TYPE *patchSkipAddr = (CORDB_ADDRESS_TYPE*)context.R8;
+    bool fIsInPlaceSingleStep = (bool)((context.R9>>8)&0x1);
+    PRD_TYPE opcode = (PRD_TYPE)(context.R9&0xFF);
 
     if (contextSize == 0 || contextSize > sizeof(CONTEXT) + 25000)
     {
@@ -11257,15 +11256,6 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual context size mismatch\n"));
 
         ThrowHR(ERROR_PARTIAL_COPY);
-    }
-
-    if (pContext->Rip != expectedRip || pContext->Rsp != expectedRsp)
-    {
-        _ASSERTE(!"ReadVirtual unexpectedly returned mismatched Rip and Rsp registers");
-
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual unexpectedly returned mismatched Rip and Rsp registers\n"));
-
-        ThrowHR(E_UNEXPECTED);
     }
 
     // TODO: Ideally we would use ICorDebugMutableDataTarget::SetThreadContext however this API currently only handles the legacy context.
@@ -11345,6 +11335,18 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     {
         LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from SetThreadContext\n"));
         ThrowHR(HRESULT_FROM_WIN32(lastError));
+    }
+
+    if (fIsInPlaceSingleStep)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - address=0x%p opcode=0x%x\n", patchSkipAddr, opcode));
+        EX_TRY
+        {
+            TargetBuffer tb((void*)patchSkipAddr, sizeof(BYTE));
+            SafeWriteBuffer(tb, (const BYTE*)&opcode); // throws
+        }
+        EX_CATCH_HRESULT(hr);
+        SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
     }
 #else
     #error Platform not supported

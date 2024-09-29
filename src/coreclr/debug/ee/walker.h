@@ -41,6 +41,9 @@ struct InstructionAttribute
     bool m_fIsRelBranch;    // is this a relative branch (either a call or a jump)?
     bool m_fIsWrite;        // does the instruction write to an address?
 
+#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+    bool m_fInPlaceSS;      // is this an in-place single-step instruction?
+#endif
 
     DWORD m_cbInstr;        // the size of the instruction
     DWORD m_cbDisp;         // the size of the displacement
@@ -55,6 +58,9 @@ struct InstructionAttribute
         m_fIsAbsBranch = false;
         m_fIsRelBranch = false;
         m_fIsWrite = false;
+#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+        m_fInPlaceSS = false;
+#endif
         m_cbInstr = 0;
         m_cbDisp  = 0;
         m_dwOffsetToDisp = 0;

@@ -192,8 +192,8 @@ public:
                                              SIZE_T *nativeOffset) = 0;
 
 
-    // Used by FixContextAndResume
-    virtual void SendSetThreadContextNeeded(CONTEXT *context) = 0;
+    // Used by EditAndContinueModule::FixContextAndResume
+    virtual void SendSetThreadContextNeeded(CONTEXT *context, DebuggerPatchSkip *patchSkip = nullptr) = 0;
     virtual BOOL IsOutOfProcessSetContextEnabled() = 0;
 #endif // FEATURE_METADATA_UPDATER
 
