@@ -38,9 +38,10 @@ Async methods have some temporary restrictions with may be lifted later:
 * Usage of the `localloc` instruction is forbidden
 * Pinning locals may not be marked `HoistedLocal`
 
-Other restrictions are likely to be permanent.
-
-Suspension points may not appear in exception handling blocks.
+Other restrictions are likely to be permanent, including
+* By-ref locals cannot be hoisted across suspension points
+* Suspension points may not appear in exception handling blocks.
+* Only four types will be supported as the return type for "runtime-async" methods: `System.Threading.Task`, `System.Threading.ValueTask`, `System.Threading.Task<T>`, and `System.Threading.ValueTask<T>`
 
 All async methods effectively have two entry points, or signatures. The first signature is the one present in the above code: a modreq before the return type. The second signature is a "Task-equivalent signature", described in further detail in [I.8.6.1.5 Method signatures].
 
