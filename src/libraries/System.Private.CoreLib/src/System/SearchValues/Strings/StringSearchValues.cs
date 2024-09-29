@@ -389,8 +389,9 @@ namespace System.Buffers
                 SearchValues<string>? searchValues = value.Length switch
                 {
                     < 4 => TryCreateSingleValuesThreeChars<ValueLengthLessThan4>(value, uniqueValues, ignoreCase, allAscii, asciiLettersOnly),
-                    < 8 => TryCreateSingleValuesThreeChars<ValueLength4To7>(value, uniqueValues, ignoreCase, allAscii, asciiLettersOnly),
-                    _ => TryCreateSingleValuesThreeChars<ValueLength8OrLongerOrUnknown>(value, uniqueValues, ignoreCase, allAscii, asciiLettersOnly),
+                    <= 8 => TryCreateSingleValuesThreeChars<ValueLength4To8>(value, uniqueValues, ignoreCase, allAscii, asciiLettersOnly),
+                    <= 16 => TryCreateSingleValuesThreeChars<ValueLength9To16>(value, uniqueValues, ignoreCase, allAscii, asciiLettersOnly),
+                    _ => TryCreateSingleValuesThreeChars<ValueLengthLongOrUnknown>(value, uniqueValues, ignoreCase, allAscii, asciiLettersOnly),
                 };
 
                 if (searchValues is not null)
