@@ -716,6 +716,20 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCall
     return st == 0;
 }
 
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetCurrentThreadName(const char* name)
+{
+    const int MAX_THREAD_NAME_SIZE = 15;
+    char name_copy[MAX_THREAD_NAME_SIZE + 1];
+    strncpy(name_copy, name, MAX_THREAD_NAME_SIZE);
+    name_copy[MAX_THREAD_NAME_SIZE] = '\0';
+#ifdef __APPLE__
+    pthread_setname_np(name_copy);
+#else
+    pthread_setname_np(pthread_self(), name_copy);
+#endif //__APPLE__
+    return true;
+}
+
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);

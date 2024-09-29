@@ -883,6 +883,10 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
     ResumeThread(hThread);
 }
 
+#define SET_THREAD_DESCRIPTION_UNINITIALIZED (pfnSetThreadDescription)-1
+typedef HRESULT(WINAPI *pfnSetThreadDescription)(HANDLE hThread, PCWSTR lpThreadDescription);
+static pfnSetThreadDescription g_pfnSetThreadDescription = SET_THREAD_DESCRIPTION_UNINITIALIZED;
+
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, BOOL highPriority)
 {
     HANDLE hThread = CreateThread(
@@ -904,6 +908,40 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCall
 
     CloseHandle(hThread);
     return true;
+}
+
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetCurrentThreadNameW(const WCHAR* name)
+{
+    if (g_pfnSetThreadDescription == SET_THREAD_DESCRIPTION_UNINITIALIZED)
+    {
+        HMODULE hKernel32 = LoadKernel32dll();
+        g_pfnSetThreadDescription = (pfnSetThreadDescription)GetProcAddress(hKernel32, "SetThreadDescription");
+    }
+    if (!g_pfnSetThreadDescription)
+    {
+        return false;
+    }
+    HANDLE hThread = GetCurrentThread();
+    g_pfnSetThreadDescription(hThread, name);
+    return true;
+}
+
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetCurrentThreadName(const char* name)
+{
+    size_t len = strlen(name);
+    wchar_t* threadNameWide = new (nothrow) wchar_t[len + 1];
+    if (threadNameWide == nullptr)
+    {
+        return false;
+    }
+    if (MultiByteToWideChar(CP_UTF8, 0, name, -1, threadNameWide, (int)(len + 1)) == 0)
+    {
+        delete[] threadNameWide;
+        return false;
+    }
+    bool ret = PalSetCurrentThreadNameW(threadNameWide);
+    delete[] threadNameWide;
+    return ret;
 }
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
