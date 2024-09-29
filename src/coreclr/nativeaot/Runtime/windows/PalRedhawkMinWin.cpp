@@ -922,7 +922,7 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetCurrentThreadNameW(const WCHAR* name
         return false;
     }
     HANDLE hThread = GetCurrentThread();
-    g_pfnSetThreadDescription(hThread, threadNameWide);
+    g_pfnSetThreadDescription(hThread, name);
     return true;
 }
 
