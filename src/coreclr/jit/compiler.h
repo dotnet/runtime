@@ -10873,11 +10873,11 @@ private:
 
 public:
 #ifdef DEBUG
-    unsigned compGenTreeID    = 0;
-    unsigned compStatementID  = 0;
-    unsigned compBasicBlockID = 0;
+    unsigned compGenTreeID   = 0;
+    unsigned compStatementID = 0;
 #endif
-    LONG compMethodID = 0;
+    unsigned compBasicBlockID = 0;
+    LONG     compMethodID     = 0;
 
     BasicBlock* compCurBB = nullptr; // the current basic block in process
     Statement*  compCurStmt;         // the current statement in process

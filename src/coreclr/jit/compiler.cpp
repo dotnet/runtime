@@ -7018,12 +7018,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         }
     }
 
-#ifdef DEBUG
     if (compIsForInlining())
     {
         compBasicBlockID = impInlineInfo->InlinerCompiler->compBasicBlockID;
     }
-#endif
 
     const bool forceInline = !!(info.compFlags & CORINFO_FLG_FORCEINLINE);
 
@@ -7250,11 +7248,15 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     if (compIsForInlining())
     {
-        impInlineInfo->InlinerCompiler->compGenTreeID    = compGenTreeID;
-        impInlineInfo->InlinerCompiler->compStatementID  = compStatementID;
-        impInlineInfo->InlinerCompiler->compBasicBlockID = compBasicBlockID;
+        impInlineInfo->InlinerCompiler->compGenTreeID   = compGenTreeID;
+        impInlineInfo->InlinerCompiler->compStatementID = compStatementID;
     }
 #endif
+
+    if (compIsForInlining())
+    {
+        impInlineInfo->InlinerCompiler->compBasicBlockID = compBasicBlockID;
+    }
 
 _Next:
 
