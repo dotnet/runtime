@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
+using ExMgrPtr = Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers.ExMgrPtr;
+
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly partial struct ExecutionManager_1 : IExecutionManager
@@ -14,7 +16,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
     // maps EECodeInfoHandle.Address (which is the CodeHeaderAddress) to the EECodeInfo
     private readonly Dictionary<TargetPointer, EECodeInfo> _codeInfos = new();
     private readonly Data.RangeSectionMap _topRangeSectionMap;
-    private readonly RangeSectionLookupAlgorithm _rangeSectionLookupAlgorithm;
+    private readonly ExecutionManagerHelpers.RangeSectionLookupAlgorithm _rangeSectionLookupAlgorithm;
     private readonly EEJitManager _eeJitManager;
     private readonly ReadyToRunJitManager _r2rJitManager;
 
@@ -22,7 +24,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
     {
         _target = target;
         _topRangeSectionMap = topRangeSectionMap;
-        _rangeSectionLookupAlgorithm = RangeSectionLookupAlgorithm.Create(_target);
+        _rangeSectionLookupAlgorithm = ExecutionManagerHelpers.RangeSectionLookupAlgorithm.Create(_target);
         ExecutionManagerHelpers.NibbleMap nibbleMap = ExecutionManagerHelpers.NibbleMap.Create(_target);
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
@@ -50,96 +52,6 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
 
         public TargetPointer MethodDescAddress => _codeHeaderData.MethodDesc;
         public bool Valid => JitManagerAddress != TargetPointer.Null;
-    }
-
-    // "ExecutionManagerPointer": a pointer to a RangeFragment and RangeSection.
-    // The pointers have a collectible flag on the lowest bit
-    private struct ExMgrPtr
-    {
-        public readonly TargetPointer RawValue;
-
-        public TargetPointer Address => RawValue & ~1ul;
-
-        public bool IsNull => Address == TargetPointer.Null;
-
-        public static ExMgrPtr Null => new ExMgrPtr(TargetPointer.Null);
-
-        public ExMgrPtr(TargetPointer value)
-        {
-            RawValue = value;
-        }
-
-        public ExMgrPtr Offset(int stride, int idx)
-        {
-            return new ExMgrPtr(RawValue.Value + (ulong)(stride * idx));
-        }
-
-        public T Load<T>(Target target) where T : Data.IData<T>
-        {
-            return target.ProcessedData.GetOrAdd<T>(Address);
-        }
-
-        public ExMgrPtr LoadPointer(Target target)
-        {
-            return new ExMgrPtr(target.ReadPointer(Address));
-        }
-    }
-
-    private readonly struct RangeSectionLookupAlgorithm
-    {
-        private int MapLevels { get; }
-        private int BitsPerLevel { get; } = 8;
-        private int MaxSetBit { get; }
-        private int EntriesPerMapLevel { get; } = 256;
-
-        private RangeSectionLookupAlgorithm(int mapLevels, int maxSetBit)
-        {
-            MapLevels = mapLevels;
-            MaxSetBit = maxSetBit;
-        }
-        public static RangeSectionLookupAlgorithm Create(Target target)
-        {
-            if (target.PointerSize == 4)
-            {
-                return new(mapLevels: 2, maxSetBit: 31); // 0 indexed
-            }
-            else if (target.PointerSize == 8)
-            {
-                return new(mapLevels: 5, maxSetBit: 56); // 0 indexed
-            }
-            else
-            {
-                throw new InvalidOperationException("Invalid pointer size");
-            }
-        }
-
-        // note: level is 1-indexed
-        private int EffectiveBitsForLevel(TargetCodePointer address, int level)
-        {
-            ulong addressAsInt = address.Value;
-            ulong addressBitsUsedInMap = addressAsInt >> (MaxSetBit + 1 - (MapLevels * BitsPerLevel));
-            ulong addressBitsShifted = addressBitsUsedInMap >> ((level - 1) * BitsPerLevel);
-            ulong addressBitsUsedInLevel = (ulong)(EntriesPerMapLevel - 1) & addressBitsShifted;
-            return checked((int)addressBitsUsedInLevel);
-        }
-
-        internal ExMgrPtr /*PTR_RangeSectionFragment*/ FindFragment(Target target, Data.RangeSectionMap topRangeSectionMap, TargetCodePointer jittedCodeAddress)
-        {
-            /* The outer levels are all pointer arrays to the next level down.  Level 1 is an array of pointers to a RangeSectionFragment */
-            int topLevelIndex = EffectiveBitsForLevel(jittedCodeAddress, MapLevels);
-
-            ExMgrPtr top = new ExMgrPtr(topRangeSectionMap.TopLevelData);
-
-            ExMgrPtr nextLevelAddress = top.Offset(target.PointerSize, topLevelIndex);
-            for (int level = MapLevels - 1; level >= 1; level--)
-            {
-                ExMgrPtr rangeSectionL = nextLevelAddress.LoadPointer(target);
-                if (rangeSectionL.IsNull)
-                    return ExMgrPtr.Null;
-                nextLevelAddress = rangeSectionL.Offset(target.PointerSize, EffectiveBitsForLevel(jittedCodeAddress, level));
-            }
-            return nextLevelAddress;
-        }
     }
 
     [Flags]
@@ -195,7 +107,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             return codeHeaderIndirect.Value <= stubCodeBlockLast;
         }
 
-        internal static RangeSection Find(Target target, Data.RangeSectionMap topRangeSectionMap, RangeSectionLookupAlgorithm rangeSectionLookup, TargetCodePointer jittedCodeAddress)
+        internal static RangeSection Find(Target target, Data.RangeSectionMap topRangeSectionMap, ExecutionManagerHelpers.RangeSectionLookupAlgorithm rangeSectionLookup, TargetCodePointer jittedCodeAddress)
         {
             ExMgrPtr rangeSectionFragmentPtr = rangeSectionLookup.FindFragment(target, topRangeSectionMap, jittedCodeAddress);
             if (rangeSectionFragmentPtr.IsNull)
