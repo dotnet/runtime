@@ -25,4 +25,6 @@ public readonly struct TargetCodePointer : IEquatable<TargetCodePointer>
     public int GetHashCode(TargetCodePointer obj) => obj.Value.GetHashCode();
 
     public TargetPointer AsTargetPointer => new(Value);
+
+    public override string ToString() => $"0x{Value:x}";
 }
