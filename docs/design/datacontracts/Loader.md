@@ -38,6 +38,9 @@ TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetThunkHeap(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
+TargetPointer GetModuleLookupMapElement(TargetPointer table, uint rid, out TargetNUInt flags);
+bool IsCollectibleLoaderAllocator(ModuleHandle handle);
+
 ```
 
 ## Version 1
@@ -58,6 +61,10 @@ Data descriptors used:
 | `Module` | `TypeDefToMethodTableMap` | Mapping table |
 | `Module` | `TypeRefToMethodTableMap` | Mapping table |
 | `ModuleLookupMap` | `TableData` | Start of the mapping table's data |
+| `ModuleLookupMap` | `SupportedFlagsMask` | Mask for flag bits on lookup map entries |
+| `ModuleLookupMap` | `Count` | Number of TargetPointer sized entries in this section of the map |
+| `ModuleLookupMap` | `Next` | Pointer to next ModuleLookupMap segment for this map
+| `LoaderAllocator` | `IsCollectible` | Flag indicating if this is loader allocator may be collected
 
 ``` csharp
 ModuleHandle GetModuleHandle(TargetPointer modulePointer)
@@ -110,3 +117,5 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle)
         Module::MethodDefToILCodeVersioningState */));
 }
 ```
+
+**TODO* pseudocode for IsCollectibleLoaderAllocator  and LookupTableMap element lookup

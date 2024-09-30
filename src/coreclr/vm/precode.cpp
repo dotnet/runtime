@@ -662,4 +662,54 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
     return FALSE;
 }
 
+PrecodeMachineDescriptor g_PrecodeMachineDescriptor;
+
+void PrecodeMachineDescriptor::Init()
+{
+#ifndef TARGET_ARM
+    g_PrecodeMachineDescriptor.CodePointerToInstrPointerMask = ~0;
+#else
+    // mask off the thumb bit
+    g_PrecodeMachineDescriptor.CodePointerToInstrPointerMask = ~1;
+#endif
+    g_PrecodeMachineDescriptor.OffsetOfPrecodeType = OFFSETOF_PRECODE_TYPE;
+    // cDAC will do (where N = 8*ReadWidthOfPrecodeType):
+    //   uintN_t PrecodeType = *(uintN_t*)(pPrecode + OffsetOfPrecodeType);
+    //   PrecodeType >>= ShiftOfPrecodeType;
+    //   return (byte)PrecodeType;
+#ifdef TARGET_LOONGARCH64
+    g_PrecodeMachineDescriptor.ReadWidthOfPrecodeType = 2;
+    g_PrecodeMachineDescriptor.ShiftOfPrecodeType = 5;
+#else
+    g_PrecodeMachineDescriptor.ReadWidthOfPrecodeType = 1;
+    g_PrecodeMachineDescriptor.ShiftOfPrecodeType = 0;
+#endif
+
+    g_PrecodeMachineDescriptor.InvalidPrecodeType = InvalidPrecode::Type;
+    g_PrecodeMachineDescriptor.StubPrecodeType = StubPrecode::Type;
+#ifdef HAS_NDIRECT_IMPORT_PRECODE
+    g_PrecodeMachineDescriptor.HasPInvokeImportPrecode = 1;
+    g_PrecodeMachineDescriptor.PInvokeImportPrecodeType = NDirectImportPrecode::Type;
+#else
+    g_PrecodeMachineDescriptor.HasPInvokeImportPrecode = 0;
+    g_PrecodeMachineDescriptor.PInvokeImportPrecodeType = 0;
+#endif // HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_FIXUP_PRECODE
+    g_PrecodeMachineDescriptor.HasFixupPrecode = 1;
+    g_PrecodeMachineDescriptor.FixupPrecodeType = FixupPrecode::Type;
+#else
+    g_PrecodeMachineDescriptor.HasFixupPrecode = 0;
+    g_PrecodeMachineDescriptor.FixupPrecodeType = 0;
+#endif // HAS_FIXUP_PRECODE
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+    g_PrecodeMachineDescriptor.HasThisPtrRetBufPrecode = 1;
+    g_PrecodeMachineDescriptor.HasThisPointerRetBufPrecodeType = ThisPtrRetBufPrecode::Type;
+#else
+    g_PrecodeMachineDescriptor.HasThisPtrRetBufPrecode = 0;
+    g_PrecodeMachineDescriptor.HasThisPointerRetBufPrecodeType = 0;
+#endif // HAS_THISPTR_RETBUF_PRECODE
+    g_PrecodeMachineDescriptor.StubCodePageSize = GetStubCodePageSize();
+}
+
 #endif // !DACCESS_COMPILE
+

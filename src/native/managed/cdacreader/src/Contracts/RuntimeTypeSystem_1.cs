@@ -4,7 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts.RuntimeTypeSystem_1_NS;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
@@ -88,7 +91,24 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     internal enum MethodDescFlags : ushort
     {
         ClassificationMask = 0x7,
+        #region Additional pointers
+        // The below flags each imply that there's an extra pointer-sized piece of data after the MethodDesc in the MethodDescChunk
         HasNonVtableSlot = 0x0008,
+        HasMethodImpl = 0x0010,
+        HasNativeCodeSlot = 0x0020,
+        // Mask for the above flags
+        MethodDescAdditionalPointersMask = 0x0038,
+        #endregion Additional pointers
+    }
+
+    [Flags]
+    internal enum MethodDescFlags3 : ushort
+    {
+        // HasPrecode implies that HasStableEntryPoint is set.
+        HasStableEntryPoint = 0x1000, // The method entrypoint is stable (either precode or actual code)
+        HasPrecode = 0x2000, // Precode has been allocated for this method
+        IsUnboxingStub = 0x4000,
+        IsEligibleForTieredCompilation = 0x8000,
     }
 
     internal enum InstantiatedMethodDescFlags2 : ushort
@@ -105,6 +125,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         IsLCGMethod = 0x00004000,
         IsILStub = 0x00008000,
+    }
+
+    [Flags]
+    internal enum MethodDescEntryPointFlags : byte
+    {
+        TemporaryEntryPointAssigned = 0x04,
     }
 
     internal struct MethodDesc
@@ -131,8 +157,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         private static uint ComputeToken(Target target, Data.MethodDesc desc, Data.MethodDescChunk chunk)
         {
             int tokenRemainderBitCount = target.ReadGlobal<byte>(Constants.Globals.MethodDescTokenRemainderBitCount);
-            int tokenRangeBitCount = 24 - tokenRemainderBitCount;
-            uint allRidBitsSet = 0xFFFFFF;
+            int tokenRangeBitCount = Constants.EcmaMetadata.RowIdBitCount - tokenRemainderBitCount;
+            uint allRidBitsSet = Constants.EcmaMetadata.RIDMask;
             uint tokenRemainderMask = allRidBitsSet >> tokenRangeBitCount;
             uint tokenRangeMask = allRidBitsSet >> tokenRemainderBitCount;
 
@@ -143,6 +169,58 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         public MethodClassification Classification => (MethodClassification)((int)_desc.Flags & (int)MethodDescFlags.ClassificationMask);
+
+        private bool HasFlags(MethodDescFlags flags) => (_desc.Flags & (ushort)flags) != 0;
+        internal bool HasFlags(MethodDescFlags3 flags) => (_desc.Flags3AndTokenRemainder & (ushort)flags) != 0;
+
+        public bool IsEligibleForTieredCompilation => HasFlags(MethodDescFlags3.IsEligibleForTieredCompilation);
+
+
+        public bool IsUnboxingStub => HasFlags(MethodDescFlags3.IsUnboxingStub);
+
+        public TargetPointer CodeData => _desc.CodeData;
+        public bool IsIL => Classification == MethodClassification.IL || Classification == MethodClassification.Instantiated;
+
+        public bool HasNativeCodeSlot => HasFlags(MethodDescFlags.HasNativeCodeSlot);
+        internal bool HasNonVtableSlot => HasFlags(MethodDescFlags.HasNonVtableSlot);
+        internal bool HasMethodImpl => HasFlags(MethodDescFlags.HasMethodImpl);
+
+        internal bool HasStableEntryPoint => HasFlags(MethodDescFlags3.HasStableEntryPoint);
+        internal bool HasPrecode => HasFlags(MethodDescFlags3.HasPrecode);
+
+        #region Additional Pointers
+        private int AdditionalPointersHelper(MethodDescFlags extraFlags)
+            => int.PopCount(_desc.Flags & (ushort)extraFlags);
+
+        // non-vtable slot, native code slot and MethodImpl slots are stored after the MethodDesc itself, packed tightly
+        // in the order: [non-vtable; methhod impl; native code].
+        internal int NonVtableSlotIndex => HasNonVtableSlot ? 0 : throw new InvalidOperationException("no non-vtable slot");
+        internal int MethodImplIndex
+        {
+            get
+            {
+                if (!HasMethodImpl)
+                {
+                    throw new InvalidOperationException("no method impl slot");
+                }
+                return AdditionalPointersHelper(MethodDescFlags.HasNonVtableSlot);
+            }
+        }
+        internal int NativeCodeSlotIndex
+        {
+            get
+            {
+                if (!HasNativeCodeSlot)
+                {
+                    throw new InvalidOperationException("no native code slot");
+                }
+                return AdditionalPointersHelper(MethodDescFlags.HasNonVtableSlot | MethodDescFlags.HasMethodImpl);
+            }
+        }
+
+        internal int AdditionalPointersCount => AdditionalPointersHelper(MethodDescFlags.MethodDescAdditionalPointersMask);
+        #endregion Additional Pointers
+
     }
 
     private class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>
@@ -767,4 +845,215 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         _ = GetTypeHandle(methodDesc.MethodTable);
         return _methodTables[methodDesc.MethodTable];
     }
+
+    private TargetPointer GetAddressOfSlot(TypeHandle typeHandle, uint slotNum)
+    {
+        if (!typeHandle.IsMethodTable())
+            throw new InvalidOperationException("typeHandle is not a MethodTable");
+        MethodTable mt = _methodTables[typeHandle.Address];
+        // MethodTable::GetSlotPtrRaw
+        // TODO(cdac): CONSISTENCY_CHECK(slotNum < GetNumVtableSlots());
+
+        if (slotNum < mt.NumVirtuals)
+        {
+            // Virtual slots live in chunks pointed to by vtable indirections
+#if false
+            return GetVtableIndirections()[GetIndexOfVtableIndirection(slotNum)] + GetIndexAfterVtableIndirection(slotNum);
+#endif
+            throw new NotImplementedException(); // TODO(cdac):
+        }
+        else
+        {
+            // Non-virtual slots < GetNumVtableSlots live before the MethodTableAuxiliaryData. The array grows backwards
+            // TODO(cdac): _ASSERTE(HasNonVirtualSlots());
+#if false
+            return MethodTableAuxiliaryData::GetNonVirtualSlotsArray(GetAuxiliaryDataForWrite()) - (1 + (slotNum - GetNumVirtuals()));
+#endif
+            throw new NotImplementedException(); // TODO(cdac):
+        }
+
+    }
+
+    private bool IsWrapperStub(MethodDesc md)
+    {
+        return md.IsUnboxingStub || IsInstantiatingStub(md);
+    }
+
+    private bool IsInstantiatingStub(MethodDesc md)
+    {
+        return md.Classification == MethodClassification.Instantiated && !md.IsUnboxingStub && AsInstantiatedMethodDesc(md).IsWrapperStubWithInstantiations;
+    }
+
+    private bool HasMethodInstantiation(MethodDesc md)
+    {
+        return md.Classification == MethodClassification.Instantiated && AsInstantiatedMethodDesc(md).HasMethodInstantiation;
+    }
+
+    private TargetPointer GetLoaderModule(TypeHandle typeHandle)
+    {
+        throw new NotImplementedException();
+    }
+
+    private bool IsGenericMethodDefinition(MethodDesc md)
+    {
+        return md.Classification == MethodClassification.Instantiated && AsInstantiatedMethodDesc(md).IsGenericMethodDefinition;
+    }
+
+    private TargetPointer GetLoaderModule(MethodDesc md)
+    {
+
+        if (HasMethodInstantiation(md) && !IsGenericMethodDefinition(md))
+        {
+            // TODO[cdac]: don't reimplement ComputeLoaderModuleWorker,
+            // but try caching the LoaderModule (or just the LoaderAllocator?) on the
+            // MethodDescChunk (and maybe MethodTable?).
+            throw new NotImplementedException();
+        }
+        else
+        {
+            TargetPointer mtAddr = GetMethodTable(new MethodDescHandle(md.Address));
+            TypeHandle mt = GetTypeHandle(mtAddr);
+            return GetLoaderModule(mt);
+        }
+    }
+
+    bool IRuntimeTypeSystem.IsCollectibleMethod(MethodDescHandle methodDesc)
+    {
+        MethodDesc md = _methodDescs[methodDesc.Address];
+        TargetPointer loaderModuleAddr = GetLoaderModule(md);
+        ModuleHandle mod = _target.Contracts.Loader.GetModuleHandle(loaderModuleAddr);
+        return _target.Contracts.Loader.IsCollectibleLoaderAllocator(mod); // TODO[cdac]: return pMethodDesc->GetLoaderAllocator()->IsCollectible()
+    }
+
+    bool IRuntimeTypeSystem.IsVersionable(MethodDescHandle methodDesc)
+    {
+        MethodDesc md = _methodDescs[methodDesc.Address];
+        if (md.IsEligibleForTieredCompilation)
+            return true;
+        // MethodDesc::IsEligibleForReJIT
+        if (_target.Contracts.ReJIT.IsEnabled())
+        {
+            if (!md.IsIL)
+                return false;
+            if (IsWrapperStub(md))
+                return false;
+            return _target.Contracts.CodeVersions.CodeVersionManagerSupportsMethod(methodDesc.Address);
+        }
+        return false;
+    }
+
+    TargetPointer IRuntimeTypeSystem.GetMethodDescVersioningState(MethodDescHandle methodDesc)
+    {
+        MethodDesc md = _methodDescs[methodDesc.Address];
+        TargetPointer codeDataAddress = md.CodeData;
+        Data.MethodDescCodeData codeData = _target.ProcessedData.GetOrAdd<Data.MethodDescCodeData>(codeDataAddress);
+        return codeData.VersioningState;
+    }
+
+    uint IRuntimeTypeSystem.GetMethodToken(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        return methodDesc.Token;
+    }
+
+    ushort IRuntimeTypeSystem.GetSlotNumber(MethodDescHandle methodDesc)
+    {
+        MethodDesc md = _methodDescs[methodDesc.Address];
+        return md.Slot;
+    }
+    bool IRuntimeTypeSystem.HasNativeCodeSlot(MethodDescHandle methodDesc)
+    {
+        MethodDesc md = _methodDescs[methodDesc.Address];
+        return md.HasNativeCodeSlot;
+    }
+
+    private uint MethodDescAdditionalPointersOffset(MethodDesc md)
+    {
+        MethodClassification cls = md.Classification;
+        switch (cls)
+        {
+            case MethodClassification.IL:
+                return _target.GetTypeInfo(DataType.MethodDesc).Size ?? throw new InvalidOperationException("size of MethodDesc not known");
+            case MethodClassification.FCall:
+                throw new NotImplementedException();
+            case MethodClassification.PInvoke:
+                throw new NotImplementedException();
+            case MethodClassification.EEImpl:
+                throw new NotImplementedException();
+            case MethodClassification.Array:
+                throw new NotImplementedException();
+            case MethodClassification.Instantiated:
+                throw new NotImplementedException();
+            case MethodClassification.ComInterop:
+                throw new NotImplementedException();
+            case MethodClassification.Dynamic:
+                throw new NotImplementedException();
+            default:
+                throw new InvalidOperationException($"Unexpected method classification 0x{cls:x2} for MethodDesc");
+        }
+    }
+
+    TargetPointer IRuntimeTypeSystem.GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc)
+    {
+        MethodDesc md = _methodDescs[methodDesc.Address];
+        uint offset = MethodDescAdditionalPointersOffset(md);
+        offset += (uint)(_target.PointerSize * md.NativeCodeSlotIndex);
+        return methodDesc.Address + offset;
+    }
+    private TargetPointer GetAddresOfNonVtableSlot(TargetPointer methodDescPointer, MethodDesc md)
+    {
+        uint offset = MethodDescAdditionalPointersOffset(md);
+        offset += (uint)(_target.PointerSize * md.NonVtableSlotIndex);
+        return methodDescPointer.Value + offset;
+    }
+
+    TargetCodePointer IRuntimeTypeSystem.GetNativeCode(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        // TODO(cdac): _ASSERTE(!IsDefaultInterfaceMethod() || HasNativeCodeSlot());
+        if (md.HasNativeCodeSlot)
+        {
+            // When profiler is enabled, profiler may ask to rejit a code even though we
+            // we have ngen code for this MethodDesc.  (See MethodDesc::DoPrestub).
+            // This means that *ppCode is not stable. It can turn from non-zero to zero.
+            TargetPointer ppCode = ((IRuntimeTypeSystem)this).GetAddressOfNativeCodeSlot(methodDescHandle);
+            TargetCodePointer pCode = _target.ReadCodePointer(ppCode);
+
+            // if arm32, set the thumb bit
+            Data.PrecodeMachineDescriptor precodeMachineDescriptor = _target.ProcessedData.GetOrAdd<Data.PrecodeMachineDescriptor>(_target.ReadGlobalPointer(Constants.Globals.PrecodeMachineDescriptor));
+            pCode = (TargetCodePointer)(pCode.Value | ~precodeMachineDescriptor.CodePointerToInstrPointerMask.Value);
+
+            return pCode;
+        }
+
+        if (!md.HasStableEntryPoint || md.HasPrecode)
+            return TargetCodePointer.Null;
+
+        return GetStableEntryPoint(methodDescHandle.Address, md);
+    }
+
+    private TargetCodePointer GetStableEntryPoint(TargetPointer methodDescAddress, MethodDesc md)
+    {
+        // TODO(cdac): _ASSERTE(HasStableEntryPoint());
+        // TODO(cdac): _ASSERTE(!IsVersionableWithVtableSlotBackpatch());
+
+        return GetMethodEntryPointIfExists(methodDescAddress, md);
+    }
+
+    private TargetCodePointer GetMethodEntryPointIfExists(TargetPointer methodDescAddress, MethodDesc md)
+    {
+        if (md.HasNonVtableSlot)
+        {
+            TargetPointer pSlot = GetAddresOfNonVtableSlot(methodDescAddress, md);
+
+            return _target.ReadCodePointer(pSlot);
+        }
+
+        TargetPointer methodTablePointer = md.MethodTable;
+        TypeHandle typeHandle = GetTypeHandle(methodTablePointer);
+        // TODO: cdac:  _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
+        TargetPointer addrOfSlot = GetAddressOfSlot(typeHandle, md.Slot);
+        return _target.ReadCodePointer(addrOfSlot);
+    }
+
 }

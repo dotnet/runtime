@@ -3,6 +3,7 @@
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
@@ -100,14 +101,94 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             // elements we return
             return HResults.E_INVALIDARG;
         }
+        if (cRevertedRejitVersions != 0)
+        {
+            return HResults.E_NOTIMPL; // TODO[cdac]: rejit
+        }
         try
         {
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(methodDesc);
+            Contracts.ICodeVersions nativeCodeContract = _target.Contracts.CodeVersions;
 
-            data->MethodTablePtr = rtsContract.GetMethodTable(methodDescHandle);
+            if (rgRevertedRejitData != null)
+            {
+                NativeMemory.Clear(rgRevertedRejitData, (nuint)(sizeof(DacpReJitData) * cRevertedRejitVersions));
+            }
+            if (pcNeededRevertedRejitData != null)
+            {
+                *pcNeededRevertedRejitData = 0;
+            }
 
-            return HResults.E_NOTIMPL;
+            NativeCodeVersionHandle requestedNativeCodeVersion;
+            NativeCodeVersionHandle? activeNativeCodeVersion = null;
+            if (ip != 0)
+            {
+                requestedNativeCodeVersion = nativeCodeContract.GetNativeCodeVersionForIP(new TargetCodePointer(ip));
+            }
+            else
+            {
+                requestedNativeCodeVersion = nativeCodeContract.GetActiveNativeCodeVersion(new TargetPointer(methodDesc));
+                activeNativeCodeVersion = requestedNativeCodeVersion;
+            }
+
+            data->requestedIP = ip;
+            data->bIsDynamic = rtsContract.IsDynamicMethod(methodDescHandle) ? 1 : 0;
+            data->wSlotNumber = rtsContract.GetSlotNumber(methodDescHandle);
+            TargetCodePointer nativeCodeAddr = TargetCodePointer.Null;
+            if (requestedNativeCodeVersion.Valid)
+            {
+                nativeCodeAddr = nativeCodeContract.GetNativeCode(requestedNativeCodeVersion);
+            }
+            if (nativeCodeAddr != TargetCodePointer.Null)
+            {
+                data->bHasNativeCode = 1;
+                data->NativeCodeAddr = nativeCodeAddr;
+            }
+            else
+            {
+                data->bHasNativeCode = 0;
+                data->NativeCodeAddr = 0xffffffff_fffffffful;
+            }
+            if (rtsContract.HasNativeCodeSlot(methodDescHandle))
+            {
+                data->AddressOfNativeCodeSlot = rtsContract.GetAddressOfNativeCodeSlot(methodDescHandle);
+            }
+            else
+            {
+                data->AddressOfNativeCodeSlot = 0;
+            }
+            data->MDToken = rtsContract.GetMethodToken(methodDescHandle);
+            data->MethodDescPtr = methodDesc;
+            TargetPointer methodTableAddr = rtsContract.GetMethodTable(methodDescHandle);
+            data->MethodTablePtr = methodTableAddr;
+            TypeHandle typeHandle = rtsContract.GetTypeHandle(methodTableAddr);
+            data->ModulePtr = rtsContract.GetModule(typeHandle);
+
+            // TODO[cdac]: everything in the ReJIT TRY/CATCH in GetMethodDescDataImpl in request.cpp
+            if (pcNeededRevertedRejitData != null)
+            {
+
+                throw new NotImplementedException(); // TODO[cdac]: rejit stuff
+            }
+
+#if false // TODO[cdac]: HAVE_GCCOVER
+            if (requestedNativeCodeVersion.Valid)
+            {
+                TargetPointer gcCoverAddr = nativeCodeContract.GetGCCoverageInfo(requestedNativeCodeVersion);
+                if (gcCoverAddr != TargetPointer.Null)
+                {
+                    return HResults.E_NOTIMPL; // TODO[cdac]: gc stress code copy
+                }
+            }
+#endif
+
+            if (data->bIsDynamic != 0)
+            {
+                return HResults.E_NOTIMPL; // TODO[cdac]: get the dynamic method managed object
+            }
+
+            return HResults.S_OK;
         }
         catch (global::System.Exception ex)
         {
