@@ -935,7 +935,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 //    None
 //
 // Notes:
-//    On return, the blockSequence array contains the blocks in lexical order, post-layout optimization.
+//    On return, the blockSequence array contains the blocks in reverse post-order.
 //    This method clears the bbVisitedSet on LinearScan, and when it returns the set
 //    contains all the bbNums for the block.
 //
@@ -951,8 +951,42 @@ void LinearScan::setBlockSequence()
     // Initialize the "visited" blocks set.
     bbVisitedSet = BlockSetOps::MakeEmpty(compiler);
 
+    // If optimizations are enabled, allocate blocks in reverse post-order.
+    // This ensures each block's predecessors are visited first.
+    auto getRpoSequence = [this]() -> BasicBlock** {
+        FlowGraphDfsTree* const dfsTree   = compiler->fgComputeDfs</* useProfile */ true>();
+        BasicBlock** const      postOrder = dfsTree->GetPostOrder();
+        bbSeqCount                        = dfsTree->GetPostOrderCount();
+
+        // Flip the DFS traversal to get the reverse post-order traversal
+        // (this is the order in which blocks will be allocated)
+        for (unsigned left = 0, right = bbSeqCount - 1; left < right; left++, right--)
+        {
+            std::swap(postOrder[left], postOrder[right]);
+        }
+
+        return postOrder;
+    };
+
+    // If we aren't optimizing, we won't have any cross-block live registers,
+    // so the order of blocks allocated shouldn't matter.
+    // Just use the linear order.
+    auto getTraversalSequence = [this]() -> BasicBlock** {
+        BasicBlock** const traversalOrder = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
+        bbSeqCount                        = compiler->fgBBcount;
+
+        unsigned i = 0;
+        for (BasicBlock* const block : compiler->Blocks())
+        {
+            traversalOrder[i++] = block;
+        }
+
+        assert(i == bbSeqCount);
+        return traversalOrder;
+    };
+
     assert((blockSequence == nullptr) && (bbSeqCount == 0));
-    blockSequence            = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
+    blockSequence            = compiler->opts.OptimizationEnabled() ? getRpoSequence() : getTraversalSequence();
     bbNumMaxBeforeResolution = compiler->fgBBNumMax;
     blockInfo                = new (compiler, CMK_LSRA) LsraBlockInfo[bbNumMaxBeforeResolution + 1];
 
@@ -967,13 +1001,9 @@ void LinearScan::setBlockSequence()
     }
 #endif // TRACK_LSRA_STATS
 
-    JITDUMP("Start LSRA Block Sequence: \n");
-    for (BasicBlock* const block : compiler->Blocks())
-    {
+    auto visitBlock = [this](BasicBlock* block) {
         JITDUMP("Current block: " FMT_BB "\n", block->bbNum);
         markBlockVisited(block);
-        assert(bbSeqCount < compiler->fgBBcount);
-        blockSequence[bbSeqCount++] = block;
 
         // Initialize the blockInfo.
         // predBBNum will be set later.
@@ -1033,7 +1063,10 @@ void LinearScan::setBlockSequence()
             }
         }
 
-        // Check for critical successor edges
+        // Determine which block to schedule next.
+
+        // First, update the NORMAL successors of the current block, adding them to the worklist
+        // according to the desired order.  We will handle the EH successors below.
         const unsigned numSuccs                = block->NumSucc(compiler);
         bool           checkForCriticalOutEdge = (numSuccs > 1);
         if (!checkForCriticalOutEdge && block->KindIs(BBJ_SWITCH))
@@ -1051,17 +1084,45 @@ void LinearScan::setBlockSequence()
                 break;
             }
         }
+    };
+
+    JITDUMP("Start LSRA Block Sequence: \n");
+    for (unsigned i = 0; i < bbSeqCount; i++)
+    {
+        visitBlock(blockSequence[i]);
     }
 
-    assert(bbSeqCount == compiler->fgBBcount);
+    // If the DFS didn't visit any blocks, add them to the end of blockSequence
+    if (bbSeqCount < compiler->fgBBcount)
+    {
+        assert(compiler->opts.OptimizationEnabled());
+
+        // Unvisited blocks are more likely to be at the back of the list, so iterate backwards
+        unsigned i = bbSeqCount;
+        for (BasicBlock* block = compiler->fgLastBB; i < compiler->fgBBcount; block = block->Prev())
+        {
+            assert(block != nullptr);
+            if (!isBlockVisited(block))
+            {
+                visitBlock(block);
+                blockSequence[i++] = block;
+            }
+        }
+    }
+
+    bbSeqCount          = compiler->fgBBcount;
     blockSequencingDone = true;
 
 #ifdef DEBUG
+    // Make sure that we've visited all the blocks.
+    for (BasicBlock* const block : compiler->Blocks())
+    {
+        assert(isBlockVisited(block));
+    }
+
     JITDUMP("Final LSRA Block Sequence:\n");
     for (BasicBlock* block = startBlockSequence(); block != nullptr; block = moveToNextBlock())
     {
-        // Make sure we've visited every block.
-        assert(isBlockVisited(block));
         JITDUMP(FMT_BB, block->bbNum);
 
         const LsraBlockInfo& bi = blockInfo[block->bbNum];
