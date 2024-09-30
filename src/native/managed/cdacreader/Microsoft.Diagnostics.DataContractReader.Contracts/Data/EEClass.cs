@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-public sealed class EEClass : IData<EEClass>
+internal sealed class EEClass : IData<EEClass>
 {
     static EEClass IData<EEClass>.Create(Target target, TargetPointer address) => new EEClass(target, address);
     public EEClass(Target target, TargetPointer address)
@@ -33,7 +33,7 @@ public sealed class EEClass : IData<EEClass>
     public ushort NumNonVirtualSlots { get; init; }
 }
 
-public sealed class ArrayClass : IData<ArrayClass>
+internal sealed class ArrayClass : IData<ArrayClass>
 {
     static ArrayClass IData<ArrayClass>.Create(Target target, TargetPointer address) => new ArrayClass(target, address);
     public ArrayClass(Target target, TargetPointer address)

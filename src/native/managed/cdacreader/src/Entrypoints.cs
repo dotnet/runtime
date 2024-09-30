@@ -15,13 +15,13 @@ internal static class Entrypoints
     private static unsafe int Init(ulong descriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, IntPtr* handle)
     {
         // TODO: [cdac] Better error code/details
-        if (!Target.TryCreate(descriptor, (address, buffer) =>
+        if (!ContractDescriptorTarget.TryCreate(descriptor, (address, buffer) =>
             {
                 fixed (byte* bufferPtr = buffer)
                 {
                     return readFromTarget(address, bufferPtr, (uint)buffer.Length, readContext);
                 }
-            }, out Target? target))
+            }, out ContractDescriptorTarget? target))
             return -1;
 
         GCHandle gcHandle = GCHandle.Alloc(target);
