@@ -132,6 +132,9 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_Instantiate)
     DllImportEntry(RuntimeTypeHandle_GetGenericTypeDefinition)
     DllImportEntry(RuntimeTypeHandle_GetActivationInfo)
+#ifdef FEATURE_COMINTEROP
+    DllImportEntry(RuntimeTypeHandle_AllocateComObject)
+#endif // FEATURE_COMINTEROP
     DllImportEntry(RuntimeTypeHandle_AllocateTypeAssociatedMemory)
     DllImportEntry(RuntimeTypeHandle_RegisterCollectibleTypeDependency)
     DllImportEntry(MethodBase_GetCurrentMethod)

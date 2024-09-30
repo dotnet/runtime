@@ -292,11 +292,18 @@ namespace System
             Interop.BOOL* pfCtorIsPublic);
 
 #if FEATURE_COMINTEROP
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_AllocateComObject")]
+        private static partial void AllocateComObject(void* pClassFactory, ObjectHandleOnStack result);
+
         // Referenced by unmanaged layer (see GetActivationInfo).
         // First parameter is ComClassFactory*.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object AllocateComObject(void* pClassFactory);
-#endif
+        private static object AllocateComObject(void* pClassFactory)
+        {
+            object? result = null;
+            AllocateComObject(pClassFactory, ObjectHandleOnStack.Create(ref result));
+            return result!;
+        }
+#endif // FEATURE_COMINTEROP
 
         internal RuntimeType GetRuntimeType()
         {

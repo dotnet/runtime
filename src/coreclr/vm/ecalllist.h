@@ -126,10 +126,6 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("SatisfiesConstraints", RuntimeTypeHandle::SatisfiesConstraints)
     FCFuncElement("GetArgumentTypesFromFunctionPointer", RuntimeTypeHandle::GetArgumentTypesFromFunctionPointer)
     FCFuncElement("IsUnmanagedFunctionPointer", RuntimeTypeHandle::IsUnmanagedFunctionPointer)
-
-#ifdef FEATURE_COMINTEROP
-    FCFuncElement("AllocateComObject", RuntimeTypeHandle::AllocateComObject)
-#endif // FEATURE_COMINTEROP
     FCFuncElement("CompareCanonicalHandles", RuntimeTypeHandle::CompareCanonicalHandles)
     FCFuncElement("IsEquivalentTo", RuntimeTypeHandle::IsEquivalentTo)
 FCFuncEnd()

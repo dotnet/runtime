@@ -113,8 +113,6 @@ public:
     ReflectClassBaseObject *pRuntimeTypeDONOTUSEDIRECTLY;
 
     // Static method on RuntimeTypeHandle
-    static FCDECL1(Object*, AllocateComObject, void* pClassFactory);
-
     static FCDECL1(ReflectClassBaseObject*, GetRuntimeType, void *th);
 
     static FCDECL2(FC_BOOL_RET, IsEquivalentTo, ReflectClassBaseObject *rtType1UNSAFE, ReflectClassBaseObject *rtType2UNSAFE);
@@ -178,6 +176,9 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
     PCODE* ppfnCtor,
     PCODE* ppfnValueCtor,
     BOOL* pfCtorIsPublic);
+#ifdef FEATURE_COMINTEROP
+extern "C" void QCALLTYPE RuntimeTypeHandle_AllocateComObject(void* pClassFactory, QCall::ObjectHandleOnStack result);
+#endif // FEATURE_COMINTEROP
 extern "C" void QCALLTYPE RuntimeTypeHandle_MakeByRef(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
 extern "C" void QCALLTYPE RuntimeTypeHandle_MakePointer(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
 extern "C" void QCALLTYPE RuntimeTypeHandle_MakeSZArray(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);

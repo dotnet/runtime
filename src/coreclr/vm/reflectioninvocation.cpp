@@ -1792,50 +1792,32 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
     END_QCALL;
 }
 
+#ifdef FEATURE_COMINTEROP
 /*
  * Given a ComClassFactory*, calls the COM allocator
  * and returns a RCW.
  */
-FCIMPL1(Object*, RuntimeTypeHandle::AllocateComObject,
-    void* pClassFactory)
+extern "C" void QCALLTYPE RuntimeTypeHandle_AllocateComObject(void* pClassFactory, QCall::ObjectHandleOnStack result)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pClassFactory));
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
-    OBJECTREF rv = NULL;
-    bool allocated = false;
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(rv);
-
-#ifdef FEATURE_COMINTEROP
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-    {
-        if (pClassFactory != NULL)
-        {
-            rv = ((ComClassFactory*)pClassFactory)->CreateInstance(NULL);
-            allocated = true;
-        }
-    }
-#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-#endif // FEATURE_COMINTEROP
-
-    if (!allocated)
-    {
-#ifdef FEATURE_COMINTEROP
+    if (pClassFactory == NULL)
         COMPlusThrow(kInvalidComObjectException, IDS_EE_NO_BACKING_CLASS_FACTORY);
-#else // FEATURE_COMINTEROP
-        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_BACKING_CLASS_FACTORY);
-#endif // FEATURE_COMINTEROP
-    }
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(rv);
+    {
+        GCX_COOP();
+        result.Set(((ComClassFactory*)pClassFactory)->CreateInstance(NULL));
+    }
+#else
+    COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_BACKING_CLASS_FACTORY);
+#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+
+    END_QCALL;
 }
-FCIMPLEND
+#endif // FEATURE_COMINTEROP
 
 //*************************************************************************************************
 //*************************************************************************************************
