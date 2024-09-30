@@ -96,7 +96,6 @@ FCFuncEnd()
 
 FCFuncStart(gSystem_RuntimeType)
     FCFuncElement("GetGUID", ReflectionInvocation::GetGUID)
-    FCFuncElement("CanValueSpecialCast", ReflectionInvocation::CanValueSpecialCast)
 #if defined(FEATURE_COMINTEROP)
     FCFuncElement("InvokeDispMethod", ReflectionInvocation::InvokeDispMethod)
 #endif // defined(FEATURE_COMINTEROP)
@@ -108,7 +107,6 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("GetDeclaringType", RuntimeTypeHandle::GetDeclaringType)
     FCFuncElement("GetFirstIntroducedMethod", RuntimeTypeHandle::GetFirstIntroducedMethod)
     FCFuncElement("GetNextIntroducedMethod", RuntimeTypeHandle::GetNextIntroducedMethod)
-    FCFuncElement("GetCorElementType", RuntimeTypeHandle::GetCorElementType)
     FCFuncElement("GetAssemblyIfExists", RuntimeTypeHandle::GetAssemblyIfExists)
     FCFuncElement("GetModuleIfExists", RuntimeTypeHandle::GetModuleIfExists)
     FCFuncElement("GetBaseType", RuntimeTypeHandle::GetBaseType)
@@ -234,11 +232,6 @@ FCFuncEnd()
 FCFuncStart(gDelegateFuncs)
     FCFuncElement("GetMulticastInvoke", COMDelegate::GetMulticastInvoke)
     FCFuncElement("GetInvokeMethod", COMDelegate::GetInvokeMethod)
-
-    // The FCall mechanism knows how to wire multiple different constructor calls into a
-    // single entrypoint, without the following entry.  But we need this entry to satisfy
-    // frame creation within the body:
-    FCFuncElement("DelegateConstruct", COMDelegate::DelegateConstruct)
 FCFuncEnd()
 
 FCFuncStart(gMathFuncs)
