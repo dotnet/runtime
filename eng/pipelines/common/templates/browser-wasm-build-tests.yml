@@ -101,6 +101,14 @@ jobs:
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
 
+          # Temporary to debug agent.os
+          - task: Bash@3
+            displayName: Print Agent.OS value
+            inputs:
+              targetType: 'inline'
+              script: |
+                echo "Agent.OS: $(Agent.OS)"
+
           - ${{ if or(eq(variables['Agent.OS'], 'Linux'), eq(variables['Agent.OS'], 'Darwin')) }}:
             - task: Bash@3
               displayName: Set execute permissions for node binary
