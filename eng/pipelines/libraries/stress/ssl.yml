@@ -34,6 +34,9 @@ extends:
       - job: linux
         displayName: Docker Linux
         timeoutInMinutes: 120
+        variables:
+          DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
+          DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
         pool:
           name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals Build.Ubuntu.2204.Amd64.Open
@@ -63,6 +66,8 @@ extends:
           name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals 1es-windows-2022-open
         variables:
+          DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
+          DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
           # The 1es-windows-2022-open image has an issue where the Chocolatey-installed V1 docker-compose takes precendence over the
           # V2 docker-compose required by the stress tests, see: https://github.com/actions/runner-images/issues/7080
           # This is worked around by handpicking the V2 executable.
