@@ -19,7 +19,7 @@ namespace System.Globalization.Tests
             // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "h:mm:ss tt" };
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, "h:mm:ss tt" };
-            yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, "H:mm:ss ч." };
+            yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "H:mm:ss ч." : "H:mm:ss" }; // H:mm:ss ч.
             yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, "h:mm:ss tt" };
             yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, "h:mm:ss tt" };
             yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, "H:mm:ss" };
@@ -137,15 +137,16 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-ZA").DateTimeFormat, "HH:mm:ss" };
             yield return new object[] { new CultureInfo("en-ZM").DateTimeFormat, "h:mm:ss tt" };
             yield return new object[] { new CultureInfo("en-ZW").DateTimeFormat, "HH:mm:ss" };
-            yield return new object[] { new CultureInfo("es-419").DateTimeFormat, "HH:mm:ss" };
+            string latinAmericaSpanishPattern = PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "HH:mm:ss" : "h:mm:ss tt"; // H:mm:ss
+            yield return new object[] { new CultureInfo("es-419").DateTimeFormat, latinAmericaSpanishPattern };
             yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, "H:mm:ss" };
-            yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "HH:mm:ss" }; // H:mm:ss
+            yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, latinAmericaSpanishPattern };
             yield return new object[] { new CultureInfo("et-EE").DateTimeFormat, "HH:mm:ss" };
             yield return new object[] { new CultureInfo("fa-IR").DateTimeFormat, "H:mm:ss" };
             yield return new object[] { new CultureInfo("fi-FI").DateTimeFormat, "H.mm.ss" };
             yield return new object[] { new CultureInfo("fil-PH").DateTimeFormat, "h:mm:ss tt" };
             yield return new object[] { new CultureInfo("fr-BE").DateTimeFormat, "HH:mm:ss" };
-            yield return new object[] { new CultureInfo("fr-CA").DateTimeFormat, "HH h mm min ss s" }; // HH 'h' mm 'min' ss 's'
+            yield return new object[] { new CultureInfo("fr-CA").DateTimeFormat, "HH 'h' mm 'min' ss 's'" };
             yield return new object[] { new CultureInfo("fr-CH").DateTimeFormat, "HH:mm:ss" };
             yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, "HH:mm:ss" };
             yield return new object[] { new CultureInfo("gu-IN").DateTimeFormat, "hh:mm:ss tt" };
@@ -281,6 +282,55 @@ namespace System.Globalization.Tests
                     break; // done.
                 }
             }
+        }
+
+        [Fact]
+        public void LongTimePattern_VerifyTimePatterns()
+        {
+            Assert.All(CultureInfo.GetCultures(CultureTypes.AllCultures), culture => {
+                if (DateTimeFormatInfoData.HasBadIcuTimePatterns(culture))
+                {
+                    return;
+                }
+                var pattern = culture.DateTimeFormat.LongTimePattern;
+                bool use24Hour = false;
+                bool use12Hour = false;
+                bool useAMPM = false;
+                for (var i = 0; i < pattern.Length; i++)
+                {
+                    switch (pattern[i])
+                    {
+                        case 'H': use24Hour = true; break;
+                        case 'h': use12Hour = true; break;
+                        case 't': useAMPM = true; break;
+                        case '\\': i++; break;
+                        case '\'':
+                            i++;
+                            for (; i < pattern.Length; i++)
+                            {
+                                var c = pattern[i];
+                                if (c == '\'') break;
+                                if (c == '\\') i++;
+                            }
+                            break;
+                    }
+                }
+                Assert.True((use24Hour || useAMPM) && (use12Hour ^ use24Hour), $"Bad long time pattern for culture {culture.Name}: '{pattern}'");
+            });
+        }
+
+        [Fact]
+        public void LongTimePattern_CheckTimeFormatWithSpaces()
+        {
+            var date = DateTime.Today + TimeSpan.FromHours(15) + TimeSpan.FromMinutes(15);
+            var culture = new CultureInfo("en-US");
+            string formattedDate = date.ToString("t", culture);
+            bool containsSpace = formattedDate.Contains(' ');
+            bool containsNoBreakSpace = formattedDate.Contains('\u00A0');
+            bool containsNarrowNoBreakSpace = formattedDate.Contains('\u202F');
+
+            Assert.True(containsSpace || containsNoBreakSpace || containsNarrowNoBreakSpace,
+                $"Formatted date string '{formattedDate}' does not contain any of the specified spaces.");
         }
     }
 }

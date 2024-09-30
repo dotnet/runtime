@@ -800,8 +800,8 @@ namespace System.Globalization
             }
 
             // Throw if we're too long
-            if (output.Length > c_defaultNameLimit - (IsDot(output[output.Length - 1]) ? 0 : 1))
-                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize, c_defaultNameLimit - (IsDot(output[output.Length - 1]) ? 0 : 1)), nameof(ascii));
+            if (output.Length > c_defaultNameLimit - (IsDot(output[^1]) ? 0 : 1))
+                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize, c_defaultNameLimit - (IsDot(output[^1]) ? 0 : 1)), nameof(ascii));
 
             // Return our output string
             return output.ToString();

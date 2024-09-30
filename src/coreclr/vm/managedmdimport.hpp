@@ -27,6 +27,7 @@ typedef struct
 class MetaDataImport
 {
 public:
+    static FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectModuleBaseObject* pModuleUNSAFE);
     static FCDECL2(HRESULT, GetScopeProps, IMDInternalImport* pScope, GUID* pmvid);
     static FCDECL3(HRESULT, GetMemberRefProps, IMDInternalImport* pScope, mdMemberRef mr, ConstArray* ppvSigBlob);
 

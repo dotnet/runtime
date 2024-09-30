@@ -13,7 +13,7 @@ namespace System.IO.Ports
     {
         public static string[] GetPortNames()
         {
-#if NETCOREAPP
+#if NET
             return OperatingSystem.IsLinux() ? GetPortNames_Linux()
                 : OperatingSystem.IsAndroid() ? GetPortNames_Linux()
                 : OperatingSystem.IsMacOS() ? GetPortNames_OSX()

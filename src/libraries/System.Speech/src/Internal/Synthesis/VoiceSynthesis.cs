@@ -804,7 +804,7 @@ namespace System.Speech.Internal.Synthesis
 #pragma warning restore 6500
 
                         default:
-                            System.Diagnostics.Debug.Assert(false, "Unknown Action!");
+                            System.Diagnostics.Debug.Fail("Unknown Action!");
                             break;
                     }
                 }

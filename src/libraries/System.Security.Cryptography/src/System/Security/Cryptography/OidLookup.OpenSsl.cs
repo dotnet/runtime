@@ -23,7 +23,7 @@ namespace System.Security.Cryptography
             switch (result)
             {
                 case 1: /* Success */
-                    Debug.Assert(friendlyNamePtr != IntPtr.Zero, "friendlyNamePtr != IntPtr.Zero");
+                    Debug.Assert(friendlyNamePtr != IntPtr.Zero);
 
                     // The pointer is to a shared string, so marshalling it out is all that's required.
                     return Marshal.PtrToStringUTF8(friendlyNamePtr);

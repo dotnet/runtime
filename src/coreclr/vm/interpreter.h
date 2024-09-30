@@ -764,7 +764,7 @@ public:
     static CorJitResult GenerateInterpreterStub(CEEInfo* comp,
                                                 CORINFO_METHOD_INFO* info,
                                                 /*OUT*/ BYTE **nativeEntry,
-                                                /*OUT*/ ULONG *nativeSizeOfCode,
+                                                /*OUT*/ uint32_t *nativeSizeOfCode,
                                                 InterpreterMethodInfo** ppInterpMethodInfo = NULL,
                                                 bool jmpCall = false);
 
@@ -920,6 +920,10 @@ public:
         NI_Illegal = 0,
         NI_System_StubHelpers_GetStubContext,
         NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
+        NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
+        NI_System_Threading_Interlocked_CompareExchange,
+        NI_System_Threading_Interlocked_Exchange,
+        NI_System_Threading_Interlocked_ExchangeAdd,
     };
     static InterpreterNamedIntrinsics getNamedIntrinsicID(CEEInfo* info, CORINFO_METHOD_HANDLE methodHnd);
     static const char* getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName = NULL, const char **enclosingClassName = NULL);
@@ -1402,8 +1406,8 @@ private:
 #if INTERP_ILCYCLE_PROFILE
     // Cycles we want to delete from the current instructions cycle count; e.g.,
     // cycles spent in a callee.
-    unsigned __int64 m_exemptCycles;
-    unsigned __int64 m_startCycles;
+    uint64_t m_exemptCycles;
+    uint64_t m_startCycles;
     unsigned short   m_instr;
 
     void UpdateCycleCount();
@@ -1533,16 +1537,16 @@ private:
     static int                   s_ILInstrExecs[256];
     static int                   s_ILInstrExecsByCategory[512];
 #if INTERP_ILCYCLE_PROFILE
-    static unsigned __int64       s_ILInstrCyclesByCategory[512];
+    static uint64_t       s_ILInstrCyclesByCategory[512];
 #endif // INTERP_ILCYCLE_PROFILE
 
     static const unsigned         CountIlInstr2Byte = 0x22;
     static int                   s_ILInstr2ByteExecs[CountIlInstr2Byte];
 
 #if INTERP_ILCYCLE_PROFILE
-    static unsigned __int64       s_ILInstrCycles[512];
+    static uint64_t       s_ILInstrCycles[512];
     // XXX
-    static unsigned __int64              s_callCycles;
+    static uint64_t              s_callCycles;
     static unsigned                      s_calls;
 #endif // INTERP_ILCYCLE_PROFILE
 #endif // INTERP_ILINSTR_PROFILE
@@ -1790,6 +1794,10 @@ private:
     void DoSIMDHwAccelerated();
     void DoGetIsSupported();
     void DoGetArrayDataReference();
+    void DoIsReferenceOrContainsReferences(CORINFO_METHOD_HANDLE method);
+    bool DoInterlockedCompareExchange(CorInfoType retType);
+    bool DoInterlockedExchange(CorInfoType retType);
+    bool DoInterlockedExchangeAdd(CorInfoType retType);
 
     // Returns the proper generics context for use in resolving tokens ("precise" in the sense of including generic instantiation
     // information).
@@ -1935,7 +1943,7 @@ private:
         bool           m_is2byte;
         unsigned m_execs;
 #if INTERP_ILCYCLE_PROFILE
-        unsigned __int64 m_cycles;
+        uint64_t m_cycles;
 #endif // INTERP_ILCYCLE_PROFILE
 
         static int _cdecl Compare(const void* v0, const void* v1)
@@ -1956,7 +1964,7 @@ private:
     // Prints the given array "recs", assumed to already be sorted.
     static void PrintILProfile(InstrExecRecord* recs, unsigned totInstrs
 #if INTERP_ILCYCLE_PROFILE
-                                 , unsigned __int64 totCycles
+                                 , uint64_t totCycles
 #endif // INTERP_ILCYCLE_PROFILE
                                  );
 #endif // INTERP_ILINSTR_PROFILE

@@ -35,6 +35,7 @@ namespace GCTest_arrres_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static void TestEntryPoint()
         {
             Test1();

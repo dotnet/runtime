@@ -866,10 +866,37 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             continue;
         }
 
-        // Doesn't tighten the current bound. So skip.
-        if (pRange->uLimit.IsConstant() && limit.vn != arrLenVN)
+        // Skip if it doesn't tighten the current bound:
+        if (pRange->uLimit.IsConstant() && ((cmpOper == GT_LE) || (cmpOper == GT_LT)))
         {
-            continue;
+            if (!limit.IsConstant() && (limit.vn != arrLenVN))
+            {
+                // If our new limit is not constant and doesn't represent the array's length - bail out.
+                // NOTE: it's fine to replace the current constant limit with a non-constant arrLenVN.
+                continue;
+            }
+            if (limit.IsConstant() && (limit.cns > pRange->uLimit.cns))
+            {
+                // The new constant limit doesn't tighten the current constant bound.
+                // E.g. current is "X < 10" and the new one is "X < 100"
+                continue;
+            }
+        }
+        // Same for the lower bound:
+        if (pRange->lLimit.IsConstant() && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
+        {
+            if (!limit.IsConstant() && (limit.vn != arrLenVN))
+            {
+                // If our new limit is not constant and doesn't represent the array's length - bail out.
+                // NOTE: it's fine to replace the current constant limit with a non-constant arrLenVN.
+                continue;
+            }
+            if (limit.IsConstant() && (limit.cns < pRange->lLimit.cns))
+            {
+                // The new constant limit doesn't tighten the current constant bound.
+                // E.g. current is "X > 10" and the new one is "X > 5"
+                continue;
+            }
         }
 
         // Check if the incoming limit from assertions tightens the existing upper limit.

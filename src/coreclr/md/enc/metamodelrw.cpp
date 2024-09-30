@@ -3995,7 +3995,7 @@ CMiniMdRW::Impl_GetStringW(
             *pcchBuffer = 0;
         goto ErrExit;
     }
-    if (!(iSize=::WszMultiByteToWideChar(CP_UTF8, 0, szString, -1, szOut, cchBuffer)))
+    if (!(iSize=::MultiByteToWideChar(CP_UTF8, 0, szString, -1, szOut, cchBuffer)))
     {
         // What was the problem?
         DWORD dwNT = GetLastError();
@@ -4006,7 +4006,7 @@ CMiniMdRW::Impl_GetStringW(
 
         // Truncation error; get the size required.
         if (pcchBuffer)
-            *pcchBuffer = ::WszMultiByteToWideChar(CP_UTF8, 0, szString, -1, NULL, 0);
+            *pcchBuffer = ::MultiByteToWideChar(CP_UTF8, 0, szString, -1, NULL, 0);
 
         if ((szOut != NULL) && (cchBuffer > 0))
         {   // null-terminate the truncated output string

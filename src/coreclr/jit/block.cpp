@@ -137,14 +137,17 @@ void FlowEdge::addLikelihood(weight_t addedLikelihood)
 //  AllSuccessorEnumerator: Construct an instance of the enumerator.
 //
 //  Arguments:
-//     comp  - Compiler instance
-//     block - The block whose successors are to be iterated
+//     comp       - Compiler instance
+//     block      - The block whose successors are to be iterated
+//     useProfile - If true, determines the order of successors visited using profile data
 //
-AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block)
+AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile /* = false */)
     : m_block(block)
 {
     m_numSuccs = 0;
-    block->VisitAllSuccs(comp, [this](BasicBlock* succ) {
+    block->VisitAllSuccs(
+        comp,
+        [this](BasicBlock* succ) {
         if (m_numSuccs < ArrLen(m_successors))
         {
             m_successors[m_numSuccs] = succ;
@@ -152,18 +155,22 @@ AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block
 
         m_numSuccs++;
         return BasicBlockVisit::Continue;
-    });
+    },
+        useProfile);
 
     if (m_numSuccs > ArrLen(m_successors))
     {
         m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
 
         unsigned numSuccs = 0;
-        block->VisitAllSuccs(comp, [this, &numSuccs](BasicBlock* succ) {
+        block->VisitAllSuccs(
+            comp,
+            [this, &numSuccs](BasicBlock* succ) {
             assert(numSuccs < m_numSuccs);
             m_pSuccessors[numSuccs++] = succ;
             return BasicBlockVisit::Continue;
-        });
+        },
+            useProfile);
 
         assert(numSuccs == m_numSuccs);
     }
@@ -383,131 +390,31 @@ bool BasicBlock::CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) c
     return NextIs(target) && !compiler->fgInDifferentRegions(this, target);
 }
 
+#ifdef DEBUG
+
 //------------------------------------------------------------------------
 // checkPredListOrder: see if pred list is properly ordered
 //
 // Returns:
-//    false if pred list is not in increasing bbNum order.
+//    false if pred list is not in increasing bbID order.
 //
 bool BasicBlock::checkPredListOrder()
 {
-    unsigned lastBBNum = 0;
+    unsigned lastBBID = 0;
+    bool     compare  = false;
     for (BasicBlock* const predBlock : PredBlocks())
     {
-        const unsigned bbNum = predBlock->bbNum;
-        if (bbNum <= lastBBNum)
+        const unsigned bbID = predBlock->bbID;
+        if (compare && (bbID <= lastBBID))
         {
-            assert(bbNum != lastBBNum);
+            assert(bbID != lastBBID);
             return false;
         }
-        lastBBNum = bbNum;
+        compare  = true;
+        lastBBID = bbID;
     }
     return true;
 }
-
-//------------------------------------------------------------------------
-// ensurePredListOrder: ensure all pred list entries appear in increasing
-//    bbNum order.
-//
-// Arguments:
-//    compiler - current compiler instance
-//
-void BasicBlock::ensurePredListOrder(Compiler* compiler)
-{
-    // First, check if list is already in order.
-    //
-    if (checkPredListOrder())
-    {
-        return;
-    }
-
-    reorderPredList(compiler);
-    assert(checkPredListOrder());
-}
-
-//------------------------------------------------------------------------
-// reorderPredList: relink pred list in increasing bbNum order.
-//
-// Arguments:
-//    compiler - current compiler instance
-//
-void BasicBlock::reorderPredList(Compiler* compiler)
-{
-    // Count number or entries.
-    //
-    int count = 0;
-    for (FlowEdge* const pred : PredEdges())
-    {
-        count++;
-    }
-
-    // If only 0 or 1 entry, nothing to reorder.
-    //
-    if (count < 2)
-    {
-        return;
-    }
-
-    // Allocate sort vector if needed.
-    //
-    if (compiler->fgPredListSortVector == nullptr)
-    {
-        CompAllocator allocator        = compiler->getAllocator(CMK_FlowEdge);
-        compiler->fgPredListSortVector = new (allocator) jitstd::vector<FlowEdge*>(allocator);
-    }
-
-    jitstd::vector<FlowEdge*>* const sortVector = compiler->fgPredListSortVector;
-    sortVector->clear();
-
-    // Fill in the vector from the list.
-    //
-    for (FlowEdge* const pred : PredEdges())
-    {
-        sortVector->push_back(pred);
-    }
-
-    // Sort by increasing bbNum
-    //
-    struct FlowEdgeBBNumCmp
-    {
-        bool operator()(const FlowEdge* f1, const FlowEdge* f2)
-        {
-            return f1->getSourceBlock()->bbNum < f2->getSourceBlock()->bbNum;
-        }
-    };
-
-    jitstd::sort(sortVector->begin(), sortVector->end(), FlowEdgeBBNumCmp());
-
-    // Rethread the list.
-    //
-    FlowEdge* last = nullptr;
-
-    for (FlowEdge* current : *sortVector)
-    {
-        if (last == nullptr)
-        {
-            bbPreds = current;
-        }
-        else
-        {
-            last->setNextPredEdge(current);
-        }
-
-        last = current;
-    }
-
-    last->setNextPredEdge(nullptr);
-
-    // Note bbLastPred is only used transiently, during
-    // initial pred list construction.
-    //
-    if (!compiler->fgPredsComputed)
-    {
-        bbLastPred = last;
-    }
-}
-
-#ifdef DEBUG
 
 //------------------------------------------------------------------------
 // dspBlockILRange(): Display the block's IL range as [XXX...YYY), where XXX and YYY might be "???" for BAD_IL_OFFSET.
@@ -902,7 +809,6 @@ void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const Basic
     to->bbStkDepth    = from->bbStkDepth;
     to->bbCodeOffs    = from->bbCodeOffs;
     to->bbCodeOffsEnd = from->bbCodeOffsEnd;
-    VarSetOps::AssignAllowUninitRhs(compiler, to->bbScope, from->bbScope);
 #ifdef DEBUG
     to->bbTgtStkDepth = from->bbTgtStkDepth;
 #endif // DEBUG
@@ -1463,7 +1369,6 @@ void BasicBlock::InitVarSets(Compiler* comp)
     VarSetOps::AssignNoCopy(comp, bbVarDef, VarSetOps::MakeEmpty(comp));
     VarSetOps::AssignNoCopy(comp, bbLiveIn, VarSetOps::MakeEmpty(comp));
     VarSetOps::AssignNoCopy(comp, bbLiveOut, VarSetOps::MakeEmpty(comp));
-    VarSetOps::AssignNoCopy(comp, bbScope, VarSetOps::MakeEmpty(comp));
 
     bbMemoryUse     = emptyMemoryKindSet;
     bbMemoryDef     = emptyMemoryKindSet;
@@ -1626,10 +1531,7 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
     // boundaries), or have been inserted by the JIT
     block->bbCodeOffs    = BAD_IL_OFFSET;
     block->bbCodeOffsEnd = BAD_IL_OFFSET;
-
-#ifdef DEBUG
-    block->bbID = compiler->compBasicBlockID++;
-#endif
+    block->bbID          = compiler->compBasicBlockID++;
 
     /* Give the block a number, set the ancestor count and weight */
 
@@ -1665,7 +1567,6 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
         VarSetOps::AssignNoCopy(compiler, block->bbVarDef, VarSetOps::MakeEmpty(compiler));
         VarSetOps::AssignNoCopy(compiler, block->bbLiveIn, VarSetOps::MakeEmpty(compiler));
         VarSetOps::AssignNoCopy(compiler, block->bbLiveOut, VarSetOps::MakeEmpty(compiler));
-        VarSetOps::AssignNoCopy(compiler, block->bbScope, VarSetOps::MakeEmpty(compiler));
     }
     else
     {
@@ -1673,7 +1574,6 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
         VarSetOps::AssignNoCopy(compiler, block->bbVarDef, VarSetOps::UninitVal());
         VarSetOps::AssignNoCopy(compiler, block->bbLiveIn, VarSetOps::UninitVal());
         VarSetOps::AssignNoCopy(compiler, block->bbLiveOut, VarSetOps::UninitVal());
-        VarSetOps::AssignNoCopy(compiler, block->bbScope, VarSetOps::UninitVal());
     }
 
     block->bbMemoryUse     = emptyMemoryKindSet;

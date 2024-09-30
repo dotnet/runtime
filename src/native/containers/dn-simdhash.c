@@ -119,8 +119,7 @@ dn_simdhash_clear (dn_simdhash_t *hash)
 	if (hash->vtable.destroy_all)
 		hash->vtable.destroy_all(hash);
 	hash->count = 0;
-	// TODO: Scan through buckets sequentially and only erase ones with data in them
-	// Maybe skip erasing the key slots too?
+	// TODO: Implement a fast clear algorithm that scans buckets and only clears ones w/nonzero count
 	memset(hash->buffers.buckets, 0, hash->buffers.buckets_length * hash->meta->bucket_size_bytes);
 	// Skip this for performance; memset is especially slow in wasm
 	// memset(hash->buffers.values, 0, hash->buffers.values_length * hash->meta->value_size);
@@ -138,6 +137,19 @@ dn_simdhash_count (dn_simdhash_t *hash)
 {
 	dn_simdhash_assert(hash);
 	return hash->count;
+}
+
+uint32_t
+dn_simdhash_overflow_count (dn_simdhash_t *hash)
+{
+	assert(hash);
+	uint32_t result = 0;
+	for (uint32_t bucket_index = 0; bucket_index < hash->buffers.buckets_length; bucket_index++) {
+		uint8_t *suffixes = ((uint8_t *)hash->buffers.buckets) + (bucket_index * hash->meta->bucket_size_bytes);
+		uint8_t cascade_count = suffixes[DN_SIMDHASH_CASCADED_SLOT];
+		result += cascade_count;
+	}
+	return result;
 }
 
 void

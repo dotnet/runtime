@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 using Microsoft.Win32.SafeHandles;
@@ -13,7 +13,7 @@ internal static partial class Interop
 {
     internal static partial class CryptUI
     {
-#if NET7_0_OR_GREATER
+#if NET
         [NativeMarshalling(typeof(Marshaller))]
 #else
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -39,7 +39,7 @@ internal static partial class Interop
             internal IntPtr rgPropSheetPages;
             internal uint nStartPage;
 
-#if NET7_0_OR_GREATER
+#if NET
             [CustomMarshaller(typeof(CRYPTUI_VIEWCERTIFICATE_STRUCTW), MarshalMode.Default, typeof(Marshaller))]
             public static class Marshaller
             {
@@ -127,7 +127,7 @@ internal static partial class Interop
 #endif
         }
 
-#if NET7_0_OR_GREATER
+#if NET
         [NativeMarshalling(typeof(Marshaller))]
 #else
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -151,7 +151,7 @@ internal static partial class Interop
             internal IntPtr rgPropSheetPages;
             internal IntPtr hSelectedCertStore;
 
-#if NET7_0_OR_GREATER
+#if NET
             [CustomMarshaller(typeof(CRYPTUI_SELECTCERTIFICATE_STRUCTW), MarshalMode.Default, typeof(Marshaller))]
             public static class Marshaller
             {

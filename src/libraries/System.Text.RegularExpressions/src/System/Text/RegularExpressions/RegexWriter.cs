@@ -177,7 +177,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private int StringCode(string str)
         {
-#if NET6_0_OR_GREATER
+#if NET
             ref int i = ref CollectionsMarshal.GetValueRefOrAddDefault(_stringTable, str, out bool exists);
             if (!exists)
             {

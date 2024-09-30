@@ -1229,16 +1229,6 @@ PhaseStatus Compiler::fgCloneFinally()
                     block->setBBProfileWeight(blockWeight * originalScale);
                     JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", block->bbNum, block->bbWeight);
 
-#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-                    // Handle a special case -- some handler entries can't have zero profile count.
-                    //
-                    if (bbIsHandlerBeg(block) && block->isRunRarely())
-                    {
-                        JITDUMP("Suppressing zero count for " FMT_BB " as it is a handler entry\n", block->bbNum);
-                        block->makeBlockHot();
-                    }
-#endif
-
                     BasicBlock* const clonedBlock = blockMap[block];
                     clonedBlock->setBBProfileWeight(blockWeight * clonedScale);
                     JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", clonedBlock->bbNum, clonedBlock->bbWeight);

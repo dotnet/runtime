@@ -63,7 +63,7 @@ public class WebcilWasmWrapper
     //
     // extracted by wasm-reader -s wrapper.wasm
     private static
-#if NET7_0_OR_GREATER
+#if NET
         ReadOnlyMemory<byte>
 #else
         byte[]
@@ -80,7 +80,7 @@ public class WebcilWasmWrapper
     //
     // extracted by wasm-reader -s wrapper.wasm
     private static
-#if NET7_0_OR_GREATER
+#if NET
         ReadOnlyMemory<byte>
 #else
         byte[]
@@ -91,7 +91,7 @@ public class WebcilWasmWrapper
 
     private static void WriteWasmHeader(Stream outputStream)
     {
-#if NET7_0_OR_GREATER
+#if NET
         outputStream.Write(s_wasmWrapperPrefix.Span);
 #else
         outputStream.Write(s_wasmWrapperPrefix, 0, s_wasmWrapperPrefix.Length);
@@ -100,7 +100,7 @@ public class WebcilWasmWrapper
 
     private static void WriteWasmSuffix(Stream outputStream)
     {
-#if NET7_0_OR_GREATER
+#if NET
         outputStream.Write(s_wasmWrapperSuffix.Span);
 #else
         outputStream.Write(s_wasmWrapperSuffix, 0, s_wasmWrapperSuffix.Length);

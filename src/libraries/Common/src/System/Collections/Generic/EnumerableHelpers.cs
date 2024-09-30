@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Collections.Generic
 {
     /// <summary>
@@ -8,6 +10,10 @@ namespace System.Collections.Generic
     /// </summary>
     internal static partial class EnumerableHelpers
     {
+        /// <summary>Calls Reset on an enumerator instance.</summary>
+        /// <remarks>Enables Reset to be called without boxing on a struct enumerator that lacks a public Reset.</remarks>
+        internal static void Reset<T>(ref T enumerator) where T : IEnumerator => enumerator.Reset();
+
         /// <summary>Gets an enumerator singleton for an empty collection.</summary>
         internal static IEnumerator<T> GetEmptyEnumerator<T>() =>
             ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator();
@@ -21,6 +27,11 @@ namespace System.Collections.Generic
         /// </returns>
         internal static T[] ToArray<T>(IEnumerable<T> source, out int length)
         {
+            // Copied from Array.MaxLength in System.Private.CoreLib/src/libraries/System.Private.CoreLib/src/System/Array.cs
+            const int ArrayMaxLength = 0X7FFFFFC7;
+#if NET6_0_OR_GREATER
+            Debug.Assert(Array.MaxLength == ArrayMaxLength);
+#endif
             if (source is ICollection<T> ic)
             {
                 int count = ic.Count;
@@ -60,9 +71,9 @@ namespace System.Collections.Generic
                                 // constrain the length to be Array.MaxLength (this overflow check works because of the
                                 // cast to uint).
                                 int newLength = count << 1;
-                                if ((uint)newLength > Array.MaxLength)
+                                if ((uint)newLength > ArrayMaxLength)
                                 {
-                                    newLength = Array.MaxLength <= count ? count + 1 : Array.MaxLength;
+                                    newLength = ArrayMaxLength <= count ? count + 1 : ArrayMaxLength;
                                 }
 
                                 Array.Resize(ref arr, newLength);

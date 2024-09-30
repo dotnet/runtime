@@ -10,6 +10,8 @@
     <NativeAotIncompatible>true</NativeAotIncompatible>
     <!-- Tracing tests routinely time out with gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- And they also time out with jitstress modes -->
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinderTracingTest.cs" />

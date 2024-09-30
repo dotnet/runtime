@@ -46,7 +46,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 documentationMode: documentationMode ?? DocumentationMode.Parse);
         }
 
-#if NETCOREAPP
+#if NET
         private static readonly Assembly systemRuntimeAssembly = Assembly.Load(new AssemblyName("System.Runtime"));
 #endif
 
@@ -68,7 +68,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 MetadataReference.CreateFromFile(typeof(GeneratedCodeAttribute).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(ReadOnlySpan<>).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
-#if NETCOREAPP
+#if NET
                 MetadataReference.CreateFromFile(typeof(LinkedList<>).Assembly.Location),
                 MetadataReference.CreateFromFile(systemRuntimeAssembly.Location),
 #else
@@ -94,7 +94,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             SyntaxTree[] syntaxTrees = new[]
             {
                 CSharpSyntaxTree.ParseText(source, parseOptions),
-#if !NETCOREAPP
+#if !NET
                 CSharpSyntaxTree.ParseText(NetfxPolyfillAttributes, parseOptions),
 #endif
             };
@@ -169,7 +169,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return ms.ToArray();
         }
 
-#if !NETCOREAPP
+#if !NET
         private const string NetfxPolyfillAttributes = """
             namespace System.Runtime.CompilerServices
             {

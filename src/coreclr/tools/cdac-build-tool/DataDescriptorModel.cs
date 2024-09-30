@@ -84,14 +84,16 @@ public class DataDescriptorModel
     public class Builder
     {
         private string _baseline;
+        private readonly string _baselinesDir;
         private bool _baselineParsed;
         private readonly Dictionary<string, TypeModelBuilder> _types = new();
         private readonly Dictionary<string, GlobalBuilder> _globals = new();
         private readonly Dictionary<string, ContractBuilder> _contracts = new();
-        public Builder()
+        public Builder(string baselinesDir)
         {
             _baseline = string.Empty;
             _baselineParsed = false;
+            _baselinesDir = baselinesDir;
         }
 
         public uint PlatformFlags {get; set;}
@@ -151,7 +153,8 @@ public class DataDescriptorModel
             {
                 throw new InvalidOperationException($"Baseline already set to {_baseline} cannot set to {baseline}");
             }
-            if (EmbeddedBaselines.BaselineNames.Contains(baseline))
+            var baselines = new DirectoryBaselines(_baselinesDir);
+            if (baselines.BaselineNames.Contains(baseline))
             {
                 _baseline = baseline;
             }
@@ -185,10 +188,6 @@ public class DataDescriptorModel
             var globals = new Dictionary<string, GlobalModel>();
             foreach (var (globalName, globalBuilder) in _globals)
             {
-                if (globalBuilder.Type == string.Empty)
-                {
-                    throw new InvalidOperationException($"Type must be set for global {globalName}");
-                }
                 GlobalValue? v = globalBuilder.Value;
                 if (v == null)
                 {

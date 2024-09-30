@@ -2,7 +2,7 @@
 
 Author: [Tarek Mahmoud Sayed](https://github.com/tarekgh)
 
-The globalization invariant mode - new in .NET Core 2.0 - enables you to remove application dependencies on globalization data and [globalization behavior](https://docs.microsoft.com/en-us/dotnet/standard/globalization-localization/). This mode is an opt-in feature that provides more flexibility if you care more about reducing dependencies and the size of distribution than globalization functionality or globalization-correctness.
+The globalization invariant mode - new in .NET Core 2.0 - enables you to remove application dependencies on globalization data and [globalization behavior](https://learn.microsoft.com/dotnet/standard/globalization-localization/). This mode is an opt-in feature that provides more flexibility if you care more about reducing dependencies and the size of distribution than globalization functionality or globalization-correctness.
 
 The drawback of running in the invariant mode is applications will get poor globalization support. This new option is only recommended for developers that understand globalization and the impact of its absence.
 
@@ -54,9 +54,9 @@ Turkish I casing will not be supported when using Turkish cultures.
 
 ## String sorting and searching
 
-String operations like [Compare](https://docs.microsoft.com/dotnet/api/?term=string.compare), [IndexOf](https://docs.microsoft.com/dotnet/api/?term=string.indexof) and [LastIndexOf](https://docs.microsoft.com/dotnet/api/?term=string.lastindexof) are always performed as [ordinal](https://en.wikipedia.org/wiki/Ordinal_number) and not linguistic operations regardless of the string comparing options passed to the APIs.
+String operations like [Compare](https://learn.microsoft.com/dotnet/api/?term=string.compare), [IndexOf](https://learn.microsoft.com/dotnet/api/?term=string.indexof) and [LastIndexOf](https://learn.microsoft.com/dotnet/api/?term=string.lastindexof) are always performed as [ordinal](https://en.wikipedia.org/wiki/Ordinal_number) and not linguistic operations regardless of the string comparing options passed to the APIs.
 
-The [ignore case](https://docs.microsoft.com/dotnet/api/system.globalization.compareoptions.ignorecase) string sorting option is supported but only for the ASCII range as mentioned previously.
+The [ignore case](https://learn.microsoft.com/dotnet/api/system.globalization.compareoptions.ignorecase) string sorting option is supported but only for the ASCII range as mentioned previously.
 
 For example, the following comparison will resolve to being unequal:
 
@@ -71,7 +71,7 @@ However, the following comparison will resolve to being equal:
 * 'I', using
 * CompareOptions.Ignorecase
 
-It is worth noticing that all other [sort comparison options](https://docs.microsoft.com/dotnet/api/system.globalization.compareoptions) (for example, ignore symbols, ignore space, Katakana, Hiragana) will have no effect in the invariant mode (they are ignored).
+It is worth noticing that all other [sort comparison options](https://learn.microsoft.com/dotnet/api/system.globalization.compareoptions) (for example, ignore symbols, ignore space, Katakana, Hiragana) will have no effect in the invariant mode (they are ignored).
 
 ## Sort keys
 

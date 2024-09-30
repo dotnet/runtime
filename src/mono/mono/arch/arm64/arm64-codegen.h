@@ -454,6 +454,8 @@ MONO_RESTORE_WARNING
 
 #define arm_stlxrx(p, rs, rt, rn) arm_format_stlxr ((p), 0x3, (rs), (rn), (rt))
 #define arm_stlxrw(p, rs, rt, rn) arm_format_stlxr ((p), 0x2, (rs), (rn), (rt))
+#define arm_stlxrh(p, rs, rt, rn) arm_format_stlxr ((p), 0x1, (rs), (rn), (rt))
+#define arm_stlxrb(p, rs, rt, rn) arm_format_stlxr ((p), 0x0, (rs), (rn), (rt))
 
 /* Load/Store SIMD&FP */
 

@@ -67,6 +67,7 @@ namespace TestLibrary
 
         public static bool IsWindows => OperatingSystem.IsWindows();
         public static bool IsLinux => OperatingSystem.IsLinux();
+        public static bool IsFreeBSD => OperatingSystem.IsFreeBSD();
         public static bool IsMacOSX => OperatingSystem.IsMacOS();
         public static bool IsWindows7 => IsWindows && Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor == 1;
         public static bool IsWindowsNanoServer => (!IsWindowsIoTCore && GetInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
@@ -101,7 +102,7 @@ namespace TestLibrary
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(Utilities).Assembly.Location);
         public static bool IsSingleFile => !HasAssemblyFiles;
 
-#if NETCOREAPP
+#if NET
         public static bool IsReflectionEmitSupported => RuntimeFeature.IsDynamicCodeSupported;
         public static bool IsNotReflectionEmitSupported => !IsReflectionEmitSupported;
 #else
@@ -340,7 +341,7 @@ namespace TestLibrary
             public const int PRODUCT_HOME_PREMIUM_N = 0x0000001A;
 
             /// <summary>
-            /// https://docs.microsoft.com/en-us/windows/desktop/api/sysinfoapi/nf-sysinfoapi-getproductinfo
+            /// https://learn.microsoft.com/windows/desktop/api/sysinfoapi/nf-sysinfoapi-getproductinfo
             /// </summary>
             [DllImport(nameof(Kernel32), SetLastError = false)]
             public static extern bool GetProductInfo(

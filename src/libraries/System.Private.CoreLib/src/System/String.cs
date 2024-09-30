@@ -320,6 +320,7 @@ namespace System
         }
 
         public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
+            where TState : allows ref struct
         {
             if (action is null)
             {
@@ -533,7 +534,7 @@ namespace System
 
             // Get our string length
             int stringLength = encoding.GetCharCount(bytes, byteLength);
-            Debug.Assert(stringLength >= 0, "stringLength >= 0");
+            Debug.Assert(stringLength >= 0);
 
             // They gave us an empty string if they needed one
             // 0 bytelength might be possible if there's something in an encoder

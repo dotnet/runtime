@@ -136,9 +136,9 @@ namespace System.Tests
         [Fact]
         public void FromStringWithBase()
         {
-            string[] testValues = { null, null, null, null, "ffffffff", "4294967295", "37777777777", "11111111111111111111111111111111", "0", "0", "0", "0", "2147483647", "2147483648", "2147483649" };
-            int[] testBases = { 10, 2, 8, 16, 16, 10, 8, 2, 16, 10, 8, 2, 10, 10, 10 };
-            uint[] expectedValues = { 0, 0, 0, 0, uint.MaxValue, uint.MaxValue, uint.MaxValue, uint.MaxValue, uint.MinValue, uint.MinValue, uint.MinValue, uint.MinValue, (uint)int.MaxValue, (uint)int.MaxValue + 1, (uint)int.MaxValue + 2 };
+            string[] testValues = { null, null, null, null, "ffffffff", "4294967295", "37777777777", "11111111111111111111111111111111", "0", "0", "0", "0", "2147483647", "2147483648", "2147483649", "0xffffffff", "0XFFFFFFFF" };
+            int[] testBases = { 10, 2, 8, 16, 16, 10, 8, 2, 16, 10, 8, 2, 10, 10, 10, 16, 16 };
+            uint[] expectedValues = { 0, 0, 0, 0, uint.MaxValue, uint.MaxValue, uint.MaxValue, uint.MaxValue, uint.MinValue, uint.MinValue, uint.MinValue, uint.MinValue, (uint)int.MaxValue, (uint)int.MaxValue + 1, (uint)int.MaxValue + 2, uint.MaxValue, uint.MaxValue};
             VerifyFromStringWithBase(Convert.ToUInt32, testValues, testBases, expectedValues);
 
             string[] overflowValues = { "18446744073709551616", "18446744073709551617", "18446744073709551618", "18446744073709551619", "18446744073709551620", "-4294967297", "11111111111111111111111111111111111111111111111111111111111111111", "1FFFFffffFFFFffff", "7777777777777777777777777" };

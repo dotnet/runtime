@@ -28,7 +28,7 @@ class AssemblySpec  : public BaseAssemblySpec
 {
   private:
     AppDomain       *m_pAppDomain;
-    DomainAssembly  *m_pParentAssembly;
+    Assembly  *m_pParentAssembly;
 
     // Contains the reference to the fallback load context associated with RefEmitted assembly requesting the load of another assembly (static or dynamic)
     AssemblyBinder *m_pFallbackBinder;
@@ -38,14 +38,13 @@ class AssemblySpec  : public BaseAssemblySpec
 
     HRESULT InitializeSpecInternal(mdToken kAssemblyRefOrDef,
                                    IMDInternalImport *pImport,
-                                   DomainAssembly *pStaticParent);
+                                   Assembly *pStaticParent);
 
     // InitializeSpecInternal should be used very carefully so it's made private.
     // functions that take special care (and thus are allowed to use the function) are listed below
     friend Assembly * Module::GetAssemblyIfLoaded(
                 mdAssemblyRef       kAssemblyRef,
                 IMDInternalImport * pMDImportOverride,
-                BOOL                fDoNotUtilizeExtraChecks,
                 AssemblyBinder      *pBinderForLoadedAssembly);
 
   public:
@@ -73,7 +72,7 @@ class AssemblySpec  : public BaseAssemblySpec
     }
 
 
-    DomainAssembly* GetParentAssembly();
+    Assembly* GetParentAssembly();
 
     AssemblyBinder* GetBinderFromParentAssembly(AppDomain *pDomain);
 
@@ -82,7 +81,7 @@ class AssemblySpec  : public BaseAssemblySpec
 
     void InitializeSpec(mdToken kAssemblyRefOrDef,
                         IMDInternalImport *pImport,
-                        DomainAssembly *pStaticParent = NULL)
+                        Assembly *pStaticParent = NULL)
     {
         CONTRACTL
         {
@@ -92,7 +91,7 @@ class AssemblySpec  : public BaseAssemblySpec
             MODE_ANY;
         }
         CONTRACTL_END;
-        HRESULT hr=InitializeSpecInternal(kAssemblyRefOrDef, pImport,pStaticParent);
+        HRESULT hr = InitializeSpecInternal(kAssemblyRefOrDef, pImport, pStaticParent);
         if(FAILED(hr))
             EEFileLoadException::Throw(this,hr);
     };
@@ -102,7 +101,7 @@ class AssemblySpec  : public BaseAssemblySpec
 
     void AssemblyNameInit(ASSEMBLYNAMEREF* pName); //[in,out]
 
-    void SetParentAssembly(DomainAssembly *pAssembly)
+    void SetParentAssembly(Assembly *pAssembly)
     {
         CONTRACTL
         {
@@ -175,8 +174,6 @@ class AssemblySpec  : public BaseAssemblySpec
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel,
                            BOOL fThrowOnFileNotFound = TRUE);
-    DomainAssembly *LoadDomainAssembly(FileLoadLevel targetLevel,
-                                       BOOL fThrowOnFileNotFound = TRUE);
 
   public: // static
     // Creates and loads an assembly based on the name and context.
@@ -321,8 +318,8 @@ class AssemblySpecBindingCache
                 delete m_pException;
         };
 
-        inline DomainAssembly* GetAssembly(){ LIMITED_METHOD_CONTRACT; return m_pAssembly;};
-        inline void SetAssembly(DomainAssembly* pAssembly){ LIMITED_METHOD_CONTRACT;  m_pAssembly=pAssembly;};
+        inline Assembly* GetAssembly(){ LIMITED_METHOD_CONTRACT; return m_pAssembly; };
+        inline void SetAssembly(Assembly* pAssembly){ LIMITED_METHOD_CONTRACT; m_pAssembly = pAssembly; };
         inline PEAssembly* GetFile(){ LIMITED_METHOD_CONTRACT; return m_pPEAssembly;};
         inline BOOL IsError(){ LIMITED_METHOD_CONTRACT; return (m_exceptionType!=EXTYPE_NONE);};
 
@@ -347,7 +344,7 @@ class AssemblySpecBindingCache
                 default: _ASSERTE(!"Unexpected exception type");
             }
         };
-        inline void Init(AssemblySpec* pSpec, PEAssembly* pPEAssembly, DomainAssembly* pAssembly, Exception* pEx, LoaderHeap *pHeap, AllocMemTracker *pamTracker)
+        inline void Init(AssemblySpec* pSpec, PEAssembly* pPEAssembly, Assembly* pAssembly, Exception* pEx, LoaderHeap *pHeap, AllocMemTracker *pamTracker)
         {
             CONTRACTL
             {
@@ -357,7 +354,7 @@ class AssemblySpecBindingCache
             }
             CONTRACTL_END;
 
-            InitInternal(pSpec,pPEAssembly,pAssembly);
+            InitInternal(pSpec, pPEAssembly, pAssembly);
             if (pHeap != NULL)
             {
                 m_spec.CloneFieldsToLoaderHeap(pHeap, pamTracker);
@@ -367,7 +364,6 @@ class AssemblySpecBindingCache
                 m_spec.CloneFields();
             }
             InitException(pEx);
-
         }
 
         inline HRESULT GetHR()
@@ -426,7 +422,7 @@ class AssemblySpecBindingCache
         };
     protected:
 
-        inline void InitInternal(AssemblySpec* pSpec, PEAssembly* pPEAssembly, DomainAssembly* pAssembly )
+        inline void InitInternal(AssemblySpec* pSpec, PEAssembly* pPEAssembly, Assembly* pAssembly )
         {
             WRAPPER_NO_CONTRACT;
             m_spec.CopyFrom(pSpec);
@@ -439,7 +435,7 @@ class AssemblySpecBindingCache
 
         AssemblySpec    m_spec;
         PEAssembly      *m_pPEAssembly;
-        DomainAssembly  *m_pAssembly;
+        Assembly        *m_pAssembly;
         enum{
             EXTYPE_NONE               = 0x00000000,
             EXTYPE_HR                    = 0x00000001,
@@ -468,15 +464,15 @@ class AssemblySpecBindingCache
 
     BOOL Contains(AssemblySpec *pSpec);
 
-    DomainAssembly *LookupAssembly(AssemblySpec *pSpec, BOOL fThrow=TRUE);
+    Assembly *LookupAssembly(AssemblySpec *pSpec, BOOL fThrow=TRUE);
     PEAssembly *LookupFile(AssemblySpec *pSpec, BOOL fThrow = TRUE);
 
-    BOOL StoreAssembly(AssemblySpec *pSpec, DomainAssembly *pAssembly);
+    BOOL StoreAssembly(AssemblySpec *pSpec, Assembly *pAssembly);
     BOOL StorePEAssembly(AssemblySpec *pSpec, PEAssembly *pPEAssembly);
 
     BOOL StoreException(AssemblySpec *pSpec, Exception* pEx);
 
-    BOOL RemoveAssembly(DomainAssembly* pAssembly);
+    BOOL RemoveAssembly(Assembly* pAssembly);
 
     DWORD Hash(AssemblySpec *pSpec)
     {
@@ -485,7 +481,7 @@ class AssemblySpecBindingCache
     }
 
 #if !defined(DACCESS_COMPILE)
-    void GetAllAssemblies(SetSHash<PTR_DomainAssembly>& assemblyList)
+    void GetAllAssemblies(SetSHash<PTR_Assembly>& assemblyList)
     {
         PtrHashMap::PtrIterator i = m_map.begin();
         while (!i.end())

@@ -533,8 +533,14 @@ namespace ILCompiler
 
                             if (owningType.HasFinalizer)
                             {
-                                // Finalizer might have observable side effects
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Finalizable class");
+                                // We have a finalizer. There's still a small chance it has been nopped out
+                                // with a feature switch. Check for that.
+                                byte[] finalizerMethodILBytes = _ilProvider.GetMethodIL(owningType.GetFinalizer()).GetILBytes();
+                                if (finalizerMethodILBytes.Length != 1 || finalizerMethodILBytes[0] != (byte)ILOpcode.ret)
+                                {
+                                    // Finalizer might have observable side effects
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Finalizable class");
+                                }
                             }
 
                             if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(ctor))
@@ -554,6 +560,12 @@ namespace ILCompiler
                             }
 
                             AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
+
+                            if (!TryGetSpanElementType(owningType, isReadOnlySpan: true, out MetadataType readOnlySpanElementType)
+                                && !TryGetSpanElementType(owningType, isReadOnlySpan: false, out readOnlySpanElementType))
+                            {
+                                readOnlySpanElementType = null;
+                            }
 
                             Value instance;
                             if (owningType.IsDelegate)
@@ -586,9 +598,8 @@ namespace ILCompiler
 
                                 instance = new DelegateInstance(owningType, pointedMethod, firstParameter, allocSite);
                             }
-                            else if ((TryGetSpanElementType(owningType, isReadOnlySpan: true, out MetadataType readOnlySpanElementType)
-                                || TryGetSpanElementType(owningType, isReadOnlySpan: false, out readOnlySpanElementType))
-                                && ctorSig.Length == 2 && ctorSig[0].IsByRef && ctorSig[1].IsWellKnownType(WellKnownType.Int32))
+                            else if (readOnlySpanElementType != null && ctorSig.Length == 2 && ctorSig[0].IsByRef
+                                && ctorSig[1].IsWellKnownType(WellKnownType.Int32))
                             {
                                 int length = ctorParameters[2].AsInt32();
                                 if (ctorParameters[1] is not ByRefValue byref)
@@ -605,6 +616,12 @@ namespace ILCompiler
                                     return Status.Fail(ctor, "Out of range memory access");
 
                                 instance = new ReadOnlySpanValue(readOnlySpanElementType, bytes, byteOffset, byteLength);
+                            }
+                            else if (readOnlySpanElementType != null && ctorSig.Length == 1 && ctorSig[0].IsArray
+                                && ctorParameters[1] is ArrayInstance spanArrayInstance
+                                && spanArrayInstance.TryGetReadOnlySpan(out ReadOnlySpanValue arraySpan))
+                            {
+                                instance = arraySpan;
                             }
                             else
                             {
@@ -2824,7 +2841,7 @@ namespace ILCompiler
                     builder.EmitZeroPointer();
 
                     // _functionPointer
-                    builder.EmitPointerReloc(factory.CanonicalEntrypoint(_methodPointed));
+                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
                 }
             }
 
@@ -2921,6 +2938,17 @@ namespace ILCompiler
                 }
 
                 builder.EmitBytes(_data);
+            }
+
+            public bool TryGetReadOnlySpan(out ReadOnlySpanValue value)
+            {
+                if (((ArrayType)Type).ParameterType is MetadataType parameterType)
+                {
+                    value = new ReadOnlySpanValue(parameterType, _data, 0, _data.Length);
+                    return true;
+                }
+                value = null;
+                return false;
             }
 
             public bool IsKnownImmutable => _elementCount == 0;

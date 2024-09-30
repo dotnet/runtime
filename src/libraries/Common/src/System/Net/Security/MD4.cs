@@ -66,9 +66,10 @@ namespace System.Net.Security
 
             Span<byte> buffer = stackalloc byte[64];
             buffer.Clear();
+
             // Initialize the context
-            Span<uint> state = stackalloc uint[4] { 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476 };
-            Span<uint> count = stackalloc uint[2] { 0, 0 };
+            Span<uint> state = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476];
+            Span<uint> count = [0, 0];
 
             HashCore(source, state, count, buffer);
 
@@ -168,7 +169,7 @@ namespace System.Net.Security
             a = BitOperations.RotateLeft(a, s);
         }
 
-        private static void Encode(Span<byte> output, Span<uint> input)
+        private static void Encode(Span<byte> output, ReadOnlySpan<uint> input)
         {
             for (int i = 0, j = 0; j < output.Length; i++, j += 4)
             {

@@ -427,7 +427,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class ClassWithInvalidDictionary
         {
-            public Dictionary<string, int[,]> UnsupportedDictionary { get; set; }
+            public Dictionary<string, int[,]>? UnsupportedDictionary { get; set; }
         }
 
         [Fact]
@@ -522,7 +522,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Each constructor parameter must bind to an object property or field.
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("{}", type));
-            Assert.Contains(type.FullName, ex.ToString());
+            Assert.Contains(type.FullName, ex.Message);
         }
 
         [Theory]
@@ -573,22 +573,22 @@ namespace System.Text.Json.Serialization.Tests
 
         public class ClassWithBadCtor_WithProps
         {
-            public SerializationInfo Info { get; set; }
+            public SerializationInfo? Info { get; set; }
 
             public StreamingContext Ctx { get; set; }
 
-            public ClassWithBadCtor_WithProps(SerializationInfo info, StreamingContext ctx) =>
+            public ClassWithBadCtor_WithProps(SerializationInfo? info, StreamingContext ctx) =>
                 (Info, Ctx) = (info, ctx);
         }
 
         public struct StructWithBadCtor_WithProps
         {
-            public SerializationInfo Info { get; set; }
+            public SerializationInfo? Info { get; set; }
 
             public StreamingContext Ctx { get; set; }
 
             [JsonConstructor]
-            public StructWithBadCtor_WithProps(SerializationInfo info, StreamingContext ctx) =>
+            public StructWithBadCtor_WithProps(SerializationInfo? info, StreamingContext ctx) =>
                 (Info, Ctx) = (info, ctx);
         }
 

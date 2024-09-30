@@ -5,11 +5,11 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-#if NETCOREAPP
+#if NET
 using System.Runtime.Intrinsics.X86;
 #endif
 
-#if NETCOREAPP
+#if NET
 using System.Runtime.Intrinsics.Arm;
 #endif
 
@@ -347,7 +347,7 @@ namespace System.Text.Encodings.Web
 
             int dataOriginalLength = data.Length;
 
-#if NETCOREAPP
+#if NET
             if (Ssse3.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
             {
                 int asciiBytesSkipped;
@@ -416,7 +416,7 @@ namespace System.Text.Encodings.Web
                 // The SIMD-enabled version handles only ASCII characters.
 
                 nuint idx = 0;
-#if NETCOREAPP
+#if NET
                 if (Ssse3.IsSupported)
                 {
                     idx = GetIndexOfFirstCharToEncodeSsse3(pData, lengthInChars);

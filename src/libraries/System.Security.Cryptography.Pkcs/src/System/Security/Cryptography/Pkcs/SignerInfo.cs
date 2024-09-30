@@ -262,7 +262,7 @@ namespace System.Security.Cryptography.Pkcs
             return new SignerInfoCollection(signerInfos.ToArray());
         }
 
-#if NETCOREAPP
+#if NET
         [Obsolete(Obsoletions.SignerInfoCounterSigMessage, DiagnosticId = Obsoletions.SignerInfoCounterSigDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
  #endif
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -653,7 +653,15 @@ namespace System.Security.Cryptography.Pkcs
                     {
                         writer.PopSetOf();
 
+#if NET9_0_OR_GREATER
+                        writer.Encode(hasher, static (hasher, encoded) =>
+                        {
+                            hasher.AppendData(encoded);
+                            return (object?)null;
+                        });
+#else
                         hasher.AppendData(writer.Encode());
+#endif
                     }
                 }
             }
@@ -746,7 +754,7 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 // SHA-2-512 is the biggest digest type we know about.
                 Span<byte> digestValue = stackalloc byte[512 / 8];
                 ReadOnlySpan<byte> digest = digestValue;

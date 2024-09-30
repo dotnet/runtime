@@ -256,9 +256,9 @@ namespace System.Text.Json.Serialization.Tests
             public string Name { get; set; }
             public Customer Customer { get; set; }
             public DerivedCustomer DerivedCustomer { get; set; }
-            public DerivedCustomer NullDerivedCustomer { get; set; }
+            public DerivedCustomer? NullDerivedCustomer { get; set; }
             public int IntValue { get; set; }
-            public string Message { get; set; }
+            public string? Message { get; set; }
         }
 
         /// <summary>

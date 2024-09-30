@@ -450,7 +450,7 @@ namespace System.Security.Cryptography.Cose
 
         private bool VerifyHash(AsymmetricAlgorithm key, IncrementalHash hasher, HashAlgorithmName hashAlgorithm, KeyType keyType, RSASignaturePadding? padding)
         {
-#if NETCOREAPP
+#if NET
             Debug.Assert(hasher.HashLengthInBytes <= 512 / 8); // largest hash we can get (SHA512).
             Span<byte> hash = stackalloc byte[hasher.HashLengthInBytes];
             hasher.GetHashAndReset(hash);

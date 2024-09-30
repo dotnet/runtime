@@ -650,7 +650,7 @@ namespace System
                     return finalist.Invoke(target, bindingFlags, binder, providedArgs, culture);
                 }
 
-                finalists ??= new MethodInfo[] { finalist };
+                finalists ??= [finalist];
                 providedArgs ??= Array.Empty<object>();
                 object? state = null;
                 MethodBase? invokeMethod = null;
@@ -737,22 +737,22 @@ namespace System
                     SR.Format(SR.Argument_NotEnoughGenArguments, genericArguments.Length, genericParameters.Length));
         }
 
-        internal static CorElementType GetUnderlyingType(RuntimeType type)
+        internal CorElementType GetUnderlyingCorElementType()
         {
+            RuntimeType type = this;
             if (type.IsActualEnum)
             {
                 type = (RuntimeType)Enum.GetUnderlyingType(type);
             }
 
-            return RuntimeTypeHandle.GetCorElementType(type);
+            return type.GetCorElementType();
         }
-
 
         // AggressiveInlining used since on hot path for reflection.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool TryGetByRefElementType(RuntimeType type, [NotNullWhen(true)] out RuntimeType? elementType)
         {
-            CorElementType corElemType = RuntimeTypeHandle.GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             if (corElemType == CorElementType.ELEMENT_TYPE_BYREF)
             {
                 elementType = RuntimeTypeHandle.GetElementType(type);

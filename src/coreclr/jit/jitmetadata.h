@@ -23,4 +23,5 @@ public:
 
     void report(Compiler* comp);
     void dump();
+    void mergeToRoot(Compiler* inlineeComp);
 };

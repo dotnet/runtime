@@ -68,7 +68,7 @@ namespace System.Text.Json
         //   * 31 bits for token offset
         // * Second int
         //   * Top bit is unassigned / always clear
-        //   * 31 bits for the token length (always 1, effectively unassigned)
+        //   * 31 bits for the number of properties in this object
         // * Third int
         //   * 4 bits JsonTokenType
         //   * 28 bits for the number of rows until the next value (never 0)
@@ -240,7 +240,7 @@ namespace System.Text.Json
                 // Note: Array.MaxLength exists only on .NET 6 or greater,
                 // so for the other versions value is hardcoded
                 const int MaxArrayLength = 0x7FFFFFC7;
-#if NET6_0_OR_GREATER
+#if NET
                 Debug.Assert(MaxArrayLength == Array.MaxLength);
 #endif
 

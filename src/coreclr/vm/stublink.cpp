@@ -350,7 +350,6 @@ StubLinker::StubLinker()
     m_pCodeElements     = NULL;
     m_pFirstCodeLabel   = NULL;
     m_pFirstLabelRef    = NULL;
-    m_pPatchLabel       = NULL;
     m_pTargetMethod     = NULL;
     m_stackSize         = 0;
     m_fDataOnly         = FALSE;
@@ -434,7 +433,7 @@ VOID StubLinker::EmitBytes(const BYTE *pBytes, UINT numBytes)
 //---------------------------------------------------------------
 // Append code bytes.
 //---------------------------------------------------------------
-VOID StubLinker::Emit8 (unsigned __int8  val)
+VOID StubLinker::Emit8 (uint8_t  val)
 {
     CONTRACTL
     {
@@ -445,7 +444,7 @@ VOID StubLinker::Emit8 (unsigned __int8  val)
 
     CodeRun *pCodeRun = GetLastCodeRunIfAny();
     if (pCodeRun && (CODERUNSIZE - pCodeRun->m_numcodebytes) >= sizeof(val)) {
-        *((unsigned __int8 *)(pCodeRun->m_codebytes + pCodeRun->m_numcodebytes)) = val;
+        *((uint8_t *)(pCodeRun->m_codebytes + pCodeRun->m_numcodebytes)) = val;
         pCodeRun->m_numcodebytes += sizeof(val);
     } else {
         EmitBytes((BYTE*)&val, sizeof(val));
@@ -455,7 +454,7 @@ VOID StubLinker::Emit8 (unsigned __int8  val)
 //---------------------------------------------------------------
 // Append code bytes.
 //---------------------------------------------------------------
-VOID StubLinker::Emit16(unsigned __int16 val)
+VOID StubLinker::Emit16(uint16_t val)
 {
     CONTRACTL
     {
@@ -476,7 +475,7 @@ VOID StubLinker::Emit16(unsigned __int16 val)
 //---------------------------------------------------------------
 // Append code bytes.
 //---------------------------------------------------------------
-VOID StubLinker::Emit32(unsigned __int32 val)
+VOID StubLinker::Emit32(uint32_t val)
 {
     CONTRACTL
     {
@@ -497,7 +496,7 @@ VOID StubLinker::Emit32(unsigned __int32 val)
 //---------------------------------------------------------------
 // Append code bytes.
 //---------------------------------------------------------------
-VOID StubLinker::Emit64(unsigned __int64 val)
+VOID StubLinker::Emit64(uint64_t val)
 {
     CONTRACTL
     {
@@ -621,26 +620,6 @@ CodeLabel* StubLinker::EmitNewCodeLabel()
     return label;
 }
 
-
-//---------------------------------------------------------------
-// Creates & emits the patch offset label for the stub
-//---------------------------------------------------------------
-VOID StubLinker::EmitPatchLabel()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    //
-    // Note that it's OK to have re-emit the patch label,
-    // just use the later one.
-    //
-
-    m_pPatchLabel = EmitNewCodeLabel();
-}
 
 //---------------------------------------------------------------
 // Returns final location of label as an offset from the start
@@ -1054,7 +1033,7 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap
                 case CodeElement::kLabelRef: {
                     LabelRef *pLabelRef = (LabelRef*)pCodeElem;
                     InstructionFormat *pIF  = pLabelRef->m_pInstructionFormat;
-                    __int64 fixupval;
+                    int64_t fixupval;
 
                     LPBYTE srcglobaladdr = pCode +
                                            pLabelRef->m_globaloffset +
@@ -1069,9 +1048,9 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap
                         targetglobaladdr = (LPBYTE)(pLabelRef->m_target->e.m_pExternalAddress);
                     }
                     if ((pLabelRef->m_target->m_fAbsolute)) {
-                        fixupval = (__int64)(size_t)targetglobaladdr;
+                        fixupval = (int64_t)(size_t)targetglobaladdr;
                     } else
-                        fixupval = (__int64)(targetglobaladdr - srcglobaladdr);
+                        fixupval = (int64_t)(targetglobaladdr - srcglobaladdr);
 
                     pLabelRef->m_pInstructionFormat->EmitInstruction(
                         pLabelRef->m_refsize,
@@ -1099,30 +1078,14 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap
             ZeroMemory(pCodeRW + lastCodeOffset, globalsize - lastCodeOffset);
     }
 
-    // Set additional stub data.
-    // - Fill in the target method for the Instantiating stub.
-    //
-    // - Fill in patch offset, if we have one
-    //      Note that these offsets are relative to the start of the stub,
-    //      not the code, so you'll have to add sizeof(Stub) to get to the
-    //      right spot.
+    // Fill in the target method for the Instantiating stub.
     if (pStubRW->IsInstantiatingStub())
     {
         _ASSERTE(m_pTargetMethod != NULL);
-        _ASSERTE(m_pPatchLabel == NULL);
         pStubRW->SetInstantiatedMethodDesc(m_pTargetMethod);
 
         LOG((LF_CORDB, LL_INFO100, "SL::ES: InstantiatedMethod fd:0x%x\n",
             pStub->GetInstantiatedMethodDesc()));
-    }
-    else if (m_pPatchLabel != NULL)
-    {
-        UINT32 uLabelOffset = GetLabelOffset(m_pPatchLabel);
-        _ASSERTE(FitsIn<USHORT>(uLabelOffset));
-        pStubRW->SetPatchOffset(static_cast<USHORT>(uLabelOffset));
-
-        LOG((LF_CORDB, LL_INFO100, "SL::ES: patch offset:0x%x\n",
-            pStub->GetPatchOffset()));
     }
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
@@ -2254,14 +2217,12 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags
     {
         if((flags & NEWSTUB_FL_LOADERHEAP) != 0)
             m_numCodeBytesAndFlags |= LOADER_HEAP_BIT;
-        if((flags & NEWSTUB_FL_MULTICAST) != 0)
-            m_numCodeBytesAndFlags |= MULTICAST_DELEGATE_BIT;
         if ((flags & NEWSTUB_FL_EXTERNAL) != 0)
             m_numCodeBytesAndFlags |= EXTERNAL_ENTRY_BIT;
         if ((flags & NEWSTUB_FL_INSTANTIATING_METHOD) != 0)
             m_numCodeBytesAndFlags |= INSTANTIATING_STUB_BIT;
-        if ((flags & NEWSTUB_FL_THUNK) != 0)
-            m_numCodeBytesAndFlags |= THUNK_BIT;
+        if ((flags & NEWSTUB_FL_SHUFFLE_THUNK) != 0)
+            m_numCodeBytesAndFlags |= SHUFFLE_THUNK_BIT;
     }
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
@@ -2294,237 +2255,6 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags
     g_StubUnwindInfoHeapSegmentsCrst.Init(CrstStubUnwindInfoHeapSegments);
 #endif
 }
-
-//-------------------------------------------------------------------
-// Constructor
-//-------------------------------------------------------------------
-ArgBasedStubCache::ArgBasedStubCache(UINT fixedSlots)
-        : m_numFixedSlots(fixedSlots),
-          m_crst(CrstArgBasedStubCache)
-{
-    WRAPPER_NO_CONTRACT;
-
-    m_aStub = new Stub * [m_numFixedSlots];
-    _ASSERTE(m_aStub != NULL);
-
-    for (unsigned __int32 i = 0; i < m_numFixedSlots; i++) {
-        m_aStub[i] = NULL;
-    }
-    m_pSlotEntries = NULL;
-}
-
-
-//-------------------------------------------------------------------
-// Destructor
-//-------------------------------------------------------------------
-ArgBasedStubCache::~ArgBasedStubCache()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    for (unsigned __int32 i = 0; i < m_numFixedSlots; i++) {
-        Stub *pStub = m_aStub[i];
-        if (pStub) {
-            pStub->DecRef();
-        }
-    }
-    // a size of 0 is a signal to Nirvana to flush the entire cache
-    // not sure if this is needed, but should have no CLR perf impact since size is 0.
-    FlushInstructionCache(GetCurrentProcess(),0,0);
-
-    SlotEntry **ppSlotEntry = &m_pSlotEntries;
-    SlotEntry *pCur;
-    while (NULL != (pCur = *ppSlotEntry)) {
-        Stub *pStub = pCur->m_pStub;
-        pStub->DecRef();
-        *ppSlotEntry = pCur->m_pNext;
-        delete pCur;
-    }
-    delete [] m_aStub;
-}
-
-
-
-//-------------------------------------------------------------------
-// Queries/retrieves a previously cached stub.
-//
-// If there is no stub corresponding to the given index,
-//   this function returns NULL.
-//
-// Otherwise, this function returns the stub after
-//   incrementing its refcount.
-//-------------------------------------------------------------------
-Stub *ArgBasedStubCache::GetStub(UINT_PTR key)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    Stub *pStub;
-
-    CrstHolder ch(&m_crst);
-
-    if (key < m_numFixedSlots) {
-        pStub = m_aStub[key];
-    } else {
-        pStub = NULL;
-        for (SlotEntry *pSlotEntry = m_pSlotEntries;
-             pSlotEntry != NULL;
-             pSlotEntry = pSlotEntry->m_pNext) {
-
-            if (pSlotEntry->m_key == key) {
-                pStub = pSlotEntry->m_pStub;
-                break;
-            }
-        }
-    }
-    if (pStub) {
-        ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub));
-        stubWriterHolder.GetRW()->IncRef();
-    }
-    return pStub;
-}
-
-
-//-------------------------------------------------------------------
-// Tries to associate a stub with a given index. This association
-// may fail because some other thread may have beaten you to it
-// just before you make the call.
-//
-// If the association succeeds, "pStub" is installed, and it is
-// returned back to the caller. The stub's refcount is incremented
-// twice (one to reflect the cache's ownership, and one to reflect
-// the caller's ownership.)
-//
-// If the association fails because another stub is already installed,
-// then the incumbent stub is returned to the caller and its refcount
-// is incremented once (to reflect the caller's ownership.)
-//
-// If the association fails due to lack of memory, NULL is returned
-// and no one's refcount changes.
-//
-// This routine is intended to be called like this:
-//
-//    Stub *pCandidate = MakeStub();  // after this, pCandidate's rc is 1
-//    Stub *pWinner = cache->SetStub(idx, pCandidate);
-//    pCandidate->DecRef();
-//    pCandidate = 0xcccccccc;     // must not use pCandidate again.
-//    if (!pWinner) {
-//          OutOfMemoryError;
-//    }
-//    // If the association succeeded, pWinner's refcount is 2 and so
-//    // is pCandidate's (because it *is* pWinner);.
-//    // If the association failed, pWinner's refcount is still 2
-//    // and pCandidate got destroyed by the last DecRef().
-//    // Either way, pWinner is now the official index holder. It
-//    // has a refcount of 2 (one for the cache's ownership, and
-//    // one belonging to this code.)
-//-------------------------------------------------------------------
-Stub* ArgBasedStubCache::AttemptToSetStub(UINT_PTR key, Stub *pStub)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    CrstHolder ch(&m_crst);
-
-    bool incRefForCache = false;
-
-    if (key < m_numFixedSlots) {
-        if (m_aStub[key]) {
-            pStub = m_aStub[key];
-        } else {
-            m_aStub[key] = pStub;
-            incRefForCache = true;
-        }
-    } else {
-        SlotEntry *pSlotEntry;
-        for (pSlotEntry = m_pSlotEntries;
-             pSlotEntry != NULL;
-             pSlotEntry = pSlotEntry->m_pNext) {
-
-            if (pSlotEntry->m_key == key) {
-                pStub = pSlotEntry->m_pStub;
-                break;
-            }
-        }
-        if (!pSlotEntry) {
-            pSlotEntry = new SlotEntry;
-            pSlotEntry->m_pStub = pStub;
-            incRefForCache = true;
-            pSlotEntry->m_key = key;
-            pSlotEntry->m_pNext = m_pSlotEntries;
-            m_pSlotEntries = pSlotEntry;
-        }
-    }
-    if (pStub) {
-        ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub));
-        if (incRefForCache)
-        {
-            stubWriterHolder.GetRW()->IncRef();   // IncRef on cache's behalf
-        }
-        stubWriterHolder.GetRW()->IncRef();  // IncRef because we're returning it to caller
-    }
-    return pStub;
-}
-
-
-
-#ifdef _DEBUG
-// Diagnostic dump
-VOID ArgBasedStubCache::Dump()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    printf("--------------------------------------------------------------\n");
-    printf("ArgBasedStubCache dump (%u fixed entries):\n", m_numFixedSlots);
-    for (UINT32 i = 0; i < m_numFixedSlots; i++) {
-
-        printf("  Fixed slot %u: ", (ULONG)i);
-        Stub *pStub = m_aStub[i];
-        if (!pStub) {
-            printf("empty\n");
-        } else {
-            printf("%zxh   - refcount is %u\n",
-                   (size_t)(pStub->GetEntryPoint()),
-                   (ULONG)( *( ( ((ULONG*)(pStub->GetEntryPoint())) - 1))));
-        }
-    }
-
-    for (SlotEntry *pSlotEntry = m_pSlotEntries;
-         pSlotEntry != NULL;
-         pSlotEntry = pSlotEntry->m_pNext) {
-
-        printf("  Dyna. slot %u: ", (ULONG)(pSlotEntry->m_key));
-        Stub *pStub = pSlotEntry->m_pStub;
-        printf("%zxh   - refcount is %u\n",
-               (size_t)(pStub->GetEntryPoint()),
-               (ULONG)( *( ( ((ULONG*)(pStub->GetEntryPoint())) - 1))));
-
-    }
-
-
-    printf("--------------------------------------------------------------\n");
-}
-#endif
 
 #endif // #ifndef DACCESS_COMPILE
 
