@@ -59,6 +59,10 @@ extends:
             docker-compose up --abort-on-container-exit --no-color
           displayName: Run SslStress
 
+        - publish: $(Build.ArtifactStagingDirectory)/dumps
+          artifact: DumpsLinux
+          condition: failed()
+
       - job: windows
         displayName: Docker NanoServer
         timeoutInMinutes: 120
@@ -94,3 +98,7 @@ extends:
             cd '$(sslStressProject)'
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run SslStress
+
+        - publish: $(Build.ArtifactStagingDirectory)/dumps
+          artifact: DumpsWindows
+          condition: failed()
