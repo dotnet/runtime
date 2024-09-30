@@ -192,7 +192,6 @@ FCFuncStart(gRuntimeMethodHandle)
 FCFuncEnd()
 
 FCFuncStart(gCOMFieldHandleNewFuncs)
-    FCFuncElement("SetValue", RuntimeFieldHandle::SetValue)
     FCFuncElement("GetValueDirect", RuntimeFieldHandle::GetValueDirect)
     FCFuncElement("SetValueDirect", RuntimeFieldHandle::SetValueDirect)
     FCFuncElement("GetName", RuntimeFieldHandle::GetName)

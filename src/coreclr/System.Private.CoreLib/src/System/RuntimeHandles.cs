@@ -1261,8 +1261,25 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object? GetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, RuntimeType? contextType);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void SetValue(RtFieldInfo field, object? obj, object? value, RuntimeType fieldType, RuntimeType? declaringType, ref bool isClassInitialized);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_SetValue")]
+        private static partial void SetValue(
+            IntPtr fieldDesc,
+            ObjectHandleOnStack instance,
+            ObjectHandleOnStack value,
+            QCallTypeHandle fieldType,
+            QCallTypeHandle declaringType,
+            [MarshalAs(UnmanagedType.Bool)] ref bool isClassInitialized);
+
+        internal static void SetValue(RtFieldInfo field, object? obj, object? value, RuntimeType fieldType, RuntimeType? declaringType, ref bool isClassInitialized)
+        {
+            if (field is null || fieldType is null)
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            SetValue(field.GetFieldDesc(), ObjectHandleOnStack.Create(ref obj), ObjectHandleOnStack.Create(ref value), new QCallTypeHandle(ref fieldType), new QCallTypeHandle(ref declaringType!), ref isClassInitialized);
+            GC.KeepAlive(field);
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void SetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, object? value, RuntimeType? contextType);

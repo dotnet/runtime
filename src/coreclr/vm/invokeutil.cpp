@@ -745,7 +745,7 @@ void InvokeUtil::SetValidField(CorElementType fldType,
                                OBJECTREF *target,
                                OBJECTREF *valueObj,
                                TypeHandle declaringType,
-                               CLR_BOOL *pIsClassInitialized) {
+                               BOOL *pIsClassInitialized) {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
