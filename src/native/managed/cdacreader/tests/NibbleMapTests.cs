@@ -146,9 +146,6 @@ public class NibbleMapTests
         builder.AllocateCodeChunk (inputPC, codeSize);
         NibbleMapTestTarget target = builder.Create();
 
-        // TODO: some kind of memory in the placeholder target
-        //target.AddHeapFragment(builder.NibbleMapFragment);
-
         // TESTCASE:
 
         NibbleMap map = NibbleMap.Create(target);
