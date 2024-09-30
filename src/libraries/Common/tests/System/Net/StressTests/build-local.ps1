@@ -21,6 +21,8 @@ if (-not ([string]::IsNullOrEmpty($args[0])) -and (Test-Path -Path $args[0])) {
     PrintUsageAndExit
 }
 
+$ProjectName = (Get-Item $TestProjectDir).Name
+
 $DailyDotnetRoot= Join-Path $TestProjectDir ".dotnet-daily"
 
 $StressConfiguration = "Release"
@@ -70,7 +72,7 @@ dotnet build -c $StressConfiguration -f "net$Version"
 $Runscript=".\run-stress-$StressConfiguration-$LibrariesConfiguration.ps1"
 if (-not (Test-Path $Runscript)) {
     Write-Host "Generating Runscript."
-    Add-Content -Path $Runscript -Value "& '$TestHostRoot/dotnet' exec --roll-forward Major ./bin/$StressConfiguration/net$Version/HttpStress.dll `$args"
+    Add-Content -Path $Runscript -Value "& '$TestHostRoot/dotnet' exec --roll-forward Major ./bin/$StressConfiguration/net$Version/$ProjectName.dll `$args"
 }
 
 Write-Host "To run tests type:"
