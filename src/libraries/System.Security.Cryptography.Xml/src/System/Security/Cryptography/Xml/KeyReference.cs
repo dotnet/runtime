@@ -10,12 +10,12 @@ namespace System.Security.Cryptography.Xml
             ReferenceType = "KeyReference";
         }
 
-        public KeyReference(string uri) : base(uri)
+        public KeyReference([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri) : base(uri)
         {
             ReferenceType = "KeyReference";
         }
 
-        public KeyReference(string uri, TransformChain transformChain) : base(uri, transformChain)
+        public KeyReference([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri, TransformChain transformChain) : base(uri, transformChain)
         {
             ReferenceType = "KeyReference";
         }
