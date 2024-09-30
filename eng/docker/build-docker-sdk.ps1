@@ -12,7 +12,7 @@ Param(
 $ErrorActionPreference = "Stop"
 
 $REPO_ROOT_DIR=$(git -C "$PSScriptRoot" rev-parse --show-toplevel)
-[xml]$xml = Get-Content (Join-Path $RepoRoot "eng\Versions.props")
+[xml]$xml = Get-Content (Join-Path $REPO_ROOT_DIR "eng\Versions.props")
 $VERSION="$($xml.Project.PropertyGroup.MajorVersion[0]).$($xml.Project.PropertyGroup.MinorVersion[0])"
 
 $dockerFilePrefix="$PSScriptRoot/libraries-sdk"
