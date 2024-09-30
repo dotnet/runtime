@@ -519,7 +519,7 @@ namespace Internal.Runtime.Augments
         public static unsafe IntPtr ResolveStaticDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot, out RuntimeTypeHandle genericContext)
         {
             MethodTable* genericContextPtr = default;
-            IntPtr result = RuntimeImports.RhResolveDispatchOnType(instanceType.ToMethodTable(), interfaceType.ToMethodTable(), checked((ushort)slot), &genericContextPtr);
+            IntPtr result = RuntimeImports.RhResolveStaticDispatchOnType(instanceType.ToMethodTable(), interfaceType.ToMethodTable(), checked((ushort)slot), &genericContextPtr);
             if (result != IntPtr.Zero)
                 genericContext = new RuntimeTypeHandle(genericContextPtr);
             else
