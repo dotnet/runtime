@@ -101,7 +101,7 @@ jobs:
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
 
-          - ${{ if eq(variables['platform'], 'browser_wasm') }}:
+          - ${{ if eq(variables['Agent.OS'], 'Linux') || eq(variables['Agent.OS'], 'Darwin') }}:
             - task: Bash@3
               displayName: Set execute permissions for node binary
               inputs:
