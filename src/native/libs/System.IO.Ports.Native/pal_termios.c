@@ -443,7 +443,7 @@ int32_t SystemIoPortsNative_TermiosReset(intptr_t handle, int32_t speed, int32_t
 #if HAVE_CFMAKERAW
     cfmakeraw(&term);
 #else
-    term.c_iflag &= ~(IMAXBEL | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+    term.c_iflag &= ~(IMAXBEL | IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
     term.c_oflag &= ~OPOST;
     term.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
     term.c_cflag &= ~(CSIZE | PARENB);
@@ -452,7 +452,6 @@ int32_t SystemIoPortsNative_TermiosReset(intptr_t handle, int32_t speed, int32_t
     term.c_cflag |= (CLOCAL | CREAD);
     term.c_lflag &= ~((tcflag_t)(ICANON | ECHO | ECHOE | ECHOK | ECHONL | ISIG | IEXTEN));
     term.c_oflag &= ~((tcflag_t)(OPOST));
-    term.c_iflag |= IGNBRK;
 
     term.c_cflag &= ~((tcflag_t)(CSIZE));
     switch (dataBits)
