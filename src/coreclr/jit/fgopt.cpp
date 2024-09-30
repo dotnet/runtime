@@ -3348,12 +3348,6 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         {
             fgDoReversePostOrderLayout();
             fgMoveColdBlocks();
-
-            // Renumber blocks to facilitate LSRA's order of block visitation
-            // TODO: Consider removing this, and using traversal order in lSRA
-            //
-            fgRenumberBlocks();
-
             return true;
         }
 
