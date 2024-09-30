@@ -38,7 +38,7 @@ public class NibbleMapTests
         {
             MapBase = mapBase;
             Arch = arch;
-            int nibbleMapSize = (int)(Addr2Pos(mapRangeSize) >> Log2NibblesPerDword);
+            int nibbleMapSize = (int)Addr2Pos(mapRangeSize);
             NibbleMapFragment = new MockMemorySpace.HeapFragment {
                 Address = mapStart,
                 Data = new byte[nibbleMapSize],
@@ -113,6 +113,18 @@ public class NibbleMapTests
         }
     }
 
+    [Fact]
+    public void RoundTripAddressTest()
+    {
+        TargetPointer mapBase = 0;
+        uint delta = 0x10u;
+        for (TargetPointer p = mapBase; p < mapBase + 0x1000; p += delta)
+        {
+            TargetPointer actual = NibbleMap.RoundTripAddress(mapBase, p);
+            Assert.Equal(p, actual);
+        }
+    }
+
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void NibbleMapOneItemLookupOk(MockTarget.Architecture arch)
@@ -125,12 +137,13 @@ public class NibbleMapTests
         TargetPointer mapStart = new(0x0456_1000u);
         /// this is how big the address space is that the map covers
         const uint MapRangeSize = 0x1000;
+        TargetPointer MapEnd = mapBase + MapRangeSize;
         NibbleMapTestBuilder builder = new(mapBase, MapRangeSize, mapStart, arch);
 
         // don't put the code too close to the start - the NibbleMap bails if the code is too close to the start of the range
         TargetCodePointer inputPC = new(mapBase + 0x0200u);
         int codeSize = 0x80; // doesn't matter
-        builder.AllocateCodeChunk (inputPC, codeSize); // 128 bytes
+        builder.AllocateCodeChunk (inputPC, codeSize);
         NibbleMapTestTarget target = builder.Create();
 
         // TODO: some kind of memory in the placeholder target
@@ -159,14 +172,17 @@ public class NibbleMapTests
             Assert.Equal(0u, methodCode.Value);
         }
 
-#if false // FIXME: for expected 5f5f0200, found 5f5f0120 input address 5f5f0300
+        methodCode = map.FindMethodCode(mapBase, mapStart, inputPC.Value + 0x100u);
+        Assert.Equal<TargetPointer>(inputPC.Value, methodCode.Value);
+
+#if true // FIXME: for expected 5f5f0200, found 5f5f0120 input address 5f5f0300
 
         // interestingly, all addresses after the code chunk should also return the beginning of the method
         // we don't track how long the method is, so we can't tell if we're past the end
-        for (ulong i = inputPC + (uint)codeSize; i < mapBase + MapRangeSize; i++)
+        for (TargetCodePointer ptr = inputPC + (uint)codeSize; ptr < MapEnd; ptr++)
         {
-            methodCode = map.FindMethodCode(mapBase, mapStart, i);
-            Assert.True(inputPC.Value == methodCode.Value, $"for expected {inputPC.Value:x}, found {methodCode.Value:x} input address {i:x}");
+            methodCode = map.FindMethodCode(mapBase, mapStart, ptr);
+            Assert.Equal<TargetPointer>(inputPC.Value, methodCode);
         }
 #endif
 

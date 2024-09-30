@@ -90,6 +90,13 @@ internal sealed class NibbleMap
         return mapStart + (mapIdx / NibblesPerMapUnit) * MapUnitBytes;
     }
 
+    internal static TargetPointer RoundTripAddress(TargetPointer mapBase, TargetPointer currentPC)
+    {
+        TargetNUInt relativeAddress = new TargetNUInt(currentPC.Value - mapBase.Value);
+        DecomposeAddress(relativeAddress, out ulong mapIdx, out uint bucketByteIndex);
+        return mapBase + ComputeByteOffset(mapIdx, bucketByteIndex);
+    }
+
     internal TargetPointer FindMethodCode(TargetPointer mapBase, TargetPointer mapStart, TargetCodePointer currentPC)
     {
         TargetNUInt relativeAddress = new TargetNUInt(currentPC.Value - mapBase.Value);
@@ -133,7 +140,8 @@ internal sealed class NibbleMap
         // We're now done with the current map index.
         // Align the map index and move to the previous map unit, then move back one nibble.
 #pragma warning disable IDE0054 // use compound assignment
-        mapIdx = mapIdx & (~(NibblesPerMapUnit - 1)) - 1;
+        mapIdx = mapIdx & (~(NibblesPerMapUnit - 1));
+        mapIdx--;
 #pragma warning restore IDE0054 // use compound assignment
 
         // read the map unit containing mapIdx and skip over it if it is all zeros
