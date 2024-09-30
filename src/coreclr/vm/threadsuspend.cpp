@@ -2731,40 +2731,29 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     }
 #endif // TARGET_X86
 
-#if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
-    //
-    // If GCStress interrupts an IL stub or inlined p/invoke while it's running in preemptive mode, it switches the mode to
-    // cooperative - but we will resume to preemptive below.  We should not trigger an abort in that case, as it will fail
-    // due to the GC mode.
-    //
-    if (!Thread::UseRedirectForGcStress() || !pThread->m_fPreemptiveGCDisabledForGCStress)
-#endif
+    UINT_PTR uAbortAddr;
+    UINT_PTR uResumePC = (UINT_PTR)GetIP(pCtx);
+    CopyOSContext(pThread->m_OSContext, pCtx);
+    uAbortAddr = (UINT_PTR)COMPlusCheckForAbort();
+    if (uAbortAddr)
     {
+        LOG((LF_EH, LL_INFO100, "thread abort in progress, resuming thread under control... (handled jit case)\n"));
 
-        UINT_PTR uAbortAddr;
-        UINT_PTR uResumePC = (UINT_PTR)GetIP(pCtx);
-        CopyOSContext(pThread->m_OSContext, pCtx);
-        uAbortAddr = (UINT_PTR)COMPlusCheckForAbort();
-        if (uAbortAddr)
-        {
-            LOG((LF_EH, LL_INFO100, "thread abort in progress, resuming thread under control... (handled jit case)\n"));
+        CONSISTENCY_CHECK(CheckPointer(pCtx));
 
-            CONSISTENCY_CHECK(CheckPointer(pCtx));
+        STRESS_LOG1(LF_EH, LL_INFO10, "resume under control: ip: %p (handled jit case)\n", uResumePC);
 
-            STRESS_LOG1(LF_EH, LL_INFO10, "resume under control: ip: %p (handled jit case)\n", uResumePC);
-
-            SetIP(pThread->m_OSContext, uResumePC);
+        SetIP(pThread->m_OSContext, uResumePC);
 
 #if defined(TARGET_ARM)
-            // Save the original resume PC in Lr
-            pCtx->Lr = uResumePC;
+        // Save the original resume PC in Lr
+        pCtx->Lr = uResumePC;
 
-            // Since we have set a new IP, we have to clear conditional execution flags too.
-            ClearITState(pThread->m_OSContext);
+        // Since we have set a new IP, we have to clear conditional execution flags too.
+        ClearITState(pThread->m_OSContext);
 #endif // TARGET_ARM
 
-            SetIP(pCtx, uAbortAddr);
-        }
+        SetIP(pCtx, uAbortAddr);
     }
 
     // Unlink the frame in preparation for resuming in managed code
@@ -2772,14 +2761,6 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 
     // Allow future use of the context
     pThread->UnmarkRedirectContextInUse(pCtx);
-
-#if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
-    if (Thread::UseRedirectForGcStress() && pThread->m_fPreemptiveGCDisabledForGCStress)
-    {
-        pThread->EnablePreemptiveGC();
-        pThread->m_fPreemptiveGCDisabledForGCStress = false;
-    }
-#endif
 
     LOG((LF_SYNC, LL_INFO1000, "Resuming execution with RtlRestoreContext\n"));
     SetLastError(dwLastError); // END_PRESERVE_LAST_ERROR
@@ -3196,22 +3177,17 @@ BOOL Thread::CheckForAndDoRedirectForUserSuspend()
 // Redirect thread at a GC stress point.
 BOOL Thread::CheckForAndDoRedirectForGCStress (CONTEXT *pCurrentThreadCtx)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
     _ASSERTE(Thread::UseRedirectForGcStress());
 
     LOG((LF_CORDB, LL_INFO1000, "Redirecting thread %08x for GCStress", GetThreadId()));
-
-    m_fPreemptiveGCDisabledForGCStress = !PreemptiveGCDisabled();
-    GCX_COOP_NO_DTOR();
-
     BOOL fSuccess = RedirectCurrentThreadAtHandledJITCase(GetRedirectHandlerForGCStress(), pCurrentThreadCtx);
-
-    if (!fSuccess)
-    {
-        GCX_COOP_NO_DTOR_END();
-        m_fPreemptiveGCDisabledForGCStress = false;
-    }
 
     return fSuccess;
 }
