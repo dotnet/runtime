@@ -1524,9 +1524,13 @@ namespace Internal.JitInterface
 
         private CORINFO_CLASS_STRUCT_* getSZArrayHelperEnumeratorClass(CORINFO_CLASS_STRUCT_* elemType)
         {
-            // TBD
-            _ = HandleToObject(elemType);
-            return null;
+            TypeDesc elementType = HandleToObject(elemType);
+            MetadataType placeholderType = _compilation.TypeSystemContext.SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
+            if (placeholderType == null)
+            {
+                return null;
+            }
+            return ObjectToHandle(placeholderType.MakeInstantiatedType(elementType));
         }
 
         private bool isIntrinsicType(CORINFO_CLASS_STRUCT_* classHnd)
