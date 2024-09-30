@@ -163,10 +163,10 @@ namespace Wasm.Build.Tests
             if (buildProjectOptions.Publish && buildProjectOptions.BuildOnlyAfterPublish)
                 commandLineArgs.Append("-p:WasmBuildOnlyAfterPublish=true");
 
-            var cmd = new DotNetCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(_projectDir!)
-                                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                                    .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables);
+            using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(_projectDir!);
+            cmd.WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables);
             if (UseWBTOverridePackTargets && s_buildEnv.IsWorkload)
                 cmd.WithEnvironmentVariable("WBTOverrideRuntimePack", "true");
 
@@ -630,8 +630,9 @@ namespace Wasm.Build.Tests
     public record BuildArgs(string ProjectName,
                             string Config,
                             bool AOT,
-                            string ProjectFileContents,
-                            string? ExtraBuildArgs);
+                            string Id,
+                            string? ExtraBuildArgs,
+                            string? ProjectFileContents=null);
     public record BuildProduct(string ProjectDir, string LogFile, bool Result, string BuildOutput);
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
