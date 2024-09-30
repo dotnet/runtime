@@ -9,7 +9,7 @@ namespace System.CodeDom.Compiler
         private readonly string? _tool;
         private readonly string? _version;
 
-        public GeneratedCodeAttribute(string? tool, string? version)
+        public GeneratedCodeAttribute(string? tool = null, string? version = null)
         {
             _tool = tool;
             _version = version;
