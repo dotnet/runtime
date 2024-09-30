@@ -139,6 +139,7 @@ extends:
             cd '$(httpStressProject)'
             $env:STRESS_CLIENT_ARGS = "$env:STRESS_CLIENT_ARGS -http 3.0"
             $env:STRESS_SERVER_ARGS = "$env:STRESS_SERVER_ARGS -http 3.0"
+            New-Item -Force $env:DUMPS_SHARE -ItemType Directory
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 3.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
@@ -147,6 +148,7 @@ extends:
             cd '$(httpStressProject)'
             $env:STRESS_CLIENT_ARGS = "$env:STRESS_CLIENT_ARGS -http 2.0"
             $env:STRESS_SERVER_ARGS = "$env:STRESS_SERVER_ARGS -http 2.0"
+            New-Item -Force $env:DUMPS_SHARE -ItemType Directory
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 2.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
@@ -155,6 +157,7 @@ extends:
             cd '$(httpStressProject)'
             $env:STRESS_CLIENT_ARGS = "$env:STRESS_CLIENT_ARGS -http 1.1"
             $env:STRESS_SERVER_ARGS = "$env:STRESS_SERVER_ARGS -http 1.1"
+            New-Item -Force $env:DUMPS_SHARE -ItemType Directory
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 1.1
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
