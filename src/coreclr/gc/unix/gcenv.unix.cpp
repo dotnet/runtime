@@ -862,10 +862,10 @@ done:
     return result;
 }
 
-static size_t GetLogicalProcessorCacheSizeFromOS()
+static void GetLogicalProcessorCacheSizeFromSysConf(size_t* cacheLevel, size_t* cacheSize)
 {
-    size_t cacheLevel = 0;
-    size_t cacheSize = 0;
+    assert (cacheLevel != nullptr);
+    assert (cacheSize != nullptr);
 
 #if defined(_SC_LEVEL1_DCACHE_SIZE) || defined(_SC_LEVEL2_CACHE_SIZE) || defined(_SC_LEVEL3_CACHE_SIZE) || defined(_SC_LEVEL4_CACHE_SIZE)
     const int cacheLevelNames[] =
@@ -881,47 +881,122 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         long size = sysconf(cacheLevelNames[i]);
         if (size > 0)
         {
-            cacheSize = (size_t)size;
-            cacheLevel = i + 1;
+            *cacheSize = (size_t)size;
+            *cacheLevel = i + 1;
             break;
         }
     }
 #endif
+}
+
+static void GetLogicalProcessorCacheSizeFromSysFs(size_t* cacheLevel, size_t* cacheSize)
+{
+    assert (cacheLevel != nullptr);
+    assert (cacheSize != nullptr);
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
-    if (cacheSize == 0)
+    //
+    // Fallback to retrieve cachesize via /sys/.. if sysconf was not available
+    // for the platform. Currently musl and arm64 should be only cases to use
+    // this method to determine cache size.
+    //
+    size_t level;
+    char path_to_size_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/size";
+    char path_to_level_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/level";
+    int index = 40;
+    assert(path_to_size_file[index] == '-');
+    assert(path_to_level_file[index] == '-');
+
+    for (int i = 0; i < 5; i++)
     {
-        //
-        // Fallback to retrieve cachesize via /sys/.. if sysconf was not available
-        // for the platform. Currently musl and arm64 should be only cases to use
-        // this method to determine cache size.
-        //
-        size_t level;
-        char path_to_size_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/size";
-        char path_to_level_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/level";
-        int index = 40;
-        assert(path_to_size_file[index] == '-');
-        assert(path_to_level_file[index] == '-');
+        path_to_size_file[index] = (char)(48 + i);
 
-        for (int i = 0; i < 5; i++)
+        uint64_t cache_size_from_sys_file = 0;
+
+        if (ReadMemoryValueFromFile(path_to_size_file, &cache_size_from_sys_file))
         {
-            path_to_size_file[index] = (char)(48 + i);
+            *cacheSize = std::max(*cacheSize, (size_t)cache_size_from_sys_file);
 
-            uint64_t cache_size_from_sys_file = 0;
-
-            if (ReadMemoryValueFromFile(path_to_size_file, &cache_size_from_sys_file))
+            path_to_level_file[index] = (char)(48 + i);
+            if (ReadMemoryValueFromFile(path_to_level_file, &level))
             {
-                cacheSize = std::max(cacheSize, (size_t)cache_size_from_sys_file);
-
-                path_to_level_file[index] = (char)(48 + i);
-                if (ReadMemoryValueFromFile(path_to_level_file, &level))
-                {
-                    cacheLevel = level;
-                }
+                *cacheLevel = level;
             }
         }
     }
+#endif 
+}
+
+static void GetLogicalProcessorCacheSizeFromHeuristic(size_t* cacheLevel, size_t* cacheSize)
+{
+    assert (cacheLevel != nullptr);
+    assert (cacheSize != nullptr);
+
+#if (defined(TARGET_LINUX) && !defined(TARGET_APPLE))
+    {
+        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
+        // from most of the machines.
+        // Hence, just use the following heuristics at best depending on the CPU count
+        // 1 ~ 4   :  4 MB
+        // 5 ~ 16  :  8 MB
+        // 17 ~ 64 : 16 MB
+        // 65+     : 32 MB
+        DWORD logicalCPUs = g_processAffinitySet.Count();
+        if (logicalCPUs < 5)
+        {
+            *cacheSize = 4;
+        }
+        else if (logicalCPUs < 17)
+        {
+            *cacheSize = 8;
+        }
+        else if (logicalCPUs < 65)
+        {
+            *cacheSize = 16;
+        }
+        else
+        {
+            *cacheSize = 32;
+        }
+
+        *cacheSize *= (1024 * 1024);
+    }
 #endif
+}
+
+// It seems ok to set the same default sizes when the cache info isn’t available on the /sys/ path like we did with arm. 
+// And provide a config to revert back to the old behavior. Does that seem reasonable?
+static size_t GetLogicalProcessorCacheSizeFromOS(bool loadFromConfig = false)
+{
+    size_t cacheLevel = 0;
+    size_t cacheSize = 0;
+
+    // if (config)
+    // - Retrieve info via sysconf
+    // else
+    // - Check if sysfs is available, and if so, retrieve info via sysfs.
+
+    // - If not, use heuristic calculation.
+    // - Handle Mac OS case.
+    
+    // Overrides:
+    // 1. MAC OS.
+    // 2. ARM64 stuff.
+
+    bool check = GCConfig::GetGCEnableSysConf();
+    if (loadFromConfig)
+    {
+        GetLogicalProcessorCacheSizeFromSysConf(&cacheLevel, &cacheSize);
+    }
+
+    else
+    {
+        GetLogicalProcessorCacheSizeFromSysFs(&cacheLevel, &cacheSize);
+        if (cacheSize == 0)
+        {
+            GetLogicalProcessorCacheSizeFromHeuristic(&cacheLevel, &cacheSize);
+        }
+    }
 
 #if HAVE_SYSCTLBYNAME
     if (cacheSize == 0)
