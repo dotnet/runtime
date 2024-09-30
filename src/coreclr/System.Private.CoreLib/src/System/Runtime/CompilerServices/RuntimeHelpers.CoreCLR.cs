@@ -942,9 +942,15 @@ namespace System.Runtime.CompilerServices
             return CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr);
         }
 
+        public int GetCorElementType() => GetCorElementType(m_asTAddr);
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo_NoCacheLookup")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
+
+        [SuppressGCTransition]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_GetCorElementType")]
+        private static partial int GetCorElementType(void* typeHnd);
     }
 
     // Helper structs used for tail calls via helper.
