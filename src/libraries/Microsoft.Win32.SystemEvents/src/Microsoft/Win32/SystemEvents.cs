@@ -130,6 +130,7 @@ namespace Microsoft.Win32
         ///  Occurs before the thread that listens for system events is terminated.
         ///  Delegates will be invoked on the events thread.
         /// </summary>
+        [Obsolete("Callbacks are not guaranteed to run before process exits. Use AppDomain.ProcessExit instead.")]
         public static event EventHandler? EventsThreadShutdown
         {
             // Really only here for GDI+ initialization and shut down
@@ -1103,7 +1104,10 @@ namespace Microsoft.Win32
                                 GC.KeepAlive(s_systemEvents);
                             }
 
-                            s_windowThread.Join();
+                            if (LocalAppContextSwitches.EnableLegacySystemEventsShutdownThreadJoin)
+                            {
+                                s_windowThread.Join();
+                            }
                         }
                         else
                         {
