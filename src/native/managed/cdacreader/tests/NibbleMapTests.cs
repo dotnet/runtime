@@ -175,8 +175,6 @@ public class NibbleMapTests
         methodCode = map.FindMethodCode(mapBase, mapStart, inputPC.Value + 0x100u);
         Assert.Equal<TargetPointer>(inputPC.Value, methodCode.Value);
 
-#if true // FIXME: for expected 5f5f0200, found 5f5f0120 input address 5f5f0300
-
         // interestingly, all addresses after the code chunk should also return the beginning of the method
         // we don't track how long the method is, so we can't tell if we're past the end
         for (TargetCodePointer ptr = inputPC + (uint)codeSize; ptr < MapEnd; ptr++)
@@ -184,7 +182,6 @@ public class NibbleMapTests
             methodCode = map.FindMethodCode(mapBase, mapStart, ptr);
             Assert.Equal<TargetPointer>(inputPC.Value, methodCode);
         }
-#endif
 
     }
 
