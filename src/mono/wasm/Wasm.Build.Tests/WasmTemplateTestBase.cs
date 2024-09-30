@@ -43,10 +43,10 @@ public abstract class WasmTemplateTestBase : BuildTestBase
 
         if (addFrameworkArg)
             extraArgs += $" -f {DefaultTargetFramework}";
-        new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
-                .WithWorkingDirectory(_projectDir!)
-                .ExecuteWithCapturedOutput($"new {template} {extraArgs}")
-                .EnsureSuccessful();
+        using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
+        CommandResult result = cmd.WithWorkingDirectory(_projectDir!)
+            .ExecuteWithCapturedOutput($"new {template} {extraArgs}")
+            .EnsureSuccessful();
 
         string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
 

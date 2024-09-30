@@ -44,7 +44,7 @@ public class InterpPgoTests : AppTestBase
         // Create a single browser instance and single context to host all our pages.
         // If we don't do this, each page will have its own unique cache and the table won't be loaded.
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(_projectDir!);
+                                            .WithWorkingDirectory(_projectDir!);
         await using var runner = new BrowserRunner(_testOutput);
         var url = await runner.StartServerAndGetUrlAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{_projectDir!}\" --forward-console");
         url = $"{url}?test=InterpPgoTest&iterationCount={iterationCount}";

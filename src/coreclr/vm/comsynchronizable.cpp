@@ -724,15 +724,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle threa
     }
     CONTRACTL_END;
 
-    BOOL res = FALSE;
-
-    BEGIN_QCALL;
-
-    res = thread->IsBackground();
-
-    END_QCALL;
-
-    return res;
+    return thread->IsBackground();
 }
 
 // Set whether or not this is a background thread.

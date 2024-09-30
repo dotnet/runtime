@@ -108,22 +108,20 @@ public class NonWasmTemplateBuildTests : TestMainJsTestBase
         File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project />");
         File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.targets"), directoryBuildTargets);
 
-        new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
-                .WithWorkingDirectory(_projectDir!)
-                .ExecuteWithCapturedOutput("new console --no-restore")
-                .EnsureSuccessful();
+        using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
+        cmd.WithWorkingDirectory(_projectDir!)
+            .ExecuteWithCapturedOutput("new console --no-restore")
+            .EnsureSuccessful();
 
-        new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
-                .WithWorkingDirectory(_projectDir!)
-                .ExecuteWithCapturedOutput($"build -restore -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} {extraBuildArgs} -f {targetFramework}")
-                .EnsureSuccessful();
+        cmd.WithWorkingDirectory(_projectDir!)
+            .ExecuteWithCapturedOutput($"build -restore -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} {extraBuildArgs} -f {targetFramework}")
+            .EnsureSuccessful();
 
         if (shouldRun)
         {
-            var result = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
-                                .WithWorkingDirectory(_projectDir!)
-                                .ExecuteWithCapturedOutput($"run -c {config} -f {targetFramework} --no-build")
-                                .EnsureSuccessful();
+            CommandResult result = cmd.WithWorkingDirectory(_projectDir!)
+            .ExecuteWithCapturedOutput($"run -c {config} -f {targetFramework} --no-build")
+            .EnsureSuccessful();
 
             Assert.Contains("Hello, World!", result.Output);
         }
