@@ -369,6 +369,7 @@ RELEASE_CONFIG_INTEGER(JitNoInline, "JitNoInline", 0)
 CONFIG_INTEGER(JitStressRex2Encoding, "JitStressRex2Encoding", 0) // Enable rex2 encoding for compatible instructions.                                                                     
 CONFIG_INTEGER(JitStressPromotedEVEXEncoding, "JitStressPromotedEVEXEncoding", 0) // Enable promoted EVEX encoding for compatible instructions.                                                                     
 CONFIG_INTEGER(JitBypassAPXCheck, "JitBypassAPXCheck", 0) // Bypass APX CPUID check.                                                                     
+CONFIG_INTEGER(JitDisableNDD, "JitDisableNDD", 0) // Disable NDD feature.                                                                     
 #endif
 
 // clang-format off
