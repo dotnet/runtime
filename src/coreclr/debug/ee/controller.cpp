@@ -7642,15 +7642,16 @@ void DebuggerStepper::TriggerMulticastDelegate(BYTE* pDel, INT32 delegateCount)
 {
     TraceDestination trace;
     FramePointer fp = LEAF_MOST_FRAME;
-    LOG((LF_CORDB, LL_INFO1000, "DebugStepper::TriggerMulticastDelegate.\n"));
+
     int totalDelegateCount = (int)*(size_t*)((BYTE*)pDel + DelegateObject::GetOffsetOfInvocationCount());
     if (delegateCount == totalDelegateCount)
     {
-        LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Fired all delegates\n"));
+        PCODE addr = NULL;
+        trace.InitForOther(addr);
+        LOG((LF_CORDB, LL_INFO10000, "DS::TMD this:0x%x, Fired all delegates\n", this));
     }
     else
     {
-        LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Fired %d of %d delegates\n", delegateCount, totalDelegateCount));
         BYTE *pbDelInvocationList = *(BYTE **)((BYTE*)pDel + DelegateObject::GetOffsetOfInvocationList());
 
         BYTE* pbDel = *(BYTE**)( ((ArrayBase *)pbDelInvocationList)->GetDataPtr() +
@@ -7659,12 +7660,8 @@ void DebuggerStepper::TriggerMulticastDelegate(BYTE* pDel, INT32 delegateCount)
         StubLinkStubManager::TraceDelegateObject(pbDel, &trace);
     }
 
-    LOG((LF_CORDB, LL_INFO1000, "DebugStepper::TMCD Done with TraceDelegateObject.\n"));
-    //somewhere I need to check to see which delegate we are on.
     g_pEEInterface->FollowTrace(&trace);
-    LOG((LF_CORDB, LL_INFO1000, "DebugStepper::TriggerMulticastDelegate done with FollowTrace.\n"));
     PatchTrace(&trace, fp, false); //Value of last bool only matters for the TRACE_UMNANAGED case, we are in the TRACE_MGR_PUSH case
-    //Does it matter what we return from these functions?
 }
 
 // Prepare for sending an event.

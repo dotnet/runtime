@@ -853,56 +853,6 @@ public:
 #endif
     }
 
-    static PCODE GetRetAddrFromMulticastILStubFrame(T_CONTEXT * pContext)
-    {
-        /*
-                Following is the callstack corresponding to context  received by ILStubManager::TraceManager.
-                This function returns the return address (user code address) where control should return after all
-                delegates in multicast delegate have been executed.
-
-                StubHelpers::MulticastDebuggerTraceHelper
-                IL_STUB_MulticastDelegate_Invoke
-                UserCode which invokes multicast delegate <---
-              */
-
-#if defined(TARGET_X86)
-        return *((PCODE *)pContext->Ebp + 1);
-#elif defined(TARGET_AMD64)
-        T_CONTEXT context(*pContext);
-        Thread::VirtualUnwindCallFrame(&context);
-        Thread::VirtualUnwindCallFrame(&context);
-
-        return context.Rip;
-#elif defined(TARGET_ARM)
-        return *((PCODE *)((TADDR)pContext->R11) + 1);
-#elif defined(TARGET_ARM64)
-        return *((PCODE *)pContext->Fp + 1);
-#else
-        PORTABILITY_ASSERT("StubManagerHelpers::GetRetAddrFromMulticastILStubFrame");
-        return (TADDR)NULL;
-#endif
-    }
-
-    static TADDR GetSecondArg(T_CONTEXT * pContext)
-    {
-#if defined(TARGET_X86)
-        return pContext->Edx;
-#elif defined(TARGET_AMD64)
-#ifdef UNIX_AMD64_ABI
-        return pContext->Rsi;
-#else
-        return pContext->Rdx;
-#endif
-#elif defined(TARGET_ARM)
-        return pContext->R1;
-#elif defined(TARGET_ARM64)
-        return pContext->X1;
-#else
-        PORTABILITY_ASSERT("StubManagerHelpers::GetSecondArg");
-        return (TADDR)NULL;
-#endif
-    }
-
 };
 
 #endif // !__stubmgr_h__

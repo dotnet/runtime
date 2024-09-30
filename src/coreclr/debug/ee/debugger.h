@@ -2614,7 +2614,7 @@ public:
 
     HRESULT ReDaclEvents(PSECURITY_DESCRIPTOR securityDescriptor);
 #ifndef DACCESS_COMPILE
-    BOOL Debugger::MulticastTraceNextStep(BYTE* pbDel, INT32 count);
+    BOOL MulticastTraceNextStep(BYTE* pbDel, INT32 count);
 #endif
 
 #ifdef DACCESS_COMPILE

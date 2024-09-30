@@ -16791,7 +16791,6 @@ BOOL Debugger::IsOutOfProcessSetContextEnabled()
 #ifndef DACCESS_COMPILE
 BOOL Debugger::MulticastTraceNextStep(BYTE* pbDel, INT32 count)
 {
-    //DebuggerStepper::TriggerMulticastDelegate(BYTE* pbDel)
     DebuggerController::DispatchMulticastDelegate(pbDel, count);
     return TRUE;
 }
