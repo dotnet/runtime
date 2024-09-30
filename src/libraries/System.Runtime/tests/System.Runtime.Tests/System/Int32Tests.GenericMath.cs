@@ -1984,6 +1984,18 @@ namespace System.Tests
             Assert.Equal((int)0x0000007F, NumberBaseHelper<int>.CreateTruncating<sbyte>(0x7F));
             Assert.Equal(unchecked((int)0xFFFFFF80), NumberBaseHelper<int>.CreateTruncating<sbyte>(unchecked((sbyte)0x80)));
             Assert.Equal(unchecked((int)0xFFFFFFFF), NumberBaseHelper<int>.CreateTruncating<sbyte>(unchecked((sbyte)0xFF)));
+
+            Assert.Equal((int)0x00000000, NumberBaseHelper<int>.CreateTruncating<sbyte>(0x00, true));
+            Assert.Equal((int)0x00000001, NumberBaseHelper<int>.CreateTruncating<sbyte>(0x01, true));
+            Assert.Equal((int)0x0000007F, NumberBaseHelper<int>.CreateTruncating<sbyte>(0x7F, true));
+            Assert.Equal(unchecked((int)0xFFFFFF80), NumberBaseHelper<int>.CreateTruncating<sbyte>(unchecked((sbyte)0x80), true));
+            Assert.Equal(unchecked((int)0xFFFFFFFF), NumberBaseHelper<int>.CreateTruncating<sbyte>(unchecked((sbyte)0xFF), true));
+
+            Assert.Equal((int)0x00000000, NumberBaseHelper<int>.CreateTruncating<sbyte>(0x00, false));
+            Assert.Equal((int)0x00000001, NumberBaseHelper<int>.CreateTruncating<sbyte>(0x01, false));
+            Assert.Equal((int)0x0000007F, NumberBaseHelper<int>.CreateTruncating<sbyte>(0x7F, false));
+            Assert.Equal(unchecked((int)0x80), NumberBaseHelper<int>.CreateTruncating<sbyte>(unchecked((sbyte)0x80), false));
+            Assert.Equal(unchecked((int)0xFF), NumberBaseHelper<int>.CreateTruncating<sbyte>(unchecked((sbyte)0xFF), false));
         }
 
         [Fact]

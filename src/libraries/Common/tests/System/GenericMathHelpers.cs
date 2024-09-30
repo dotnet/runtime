@@ -344,6 +344,9 @@ namespace System
         public static TSelf CreateTruncating<TOther>(TOther value)
             where TOther : INumberBase<TOther> => TSelf.CreateTruncating(value);
 
+        public static TSelf CreateTruncating<TOther>(TOther value, bool signPropagation)
+            where TOther : INumberBase<TOther> => TSelf.CreateTruncating(value, signPropagation);
+
         public static bool IsCanonical(TSelf value) => TSelf.IsCanonical(value);
 
         public static bool IsComplexNumber(TSelf value) => TSelf.IsComplexNumber(value);
