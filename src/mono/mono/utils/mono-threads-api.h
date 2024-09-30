@@ -27,7 +27,7 @@ typedef struct _MonoStackData {
 } MonoStackData;
 
 // FIXME an ifdef to change __func__ to empty or further minimization.
-#if !defined(DISABLE_LOGGING) || defined(DEBUG)
+#ifndef DISABLE_LOGGING
 #define MONO_STACKDATA(x) MonoStackData x = { &x, __func__ }
 #else
 #define MONO_STACKDATA(x) MonoStackData x = { &x, NULL }
