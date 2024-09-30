@@ -48,7 +48,7 @@ class Assembly
     friend class ClrDataAccess;
 
 private:
-    Assembly(PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, LoaderAllocator* pLoaderAllocator);
+    Assembly(PEAssembly *pPEAssembly, LoaderAllocator* pLoaderAllocator);
     void Init(AllocMemTracker *pamTracker);
 
 // Load state tracking
@@ -163,7 +163,7 @@ public:
     void StartUnload();
     void Terminate( BOOL signalProfiler = TRUE );
 
-    static Assembly *Create(PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
+    static Assembly *Create(PEAssembly *pPEAssembly, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
     static void Initialize();
 
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->IsSystem(); }
@@ -324,6 +324,11 @@ public:
         m_debuggerFlags = flags;
     }
 
+private:
+    DebuggerAssemblyControlFlags ComputeDebuggingConfig(void);
+    HRESULT GetDebuggingCustomAttributes(DWORD* pdwFlags);
+
+public:
     // On failure:
     //      if loadFlag == Loader::Load => throw
     //      if loadFlag != Loader::Load => return NULL
