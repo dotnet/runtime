@@ -112,6 +112,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MethodTable_AreTypesEquivalent)
     DllImportEntry(MethodTable_CanCompareBitsOrUseFastGetHashCode)
     DllImportEntry(TypeHandle_CanCastTo_NoCacheLookup)
+    DllImportEntry(TypeHandle_GetCorElementType)
     DllImportEntry(ValueType_GetHashCodeStrategy)
     DllImportEntry(Stream_HasOverriddenSlow)
     DllImportEntry(RuntimeTypeHandle_MakePointer)

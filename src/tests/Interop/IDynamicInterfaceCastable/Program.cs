@@ -380,7 +380,6 @@ namespace IDynamicInterfaceCastableTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/1442", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         public static void ValidateGenericInterface()
         {
             Console.WriteLine($"Running {nameof(ValidateGenericInterface)}");
@@ -394,26 +393,38 @@ namespace IDynamicInterfaceCastableTests
             Console.WriteLine(" -- Validate cast");
 
             // ITestGeneric<int, int> -> ITestGenericIntImpl
-            Assert.True(castableObj is ITestGeneric<int, int>, $"Should be castable to {nameof(ITestGeneric<int, int>)} via is");
-            Assert.NotNull(castableObj as ITestGeneric<int, int>);
+            if (!TestLibrary.Utilities.IsNativeAot) // https://github.com/dotnet/runtime/issues/108229
+            {
+                Assert.True(castableObj is ITestGeneric<int, int>, $"Should be castable to {nameof(ITestGeneric<int, int>)} via is");
+                Assert.NotNull(castableObj as ITestGeneric<int, int>);
+            }
             ITestGeneric<int, int> testInt = (ITestGeneric<int, int>)castableObj;
 
             // ITestGeneric<string, string> -> ITestGenericImpl<string, string>
-            Assert.True(castableObj is ITestGeneric<string, string>, $"Should be castable to {nameof(ITestGeneric<string, string>)} via is");
-            Assert.NotNull(castableObj as ITestGeneric<string, string>);
+            if (!TestLibrary.Utilities.IsNativeAot) // https://github.com/dotnet/runtime/issues/108229
+            {
+                Assert.True(castableObj is ITestGeneric<string, string>, $"Should be castable to {nameof(ITestGeneric<string, string>)} via is");
+                Assert.NotNull(castableObj as ITestGeneric<string, string>);
+            }
             ITestGeneric<string, string> testStr = (ITestGeneric<string, string>)castableObj;
 
             // Validate Variance
             // ITestGeneric<string, object> -> ITestGenericImpl<object, string>
-            Assert.True(castableObj is ITestGeneric<string, object>, $"Should be castable to {nameof(ITestGeneric<string, object>)} via is");
-            Assert.NotNull(castableObj as ITestGeneric<string, object>);
+            if (!TestLibrary.Utilities.IsNativeAot) // https://github.com/dotnet/runtime/issues/108229
+            {
+                Assert.True(castableObj is ITestGeneric<string, object>, $"Should be castable to {nameof(ITestGeneric<string, object>)} via is");
+                Assert.NotNull(castableObj as ITestGeneric<string, object>);
+            }
             ITestGeneric<string, object> testVar = (ITestGeneric<string, object>)castableObj;
 
-            // ITestGeneric<bool, bool> is not recognized
-            Assert.False(castableObj is ITestGeneric<bool, bool>, $"Should not be castable to {nameof(ITestGeneric<bool, bool>)} via is");
-            Assert.Null(castableObj as ITestGeneric<bool, bool>);
-            var ex = Assert.Throws<DynamicInterfaceCastableException>(() => { var _ = (ITestGeneric<bool, bool>)castableObj; });
-            Assert.Equal(string.Format(DynamicInterfaceCastableException.ErrorFormat, typeof(ITestGeneric<bool, bool>)), ex.Message);
+            if (!TestLibrary.Utilities.IsNativeAot) // https://github.com/dotnet/runtime/issues/108229
+            {
+                // ITestGeneric<bool, bool> is not recognized
+                Assert.False(castableObj is ITestGeneric<bool, bool>, $"Should not be castable to {nameof(ITestGeneric<bool, bool>)} via is");
+                Assert.Null(castableObj as ITestGeneric<bool, bool>);
+                var ex = Assert.Throws<DynamicInterfaceCastableException>(() => { var _ = (ITestGeneric<bool, bool>)castableObj; });
+                Assert.Equal(string.Format(DynamicInterfaceCastableException.ErrorFormat, typeof(ITestGeneric<bool, bool>)), ex.Message);
+            }
 
             int expectedInt = 42;
             string expectedStr = "str";
@@ -423,13 +434,16 @@ namespace IDynamicInterfaceCastableTests
             Assert.Equal(expectedStr, testStr.ReturnArg(expectedStr));
             Assert.Equal(expectedStr, testVar.ReturnArg(expectedStr));
 
-            Console.WriteLine(" -- Validate generic method call");
-            Assert.Equal(expectedInt * 2, testInt.DoubleGenericArg<int>(42));
-            Assert.Equal(expectedStr + expectedStr, testInt.DoubleGenericArg<string>("str"));
-            Assert.Equal(expectedInt * 2, testStr.DoubleGenericArg<int>(42));
-            Assert.Equal(expectedStr + expectedStr, testStr.DoubleGenericArg<string>("str"));
-            Assert.Equal(expectedInt * 2, testVar.DoubleGenericArg<int>(42));
-            Assert.Equal(expectedStr + expectedStr, testVar.DoubleGenericArg<string>("str"));
+            if (!TestLibrary.Utilities.IsNativeAot) // https://github.com/dotnet/runtime/issues/108228
+            {
+                Console.WriteLine(" -- Validate generic method call");
+                Assert.Equal(expectedInt * 2, testInt.DoubleGenericArg<int>(42));
+                Assert.Equal(expectedStr + expectedStr, testInt.DoubleGenericArg<string>("str"));
+                Assert.Equal(expectedInt * 2, testStr.DoubleGenericArg<int>(42));
+                Assert.Equal(expectedStr + expectedStr, testStr.DoubleGenericArg<string>("str"));
+                Assert.Equal(expectedInt * 2, testVar.DoubleGenericArg<int>(42));
+                Assert.Equal(expectedStr + expectedStr, testVar.DoubleGenericArg<string>("str"));
+            }
 
             Console.WriteLine(" -- Validate delegate call");
             Func<int, int> funcInt = new Func<int, int>(testInt.ReturnArg);

@@ -177,7 +177,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void InternalFinalize();
 
-        partial void ThreadNameChanged(string? value)
+        private void ThreadNameChanged(string? value)
         {
             InformThreadNameChange(GetNativeHandle(), value, value?.Length ?? 0);
             GC.KeepAlive(this);
