@@ -2613,6 +2613,9 @@ public:
     bool ThisIsHelperThread(void);
 
     HRESULT ReDaclEvents(PSECURITY_DESCRIPTOR securityDescriptor);
+#ifndef DACCESS_COMPILE
+    BOOL Debugger::MulticastTraceNextStep(BYTE* pbDel, INT32 count);
+#endif
 
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

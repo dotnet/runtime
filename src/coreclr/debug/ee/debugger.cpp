@@ -26,6 +26,7 @@
 #include "../../vm/dwreport.h"
 #include "../../vm/eepolicy.h"
 #include "../../vm/excep.h"
+#include "../../vm/stubhelpers.h"
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
 #include "dbgtransportsession.h"
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
@@ -12600,7 +12601,7 @@ bool Debugger::IsThreadAtSafePlace(Thread *thread)
     // any thread handling a SO is not at a safe place.
     // NOTE: don't check for thread->IsExceptionInProgress(), SO has special handling
     // that directly sets the last thrown object without ever creating a tracker.
-    // (Tracker is what thread->IsExceptionInProgress() checks for)   
+    // (Tracker is what thread->IsExceptionInProgress() checks for)
     if (g_pEEInterface->GetThreadException(thread) == CLRException::GetPreallocatedStackOverflowExceptionHandle())
     {
         return false;
@@ -16787,6 +16788,14 @@ BOOL Debugger::IsOutOfProcessSetContextEnabled()
 }
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 #endif // DACCESS_COMPILE
+#ifndef DACCESS_COMPILE
+BOOL Debugger::MulticastTraceNextStep(BYTE* pbDel, INT32 count)
+{
+    //DebuggerStepper::TriggerMulticastDelegate(BYTE* pbDel)
+    DebuggerController::DispatchMulticastDelegate(pbDel, count);
+    return TRUE;
+}
+#endif //DACCESS_COMPILE
 
 #endif //DEBUGGING_SUPPORTED
 
