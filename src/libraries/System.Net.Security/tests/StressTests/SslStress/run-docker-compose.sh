@@ -19,7 +19,6 @@ while [[ -h "$source" ]]; do
   [[ $source != /* ]] && source="$scriptroot/$source"
 done
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
-
 repo_root=$(git -C "$scriptroot" rev-parse --show-toplevel)
 
 "$repo_root/src/libraries/Common/tests/System/Net/StressTests/run-docker-compose.sh" "$scriptroot" "$@"

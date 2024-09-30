@@ -14,7 +14,7 @@ exit_code=$?
 if [ $exit_code -ne 0 ]; then
     echo "HttpStress failed, copying artifacts for investigation"
 
-    if [ ! -d "$DUMPS_SHARE_MOUNT_ROOT/net$VERSION-linux-$CONFIGURATION-x64" ]; then
+    if [ ! -d "$DUMPS_SHARE_MOUNT_ROOT/net$VERSION-linux-$CONFIGURATION-x64" ] && [ -n "$DUMPS_SHARE_MOUNT_ROOT" ]; then
         # copy runtime artifacts and msquic
         cp -r /live-runtime-artifacts/testhost/net$VERSION-linux-$CONFIGURATION-x64/ $DUMPS_SHARE_MOUNT_ROOT
         mkdir -p $DUMPS_SHARE_MOUNT_ROOT/msquic

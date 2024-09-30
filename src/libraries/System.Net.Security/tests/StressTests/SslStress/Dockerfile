@@ -3,6 +3,7 @@ FROM $SDK_BASE_IMAGE
 
 WORKDIR /app
 COPY . .
+WORKDIR /app/System.Net.Security/tests/StressTests/SslStress
 
 ARG VERSION=9.0
 ARG CONFIGURATION=Release
