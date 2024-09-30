@@ -149,28 +149,6 @@ public:
 
     DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator, AllocMemTracker* memTracker);
 
-public:
-// ------------------------------------------------------------
-// Debugger control API
-// ------------------------------------------------------------
-
-    DebuggerAssemblyControlFlags GetDebuggerInfoBits(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_debuggerFlags;
-    }
-
-    void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_debuggerFlags = newBits;
-    }
-
-    void SetupDebuggingConfig(void);
-    DWORD ComputeDebuggingConfig(void);
-
-    HRESULT GetDebuggingCustomAttributes(DWORD* pdwFlags);
-
 private:
     // ------------------------------------------------------------
     // Instance data
@@ -183,8 +161,6 @@ private:
     BOOL                        m_fCollectible;
     DomainAssembly*             m_NextDomainAssemblyInSameALC;
     PTR_LoaderAllocator         m_pLoaderAllocator;
-
-    DebuggerAssemblyControlFlags    m_debuggerFlags;
 };
 
 #endif  // _DOMAINASSEMBLY_H_
