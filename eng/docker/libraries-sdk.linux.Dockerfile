@@ -8,7 +8,7 @@ ARG CONFIGURATION=Release
 
 WORKDIR /repo
 COPY . .
-RUN ./build.sh clr+libs -runtimeconfiguration Release -librariesconfiguration $CONFIGURATION -ci
+RUN ./build.sh clr+libs -runtimeconfiguration Release -configuration $CONFIGURATION -ci
 
 FROM $SDK_BASE_IMAGE as target
 
