@@ -736,14 +736,13 @@ FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
     return VARARGS::CalcVaListSize(varargs);
 }
 FCIMPLEND
-#ifndef DACCESS_COMPILE
+
 FCIMPL2(void, StubHelpers::MulticastDebuggerTraceHelper, Object* element, INT32 count)
 {
     FCALL_CONTRACT;
     FCUnique(0xa5);
     g_pDebugger->MulticastTraceNextStep(reinterpret_cast<BYTE*>(element), count);
 }
-#endif // DACCESS_COMPILE
 FCIMPLEND
 
 FCIMPL0(void*, StubHelpers::NextCallReturnAddress)

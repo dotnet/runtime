@@ -411,7 +411,7 @@ public:
 #ifndef DACCESS_COMPILE
     virtual HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef) = 0;
     virtual HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult) = 0;
-    virtual BOOL MulticastTraceNextStep(BYTE* pbDel, INT32 count) = 0;
+    virtual void MulticastTraceNextStep(BYTE* pbDel, INT32 count) = 0;
 #endif //DACCESS_COMPILE
 };
 
