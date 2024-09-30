@@ -23,7 +23,7 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
 imagename="dotnet-sdk-libs-current"
 configuration="Release"
-repo_root=$(git rev-parse --show-toplevel)
+repo_root=$(git -C "$scriptroot" rev-parse --show-toplevel)
 major_version=$(grep -oP '(?<=<MajorVersion>).*?(?=</MajorVersion>)' "$repo_root/eng/Versions.props")
 minor_version=$(grep -oP '(?<=<MinorVersion>).*?(?=</MinorVersion>)' "$repo_root/eng/Versions.props")
 version="$major_version.$minor_version"
