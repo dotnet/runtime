@@ -543,7 +543,12 @@ namespace ILCompiler
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
 
                             if (!canonType.IsDefType || !((MetadataType)canonType).IsAbstract)
+                            {
                                 _canonConstructedTypes.Add(canonType.GetClosestDefType());
+                                TypeDesc canonBaseType = canonType.BaseType?.ConvertToCanonForm(CanonicalFormKind.Specific);
+                                while (canonBaseType != null && _canonConstructedTypes.Add(canonBaseType))
+                                    canonBaseType = canonType.BaseType?.ConvertToCanonForm(CanonicalFormKind.Specific);
+                            }
 
                             TypeDesc baseType = canonType.BaseType;
                             bool added = true;
