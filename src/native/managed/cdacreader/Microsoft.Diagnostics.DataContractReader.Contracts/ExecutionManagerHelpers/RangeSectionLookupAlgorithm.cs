@@ -78,12 +78,16 @@ internal readonly struct RangeSectionLookupAlgorithm
         return checked((int)addressBitsUsedInLevel);
     }
 
-    internal ExMgrPtr /*PTR_RangeSectionFragment*/ FindFragment(Target target, Data.RangeSectionMap topRangeSectionMap, TargetCodePointer jittedCodeAddress)
+    public ExMgrPtr /*PTR_RangeSectionFragment*/ FindFragment(Target target, Data.RangeSectionMap topRangeSectionMap, TargetCodePointer jittedCodeAddress)
+    {
+        ExMgrPtr top = new ExMgrPtr(topRangeSectionMap.TopLevelData);
+        return FindFragmentInternal(target, top, jittedCodeAddress);
+    }
+
+    internal ExMgrPtr FindFragmentInternal(Target target, ExMgrPtr top, TargetCodePointer jittedCodeAddress)
     {
         /* The outer levels are all pointer arrays to the next level down.  Level 1 is an array of pointers to a RangeSectionFragment */
         int topLevelIndex = EffectiveBitsForLevel(jittedCodeAddress, MapLevels);
-
-        ExMgrPtr top = new ExMgrPtr(topRangeSectionMap.TopLevelData);
 
         ExMgrPtr nextLevelAddress = top.Offset(target.PointerSize, topLevelIndex);
         for (int level = MapLevels - 1; level >= 1; level--)
