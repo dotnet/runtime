@@ -67,7 +67,9 @@ else()
   if(NOT EXISTS "${CDAC_BUILD_TOOL_BINARY_PATH}")
     message(FATAL_ERROR "${CDAC_BUILD_TOOL_BINARY_PATH} does not exist")
   endif()
+  set(CONTRACT_DESCRIPTOR_INPUT "${CMAKE_CURRENT_SOURCE_DIR}/contract-descriptor.c.in")
 
+  set(CONTRACT_BASELINE_DIR "${CLR_REPO_ROOT_DIR}/docs/design/datacontracts/data")
   set(CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.jsonc")
 
   # generate the contract descriptor by running cdac-build-tool
@@ -75,8 +77,8 @@ else()
   add_custom_command(
     OUTPUT "${CONTRACT_DESCRIPTOR_OUTPUT}"
     VERBATIM
-    COMMAND ${CLR_DOTNET_HOST_PATH} ${CDAC_BUILD_TOOL_BINARY_PATH} compose -o "${CONTRACT_DESCRIPTOR_OUTPUT}" -c "${CONTRACT_FILE}" $<TARGET_OBJECTS:cdac_data_descriptor>
-    DEPENDS cdac_data_descriptor cee_wks_core $<TARGET_OBJECTS:cdac_data_descriptor> "${CONTRACT_FILE}"
+    COMMAND ${CLR_DOTNET_HOST_PATH} ${CDAC_BUILD_TOOL_BINARY_PATH} compose -i "${CONTRACT_DESCRIPTOR_INPUT}" -o "${CONTRACT_DESCRIPTOR_OUTPUT}" -b "${CONTRACT_BASELINE_DIR}" -c "${CONTRACT_FILE}" $<TARGET_OBJECTS:cdac_data_descriptor>
+    DEPENDS cdac_data_descriptor cee_wks_core $<TARGET_OBJECTS:cdac_data_descriptor> "${CONTRACT_FILE}" "${CONTRACT_DESCRIPTOR_INPUT}"
     USES_TERMINAL
   )
 
