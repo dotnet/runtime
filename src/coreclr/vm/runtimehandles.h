@@ -103,12 +103,8 @@ public:
 
 extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes);
 
-class RuntimeTypeHandle;
-
-typedef RuntimeTypeHandle FCALLRuntimeTypeHandle;
-#define FCALL_RTH_TO_REFLECTCLASS(x) (x).pRuntimeTypeDONOTUSEDIRECTLY
-
-class RuntimeTypeHandle {
+class RuntimeTypeHandle
+{
 public:
     ReflectClassBaseObject *pRuntimeTypeDONOTUSEDIRECTLY;
 
@@ -133,7 +129,7 @@ public:
     static FCDECL1(FC_BOOL_RET, IsUnmanagedFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
 
     static FCDECL2(FC_BOOL_RET, CanCastTo, ReflectClassBaseObject *pType, ReflectClassBaseObject *pTarget);
-    static FCDECL2(FC_BOOL_RET, IsInstanceOfType, ReflectClassBaseObject *pType, Object *object);
+    static FCDECL2(INT32, IsInstanceOfTypeInternal, ReflectClassBaseObject *pType, Object *object);
 
     static FCDECL6(FC_BOOL_RET, SatisfiesConstraints, PTR_ReflectClassBaseObject pGenericParameter, TypeHandle *typeContextArgs, INT32 typeContextCount, TypeHandle *methodContextArgs, INT32 methodContextCount, PTR_ReflectClassBaseObject pGenericArgument);
 
@@ -164,6 +160,7 @@ public:
 };
 
 extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter(QCall::TypeHandle pTypeHandle, TypeHandle *pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack pInstantiatedObject);
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsInstanceOfTypeInternalSlow(QCall::TypeHandle typeHandle, QCall::ObjectHandleOnStack obj);
 extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall::TypeHandle type, uint32_t size);
 
 extern "C" PVOID QCALLTYPE QCall_GetGCHandleForTypeHandle(QCall::TypeHandle pTypeHandle, INT32 handleType);

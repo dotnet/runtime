@@ -26,7 +26,35 @@ namespace System
             m_type ?? throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o);
+        private static extern int IsInstanceOfTypeInternal(RuntimeType type, object o);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsInstanceOfTypeInternalSlow")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool IsInstanceOfTypeInternalSlow(QCallTypeHandle type, ObjectHandleOnStack obj);
+
+        internal static bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o)
+        {
+            if (type is null)
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            if (o is null)
+            {
+                return false;
+            }
+
+            return IsInstanceOfTypeInternal(type, o) switch
+            {
+                0 => false,
+                1 => true,
+                _ => IsInstanceOfTypeSlow(type, o)
+            };
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static bool IsInstanceOfTypeSlow(RuntimeType type, object o)
+                => IsInstanceOfTypeInternalSlow(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref o));
+        }
 
         /// <summary>
         /// Returns a new <see cref="RuntimeTypeHandle"/> object created from a handle to a RuntimeType.

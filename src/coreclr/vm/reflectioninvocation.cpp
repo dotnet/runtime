@@ -117,47 +117,39 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParam
     END_QCALL;
 }
 
-NOINLINE FC_BOOL_RET IsInstanceOfTypeHelper(OBJECTREF obj, REFLECTCLASSBASEREF refType)
+FCIMPL2(INT32, RuntimeTypeHandle::IsInstanceOfTypeInternal, ReflectClassBaseObject* pTypeUNSAFE, Object *objectUNSAFE)
 {
     FCALL_CONTRACT;
 
-    BOOL canCast = false;
-
-    FC_INNER_PROLOG(RuntimeTypeHandle::IsInstanceOfType);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_2(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, obj, refType);
-    canCast = ObjIsInstanceOf(OBJECTREFToObject(obj), refType->GetType());
-    HELPER_METHOD_FRAME_END();
-
-    FC_RETURN_BOOL(canCast);
-}
-
-FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsInstanceOfType, ReflectClassBaseObject* pTypeUNSAFE, Object *objectUNSAFE) {
-    FCALL_CONTRACT;
-
-    OBJECTREF obj = ObjectToOBJECTREF(objectUNSAFE);
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    // Null is not instance of anything in reflection world
-    if (obj == NULL)
-        FC_RETURN_BOOL(false);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    switch (ObjIsInstanceOfCached(objectUNSAFE, refType->GetType())) {
+    switch (ObjIsInstanceOfCached(objectUNSAFE, refType->GetType()))
+    {
     case TypeHandle::CanCast:
-        FC_RETURN_BOOL(true);
+        return 1;
     case TypeHandle::CannotCast:
-        FC_RETURN_BOOL(false);
+        return 0;
     default:
-        // fall through to the slow helper
-        break;
+        // Defer to the slow helper
+        return -1;
     }
-
-    FC_INNER_RETURN(FC_BOOL_RET, IsInstanceOfTypeHelper(obj, refType));
 }
 FCIMPLEND
+
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsInstanceOfTypeInternalSlow(QCall::TypeHandle typeHandle, QCall::ObjectHandleOnStack obj)
+{
+    QCALL_CONTRACT;
+
+    BOOL canCast = false;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    canCast = ObjIsInstanceOf(OBJECTREFToObject(obj.Get()), typeHandle.AsTypeHandle());
+
+    END_QCALL;
+
+    return canCast;
+}
 
 static OBJECTREF InvokeArrayConstructor(TypeHandle th, PVOID* args, int argCnt)
 {

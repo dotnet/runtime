@@ -102,7 +102,7 @@ FCFuncStart(gSystem_RuntimeType)
 FCFuncEnd()
 
 FCFuncStart(gCOMTypeHandleFuncs)
-    FCFuncElement("IsInstanceOfType", RuntimeTypeHandle::IsInstanceOfType)
+    FCFuncElement("IsInstanceOfTypeInternal", RuntimeTypeHandle::IsInstanceOfTypeInternal)
     FCFuncElement("GetDeclaringMethod", RuntimeTypeHandle::GetDeclaringMethod)
     FCFuncElement("GetDeclaringType", RuntimeTypeHandle::GetDeclaringType)
     FCFuncElement("GetFirstIntroducedMethod", RuntimeTypeHandle::GetFirstIntroducedMethod)
