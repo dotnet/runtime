@@ -178,6 +178,8 @@ configuration:
         - labelAdded:
             label: area-Infrastructure-mono
         - labelAdded:
+            label: area-Interop-coreclr
+        - labelAdded:
             label: area-Meta
         - labelAdded:
             label: area-Microsoft.CSharp
@@ -1399,6 +1401,18 @@ configuration:
       - if:
         - hasLabel:
             label: area-System.Runtime.InteropServices
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/interop-contrib
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Interop-coreclr
         then:
         - mentionUsers:
             mentionees:
