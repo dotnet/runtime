@@ -54,4 +54,7 @@ Contracts used:
 
 ### NibbleMap
 
-**TODO**
+Version 1 of this contract depends on a "nibble map" data structure
+that allows mapping of a code address in a contiguous subsection of
+the address space to the pointer to the start of that a code sequence.
+It takes advantage of the fact that the code starts are aligned and
