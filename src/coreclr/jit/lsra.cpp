@@ -1060,6 +1060,8 @@ void LinearScan::setBlockSequence()
     JITDUMP("Final LSRA Block Sequence:\n");
     for (BasicBlock* block = startBlockSequence(); block != nullptr; block = moveToNextBlock())
     {
+        // Make sure we've visited every block.
+        assert(isBlockVisited(block));
         JITDUMP(FMT_BB, block->bbNum);
 
         const LsraBlockInfo& bi = blockInfo[block->bbNum];
