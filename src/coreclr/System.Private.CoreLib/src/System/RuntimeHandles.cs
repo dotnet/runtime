@@ -1222,7 +1222,19 @@ namespace System
         internal static partial bool GetRVAFieldInfo(RuntimeFieldHandleInternal field, out void* address, out uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetToken(RtFieldInfo field);
+        private static extern int GetToken(IntPtr fieldDesc);
+
+        internal static int GetToken(RtFieldInfo field)
+        {
+            if (field is null)
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            int tk = GetToken(field.GetFieldDesc());
+            GC.KeepAlive(field);
+            return tk;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetValue")]
         private static partial void GetValue(
@@ -1241,7 +1253,7 @@ namespace System
             }
 
             object? result = null;
-            GetValue(field.GetFieldHandle(), ObjectHandleOnStack.Create(ref instance), new QCallTypeHandle(ref fieldType), new QCallTypeHandle(ref declaringType!), ref isClassInitialized, ObjectHandleOnStack.Create(ref result));
+            GetValue(field.GetFieldDesc(), ObjectHandleOnStack.Create(ref instance), new QCallTypeHandle(ref fieldType), new QCallTypeHandle(ref declaringType!), ref isClassInitialized, ObjectHandleOnStack.Create(ref result));
             GC.KeepAlive(field);
             return result;
         }

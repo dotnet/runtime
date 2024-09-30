@@ -301,7 +301,7 @@ namespace System
                                 break; // end of list; stop iteration and fall through to slower path
                             }
 
-                            if (candidate is RtFieldInfo candidateRtFI && candidateRtFI.GetFieldHandle() == field.Value)
+                            if (candidate is RtFieldInfo candidateRtFI && candidateRtFI.GetFieldDesc() == field.Value)
                             {
                                 return candidateRtFI; // match!
                             }

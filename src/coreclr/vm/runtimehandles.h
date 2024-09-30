@@ -304,7 +304,7 @@ public:
 
     static FCDECL1(INT32, GetAttributes, FieldDesc *pField);
     static FCDECL1(ReflectClassBaseObject*, GetApproxDeclaringType, FieldDesc *pField);
-    static FCDECL1(INT32, GetToken, ReflectFieldObject *pFieldUNSAFE);
+    static FCDECL1(INT32, GetToken, FieldDesc* pField);
     static FCDECL2(FieldDesc*, GetStaticFieldForGenericType, FieldDesc *pField, ReflectClassBaseObject *pDeclaringType);
     static FCDECL1(FC_BOOL_RET, AcquiresContextFromThis, FieldDesc *pField);
     static FCDECL1(Object*, GetLoaderAllocator, FieldDesc *pField);
