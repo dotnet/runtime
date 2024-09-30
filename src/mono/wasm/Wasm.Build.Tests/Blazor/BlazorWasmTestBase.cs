@@ -46,11 +46,11 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
     public string CreateBlazorWasmTemplateProject(string id)
     {
         InitBlazorWasmProjectDir(id);
-        new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
-                .WithWorkingDirectory(_projectDir!)
-                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("new blazorwasm")
-                .EnsureSuccessful();
+        using DotNetCommand dotnetCommand = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
+        CommandResult result = dotnetCommand.WithWorkingDirectory(_projectDir!)
+            .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+            .ExecuteWithCapturedOutput("new blazorwasm")
+            .EnsureSuccessful();
 
         return Path.Combine(_projectDir!, $"{id}.csproj");
     }
@@ -195,12 +195,12 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         runOptions.ServerEnvironment?.ToList().ForEach(
             kv => s_buildEnv.EnvVars[kv.Key] = kv.Value);
 
-        using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(workingDirectory);
+        using RunCommand runCommand = new RunCommand(s_buildEnv, _testOutput);
+        ToolCommand cmd = runCommand.WithWorkingDirectory(workingDirectory);
 
         await using var runner = new BrowserRunner(_testOutput);
         var page = await runner.RunAsync(
-            runCommand,
+            cmd,
             runArgs,
             onConsoleMessage: OnConsoleMessage,
             onServerMessage: runOptions.OnServerMessage,

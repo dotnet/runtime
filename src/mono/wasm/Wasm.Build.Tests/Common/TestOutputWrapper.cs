@@ -18,7 +18,7 @@ public class TestOutputWrapper(ITestOutputHelper baseOutput) : ITestOutputHelper
         baseOutput.WriteLine(message);
         _outputBuffer.AppendLine(message);
         if (EnvironmentVariables.ShowBuildOutput)
-            Console.WriteLine(message);
+            Console.WriteLine(message);      
     }
 
     public void WriteLine(string format, params object[] args)
