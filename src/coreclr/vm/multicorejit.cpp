@@ -237,11 +237,11 @@ FileLoadLevel MulticoreJitManager::GetModuleFileLoadLevel(Module * pModule)
 
     if (pModule != NULL)
     {
-        DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
+        Assembly * pAssembly = pModule->GetAssembly();
 
-        if (pDomainAssembly != NULL)
+        if (pAssembly != NULL)
         {
-            level = pDomainAssembly->GetLoadLevel();
+            level = pAssembly->GetLoadLevel();
         }
     }
 
@@ -768,7 +768,7 @@ DWORD MulticoreJitRecorder::EncodeModule(Module * pReferencedModule)
 }
 
 // Enumerate all modules within an assembly, call OnModule virtual method
-HRESULT MulticoreJitModuleEnumerator::HandleAssembly(DomainAssembly * pAssembly)
+HRESULT MulticoreJitModuleEnumerator::HandleAssembly(Assembly * pAssembly)
 {
     STANDARD_VM_CONTRACT;
 
@@ -786,12 +786,12 @@ HRESULT MulticoreJitModuleEnumerator::EnumerateLoadedModules(AppDomain * pDomain
 
     AppDomain::AssemblyIterator appIt = pDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
 
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-    while (appIt.Next(pDomainAssembly.This()) && SUCCEEDED(hr))
+    while (appIt.Next(pAssembly.This()) && SUCCEEDED(hr))
     {
         {
-            hr = HandleAssembly(pDomainAssembly);
+            hr = HandleAssembly(pAssembly);
         }
     }
 

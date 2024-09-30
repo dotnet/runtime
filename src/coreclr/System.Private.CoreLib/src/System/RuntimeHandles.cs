@@ -82,7 +82,7 @@ namespace System
 
         internal static bool IsTypeDefinition(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             if (!((corElemType >= CorElementType.ELEMENT_TYPE_VOID && corElemType < CorElementType.ELEMENT_TYPE_PTR) ||
                     corElemType == CorElementType.ELEMENT_TYPE_VALUETYPE ||
                     corElemType == CorElementType.ELEMENT_TYPE_CLASS ||
@@ -100,42 +100,42 @@ namespace System
 
         internal static bool IsPrimitive(RuntimeType type)
         {
-            return RuntimeHelpers.IsPrimitiveType(GetCorElementType(type));
+            return RuntimeHelpers.IsPrimitiveType(type.GetCorElementType());
         }
 
         internal static bool IsByRef(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_BYREF;
         }
 
         internal static bool IsPointer(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_PTR;
         }
 
         internal static bool IsArray(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_ARRAY || corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
         }
 
         internal static bool IsSZArray(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
         }
 
         internal static bool IsFunctionPointer(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_FNPTR;
         }
 
         internal static bool HasElementType(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
 
             return corElemType == CorElementType.ELEMENT_TYPE_ARRAY || corElemType == CorElementType.ELEMENT_TYPE_SZARRAY // IsArray
                    || (corElemType == CorElementType.ELEMENT_TYPE_PTR)                                          // IsPointer
@@ -303,14 +303,43 @@ namespace System
             return m_type;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern CorElementType GetCorElementType(RuntimeType type);
+        internal static RuntimeAssembly GetAssembly(RuntimeType type)
+        {
+            return GetAssemblyIfExists(type) ?? GetAssemblyWorker(type);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static RuntimeAssembly GetAssemblyWorker(RuntimeType type)
+            {
+                RuntimeAssembly? assembly = null;
+                GetAssemblySlow(ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref assembly));
+                return assembly!;
+            }
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeAssembly GetAssembly(RuntimeType type);
+        private static extern RuntimeAssembly? GetAssemblyIfExists(RuntimeType type);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetAssemblySlow")]
+        private static partial void GetAssemblySlow(ObjectHandleOnStack type, ObjectHandleOnStack assembly);
+
+        internal static RuntimeModule GetModule(RuntimeType type)
+        {
+            return GetModuleIfExists(type) ?? GetModuleWorker(type);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static RuntimeModule GetModuleWorker(RuntimeType type)
+            {
+                RuntimeModule? module = null;
+                GetModuleSlow(ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref module));
+                return module!;
+            }
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeModule GetModule(RuntimeType type);
+        private static extern RuntimeModule? GetModuleIfExists(RuntimeType type);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetModuleSlow")]
+        private static partial void GetModuleSlow(ObjectHandleOnStack type, ObjectHandleOnStack module);
 
         public ModuleHandle GetModuleHandle()
         {
