@@ -56,6 +56,7 @@ extends:
 
         - bash: |
             cd '$(sslStressProject)'
+            mkdir -p $DUMPS_SHARE
             docker-compose up --abort-on-container-exit --no-color
           displayName: Run SslStress
 
@@ -96,6 +97,7 @@ extends:
 
         - powershell: |
             cd '$(sslStressProject)'
+            New-Item -Force $env:DUMPS_SHARE -ItemType Directory
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run SslStress
 
