@@ -30,13 +30,14 @@ buildcurrentlibraries=0
 buildonly=0
 clientstressargs=""
 serverstressargs=""
-dumpssharepath=""
 
 projectdir=$1
 if [[ ! -d "$projectdir" ]]; then
     echo "First argument must be path to the stress project directory"
     exit 1
 fi
+
+dumpssharepath="$projectdir/dumps"
 
 while [[ $# > 0 ]]; do
   opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
@@ -98,9 +99,9 @@ fi
 
 if [[ "$buildonly" -eq 0 ]]; then
     if [[ -n "$dumpssharepath" ]]; then
-        export DUMPS_SHARE_ROOT="$dumpssharepath"
+        export DUMPS_SHARE="$dumpssharepath"
         export DUMPS_SHARE_MOUNT_ROOT="/dumps-share"
-    else
+    fi
 
     export STRESS_CLIENT_ARGS=$clientstressargs
     export STRESS_SERVER_ARGS=$serverstressargs

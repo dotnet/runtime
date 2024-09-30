@@ -1,5 +1,7 @@
 mkdir -p $DUMPS_SHARE_MOUNT_ROOT/$STRESS_ROLE
 
+ulimit -c unlimited
+
 # Enable dump collection
 export DOTNET_DbgEnableMiniDump=1
 export DOTNET_DbgMiniDumpType=MiniDumpWithFullMemory
