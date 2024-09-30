@@ -5,46 +5,9 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal record struct ThreadStoreData(
-    int ThreadCount,
-    TargetPointer FirstThread,
-    TargetPointer FinalizerThread,
-    TargetPointer GCThread);
-
-internal record struct ThreadStoreCounts(
-    int UnstartedThreadCount,
-    int BackgroundThreadCount,
-    int PendingThreadCount,
-    int DeadThreadCount);
-
-[Flags]
-internal enum ThreadState
+internal sealed class ThreadFactory : IContractFactory<IThread>
 {
-    Unknown             = 0x00000000,
-    Hijacked            = 0x00000080,   // Return address has been hijacked
-    Background          = 0x00000200,   // Thread is a background thread
-    Unstarted           = 0x00000400,   // Thread has never been started
-    Dead                = 0x00000800,   // Thread is dead
-    ThreadPoolWorker    = 0x01000000,   // Thread is a thread pool worker thread
-}
-
-internal record struct ThreadData(
-    uint Id,
-    TargetNUInt OSId,
-    ThreadState State,
-    bool PreemptiveGCDisabled,
-    TargetPointer AllocContextPointer,
-    TargetPointer AllocContextLimit,
-    TargetPointer Frame,
-    TargetPointer FirstNestedException,
-    TargetPointer TEB,
-    TargetPointer LastThrownObjectHandle,
-    TargetPointer NextThread);
-
-internal interface IThread : IContract
-{
-    static string IContract.Name { get; } = nameof(Thread);
-    static IContract IContract.Create(Target target, int version)
+    IThread IContractFactory<IThread>.CreateContract(Target target, int version)
     {
         TargetPointer threadStorePointer = target.ReadGlobalPointer(Constants.Globals.ThreadStore);
         TargetPointer threadStore = target.ReadPointer(threadStorePointer);
@@ -54,15 +17,6 @@ internal interface IThread : IContract
             _ => default(Thread),
         };
     }
-
-    public virtual ThreadStoreData GetThreadStoreData() => throw new NotImplementedException();
-    public virtual ThreadStoreCounts GetThreadCounts() => throw new NotImplementedException();
-    public virtual ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();
-}
-
-internal readonly struct Thread : IThread
-{
-    // Everything throws NotImplementedException
 }
 
 internal readonly struct Thread_1 : IThread
