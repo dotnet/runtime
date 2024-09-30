@@ -18,14 +18,6 @@ internal record struct ExceptionData(
 internal interface IException : IContract
 {
     static string IContract.Name { get; } = nameof(Exception);
-    static IContract IContract.Create(Target target, int version)
-    {
-        return version switch
-        {
-            1 => new Exception_1(target),
-            _ => default(Exception),
-        };
-    }
 
     public virtual TargetPointer GetNestedExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException) => throw new NotImplementedException();
     public virtual ExceptionData GetExceptionData(TargetPointer managedException) => throw new NotImplementedException();

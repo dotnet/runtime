@@ -12,45 +12,6 @@ using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
-public readonly struct TargetPointer : IEquatable<TargetPointer>
-{
-    public static TargetPointer Null = new(0);
-    public static TargetPointer Max32Bit = new(uint.MaxValue);
-    public static TargetPointer Max64Bit = new(ulong.MaxValue);
-
-    public readonly ulong Value;
-    public TargetPointer(ulong value) => Value = value;
-
-    public static implicit operator ulong(TargetPointer p) => p.Value;
-    public static implicit operator TargetPointer(ulong v) => new TargetPointer(v);
-
-    public static bool operator ==(TargetPointer left, TargetPointer right) => left.Value == right.Value;
-    public static bool operator !=(TargetPointer left, TargetPointer right) => left.Value != right.Value;
-
-    public override bool Equals(object? obj) => obj is TargetPointer pointer && Equals(pointer);
-    public bool Equals(TargetPointer other) => Value == other.Value;
-
-    public override int GetHashCode() => Value.GetHashCode();
-}
-
-public readonly struct TargetNUInt
-{
-    public readonly ulong Value;
-    public TargetNUInt(ulong value) => Value = value;
-}
-
-public readonly struct TargetSpan
-{
-    public TargetSpan(TargetPointer address, ulong size)
-    {
-        Address = address;
-        Size = size;
-    }
-
-    public TargetPointer Address { get; }
-    public ulong Size { get; }
-}
-
 /// <summary>
 /// Representation of the target under inspection
 /// </summary>
@@ -60,23 +21,8 @@ public readonly struct TargetSpan
 /// these are throwing APIs. Any callers at the boundaries (for example, unmanaged entry points, COM)
 /// should handle any exceptions.
 /// </remarks>
-public sealed unsafe class Target
+internal sealed unsafe class ContractDescriptorTarget : Target
 {
-    public record struct TypeInfo
-    {
-        public uint? Size;
-        public Dictionary<string, FieldInfo> Fields = [];
-
-        public TypeInfo() { }
-    }
-
-    public record struct FieldInfo
-    {
-        public int Offset;
-        public DataType Type;
-        public string? TypeName;
-    }
-
     private const int StackAllocByteThreshold = 1024;
 
     private readonly struct Configuration
@@ -90,20 +36,20 @@ public sealed unsafe class Target
 
     private readonly Dictionary<string, int> _contracts = [];
     private readonly IReadOnlyDictionary<string, (ulong Value, string? Type)> _globals = new Dictionary<string, (ulong, string?)>();
-    private readonly Dictionary<DataType, TypeInfo> _knownTypes = [];
-    private readonly Dictionary<string, TypeInfo> _types = [];
+    private readonly Dictionary<DataType, Target.TypeInfo> _knownTypes = [];
+    private readonly Dictionary<string, Target.TypeInfo> _types = [];
 
-    internal Contracts.Registry Contracts { get; }
-    internal DataCache ProcessedData { get; }
+    public override ContractRegistry Contracts { get; }
+    public override DataCache ProcessedData { get; }
 
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
 
-    public static bool TryCreate(ulong contractDescriptor, ReadFromTargetDelegate readFromTarget, out Target? target)
+    public static bool TryCreate(ulong contractDescriptor, ReadFromTargetDelegate readFromTarget, out ContractDescriptorTarget? target)
     {
         Reader reader = new Reader(readFromTarget);
         if (TryReadContractDescriptor(contractDescriptor, reader, out Configuration config, out ContractDescriptorParser.ContractDescriptor? descriptor, out TargetPointer[] pointerData))
         {
-            target = new Target(config, descriptor!, pointerData, reader);
+            target = new ContractDescriptorTarget(config, descriptor!, pointerData, reader);
             return true;
         }
 
@@ -111,9 +57,9 @@ public sealed unsafe class Target
         return false;
     }
 
-    private Target(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
+    private ContractDescriptorTarget(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
     {
-        Contracts = new Contracts.Registry(this);
+        Contracts = new CachingContractRegistry(this, this.TryGetContractVersion);
         ProcessedData = new DataCache(this);
         _config = config;
         _reader = reader;
@@ -125,12 +71,12 @@ public sealed unsafe class Target
         {
             foreach ((string name, ContractDescriptorParser.TypeDescriptor type) in descriptor.Types)
             {
-                TypeInfo typeInfo = new() { Size = type.Size };
+                Dictionary<string, Target.FieldInfo> fieldInfos = [];
                 if (type.Fields is not null)
                 {
                     foreach ((string fieldName, ContractDescriptorParser.FieldDescriptor field) in type.Fields)
                     {
-                        typeInfo.Fields[fieldName] = new FieldInfo()
+                        fieldInfos[fieldName] = new Target.FieldInfo()
                         {
                             Offset = field.Offset,
                             Type = field.Type is null ? DataType.Unknown : GetDataType(field.Type),
@@ -138,6 +84,7 @@ public sealed unsafe class Target
                         };
                     }
                 }
+                Target.TypeInfo typeInfo = new() { Size = type.Size, Fields = fieldInfos };
 
                 DataType dataType = GetDataType(name);
                 if (dataType is not DataType.Unknown)
@@ -263,7 +210,8 @@ public sealed unsafe class Target
         return DataType.Unknown;
     }
 
-    public int PointerSize => _config.PointerSize;
+    public override int PointerSize => _config.PointerSize;
+    public override bool IsLittleEndian => _config.IsLittleEndian;
 
     /// <summary>
     /// Read a value from the target in target endianness
@@ -271,7 +219,7 @@ public sealed unsafe class Target
     /// <typeparam name="T">Type of value to read</typeparam>
     /// <param name="address">Address to start reading from</param>
     /// <returns>Value read from the target</returns>
-    public T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    public override T Read<T>(ulong address)
     {
         if (!TryRead(address, _config.IsLittleEndian, _reader, out T value))
             throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
@@ -308,7 +256,7 @@ public sealed unsafe class Target
         return value;
     }
 
-    public void ReadBuffer(ulong address, Span<byte> buffer)
+    public override void ReadBuffer(ulong address, Span<byte> buffer)
     {
         if (!TryReadBuffer(address, buffer))
             throw new InvalidOperationException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
@@ -330,7 +278,7 @@ public sealed unsafe class Target
     /// </summary>
     /// <param name="address">Address to start reading from</param>
     /// <returns>Pointer read from the target</returns>}
-    public TargetPointer ReadPointer(ulong address)
+    public override TargetPointer ReadPointer(ulong address)
     {
         if (!TryReadPointer(address, _config, _reader, out TargetPointer pointer))
             throw new InvalidOperationException($"Failed to read pointer at 0x{address:x8}.");
@@ -338,7 +286,7 @@ public sealed unsafe class Target
         return pointer;
     }
 
-    public TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes)
+    public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes)
     {
         if (_config.PointerSize == sizeof(uint))
         {
@@ -368,7 +316,7 @@ public sealed unsafe class Target
     /// </summary>
     /// <param name="address">Address to start reading from</param>
     /// <returns>String read from the target</returns>}
-    public string ReadUtf8String(ulong address)
+    public override string ReadUtf8String(ulong address)
     {
         // Read characters until we find the null terminator
         ulong end = address;
@@ -393,7 +341,7 @@ public sealed unsafe class Target
     /// </summary>
     /// <param name="address">Address to start reading from</param>
     /// <returns>String read from the target</returns>}
-    public string ReadUtf16String(ulong address)
+    public override string ReadUtf16String(ulong address)
     {
         // Read characters until we find the null terminator
         ulong end = address;
@@ -421,7 +369,7 @@ public sealed unsafe class Target
     /// </summary>
     /// <param name="address">Address to start reading from</param>
     /// <returns>Value read from the target</returns>
-    public TargetNUInt ReadNUInt(ulong address)
+    public override TargetNUInt ReadNUInt(ulong address)
     {
         if (!TryReadNUInt(address, _config, _reader, out ulong value))
             throw new InvalidOperationException($"Failed to read nuint at 0x{address:x8}.");
@@ -465,12 +413,10 @@ public sealed unsafe class Target
         => IsAligned(value, _config.PointerSize);
     public bool IsAlignedToPointerSize(ulong value)
         => IsAligned(value, _config.PointerSize);
-    public bool IsAlignedToPointerSize(TargetPointer pointer)
+    public override bool IsAlignedToPointerSize(TargetPointer pointer)
         => IsAligned(pointer.Value, _config.PointerSize);
 
-    public char DirectorySeparator => (char)ReadGlobal<byte>(Constants.Globals.DirectorySeparator);
-
-    public T ReadGlobal<T>(string name) where T : struct, INumber<T>
+    public override T ReadGlobal<T>(string name)
         => ReadGlobal<T>(name, out _);
 
     public T ReadGlobal<T>(string name, out string? type) where T : struct, INumber<T>
@@ -482,7 +428,7 @@ public sealed unsafe class Target
         return T.CreateChecked(global.Value);
     }
 
-    public TargetPointer ReadGlobalPointer(string name)
+    public override TargetPointer ReadGlobalPointer(string name)
         => ReadGlobalPointer(name, out _);
 
     public TargetPointer ReadGlobalPointer(string name, out string? type)
@@ -494,17 +440,17 @@ public sealed unsafe class Target
         return new TargetPointer(global.Value);
     }
 
-    public TypeInfo GetTypeInfo(DataType type)
+    public override TypeInfo GetTypeInfo(DataType type)
     {
-        if (!_knownTypes.TryGetValue(type, out TypeInfo typeInfo))
+        if (!_knownTypes.TryGetValue(type, out Target.TypeInfo typeInfo))
             throw new InvalidOperationException($"Failed to get type info for '{type}'");
 
         return typeInfo;
     }
 
-    public TypeInfo GetTypeInfo(string type)
+    public Target.TypeInfo GetTypeInfo(string type)
     {
-        if (_types.TryGetValue(type, out TypeInfo typeInfo))
+        if (_types.TryGetValue(type, out Target.TypeInfo typeInfo))
         return typeInfo;
 
         DataType dataType = GetDataType(type);
@@ -521,12 +467,12 @@ public sealed unsafe class Target
     /// Store of addresses that have already been read into corresponding data models.
     /// This is simply used to avoid re-processing data on every request.
     /// </summary>
-    internal sealed class DataCache
+    internal sealed class DataCache : Target.IDataCache
     {
-        private readonly Target _target;
+        private readonly ContractDescriptorTarget _target;
         private readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
 
-        public DataCache(Target target)
+        public DataCache(ContractDescriptorTarget target)
         {
             _target = target;
         }

@@ -17,14 +17,14 @@ public unsafe class TargetTests
         // Size and fields
         [DataType.Thread] = new(){
             Size = 56,
-            Fields = {
+            Fields = new Dictionary<string, Target.FieldInfo> {
                 { "Field1", new(){ Offset = 8, Type = DataType.uint16, TypeName = DataType.uint16.ToString() }},
                 { "Field2", new(){ Offset = 16, Type = DataType.GCHandle, TypeName = DataType.GCHandle.ToString() }},
                 { "Field3", new(){ Offset = 32 }}
             }},
         // Fields only
         [DataType.ThreadStore] = new(){
-            Fields = {
+            Fields = new Dictionary<string, Target.FieldInfo> {
                 { "Field1", new(){ Offset = 0, TypeName = "FieldType" }},
                 { "Field2", new(){ Offset = 8 }}
             }},
@@ -44,7 +44,7 @@ public unsafe class TargetTests
             .SetGlobals(Array.Empty<(string, ulong, string?)>())
             .SetContracts(Array.Empty<string>());
 
-        bool success = builder.TryCreateTarget(out Target? target);
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
         Assert.True(success);
 
         foreach ((DataType type, Target.TypeInfo info) in TestTypes)
@@ -90,7 +90,7 @@ public unsafe class TargetTests
             .SetGlobals(TestGlobals)
             .SetContracts([]);
 
-        bool success = builder.TryCreateTarget(out Target? target);
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
         Assert.True(success);
 
         ValidateGlobals(target, TestGlobals);
@@ -107,7 +107,7 @@ public unsafe class TargetTests
             .SetGlobals(TestGlobals.Select(MakeGlobalToIndirect).ToArray(),
                         TestGlobals.Select((g) => g.Value).ToArray());
 
-        bool success = builder.TryCreateTarget(out Target? target);
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
         Assert.True(success);
 
         // Indirect values are pointer-sized, so max 32-bits for a 32-bit target
@@ -124,7 +124,7 @@ public unsafe class TargetTests
     }
 
     private static void ValidateGlobals(
-        Target target,
+        ContractDescriptorTarget target,
         (string Name, ulong Value, string? Type)[] globals,
         [CallerMemberName] string caller = "",
         [CallerFilePath] string filePath = "",
