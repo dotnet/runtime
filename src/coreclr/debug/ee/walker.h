@@ -41,6 +41,7 @@ struct InstructionAttribute
     bool m_fIsRelBranch;    // is this a relative branch (either a call or a jump)?
     bool m_fIsWrite;        // does the instruction write to an address?
 
+
     DWORD m_cbInstr;        // the size of the instruction
     DWORD m_cbDisp;         // the size of the displacement
     DWORD m_dwOffsetToDisp; // the offset from the beginning of the instruction

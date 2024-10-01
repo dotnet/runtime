@@ -1110,7 +1110,11 @@ class DebuggerController
                                 CONTEXT *context,
                                 DebuggerControllerQueue *pDcq,
                                 SCAN_TRIGGER stWhat,
-                                TP_RESULT *pTpr);
+                                TP_RESULT *pTpr,
+#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+                                DebuggerPatchSkip **ppDps
+#endif
+                                );
 
 
     static DebuggerPatchSkip *ActivatePatchSkip(Thread *thread,
@@ -1371,7 +1375,7 @@ public:
     // Dispatched when we get a SingleStep exception on this thread.
     // Return true if we want SendEvent to get called.
 
-    virtual bool TriggerSingleStep(Thread *thread, const BYTE *ip);
+    virtual DPOSS_ACTION TriggerSingleStep(Thread *thread, const BYTE *ip);
 
 
     // Dispatched to notify the controller when we are going to a filter/handler
@@ -1465,7 +1469,7 @@ class DebuggerPatchSkip : public DebuggerController
 
     ~DebuggerPatchSkip();
 
-    bool TriggerSingleStep(Thread *thread,
+    DPOSS_ACTION TriggerSingleStep(Thread *thread,
                            const BYTE *ip);
 
     TP_RESULT TriggerExceptionHook(Thread *thread, CONTEXT * pContext,
@@ -1646,7 +1650,7 @@ protected:
     TP_RESULT TriggerPatch(DebuggerControllerPatch *patch,
                       Thread *thread,
                       TRIGGER_WHY tyWhy);
-    bool TriggerSingleStep(Thread *thread, const BYTE *ip);
+    DPOSS_ACTION TriggerSingleStep(Thread *thread, const BYTE *ip);
     void TriggerUnwind(Thread *thread, MethodDesc *fd, DebuggerJitInfo * pDJI,
                       SIZE_T offset, FramePointer fp,
                       CorDebugStepReason unwindReason);
@@ -1833,7 +1837,7 @@ public:
 
     virtual TP_RESULT TriggerPatch(DebuggerControllerPatch *patch, Thread *thread,  TRIGGER_WHY tyWhy);
 
-    virtual bool TriggerSingleStep(Thread *thread, const BYTE *ip);
+    virtual DPOSS_ACTION TriggerSingleStep(Thread *thread, const BYTE *ip);
 
     bool SendEvent(Thread *thread, bool fInterruptedBySetIp)
     {

@@ -2537,7 +2537,11 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
                                          CONTEXT *context,
                                          DebuggerControllerQueue *pDcq,
                                          SCAN_TRIGGER stWhat,
-                                         TP_RESULT *pTpr)
+                                         TP_RESULT *pTpr,
+#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+                                         DebuggerPatchSkip **ppDps
+#endif
+                                         )
 {
     CONTRACTL
     {
@@ -2739,7 +2743,8 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
                     used = DPOSS_USED_WITH_NO_EVENT;
                 }
 
-                if (p->TriggerSingleStep(thread, (const BYTE *)address))
+                DPOSS_ACTION tmpAction = p->TriggerSingleStep(thread, (const BYTE *)address);
+                if (tmpAction == DPOSS_USED_WITH_EVENT)
                 {
                     // by now, we should already know that we care for this exception.
                     _ASSERTE(IsInUsedAction(used) == true);
@@ -2749,6 +2754,13 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
                     pDcq->dcqEnqueue(p, FALSE); // <REVISIT_TODO>@todo Return value</REVISIT_TODO>
 
                 }
+#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+                else if (tmpAction == DPOSS_USED_WITH_NO_EVENT)
+                {
+                    *ppDps = (DebuggerPatchSkip*)p;
+                    used = DPOSS_USED_WITH_NO_EVENT;
+                }
+#endif
             }
 
             p = pNext;
@@ -2877,6 +2889,11 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
 
     CrstHolderWithState lockController(&g_criticalSection);
 
+    if (ppDebuggerPatchSkip != nullptr)
+    {
+        *ppDebuggerPatchSkip = nullptr;
+    }
+
     TADDR originalAddress = 0;
 
 #ifdef FEATURE_METADATA_UPDATER
@@ -2923,8 +2940,20 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
 #endif // FEATURE_METADATA_UPDATER
 
     TP_RESULT tpr;
-
-    used = ScanForTriggers((CORDB_ADDRESS_TYPE *)address, thread, context, &dcq, which, &tpr);
+#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+    DebuggerPatchSkip *dps = nullptr;
+#endif
+    used = ScanForTriggers((CORDB_ADDRESS_TYPE *)address, thread, context, &dcq, which, &tpr, 
+#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+    &dps
+#endif
+    );
+#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+    if (dps)
+    {
+        *ppDebuggerPatchSkip = dps;
+    }
+#endif
 
     LOG((LF_CORDB|LF_ENC, LL_EVERYTHING, "DC::DPOSS ScanForTriggers called and returned.\n"));
 
@@ -3033,7 +3062,7 @@ Exit:
 #endif
 
     DebuggerPatchSkip* pDebuggerPatchSkip = ActivatePatchSkip(thread, dac_cast<PTR_CBYTE>(GetIP(pCtx)), FALSE);
-    if (ppDebuggerPatchSkip != nullptr)
+    if (pDebuggerPatchSkip != nullptr && ppDebuggerPatchSkip != nullptr)
     {
         *ppDebuggerPatchSkip = pDebuggerPatchSkip;
     }
@@ -4008,11 +4037,11 @@ TP_RESULT DebuggerController::TriggerPatch(DebuggerControllerPatch *patch,
     return TPR_IGNORE;
 }
 
-bool DebuggerController::TriggerSingleStep(Thread *thread,
+DPOSS_ACTION DebuggerController::TriggerSingleStep(Thread *thread,
                                            const BYTE *ip)
 {
     LOG((LF_CORDB, LL_INFO10000, "DC::TP: in default TriggerSingleStep\n"));
-    return false;
+    return DPOSS_DONT_CARE;
 }
 
 void DebuggerController::TriggerUnwind(Thread *thread,
@@ -4326,7 +4355,8 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
             result = DebuggerController::DispatchPatchOrSingleStep(pCurThread,
                                                             pContext,
                                                             ip,
-                                        (SCAN_TRIGGER)(ST_PATCH|ST_SINGLE_STEP));
+                                        (SCAN_TRIGGER)(ST_PATCH|ST_SINGLE_STEP),
+                                                            ppDebuggerPatchSkip);
                 // We pass patch | single step since single steps actually
                 // do both (eg, you SS onto a breakpoint).
             break;
@@ -4895,7 +4925,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
     return TPR_TRIGGER;
 }
 
-bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
+DPOSS_ACTION DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
 {
     LOG((LF_CORDB,LL_INFO10000, "DPS::TSS: basically a no-op\n"));
 
@@ -4981,7 +5011,7 @@ bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
         //     }
         // }
         m_fSSCompleted = true;
-        return true;
+        return DPOSS_USED_WITH_NO_EVENT;
     }
 //Error:
 #endif // !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
@@ -4990,7 +5020,7 @@ bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
 
     TRACE_FREE(this);
     Delete();
-    return false;
+    return DPOSS_DONT_CARE;
 }
 
 // * -------------------------------------------------------------------------
@@ -7493,7 +7523,7 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
 // We may have single-stepped over a return statement to land us up a frame.
 // Or we may have single-stepped through a method.
 // We never single-step into calls (we place a patch at the call destination).
-bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
+DPOSS_ACTION DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
 {
     LOG((LF_CORDB,LL_INFO10000,"DS::TSS this:0x%p, @ ip:0x%p\n", this, ip));
 
@@ -7514,7 +7544,7 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
     {
         LOG((LF_CORDB,LL_INFO10000, "DS::TSS: not in managed code, Returning false (case 0)!\n"));
         DisableSingleStep();
-        return false;
+        return DPOSS_DONT_CARE;
     }
 
     // If we EnC the method, we'll blast the function address,
@@ -7552,7 +7582,7 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
             EnableMethodEnter();
         }
         DisableSingleStep();
-        return false;
+        return DPOSS_DONT_CARE;
     }
 
     DisableAll();
@@ -7562,7 +7592,7 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
 
     if (DetectHandleLCGMethods((PCODE)ip, fd, &info))
     {
-        return false;
+        return DPOSS_DONT_CARE;
     }
 
     if (IsInRange(offset, m_range, m_rangeCount, &info) ||
@@ -7574,7 +7604,7 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
         EnableUnwind(m_fp);
 
         LOG((LF_CORDB,LL_INFO10000, "DS::TSS: Returning false Case 1!\n"));
-        return false;
+        return DPOSS_DONT_CARE;
     }
     else
     {
@@ -7587,10 +7617,10 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
         DebuggerMethodInfo * dmi = g_pDebugger->GetOrCreateMethodInfo(fd->GetModule(), fd->GetMemberDef());
 
         if ((dmi != NULL) && DetectHandleNonUserCode(&info, dmi))
-            return false;
+            return DPOSS_DONT_CARE;
 
         PrepareForSendEvent(ticket);
-        return true;
+        return DPOSS_USED_WITH_EVENT;
     }
 }
 
@@ -9206,18 +9236,18 @@ TP_RESULT DebuggerDataBreakpoint::TriggerPatch(DebuggerControllerPatch *patch, T
     }
 }
 
-bool DebuggerDataBreakpoint::TriggerSingleStep(Thread *thread, const BYTE *ip)
+DPOSS_ACTION DebuggerDataBreakpoint::TriggerSingleStep(Thread *thread, const BYTE *ip)
 {
     if (g_pDebugger->IsThreadAtSafePlace(thread))
     {
         LOG((LF_CORDB, LL_INFO10000, "D:DDBP: Finally safe for stopping, stop stepping\n"));
         this->DisableSingleStep();
-        return true;
+        return DPOSS_USED_WITH_EVENT;
     }
     else
     {
         LOG((LF_CORDB, LL_INFO10000, "D:DDBP: Still not safe for stopping, continue stepping\n"));
-        return false;
+        return DPOSS_DONT_CARE;
     }
 }
 
