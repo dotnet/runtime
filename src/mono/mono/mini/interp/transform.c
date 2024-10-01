@@ -5194,6 +5194,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	gboolean inlining = td->method != method;
 	gboolean generate_enc_seq_points_without_debug_info = FALSE;
 	InterpBasicBlock *exit_bb = NULL;
+	int initial_stack_height;
 
 	original_bb = bb = mono_basic_block_split (method, error, header);
 	goto_if_nok (error, exit);
@@ -5327,6 +5328,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		if (mono_threads_are_safepoints_enabled ())
 			interp_add_ins (td, MINT_SAFEPOINT);
 #endif
+		initial_stack_height = 0;
 	} else {
 		int local;
 		arg_locals = (guint32*) g_malloc ((!!signature->hasthis + signature->param_count) * sizeof (guint32));
@@ -5352,6 +5354,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		local_locals = (guint32*) g_malloc (header->num_locals * sizeof (guint32));
 		for (int i = 0; i < header->num_locals; i++)
 			local_locals [i] = interp_create_var (td, header->locals [i]);
+		initial_stack_height = GPTRDIFF_TO_INT (td->sp - td->stack);
 	}
 
 	/*
@@ -5880,6 +5883,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			if (offset) {
 				handle_branch (td, MINT_BR, 5 + offset);
 				link_bblocks = FALSE;
+				InterpBasicBlock *next_bb = td->offset_to_bb [td->ip + 5 - header->code];
+				if (next_bb->stack_height == -1) {
+					// If during the forward scan of the instructions we reach an instruction that follows
+					// an uncoditional branch and it wasn't yet reached by any forward branches before, the
+					// spec requires for the stack to be empty for simplicity.
+					td->sp = td->stack + initial_stack_height;
+					init_bb_stack_state (td, next_bb);
+				}
 			}
 			td->ip += 5;
 			break;
@@ -5889,6 +5900,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			if (offset) {
 				handle_branch (td, MINT_BR, 2 + (gint8)td->ip [1]);
 				link_bblocks = FALSE;
+				InterpBasicBlock *next_bb = td->offset_to_bb [td->ip + 2 - header->code];
+				if (next_bb->stack_height == -1) {
+					td->sp = td->stack + initial_stack_height;
+					init_bb_stack_state (td, next_bb);
+				}
 			}
 			td->ip += 2;
 			break;
