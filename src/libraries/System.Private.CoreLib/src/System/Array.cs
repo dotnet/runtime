@@ -916,28 +916,22 @@ namespace System
                                 result = GenericBinarySearch<ushort>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_I4:
-#if TARGET_32BIT
-                            case CorElementType.ELEMENT_TYPE_I:
-#endif
                                 result = GenericBinarySearch<int>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_U4:
-#if TARGET_32BIT
-                            case CorElementType.ELEMENT_TYPE_U:
-#endif
                                 result = GenericBinarySearch<uint>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_I8:
-#if TARGET_64BIT
-                            case CorElementType.ELEMENT_TYPE_I:
-#endif
                                 result = GenericBinarySearch<long>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_U8:
-#if TARGET_64BIT
-                            case CorElementType.ELEMENT_TYPE_U:
-#endif
                                 result = GenericBinarySearch<ulong>(array, adjustedIndex, length, value);
+                                break;
+                            case CorElementType.ELEMENT_TYPE_I:
+                                result = (IntPtr.Size == 4) ? GenericBinarySearch<int>(array, adjustedIndex, length, value) : GenericBinarySearch<long>(array, adjustedIndex, length, value);
+                                break;
+                            case CorElementType.ELEMENT_TYPE_U:
+                                result = (IntPtr.Size == 4) ? GenericBinarySearch<uint>(array, adjustedIndex, length, value) : GenericBinarySearch<ulong>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_R4:
                                 result = GenericBinarySearch<float>(array, adjustedIndex, length, value);
@@ -1424,19 +1418,15 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
-#if TARGET_32BIT
-                        case CorElementType.ELEMENT_TYPE_I:
-                        case CorElementType.ELEMENT_TYPE_U:
-#endif
                             result = GenericIndexOf<int>(array, value, adjustedIndex, count);
                             break;
                         case CorElementType.ELEMENT_TYPE_I8:
                         case CorElementType.ELEMENT_TYPE_U8:
-#if TARGET_64BIT
+                            result = GenericIndexOf<long>(array, value, adjustedIndex, count);
+                            break;
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
-#endif
-                            result = GenericIndexOf<long>(array, value, adjustedIndex, count);
+                            result = (IntPtr.Size == 4) ? GenericIndexOf<int>(array, value, adjustedIndex, count) : GenericIndexOf<long>(array, value, adjustedIndex, count);
                             break;
                         case CorElementType.ELEMENT_TYPE_R4:
                             result = GenericIndexOf<float>(array, value, adjustedIndex, count);
@@ -1654,19 +1644,15 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
-#if TARGET_32BIT
-                        case CorElementType.ELEMENT_TYPE_I:
-                        case CorElementType.ELEMENT_TYPE_U:
-#endif
                             result = GenericLastIndexOf<int>(array, value, adjustedIndex, count);
                             break;
                         case CorElementType.ELEMENT_TYPE_I8:
                         case CorElementType.ELEMENT_TYPE_U8:
-#if TARGET_64BIT
+                            result = GenericLastIndexOf<long>(array, value, adjustedIndex, count);
+                            break;
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
-#endif
-                            result = GenericLastIndexOf<long>(array, value, adjustedIndex, count);
+                            result = (IntPtr.Size == 4) ? GenericLastIndexOf<int>(array, value, adjustedIndex, count) : GenericLastIndexOf<long>(array, value, adjustedIndex, count);
                             break;
                         case CorElementType.ELEMENT_TYPE_R4:
                             result = GenericLastIndexOf<float>(array, value, adjustedIndex, count);
@@ -1863,21 +1849,20 @@ namespace System
                     return;
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
-#if TARGET_32BIT
-                case CorElementType.ELEMENT_TYPE_I:
-                case CorElementType.ELEMENT_TYPE_U:
-#endif
                 case CorElementType.ELEMENT_TYPE_R4:
                     UnsafeArrayAsSpan<int>(array, adjustedIndex, length).Reverse();
                     return;
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
-#if TARGET_64BIT
-                case CorElementType.ELEMENT_TYPE_I:
-                case CorElementType.ELEMENT_TYPE_U:
-#endif
                 case CorElementType.ELEMENT_TYPE_R8:
                     UnsafeArrayAsSpan<long>(array, adjustedIndex, length).Reverse();
+                    return;
+                case CorElementType.ELEMENT_TYPE_I:
+                case CorElementType.ELEMENT_TYPE_U:
+                    if (IntPtr.Size == 4)
+                        UnsafeArrayAsSpan<int>(array, adjustedIndex, length).Reverse();
+                    else
+                        UnsafeArrayAsSpan<long>(array, adjustedIndex, length).Reverse();
                     return;
                 case CorElementType.ELEMENT_TYPE_OBJECT:
                 case CorElementType.ELEMENT_TYPE_ARRAY:
@@ -2069,28 +2054,28 @@ namespace System
                             GenericSort<ushort>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_I4:
-#if TARGET_32BIT
-                        case CorElementType.ELEMENT_TYPE_I:
-#endif
                             GenericSort<int>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_U4:
-#if TARGET_32BIT
-                        case CorElementType.ELEMENT_TYPE_U:
-#endif
                             GenericSort<uint>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_I8:
-#if TARGET_64BIT
-                        case CorElementType.ELEMENT_TYPE_I:
-#endif
                             GenericSort<long>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_U8:
-#if TARGET_64BIT
-                        case CorElementType.ELEMENT_TYPE_U:
-#endif
                             GenericSort<ulong>(keys, items, adjustedIndex, length);
+                            return;
+                        case CorElementType.ELEMENT_TYPE_I:
+                            if (IntPtr.Size == 4)
+                                GenericSort<int>(keys, items, adjustedIndex, length);
+                            else
+                                GenericSort<long>(keys, items, adjustedIndex, length);
+                            return;
+                        case CorElementType.ELEMENT_TYPE_U:
+                            if (IntPtr.Size == 4)
+                                GenericSort<uint>(keys, items, adjustedIndex, length);
+                            else
+                                GenericSort<ulong>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_R4:
                             GenericSort<float>(keys, items, adjustedIndex, length);
