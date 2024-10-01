@@ -83,6 +83,9 @@
 
       <!-- <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set DEBUG=pw:browser*" /> -->
 
+      <!-- prividing info for the issue in Playwright -->
+      <RunScriptCommands Include="npx envinfo --preset playwright" />
+
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export FIREFOX_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(FirefoxDirName)/$(FirefoxBinaryName)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set FIREFOX_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(FirefoxDirName)\$(FirefoxBinaryName)" />
 
