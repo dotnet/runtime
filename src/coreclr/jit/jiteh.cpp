@@ -1051,55 +1051,6 @@ unsigned Compiler::ehFuncletCount()
 }
 
 /*****************************************************************************
- *
- *  Get the index to use as the cache key for sharing throw blocks.
- *  For non-funclet platforms, this is just the block's bbTryIndex, to ensure
- *  that throw is protected by the correct set of trys.  However, when we have
- *  funclets we also have to ensure that the throw blocks are *not* shared
- *  across funclets, so we use EHblkDsc index of either the funclet or
- *  the containing try region, whichever is inner-most.  We differentiate
- *  between the 3 cases by setting the high bits (0 = try, 1 = handler,
- *  2 = filter)
- *
- */
-unsigned Compiler::bbThrowIndex(BasicBlock* blk)
-{
-    if (UsesFunclets())
-    {
-        if (!blk->hasTryIndex() && !blk->hasHndIndex())
-        {
-            return -1;
-        }
-
-        const unsigned tryIndex = blk->hasTryIndex() ? blk->getTryIndex() : USHRT_MAX;
-        const unsigned hndIndex = blk->hasHndIndex() ? blk->getHndIndex() : USHRT_MAX;
-        assert(tryIndex != hndIndex);
-        assert(tryIndex != USHRT_MAX || hndIndex != USHRT_MAX);
-
-        if (tryIndex < hndIndex)
-        {
-            // The most enclosing region is a try body, use it
-            assert(tryIndex <= 0x3FFFFFFF);
-            return tryIndex;
-        }
-
-        // The most enclosing region is a handler which will be a funclet
-        // Now we have to figure out if blk is in the filter or handler
-        assert(hndIndex <= 0x3FFFFFFF);
-        if (ehGetDsc(hndIndex)->InFilterRegionBBRange(blk))
-        {
-            return hndIndex | 0x40000000;
-        }
-
-        return hndIndex | 0x80000000;
-    }
-    else
-    {
-        return blk->bbTryIndex;
-    }
-}
-
-/*****************************************************************************
  * Determine the emitter code cookie for a block, for unwind purposes.
  */
 
@@ -1420,6 +1371,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 {
     assert(compHndBBtabCount > 0);
     assert(XTnum < compHndBBtabCount);
+    assert(fgAddCodeList == nullptr);
 
     EHblkDsc* HBtab;
 
