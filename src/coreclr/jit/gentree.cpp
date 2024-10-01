@@ -20993,8 +20993,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             assert(varTypeIsByte(simdBaseType));
 
             intrinsic =
-                GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, op, op1, op2ForLookup,
-                                                             op == GT_RSZ ? TYP_INT : TYP_SHORT, simdSize, false);
+                GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, op, op1, op2ForLookup, TYP_INT, simdSize, false);
             assert(intrinsic != NI_Illegal);
 
             GenTree* maskAmountOp;
