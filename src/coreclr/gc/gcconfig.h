@@ -39,7 +39,8 @@ public:
     {
         if (m_str)
         {
-            GCToEEInterface::FreeStringConfigValue(m_str);
+            // TODO: Check -- GCToEEInterface::FreeStringConfigValue(m_str);
+            delete[] m_str;
         }
 
         m_str = nullptr;
@@ -142,7 +143,7 @@ public:
     INT_CONFIG   (GCSpinCountUnit,           "GCSpinCountUnit",           NULL,                                0,                  "Specifies the spin count unit used by the GC.")                                          \
     INT_CONFIG   (GCDynamicAdaptationMode,   "GCDynamicAdaptationMode",   "System.GC.DynamicAdaptationMode",   1,                  "Enable the GC to dynamically adapt to application sizes.")                               \
     INT_CONFIG   (GCDTargetTCP,              "GCDTargetTCP",              "System.GC.DTargetTCP",              0,                  "Specifies the target tcp for DATAS")                                                     \
-    BOOL_CONFIG  (GCEnableSysConf,           "GCEnableSysConf",           NULL,                                false,              "TODO: Fill this...")
+    BOOL_CONFIG  (GCCacheSizeFromSysConf,    "GCCacheSizeFromSysConf",    NULL,                                false,              "Unix-Only flag to use sysconf to retrieve the last level cache size.")
 
 // This class is responsible for retreiving configuration information
 // for how the GC should operate.

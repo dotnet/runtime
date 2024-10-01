@@ -21,6 +21,7 @@
 #include "gcenv.unix.inl"
 #include "volatile.h"
 #include "numasupport.h"
+#include "../gcinterface.h"
 #include "../gcconfig.h"
 
 #if HAVE_SWAPCTL
@@ -965,29 +966,23 @@ static void GetLogicalProcessorCacheSizeFromHeuristic(size_t* cacheLevel, size_t
 #endif
 }
 
-// It seems ok to set the same default sizes when the cache info isn’t available on the /sys/ path like we did with arm. 
-// And provide a config to revert back to the old behavior. Does that seem reasonable?
-static size_t GetLogicalProcessorCacheSizeFromOS(bool loadFromConfig = false)
+static size_t GetLogicalProcessorCacheSizeFromOS(bool useSysConf)
 {
     size_t cacheLevel = 0;
     size_t cacheSize = 0;
 
-    // if (config)
-    // - Retrieve info via sysconf
-    // else
-    // - Check if sysfs is available, and if so, retrieve info via sysfs.
-
-    // - If not, use heuristic calculation.
-    // - Handle Mac OS case.
-    
-    // Overrides:
-    // 1. MAC OS.
-    // 2. ARM64 stuff.
-
-    bool check = GCConfig::GetGCEnableSysConf();
-    if (loadFromConfig)
+    if (useSysConf)
     {
         GetLogicalProcessorCacheSizeFromSysConf(&cacheLevel, &cacheSize);
+        if (cacheSize == 0)
+        {
+            // TODO: Remove duplication.
+            GetLogicalProcessorCacheSizeFromSysFs(&cacheLevel, &cacheSize);
+            if (cacheSize == 0)
+            {
+                GetLogicalProcessorCacheSizeFromHeuristic(&cacheLevel, &cacheSize);
+            }
+        }
     }
 
     else
@@ -1024,32 +1019,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS(bool loadFromConfig = false)
 #if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_APPLE)
     if (cacheLevel != 3)
     {
-        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
-        // from most of the machines.
-        // Hence, just use the following heuristics at best depending on the CPU count
-        // 1 ~ 4   :  4 MB
-        // 5 ~ 16  :  8 MB
-        // 17 ~ 64 : 16 MB
-        // 65+     : 32 MB
-        DWORD logicalCPUs = g_processAffinitySet.Count();
-        if (logicalCPUs < 5)
-        {
-            cacheSize = 4;
-        }
-        else if (logicalCPUs < 17)
-        {
-            cacheSize = 8;
-        }
-        else if (logicalCPUs < 65)
-        {
-            cacheSize = 16;
-        }
-        else
-        {
-            cacheSize = 32;
-        }
-
-        cacheSize *= (1024 * 1024);
+        GetLogicalProcessorCacheSizeFromHeuristic(&cacheLevel, &cacheSize);
     }
 #endif
 
@@ -1118,13 +1088,15 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 {
     static volatile size_t s_maxSize;
     static volatile size_t s_maxTrueSize;
+    bool useSysConf = GCConfig::GetGCCacheSizeFromSysConf();
 
     size_t size = trueSize ? s_maxTrueSize : s_maxSize;
     if (size != 0)
         return size;
 
     size_t maxSize, maxTrueSize;
-    maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS(); // Returns the size of the highest level processor cache
+    maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS(useSysConf); // Returns the size of the highest level processor cache
+    printf ("Last Level Cache Size = %zu\n", maxSize);
 
     s_maxSize = maxSize;
     s_maxTrueSize = maxTrueSize;
