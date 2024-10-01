@@ -21,6 +21,7 @@
 #include "gcenv.unix.inl"
 #include "volatile.h"
 #include "numasupport.h"
+#include "../gcconfig.h"
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
