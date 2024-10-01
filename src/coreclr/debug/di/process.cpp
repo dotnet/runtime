@@ -11360,7 +11360,6 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         EX_CATCH_HRESULT(hr);
         SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
 
-        if (!fSSCompleted)
         {
             RSLockHolder lockHolder(GetProcessLock());
             HASHFIND find;
@@ -11374,32 +11373,40 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
                 DWORD dwThreadId2 = GetDAC()->TryGetVolatileOSThreadID(pThreadIter->m_vmThreadToken);
                 if (dwThreadId2 == dwThreadId)
                 {
-                    pThread = pThreadIter;
+                    continue;
+                }
+                HANDLE hOutOfProcThreadIter = pDAC->GetThreadHandle(pThreadIter->m_vmThreadToken);
+                if (hOutOfProcThreadIter == NULL)
+                {
+                    continue;
+                }
+                CordbThread *tmpThread = m_SuspendedThreads.GetBase(VmPtrToCookie(pThreadIter->m_vmThreadToken));
+                if (tmpThread == NULL)
+                {
+                    if (fSSCompleted)
+                    {
+                        continue;
+                    }
+                    m_SuspendedThreads.AddBaseOrThrow(pThreadIter);
+                }
+
+                HandleHolder hThreadIter;
+                BOOL fSuccess = DuplicateHandle(UnsafeGetProcessHandle(), hOutOfProcThreadIter, ::GetCurrentProcess(), &hThreadIter, 0, FALSE, DUPLICATE_SAME_ACCESS);
+                if (!fSuccess)
+                {
+                    continue;
+                }
+                if (!fSSCompleted)
+                {
+                    if (::SuspendThread(hThreadIter) != (DWORD)-1)
+                    {
+                        pThreadIter->m_dwInternalSuspendCount++;
+                    }
                 }
                 else
                 {
-                    HANDLE hOutOfProcThreadIter = pDAC->GetThreadHandle(pThreadIter->m_vmThreadToken);
-                    if (hOutOfProcThreadIter != NULL)
-                    {
-                        HandleHolder hThreadIter;
-                        BOOL fSuccess = DuplicateHandle(UnsafeGetProcessHandle(), hOutOfProcThreadIter, ::GetCurrentProcess(), &hThreadIter, 0, FALSE, DUPLICATE_SAME_ACCESS);
-                        if (fSuccess)
-                        {
-                            if (::SuspendThread(hThreadIter) != (DWORD)-1)
-                            {
-                                CordbThread *tmpThread = m_SuspendedThreads.GetBase(VmPtrToCookie(pThreadIter->m_vmThreadToken));
-                                if (tmpThread != NULL)
-                                {
-                                    _ASSERTE(tmpThread == pThreadIter);
-                                }
-                                else
-                                {
-                                    m_SuspendedThreads.AddBaseOrThrow(pThreadIter);
-                                }
-                                pThreadIter->m_dwInternalSuspendCount++;
-                            }
-                        }
-                    }
+                    pThreadIter->m_dwInternalSuspendCount--;
+                    ::ResumeThread(hThreadIter);
                 }
             }
         }
