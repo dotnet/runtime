@@ -77,8 +77,9 @@ namespace System.Formats.Nrbf
         public abstract System.Reflection.Metadata.TypeName TypeName { get; }
         public bool TypeNameMatches(System.Type type) { throw null; }
     }
-    public partial struct SerializationRecordId : System.IEquatable<System.Formats.Nrbf.SerializationRecordId>
+    public readonly partial struct SerializationRecordId : System.IEquatable<System.Formats.Nrbf.SerializationRecordId>
     {
+        private readonly int _dummyPrimitive;
         public bool Equals(System.Formats.Nrbf.SerializationRecordId other) { throw null; }
         public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
