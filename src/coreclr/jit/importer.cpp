@@ -4258,7 +4258,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             }
             if (isStaticReadOnlyInitedRef)
             {
-                indirFlags |= (GTF_IND_INVARIANT | GTF_IND_NONNULL);
+                indirFlags |= (GTF_IND_NONFAULTING | GTF_IND_INVARIANT | GTF_IND_NONNULL);
             }
             break;
         }
@@ -12632,7 +12632,9 @@ void Compiler::impFixPredLists()
 //
 bool Compiler::impIsInvariant(const GenTree* tree)
 {
-    return tree->OperIsConst() || impIsAddressInLocal(tree) || tree->OperIs(GT_FTN_ADDR);
+    return tree->OperIsConst() || impIsAddressInLocal(tree) || tree->OperIs(GT_FTN_ADDR) ||
+           (tree->OperIs(GT_IND) && tree->AsIndir()->IsInvariantLoad() &&
+            ((tree->AsIndir()->gtFlags & GTF_SIDE_EFFECT) == 0));
 }
 
 //------------------------------------------------------------------------
