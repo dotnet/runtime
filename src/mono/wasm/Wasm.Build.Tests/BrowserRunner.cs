@@ -106,7 +106,7 @@ internal class BrowserRunner : IAsyncDisposable
     public async Task<IBrowser> SpawnBrowserAsync(
         string browserUrl,
         bool headless = true,
-        int timeout = 15000,
+        int timeout = null,
         int maxRetries = 3,        
         string language = "en-US"
     ) {
@@ -127,7 +127,7 @@ internal class BrowserRunner : IAsyncDisposable
                 }
                 Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
                 Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions {
-                    ExecutablePath = s_chromePath.Value,
+                    // ExecutablePath = s_chromePath.Value,
                     Headless = headless,
                     Args = chromeArgs,
                     Timeout = timeout
