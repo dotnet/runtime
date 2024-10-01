@@ -85,6 +85,10 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
     m_userState(kInvalidUserState),
     m_hCachedThread(INVALID_HANDLE_VALUE),
     m_hCachedOutOfProcThread(INVALID_HANDLE_VALUE)
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    ,
+    m_dwInternalSuspendCount(0)
+#endif
 {
     m_fHasUnhandledException = FALSE;
     m_pExceptionRecord = NULL;
@@ -161,6 +165,10 @@ void CordbThread::Neuter()
         delete [] m_pContext;
         m_pContext = NULL;
     }
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    m_dwInternalSuspendCount = 0;
+#endif
 
     ClearStackFrameCache();
 

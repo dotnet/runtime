@@ -11283,6 +11283,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 
     CORDB_ADDRESS_TYPE *patchSkipAddr = (CORDB_ADDRESS_TYPE*)context.R8;
     bool fIsInPlaceSingleStep = (bool)((context.R9>>8)&0x1);
+    bool fSSCompleted = (bool)((context.R9>>9)&0x1);
     PRD_TYPE opcode = (PRD_TYPE)(context.R9&0xFF);
 
     if (contextSize == 0 || contextSize > sizeof(CONTEXT) + 25000)
