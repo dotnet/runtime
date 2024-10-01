@@ -12,6 +12,7 @@ class Devirtualization
     internal static int Run()
     {
         RegressionBug73076.Run();
+        RegressionGenericHierarchy.Run();
         DevirtualizationCornerCaseTests.Run();
         DevirtualizeIntoUnallocatedGenericType.Run();
 
@@ -50,6 +51,36 @@ class Devirtualization
             var made = factory.Make<object>();
             if (made.GetId() != "Derived")
                 throw new Exception();
+        }
+    }
+
+    class RegressionGenericHierarchy
+    {
+        class Base<T>
+        {
+            public virtual string Print() => "Base<T>";
+        }
+
+        class Mid : Base<Atom>
+        {
+            public override string Print() => "Mid";
+            public override string ToString() => Print();
+        }
+
+        class Derived : Mid
+        {
+            public override string Print() => "Derived";
+        }
+
+        class Atom { }
+
+        public static void Run()
+        {
+            if (Get().ToString() != "Derived")
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static object Get() => new Derived();
         }
     }
 
