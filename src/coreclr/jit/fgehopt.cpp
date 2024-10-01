@@ -223,6 +223,9 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         // so XTnum now points at the next entry.
         fgRemoveEHTableEntry(XTnum);
 
+        // First block of the former try no longer needs special protection.
+        firstTryBlock->RemoveFlags(BBF_DONT_REMOVE);
+
         emptyCount++;
     }
 
@@ -1056,6 +1059,9 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 // Mark the block as the start of the cloned finally.
                 newBlock->SetFlags(BBF_CLONED_FINALLY_BEGIN);
+
+                // Cloned finally entry block does not need any special protection.
+                newBlock->RemoveFlags(BBF_DONT_REMOVE);
             }
 
             if (block == lastBlock)
