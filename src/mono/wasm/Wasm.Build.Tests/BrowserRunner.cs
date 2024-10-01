@@ -106,7 +106,7 @@ internal class BrowserRunner : IAsyncDisposable
     public async Task<IBrowser> SpawnBrowserAsync(
         string browserUrl,
         bool headless = true,
-        int timeout = null,
+        int? timeout = null,
         int maxRetries = 3,        
         string language = "en-US"
     ) {
