@@ -49,8 +49,6 @@ public:
 
     // TypedReference functions, should go somewhere else
     static FCDECL4(void, MakeTypedReference, TypedByRef * value, Object* targetUNSAFE, ArrayBase* fldsUNSAFE, ReflectClassBaseObject *pFieldType);
-
-    static FCDECL2(void, GetGUID, ReflectClassBaseObject* refThisUNSAFE, GUID * result);
 };
 
 extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD);
@@ -74,7 +72,11 @@ extern "C" void QCALLTYPE ReflectionInvocation_InvokeDispMethod(
     LCID culture,
     QCall::ObjectHandleOnStack namedParameters,
     QCall::ObjectHandleOnStack result);
+
+extern "C" void QCALLTYPE ReflectionInvocation_GetComObjectGuid(QCall::ObjectHandleOnStack type, GUID* result);
 #endif // FEATURE_COMINTEROP
+
+extern "C" void QCALLTYPE ReflectionInvocation_GetGuid(MethodTable* pMT, GUID* result);
 
 extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectInfo(QCall::TypeHandle pType, PCODE* ppfnAllocator, void** pvAllocatorFirstArg);
 

@@ -1438,55 +1438,58 @@ extern "C" void QCALLTYPE ReflectionInvocation_InvokeDispMethod(
     GCPROTECT_END();
     END_QCALL;
 }
-#endif  // FEATURE_COMINTEROP
 
-FCIMPL2(void, ReflectionInvocation::GetGUID, ReflectClassBaseObject* refThisUNSAFE, GUID * result) {
-    FCALL_CONTRACT;
-
-    REFLECTCLASSBASEREF refThis = (REFLECTCLASSBASEREF) refThisUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_1(refThis);
-    GCPROTECT_BEGININTERIOR (result);
-
-    if (result == NULL || refThis == NULL)
-        COMPlusThrow(kNullReferenceException);
-
-    TypeHandle type = refThis->GetType();
-    if (type.IsTypeDesc() || type.IsArray()) {
-        memset(result,0,sizeof(GUID));
-        goto lExit;
-    }
-
-#ifdef FEATURE_COMINTEROP
-    if (IsComObjectClass(type))
+extern "C" void QCALLTYPE ReflectionInvocation_GetComObjectGuid(QCall::ObjectHandleOnStack type, GUID* result)
+{
+    CONTRACTL
     {
-        SyncBlock* pSyncBlock = refThis->GetSyncBlock();
+        QCALL_CHECK;
+        PRECONDITION(result != NULL);
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-        ComClassFactory* pComClsFac = pSyncBlock->GetInteropInfo()->GetComClassFactory();
-        if (pComClsFac)
-        {
-            memcpyNoGCRefs(result, &pComClsFac->m_rclsid, sizeof(GUID));
-        }
-        else
-#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-        {
-            memset(result, 0, sizeof(GUID));
-        }
-
-        goto lExit;
+    SyncBlock* pSyncBlock;
+    {
+        GCX_COOP();
+        _ASSERTE(type.Get()->GetMethodTable()->IsComObjectType());
+        pSyncBlock = type.Get()->GetSyncBlock();
     }
+    ComClassFactory* pComClsFac = pSyncBlock->GetInteropInfo()->GetComClassFactory();
+    if (pComClsFac != NULL)
+    {
+        memcpyNoGCRefs(result, &pComClsFac->m_rclsid, sizeof(GUID));
+    }
+    else
+#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+    {
+        memset(result, 0, sizeof(GUID));
+    }
+
+    END_QCALL;
+}
 #endif // FEATURE_COMINTEROP
 
+extern "C" void QCALLTYPE ReflectionInvocation_GetGuid(MethodTable* pMT, GUID* result)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(pMT != NULL);
+        PRECONDITION(result != NULL);
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
+
     GUID guid;
-    type.AsMethodTable()->GetGuid(&guid, TRUE);
+    pMT->GetGuid(&guid, /* bGenerateIfNotFound */ TRUE);
     memcpyNoGCRefs(result, &guid, sizeof(GUID));
 
-lExit: ;
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 /*
  * Given a TypeHandle, validates whether it's legal to construct a real

@@ -3367,14 +3367,46 @@ namespace System
         {
             get
             {
+                TypeHandle th = GetNativeTypeHandle();
+                if (th.IsTypeDesc || IsArray)
+                {
+                    return Guid.Empty;
+                }
+
                 Guid result = default;
-                GetGUID(ref result);
+                unsafe
+                {
+#if FEATURE_COMINTEROP
+                    if (IsCOMObject)
+                    {
+                        GetComObjectGuidWorker(this, &result);
+                    }
+                    else
+#endif // FEATURE_COMINTEROP
+                    {
+                        GetGuid(th.AsMethodTable(), &result);
+                    }
+                }
+                GC.KeepAlive(this); // Ensure TypeHandle remains alive.
                 return result;
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void GetGUID(ref Guid result);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetGuid")]
+        private static unsafe partial void GetGuid(MethodTable* pMT, Guid* result);
+
+#if FEATURE_COMINTEROP
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe void GetComObjectGuidWorker(RuntimeType type, Guid* result)
+        {
+            Debug.Assert(type.IsCOMObject);
+            Debug.Assert(result is not null);
+            GetComObjectGuid(ObjectHandleOnStack.Create(ref type), result);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetComObjectGuid")]
+        private static unsafe partial void GetComObjectGuid(ObjectHandleOnStack type, Guid* result);
+#endif // FEATURE_COMINTEROP
 
         protected override unsafe bool IsValueTypeImpl()
         {
@@ -3524,7 +3556,7 @@ namespace System
             }
         }
 
-        #endregion
+#endregion
 
         #region Arrays
 
@@ -3788,7 +3820,7 @@ namespace System
         }
         #endregion
 
-        #endregion
+#endregion
 
         public override string ToString() => GetCachedName(TypeNameKind.ToString)!;
 

@@ -94,10 +94,6 @@ FCFuncStart(gSystem_Type)
     FCFuncElement("GetTypeFromHandleUnsafe", RuntimeTypeHandle::GetRuntimeType)
 FCFuncEnd()
 
-FCFuncStart(gSystem_RuntimeType)
-    FCFuncElement("GetGUID", ReflectionInvocation::GetGUID)
-FCFuncEnd()
-
 FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("GetDeclaringMethod", RuntimeTypeHandle::GetDeclaringMethod)
     FCFuncElement("GetDeclaringType", RuntimeTypeHandle::GetDeclaringType)
@@ -451,7 +447,6 @@ FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
 FCClassElement("RuntimeHelpers", "System.Runtime.CompilerServices", gRuntimeHelpers)
 FCClassElement("RuntimeMethodHandle", "System", gRuntimeMethodHandle)
-FCClassElement("RuntimeType", "System", gSystem_RuntimeType)
 FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
 
 FCClassElement("Signature", "System", gSignatureNative)
