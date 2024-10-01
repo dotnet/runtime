@@ -111,7 +111,7 @@ Visual Studio can also be used to debug builds built externally from CLI scripts
 2. Build the Core_Root as described in the [testing instructions](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/coreclr/testing.md#building-the-core_root). This generates `corerun.exe` which serves as the entry point to run managed code. It is placed inside the core root folder along with all required dlls. Example command: `.\src\tests\build.cmd generatelayoutonly`
 3. Launch a Visual Studio instance and select the option to open an existing project/solution. Select `artifacts\tests\coreclr\<OS>.<arch>.<configuration>\Tests\Core_Root\corerun.exe` as the project.
 4. In the Solution Explorer, right click `corerun` and select properties. Set `Debugger Type` to `Native Only`. Set the `Arguments` field to a path of a managed application to debug.
-5. To set breakpoints, runtime source files can to be added by right click the solution in the Solution Explorer and selecting Add -> Existing Item.
+5. To set breakpoints, runtime source files can to be added by right clicking the solution in the Solution Explorer and selecting Add -> Existing Item.
 6. Set breakpoints and run the application with `F5` to start debugging.
 
 Note, the `.sln` file can be saved and stores paths to `corerun.exe`, included files, and debug settings. It can be reused as long as the paths do not change.
