@@ -30333,7 +30333,8 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 
 bool GenTree::IsInvariant() const
 {
-    return OperIsConst() || OperIs(GT_LCL_ADDR) || OperIs(GT_FTN_ADDR);
+    return OperIsConst() || OperIs(GT_LCL_ADDR) || OperIs(GT_FTN_ADDR) ||
+           (OperIs(GT_IND) && AsIndir()->IsInvariantLoad() && ((AsIndir()->gtFlags & GTF_SIDE_EFFECT) == 0));
 }
 
 //-------------------------------------------------------------------
