@@ -20985,6 +20985,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
 #if defined(TARGET_XARCH)
         case GT_RSZ:
+        case GT_LSH:
         {
             // We don't have actual instructions for shifting bytes, so we'll emulate them
             // by shifting 32-bit values and masking off the bits that should be zeroed.
@@ -20992,7 +20993,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             assert(varTypeIsByte(simdBaseType));
 
             intrinsic =
-                GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, op, op1, op2ForLookup, TYP_INT, simdSize, false);
+                GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, op, op1, op2ForLookup,
+                                                             op == GT_RSZ ? TYP_INT : TYP_SHORT, simdSize, false);
             assert(intrinsic != NI_Illegal);
 
             GenTree* maskAmountOp;
@@ -21000,7 +21002,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             if (op2->IsCnsIntOrI())
             {
                 ssize_t shiftCount = op2->AsIntCon()->gtIconVal;
-                ssize_t mask       = 255 >> shiftCount;
+                ssize_t mask       = op == GT_RSZ ? (255 >> shiftCount) : ((255 << shiftCount) & 0xFF);
 
                 maskAmountOp = gtNewIconNode(mask, type);
             }
@@ -21009,27 +21011,14 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 assert(op2->OperIsHWIntrinsic(NI_Vector128_CreateScalar));
 
                 GenTree* nonConstantByteShiftCountOp = fgMakeMultiUse(&op2->AsHWIntrinsic()->Op(1));
-                maskAmountOp = gtNewOperNode(GT_RSZ, TYP_INT, gtNewIconNode(255), nonConstantByteShiftCountOp);
+                maskAmountOp = gtNewOperNode(op, TYP_INT, gtNewIconNode(255), nonConstantByteShiftCountOp);
             }
 
-            GenTree* shiftOp = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, CORINFO_TYPE_INT, simdSize);
+            GenTree* shiftOp = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic,
+                                                        op == GT_RSZ ? CORINFO_TYPE_INT : CORINFO_TYPE_SHORT, simdSize);
             GenTree* maskOp  = gtNewSimdCreateBroadcastNode(type, maskAmountOp, simdBaseJitType, simdSize);
 
             return gtNewSimdBinOpNode(GT_AND, type, shiftOp, maskOp, simdBaseJitType, simdSize);
-        }
-
-        case GT_LSH:
-        {
-            assert(varTypeIsByte(simdBaseType));
-            GenTree* andShiftVal = fgMakeMultiUse(&op2ForLookup);
-            GenTree* shiftOp =
-                gtNewSimdBinOpNode(GT_LSH, type, op1, op2ForLookup,
-                                   varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_USHORT : CORINFO_TYPE_SHORT,
-                                   simdSize);
-            GenTree* maskElement =
-                gtNewOperNode(GT_LSH, andShiftVal->TypeGet(), gtNewIconNode(0xFF), fgMakeMultiUse(&andShiftVal));
-            GenTree* mask = gtNewSimdCreateBroadcastNode(type, maskElement, simdBaseJitType, simdSize);
-            return gtNewSimdBinOpNode(GT_AND, type, shiftOp, mask, simdBaseJitType, simdSize);
         }
 #endif // TARGET_XARCH
 
