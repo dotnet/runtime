@@ -934,6 +934,9 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_syncCompleteReceived(false),
     m_pShim(pShim),
     m_userThreads(11),
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    m_SuspendedThreads(11),
+#endif
     m_oddSync(false),
 #ifdef FEATURE_INTEROP_DEBUGGING
     m_unmanagedThreads(11),
@@ -1301,6 +1304,9 @@ void CordbProcess::NeuterChildren()
     m_ContinueNeuterList.NeuterAndClear(this);
 
     m_userThreads.NeuterAndClear(GetProcessLock());
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    m_SuspendedThreads.NeuterAndClear(GetProcessLock());
+#endif
 
     m_pDefaultAppDomain = NULL;
 
@@ -11174,12 +11180,63 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     // 2. Duplicate the handle to the current process
 
     // lookup the CordbThread by thread ID, so that we can access the left-side thread handle
-    CordbThread * pThread = TryLookupOrCreateThreadByVolatileOSId(dwThreadId);
-
     IDacDbiInterface* pDAC = GetDAC();
     if (pDAC == NULL)
     {
         LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - DAC not initialized\n"));
+        ThrowHR(E_UNEXPECTED);
+    }
+    CordbThread * pThread = nullptr;
+
+    {
+        RSLockHolder lockHolder(GetProcessLock());
+        //pThread = TryLookupOrCreateThreadByVolatileOSId(dwThreadId);
+        PrepopulateThreadsOrThrow();
+        //pThread = TryLookupThreadByVolatileOSId(dwThreadId);
+        HASHFIND find;
+        for (CordbThread * pThreadIter = m_userThreads.FindFirst(&find);
+            pThreadIter != NULL;
+            pThreadIter =  m_userThreads.FindNext(&find))
+        {
+            _ASSERTE(pThreadIter != NULL);
+
+            // Get the OS tid. This returns 0 if the thread is switched out.
+            DWORD dwThreadId2 = GetDAC()->TryGetVolatileOSThreadID(pThreadIter->m_vmThreadToken);
+            if (dwThreadId2 == dwThreadId)
+            {
+                pThread = pThreadIter;
+            }
+            else
+            {
+                HANDLE hOutOfProcThreadIter = pDAC->GetThreadHandle(pThreadIter->m_vmThreadToken);
+                if (hOutOfProcThreadIter != NULL)
+                {
+                    HandleHolder hThreadIter;
+                    BOOL fSuccess = DuplicateHandle(UnsafeGetProcessHandle(), hOutOfProcThreadIter, ::GetCurrentProcess(), &hThreadIter, 0, FALSE, DUPLICATE_SAME_ACCESS);
+                    if (fSuccess)
+                    {
+                        if (::SuspendThread(hThreadIter) != (DWORD)-1)
+                        {
+                            CordbThread *tmpThread = m_SuspendedThreads.GetBase(VmPtrToCookie(pThreadIter->m_vmThreadToken));
+                            if (tmpThread != NULL)
+                            {
+                                _ASSERTE(tmpThread == pThreadIter);
+                            }
+                            else
+                            {
+                                m_SuspendedThreads.AddBaseOrThrow(pThreadIter);
+                            }
+                            pThreadIter->m_dwInternalSuspendCount++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (pThread == nullptr)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Failed to find thread\n"));
         ThrowHR(E_UNEXPECTED);
     }
 

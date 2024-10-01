@@ -3846,7 +3846,9 @@ private:
     RSExtSmartPtr<ShimProcess> m_pShim;
 
     CordbSafeHashTable<CordbThread>           m_userThreads;
-
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    CordbSafeHashTable<CordbThread>           m_SuspendedThreads;
+#endif
 public:
     ShimProcess* GetShim();
 
@@ -6372,6 +6374,11 @@ private:
     // offload to the shim to support V2 scenarios.
     HANDLE                m_hCachedThread;
     HANDLE                m_hCachedOutOfProcThread;
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+public:
+    DWORD                 m_dwInternalSuspendCount;
+#endif
 };
 
 /* ------------------------------------------------------------------------- *
