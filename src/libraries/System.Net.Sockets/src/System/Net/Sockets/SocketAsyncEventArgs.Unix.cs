@@ -35,7 +35,6 @@ namespace System.Net.Sockets
             _acceptedFileDescriptor = acceptedFileDescriptor;
             if (socketError == SocketError.Success)
             {
-                Debug.Assert(socketAddress.Length > 0);
                 _acceptAddressBufferCount = socketAddress.Length;
             }
             else
