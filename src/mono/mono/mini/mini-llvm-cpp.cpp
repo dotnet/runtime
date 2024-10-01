@@ -484,6 +484,12 @@ void
 mono_llvm_add_func_attr (LLVMValueRef func, AttrKind kind)
 {
 	unwrap<Function> (func)->addFnAttr (convert_attr (kind));
+	if (kind == LLVM_ATTR_UW_TABLE)
+#if defined(TARGET_ARM64) && defined(TARGET_MACH)
+		unwrap<Function> (func)->setUWTableKind (UWTableKind::Sync);
+#else
+		unwrap<Function> (func)->setUWTableKind (UWTableKind::Async);
+#endif
 }
 
 void
