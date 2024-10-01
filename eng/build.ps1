@@ -15,7 +15,7 @@ Param(
   [switch]$cross = $false,
   [string][Alias('s')]$subset,
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
-  [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
+  [ValidateSet("Debug","Release","Checked")][string][Alias('lc')]$librariesConfiguration,
   [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
   [ValidateSet("Debug","Release","Checked")][string][Alias('hc')]$hostConfiguration,
   [switch]$usemonoruntime = $false,
@@ -41,7 +41,7 @@ function Get-Help() {
   Write-Host "  -help (-h)                     Print help and exit."
   Write-Host "  -hostConfiguration (-hc)       Host build configuration: Debug, Release or Checked."
   Write-Host "                                 [Default: Debug]"
-  Write-Host "  -librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
+  Write-Host "  -librariesConfiguration (-lc)  Libraries build configuration: Debug, Release or Checked."
   Write-Host "                                 [Default: Debug]"
   Write-Host "  -os                            Target operating system: windows, linux, osx, android, wasi or browser."
   Write-Host "                                 [Default: Your machine's OS.]"

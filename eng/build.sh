@@ -384,12 +384,12 @@ while [[ $# > 0 ]]; do
       fi
       passedLibConf="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       case "$passedLibConf" in
-        debug|release)
+        debug|release|checked)
           val="$(tr '[:lower:]' '[:upper:]' <<< ${passedLibConf:0:1})${passedLibConf:1}"
           ;;
         *)
           echo "Unsupported libraries configuration '$2'."
-          echo "The allowed values are Debug and Release."
+          echo "The allowed values are Debug, Release and Checked."
           exit 1
           ;;
       esac
