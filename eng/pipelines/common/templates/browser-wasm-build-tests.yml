@@ -101,15 +101,6 @@ jobs:
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
 
-          - task: Bash@3
-            displayName: Set execute permissions for node binary for Linux and Darwin
-            inputs:
-              targetType: 'inline'
-              script: |
-                if [ "$(Agent.OS)" = "Linux" ] || [ "$(Agent.OS)" = "Darwin" ]; then
-                  chmod +x $HELIX_WORKITEM_ROOT/artifacts/helix/.playwright/node/linux-x64/node
-                fi
-
         # build WBT
         buildArgs: >-
           $(wbtProjectArg) $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj
