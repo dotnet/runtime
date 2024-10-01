@@ -3846,9 +3846,7 @@ private:
     RSExtSmartPtr<ShimProcess> m_pShim;
 
     CordbSafeHashTable<CordbThread>           m_userThreads;
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    CordbSafeHashTable<CordbThread>           m_SuspendedThreads;
-#endif
+
 public:
     ShimProcess* GetShim();
 
@@ -6376,8 +6374,12 @@ private:
     HANDLE                m_hCachedOutOfProcThread;
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-public:
+private:
+    CordbSafeHashTable<CordbThread>  m_SuspendedThreads;
     DWORD                 m_dwInternalSuspendCount;
+public:
+    HRESULT InternalSuspendOtherThreads(CordbSafeHashTable<CordbThread> *pThreads);
+    HRESULT InternalResumeOtherThreads();
 #endif
 };
 

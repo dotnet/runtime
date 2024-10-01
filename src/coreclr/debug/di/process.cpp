@@ -934,9 +934,6 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_syncCompleteReceived(false),
     m_pShim(pShim),
     m_userThreads(11),
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    m_SuspendedThreads(11),
-#endif
     m_oddSync(false),
 #ifdef FEATURE_INTEROP_DEBUGGING
     m_unmanagedThreads(11),
@@ -1304,9 +1301,6 @@ void CordbProcess::NeuterChildren()
     m_ContinueNeuterList.NeuterAndClear(this);
 
     m_userThreads.NeuterAndClear(GetProcessLock());
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    m_SuspendedThreads.NeuterAndClear(GetProcessLock());
-#endif
 
     m_pDefaultAppDomain = NULL;
 
@@ -11360,55 +11354,13 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         EX_CATCH_HRESULT(hr);
         SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
 
+        if (!fSSCompleted)
         {
-            RSLockHolder lockHolder(GetProcessLock());
-            HASHFIND find;
-            for (CordbThread * pThreadIter = m_userThreads.FindFirst(&find);
-                pThreadIter != NULL;
-                pThreadIter =  m_userThreads.FindNext(&find))
-            {
-                _ASSERTE(pThreadIter != NULL);
-
-                // Get the OS tid. This returns 0 if the thread is switched out.
-                DWORD dwThreadId2 = GetDAC()->TryGetVolatileOSThreadID(pThreadIter->m_vmThreadToken);
-                if (dwThreadId2 == dwThreadId)
-                {
-                    continue;
-                }
-                HANDLE hOutOfProcThreadIter = pDAC->GetThreadHandle(pThreadIter->m_vmThreadToken);
-                if (hOutOfProcThreadIter == NULL)
-                {
-                    continue;
-                }
-                CordbThread *tmpThread = m_SuspendedThreads.GetBase(VmPtrToCookie(pThreadIter->m_vmThreadToken));
-                if (tmpThread == NULL)
-                {
-                    if (fSSCompleted)
-                    {
-                        continue;
-                    }
-                    m_SuspendedThreads.AddBaseOrThrow(pThreadIter);
-                }
-
-                HandleHolder hThreadIter;
-                BOOL fSuccess = DuplicateHandle(UnsafeGetProcessHandle(), hOutOfProcThreadIter, ::GetCurrentProcess(), &hThreadIter, 0, FALSE, DUPLICATE_SAME_ACCESS);
-                if (!fSuccess)
-                {
-                    continue;
-                }
-                if (!fSSCompleted)
-                {
-                    if (::SuspendThread(hThreadIter) != (DWORD)-1)
-                    {
-                        pThreadIter->m_dwInternalSuspendCount++;
-                    }
-                }
-                else
-                {
-                    pThreadIter->m_dwInternalSuspendCount--;
-                    ::ResumeThread(hThreadIter);
-                }
-            }
+            pThread->InternalSuspendOtherThreads(&m_userThreads);
+        }
+        else
+        {
+            pThread->InternalResumeOtherThreads();
         }
     }
 #else
