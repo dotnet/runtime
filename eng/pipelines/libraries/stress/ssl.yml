@@ -56,6 +56,8 @@ extends:
 
         - bash: |
             cd '$(sslStressProject)'
+            export STRESS_CLIENT_ARGS=$SSLSTRESS_CLIENT_ARGS
+            export STRESS_SERVER_ARGS=$SSLSTRESS_SERVER_ARGS
             mkdir -p $DUMPS_SHARE
             docker-compose up --abort-on-container-exit --no-color
           displayName: Run SslStress
@@ -97,6 +99,8 @@ extends:
 
         - powershell: |
             cd '$(sslStressProject)'
+            $env:STRESS_CLIENT_ARGS = $env:SSLSTRESS_CLIENT_ARGS
+            $env:STRESS_SERVER_ARGS = $env:SSLSTRESS_SERVER_ARGS
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run SslStress

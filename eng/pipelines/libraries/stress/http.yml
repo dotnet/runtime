@@ -59,8 +59,8 @@ extends:
 
         - bash: |
             cd '$(httpStressProject)'
-            export STRESS_CLIENT_ARGS="$STRESS_CLIENT_ARGS -http 3.0"
-            export STRESS_SERVER_ARGS="$STRESS_SERVER_ARGS -http 3.0"
+            export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0"
+            export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
             mkdir -p $DUMPS_SHARE
             docker-compose up --abort-on-container-exit --no-color
           timeoutInMinutes: 35 # In case the HTTP/3.0 run hangs, we timeout shortly after the expected 30 minute run
@@ -69,8 +69,8 @@ extends:
 
         - bash: |
             cd '$(httpStressProject)'
-            export STRESS_CLIENT_ARGS="$STRESS_CLIENT_ARGS -http 2.0"
-            export STRESS_SERVER_ARGS="$STRESS_SERVER_ARGS -http 2.0"
+            export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
+            export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
             mkdir -p $DUMPS_SHARE
             docker-compose up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 2.0
@@ -78,8 +78,8 @@ extends:
 
         - bash: |
             cd '$(httpStressProject)'
-            export STRESS_CLIENT_ARGS="$STRESS_CLIENT_ARGS -http 1.1"
-            export STRESS_SERVER_ARGS="$STRESS_SERVER_ARGS -http 1.1"
+            export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
+            export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
             mkdir -p $DUMPS_SHARE
             docker-compose up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 1.1
@@ -140,8 +140,8 @@ extends:
 
         - powershell: |
             cd '$(httpStressProject)'
-            $env:STRESS_CLIENT_ARGS = "$env:STRESS_CLIENT_ARGS -http 3.0"
-            $env:STRESS_SERVER_ARGS = "$env:STRESS_SERVER_ARGS -http 3.0"
+            $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
+            $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 3.0
@@ -149,8 +149,8 @@ extends:
 
         - powershell: |
             cd '$(httpStressProject)'
-            $env:STRESS_CLIENT_ARGS = "$env:STRESS_CLIENT_ARGS -http 2.0"
-            $env:STRESS_SERVER_ARGS = "$env:STRESS_SERVER_ARGS -http 2.0"
+            $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
+            $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 2.0
@@ -158,8 +158,8 @@ extends:
 
         - powershell: |
             cd '$(httpStressProject)'
-            $env:STRESS_CLIENT_ARGS = "$env:STRESS_CLIENT_ARGS -http 1.1"
-            $env:STRESS_SERVER_ARGS = "$env:STRESS_SERVER_ARGS -http 1.1"
+            $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
+            $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 1.1
