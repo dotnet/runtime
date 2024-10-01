@@ -512,9 +512,8 @@ public:
     static TypeHandle MergeTypeHandlesToCommonParent(
         TypeHandle ta, TypeHandle tb);
 
-
-    BOOL NotifyDebuggerLoad(AppDomain *domain, BOOL attaching) const;
-    void NotifyDebuggerUnload(AppDomain *domain) const;
+    BOOL NotifyDebuggerLoad(BOOL attaching) const;
+    void NotifyDebuggerUnload() const;
 
     // Execute the callback functor for each MethodTable that makes up the given type handle.  This method
     // does not invoke the functor for generic variables
