@@ -650,6 +650,7 @@ struct InlArgInfo
     unsigned argIsByRefToStructLocal : 1; // Is this arg an address of a struct local or a normed struct local or a
                                           // field in them?
     unsigned argIsExact : 1;              // Is this arg of an exact class?
+    unsigned argIsConstant : 1;           // the argument is a constant or a local variable address
 };
 
 // InlLclVarInfo describes inline candidate argument and local variable properties.
