@@ -108,6 +108,24 @@ jobs:
               targetType: 'inline'
               script: |
                 echo "Agent.OS: $(Agent.OS)"
+                echo "Checking if Agent.OS is Linux..."
+                if [ "$(Agent.OS)" = "Linux" ]; then
+                  echo "$(Agent.OS) = Linux: true"
+                else
+                  echo "$(Agent.OS) = Linux: false"
+                fi
+                echo "Checking if Agent.OS is Darwin..."
+                if [ "$(Agent.OS)" = "Darwin" ]; then
+                  echo "$(Agent.OS) = Darwin: true"
+                else
+                  echo "$(Agent.OS) = Darwin: false"
+                fi
+                echo "Checking if Agent.OS is Linux or Darwin..."
+                if [ "$(Agent.OS)" = "Linux" ] || [ "$(Agent.OS)" = "Darwin" ]; then
+                  echo "$(Agent.OS) = Linux or $(Agent.OS) = Darwin: true"
+                else
+                  echo "$(Agent.OS) = Linux or $(Agent.OS) = Darwin: false"
+                fi
 
           - ${{ if or(eq(variables['Agent.OS'], 'Linux'), eq(variables['Agent.OS'], 'Darwin')) }}:
             - task: Bash@3
