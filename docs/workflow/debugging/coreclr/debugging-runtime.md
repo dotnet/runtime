@@ -107,7 +107,7 @@ Whenever you make changes to the CoreCLR source code, don't forget to invoke the
 #### Using Visual Studio to debug CLI builds
 Visual Studio can also be used to debug builds built externally from CLI scripts.
 
-1. Build at least the `clr` and `lib` as described in the [build instructions](https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md#building-the-repo). Example command: `.\build.cmd -subset clr+libs -configuration Release -runtimeConfiguration Debug`
+1. Build at least the `clr` and `libs` subsets as described in the [build instructions](https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md#building-the-repo). Example command: `.\build.cmd -subset clr+libs -configuration Release -runtimeConfiguration Debug`
 2. Build the Core_Root as described in the [testing instructions](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/coreclr/testing.md#building-the-core_root). This generates `corerun.exe` which serves as the entry point to run managed code. It is placed inside the core root folder along with all required dlls. Example command: `.\src\tests\build.cmd generatelayoutonly`
 3. Launch a Visual Studio instance and select the option to open an existing project/solution. Select `artifacts\tests\coreclr\<OS>.<arch>.<configuration>\Tests\Core_Root\corerun.exe` as the project.
 4. In the Solution Explorer, right click `corerun` and select properties. Set `Debugger Type` to `Native Only`. Set the `Arguments` field to a path of a managed application to debug.
