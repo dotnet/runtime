@@ -11186,53 +11186,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - DAC not initialized\n"));
         ThrowHR(E_UNEXPECTED);
     }
-    CordbThread * pThread = nullptr;
-
-    {
-        RSLockHolder lockHolder(GetProcessLock());
-        //pThread = TryLookupOrCreateThreadByVolatileOSId(dwThreadId);
-        PrepopulateThreadsOrThrow();
-        //pThread = TryLookupThreadByVolatileOSId(dwThreadId);
-        HASHFIND find;
-        for (CordbThread * pThreadIter = m_userThreads.FindFirst(&find);
-            pThreadIter != NULL;
-            pThreadIter =  m_userThreads.FindNext(&find))
-        {
-            _ASSERTE(pThreadIter != NULL);
-
-            // Get the OS tid. This returns 0 if the thread is switched out.
-            DWORD dwThreadId2 = GetDAC()->TryGetVolatileOSThreadID(pThreadIter->m_vmThreadToken);
-            if (dwThreadId2 == dwThreadId)
-            {
-                pThread = pThreadIter;
-            }
-            else
-            {
-                HANDLE hOutOfProcThreadIter = pDAC->GetThreadHandle(pThreadIter->m_vmThreadToken);
-                if (hOutOfProcThreadIter != NULL)
-                {
-                    HandleHolder hThreadIter;
-                    BOOL fSuccess = DuplicateHandle(UnsafeGetProcessHandle(), hOutOfProcThreadIter, ::GetCurrentProcess(), &hThreadIter, 0, FALSE, DUPLICATE_SAME_ACCESS);
-                    if (fSuccess)
-                    {
-                        if (::SuspendThread(hThreadIter) != (DWORD)-1)
-                        {
-                            CordbThread *tmpThread = m_SuspendedThreads.GetBase(VmPtrToCookie(pThreadIter->m_vmThreadToken));
-                            if (tmpThread != NULL)
-                            {
-                                _ASSERTE(tmpThread == pThreadIter);
-                            }
-                            else
-                            {
-                                m_SuspendedThreads.AddBaseOrThrow(pThreadIter);
-                            }
-                            pThreadIter->m_dwInternalSuspendCount++;
-                        }
-                    }
-                }
-            }
-        }
-    }
+    CordbThread * pThread = TryLookupOrCreateThreadByVolatileOSId(dwThreadId);
 
     if (pThread == nullptr)
     {
@@ -11405,6 +11359,50 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         }
         EX_CATCH_HRESULT(hr);
         SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
+
+        if (!fSSCompleted)
+        {
+            RSLockHolder lockHolder(GetProcessLock());
+            HASHFIND find;
+            for (CordbThread * pThreadIter = m_userThreads.FindFirst(&find);
+                pThreadIter != NULL;
+                pThreadIter =  m_userThreads.FindNext(&find))
+            {
+                _ASSERTE(pThreadIter != NULL);
+
+                // Get the OS tid. This returns 0 if the thread is switched out.
+                DWORD dwThreadId2 = GetDAC()->TryGetVolatileOSThreadID(pThreadIter->m_vmThreadToken);
+                if (dwThreadId2 == dwThreadId)
+                {
+                    pThread = pThreadIter;
+                }
+                else
+                {
+                    HANDLE hOutOfProcThreadIter = pDAC->GetThreadHandle(pThreadIter->m_vmThreadToken);
+                    if (hOutOfProcThreadIter != NULL)
+                    {
+                        HandleHolder hThreadIter;
+                        BOOL fSuccess = DuplicateHandle(UnsafeGetProcessHandle(), hOutOfProcThreadIter, ::GetCurrentProcess(), &hThreadIter, 0, FALSE, DUPLICATE_SAME_ACCESS);
+                        if (fSuccess)
+                        {
+                            if (::SuspendThread(hThreadIter) != (DWORD)-1)
+                            {
+                                CordbThread *tmpThread = m_SuspendedThreads.GetBase(VmPtrToCookie(pThreadIter->m_vmThreadToken));
+                                if (tmpThread != NULL)
+                                {
+                                    _ASSERTE(tmpThread == pThreadIter);
+                                }
+                                else
+                                {
+                                    m_SuspendedThreads.AddBaseOrThrow(pThreadIter);
+                                }
+                                pThreadIter->m_dwInternalSuspendCount++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 #else
     #error Platform not supported
