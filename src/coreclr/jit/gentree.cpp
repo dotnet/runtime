@@ -21013,8 +21013,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 maskAmountOp = gtNewOperNode(op, TYP_INT, gtNewIconNode(255), nonConstantByteShiftCountOp);
             }
 
-            GenTree* shiftOp = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic,
-                                                        op == GT_RSZ ? CORINFO_TYPE_INT : CORINFO_TYPE_SHORT, simdSize);
+            GenTree* shiftOp = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, CORINFO_TYPE_INT, simdSize);
             GenTree* maskOp  = gtNewSimdCreateBroadcastNode(type, maskAmountOp, simdBaseJitType, simdSize);
 
             return gtNewSimdBinOpNode(GT_AND, type, shiftOp, maskOp, simdBaseJitType, simdSize);
