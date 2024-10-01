@@ -3120,8 +3120,10 @@ namespace System.Reflection.Metadata.Ecma335
         public void UIntPtr() { }
         public void VoidPointer() { }
     }
-    public readonly struct SwitchInstructionEncoder
+    public readonly partial struct SwitchInstructionEncoder
     {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public void Branch(System.Reflection.Metadata.Ecma335.LabelHandle label) { }
     }
     public enum TableIndex : byte
