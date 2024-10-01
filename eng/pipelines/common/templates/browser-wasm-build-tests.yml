@@ -107,7 +107,7 @@ jobs:
               targetType: 'inline'
               script: |
                 if [ "$(Agent.OS)" = "Linux" ] || [ "$(Agent.OS)" = "Darwin" ]; then
-                  chmod +x $(Build.SourcesDirectory)/artifacts/helix/.playwright/node/linux-x64/node
+                  chmod +x $HELIX_WORKITEM_ROOT/artifacts/helix/.playwright/node/linux-x64/node
                 fi
 
         # build WBT
