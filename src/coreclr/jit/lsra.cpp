@@ -9480,6 +9480,21 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         }
     }
 
+#ifdef DEBUG
+    if (compiler->verbose)
+    {
+        printf("Resolving Edge: ");
+        if (fromBlock != nullptr)
+        {
+            printf("from: " FMT_BB " ", fromBlock->bbNum);
+        }
+        if (toBlock != nullptr)
+        {
+            printf("to: " FMT_BB, toBlock->bbNum);
+        }
+    }
+#endif // DEBUG
+
     // First:
     //   - Perform all moves from reg to stack (no ordering needed on these)
     //   - For reg to reg moves, record the current location, associating their
@@ -9542,6 +9557,18 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             source[toReg]            = (regNumberSmall)fromReg;
             sourceIntervals[fromReg] = interval;
             targetRegsToDo |= genRegMask(toReg);
+
+#ifdef DEBUG
+            if (compiler->verbose)
+            {
+                printf("Added ");
+                interval->tinyDump();
+                printf(" for %s -> %s (%s). targetRegsToDo= ", getRegName(fromReg), getRegName(toReg),
+                       ((interval->registerType == TYP_DOUBLE) ? "double" : "float"));
+                compiler->dumpRegMask(targetRegsToDo.getLow(), TYP_FLOAT);
+                printf("\n");
+            }
+#endif // DEBUG
         }
     }
 
@@ -9605,10 +9632,30 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     // Perform reg to reg moves
     while (targetRegsToDo.IsNonEmpty())
     {
+#ifdef DEBUG
+        if (compiler->verbose)
+        {
+            printf("targetRegsToDo: ");
+            compiler->dumpRegMask(targetRegsToDo);
+            printf("\n");
+        }
+#endif // DEBUG
         while (targetRegsReady.IsNonEmpty())
         {
             regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetRegsReady);
             targetRegsToDo.RemoveRegNumFromMask(targetReg);
+#ifdef DEBUG
+            if (compiler->verbose)
+            {
+                printf("targetReg: %s, ", getRegName(targetReg));
+                printf("targetRegsReady: ");
+                compiler->dumpRegMask(targetRegsReady);
+                printf(", targetRegsToDo: ");
+                compiler->dumpRegMask(targetRegsToDo);
+                printf("\n");
+            }
+#endif // DEBUG
+
             assert(location[targetReg] != targetReg);
             assert(targetReg < REG_COUNT);
             regNumber sourceReg = (regNumber)source[targetReg];
@@ -9620,6 +9667,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             assert(interval != nullptr);
             addResolution(block, insertionPoint, interval, targetReg,
                           fromReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock) DEBUG_ARG(resolveTypeName[resolveType]));
+
             sourceIntervals[sourceReg] = nullptr;
             location[sourceReg]        = REG_NA;
 
@@ -9828,6 +9876,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 {
                     compiler->codeGen->regSet.rsSetRegsModified(genRegMask(tempReg) DEBUGARG(true));
 #ifdef TARGET_ARM
+                    regNumber originDoubleReg     = REG_NA;
                     Interval* otherTargetInterval = nullptr;
                     regNumber otherHalfTargetReg  = REG_NA;
                     if (genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
@@ -9842,6 +9891,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
                         addResolutionForDouble(block, insertionPoint, sourceIntervals, location, tempReg, targetReg,
                                                resolveType DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock));
+                        originDoubleReg = targetReg;
                     }
                     else if (otherTargetInterval != nullptr)
                     {
@@ -9850,6 +9900,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
                         addResolutionForDouble(block, insertionPoint, sourceIntervals, location, tempReg,
                                                otherHalfTargetReg, resolveType DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock));
+                        originDoubleReg = otherHalfTargetReg;
                     }
                     else
                     {
@@ -9858,7 +9909,29 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg,
                                       targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
                                           DEBUG_ARG(resolveTypeName[resolveType]));
+
+                        if (sourceIntervals[targetReg]->registerType == TYP_DOUBLE)
+                        {
+                            originDoubleReg = targetReg;
+                        }
+
                         location[targetReg] = (regNumberSmall)tempReg;
+                    }
+
+                    if (originDoubleReg != REG_NA)
+                    {
+                        // There was a value in originDoubleReg, which we free-up by moving it to
+                        // tempReg. As such, make sure to free-up the upper-half too, only if
+                        // originDoubleReg held DOUBLE interval and upper-half is target of a
+                        // different interval.
+                        assert(genIsValidDoubleReg(originDoubleReg));
+                        targetRegMask |= genRegMask(originDoubleReg);
+
+                        regNumber upperHalfReg = REG_NEXT(originDoubleReg);
+                        if (targetRegsToDo.IsRegNumInMask(upperHalfReg))
+                        {
+                            targetRegMask |= genRegMask(upperHalfReg);
+                        }
                     }
 #else
                     assert(sourceIntervals[targetReg] != nullptr);
