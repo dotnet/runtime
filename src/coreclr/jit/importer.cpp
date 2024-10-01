@@ -13069,6 +13069,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     if (impIsInvariant(curArgVal))
     {
         inlCurArgInfo->argIsInvariant = true;
+        inlCurArgInfo->argIsConstant  = !curArgVal->OperIs(GT_IND);
         if (inlCurArgInfo->argIsThis && (curArgVal->gtOper == GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
         {
             // Abort inlining at this call site
@@ -13079,6 +13080,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     else if (gtIsTypeof(curArgVal))
     {
         inlCurArgInfo->argIsInvariant = true;
+        inlCurArgInfo->argIsConstant  = true;
         inlCurArgInfo->argHasSideEff  = false;
     }
 
