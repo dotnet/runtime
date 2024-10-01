@@ -3,8 +3,9 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using WasiPollWorld.wit.imports.wasi.io.v0_2_1;
-using Pollable = WasiPollWorld.wit.imports.wasi.io.v0_2_1.IPoll.Pollable;
+using WasiPollWorld.wit.imports.wasi.io.v0_2_0;
+using Pollable = WasiPollWorld.wit.imports.wasi.io.v0_2_0.IPoll.Pollable;
+using MonotonicClockInterop = WasiPollWorld.wit.imports.wasi.clocks.v0_2_0.MonotonicClockInterop;
 
 namespace System.Threading
 {
@@ -14,33 +15,87 @@ namespace System.Threading
         // it will be leaked and stay in this list forever.
         // it will also keep the Pollable handle alive and prevent it from being disposed
         private static readonly List<PollableHolder> s_pollables = new();
-        private static bool s_tasksCanceled;
+        private static bool s_checkScheduled;
+        private static Pollable? s_resolvedPollable;
+        private static Task? s_mainTask;
 
-        internal static Task RegisterWasiPollableHandle(int handle, CancellationToken cancellationToken)
+        internal static Task RegisterWasiPollableHandle(int handle, bool ownsPollable, CancellationToken cancellationToken)
         {
             // note that this is duplicate of the original Pollable
             // the original should have been neutralized without disposing the handle
             var pollableCpy = new Pollable(new Pollable.THandle(handle));
-            return RegisterWasiPollable(pollableCpy, cancellationToken);
+            return RegisterWasiPollable(pollableCpy, ownsPollable, cancellationToken);
         }
 
-        internal static Task RegisterWasiPollable(Pollable pollable, CancellationToken cancellationToken)
+        internal static Task RegisterWasiPollable(Pollable pollable, bool ownsPollable, CancellationToken cancellationToken)
         {
             // this will register the pollable holder into s_pollables
-            var holder = new PollableHolder(pollable, cancellationToken);
+            var holder = new PollableHolder(pollable, ownsPollable, cancellationToken);
             s_pollables.Add(holder);
+
+            ScheduleCheck();
+
             return holder.taskCompletionSource.Task;
         }
 
-        // this is not thread safe
-        internal static void DispatchWasiEventLoop()
+
+        internal static T PollWasiEventLoopUntilResolved<T>(Task<T> mainTask)
         {
-            ThreadPoolWorkQueue.Dispatch();
-            if (s_tasksCanceled)
+            try
             {
-                s_tasksCanceled = false;
-                return;
+                s_mainTask = mainTask;
+                while (!mainTask.IsCompleted)
+                {
+                    ThreadPoolWorkQueue.Dispatch();
+                }
             }
+            finally
+            {
+                s_mainTask = null;
+            }
+            var exception = mainTask.Exception;
+            if (exception is not null)
+            {
+                throw exception;
+            }
+
+            return mainTask.Result;
+        }
+
+        internal static void PollWasiEventLoopUntilResolvedVoid(Task mainTask)
+        {
+            try
+            {
+                s_mainTask = mainTask;
+                while (!mainTask.IsCompleted)
+                {
+                    ThreadPoolWorkQueue.Dispatch();
+                }
+            }
+            finally
+            {
+                s_mainTask = null;
+            }
+
+            var exception = mainTask.Exception;
+            if (exception is not null)
+            {
+                throw exception;
+            }
+        }
+
+        internal static void ScheduleCheck()
+        {
+            if (!s_checkScheduled && s_pollables.Count > 0)
+            {
+                s_checkScheduled = true;
+                ThreadPool.UnsafeQueueUserWorkItem(CheckPollables, null);
+            }
+        }
+
+        internal static void CheckPollables(object? _)
+        {
+            s_checkScheduled = false;
 
             var holders = new List<PollableHolder>(s_pollables.Count);
             var pending = new List<Pollable>(s_pollables.Count);
@@ -58,13 +113,28 @@ namespace System.Threading
 
             if (pending.Count > 0)
             {
+                var resolvedPollableIndex = -1;
+                // if there is CPU-bound work to do, we should not block on PollInterop.Poll below
+                // so we will append pollable resolved in 0ms
+                // in effect, the PollInterop.Poll would not block us
+                if (ThreadPool.PendingWorkItemCount > 0 || (s_mainTask != null && s_mainTask.IsCompleted))
+                {
+                    s_resolvedPollable ??= MonotonicClockInterop.SubscribeDuration(0);
+                    resolvedPollableIndex = pending.Count;
+                    pending.Add(s_resolvedPollable);
+                }
+
                 var readyIndexes = PollInterop.Poll(pending);
                 for (int i = 0; i < readyIndexes.Length; i++)
                 {
                     uint readyIndex = readyIndexes[i];
-                    var holder = holders[(int)readyIndex];
-                    holder.ResolveAndDispose();
+                    if (resolvedPollableIndex != readyIndex)
+                    {
+                        var holder = holders[(int)readyIndex];
+                        holder.ResolveAndDispose();
+                    }
                 }
+
                 for (int i = 0; i < holders.Count; i++)
                 {
                     PollableHolder holder = holders[i];
@@ -73,20 +143,24 @@ namespace System.Threading
                         s_pollables.Add(holder);
                     }
                 }
+
+                ScheduleCheck();
             }
         }
 
         private sealed class PollableHolder
         {
             public bool isDisposed;
+            public bool ownsPollable;
             public readonly Pollable pollable;
             public readonly TaskCompletionSource taskCompletionSource;
             public readonly CancellationTokenRegistration cancellationTokenRegistration;
             public readonly CancellationToken cancellationToken;
 
-            public PollableHolder(Pollable pollable, CancellationToken cancellationToken)
+            public PollableHolder(Pollable pollable, bool ownsPollable, CancellationToken cancellationToken)
             {
                 this.pollable = pollable;
+                this.ownsPollable = ownsPollable;
                 this.cancellationToken = cancellationToken;
 
                 // this means that taskCompletionSource.Task.AsyncState -> this;
@@ -106,13 +180,15 @@ namespace System.Threading
 
                 // no need to unregister the holder from s_pollables, when this is called
                 isDisposed = true;
-                pollable.Dispose();
+                if (ownsPollable){
+                    pollable.Dispose();
+                }
                 cancellationTokenRegistration.Dispose();
                 taskCompletionSource.TrySetResult();
             }
 
             // for GC of abandoned Tasks or for cancellation
-            private static void CancelAndDispose(object? s)
+            public static void CancelAndDispose(object? s)
             {
                 PollableHolder self = (PollableHolder)s!;
                 if (self.isDisposed)
@@ -120,14 +196,11 @@ namespace System.Threading
                     return;
                 }
 
-                // Tell event loop to exit early, giving the application a
-                // chance to quit if the task(s) it is interested in have
-                // completed.
-                s_tasksCanceled = true;
-
                 // it will be removed from s_pollables on the next run
                 self.isDisposed = true;
-                self.pollable.Dispose();
+                if (self.ownsPollable){
+                    self.pollable.Dispose();
+                }
                 self.cancellationTokenRegistration.Dispose();
                 self.taskCompletionSource.TrySetCanceled(self.cancellationToken);
             }

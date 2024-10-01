@@ -1282,7 +1282,7 @@ extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(FieldDesc* pField, 
         Module* pModule = pField->GetModule();
         *address = pModule->GetRvaField(pField->GetOffset());
         *size = pField->LoadSize();
-        
+
         ret = TRUE;
     }
 
@@ -1332,12 +1332,12 @@ extern "C" void QCALLTYPE ReflectionInvocation_RunModuleConstructor(QCall::Modul
 {
     QCALL_CONTRACT;
 
-    DomainAssembly *pDomainAssembly = pModule->GetDomainAssembly();
-    if (pDomainAssembly != NULL && pDomainAssembly->IsActive())
+    Assembly *pAssembly = pModule->GetAssembly();
+    if (pAssembly != NULL && pAssembly->IsActive())
         return;
 
     BEGIN_QCALL;
-    pDomainAssembly->EnsureActive();
+    pAssembly->EnsureActive();
     END_QCALL;
 }
 
@@ -1438,37 +1438,17 @@ FCIMPL1(void, ReflectionInvocation::PrepareDelegate, Object* delegateUNSAFE)
 }
 FCIMPLEND
 
-// This method checks to see if there is sufficient stack to execute the average Framework method.
-// If there is not, then it throws System.InsufficientExecutionStackException. The limit for each
-// thread is precomputed when the thread is created.
-FCIMPL0(void, ReflectionInvocation::EnsureSufficientExecutionStack)
-{
-    FCALL_CONTRACT;
-
-    Thread *pThread = GetThread();
-
-    // We use the address of a local variable as our "current stack pointer", which is
-    // plenty close enough for the purposes of this method.
-    UINT_PTR current = reinterpret_cast<UINT_PTR>(&pThread);
-    UINT_PTR limit = pThread->GetCachedStackSufficientExecutionLimit();
-
-    if (current < limit)
-    {
-        FCThrowVoid(kInsufficientExecutionStackException);
-    }
-}
-FCIMPLEND
-
-// As with EnsureSufficientExecutionStack, this method checks and returns whether there is
-// sufficient stack to execute the average Framework method, but rather than throwing,
-// it simply returns a Boolean: true for sufficient stack space, otherwise false.
+// This method checks and returns whether there is sufficient stack to execute the
+// average Framework method, but rather than throwing, it simply returns a
+// Boolean: true for sufficient stack space, otherwise false.
 FCIMPL0(FC_BOOL_RET, ReflectionInvocation::TryEnsureSufficientExecutionStack)
 {
 	FCALL_CONTRACT;
 
 	Thread *pThread = GetThread();
 
-	// Same logic as EnsureSufficientExecutionStack
+    // We use the address of a local variable as our "current stack pointer", which is
+    // plenty close enough for the purposes of this method.
 	UINT_PTR current = reinterpret_cast<UINT_PTR>(&pThread);
 	UINT_PTR limit = pThread->GetCachedStackSufficientExecutionLimit();
 
