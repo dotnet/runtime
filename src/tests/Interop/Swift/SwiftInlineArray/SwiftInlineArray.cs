@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
 using Xunit;
 
-public class SwiftStructLowering
+public class SwiftInlineArray
 {
-    private const string SwiftLib = "libSwiftStructLowering.dylib";
+    private const string SwiftLib = "libSwiftInlineArray.dylib";
 
     [InlineArray(32)]
     struct F0
@@ -18,7 +18,7 @@ public class SwiftStructLowering
     }
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s19SwiftStructLowering10swiftFunc02a0SiAA2F0V_tF")]
+    [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc02a0SiAA2F0V_tF")]
     private static extern nint SwiftFunc0(F0 a0);
 
     [Fact]
@@ -74,7 +74,7 @@ public class SwiftStructLowering
     }
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s19SwiftStructLowering10swiftFunc12a0SiAA2F1V_tF")]
+    [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc12a0SiAA2F1V_tF")]
     private static extern nint SwiftFunc1(F1 a0);
 
     [Fact]
@@ -105,7 +105,7 @@ public class SwiftStructLowering
     }
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s19SwiftStructLowering10swiftFunc22a0SiAA2F2V_tF")]
+    [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc22a0SiAA2F2V_tF")]
     private static extern nint SwiftFunc2(F2 a0);
 
     [Fact]
@@ -134,7 +134,7 @@ public class SwiftStructLowering
     }
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s19SwiftStructLowering10swiftFunc32a0SiAA2F3V_tF")]
+    [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc32a0SiAA2F3V_tF")]
     private static extern nint SwiftFunc3(F3 a0);
 
     [Fact]

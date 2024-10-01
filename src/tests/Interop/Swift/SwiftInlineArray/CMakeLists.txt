@@ -1,7 +1,7 @@
-project(SwiftStructLowering)
+project(SwiftInlineArray)
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
 
-set(SOURCE SwiftStructLowering)
+set(SOURCE SwiftInlineArray)
 
 if (NOT SWIFT_COMPILER_TARGET AND CLR_CMAKE_TARGET_APPLE)
     set(SWIFT_PLATFORM "macosx")
