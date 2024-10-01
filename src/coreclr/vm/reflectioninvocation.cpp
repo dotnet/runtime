@@ -117,40 +117,6 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParam
     END_QCALL;
 }
 
-FCIMPL2(INT32, RuntimeTypeHandle::IsInstanceOfTypeInternal, ReflectClassBaseObject* pTypeUNSAFE, Object *objectUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-    switch (ObjIsInstanceOfCached(objectUNSAFE, refType->GetType()))
-    {
-    case TypeHandle::CanCast:
-        return 1;
-    case TypeHandle::CannotCast:
-        return 0;
-    default:
-        // Defer to the slow helper
-        return -1;
-    }
-}
-FCIMPLEND
-
-extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsInstanceOfTypeInternalSlow(QCall::TypeHandle typeHandle, QCall::ObjectHandleOnStack obj)
-{
-    QCALL_CONTRACT;
-
-    BOOL canCast = false;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-    canCast = ObjIsInstanceOf(OBJECTREFToObject(obj.Get()), typeHandle.AsTypeHandle());
-
-    END_QCALL;
-
-    return canCast;
-}
-
 static OBJECTREF InvokeArrayConstructor(TypeHandle th, PVOID* args, int argCnt)
 {
     CONTRACTL

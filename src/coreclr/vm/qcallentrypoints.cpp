@@ -107,7 +107,6 @@ static const Entry s_QCall[] =
     DllImportEntry(ExceptionNative_ThrowAmbiguousResolutionException)
     DllImportEntry(ExceptionNative_ThrowEntryPointNotFoundException)
     DllImportEntry(RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter)
-    DllImportEntry(RuntimeTypeHandle_IsInstanceOfTypeInternalSlow)
     DllImportEntry(QCall_GetGCHandleForTypeHandle)
     DllImportEntry(QCall_FreeGCHandleForTypeHandle)
     DllImportEntry(MethodTable_AreTypesEquivalent)
