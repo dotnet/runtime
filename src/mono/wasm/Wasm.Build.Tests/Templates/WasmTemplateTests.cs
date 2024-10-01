@@ -232,6 +232,7 @@ namespace Wasm.Build.Tests
 
         [Theory, TestCategory("no-fingerprinting")]
         [MemberData(nameof(TestDataForAppBundleDir))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/108107")]
         public async Task RunWithDifferentAppBundleLocations(bool forConsole, bool runOutsideProjectDirectory, string extraProperties)
             => await (forConsole
                     ? ConsoleRunWithAndThenWithoutBuildAsync("Release", extraProperties, runOutsideProjectDirectory)
