@@ -105,7 +105,7 @@ Steps 1-9 only need to be done once as long as there's been no changes to the CM
 Whenever you make changes to the CoreCLR source code, don't forget to invoke the _Install_ command again to have them set in place.
 
 #### Using Visual Studio to debug CLI builds
-Visual Studio can also be used to debug builds built externally from CLI scripts. 
+Visual Studio can also be used to debug builds built externally from CLI scripts.
 
 1. Build at least the `clr` and `lib` as described in the [build instructions](https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md#building-the-repo). Example command: `.\build.cmd -subset clr+libs -configuration Release -runtimeConfiguration Debug`
 2. Build the Core_Root as described in the [testing instructions](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/coreclr/testing.md#building-the-core_root). This generates `corerun.exe` which serves as the entry point to run managed code. It is placed inside the core root folder along with all required dlls. Example command: `.\src\tests\build.cmd generatelayoutonly`
