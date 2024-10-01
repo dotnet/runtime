@@ -6,7 +6,7 @@ using System.Numerics;
 using System.Reflection;
 using Xunit;
 
-namespace System.Drawing.PrimitivesTests
+namespace System.Drawing.Primitives.Tests
 {
     public class PointFTests
     {
