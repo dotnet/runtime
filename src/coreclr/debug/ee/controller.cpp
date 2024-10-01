@@ -4443,7 +4443,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
 #if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
     if (g_pDebugInterface->IsOutOfProcessSetContextEnabled() && m_instrAttrib.m_fIsCall)
     {
-        m_instrAttrib.m_fInPlaceSS = true;
+        m_fInPlaceSS = true;
     }
 #endif // !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
 
@@ -4454,7 +4454,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
     // has since been expanded to handle RIP-relative writes as well.
     if (m_instrAttrib.m_dwOffsetToDisp != 0
 #if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
-        && (!m_instrAttrib.m_fInPlaceSS || !m_instrAttrib.m_fIsCall)
+        && (!IsInPlaceSingleStep())
 #endif
     )
     {
@@ -4485,7 +4485,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
             // Copy the data into our buffer.
             memcpy(bufferBypassRW, patch->address + m_instrAttrib.m_cbInstr + dwOldDisp, m_instrAttrib.m_cOperandSize);
 
-            if (m_instrAttrib.m_fIsWrite)
+            if (m_instrAttrib.m_fIsWrite /*&& !m_instrAttrib.m_fIsCall*/)
             {
                 // save the actual destination address and size so when we TriggerSingleStep() we can update the value
                 pSharedPatchBypassBufferRW->RipTargetFixup = (UINT_PTR)(patch->address + m_instrAttrib.m_cbInstr + dwOldDisp);
@@ -4563,7 +4563,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
 #endif //TARGET_ARM64
 
 #if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
-    if (!m_instrAttrib.m_fInPlaceSS || !m_instrAttrib.m_fIsCall)
+    if (!IsInPlaceSingleStep())
 #endif // !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
     {
         //set eip to point to buffer...
@@ -4793,7 +4793,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
         // Fixup return address on stack
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-        if (!m_instrAttrib.m_fInPlaceSS)
+        if (!IsInPlaceSingleStep())
 #endif
         {
             // Fixup return address on stack
@@ -4826,7 +4826,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
                  (size_t)GetIP(context) <= (size_t)(patchBypass + MAX_INSTRUCTION_LENGTH + 1)))
             {
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-                if (!m_instrAttrib.m_fInPlaceSS || !m_instrAttrib.m_fIsCall)
+                if (!IsInPlaceSingleStep())
                 {
 #endif
                     LOG((LF_CORDB, LL_INFO10000, "Bypass instruction redirected because still in skip area.\n"
@@ -4901,7 +4901,7 @@ bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
 
 #if defined(TARGET_AMD64)
 #if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
-    if (!m_instrAttrib.m_fInPlaceSS || !m_instrAttrib.m_fIsCall)
+    if (!IsInPlaceSingleStep())
 #endif // !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
     {
         // Dev11 91932: for RIP-relative writes we need to copy the value that was written in our buffer to the actual address
@@ -4946,42 +4946,44 @@ bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
         }
     }
 #if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
-    else if (m_instrAttrib.m_fInPlaceSS && m_instrAttrib.m_fIsCall)
+    else if (IsInPlaceSingleStep())
     {
         LOG((LF_CORDB, LL_INFO10000, "This is an in-place single-step, all we want to do is back-patch the breakpoint\n"));
-        {
-            LPVOID baseAddress = (LPVOID)m_address;
-            DWORD oldProt;
+        // {
+        //     LPVOID baseAddress = (LPVOID)m_address;
+        //     DWORD oldProt;
 
-            if (!VirtualProtect(baseAddress,
-                                CORDbg_BREAK_INSTRUCTION_SIZE,
-                                PAGE_EXECUTE_READWRITE, &oldProt))
-            {
-                // we may be seeing unwriteable directly mapped executable memory.
-                // let's try copy-on-write instead,
-                if (!VirtualProtect(baseAddress,
-                    CORDbg_BREAK_INSTRUCTION_SIZE,
-                    PAGE_EXECUTE_WRITECOPY, &oldProt))
-                {
-                    _ASSERTE(!"VirtualProtect of code page failed");
-                    goto Error;
-                }
-            }
+        //     if (!VirtualProtect(baseAddress,
+        //                         CORDbg_BREAK_INSTRUCTION_SIZE,
+        //                         PAGE_EXECUTE_READWRITE, &oldProt))
+        //     {
+        //         // we may be seeing unwriteable directly mapped executable memory.
+        //         // let's try copy-on-write instead,
+        //         if (!VirtualProtect(baseAddress,
+        //             CORDbg_BREAK_INSTRUCTION_SIZE,
+        //             PAGE_EXECUTE_WRITECOPY, &oldProt))
+        //         {
+        //             _ASSERTE(!"VirtualProtect of code page failed");
+        //             goto Error;
+        //         }
+        //     }
 
-            CORDbgInsertBreakpoint(m_address);
-            LOG((LF_CORDB, LL_EVERYTHING, "DPS::TriggerSingleStep Breakpoint was re-inserted at %p\n",
-                m_address));
+        //     CORDbgInsertBreakpoint(m_address);
+        //     LOG((LF_CORDB, LL_EVERYTHING, "DPS::TSS Breakpoint was re-inserted at %p\n",
+        //         m_address));
 
-            if (!VirtualProtect(baseAddress,
-                                CORDbg_BREAK_INSTRUCTION_SIZE,
-                                oldProt, &oldProt))
-            {
-                _ASSERTE(!"VirtualProtect of code page failed");
-                goto Error;
-            }
-        }
+        //     if (!VirtualProtect(baseAddress,
+        //                         CORDbg_BREAK_INSTRUCTION_SIZE,
+        //                         oldProt, &oldProt))
+        //     {
+        //         _ASSERTE(!"VirtualProtect of code page failed");
+        //         goto Error;
+        //     }
+        // }
+        m_fSSCompleted = true;
+        return true;
     }
-Error:
+//Error:
 #endif // !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
 #endif // defined(TARGET_AMD64)
     LOG((LF_CORDB,LL_INFO10000, "DPS::TSS: triggered, about to delete\n"));

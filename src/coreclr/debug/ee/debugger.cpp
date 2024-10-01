@@ -16751,17 +16751,27 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerPatchSkip *p
     contextSize -= (DWORD)((BYTE*)pContext-(BYTE*)pBuffer);
 
     bool fIsInPlaceSingleStep = patchSkip != nullptr && patchSkip->IsInPlaceSingleStep();
+    bool fSSCompleted = patchSkip != nullptr && patchSkip->IsSingleStepCompleted();
     CORDB_ADDRESS_TYPE *patchSkipAddr = patchSkip != nullptr && fIsInPlaceSingleStep ? patchSkip->GetAddress() : nullptr;
-    _ASSERTE(!fIsInPlaceSingleStep || pContext->Rip == patchSkipAddr);
+    _ASSERTE(!fIsInPlaceSingleStep || fSSCompleted || pContext->Rip == patchSkipAddr);
 
-    PRD_TYPE opcode = 0xcc;
+    PRD_TYPE opcode = CORDbg_BREAK_INSTRUCTION;
     if (fIsInPlaceSingleStep)
     {
-        DebuggerControllerPatch *patch = DebuggerController::GetPatchTable()->GetPatch((CORDB_ADDRESS_TYPE *)pContext->Rip);
-        if (patch != NULL)
+        if (!fSSCompleted)
         {
-            LOG((LF_CORDB, LL_INFO10000, "D::SSTCN Patch found at address 0x%p  opcode=0x%x\n", pContext->Rip, patch->opcode));
-            opcode = patch->opcode;
+            DebuggerControllerPatch *patch = DebuggerController::GetPatchTable()->GetPatch((CORDB_ADDRESS_TYPE *)pContext->Rip);
+            if (patch != NULL)
+            {
+                LOG((LF_CORDB, LL_INFO10000, "D::SSTCN Patch found at address 0x%p  opcode=0x%x\n", pContext->Rip, patch->opcode));
+                opcode = patch->opcode;
+            }
+        }
+        else
+        {
+            LOG((LF_CORDB, LL_INFO10000, "D::SSTCN Patch found at address 0x%p  opcode=0x%x  deleting patch\n", pContext->Rip, patch->opcode));
+            TRACE_FREE(patchSkip);
+            patchSkip->Delete();
         }
     }
 
@@ -16772,7 +16782,7 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerPatchSkip *p
         SetThreadContextNeededFlare((TADDR)pContext, 
                                     contextSize, 
                                     patchSkipAddr, 
-                                    (((fIsInPlaceSingleStep&0x1)<<8)|(opcode&0xFF)));
+                                    (((fSSCompleted&0x1)<<9)|((fIsInPlaceSingleStep&0x1)<<8)|(opcode&0xFF)));
     }
     EX_CATCH
     {
