@@ -841,7 +841,7 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
 }
 
 #if defined(TARGET_RISCV64)
-static PCODE CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* pTargetMD)
+static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* pTargetMD)
 {
     SigTypeContext typeContext(pDelegateMD);
     MetaSig delegateSig(pDelegateMD);
@@ -855,14 +855,16 @@ static PCODE CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* p
     _ASSERTE(delegateSig.GetReturnType() == targetSig.GetReturnType());
     _ASSERTE(delegateSig.HasThis());
 
-    ILStubLinkerFlags flags = ILSTUB_LINKER_FLAG_STUB_HAS_THIS;
+    ILStubLinkerFlags flags = ILStubLinkerFlags(ILSTUB_LINKER_FLAG_STUB_HAS_THIS);
     ILStubLinker stubLinker(pDelegateMD->GetModule(), pDelegateMD->GetSignature(), &typeContext, pDelegateMD, flags);
     ILCodeStream *pCode = stubLinker.NewCodeStream(ILStubLinker::kDispatch);
 
     for (unsigned i = 0; i < delegateSig.NumFixedArgs(); ++i)
         pCode->EmitLDARG(i);
 
-    pCode->EmitCALL(pCode->GetToken(pTargetMD), delegateSig.NumFixedArgs(), delegateSig.IsReturnTypeVoid() ? 0 : 1);
+    pCode->EmitLoadThis();
+    pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR_AUX)));
+    pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, delegateSig.NumFixedArgs(), delegateSig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
     PCCOR_SIGNATURE pSig;
@@ -878,7 +880,13 @@ static PCODE CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* p
         &typeContext,
         &stubLinker);
 
-    return JitILStub(pStubMD);
+    DWORD cbTargetSig;
+    PCCOR_SIGNATURE pTargetSig;
+    pTargetMD->GetSig(&pTargetSig, &cbTargetSig);
+    ILStubResolver* pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
+    pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
+
+    return Stub::NewStub(JitILStub(pStubMD));
 }
 #endif // TARGET_RISCV64
 
@@ -918,41 +926,42 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
             pShuffleThunkCache = ((AssemblyLoaderAllocator*)pLoaderAllocator)->GetShuffleThunkCache();
         }
 
-        Stub* pShuffleThunk = pShuffleThunkCache->Canonicalize((const BYTE *)&rShuffleEntryArray[0]);
-        if (!pShuffleThunk)
-        {
-            COMPlusThrowOM();
-        }
-
-        if (isInstRetBuff)
-        {
-            if (InterlockedCompareExchangeT(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
-            {
-                ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
-                shuffleThunkWriterHolder.GetRW()->DecRef();
-                pShuffleThunk = pClass->m_pInstRetBuffCallStub;
-            }
-        }
-        else
-        {
-            if (InterlockedCompareExchangeT(&pClass->m_pStaticCallStub, pShuffleThunk, NULL ) != NULL)
-            {
-                ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
-                shuffleThunkWriterHolder.GetRW()->DecRef();
-                pShuffleThunk = pClass->m_pStaticCallStub;
-            }
-        }
-        return pShuffleThunk->GetEntryPoint();
+        pShuffleThunk = pShuffleThunkCache->Canonicalize((const BYTE *)&rShuffleEntryArray[0]);
     }
     else
     {
 #if defined(TARGET_RISCV64)
-        return CreateILDelegateShuffleThunk(pMD, pTargetMeth);
+        pShuffleThunk = CreateILDelegateShuffleThunk(pMD, pTargetMeth);
 #else
         _ASSERTE(FALSE);
         return NULL;
 #endif // TARGET_RISCV64
     }
+
+    if (!pShuffleThunk)
+    {
+        COMPlusThrowOM();
+    }
+
+    if (isInstRetBuff)
+    {
+        if (InterlockedCompareExchangeT(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
+        {
+            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
+            shuffleThunkWriterHolder.GetRW()->DecRef();
+            pShuffleThunk = pClass->m_pInstRetBuffCallStub;
+        }
+    }
+    else
+    {
+        if (InterlockedCompareExchangeT(&pClass->m_pStaticCallStub, pShuffleThunk, NULL ) != NULL)
+        {
+            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
+            shuffleThunkWriterHolder.GetRW()->DecRef();
+            pShuffleThunk = pClass->m_pStaticCallStub;
+        }
+    }
+    return pShuffleThunk->GetEntryPoint();
 }
 
 static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
