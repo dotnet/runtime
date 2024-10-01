@@ -31,7 +31,6 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
     , m_fCollectible(pLoaderAllocator->IsCollectible())
     , m_NextDomainAssemblyInSameALC(NULL)
     , m_pLoaderAllocator(pLoaderAllocator)
-    , m_debuggerFlags(DACF_NONE)
 {
     CONTRACTL
     {
@@ -45,10 +44,8 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
     pPEAssembly->AddRef();
     pPEAssembly->ValidateForExecution();
 
-    SetupDebuggingConfig();
-
     // Create the Assembly
-    NewHolder<Assembly> assembly = Assembly::Create(pPEAssembly, GetDebuggerInfoBits(), memTracker, pLoaderAllocator);
+    NewHolder<Assembly> assembly = Assembly::Create(pPEAssembly, memTracker, pLoaderAllocator);
 
     m_pAssembly = assembly.Extract();
     m_pModule = m_pAssembly->GetModule();
@@ -519,7 +516,7 @@ void Assembly::DeliverSyncEvents()
 #endif // DEBUGGING_SUPPORTED
 }
 
-DWORD DomainAssembly::ComputeDebuggingConfig()
+DebuggerAssemblyControlFlags Assembly::ComputeDebuggingConfig()
 {
     CONTRACTL
     {
@@ -534,36 +531,15 @@ DWORD DomainAssembly::ComputeDebuggingConfig()
 #ifdef DEBUGGING_SUPPORTED
     DWORD dacfFlags = DACF_ALLOW_JIT_OPTS;
     IfFailThrow(GetDebuggingCustomAttributes(&dacfFlags));
-    return dacfFlags;
+    return (DebuggerAssemblyControlFlags)dacfFlags;
 #else // !DEBUGGING_SUPPORTED
     return 0;
 #endif // DEBUGGING_SUPPORTED
 }
 
-void DomainAssembly::SetupDebuggingConfig(void)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-#ifdef DEBUGGING_SUPPORTED
-    DWORD dacfFlags = ComputeDebuggingConfig();
-
-    SetDebuggerInfoBits((DebuggerAssemblyControlFlags)dacfFlags);
-
-    LOG((LF_CORDB, LL_INFO10, "Assembly %s: bits=0x%x\n", GetDebugName(), GetDebuggerInfoBits()));
-#endif // DEBUGGING_SUPPORTED
-}
-
 // For right now, we only check to see if the DebuggableAttribute is present - later may add fields/properties to the
 // attributes.
-HRESULT DomainAssembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
+HRESULT Assembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
 {
     CONTRACTL
     {
@@ -576,70 +552,63 @@ HRESULT DomainAssembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
     }
     CONTRACTL_END;
 
-    HRESULT hr = S_OK;
+    ULONG size;
+    BYTE *blob;
+    IMDInternalImport* mdImport = GetPEAssembly()->GetMDImport();
+    mdAssembly asTK = TokenFromRid(mdtAssembly, 1);
 
+    HRESULT hr = mdImport->GetCustomAttributeByName(asTK,
+                                            DEBUGGABLE_ATTRIBUTE_TYPE,
+                                            (const void**)&blob,
+                                            &size);
+
+    // If there is no custom value, then there is no entrypoint defined.
+    if (FAILED(hr) || hr == S_FALSE)
+        return hr;
+
+    // We're expecting a 6 or 8 byte blob:
+    //
+    // 1, 0, enable tracking, disable opts, 0, 0
+    if ((size == 6) || (size == 8))
     {
-        ULONG size;
-        BYTE *blob;
-        mdModule mdMod;
-        IMDInternalImport* mdImport = GetPEAssembly()->GetMDImport();
-        mdMod = mdImport->GetModuleFromScope();
-        mdAssembly asTK = TokenFromRid(mdtAssembly, 1);
-
-        hr = mdImport->GetCustomAttributeByName(asTK,
-                                                DEBUGGABLE_ATTRIBUTE_TYPE,
-                                                (const void**)&blob,
-                                                &size);
-
-        // If there is no custom value, then there is no entrypoint defined.
-        if (!(FAILED(hr) || hr == S_FALSE))
+        if (!((blob[0] == 1) && (blob[1] == 0)))
         {
-            // We're expecting a 6 or 8 byte blob:
-            //
-            // 1, 0, enable tracking, disable opts, 0, 0
-            if ((size == 6) || (size == 8))
-            {
-                if (!((blob[0] == 1) && (blob[1] == 0)))
-                {
-                    BAD_FORMAT_NOTHROW_ASSERT(!"Invalid blob format for custom attribute");
-                    return COR_E_BADIMAGEFORMAT;
-                }
-
-                if (blob[2] & 0x1)
-                {
-                    *pdwFlags |= DACF_OBSOLETE_TRACK_JIT_INFO;
-                }
-                else
-                {
-                    *pdwFlags &= (~DACF_OBSOLETE_TRACK_JIT_INFO);
-                }
-
-                if (blob[2] & 0x2)
-                {
-                    *pdwFlags |= DACF_IGNORE_PDBS;
-                }
-                else
-                {
-                    *pdwFlags &= (~DACF_IGNORE_PDBS);
-                }
-
-
-                // For compatibility, we enable optimizations if the tracking byte is zero,
-                // even if disable opts is nonzero
-                if (((blob[2] & 0x1) == 0) || (blob[3] == 0))
-                {
-                    *pdwFlags |= DACF_ALLOW_JIT_OPTS;
-                }
-                else
-                {
-                    *pdwFlags &= (~DACF_ALLOW_JIT_OPTS);
-                }
-
-                LOG((LF_CORDB, LL_INFO10, "Assembly %s: has %s=%d,%d bits = 0x%x\n", GetDebugName(),
-                     DEBUGGABLE_ATTRIBUTE_TYPE_NAME,
-                     blob[2], blob[3], *pdwFlags));
-            }
+            BAD_FORMAT_NOTHROW_ASSERT(!"Invalid blob format for custom attribute");
+            return COR_E_BADIMAGEFORMAT;
         }
+
+        if (blob[2] & 0x1)
+        {
+            *pdwFlags |= DACF_OBSOLETE_TRACK_JIT_INFO;
+        }
+        else
+        {
+            *pdwFlags &= (~DACF_OBSOLETE_TRACK_JIT_INFO);
+        }
+
+        if (blob[2] & 0x2)
+        {
+            *pdwFlags |= DACF_IGNORE_PDBS;
+        }
+        else
+        {
+            *pdwFlags &= (~DACF_IGNORE_PDBS);
+        }
+
+        // For compatibility, we enable optimizations if the tracking byte is zero,
+        // even if disable opts is nonzero
+        if (((blob[2] & 0x1) == 0) || (blob[3] == 0))
+        {
+            *pdwFlags |= DACF_ALLOW_JIT_OPTS;
+        }
+        else
+        {
+            *pdwFlags &= (~DACF_ALLOW_JIT_OPTS);
+        }
+
+        LOG((LF_CORDB, LL_INFO10, "Assembly %s: has %s=%d,%d bits = 0x%x\n", GetDebugName(),
+                DEBUGGABLE_ATTRIBUTE_TYPE_NAME,
+                blob[2], blob[3], *pdwFlags));
     }
 
     return hr;
