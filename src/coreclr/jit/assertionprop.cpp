@@ -2324,38 +2324,6 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
 
 /*****************************************************************************
  *
- *  Create an assertion on the phi node if some information can be gleaned
- *  from all of the constituent phi operands.
- *
- */
-AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
-{
-    if (!tree->IsPhiDefn())
-    {
-        return NO_ASSERTION_INDEX;
-    }
-
-    // Try to find if all phi arguments are known to be non-null.
-    bool isNonNull = true;
-    for (GenTreePhi::Use& use : tree->AsLclVar()->Data()->AsPhi()->Uses())
-    {
-        if (!vnStore->IsKnownNonNull(use.GetNode()->gtVNPair.GetConservative()))
-        {
-            isNonNull = false;
-            break;
-        }
-    }
-
-    // All phi arguments are non-null implies phi rhs is non-null.
-    if (isNonNull)
-    {
-        return optCreateAssertion(tree->AsOp()->gtOp1, nullptr, OAK_NOT_EQUAL);
-    }
-    return NO_ASSERTION_INDEX;
-}
-
-/*****************************************************************************
- *
  *  If this node creates an assertion then assign an index to the assertion
  *  by adding it to the lookup table, if necessary.
  */
@@ -2386,10 +2354,6 @@ void Compiler::optAssertionGen(GenTree* tree)
             if (optLocalAssertionProp)
             {
                 assertionInfo = optCreateAssertion(tree, tree->AsLclVar()->Data(), OAK_EQUAL);
-            }
-            else
-            {
-                assertionInfo = optAssertionGenPhiDefn(tree);
             }
             break;
 
@@ -5097,20 +5061,22 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
     GCInfo::WriteBarrierForm barrierType = GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
 
     // First, analyze the value being stored
-    if (value->IsIntegralConst(0) || (value->gtVNPair.GetConservative() == ValueNumStore::VNForNull()))
+    auto vnVisitor = [this](ValueNum vn) -> ValueNumStore::VNVisit {
+        if ((vn == ValueNumStore::VNForNull()) || vnStore->IsVNObjHandle(vn))
+        {
+            // No write barrier is required for null or nongc object handles as values
+            return ValueNumStore::VNVisit::Continue;
+        }
+        return ValueNumStore::VNVisit::Abort;
+    };
+
+    if (vnStore->VNVisitReachingVNs(value->gtVNPair.GetConservative(), vnVisitor) == ValueNumStore::VNVisit::Continue)
     {
-        // The value being stored is null
         barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
     }
-    else if (value->IsIconHandle(GTF_ICON_OBJ_HDL) || vnStore->IsVNObjHandle(value->gtVNPair.GetConservative()))
-    {
-        // The value being stored is a handle
-        barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
-    }
+    // Next, analyze the address if we haven't already determined the barrier type from the value
     else if ((indir->gtFlags & GTF_IND_TGT_HEAP) == 0)
     {
-        // Next, analyze the address if we haven't already determined the barrier type from the value
-        //
         // NOTE: we might want to inspect indirs with GTF_IND_TGT_HEAP flag as well - what if we can prove
         // that they actually need no barrier? But that comes with a TP regression.
         barrierType = GetWriteBarrierForm(vnStore, addr->gtVNPair.GetConservative());

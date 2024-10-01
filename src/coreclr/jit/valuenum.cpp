@@ -1623,32 +1623,34 @@ ValueNumPair ValueNumStore::VNPWithExc(ValueNumPair vnp, ValueNumPair excSetVNP)
 
 bool ValueNumStore::IsKnownNonNull(ValueNum vn)
 {
-    if (vn == NoVN)
-    {
-        return false;
-    }
+    auto vnVisitor = [this](ValueNum vn) -> VNVisit {
+        if (vn == NoVN)
+        {
+            return VNVisit::Abort;
+        }
 
-    if (IsVNHandle(vn))
-    {
-        assert(CoercedConstantValue<size_t>(vn) != 0);
-        return true;
-    }
+        if (IsVNHandle(vn))
+        {
+            assert(CoercedConstantValue<size_t>(vn) != 0);
+            return VNVisit::Continue;
+        }
 
-    VNFuncApp funcAttr;
-    if (!GetVNFunc(vn, &funcAttr))
-    {
-        return false;
-    }
+        VNFuncApp funcAttr;
+        if (!GetVNFunc(vn, &funcAttr))
+        {
+            return VNVisit::Abort;
+        }
 
-    if ((s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0)
-    {
-        return true;
-    }
+        if ((s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0)
+        {
+            return VNVisit::Continue;
+        }
+        return VNVisit::Abort;
 
-    // TODO: we can recognize more non-null idioms here, e.g.
-    // ADD(IsKnownNonNull(op1), smallCns), etc.
-
-    return false;
+        // TODO: we can recognize more non-null idioms here, e.g.
+        // ADD(IsKnownNonNull(op1), smallCns), etc.
+    };
+    return VNVisitReachingVNs(vn, vnVisitor) == VNVisit::Continue;
 }
 
 bool ValueNumStore::IsSharedStatic(ValueNum vn)
@@ -3030,6 +3032,17 @@ bool ValueNumStore::GetPhiDef(ValueNum vn, VNPhiDef* phiDef)
     }
 
     return false;
+}
+
+bool ValueNumStore::IsPhiDef(ValueNum vn) const
+{
+    if (vn == NoVN)
+    {
+        return false;
+    }
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    assert(ChunkOffset(vn) < c->m_numUsed);
+    return c->m_attribs == CEA_PhiDef;
 }
 
 // ----------------------------------------------------------------------------------------
