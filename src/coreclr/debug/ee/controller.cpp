@@ -2378,15 +2378,15 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
         return true;
 
     case TRACE_MGR_PUSH:
-        LOG((LF_CORDB, LL_INFO10000,
-             "Setting frame patch (TRACE_MGR_PUSH) at 0x%p(%p)\n",
-             trace->GetAddress(), fp.GetSPValue()));
         if (trace->GetAddress() == GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper))
         {
             EnableMultiCastDelegate();
         }
         else
         {
+            LOG((LF_CORDB, LL_INFO10000,
+             "Setting frame patch (TRACE_MGR_PUSH) at 0x%p(%p)\n",
+             trace->GetAddress(), fp.GetSPValue()));
             dcp = AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE *)trace->GetAddress(),
                         LEAF_MOST_FRAME, // But Mgr_push can't have fp affinity!
                         TRUE,
