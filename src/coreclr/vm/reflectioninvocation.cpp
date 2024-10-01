@@ -1284,33 +1284,25 @@ extern "C" void QCALLTYPE ReflectionInvocation_PrepareMethod(MethodDesc *pMD, Ty
     END_QCALL;
 }
 
-// This method triggers target of a given method to be jitted. CoreCLR implementation of this method triggers jiting
-// of the given method only. It does not walk a subset of callgraph to provide CER guarantees.
+// This method triggers target of a given method to be jitted.
 // In the case of a multi-cast delegate, we rely on the fact that each individual component
 // was prepared prior to the Combine.
-FCIMPL1(void, ReflectionInvocation::PrepareDelegate, Object* delegateUNSAFE)
+extern "C" void QCALLTYPE ReflectionInvocation_PrepareDelegate(QCall::ObjectHandleOnStack delegate)
 {
-    CONTRACTL
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    MethodDesc* pMD = NULL;
     {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(delegateUNSAFE, NULL_OK));
+        GCX_COOP();
+        pMD = COMDelegate::GetMethodDesc(delegate.Get());
     }
-    CONTRACTL_END;
 
-    if (delegateUNSAFE == NULL)
-        return;
-
-    OBJECTREF delegate = ObjectToOBJECTREF(delegateUNSAFE);
-    HELPER_METHOD_FRAME_BEGIN_1(delegate);
-
-    MethodDesc *pMD = COMDelegate::GetMethodDesc(delegate);
-
-    GCX_PREEMP();
     PrepareMethodHelper(pMD);
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 // This method checks and returns whether there is sufficient stack to execute the
 // average Framework method, but rather than throwing, it simply returns a

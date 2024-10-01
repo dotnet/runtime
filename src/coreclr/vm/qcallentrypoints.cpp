@@ -376,6 +376,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ReflectionInvocation_RunModuleConstructor)
     DllImportEntry(ReflectionInvocation_CompileMethod)
     DllImportEntry(ReflectionInvocation_PrepareMethod)
+    DllImportEntry(ReflectionInvocation_PrepareDelegate)
     DllImportEntry(ReflectionInvocation_SizeOf)
     DllImportEntry(ReflectionInvocation_GetBoxInfo)
     DllImportEntry(ReflectionSerialization_GetCreateUninitializedObjectInfo)

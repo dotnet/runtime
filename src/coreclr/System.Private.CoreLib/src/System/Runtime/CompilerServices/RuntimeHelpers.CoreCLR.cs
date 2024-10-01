@@ -217,8 +217,18 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void PrepareDelegate(Delegate d);
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareDelegate")]
+        private static partial void PrepareDelegate(ObjectHandleOnStack d);
+
+        public static void PrepareDelegate(Delegate d)
+        {
+            if (d is null)
+            {
+                return;
+            }
+
+            PrepareDelegate(ObjectHandleOnStack.Create(ref d));
+        }
 
         /// <summary>
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
