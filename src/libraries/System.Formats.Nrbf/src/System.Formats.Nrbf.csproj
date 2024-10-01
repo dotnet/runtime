@@ -6,7 +6,6 @@
     <CLSCompliant>false</CLSCompliant>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides a safe reader for .NET Remoting Binary Format (NRBF) payloads.</PackageDescription>
-    <EnableDefaultPackageReadmeFile>true</EnableDefaultPackageReadmeFile>
 
     <!-- Disabling baseline validation since this is a brand new package.
          Once this package has shipped a stable version, the following line
