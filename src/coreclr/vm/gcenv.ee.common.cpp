@@ -138,6 +138,31 @@ inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
 }
 
 /*
+ * CheckDoubleReporting()
+ *
+ * This function is used to check for double reporting of the same stack slot or register.
+ * Double reporting is not allowed unless the reference is pinned, since it would
+ * result in incorrect updating of a reference in the slot in case the GC moves the
+ * object.
+ */
+void CheckDoubleReporting(GCCONTEXT *pCtx, Object **ppObj, uint32_t flags)
+{
+    if (((flags & GC_CALL_PINNED) == 0) && pCtx->sc->promotion)
+    {
+        if (pCtx->pScannedSlots == NULL)
+        {
+            pCtx->pScannedSlots = new (nothrow) SetSHash<Object**, PtrSetSHashTraits<Object**> >();
+            if (pCtx->pScannedSlots == NULL)
+            {
+                return;
+            }
+        }
+        _ASSERTE_ALL_BUILDS(pCtx->pScannedSlots->Lookup(ppObj) == NULL);
+        pCtx->pScannedSlots->AddNoThrow(ppObj);
+    }
+}
+
+/*
  * GcEnumObject()
  *
  * This is the JIT compiler (or any remote code manager)
@@ -148,6 +173,11 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
 {
     Object ** ppObj = (Object **)pObj;
     GCCONTEXT   * pCtx  = (GCCONTEXT *) pData;
+
+    if (g_pConfig->GetCheckDoubleReporting())
+    {
+        CheckDoubleReporting(pCtx, ppObj, flags);
+    }
 
     // Since we may be asynchronously walking another thread's stack,
     // check (frequently) for stack-buffer-overrun corruptions after
