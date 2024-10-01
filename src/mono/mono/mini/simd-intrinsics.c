@@ -368,9 +368,9 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_op_Division: {
 				const char *class_name = m_class_get_name (klass);
 				if (strcmp ("Quaternion", class_name) && strcmp ("Plane", class_name)) {
-					if (!type_is_simd_vector (fsig->params [1]))
+					if (!type_is_simd_vector (fsig->params [1])) // vector / scalar
 						return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, OP_FDIV);
-					else if (type_is_simd_vector (fsig->params [0]) && type_is_simd_vector (fsig->params [1])) {
+					else if (type_is_simd_vector (fsig->params [0]) && type_is_simd_vector (fsig->params [1])) { // vector / vector
 						instc0 = OP_FDIV;
 						break;
 					} else {
@@ -396,11 +396,11 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_op_Multiply: {
 				const char *class_name = m_class_get_name (klass);
 				if (strcmp ("Quaternion", class_name) && strcmp ("Plane", class_name)) {
-					if (!type_is_simd_vector (fsig->params [1]))
+					if (!type_is_simd_vector (fsig->params [1])) // vector * scalar
 						return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, OP_FMUL);
-					else if (!type_is_simd_vector (fsig->params [0]))
+					else if (!type_is_simd_vector (fsig->params [0])) // scalar * vector
 						return handle_mul_div_by_scalar (cfg, klass, arg_type, args [0]->dreg, args [1]->dreg, OP_FMUL);
-					else if (type_is_simd_vector (fsig->params [0]) && type_is_simd_vector (fsig->params [1])) {
+					else if (type_is_simd_vector (fsig->params [0]) && type_is_simd_vector (fsig->params [1])) { // vector * vector
 						instc0 = OP_FMUL;
 						break;
 					} else {
@@ -1992,16 +1992,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 
-	MonoClass* klass = cmethod->klass;
-	MonoTypeEnum arg0_type = MONO_TYPE_VOID;
-	if (fsig->param_count > 0) {
-		if (type_is_simd_vector (fsig->params [0])) {
-			klass = args [0]->klass;
-		} else if (fsig->param_count > 1 && type_is_simd_vector (fsig->params [1])) {
-			klass = args [1]->klass;
-		}
-		arg0_type = get_underlying_type (fsig->params [0]);
-	}
+	MonoClass *klass = fsig->param_count > 0 ? args [0]->klass : cmethod->klass;
+	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
 
 	if (cfg->verbose_level > 1) {
 		char *name = mono_method_full_name (cmethod, TRUE);
@@ -2072,16 +2064,27 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_MinNative:
 	case SN_Multiply:
 	case SN_Subtract:
-	case SN_Xor:
-		if (type_is_simd_vector (fsig->params [0]) && !is_element_type_primitive (fsig->params [0]))
+	case SN_Xor: {
+		if ((!type_is_simd_vector (fsig->params [0]) || !is_element_type_primitive (fsig->params [0])) &&
+			(!type_is_simd_vector (fsig->params [1]) || !is_element_type_primitive (fsig->params [1])))
 			return NULL;
-		if (type_is_simd_vector (fsig->params [1]) && !is_element_type_primitive (fsig->params [1]))
-			return NULL;
+
+		MonoTypeEnum vector_inner_type = arg0_type;
+		if (!type_is_simd_vector (fsig->params [0]) && fsig->param_count > 1 && type_is_simd_vector (fsig->params [1])) {
+			// By default, we expect the first argument to be the vector type
+			// however, for some operations (e.g., scalar * vector), the first argument is the scalar. In this case, we need to
+			// get the vector type from the second argument.
+			klass = args [1]->klass;
+			vector_inner_type = get_underlying_type (fsig->params [1]);
+		}
+
 #ifndef TARGET_ARM64
-		if (((id == SN_Max) || (id == SN_Min)) && type_enum_is_float(arg0_type))
+		if (((id == SN_Max) || (id == SN_Min)) && type_enum_is_float(vector_inner_type))
 			return NULL;
 #endif
-		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
+
+		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, vector_inner_type, id);
+	}
 	case SN_AndNot: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
