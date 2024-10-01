@@ -1369,17 +1369,23 @@ FCIMPL4(void, ReflectionInvocation::MakeTypedReference, TypedByRef * value, Obje
 FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP
-FCIMPL8(Object*, ReflectionInvocation::InvokeDispMethod, ReflectClassBaseObject* refThisUNSAFE,
-                                                         StringObject* nameUNSAFE,
-                                                         INT32 invokeAttr,
-                                                         Object* targetUNSAFE,
-                                                         PTRArray* argsUNSAFE,
-                                                         PTRArray* byrefModifiersUNSAFE,
-                                                         LCID lcid,
-                                                         PTRArray* namedParametersUNSAFE) {
-    FCALL_CONTRACT;
+extern "C" void QCALLTYPE ReflectionInvocation_InvokeDispMethod(
+    QCall::ObjectHandleOnStack type,
+    QCall::ObjectHandleOnStack name,
+    INT32 invokeAttr,
+    QCall::ObjectHandleOnStack target,
+    QCall::ObjectHandleOnStack args,
+    QCall::ObjectHandleOnStack byrefModifiers,
+    LCID culture,
+    QCall::ObjectHandleOnStack namedParameters,
+    QCall::ObjectHandleOnStack result)
+{
+    QCALL_CONTRACT;
 
-    struct _gc
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    struct
     {
         REFLECTCLASSBASEREF refThis;
         STRINGREF           name;
@@ -1389,16 +1395,14 @@ FCIMPL8(Object*, ReflectionInvocation::InvokeDispMethod, ReflectClassBaseObject*
         PTRARRAYREF         namedParameters;
         OBJECTREF           RetObj;
     } gc;
-
-    gc.refThis          = (REFLECTCLASSBASEREF) refThisUNSAFE;
-    gc.name             = (STRINGREF)           nameUNSAFE;
-    gc.target           = (OBJECTREF)           targetUNSAFE;
-    gc.args             = (PTRARRAYREF)         argsUNSAFE;
-    gc.byrefModifiers   = (PTRARRAYREF)         byrefModifiersUNSAFE;
-    gc.namedParameters  = (PTRARRAYREF)         namedParametersUNSAFE;
+    gc.refThis          = (REFLECTCLASSBASEREF) type.Get();
+    gc.name             = (STRINGREF)           name.Get();
+    gc.target           = (OBJECTREF)           target.Get();
+    gc.args             = (PTRARRAYREF)         args.Get();
+    gc.byrefModifiers   = (PTRARRAYREF)         byrefModifiers.Get();
+    gc.namedParameters  = (PTRARRAYREF)         namedParameters.Get();
     gc.RetObj           = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    GCPROTECT_BEGIN(gc);
 
     _ASSERTE(gc.target != NULL);
     _ASSERTE(gc.target->GetMethodTable()->IsComObjectType());
@@ -1425,15 +1429,15 @@ FCIMPL8(Object*, ReflectionInvocation::InvokeDispMethod, ReflectClassBaseObject*
                         (OBJECTREF*)&gc.byrefModifiers,
                         (OBJECTREF*)&gc.namedParameters,
                         &gc.RetObj,
-                        lcid,
+                        culture,
                         flags,
                         invokeAttr & BINDER_IgnoreReturn,
                         invokeAttr & BINDER_IgnoreCase);
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(gc.RetObj);
+    result.Set(gc.RetObj);
+    GCPROTECT_END();
+    END_QCALL;
 }
-FCIMPLEND
 #endif  // FEATURE_COMINTEROP
 
 FCIMPL2(void, ReflectionInvocation::GetGUID, ReflectClassBaseObject* refThisUNSAFE, GUID * result) {

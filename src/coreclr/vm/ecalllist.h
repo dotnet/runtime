@@ -96,9 +96,6 @@ FCFuncEnd()
 
 FCFuncStart(gSystem_RuntimeType)
     FCFuncElement("GetGUID", ReflectionInvocation::GetGUID)
-#if defined(FEATURE_COMINTEROP)
-    FCFuncElement("InvokeDispMethod", ReflectionInvocation::InvokeDispMethod)
-#endif // defined(FEATURE_COMINTEROP)
 FCFuncEnd()
 
 FCFuncStart(gCOMTypeHandleFuncs)
