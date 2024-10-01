@@ -134,14 +134,8 @@ namespace Microsoft.Win32
         public static event EventHandler? EventsThreadShutdown
         {
             // Really only here for GDI+ initialization and shut down
-            add
-            {
-                AddEventHandler(s_onEventsThreadShutdownEvent, value);
-            }
-            remove
-            {
-                RemoveEventHandler(s_onEventsThreadShutdownEvent, value);
-            }
+            add => AddEventHandler(s_onEventsThreadShutdownEvent, value);
+            remove => RemoveEventHandler(s_onEventsThreadShutdownEvent, value);
         }
 
         /// <summary>
@@ -1076,45 +1070,58 @@ namespace Microsoft.Win32
 
         private static void Shutdown()
         {
-            if (s_systemEvents != null)
+            if (s_systemEvents is null)
             {
-                lock (s_procLockObject)
+                return;
+            }
+
+            lock (s_procLockObject)
+            {
+                if (s_systemEvents is null)
                 {
-                    if (s_systemEvents != null)
-                    {
-                        // If we are using system events from another thread, request that it terminate
-                        if (s_windowThread != null)
-                        {
+                    return;
+                }
+
+                // If we are using system events from another thread, request that it terminate
+                if (s_windowThread is not null)
+                {
 #if DEBUG
-                            unsafe
-                            {
-                                int pid;
-                                int thread = Interop.User32.GetWindowThreadProcessId(s_systemEvents._windowHandle, &pid);
-                                Debug.Assert(thread != Interop.Kernel32.GetCurrentThreadId(), "Don't call Shutdown on the system events thread");
+                    unsafe
+                    {
+                        int pid;
+                        int thread = Interop.User32.GetWindowThreadProcessId(s_systemEvents._windowHandle, &pid);
+                        Debug.Assert(thread != Interop.Kernel32.GetCurrentThreadId(), "Don't call Shutdown on the system events thread");
 
-                            }
-#endif
-                            // The handle could be valid, Zero or invalid depending on the state of the thread
-                            // that is processing the messages. We optimistically expect it to be valid to
-                            // notify the thread to shutdown. The Zero or invalid values should be present
-                            // only when the thread is already shutting down due to external factors.
-                            if (s_systemEvents._windowHandle != IntPtr.Zero)
-                            {
-                                Interop.User32.PostMessageW(s_systemEvents._windowHandle, Interop.User32.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
-                                GC.KeepAlive(s_systemEvents);
-                            }
-
-                            if (LocalAppContextSwitches.EnableLegacySystemEventsShutdownThreadJoin)
-                            {
-                                s_windowThread.Join();
-                            }
-                        }
-                        else
-                        {
-                            s_systemEvents.Dispose();
-                            s_systemEvents = null;
-                        }
                     }
+#endif
+                    // The handle could be valid, Zero or invalid depending on the state of the thread
+                    // that is processing the messages. We optimistically expect it to be valid to
+                    // notify the thread to shutdown. The Zero or invalid values should be present
+                    // only when the thread is already shutting down due to external factors.
+                    if (s_systemEvents._windowHandle != IntPtr.Zero)
+                    {
+                        Interop.User32.PostMessageW(s_systemEvents._windowHandle, Interop.User32.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
+                        GC.KeepAlive(s_systemEvents);
+                    }
+
+                    // When the main thread kicks off shutdown, the Finalizer thread will raise a ProcessExit event,
+                    // which will callback to here waiting for this method to finish.
+                    // This occurs before AppDomain.IsFinalizingForUnload or Environment.HasShutdownStarted is set to true.
+                    // Because of this, any code that needs a response from the main thread will not know main thread will not respond.
+                    // This can cause synchronous callbacks to deadlock. For example, in https://github.com/dotnet/winforms/issues/11944,
+                    // WindowsFormsSynchronizationContext will block the SystemEvents thread to wait for tasks to complete on the main thread.
+                    // It cannot see that main thread is trying to shut down, but is stuck waiting for the Finalizer thread to finish,
+                    // which is waiting for SystemEvents thread to finish. Avoid blocking the Finalizer thread on shutdown by skipping
+                    // waiting for the SystemEvents thread to finish.
+                    if (LocalAppContextSwitches.EnableLegacySystemEventsShutdownThreadJoin)
+                    {
+                        s_windowThread.Join();
+                    }
+                }
+                else
+                {
+                    s_systemEvents.Dispose();
+                    s_systemEvents = null;
                 }
             }
         }
