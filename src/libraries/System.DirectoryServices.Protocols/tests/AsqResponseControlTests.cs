@@ -36,6 +36,7 @@ namespace System.DirectoryServices.Protocols.Tests
 
         public static IEnumerable<object[]> NonconformantControlValues()
         {
+#if NETFRAMEWORK
             // {i}, single-byte length. ASN.1 type of INTEGER rather than ENUMERATED
             yield return new object[] { new byte[] { 0x30, 0x03,
                 0x02, 0x01, 0x00
@@ -51,6 +52,7 @@ namespace System.DirectoryServices.Protocols.Tests
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x03,
                 0x02, 0x01, 0x7F
             }, (ResultCode)0x7F };
+#endif
 
             // {e}, single-byte length. Trailing data after the end of the sequence
             yield return new object[] { new byte[] { 0x30, 0x03,
@@ -98,6 +100,19 @@ namespace System.DirectoryServices.Protocols.Tests
             // e, not wrapped in an ASN.1 SEQUENCE
             yield return new object[] { new byte[] { 0x02, 0x01, 0x00 } };
 
+#if NET
+            // {i}, single-byte length. ASN.1 type of INTEGER rather than ENUMERATED
+            yield return new object[] { new byte[] { 0x30, 0x03,
+                0x02, 0x01, 0x00 } };
+            yield return new object[] { new byte[] { 0x30, 0x03,
+                0x02, 0x01, 0x7F } };
+
+            // {i}, four-byte length. ASN.1 type of INTEGER rather than ENUMERATED
+            yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x03,
+                0x02, 0x01, 0x00 } };
+            yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x03,
+                0x02, 0x01, 0x7F } };
+#endif
             // {e}, single-byte length, sequence length extending beyond the end of the buffer
             yield return new object[] { new byte[] { 0x30, 0x04,
                 0x0A, 0x01, 0x00 } };
