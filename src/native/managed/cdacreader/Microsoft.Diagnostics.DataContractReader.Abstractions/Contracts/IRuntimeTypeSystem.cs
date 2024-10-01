@@ -76,17 +76,6 @@ public enum ArrayFunctionType
 internal interface IRuntimeTypeSystem : IContract
 {
     static string IContract.Name => nameof(RuntimeTypeSystem);
-    static IContract IContract.Create(Target target, int version)
-    {
-        TargetPointer targetPointer = target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable);
-        TargetPointer freeObjectMethodTable = target.ReadPointer(targetPointer);
-        ulong methodDescAlignment = target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
-        return version switch
-        {
-            1 => new RuntimeTypeSystem_1(target, freeObjectMethodTable, methodDescAlignment),
-            _ => default(RuntimeTypeSystem),
-        };
-    }
 
     #region TypeHandle inspection APIs
     public virtual TypeHandle GetTypeHandle(TargetPointer address) => throw new NotImplementedException();
