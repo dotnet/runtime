@@ -3556,7 +3556,7 @@ namespace System
             }
         }
 
-#endregion
+        #endregion
 
         #region Arrays
 
@@ -3820,7 +3820,7 @@ namespace System
         }
         #endregion
 
-#endregion
+        #endregion
 
         public override string ToString() => GetCachedName(TypeNameKind.ToString)!;
 
