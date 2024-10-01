@@ -305,15 +305,15 @@ typedef PEFileListLock::Holder PEFileListLockHolder;
 class FileLoadLock : public ListLockEntry
 {
 private:
-    FileLoadLevel           m_level;
-    DomainAssembly          *m_pDomainAssembly;
-    HRESULT                 m_cachedHR;
+    FileLoadLevel   m_level;
+    Assembly*       m_pAssembly;
+    HRESULT         m_cachedHR;
 
 public:
-    static FileLoadLock *Create(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainAssembly *pDomainAssembly);
+    static FileLoadLock *Create(PEFileListLock *pLock, PEAssembly *pPEAssembly, Assembly *pAssembly);
 
     ~FileLoadLock();
-    DomainAssembly *GetDomainAssembly();
+    Assembly *GetAssembly();
     FileLoadLevel GetLoadLevel();
 
     // CanAcquire will return FALSE if Acquire will definitely not take the lock due
@@ -340,7 +340,7 @@ public:
 
 private:
 
-    FileLoadLock(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainAssembly *pDomainAssembly);
+    FileLoadLock(PEFileListLock *pLock, PEAssembly *pPEAssembly, Assembly *pAssembly);
 
     static void HolderLeave(FileLoadLock *pThis);
 
@@ -1002,9 +1002,9 @@ public:
         AssemblyIterationFlags m_assemblyIterationFlags;
 
     public:
-        BOOL Next(CollectibleAssemblyHolder<DomainAssembly *> * pDomainAssemblyHolder);
-        // Note: Does not lock the assembly list, but AddRefs collectible assemblies.
-        BOOL Next_Unlocked(CollectibleAssemblyHolder<DomainAssembly *> * pDomainAssemblyHolder);
+        BOOL Next(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder);
+        // Note: Does not lock the assembly list, but AddRefs collectible assemblies' loader allocator.
+        BOOL Next_Unlocked(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder);
 
     private:
         inline DWORD GetIndex()
@@ -1068,12 +1068,11 @@ public:
 
     CHECK CheckCanLoadTypes(Assembly *pAssembly);
     CHECK CheckCanExecuteManagedCode(MethodDesc* pMD);
-    CHECK CheckLoading(DomainAssembly *pFile, FileLoadLevel level);
+    CHECK CheckLoading(Assembly *pFile, FileLoadLevel level);
 
-    BOOL IsLoading(DomainAssembly *pFile, FileLoadLevel level);
+    BOOL IsLoading(Assembly *pFile, FileLoadLevel level);
 
-    void LoadDomainAssembly(DomainAssembly *pFile,
-                        FileLoadLevel targetLevel);
+    void LoadAssembly(Assembly *pFile, FileLoadLevel targetLevel);
 
     enum FindAssemblyOptions
     {
@@ -1081,64 +1080,59 @@ public:
         FindAssemblyOptions_IncludeFailedToLoad     = 0x1
     };
 
-    DomainAssembly * FindAssembly(PEAssembly* pPEAssembly, FindAssemblyOptions options = FindAssemblyOptions_None) DAC_EMPTY_RET(NULL);
+    Assembly * FindAssembly(PEAssembly* pPEAssembly, FindAssemblyOptions options = FindAssemblyOptions_None) DAC_EMPTY_RET(NULL);
 
 
     Assembly *LoadAssembly(AssemblySpec* pIdentity,
                            PEAssembly *pPEAssembly,
                            FileLoadLevel targetLevel);
 
-    // this function does not provide caching, you must use LoadDomainAssembly
+    CHECK CheckValidModule(Module *pModule);
+
+    void LoadSystemAssemblies();
+
+private:
+    // this function does not provide caching, you must use LoadAssembly
     // unless the call is guaranteed to succeed or you don't need the caching
     // (e.g. if you will FailFast or tear down the AppDomain anyway)
     // The main point that you should not bypass caching if you might try to load the same file again,
     // resulting in multiple DomainAssembly objects that share the same PEAssembly for ngen image
     //which is violating our internal assumptions
-    DomainAssembly *LoadDomainAssemblyInternal( AssemblySpec* pIdentity,
-                                                PEAssembly *pPEAssembly,
-                                                FileLoadLevel targetLevel);
+    Assembly *LoadAssemblyInternal(AssemblySpec* pIdentity,
+                                   PEAssembly *pPEAssembly,
+                                   FileLoadLevel targetLevel);
 
-    DomainAssembly *LoadDomainAssembly( AssemblySpec* pIdentity,
-                                        PEAssembly *pPEAssembly,
-                                        FileLoadLevel targetLevel);
+    Assembly *LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel);
 
-
-    CHECK CheckValidModule(Module *pModule);
-
-    // private:
-    void LoadSystemAssemblies();
-
-    DomainAssembly *LoadDomainAssembly(FileLoadLock *pLock,
-                               FileLoadLevel targetLevel);
-
-    void TryIncrementalLoad(DomainAssembly *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder);
+    void TryIncrementalLoad(Assembly *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder);
 
 #ifndef DACCESS_COMPILE // needs AssemblySpec
-
+public:
     //****************************************************************************************
     // Returns and Inserts assemblies into a lookup cache based on the binding information
     // in the AssemblySpec. There can be many AssemblySpecs to a single assembly.
-    DomainAssembly* FindCachedAssembly(AssemblySpec* pSpec, BOOL fThrow=TRUE)
+    Assembly* FindCachedAssembly(AssemblySpec* pSpec, BOOL fThrow=TRUE)
     {
         WRAPPER_NO_CONTRACT;
         return m_AssemblyCache.LookupAssembly(pSpec, fThrow);
     }
 
+private:
     PEAssembly* FindCachedFile(AssemblySpec* pSpec, BOOL fThrow = TRUE);
     BOOL IsCached(AssemblySpec *pSpec);
 #endif // DACCESS_COMPILE
 
+public:
     BOOL AddFileToCache(AssemblySpec* pSpec, PEAssembly *pPEAssembly);
     BOOL RemoveFileFromCache(PEAssembly *pPEAssembly);
 
-    BOOL AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembly);
-    BOOL RemoveAssemblyFromCache(DomainAssembly* pAssembly);
+    BOOL AddAssemblyToCache(AssemblySpec* pSpec, Assembly *pAssembly);
+    BOOL RemoveAssemblyFromCache(Assembly* pAssembly);
 
     BOOL AddExceptionToCache(AssemblySpec* pSpec, Exception *ex);
     void AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HANDLE hMod);
     NATIVE_LIBRARY_HANDLE FindUnmanagedImageInCache(LPCWSTR libraryName);
-    //****************************************************************************************
-    //
+
     // Adds or removes an assembly to the domain.
     void AddAssembly(DomainAssembly * assem);
     void RemoveAssembly(DomainAssembly * pAsm);
@@ -1380,7 +1374,7 @@ public:
 private:
     void RaiseLoadingAssemblyEvent(Assembly* pAssembly);
 
-    friend class DomainAssembly;
+    friend class Assembly;
 
 private:
     BOOL RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminating);

@@ -67,6 +67,7 @@
 #endif //FEATURE_PERFTRACING
 
 #include "tailcallhelp.h"
+#include "JitQCallHelpers.h"
 
 #include <minipal/entrypoints.h>
 
@@ -92,6 +93,7 @@ static const Entry s_QCall[] =
     DllImportEntry(Delegate_InitializeVirtualCallStub)
     DllImportEntry(Delegate_GetMulticastInvokeSlow)
     DllImportEntry(Delegate_AdjustTarget)
+    DllImportEntry(Delegate_Construct)
     DllImportEntry(Delegate_InternalAlloc)
     DllImportEntry(Delegate_InternalAllocLike)
     DllImportEntry(Delegate_FindMethodHandle)
@@ -110,6 +112,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MethodTable_AreTypesEquivalent)
     DllImportEntry(MethodTable_CanCompareBitsOrUseFastGetHashCode)
     DllImportEntry(TypeHandle_CanCastTo_NoCacheLookup)
+    DllImportEntry(TypeHandle_GetCorElementType)
     DllImportEntry(ValueType_GetHashCodeStrategy)
     DllImportEntry(Stream_HasOverriddenSlow)
     DllImportEntry(RuntimeTypeHandle_MakePointer)
@@ -239,6 +242,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
     DllImportEntry(ThreadNative_GetCurrentThread)
+    DllImportEntry(ThreadNative_GetIsBackground)
     DllImportEntry(ThreadNative_SetIsBackground)
     DllImportEntry(ThreadNative_InformThreadNameChange)
     DllImportEntry(ThreadNative_YieldThread)
@@ -476,6 +480,8 @@ static const Entry s_QCall[] =
     DllImportEntry(EHEnumNext)
     DllImportEntry(AppendExceptionStackFrame)
 #endif // FEATURE_EH_FUNCLETS
+    DllImportEntry(ResolveVirtualFunctionPointer)
+    DllImportEntry(GenericHandleWorker)
 };
 
 const void* QCallResolveDllImport(const char* name)

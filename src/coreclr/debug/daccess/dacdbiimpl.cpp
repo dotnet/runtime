@@ -3391,7 +3391,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject, Delega
     // - System.Private.CoreLib!System.Delegate.GetMethodImpl and System.Private.CoreLib!System.MulticastDelegate.GetMethodImpl
     // - System.Private.CoreLib!System.Delegate.GetTarget and System.Private.CoreLib!System.MulticastDelegate.GetTarget
     // - coreclr!COMDelegate::GetMethodDesc and coreclr!COMDelegate::FindMethodHandle
-    // - coreclr!COMDelegate::DelegateConstruct and the delegate type table in
+    // - coreclr!Delegate_Construct and the delegate type table in
     // - DELEGATE KINDS TABLE in comdelegate.cpp
 
     *delegateType = DelegateType::kUnknownDelegateType;
@@ -4421,17 +4421,12 @@ void  DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(
 
     // Pass the magical flags to the loader enumerator to get all Execution-only assemblies.
     iterator = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-    while (iterator.Next(pDomainAssembly.This()))
+    while (iterator.Next(pAssembly.This()))
     {
-        if (!pDomainAssembly->IsVisibleToDebugger())
-        {
-            continue;
-        }
-
         VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
-        vmDomainAssembly.SetHostPtr(pDomainAssembly);
+        vmDomainAssembly.SetHostPtr(pAssembly->GetDomainAssembly());
 
         fpCallback(vmDomainAssembly, pUserData);
     }
@@ -4454,7 +4449,7 @@ void DacDbiInterfaceImpl::EnumerateModulesInAssembly(
     if (pDomainAssembly->GetModule()->IsVisibleToDebugger())
     {
         // If domain assembly isn't yet loaded, just return
-        if (!pDomainAssembly->IsLoaded())
+        if (!pDomainAssembly->GetAssembly()->IsLoaded())
             return;
 
         VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();

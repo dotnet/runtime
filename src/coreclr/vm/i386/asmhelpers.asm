@@ -24,10 +24,6 @@ EXTERN __imp__RtlUnwind@16:DWORD
 ifdef _DEBUG
 EXTERN _HelperMethodFrameConfirmState@20:PROC
 endif
-ifdef FEATURE_COMINTEROP
-EXTERN _StubRareDisableHRWorker@4:PROC
-endif ; FEATURE_COMINTEROP
-EXTERN _StubRareDisableTHROWWorker@4:PROC
 ifdef FEATURE_HIJACK
 EXTERN _OnHijackWorker@4:PROC
 endif ;FEATURE_HIJACK
@@ -46,6 +42,7 @@ EXTERN _TheUMEntryPrestubWorker@4:PROC
 
 ifdef FEATURE_COMINTEROP
 EXTERN _CLRToCOMWorker@8:PROC
+EXTERN _COMToCLRWorker@4:PROC
 endif
 
 EXTERN _ExternalMethodFixupWorker@16:PROC
@@ -57,8 +54,6 @@ endif
 ifdef FEATURE_READYTORUN
 EXTERN _DynamicHelperWorker@20:PROC
 endif
-
-EXTERN @JIT_InternalThrow@4:PROC
 
 EXTERN @ProfileEnter@8:PROC
 EXTERN @ProfileLeave@8:PROC
@@ -391,38 +386,6 @@ endif
         pop     ebp ; don't use 'leave' here, as ebp as been trashed
         retn    8
 _CallJitEHFinallyHelper@8 ENDP
-
-ifdef FEATURE_COMINTEROP
-_StubRareDisableHR proc public
-        push    edx
-
-        push    ebx     ; Thread
-        call    _StubRareDisableHRWorker@4
-
-        pop     edx
-        retn
-_StubRareDisableHR ENDP
-endif ; FEATURE_COMINTEROP
-
-_StubRareDisableTHROW proc public
-        push    eax
-        push    edx
-
-        push    ebx     ; Thread
-        call    _StubRareDisableTHROWWorker@4
-
-        pop     edx
-        pop     eax
-        retn
-_StubRareDisableTHROW endp
-
-
-InternalExceptionWorker proc public
-        pop     edx             ; recover RETADDR
-        add     esp, eax        ; release caller's args
-        push    edx             ; restore RETADDR
-        jmp     @JIT_InternalThrow@4
-InternalExceptionWorker endp
 
 ;------------------------------------------------------------------------------
 ; This helper routine enregisters the appropriate arguments and makes the
@@ -1244,6 +1207,51 @@ _GenericCLRToCOMCallStub@0 proc public
     ret
 
 _GenericCLRToCOMCallStub@0 endp
+
+_GenericComCallStub@0 proc public
+
+    ; Pop ComCallMethodDesc* pushed by prestub
+    pop         eax
+
+    ; Create UnmanagedToManagedFrame on stack
+
+    ; push ebp-frame
+    push        ebp
+    mov         ebp,esp
+
+    ; save CalleeSavedRegisters
+    push        ebx
+    push        esi
+    push        edi
+
+    push        eax         ; UnmanagedToManagedFrame::m_pvDatum = ComCallMethodDesc*
+    sub         esp, (SIZEOF_GSCookie + OFFSETOF__UnmanagedToManagedFrame__m_pvDatum)
+
+    lea         eax, [esp+SIZEOF_GSCookie]
+
+    push        eax
+    call        _COMToCLRWorker@4
+
+    add         esp, (SIZEOF_GSCookie + OFFSETOF__UnmanagedToManagedFrame__m_pvDatum)
+
+    ; pop the ComCallMethodDesc*
+    pop         ecx
+
+    ; pop CalleeSavedRegisters
+    pop         edi
+    pop         esi
+    pop         ebx
+    pop         ebp
+
+    sub         ecx, COMMETHOD_PREPAD_ASM
+    jmp         ecx
+
+    ; This will never be executed. It is just to help out stack-walking logic
+    ; which disassembles the epilog to unwind the stack.
+    ret
+
+_GenericComCallStub@0 endp
+
 endif ; FEATURE_COMINTEROP
 
 
