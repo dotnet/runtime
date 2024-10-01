@@ -16,6 +16,7 @@ using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using Microsoft.Build.Logging.StructuredLogger;
 
 #nullable enable
 
@@ -175,6 +176,22 @@ namespace Wasm.Build.Tests
                 res.EnsureSuccessful();
             else if (res.ExitCode == 0)
                 throw new XunitException($"Build should have failed, but it didn't. Process exited with exitCode : {res.ExitCode}");
+
+            if (res.ExitCode == 0)
+            {
+                // Ensure build finished and we got all output.
+                if (!res.Output.Contains("Build succeeded in"))
+                {
+                    var outputBuilder = new StringBuilder();
+                    var buildRoot = BinaryLog.ReadBuild(logFilePath);
+                    buildRoot.VisitAllChildren<Message>(m =>
+                    {
+                        outputBuilder.AppendLine(m.Title);
+                    });
+
+                    res = new CommandResult(res.StartInfo, res.ExitCode, outputBuilder.ToString());
+                }
+            }
 
             return (res, logFilePath);
         }
