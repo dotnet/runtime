@@ -2358,13 +2358,6 @@ void Compiler::optAssertionGen(GenTree* tree)
             break;
 
         case GT_IND:
-            // Dynamic block copy sources could be zero-sized and so should not generate assertions.
-            if (tree->TypeIs(TYP_STRUCT))
-            {
-                break;
-            }
-            FALLTHROUGH;
-
         case GT_XAND:
         case GT_XORR:
         case GT_XADD:
@@ -5477,63 +5470,11 @@ void Compiler::optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& ac
     noway_assert(assertionIndex != 0);
     noway_assert(assertionIndex <= optAssertionCount);
 
-    AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
-    if (!BitVecOps::IsEmpty(apTraits, activeAssertions))
-    {
-        const ASSERT_TP mappedAssertions = optGetVnMappedAssertions(curAssertion->op1.vn);
-        if (mappedAssertions == nullptr)
-        {
-            return;
-        }
-
-        ASSERT_TP chkAssertions = BitVecOps::MakeCopy(apTraits, mappedAssertions);
-
-        if (curAssertion->op2.kind == O2K_LCLVAR_COPY)
-        {
-            const ASSERT_TP op2Assertions = optGetVnMappedAssertions(curAssertion->op2.vn);
-            if (op2Assertions != nullptr)
-            {
-                BitVecOps::UnionD(apTraits, chkAssertions, op2Assertions);
-            }
-        }
-        BitVecOps::IntersectionD(apTraits, chkAssertions, activeAssertions);
-
-        if (BitVecOps::IsEmpty(apTraits, chkAssertions))
-        {
-            return;
-        }
-
-        // Check each assertion in chkAssertions to see if it can be applied to curAssertion
-        BitVecOps::Iter chkIter(apTraits, chkAssertions);
-        unsigned        chkIndex = 0;
-        while (chkIter.NextElem(&chkIndex))
-        {
-            AssertionIndex chkAssertionIndex = GetAssertionIndex(chkIndex);
-            if (chkAssertionIndex > optAssertionCount)
-            {
-                break;
-            }
-            if (chkAssertionIndex == assertionIndex)
-            {
-                continue;
-            }
-
-            // Determine which one is a copy assertion and use the other to check for implied assertions.
-            AssertionDsc* iterAssertion = optGetAssertion(chkAssertionIndex);
-            if (curAssertion->IsCopyAssertion())
-            {
-                optImpliedByCopyAssertion(curAssertion, iterAssertion, activeAssertions);
-            }
-            else if (iterAssertion->IsCopyAssertion())
-            {
-                optImpliedByCopyAssertion(iterAssertion, curAssertion, activeAssertions);
-            }
-        }
-    }
     // Is curAssertion a constant store of a 32-bit integer?
     // (i.e  GT_LVL_VAR X  == GT_CNS_INT)
-    else if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_LCLVAR) &&
-             (curAssertion->op2.kind == O2K_CONST_INT))
+    AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
+    if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_LCLVAR) &&
+        (curAssertion->op2.kind == O2K_CONST_INT))
     {
         optImpliedByConstAssertion(curAssertion, activeAssertions);
     }

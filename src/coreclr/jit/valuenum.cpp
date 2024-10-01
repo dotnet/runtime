@@ -1624,31 +1624,21 @@ ValueNumPair ValueNumStore::VNPWithExc(ValueNumPair vnp, ValueNumPair excSetVNP)
 bool ValueNumStore::IsKnownNonNull(ValueNum vn)
 {
     auto vnVisitor = [this](ValueNum vn) -> VNVisit {
-        if (vn == NoVN)
+        if (vn != NoVN)
         {
-            return VNVisit::Abort;
-        }
+            if (IsVNHandle(vn))
+            {
+                assert(CoercedConstantValue<size_t>(vn) != 0);
+                return VNVisit::Continue;
+            }
 
-        if (IsVNHandle(vn))
-        {
-            assert(CoercedConstantValue<size_t>(vn) != 0);
-            return VNVisit::Continue;
-        }
-
-        VNFuncApp funcAttr;
-        if (!GetVNFunc(vn, &funcAttr))
-        {
-            return VNVisit::Abort;
-        }
-
-        if ((s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0)
-        {
-            return VNVisit::Continue;
+            VNFuncApp funcAttr;
+            if (GetVNFunc(vn, &funcAttr) && ((s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0))
+            {
+                return VNVisit::Continue;
+            }
         }
         return VNVisit::Abort;
-
-        // TODO: we can recognize more non-null idioms here, e.g.
-        // ADD(IsKnownNonNull(op1), smallCns), etc.
     };
     return VNVisitReachingVNs(vn, vnVisitor) == VNVisit::Continue;
 }
