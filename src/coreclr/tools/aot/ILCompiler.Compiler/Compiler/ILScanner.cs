@@ -541,21 +541,27 @@ namespace ILCompiler
                             }
 
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                            TypeDesc baseType;
 
-                            if (!canonType.IsDefType || !((MetadataType)canonType).IsAbstract)
+                            if (canonType is not MetadataType { IsAbstract: true })
                             {
                                 _canonConstructedTypes.Add(canonType.GetClosestDefType());
-                                TypeDesc canonBaseType = canonType.BaseType?.ConvertToCanonForm(CanonicalFormKind.Specific);
-                                while (canonBaseType != null && _canonConstructedTypes.Add(canonBaseType))
-                                    canonBaseType = canonType.BaseType?.ConvertToCanonForm(CanonicalFormKind.Specific);
+                                baseType = canonType.BaseType;
+                                while (baseType != null)
+                                {
+                                    baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                                    if (!_canonConstructedTypes.Add(baseType))
+                                        break;
+                                    baseType = baseType.BaseType;
+                                }
                             }
 
-                            TypeDesc baseType = canonType.BaseType;
-                            bool added = true;
-                            while (baseType != null && added)
+                            baseType = canonType.BaseType;
+                            while (baseType != null)
                             {
                                 baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                                added = _unsealedTypes.Add(baseType);
+                                if (!_unsealedTypes.Add(baseType))
+                                    break;
                                 baseType = baseType.BaseType;
                             }
 
