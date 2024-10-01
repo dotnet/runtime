@@ -81,6 +81,7 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export CHROME_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName)/$(ChromeBinaryName)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set CHROME_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)\$(ChromeBinaryName)" />
 
+      <!-- Issue: https://github.com/dotnet/runtime/issues/107771 -->
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set DEBUG=pw:browser*" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export FIREFOX_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(FirefoxDirName)/$(FirefoxBinaryName)" />
