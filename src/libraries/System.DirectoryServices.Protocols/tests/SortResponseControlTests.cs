@@ -101,7 +101,6 @@ namespace System.DirectoryServices.Protocols.Tests
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x03,
                 0x02, 0x01, 0x40
             }, (ResultCode)0x40, null };
-#endif
 
             // {e}, single-byte length. Trailing data after the end of the sequence
             yield return new object[] { new byte[] { 0x30, 0x03,
@@ -115,7 +114,6 @@ namespace System.DirectoryServices.Protocols.Tests
                 0x80, 0x80, 0x80, 0x80
             }, (ResultCode)0x40, null };
 
-#if NETFRAMEWORK
             // {e}, single-byte length. Trailing data within the sequence is interpreted as an empty string by Windows
             yield return new object[] { new byte[] { 0x30, 0x07,
                 0x0A, 0x01, 0x40,
@@ -169,6 +167,8 @@ namespace System.DirectoryServices.Protocols.Tests
                 0x04, 0x84, 0x00, 0x00, 0x00, 0x05, 0x6E, 0x61, 0x6D, 0x65, 0x31,
                 0x80, 0x80, 0x80, 0x80
             }, (ResultCode)0x40, "name1" };
+#else
+            yield break;
 #endif
         }
 
@@ -193,6 +193,16 @@ namespace System.DirectoryServices.Protocols.Tests
             // {i}, four-byte length. ASN.1 type of INTEGER rather than ENUMERATED
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x03,
                 0x02, 0x01, 0x40 } };
+
+            // {e}, single-byte length. Trailing data after the end of the sequence
+            yield return new object[] { new byte[] { 0x30, 0x03,
+                0x0A, 0x01, 0x40,
+                0x80, 0x80, 0x80, 0x80 } };
+
+            // {e}, four-byte length. Trailing data after the end of the sequence
+            yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x03,
+                0x0A, 0x01, 0x40,
+                0x80, 0x80, 0x80, 0x80 } };
 
             // {e}, single-byte length. Trailing data within the sequence
             yield return new object[] { new byte[] { 0x30, 0x07,

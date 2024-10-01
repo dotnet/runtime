@@ -161,11 +161,12 @@ namespace System.DirectoryServices.Protocols
                         // The control is a PageResultResponseControl. The structure of its value is described as a realSearchControlValue structure in RFC 2696.
                         byte[] cookie;
 
-                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out int bytesConsumed);
                         ThrowUnless(sequenceContentLength > 0);
+                        ThrowUnless(bytesConsumed == asnSpan.Length);
 
                         asnSpan = asnSpan.Slice(sequenceContentOffset, sequenceContentLength);
-                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int size, out int bytesConsumed);
+                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int size, out bytesConsumed);
                         ThrowUnless(asnReadSuccessful);
                         asnSpan = asnSpan.Slice(bytesConsumed);
 
@@ -183,10 +184,12 @@ namespace System.DirectoryServices.Protocols
                         // The control is an AsqResponseControl. The structure of its value is described as an ASQResponseValue in MS-ADTS section 3.1.1.3.4.1.18.
                         ResultCode result;
 
-                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out int bytesConsumed);
                         ThrowUnless(sequenceContentLength > 0);
+                        ThrowUnless(bytesConsumed == asnSpan.Length);
 
-                        result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan.Slice(sequenceContentOffset, sequenceContentLength), AsnEncodingRules.BER, out _);
+                        result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan.Slice(sequenceContentOffset, sequenceContentLength), AsnEncodingRules.BER, out bytesConsumed);
+                        ThrowUnless(bytesConsumed == sequenceContentLength);
 
                         AsqResponseControl asq = new AsqResponseControl(result, controls[i].IsCritical, value);
                         controls[i] = asq;
@@ -196,11 +199,12 @@ namespace System.DirectoryServices.Protocols
                         // The control is a DirSyncResponseControl. The structure of its value is described as a DirSyncResponseValue in MS-ADTS section 3.1.1.3.4.1.3.
                         byte[] dirsyncCookie;
 
-                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out int bytesConsumed);
                         ThrowUnless(sequenceContentLength > 0);
+                        ThrowUnless(bytesConsumed == asnSpan.Length);
                         asnSpan = asnSpan.Slice(sequenceContentOffset, sequenceContentLength);
 
-                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int moreResults, out int bytesConsumed);
+                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int moreResults, out bytesConsumed);
                         ThrowUnless(asnReadSuccessful);
                         asnSpan = asnSpan.Slice(bytesConsumed);
 
@@ -220,11 +224,12 @@ namespace System.DirectoryServices.Protocols
                         ResultCode result;
                         string attribute = null;
 
-                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out int bytesConsumed);
                         ThrowUnless(sequenceContentLength > 0);
+                        ThrowUnless(bytesConsumed == asnSpan.Length);
                         asnSpan = asnSpan.Slice(sequenceContentOffset, sequenceContentLength);
 
-                        result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan, AsnEncodingRules.BER, out int bytesConsumed);
+                        result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
                         asnSpan = asnSpan.Slice(bytesConsumed);
 
                         // If present, the remaining bytes in the control are expected to be an octet string.
@@ -260,11 +265,12 @@ namespace System.DirectoryServices.Protocols
                         ResultCode result;
                         byte[] context = null;
 
-                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out int bytesConsumed);
                         ThrowUnless(sequenceContentLength > 0);
+                        ThrowUnless(bytesConsumed == asnSpan.Length);
                         asnSpan = asnSpan.Slice(sequenceContentOffset, sequenceContentLength);
 
-                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int position, out int bytesConsumed);
+                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int position, out bytesConsumed);
                         ThrowUnless(asnReadSuccessful);
                         asnSpan = asnSpan.Slice(bytesConsumed);
 

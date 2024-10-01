@@ -52,7 +52,6 @@ namespace System.DirectoryServices.Protocols.Tests
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x03,
                 0x02, 0x01, 0x7F
             }, (ResultCode)0x7F };
-#endif
 
             // {e}, single-byte length. Trailing data after the end of the sequence
             yield return new object[] { new byte[] { 0x30, 0x03,
@@ -93,6 +92,9 @@ namespace System.DirectoryServices.Protocols.Tests
                 0x0A, 0x01, 0x7F,
                 0x80, 0x80, 0x80, 0x80
             }, (ResultCode)0x7F };
+#else
+            yield break;
+#endif
         }
 
         public static IEnumerable<object[]> InvalidControlValues()
@@ -120,6 +122,40 @@ namespace System.DirectoryServices.Protocols.Tests
             // {e}, four-byte length, sequence length extending beyond the end of the buffer
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x04,
                 0x0A, 0x01, 0x00 } };
+
+#if NET
+            // {e}, single-byte length. Trailing data after the end of the sequence
+            yield return new object[] { new byte[] { 0x30, 0x03,
+                0x0A, 0x01, 0x00,
+                0x80, 0x80, 0x80, 0x80 } };
+            yield return new object[] { new byte[] { 0x30, 0x03,
+                0x0A, 0x01, 0x7F,
+                0x80, 0x80, 0x80, 0x80 } };
+
+            // {e}, four-byte length. Trailing data after the end of the sequence
+            yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x03,
+                0x0A, 0x01, 0x00,
+                0x80, 0x80, 0x80, 0x80 } };
+            yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x03,
+                0x0A, 0x01, 0x7F,
+                0x80, 0x80, 0x80, 0x80 } };
+
+            // {e}, single-byte length. Trailing data within the sequence
+            yield return new object[] { new byte[] { 0x30, 0x07,
+                0x0A, 0x01, 0x00,
+                0x80, 0x80, 0x80, 0x80 } };
+            yield return new object[] { new byte[] { 0x30, 0x07,
+                0x0A, 0x01, 0x7F,
+                0x80, 0x80, 0x80, 0x80 } };
+
+            // {e}, four-byte length. Trailing data within the sequence
+            yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x07,
+                0x0A, 0x01, 0x00,
+                0x80, 0x80, 0x80, 0x80 } };
+            yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x07,
+                0x0A, 0x01, 0x7F,
+                0x80, 0x80, 0x80, 0x80 } };
+#endif
         }
 
         [Theory]
