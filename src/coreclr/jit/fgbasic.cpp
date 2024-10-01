@@ -632,7 +632,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
 // Note that the successor block's bbRefs is not changed, since it has the same number of
 // references as before, just from a different predecessor block.
 //
-// Also note this may cause sorting of the pred list.
+// Also note this may cause reordering of the pred list.
 //
 void Compiler::fgReplacePred(FlowEdge* edge, BasicBlock* const newPred)
 {
@@ -640,13 +640,18 @@ void Compiler::fgReplacePred(FlowEdge* edge, BasicBlock* const newPred)
     assert(newPred != nullptr);
     assert(edge->getSourceBlock() != newPred);
 
-    edge->setSourceBlock(newPred);
-
-    // We may now need to reorder the pred list.
+    // Remove the edge, modify it, then add it back
     //
-    BasicBlock* succBlock = edge->getDestinationBlock();
-    assert(succBlock != nullptr);
-    succBlock->ensurePredListOrder(this);
+    BasicBlock* const target  = edge->getDestinationBlock();
+    BasicBlock* const oldPred = edge->getSourceBlock();
+    FlowEdge**        listp   = fgGetPredInsertPoint(oldPred, target);
+    assert(*listp == edge);
+    *listp = edge->getNextPredEdge();
+    edge->setSourceBlock(newPred);
+    listp = fgGetPredInsertPoint(newPred, target);
+    edge->setNextPredEdge(*listp);
+    *listp = edge;
+    assert(target->checkPredListOrder());
 }
 
 /*****************************************************************************
@@ -5407,10 +5412,6 @@ bool Compiler::fgRenumberBlocks()
     //
     if (renumbered)
     {
-        for (BasicBlock* const block : Blocks())
-        {
-            block->ensurePredListOrder(this);
-        }
         JITDUMP("\n*************** After renumbering the basic blocks\n");
         JITDUMPEXEC(fgDispBasicBlocks());
         JITDUMPEXEC(fgDispHandlerTab());
