@@ -587,6 +587,7 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\System.Globalization.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Threading.Timer.Tests\System.Threading.Timer.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.NameResolution\tests\FunctionalTests\System.Net.NameResolution.Functional.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Sockets\tests\FunctionalTests\System.Net.Sockets.Tests.csproj" />
   </ItemGroup>
 
   <!-- wasi/aot smoke tests -->
