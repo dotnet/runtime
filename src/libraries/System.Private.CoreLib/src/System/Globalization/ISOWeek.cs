@@ -34,6 +34,8 @@ namespace System.Globalization
             return week;
         }
 
+        public static int GetWeekOfYear(DateOnly date) => GetWeekOfYear(date.GetEquivalentDateTime());
+
         public static int GetYear(DateTime date)
         {
             int week = GetWeekNumber(date);
@@ -54,6 +56,8 @@ namespace System.Globalization
 
             return date.Year;
         }
+
+        public static int GetYear(DateOnly date) => GetYear(date.GetEquivalentDateTime());
 
         // The year parameter represents an ISO week-numbering year (also called ISO year informally).
         // Each week's year is the Gregorian year in which the Thursday falls.
@@ -137,6 +141,8 @@ namespace System.Globalization
 
             return new DateTime(year, month: 1, day: 1).AddDays(ordinal - 1);
         }
+
+        public static DateOnly ToDateOnly(int year, int week, DayOfWeek dayOfWeek) => DateOnly.FromDateTime(ToDateTime(year, week, dayOfWeek));
 
         // From https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_of_a_given_date:
         //
