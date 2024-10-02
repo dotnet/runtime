@@ -2,32 +2,45 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using static Interop;
 
-namespace Microsoft.Win32.SystemEventsTests
+namespace Microsoft.Win32.SystemEventsTests;
+
+public class ShutdownTest : SystemEventsTest
 {
-    public abstract class ShutdownTest : SystemEventsTest
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+    public void ShutdownThroughRestartManager()
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public void ShutdownThroughRestartManager()
+        RemoteExecutor.Invoke(() =>
         {
-            RemoteExecutor.Invoke(() =>
-            {
-                // Register any event to ensure that SystemEvents get initialized
-                SystemEvents.TimeChanged += (o, e) => { };
+            // Register any event to ensure that SystemEvents get initialized
+            SystemEvents.TimeChanged += (o, e) => { };
 
-                // Fake Restart Manager behavior by sending external WM_CLOSE message
-                SendMessage(Interop.User32.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+            // Fake Restart Manager behavior by sending external WM_CLOSE message
+            SendMessage(Interop.User32.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
 
-                // Emulate calling the Shutdown event
-                var shutdownMethod = typeof(SystemEvents).GetMethod("Shutdown", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic, null, new Type[0], null);
-                Assert.NotNull(shutdownMethod);
-                shutdownMethod.Invoke(null, null);
-            }).Dispose();
-        }
+            // Emulate calling the Shutdown event
+            var shutdownMethod = typeof(SystemEvents).GetMethod("Shutdown", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic, null, new Type[0], null);
+            Assert.NotNull(shutdownMethod);
+            shutdownMethod.Invoke(null, null);
+        }).Dispose();
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+    public void ShutdownSuccessDespiteThreadBlock()
+    {
+        AppContext.TryGetSwitch("Switch.SystemEvents.EnableLegacySystemEventsShutdownThreadJoin", out bool isEnabled);
+        Assert.False(isEnabled);
+
+        RemoteExecutor.Invoke(() =>
+        {
+            // Block the SystemEvents thread. Regression test for https://github.com/dotnet/winforms/issues/11944
+            SystemEvents.UserPreferenceChanged += (o, e) => { while (true) { } };
+            SendMessage(User32.WM_SETTINGCHANGE, IntPtr.Zero, IntPtr.Zero);
+        }).Dispose();
     }
 }
