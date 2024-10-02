@@ -12022,7 +12022,7 @@ const char* Interpreter::getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd,
         return pMD->GetName();
     }
 
-    return info->getMethodNameFromMetadata(hnd, className, namespaceName, enclosingClassName);
+    return info->getMethodNameFromMetadata(hnd, className, namespaceName, enclosingClassName, 0);
 }
 
 const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** clsName)

@@ -1309,13 +1309,16 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
     //
 
     StubUnwindInfoHeader *pHeader = pStubRW->GetUnwindInfoHeader();
+    StubUnwindInfoHeader *pHeaderX = pStubRX->GetUnwindInfoHeader();
     _ASSERTE(IS_ALIGNED(pHeader, sizeof(void*)));
 
     BYTE *pbBaseAddress = pbRegionBaseAddress;
+    BYTE *pbBaseAddressW = (BYTE*)((uint64_t)pbRegionBaseAddress + (uint64_t)pHeader - (uint64_t)pHeaderX);
 
-    while ((size_t)((BYTE*)pHeader - pbBaseAddress) > MaxSegmentSize)
+    while ((size_t)((BYTE*)pHeaderX - pbBaseAddress) > MaxSegmentSize)
     {
         pbBaseAddress += MaxSegmentSize;
+        pbBaseAddressW += MaxSegmentSize;
     }
 
     //
@@ -1452,7 +1455,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
         COMPlusThrowArithmetic();
     pCurFunction->EndAddress = sEndAddress.Value();
 
-    S_UINT32 sTemp = S_BYTEPTR(pUnwindInfo) - S_BYTEPTR(pbBaseAddress);
+    S_UINT32 sTemp = S_BYTEPTR(pUnwindInfo) - S_BYTEPTR(pbBaseAddressW);
     if (sTemp.IsOverflow())
         COMPlusThrowArithmetic();
     RUNTIME_FUNCTION__SetUnwindInfoAddress(pCurFunction, sTemp.Value());
@@ -1470,7 +1473,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
         COMPlusThrowArithmetic();
     RUNTIME_FUNCTION__SetBeginAddress(pCurFunction, sBeginAddress.Value());
 
-    S_UINT32 sTemp = S_BYTEPTR(pUnwindInfo) - S_BYTEPTR(pbBaseAddress);
+    S_UINT32 sTemp = S_BYTEPTR(pUnwindInfo) - S_BYTEPTR(pbBaseAddressW);
     if (sTemp.IsOverflow())
         COMPlusThrowArithmetic();
     RUNTIME_FUNCTION__SetUnwindInfoAddress(pCurFunction, sTemp.Value());
