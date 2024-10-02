@@ -35,14 +35,6 @@ internal record struct ModuleLookupTables(
 internal interface ILoader : IContract
 {
     static string IContract.Name => nameof(Loader);
-    static IContract IContract.Create(Target target, int version)
-    {
-        return version switch
-        {
-            1 => new Loader_1(target),
-            _ => default(Loader),
-        };
-    }
 
     public virtual ModuleHandle GetModuleHandle(TargetPointer modulePointer) => throw new NotImplementedException();
 

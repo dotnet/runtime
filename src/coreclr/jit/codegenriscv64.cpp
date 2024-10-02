@@ -6871,8 +6871,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
             excpRaisingBlock = failBlk;
 
 #ifdef DEBUG
-            Compiler::AddCodeDsc* add =
-                compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
             assert(add->acdUsed);
             assert(excpRaisingBlock == add->acdDstBlk);
 #if !FEATURE_FIXED_OUT_ARGS
@@ -6883,8 +6882,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
         else
         {
             // Find the helper-block which raises the exception.
-            Compiler::AddCodeDsc* add =
-                compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
             PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
             assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
