@@ -144,9 +144,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public int memberKept {
 				[Kept]
-				get { return this.field; }
+				get { return @field; }
 				[Kept]
-				set { this.field = value; }
+				set { @field = value; }
 			}
 
 			[Kept]
