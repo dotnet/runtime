@@ -25,13 +25,6 @@ namespace System
         internal RuntimeType GetTypeChecked() =>
             m_type ?? throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
 
-        internal static bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o)
-        {
-            bool ret = CastHelpers.IsInstanceOfAny(type.GetUnderlyingNativeHandle().ToPointer(), o) is not null;
-            GC.KeepAlive(type);
-            return ret;
-        }
-
         /// <summary>
         /// Returns a new <see cref="RuntimeTypeHandle"/> object created from a handle to a RuntimeType.
         /// </summary>

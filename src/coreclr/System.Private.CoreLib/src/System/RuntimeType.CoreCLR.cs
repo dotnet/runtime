@@ -3306,6 +3306,13 @@ namespace System
             return false;
         }
 
+        public override unsafe bool IsInstanceOfType([NotNullWhen(true)] object? o)
+        {
+            bool ret = CastHelpers.IsInstanceOfAny(GetUnderlyingNativeHandle().ToPointer(), o) is not null;
+            GC.KeepAlive(this);
+            return ret;
+        }
+
 #if FEATURE_TYPEEQUIVALENCE
         // Reflexive, symmetric, transitive.
         public override bool IsEquivalentTo([NotNullWhen(true)] Type? other)
