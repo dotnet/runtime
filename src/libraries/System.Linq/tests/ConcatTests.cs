@@ -93,6 +93,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(ConcatWithSelfData))]
         [MemberData(nameof(ChainedCollectionConcatData))]
         [MemberData(nameof(AppendedPrependedConcatAlternationsData))]
+        [MemberData(nameof(ConcatWithEmptyEnumerableData))]
         public void First_Last_ElementAt(IEnumerable<int> _, IEnumerable<int> actual)
         {
             int count = actual.Count();
@@ -230,6 +231,15 @@ namespace System.Linq.Tests
                     expected.Clear();
                 }
             }
+        }
+
+        public static IEnumerable<object[]> ConcatWithEmptyEnumerableData()
+        {
+            yield return new object[]
+            {
+                Enumerable.Range(0, 10),
+                Enumerable.Concat(Enumerable.Concat(Enumerable.Range(0, 10), new List<int>()), new List<int>())
+            };
         }
 
         private static IEnumerable<object[]> GenerateSourcesData(
