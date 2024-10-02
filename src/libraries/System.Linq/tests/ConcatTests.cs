@@ -235,10 +235,27 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> ConcatWithEmptyEnumerableData()
         {
+            List<int> baseList = [0, 1, 2, 3, 4];
+
             yield return new object[]
             {
-                Enumerable.Range(0, 10),
-                Enumerable.Concat(Enumerable.Concat(Enumerable.Range(0, 10), new List<int>()), new List<int>())
+                Enumerable.Range(0, 5),
+                Enumerable.Concat(Enumerable.Concat(new List<int>(), new List<int>()), baseList)
+            };
+            yield return new object[]
+            {
+                Enumerable.Range(0, 5),
+                Enumerable.Concat(new List<int>(), baseList)
+            };
+            yield return new object[]
+            {
+                Enumerable.Range(0, 5),
+                Enumerable.Concat(Enumerable.Concat(baseList, new List<int>()), new List<int>())
+            };
+            yield return new object[]
+            {
+                Enumerable.Range(0, 5),
+                Enumerable.Concat(baseList, new List<int>())
             };
         }
 
