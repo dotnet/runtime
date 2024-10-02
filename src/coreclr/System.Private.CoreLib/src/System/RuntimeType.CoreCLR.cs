@@ -3382,7 +3382,8 @@ namespace System
 
                 Guid result;
 #if FEATURE_COMINTEROP
-                if (IsCOMObject)
+                // The fully qualified name is needed since the RuntimeType has a TypeHandle property.
+                if (System.Runtime.CompilerServices.TypeHandle.AreSameType(th, System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<__ComObject>()))
                 {
                     GetComObjectGuidWorker(this, &result);
                 }
@@ -3403,7 +3404,7 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe void GetComObjectGuidWorker(RuntimeType type, Guid* result)
         {
-            Debug.Assert(type.IsCOMObject);
+            Debug.Assert(type.IsGenericCOMObjectImpl());
             Debug.Assert(result is not null);
             GetComObjectGuid(ObjectHandleOnStack.Create(ref type), result);
         }
