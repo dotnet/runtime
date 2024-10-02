@@ -3363,29 +3363,26 @@ namespace System
 
         #region Attributes
 
-        public override Guid GUID
+        public override unsafe Guid GUID
         {
             get
             {
                 TypeHandle th = GetNativeTypeHandle();
-                if (th.IsTypeDesc || IsArray)
+                if (th.IsTypeDesc || th.AsMethodTable()->IsArray)
                 {
                     return Guid.Empty;
                 }
 
                 Guid result;
-                unsafe
-                {
 #if FEATURE_COMINTEROP
-                    if (this == (RuntimeType)typeof(__ComObject))
-                    {
-                        GetComObjectGuidWorker(this, &result);
-                    }
-                    else
+                if (this == (RuntimeType)typeof(__ComObject))
+                {
+                    GetComObjectGuidWorker(this, &result);
+                }
+                else
 #endif // FEATURE_COMINTEROP
-                    {
-                        GetGuid(th.AsMethodTable(), &result);
-                    }
+                {
+                    GetGuid(th.AsMethodTable(), &result);
                 }
                 GC.KeepAlive(this); // Ensure TypeHandle remains alive.
                 return result;
