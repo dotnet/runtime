@@ -437,7 +437,7 @@ namespace System.IO
         internal static void WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
         {
             // WriteFileGather does not support sync handles, so we just call WriteFile in a loop
-            int bytesWritten = 0;
+            long bytesWritten = 0;
             int buffersCount = buffers.Count;
             for (int i = 0; i < buffersCount; i++)
             {
