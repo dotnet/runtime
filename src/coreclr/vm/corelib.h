@@ -1072,6 +1072,8 @@ DEFINE_METHOD(SZARRAYHELPER,        INDEXOF,                IndexOf,            
 DEFINE_METHOD(SZARRAYHELPER,        INSERT,                 Insert,                     NoSig)
 DEFINE_METHOD(SZARRAYHELPER,        REMOVEAT,               RemoveAt,                   NoSig)
 
+DEFINE_CLASS(SZGENERICARRAYENUMERATOR, System, SZGenericArrayEnumerator`1)
+
 DEFINE_CLASS(IENUMERABLEGENERIC,    CollectionsGeneric,     IEnumerable`1)
 DEFINE_CLASS(IENUMERATORGENERIC,    CollectionsGeneric,     IEnumerator`1)
 DEFINE_CLASS(ICOLLECTIONGENERIC,    CollectionsGeneric,     ICollection`1)

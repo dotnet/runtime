@@ -468,6 +468,10 @@ public:
     void dmpGetDefaultEqualityComparerClass(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls);
 
+    void recGetSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
+    void dmpGetSZArrayHelperEnumeratorClass(DWORDLONG key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE cls);
+
     void recGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CLASS_HANDLE result);
     void dmpGetTokenTypeAsHandle(const GetTokenTypeAsHandleValue& key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken);
@@ -1187,6 +1191,7 @@ enum mcPackets
     Packet_GetFpStructLowering = 223,
     Packet_GetSpecialCopyHelper = 224,
     Packet_GetClassAssemblyName = 225,
+    Packet_GetSZArrayHelperEnumeratorClass = 226,
 };
 
 void SetDebugDumpVariables();

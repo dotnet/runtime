@@ -598,13 +598,22 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     CORINFO_METHOD_HANDLE guardedMethodUnboxedEntryHandle;
     unsigned              likelihood;
     bool                  requiresInstMethodTableArg;
+    bool                  arrayInterface;
 
     CORINFO_METHOD_INFO methInfo;
 
     // the logical IL caller of this inlinee.
-    CORINFO_METHOD_HANDLE  ilCallerHandle;
-    CORINFO_CLASS_HANDLE   clsHandle;
-    CORINFO_CONTEXT_HANDLE exactContextHnd;
+    CORINFO_METHOD_HANDLE ilCallerHandle;
+    CORINFO_CLASS_HANDLE  clsHandle;
+
+    // Context handle to use when inlining.
+    //
+    CORINFO_CONTEXT_HANDLE exactContextHandle;
+
+    // Context handle of the call before any
+    // GDV/Inlining evaluation
+    //
+    CORINFO_CONTEXT_HANDLE originalContextHandle;
 
     // The GT_RET_EXPR node linking back to the inline candidate.
     GenTreeRetExpr* retExpr;

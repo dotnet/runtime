@@ -229,6 +229,15 @@ CORINFO_CLASS_HANDLE MyICJI::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDL
     return result;
 }
 
+// Given T, return the type of the SZGenericArrayEnumerator<T>.
+// Returns null if the type can't be determined exactly.
+CORINFO_CLASS_HANDLE MyICJI::getSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getSZArrayHelperEnumeratorClass");
+    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetSZArrayHelperEnumeratorClass(cls);
+    return result;
+}
+
 void MyICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     jitInstance->mc->cr->AddCall("expandRawHandleIntrinsic");
