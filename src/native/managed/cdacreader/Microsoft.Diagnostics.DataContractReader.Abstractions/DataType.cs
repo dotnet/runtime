@@ -59,7 +59,7 @@ public enum DataType
     RangeSectionFragment,
     RangeSection,
     RealCodeHeader,
-    HeapList,
+    CodeHeapListNode,
     MethodDescVersioningState,
     ILCodeVersioningState,
     NativeCodeVersionNode,

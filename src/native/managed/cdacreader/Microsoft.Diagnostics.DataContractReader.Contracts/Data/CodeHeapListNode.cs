@@ -10,7 +10,7 @@ internal sealed class CodeHeapListNode : IData<CodeHeapListNode>
 
     public CodeHeapListNode(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.HeapList);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.CodeHeapListNode);
         Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
         StartAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(StartAddress)].Offset);
         EndAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(EndAddress)].Offset);
