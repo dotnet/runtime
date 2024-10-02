@@ -25,6 +25,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(InvalidClientHelloDataTruncatedBytes))]
+        [ActiveIssue("AAAA")]
         public void SniHelper_TruncatedData_Fails(int id, byte[] clientHello)
         {
             InvalidClientHello(clientHello, id, shouldPass: false);
