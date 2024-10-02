@@ -1101,22 +1101,17 @@ namespace Microsoft.Win32
                     if (s_systemEvents._windowHandle != IntPtr.Zero)
                     {
                         Interop.User32.PostQuitMessage(0);
-                        GC.KeepAlive(s_systemEvents);
                     }
 
+                    // Don't wait for the SystemEvents thread to finish to avoid blocking the Finalizer thread.
                     // When the main thread kicks off shutdown, the Finalizer thread will raise a ProcessExit event,
                     // which will callback to here waiting for this method to finish.
                     // This occurs before AppDomain.IsFinalizingForUnload or Environment.HasShutdownStarted is set to true.
-                    // Because of this, any code that needs a response from the main thread will not know main thread will not respond.
-                    // This can cause synchronous callbacks to deadlock. For example, in https://github.com/dotnet/winforms/issues/11944,
-                    // WindowsFormsSynchronizationContext will block the SystemEvents thread to wait for tasks to complete on the main thread.
-                    // It cannot see that main thread is trying to shut down, but is stuck waiting for the Finalizer thread to finish,
-                    // which is waiting for SystemEvents thread to finish. Avoid blocking the Finalizer thread on shutdown by skipping
-                    // waiting for the SystemEvents thread to finish.
-                    if (LocalAppContextSwitches.EnableLegacySystemEventsShutdownThreadJoin)
-                    {
-                        s_windowThread.Join();
-                    }
+                    // Because of this, any code that needs a response from the main thread will not know main thread will not respond
+                    // since it is in the middle of shutdown. This can cause synchronous callbacks to deadlock.
+                    // For example, in https://github.com/dotnet/winforms/issues/11944, WindowsFormsSynchronizationContext will block the
+                    // SystemEvents thread to wait for tasks to complete on the main thread. It cannot see that main thread is trying to
+                    // shut down, but is stuck waiting for the Finalizer thread to finish, which is waiting for SystemEvents thread to finish.
                 }
                 else
                 {

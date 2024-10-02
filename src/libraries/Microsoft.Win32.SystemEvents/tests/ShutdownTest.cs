@@ -33,9 +33,6 @@ public class ShutdownTest : SystemEventsTest
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
     public void ShutdownSuccessDespiteThreadBlock()
     {
-        AppContext.TryGetSwitch("Switch.SystemEvents.EnableLegacySystemEventsShutdownThreadJoin", out bool isEnabled);
-        Assert.False(isEnabled);
-
         RemoteExecutor.Invoke(() =>
         {
             // Block the SystemEvents thread. Regression test for https://github.com/dotnet/winforms/issues/11944
