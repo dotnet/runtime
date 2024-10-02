@@ -2724,6 +2724,14 @@ namespace System.Numerics.Tensors
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
         public static Tensor<T> Reshape<T>(this Tensor<T> tensor, params ReadOnlySpan<nint> lengths)
         {
+            if (tensor.Lengths.SequenceEqual(lengths))
+                return tensor;
+
+            if (!TensorHelpers.IsContiguousAndDense<T>(tensor) && !tensor.Strides.Contains(0))
+            {
+                ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
+            }
+
             nint[] arrLengths = lengths.ToArray();
             // Calculate wildcard info.
             if (lengths.Contains(-1))
@@ -2745,7 +2753,33 @@ namespace System.Numerics.Tensors
             nint tempLinear = TensorSpanHelpers.CalculateTotalLength(arrLengths);
             if (tempLinear != tensor.FlattenedLength)
                 ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
-            nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
+
+            nint[] strides;
+
+            // If we contain a 0 stride we can only add dimensions of length 1.
+            if (tensor.Strides.Contains(0))
+            {
+                List<nint> origStrides = new List<nint>(tensor.Strides.ToArray());
+                int lengthOffset = 0;
+                for (int i = 0; i < arrLengths.Length; i++)
+                {
+                    if (lengthOffset < tensor.Rank && arrLengths[i] == tensor.Lengths[lengthOffset])
+                        lengthOffset++;
+                    else if (arrLengths[i] == 1)
+                    {
+                        if (lengthOffset == tensor.Rank)
+                            origStrides.Add(tensor.Strides[lengthOffset - 1]);
+                        else
+                            origStrides.Insert(i, tensor.Strides[i] * tensor.Lengths[i]);
+                    }
+                    else
+                        ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
+                }
+                strides = origStrides.ToArray();
+            }
+            else
+                strides = TensorSpanHelpers.CalculateStrides(arrLengths);
+
             return new Tensor<T>(tensor._values, arrLengths, strides);
         }
 
@@ -2758,6 +2792,14 @@ namespace System.Numerics.Tensors
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
         public static TensorSpan<T> Reshape<T>(in this TensorSpan<T> tensor, params scoped ReadOnlySpan<nint> lengths)
         {
+            if (tensor.Lengths.SequenceEqual(lengths))
+                return tensor;
+
+            if (!TensorHelpers.IsContiguousAndDense<T>(tensor) && !tensor.Strides.Contains(0))
+            {
+                ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
+            }
+
             nint[] arrLengths = lengths.ToArray();
             // Calculate wildcard info.
             if (lengths.Contains(-1))
@@ -2779,7 +2821,35 @@ namespace System.Numerics.Tensors
             nint tempLinear = TensorSpanHelpers.CalculateTotalLength(arrLengths);
             if (tempLinear != tensor.FlattenedLength)
                 ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
-            nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
+
+            nint[] strides;
+
+            // If we contain a 0 stride we can only add dimensions of length 1.
+            if (tensor.Strides.Contains(0))
+            {
+                List<nint> origStrides = new List<nint>(tensor.Strides.ToArray());
+                int lengthOffset = 0;
+                for (int i = 0; i < arrLengths.Length; i++)
+                {
+                    if (lengthOffset < tensor.Rank && arrLengths[i] == tensor.Lengths[lengthOffset])
+                    {
+                        lengthOffset++;
+                    }
+                    else if (arrLengths[i] == 1)
+                    {
+                        if (lengthOffset == tensor.Rank)
+                            origStrides.Add(tensor.Strides[lengthOffset - 1]);
+                        else
+                            origStrides.Insert(i, tensor.Strides[i] * tensor.Lengths[i]);
+                    }
+                    else
+                        ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
+                }
+                strides = origStrides.ToArray();
+            }
+            else
+                strides = TensorSpanHelpers.CalculateStrides(arrLengths);
+
             TensorSpan<T> output = new TensorSpan<T>(ref tensor._reference, arrLengths, strides, tensor._shape._memoryLength);
             return output;
         }
@@ -2793,6 +2863,14 @@ namespace System.Numerics.Tensors
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
         public static ReadOnlyTensorSpan<T> Reshape<T>(in this ReadOnlyTensorSpan<T> tensor, params scoped ReadOnlySpan<nint> lengths)
         {
+            if (tensor.Lengths.SequenceEqual(lengths))
+                return tensor;
+
+            if (!TensorHelpers.IsContiguousAndDense<T>(tensor) && !tensor.Strides.Contains(0))
+            {
+                ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
+            }
+
             nint[] arrLengths = lengths.ToArray();
             // Calculate wildcard info.
             if (lengths.Contains(-1))
@@ -2814,7 +2892,33 @@ namespace System.Numerics.Tensors
             nint tempLinear = TensorSpanHelpers.CalculateTotalLength(arrLengths);
             if (tempLinear != tensor.FlattenedLength)
                 ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
-            nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
+
+            nint[] strides;
+
+            // If we contain a 0 stride we can only add dimensions of length 1.
+            if (tensor.Strides.Contains(0))
+            {
+                List<nint> origStrides = new List<nint>(tensor.Strides.ToArray());
+                int lengthOffset = 0;
+                for (int i = 0; i < arrLengths.Length; i++)
+                {
+                    if (lengthOffset < tensor.Rank && arrLengths[i] == tensor.Lengths[lengthOffset])
+                        lengthOffset++;
+                    else if (arrLengths[i] == 1)
+                    {
+                        if (lengthOffset == tensor.Rank)
+                            origStrides.Add(tensor.Strides[lengthOffset - 1]);
+                        else
+                            origStrides.Insert(i, tensor.Strides[i] * tensor.Lengths[i]);
+                    }
+                    else
+                        ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
+                }
+                strides = origStrides.ToArray();
+            }
+            else
+                strides = TensorSpanHelpers.CalculateStrides(arrLengths);
+
             ReadOnlyTensorSpan<T> output = new ReadOnlyTensorSpan<T>(ref tensor._reference, arrLengths, strides, tensor._shape._memoryLength);
             return output;
         }
@@ -3053,14 +3157,17 @@ namespace System.Numerics.Tensors
             TensorSpan<T> srcSpan;
             if (ranges == ReadOnlySpan<NRange>.Empty)
             {
-                if (!tensor.Lengths.SequenceEqual(values.Lengths))
+                if (!TensorHelpers.IsBroadcastableTo(values.Lengths, tensor.Lengths))
                     ThrowHelper.ThrowArgument_SetSliceNoRange(nameof(values));
-                srcSpan = tensor.Slice(tensor.Lengths);
+                srcSpan = tensor;
             }
             else
                 srcSpan = tensor.Slice(ranges);
 
-            if (!srcSpan.Lengths.SequenceEqual(values.Lengths))
+            if (!TensorHelpers.IsContiguousAndDense<T>(srcSpan))
+                ThrowHelper.ThrowArgument_SetSliceInvalidShapes(nameof(values));
+
+            if (!TensorHelpers.IsBroadcastableTo(values.Lengths, srcSpan.Lengths))
                 ThrowHelper.ThrowArgument_SetSliceInvalidShapes(nameof(values));
 
             values.CopyTo(srcSpan);
@@ -3555,8 +3662,13 @@ namespace System.Numerics.Tensors
 
             List<nint> tempLengths = tensor._lengths.ToList();
             tempLengths.Insert(dimension, 1);
-            nint[] lengths = tempLengths.ToArray();
-            nint[] strides = TensorSpanHelpers.CalculateStrides(lengths);
+            nint[] lengths = [.. tempLengths];
+            List<nint> tempStrides = tensor.Strides.ToArray().ToList();
+            if (dimension == tensor.Rank)
+                tempStrides.Add(tensor.Strides[dimension - 1]);
+            else
+                tempStrides.Insert(dimension, tensor.Strides[dimension] * tensor.Lengths[dimension]);
+            nint[] strides = [.. tempStrides];
             return new Tensor<T>(tensor._values, lengths, strides);
         }
 
@@ -3574,8 +3686,13 @@ namespace System.Numerics.Tensors
 
             List<nint> tempLengths = tensor.Lengths.ToArray().ToList();
             tempLengths.Insert(dimension, 1);
-            nint[] lengths = tempLengths.ToArray();
-            nint[] strides = TensorSpanHelpers.CalculateStrides(lengths);
+            nint[] lengths = [.. tempLengths];
+            List<nint> tempStrides = tensor.Strides.ToArray().ToList();
+            if (dimension == tensor.Rank)
+                tempStrides.Add(tensor.Strides[dimension - 1]);
+            else
+                tempStrides.Insert(dimension, tensor.Strides[dimension] * tensor.Lengths[dimension]);
+            nint[] strides = [.. tempStrides];
             return new TensorSpan<T>(ref tensor._reference, lengths, strides, tensor._shape._memoryLength);
         }
 
@@ -3593,8 +3710,13 @@ namespace System.Numerics.Tensors
 
             List<nint> tempLengths = tensor.Lengths.ToArray().ToList();
             tempLengths.Insert(dimension, 1);
-            nint[] lengths = tempLengths.ToArray();
-            nint[] strides = TensorSpanHelpers.CalculateStrides(lengths);
+            nint[] lengths = [.. tempLengths];
+            List<nint> tempStrides = tensor.Strides.ToArray().ToList();
+            if (dimension == tensor.Rank)
+                tempStrides.Add(tensor.Strides[dimension - 1]);
+            else
+                tempStrides.Insert(dimension, tensor.Strides[dimension] * tensor.Lengths[dimension]);
+            nint[] strides = [.. tempStrides];
             return new ReadOnlyTensorSpan<T>(ref tensor._reference, lengths, strides, tensor._shape._memoryLength);
         }
         #endregion
