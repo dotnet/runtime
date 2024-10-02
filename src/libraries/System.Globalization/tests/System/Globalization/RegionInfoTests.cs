@@ -269,7 +269,7 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentException>("culture", () => new RegionInfo(4096));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows8x))]
         public void BuiltInRegionListTest()
         {
             // Ensure we can create all region info objects from the built-in list
