@@ -8176,9 +8176,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         }
 
         CORINFO_CLASS_HANDLE moreExactBaseClass = baseClass;
-
-        // See if objClass is a more specific type than baseClass
-        if ((objClass != NO_CLASS_HANDLE) && info.compCompHnd->isMoreSpecificType(objClass, baseClass))
+        if (objClass != NO_CLASS_HANDLE)
         {
             moreExactBaseClass = objClass;
         }
