@@ -12981,9 +12981,10 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 {
                     inlineInfo = call->GetSingleInlineCandidateInfo();
                 }
-                if ((inlineInfo != nullptr) && (inlineInfo->exactContextHnd != nullptr))
+
+                if ((inlineInfo != nullptr) && (inlineInfo->exactContextHandle != nullptr))
                 {
-                    printf(" (exactContextHnd=0x%p)", dspPtr(inlineInfo->exactContextHnd));
+                    printf(" (exactContextHandle=0x%p)", dspPtr(inlineInfo->exactContextHandle));
                 }
             }
 
@@ -19048,7 +19049,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 // of the inlinee.
                 if (eeIsSharedInst(objClass))
                 {
-                    CORINFO_CONTEXT_HANDLE context = inlInfo->exactContextHnd;
+                    CORINFO_CONTEXT_HANDLE context = inlInfo->exactContextHandle;
 
                     if (context != nullptr)
                     {
