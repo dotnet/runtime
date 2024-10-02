@@ -740,8 +740,7 @@ FCIMPLEND
 FCIMPL2(void, StubHelpers::MulticastDebuggerTraceHelper, Object* element, INT32 count)
 {
     FCALL_CONTRACT;
-    FCUnique(0xa5);
-    g_pDebugger->MulticastTraceNextStep(reinterpret_cast<BYTE*>(element), count);
+    g_pDebugger->MulticastTraceNextStep((DELEGATEREF)ObjectToOBJECTREF(element), count);
 }
 FCIMPLEND
 

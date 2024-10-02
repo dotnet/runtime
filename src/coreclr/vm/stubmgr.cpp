@@ -19,14 +19,15 @@ const char *GetTType( TraceType tt)
 
     switch( tt )
     {
-        case TRACE_ENTRY_STUB:      return "TRACE_ENTRY_STUB";
-        case TRACE_STUB:            return "TRACE_STUB";
-        case TRACE_UNMANAGED:       return "TRACE_UNMANAGED";
-        case TRACE_MANAGED:         return "TRACE_MANAGED";
-        case TRACE_FRAME_PUSH:      return "TRACE_FRAME_PUSH";
-        case TRACE_MGR_PUSH:        return "TRACE_MGR_PUSH";
-        case TRACE_OTHER:           return "TRACE_OTHER";
-        case TRACE_UNJITTED_METHOD: return "TRACE_UNJITTED_METHOD";
+        case TRACE_ENTRY_STUB:                return "TRACE_ENTRY_STUB";
+        case TRACE_STUB:                      return "TRACE_STUB";
+        case TRACE_UNMANAGED:                 return "TRACE_UNMANAGED";
+        case TRACE_MANAGED:                   return "TRACE_MANAGED";
+        case TRACE_FRAME_PUSH:                return "TRACE_FRAME_PUSH";
+        case TRACE_MGR_PUSH:                  return "TRACE_MGR_PUSH";
+        case TRACE_OTHER:                     return "TRACE_OTHER";
+        case TRACE_UNJITTED_METHOD:           return "TRACE_UNJITTED_METHOD";
+        case TRACE_MULTICAST_DELEGATE_HELPER: return "TRACE_MULTICAST_DELEGATE_HELPER";
     }
     return "TRACE_REALLY_WACKED";
 }
@@ -115,6 +116,11 @@ const CHAR * TraceDestination::DbgToString(SString & buffer)
 
             case TRACE_MGR_PUSH:
                 buffer.Printf("TRACE_MGR_PUSH(addr=%p, sm=%s)", GetAddress(), this->GetStubManager()->DbgGetName());
+                pValue = buffer.GetUTF8();
+                break;
+            
+            case TRACE_MULTICAST_DELEGATE_HELPER:
+                buffer.Printf("TRACE_MULTICAST_DELEGATE_HELPER(addr=%p)", GetAddress());
                 pValue = buffer.GetUTF8();
                 break;
 
@@ -1711,15 +1717,14 @@ BOOL ILStubManager::DoTraceStub(PCODE stubStartAddress,
     MethodDesc* pStubMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
     if (pStubMD != NULL && pStubMD->AsDynamicMethodDesc()->IsMulticastStub())
     {
-        traceDestination = GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper);
+        trace->InitForMulticastDelegateHelper(GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper));
     }
     else
     {
         // This call is going out to unmanaged code, either through pinvoke or COM interop.
-        traceDestination = stubStartAddress;
+        trace->InitForManagerPush(stubStartAddress, this);
     }
 
-    trace->InitForManagerPush(traceDestination, this);
     LOG_TRACE_DESTINATION(trace, traceDestination, "ILStubManager::DoTraceStub");
 
     return TRUE;
@@ -1776,8 +1781,12 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 
     // See code:ILStubCache.CreateNewMethodDesc for the code that sets flags on stub MDs
     PCODE target = (PCODE)NULL;
-
-    if (pStubMD->IsReverseStub())
+    if (pStubMD->IsMulticastStub())
+    {
+        _ASSERTE(!"We should never get here. Multicast Delegates should not invoke TraceManager.");
+        return FALSE;
+    }
+    else if (pStubMD->IsReverseStub())
     {
         if (pStubMD->IsStatic())
         {

@@ -2614,7 +2614,7 @@ public:
 
     HRESULT ReDaclEvents(PSECURITY_DESCRIPTOR securityDescriptor);
 #ifndef DACCESS_COMPILE
-    void MulticastTraceNextStep(BYTE* pbDel, INT32 count);
+    void MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count);
 #endif
 
 #ifdef DACCESS_COMPILE

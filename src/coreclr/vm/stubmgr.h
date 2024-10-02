@@ -53,16 +53,17 @@
 // TraceType indicates what this 'target' is
 enum TraceType
 {
-    TRACE_ENTRY_STUB,               // Stub goes to an unmanaged entry stub
-    TRACE_STUB,                     // Stub goes to another stub
-    TRACE_UNMANAGED,                // Stub goes to unmanaged code
-    TRACE_MANAGED,                  // Stub goes to Jitted code
-    TRACE_UNJITTED_METHOD,          // Is the prestub, since there is no code, the address will actually be a MethodDesc*
+    TRACE_ENTRY_STUB,                // Stub goes to an unmanaged entry stub
+    TRACE_STUB,                      // Stub goes to another stub
+    TRACE_UNMANAGED,                 // Stub goes to unmanaged code
+    TRACE_MANAGED,                   // Stub goes to Jitted code
+    TRACE_UNJITTED_METHOD,           // Is the prestub, since there is no code, the address will actually be a MethodDesc*
 
-    TRACE_FRAME_PUSH,               // Don't know where stub goes, stop at address, and then ask the frame that is on the stack
-    TRACE_MGR_PUSH,                 // Don't know where stub goes, stop at address then call TraceManager() below to find out
+    TRACE_FRAME_PUSH,                // Don't know where stub goes, stop at address, and then ask the frame that is on the stack
+    TRACE_MGR_PUSH,                  // Don't know where stub goes, stop at address then call TraceManager() below to find out
+    TRACE_MULTICAST_DELEGATE_HELPER, // Stub goes to a multicast delegate helper
 
-    TRACE_OTHER                     // We are going somewhere you can't step into (eg. ee helper function)
+    TRACE_OTHER                      // We are going somewhere you can't step into (eg. ee helper function)
 };
 
 class StubManager;
@@ -143,6 +144,14 @@ public:
     void InitForFramePush(PCODE addr)
     {
         this->type = TRACE_FRAME_PUSH;
+        this->address = addr;
+        this->stubManager = NULL;
+    }
+
+    
+    void InitForMulticastDelegateHelper(PCODE addr)
+    {
+        this->type = TRACE_MULTICAST_DELEGATE_HELPER;
         this->address = addr;
         this->stubManager = NULL;
     }
