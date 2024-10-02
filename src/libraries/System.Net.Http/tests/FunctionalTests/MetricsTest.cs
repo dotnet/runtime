@@ -948,6 +948,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Browser is relaxed about validating HTTP headers")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
         public async Task RequestDuration_ConnectionClosedWhileReceivingHeaders_Recorded()
         {
             using CancellationTokenSource cancelServerCts = new CancellationTokenSource();

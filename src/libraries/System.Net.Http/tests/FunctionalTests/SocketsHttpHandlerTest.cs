@@ -312,24 +312,28 @@ namespace System.Net.Http.Functional.Tests
 #endif
 
     [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Decompression_Tests : HttpClientHandler_Decompression_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Decompression_Tests(ITestOutputHelper output) : base(output) { }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Certificates are not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test
     {
         public SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test(ITestOutputHelper output) : base(output) { }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Certificates are not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test
     {
         public SocketsHttpHandler_HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) { }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Proxy is not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test
     {
         public SocketsHttpHandler_HttpClientHandler_DefaultProxyCredentials_Test(ITestOutputHelper output) : base(output) { }
@@ -347,6 +351,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test
     {
         public SocketsHttpHandler_HttpClientHandler_MaxConnectionsPerServer_Test(ITestOutputHelper output) : base(output) { }
@@ -411,12 +416,14 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Certificates are not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test
     {
         public SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "ResponseDrainTimeout is not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_ResponseDrain_Test : HttpClientHandler_ResponseDrain_Test
     {
         protected override void SetResponseDrainTimeout(HttpClientHandler handler, TimeSpan time)
@@ -729,6 +736,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Proxy_Test : HttpClientHandler_Proxy_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
@@ -1298,12 +1306,14 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "UseCookies is not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SocketsHttpHandlerTest_Cookies : HttpClientHandlerTest_Cookies
     {
         public SocketsHttpHandlerTest_Cookies(ITestOutputHelper output) : base(output) { }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "UseCookies is not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SocketsHttpHandlerTest_Cookies_Http11 : HttpClientHandlerTest_Cookies_Http11
     {
         public SocketsHttpHandlerTest_Cookies_Http11(ITestOutputHelper output) : base(output) { }
@@ -1717,6 +1727,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Authentication_Test : HttpClientHandler_Authentication_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Authentication_Test(ITestOutputHelper output) : base(output) { }
@@ -1849,6 +1860,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SocketsHttpHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientHandlerTestBase
     {
         public SocketsHttpHandler_HttpClientHandler_ConnectionPooling_Test(ITestOutputHelper output) : base(output) { }
@@ -2600,6 +2612,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Headers.Location are not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SocketsHttpHandlerTest_LocationHeader
     {
         private static readonly byte[] s_redirectResponseBefore = Encoding.ASCII.GetBytes(
@@ -3597,6 +3610,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SocketsHttpHandlerTest_ConnectCallback_Http11 : SocketsHttpHandlerTest_ConnectCallback
     {
         public SocketsHttpHandlerTest_ConnectCallback_Http11(ITestOutputHelper output) : base(output) { }

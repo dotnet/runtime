@@ -17,7 +17,7 @@ namespace System.Net.Http.Functional.Tests
         public Task SendAsync_Null_ThrowsArgumentNullException() =>
             Assert.ThrowsAsync<ArgumentNullException>(() => new TestHttpClientHandler().SendNullAsync());
 
-        public static bool SupportsSyncSend => PlatformDetection.IsNotMobile && PlatformDetection.IsNotBrowser;
+        public static bool SupportsSyncSend => PlatformDetection.IsNotMobile && PlatformDetection.IsNotWasm;
 
         [ConditionalFact(nameof(SupportsSyncSend))]
         public void Send_Null_ThrowsArgumentNullException() => Assert.Throws<ArgumentNullException>(() => new TestHttpClientHandler().SendNull());

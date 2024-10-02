@@ -162,6 +162,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [SkipOnPlatform(TestPlatforms.Browser, "PreAuthenticate not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "PreAuthenticate not supported on Wasi")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostRewindableContentUsingAuth_NoPreAuthenticate_Success(Configuration.Http.RemoteServer remoteServer)
         {
@@ -179,6 +180,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "PreAuthenticate not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "PreAuthenticate not supported on Wasi")]
         public async Task PostNonRewindableContentUsingAuth_NoPreAuthenticate_ThrowsHttpRequestException(Configuration.Http.RemoteServer remoteServer)
         {
             // Sync API supported only up to HTTP/1.1
@@ -196,6 +198,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "PreAuthenticate not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "PreAuthenticate not supported on Wasi")]
         public async Task PostNonRewindableContentUsingAuth_PreAuthenticate_Success(Configuration.Http.RemoteServer remoteServer)
         {
             // Sync API supported only up to HTTP/1.1

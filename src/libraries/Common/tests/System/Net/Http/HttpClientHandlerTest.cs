@@ -45,6 +45,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Credentials not supported on Wasi")]
         public void Ctor_ExpectedDefaultPropertyValues_CommonPlatform()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -68,6 +69,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "MaxResponseHeadersLength is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "MaxResponseHeadersLength not supported on Wasi")]
         public void Ctor_ExpectedDefaultPropertyValues()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -86,6 +88,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Credentials not supported on Wasi")]
         public void Credentials_SetGet_Roundtrips()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -107,6 +110,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(-1)]
         [InlineData(0)]
         [SkipOnPlatform(TestPlatforms.Browser, "MaxAutomaticRedirections not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "MaxAutomaticRedirections not supported on Wasi")]
         public void MaxAutomaticRedirections_InvalidValue_Throws(int redirects)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -157,6 +161,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "ServerCertificateCustomValidationCallback not supported on Wasi")]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -231,6 +236,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("[::1234]:8080", "[::1234]:8080")]
         [InlineData("[fe80::9c3a:b64d:6249:1de8%2]", "[fe80::9c3a:b64d:6249:1de8]")]
         [SkipOnPlatform(TestPlatforms.Browser, "Proxy not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Proxy not supported on Wasi")]
         public async Task GetAsync_IPv6AddressInHostHeader_CorrectlyFormatted(string host, string hostHeader)
         {
             string ipv6Address = "http://" + host;
@@ -263,7 +269,7 @@ namespace System.Net.Http.Functional.Tests
             from address in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback }
             from useSsl in BoolValues
                 // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
-            where PlatformDetection.IsNotBrowser || !useSsl
+            where PlatformDetection.IsNotWasm || !useSsl
             select new object[] { address, useSsl };
 
         [ConditionalTheory]
@@ -287,7 +293,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    if (useSsl && PlatformDetection.IsNotBrowser)
+                    if (useSsl && PlatformDetection.IsNotWasm)
                     {
                         // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                         handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
@@ -309,6 +315,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("WWW-Authenticate", "CustomAuth")]
         [InlineData("", "")] // RFC7235 requires servers to send this header with 401 but some servers don't.
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Credentials is not supported on Wasi")]
         public async Task GetAsync_ServerNeedsNonStandardAuthAndSetCredential_StatusCodeUnauthorized(string authHeadrName, string authHeaderValue)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1590,6 +1597,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(Interim1xxStatusCode))]
         [SkipOnPlatform(TestPlatforms.Browser, "CookieContainer is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "CookieContainer is not supported on Wasi")]
         public async Task SendAsync_1xxResponsesWithHeaders_InterimResponsesHeadersIgnored(HttpStatusCode responseStatusCode)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1859,6 +1867,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Switching protocol is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Switching protocol is not supported on Wasi")]
         public async Task SendAsync_101SwitchingProtocolsResponse_Success()
         {
             // WinHttpHandler and CurlHandler will hang, waiting for additional response.
@@ -1986,6 +1995,7 @@ namespace System.Net.Http.Functional.Tests
         #region Version tests
 
         [SkipOnPlatform(TestPlatforms.Browser, "Version is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Version is not supported on Wasi")]
         [Fact]
         public async Task SendAsync_RequestVersion10_ServerReceivesVersion10Request()
         {
@@ -1999,7 +2009,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(new Version(1, 0), receivedRequestVersion);
         }
 
-        [SkipOnPlatform(TestPlatforms.Browser, "Version is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Version is not supported on Wasi")]
         [Fact]
         public async Task SendAsync_RequestVersion11_ServerReceivesVersion11Request()
         {

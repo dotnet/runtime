@@ -63,6 +63,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         [InlineData(true)]
         [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "UseProxy not supported on Wasi")]
         public async Task UseDefaultCredentials_SetToFalseAndServerNeedsAuth_StatusCodeUnauthorized(bool useProxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -131,6 +132,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Credentials is not supported on Wasi")]
         public async Task GetAsync_ServerNeedsBasicAuthAndSetDefaultCredentials_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -148,6 +150,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Credentials is not supported on Wasi")]
         public async Task GetAsync_ServerNeedsAuthAndSetCredential_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -611,6 +614,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(ExpectContinueVersion))]
         [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "ExpectContinue not supported on Wasi")]
         public async Task PostAsync_ExpectContinue_Success(bool? expectContinue, Version version)
         {
             // Sync API supported only up to HTTP/1.1
@@ -1052,6 +1056,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(3, 3)]
         [InlineData(3, 4)]
         [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "MaxConnectionsPerServer not supported on Wasi")]
         public async Task GetAsync_MaxAutomaticRedirectionsNServerHops_ThrowsIfTooMany(int maxHops, int hops)
         {
             if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1703OrGreater)
@@ -1122,6 +1127,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [OuterLoop("Uses external servers")]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Credentials is not supported on Wasi")]
         public async Task GetAsync_CredentialIsNetworkCredentialUriRedirect_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -1142,6 +1148,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [OuterLoop("Uses external servers")]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Credentials is not supported on Wasi")]
         public async Task HttpClientHandler_CredentialIsNotCredentialCacheAfterRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -1169,6 +1176,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Credentials is not supported on Wasi")]
         public async Task GetAsync_CredentialIsCredentialCacheUriRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
             if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
@@ -1242,6 +1250,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "AutomaticDecompression not supported on Wasi")]
         [Theory, MemberData(nameof(RemoteServersAndCompressionUris))]
         public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed_GZip(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
@@ -1274,6 +1283,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("http://httpbin.org/deflate", "\"deflated\": true")]
         [InlineData("https://httpbin.org/deflate", "\"deflated\": true")]
         [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "AutomaticDecompression not supported on Wasi")]
         public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed_Deflate(string uri, string expectedContent)
         {
             if (IsWinHttpHandler)
@@ -1308,6 +1318,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersAndCompressionUris))]
         [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "AutomaticDecompression not supported on Wasi")]
         public async Task GetAsync_SetAutomaticDecompression_HeadersRemoved(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
             // Sync API supported only up to HTTP/1.1

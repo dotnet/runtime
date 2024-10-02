@@ -71,7 +71,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Dispose_WhileInUse_DisposeDelayed()
         {
             using (var listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -105,7 +105,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ExecutionContext_FlowsIfNotSuppressed(bool suppressed)
@@ -147,13 +147,13 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ExecutionContext_SocketAsyncEventArgs_Ctor_Default_FlowIsNotSuppressed()
         {
             await ExecutionContext_SocketAsyncEventArgs_Ctors(() => new SocketAsyncEventArgs(), false);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ExecutionContext_SocketAsyncEventArgs_Ctor_UnsafeSuppressExecutionContextFlow(bool suppressed)
@@ -358,7 +358,7 @@ namespace System.Net.Sockets.Tests
                     tcs2 = new TaskCompletionSource();
                     Assert.True(client.ReceiveAsync(receiveSaea));
 
-                    server.Send(new byte[1]);
+                    await server.SendAsync(new byte[1]);
                     await Task.WhenAll(tcs1.Task, tcs2.Task);
 
                     receiveSaea.Completed -= handler2;
@@ -367,7 +367,7 @@ namespace System.Net.Sockets.Tests
                     tcs2 = new TaskCompletionSource();
                     Assert.True(client.ReceiveAsync(receiveSaea));
 
-                    server.Send(new byte[1]);
+                    await server.SendAsync(new byte[1]);
                     await tcs1.Task;
 
                     Assert.False(tcs2.Task.IsCompleted);
@@ -430,6 +430,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(false, 10_000)]
         [InlineData(true, 1)]           // This should fit with SYN flag
         [InlineData(true, 10_000)]      // This should be too big to fit completely to first packet.
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support FastOpen")]
         public async Task ConnectAsync_WithData_OK(bool useFastOpen, int size)
         {
             if (useFastOpen && PlatformDetection.IsWindows && !PlatformDetection.IsWindows10OrLater)
@@ -521,7 +522,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false, 1)]
         [InlineData(false, 10_000)]
         [InlineData(true, 1)]           // This should fit with SYN flag
@@ -687,7 +688,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Unix platforms don't yet support receiving data with AcceptAsync.
         public void AcceptAsync_WithReceiveBuffer_Success()
         {
@@ -775,6 +776,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task SocketConnectAsync_IPAddressAny_SocketAsyncEventArgsReusableAfterFailure()
         {
             var e = new SocketAsyncEventArgs();
@@ -1041,7 +1043,7 @@ namespace System.Net.Sockets.Tests
             }, 30_000));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task SendTo_DifferentEP_Success(bool ipv4)
@@ -1093,6 +1095,8 @@ namespace System.Net.Sockets.Tests
     {
         internal static void Connect(this Socket socket, EndPoint ep, Memory<byte> buffer, int timeout)
         {
+            Assert.False(OperatingSystem.IsWasi()); // wait below requires threading
+
             var re = new ManualResetEventSlim();
             var saea = new SocketAsyncEventArgs();
             saea.SetBuffer(buffer);

@@ -274,6 +274,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(CancellationMode.CancelPendingRequests, true)]
         [InlineData(CancellationMode.DisposeHttpClient, true)]
         [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't have blocking synchronous Stream.ReadByte and so it waits for whole body")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't have blocking synchronous Stream.ReadByte and so it waits for whole body")]
         public async Task GetAsync_CancelPendingRequests_DoesntCancelReadAsyncOnResponseStream(CancellationMode mode, bool copyToAsync)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -347,6 +348,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "MaxConnectionsPerServer is not supported on Wasi")]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)

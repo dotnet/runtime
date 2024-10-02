@@ -6,7 +6,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasm))]
     [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send method is not supported on Android.")]
     public sealed class SyncHttpHandler_HttpProtocolTests : HttpProtocolTests
     {
@@ -14,7 +14,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasm))]
     [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send method is not supported on Android.")]
     public sealed class SyncHttpHandler_HttpProtocolTests_Dribble : HttpProtocolTests_Dribble
     {
@@ -37,7 +37,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasm))]
     [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send method is not supported on Android.")]
     public sealed class SyncHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
@@ -45,7 +45,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasm))]
     [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send method is not supported on Android.")]
     public sealed class SyncHttpHandlerTest_AutoRedirect : HttpClientHandlerTest_AutoRedirect
     {
@@ -60,7 +60,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasm))]
     [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send method is not supported on Android.")]
     public sealed class SyncHttpHandler_IdnaProtocolTests : IdnaProtocolTests
     {
@@ -69,7 +69,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool SupportsIdna => true;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasm))]
     [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send method is not supported on Android.")]
     public sealed class SyncHttpHandlerTest_RequestRetry : HttpClientHandlerTest_RequestRetry
     {
@@ -77,7 +77,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasm))]
     [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send method is not supported on Android.")]
     public sealed class SyncHttpHandlerTest_Cookies : HttpClientHandlerTest_Cookies
     {
@@ -85,7 +85,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasm))]
     [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send method is not supported on Android.")]
     public sealed class SyncHttpHandlerTest_Cookies_Http11 : HttpClientHandlerTest_Cookies_Http11
     {
@@ -93,7 +93,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasm))]
     [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send method is not supported on Android.")]
     public sealed class SyncHttpHandler_HttpClientHandler_Cancellation_Test : SocketsHttpHandler_Cancellation_Test
     {
@@ -101,7 +101,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasm))]
     [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send method is not supported on Android.")]
     public sealed class SyncHttpHandler_HttpClientHandler_Authentication_Test : HttpClientHandler_Authentication_Test
     {
@@ -109,7 +109,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasm))]
     [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send method is not supported on Android.")]
     public sealed class SyncHttpHandler_Connect_Test : HttpClientHandler_Connect_Test
     {
@@ -119,6 +119,7 @@ namespace System.Net.Http.Functional.Tests
 
     [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
     [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send method is not supported on Android.")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SyncHttpHandlerTest_HttpClientHandlerTest_Headers : HttpClientHandlerTest_Headers
     {
         public SyncHttpHandlerTest_HttpClientHandlerTest_Headers(ITestOutputHelper output) : base(output) { }
