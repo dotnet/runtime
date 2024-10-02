@@ -182,6 +182,8 @@ namespace Wasm.Build.Tests
                 // Ensure build finished and we got all output.
                 if (!res.Output.Contains("Build succeeded in"))
                 {
+                    _testOutput.WriteLine("Replacing dotnet process output with messages from binlog");
+
                     var outputBuilder = new StringBuilder();
                     var buildRoot = BinaryLog.ReadBuild(logFilePath);
                     buildRoot.VisitAllChildren<Message>(m =>
