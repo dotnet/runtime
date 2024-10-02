@@ -27,12 +27,9 @@ namespace System
 
         internal static bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o)
         {
-            if (type is null)
-            {
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
-            }
-
-            return CastHelpers.IsInstanceOfAny(type.GetUnderlyingNativeHandle().ToPointer(), o) is not null;
+            bool ret = CastHelpers.IsInstanceOfAny(type.GetUnderlyingNativeHandle().ToPointer(), o) is not null;
+            GC.KeepAlive(type);
+            return ret;
         }
 
         /// <summary>

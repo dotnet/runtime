@@ -69,7 +69,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_InvokeDispMethod(
     QCall::ObjectHandleOnStack target,
     QCall::ObjectHandleOnStack args,
     QCall::ObjectHandleOnStack byrefModifiers,
-    LCID culture,
+    LCID lcid,
     QCall::ObjectHandleOnStack namedParameters,
     QCall::ObjectHandleOnStack result);
 

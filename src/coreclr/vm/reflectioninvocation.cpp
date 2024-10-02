@@ -33,9 +33,8 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_GetValue(FieldDesc* fieldDesc, QCal
 
     GCX_COOP();
 
-    OBJECTREF target = NULL;
+    OBJECTREF target = instance.Get();
     GCPROTECT_BEGIN(target);
-    target = instance.Get();
 
     // There can be no GC after this until the Object is returned.
     result.Set(InvokeUtil::GetFieldValue(fieldDesc, fieldType.AsTypeHandle(), &target, declaringType.AsTypeHandle(), pIsClassInitialized));
@@ -1376,7 +1375,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_InvokeDispMethod(
     QCall::ObjectHandleOnStack target,
     QCall::ObjectHandleOnStack args,
     QCall::ObjectHandleOnStack byrefModifiers,
-    LCID culture,
+    LCID lcid,
     QCall::ObjectHandleOnStack namedParameters,
     QCall::ObjectHandleOnStack result)
 {
@@ -1429,7 +1428,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_InvokeDispMethod(
                         (OBJECTREF*)&gc.byrefModifiers,
                         (OBJECTREF*)&gc.namedParameters,
                         &gc.RetObj,
-                        culture,
+                        lcid,
                         flags,
                         invokeAttr & BINDER_IgnoreReturn,
                         invokeAttr & BINDER_IgnoreCase);
@@ -1484,9 +1483,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetGuid(MethodTable* pMT, GUID* r
 
     BEGIN_QCALL;
 
-    GUID guid;
-    pMT->GetGuid(&guid, /* bGenerateIfNotFound */ TRUE);
-    memcpyNoGCRefs(result, &guid, sizeof(GUID));
+    pMT->GetGuid(result, /* bGenerateIfNotFound */ TRUE);
 
     END_QCALL;
 }

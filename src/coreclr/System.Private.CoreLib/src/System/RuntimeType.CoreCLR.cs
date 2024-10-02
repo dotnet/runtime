@@ -3373,7 +3373,7 @@ namespace System
                     return Guid.Empty;
                 }
 
-                Guid result = default;
+                Guid result;
                 unsafe
                 {
 #if FEATURE_COMINTEROP
@@ -4062,7 +4062,7 @@ namespace System
             ObjectHandleOnStack target,
             ObjectHandleOnStack args,
             ObjectHandleOnStack byrefModifiers,
-            int culture,
+            int lcid,
             ObjectHandleOnStack namedParameters,
             ObjectHandleOnStack result);
 
