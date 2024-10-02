@@ -63,7 +63,7 @@ namespace System.Net.Sockets
         {
             if (OperatingSystem.IsWasi())
             {
-                // Unify with unix after https://github.com/WebAssembly/wasi-libc/issues/537
+                // FIXME: Unify with unix after https://github.com/WebAssembly/wasi-libc/issues/537
                 blocking = false;
                 Interop.Error e = Interop.Sys.GetSocketType(handle, out addressFamily, out socketType, out protocolType, out isListening);
                 if (e == Interop.Error.ENOTSOCK)

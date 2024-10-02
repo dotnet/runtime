@@ -281,7 +281,7 @@ namespace System.Threading
                     return;
                 }
 
-                // it will be removed from s_pollables on the next run
+                // it will be removed from s_hooks on the next run
                 self.isDisposed = true;
                 self.cancellationTokenRegistration.Dispose();
             }

@@ -226,7 +226,7 @@ namespace System.Net.Sockets
         //     Number of bytes we read, or 0 if the socket is closed.
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
@@ -247,7 +247,7 @@ namespace System.Net.Sockets
 
         public override int Read(Span<byte> buffer)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
             if (GetType() != typeof(NetworkStream))
             {
@@ -272,7 +272,7 @@ namespace System.Net.Sockets
 
         public override unsafe int ReadByte()
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
             byte b;
             return Read(new Span<byte>(&b, 1)) == 0 ? -1 : b;
@@ -296,7 +296,7 @@ namespace System.Net.Sockets
         //     way to indicate an error.
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
@@ -319,7 +319,7 @@ namespace System.Net.Sockets
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
             if (GetType() != typeof(NetworkStream))
             {
@@ -432,7 +432,7 @@ namespace System.Net.Sockets
         //     An IASyncResult, representing the read.
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
@@ -467,7 +467,7 @@ namespace System.Net.Sockets
         //     The number of bytes read. May throw an exception.
         public override int EndRead(IAsyncResult asyncResult)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(asyncResult);
@@ -498,7 +498,7 @@ namespace System.Net.Sockets
         //     An IASyncResult, representing the write.
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
@@ -530,7 +530,7 @@ namespace System.Net.Sockets
         // Returns:  The number of bytes read. May throw an exception.
         public override void EndWrite(IAsyncResult asyncResult)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(asyncResult);

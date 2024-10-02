@@ -71,6 +71,7 @@ namespace System.Net.Sockets
 
                 // The socket was created successfully; enable IPV6_V6ONLY by default for normal AF_INET6 sockets.
                 // This fails on raw sockets so we just let them be in default state.
+                // WASI is always IPv6-only when IPv6 is enabled.
                 if (!OperatingSystem.IsWasi() && addressFamily == AddressFamily.InterNetworkV6 && socketType != SocketType.Raw)
                 {
                     int on = 1;

@@ -16,8 +16,7 @@ namespace System.Net.Sockets
 {
     internal sealed unsafe class SocketAsyncEngine
     {
-        internal static readonly bool InlineSocketCompletionsEnabled = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1";
-        internal static readonly TaskContinuationOptions ContinuationOptions = InlineSocketCompletionsEnabled ? TaskContinuationOptions.ExecuteSynchronously : TaskContinuationOptions.RunContinuationsAsynchronously;
+        internal const bool InlineSocketCompletionsEnabled = true;
         private static readonly SocketAsyncEngine s_engine = new SocketAsyncEngine();
 
         public static bool TryRegisterSocket(IntPtr socketHandle, SocketAsyncContext context, out SocketAsyncEngine? engine, out Interop.Error error)
@@ -43,6 +42,9 @@ namespace System.Net.Sockets
             context.unregisterPollHook.Cancel();
         }
 
+        // this method is invading private implementation details of wasi-libc
+        // we could get rid of it when https://github.com/WebAssembly/wasi-libc/issues/542 is resolved
+        // or after WASIp3 promises are implemented, whatever comes first
         public static IList<int> BeforePollHook(object? state)
         {
             var context = (SocketAsyncContext)state!;

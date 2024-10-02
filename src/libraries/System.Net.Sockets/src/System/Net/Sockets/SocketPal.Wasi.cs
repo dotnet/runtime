@@ -11,6 +11,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
+// types here are clone of private implementation details of wasi-libc
+// we could get rid of it when https://github.com/WebAssembly/wasi-libc/issues/542 is resolved
+// or after WASIp3 promises are implemented, whatever comes first
+
 namespace System.Net.Sockets
 {
     [StructLayout(LayoutKind.Sequential)]

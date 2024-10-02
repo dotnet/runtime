@@ -3373,6 +3373,9 @@ static int32_t WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32
 // from https://github.com/WebAssembly/wasi-libc/blob/230d4be6c54bec93181050f9e25c87150506bdd0/libc-bottom-half/headers/private/wasi/descriptor_table.h
 bool descriptor_table_get_ref(int fd, void **entry);
 
+// this method is invading private implementation details of wasi-libc
+// we could get rid of it when https://github.com/WebAssembly/wasi-libc/issues/542 is resolved
+// or after WASIp3 promises are implemented, whatever comes first
 int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry)
 {
     if (entry == NULL)
