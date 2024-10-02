@@ -896,6 +896,12 @@ INST3(movbe,            "movbe",            IUM_WR, PCKMVB(0xF1), BAD_CODE,     
 // POPCNT
 INST3(popcnt,           "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xB8),                            INS_TT_NONE,    Resets_OF      | Resets_SF     | Writes_ZF     | Resets_AF     | Resets_PF     | Resets_CF | Encoding_REX2)
 
+#if defined(TARGET_AMD64)
+INST3(tzcnt_evex,       "tzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0000F4,                                INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF | INS_Flags_Has_NF)    // Count the Number of Trailing Zero Bits
+INST3(lzcnt_evex,       "lzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0000F5,                                INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF | INS_Flags_Has_NF)
+INST3(popcnt_evex,      "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     0x000088,                                INS_TT_NONE,    Resets_OF      | Resets_SF     | Writes_ZF     | Resets_AF     | Resets_PF     | Resets_CF | INS_Flags_Has_NF)
+#endif // TARGET_AMD64
+
 INST3(neg,              "neg",              IUM_RW, 0x0018F6,     BAD_CODE,     0x0018F6,                                INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
 INST3(not,              "not",              IUM_RW, 0x0010F6,     BAD_CODE,     0x0010F6,                                INS_TT_NONE,    INS_FLAGS_None | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD)
 

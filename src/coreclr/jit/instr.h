@@ -221,8 +221,11 @@ enum insFlags : uint64_t
     // APX: REX2 prefix:
     Encoding_REX2  = 1ULL << 44,
 
-    // APX: NDD form:
-    INS_Flags_Has_NDD  = 1ULL << 45,
+    // APX: EVEX.ND:
+    INS_Flags_Has_NDD  = 1ULL << 45,    
+    
+    // APX: EVEX.NF:
+    INS_Flags_Has_NF  = 1ULL << 46,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
@@ -264,10 +267,14 @@ enum insOpts: unsigned
     INS_OPTS_EVEX_em_zero = 1 << 5, // Embedded mask merges with zero
 
     // One-bit:  0b0100_0000
-    // TODO-Ruihan: may consider define it only under x64
     INS_OPTS_EVEX_nd_MASK = 0x40,   // mask for APX-EVEX.nd related features
 
     INS_OPTS_EVEX_nd = 1 << 6,      // NDD form for legacy instructions
+
+    // One-bit:  0b1000_0000
+    INS_OPTS_EVEX_nf_MASK = 0x80,   // mask for APX-EVEX.nf related features
+
+    INS_OPTS_EVEX_nf = 1 << 7,      // NDD form for legacy instructions
 
 };
 

@@ -794,10 +794,12 @@ protected:
         // For normal and embedded broadcast intrinsics, EVEX.L'L has the same semantic, vector length.
         // For embedded rounding, EVEX.L'L semantic changes to indicate the rounding mode.
         // Multiple bits in _idEvexbContext are used to inform emitter to specially handle the EVEX.L'L bits.
-        unsigned _idCustom5 : 2;
+        unsigned _idCustom5 : 1;
+        unsigned _idCustom6 : 1;
 
-#define _idEvexbContext   _idCustom5 /* Evex.b: embedded broadcast, embedded rounding, embedded SAE */
+#define _idEvexbContext   (_idCustom6 << 1) | _idCustom5 /* Evex.b: embedded broadcast, embedded rounding, embedded SAE */
 #define _idEvexNdContext  _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
+#define _idEvexNfContext  _idCustom6 /* bits used for the APX-EVEX.nf context for promoted legacy/vex instructions */
 #endif //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
@@ -1661,38 +1663,18 @@ protected:
 #ifdef TARGET_XARCH
         bool idIsEvexbContextSet() const
         {
-            return _idEvexbContext != 0;
+            return idGetEvexbContext() != 0;
         }
 
         void idSetEvexbContext(insOpts instOptions)
         {
             assert(!idIsEvexbContextSet());
+            assert(idGetEvexbContext() == 0);
+            unsigned value = static_cast<unsigned>(instOptions & INS_OPTS_EVEX_b_MASK);
 
-            switch (instOptions & INS_OPTS_EVEX_b_MASK)
-            {
-                case INS_OPTS_EVEX_eb_er_rd:
-                {
-                    _idEvexbContext = 1;
-                    break;
-                }
-
-                case INS_OPTS_EVEX_er_ru:
-                {
-                    _idEvexbContext = 2;
-                    break;
-                }
-
-                case INS_OPTS_EVEX_er_rz:
-                {
-                    _idEvexbContext = 3;
-                    break;
-                }
-
-                default:
-                {
-                    unreached();
-                }
-            }
+            _idCustom5 = ((value >> 0) & 1);
+            _idCustom6 = ((value >> 1) & 1);
+            
         }
 
         unsigned idGetEvexbContext() const
