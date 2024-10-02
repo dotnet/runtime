@@ -226,10 +226,10 @@ internal unsafe static class MockMemorySpace
             return true;
         }
 
-        public bool TryCreateTarget([NotNullWhen(true)] out Target? target)
+        public bool TryCreateTarget([NotNullWhen(true)] out ContractDescriptorTarget? target)
         {
             ReadContext context = CreateContext();
-            return Target.TryCreate(context.ContractDescriptor.Address, context.ReadFromTarget, out target);
+            return ContractDescriptorTarget.TryCreate(context.ContractDescriptor.Address, context.ReadFromTarget, out target);
         }
     }
 
