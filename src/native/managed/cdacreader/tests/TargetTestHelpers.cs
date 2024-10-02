@@ -251,6 +251,18 @@ internal unsafe class TargetTestHelpers
         }
     }
 
+    internal TargetPointer ReadPointer(ReadOnlySpan<byte> src)
+    {
+        if (Arch.Is64Bit)
+        {
+            return Arch.IsLittleEndian ? BinaryPrimitives.ReadUInt64LittleEndian(src) : BinaryPrimitives.ReadUInt64BigEndian(src);
+        }
+        else
+        {
+            return Arch.IsLittleEndian ? BinaryPrimitives.ReadUInt32LittleEndian(src) : BinaryPrimitives.ReadUInt32BigEndian(src);
+        }
+    }
+
     internal int SizeOfPrimitive(DataType type)
     {
         return type switch
