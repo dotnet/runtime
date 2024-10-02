@@ -415,11 +415,6 @@ namespace Mono.Linker
 		// not an array, pointer, byref, or generic parameter. Conceptually this is supposed to represent the same idea as Roslyn's
 		// INamedTypeSymbol, or ILC's DefType/MetadataType.
 		public static bool IsNamedType (this TypeReference typeReference) {
-			// Shouldn't get called for these cases
-			Debug.Assert (!typeReference.IsFunctionPointer);
-			Debug.Assert (!typeReference.IsPinned);
-			Debug.Assert (!typeReference.IsSentinel);
-
 			if (typeReference.IsRequiredModifier)
 				typeReference = ((RequiredModifierType) typeReference).ElementType;
 			if (typeReference.IsOptionalModifier)
@@ -428,7 +423,17 @@ namespace Mono.Linker
 			if (typeReference.IsDefinition || typeReference.IsGenericInstance)
 				return true;
 
-			if (typeReference.IsArray || typeReference.IsByReference || typeReference.IsPointer || typeReference.IsGenericParameter)
+			if (typeReference.IsArray ||
+				typeReference.IsByReference ||
+				typeReference.IsPointer ||
+				typeReference.IsFunctionPointer ||
+				typeReference.IsGenericParameter)
+				return false;
+
+			// Shouldn't get called for these cases
+			Debug.Assert (!typeReference.IsPinned);
+			Debug.Assert (!typeReference.IsSentinel);
+			if (typeReference.IsPinned || typeReference.IsSentinel)
 				return false;
 
 			Debug.Assert (typeReference.GetType () == typeof (TypeReference));
