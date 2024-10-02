@@ -3382,7 +3382,7 @@ namespace System
 
                 Guid result;
 #if FEATURE_COMINTEROP
-                if (this == (RuntimeType)typeof(__ComObject))
+                if (IsCOMObject)
                 {
                     GetComObjectGuidWorker(this, &result);
                 }
@@ -3403,7 +3403,7 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe void GetComObjectGuidWorker(RuntimeType type, Guid* result)
         {
-            Debug.Assert(type == (RuntimeType)typeof(__ComObject));
+            Debug.Assert(type.IsCOMObject);
             Debug.Assert(result is not null);
             GetComObjectGuid(ObjectHandleOnStack.Create(ref type), result);
         }

@@ -1453,7 +1453,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetComObjectGuid(QCall::ObjectHan
     SyncBlock* pSyncBlock;
     {
         GCX_COOP();
-        _ASSERTE(type.Get()->GetMethodTable()->IsComObjectType());
+        _ASSERTE(IsComObjectClass(TypeHandle{ type.Get()->GetMethodTable() }));
         pSyncBlock = type.Get()->GetSyncBlock();
     }
     ComClassFactory* pComClsFac = pSyncBlock->GetInteropInfo()->GetComClassFactory();
