@@ -195,7 +195,7 @@ namespace System.Globalization
                 Next: ;
                 }
 
-                // Before we return -1, check if the remaining source contains any special on non-Ascii characters.
+                // Before we return -1, check if the remaining source contains any special or non-Ascii characters.
                 if (remainingSource.ContainsAnyExcept(s_nonSpecialAsciiChars))
                 {
                     goto InteropCall;
