@@ -17,11 +17,11 @@
 
 #include "gcenv.structs.h"
 #include "gcenv.base.h"
-#include "gcenv.ee.h"
 #include "gcenv.os.h"
+#include "gcenv.ee.h"
 #include "gcenv.unix.inl"
-#include "gcconfig.h"
 #include "volatile.h"
+#include "gcconfig.h"
 #include "numasupport.h"
 
 #if HAVE_SWAPCTL
