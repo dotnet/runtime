@@ -1,4 +1,4 @@
-<!--
+<!--WasmPublishBootConfigFileName
 ***********************************************************************************************
 Microsoft.NET.Sdk.WebAssembly.targets
 
@@ -19,8 +19,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <RunCommand Condition="'$(RunCommand)' == ''">dotnet</RunCommand>
 
     <WasmAppHostDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'WasmAppHost'))</WasmAppHostDir>
-    <WasmBuildBootJsonFileName Condition="'$(WasmBuildBootJsonFileName)'==''">blazor.boot.json</WasmBuildBootJsonFileName>
-    <WasmBuildPublishBootJsonFileName Condition="'$(WasmBuildPublishBootJsonFileName)'==''">blazor.publish.boot.json</WasmBuildPublishBootJsonFileName>
+    <WasmBootConfigFileName Condition="'$(WasmBootConfigFileName)'==''">blazor.boot.json</WasmBootConfigFileName>
+    <WasmPublishBootConfigFileName Condition="'$(WasmPublishBootConfigFileName)'==''">publish.$(WasmBootConfigFileName)</WasmPublishBootConfigFileName>
 
     <_RunWorkingDirectory>$(OutputPath)</_RunWorkingDirectory>
     <_RunWorkingDirectory Condition="'$(_RunWorkingDirectory)' != '' and !$([System.IO.Path]::IsPathRooted($(_RunWorkingDirectory)))">$([System.IO.Path]::Combine($(MSBuildProjectDirectory), $(_RunWorkingDirectory)))</_RunWorkingDirectory>
@@ -329,7 +329,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="$(GenerateBuildWasmBootJsonDependsOn)">
     <PropertyGroup>
-      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)$(WasmBuildBootJsonFileName)</_WasmBuildBootJsonPath>
+      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)$(WasmBootConfigFileName)</_WasmBuildBootJsonPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -394,13 +394,13 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
 
     <PropertyGroup>
-      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)$(WasmBuildBootJsonFileName)</_WasmBuildBootJsonPath>
+      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)$(WasmBootConfigFileName)</_WasmBuildBootJsonPath>
     </PropertyGroup>
 
     <ItemGroup>
       <_BuildWasmBootJson
         Include="$(_WasmBuildBootJsonPath)"
-        RelativePath="_framework/$(WasmBuildBootJsonFileName)" />
+        RelativePath="_framework/$(WasmBootConfigFileName)" />
     </ItemGroup>
 
     <DefineStaticWebAssets
@@ -591,8 +591,8 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_AddPublishWasmBootJsonToStaticWebAssets" DependsOnTargets="GeneratePublishWasmBootJson">
     <ItemGroup>
       <_PublishWasmBootJson
-        Include="$(IntermediateOutputPath)$(WasmBuildPublishBootJsonFileName)"
-        RelativePath="_framework/$(WasmBuildBootJsonFileName)" />
+        Include="$(IntermediateOutputPath)$(WasmPublishBootConfigFileName)"
+        RelativePath="_framework/$(WasmBootConfigFileName)" />
     </ItemGroup>
 
     <DefineStaticWebAssets
@@ -661,7 +661,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       DebugLevel="$(WasmDebugLevel)"
       LinkerEnabled="$(PublishTrimmed)"
       CacheBootResources="$(BlazorCacheBootResources)"
-      OutputPath="$(IntermediateOutputPath)blazor.publish.boot.json"
+      OutputPath="$(IntermediateOutputPath)$(WasmPublishBootConfigFileName)"
       ConfigurationFiles="@(_WasmPublishConfigFile)"
       LazyLoadedAssemblies="@(BlazorWebAssemblyLazyLoad)"
       InvariantGlobalization="$(InvariantGlobalization)"
@@ -681,7 +681,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       FingerprintAssets="$(_WasmFingerprintAssets)" />
 
     <ItemGroup>
-      <FileWrites Include="$(IntermediateOutputPath)blazor.publish.boot.json" />
+      <FileWrites Include="$(IntermediateOutputPath)$(WasmPublishBootConfigFileName)" />
     </ItemGroup>
 
   </Target>
