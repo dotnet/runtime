@@ -76,15 +76,25 @@ public:
 
 #if defined(TARGET_AMD64)
     regMaskTP rbmAllFloat;
+    regMaskTP rbmAllInt;
     regMaskTP rbmFltCalleeTrash;
+    regMaskTP rbmIntCalleeTrash;
 
     FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
+    FORCEINLINE regMaskTP get_RBM_ALLINT() const
+    {
+        return this->rbmAllInt;
+    }
     FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
+    }
+    FORCEINLINE regMaskTP get_RBM_INT_CALLEE_TRASH() const
+    {
+        return this->rbmIntCalleeTrash;
     }
 #endif // TARGET_AMD64
 

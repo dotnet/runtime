@@ -62,7 +62,12 @@ bool regMaskTP::IsRegNumInMask(regNumber reg, var_types type) const
 //
 void regMaskTP::AddGprRegs(SingleTypeRegSet gprRegs)
 {
+    // RBM_ALLINT is not known at compile time on TARGET_AMD64 since it's dependent on APX support.
+#if defined(TARGET_AMD64)
+    assert((gprRegs == RBM_NONE) || ((gprRegs & RBM_ALLINT_STATIC_ALL) != RBM_NONE));
+#else
     assert((gprRegs == RBM_NONE) || ((gprRegs & RBM_ALLINT) != RBM_NONE));
+#endif
     low |= gprRegs;
 }
 

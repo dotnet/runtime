@@ -743,6 +743,7 @@ protected:
         // The instrDescCGCA struct's member keeping the GC-ness of the first return register is _idcSecondRetRegGCType.
         GCtype _idGCref : 2; // GCref operand? (value is a "GCtype")
 
+#if !defined(TARGET_AMD64)
         // The idReg1 and idReg2 fields hold the first and second register
         // operand(s), whenever these are present. Note that currently the
         // size of these fields is 6 bits on all targets, and care needs to
@@ -753,11 +754,12 @@ protected:
         //
         regNumber _idReg1 : REGNUM_BITS; // register num
         regNumber _idReg2 : REGNUM_BITS;
+#endif
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
         // x86:         38 bits
-        // amd64:       38 bits
+        // amd64:       26 bits
         // arm:         32 bits
         // arm64:       46 bits
         // loongarch64: 28 bits
@@ -827,17 +829,29 @@ protected:
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
         // x86:         48 bits
-        // amd64:       48 bits
+        // amd64:       36 bits
         // arm:         48 bits
         // arm64:       55 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
 
+#if defined(TARGET_AMD64)
+        // The idReg1 and idReg2 fields hold the first and second register
+        // operand(s), whenever these are present. Note that currently the
+        // size of these fields is 6 bits on all targets, and care needs to
+        // be taken to make sure all of these fields stay reasonably packed.
+
+        // Note that we use the _idReg1 and _idReg2 fields to hold
+        // the live gcrefReg mask for the call instructions on x86/x64
+        //
+        regNumber _idReg1 : REGNUM_BITS; // register num
+        regNumber _idReg2 : REGNUM_BITS;
+#endif
+
         //
         // How many bits have been used beyond the first 32?
         // Define ID_EXTRA_BITFIELD_BITS to that number.
         //
-
 #if defined(TARGET_ARM)
 #define ID_EXTRA_BITFIELD_BITS (16)
 #elif defined(TARGET_ARM64)
@@ -845,7 +859,7 @@ protected:
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
-#define ID_EXTRA_BITFIELD_BITS (16)
+#define ID_EXTRA_BITFIELD_BITS (18)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -880,7 +894,7 @@ protected:
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
         // x86:         54/50 bits
-        // amd64:       55/50 bits
+        // amd64:       57/52 bits
         // arm:         54/50 bits
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
@@ -2502,10 +2516,23 @@ public:
 private:
 #if defined(TARGET_AMD64)
     regMaskTP rbmFltCalleeTrash;
+    regMaskTP rbmAllInt;
 
     FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
+    }
+
+    regMaskTP rbmIntCalleeTrash;
+
+    FORCEINLINE regMaskTP get_RBM_INT_CALLEE_TRASH() const
+    {
+        return this->rbmIntCalleeTrash;
+    }
+
+    FORCEINLINE regMaskTP get_RBM_ALLINT() const
+    {
+        return this->rbmAllInt;
     }
 #endif // TARGET_AMD64
 

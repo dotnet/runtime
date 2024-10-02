@@ -787,6 +787,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
+    rbmAllInt         = compiler->rbmAllInt;
+    rbmIntCalleeTrash = compiler->rbmIntCalleeTrash;
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
@@ -12384,6 +12386,9 @@ void LinearScan::verifyResolutionMove(GenTree* resolutionMove, LsraLocation curr
 LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 {
     this->linearScan = linearScan;
+#if defined(TARGET_AMD64)
+    rbmAllInt = linearScan->compiler->get_RBM_ALLINT();
+#endif // TARGET_AMD64
 
 #ifdef DEBUG
     mappingTable = new ScoreMappingTable(linearScan->compiler->getAllocator(CMK_LSRA));
