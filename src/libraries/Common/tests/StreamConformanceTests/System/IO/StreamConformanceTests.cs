@@ -1807,6 +1807,7 @@ namespace System.IO.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on browser")]
         [Theory]
         [MemberData(nameof(ReadWrite_Success_Large_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public virtual async Task ReadWrite_Success_Large(ReadWriteMode mode, int writeSize, bool startWithFlush) =>
             await ReadWrite_Success(mode, writeSize, startWithFlush);
 
@@ -1814,6 +1815,7 @@ namespace System.IO.Tests
         [MemberData(nameof(ReadWrite_Success_MemberData))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public virtual async Task ReadWrite_Success(ReadWriteMode mode, int writeSize, bool startWithFlush)
         {
             if (SkipOnWasi(mode)) return;

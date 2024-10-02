@@ -163,6 +163,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task Ctor_SocketBool_CanReadAndWrite(bool ownsSocket)
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -296,6 +297,7 @@ namespace System.Net.Sockets.Tests
         [Theory]	
         [InlineData(false)]	
         [InlineData(true)]	
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task DisposedClosed_MembersThrowObjectDisposedException(bool close)	
         {	
             await RunWithConnectedNetworkStreamsAsync((server, _) =>	
