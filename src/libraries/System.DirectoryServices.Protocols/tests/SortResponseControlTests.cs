@@ -48,19 +48,11 @@ namespace System.DirectoryServices.Protocols.Tests
             yield return new object[] { new byte[] { 0x30, 0x05,
                 0x0A, 0x01, 0x40,
                 0x80, 0x00
-#if NET
-            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major < 10 ? null : string.Empty };
-#else
             }, (ResultCode)0x40, string.Empty };
-#endif
             yield return new object[] { new byte[] { 0x30, 0x05,
                 0x0A, 0x01, 0x7F,
                 0x80, 0x00
-#if NET
-            }, (ResultCode)0x7F, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major < 10 ? null : string.Empty };
-#else
             }, (ResultCode)0x7F, string.Empty };
-#endif
 
             // {ea}, four-byte length
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x0E,
@@ -74,19 +66,11 @@ namespace System.DirectoryServices.Protocols.Tests
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x09,
                 0x0A, 0x01, 0x40,
                 0x80, 0x84, 0x00, 0x00, 0x00, 0x00
-#if NET
-            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major < 10 ? null : string.Empty };
-#else
             }, (ResultCode)0x40, string.Empty };
-#endif
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x09,
                 0x0A, 0x01, 0x7F,
                 0x80, 0x84, 0x00, 0x00, 0x00, 0x00
-#if NET
-            }, (ResultCode)0x7F, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major < 10 ? null : string.Empty };
-#else
             }, (ResultCode)0x7F, string.Empty };
-#endif
         }
 
         public static IEnumerable<object[]> NonconformantControlValues()
