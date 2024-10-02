@@ -56,9 +56,6 @@ public:
     static FCDECL8(Object*, InvokeDispMethod, ReflectClassBaseObject* refThisUNSAFE, StringObject* nameUNSAFE, INT32 invokeAttr, Object* targetUNSAFE, PTRArray* argsUNSAFE, PTRArray* byrefModifiersUNSAFE, LCID lcid, PTRArray* namedParametersUNSAFE);
 #endif  // FEATURE_COMINTEROP
     static FCDECL2(void, GetGUID, ReflectClassBaseObject* refThisUNSAFE, GUID * result);
-
-    // helper fcalls for invocation
-    static FCDECL2(FC_BOOL_RET, CanValueSpecialCast, ReflectClassBaseObject *valueType, ReflectClassBaseObject *targetType);
 };
 
 extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD);
