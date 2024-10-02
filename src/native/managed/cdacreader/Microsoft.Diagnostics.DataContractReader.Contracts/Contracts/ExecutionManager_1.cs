@@ -118,6 +118,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             {
                 return new RangeSection();
             }
+            rangeSectionFragmentPtr = rangeSectionFragmentPtr.LoadPointer(target); // FIXED?
             while (!rangeSectionFragmentPtr.IsNull)
             {
                 Data.RangeSectionFragment fragment = rangeSectionFragmentPtr.Load<Data.RangeSectionFragment>(target);
