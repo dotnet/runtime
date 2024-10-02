@@ -110,6 +110,10 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
         internal static RangeSection Find(Target target, Data.RangeSectionMap topRangeSectionMap, ExecutionManagerHelpers.RangeSectionLookupAlgorithm rangeSectionLookup, TargetCodePointer jittedCodeAddress)
         {
             ExMgrPtr rangeSectionFragmentPtr = rangeSectionLookup.FindFragment(target, topRangeSectionMap, jittedCodeAddress);
+            // FIXME: are we mising one extra load here?
+            // codeman.h LookupRangeSection calls GetRangeSectionForAddress which does an array index followed by a VolatileLoadWithoutBarrier at L1
+            // FIXME: verify we actually get here
+
             if (rangeSectionFragmentPtr.IsNull)
             {
                 return new RangeSection();
