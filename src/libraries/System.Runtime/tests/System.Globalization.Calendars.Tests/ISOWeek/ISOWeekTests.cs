@@ -147,6 +147,7 @@ namespace System.Globalization
         public static void ToDateTime_WithInvalidYear_Throws(int year)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(year), () => ISOWeek.ToDateTime(year, 1, DayOfWeek.Friday));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(year), () => ISOWeek.ToDateOnly(year, 1, DayOfWeek.Friday));
         }
 
         [Theory]
@@ -155,6 +156,7 @@ namespace System.Globalization
         public static void ToDateTime_WithInvalidWeek_Throws(int week)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(week), () => ISOWeek.ToDateTime(2018, week, DayOfWeek.Friday));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(week), () => ISOWeek.ToDateOnly(2018, week, DayOfWeek.Friday));
         }
 
         [Theory]
@@ -163,29 +165,6 @@ namespace System.Globalization
         public static void ToDateTime_WithInvalidDayOfWeek_Throws(int dayOfWeek)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(dayOfWeek), () => ISOWeek.ToDateTime(2018, 1, (DayOfWeek)dayOfWeek));
-        }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(10000)]
-        public static void ToDateOnly_WithInvalidYear_Throws(int year)
-        {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(year), () => ISOWeek.ToDateOnly(year, 1, DayOfWeek.Friday));
-        }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(54)]
-        public static void ToDateOnly_WithInvalidWeek_Throws(int week)
-        {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(week), () => ISOWeek.ToDateOnly(2018, week, DayOfWeek.Friday));
-        }
-
-        [Theory]
-        [InlineData(-1)]
-        [InlineData(8)]
-        public static void ToDateOnly_WithInvalidDayOfWeek_Throws(int dayOfWeek)
-        {
             AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(dayOfWeek), () => ISOWeek.ToDateOnly(2018, 1, (DayOfWeek)dayOfWeek));
         }
 
