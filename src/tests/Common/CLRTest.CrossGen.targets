@@ -80,8 +80,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
       __cg2ExitCode=0
       __r2rDumpExitCode=0
+      __CrossgenInputsList=()
 
-      OneFileCrossgen2() {
+      RunCrossgen2OnInputsList() {
         date +%H:%M:%S
         __OutputFile=$1
 
@@ -102,8 +103,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         __Command+=" @$__ResponseFile"
         __Command+=" $ExtraCrossGen2Args"
 
-        # FIXME: What is this doing?
-        echo $2 >> $__ResponseFile
+        for dllFile in ${__CrossgenInputsList[@]}; do
+          echo $dllFile >> $__ResponseFile
+        done
 
         echo -o:$__OutputFile>>$__ResponseFile
         echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
@@ -117,11 +119,14 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         if [ ! -z ${HotColdSplitting+x} ]%3B then
             echo --hot-cold-splitting>>$__ResponseFile
         fi
+        # HACK: Suppress the globbing of the reference causing empty lines in the response file
+        set -o noglob
         echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
         echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
         echo -r:$CORE_ROOT/xunit.*.dll>>$__ResponseFile
         echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
         echo -r:$CORE_ROOT/netstandard.dll>>$__ResponseFile
+        set +o noglob
 
         # FIXME: --pdb
 
@@ -150,14 +155,17 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       }
 
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
-          OneFileCrossgen2 "$PWD/composite-r2r.dll" "$PWD/IL-CG2/*.dll"
+          shopt -s nullglob
+          __CrossgenInputsList=($PWD/IL-CG2/*.dll)
+          RunCrossgen2OnInputsList "$PWD/composite-r2r.dll"
       else
           ExtraCrossGen2Args+= -r:$PWD/IL-CG2/*.dll
           for dllFile in $PWD/IL-CG2/*.dll
           do
             echo $dllFile
             bareFileName="${dllFile##*/}"
-            OneFileCrossgen2 "$PWD/$bareFileName" "$dllFile"
+            __CrossgenInputsList=($dllFile)
+            RunCrossgen2OnInputsList "$PWD/$bareFileName"
             if [ $__cg2ExitCode -ne 0 ]; then
               break
             fi
