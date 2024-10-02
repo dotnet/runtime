@@ -806,10 +806,10 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
             *(&__exceptionFrame)->GetGSCookiePtr() = GetProcessGSCookie(); \
             RtlCaptureContext(__exceptionFrame.GetContext()); \
             __exceptionFrame.InitAndLink(GET_THREAD(), funCallDepth); \
-            FC_CAN_TRIGGER_GC_HAVE_THREAD(GET_THREAD())
+            FC_CAN_TRIGGER_GC()
 
 #define EXCEPTION_METHOD_FRAME_END() \
-            FC_CAN_TRIGGER_GC_HAVE_THREADEND(GET_THREAD()) \
+            FC_CAN_TRIGGER_GC_END(); \
         } \
         while (0)
 
@@ -905,8 +905,6 @@ void HCallAssert(void*& cache, void* target);
 #define FC_COMMON_PROLOG(target, assertFn) FCALL_TRANSITION_BEGIN()
 #define FC_CAN_TRIGGER_GC()
 #define FC_CAN_TRIGGER_GC_END()
-#define FC_CAN_TRIGGER_GC_HAVE_THREAD(thread)
-#define FC_CAN_TRIGGER_GC_HAVE_THREADEND(thread)
 #endif // ENABLE_CONTRACTS
 
 // #FC_INNER
