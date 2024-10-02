@@ -17,12 +17,12 @@
 
 #include "gcenv.structs.h"
 #include "gcenv.base.h"
+#include "gcenv.ee.h"
 #include "gcenv.os.h"
 #include "gcenv.unix.inl"
+#include "gcconfig.h"
 #include "volatile.h"
 #include "numasupport.h"
-#include "../gcinterface.h"
-#include "../gcconfig.h"
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
@@ -974,18 +974,9 @@ static size_t GetLogicalProcessorCacheSizeFromOS(bool useSysConf)
     if (useSysConf)
     {
         GetLogicalProcessorCacheSizeFromSysConf(&cacheLevel, &cacheSize);
-        if (cacheSize == 0)
-        {
-            // TODO: Remove duplication.
-            GetLogicalProcessorCacheSizeFromSysFs(&cacheLevel, &cacheSize);
-            if (cacheSize == 0)
-            {
-                GetLogicalProcessorCacheSizeFromHeuristic(&cacheLevel, &cacheSize);
-            }
-        }
     }
 
-    else
+    if (cacheSize == 0) 
     {
         GetLogicalProcessorCacheSizeFromSysFs(&cacheLevel, &cacheSize);
         if (cacheSize == 0)

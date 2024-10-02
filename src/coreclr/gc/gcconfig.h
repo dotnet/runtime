@@ -39,8 +39,7 @@ public:
     {
         if (m_str)
         {
-            // TODO: Check -- GCToEEInterface::FreeStringConfigValue(m_str);
-            delete[] m_str;
+            GCToEEInterface::FreeStringConfigValue(m_str);
         }
 
         m_str = nullptr;
