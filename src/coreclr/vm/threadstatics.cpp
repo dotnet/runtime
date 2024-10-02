@@ -901,6 +901,11 @@ static bool IsValidTLSResolver()
 bool CanJITOptimizeTLSAccess()
 {
     LIMITED_METHOD_CONTRACT;
+    if (g_pConfig->DisableOptimizedThreadStaticAccess())
+    {
+        return false;
+    }
+
     bool optimizeThreadStaticAccess = false;
 #if defined(TARGET_ARM)
     // Optimization is disabled for linux/windows arm
@@ -955,11 +960,6 @@ bool CanJITOptimizeTLSAccess()
     optimizeThreadStaticAccess = GetTlsIndexObjectAddress() != nullptr;
 #endif // !TARGET_OSX && TARGET_UNIX && TARGET_AMD64
 #endif
-
-    if (g_pConfig->DisableOptimizedThreadStaticAccess())
-    {
-        optimizeThreadStaticAccess = false;
-    }
 
     return optimizeThreadStaticAccess;
 }
