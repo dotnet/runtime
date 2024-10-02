@@ -207,10 +207,10 @@ namespace Swift.Runtime
 
         internal static unsafe void* GetProtocolWitnessTable(void* metadata, string conformanceDescriptorSymbol)
         {
-            IntPtr handle = DynamicLibraryLoader.dlopen(Path, DynamicLibraryLoader.RTLD_NOW);
-            void* conformanceDescriptor = DynamicLibraryLoader.dlsym(handle, conformanceDescriptorSymbol).ToPointer();
+            IntPtr handle = NativeLibrary.Load(Path);
+            void* conformanceDescriptor = NativeLibrary.GetExport(handle, conformanceDescriptorSymbol).ToPointer();
             void* witnessTable = PInvoke_Swift_GetWitnessTable(conformanceDescriptor, metadata, null);
-            DynamicLibraryLoader.dlclose(handle);
+            NativeLibrary.Free(handle);
             return witnessTable;
         }
     }

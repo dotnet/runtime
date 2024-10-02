@@ -1090,8 +1090,6 @@
              Link="Common\Interop\OSX\Swift.Runtime\Foundation.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Swift.Runtime\CryptoKit.cs"
              Link="Common\Interop\OSX\Swift.Runtime\CryptoKit.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\Swift.Runtime\DynamicLibraryLoader.cs"
-             Link="Common\Interop\OSX\Swift.Runtime\DynamicLibraryLoader.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Aead.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Aead.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Digest.cs"
