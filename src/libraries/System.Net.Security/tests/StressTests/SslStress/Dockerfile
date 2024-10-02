@@ -1,4 +1,4 @@
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:8.0
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:latest
 FROM $SDK_BASE_IMAGE
 
 WORKDIR /app
