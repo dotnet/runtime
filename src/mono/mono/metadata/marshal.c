@@ -6798,11 +6798,15 @@ static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoTy
 
 static void record_inlinearray_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset) 
 {
+	int align;
+	int type_offset = MONO_ABI_SIZEOF (MonoObject);
+
 	// Get the first field and record its physical lowering N times
-	MonoClassField* field = mono_class_get_fields_internal (klass, NULL);
+	gpointer iter = NULL;
+	MonoClassField* field = mono_class_get_fields_internal (klass, &iter);
 	MonoType* fieldType = field->type;
 	for (int i = 0; i < m_class_inlinearray_value(klass); ++i) {
-		record_struct_field_physical_lowering(lowered_bytes, fieldType, offset + m_field_get_offset(field) + i * mono_type_size(fieldType, NULL));
+		record_struct_field_physical_lowering(lowered_bytes, fieldType, offset + m_field_get_offset(field) + i * mono_type_size(fieldType, &align) - type_offset);
 	}
 }
 

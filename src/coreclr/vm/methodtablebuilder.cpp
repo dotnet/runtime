@@ -1260,8 +1260,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     }
     CONTRACTL_END;
 
-    pModule->EnsureAllocated();
-
     // The following structs, defined as private members of MethodTableBuilder, contain the necessary local
     // parameters needed for BuildMethodTable Look at the struct definitions for a detailed list of all
     // parameters available to BuildMethodTableThrowing.
@@ -6140,15 +6138,9 @@ MethodTableBuilder::InitMethodDesc(
             BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod == NULL);
             ((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod = pNewMD;
         }
-        else if (strcmp(pMethodName, "BeginInvoke") == 0)
+        else if (strcmp(pMethodName, "BeginInvoke") == 0 || strcmp(pMethodName, "EndInvoke") == 0)
         {
-            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod == NULL);
-            ((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod = pNewMD;
-        }
-        else if (strcmp(pMethodName, "EndInvoke") == 0)
-        {
-            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod == NULL);
-            ((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod = pNewMD;
+            // Obsolete async methods
         }
         else
         {
