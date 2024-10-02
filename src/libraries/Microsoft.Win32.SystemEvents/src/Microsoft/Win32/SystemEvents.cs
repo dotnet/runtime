@@ -1100,7 +1100,7 @@ namespace Microsoft.Win32
                     // only when the thread is already shutting down due to external factors.
                     if (s_systemEvents._windowHandle != IntPtr.Zero)
                     {
-                        Interop.User32.PostMessageW(s_systemEvents._windowHandle, Interop.User32.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
+                        Interop.User32.PostQuitMessage(0);
                         GC.KeepAlive(s_systemEvents);
                     }
 
