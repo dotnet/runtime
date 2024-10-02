@@ -1811,7 +1811,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
     //
 
     pHeaderRW->pNext = pStubHeapSegment->pUnwindHeaderList;
-                     pStubHeapSegment->pUnwindHeaderList = pHeaderRW;
+    pStubHeapSegment->pUnwindHeaderList = pHeaderRW;
 
 #ifdef TARGET_AMD64
     // Publish Unwind info to ETW stack crawler
