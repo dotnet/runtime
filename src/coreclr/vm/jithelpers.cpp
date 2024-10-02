@@ -2691,7 +2691,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     {
         MAKE_CURRENT_THREAD_AVAILABLE();
 
-        EXCEPTION_METHOD_FRAME_BEGIN(1);
+        EXCEPTION_METHOD_FRAME_BEGIN();
 
         if (oref == 0)
             DispatchManagedException(kNullReferenceException);
@@ -2777,7 +2777,7 @@ HCIMPL0(void, IL_Rethrow)
     {
         MAKE_CURRENT_THREAD_AVAILABLE();
 
-        EXCEPTION_METHOD_FRAME_BEGIN(1);
+        EXCEPTION_METHOD_FRAME_BEGIN();
 
         Thread *pThread = GET_THREAD();
 

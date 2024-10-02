@@ -1172,8 +1172,8 @@ public:
         return PTR_HOST_MEMBER_TADDR(SoftwareExceptionFrame, this, m_ReturnAddress);
     }
 
-    void Init(int funCallDepth);
-    void InitAndLink(Thread *pThread, int funCallDepth);
+    void Init();
+    void InitAndLink(Thread *pThread);
 
     Interception GetInterception()
     {
@@ -3256,7 +3256,7 @@ public:
     void Poll() { WRAPPER_NO_CONTRACT; m_frame.Poll(); }
     void SetStackPointerPtr(TADDR sp) { WRAPPER_NO_CONTRACT; m_frame.SetStackPointerPtr(sp); }
     void InitAndLink(T_CONTEXT *pContext) { WRAPPER_NO_CONTRACT; m_frame.InitAndLink(pContext); }
-    void InitAndLink(Thread *pThread, int funCallDepth) { WRAPPER_NO_CONTRACT; m_frame.InitAndLink(pThread, funCallDepth); }
+    void InitAndLink(Thread *pThread) { WRAPPER_NO_CONTRACT; m_frame.InitAndLink(pThread); }
     void Init(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
         { WRAPPER_NO_CONTRACT; m_frame.Init(pThread, pObjRefs, numObjRefs, maybeInterior); }
     ValueClassInfo ** GetValueClassInfoList() { WRAPPER_NO_CONTRACT; return m_frame.GetValueClassInfoList(); }

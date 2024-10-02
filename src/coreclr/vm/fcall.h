@@ -799,13 +799,13 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 #define HELPER_METHOD_FRAME_GET_RETURN_ADDRESS()                                        \
     ( static_cast<UINT_PTR>( (__helperframe.InsureInit(NULL)), (__helperframe.MachineState()->GetRetAddr()) ) )
 
-#define EXCEPTION_METHOD_FRAME_BEGIN(funCallDepth) \
+#define EXCEPTION_METHOD_FRAME_BEGIN() \
         do \
         { \
             FrameWithCookie<SoftwareExceptionFrame> __exceptionFrame; \
             *(&__exceptionFrame)->GetGSCookiePtr() = GetProcessGSCookie(); \
             RtlCaptureContext(__exceptionFrame.GetContext()); \
-            __exceptionFrame.InitAndLink(GET_THREAD(), funCallDepth); \
+            __exceptionFrame.InitAndLink(GET_THREAD()); \
             FC_CAN_TRIGGER_GC()
 
 #define EXCEPTION_METHOD_FRAME_END() \
