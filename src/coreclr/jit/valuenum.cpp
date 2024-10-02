@@ -3024,6 +3024,15 @@ bool ValueNumStore::GetPhiDef(ValueNum vn, VNPhiDef* phiDef)
     return false;
 }
 
+// ----------------------------------------------------------------------------------------
+// IsPhiDef - Check if a VN represents a phi definition.
+//
+// Arguments:
+//   vn - Value number to check
+//
+// Return Value:
+//   True if the VN is a phi def.
+//
 bool ValueNumStore::IsPhiDef(ValueNum vn) const
 {
     if (vn == NoVN)
