@@ -2657,21 +2657,18 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
         case CORINFO_HELP_ISINSTANCEOFANY:
         case CORINFO_HELP_ISINSTANCEOFINTERFACE:
         {
-            GenTree* castClsArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
-            GenTree* castObjArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-
-            if ((castObjArg->gtFlags & GTF_ALL_EFFECT) != 0)
-            {
-                // It won't be trivial to properly extract side-effects from the call node.
-                // Ideally, we only need side effects from the castClsArg argument as the call itself
-                // won't throw any exceptions. But we should not forget about the EarlyNode (setup args)
-                return nullptr;
-            }
+            CallArg* castClsCallArg = call->gtArgs.GetUserArgByIndex(0);
+            CallArg* castObjCallArg = call->gtArgs.GetUserArgByIndex(1);
+            GenTree* castClsArg     = castClsCallArg->GetNode();
+            GenTree* castObjArg     = castObjCallArg->GetNode();
 
             // If object has the same VN as the cast, then the cast is effectively a no-op.
             //
             if (castObjArg->gtVNPair == call->gtVNPair)
             {
+                // if castObjArg is not simple, we replace the arg with a temp assignment and
+                // continue using that temp - it allows us reliably extract all side effects
+                castObjArg = fgMakeMultiUse(&castObjCallArg->LateNodeRef());
                 return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
             }
 
@@ -2686,6 +2683,9 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
                     CORINFO_CLASS_HANDLE castTo = gtGetHelperArgClassHandle(castClsArg);
                     if (info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
                     {
+                        // if castObjArg is not simple, we replace the arg with a temp assignment and
+                        // continue using that temp - it allows us reliably extract all side effects
+                        castObjArg = fgMakeMultiUse(&castObjCallArg->LateNodeRef());
                         return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
                     }
                 }
@@ -5162,21 +5162,22 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTANY) ||
             (helper == CORINFO_HELP_CHKCASTCLASS_SPECIAL))
         {
-            GenTree* castToArg = call->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree* objArg    = call->gtArgs.GetArgByIndex(1)->GetNode();
+            CallArg* castToCallArg = call->gtArgs.GetArgByIndex(0);
+            CallArg* objCallArg    = call->gtArgs.GetArgByIndex(1);
+            GenTree* castToArg     = castToCallArg->GetNode();
+            GenTree* objArg        = objCallArg->GetNode();
 
-            // We require objArg to be side effect free due to limitations in gtWrapWithSideEffects
-            if ((objArg->gtFlags & GTF_ALL_EFFECT) == 0)
+            const unsigned index = optAssertionIsSubtype(objArg, castToArg, assertions);
+            if (index != NO_ASSERTION_INDEX)
             {
-                const unsigned index = optAssertionIsSubtype(objArg, castToArg, assertions);
-                if (index != NO_ASSERTION_INDEX)
-                {
-                    JITDUMP("\nDid VN based subtype prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
-                    DISPTREE(call);
+                JITDUMP("\nDid VN based subtype prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
+                DISPTREE(call);
 
-                    objArg = gtWrapWithSideEffects(objArg, call, GTF_SIDE_EFFECT, true);
-                    return optAssertionProp_Update(objArg, call, stmt);
-                }
+                // if castObjArg is not simple, we replace the arg with a temp assignment and
+                // continue using that temp - it allows us reliably extract all side effects
+                objArg = fgMakeMultiUse(&objCallArg->LateNodeRef());
+                objArg = gtWrapWithSideEffects(objArg, call, GTF_SIDE_EFFECT, true);
+                return optAssertionProp_Update(objArg, call, stmt);
             }
 
             // Leave a hint for fgLateCastExpansion that obj is never null.
