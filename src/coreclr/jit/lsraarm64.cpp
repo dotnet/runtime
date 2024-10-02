@@ -1734,8 +1734,8 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
 //
 //
 // Arguments:
-//    embeddedOpNode - The embdedded node of interest
-//    intrin         - The embedded node as a HWIntrinsic
+//    embeddedOpNode      - The embedded node of interest
+//    embeddedDelayFreeOp - The delay free operand corresponding to the embedded node
 //
 // Return Value:
 //    The number of sources consumed by this node.
@@ -2083,7 +2083,7 @@ bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegist
 // Arguments:
 //    intrinsicTree - Tree to check
 //    intrin        - The tree as a HWIntrinsic
-//    OpNum         - The Operand number in the intrinsic tree
+//    opNum         - The Operand number in the intrinsic tree
 //
 // Return Value:
 //    The candidates for the operand number
@@ -2091,6 +2091,8 @@ bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegist
 SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicTree, HWIntrinsic intrin, size_t opNum)
 {
     SingleTypeRegSet opCandidates = RBM_NONE;
+
+    assert(opNum <= intrinsicTree->GetOperandCount());
 
     if (HWIntrinsicInfo::IsLowVectorOperation(intrin.id))
     {
@@ -2164,12 +2166,12 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
 //------------------------------------------------------------------------
 // getDelayFreeOperand: Get the delay free characteristics of the HWIntrinsic
 //
-// For a RMW intrinsic preference the RMW operand to the target.
-// For a simple move semantic between two SIMD registers, then preference the source operand.
+// For a RMW intrinsic, prefer the RMW operand to the target.
+// For a simple move semantic between two SIMD registers, then prefer the source operand.
 //
 // Arguments:
 //    intrinsicTree - Tree to check
-//    embeddedOp - The embedded operand, if any
+//    embedded - If this is an embedded operand
 //
 // Return Value:
 //    The operand that needs to be delay freed
@@ -2310,7 +2312,10 @@ GenTree* LinearScan::getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree)
 //    destIsConsecutive (out) - if the destination requires consective registers
 //
 // Return Value:
-//    The operand that requires consecutive registers
+//    The operand that requires consecutive registers.
+//
+//    If only the destination requires consecutive registers then destIsConsecutive will be
+//    true and the function will return nullptr.
 //
 GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bool* destIsConsecutive)
 {
@@ -2401,7 +2406,7 @@ GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bo
 //------------------------------------------------------------------------
 //
 // Arguments:
-//    intrinsicTree - Tree to check
+//    intrin - Tree to check
 //
 // Return Value:
 //    The operand that is an embedded mask
