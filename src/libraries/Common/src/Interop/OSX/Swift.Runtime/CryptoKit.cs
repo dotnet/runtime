@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
+using System.Security.Cryptography;
 
 #pragma warning disable CS3016 // Arrays as attribute arguments are not CLS Compliant
 #pragma warning disable SYSLIB1051
@@ -40,9 +41,9 @@ namespace Swift.Runtime
 
                 CryptoKit.PInvoke_ChaChaPoly_Nonce_Init2(swiftIndirectResult, dataPtr, data.Metadata(), default(DataProtocol).WitnessTable(data), out SwiftError error);
 
-                if (error.Value != null) // Should throw when nonce is not 12 bytes
+                if (error.Value != null)
                 {
-                    throw new Exception();
+                    throw new CryptographicException();
                 }
             }
 
@@ -66,11 +67,19 @@ namespace Swift.Runtime
             {
                 void* tagPtr = &tag;
                 void* ciphertextPtr = &ciphertext;
-                this = CryptoKit.PInvoke_ChaChaPoly_SealedBox_Init(nonce.payload, ciphertextPtr, tagPtr, ciphertext.Metadata(), tag.Metadata(), default(DataProtocol).WitnessTable(ciphertext), default(DataProtocol).WitnessTable(tag), out SwiftError error);
+                this = CryptoKit.PInvoke_ChaChaPoly_SealedBox_Init(
+                    nonce.payload,
+                    ciphertextPtr,
+                    tagPtr,
+                    ciphertext.Metadata(),
+                    tag.Metadata(),
+                    default(DataProtocol).WitnessTable(ciphertext),
+                    default(DataProtocol).WitnessTable(tag),
+                    out SwiftError error);
 
                 if (error.Value != null)
                 {
-                    throw new Exception();
+                    throw new CryptographicException();
                 }
             }
         }
@@ -103,9 +112,9 @@ namespace Swift.Runtime
                 void* dataPtr = &data;
                 CryptoKit.PInvoke_AesGcm_Nonce_Init2(swiftIndirectResult, dataPtr, data.Metadata(), default(DataProtocol).WitnessTable(data), out SwiftError error);
 
-                if (error.Value != null) // Should throw when nonce is not 12 bytes
+                if (error.Value != null)
                 {
-                    throw new Exception();
+                    throw new CryptographicException();
                 }
             }
 
@@ -131,11 +140,20 @@ namespace Swift.Runtime
                 void* tagPtr = &tag;
                 void* ciphertextPtr = &ciphertext;
 
-                CryptoKit.PInvoke_AesGcm_SealedBox_Init(swiftIndirectResult, nonce.payload, ciphertextPtr, tagPtr, ciphertext.Metadata(), tag.Metadata(), default(DataProtocol).WitnessTable(ciphertext), default(DataProtocol).WitnessTable(tag), out SwiftError error);
+                CryptoKit.PInvoke_AesGcm_SealedBox_Init(
+                    swiftIndirectResult,
+                    nonce.payload,
+                    ciphertextPtr,
+                    tagPtr,
+                    ciphertext.Metadata(),
+                    tag.Metadata(),
+                    default(DataProtocol).WitnessTable(ciphertext),
+                    default(DataProtocol).WitnessTable(tag),
+                    out SwiftError error);
 
                 if (error.Value != null)
                 {
-                    throw new Exception();
+                    throw new CryptographicException();
                 }
             }
 
