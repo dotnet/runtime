@@ -31,6 +31,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.WriteToStaticFieldOnADifferentClass ();
 
 			instance.WriteUnknownValue ();
+			instance.WriteModReqType ();
 
 			WriteCapturedField.Test ();
 			WriteFieldOfCapturedInstance.Test ();
@@ -154,6 +155,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static void MakeArrayValuesUnknown (object[] array)
 			{
 			}
+		}
+
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+		volatile Type volatileType;
+
+		[ExpectedWarning ("IL2074", nameof (GetTypeWithPublicConstructors), nameof (volatileType))]
+		private void WriteModReqType ()
+		{
+			var type = GetTypeWithPublicConstructors ();
+			volatileType = type;
 		}
 
 		private static void TestStringEmpty ()
@@ -394,11 +405,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				GenericField<Type>.field = GetUnknownType ();
 			}
 
+			[ExpectedWarning ("IL2097")]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static volatile Type[] volatileTypeArray;
+
+			static void TestModReqTypeArray ()
+			{
+				volatileTypeArray = new Type[1];
+			}
+
 			public static void Test ()
 			{
 				TestUnsupportedType ();
 				StringRef.Test ();
 				TestTypeGenericParameter ();
+				TestModReqTypeArray ();
 			}
 		}
 
