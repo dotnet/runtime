@@ -81,16 +81,19 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export CHROME_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName)/$(ChromeBinaryName)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set CHROME_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)\$(ChromeBinaryName)" />
 
-      <!-- <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set DEBUG=pw:browser*" /> -->
-
-      <!-- prividing info for the issue in Playwright -->
-      <RunScriptCommands Include="npx envinfo --preset playwright" />
-
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export FIREFOX_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(FirefoxDirName)/$(FirefoxBinaryName)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set FIREFOX_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(FirefoxDirName)\$(FirefoxBinaryName)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export IS_RUNNING_ON_CI=true" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set IS_RUNNING_ON_CI=true" />
+
+      <!-- avoids "Executable doesn't exist. Looks like Playwright was just installed or updated." -->
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="npx playwright install" />
+
+      <!-- prividing info for the issue in Playwright -->
+      <RunScriptCommands Include="npx envinfo --preset playwright" />
+      
+      <!-- <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set DEBUG=pw:browser*" /> -->
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux-x64/playwright.sh" />
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux-x64/node" />
