@@ -3390,11 +3390,22 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
     cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
 
+    rbmAllInt         = RBM_ALLINT_INIT;
+    rbmIntCalleeTrash = RBM_INT_CALLEE_TRASH_INIT;
+    cntCalleeTrashInt = CNT_CALLEE_TRASH_INT_INIT;
+
     if (canUseEvexEncoding())
     {
         rbmAllFloat |= RBM_HIGHFLOAT;
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
         cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
+    }
+
+    if (canUseApxEncodings())
+    {
+        rbmAllInt |= RBM_HIGHINT;
+        rbmIntCalleeTrash |= RBM_HIGHINT;
+        cntCalleeTrashInt += CNT_CALLEE_TRASH_HIGHINT;
     }
 #endif // TARGET_AMD64
 

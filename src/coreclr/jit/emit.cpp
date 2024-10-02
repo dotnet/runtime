@@ -752,6 +752,8 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
 
 #if defined(TARGET_AMD64)
     rbmFltCalleeTrash = emitComp->rbmFltCalleeTrash;
+    rbmIntCalleeTrash = emitComp->rbmIntCalleeTrash;
+    rbmAllInt         = emitComp->rbmAllInt;
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)

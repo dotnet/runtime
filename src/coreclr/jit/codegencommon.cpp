@@ -186,6 +186,8 @@ void CodeGenInterface::CopyRegisterInfo()
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
+    rbmAllInt         = compiler->rbmAllInt;
+    rbmIntCalleeTrash = compiler->rbmIntCalleeTrash;
 #endif // TARGET_AMD64
 
     rbmAllMask        = compiler->rbmAllMask;

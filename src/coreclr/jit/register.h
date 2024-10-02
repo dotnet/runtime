@@ -38,22 +38,39 @@ REGALIAS(RDI, EDI)
 
 /*
 REGDEF(name, rnum,   mask, sname) */
-REGDEF(RAX,     0, 0x0001, "rax"   )
-REGDEF(RCX,     1, 0x0002, "rcx"   )
-REGDEF(RDX,     2, 0x0004, "rdx"   )
-REGDEF(RBX,     3, 0x0008, "rbx"   )
-REGDEF(RSP,     4, 0x0010, "rsp"   )
-REGDEF(RBP,     5, 0x0020, "rbp"   )
-REGDEF(RSI,     6, 0x0040, "rsi"   )
-REGDEF(RDI,     7, 0x0080, "rdi"   )
-REGDEF(R8,      8, 0x0100, "r8"    )
-REGDEF(R9,      9, 0x0200, "r9"    )
-REGDEF(R10,    10, 0x0400, "r10"   )
-REGDEF(R11,    11, 0x0800, "r11"   )
-REGDEF(R12,    12, 0x1000, "r12"   )
-REGDEF(R13,    13, 0x2000, "r13"   )
-REGDEF(R14,    14, 0x4000, "r14"   )
-REGDEF(R15,    15, 0x8000, "r15"   )
+REGDEF(RAX,     0, 0x00000001, "rax"   )
+REGDEF(RCX,     1, 0x00000002, "rcx"   )
+REGDEF(RDX,     2, 0x00000004, "rdx"   )
+REGDEF(RBX,     3, 0x00000008, "rbx"   )
+REGDEF(RSP,     4, 0x00000010, "rsp"   )
+REGDEF(RBP,     5, 0x00000020, "rbp"   )
+REGDEF(RSI,     6, 0x00000040, "rsi"   )
+REGDEF(RDI,     7, 0x00000080, "rdi"   )
+REGDEF(R8,      8, 0x00000100, "r8"    )
+REGDEF(R9,      9, 0x00000200, "r9"    )
+REGDEF(R10,    10, 0x00000400, "r10"   )
+REGDEF(R11,    11, 0x00000800, "r11"   )
+REGDEF(R12,    12, 0x00001000, "r12"   )
+REGDEF(R13,    13, 0x00002000, "r13"   )
+REGDEF(R14,    14, 0x00004000, "r14"   )
+REGDEF(R15,    15, 0x00008000, "r15"   )
+REGDEF(R16,    16, 0x00010000, "r16"   )
+REGDEF(R17,    17, 0x00020000, "r17"   )
+REGDEF(R18,    18, 0x00040000, "r18"   )
+REGDEF(R19,    19, 0x00080000, "r19"   )
+REGDEF(R20,    20, 0x00100000, "r20"   )
+REGDEF(R21,    21, 0x00200000, "r21"   )
+REGDEF(R22,    22, 0x00400000, "r22"   )
+REGDEF(R23,    23, 0x00800000, "r23"   )
+REGDEF(R24,    24, 0x01000000, "r24"   )
+REGDEF(R25,    25, 0x02000000, "r25"   )
+REGDEF(R26,    26, 0x04000000, "r26"   )
+REGDEF(R27,    27, 0x08000000, "r27"   )
+REGDEF(R28,    28, 0x10000000, "r28"   )
+REGDEF(R29,    29, 0x20000000, "r29"   )
+REGDEF(R30,    30, 0x40000000, "r30"   )
+REGDEF(R31,    31, 0x80000000, "r31"   )
+
 
 REGALIAS(EAX, RAX)
 REGALIAS(ECX, RCX)
@@ -67,11 +84,11 @@ REGALIAS(EDI, RDI)
 #endif // !defined(TARGET_X86)
 
 #ifdef TARGET_AMD64
-#define XMMBASE 16
+#define XMMBASE 32
 #define XMMMASK(x) ((int64_t)(1) << ((x)+XMMBASE))
 
-#define KBASE 48
-#define KMASK(x) ((int64_t)(1) << ((x)+KBASE))
+#define KBASE 64
+#define KMASK(x) ((int64_t)(1) << ((x)))
 
 #else // !TARGET_AMD64
 #define XMMBASE 8
