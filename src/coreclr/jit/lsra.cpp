@@ -2463,10 +2463,11 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock*           block,
                 BasicBlock* const candidatePredBlock = candidatePredEdge->getSourceBlock();
                 if (isBlockVisited(candidatePredBlock))
                 {
-                    if ((hottestPred == nullptr) || (hottestPred->getLikelyWeight() < candidatePredEdge->getLikelyWeight()))
+                    if ((hottestPred == nullptr) ||
+                        (hottestPred->getLikelyWeight() < candidatePredEdge->getLikelyWeight()))
                     {
                         hottestPred = candidatePredEdge;
-                        predBlock = candidatePredBlock;
+                        predBlock   = candidatePredBlock;
                         INDEBUG(*pPredBlockIsAllocated = true;)
                     }
                 }
