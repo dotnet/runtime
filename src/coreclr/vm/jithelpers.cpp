@@ -2689,9 +2689,14 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 #ifdef FEATURE_EH_FUNCLETS
     if (g_isNewExceptionHandlingEnabled)
     {
-        MAKE_CURRENT_THREAD_AVAILABLE();
+        Thread *pThread = GetThread();
 
-        EXCEPTION_METHOD_FRAME_BEGIN();
+        FrameWithCookie<SoftwareExceptionFrame> exceptionFrame;
+        *(&exceptionFrame)->GetGSCookiePtr() = GetProcessGSCookie();
+        RtlCaptureContext(exceptionFrame.GetContext());
+        exceptionFrame.InitAndLink(pThread);
+
+        FC_CAN_TRIGGER_GC();
 
         if (oref == 0)
             DispatchManagedException(kNullReferenceException);
@@ -2709,7 +2714,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
             // If the flag indicating ForeignExceptionRaise has been set,
             // then do not clear the "_stackTrace" field of the exception object.
-            if (GET_THREAD()->GetExceptionState()->IsRaisingForeignException())
+            if (pThread->GetExceptionState()->IsRaisingForeignException())
             {
                 ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
             }
@@ -2719,8 +2724,8 @@ HCIMPL1(void, IL_Throw,  Object* obj)
             }
         }
 
-        DispatchManagedException(oref, EXCEPTION_METHOD_FRAME_GET_CONTEXT());
-        EXCEPTION_METHOD_FRAME_END();
+        DispatchManagedException(oref, exceptionFrame.GetContext());
+        FC_CAN_TRIGGER_GC_END();
         UNREACHABLE();
     }
 #endif // FEATURE_EH_FUNCLETS
@@ -2775,18 +2780,18 @@ HCIMPL0(void, IL_Rethrow)
 #ifdef FEATURE_EH_FUNCLETS
     if (g_isNewExceptionHandlingEnabled)
     {
-        MAKE_CURRENT_THREAD_AVAILABLE();
+        Thread *pThread = GetThread();
 
-        EXCEPTION_METHOD_FRAME_BEGIN();
-
-        Thread *pThread = GET_THREAD();
+        FrameWithCookie<SoftwareExceptionFrame> exceptionFrame;
+        *(&exceptionFrame)->GetGSCookiePtr() = GetProcessGSCookie();
+        RtlCaptureContext(exceptionFrame.GetContext());
+        exceptionFrame.InitAndLink(pThread);
 
         ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
-        CONTEXT exceptionContext;
-        RtlCaptureContext(&exceptionContext);
+        ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, exceptionFrame.GetContext(), ExKind::None);
 
-        ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, &exceptionContext, ExKind::None);
+        FC_CAN_TRIGGER_GC();
 
         GCPROTECT_BEGIN(exInfo.m_exception);
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
@@ -2801,7 +2806,7 @@ HCIMPL0(void, IL_Rethrow)
         CALL_MANAGED_METHOD_NORET(args)
         GCPROTECT_END();
 
-        EXCEPTION_METHOD_FRAME_END();
+        FC_CAN_TRIGGER_GC_END();
         UNREACHABLE();
     }
 #endif
