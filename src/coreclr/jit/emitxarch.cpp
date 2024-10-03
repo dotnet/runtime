@@ -305,11 +305,6 @@ bool emitter::IsApxNDDEncodableInstruction(instruction ins) const
         return false;
     }
 
-    if(!JitConfig.JitEnableApxNDD())
-    {
-        return false;
-    }
-
     return HasApxNdd(ins);
 }
 
@@ -326,11 +321,6 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
 {
     // TODO-Ruihan: assert if it is legacy instructions.
     if(!UsePromotedEVEXEncoding())
-    {
-        return false;
-    }
-
-    if(!JitConfig.JitEnableApxNDD())
     {
         return false;
     }
