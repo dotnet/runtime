@@ -102,7 +102,7 @@ internal readonly struct RangeSectionMap
     }
 
     // note: level is 1-indexed
-    private int EffectiveBitsForLevel(TargetCodePointer address, int level)
+    internal int EffectiveBitsForLevel(TargetCodePointer address, int level)
     {
         ulong addressAsInt = address.Value;
         ulong addressBitsUsedInMap = addressAsInt >> (MaxSetBit + 1 - (MapLevels * BitsPerLevel));
