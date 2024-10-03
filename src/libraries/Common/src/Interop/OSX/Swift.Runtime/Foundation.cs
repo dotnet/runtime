@@ -138,8 +138,8 @@ namespace Swift.Runtime
     [InlineArray(16)]
     internal unsafe partial struct Data : ISwiftType
     {
-        private static void* metadata = Foundation.PInvoke_Data_GetMetadata();
         internal byte payload;
+        private static void* metadata = Foundation.PInvoke_Data_GetMetadata(); // Static field after instance field: https://github.com/dotnet/runtime/issues/108522
 
         internal unsafe Data(UnsafeRawPointer pointer, nint count)
         {
