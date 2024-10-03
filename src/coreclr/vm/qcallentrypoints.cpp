@@ -132,6 +132,9 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_Instantiate)
     DllImportEntry(RuntimeTypeHandle_GetGenericTypeDefinition)
     DllImportEntry(RuntimeTypeHandle_GetActivationInfo)
+#ifdef FEATURE_COMINTEROP
+    DllImportEntry(RuntimeTypeHandle_AllocateComObject)
+#endif // FEATURE_COMINTEROP
     DllImportEntry(RuntimeTypeHandle_AllocateTypeAssociatedMemory)
     DllImportEntry(RuntimeTypeHandle_RegisterCollectibleTypeDependency)
     DllImportEntry(MethodBase_GetCurrentMethod)
@@ -146,6 +149,8 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeModule_GetScopeName)
     DllImportEntry(RuntimeModule_GetFullyQualifiedName)
     DllImportEntry(RuntimeModule_GetTypes)
+    DllImportEntry(RuntimeFieldHandle_GetValue)
+    DllImportEntry(RuntimeFieldHandle_SetValue)
     DllImportEntry(RuntimeFieldHandle_GetRVAFieldInfo)
     DllImportEntry(StackTrace_GetStackFramesInternal)
     DllImportEntry(StackFrame_GetMethodDescFromNativeIP)
@@ -371,6 +376,12 @@ static const Entry s_QCall[] =
     DllImportEntry(ReflectionInvocation_RunModuleConstructor)
     DllImportEntry(ReflectionInvocation_CompileMethod)
     DllImportEntry(ReflectionInvocation_PrepareMethod)
+    DllImportEntry(ReflectionInvocation_PrepareDelegate)
+#ifdef FEATURE_COMINTEROP
+    DllImportEntry(ReflectionInvocation_InvokeDispMethod)
+    DllImportEntry(ReflectionInvocation_GetComObjectGuid)
+#endif // FEATURE_COMINTEROP
+    DllImportEntry(ReflectionInvocation_GetGuid)
     DllImportEntry(ReflectionInvocation_SizeOf)
     DllImportEntry(ReflectionInvocation_GetBoxInfo)
     DllImportEntry(ReflectionSerialization_GetCreateUninitializedObjectInfo)
