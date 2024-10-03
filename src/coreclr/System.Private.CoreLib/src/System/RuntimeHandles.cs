@@ -525,11 +525,25 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void* _GetUtf8Name(RuntimeType type);
+        private static extern unsafe bool GetUtf8NameInternal(MethodTable* pMT, void** name);
 
-        internal static MdUtf8String GetUtf8Name(RuntimeType type)
+        internal static unsafe MdUtf8String GetUtf8Name(RuntimeType type)
         {
-            return new MdUtf8String(_GetUtf8Name(type));
+            TypeHandle th = type.GetNativeTypeHandle();
+            if (th.IsTypeDesc || th.AsMethodTable()->IsArray)
+            {
+                throw new ArgumentException(SR.Arg_InvalidHandle);
+            }
+
+            void* name;
+            if (!GetUtf8NameInternal(th.AsMethodTable(), &name))
+            {
+                throw new ArgumentException(SR.Arg_InvalidHandle);
+            }
+
+            var nameUtf8 = new MdUtf8String(name);
+            GC.KeepAlive(type);
+            return nameUtf8;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

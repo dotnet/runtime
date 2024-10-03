@@ -118,7 +118,7 @@ public:
     static FCDECL1(ReflectModuleBaseObject*, GetModuleIfExists, ReflectClassBaseObject* pType);
     static FCDECL1(INT32, GetAttributes, ReflectClassBaseObject* pType);
     static FCDECL1(INT32, GetToken, ReflectClassBaseObject* pType);
-    static FCDECL1(LPCUTF8, GetUtf8Name, ReflectClassBaseObject* pType);
+    static FCDECL2(FC_BOOL_RET, GetUtf8Name, MethodTable* pMT, LPCUTF8* name);
     static FCDECL1(INT32, GetArrayRank, ReflectClassBaseObject* pType);
 
     static FCDECL1(ReflectMethodObject*, GetDeclaringMethod, ReflectClassBaseObject *pType);

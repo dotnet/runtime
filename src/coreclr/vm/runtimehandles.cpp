@@ -840,45 +840,24 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsVisible(QCall::TypeHandle pTypeHan
     return fIsExternallyVisible;
 }
 
-FCIMPL1(LPCUTF8, RuntimeTypeHandle::GetUtf8Name, ReflectClassBaseObject* pTypeUNSAFE) {
-    CONTRACTL {
+FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::GetUtf8Name, MethodTable* pMT, LPCUTF8* name)
+{
+    CONTRACTL
+    {
         FCALL_CHECK;
+        PRECONDITION(pMT != NULL);
+        PRECONDITION(name != NULL);
     }
     CONTRACTL_END;
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-    INT32 tkTypeDef = mdTypeDefNil;
-    LPCUTF8 szName = NULL;
-
-    if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    if (typeHandle.IsTypeDesc() || typeHandle.IsArray())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    MethodTable* pMT= typeHandle.AsMethodTable();
-
-    if (pMT == NULL)
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    tkTypeDef = (INT32)pMT->GetCl();
-
+    INT32 tkTypeDef = (INT32)pMT->GetCl();
     if (IsNilToken(tkTypeDef))
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+        FC_RETURN_BOOL(FALSE);
 
-    if (FAILED(pMT->GetMDImport()->GetNameOfTypeDef(tkTypeDef, &szName, NULL)))
-    {
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-    }
+    if (FAILED(pMT->GetMDImport()->GetNameOfTypeDef(tkTypeDef, name, NULL)))
+        FC_RETURN_BOOL(FALSE);
 
-    _ASSERTE(CheckPointer(szName, NULL_OK));
-
-    return szName;
+    FC_RETURN_BOOL(TRUE);
 }
 FCIMPLEND
 
