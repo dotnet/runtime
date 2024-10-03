@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(fieldName));
             }
 
-            nint offset = OffsetOf(rtField.GetFieldHandle());
+            nint offset = OffsetOf(rtField.GetFieldDesc());
             GC.KeepAlive(rtField);
             return offset;
         }

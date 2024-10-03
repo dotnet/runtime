@@ -1079,8 +1079,6 @@ FCDECL0(VOID, JIT_PollGC);
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 BOOL ObjIsInstanceOfCore(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 
-EXTERN_C TypeHandle::CastResult STDCALL ObjIsInstanceOfCached(Object *pObject, TypeHandle toTypeHnd);
-
 #ifdef HOST_64BIT
 class InlinedCallFrame;
 Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame);

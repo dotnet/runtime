@@ -1236,6 +1236,8 @@ namespace System
 
         #region Hierarchy
 
+        public override bool IsInstanceOfType([NotNullWhen(true)] object? o) => RuntimeTypeHandle.IsInstanceOfType(this, o);
+
         // Reflexive, symmetric, transitive.
         public override bool IsEquivalentTo(Type? other)
         {

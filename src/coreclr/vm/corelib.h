@@ -619,7 +619,7 @@ DEFINE_METHOD(RESOLVER,             RESOLVE_SIGNATURE,      ResolveSignature,   
 DEFINE_CLASS(RESOURCE_MANAGER,      Resources,              ResourceManager)
 
 DEFINE_CLASS(RTFIELD,               Reflection,             RtFieldInfo)
-DEFINE_METHOD(RTFIELD,              GET_FIELDHANDLE,        GetFieldHandle,            IM_RetIntPtr)
+DEFINE_METHOD(RTFIELD,              GET_FIELDESC,           GetFieldDesc,            IM_RetIntPtr)
 
 DEFINE_CLASS(RUNTIME_HELPERS,       CompilerServices,       RuntimeHelpers)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)

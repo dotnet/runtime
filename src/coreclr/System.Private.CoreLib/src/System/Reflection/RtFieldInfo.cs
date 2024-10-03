@@ -114,7 +114,7 @@ namespace System.Reflection
 
         public override RuntimeFieldHandle FieldHandle => new RuntimeFieldHandle(this);
 
-        internal IntPtr GetFieldHandle()
+        internal IntPtr GetFieldDesc()
         {
             return m_fieldHandle;
         }

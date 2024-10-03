@@ -6013,7 +6013,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     GuidInfo *pInfo = GetClass()->GetGuidInfo();
 
     // First check to see if we have already cached the guid for this type.
-    // We currently only cache guids on interfaces and WinRT delegates.
+    // We currently only cache guids on interfaces.
     // In classic mode, though, ensure we don't retrieve the GuidInfo for redirected interfaces
     if ((IsInterface()) && pInfo != NULL
         && (!bClassic))

@@ -256,8 +256,6 @@ namespace System
 
         protected override bool IsCOMObjectImpl() => RuntimeTypeHandle.IsComObject(this, false);
 
-        public override bool IsInstanceOfType([NotNullWhen(true)] object? o) => RuntimeTypeHandle.IsInstanceOfType(this, o);
-
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
             => typeInfo != null && IsAssignableFrom(typeInfo.AsType());
 

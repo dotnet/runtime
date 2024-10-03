@@ -25,9 +25,6 @@ namespace System
         internal RuntimeType GetTypeChecked() =>
             m_type ?? throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o);
-
         /// <summary>
         /// Returns a new <see cref="RuntimeTypeHandle"/> object created from a handle to a RuntimeType.
         /// </summary>
@@ -292,11 +289,18 @@ namespace System
             Interop.BOOL* pfCtorIsPublic);
 
 #if FEATURE_COMINTEROP
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_AllocateComObject")]
+        private static partial void AllocateComObject(void* pClassFactory, ObjectHandleOnStack result);
+
         // Referenced by unmanaged layer (see GetActivationInfo).
         // First parameter is ComClassFactory*.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object AllocateComObject(void* pClassFactory);
-#endif
+        private static object AllocateComObject(void* pClassFactory)
+        {
+            object? result = null;
+            AllocateComObject(pClassFactory, ObjectHandleOnStack.Create(ref result));
+            return result!;
+        }
+#endif // FEATURE_COMINTEROP
 
         internal RuntimeType GetRuntimeType()
         {
@@ -1215,16 +1219,60 @@ namespace System
         internal static partial bool GetRVAFieldInfo(RuntimeFieldHandleInternal field, out void* address, out uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetToken(RtFieldInfo field);
+        private static extern int GetToken(IntPtr fieldDesc);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object? GetValue(RtFieldInfo field, object? instance, RuntimeType fieldType, RuntimeType? declaringType, ref bool isClassInitialized);
+        internal static int GetToken(RtFieldInfo field)
+        {
+            Debug.Assert(field is not null);
+            int tk = GetToken(field.GetFieldDesc());
+            GC.KeepAlive(field);
+            return tk;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetValue")]
+        private static partial void GetValue(
+            IntPtr fieldDesc,
+            ObjectHandleOnStack instance,
+            QCallTypeHandle fieldType,
+            QCallTypeHandle declaringType,
+            [MarshalAs(UnmanagedType.Bool)] ref bool isClassInitialized,
+            ObjectHandleOnStack result);
+
+        internal static object? GetValue(RtFieldInfo field, object? instance, RuntimeType fieldType, RuntimeType? declaringType, ref bool isClassInitialized)
+        {
+            if (field is null || fieldType is null)
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            object? result = null;
+            GetValue(field.GetFieldDesc(), ObjectHandleOnStack.Create(ref instance), new QCallTypeHandle(ref fieldType), new QCallTypeHandle(ref declaringType!), ref isClassInitialized, ObjectHandleOnStack.Create(ref result));
+            GC.KeepAlive(field);
+            return result;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object? GetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, RuntimeType? contextType);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void SetValue(RtFieldInfo field, object? obj, object? value, RuntimeType fieldType, RuntimeType? declaringType, ref bool isClassInitialized);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_SetValue")]
+        private static partial void SetValue(
+            IntPtr fieldDesc,
+            ObjectHandleOnStack instance,
+            ObjectHandleOnStack value,
+            QCallTypeHandle fieldType,
+            QCallTypeHandle declaringType,
+            [MarshalAs(UnmanagedType.Bool)] ref bool isClassInitialized);
+
+        internal static void SetValue(RtFieldInfo field, object? obj, object? value, RuntimeType fieldType, RuntimeType? declaringType, ref bool isClassInitialized)
+        {
+            if (field is null || fieldType is null)
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            SetValue(field.GetFieldDesc(), ObjectHandleOnStack.Create(ref obj), ObjectHandleOnStack.Create(ref value), new QCallTypeHandle(ref fieldType), new QCallTypeHandle(ref declaringType!), ref isClassInitialized);
+            GC.KeepAlive(field);
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void SetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, object? value, RuntimeType? contextType);
