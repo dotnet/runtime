@@ -6,5 +6,6 @@ PALEXPORT void AndroidCryptoNative_RegisterRemoteCertificateValidationCallback(R
 
 jobjectArray GetTrustManagers(JNIEnv* env, intptr_t sslStreamProxyHandle);
 
+void StoreRemoteVerificationCallback (RemoteCertificateValidationCallback callback);
 JNIEXPORT jboolean JNICALL Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(
     JNIEnv *env, jobject thisHandle, jlong sslStreamProxyHandle);
