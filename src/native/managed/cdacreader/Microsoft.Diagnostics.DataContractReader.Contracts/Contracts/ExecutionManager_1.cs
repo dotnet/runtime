@@ -15,7 +15,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
     // maps EECodeInfoHandle.Address (which is the CodeHeaderAddress) to the EECodeInfo
     private readonly Dictionary<TargetPointer, EECodeInfo> _codeInfos = new();
     private readonly Data.RangeSectionMap _topRangeSectionMap;
-    private readonly ExecutionManagerHelpers.RangeSectionMap _rangeSectionLookupAlgorithm;
+    private readonly ExecutionManagerHelpers.RangeSectionMap _rangeSectionMapLookup;
     private readonly EEJitManager _eeJitManager;
     private readonly ReadyToRunJitManager _r2rJitManager;
 
@@ -23,7 +23,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
     {
         _target = target;
         _topRangeSectionMap = topRangeSectionMap;
-        _rangeSectionLookupAlgorithm = ExecutionManagerHelpers.RangeSectionMap.Create(_target);
+        _rangeSectionMapLookup = ExecutionManagerHelpers.RangeSectionMap.Create(_target);
         ExecutionManagerHelpers.NibbleMap nibbleMap = ExecutionManagerHelpers.NibbleMap.Create(_target);
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
@@ -108,32 +108,29 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
 
         internal static RangeSection Find(Target target, Data.RangeSectionMap topRangeSectionMap, ExecutionManagerHelpers.RangeSectionMap rangeSectionLookup, TargetCodePointer jittedCodeAddress)
         {
-            RangeSectionMap.Cursor? rangeSectionFragmentSlot = rangeSectionLookup.FindFragment(target, topRangeSectionMap, jittedCodeAddress);
-            if (!rangeSectionFragmentSlot.HasValue)
-            {
-                return new RangeSection();
-            }
-            TargetPointer rangeSectionFragmentPtr = rangeSectionFragmentSlot.Value.LoadValue(target).Address;
+            TargetPointer rangeSectionFragmentPtr = rangeSectionLookup.FindFragment(target, topRangeSectionMap, jittedCodeAddress);
+            // The lowest level of the range section map covers a large address space which may contain multiple small fragments.
+            // Iterate over them to find the one that contains the jitted code address.
             while (rangeSectionFragmentPtr != TargetPointer.Null)
             {
-                Data.RangeSectionFragment fragment = target.ProcessedData.GetOrAdd<Data.RangeSectionFragment>(rangeSectionFragmentPtr);
-                if (fragment.Contains(jittedCodeAddress))
+                Data.RangeSectionFragment curFragment = target.ProcessedData.GetOrAdd<Data.RangeSectionFragment>(rangeSectionFragmentPtr);
+                if (curFragment.Contains(jittedCodeAddress))
                 {
                     break;
                 }
-                rangeSectionFragmentPtr = fragment.Next;
+                rangeSectionFragmentPtr = curFragment.Next;
             }
-            if (rangeSectionFragmentPtr != TargetPointer.Null)
+            if (rangeSectionFragmentPtr == TargetPointer.Null)
             {
-                Data.RangeSectionFragment fragment = target.ProcessedData.GetOrAdd<Data.RangeSectionFragment>(rangeSectionFragmentPtr);
-                Data.RangeSection rangeSection = target.ProcessedData.GetOrAdd<Data.RangeSection>(fragment.RangeSection);
-                if (rangeSection.NextForDelete != TargetPointer.Null)
-                {
-                    return new RangeSection();
-                }
-                return new RangeSection(rangeSection);
+                return new RangeSection();
             }
-            return new RangeSection();
+            Data.RangeSectionFragment fragment = target.ProcessedData.GetOrAdd<Data.RangeSectionFragment>(rangeSectionFragmentPtr);
+            Data.RangeSection rangeSection = target.ProcessedData.GetOrAdd<Data.RangeSection>(fragment.RangeSection);
+            if (rangeSection.NextForDelete != TargetPointer.Null)
+            {
+                return new RangeSection();
+            }
+            return new RangeSection(rangeSection);
         }
     }
 
@@ -151,7 +148,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
 
     private EECodeInfo? GetEECodeInfo(TargetCodePointer jittedCodeAddress)
     {
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionLookupAlgorithm, jittedCodeAddress);
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, jittedCodeAddress);
         if (range.Data == null)
         {
             return null;

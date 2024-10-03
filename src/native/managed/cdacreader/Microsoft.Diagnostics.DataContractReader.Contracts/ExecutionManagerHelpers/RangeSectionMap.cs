@@ -117,10 +117,10 @@ internal readonly struct RangeSectionMap
     /// <param name="target"></param>
     /// <param name="topRangeSectionMap"></param>
     /// <param name="jittedCodeAddress"></param>
-    /// <returns>null if the map doesn't contain a fragment that could cover this address range</returns>
-    public Cursor? /*PTR_RangeSectionFragment*/ FindFragment(Target target, Data.RangeSectionMap topRangeSectionMap, TargetCodePointer jittedCodeAddress)
+    /// <returns>TargetPointer.Null if the map doesn't contain a fragment that could cover this address range</returns>
+    public TargetPointer /*PTR_RangeSectionFragment*/ FindFragment(Target target, Data.RangeSectionMap topRangeSectionMap, TargetCodePointer jittedCodeAddress)
     {
-        return FindFragmentInternal(target, topRangeSectionMap.TopLevelData, jittedCodeAddress);
+        return FindFragmentInternal(target, topRangeSectionMap.TopLevelData, jittedCodeAddress)?.LoadValue(target).Address ?? TargetPointer.Null;
     }
 
     internal Cursor? FindFragmentInternal(Target target, TargetPointer topMap, TargetCodePointer jittedCodeAddress)
