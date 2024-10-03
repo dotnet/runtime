@@ -2084,8 +2084,83 @@ public static class Program
 		public static ShufflingThunk_MemberGrowsStack_RiscV TestInstance =
 			new ShufflingThunk_MemberGrowsStack_RiscV();
 
+		public delegate FloatEmpty8Float TestDelegate(
+			ShufflingThunk_MemberGrowsStack_RiscV _this,
+			int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+			float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+			UintFloat stack0_to_a7_fa6, // frees 1 stack slot
+			DoubleFloatNestedEmpty fa6_fa7_to_stack0_stack1); // takes 2 stack slots, shuffling thunk must grow the stack
+
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		public FloatEmpty8Float TestMethod(
+			int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+			float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+			UintFloat stack0_to_a7_fa6, // frees 1 stack slot
+			DoubleFloatNestedEmpty fa6_fa7_to_stack0_stack1) // takes 2 stack slots, shuffling thunk must grow the stack
+		{
+			return StaticTestMethod(this,
+				a2_to_a1, a3_to_a2, a4_to_a3, a5_to_a4, a6_to_a5, a7_to_a6,
+				fa0, fa1, fa2, fa3, fa4, fa5,
+				stack0_to_a7_fa6,
+				fa6_fa7_to_stack0_stack1);
+		}
+
+		public static FloatEmpty8Float StaticTestMethod(
+			ShufflingThunk_MemberGrowsStack_RiscV _this,
+			int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+			float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+			UintFloat stack0_to_a7_fa6, // frees 1 stack slot
+			DoubleFloatNestedEmpty fa6_fa7_to_stack0_stack1) // takes 2 stack slots, shuffling thunk must grow the stack
+		{
+			Assert.Equal(TestInstance, _this);
+			Assert.Equal(1, a2_to_a1);
+			Assert.Equal(2, a3_to_a2);
+			Assert.Equal(3, a4_to_a3);
+			Assert.Equal(4, a5_to_a4);
+			Assert.Equal(5, a6_to_a5);
+			Assert.Equal(6, a7_to_a6);
+			Assert.Equal(0f, fa0);
+			Assert.Equal(1f, fa1);
+			Assert.Equal(2f, fa2);
+			Assert.Equal(3f, fa3);
+			Assert.Equal(4f, fa4);
+			Assert.Equal(5f, fa5);
+			Assert.Equal(UintFloat.Get(), stack0_to_a7_fa6);
+			Assert.Equal(DoubleFloatNestedEmpty.Get(), fa6_fa7_to_stack0_stack1);
+			return FloatEmpty8Float.Get();
+		}
+	}
+
+	[Fact]
+	public static void Test_ShufflingThunk_MemberGrowsStack_RiscV()
+	{
+		var delegat = (ShufflingThunk_MemberGrowsStack_RiscV.TestDelegate)Delegate.CreateDelegate(
+			typeof(ShufflingThunk_MemberGrowsStack_RiscV.TestDelegate), null,
+			typeof(ShufflingThunk_MemberGrowsStack_RiscV).GetMethod(
+				nameof(ShufflingThunk_MemberGrowsStack_RiscV.TestMethod))
+		);
+		FloatEmpty8Float ret = delegat(ShufflingThunk_MemberGrowsStack_RiscV.TestInstance,
+			1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, UintFloat.Get(), DoubleFloatNestedEmpty.Get());
+		Assert.Equal(FloatEmpty8Float.Get(), ret);
+
+		var getStaticMethod = [MethodImpl(MethodImplOptions.NoOptimization)] ()
+			=> (ShufflingThunk_MemberGrowsStack_RiscV.TestDelegate)
+				ShufflingThunk_MemberGrowsStack_RiscV.StaticTestMethod;
+		delegat = getStaticMethod();
+		ret = delegat(ShufflingThunk_MemberGrowsStack_RiscV.TestInstance,
+			1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, UintFloat.Get(), DoubleFloatNestedEmpty.Get());
+		Assert.Equal(FloatEmpty8Float.Get(), ret);
+	}
+
+
+
+	class ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV
+	{
+		public static ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV TestInstance =
+			new ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV();
+
 		public delegate LongDoubleInt TestDelegate(
-			ShufflingThunk_MemberGrowsStack_RiscV tc,
+			ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV _this,
 			// ReturnBuffer* a2_to_a0
 			int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
 			float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
@@ -2100,7 +2175,23 @@ public static class Program
 			UintFloat stack0_to_a7_fa6, // frees 1 stack slot
 			DoubleFloatNestedEmpty fa6_fa7_to_stack0_stack1) // takes 2 stack slots, shuffling thunk must grow the stack
 		{
-			Assert.Equal(TestInstance, this);
+			return StaticTestMethod(this,
+				a3_to_a2, a4_to_a3, a5_to_a4, a6_to_a5, a7_to_a6,
+				fa0, fa1, fa2, fa3, fa4, fa5,
+				stack0_to_a7_fa6,
+				fa6_fa7_to_stack0_stack1);
+		}
+
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		public static LongDoubleInt StaticTestMethod(
+			ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV _this,
+			// ReturnBuffer* a2_to_a0
+			int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+			float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+			UintFloat stack0_to_a7_fa6, // frees 1 stack slot
+			DoubleFloatNestedEmpty fa6_fa7_to_stack0_stack1) // takes 2 stack slots, shuffling thunk must grow the stack
+		{
+			Assert.Equal(TestInstance, _this);
 			Assert.Equal(2, a3_to_a2);
 			Assert.Equal(3, a4_to_a3);
 			Assert.Equal(4, a5_to_a4);
@@ -2119,14 +2210,22 @@ public static class Program
 	}
 
 	[Fact]
-	public static void Test_ShufflingThunk_MemberGrowsStack_RiscV()
+	public static void Test_ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV()
 	{
-		var delegat = (ShufflingThunk_MemberGrowsStack_RiscV.TestDelegate)Delegate.CreateDelegate(
-			typeof(ShufflingThunk_MemberGrowsStack_RiscV.TestDelegate), null,
-			typeof(ShufflingThunk_MemberGrowsStack_RiscV).GetMethod(
-				nameof(ShufflingThunk_MemberGrowsStack_RiscV.TestMethod))
+		var delegat = (ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV.TestDelegate)Delegate.CreateDelegate(
+			typeof(ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV.TestDelegate), null,
+			typeof(ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV).GetMethod(
+				nameof(ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV.TestMethod))
 		);
-		LongDoubleInt ret = delegat(ShufflingThunk_MemberGrowsStack_RiscV.TestInstance,
+		LongDoubleInt ret = delegat(ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV.TestInstance,
+			2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, UintFloat.Get(), DoubleFloatNestedEmpty.Get());
+		Assert.Equal(LongDoubleInt.Get(), ret);
+
+		var getStaticMethod = [MethodImpl(MethodImplOptions.NoOptimization)] ()
+			=> (ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV.TestDelegate)
+				ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV.StaticTestMethod;
+		delegat = getStaticMethod();
+		ret = delegat(ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV.TestInstance,
 			2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, UintFloat.Get(), DoubleFloatNestedEmpty.Get());
 		Assert.Equal(LongDoubleInt.Get(), ret);
 	}
