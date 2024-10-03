@@ -1627,7 +1627,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
         if (sBeginAddress.IsOverflow())
             COMPlusThrowArithmetic();
 
-        S_UINT32 sTemp = S_BYTEPTR(pUnwindInfo) - S_BYTEPTR(pbBaseAddressRX);
+        S_UINT32 sTemp = S_BYTEPTR(pUnwindInfo) - S_BYTEPTR(pbBaseAddressRW);
         if (sTemp.IsOverflow())
             COMPlusThrowArithmetic();
 
