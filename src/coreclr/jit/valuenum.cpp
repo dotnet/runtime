@@ -1623,32 +1623,24 @@ ValueNumPair ValueNumStore::VNPWithExc(ValueNumPair vnp, ValueNumPair excSetVNP)
 
 bool ValueNumStore::IsKnownNonNull(ValueNum vn)
 {
-    if (vn == NoVN)
-    {
-        return false;
-    }
+    auto vnVisitor = [this](ValueNum vn) -> VNVisit {
+        if (vn != NoVN)
+        {
+            if (IsVNHandle(vn))
+            {
+                assert(CoercedConstantValue<size_t>(vn) != 0);
+                return VNVisit::Continue;
+            }
 
-    if (IsVNHandle(vn))
-    {
-        assert(CoercedConstantValue<size_t>(vn) != 0);
-        return true;
-    }
-
-    VNFuncApp funcAttr;
-    if (!GetVNFunc(vn, &funcAttr))
-    {
-        return false;
-    }
-
-    if ((s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0)
-    {
-        return true;
-    }
-
-    // TODO: we can recognize more non-null idioms here, e.g.
-    // ADD(IsKnownNonNull(op1), smallCns), etc.
-
-    return false;
+            VNFuncApp funcAttr;
+            if (GetVNFunc(vn, &funcAttr) && ((s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0))
+            {
+                return VNVisit::Continue;
+            }
+        }
+        return VNVisit::Abort;
+    };
+    return VNVisitReachingVNs(vn, vnVisitor) == VNVisit::Continue;
 }
 
 bool ValueNumStore::IsSharedStatic(ValueNum vn)
@@ -3030,6 +3022,26 @@ bool ValueNumStore::GetPhiDef(ValueNum vn, VNPhiDef* phiDef)
     }
 
     return false;
+}
+
+// ----------------------------------------------------------------------------------------
+// IsPhiDef - Check if a VN represents a phi definition.
+//
+// Arguments:
+//   vn - Value number to check
+//
+// Return Value:
+//   True if the VN is a phi def.
+//
+bool ValueNumStore::IsPhiDef(ValueNum vn) const
+{
+    if (vn == NoVN)
+    {
+        return false;
+    }
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    assert(ChunkOffset(vn) < c->m_numUsed);
+    return c->m_attribs == CEA_PhiDef;
 }
 
 // ----------------------------------------------------------------------------------------
