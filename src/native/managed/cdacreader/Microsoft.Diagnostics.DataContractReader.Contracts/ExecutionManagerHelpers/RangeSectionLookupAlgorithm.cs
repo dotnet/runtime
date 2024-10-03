@@ -47,6 +47,41 @@ internal readonly struct RangeSectionLookupAlgorithm
     private int MaxSetBit { get; }
     private int EntriesPerMapLevel { get; } = 256;
 
+    internal struct Cursor
+    {
+        public TargetPointer LevelMap { get; }
+        public int Level { get; }
+        public int Index { get; }
+
+        public Cursor(TargetPointer levelMap, int level, int index)
+        {
+            LevelMap = levelMap;
+            Level = level;
+            Index = index;
+        }
+
+        public TargetPointer GetSlot(Target target) => LevelMap + (ulong)(Index * target.PointerSize);
+
+        public ExMgrPtr LoadValue(Target target) => new ExMgrPtr(target.ReadPointer(GetSlot(target)));
+
+        public bool IsLeaf => Level == 1;
+
+    }
+
+    internal Cursor GetTopCursor(TargetPointer topMap, TargetCodePointer jittedCodeAddress)
+    {
+        int index = EffectiveBitsForLevel(jittedCodeAddress, MapLevels);
+        return new Cursor(topMap, MapLevels, index);
+    }
+
+    internal Cursor GetNextCursor(Target target, Cursor cursor, TargetCodePointer jittedCodeAddress)
+    {
+        int nextLevel = cursor.Level - 1;
+        int nextIndex = EffectiveBitsForLevel(jittedCodeAddress, nextLevel);
+        TargetPointer nextMap = cursor.LoadValue(target).Address;
+        return new Cursor(nextMap, nextLevel, nextIndex);
+    }
+
     private RangeSectionLookupAlgorithm(int mapLevels, int maxSetBit)
     {
         MapLevels = mapLevels;
@@ -86,6 +121,7 @@ internal readonly struct RangeSectionLookupAlgorithm
 
     internal ExMgrPtr FindFragmentInternal(Target target, ExMgrPtr top, TargetCodePointer jittedCodeAddress)
     {
+#if false
         /* The outer levels are all pointer arrays to the next level down.  Level 1 is an array of pointers to a RangeSectionFragment */
         int topLevelIndex = EffectiveBitsForLevel(jittedCodeAddress, MapLevels);
 
@@ -98,5 +134,16 @@ internal readonly struct RangeSectionLookupAlgorithm
             nextLevelAddress = rangeSectionL.Offset(target.PointerSize, EffectiveBitsForLevel(jittedCodeAddress, level));
         }
         return nextLevelAddress;
+#else
+        Cursor cursor = GetTopCursor(top.Address, jittedCodeAddress);
+        while (!cursor.IsLeaf)
+        {
+            ExMgrPtr nextLevel = cursor.LoadValue(target);
+            if (nextLevel.IsNull)
+                return ExMgrPtr.Null;
+            cursor = GetNextCursor(target, cursor, jittedCodeAddress);
+        }
+        return new ExMgrPtr(cursor.GetSlot(target)); // FIXME: update client code to use a TargetPointer and rename this function  to FindFragmentSlot
+#endif
     }
 }
