@@ -7,6 +7,14 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
+
+internal readonly struct RangeSectionLookupAlgorithm
+{
+    private int MapLevels { get; }
+    private int BitsPerLevel { get; } = 8;
+    private int MaxSetBit { get; }
+    private int EntriesPerMapLevel { get; } = 256;
+
 // "ExecutionManagerPointer": a pointer to a RangeFragment and RangeSection.
 // The pointers have a collectible flag on the lowest bit
 internal struct ExMgrPtr
@@ -39,13 +47,6 @@ internal struct ExMgrPtr
         return new ExMgrPtr(target.ReadPointer(Address));
     }
 }
-
-internal readonly struct RangeSectionLookupAlgorithm
-{
-    private int MapLevels { get; }
-    private int BitsPerLevel { get; } = 8;
-    private int MaxSetBit { get; }
-    private int EntriesPerMapLevel { get; } = 256;
 
     internal struct Cursor
     {

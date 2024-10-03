@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-using ExMgrPtr = Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers.ExMgrPtr;
+using ExMgrPtr = Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers.RangeSectionLookupAlgorithm.ExMgrPtr;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 

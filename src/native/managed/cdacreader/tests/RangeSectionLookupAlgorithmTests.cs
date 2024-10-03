@@ -7,6 +7,8 @@ using Xunit;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 using System.Collections.Generic;
 
+using ExMgrPtr = Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers.RangeSectionLookupAlgorithm.ExMgrPtr;
+
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public class RangeSectionLookupAlgorithmTests
@@ -50,7 +52,7 @@ public class RangeSectionLookupAlgorithmTests
             _builder.AddHeapFragment(top);
         }
 
-        public ExMgrPtr TopLevel => new ExMgrPtr(topLevelAddress);
+        public RangeSectionLookupAlgorithm.ExMgrPtr TopLevel => new RangeSectionLookupAlgorithm.ExMgrPtr(topLevelAddress);
 
         private int EffectiveBitsForLevel(ulong address, int level)
         {
