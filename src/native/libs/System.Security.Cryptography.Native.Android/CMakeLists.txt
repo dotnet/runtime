@@ -33,7 +33,7 @@ set(NATIVECRYPTO_SOURCES
 
 add_library(System.Security.Cryptography.Native.Android
     SHARED
-    ${NATIVECRYPTO_SOURCES} pal_jni_onload.c
+    ${NATIVECRYPTO_SOURCES} pal_jni_onload.c pal_trust_manager_jni_export.c
     ${VERSION_FILE_PATH}
 )
 
@@ -42,7 +42,10 @@ add_library(System.Security.Cryptography.Native.Android-Static
     ${NATIVECRYPTO_SOURCES}
 )
 
-set_target_properties(System.Security.Cryptography.Native.Android-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.Android CLEAN_DIRECT_OUTPUT 1)
+add_library(System.Security.Cryptography.Native.Android-StaticJNIExport
+    STATIC
+    pal_trust_manager_jni_export.c
+)
 
 target_link_libraries(System.Security.Cryptography.Native.Android
     PRIVATE
@@ -50,7 +53,8 @@ target_link_libraries(System.Security.Cryptography.Native.Android
 )
 
 set_target_properties(System.Security.Cryptography.Native.Android PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android")
-set_target_properties(System.Security.Cryptography.Native.Android-Static PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android")
+set_target_properties(System.Security.Cryptography.Native.Android-Static PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android" CLEAN_DIRECT_OUTPUT 1)
+set_target_properties(System.Security.Cryptography.Native.Android-StaticJNIExport PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android.JNIExport"  CLEAN_DIRECT_OUTPUT 1)
 
 if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Security.Cryptography.Native.Android PROGRAMS .)
@@ -60,4 +64,5 @@ install (TARGETS System.Security.Cryptography.Native.Android-Static DESTINATION 
 
 if(CLR_CMAKE_HOST_ANDROID)
     install (TARGETS System.Security.Cryptography.Native.Android-Static DESTINATION sharedFramework COMPONENT runtime)
+    install (TARGETS System.Security.Cryptography.Native.Android-StaticJNIExport DESTINATION sharedFramework COMPONENT runtime)
 endif()
