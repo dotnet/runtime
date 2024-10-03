@@ -42,6 +42,20 @@ add_library(System.Security.Cryptography.Native.Android-Static
     ${NATIVECRYPTO_SOURCES}
 )
 
+#
+# This is necessary so that dynamic linking of the .NET for Android runtime
+# can hide all the other symbols in System.Security.Cryptography.Native.Android.
+#
+# .NET for Android dynamic runtime linking links all the relevant native BCL
+# libraries into a single .so, using the .a archives built here.  clang allows
+# hiding all the symbols in the .a archive, but there's no (working) way to
+# exclude just select symbols from hiding.
+#
+# Java VM requires that all the functions implementing the `native` methods are
+# exported from the shared libraries they are implemented in.  Therefore it is
+# necessary to put this symbol in a separate .a archive so that we can exclude it
+# from hiding described above.
+#
 add_library(System.Security.Cryptography.Native.Android-StaticJNIExport
     STATIC
     pal_trust_manager_jni_export.c
