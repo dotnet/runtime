@@ -85,23 +85,34 @@ namespace System.DirectoryServices.Protocols
         }
 
         public SecurityProtocol Protocol => _securityProtocol;
-
+#if NET10_0_OR_GREATER
         [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public CipherAlgorithmType AlgorithmIdentifier => _identifier;
 
+#if NET10_0_OR_GREATER
         [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public int CipherStrength => _strength;
 
+#if NET10_0_OR_GREATER
         [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public HashAlgorithmType Hash => _hashAlgorithm;
 
+#if NET10_0_OR_GREATER
         [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public int HashStrength => _hashStrength;
 
+#if NET10_0_OR_GREATER
         [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public int KeyExchangeAlgorithm => _keyExchangeAlgorithm;
 
+#if NET10_0_OR_GREATER
         [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         public int ExchangeStrength => _exchangeStrength;
 
         internal ref readonly byte GetPinnableReference() => ref Unsafe.As<SecurityProtocol, byte>(ref _securityProtocol);
