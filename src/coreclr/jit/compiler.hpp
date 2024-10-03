@@ -3229,19 +3229,23 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
     }
 
     // We can get to this point for blocks that we didn't create as throw helper blocks
-    // under stress, with implausible flow graph optimizations. So, walk the fgAddCodeList
+    // under stress, with implausible flow graph optimizations. So, walk the fgAddCodeDscMap
     // for the final determination.
 
-    for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
+    if (fgHasAddCodeDscMap())
     {
-        if (block == add->acdDstBlk)
+        for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(fgGetAddCodeDscMap()))
         {
-            return add->acdKind == SCK_RNGCHK_FAIL || add->acdKind == SCK_DIV_BY_ZERO || add->acdKind == SCK_OVERFLOW ||
-                   add->acdKind == SCK_ARG_EXCPN || add->acdKind == SCK_ARG_RNG_EXCPN || add->acdKind == SCK_FAIL_FAST;
+            if (block == add->acdDstBlk)
+            {
+                return add->acdKind == SCK_RNGCHK_FAIL || add->acdKind == SCK_DIV_BY_ZERO ||
+                       add->acdKind == SCK_OVERFLOW || add->acdKind == SCK_ARG_EXCPN ||
+                       add->acdKind == SCK_ARG_RNG_EXCPN || add->acdKind == SCK_FAIL_FAST;
+            }
         }
     }
 
-    // We couldn't find it in the fgAddCodeList
+    // We couldn't find it in the fgAddCodeDscMap
     return false;
 }
 
@@ -3255,7 +3259,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
 
 inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 {
-    for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
+    for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(fgGetAddCodeDscMap()))
     {
         if (block == add->acdDstBlk)
         {
@@ -3273,7 +3277,7 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
     }
 
     noway_assert(!"fgThrowHlpBlkStkLevel should only be called if fgIsThrowHlpBlk() is true, but we can't find the "
-                  "block in the fgAddCodeList list");
+                  "block in the fgAddCodeDscMap");
 
     /* We couldn't find the basic block: it must not have been a throw helper block */
 
