@@ -885,27 +885,16 @@ namespace System.Numerics.Tensors.Tests
             rightSpan[0, 0] = 100;
             Assert.NotEqual(leftSpan[0, 0], rightSpan[0, 0]);
 
-            leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            rightData = new int[15];
-            leftSpan = leftData.AsTensorSpan(9);
-            rightSpan = rightData.AsTensorSpan(15);
-            leftSpan.CopyTo(rightSpan);
-            leftEnum = leftSpan.GetEnumerator();
-            rightEnum = rightSpan.GetEnumerator();
-            // Make sure the first 9 spots are equal after copy
-            while (leftEnum.MoveNext() && rightEnum.MoveNext())
+            // Can't copy if data is not same shape or broadcastable to.
+            Assert.Throws<ArgumentException>(() =>
             {
-                Assert.Equal(leftEnum.Current, rightEnum.Current);
+                leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+                rightData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                TensorSpan<int> leftSpan = leftData.AsTensorSpan(9);
+                TensorSpan<int> tensor = rightData.AsTensorSpan(rightData.Length);
+                leftSpan.CopyTo(tensor);
             }
-            // The rest of the slots shouldn't have been touched.
-            while (rightEnum.MoveNext())
-            {
-                Assert.Equal(0, rightEnum.Current);
-            }
-
-            //Make sure its a copy
-            rightSpan[0] = 100;
-            Assert.NotEqual(leftSpan[0], rightSpan[0]);
+            );
 
             leftData = [.. Enumerable.Range(0, 27)];
             rightData = [.. Enumerable.Range(0, 27)];
@@ -951,23 +940,7 @@ namespace System.Numerics.Tensors.Tests
             leftSpan = leftData.AsTensorSpan(9);
             rightSpan = rightData.AsTensorSpan(15);
             success = leftSpan.TryCopyTo(rightSpan);
-            leftEnum = leftSpan.GetEnumerator();
-            rightEnum = rightSpan.GetEnumerator();
-            Assert.True(success);
-            // Make sure the first 9 spots are equal after copy
-            while (leftEnum.MoveNext() && rightEnum.MoveNext())
-            {
-                Assert.Equal(leftEnum.Current, rightEnum.Current);
-            }
-            // The rest of the slots shouldn't have been touched.
-            while (rightEnum.MoveNext())
-            {
-                Assert.Equal(0, rightEnum.Current);
-            }
-
-            //Make sure its a copy
-            rightSpan[0] = 100;
-            Assert.NotEqual(leftSpan[0], rightSpan[0]);
+            Assert.False(success);
 
             leftData = [.. Enumerable.Range(0, 27)];
             rightData = [.. Enumerable.Range(0, 27)];
@@ -984,6 +957,9 @@ namespace System.Numerics.Tensors.Tests
             var l = leftData.AsTensorSpan(3, 3, 3);
             var r = new TensorSpan<int>();
             success = l.TryCopyTo(r);
+            Assert.False(success);
+
+            success = new ReadOnlyTensorSpan<double>(new double[1]).TryCopyTo(Array.Empty<double>());
             Assert.False(success);
         }
 
