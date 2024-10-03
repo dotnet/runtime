@@ -31,6 +31,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		readonly TypeNameResolver _linkedTypeNameResolver;
 		readonly ReaderParameters _originalReaderParameters;
 		readonly ReaderParameters _linkedReaderParameters;
+		readonly TypeMapInfo _originalTypeMapInfo;
 
 		public ResultChecker ()
 			: this (new TestCaseAssemblyResolver (), new TestCaseAssemblyResolver (),
@@ -51,6 +52,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			_linkedTypeNameResolver = new TypeNameResolver (new TestResolver (), new TestAssemblyNameResolver (_linkedResolver));
 			_originalReaderParameters = originalReaderParameters;
 			_linkedReaderParameters = linkedReaderParameters;
+			_originalTypeMapInfo = new TypeMapInfo (new TestResolver ());
 		}
 
 		protected static void ValidateTypeRefsHaveValidAssemblyRefs (AssemblyDefinition linked)
@@ -92,6 +94,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				var original = ResolveOriginalsAssembly (linkResult.ExpectationsAssemblyPath.FileNameWithoutExtension);
 
 				VerifyExitCode (linkResult, original);
+				var errs = VerifyTypeMapOfOtherAssemblies (original);
+				if (errs.Any ())
+					Assert.Fail ($"Errors found in type map validation:\n{string.Join ("\n", errs)}");
 
 				if (!HasAttribute (original, nameof (NoLinkedOutputAttribute))) {
 					Assert.IsTrue (linkResult.OutputAssemblyPath.FileExists (), $"The linked output assembly was not found.  Expected at {linkResult.OutputAssemblyPath}");
@@ -145,7 +150,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, TrimmedTestCaseResult linkedTestCase)
 		{
-			return new AssemblyChecker (original, linked, linkedTestCase);
+			return new AssemblyChecker (original, linked, linkedTestCase, _originalTypeMapInfo);
 		}
 
 		void InitializeResolvers (TrimmedTestCaseResult linkedResult)
@@ -290,6 +295,35 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			ValidateTypeRefsHaveValidAssemblyRefs (linked);
 		}
 
+		IEnumerable<string> VerifyTypeMapOfOtherAssemblies (AssemblyDefinition original)
+		{
+			var checks = BuildTypeMapInfoCheckTable (original);
+			List<string> errs = [];
+			try {
+				foreach (var assemblyName in checks.Keys) {
+					var assembly = ResolveOriginalsAssembly (assemblyName);
+					foreach (var check in checks[assemblyName]) {
+						switch (check.AttributeType.Name) {
+						case nameof (RuntimeInterfaceOnTypeInAssembly):
+							object type = check.ConstructorArguments[1].Value;
+							TypeDefinition typeDef = GetOriginalTypeFromInAssemblyAttribute (assemblyName, type);
+							string interfaceName = (check.ConstructorArguments[2].Value as TypeReference)?.FullName ?? (string) check.ConstructorArguments[2].Value;
+							var expectedImplChain = (check.ConstructorArguments[3].Value as CustomAttributeArgument[])
+								.Select (caa => (caa.Value as TypeReference)?.FullName ?? (string) caa.Value);
+							errs.AddRange (TypeMapInfoValidation.ValidateRuntimeInterfaces (_originalTypeMapInfo, typeDef, interfaceName, expectedImplChain));
+							break;
+						default:
+							break;
+						}
+					}
+
+				}
+			} catch (AssemblyResolutionException e) {
+				Assert.Fail ($"Failed to resolve linked assembly `{e.AssemblyReference.Name}`.  It must not exist in any of the input directories:\n\t{_originalsResolver.GetSearchDirectories ().Aggregate ((buff, s) => $"{buff}\n\t{s}")}\n");
+			}
+			return errs;
+		}
+
 		void VerifyLinkingOfOtherAssemblies (AssemblyDefinition original)
 		{
 			var checks = BuildOtherAssemblyCheckTable (original);
@@ -318,7 +352,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						TypeReference linkedTypeRef = null;
 						try {
 							_linkedTypeNameResolver.TryResolveTypeName (linkedAssembly, expectedTypeName, out linkedTypeRef, out _);
-						} catch (AssemblyResolutionException) {}
+						} catch (AssemblyResolutionException) { }
 						TypeDefinition linkedType = linkedTypeRef?.Resolve ();
 
 						if (linkedType == null && linkedAssembly.MainModule.HasExportedTypes) {
@@ -963,8 +997,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
 											(actualName.Contains ("<" + expectedMember.Name + ">") ||
-											 actualName.EndsWith ("get_" + expectedMember.Name) ||
-											 actualName.EndsWith ("set_" + expectedMember.Name))) {
+											actualName.EndsWith ("get_" + expectedMember.Name) ||
+											actualName.EndsWith ("set_" + expectedMember.Name))) {
 											expectedWarningFound = true;
 											unmatchedMessages.Remove (loggedMessage);
 											break;
@@ -1256,18 +1290,38 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return originalType;
 		}
 
+
+		bool IsTypeInOtherAssemblyAssertion (CustomAttribute attr)
+		{
+			if (false == attr.AttributeType.Resolve ()?.DerivesFrom (nameof (BaseInAssemblyAttribute)))
+				return false;
+
+			Tool? toolTarget = (Tool?) (int?) attr.GetPropertyValue ("Tool");
+			if (toolTarget is not null && !toolTarget.Value.HasFlag (Tool.Trimmer))
+				return false;
+
+			return true;
+		}
+
+		bool IsTypeMapInfoInOtherAssemblyAssertion (CustomAttribute attr)
+		{
+			return attr.AttributeType.Resolve ()?.DerivesFrom (nameof (BaseTypeMapInfoAttribute)) ?? false;
+		}
+
+		Dictionary<string, List<CustomAttribute>> BuildTypeMapInfoCheckTable (AssemblyDefinition original)
+			=> BuildChecksTable (original, IsTypeMapInfoInOtherAssemblyAssertion);
+
 		Dictionary<string, List<CustomAttribute>> BuildOtherAssemblyCheckTable (AssemblyDefinition original)
+			=> BuildChecksTable (original, IsTypeInOtherAssemblyAssertion);
+
+		Dictionary<string, List<CustomAttribute>> BuildChecksTable (AssemblyDefinition original, Func<CustomAttribute, bool> predicate)
 		{
 			var checks = new Dictionary<string, List<CustomAttribute>> ();
 
 			foreach (var typeWithRemoveInAssembly in original.AllDefinedTypes ()) {
-				foreach (var attr in typeWithRemoveInAssembly.CustomAttributes.Where (IsTypeInOtherAssemblyAssertion)) {
+				foreach (var attr in typeWithRemoveInAssembly.CustomAttributes.Where (predicate)) {
+
 					var assemblyName = (string) attr.ConstructorArguments[0].Value;
-
-					Tool? toolTarget = (Tool?) (int?) attr.GetPropertyValue ("Tool");
-					if (toolTarget is not null && !toolTarget.Value.HasFlag (Tool.Trimmer))
-						continue;
-
 					if (!checks.TryGetValue (assemblyName, out List<CustomAttribute> checksForAssembly))
 						checks[assemblyName] = checksForAssembly = new List<CustomAttribute> ();
 
@@ -1283,10 +1337,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			throw new NotImplementedException ($"Type {expectedTypeName}, has an unknown other assembly attribute of type {checkAttrInAssembly.AttributeType}");
 		}
 
-		bool IsTypeInOtherAssemblyAssertion (CustomAttribute attr)
-		{
-			return attr.AttributeType.Resolve ()?.DerivesFrom (nameof (BaseInAssemblyAttribute)) ?? false;
-		}
 
 		static bool HasAttribute (ICustomAttributeProvider caProvider, string attributeName)
 		{

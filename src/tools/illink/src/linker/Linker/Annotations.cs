@@ -31,6 +31,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -71,6 +72,7 @@ namespace Mono.Linker
 		protected readonly HashSet<MethodDefinition> indirectly_called = new HashSet<MethodDefinition> ();
 		protected readonly HashSet<TypeDefinition> types_relevant_to_variant_casting = new HashSet<TypeDefinition> ();
 		readonly HashSet<IMemberDefinition> reflection_used = new ();
+		readonly HashSet<RuntimeInterfaceImplementation> _marked_runtime_interface_implementations = new ();
 
 		public AnnotationStore (LinkContext context)
 		{
@@ -705,9 +707,13 @@ namespace Mono.Linker
 				VirtualMethodsWithAnnotationsToValidate.Add (method);
 		}
 
-		internal List<(TypeReference InterfaceType, List<InterfaceImplementation> ImplementationChain)>? GetRecursiveInterfaces (TypeDefinition type)
+		internal ImmutableArray<RuntimeInterfaceImplementation> GetRuntimeInterfaces (TypeDefinition type)
 		{
 			return TypeMapInfo.GetRecursiveInterfaces (type);
 		}
+
+		internal bool IsMarked (RuntimeInterfaceImplementation runtimeInterface) => _marked_runtime_interface_implementations.Contains (runtimeInterface);
+
+		internal void Mark (RuntimeInterfaceImplementation runtimeInterface) => _marked_runtime_interface_implementations.Add (runtimeInterface);
 	}
 }

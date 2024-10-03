@@ -29,27 +29,35 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Mono.Cecil;
+using Mono.Linker.Linker;
 
 namespace Mono.Linker
 {
-
 	public class TypeMapInfo
 	{
 		readonly HashSet<AssemblyDefinition> assemblies = new HashSet<AssemblyDefinition> ();
-		readonly LinkContext context;
+		readonly ITryResolveMetadata context;
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> base_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> default_interface_implementations = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
+		readonly RuntimeInterfacesAlgorithm _recursiveInterfaces;
 
 		public TypeMapInfo (LinkContext context)
 		{
 			this.context = context;
+			_recursiveInterfaces = new (context);
+		}
+
+		internal TypeMapInfo (ITryResolveMetadata context)
+		{
+			this.context = context;
+			_recursiveInterfaces = new (context);
 		}
 
 		public void EnsureProcessed (AssemblyDefinition assembly)
@@ -100,28 +108,20 @@ namespace Mono.Linker
 			return ret;
 		}
 
-		public void AddBaseMethod (MethodDefinition method, MethodDefinition @base, InterfaceImplementor? interfaceImplementor)
+		internal void AddBaseMethod (MethodDefinition method, MethodDefinition @base, RuntimeInterfaceImplementation? runtimeInterface)
 		{
-			base_methods.AddToList (method, new OverrideInformation (@base, method, interfaceImplementor));
+			base_methods.AddToList (method, new OverrideInformation (@base, method, runtimeInterface));
 		}
 
-		public void AddOverride (MethodDefinition @base, MethodDefinition @override, InterfaceImplementor? interfaceImplementor = null)
+		internal void AddOverride (MethodDefinition @base, MethodDefinition @override, RuntimeInterfaceImplementation? runtimeInterface = null)
 		{
-			override_methods.AddToList (@base, new OverrideInformation (@base, @override, interfaceImplementor));
+			override_methods.AddToList (@base, new OverrideInformation (@base, @override, runtimeInterface));
 		}
 
-		public void AddDefaultInterfaceImplementation (MethodDefinition @base, InterfaceImplementor interfaceImplementor, MethodDefinition defaultImplementationMethod)
-		{
-			Debug.Assert(@base.DeclaringType.IsInterface);
-			default_interface_implementations.AddToList (@base, new OverrideInformation (@base, defaultImplementationMethod, interfaceImplementor));
-		}
-
-		Dictionary<TypeDefinition, List<(TypeReference, List<InterfaceImplementation>)>> interfaces = new ();
 		protected virtual void MapType (TypeDefinition type)
 		{
 			MapVirtualMethods (type);
 			MapInterfaceMethodsInTypeHierarchy (type);
-			interfaces[type] = GetRecursiveInterfaceImplementations (type);
 
 			if (!type.HasNestedTypes)
 				return;
@@ -130,58 +130,21 @@ namespace Mono.Linker
 				MapType (nested);
 		}
 
-		internal List<(TypeReference InterfaceType, List<InterfaceImplementation> ImplementationChain)>? GetRecursiveInterfaces (TypeDefinition type)
+		internal ImmutableArray<RuntimeInterfaceImplementation> GetRecursiveInterfaces (TypeDefinition type)
 		{
-			EnsureProcessed(type.Module.Assembly);
-			if (interfaces.TryGetValue (type, out var value))
-				return value;
-			return null;
-		}
-
-		List<(TypeReference InterfaceType, List<InterfaceImplementation> ImplementationChain)> GetRecursiveInterfaceImplementations (TypeDefinition type)
-		{
-			List<(TypeReference, List<InterfaceImplementation>)> firstImplementationChain = new ();
-
-			AddRecursiveInterfaces (type, [], firstImplementationChain, context);
-			Debug.Assert (firstImplementationChain.All (kvp => context.Resolve (kvp.Item1) == context.Resolve (kvp.Item2.Last ().InterfaceType)));
-
-			return firstImplementationChain;
-
-			static void AddRecursiveInterfaces (TypeReference typeRef, IEnumerable<InterfaceImplementation> pathToType, List<(TypeReference, List<InterfaceImplementation>)> firstImplementationChain, LinkContext Context)
-			{
-				var type = Context.TryResolve (typeRef);
-				// If we can't resolve the interface type we can't find recursive interfaces
-				if (type is null)
-					return;
-				// Get all explicit interfaces of this type
-				foreach (var iface in type.Interfaces) {
-					var interfaceType = iface.InterfaceType.InflateFrom (typeRef as IGenericInstance);
-					if (!firstImplementationChain.Any (i => TypeReferenceEqualityComparer.AreEqual (i.Item1, interfaceType, Context))) {
-						firstImplementationChain.Add ((interfaceType, pathToType.Append (iface).ToList ()));
-					}
-				}
-
-				// Recursive interfaces after all direct interfaces to preserve Inherit/Implement tree order
-				foreach (var iface in type.Interfaces) {
-					var ifaceDirectlyOnType = iface.InterfaceType.InflateFrom (typeRef as IGenericInstance);
-					AddRecursiveInterfaces (ifaceDirectlyOnType, pathToType.Append (iface), firstImplementationChain, Context);
-				}
-			}
+			return _recursiveInterfaces.GetRuntimeInterfaceImplementations (type);
 		}
 
 		void MapInterfaceMethodsInTypeHierarchy (TypeDefinition type)
 		{
-			if (!type.HasInterfaces)
+			var runtimeInterfaceImpls = _recursiveInterfaces.GetRuntimeInterfaceImplementations (type);
+			if (runtimeInterfaceImpls.Length == 0)
 				return;
 
 			// Foreach interface and for each newslot virtual method on the interface, try
 			// to find the method implementation and record it.
-			foreach (var interfaceImpl in type.GetInflatedInterfaces (context)) {
-				foreach (MethodReference interfaceMethod in interfaceImpl.InflatedInterface.GetMethods (context)) {
-					MethodDefinition? resolvedInterfaceMethod = context.TryResolve (interfaceMethod);
-					if (resolvedInterfaceMethod == null)
-						continue;
-
+			foreach (var interfaceImpl in runtimeInterfaceImpls) {
+				foreach ((MethodReference interfaceMethod, MethodDefinition resolvedInterfaceMethod) in interfaceImpl.InflatedInterfaceType.GetMethods (context)) {
 					// TODO-NICE: if the interface method is implemented explicitly (with an override),
 					// we shouldn't need to run the below logic. This results in ILLink potentially
 					// keeping more methods than needed.
@@ -190,26 +153,28 @@ namespace Mono.Linker
 						|| resolvedInterfaceMethod.IsFinal)
 						continue;
 
+					// Note: methods with overrides are annotated in MapVirtualMethods
+
 					// Static methods on interfaces must be implemented only via explicit method-impl record
 					// not by a signature match. So there's no point in running this logic for static methods.
 					if (!resolvedInterfaceMethod.IsStatic) {
 						// Try to find an implementation with a name/sig match on the current type
 						MethodDefinition? exactMatchOnType = TryMatchMethod (type, interfaceMethod);
 						if (exactMatchOnType != null) {
-							AnnotateMethods (resolvedInterfaceMethod, exactMatchOnType, new (type, interfaceImpl.OriginalImpl, resolvedInterfaceMethod.DeclaringType, context));
+							AnnotateMethods (resolvedInterfaceMethod, exactMatchOnType, interfaceImpl);
 							continue;
 						}
 
 						// Next try to find an implementation with a name/sig match in the base hierarchy
 						var @base = GetBaseMethodInTypeHierarchy (type, interfaceMethod);
 						if (@base != null) {
-							AnnotateMethods (resolvedInterfaceMethod, @base, new (type, interfaceImpl.OriginalImpl, resolvedInterfaceMethod.DeclaringType, context));
+							AnnotateMethods (resolvedInterfaceMethod, @base, interfaceImpl);
 							continue;
 						}
 					}
 
 					// Look for a default implementation last.
-					FindAndAddDefaultInterfaceImplementations (type, type, resolvedInterfaceMethod, interfaceImpl.OriginalImpl);
+					FindAndAddDefaultInterfaceImplementations (interfaceImpl, resolvedInterfaceMethod);
 				}
 			}
 		}
@@ -239,7 +204,7 @@ namespace Mono.Linker
 			if (@base == null)
 				return;
 
-			Debug.Assert(!@base.DeclaringType.IsInterface);
+			Debug.Assert (!@base.DeclaringType.IsInterface);
 
 			AnnotateMethods (@base, method);
 		}
@@ -251,17 +216,20 @@ namespace Mono.Linker
 				if (baseMethod == null)
 					continue;
 				if (baseMethod.DeclaringType.IsInterface) {
-					AnnotateMethods (baseMethod, method, InterfaceImplementor.Create (method.DeclaringType, baseMethod.DeclaringType, context));
+					var runtimeInterfaces = _recursiveInterfaces.GetRuntimeInterfaceImplementations (method.DeclaringType);
+					Debug.Assert (runtimeInterfaces.Length > 0);
+					var runtimeInterface = runtimeInterfaces.Single (i => TypeReferenceEqualityComparer.AreEqual (i.InflatedInterfaceType, baseMethodRef.DeclaringType, context));
+					AnnotateMethods (baseMethod, method, runtimeInterface);
 				} else {
 					AnnotateMethods (baseMethod, method);
 				}
 			}
 		}
 
-		void AnnotateMethods (MethodDefinition @base, MethodDefinition @override, InterfaceImplementor? interfaceImplementor = null)
+		void AnnotateMethods (MethodDefinition @base, MethodDefinition @override, RuntimeInterfaceImplementation? runtimeInterface = null)
 		{
-			AddBaseMethod (@override, @base, interfaceImplementor);
-			AddOverride (@base, @override, interfaceImplementor);
+			AddBaseMethod (@override, @base, runtimeInterface);
+			AddOverride (@base, @override, runtimeInterface);
 		}
 
 		MethodDefinition? GetBaseMethodInTypeHierarchy (MethodDefinition method)
@@ -323,23 +291,23 @@ namespace Mono.Linker
 		/// <param name="implOfInterface">
 		/// The InterfaceImplementation on <paramref name="type"/> that points to the DeclaringType of <paramref name="interfaceMethod"/>.
 		/// </param>
-		void FindAndAddDefaultInterfaceImplementations (TypeDefinition typeThatImplementsInterface, TypeDefinition typeThatMayHaveDIM, MethodDefinition interfaceMethodToBeImplemented, InterfaceImplementation originalInterfaceImpl)
+		void FindAndAddDefaultInterfaceImplementations (RuntimeInterfaceImplementation originalInterfaceImpl, MethodDefinition interfaceMethodDef)
 		{
 			// Go over all interfaces, trying to find a method that is an explicit MethodImpl of the
 			// interface method in question.
+			var runtimeIfaces = _recursiveInterfaces.GetRuntimeInterfaceImplementations (originalInterfaceImpl.Implementor);
+			if (runtimeIfaces.Length == 0)
+				return;
 
-			foreach (var interfaceImpl in typeThatMayHaveDIM.Interfaces) {
-				var potentialImplInterface = context.TryResolve (interfaceImpl.InterfaceType);
-				if (potentialImplInterface == null)
+			foreach (var runtimeIface in runtimeIfaces) {
+				var potentialImplInterface = runtimeIface.InterfaceTypeDefinition;
+				if (potentialImplInterface is null)
 					continue;
 
-				bool foundImpl = false;
-
 				foreach (var potentialImplMethod in potentialImplInterface.Methods) {
-					if (potentialImplMethod == interfaceMethodToBeImplemented &&
-						!potentialImplMethod.IsAbstract) {
-						AddDefaultInterfaceImplementation (interfaceMethodToBeImplemented, new (typeThatImplementsInterface, originalInterfaceImpl, interfaceMethodToBeImplemented.DeclaringType, context), potentialImplMethod);
-						foundImpl = true;
+					if (potentialImplMethod == interfaceMethodDef && !potentialImplMethod.IsAbstract) {
+						// The interface method definition provides a default implementation.
+						AddDefaultInterfaceImplementation (interfaceMethodDef, originalInterfaceImpl, potentialImplMethod);
 						break;
 					}
 
@@ -347,34 +315,31 @@ namespace Mono.Linker
 						continue;
 
 					// This method is an override of something. Let's see if it's the method we are looking for.
+					bool foundImpl = false;
 					foreach (var baseMethod in potentialImplMethod.Overrides) {
-						if (context.TryResolve (baseMethod) == interfaceMethodToBeImplemented) {
-							AddDefaultInterfaceImplementation (interfaceMethodToBeImplemented, new (typeThatImplementsInterface, originalInterfaceImpl, interfaceMethodToBeImplemented.DeclaringType, context), @potentialImplMethod);
+						if (context.TryResolve (baseMethod) == interfaceMethodDef) {
+							AddDefaultInterfaceImplementation (interfaceMethodDef, originalInterfaceImpl, @potentialImplMethod);
 							foundImpl = true;
-							break;
 						}
 					}
-
 					if (foundImpl) {
 						break;
 					}
 				}
+			}
 
-				// We haven't found a MethodImpl on the current interface, but one of the interfaces
-				// this interface requires could still provide it.
-				if (!foundImpl) {
-					FindAndAddDefaultInterfaceImplementations (typeThatImplementsInterface, potentialImplInterface, interfaceMethodToBeImplemented, originalInterfaceImpl);
-				}
+			void AddDefaultInterfaceImplementation (MethodDefinition @base, RuntimeInterfaceImplementation runtimeInterface, MethodDefinition defaultImplementationMethod)
+			{
+				Debug.Assert (@base.DeclaringType.IsInterface);
+				default_interface_implementations.AddToList (@base, new OverrideInformation (@base, defaultImplementationMethod, runtimeInterface));
 			}
 		}
 
 		MethodDefinition? TryMatchMethod (TypeReference type, MethodReference method)
 		{
-			foreach (var candidate in type.GetMethods (context)) {
-				var md = context.TryResolve (candidate);
-				if (md?.IsVirtual != true)
+			foreach (var (candidate, md) in type.GetMethods (context)) {
+				if (!md.IsVirtual)
 					continue;
-
 				if (MethodMatch (candidate, method))
 					return md;
 			}

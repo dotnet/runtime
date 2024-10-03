@@ -30,6 +30,9 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.RecursiveInterfaces
 	[RemovedOverrideOnMethodInAssembly ("library.dll", "Program/A", "O", "System.Void Program/IMiddleUnused::O()")]
 	[RemovedMemberInAssembly ("library.dll", "Program/IBaseUnused", "M()")]
 	[RemovedMemberInAssembly ("library.dll", "Program/IMiddleUnused", "O()")]
+	[RuntimeInterfaceOnTypeInAssembly ("library.dll", "Program/A", "Program/IDerived", new string[] { "Program/IDerived" })]
+	[RuntimeInterfaceOnTypeInAssembly ("library.dll", "Program/A", "Program/IBaseUsed", new string[] { "Program/IDerived", "Program/IMiddleUnused", "Program/IBaseUsed" })]
+	[RuntimeInterfaceOnTypeInAssembly ("library.dll", "Program/A", "Program/IBaseUnused", new string[] { "Program/IDerived", "Program/IMiddleUnused", "Program/IBaseUnused" })]
 	public class OverrideOfRecursiveInterfaceIsRemoved
 	{
 		[Kept]

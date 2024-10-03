@@ -11,6 +11,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 		public static void Main ()
 		{
 			CallMethod<Derived> ();
+			CallMN<D> ();
 		}
 
 		[Kept]
@@ -38,5 +39,40 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 		// Compiler generates private explicit implementation that calls Base.Method()
 		class Derived : Base, IFoo
 		{ }
+
+		[Kept]
+		static void CallMN<T> () where T : I
+		{
+			T.M ();
+			T.N ();
+		}
+
+		[Kept]
+		interface I
+		{
+			[Kept]
+			static abstract string M ();
+			[Kept]
+			static abstract string N ();
+		}
+
+		[Kept]
+		[KeptInterface (typeof (I))]
+		class B : I
+		{
+			[Kept]
+			public static string M () => "B.M";
+			[Kept]
+			static string I.N () => "B's I.N";
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (B))]
+		[KeptInterface (typeof (I))]
+		class D : B, I
+		{
+			[Kept]
+			static string I.N () => "D's I.N";
+		}
 	}
 }

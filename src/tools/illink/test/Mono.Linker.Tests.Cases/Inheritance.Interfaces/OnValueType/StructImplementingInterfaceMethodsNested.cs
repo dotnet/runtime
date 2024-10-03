@@ -17,6 +17,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType
 			void Foo ();
 		}
 
+		[Kept]
+		[KeptInterface (typeof (IFoo))]
 		interface IBar : IFoo
 		{
 			void Bar ();
@@ -24,6 +26,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType
 
 		[Kept]
 		[KeptInterface (typeof (IFoo))]
+		[KeptInterface (typeof (IBar))]
 		struct A : IBar
 		{
 			[Kept]

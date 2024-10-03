@@ -20,8 +20,11 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 			void InterfaceMethod ();
 		}
 
+		[Kept] // Should be removable
+		[KeptInterface (typeof (IFoo))]
 		interface IDefaultImpl : IFoo
 		{
+			[Kept]
 			void IFoo.InterfaceMethod ()
 			{
 			}
@@ -29,6 +32,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 
 		[Kept]
 		[KeptInterface (typeof (IFoo))]
+		[KeptInterface (typeof (IDefaultImpl))] // Should be removable
 		class Foo : IDefaultImpl
 		{
 			[Kept]

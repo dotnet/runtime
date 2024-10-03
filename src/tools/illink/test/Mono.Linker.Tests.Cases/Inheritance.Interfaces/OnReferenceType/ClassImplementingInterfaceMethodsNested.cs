@@ -17,6 +17,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 			void Foo ();
 		}
 
+		[Kept]
+		[KeptInterface (typeof (IFoo))]
 		interface IBar : IFoo
 		{
 			void Bar ();
@@ -25,6 +27,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo))]
+		[KeptInterface (typeof (IBar))]
 		class A : IBar
 		{
 			[Kept]

@@ -22,6 +22,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 		class BaseFoo
 		{
 			[Kept]
+			[IsOverrideOf ("System.Void Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember.SimpleMethod/IFoo::Method()")]
 			public void Method ()
 			{
 			}

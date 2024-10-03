@@ -136,15 +136,19 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 			internal UninstantiatedPublicClassWithInterface () { }
 
 			[Kept]
+			[IsOverrideOf ("System.Void Mono.Linker.Tests.Cases.Inheritance.Interfaces.InterfaceVariants/IPublicInterface::PublicInterfaceMethod()")]
 			public void PublicInterfaceMethod () { }
 
 			[Kept]
+			[IsOverrideOf ("System.Void Mono.Linker.Tests.Cases.Inheritance.Interfaces.InterfaceVariants/IPublicInterface::ExplicitImplementationPublicInterfaceMethod()")]
 			void IPublicInterface.ExplicitImplementationPublicInterfaceMethod () { }
 
 			[Kept]
+			[IsOverrideOf ("System.Void Mono.Linker.Tests.Cases.Inheritance.Interfaces.InterfaceVariants/IPublicStaticInterface::PublicStaticInterfaceMethod()")]
 			public static void PublicStaticInterfaceMethod () { }
 
 			[Kept]
+			[IsOverrideOf ("System.Void Mono.Linker.Tests.Cases.Inheritance.Interfaces.InterfaceVariants/IPublicStaticInterface::ExplicitImplementationPublicStaticInterfaceMethod()")]
 			static void IPublicStaticInterface.ExplicitImplementationPublicStaticInterfaceMethod () { }
 
 			public void InternalInterfaceMethod () { }

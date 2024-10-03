@@ -279,7 +279,7 @@ namespace Mono.Linker
 			return result;
 		}
 
-		public static IEnumerable<MethodReference> GetMethods (this TypeReference type, ITryResolveMetadata resolver)
+		public static IEnumerable<(MethodReference, MethodDefinition)> GetMethods (this TypeReference type, ITryResolveMetadata resolver)
 		{
 			TypeDefinition? typeDef = resolver.TryResolve (type);
 			if (typeDef?.HasMethods != true)
@@ -287,10 +287,10 @@ namespace Mono.Linker
 
 			if (type is GenericInstanceType genericInstanceType) {
 				foreach (var methodDef in typeDef.Methods)
-					yield return MakeMethodReferenceForGenericInstanceType (genericInstanceType, methodDef);
+					yield return (MakeMethodReferenceForGenericInstanceType (genericInstanceType, methodDef), methodDef);
 			} else {
 				foreach (var method in typeDef.Methods)
-					yield return method;
+					yield return (method, method);
 			}
 		}
 
@@ -414,7 +414,8 @@ namespace Mono.Linker
 		// Check whether this type represents a "named type" (i.e. a type that has a name and can be resolved to a TypeDefinition),
 		// not an array, pointer, byref, or generic parameter. Conceptually this is supposed to represent the same idea as Roslyn's
 		// INamedTypeSymbol, or ILC's DefType/MetadataType.
-		public static bool IsNamedType (this TypeReference typeReference) {
+		public static bool IsNamedType (this TypeReference typeReference)
+		{
 			if (typeReference.IsDefinition || typeReference.IsGenericInstance)
 				return true;
 

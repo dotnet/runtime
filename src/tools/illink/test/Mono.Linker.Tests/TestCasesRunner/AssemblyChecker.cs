@@ -17,6 +17,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 	partial class AssemblyChecker
 	{
 		readonly AssemblyDefinition originalAssembly, linkedAssembly;
+		TypeMapInfo _originalTypeMapInfo = new TypeMapInfo (new TestResolver ());
 		readonly TrimmedTestCaseResult linkedTestCase;
 
 		HashSet<string> linkedMembers;
@@ -25,11 +26,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		readonly HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
 		bool checkNames;
 
-		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, TrimmedTestCaseResult linkedTestCase)
+		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, TrimmedTestCaseResult linkedTestCase, TypeMapInfo typeMapInfo)
 		{
 			this.originalAssembly = original;
 			this.linkedAssembly = linked;
 			this.linkedTestCase = linkedTestCase;
+			this._originalTypeMapInfo = typeMapInfo;
 
 			checkNames = original.MainModule.GetTypeReferences ().Any (attr =>
 				attr.Name == nameof (RemovedNameValueAttribute));
@@ -43,6 +45,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			IEnumerable<string> GetFailures ()
 			{
+				foreach (var err in VerifyTypeMapInfo (originalAssembly))
+					yield return err;
 				foreach (var err in VerifyExportedTypes (originalAssembly, linkedAssembly))
 					yield return err;
 				foreach (var err in VerifyCustomAttributes (originalAssembly, linkedAssembly))
@@ -96,6 +100,44 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (linkedMembers.Any ())
 					foreach (var err in linkedMembers.Select (m => $"Member `{m}' was not expected to be kept"))
 						yield return err;
+			}
+		}
+
+		private IEnumerable<string> VerifyTypeMapInfo (AssemblyDefinition originalAssembly)
+		{
+			foreach (var type in originalAssembly.AllDefinedTypes ()) {
+				foreach (var att in type.CustomAttributes) {
+					switch (att.AttributeType.Name) {
+					case nameof (HasRuntimeInterfaceAttribute):
+						var expectedInterfaceTypeName = att.ConstructorArguments[0].Value as string ?? ((TypeReference) att.ConstructorArguments[0].Value).FullName;
+						var expectedInterfaceChain = ((CustomAttributeArgument[]) att.ConstructorArguments[1].Value).Select (t => t.Value as string ?? ((TypeReference) t.Value).FullName);
+						var errs = TypeMapInfoValidation.ValidateRuntimeInterfaces (_originalTypeMapInfo, type, expectedInterfaceTypeName, expectedInterfaceChain);
+						foreach (var err in errs)
+							yield return err;
+						break;
+
+					default:
+						break;
+					}
+				}
+				foreach (var method in type.Methods) {
+					foreach (var att in method.CustomAttributes) {
+						switch (att.AttributeType.Name) {
+						case nameof (IsOverrideOfAttribute):
+							string expectedOverriddenMethodName = att.ConstructorArguments.Count switch {
+								1 => (string) att.ConstructorArguments[0].Value,
+								_ => throw new NotImplementedException ($"Unexpected number of arguments in {att.AttributeType.Name} attribute: {att.ConstructorArguments.Count}")
+							};
+							var errs = TypeMapInfoValidation.ValidateMethodIsOverrideOf (_originalTypeMapInfo, method, expectedOverriddenMethodName);
+							foreach (var err in errs)
+								yield return err;
+
+							break;
+						default:
+							break;
+						}
+					}
+				}
 			}
 		}
 
@@ -1186,7 +1228,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				yield return $"Mismatch in generic parameter constraints on {src} of {src.Owner}. Input has constraints?: {src.HasConstraints}, Output has constraints?: {linked.HasConstraints}";
 				yield break;
 			}
-			
+
 			if (!src.HasConstraints)
 				yield break;
 
@@ -1222,7 +1264,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				yield return string.Join (Environment.NewLine, $"Custom attributes on `{src}' generic parameter constraints are not matching:", missing, extra);
 			}
 
-			static bool IsKeptAttributeOnConstraint (CustomAttribute attr) {
+			static bool IsKeptAttributeOnConstraint (CustomAttribute attr)
+			{
 				if (attr.AttributeType.Name != nameof (KeptAttributeOnConstraintAttribute))
 					return false;
 

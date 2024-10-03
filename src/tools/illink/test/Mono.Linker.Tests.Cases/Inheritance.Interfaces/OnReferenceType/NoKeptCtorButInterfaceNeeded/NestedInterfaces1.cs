@@ -46,6 +46,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptC
 		/// </summary>
 		[Kept]
 		[KeptInterface (typeof (IBase3))]
+		[KeptInterface (typeof (IBase2))] // Should be removable
 		[KeptInterface (typeof (IBase))]
 		class Foo : IBase3
 		{
