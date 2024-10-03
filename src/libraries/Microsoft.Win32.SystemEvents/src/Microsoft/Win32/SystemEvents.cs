@@ -459,39 +459,43 @@ namespace Microsoft.Win32
         /// </summary>
         private static void EnsureSystemEvents(bool requireHandle)
         {
-            if (s_systemEvents == null)
+            if (s_systemEvents is not null)
             {
-                lock (s_procLockObject)
+                return;
+            }
+
+            lock (s_procLockObject)
+            {
+                if (s_systemEvents is not null)
                 {
-                    if (s_systemEvents == null)
-                    {
-                        // Create a new pumping thread.  We always create one even if the current thread
-                        // is STA, as there are no guarantees this thread will pump nor still be alive
-                        // for the desired duration.
+                    return;
+                }
 
-                        s_eventWindowReady = new ManualResetEvent(false);
-                        SystemEvents systemEvents = new SystemEvents();
-                        s_windowThread = new Thread(new ThreadStart(systemEvents.WindowThreadProc))
-                        {
-                            IsBackground = true,
-                            Name = ".NET System Events"
-                        };
-                        s_windowThread.Start();
-                        s_eventWindowReady.WaitOne();
+                // Create a new pumping thread. We always create one even if the current thread
+                // is STA, as there are no guarantees this thread will pump nor still be alive
+                // for the desired duration.
 
-                        // ensure this is initialized last as that will force concurrent threads calling
-                        // this method to block until after we've initialized.
-                        s_systemEvents = systemEvents;
+                s_eventWindowReady = new ManualResetEvent(false);
+                SystemEvents systemEvents = new SystemEvents();
+                s_windowThread = new Thread(new ThreadStart(systemEvents.WindowThreadProc))
+                {
+                    IsBackground = true,
+                    Name = ".NET System Events"
+                };
+                s_windowThread.Start();
+                s_eventWindowReady.WaitOne();
 
-                        if (requireHandle && s_systemEvents._windowHandle == IntPtr.Zero)
-                        {
-                            // In theory, it's not the end of the world that
-                            // we don't get system events.  Unfortunately, the main reason windowHandle == 0
-                            // is CreateWindowEx failed for mysterious reasons, and when that happens,
-                            // subsequent (and more important) CreateWindowEx calls also fail.
-                            throw new ExternalException(SR.ErrorCreateSystemEvents);
-                        }
-                    }
+                // Ensure this is initialized last as that will force concurrent threads calling
+                // this method to block until after we've initialized.
+                s_systemEvents = systemEvents;
+
+                if (requireHandle && s_systemEvents._windowHandle == IntPtr.Zero)
+                {
+                    // In theory, it's not the end of the world that
+                    // we don't get system events.  Unfortunately, the main reason windowHandle == 0
+                    // is CreateWindowEx failed for mysterious reasons, and when that happens,
+                    // subsequent (and more important) CreateWindowEx calls also fail.
+                    throw new ExternalException(SR.ErrorCreateSystemEvents);
                 }
             }
         }
@@ -754,16 +758,15 @@ namespace Microsoft.Win32
             {
                 int pid;
                 int thread = Interop.User32.GetWindowThreadProcessId(s_systemEvents!._windowHandle, &pid);
-                GC.KeepAlive(s_systemEvents);
                 Debug.Assert(s_windowThread == null || thread != Interop.Kernel32.GetCurrentThreadId(), "Don't call MarshaledInvoke on the system events thread");
             }
 #endif
 
-            if (s_threadCallbackList == null)
+            if (s_threadCallbackList is null)
             {
                 lock (s_eventLockObject)
                 {
-                    if (s_threadCallbackList == null)
+                    if (s_threadCallbackList is null)
                     {
                         s_threadCallbackMessage = Interop.User32.RegisterWindowMessageW("SystemEventsThreadCallbackMessage");
                         s_threadCallbackList = new Queue<Delegate>();
@@ -779,7 +782,6 @@ namespace Microsoft.Win32
             }
 
             Interop.User32.PostMessageW(s_systemEvents!._windowHandle, s_threadCallbackMessage, IntPtr.Zero, IntPtr.Zero);
-            GC.KeepAlive(s_systemEvents);
         }
 
         /// <summary>
@@ -1100,7 +1102,7 @@ namespace Microsoft.Win32
                     // only when the thread is already shutting down due to external factors.
                     if (s_systemEvents._windowHandle != IntPtr.Zero)
                     {
-                        Interop.User32.PostQuitMessage(0);
+                        InvokeOnEventsThread(() => Interop.User32.PostQuitMessage(0));
                     }
 
                     // Don't wait for the SystemEvents thread to finish to avoid blocking the Finalizer thread.
