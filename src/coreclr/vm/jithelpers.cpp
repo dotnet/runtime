@@ -1036,19 +1036,6 @@ HCIMPLEND_RAW
 //
 //========================================================================
 
-TypeHandle::CastResult STDCALL ObjIsInstanceOfCached(Object *pObject, TypeHandle toTypeHnd)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pObject));
-    } CONTRACTL_END;
-
-    MethodTable* pMT = pObject->GetMethodTable();
-    return CastCache::TryGetFromCache(pMT, toTypeHnd);
-}
-
 BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException)
 {
     CONTRACTL {
@@ -2097,7 +2084,7 @@ extern "C" void* QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnSt
 
     if (staticTH.IsNull())
     {
-        // This may be NULL on input for cases where the methodHnd is not an interface method, or if getting the method table from the 
+        // This may be NULL on input for cases where the methodHnd is not an interface method, or if getting the method table from the
         // MethodDesc will return an exact type.
         if (pStaticMD->IsInterface())
         {
