@@ -112,7 +112,7 @@ namespace System.Globalization
         }
 
         [Theory, MemberData(nameof(GetWeekOfYear_DateOnly_TestData))]
-        public static void GetWeekOfYear(DateOnly date, int expected)
+        public static void GetWeekOfYearUsingDateOnly(DateOnly date, int expected)
         {
             Assert.Equal(expected, ISOWeek.GetWeekOfYear(date));
         }
@@ -124,7 +124,7 @@ namespace System.Globalization
         }
 
         [Theory, MemberData(nameof(GetYear_DateOnly_TestData))]
-        public static void GetYear(DateOnly date, int expected)
+        public static void GetYearUsingDateOnly(DateOnly date, int expected)
         {
             Assert.Equal(expected, ISOWeek.GetYear(date));
         }
