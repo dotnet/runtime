@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- SYSTEM_NET_SOCKETS_DLL is required to allow source-level code sharing for types defined within the
          System.Net.Internals namespace. -->
@@ -48,7 +48,7 @@
     <Compile Include="System\Net\Sockets\TransmitFileOptions.cs" />
     <Compile Include="System\Net\Sockets\UDPClient.cs" />
     <Compile Include="System\Net\Sockets\UdpReceiveResult.cs" />
-    <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.cs" />
+    <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.cs"  Condition="'$(TargetPlatformIdentifier)' != 'wasi'"/>
     <!-- Common sources -->
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
@@ -183,14 +183,28 @@
              Link="Common\System\Net\CompletionPortHelper.Windows.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
+    <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.Wasi.cs" />
+    <Compile Include="System\Net\Sockets\SocketAsyncContext.Wasi.cs" />
+    <Compile Include="System\Net\Sockets\SocketAsyncEngine.Wasi.cs"/>
+    <Compile Include="System\Net\Sockets\SocketPal.Wasi.cs" />
+    <Compile Include="$(CommonPath)Interop\Wasi\System.Native\Interop.SocketEvent.cs"
+             Link="Common\Interop\Wasi\System.Native\Interop.SocketEvent.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
+    <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.Unix.cs"/>
+    <Compile Include="System\Net\Sockets\SocketAsyncEngine.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketEvent.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.SocketEvent.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'wasi' or '$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
     <Compile Include="System\Net\Sockets\SafeSocketHandle.Unix.cs" />
     <Compile Include="System\Net\Sockets\Socket.Unix.cs" />
     <Compile Include="System\Net\Sockets\SocketAsyncContext.Unix.cs" />
-    <Compile Include="System\Net\Sockets\SocketAsyncEngine.Unix.cs" />
     <Compile Include="System\Net\Sockets\SocketAsyncEventArgs.Unix.cs" />
     <Compile Include="System\Net\Sockets\SocketPal.Unix.cs" />
-    <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
              Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
@@ -277,8 +291,6 @@
              Link="Common\Interop\Unix\System.Native\Interop.Shutdown.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Socket.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Socket.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketEvent.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.SocketEvent.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
              Link="Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Pipe.cs"
