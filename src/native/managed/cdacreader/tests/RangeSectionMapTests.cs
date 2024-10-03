@@ -7,11 +7,11 @@ using Xunit;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 using System.Collections.Generic;
 
-using ExMgrPtr = Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers.RangeSectionLookupAlgorithm.ExMgrPtr;
+using InteriorMapValue = Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers.RangeSectionMap.InteriorMapValue;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
-public class RangeSectionLookupAlgorithmTests
+public class RangeSectionMapTests
 {
     const int EntriesPerMapLevel = 256; // for now its fixed at 256, see codeman.h RangeSectionMap::entriesPerMapLevel
     const int BitsPerLevel = 8;
@@ -30,7 +30,7 @@ public class RangeSectionLookupAlgorithmTests
 
     internal class Builder
     {
-        const ulong topLevelAddress = 0x0000_1000u;
+        const ulong topLevelAddress = 0x0000_1000u; // arbitrary
         private readonly MockMemorySpace.Builder _builder;
         private readonly TargetTestHelpers _targetTestHelpers;
         private readonly int _levels;
@@ -52,7 +52,7 @@ public class RangeSectionLookupAlgorithmTests
             _builder.AddHeapFragment(top);
         }
 
-        public RangeSectionLookupAlgorithm.ExMgrPtr TopLevel => new RangeSectionLookupAlgorithm.ExMgrPtr(topLevelAddress);
+        public TargetPointer TopLevel => topLevelAddress;
 
         private int EffectiveBitsForLevel(ulong address, int level)
         {
@@ -66,16 +66,23 @@ public class RangeSectionLookupAlgorithmTests
         private int BytesAtLastLevel => checked (1 << BitsAtLastLevel);
         private int BitsAtLastLevel => _maxSetBit - (BitsPerLevel * _levels) + 1;
 
-        private void WritePointer(TargetPointer address, ExMgrPtr value)
+        private TargetPointer CursorAddress(RangeSectionMap.Cursor cursor)
         {
+            return cursor.LevelMap + (ulong)(cursor.Index * _targetTestHelpers.PointerSize);
+        }
+
+        private void WritePointer(RangeSectionMap.Cursor cursor, InteriorMapValue value)
+        {
+            TargetPointer address = CursorAddress(cursor);
             Span<byte> dest = _builder.BorrowAddressRange(address, _targetTestHelpers.PointerSize);
             _targetTestHelpers.WritePointer(dest, value.RawValue);
         }
 
-        private ExMgrPtr ReadPointer (TargetPointer address)
+        private InteriorMapValue LoadCursorValue (RangeSectionMap.Cursor cursor)
         {
+            TargetPointer address = CursorAddress(cursor);
             ReadOnlySpan<byte> src = _builder.BorrowAddressRange(address, _targetTestHelpers.PointerSize);
-            return new ExMgrPtr(_targetTestHelpers.ReadPointer(src));
+            return new InteriorMapValue(_targetTestHelpers.ReadPointer(src));
         }
 
         private MockMemorySpace.HeapFragment AllocateMapLevel(int level)
@@ -91,23 +98,14 @@ public class RangeSectionLookupAlgorithmTests
             return mapLevel;
         }
 
-        private TargetPointer Offset(TargetPointer levelStart, int index)
-        {
-            return new TargetPointer(levelStart.Value + (ulong)(index * _targetTestHelpers.PointerSize));
-        }
-
-        private TargetPointer GetSlot(RangeSectionLookupAlgorithm.Cursor cursor)
-        {
-            return Offset(cursor.LevelMap, cursor.Index);
-        }
 
         // computes the cursor for the next level down from the given cursor
         // if the slot for the next level does not exist, it is created
-        private RangeSectionLookupAlgorithm.Cursor GetOrAddLevelSlot(TargetCodePointer address, RangeSectionLookupAlgorithm.Cursor cursor, bool collectible = false)
+        private RangeSectionMap.Cursor GetOrAddLevelSlot(TargetCodePointer address, RangeSectionMap.Cursor cursor, bool collectible = false)
         {
             int nextLevel = cursor.Level - 1;
             int nextIndex = EffectiveBitsForLevel(address, nextLevel);
-            ExMgrPtr nextLevelMap = ReadPointer(GetSlot(cursor));
+            InteriorMapValue nextLevelMap = LoadCursorValue(cursor);
             if (nextLevelMap.IsNull)
             {
                 nextLevelMap = new (AllocateMapLevel(nextLevel).Address);
@@ -115,17 +113,17 @@ public class RangeSectionLookupAlgorithmTests
                 {
                     nextLevelMap = new (nextLevelMap.RawValue | 1);
                 }
-                WritePointer(GetSlot(cursor), nextLevelMap);
+                WritePointer(cursor, nextLevelMap);
             }
-            return new RangeSectionLookupAlgorithm.Cursor(nextLevelMap.Address, nextLevel, nextIndex);
+            return new RangeSectionMap.Cursor(nextLevelMap.Address, nextLevel, nextIndex);
         }
 
         // ensures that the maps for all the levels for the given address are allocated.
         // returns the address of the slot in the last level that corresponds to the given address
-        RangeSectionLookupAlgorithm.Cursor EnsureLevelsForAddress(TargetCodePointer address, bool collectible = false)
+        RangeSectionMap.Cursor EnsureLevelsForAddress(TargetCodePointer address, bool collectible = false)
         {
             int topIndex = EffectiveBitsForLevel(address, _levels);
-            RangeSectionLookupAlgorithm.Cursor cursor = new RangeSectionLookupAlgorithm.Cursor(TopLevel.Address, _levels, topIndex);
+            RangeSectionMap.Cursor cursor = new RangeSectionMap.Cursor(TopLevel, _levels, topIndex);
             while (!cursor.IsLeaf)
             {
                 cursor = GetOrAddLevelSlot(address, cursor, collectible);
@@ -137,8 +135,8 @@ public class RangeSectionLookupAlgorithmTests
             TargetCodePointer cur = start;
             ulong end = start.Value + length;
             do {
-                RangeSectionLookupAlgorithm.Cursor lastCursor = EnsureLevelsForAddress(cur, collectible);
-                WritePointer(GetSlot(lastCursor), new ExMgrPtr(value));
+                RangeSectionMap.Cursor lastCursor = EnsureLevelsForAddress(cur, collectible);
+                WritePointer(lastCursor, new InteriorMapValue(value));
                 cur = new TargetCodePointer(cur.Value + (ulong)BytesAtLastLevel); // FIXME: round ?
             } while (cur.Value < end);
         }
@@ -162,11 +160,11 @@ public class RangeSectionLookupAlgorithmTests
         builder.MarkCreated();
         var target = new RSLATestTarget(arch, builder.GetReadContext());
 
-        var rsla = RangeSectionLookupAlgorithm.Create(target);
+        var rsla = RangeSectionMap.Create(target);
 
         var inputPC = new TargetCodePointer(0x007f_0000);
         var result = rsla.FindFragmentInternal(target, builder.TopLevel, inputPC);
-        Assert.Equal(ExMgrPtr.Null, result);
+        Assert.False(result.HasValue);
     }
 
     [Theory]
@@ -183,10 +181,11 @@ public class RangeSectionLookupAlgorithmTests
         builder.MarkCreated();
         var target = new RSLATestTarget(arch, builder.GetReadContext());
 
-        var rsla = RangeSectionLookupAlgorithm.Create(target);
+        var rsla = RangeSectionMap.Create(target);
 
-        var resultSlot = rsla.FindFragmentInternal(target, builder.TopLevel, inputPC);
-        var result = resultSlot.LoadPointer(target);
+        var cursor = rsla.FindFragmentInternal(target, builder.TopLevel, inputPC);
+        Assert.True(cursor.HasValue);
+        var result = cursor.Value.LoadValue(target);
         Assert.Equal(value, result.Address.Value);
     }
 

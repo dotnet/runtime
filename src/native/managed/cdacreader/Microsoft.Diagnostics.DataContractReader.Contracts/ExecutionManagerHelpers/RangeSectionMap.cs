@@ -8,47 +8,38 @@ using System.Diagnostics.CodeAnalysis;
 namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 
-internal readonly struct RangeSectionLookupAlgorithm
+internal readonly struct RangeSectionMap
 {
     private int MapLevels { get; }
     private int BitsPerLevel { get; } = 8;
     private int MaxSetBit { get; }
     private int EntriesPerMapLevel { get; } = 256;
 
-// "ExecutionManagerPointer": a pointer to a RangeFragment and RangeSection.
-// The pointers have a collectible flag on the lowest bit
-internal struct ExMgrPtr
-{
-    public readonly TargetPointer RawValue;
-
-    public TargetPointer Address => RawValue & ~1ul;
-
-    public bool IsNull => Address == TargetPointer.Null;
-
-    public static ExMgrPtr Null => new ExMgrPtr(TargetPointer.Null);
-
-    public ExMgrPtr(TargetPointer value)
+    /// <summary>
+    /// The entries in the non-leaf levels of the map are pointers to the next level of the map together
+    /// with a collectible flag on the lowest bit.
+    /// </summary>
+    internal struct InteriorMapValue
     {
-        RawValue = value;
+        public readonly TargetPointer RawValue;
+
+        public TargetPointer Address => RawValue & ~1ul;
+
+        public bool IsNull => Address == TargetPointer.Null;
+
+        public InteriorMapValue(TargetPointer value)
+        {
+            RawValue = value;
+        }
     }
 
-    public ExMgrPtr Offset(int stride, int idx)
-    {
-        return new ExMgrPtr(RawValue.Value + (ulong)(stride * idx));
-    }
-
-    public T Load<T>(Target target) where T : Data.IData<T>
-    {
-        return target.ProcessedData.GetOrAdd<T>(Address);
-    }
-
-    public ExMgrPtr LoadPointer(Target target)
-    {
-        return new ExMgrPtr(target.ReadPointer(Address));
-    }
-}
-
-    internal struct Cursor
+    /// <summary>
+    /// Points at a slot in the RangeSectionMap that corresponds to an address range that includes a particular address.
+    /// </summary>
+    /// <remarks>
+    /// Represented as a pointer to the current map level and an index into that map level.
+    /// </remarks>
+    internal readonly struct Cursor
     {
         public TargetPointer LevelMap { get; }
         public int Level { get; }
@@ -61,9 +52,15 @@ internal struct ExMgrPtr
             Index = index;
         }
 
+        /// <summary>
+        /// Gets the address of the slot in the current level's map that the cursor points to
+        /// </summary>
+        /// <param name="target"></param>
+        /// <returns></returns>
         public TargetPointer GetSlot(Target target) => LevelMap + (ulong)(Index * target.PointerSize);
 
-        public ExMgrPtr LoadValue(Target target) => new ExMgrPtr(target.ReadPointer(GetSlot(target)));
+        // the values at the non-leaf levels are pointers with the last bit stolen for the collectible flag
+        public InteriorMapValue LoadValue(Target target) => new InteriorMapValue(target.ReadPointer(GetSlot(target)));
 
         public bool IsLeaf => Level == 1;
 
@@ -83,12 +80,12 @@ internal struct ExMgrPtr
         return new Cursor(nextMap, nextLevel, nextIndex);
     }
 
-    private RangeSectionLookupAlgorithm(int mapLevels, int maxSetBit)
+    private RangeSectionMap(int mapLevels, int maxSetBit)
     {
         MapLevels = mapLevels;
         MaxSetBit = maxSetBit;
     }
-    public static RangeSectionLookupAlgorithm Create(Target target)
+    public static RangeSectionMap Create(Target target)
     {
         if (target.PointerSize == 4)
         {
@@ -114,37 +111,28 @@ internal struct ExMgrPtr
         return checked((int)addressBitsUsedInLevel);
     }
 
-    public ExMgrPtr /*PTR_RangeSectionFragment*/ FindFragment(Target target, Data.RangeSectionMap topRangeSectionMap, TargetCodePointer jittedCodeAddress)
+    /// <summary>
+    /// Find the location of the fragment that contains the given jitted code address.
+    /// </summary>
+    /// <param name="target"></param>
+    /// <param name="topRangeSectionMap"></param>
+    /// <param name="jittedCodeAddress"></param>
+    /// <returns>null if the map doesn't contain a fragment that could cover this address range</returns>
+    public Cursor? /*PTR_RangeSectionFragment*/ FindFragment(Target target, Data.RangeSectionMap topRangeSectionMap, TargetCodePointer jittedCodeAddress)
     {
-        ExMgrPtr top = new ExMgrPtr(topRangeSectionMap.TopLevelData);
-        return FindFragmentInternal(target, top, jittedCodeAddress);
+        return FindFragmentInternal(target, topRangeSectionMap.TopLevelData, jittedCodeAddress);
     }
 
-    internal ExMgrPtr FindFragmentInternal(Target target, ExMgrPtr top, TargetCodePointer jittedCodeAddress)
+    internal Cursor? FindFragmentInternal(Target target, TargetPointer topMap, TargetCodePointer jittedCodeAddress)
     {
-#if false
-        /* The outer levels are all pointer arrays to the next level down.  Level 1 is an array of pointers to a RangeSectionFragment */
-        int topLevelIndex = EffectiveBitsForLevel(jittedCodeAddress, MapLevels);
-
-        ExMgrPtr nextLevelAddress = top.Offset(target.PointerSize, topLevelIndex);
-        for (int level = MapLevels - 1; level >= 1; level--)
-        {
-            ExMgrPtr rangeSectionL = nextLevelAddress.LoadPointer(target);
-            if (rangeSectionL.IsNull)
-                return ExMgrPtr.Null;
-            nextLevelAddress = rangeSectionL.Offset(target.PointerSize, EffectiveBitsForLevel(jittedCodeAddress, level));
-        }
-        return nextLevelAddress;
-#else
-        Cursor cursor = GetTopCursor(top.Address, jittedCodeAddress);
+        Cursor cursor = GetTopCursor(topMap, jittedCodeAddress);
         while (!cursor.IsLeaf)
         {
-            ExMgrPtr nextLevel = cursor.LoadValue(target);
+            InteriorMapValue nextLevel = cursor.LoadValue(target);
             if (nextLevel.IsNull)
-                return ExMgrPtr.Null;
+                return null;
             cursor = GetNextCursor(target, cursor, jittedCodeAddress);
         }
-        return new ExMgrPtr(cursor.GetSlot(target)); // FIXME: update client code to use a TargetPointer and rename this function  to FindFragmentSlot
-#endif
+        return cursor;
     }
 }

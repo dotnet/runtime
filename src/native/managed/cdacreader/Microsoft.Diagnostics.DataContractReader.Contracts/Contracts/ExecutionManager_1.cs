@@ -4,8 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-
-using ExMgrPtr = Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers.RangeSectionLookupAlgorithm.ExMgrPtr;
+using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -16,7 +15,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
     // maps EECodeInfoHandle.Address (which is the CodeHeaderAddress) to the EECodeInfo
     private readonly Dictionary<TargetPointer, EECodeInfo> _codeInfos = new();
     private readonly Data.RangeSectionMap _topRangeSectionMap;
-    private readonly ExecutionManagerHelpers.RangeSectionLookupAlgorithm _rangeSectionLookupAlgorithm;
+    private readonly ExecutionManagerHelpers.RangeSectionMap _rangeSectionLookupAlgorithm;
     private readonly EEJitManager _eeJitManager;
     private readonly ReadyToRunJitManager _r2rJitManager;
 
@@ -24,7 +23,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
     {
         _target = target;
         _topRangeSectionMap = topRangeSectionMap;
-        _rangeSectionLookupAlgorithm = ExecutionManagerHelpers.RangeSectionLookupAlgorithm.Create(_target);
+        _rangeSectionLookupAlgorithm = ExecutionManagerHelpers.RangeSectionMap.Create(_target);
         ExecutionManagerHelpers.NibbleMap nibbleMap = ExecutionManagerHelpers.NibbleMap.Create(_target);
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
@@ -107,30 +106,26 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             return codeHeaderIndirect.Value <= stubCodeBlockLast;
         }
 
-        internal static RangeSection Find(Target target, Data.RangeSectionMap topRangeSectionMap, ExecutionManagerHelpers.RangeSectionLookupAlgorithm rangeSectionLookup, TargetCodePointer jittedCodeAddress)
+        internal static RangeSection Find(Target target, Data.RangeSectionMap topRangeSectionMap, ExecutionManagerHelpers.RangeSectionMap rangeSectionLookup, TargetCodePointer jittedCodeAddress)
         {
-            ExMgrPtr rangeSectionFragmentPtr = rangeSectionLookup.FindFragment(target, topRangeSectionMap, jittedCodeAddress);
-            // FIXME: are we mising one extra load here?
-            // codeman.h LookupRangeSection calls GetRangeSectionForAddress which does an array index followed by a VolatileLoadWithoutBarrier at L1
-            // FIXME: verify we actually get here
-
-            if (rangeSectionFragmentPtr.IsNull)
+            RangeSectionMap.Cursor? rangeSectionFragmentSlot = rangeSectionLookup.FindFragment(target, topRangeSectionMap, jittedCodeAddress);
+            if (!rangeSectionFragmentSlot.HasValue)
             {
                 return new RangeSection();
             }
-            rangeSectionFragmentPtr = rangeSectionFragmentPtr.LoadPointer(target); // FIXED?
-            while (!rangeSectionFragmentPtr.IsNull)
+            TargetPointer rangeSectionFragmentPtr = rangeSectionFragmentSlot.Value.LoadValue(target).Address;
+            while (rangeSectionFragmentPtr != TargetPointer.Null)
             {
-                Data.RangeSectionFragment fragment = rangeSectionFragmentPtr.Load<Data.RangeSectionFragment>(target);
+                Data.RangeSectionFragment fragment = target.ProcessedData.GetOrAdd<Data.RangeSectionFragment>(rangeSectionFragmentPtr);
                 if (fragment.Contains(jittedCodeAddress))
                 {
                     break;
                 }
-                rangeSectionFragmentPtr = new ExMgrPtr(fragment.Next);
+                rangeSectionFragmentPtr = fragment.Next;
             }
-            if (!rangeSectionFragmentPtr.IsNull)
+            if (rangeSectionFragmentPtr != TargetPointer.Null)
             {
-                Data.RangeSectionFragment fragment = rangeSectionFragmentPtr.Load<Data.RangeSectionFragment>(target);
+                Data.RangeSectionFragment fragment = target.ProcessedData.GetOrAdd<Data.RangeSectionFragment>(rangeSectionFragmentPtr);
                 Data.RangeSection rangeSection = target.ProcessedData.GetOrAdd<Data.RangeSection>(fragment.RangeSection);
                 if (rangeSection.NextForDelete != TargetPointer.Null)
                 {
