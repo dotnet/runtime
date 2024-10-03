@@ -17,7 +17,7 @@ extends:
 
     containers:
       Linux_arm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm-20220907130538-70ed2e8
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-20210719121212-8a8d3be
         env:
           ROOTFS_DIR: /crossrootfs/arm
 
@@ -35,7 +35,7 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-WithNode-20210910135845-c401c85
 
       Linux_musl_arm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm-alpine-20220915134743-78f7860
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm-alpine-20210719121212-044d5b9
         env:
           ROOTFS_DIR: /crossrootfs/arm
 
