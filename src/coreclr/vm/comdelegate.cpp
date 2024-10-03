@@ -854,8 +854,11 @@ static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTarg
     }
     _ASSERTE(sig.HasThis());
 
+    Module* pModule = sig.GetModule();
+    Signature signature = pDelegateMD->GetSignature();
+
     ILStubLinkerFlags flags = ILSTUB_LINKER_FLAG_STUB_HAS_THIS;
-    ILStubLinker stubLinker(pDelegateMD->GetModule(), pDelegateMD->GetSignature(), &typeContext, pDelegateMD, flags);
+    ILStubLinker stubLinker(pModule, signature, &typeContext, pDelegateMD, flags);
     ILCodeStream *pCode = stubLinker.NewCodeStream(ILStubLinker::kDispatch);
 
     for (unsigned i = 0; i < sig.NumFixedArgs(); ++i)
@@ -866,22 +869,12 @@ static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTarg
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, sig.NumFixedArgs(), sig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
-    Module* pModule = sig.GetModule();
-    PCCOR_SIGNATURE pSig;
-    DWORD cbSig;
-    pDelegateMD->GetSig(&pSig, &cbSig);
-    PTR_Module pLoaderModule = pDelegateMD->GetLoaderModule();
     MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(
-        pDelegateMD->GetLoaderAllocator(),
-        pDelegateMD->GetMethodTable(),
-        ILSTUB_DELEGATE_SHUFFLE_THUNK,
-        pModule,
-        pSig, cbSig,
-        &typeContext,
-        &stubLinker);
+        pDelegateMD->GetLoaderAllocator(), pDelegateMD->GetMethodTable(), ILSTUB_DELEGATE_SHUFFLE_THUNK,
+        pModule, signature.GetRawSig(), signature.GetRawSigLen(), &typeContext, &stubLinker);
 
     // Build target signature
-    SigBuilder sigBuilder(cbSig);
+    SigBuilder sigBuilder(signature.GetRawSigLen());
     sigBuilder.AppendByte(callTargetWithThis
         ? IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS
         : IMAGE_CEE_CS_CALLCONV_DEFAULT);
