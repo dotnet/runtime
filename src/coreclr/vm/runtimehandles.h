@@ -193,8 +193,8 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_VerifyInterfaceIsImplemented(QCall::
 extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetInterfaceMethodImplementation(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pOwner, MethodDesc * pMD);
 extern "C" void QCALLTYPE RuntimeTypeHandle_RegisterCollectibleTypeDependency(QCall::TypeHandle pTypeHandle, QCall::AssemblyHandle pAssembly);
 
-class RuntimeMethodHandle {
-
+class RuntimeMethodHandle
+{
 public:
     static FCDECL4(Object*, InvokeMethod, Object *target, PVOID* args, SignatureNative* pSig, FC_BOOL_ARG fConstructor);
 
@@ -236,7 +236,6 @@ public:
     static FCDECL1(ReflectClassBaseObject*, GetDeclaringType, MethodDesc *pMethod);
     static FCDECL1(INT32, GetSlot, MethodDesc *pMethod);
     static FCDECL1(INT32, GetMethodDef, ReflectMethodObject *pMethodUNSAFE);
-    static FCDECL1(StringObject*, GetName, MethodDesc *pMethod);
     static FCDECL1(LPCUTF8, GetUtf8Name, MethodDesc *pMethod);
     static
     FCDECL1(FC_BOOL_RET, HasMethodInstantiation, MethodDesc *pMethod);

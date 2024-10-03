@@ -922,8 +922,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetMethodDef(IRuntimeMethodInfo method);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern string GetName(RuntimeMethodHandleInternal method);
+        internal static string GetName(RuntimeMethodHandleInternal method)
+            => GetUtf8Name(method).ToString();
 
         internal static string GetName(IRuntimeMethodInfo method)
         {
@@ -933,11 +933,11 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void* _GetUtf8Name(RuntimeMethodHandleInternal method);
+        private static extern void* GetUtf8NameInternal(RuntimeMethodHandleInternal method);
 
         internal static MdUtf8String GetUtf8Name(RuntimeMethodHandleInternal method)
         {
-            return new MdUtf8String(_GetUtf8Name(method));
+            return new MdUtf8String(GetUtf8NameInternal(method));
         }
 
         [DebuggerStepThrough]

@@ -1522,41 +1522,18 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc * pMet
     return isCollectible;
 }
 
-FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc *pMethod) {
-    CONTRACTL {
+FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
+{
+    CONTRACTL
+    {
         FCALL_CHECK;
+        PRECONDITION(CheckPointer(pMethod));
     }
     CONTRACTL_END;
 
-    LPCUTF8 szName = NULL;
-
-    if (!pMethod)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    szName = pMethod->GetName();
-
+    LPCUTF8 szName = pMethod->GetName();
     _ASSERTE(CheckPointer(szName, NULL_OK));
-
     return szName;
-}
-FCIMPLEND
-
-FCIMPL1(StringObject*, RuntimeMethodHandle::GetName, MethodDesc *pMethod) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    if (!pMethod)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    STRINGREF refName = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-    refName = StringObject::NewString(pMethod->GetName());
-    HELPER_METHOD_FRAME_END();
-
-    return (StringObject*)OBJECTREFToObject(refName);
 }
 FCIMPLEND
 
