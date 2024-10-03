@@ -7573,7 +7573,9 @@ public:
                                              CORINFO_CONTEXT_HANDLE contextHandle,
                                              unsigned               methodAttr,
                                              unsigned               classAttr,
-                                             unsigned               likelihood);
+                                             unsigned               likelihood,
+                                             bool                   arrayInterface,
+                                             CORINFO_CONTEXT_HANDLE originalContextHandle);
 
     int getGDVMaxTypeChecks()
     {
@@ -8076,7 +8078,6 @@ public:
     // Assertion Gen functions.
     void           optAssertionGen(GenTree* tree);
     AssertionIndex optAssertionGenCast(GenTreeCast* cast);
-    AssertionIndex optAssertionGenPhiDefn(GenTree* tree);
     AssertionInfo  optCreateJTrueBoundsAssertion(GenTree* tree);
     AssertionInfo  optAssertionGenJtrue(GenTree* tree);
     AssertionIndex optCreateJtrueAssertions(GenTree*                   op1,
