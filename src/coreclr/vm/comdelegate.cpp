@@ -962,24 +962,16 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
         COMPlusThrowOM();
     }
 
-    if (isInstRetBuff)
+    // Cache the shuffle thunk
+    Stub** ppThunk = isInstRetBuff ? &pClass->m_pInstRetBuffCallStub : &pClass->m_pStaticCallStub;
+    Stub* pExistingThunk = InterlockedCompareExchangeT(ppThunk, pShuffleThunk, NULL);
+    if (pExistingThunk != NULL)
     {
-        if (InterlockedCompareExchangeT(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
-        {
-            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
-            shuffleThunkWriterHolder.GetRW()->DecRef();
-            pShuffleThunk = pClass->m_pInstRetBuffCallStub;
-        }
+        ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
+        shuffleThunkWriterHolder.GetRW()->DecRef();
+        pShuffleThunk = pExistingThunk;
     }
-    else
-    {
-        if (InterlockedCompareExchangeT(&pClass->m_pStaticCallStub, pShuffleThunk, NULL ) != NULL)
-        {
-            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
-            shuffleThunkWriterHolder.GetRW()->DecRef();
-            pShuffleThunk = pClass->m_pStaticCallStub;
-        }
-    }
+
     return pShuffleThunk->GetEntryPoint();
 }
 
