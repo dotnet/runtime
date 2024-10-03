@@ -1277,8 +1277,26 @@ namespace System
             return result;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object? GetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, RuntimeType? contextType);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetValueDirect")]
+        private static partial void GetValueDirect(
+            IntPtr fieldDesc,
+            void* pTypedRef,
+            QCallTypeHandle fieldType,
+            QCallTypeHandle declaringType,
+            ObjectHandleOnStack result);
+
+        internal static object? GetValueDirect(RtFieldInfo field, RuntimeType fieldType, TypedReference typedRef, RuntimeType? contextType)
+        {
+            if (field is null || fieldType is null)
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            object? result = null;
+            GetValueDirect(field.GetFieldDesc(), &typedRef, new QCallTypeHandle(ref fieldType), new QCallTypeHandle(ref contextType!), ObjectHandleOnStack.Create(ref result));
+            GC.KeepAlive(field);
+            return result;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_SetValue")]
         private static partial void SetValue(

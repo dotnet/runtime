@@ -750,13 +750,13 @@ extern "C" MethodDesc* QCALLTYPE MethodBase_GetCurrentMethod(QCall::StackCrawlMa
     return pRet;
 }
 
-static OBJECTREF DirectObjectFieldGet(FieldDesc *pField, TypeHandle fieldType, TypeHandle enclosingType, TypedByRef *pTarget, BOOL *pIsClassInitialized) {
+static OBJECTREF DirectObjectFieldGet(FieldDesc *pField, TypeHandle fieldType, TypeHandle enclosingType, TypedByRef *pTarget)
+{
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-
         PRECONDITION(CheckPointer(pField));
     }
     CONTRACTL_END;
@@ -764,55 +764,34 @@ static OBJECTREF DirectObjectFieldGet(FieldDesc *pField, TypeHandle fieldType, T
     OBJECTREF refRet;
     OBJECTREF objref = NULL;
     GCPROTECT_BEGIN(objref);
-    if (!pField->IsStatic()) {
+    if (!pField->IsStatic())
         objref = ObjectToOBJECTREF(*((Object**)pTarget->data));
-    }
 
     InvokeUtil::ValidateObjectTarget(pField, enclosingType, &objref);
-    refRet = InvokeUtil::GetFieldValue(pField, fieldType, &objref, enclosingType, pIsClassInitialized);
+
+    BOOL isClassInitialized = FALSE;
+    refRet = InvokeUtil::GetFieldValue(pField, fieldType, &objref, enclosingType, &isClassInitialized);
     GCPROTECT_END();
     return refRet;
 }
 
-FCIMPL4(Object*, RuntimeFieldHandle::GetValueDirect, ReflectFieldObject *pFieldUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, TypedByRef *pTarget, ReflectClassBaseObject *pDeclaringTypeUNSAFE) {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+extern "C" void QCALLTYPE RuntimeFieldHandle_GetValueDirect(FieldDesc* fieldDesc, TypedByRef *pTarget, QCall::TypeHandle fieldTypeHandle, QCall::TypeHandle declaringTypeHandle, QCall::ObjectHandleOnStack result)
+{
+    QCALL_CONTRACT;
 
-    struct
-    {
-        REFLECTCLASSBASEREF refFieldType;
-        REFLECTCLASSBASEREF refDeclaringType;
-        REFLECTFIELDREF refField;
-    }gc;
-    gc.refFieldType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pFieldTypeUNSAFE);
-    gc.refDeclaringType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pDeclaringTypeUNSAFE);
-    gc.refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
+    BEGIN_QCALL;
 
-    if ((gc.refFieldType == NULL) || (gc.refField == NULL))
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+    GCX_COOP();
 
-    TypeHandle fieldType = gc.refFieldType->GetType();
-
-    FieldDesc *pField = gc.refField->GetField();
-
-    Assembly *pAssem = pField->GetModule()->GetAssembly();
-
-    OBJECTREF refRet  = NULL;
-    CorElementType fieldElType;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    TypeHandle fieldType = fieldTypeHandle.AsTypeHandle();
 
     // Find the Object and its type
     TypeHandle targetType = pTarget->type;
-    _ASSERTE(gc.refDeclaringType == NULL || !gc.refDeclaringType->GetType().IsTypeDesc());
-    MethodTable *pEnclosingMT = (gc.refDeclaringType != NULL ? gc.refDeclaringType->GetType() : TypeHandle()).AsMethodTable();
+    MethodTable* pEnclosingMT = declaringTypeHandle.AsTypeHandle().AsMethodTable();
 
-    BOOL isClassInitialized = FALSE;
-    if (pField->IsStatic() || !targetType.IsValueType()) {
-        refRet = DirectObjectFieldGet(pField, fieldType, TypeHandle(pEnclosingMT), pTarget, &isClassInitialized);
+    if (fieldDesc->IsStatic() || !targetType.IsValueType())
+    {
+        result.Set(DirectObjectFieldGet(fieldDesc, fieldType, TypeHandle(pEnclosingMT), pTarget));
         goto lExit;
     }
 
@@ -824,8 +803,9 @@ FCIMPL4(Object*, RuntimeFieldHandle::GetValueDirect, ReflectFieldObject *pFieldU
     //  Enum.  We want to process it here.
     // Get the value from the field
     void* p;
-    fieldElType = fieldType.GetSignatureCorElementType();
-    switch (fieldElType) {
+    CorElementType fieldElType = fieldType.GetSignatureCorElementType();
+    switch (fieldElType)
+    {
     case ELEMENT_TYPE_VOID:
         _ASSERTE(!"Void used as Field Type!");
         COMPlusThrow(kInvalidProgramException);
@@ -846,21 +826,21 @@ FCIMPL4(Object*, RuntimeFieldHandle::GetValueDirect, ReflectFieldObject *pFieldU
     case ELEMENT_TYPE_R8:       // double
     case ELEMENT_TYPE_VALUETYPE:
         _ASSERTE(!fieldType.IsTypeDesc());
-        p = ((BYTE*) pTarget->data) + pField->GetOffset();
-        refRet = fieldType.AsMethodTable()->Box(p);
+        p = ((BYTE*) pTarget->data) + fieldDesc->GetOffset();
+        result.Set(fieldType.AsMethodTable()->Box(p));
         break;
 
     case ELEMENT_TYPE_OBJECT:
     case ELEMENT_TYPE_CLASS:
     case ELEMENT_TYPE_SZARRAY:          // Single Dim, Zero
     case ELEMENT_TYPE_ARRAY:            // general array
-        p = ((BYTE*) pTarget->data) + pField->GetOffset();
-        refRet = ObjectToOBJECTREF(*(Object**) p);
+        p = ((BYTE*) pTarget->data) + fieldDesc->GetOffset();
+        result.Set(ObjectToOBJECTREF(*(Object**) p));
         break;
 
     case ELEMENT_TYPE_PTR:
-        p = ((BYTE*) pTarget->data) + pField->GetOffset();
-        refRet = InvokeUtil::CreatePointer(fieldType, *(void **)p);
+        p = ((BYTE*) pTarget->data) + fieldDesc->GetOffset();
+        result.Set(InvokeUtil::CreatePointer(fieldType, *(void **)p));
         break;
 
     default:
@@ -870,10 +850,8 @@ FCIMPL4(Object*, RuntimeFieldHandle::GetValueDirect, ReflectFieldObject *pFieldU
     }
 
 lExit: ;
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(refRet);
+    END_QCALL;
 }
-FCIMPLEND
 
 static void DirectObjectFieldSet(FieldDesc *pField, TypeHandle fieldType, TypeHandle enclosingType, TypedByRef *pTarget, OBJECTREF *pValue, BOOL *pIsClassInitialized) {
     CONTRACTL

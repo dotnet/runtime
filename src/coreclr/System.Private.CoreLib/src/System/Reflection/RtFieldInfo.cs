@@ -93,7 +93,7 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Arg_TypedReference_Null);
 
             // Passing TypedReference by reference is easier to make correct in native code
-            return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
+            return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, obj, (RuntimeType?)DeclaringType);
         }
 
         [DebuggerStepThrough]
