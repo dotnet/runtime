@@ -81,9 +81,8 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
       __cg2ExitCode=0
       __r2rDumpExitCode=0
-      __CrossgenInputsList=()
 
-      RunCrossgen2OnInputsList() {
+      RunCrossgen2OnFiles() {
         date +%H:%M:%S
         __OutputFile=$1
 
@@ -104,7 +103,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         __Command+=" @$__ResponseFile"
         __Command+=" $ExtraCrossGen2Args"
 
-        for dllFile in "${__CrossgenInputsList[@]}"; do
+        # Expand glob or multiple filenames into array
+        __InputFiles=($2)
+        for dllFile in "${__InputFiles[@]}"; do
           echo "$dllFile" >> "$__ResponseFile"
         done
 
@@ -157,16 +158,14 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
           shopt -s nullglob
-          __CrossgenInputsList=("$PWD"/IL-CG2/*.dll)
-          RunCrossgen2OnInputsList "$PWD/composite-r2r.dll"
+          RunCrossgen2OnFiles "$PWD/composite-r2r.dll" "$PWD/IL-CG2/*.dll"
       else
           ExtraCrossGen2Args+=" -r:$PWD/IL-CG2/*.dll"
           for dllFile in "$PWD"/IL-CG2/*.dll
           do
             echo $dllFile
             bareFileName="${dllFile##*/}"
-            __CrossgenInputsList=("$dllFile")
-            RunCrossgen2OnInputsList "$PWD/$bareFileName"
+            RunCrossgen2OnFiles "$PWD/$bareFileName" "$dllFile"
             if [ $__cg2ExitCode -ne 0 ]; then
               break
             fi
