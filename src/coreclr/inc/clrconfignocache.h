@@ -91,6 +91,8 @@ public:
             strcpy_s(nameBuffer, ARRAY_SIZE(nameBuffer), fallbackPrefix);
             strcat_s(nameBuffer, ARRAY_SIZE(nameBuffer), cfg);
             val = getEnvFptr != NULL ? getEnvFptr(nameBuffer) : getenv(nameBuffer);
+            if (val)
+                printf("Warning: COMPlus_ prefixes are deprecated and will be removed in future releases. Use DOTNET_ prefix in %s instead.\n", nameBuffer);
         }
 
         return { val };
