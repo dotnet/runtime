@@ -2174,7 +2174,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
     {
         fgRemoveStmt(block, candidateStmt);
 
-        // Make sure the removed store node isn't referenced in any SSA definitions
+        // Make sure the removed store node isn't referenced by an SSA definition
         assert(candidateStmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR));
         GenTreeLclVarCommon* const rootNode = candidateStmt->GetRootNode()->AsLclVarCommon();
         LclVarDsc* const varDsc = lvaGetDesc(rootNode);
