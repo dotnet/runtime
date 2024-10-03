@@ -1321,49 +1321,17 @@ FCIMPL0(FC_BOOL_RET, ReflectionInvocation::TryEnsureSufficientExecutionStack)
 }
 FCIMPLEND
 
-FCIMPL4(void, ReflectionInvocation::MakeTypedReference, TypedByRef * value, Object* targetUNSAFE, ArrayBase* fldsUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE)
+FCIMPL2(INT32, ReflectionInvocation::ComputeOffsetForTypedReference, INT32 fldsLen, FieldDesc** flds)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(targetUNSAFE));
-        PRECONDITION(CheckPointer(fldsUNSAFE));
-    }
-    CONTRACTL_END;
+    FCALL_CONTRACT;
 
     DWORD offset = 0;
-
-    struct _gc
+    for (INT32 i = 0; i < fldsLen; i++)
     {
-        OBJECTREF   target;
-        BASEARRAYREF flds;
-        REFLECTCLASSBASEREF refFieldType;
-    } gc;
-    gc.target  = (OBJECTREF)   targetUNSAFE;
-    gc.flds   = (BASEARRAYREF) fldsUNSAFE;
-    gc.refFieldType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pFieldTypeUNSAFE);
-
-    TypeHandle fieldType = gc.refFieldType->GetType();
-
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
-    GCPROTECT_BEGININTERIOR (value)
-
-    DWORD cnt = gc.flds->GetNumComponents();
-    FieldDesc** fields = (FieldDesc**)gc.flds->GetDataPtr();
-    for (DWORD i = 0; i < cnt; i++) {
-        FieldDesc* pField = fields[i];
+        FieldDesc* pField = flds[i];
         offset += pField->GetOffset();
     }
-
-        // Fields already are prohibted from having ArgIterator and RuntimeArgumentHandles
-    _ASSERTE(!gc.target->GetTypeHandle().GetMethodTable()->IsByRefLike());
-
-    // Create the ByRef
-    value->data = ((BYTE *)(gc.target->GetAddress() + offset)) + sizeof(Object);
-    value->type = fieldType;
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END();
+    return (INT32)offset;
 }
 FCIMPLEND
 

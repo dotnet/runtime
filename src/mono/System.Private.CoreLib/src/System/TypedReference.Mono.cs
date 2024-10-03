@@ -16,6 +16,21 @@ namespace System
         #pragma warning restore CA1823
         #endregion
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TypedReference MakeTypedReferenceInternal(object target, IntPtr[] fields, RuntimeType lastFieldType)
+        {
+            TypedReference result = default;
+            unsafe
+            {
+                InternalMakeTypedReference(&result, target, fields, lastFieldType);
+            }
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        // reference to TypedReference is banned, so have to pass result as pointer
+        private static extern unsafe void InternalMakeTypedReference(void* result, object target, IntPtr[] flds, RuntimeType lastFieldType);
+
         public static unsafe object? ToObject(TypedReference value)
         {
             return InternalToObject(&value);

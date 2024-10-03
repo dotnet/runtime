@@ -4,6 +4,7 @@
 // TypedReference is basically only ever seen on the call stack, and in param arrays.
 // These are blob that must be dealt with by the compiler.
 
+using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
@@ -15,6 +16,25 @@ namespace System
     {
         private readonly ref byte _value;
         private readonly IntPtr _type;
+
+        private TypedReference(object target, int offset, RuntimeType type)
+        {
+            _value = ref Unsafe.Add(ref target.GetRawData(), offset);
+            _type = type.GetUnderlyingNativeHandle();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe TypedReference MakeTypedReferenceInternal(object target, IntPtr[] fields, RuntimeType lastFieldType)
+        {
+            fixed (IntPtr* fieldsRaw = fields)
+            {
+                int offset = ComputeOffsetForTypedReference(fields.Length, fieldsRaw);
+                return new TypedReference(target, offset, lastFieldType);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe int ComputeOffsetForTypedReference(int fieldsLen, IntPtr* fields);
 
         public static unsafe object? ToObject(TypedReference value)
         {

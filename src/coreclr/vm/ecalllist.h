@@ -87,7 +87,7 @@ FCFuncStart(gExceptionFuncs)
 FCFuncEnd()
 
 FCFuncStart(gTypedReferenceFuncs)
-    FCFuncElement("InternalMakeTypedReference", ReflectionInvocation::MakeTypedReference)
+    FCFuncElement("ComputeOffsetForTypedReference", ReflectionInvocation::ComputeOffsetForTypedReference)
 FCFuncEnd()
 
 FCFuncStart(gSystem_Type)

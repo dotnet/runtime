@@ -47,8 +47,7 @@ class ReflectionInvocation
 public:
     static FCDECL0(FC_BOOL_RET, TryEnsureSufficientExecutionStack);
 
-    // TypedReference functions, should go somewhere else
-    static FCDECL4(void, MakeTypedReference, TypedByRef * value, Object* targetUNSAFE, ArrayBase* fldsUNSAFE, ReflectClassBaseObject *pFieldType);
+    static FCDECL2(INT32, ComputeOffsetForTypedReference, INT32 fldsLen, FieldDesc** flds);
 };
 
 extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD);

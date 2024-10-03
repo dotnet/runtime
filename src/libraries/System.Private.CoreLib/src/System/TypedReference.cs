@@ -4,6 +4,7 @@
 // TypedReference is basically only ever seen on the call stack, and in param arrays.
 //  These are blob that must be dealt with by the compiler.
 
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -12,14 +13,15 @@ namespace System
     [CLSCompliant(false)]
     public ref partial struct TypedReference
     {
-
         public static TypedReference MakeTypedReference(object target, FieldInfo[] flds)
         {
             ArgumentNullException.ThrowIfNull(target);
             ArgumentNullException.ThrowIfNull(flds);
 
             if (flds.Length == 0)
+            {
                 throw new ArgumentException(SR.Arg_ArrayZeroError, nameof(flds));
+            }
 
             IntPtr[] fields = new IntPtr[flds.Length];
             // For proper handling of Nullable<T> don't change GetType() to something like 'IsAssignableFrom'
@@ -29,35 +31,35 @@ namespace System
             {
                 RuntimeFieldInfo field = flds[i] as RuntimeFieldInfo ?? throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo);
                 if (field.IsStatic)
+                {
                     throw new ArgumentException(SR.Format(SR.Argument_TypedReferenceInvalidField, field.Name));
+                }
 
                 if (targetType != field.GetDeclaringTypeInternal() && !targetType.IsSubclassOf(field.GetDeclaringTypeInternal()))
+                {
                     throw new MissingMemberException(SR.MissingMemberTypeRef);
+                }
 
                 RuntimeType fieldType = (RuntimeType)field.FieldType;
                 if (fieldType.IsPrimitive)
+                {
                     throw new ArgumentException(SR.Format(SR.Arg_TypeRefPrimitive, field.Name));
+                }
 
                 if (i < (flds.Length - 1) && !fieldType.IsValueType)
+                {
                     throw new MissingMemberException(SR.MissingMemberNestErr);
+                }
 
                 fields[i] = field.FieldHandle.Value;
                 targetType = fieldType;
             }
 
-            TypedReference result = default;
-
-            // reference to TypedReference is banned, so have to pass result as pointer
-            unsafe
-            {
-                InternalMakeTypedReference(&result, target, fields, targetType);
-            }
-            return result;
+            TypedReference res = MakeTypedReferenceInternal(target, fields, targetType);
+            GC.KeepAlive(flds); // Ensure FieldInfos are alive for passed in FieldDescs.
+            GC.KeepAlive(targetType);
+            return res;
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        // reference to TypedReference is banned, so have to pass result as pointer
-        private static extern unsafe void InternalMakeTypedReference(void* result, object target, IntPtr[] flds, RuntimeType lastFieldType);
 
         public override int GetHashCode()
         {
