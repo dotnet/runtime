@@ -841,32 +841,32 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
 }
 
 #if defined(TARGET_RISCV64)
-static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* pTargetMD)
+static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTargetWithThis)
 {
     SigTypeContext typeContext(pDelegateMD);
-    MetaSig delegateSig(pDelegateMD);
-    INDEBUG(MetaSig targetSig(pTargetMD));
-    LOG((LF_STUBS, LL_INFO1000000,
-        "CreateILDelegateShuffleThunk %s.%s (%i args) -> %s.%s (%i args + %i this)\n",
-        pDelegateMD->GetMethodTable()->GetDebugClassName(), pDelegateMD->GetName(), delegateSig.NumFixedArgs(),
-        pTargetMD->GetMethodTable()->GetDebugClassName(), pTargetMD->GetName(), targetSig.NumFixedArgs(), !!targetSig.HasThis()
-    ));
-    _ASSERTE(delegateSig.NumFixedArgs() == targetSig.NumFixedArgs() + (targetSig.HasThis() ? 1 : 0));
-    _ASSERTE(delegateSig.GetReturnType() == targetSig.GetReturnType());
-    _ASSERTE(delegateSig.HasThis());
+    MetaSig sig(pDelegateMD);
+    if (LoggingOn(LF_STUBS, LL_INFO1000000))
+    {
+        SString delegateName;
+        pDelegateMD->GetFullMethodInfo(delegateName);
+        LOGALWAYS(("CreateILDelegateShuffleThunk %s (%i args, callTargetWithThis:%i)\n",
+            delegateName.GetUTF8(), sig.NumFixedArgs(), callTargetWithThis));
+    }
+    _ASSERTE(sig.HasThis());
 
-    ILStubLinkerFlags flags = ILStubLinkerFlags(ILSTUB_LINKER_FLAG_STUB_HAS_THIS);
+    ILStubLinkerFlags flags = ILSTUB_LINKER_FLAG_STUB_HAS_THIS;
     ILStubLinker stubLinker(pDelegateMD->GetModule(), pDelegateMD->GetSignature(), &typeContext, pDelegateMD, flags);
     ILCodeStream *pCode = stubLinker.NewCodeStream(ILStubLinker::kDispatch);
 
-    for (unsigned i = 0; i < delegateSig.NumFixedArgs(); ++i)
+    for (unsigned i = 0; i < sig.NumFixedArgs(); ++i)
         pCode->EmitLDARG(i);
 
     pCode->EmitLoadThis();
     pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR_AUX)));
-    pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, delegateSig.NumFixedArgs(), delegateSig.IsReturnTypeVoid() ? 0 : 1);
+    pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, sig.NumFixedArgs(), sig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
+    Module* pModule = sig.GetModule();
     PCCOR_SIGNATURE pSig;
     DWORD cbSig;
     pDelegateMD->GetSig(&pSig, &cbSig);
@@ -875,14 +875,33 @@ static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* p
         pDelegateMD->GetLoaderAllocator(),
         pDelegateMD->GetMethodTable(),
         ILSTUB_DELEGATE_SHUFFLE_THUNK,
-        pDelegateMD->GetModule(),
+        pModule,
         pSig, cbSig,
         &typeContext,
         &stubLinker);
 
+    // Build target signature
+    SigBuilder sigBuilder(cbSig);
+    sigBuilder.AppendByte(callTargetWithThis
+        ? IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS
+        : IMAGE_CEE_CS_CALLCONV_DEFAULT);
+
+    unsigned numFixedArgs = sig.NumFixedArgs() - callTargetWithThis;
+    sigBuilder.AppendData(numFixedArgs);
+
+    SigPointer pReturn = sig.GetReturnProps();
+    pReturn.ConvertToInternalExactlyOne(pModule, &typeContext, &sigBuilder);
+
+    sig.SkipArg(); // skip delegate object
+    if (callTargetWithThis)
+        sig.SkipArg();
+
+    SigPointer pArgs = sig.GetArgProps();
+    for (unsigned i = 0; i < numFixedArgs; ++i)
+        pArgs.ConvertToInternalExactlyOne(pModule, &typeContext, &sigBuilder);
+
     DWORD cbTargetSig;
-    PCCOR_SIGNATURE pTargetSig;
-    pTargetMD->GetSig(&pTargetSig, &cbTargetSig);
+    PCCOR_SIGNATURE pTargetSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cbTargetSig);
     ILStubResolver* pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
     pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
 
@@ -931,7 +950,7 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
     else
     {
 #if defined(TARGET_RISCV64)
-        pShuffleThunk = CreateILDelegateShuffleThunk(pMD, pTargetMeth);
+        pShuffleThunk = CreateILDelegateShuffleThunk(pMD, isInstRetBuff);
 #else
         _ASSERTE(FALSE);
         return NULL;
