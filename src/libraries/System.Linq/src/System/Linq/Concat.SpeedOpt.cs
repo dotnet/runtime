@@ -340,14 +340,7 @@ namespace System.Linq
                 while ((previousN = node.PreviousN) is not null);
 
                 Debug.Assert(node._tail is Concat2Iterator<TSource>);
-                result = node._tail.TryGetLast(out found);
-                if (found)
-                {
-                    return result;
-                }
-
-                found = false;
-                return default;
+                return node._tail.TryGetLast(out found);
             }
         }
 
