@@ -1315,7 +1315,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static RequiresAll<T> field;
 
 				// Instance fields get generic warnings but static fields don't.
-				[UnexpectedWarning ("IL2091", Tool.Trimmer, "https://github.com/dotnet/linker/issues/3142")]
+				[UnexpectedWarning ("IL2091", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/108523")]
 				public RequiresAll<T> instanceField;
 
 				[RequiresOnCtor]
@@ -1355,14 +1355,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// This warning should ideally be suppressed by the RUC on the type:
-			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/3142")]
+			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/108523")]
 			[RequiresUnreferencedCode ("--GenericClassWithWarningWithRequires--")]
 			public class GenericClassWithWarningWithRequires<U> : RequiresAll<U>
 			{
 			}
 
 			// This warning should ideally be suppressed by the RUC on the type:
-			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/3142")]
+			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/108523")]
 			[RequiresUnreferencedCode ("--ClassWithWarningWithRequires--")]
 			public class ClassWithWarningWithRequires : RequiresAll<T>
 			{
@@ -1371,7 +1371,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2026", "ClassWithRequires()", "--ClassWithRequires--")]
 			class ClassWithWarningOnGenericArgumentConstructor : RequiresNew<ClassWithRequires>
 			{
-				[ExpectedWarning ("IL2026")]
+				// Analyzer misses warning for implicit call to the base constructor, because the new constraint is not checked in dataflow.
+				[ExpectedWarning ("IL2026", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/108507")]
 				public ClassWithWarningOnGenericArgumentConstructor ()
 				{
 				}
@@ -1383,7 +1384,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 			}
 
-			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/3142")]
+			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/108523")]
 			[RequiresUnreferencedCode ("--GenericAnnotatedWithWarningWithRequires--")]
 			public class GenericAnnotatedWithWarningWithRequires<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields> : RequiresAll<TFields>
 			{
