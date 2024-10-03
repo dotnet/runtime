@@ -280,7 +280,7 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDecoratedType(
 extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack retTypes, BOOL fAsRuntimeTypeArray);
 
 extern "C" void QCALLTYPE RuntimeMethodHandle_ConstructInstantiation(MethodDesc * pMethod, DWORD format, QCall::StringHandleOnStack retString);
-extern "C" void * QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * pMethod);
+extern "C" void* QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * pMethod);
 extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc * pMethod);
 extern "C" void QCALLTYPE RuntimeMethodHandle_GetTypicalMethodDefinition(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod);
 extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod);
@@ -293,7 +293,6 @@ public:
     static FCDECL1(FC_BOOL_RET, IsFastPathSupported, ReflectFieldObject *pField);
     static FCDECL1(INT32, GetInstanceFieldOffset, ReflectFieldObject *pField);
     static FCDECL1(void*, GetStaticFieldAddress, ReflectFieldObject *pField);
-    static FCDECL1(StringObject*, GetName, ReflectFieldObject *pFieldUNSAFE);
     static FCDECL1(LPCUTF8, GetUtf8Name, FieldDesc *pField);
 
     static FCDECL1(INT32, GetAttributes, FieldDesc *pField);

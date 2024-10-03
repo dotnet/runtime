@@ -1184,13 +1184,25 @@ namespace System
 
         public static bool operator !=(RuntimeFieldHandle left, RuntimeFieldHandle right) => !left.Equals(right);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern string GetName(RtFieldInfo field);
+        internal static string GetName(IRuntimeFieldInfo field)
+        {
+            string name = GetUtf8Name(field.Value).ToString();
+            GC.KeepAlive(field);
+            return name;
+       }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void* _GetUtf8Name(RuntimeFieldHandleInternal field);
+        private static extern void* GetUtf8NameInternal(RuntimeFieldHandleInternal field);
 
-        internal static MdUtf8String GetUtf8Name(RuntimeFieldHandleInternal field) { return new MdUtf8String(_GetUtf8Name(field)); }
+        internal static MdUtf8String GetUtf8Name(RuntimeFieldHandleInternal field)
+        {
+            void* name = GetUtf8NameInternal(field);
+            if (name is null)
+            {
+                throw new BadImageFormatException();
+            }
+            return new MdUtf8String(name);
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern FieldAttributes GetAttributes(RuntimeFieldHandleInternal field);

@@ -2535,40 +2535,19 @@ FCIMPLEND
 //*********************************************************************************************
 //*********************************************************************************************
 
-FCIMPL1(StringObject*, RuntimeFieldHandle::GetName, ReflectFieldObject *pFieldUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    REFLECTFIELDREF refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
-    if (!refField)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    FieldDesc *pField = refField->GetField();
-
-    STRINGREF refString = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refField);
+FCIMPL1(LPCUTF8, RuntimeFieldHandle::GetUtf8Name, FieldDesc *pField)
+{
+    CONTRACTL
     {
-        refString = StringObject::NewString(pField->GetName());
-    }
-    HELPER_METHOD_FRAME_END();
-    return (StringObject*)OBJECTREFToObject(refString);
-}
-FCIMPLEND
-
-FCIMPL1(LPCUTF8, RuntimeFieldHandle::GetUtf8Name, FieldDesc *pField) {
-    CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(pField));
     }
     CONTRACTL_END;
 
-    LPCUTF8    szFieldName;
-
+    LPCUTF8 szFieldName;
     if (FAILED(pField->GetName_NoThrow(&szFieldName)))
     {
-        FCThrow(kBadImageFormatException);
+        szFieldName = NULL;
     }
     return szFieldName;
 }
