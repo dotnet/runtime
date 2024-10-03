@@ -1318,8 +1318,24 @@ namespace System
             GC.KeepAlive(field);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void SetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, object? value, RuntimeType? contextType);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_SetValueDirect")]
+        private static partial void SetValueDirect(
+            IntPtr fieldDesc,
+            void* pTypedRef,
+            ObjectHandleOnStack value,
+            QCallTypeHandle fieldType,
+            QCallTypeHandle declaringType);
+
+        internal static void SetValueDirect(RtFieldInfo field, RuntimeType fieldType, TypedReference typedRef, object? value, RuntimeType? contextType)
+        {
+            if (field is null || fieldType is null)
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            SetValueDirect(field.GetFieldDesc(), &typedRef, ObjectHandleOnStack.Create(ref value), new QCallTypeHandle(ref fieldType), new QCallTypeHandle(ref contextType!));
+            GC.KeepAlive(field);
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeFieldHandleInternal GetStaticFieldForGenericType(RuntimeFieldHandleInternal field, RuntimeType declaringType);

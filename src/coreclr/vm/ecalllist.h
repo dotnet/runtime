@@ -183,7 +183,6 @@ FCFuncStart(gRuntimeMethodHandle)
 FCFuncEnd()
 
 FCFuncStart(gCOMFieldHandleNewFuncs)
-    FCFuncElement("SetValueDirect", RuntimeFieldHandle::SetValueDirect)
     FCFuncElement("GetUtf8NameInternal", RuntimeFieldHandle::GetUtf8Name)
     FCFuncElement("GetAttributes", RuntimeFieldHandle::GetAttributes)
     FCFuncElement("GetApproxDeclaringType", RuntimeFieldHandle::GetApproxDeclaringType)
