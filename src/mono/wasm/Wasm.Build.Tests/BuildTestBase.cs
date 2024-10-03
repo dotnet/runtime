@@ -177,22 +177,19 @@ namespace Wasm.Build.Tests
             else if (res.ExitCode == 0)
                 throw new XunitException($"Build should have failed, but it didn't. Process exited with exitCode : {res.ExitCode}");
 
-            if (res.ExitCode == 0)
+            // Ensure build finished and we got all output.
+            if ((res.ExitCode == 0 && !res.Output.Contains("Build succeeded in")) || (res.ExitCode != 0 && !res.Output.Contains("Build failed with")))
             {
-                // Ensure build finished and we got all output.
-                if (!res.Output.Contains("Build succeeded in"))
+                _testOutput.WriteLine("Replacing dotnet process output with messages from binlog");
+
+                var outputBuilder = new StringBuilder();
+                var buildRoot = BinaryLog.ReadBuild(logFilePath);
+                buildRoot.VisitAllChildren<Message>(m =>
                 {
-                    _testOutput.WriteLine("Replacing dotnet process output with messages from binlog");
+                    outputBuilder.AppendLine(m.Title);
+                });
 
-                    var outputBuilder = new StringBuilder();
-                    var buildRoot = BinaryLog.ReadBuild(logFilePath);
-                    buildRoot.VisitAllChildren<Message>(m =>
-                    {
-                        outputBuilder.AppendLine(m.Title);
-                    });
-
-                    res = new CommandResult(res.StartInfo, res.ExitCode, outputBuilder.ToString());
-                }
+                res = new CommandResult(res.StartInfo, res.ExitCode, outputBuilder.ToString());
             }
 
             return (res, logFilePath);
