@@ -7636,7 +7636,7 @@ void DebuggerStepper::TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateC
     TraceDestination trace;
     FramePointer fp = LEAF_MOST_FRAME;
 
-    int totalDelegateCount = pDel->GetInvocationCount();
+    INT_PTR totalDelegateCount = pDel->GetInvocationCount();
     if (delegateCount == totalDelegateCount)
     {
         PCODE addr = (PCODE)NULL;
