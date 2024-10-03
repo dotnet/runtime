@@ -9,7 +9,7 @@ namespace System.Configuration
 {
     public static class ConfigurationManager
     {
-        internal const string TrimWarning = "System.Configuration.ConfigurationManager relies on reflection-based serialization. Required types may be removed when trimming. Consider using the configuration-binding source generator instead.";
+        internal const string TrimWarning = "System.Configuration.ConfigurationManager relies on reflection-based serialization. Required types may be removed when trimming. Consider using Microsoft.Extensions.Configuration and the configuration-binding source generator instead.";
 
         // The Configuration System
         private static volatile IInternalConfigSystem s_configSystem;
