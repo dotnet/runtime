@@ -416,9 +416,9 @@ namespace Mono.Linker
 		// INamedTypeSymbol, or ILC's DefType/MetadataType.
 		public static bool IsNamedType (this TypeReference typeReference) {
 			if (typeReference.IsRequiredModifier)
-				typeReference = ((RequiredModifierType) typeReference).ElementType;
+				return ((RequiredModifierType) typeReference).ElementType.IsNamedType ();
 			if (typeReference.IsOptionalModifier)
-				typeReference = ((OptionalModifierType) typeReference).ElementType;
+				return ((OptionalModifierType) typeReference).ElementType.IsNamedType ();
 
 			if (typeReference.IsDefinition || typeReference.IsGenericInstance)
 				return true;
