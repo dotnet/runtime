@@ -2177,16 +2177,10 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         // Make sure the removed store node isn't referenced in any SSA definitions
         assert(candidateStmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR));
         GenTreeLclVarCommon* const rootNode = candidateStmt->GetRootNode()->AsLclVarCommon();
-
         LclVarDsc* const varDsc = lvaGetDesc(rootNode);
-        for (unsigned defIndex = 0; defIndex < varDsc->lvPerSsaData.GetCount(); defIndex++)
-        {
-            LclSsaVarDsc* const defDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex);
-            if (defDsc->GetDefNode() == rootNode)
-            {
-                defDsc->SetDefNode(nullptr);
-            }
-        }
+        LclSsaVarDsc* const defDsc = varDsc->GetPerSsaData(rootNode->GetSsaNum());
+        assert(defDsc->GetDefNode() == rootNode);
+        defDsc->SetDefNode(nullptr);
 
         DEBUG_DESTROY_NODE(rootNode);
     }
