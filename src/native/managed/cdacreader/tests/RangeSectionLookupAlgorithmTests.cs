@@ -7,6 +7,7 @@ using Xunit;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 using System.Diagnostics;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
@@ -173,11 +174,13 @@ public class RangeSectionLookupAlgorithmTests
     }
 
     [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void TestLookupOne(MockTarget.Architecture arch)
+    //[ClassData(typeof(MockTarget.StdArch))]
+    [MemberData(nameof(Something), 10)]
+    public void TestLookupOne(MockTarget.Architecture arch, int seed)
     {
+        var rng = new Random(seed);
         var builder = new Builder(arch);
-        var inputPC = new TargetCodePointer(0x007f_0000);
+        var inputPC = new TargetCodePointer(GoodAddress(/*0x007f_0000*/ rng, arch));
         var length = 0x1000u;
         var value = 0x0a0a_0a0au;
         builder.InsertAddressRange(inputPC, length, value);
@@ -190,4 +193,33 @@ public class RangeSectionLookupAlgorithmTests
         var result = resultSlot.LoadPointer(target);
         Assert.Equal(value, result.Address.Value);
     }
+
+    private static ulong GoodAddress(Random rng, MockTarget.Architecture arch)
+    {
+        ulong address;
+        do
+        {
+            address = (ulong)rng.Next();
+            if (arch.Is64Bit)
+            {
+                address <<= 32;
+                address |= (uint)rng.Next();
+            }
+            address &= ~0xFu; // align to 16 bytes
+            if (address < 0x8000)
+                continue; // retry if address is too low - wan't to avoid the map fragments themselves
+        } while (false);
+        return address;
+    }
+
+    public static IEnumerable<object[]> Something(int numRandomSeeds) {
+        foreach (object[] arch in new MockTarget.StdArch())
+        {
+            for (int seed = 1; seed <= numRandomSeeds; seed++)
+            {
+                yield return new object[] { arch[0], seed };
+            }
+        }
+    }
+
 }
