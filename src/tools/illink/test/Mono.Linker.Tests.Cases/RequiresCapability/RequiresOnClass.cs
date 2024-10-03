@@ -1305,6 +1305,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 			}
 
+			class RequiresNew<T> where T : new()
+			{
+			}
+
 			[RequiresUnreferencedCode ("--ClassWithRequires--")]
 			public class ClassWithRequires
 			{
@@ -1364,6 +1368,21 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 			}
 
+			[ExpectedWarning ("IL2026", "ClassWithRequires()", "--ClassWithRequires--")]
+			class ClassWithWarningOnGenericArgumentConstructor : RequiresNew<ClassWithRequires>
+			{
+				[ExpectedWarning ("IL2026")]
+				public ClassWithWarningOnGenericArgumentConstructor ()
+				{
+				}
+			}
+
+			[UnexpectedWarning ("IL2026", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/108507")]
+			[RequiresUnreferencedCode ("--ClassWithWarningOnGenericArgumentConstructorWithRequires--")]
+			class ClassWithWarningOnGenericArgumentConstructorWithRequires : RequiresNew<ClassWithRequires>
+			{
+			}
+
 			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/3142")]
 			[RequiresUnreferencedCode ("--GenericAnnotatedWithWarningWithRequires--")]
 			public class GenericAnnotatedWithWarningWithRequires<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields> : RequiresAll<TFields>
@@ -1376,6 +1395,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2026", "--ClassWithRequires--", ".ClassWithRequires", "MethodWithAttribute")]
 			[ExpectedWarning ("IL2026", "--GenericClassWithWarningWithRequires--")]
 			[ExpectedWarning ("IL2026", "--ClassWithWarningWithRequires--")]
+			[ExpectedWarning ("IL2026", "--ClassWithWarningOnGenericArgumentConstructorWithRequires--")]
 			[ExpectedWarning ("IL2026", "--GenericAnnotatedWithWarningWithRequires--")]
 			[ExpectedWarning ("IL2091", Tool.Trimmer, "")]
 			public static void Test (ClassWithRequires inst = null)
@@ -1392,7 +1412,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				var d = new ClassWithRequires.ClassWithAttribute ();
 				var g = new GenericClassWithWarningWithRequires<int> ();
 				var h = new ClassWithWarningWithRequires ();
-				var j = new GenericAnnotatedWithWarningWithRequires<int> ();
+				var j = new ClassWithWarningOnGenericArgumentConstructor ();
+				var k = new ClassWithWarningOnGenericArgumentConstructorWithRequires ();
+				var l = new GenericAnnotatedWithWarningWithRequires<int> ();
 			}
 		}
 
