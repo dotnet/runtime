@@ -157,9 +157,6 @@ namespace System.Numerics.Tensors
             private const ulong V_ARG_MAX = 0x40862000_00000000;
             private const ulong V_DP64_BIAS = 1023;
 
-            private const double V_EXPF_MIN = -709.782712893384;
-            private const double V_EXPF_MAX = +709.782712893384;
-
             private const double V_EXPF_HUGE = 6755399441055744;
             private const double V_TBL_LN2 = 1.4426950408889634;
 
@@ -183,155 +180,145 @@ namespace System.Numerics.Tensors
 
             public static Vector128<double> Invoke(Vector128<double> x)
             {
-                // x * (64.0 / ln(2))
-                Vector128<double> z = x * Vector128.Create(V_TBL_LN2);
-
-                Vector128<double> dn = z + Vector128.Create(V_EXPF_HUGE);
-
-                // n = (int)z
-                Vector128<ulong> n = dn.AsUInt64();
-
-                // dn = (double)n
-                dn -= Vector128.Create(V_EXPF_HUGE);
-
-                // r = x - (dn * (ln(2) / 64))
-                // where ln(2) / 64 is split into Head and Tail values
-                Vector128<double> r = x - (dn * Vector128.Create(V_LN2_HEAD)) - (dn * Vector128.Create(V_LN2_TAIL));
-
-                Vector128<double> r2 = r * r;
-                Vector128<double> r4 = r2 * r2;
-                Vector128<double> r8 = r4 * r4;
-
-                // Compute polynomial
-                Vector128<double> poly = ((Vector128.Create(C12) * r + Vector128.Create(C11)) * r2 +
-                                           Vector128.Create(C10) * r + Vector128.Create(C9)) * r8 +
-                                         ((Vector128.Create(C8) * r + Vector128.Create(C7)) * r2 +
-                                          (Vector128.Create(C6) * r + Vector128.Create(C5))) * r4 +
-                                         ((Vector128.Create(C4) * r + Vector128.Create(C3)) * r2 + (r + Vector128<double>.One));
-
-                // m = (n - j) / 64
-                // result = polynomial * 2^m
-                Vector128<double> ret = poly * ((n + Vector128.Create(V_DP64_BIAS)) << 52).AsDouble();
-
                 // Check if -709 < vx < 709
-                if (Vector128.GreaterThanAny(Vector128.Abs(x).AsUInt64(), Vector128.Create(V_ARG_MAX)))
+                if (Vector128.LessThanOrEqualAll(Vector128.Abs(x).AsUInt64(), Vector128.Create(V_ARG_MAX)))
                 {
-                    // (x > V_EXPF_MAX) ? double.PositiveInfinity : x
-                    Vector128<double> infinityMask = Vector128.GreaterThan(x, Vector128.Create(V_EXPF_MAX));
+                    // x * (64.0 / ln(2))
+                    Vector128<double> z = x * Vector128.Create(V_TBL_LN2);
 
-                    ret = Vector128.ConditionalSelect(
-                        infinityMask,
-                        Vector128.Create(double.PositiveInfinity),
-                        ret
-                    );
+                    Vector128<double> dn = z + Vector128.Create(V_EXPF_HUGE);
 
-                    // (x < V_EXPF_MIN) ? 0 : x
-                    ret = Vector128.AndNot(ret, Vector128.LessThan(x, Vector128.Create(V_EXPF_MIN)));
+                    // n = (int)z
+                    Vector128<ulong> n = dn.AsUInt64();
+
+                    // dn = (double)n
+                    dn -= Vector128.Create(V_EXPF_HUGE);
+
+                    // r = x - (dn * (ln(2) / 64))
+                    // where ln(2) / 64 is split into Head and Tail values
+                    Vector128<double> r = x - (dn * Vector128.Create(V_LN2_HEAD)) - (dn * Vector128.Create(V_LN2_TAIL));
+
+                    Vector128<double> r2 = r * r;
+                    Vector128<double> r4 = r2 * r2;
+                    Vector128<double> r8 = r4 * r4;
+
+                    // Compute polynomial
+                    Vector128<double> poly = ((Vector128.Create(C12) * r + Vector128.Create(C11)) * r2 +
+                                               Vector128.Create(C10) * r + Vector128.Create(C9)) * r8 +
+                                             ((Vector128.Create(C8) * r + Vector128.Create(C7)) * r2 +
+                                              (Vector128.Create(C6) * r + Vector128.Create(C5))) * r4 +
+                                             ((Vector128.Create(C4) * r + Vector128.Create(C3)) * r2 + (r + Vector128<double>.One));
+
+                    // m = (n - j) / 64
+                    // result = polynomial * 2^m
+                    return poly * ((n + Vector128.Create(V_DP64_BIAS)) << 52).AsDouble();
                 }
+                else
+                {
+                    return ScalarFallback(x);
 
-                return ret;
+                    static Vector128<double> ScalarFallback(Vector128<double> x) =>
+                        Vector128.Create(Math.Exp(x.GetElement(0)),
+                                         Math.Exp(x.GetElement(1)));
+                }
             }
 
             public static Vector256<double> Invoke(Vector256<double> x)
             {
-                // x * (64.0 / ln(2))
-                Vector256<double> z = x * Vector256.Create(V_TBL_LN2);
-
-                Vector256<double> dn = z + Vector256.Create(V_EXPF_HUGE);
-
-                // n = (int)z
-                Vector256<ulong> n = dn.AsUInt64();
-
-                // dn = (double)n
-                dn -= Vector256.Create(V_EXPF_HUGE);
-
-                // r = x - (dn * (ln(2) / 64))
-                // where ln(2) / 64 is split into Head and Tail values
-                Vector256<double> r = x - (dn * Vector256.Create(V_LN2_HEAD)) - (dn * Vector256.Create(V_LN2_TAIL));
-
-                Vector256<double> r2 = r * r;
-                Vector256<double> r4 = r2 * r2;
-                Vector256<double> r8 = r4 * r4;
-
-                // Compute polynomial
-                Vector256<double> poly = ((Vector256.Create(C12) * r + Vector256.Create(C11)) * r2 +
-                                           Vector256.Create(C10) * r + Vector256.Create(C9)) * r8 +
-                                         ((Vector256.Create(C8) * r + Vector256.Create(C7)) * r2 +
-                                          (Vector256.Create(C6) * r + Vector256.Create(C5))) * r4 +
-                                         ((Vector256.Create(C4) * r + Vector256.Create(C3)) * r2 + (r + Vector256<double>.One));
-
-                // m = (n - j) / 64
-                // result = polynomial * 2^m
-                Vector256<double> ret = poly * ((n + Vector256.Create(V_DP64_BIAS)) << 52).AsDouble();
-
                 // Check if -709 < vx < 709
-                if (Vector256.GreaterThanAny(Vector256.Abs(x).AsUInt64(), Vector256.Create(V_ARG_MAX)))
+                if (Vector256.LessThanOrEqualAll(Vector256.Abs(x).AsUInt64(), Vector256.Create(V_ARG_MAX)))
                 {
-                    // (x > V_EXPF_MAX) ? double.PositiveInfinity : x
-                    Vector256<double> infinityMask = Vector256.GreaterThan(x, Vector256.Create(V_EXPF_MAX));
+                    // x * (64.0 / ln(2))
+                    Vector256<double> z = x * Vector256.Create(V_TBL_LN2);
 
-                    ret = Vector256.ConditionalSelect(
-                        infinityMask,
-                        Vector256.Create(double.PositiveInfinity),
-                        ret
-                    );
+                    Vector256<double> dn = z + Vector256.Create(V_EXPF_HUGE);
 
-                    // (x < V_EXPF_MIN) ? 0 : x
-                    ret = Vector256.AndNot(ret, Vector256.LessThan(x, Vector256.Create(V_EXPF_MIN)));
+                    // n = (int)z
+                    Vector256<ulong> n = dn.AsUInt64();
+
+                    // dn = (double)n
+                    dn -= Vector256.Create(V_EXPF_HUGE);
+
+                    // r = x - (dn * (ln(2) / 64))
+                    // where ln(2) / 64 is split into Head and Tail values
+                    Vector256<double> r = x - (dn * Vector256.Create(V_LN2_HEAD)) - (dn * Vector256.Create(V_LN2_TAIL));
+
+                    Vector256<double> r2 = r * r;
+                    Vector256<double> r4 = r2 * r2;
+                    Vector256<double> r8 = r4 * r4;
+
+                    // Compute polynomial
+                    Vector256<double> poly = ((Vector256.Create(C12) * r + Vector256.Create(C11)) * r2 +
+                                               Vector256.Create(C10) * r + Vector256.Create(C9)) * r8 +
+                                             ((Vector256.Create(C8) * r + Vector256.Create(C7)) * r2 +
+                                              (Vector256.Create(C6) * r + Vector256.Create(C5))) * r4 +
+                                             ((Vector256.Create(C4) * r + Vector256.Create(C3)) * r2 + (r + Vector256<double>.One));
+
+                    // m = (n - j) / 64
+                    // result = polynomial * 2^m
+                    return poly * ((n + Vector256.Create(V_DP64_BIAS)) << 52).AsDouble();
                 }
+                else
+                {
+                    return ScalarFallback(x);
 
-                return ret;
+                    static Vector256<double> ScalarFallback(Vector256<double> x) =>
+                        Vector256.Create(Math.Exp(x.GetElement(0)),
+                                         Math.Exp(x.GetElement(1)),
+                                         Math.Exp(x.GetElement(2)),
+                                         Math.Exp(x.GetElement(3)));
+                }
             }
 
             public static Vector512<double> Invoke(Vector512<double> x)
             {
-                // x * (64.0 / ln(2))
-                Vector512<double> z = x * Vector512.Create(V_TBL_LN2);
-
-                Vector512<double> dn = z + Vector512.Create(V_EXPF_HUGE);
-
-                // n = (int)z
-                Vector512<ulong> n = dn.AsUInt64();
-
-                // dn = (double)n
-                dn -= Vector512.Create(V_EXPF_HUGE);
-
-                // r = x - (dn * (ln(2) / 64))
-                // where ln(2) / 64 is split into Head and Tail values
-                Vector512<double> r = x - (dn * Vector512.Create(V_LN2_HEAD)) - (dn * Vector512.Create(V_LN2_TAIL));
-
-                Vector512<double> r2 = r * r;
-                Vector512<double> r4 = r2 * r2;
-                Vector512<double> r8 = r4 * r4;
-
-                // Compute polynomial
-                Vector512<double> poly = ((Vector512.Create(C12) * r + Vector512.Create(C11)) * r2 +
-                                           Vector512.Create(C10) * r + Vector512.Create(C9)) * r8 +
-                                         ((Vector512.Create(C8) * r + Vector512.Create(C7)) * r2 +
-                                          (Vector512.Create(C6) * r + Vector512.Create(C5))) * r4 +
-                                         ((Vector512.Create(C4) * r + Vector512.Create(C3)) * r2 + (r + Vector512<double>.One));
-
-                // m = (n - j) / 64
-                // result = polynomial * 2^m
-                Vector512<double> ret = poly * ((n + Vector512.Create(V_DP64_BIAS)) << 52).AsDouble();
-
                 // Check if -709 < vx < 709
-                if (Vector512.GreaterThanAny(Vector512.Abs(x).AsUInt64(), Vector512.Create(V_ARG_MAX)))
+                if (Vector512.LessThanOrEqualAll(Vector512.Abs(x).AsUInt64(), Vector512.Create(V_ARG_MAX)))
                 {
-                    // (x > V_EXPF_MAX) ? double.PositiveInfinity : x
-                    Vector512<double> infinityMask = Vector512.GreaterThan(x, Vector512.Create(V_EXPF_MAX));
+                    // x * (64.0 / ln(2))
+                    Vector512<double> z = x * Vector512.Create(V_TBL_LN2);
 
-                    ret = Vector512.ConditionalSelect(
-                        infinityMask,
-                        Vector512.Create(double.PositiveInfinity),
-                        ret
-                    );
+                    Vector512<double> dn = z + Vector512.Create(V_EXPF_HUGE);
 
-                    // (x < V_EXPF_MIN) ? 0 : x
-                    ret = Vector512.AndNot(ret, Vector512.LessThan(x, Vector512.Create(V_EXPF_MIN)));
+                    // n = (int)z
+                    Vector512<ulong> n = dn.AsUInt64();
+
+                    // dn = (double)n
+                    dn -= Vector512.Create(V_EXPF_HUGE);
+
+                    // r = x - (dn * (ln(2) / 64))
+                    // where ln(2) / 64 is split into Head and Tail values
+                    Vector512<double> r = x - (dn * Vector512.Create(V_LN2_HEAD)) - (dn * Vector512.Create(V_LN2_TAIL));
+
+                    Vector512<double> r2 = r * r;
+                    Vector512<double> r4 = r2 * r2;
+                    Vector512<double> r8 = r4 * r4;
+
+                    // Compute polynomial
+                    Vector512<double> poly = ((Vector512.Create(C12) * r + Vector512.Create(C11)) * r2 +
+                                               Vector512.Create(C10) * r + Vector512.Create(C9)) * r8 +
+                                             ((Vector512.Create(C8) * r + Vector512.Create(C7)) * r2 +
+                                              (Vector512.Create(C6) * r + Vector512.Create(C5))) * r4 +
+                                             ((Vector512.Create(C4) * r + Vector512.Create(C3)) * r2 + (r + Vector512<double>.One));
+
+                    // m = (n - j) / 64
+                    // result = polynomial * 2^m
+                    return poly * ((n + Vector512.Create(V_DP64_BIAS)) << 52).AsDouble();
                 }
+                else
+                {
+                    return ScalarFallback(x);
 
-                return ret;
+                    static Vector512<double> ScalarFallback(Vector512<double> x) =>
+                        Vector512.Create(Math.Exp(x.GetElement(0)),
+                                         Math.Exp(x.GetElement(1)),
+                                         Math.Exp(x.GetElement(2)),
+                                         Math.Exp(x.GetElement(3)),
+                                         Math.Exp(x.GetElement(4)),
+                                         Math.Exp(x.GetElement(5)),
+                                         Math.Exp(x.GetElement(6)),
+                                         Math.Exp(x.GetElement(7)));
+                }
             }
         }
 

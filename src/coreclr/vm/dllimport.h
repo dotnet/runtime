@@ -202,6 +202,7 @@ enum ILStubTypes
     ILSTUB_TAILCALL_STOREARGS            = 0x80000008,
     ILSTUB_TAILCALL_CALLTARGET           = 0x80000009,
     ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB  = 0x8000000A,
+    ILSTUB_DELEGATE_INVOKE_METHOD        = 0x8000000B,
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -230,6 +231,7 @@ inline bool SF_IsArrayOpStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONT
                                                                                               (dwStubFlags == ILSTUB_ARRAYOP_ADDRESS)); }
 
 inline bool SF_IsMulticastDelegateStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_MULTICASTDELEGATE_INVOKE); }
+inline bool SF_IsDelegateInvokeMethod  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_DELEGATE_INVOKE_METHOD); }
 
 inline bool SF_IsWrapperDelegateStub    (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_WRAPPERDELEGATE_INVOKE); }
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
@@ -487,9 +489,6 @@ public:
 #endif // FEATURE_COMINTEROP
     DWORD   GetCleanupWorkListLocalNum();
     DWORD   GetReturnValueLocalNum();
-#if defined(TARGET_X86) && defined(FEATURE_IJW)
-    DWORD   GetCopyCtorChainLocalNum();
-#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
     void    SetCleanupNeeded();
     void    SetExceptionCleanupNeeded();
     BOOL    IsCleanupWorkListSetup();
@@ -559,10 +558,6 @@ protected:
     DWORD               m_dwTargetEntryPointLocalNum;
 #endif // FEATURE_COMINTEROP
 
-#if defined(TARGET_X86) && defined(FEATURE_IJW)
-    DWORD               m_dwCopyCtorChainLocalNum;
-#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
-
     BOOL                m_fHasCleanupCode;
     BOOL                m_fHasExceptionCleanupCode;
     BOOL                m_fCleanupWorkListIsSetup;
@@ -597,6 +592,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 #ifndef DACCESS_COMPILE
 void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
 void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
+bool GenerateCopyConstructorHelper(MethodDesc* ftn, TypeHandle type, DynamicResolver** ppResolver, COR_ILMETHOD_DECODER** ppHeader, CORINFO_METHOD_INFO* methInfo);
 #endif // DACCESS_COMPILE
 
 //

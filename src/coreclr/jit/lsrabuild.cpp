@@ -3679,12 +3679,17 @@ int LinearScan::BuildOperandUses(GenTree* node, SingleTypeRegSet candidates)
     {
         GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
 
+        size_t numArgs = hwintrinsic->GetOperandCount();
         if (hwintrinsic->OperIsMemoryLoad())
         {
+#ifdef TARGET_ARM64
+            if (numArgs == 2)
+            {
+                return BuildAddrUses(hwintrinsic->Op(1)) + BuildOperandUses(hwintrinsic->Op(2), candidates);
+            }
+#endif
             return BuildAddrUses(hwintrinsic->Op(1));
         }
-
-        size_t numArgs = hwintrinsic->GetOperandCount();
 
         if (numArgs != 1)
         {
@@ -3841,9 +3846,25 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
             return 0;
         }
     }
+
+    // Don't mark as delay free if there is a mismatch in register types
+    bool addDelayFreeUses = false;
+    // Multi register nodes should not go via this route.
+    assert(!node->IsMultiRegNode());
+    // Multi register nodes should always use fp registers (this includes vectors).
+    assert(varTypeUsesFloatReg(node->TypeGet()) || !node->IsMultiRegNode());
+    if (rmwNode == nullptr || varTypeUsesSameRegType(rmwNode->TypeGet(), node->TypeGet()) ||
+        (rmwNode->IsMultiRegNode() && varTypeUsesFloatReg(node->TypeGet())))
+    {
+        addDelayFreeUses = true;
+    }
+
     if (use != nullptr)
     {
-        AddDelayFreeUses(use, rmwNode);
+        if (addDelayFreeUses)
+        {
+            AddDelayFreeUses(use, rmwNode);
+        }
         if (useRefPositionRef != nullptr)
         {
             *useRefPositionRef = use;
@@ -3859,15 +3880,20 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
     if (addrMode->HasBase() && !addrMode->Base()->isContained())
     {
         use = BuildUse(addrMode->Base(), candidates);
-        AddDelayFreeUses(use, rmwNode);
-
+        if (addDelayFreeUses)
+        {
+            AddDelayFreeUses(use, rmwNode);
+        }
         srcCount++;
     }
+
     if (addrMode->HasIndex() && !addrMode->Index()->isContained())
     {
         use = BuildUse(addrMode->Index(), candidates);
-        AddDelayFreeUses(use, rmwNode);
-
+        if (addDelayFreeUses)
+        {
+            AddDelayFreeUses(use, rmwNode);
+        }
         srcCount++;
     }
 

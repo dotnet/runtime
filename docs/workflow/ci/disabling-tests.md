@@ -63,6 +63,8 @@ in the [issues.targets](../../../src/tests/issues.targets) file. Additionally, t
 link to a GitHub issue in the `<Issue>` element. Disabling a test here can be conditioned on processor
 architecture, runtime, and operating system.
 
+### Disabling runtime tests (src/tests) with test configuration properties
+
 However, some test configurations must be disabled by editing the `.csproj` or `.ilproj` file for the test,
 and inserting a property in a `<PropertyGroup>`, as follows:
 

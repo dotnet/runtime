@@ -30,7 +30,8 @@ namespace System.Reflection.Emit
         private int _localCount;
         private Dictionary<Label, LabelInfo> _labelTable = new(2);
         private List<KeyValuePair<object, BlobWriter>> _memberReferences = new();
-        private List<ExceptionBlock> _exceptionStack = new();
+        private List<ExceptionBlock> _exceptionStack = new(); // tracks the exception nesting
+        private List<ExceptionHandlerInfo> _exceptionBlocks = new(); // keeps all ExceptionHandler blocks
         private Dictionary<SymbolDocumentWriter, List<SequencePoint>> _documentToSequencePoints = new();
 
         internal ILGeneratorImpl(MethodBuilderImpl methodBuilder, int size)
@@ -53,6 +54,32 @@ namespace System.Reflection.Emit
         internal int LocalCount => _localCount;
         internal Scope Scope => _scope;
         internal Dictionary<SymbolDocumentWriter, List<SequencePoint>> DocumentToSequencePoints => _documentToSequencePoints;
+
+        internal void AddExceptionBlocks()
+        {
+            foreach(ExceptionHandlerInfo eb in _exceptionBlocks)
+            {
+                switch (eb.Kind)
+                {
+                    case ExceptionRegionKind.Catch:
+                        _cfBuilder.AddCatchRegion(GetMetaLabel(eb.TryStart), GetMetaLabel(eb.TryEnd),
+                            GetMetaLabel(eb.HandlerStart), GetMetaLabel(eb.HandlerEnd), _moduleBuilder.GetTypeHandle(eb.ExceptionType!));
+                        break;
+                    case ExceptionRegionKind.Filter:
+                        _cfBuilder.AddFilterRegion(GetMetaLabel(eb.TryStart), GetMetaLabel(eb.TryEnd),
+                            GetMetaLabel(eb.HandlerStart), GetMetaLabel(eb.HandlerEnd), GetMetaLabel(eb.FilterStart));
+                        break;
+                    case ExceptionRegionKind.Fault:
+                        _cfBuilder.AddFaultRegion(GetMetaLabel(eb.TryStart), GetMetaLabel(eb.TryEnd),
+                            GetMetaLabel(eb.HandlerStart), GetMetaLabel(eb.HandlerEnd));
+                        break;
+                    case ExceptionRegionKind.Finally:
+                        _cfBuilder.AddFinallyRegion(GetMetaLabel(eb.TryStart), GetMetaLabel(eb.TryEnd),
+                            GetMetaLabel(eb.HandlerStart), GetMetaLabel(eb.HandlerEnd));
+                        break;
+                }
+            }
+        }
 
         public override int ILOffset => _il.Offset;
 
@@ -91,8 +118,8 @@ namespace System.Reflection.Emit
 
                 currentExBlock.HandleStart = DefineLabel();
                 currentExBlock.HandleEnd = DefineLabel();
-                _cfBuilder.AddCatchRegion(GetMetaLabel(currentExBlock.TryStart), GetMetaLabel(currentExBlock.TryEnd),
-                    GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd), _moduleBuilder.GetTypeHandle(exceptionType));
+                _exceptionBlocks.Add(new ExceptionHandlerInfo(ExceptionRegionKind.Catch, currentExBlock.TryStart,
+                    currentExBlock.TryEnd, currentExBlock.HandleStart, currentExBlock.HandleEnd, default, exceptionType));
                 MarkLabel(currentExBlock.HandleStart);
             }
 
@@ -124,9 +151,9 @@ namespace System.Reflection.Emit
             currentExBlock.FilterStart = DefineLabel();
             currentExBlock.HandleStart = DefineLabel();
             currentExBlock.HandleEnd = DefineLabel();
-            _cfBuilder.AddFilterRegion(GetMetaLabel(currentExBlock.TryStart), GetMetaLabel(currentExBlock.TryEnd),
-                GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd), GetMetaLabel(currentExBlock.FilterStart));
             currentExBlock.State = ExceptionState.Filter;
+            _exceptionBlocks.Add(new ExceptionHandlerInfo(ExceptionRegionKind.Filter, currentExBlock.TryStart,
+                currentExBlock.TryEnd, currentExBlock.HandleStart, currentExBlock.HandleEnd, currentExBlock.FilterStart));
             MarkLabel(currentExBlock.FilterStart);
             // Stack depth for "filter" starts at one.
             _currentStackDepth = 1;
@@ -166,8 +193,8 @@ namespace System.Reflection.Emit
 
             currentExBlock.HandleStart = DefineLabel();
             currentExBlock.HandleEnd = DefineLabel();
-            _cfBuilder.AddFaultRegion(GetMetaLabel(currentExBlock.TryStart), GetMetaLabel(currentExBlock.TryEnd),
-                GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd));
+            _exceptionBlocks.Add(new ExceptionHandlerInfo(ExceptionRegionKind.Fault, currentExBlock.TryStart,
+                currentExBlock.TryEnd, currentExBlock.HandleStart, currentExBlock.HandleEnd));
             currentExBlock.State = ExceptionState.Fault;
             MarkLabel(currentExBlock.HandleStart);
             // Stack depth for "fault" starts at zero.
@@ -197,8 +224,8 @@ namespace System.Reflection.Emit
             MarkLabel(currentExBlock.TryEnd);
             currentExBlock.HandleStart = DefineLabel();
             currentExBlock.HandleEnd = finallyEndLabel;
-            _cfBuilder.AddFinallyRegion(GetMetaLabel(currentExBlock.TryStart), GetMetaLabel(currentExBlock.TryEnd),
-                GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd));
+            _exceptionBlocks.Add(new ExceptionHandlerInfo(ExceptionRegionKind.Finally, currentExBlock.TryStart,
+                currentExBlock.TryEnd, currentExBlock.HandleStart, currentExBlock.HandleEnd));
             currentExBlock.State = ExceptionState.Finally;
             MarkLabel(currentExBlock.HandleStart);
             // Stack depth for "finally" starts at zero.
@@ -833,6 +860,31 @@ namespace System.Reflection.Emit
         public Label FilterStart;
         public Label EndLabel;
         public ExceptionState State;
+    }
+
+    internal struct ExceptionHandlerInfo
+    {
+        public readonly ExceptionRegionKind Kind;
+        public readonly Label TryStart, TryEnd, HandlerStart, HandlerEnd, FilterStart;
+        public Type? ExceptionType;
+
+        public ExceptionHandlerInfo(
+            ExceptionRegionKind kind,
+            Label tryStart,
+            Label tryEnd,
+            Label handlerStart,
+            Label handlerEnd,
+            Label filterStart = default,
+            Type? catchType = null)
+        {
+            Kind = kind;
+            TryStart = tryStart;
+            TryEnd = tryEnd;
+            HandlerStart = handlerStart;
+            HandlerEnd = handlerEnd;
+            FilterStart = filterStart;
+            ExceptionType = catchType;
+        }
     }
 
     internal enum ExceptionState

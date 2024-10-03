@@ -104,6 +104,8 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
+#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
+#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 //**********************************************************************
 // Frames
@@ -413,8 +415,6 @@ public:
     void EmitProlog(unsigned short cIntRegArgs, unsigned short cFpRegArgs, unsigned short cbStackSpace = 0);
     void EmitEpilog();
 };
-
-extern "C" void SinglecastDelegateInvokeStub();
 
 
 // preferred alignment for data

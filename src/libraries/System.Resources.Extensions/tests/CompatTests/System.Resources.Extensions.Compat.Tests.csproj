@@ -1,11 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <CustomResourceTypesSupport Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">true</CustomResourceTypesSupport>
     <!-- some of the embeded resources have this assembly name hardcoded -->
     <AssemblyName>System.Resources.Extensions.Tests</AssemblyName>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\**\*.cs" />
     <Compile Remove="..\BinaryFormatTests\**\*.cs" />
@@ -16,22 +18,26 @@
     <EmbeddedResource Include="..\TestData.resources" WithCulture="false" Type="Non-Resx" LogicalName="System.Resources.Extensions.Tests.%(FileName)%(Extension)" />
     <None Include="runtimeconfig.template.json" />
   </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" />
-    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="$(SystemRuntimeSerializationFormattersVersion)" />
     <ProjectReference Include="..\..\src\System.Resources.Extensions.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+
+  <ItemGroup>
     <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
+        <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Windows.Extensions\src\System.Windows.Extensions.csproj" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
-  </ItemGroup>
+
   <ItemGroup>
     <!-- Apple mobile trimming descriptor for Mono runtime -->
     <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
+
   <!-- Use the following target to regenerate the test resources file.
        This is done from a test application and checked in so that we don't run
        product code during the build.
@@ -54,4 +60,5 @@
     </ItemGroup>
     <Exec Command="%(ExecuteMethod.Command)" WorkingDirectory="$(TargetDir)" />
   </Target>
+
 </Project>

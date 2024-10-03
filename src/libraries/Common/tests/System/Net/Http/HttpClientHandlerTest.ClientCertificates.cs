@@ -115,7 +115,7 @@ namespace System.Net.Http.Functional.Tests
                         {
                             _output.WriteLine(
                                 "Client cert: {0}",
-                                new X509Certificate2(sslStream.RemoteCertificate.Export(X509ContentType.Cert)).GetNameInfo(X509NameType.SimpleName, false));
+                                X509CertificateLoader.LoadCertificate(sslStream.RemoteCertificate.Export(X509ContentType.Cert)).GetNameInfo(X509NameType.SimpleName, false));
                             Assert.Equal(cert, sslStream.RemoteCertificate);
                         }
                         else
@@ -233,7 +233,7 @@ namespace System.Net.Http.Functional.Tests
 
                             _output.WriteLine(
                                 "Client cert: {0}",
-                                new X509Certificate2(sslStream.RemoteCertificate.Export(X509ContentType.Cert)).GetNameInfo(X509NameType.SimpleName, false));
+                                X509CertificateLoader.LoadCertificate(sslStream.RemoteCertificate.Export(X509ContentType.Cert)).GetNameInfo(X509NameType.SimpleName, false));
 
                             Assert.Equal(clientCertificate.GetCertHashString(), sslStream.RemoteCertificate.GetCertHashString());
 

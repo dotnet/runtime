@@ -8,6 +8,7 @@ namespace System.Runtime.InteropServices
 {
     public static partial class JsonMarshal
     {
+        public static System.ReadOnlySpan<byte> GetRawUtf8PropertyName(System.Text.Json.JsonProperty property) { throw null; }
         public static System.ReadOnlySpan<byte> GetRawUtf8Value(System.Text.Json.JsonElement element) { throw null; }
     }
 }
@@ -209,6 +210,7 @@ namespace System.Text.Json
     }
     public static partial class JsonSerializer
     {
+        [System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute("System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault")]
         public static bool IsReflectionEnabledByDefault { get { throw null; } }
         public static object? Deserialize(System.IO.Stream utf8Json, System.Text.Json.Serialization.Metadata.JsonTypeInfo jsonTypeInfo) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]

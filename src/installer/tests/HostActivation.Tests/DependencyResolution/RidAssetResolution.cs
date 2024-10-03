@@ -602,7 +602,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
             IReadOnlyList<RuntimeFallbacks> fallbacks;
             string depsJson = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, $"{Constants.MicrosoftNETCoreApp}.deps.json");
-            using (FileStream fileStream = File.Open(depsJson, FileMode.Open))
+            using (FileStream fileStream = File.OpenRead(depsJson))
             using (DependencyContextJsonReader reader = new DependencyContextJsonReader())
             {
                 fallbacks = reader.Read(fileStream).RuntimeGraph;
