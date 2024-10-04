@@ -799,28 +799,81 @@ static void* GetTlsIndexObjectAddress();
 
 #if !defined(TARGET_OSX) && defined(TARGET_UNIX) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
 extern "C" size_t GetTLSResolverAddress();
-#endif // !TARGET_OSX && TARGET_UNIX && (TARGET_ARM64 || TARGET_LOONGARCH64)
 
-bool CanJITOptimizeTLSAccess()
+// Check if the resolver address retrieval code is expected. We verify the exact
+// code sequence for all the instructions. However, for two instructions adrp/ldr,
+// we make sure that the instruction's opcode and registers matches.
+// If the resolver address retrieval code is correct, we invoke it to determine if
+// it is a static or dynamic resolver. TLS optimization is enabled only for for static
+// resolver. That's because for static resolver, the TP offset is same for all threads.
+// For dynamic resolver, TP offset returned is for the current thread and will be
+// different for the other threads.
+static bool IsValidTLSResolver()
 {
-    LIMITED_METHOD_CONTRACT;
+#define READ_CODE(p, code)                                      \
+    code = (p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0];    \
+    p += 4;
 
-    bool optimizeThreadStaticAccess = false;
-#if defined(TARGET_ARM)
-    // Optimization is disabled for linux/windows arm
-#elif !defined(TARGET_WINDOWS) && defined(TARGET_X86)
-    // Optimization is disabled for linux/x86
-#elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
-    // Optimization is disabled for linux musl arm64
-#elif defined(TARGET_FREEBSD) && defined(TARGET_ARM64)
-    // Optimization is disabled for FreeBSD/arm64
-#elif defined(FEATURE_INTERPRETER)
-    // Optimization is disabled when interpreter may be used
-#elif !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
-    // Optimization is enabled for linux/arm64 only for static resolver.
-    // For static resolver, the TP offset is same for all threads.
-    // For dynamic resolver, TP offset returned is for the current thread and
-    // will be different for the other threads.
+    uint32_t code;
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetTLSResolverAddress);
+
+    // stp     x29, x30, [sp, #-32]!
+    READ_CODE(p, code)
+    if (code != 0xA9BE7BFD)
+    {
+        return false;
+    }
+
+    // mov     x29, sp
+    READ_CODE(p, code)
+    if (code != 0x910003FD)
+    {
+        return false;
+    }
+
+    // adrp    x0, <address>
+    // 28:24 have 0x10 for adrp
+    // 4:0 should have x0
+    READ_CODE(p, code)
+    if ((code & 0x9F00001F) != 0x90000000)
+    {
+        return false;
+    }
+
+    // ldr     x0, [x0, <offet>]
+    READ_CODE(p, code)
+    // 31:24 have 0xf9 for ldr
+    // 23:22 have 01
+    // 9:5 have 0 for x0
+    // 4:0 have 1 for x1
+    if ((code & 0xFFC003FF) != 0xF9400001)
+    {
+        return false;
+    }
+
+    // mov     x0, x1
+    READ_CODE(p, code)
+    if (code != 0xAA0103E0)
+    {
+        return false;
+    }
+
+    // ldp     x29, x30, [sp], #32
+    READ_CODE(p, code)
+    if (code != 0xA8C27BFD)
+    {
+        return false;
+    }
+
+    // ret
+    READ_CODE(p, code)
+    if (code != 0xD65F03C0)
+    {
+        return false;
+    }
+
+    // Now invoke the code to retrieve the resolver address
+    // and verify if that is as expected.
     uint32_t* resolverAddress = reinterpret_cast<uint32_t*>(GetTLSResolverAddress());
     int ip = 0;
     if ((resolverAddress[ip] == 0xd503201f) || (resolverAddress[ip] == 0xd503241f))
@@ -838,13 +891,43 @@ bool CanJITOptimizeTLSAccess()
         (resolverAddress[ip + 1] == 0xd65f03c0)
     )
     {
+        return true;
+    }
+
+    return false;
+}
+#endif // !TARGET_OSX && TARGET_UNIX && (TARGET_ARM64 || TARGET_LOONGARCH64)
+
+bool CanJITOptimizeTLSAccess()
+{
+    LIMITED_METHOD_CONTRACT;
+    if (g_pConfig->DisableOptimizedThreadStaticAccess())
+    {
+        return false;
+    }
+
+    bool optimizeThreadStaticAccess = false;
+#if defined(TARGET_ARM)
+    // Optimization is disabled for linux/windows arm
+#elif !defined(TARGET_WINDOWS) && defined(TARGET_X86)
+    // Optimization is disabled for linux/x86
+#elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
+    // Optimization is disabled for linux musl arm64
+#elif defined(TARGET_FREEBSD) && defined(TARGET_ARM64)
+    // Optimization is disabled for FreeBSD/arm64
+#elif defined(FEATURE_INTERPRETER)
+    // Optimization is disabled when interpreter may be used
+#elif !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
+    bool tlsResolverValid = IsValidTLSResolver();
+    if (tlsResolverValid)
+    {
         optimizeThreadStaticAccess = true;
 #ifdef _DEBUG
         if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AssertNotStaticTlsResolver) != 0)
         {
             _ASSERTE(!"Detected static resolver in use when not expected");
         }
-#endif
+#endif // _DEBUG
     }
 #elif defined(TARGET_LOONGARCH64)
     // Optimization is enabled for linux/loongarch64 only for static resolver.
@@ -877,11 +960,6 @@ bool CanJITOptimizeTLSAccess()
     optimizeThreadStaticAccess = GetTlsIndexObjectAddress() != nullptr;
 #endif // !TARGET_OSX && TARGET_UNIX && TARGET_AMD64
 #endif
-
-    if (g_pConfig->DisableOptimizedThreadStaticAccess())
-    {
-        optimizeThreadStaticAccess = false;
-    }
 
     return optimizeThreadStaticAccess;
 }
