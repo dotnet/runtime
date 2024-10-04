@@ -402,7 +402,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			break;
 		}
 		case SN_Multiply:
-		case SN_op_Multiply:
+		case SN_op_Multiply: {
 			if (type_enum_is_float (arg_type)) {
 				instc0 = OP_FMUL;
 			} else {
@@ -422,6 +422,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 				return handle_mul_div_by_scalar (cfg, klass, arg_type, args [0]->dreg, args [1]->dreg, instc0);
 			}
 			break;
+		}
 		case SN_Subtract:
 		case SN_op_Subtraction: {
 			if (type_enum_is_float (arg_type)) {
@@ -429,6 +430,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			} else {
 				instc0 = OP_ISUB;
 			}
+			break;
 		}
 		case SN_Xor:
 		case SN_op_ExclusiveOr: {
