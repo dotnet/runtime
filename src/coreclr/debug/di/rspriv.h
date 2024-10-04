@@ -4125,6 +4125,11 @@ private:
     WriteableMetadataUpdateMode m_writableMetadataUpdateMode;
 
     COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject);
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    bool m_fExpectingSingleStep;
+    CORDB_ADDRESS_TYPE * m_patchSkipAddr;
+#endif
 };
 
 // Some IMDArocess APIs are supported as interop-only.

@@ -2481,7 +2481,12 @@ bool DebuggerController::MatchPatch(Thread *thread,
 
 DebuggerPatchSkip *DebuggerController::ActivatePatchSkip(Thread *thread,
                                                          const BYTE *PC,
-                                                         BOOL fForEnC)
+                                                         BOOL fForEnC
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                                                         ,
+                                                         DebuggerSteppingInfo *pDebuggerSteppingInfo
+#endif
+                                                         )
 {
 #ifdef _DEBUG
     BOOL shouldBreak = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ActivatePatchSkip);
@@ -2527,6 +2532,14 @@ DebuggerPatchSkip *DebuggerController::ActivatePatchSkip(Thread *thread,
         LOG((LF_CORDB,LL_INFO10000, "DC::APS: About to skip from PC=0x%p\n", PC));
         skip = new (interopsafe) DebuggerPatchSkip(thread, patch);
         TRACE_ALLOC(skip);
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+        if (pDebuggerSteppingInfo != NULL && skip != NULL && skip->IsInPlaceSingleStep())
+        {
+            // send the opcode to the right side so it can be restored during single-step
+            pDebuggerSteppingInfo->EnableInPlaceSingleStepOverCall(patch->opcode);
+        }
+#endif
     }
 
     return skip;
@@ -2537,11 +2550,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
                                          CONTEXT *context,
                                          DebuggerControllerQueue *pDcq,
                                          SCAN_TRIGGER stWhat,
-                                         TP_RESULT *pTpr,
-#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
-                                         DebuggerPatchSkip **ppDps
-#endif
-                                         )
+                                         TP_RESULT *pTpr)
 {
     CONTRACTL
     {
@@ -2743,8 +2752,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
                     used = DPOSS_USED_WITH_NO_EVENT;
                 }
 
-                DPOSS_ACTION tmpAction = p->TriggerSingleStep(thread, (const BYTE *)address);
-                if (tmpAction == DPOSS_USED_WITH_EVENT)
+                if (p->TriggerSingleStep(thread, (const BYTE *)address))
                 {
                     // by now, we should already know that we care for this exception.
                     _ASSERTE(IsInUsedAction(used) == true);
@@ -2754,13 +2762,6 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
                     pDcq->dcqEnqueue(p, FALSE); // <REVISIT_TODO>@todo Return value</REVISIT_TODO>
 
                 }
-#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
-                else if (tmpAction == DPOSS_USED_WITH_NO_EVENT)
-                {
-                    *ppDps = (DebuggerPatchSkip*)p;
-                    used = DPOSS_USED_WITH_NO_EVENT;
-                }
-#endif
             }
 
             p = pNext;
@@ -2850,7 +2851,11 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
 // DebuggerController's TriggerPatch).  Put any DCs that are interested into a queue and then calls
 // SendEvent on each.
 // Note that control will not return from this function in the case of EnC remap
-DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTEXT *context, CORDB_ADDRESS_TYPE *address, SCAN_TRIGGER which, DebuggerPatchSkip **ppDebuggerPatchSkip)
+DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTEXT *context, CORDB_ADDRESS_TYPE *address, SCAN_TRIGGER which
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+,DebuggerSteppingInfo *pDebuggerSteppingInfo
+#endif
+)
 {
     CONTRACT(DPOSS_ACTION)
     {
@@ -2888,11 +2893,6 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
     _ASSERTE(g_patches != NULL);
 
     CrstHolderWithState lockController(&g_criticalSection);
-
-    if (ppDebuggerPatchSkip != nullptr)
-    {
-        *ppDebuggerPatchSkip = nullptr;
-    }
 
     TADDR originalAddress = 0;
 
@@ -2940,20 +2940,8 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
 #endif // FEATURE_METADATA_UPDATER
 
     TP_RESULT tpr;
-#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
-    DebuggerPatchSkip *dps = nullptr;
-#endif
-    used = ScanForTriggers((CORDB_ADDRESS_TYPE *)address, thread, context, &dcq, which, &tpr, 
-#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
-    &dps
-#endif
-    );
-#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
-    if (dps)
-    {
-        *ppDebuggerPatchSkip = dps;
-    }
-#endif
+
+    used = ScanForTriggers((CORDB_ADDRESS_TYPE *)address, thread, context, &dcq, which, &tpr);
 
     LOG((LF_CORDB|LF_ENC, LL_EVERYTHING, "DC::DPOSS ScanForTriggers called and returned.\n"));
 
@@ -3061,11 +3049,11 @@ Exit:
     }
 #endif
 
-    DebuggerPatchSkip* pDebuggerPatchSkip = ActivatePatchSkip(thread, dac_cast<PTR_CBYTE>(GetIP(pCtx)), FALSE);
-    if (pDebuggerPatchSkip != nullptr && ppDebuggerPatchSkip != nullptr)
-    {
-        *ppDebuggerPatchSkip = pDebuggerPatchSkip;
-    }
+    ActivatePatchSkip(thread, dac_cast<PTR_CBYTE>(GetIP(pCtx)), FALSE
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    , pDebuggerSteppingInfo
+#endif
+    );
 
     lockController.Release();
 
@@ -4037,11 +4025,11 @@ TP_RESULT DebuggerController::TriggerPatch(DebuggerControllerPatch *patch,
     return TPR_IGNORE;
 }
 
-DPOSS_ACTION DebuggerController::TriggerSingleStep(Thread *thread,
+bool DebuggerController::TriggerSingleStep(Thread *thread,
                                            const BYTE *ip)
 {
     LOG((LF_CORDB, LL_INFO10000, "DC::TP: in default TriggerSingleStep\n"));
-    return DPOSS_DONT_CARE;
+    return false;
 }
 
 void DebuggerController::TriggerUnwind(Thread *thread,
@@ -4165,8 +4153,12 @@ void ThisFunctionMayHaveTriggerAGC()
 bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
                                                  CONTEXT *pContext,
                                                  DWORD dwCode,
-                                                 Thread *pCurThread,
-                                                 DebuggerPatchSkip **ppDebuggerPatchSkip)
+                                                 Thread *pCurThread
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                                                 ,
+                                                 DebuggerSteppingInfo *pDebuggerSteppingInfo
+#endif
+                                                 )
 {
     CONTRACTL
     {
@@ -4337,8 +4329,12 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
             result = DebuggerController::DispatchPatchOrSingleStep(pCurThread,
                                                        pContext,
                                                        ip,
-                                                       ST_PATCH,
-                                                       ppDebuggerPatchSkip);
+                                                       ST_PATCH
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                                                       ,
+                                                       pDebuggerSteppingInfo
+#endif
+                                                       );
             LOG((LF_CORDB, LL_EVERYTHING, "DC::DNE DispatchPatch call returned\n"));
 
             // If we detached, we should remove all our breakpoints. So if we try
@@ -4355,8 +4351,12 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
             result = DebuggerController::DispatchPatchOrSingleStep(pCurThread,
                                                             pContext,
                                                             ip,
-                                        (SCAN_TRIGGER)(ST_PATCH|ST_SINGLE_STEP),
-                                                            ppDebuggerPatchSkip);
+                                        (SCAN_TRIGGER)(ST_PATCH|ST_SINGLE_STEP)
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                                                            ,
+                                                            pDebuggerSteppingInfo
+#endif
+                                                            );
                 // We pass patch | single step since single steps actually
                 // do both (eg, you SS onto a breakpoint).
             break;
@@ -4483,8 +4483,8 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
     // we are only using RIP-relative addressing to access read-only data (see VSW 246145 for more information). This
     // has since been expanded to handle RIP-relative writes as well.
     if (m_instrAttrib.m_dwOffsetToDisp != 0
-#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
-        && (!IsInPlaceSingleStep())
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+        && !IsInPlaceSingleStep()
 #endif
     )
     {
@@ -4515,7 +4515,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
             // Copy the data into our buffer.
             memcpy(bufferBypassRW, patch->address + m_instrAttrib.m_cbInstr + dwOldDisp, m_instrAttrib.m_cOperandSize);
 
-            if (m_instrAttrib.m_fIsWrite /*&& !m_instrAttrib.m_fIsCall*/)
+            if (m_instrAttrib.m_fIsWrite)
             {
                 // save the actual destination address and size so when we TriggerSingleStep() we can update the value
                 pSharedPatchBypassBufferRW->RipTargetFixup = (UINT_PTR)(patch->address + m_instrAttrib.m_cbInstr + dwOldDisp);
@@ -4592,9 +4592,9 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
     patchBypassRX = NativeWalker::SetupOrSimulateInstructionForPatchSkip(context, m_pSharedPatchBypassBuffer, (const BYTE *)patch->address, patch->opcode);
 #endif //TARGET_ARM64
 
-#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     if (!IsInPlaceSingleStep())
-#endif // !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+#endif
     {
         //set eip to point to buffer...
         SetIP(context, (PCODE)patchBypassRX);
@@ -4857,15 +4857,13 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
             {
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
                 if (!IsInPlaceSingleStep())
-                {
 #endif
+                {
                     LOG((LF_CORDB, LL_INFO10000, "Bypass instruction redirected because still in skip area.\n"
                         "\tm_fIsCall = %s, patchBypass = %p, m_address = %p\n",
                         (m_instrAttrib.m_fIsCall ? "true" : "false"), patchBypass, m_address));
                     SetIP(context, (PCODE)((BYTE *)GetIP(context) - (patchBypass - (BYTE *)m_address)));
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
                 }
-#endif
             }
             else
             {
@@ -4925,102 +4923,61 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
     return TPR_TRIGGER;
 }
 
-DPOSS_ACTION DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
+bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
 {
     LOG((LF_CORDB,LL_INFO10000, "DPS::TSS: basically a no-op\n"));
 
 #if defined(TARGET_AMD64)
-#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
-    if (!IsInPlaceSingleStep())
-#endif // !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+    // Dev11 91932: for RIP-relative writes we need to copy the value that was written in our buffer to the actual address
+    _ASSERTE(m_pSharedPatchBypassBuffer);
+    if (m_pSharedPatchBypassBuffer->RipTargetFixup
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+        && !IsInPlaceSingleStep()
+#endif
+    )
     {
-        // Dev11 91932: for RIP-relative writes we need to copy the value that was written in our buffer to the actual address
-        _ASSERTE(m_pSharedPatchBypassBuffer);
-        if (m_pSharedPatchBypassBuffer->RipTargetFixup)
+        _ASSERTE(m_pSharedPatchBypassBuffer->RipTargetFixupSize);
+
+        BYTE* bufferBypass = m_pSharedPatchBypassBuffer->BypassBuffer;
+        BYTE fixupSize = m_pSharedPatchBypassBuffer->RipTargetFixupSize;
+        UINT_PTR targetFixup = m_pSharedPatchBypassBuffer->RipTargetFixup;
+
+        switch (fixupSize)
         {
-            _ASSERTE(m_pSharedPatchBypassBuffer->RipTargetFixupSize);
+        case 1:
+            *(reinterpret_cast<BYTE*>(targetFixup)) = *(reinterpret_cast<BYTE*>(bufferBypass));
+            break;
 
-            BYTE* bufferBypass = m_pSharedPatchBypassBuffer->BypassBuffer;
-            BYTE fixupSize = m_pSharedPatchBypassBuffer->RipTargetFixupSize;
-            UINT_PTR targetFixup = m_pSharedPatchBypassBuffer->RipTargetFixup;
+        case 2:
+            *(reinterpret_cast<WORD*>(targetFixup)) = *(reinterpret_cast<WORD*>(bufferBypass));
+            break;
 
-            switch (fixupSize)
-            {
-            case 1:
-                *(reinterpret_cast<BYTE*>(targetFixup)) = *(reinterpret_cast<BYTE*>(bufferBypass));
-                break;
+        case 4:
+            *(reinterpret_cast<DWORD*>(targetFixup)) = *(reinterpret_cast<DWORD*>(bufferBypass));
+            break;
 
-            case 2:
-                *(reinterpret_cast<WORD*>(targetFixup)) = *(reinterpret_cast<WORD*>(bufferBypass));
-                break;
+        case 8:
+            *(reinterpret_cast<ULONGLONG*>(targetFixup)) = *(reinterpret_cast<ULONGLONG*>(bufferBypass));
+            break;
 
-            case 4:
-                *(reinterpret_cast<DWORD*>(targetFixup)) = *(reinterpret_cast<DWORD*>(bufferBypass));
-                break;
+        case 16:
+        case 32:
+        case 64:
+            memcpy(reinterpret_cast<void*>(targetFixup), bufferBypass, fixupSize);
+            break;
 
-            case 8:
-                *(reinterpret_cast<ULONGLONG*>(targetFixup)) = *(reinterpret_cast<ULONGLONG*>(bufferBypass));
-                break;
-
-            case 16:
-            case 32:
-            case 64:
-                memcpy(reinterpret_cast<void*>(targetFixup), bufferBypass, fixupSize);
-                break;
-
-            default:
-                _ASSERTE(!"bad operand size. If you hit this and it was because we need to process instructions with larger \
-                    relative immediates, make sure to update the SharedPatchBypassBuffer size, the DebuggerHeapExecutableMemoryAllocator, \
-                    and structures depending on DBG_MAX_EXECUTABLE_ALLOC_SIZE.");
-            }
+        default:
+            _ASSERTE(!"bad operand size. If you hit this and it was because we need to process instructions with larger \
+                relative immediates, make sure to update the SharedPatchBypassBuffer size, the DebuggerHeapExecutableMemoryAllocator, \
+                and structures depending on DBG_MAX_EXECUTABLE_ALLOC_SIZE.");
         }
     }
-#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
-    else if (IsInPlaceSingleStep())
-    {
-        LOG((LF_CORDB, LL_INFO10000, "This is an in-place single-step, all we want to do is back-patch the breakpoint\n"));
-        // {
-        //     LPVOID baseAddress = (LPVOID)m_address;
-        //     DWORD oldProt;
-
-        //     if (!VirtualProtect(baseAddress,
-        //                         CORDbg_BREAK_INSTRUCTION_SIZE,
-        //                         PAGE_EXECUTE_READWRITE, &oldProt))
-        //     {
-        //         // we may be seeing unwriteable directly mapped executable memory.
-        //         // let's try copy-on-write instead,
-        //         if (!VirtualProtect(baseAddress,
-        //             CORDbg_BREAK_INSTRUCTION_SIZE,
-        //             PAGE_EXECUTE_WRITECOPY, &oldProt))
-        //         {
-        //             _ASSERTE(!"VirtualProtect of code page failed");
-        //             goto Error;
-        //         }
-        //     }
-
-        //     CORDbgInsertBreakpoint(m_address);
-        //     LOG((LF_CORDB, LL_EVERYTHING, "DPS::TSS Breakpoint was re-inserted at %p\n",
-        //         m_address));
-
-        //     if (!VirtualProtect(baseAddress,
-        //                         CORDbg_BREAK_INSTRUCTION_SIZE,
-        //                         oldProt, &oldProt))
-        //     {
-        //         _ASSERTE(!"VirtualProtect of code page failed");
-        //         goto Error;
-        //     }
-        // }
-        m_fSSCompleted = true;
-        return DPOSS_USED_WITH_NO_EVENT;
-    }
-//Error:
-#endif // !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
-#endif // defined(TARGET_AMD64)
+#endif
     LOG((LF_CORDB,LL_INFO10000, "DPS::TSS: triggered, about to delete\n"));
 
     TRACE_FREE(this);
     Delete();
-    return DPOSS_DONT_CARE;
+    return false;
 }
 
 // * -------------------------------------------------------------------------
@@ -7523,7 +7480,7 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
 // We may have single-stepped over a return statement to land us up a frame.
 // Or we may have single-stepped through a method.
 // We never single-step into calls (we place a patch at the call destination).
-DPOSS_ACTION DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
+bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
 {
     LOG((LF_CORDB,LL_INFO10000,"DS::TSS this:0x%p, @ ip:0x%p\n", this, ip));
 
@@ -7544,7 +7501,7 @@ DPOSS_ACTION DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
     {
         LOG((LF_CORDB,LL_INFO10000, "DS::TSS: not in managed code, Returning false (case 0)!\n"));
         DisableSingleStep();
-        return DPOSS_DONT_CARE;
+        return false;
     }
 
     // If we EnC the method, we'll blast the function address,
@@ -7582,7 +7539,7 @@ DPOSS_ACTION DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
             EnableMethodEnter();
         }
         DisableSingleStep();
-        return DPOSS_DONT_CARE;
+        return false;
     }
 
     DisableAll();
@@ -7592,7 +7549,7 @@ DPOSS_ACTION DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
 
     if (DetectHandleLCGMethods((PCODE)ip, fd, &info))
     {
-        return DPOSS_DONT_CARE;
+        return false;
     }
 
     if (IsInRange(offset, m_range, m_rangeCount, &info) ||
@@ -7604,7 +7561,7 @@ DPOSS_ACTION DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
         EnableUnwind(m_fp);
 
         LOG((LF_CORDB,LL_INFO10000, "DS::TSS: Returning false Case 1!\n"));
-        return DPOSS_DONT_CARE;
+        return false;
     }
     else
     {
@@ -7617,10 +7574,10 @@ DPOSS_ACTION DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
         DebuggerMethodInfo * dmi = g_pDebugger->GetOrCreateMethodInfo(fd->GetModule(), fd->GetMemberDef());
 
         if ((dmi != NULL) && DetectHandleNonUserCode(&info, dmi))
-            return DPOSS_DONT_CARE;
+            return false;
 
         PrepareForSendEvent(ticket);
-        return DPOSS_USED_WITH_EVENT;
+        return true;
     }
 }
 
@@ -9236,18 +9193,18 @@ TP_RESULT DebuggerDataBreakpoint::TriggerPatch(DebuggerControllerPatch *patch, T
     }
 }
 
-DPOSS_ACTION DebuggerDataBreakpoint::TriggerSingleStep(Thread *thread, const BYTE *ip)
+bool DebuggerDataBreakpoint::TriggerSingleStep(Thread *thread, const BYTE *ip)
 {
     if (g_pDebugger->IsThreadAtSafePlace(thread))
     {
         LOG((LF_CORDB, LL_INFO10000, "D:DDBP: Finally safe for stopping, stop stepping\n"));
         this->DisableSingleStep();
-        return DPOSS_USED_WITH_EVENT;
+        return true;
     }
     else
     {
         LOG((LF_CORDB, LL_INFO10000, "D:DDBP: Still not safe for stopping, continue stepping\n"));
-        return DPOSS_DONT_CARE;
+        return false;
     }
 }
 

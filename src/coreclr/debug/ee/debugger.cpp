@@ -5462,7 +5462,9 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
     }
 
     bool retVal;
-    DebuggerPatchSkip *pDebuggerPatchSkip = nullptr;
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    DebuggerSteppingInfo debuggerSteppingInfo;
+#endif
 
     {
         // Don't stop for native debugging anywhere inside our inproc-Filters.
@@ -5471,7 +5473,11 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
         if (!CORDBUnrecoverableError(this))
         {
             retVal = DebuggerController::DispatchNativeException(exception, context,
-                                                               code, thread, &pDebuggerPatchSkip);
+                                                               code, thread
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                                                               ,&debuggerSteppingInfo
+#endif
+                                                               );
         }
         else
         {
@@ -5482,14 +5488,7 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
     if (retVal && fIsVEH)
     {
-        if (pDebuggerPatchSkip != nullptr && pDebuggerPatchSkip->IsInPlaceSingleStep())
-        {
-            SendSetThreadContextNeeded(context, pDebuggerPatchSkip);
-        }
-        else
-        {
-            SendSetThreadContextNeeded(context);
-        }
+        SendSetThreadContextNeeded(context, &debuggerSteppingInfo);
     }
 #endif
     return retVal;
@@ -16699,7 +16698,7 @@ void Debugger::StartCanaryThread()
 
 #ifndef DACCESS_COMPILE
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerPatchSkip *patchSkip)
+void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -16750,39 +16749,21 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerPatchSkip *p
     // adjust context size if the context pointer is not aligned with the buffer we allocated
     contextSize -= (DWORD)((BYTE*)pContext-(BYTE*)pBuffer);
 
-    bool fIsInPlaceSingleStep = patchSkip != nullptr && patchSkip->IsInPlaceSingleStep();
-    bool fSSCompleted = patchSkip != nullptr && patchSkip->IsSingleStepCompleted();
-    CORDB_ADDRESS_TYPE *patchSkipAddr = patchSkip != nullptr && fIsInPlaceSingleStep ? patchSkip->GetAddress() : nullptr;
-    _ASSERTE(!fIsInPlaceSingleStep || fSSCompleted || pContext->Rip == patchSkipAddr);
-
-    PRD_TYPE opcode = CORDbg_BREAK_INSTRUCTION;
-    if (fIsInPlaceSingleStep)
-    {
-        if (!fSSCompleted)
-        {
-            DebuggerControllerPatch *patch = DebuggerController::GetPatchTable()->GetPatch((CORDB_ADDRESS_TYPE *)pContext->Rip);
-            if (patch != NULL)
-            {
-                LOG((LF_CORDB, LL_INFO10000, "D::SSTCN Patch found at address 0x%p  opcode=0x%x\n", pContext->Rip, patch->opcode));
-                opcode = patch->opcode;
-            }
-        }
-        else
-        {
-            LOG((LF_CORDB, LL_INFO10000, "D::SSTCN Patch found at address 0x%p  opcode=0x%x  deleting patch\n", pContext->Rip, patch->opcode));
-            TRACE_FREE(patchSkip);
-            patchSkip->Delete();
-        }
-    }
-
     // send the context to the right side
     LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d..\n", contextFlags, contextSize));
     EX_TRY
     {
+        bool fIsInPlaceSingleStep = false;
+        PRD_TYPE opcode = CORDbg_BREAK_INSTRUCTION;
+        if (pDebuggerSteppingInfo)
+        {
+            fIsInPlaceSingleStep = pDebuggerSteppingInfo->IsInPlaceSingleStep();
+            opcode = pDebuggerSteppingInfo->GetOpcode();
+        }
         SetThreadContextNeededFlare((TADDR)pContext, 
                                     contextSize, 
-                                    patchSkipAddr, 
-                                    (((fSSCompleted&0x1)<<9)|((fIsInPlaceSingleStep&0x1)<<8)|(opcode&0xFF)));
+                                    fIsInPlaceSingleStep, 
+                                    opcode);
     }
     EX_CATCH
     {
@@ -16801,7 +16782,7 @@ BOOL Debugger::IsOutOfProcessSetContextEnabled()
     return m_fOutOfProcessSetContextEnabled;
 }
 #else
-void Debugger::SendSetThreadContextNeeded(CONTEXT* context)
+void Debugger::SendSetThreadContextNeeded(CONTEXT* context, DebuggerSteppingInfo *pDebuggerSteppingInfo)
 {
     _ASSERTE(!"SendSetThreadContextNeeded is not enabled on this platform");
 }

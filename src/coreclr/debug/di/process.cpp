@@ -981,6 +981,11 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_fAssertOnTargetInconsistency(false),
     m_runtimeOffsetsInitialized(false),
     m_writableMetadataUpdateMode(LegacyCompatPolicy)
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    ,
+    m_fExpectingSingleStep(false),
+    m_patchSkipAddr(NULL)
+#endif
 {
     _ASSERTE((m_id == 0) == (pShim == NULL));
 
@@ -11174,17 +11179,17 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     // 2. Duplicate the handle to the current process
 
     // lookup the CordbThread by thread ID, so that we can access the left-side thread handle
+    CordbThread * pThread = TryLookupOrCreateThreadByVolatileOSId(dwThreadId);
+    if (pThread == NULL)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Failed to find thread\n"));
+        ThrowHR(E_UNEXPECTED);
+    }
+
     IDacDbiInterface* pDAC = GetDAC();
     if (pDAC == NULL)
     {
         LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - DAC not initialized\n"));
-        ThrowHR(E_UNEXPECTED);
-    }
-    CordbThread * pThread = TryLookupOrCreateThreadByVolatileOSId(dwThreadId);
-
-    if (pThread == nullptr)
-    {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Failed to find thread\n"));
         ThrowHR(E_UNEXPECTED);
     }
 
@@ -11229,10 +11234,8 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     TADDR lsContextAddr = (TADDR)context.Rcx;
     DWORD contextSize = (DWORD)context.Rdx;
 
-    CORDB_ADDRESS_TYPE *patchSkipAddr = (CORDB_ADDRESS_TYPE*)context.R8;
-    bool fIsInPlaceSingleStep = (bool)((context.R9>>8)&0x1);
-    bool fSSCompleted = (bool)((context.R9>>9)&0x1);
-    PRD_TYPE opcode = (PRD_TYPE)(context.R9&0xFF);
+    bool fIsInPlaceSingleStep = (bool)context.R8;
+    PRD_TYPE opcode = (PRD_TYPE)context.R9&0xFF;
 
     if (contextSize == 0 || contextSize > sizeof(CONTEXT) + 25000)
     {
@@ -11345,6 +11348,11 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 
     if (fIsInPlaceSingleStep)
     {
+        CORDB_ADDRESS_TYPE *patchSkipAddr = (CORDB_ADDRESS_TYPE*)pFrameContext->Rip;
+
+        this->m_patchSkipAddr = patchSkipAddr;
+        this->m_fExpectingSingleStep = true;
+
         LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - address=0x%p opcode=0x%x\n", patchSkipAddr, opcode));
         EX_TRY
         {
@@ -11354,14 +11362,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         EX_CATCH_HRESULT(hr);
         SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
 
-        if (!fSSCompleted)
-        {
-            pThread->InternalSuspendOtherThreads(&m_userThreads);
-        }
-        else
-        {
-            pThread->InternalResumeOtherThreads();
-        }
+        pThread->InternalSuspendOtherThreads(&m_userThreads);
     }
 #else
     #error Platform not supported
@@ -11622,6 +11623,30 @@ HRESULT CordbProcess::Filter(
 
             HandleSetThreadContextNeeded(dwThreadId);
             *pContinueStatus = DBG_CONTINUE;
+        }
+        else if (dwFirstChance && pRecord->ExceptionCode == STATUS_SINGLE_STEP && m_fExpectingSingleStep)
+        {
+            // we are expecting a single step exception
+            CordbThread * pThread = TryLookupOrCreateThreadByVolatileOSId(dwThreadId);
+            if (pThread != NULL)
+            {
+                EX_TRY
+                {
+                    BYTE opcode = CORDbg_BREAK_INSTRUCTION;
+                    TargetBuffer tb((void*)m_patchSkipAddr, sizeof(BYTE));
+                    SafeWriteBuffer(tb, (const BYTE*)&opcode); // throws
+                }
+                EX_CATCH_HRESULT(hr);
+                SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
+
+                m_fExpectingSingleStep = false;
+                m_patchSkipAddr = NULL;
+
+                pThread->InternalResumeOtherThreads();
+            }
+
+            // let the normal debugger stepper logic execute for this single step
+            *pContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
         }
 #endif
     }

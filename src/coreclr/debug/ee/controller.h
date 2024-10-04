@@ -1072,8 +1072,12 @@ class DebuggerController
     static bool DispatchNativeException(EXCEPTION_RECORD *exception,
                                         CONTEXT *context,
                                         DWORD code,
-                                        Thread *thread,
-                                        DebuggerPatchSkip **ppDebuggerPatchSkip = nullptr);
+                                        Thread *thread
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                                        ,
+                                        DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL
+#endif
+                                        );
 
     static bool DispatchUnwind(Thread *thread,
                                MethodDesc *fd, DebuggerJitInfo * pDJI, SIZE_T offset,
@@ -1110,23 +1114,28 @@ class DebuggerController
                                 CONTEXT *context,
                                 DebuggerControllerQueue *pDcq,
                                 SCAN_TRIGGER stWhat,
-                                TP_RESULT *pTpr,
-#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
-                                DebuggerPatchSkip **ppDps
-#endif
-                                );
+                                TP_RESULT *pTpr);
 
 
     static DebuggerPatchSkip *ActivatePatchSkip(Thread *thread,
                                                 const BYTE *eip,
-                                                BOOL fForEnC);
+                                                BOOL fForEnC
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                                                ,
+                                                DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL
+#endif
+                                                );
 
 
     static DPOSS_ACTION DispatchPatchOrSingleStep(Thread *thread,
                                           CONTEXT *context,
                                           CORDB_ADDRESS_TYPE *ip,
-                                          SCAN_TRIGGER which,
-                                          DebuggerPatchSkip **ppDebuggerPatchSkip = nullptr);
+                                          SCAN_TRIGGER which
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                                          ,
+                                          DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL
+#endif
+                                          );
 
 
     static int GetNumberOfPatches()
@@ -1375,7 +1384,7 @@ public:
     // Dispatched when we get a SingleStep exception on this thread.
     // Return true if we want SendEvent to get called.
 
-    virtual DPOSS_ACTION TriggerSingleStep(Thread *thread, const BYTE *ip);
+    virtual bool TriggerSingleStep(Thread *thread, const BYTE *ip);
 
 
     // Dispatched to notify the controller when we are going to a filter/handler
@@ -1456,6 +1465,23 @@ private:
 
 #if !defined(DACCESS_COMPILE)
 
+// this structure stores useful information about single-stepping over a call instruction
+// it is used to communicate the patch skip opcode and current state between the controller on left side and HandleSetThreadContextNeeded on the right side
+class DebuggerSteppingInfo
+{
+    bool fIsInPlaceSingleStep = false;
+    PRD_TYPE opcode = 0;
+
+public:
+    bool IsInPlaceSingleStep() { return fIsInPlaceSingleStep; }
+    PRD_TYPE GetOpcode() { return opcode; }
+    void EnableInPlaceSingleStepOverCall(PRD_TYPE opcode)
+    {
+        this->fIsInPlaceSingleStep = true;
+        this->opcode = opcode;
+    }
+};
+
 /* ------------------------------------------------------------------------- *
  * DebuggerPatchSkip routines
  * ------------------------------------------------------------------------- */
@@ -1469,7 +1495,7 @@ class DebuggerPatchSkip : public DebuggerController
 
     ~DebuggerPatchSkip();
 
-    DPOSS_ACTION TriggerSingleStep(Thread *thread,
+    bool TriggerSingleStep(Thread *thread,
                            const BYTE *ip);
 
     TP_RESULT TriggerExceptionHook(Thread *thread, CONTEXT * pContext,
@@ -1493,7 +1519,6 @@ class DebuggerPatchSkip : public DebuggerController
     InstructionAttribute     m_instrAttrib;      // info about the instruction being skipped over
 #if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
     bool                     m_fInPlaceSS;       // is this an in-place single-step instruction?
-    bool                     m_fSSCompleted;     // true if the single step has completed
 #endif
 #ifndef FEATURE_EMULATE_SINGLESTEP
     // this is shared among all the skippers and the controller. see the comments
@@ -1507,10 +1532,16 @@ public:
         BYTE* patchBypass = m_pSharedPatchBypassBuffer->PatchBypass;
         return (CORDB_ADDRESS_TYPE *)patchBypass;
     }
-#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
-    BOOL IsInPlaceSingleStep() { return m_instrAttrib.m_fIsCall && m_fInPlaceSS; } // only in-place single steps over call intructions are supported at this time
-    BOOL IsSingleStepCompleted() { return m_fSSCompleted; }
-    CORDB_ADDRESS_TYPE* GetAddress() { return m_address; }
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    BOOL IsInPlaceSingleStep() 
+    { 
+        // only in-place single steps over call intructions are supported at this time
+#ifndef FEATURE_EMULATE_SINGLESTEP
+        return m_instrAttrib.m_fIsCall && m_fInPlaceSS; 
+#else
+#error single step emulation not supported with out of process set thread context
+#endif
+    }
 #endif
 #endif // !FEATURE_EMULATE_SINGLESTEP
 };
@@ -1650,7 +1681,7 @@ protected:
     TP_RESULT TriggerPatch(DebuggerControllerPatch *patch,
                       Thread *thread,
                       TRIGGER_WHY tyWhy);
-    DPOSS_ACTION TriggerSingleStep(Thread *thread, const BYTE *ip);
+    bool TriggerSingleStep(Thread *thread, const BYTE *ip);
     void TriggerUnwind(Thread *thread, MethodDesc *fd, DebuggerJitInfo * pDJI,
                       SIZE_T offset, FramePointer fp,
                       CorDebugStepReason unwindReason);
@@ -1837,7 +1868,7 @@ public:
 
     virtual TP_RESULT TriggerPatch(DebuggerControllerPatch *patch, Thread *thread,  TRIGGER_WHY tyWhy);
 
-    virtual DPOSS_ACTION TriggerSingleStep(Thread *thread, const BYTE *ip);
+    virtual bool TriggerSingleStep(Thread *thread, const BYTE *ip);
 
     bool SendEvent(Thread *thread, bool fInterruptedBySetIp)
     {

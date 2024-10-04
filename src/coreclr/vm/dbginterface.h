@@ -19,6 +19,8 @@ typedef DPTR(struct ICorDebugInfo::NativeVarInfo) PTR_NativeVarInfo;
 
 typedef void (*FAVORCALLBACK)(void *);
 
+class DebuggerSteppingInfo;
+
 //
 // The purpose of this object is to serve as an entry point to the
 // debugger, which used to reside in a separate DLL.
@@ -193,7 +195,7 @@ public:
 
 
     // Used by EditAndContinueModule::FixContextAndResume
-    virtual void SendSetThreadContextNeeded(CONTEXT *context, DebuggerPatchSkip *patchSkip = nullptr) = 0;
+    virtual void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = nullptr) = 0;
     virtual BOOL IsOutOfProcessSetContextEnabled() = 0;
 #endif // FEATURE_METADATA_UPDATER
 
