@@ -11,6 +11,8 @@
 // where D is the specialization of cdac_data that will expose the information. Then provide a 
 // specialization cdac_data<D> with constexpr members exposing the information.
 //
+// Note, in the common case type D will be type C.
+//
 // For example, if the offset of field F in class C is required:
 //
 //      class C {
