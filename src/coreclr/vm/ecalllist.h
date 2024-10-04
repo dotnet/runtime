@@ -86,10 +86,6 @@ FCFuncStart(gExceptionFuncs)
     FCFuncElement("GetExceptionCount", ExceptionNative::GetExceptionCount)
 FCFuncEnd()
 
-FCFuncStart(gTypedReferenceFuncs)
-    FCFuncElement("ComputeOffsetForTypedReference", ReflectionInvocation::ComputeOffsetForTypedReference)
-FCFuncEnd()
-
 FCFuncStart(gSystem_Type)
     FCFuncElement("GetTypeFromHandleUnsafe", RuntimeTypeHandle::GetRuntimeType)
 FCFuncEnd()
@@ -451,7 +447,6 @@ FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
 FCClassElement("Thread", "System.Threading", gThreadFuncs)
 FCClassElement("ThreadPool", "System.Threading", gThreadPoolFuncs)
 FCClassElement("Type", "System", gSystem_Type)
-FCClassElement("TypedReference", "System", gTypedReferenceFuncs)
 
 #undef FCFuncElement
 #undef FCFuncElementSig

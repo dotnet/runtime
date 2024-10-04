@@ -284,6 +284,7 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc * pMet
 extern "C" void QCALLTYPE RuntimeMethodHandle_GetTypicalMethodDefinition(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod);
 extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod);
 extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod);
+
 class RuntimeFieldHandle
 {
 public:

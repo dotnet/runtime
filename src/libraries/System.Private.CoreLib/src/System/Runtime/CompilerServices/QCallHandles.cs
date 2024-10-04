@@ -34,6 +34,37 @@ namespace System.Runtime.CompilerServices
         }
     }
 
+    internal unsafe ref struct ByteRef
+    {
+        private ref byte _ref;
+
+        internal ref byte Get()
+        {
+            return ref _ref;
+        }
+
+        internal ByteRefOnStack Create()
+        {
+            // This is valid because the ByteRef is ByRefLike (stack allocated)
+            // and the ByteRefOnStack is expected to have a shorter lifetime
+            // than this ByteRef instance.
+            fixed (ByteRef* pThis = &this)
+            {
+                return new ByteRefOnStack(pThis);
+            }
+        }
+    }
+
+    // Wrapper for address of a byref to byte variable on stack
+    internal unsafe ref struct ByteRefOnStack
+    {
+        private readonly ByteRef* _pByteRef;
+        internal ByteRefOnStack(ByteRef* pByteRef)
+        {
+            _pByteRef = pByteRef;
+        }
+    }
+
     // Wrapper for StackCrawlMark
     internal unsafe ref struct StackCrawlMarkHandle
     {

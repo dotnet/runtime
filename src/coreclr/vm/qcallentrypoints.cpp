@@ -192,6 +192,7 @@ static const Entry s_QCall[] =
     DllImportEntry(TypeBuilder_SetPInvokeData)
     DllImportEntry(TypeBuilder_SetConstantValue)
     DllImportEntry(TypeBuilder_DefineCustomAttribute)
+    DllImportEntry(TypedReference_GetFieldDataReference)
     DllImportEntry(MdUtf8String_EqualsCaseInsensitive)
     DllImportEntry(Array_CreateInstance)
     DllImportEntry(Array_GetElementConstructorEntrypoint)

@@ -1301,20 +1301,6 @@ FCIMPL0(FC_BOOL_RET, ReflectionInvocation::TryEnsureSufficientExecutionStack)
 }
 FCIMPLEND
 
-FCIMPL2(INT32, ReflectionInvocation::ComputeOffsetForTypedReference, INT32 fldsLen, FieldDesc** flds)
-{
-    FCALL_CONTRACT;
-
-    DWORD offset = 0;
-    for (INT32 i = 0; i < fldsLen; i++)
-    {
-        FieldDesc* pField = flds[i];
-        offset += pField->GetOffset();
-    }
-    return (INT32)offset;
-}
-FCIMPLEND
-
 #ifdef FEATURE_COMINTEROP
 extern "C" void QCALLTYPE ReflectionInvocation_InvokeDispMethod(
     QCall::ObjectHandleOnStack type,
@@ -1864,6 +1850,25 @@ extern "C" int32_t QCALLTYPE ReflectionInvocation_SizeOf(QCall::TypeHandle pType
         return -1;
 
     return handle.GetSize();
+}
+
+extern "C" void QCALLTYPE TypedReference_GetFieldDataReference(FieldDesc* pField, QCall::ObjectHandleOnStack instance, QCall::ByteRefOnStack offset)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(pField != NULL);
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    _ASSERTE(instance.Get() != NULL);
+
+    offset.Set((BYTE*)pField->GetInstanceAddress(instance.Get()));
+
+    END_QCALL;
 }
 
 extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(

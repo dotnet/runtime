@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -16,20 +17,28 @@ namespace System
         #pragma warning restore CA1823
         #endregion
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static TypedReference MakeTypedReferenceInternal(object target, IntPtr[] fields, RuntimeType lastFieldType)
+        private static unsafe TypedReference MakeTypedReference(ref byte target, RuntimeType lastFieldType)
         {
-            TypedReference result = default;
-            unsafe
+            TypedReference typedRef = default;
             {
-                InternalMakeTypedReference(&result, target, fields, lastFieldType);
+                InternalMakeTypedReference(&typedRef, ref target, lastFieldType._impl.Value);
             }
-            return result;
+            return typedRef;
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern ref byte GetFieldDataReference(object target, RuntimeFieldInfo field);
+
+        private static ref byte GetFieldDataReference(ref byte target, RuntimeFieldInfo field)
+        {
+            Debug.Assert(!Unsafe.IsNullRef(ref target));
+            int offset = field.GetFieldOffset();
+            return ref Unsafe.AddByteOffset(ref target, offset);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         // reference to TypedReference is banned, so have to pass result as pointer
-        private static extern unsafe void InternalMakeTypedReference(void* result, object target, IntPtr[] flds, RuntimeType lastFieldType);
+        private static extern unsafe void InternalMakeTypedReference(void* result, ref byte target, IntPtr lastFieldType);
 
         public static unsafe object? ToObject(TypedReference value)
         {

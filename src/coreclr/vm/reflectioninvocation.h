@@ -46,8 +46,6 @@ class ReflectionInvocation
 {
 public:
     static FCDECL0(FC_BOOL_RET, TryEnsureSufficientExecutionStack);
-
-    static FCDECL2(INT32, ComputeOffsetForTypedReference, INT32 fldsLen, FieldDesc** flds);
 };
 
 extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD);
@@ -89,5 +87,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
 extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QCall::ObjectHandleOnStack pReturnValues, QCall::ObjectHandleOnStack pReturnNames, BOOL fGetNames);
 
 extern "C" int32_t QCALLTYPE ReflectionInvocation_SizeOf(QCall::TypeHandle pType);
+
+extern "C" void QCALLTYPE TypedReference_GetFieldDataReference(FieldDesc* pField, QCall::ObjectHandleOnStack instance, QCall::ByteRefOnStack offset);
 
 #endif // _REFLECTIONINVOCATION_H_

@@ -23,7 +23,8 @@ namespace System
                 throw new ArgumentException(SR.Arg_ArrayZeroError, nameof(flds));
             }
 
-            IntPtr[] fields = new IntPtr[flds.Length];
+            ref byte targetRef = ref Unsafe.NullRef<byte>();
+
             // For proper handling of Nullable<T> don't change GetType() to something like 'IsAssignableFrom'
             // Currently we can't make a TypedReference to fields of Nullable<T>, which is fine.
             RuntimeType targetType = (RuntimeType)target.GetType();
@@ -51,14 +52,18 @@ namespace System
                     throw new MissingMemberException(SR.MissingMemberNestErr);
                 }
 
-                fields[i] = field.FieldHandle.Value;
+                if (i == 0)
+                {
+                    targetRef = ref GetFieldDataReference(target, field);
+                }
+                else
+                {
+                    targetRef = ref GetFieldDataReference(ref targetRef, field);
+                }
                 targetType = fieldType;
             }
 
-            TypedReference res = MakeTypedReferenceInternal(target, fields, targetType);
-            GC.KeepAlive(flds); // Ensure FieldInfos are alive for passed in FieldDescs.
-            GC.KeepAlive(targetType);
-            return res;
+            return MakeTypedReference(ref targetRef, targetType);
         }
 
         public override int GetHashCode()
