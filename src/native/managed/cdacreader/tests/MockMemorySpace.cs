@@ -54,6 +54,7 @@ internal unsafe static class MockMemorySpace
             _targetTestHelpers = targetTestHelpers;
         }
 
+        internal TargetTestHelpers TargetTestHelpers => _targetTestHelpers;
 
         internal Span<byte> BorrowAddressRange(ulong address, int length)
         {
