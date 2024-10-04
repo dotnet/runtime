@@ -700,6 +700,9 @@ if (CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_TARGET_UNIX)
+  # Enable PAC
+  add_compile_options(-mbranch-protection=pac-ret)
+
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_UNIX>)
   # Contracts are disabled on UNIX.
   add_definitions(-DDISABLE_CONTRACTS)
