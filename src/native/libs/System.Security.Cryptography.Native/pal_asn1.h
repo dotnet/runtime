@@ -50,11 +50,6 @@ Direct shim to ASN1_OBJECT_free.
 PALEXPORT void CryptoNative_Asn1ObjectFree(ASN1_OBJECT* a);
 
 /*
-Shims the d2i_ASN1_BIT_STRING method and makes it easier to invoke from managed code.
-*/
-PALEXPORT ASN1_BIT_STRING* CryptoNative_DecodeAsn1BitString(const uint8_t* buf, int32_t len);
-
-/*
 Direct shim to ASN1_BIT_STRING_free.
 */
 PALEXPORT void CryptoNative_Asn1BitStringFree(ASN1_STRING* a);

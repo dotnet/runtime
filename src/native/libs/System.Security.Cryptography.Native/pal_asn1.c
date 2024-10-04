@@ -61,18 +61,6 @@ void CryptoNative_Asn1ObjectFree(ASN1_OBJECT* a)
     ASN1_OBJECT_free(a);
 }
 
-ASN1_BIT_STRING* CryptoNative_DecodeAsn1BitString(const uint8_t* buf, int32_t len)
-{
-    if (!buf || !len)
-    {
-        return NULL;
-    }
-
-    ERR_clear_error();
-
-    return d2i_ASN1_BIT_STRING(NULL, &buf, len);
-}
-
 void CryptoNative_Asn1BitStringFree(ASN1_STRING* a)
 {
     ASN1_BIT_STRING_free(a);
