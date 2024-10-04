@@ -8175,13 +8175,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        CORINFO_CLASS_HANDLE moreExactBaseClass = baseClass;
-        if (objClass != NO_CLASS_HANDLE)
-        {
-            moreExactBaseClass = objClass;
-        }
-
-        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, moreExactBaseClass, pContextHandle);
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, objClass, pContextHandle);
         return;
     }
 
