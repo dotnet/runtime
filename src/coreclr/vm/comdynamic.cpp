@@ -894,9 +894,6 @@ void UpdateRuntimeStateForAssemblyCustomAttribute(Module* pModule, mdToken tkCus
         DomainAssembly* pDomainAssembly = pAssembly->GetDomainAssembly();
 
         DWORD actualFlags;
-        actualFlags =  ((DWORD)pDomainAssembly->GetDebuggerInfoBits() & mask) | flags;
-        pDomainAssembly->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)actualFlags);
-
         actualFlags = ((DWORD)pAssembly->GetDebuggerInfoBits() & mask) | flags;
         pAssembly->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)actualFlags);
 

@@ -1510,18 +1510,21 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // [Out] results of resolveVirtualMethod.
     // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
     //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-    // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
     // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
     // - details on the computation done by the jit host
     // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targeting an R2R image
     //   use it as the parameter to getCallInfo
+    // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
+    // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
+    //     (in which case the method handle and context will be a generic method)
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
-    bool                            requiresInstMethodTableArg;
     CORINFO_CONTEXT_HANDLE          exactContext;
     CORINFO_DEVIRTUALIZATION_DETAIL detail;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedMethod;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedUnboxedMethod;
+    bool                            requiresInstMethodTableArg;
+    bool                            wasArrayInterfaceDevirt;
 };
 
 //----------------------------------------------------------------------------
@@ -2120,6 +2123,12 @@ public:
     // Given T, return the type of the default EqualityComparer<T>.
     // Returns null if the type can't be determined exactly.
     virtual CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
+            CORINFO_CLASS_HANDLE elemType
+            ) = 0;
+
+    // Given T, return the type of the SZArrayHelper enumerator
+    // Returns null if the type can't be determined exactly.
+    virtual CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(
             CORINFO_CLASS_HANDLE elemType
             ) = 0;
 

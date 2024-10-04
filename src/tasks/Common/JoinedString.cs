@@ -12,12 +12,12 @@ namespace JoinedString;
 
 internal static class JoinedStringExtensions
 {
-    public static ConcatinatedString Join(this IEnumerable<string> list, string separator)
-    => ConcatinatedString.Join(list, separator);
-    public static ConcatinatedString Join<T>(this IEnumerable<T> list, string separator, Func<T, string> formatter)
-    => ConcatinatedString.Join(list, separator, formatter);
-    public static ConcatinatedString Join<T>(this IEnumerable<T> list, string separator, Func<T, int, string> formatter)
-    => ConcatinatedString.Join(list, separator, formatter);
+    public static ConcatenatedString Join(this IEnumerable<string> list, string separator)
+    => ConcatenatedString.Join(list, separator);
+    public static ConcatenatedString Join<T>(this IEnumerable<T> list, string separator, Func<T, string> formatter)
+    => ConcatenatedString.Join(list, separator, formatter);
+    public static ConcatenatedString Join<T>(this IEnumerable<T> list, string separator, Func<T, int, string> formatter)
+    => ConcatenatedString.Join(list, separator, formatter);
 
     public static JoinedList<T> Join<T>(this IList<T> list, string separator)
     => new JoinedList<T>(list, separator, (item, _) => $"{item}");
@@ -56,23 +56,23 @@ internal interface IStringSegments {
     public IEnumerator<string> GetEnumerator();
 }
 
-internal sealed class ConcatinatedString : IStringSegments, IEnumerable<string>
+internal sealed class ConcatenatedString : IStringSegments, IEnumerable<string>
 {
     private readonly IEnumerable<string> _values;
 
-    public ConcatinatedString(IEnumerable<string> values)
+    public ConcatenatedString(IEnumerable<string> values)
     {
         _values = values;
     }
 
-    public static ConcatinatedString Join(IEnumerable<string> values, string separator)
-        => new ConcatinatedString(JoinInternal(values, separator, (x, _) => x));
+    public static ConcatenatedString Join(IEnumerable<string> values, string separator)
+        => new ConcatenatedString(JoinInternal(values, separator, (x, _) => x));
 
-    public static ConcatinatedString Join<T>(IEnumerable<T> values, string separator, Func<T, string> format)
-        => new ConcatinatedString(JoinInternal(values, separator, (x, _) => format(x)));
+    public static ConcatenatedString Join<T>(IEnumerable<T> values, string separator, Func<T, string> format)
+        => new ConcatenatedString(JoinInternal(values, separator, (x, _) => format(x)));
 
-    public static ConcatinatedString Join<T>(IEnumerable<T> values, string separator, Func<T, int, string> format)
-        => new ConcatinatedString(JoinInternal(values, separator, format));
+    public static ConcatenatedString Join<T>(IEnumerable<T> values, string separator, Func<T, int, string> format)
+        => new ConcatenatedString(JoinInternal(values, separator, format));
 
     private static IEnumerable<string> JoinInternal<T>(IEnumerable<T> values, string separator, Func<T, int, string> format)
     {
