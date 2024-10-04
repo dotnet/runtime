@@ -105,6 +105,9 @@ CORINFO_CLASS_HANDLE getDefaultComparerClass(
 CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
           CORINFO_CLASS_HANDLE elemType) override;
 
+CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(
+          CORINFO_CLASS_HANDLE elemType) override;
+
 void expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_METHOD_HANDLE callerHandle,
