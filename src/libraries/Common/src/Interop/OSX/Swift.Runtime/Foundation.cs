@@ -208,9 +208,24 @@ namespace Swift
 
         internal static unsafe void* GetConformanceDescriptor(string symbol)
         {
-            IntPtr handle = NativeLibrary.Load(Foundation.Path);
-            void* conformanceDescriptor = NativeLibrary.GetExport(handle, symbol).ToPointer();
-            return conformanceDescriptor;
+            IntPtr handle = IntPtr.Zero;
+            try
+            {
+                handle = NativeLibrary.Load(Foundation.Path);
+                void* conformanceDescriptor = NativeLibrary.GetExport(handle, symbol).ToPointer();
+                return conformanceDescriptor;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to get conformance descriptor for symbol: {symbol}", ex);
+            }
+            finally
+            {
+                if (handle != IntPtr.Zero)
+                {
+                    NativeLibrary.Free(handle);
+                }
+            }
         }
     }
 }
