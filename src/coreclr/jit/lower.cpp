@@ -2452,10 +2452,8 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
             GenTree* srcAddr = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
             // TODO-CQ: Try to create an addressing mode
-            GenTreeIndir* srcBlk = comp->gtNewIndir(TYP_STRUCT, srcAddr);
-            srcBlk->SetContained();
-
-            GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
+            GenTreeIndir* srcBlk   = comp->gtNewIndir(TYP_STRUCT, srcAddr);
+            GenTreeBlk*   storeBlk = new (comp, GT_STORE_BLK)
                 GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, dstAddr, srcBlk, comp->typGetBlkLayout((unsigned)cnsSize));
             storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
 
