@@ -12,6 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public class RangeSectionMapTests
 {
+    const ulong DefaultTopLevelAddress = 0x0000_1000u; // arbitrary
     const int EntriesPerMapLevel = 256; // for now its fixed at 256, see codeman.h RangeSectionMap::entriesPerMapLevel
     const int BitsPerLevel = 8;
     internal class RSLATestTarget : TestPlaceholderTarget
@@ -29,21 +30,29 @@ public class RangeSectionMapTests
 
     internal class Builder
     {
-        const ulong topLevelAddress = 0x0000_1000u; // arbitrary
+        private readonly TargetPointer _topLevelAddress;
         private readonly MockMemorySpace.Builder _builder;
         private readonly TargetTestHelpers _targetTestHelpers;
         private readonly int _levels;
         private readonly int _maxSetBit;
         private ulong _nextMapAddress;
-        public Builder(MockTarget.Architecture arch)
+        public Builder(MockTarget.Architecture arch) : this (DefaultTopLevelAddress, new MockMemorySpace.Builder (new TargetTestHelpers(arch)))
         {
             _targetTestHelpers = new TargetTestHelpers(arch);
             _builder = new MockMemorySpace.Builder(_targetTestHelpers);
+        }
+
+        public Builder (TargetPointer topLevelAddress, MockMemorySpace.Builder builder)
+        {
+            _topLevelAddress = topLevelAddress;
+            _builder = builder;
+            _targetTestHelpers = builder.TargetTestHelpers;
+            var arch = _targetTestHelpers.Arch;
             _levels = arch.Is64Bit ? 5 : 2;
             _maxSetBit = arch.Is64Bit ? 56 : 31; // 0 indexed
             MockMemorySpace.HeapFragment top = new MockMemorySpace.HeapFragment
             {
-                Address = new TargetPointer(topLevelAddress),
+                Address = topLevelAddress,
                 Data = new byte[EntriesPerMapLevel * _targetTestHelpers.PointerSize],
                 Name = $"Map Level {_levels}"
             };
@@ -51,7 +60,7 @@ public class RangeSectionMapTests
             _builder.AddHeapFragment(top);
         }
 
-        public TargetPointer TopLevel => topLevelAddress;
+        public TargetPointer TopLevel => _topLevelAddress;
 
         private int EffectiveBitsForLevel(ulong address, int level)
         {
