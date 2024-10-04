@@ -20,8 +20,7 @@ namespace System.Linq
                     g = g._next;
                     Debug.Assert(g is not null);
 
-                    g.Trim();
-                    array[index] = resultSelector(g._key, g._elements);
+                    array[index] = resultSelector(g._key, g);
                     ++index;
                 }
                 while (g != _lastGrouping);

@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq
 {
@@ -173,8 +174,7 @@ namespace System.Linq
             ValidItem:
                 _g = _g._next;
                 Debug.Assert(_g is not null);
-                _g.Trim();
-                _current = _resultSelector(_g.Key, _g._elements);
+                _current = _resultSelector(_g.Key, _g);
                 return true;
             }
         }
@@ -229,8 +229,7 @@ namespace System.Linq
             ValidItem:
                 _g = _g._next;
                 Debug.Assert(_g is not null);
-                _g.Trim();
-                _current = _resultSelector(_g.Key, _g._elements);
+                _current = _resultSelector(_g.Key, _g);
                 return true;
             }
         }
@@ -335,7 +334,7 @@ namespace System.Linq
                 Dispose();
                 return false;
 
-                ValidItem:
+            ValidItem:
                 _g = _g._next;
                 Debug.Assert(_g is not null);
                 _current = _g;
@@ -355,8 +354,9 @@ namespace System.Linq
     {
         internal readonly TKey _key;
         internal readonly int _hashCode;
-        internal TElement[] _elements;
-        internal int _count;
+        private GroupingElementArray<TElement> _inlineElements;
+        private TElement[]? _elements;
+        private int _count;
         internal Grouping<TKey, TElement>? _hashNext;
         internal Grouping<TKey, TElement>? _next;
 
@@ -364,32 +364,47 @@ namespace System.Linq
         {
             _key = key;
             _hashCode = hashCode;
-            _elements = new TElement[1];
         }
 
         internal void Add(TElement element)
         {
-            if (_elements.Length == _count)
+            Span<TElement> destination;
+
+            if (_elements is null)
             {
-                Array.Resize(ref _elements, checked(_count * 2));
+                destination = _inlineElements;
+
+                if (_count == GroupingElementArray<TElement>.Size)
+                {
+                    _elements = new TElement[checked(_count * 2)];
+                    destination.CopyTo(_elements);
+                    destination = _elements;
+                }
+            }
+            else
+            {
+                if (_elements.Length == _count)
+                {
+                    Array.Resize(ref _elements, checked(_count * 2));
+                }
+
+                destination = _elements;
             }
 
-            _elements[_count] = element;
-            _count++;
-        }
-
-        internal void Trim()
-        {
-            if (_elements.Length != _count)
-            {
-                Array.Resize(ref _elements, _count);
-            }
+            destination[_count++] = element;
         }
 
         public IEnumerator<TElement> GetEnumerator()
         {
             Debug.Assert(_count > 0, "A grouping should only have been created if an element was being added to it.");
-            return new PartialArrayEnumerator<TElement>(_elements, _count);
+            if (_elements is null)
+            {
+                return new GroupingElementArrayEnumerator<TElement>(_inlineElements, _count);
+            }
+            else
+            {
+                return new PartialArrayEnumerator<TElement>(_elements, _count);
+            }
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -404,14 +419,29 @@ namespace System.Linq
 
         void ICollection<TElement>.Clear() => ThrowHelper.ThrowNotSupportedException();
 
-        bool ICollection<TElement>.Contains(TElement item) => Array.IndexOf(_elements, item, 0, _count) >= 0;
+        bool ICollection<TElement>.Contains(TElement item)
+        {
+            if (_elements is null)
+            {
+                return IndexOfInlineElements(item) >= 0;
+            }
 
-        void ICollection<TElement>.CopyTo(TElement[] array, int arrayIndex) =>
-            Array.Copy(_elements, 0, array, arrayIndex, _count);
+            return Array.IndexOf(_elements, item) >= 0;
+        }
+
+        void ICollection<TElement>.CopyTo(TElement[] array, int arrayIndex) => GetElements().CopyTo(array.AsSpan(arrayIndex));
 
         bool ICollection<TElement>.Remove(TElement item) => ThrowHelper.ThrowNotSupportedException_Boolean();
 
-        int IList<TElement>.IndexOf(TElement item) => Array.IndexOf(_elements, item, 0, _count);
+        int IList<TElement>.IndexOf(TElement item)
+        {
+            if (_elements is null)
+            {
+                return IndexOfInlineElements(item);
+            }
+
+            return Array.IndexOf(_elements, item, 0, _count);
+        }
 
         void IList<TElement>.Insert(int index, TElement item) => ThrowHelper.ThrowNotSupportedException();
 
@@ -426,10 +456,74 @@ namespace System.Linq
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
                 }
 
-                return _elements[index];
+                return GetElements()[index];
             }
 
             set => ThrowHelper.ThrowNotSupportedException();
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<TElement> GetElements()
+        {
+            ReadOnlySpan<TElement> buffer = _elements is null ? _inlineElements : _elements;
+            return buffer.Slice(0, _count);
+        }
+
+        private int IndexOfInlineElements(TElement item)
+        {
+            ReadOnlySpan<TElement> inlineElements = ((ReadOnlySpan<TElement>)_inlineElements).Slice(0, _count);
+            for (int i = 0; i < inlineElements.Length; i++)
+            {
+                if (EqualityComparer<TElement>.Default.Equals(inlineElements[i], item))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
     }
+
+    [InlineArray(GroupingElementArray<int>.Size)]
+    internal struct GroupingElementArray<TElement>
+    {
+        public const int Size = 3;
+        private TElement _element0;
+    }
+
+    internal sealed class GroupingElementArrayEnumerator<TElement> : IEnumerator<TElement>
+    {
+        private GroupingElementArray<TElement> _array;
+        private int _count;
+        private int _index;
+
+        public GroupingElementArrayEnumerator(GroupingElementArray<TElement> array, int count)
+        {
+            Debug.Assert((uint)_count <= GroupingElementArray<TElement>.Size);
+            _array = array;
+            _count = count;
+            _index = -1;
+        }
+
+        public bool MoveNext()
+        {
+            if (_index + 1 < _count)
+            {
+                _index++;
+                return true;
+            }
+
+            return false;
+        }
+
+        public TElement Current => _array[_index];
+
+        object? IEnumerator.Current => Current;
+
+        public void Dispose() { }
+
+        public void Reset() => _index = -1;
+    }
+
 }

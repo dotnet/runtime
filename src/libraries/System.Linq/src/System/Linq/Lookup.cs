@@ -164,8 +164,7 @@ namespace System.Linq
                     g = g._next;
 
                     Debug.Assert(g is not null);
-                    g.Trim();
-                    span[index] = resultSelector(g._key, g._elements);
+                    span[index] = resultSelector(g._key, g);
                     ++index;
                 }
                 while (g != _lastGrouping);
@@ -186,8 +185,7 @@ namespace System.Linq
                     g = g._next;
 
                     Debug.Assert(g is not null);
-                    g.Trim();
-                    yield return resultSelector(g._key, g._elements);
+                    yield return resultSelector(g._key, g);
                 }
                 while (g != _lastGrouping);
             }
