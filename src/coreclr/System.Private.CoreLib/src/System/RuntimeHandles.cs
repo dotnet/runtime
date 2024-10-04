@@ -538,7 +538,7 @@ namespace System
             void* name;
             if (!GetUtf8NameInternal(th.AsMethodTable(), &name))
             {
-                throw new ArgumentException(SR.Arg_InvalidHandle);
+                throw new BadImageFormatException();
             }
 
             var nameUtf8 = new MdUtf8String(name);
