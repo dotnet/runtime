@@ -27,16 +27,13 @@ internal sealed class NibbleMap
 
     public static NibbleMap Create(Target target)
     {
-        uint codeHeaderSize = (uint)target.PointerSize;
-        return new NibbleMap(target, codeHeaderSize);
+        return new NibbleMap(target);
     }
 
     private readonly Target _target;
-    private readonly uint _codeHeaderSize;
-    private NibbleMap(Target target, uint codeHeaderSize)
+    private NibbleMap(Target target)
     {
         _target = target;
-        _codeHeaderSize = codeHeaderSize;
     }
 
     // Shift the next nibble into the least significant position.
