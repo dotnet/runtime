@@ -326,30 +326,23 @@ struct MethodTableAuxiliaryData
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORRECT INITIAL FLAGS.
 
-        enum_flag_Initialized             = 0x0001,
-        enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
-        enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x0004,     // Is any field type or sub field type overridden Equals or GetHashCode
-
+        enum_flag_Initialized               = 0x0001,
+        enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode  = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
+        enum_flag_CanCompareBitsOrUseFastGetHashCode    = 0x0004,     // Is any field type or sub field type overridden Equals or GetHashCode
+        enum_flag_IsTlsIndexAllocated       = 0x0008,
         enum_flag_HasApproxParent           = 0x0010,
-#ifdef _DEBUG
-        // The MethodTable is in the right state to be published, and will be inevitably.
-        // Currently DEBUG only as it does not affect behavior in any way in a release build
-        enum_flag_IsPublished               = 0x0020,
-#endif
+        enum_flag_MayHaveOpenInterfaceInInterfaceMap    = 0x0020,
         enum_flag_IsNotFullyLoaded          = 0x0040,
         enum_flag_DependenciesLoaded        = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
         enum_flag_IsInitError               = 0x0100,
         enum_flag_IsStaticDataAllocated     = 0x0200,     // When this is set, if the class can be marked as initialized without any further code execution it will be.
-        // unum_unused                      = 0x0400,
-        enum_flag_IsTlsIndexAllocated       = 0x0800,
-        enum_flag_MayHaveOpenInterfaceInInterfaceMap = 0x1000,
-        // enum_unused                      = 0x2000,
-
-#ifdef _DEBUG
-        enum_flag_ParentMethodTablePointerValid =  0x4000,
-        enum_flag_HasInjectedInterfaceDuplicates = 0x8000,
-#endif
+        enum_flag_HasCheckedStreamOverride  = 0x0400,
+        enum_flag_StreamOverriddenRead      = 0x0800,
+        enum_flag_StreamOverriddenWrite     = 0x1000,
+        // unused enum                      = 0x2000,
+        // unused enum                      = 0x4000,
+        // unused enum                      = 0x8000,
     };
     union
     {
@@ -369,6 +362,16 @@ struct MethodTableAuxiliaryData
     RUNTIMETYPEHANDLE m_hExposedClassObject;
 
 #ifdef _DEBUG
+    enum
+    {
+        // The MethodTable is in the right state to be published, and will be inevitably.
+        // Currently DEBUG only as it does not affect behavior in any way in a release build
+        enum_flagDebug_IsPublished                    = 0x2000,
+        enum_flagDebug_ParentMethodTablePointerValid  = 0x4000,
+        enum_flagDebug_HasInjectedInterfaceDuplicates = 0x8000,
+    };
+    DWORD m_dwFlagsDebug;
+
     // to avoid verify same method table too many times when it's not changing, we cache the GC count
     // on which the method table is verified. When fast GC STRESS is turned on, we only verify the MT if
     // current GC count is bigger than the number. Note most thing which will invalidate a MT will require a
@@ -403,13 +406,13 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_dwFlags & enum_flag_ParentMethodTablePointerValid);
+        return (m_dwFlagsDebug & enum_flagDebug_ParentMethodTablePointerValid);
     }
     inline void SetParentMethodTablePointerValid()
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_dwFlags |= enum_flag_ParentMethodTablePointerValid;
+        m_dwFlagsDebug |= enum_flagDebug_ParentMethodTablePointerValid;
     }
 #endif
 
@@ -485,6 +488,15 @@ public:
     }
 #endif
 
+    inline void SetStreamOverrideState(BOOL read, BOOL write)
+    {
+        LONG streamOverride =
+            enum_flag_HasCheckedStreamOverride
+            | (read ? enum_flag_StreamOverriddenRead : 0)
+            | (write ? enum_flag_StreamOverriddenWrite : 0);
+        InterlockedOr((LONG*)&m_dwFlags, streamOverride);
+    }
+
     inline RUNTIMETYPEHANDLE GetExposedClassObjectHandle() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -515,7 +527,7 @@ public:
     void SetIsPublished()
     {
         LIMITED_METHOD_CONTRACT;
-        m_dwFlags |= (MethodTableAuxiliaryData::enum_flag_IsPublished);
+        m_dwFlagsDebug |= (MethodTableAuxiliaryData::enum_flagDebug_IsPublished);
     }
 #endif
 
@@ -524,7 +536,7 @@ public:
     bool IsPublished() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (VolatileLoad(&m_dwFlags) & enum_flag_IsPublished);
+        return (VolatileLoad(&m_dwFlagsDebug) & enum_flagDebug_IsPublished);
     }
 #endif // _DEBUG
 
@@ -591,12 +603,12 @@ public:
     TADDR m_pGCStatics; // Always access through helper methods to properly handle the ISCLASSNOTINITED bit
     TADDR m_pNonGCStatics; // Always access through helper methods to properly handle the ISCLASSNOTINITED bit
     PTR_MethodTable m_pMethodTable;
-    PTR_OBJECTREF GetGCStaticsPointer() { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pGCStatics); return dac_cast<PTR_OBJECTREF>(staticsVal & STATICSPOINTERMASK); }
-    PTR_BYTE GetNonGCStaticsPointer() { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pNonGCStatics); return dac_cast<PTR_BYTE>(staticsVal & STATICSPOINTERMASK); }
+    PTR_OBJECTREF GetGCStaticsPointer() { TADDR staticsVal = VolatileLoad(&m_pGCStatics); return dac_cast<PTR_OBJECTREF>(staticsVal & STATICSPOINTERMASK); }
+    PTR_BYTE GetNonGCStaticsPointer() { TADDR staticsVal = VolatileLoad(&m_pNonGCStatics); return dac_cast<PTR_BYTE>(staticsVal & STATICSPOINTERMASK); }
     PTR_OBJECTREF GetGCStaticsPointerAssumeIsInited() { TADDR staticsVal = m_pGCStatics; _ASSERTE(staticsVal != 0); _ASSERTE((staticsVal & (ISCLASSNOTINITEDMASK)) == 0); return dac_cast<PTR_OBJECTREF>(staticsVal); }
     PTR_BYTE GetNonGCStaticsPointerAssumeIsInited() { TADDR staticsVal = m_pNonGCStatics; _ASSERTE(staticsVal != 0); _ASSERTE((staticsVal & (ISCLASSNOTINITEDMASK)) == 0); return dac_cast<PTR_BYTE>(staticsVal); }
-    bool GetIsInitedAndGCStaticsPointerIfInited(PTR_OBJECTREF *ptrResult) { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pGCStatics); *ptrResult = dac_cast<PTR_OBJECTREF>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
-    bool GetIsInitedAndNonGCStaticsPointerIfInited(PTR_BYTE *ptrResult) { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pNonGCStatics); *ptrResult = dac_cast<PTR_BYTE>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
+    bool GetIsInitedAndGCStaticsPointerIfInited(PTR_OBJECTREF *ptrResult) { TADDR staticsVal = VolatileLoad(&m_pGCStatics); *ptrResult = dac_cast<PTR_OBJECTREF>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
+    bool GetIsInitedAndNonGCStaticsPointerIfInited(PTR_BYTE *ptrResult) { TADDR staticsVal = VolatileLoad(&m_pNonGCStatics); *ptrResult = dac_cast<PTR_BYTE>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
 
     // This function sets the pointer portion of a statics pointer. It returns false if the statics value was already set.
     bool InterlockedUpdateStaticsPointer(bool isGC, TADDR newVal, bool isClassInitedByUpdatingStaticPointer)
@@ -2679,15 +2691,6 @@ public:
     void DebugDumpGCDesc(LPCUTF8 pszClassName, BOOL debug);
 #endif //_DEBUG
 
-    inline BOOL IsAgileAndFinalizable()
-    {
-        LIMITED_METHOD_CONTRACT;
-        // Right now, System.Thread is the only cases of this.
-        // Things should stay this way - please don't change without talking to EE team.
-        return this == g_pThreadClass;
-    }
-
-
     //-------------------------------------------------------------------
     // ENUMS, DELEGATES, VALUE TYPES, ARRAYS
     //
@@ -2777,7 +2780,11 @@ public:
     }
 
     // The following methods are only valid for the method tables for array types.
-    CorElementType GetArrayElementType();
+    CorElementType GetArrayElementType()
+    {
+        return GetArrayElementTypeHandle().GetSignatureCorElementType();
+    }
+
     DWORD GetRank();
 
     TypeHandle GetArrayElementTypeHandle()
@@ -3022,9 +3029,6 @@ public :
     SString &_GetFullyQualifiedNameForClass(SString &ssBuf);
     LPCUTF8 GetFullyQualifiedNameInfo(LPCUTF8 *ppszNamespace);
 
-private:
-    template<typename RedirectFunctor> SString &_GetFullyQualifiedNameForClassNestedAwareInternal(SString &ssBuf);
-
 public :
     //-------------------------------------------------------------------
     // Debug Info
@@ -3048,12 +3052,12 @@ public :
     inline BOOL Debug_HasInjectedInterfaceDuplicates() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasInjectedInterfaceDuplicates) != 0;
+        return (GetAuxiliaryData()->m_dwFlagsDebug & MethodTableAuxiliaryData::enum_flagDebug_HasInjectedInterfaceDuplicates) != 0;
     }
     inline void Debug_SetHasInjectedInterfaceDuplicates()
     {
         LIMITED_METHOD_CONTRACT;
-        GetAuxiliaryDataForWrite()->m_dwFlags |= MethodTableAuxiliaryData::enum_flag_HasInjectedInterfaceDuplicates;
+        GetAuxiliaryDataForWrite()->m_dwFlagsDebug |= MethodTableAuxiliaryData::enum_flagDebug_HasInjectedInterfaceDuplicates;
     }
 #endif // _DEBUG
 

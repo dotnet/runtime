@@ -23,27 +23,29 @@ namespace Microsoft.Interop.JavaScript
 
         public TypePositionInfo TypeInfo => _inner.TypeInfo;
 
+        public StubCodeContext CodeContext => _inner.CodeContext;
+
         public ManagedTypeInfo NativeType => _inner.NativeType;
 
         public SignatureBehavior NativeSignatureBehavior => _inner.NativeSignatureBehavior;
 
-        public ValueBoundaryBehavior GetValueBoundaryBehavior(StubCodeContext context) => _inner.GetValueBoundaryBehavior(context);
+        public ValueBoundaryBehavior ValueBoundaryBehavior => _inner.ValueBoundaryBehavior;
 
-        public virtual bool UsesNativeIdentifier(StubCodeContext context) => _inner.UsesNativeIdentifier(context);
+        public virtual bool UsesNativeIdentifier => _inner.UsesNativeIdentifier;
 
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
-            => _inner.SupportsByValueMarshalKind(marshalKind, context, out diagnostic);
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, out GeneratorDiagnostic? diagnostic)
+            => _inner.SupportsByValueMarshalKind(marshalKind, out diagnostic);
 
-        public virtual IEnumerable<ExpressionSyntax> GenerateBind(StubCodeContext context)
+        public virtual IEnumerable<ExpressionSyntax> GenerateBind()
         {
             yield return MarshalerTypeName(Type);
         }
 
-        public virtual IEnumerable<StatementSyntax> Generate(StubCodeContext context)
+        public virtual IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
         {
             string argName = context.GetAdditionalIdentifier(TypeInfo, "js_arg");
 
-            if (context.CurrentStage == StubCodeContext.Stage.Setup)
+            if (context.CurrentStage == StubIdentifierContext.Stage.Setup)
             {
                 if (!TypeInfo.IsManagedReturnPosition)
                 {
@@ -87,7 +89,5 @@ namespace Microsoft.Interop.JavaScript
                     return IdentifierName(Constants.ToJSMethod);
             }
         }
-
-        public abstract IBoundMarshallingGenerator Rebind(TypePositionInfo info);
     }
 }

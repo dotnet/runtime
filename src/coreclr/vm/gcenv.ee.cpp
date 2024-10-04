@@ -201,7 +201,9 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 #if defined(FEATURE_EH_FUNCLETS)
         flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
 #endif // defined(FEATURE_EH_FUNCLETS)
+        gcctx.pScannedSlots = NULL;
         pThread->StackWalkFrames( GcStackCrawlCallBack, &gcctx, flagsStackWalk);
+        delete gcctx.pScannedSlots;
     }
 
     GCFrame* pGCFrame = pThread->GetGCFrame();
@@ -1393,6 +1395,9 @@ struct SuspendableThreadStubArguments
     class Thread* Thread;
     bool HasStarted;
     CLREvent ThreadStartedEvent;
+#ifdef __APPLE__
+    const WCHAR* name;
+#endif //__APPLE__
 };
 
 struct ThreadStubArguments
@@ -1402,6 +1407,9 @@ struct ThreadStubArguments
     HANDLE Thread;
     bool HasStarted;
     CLREvent ThreadStartedEvent;
+#ifdef __APPLE__
+    const WCHAR* name;
+#endif //__APPLE__
 };
 
 namespace
@@ -1420,6 +1428,9 @@ namespace
         args.ThreadStart = threadStart;
         args.Thread = nullptr;
         args.HasStarted = false;
+#ifdef __APPLE__
+        args.name = name;
+#endif //__APPLE__
         if (!args.ThreadStartedEvent.CreateAutoEventNoThrow(FALSE))
         {
             return false;
@@ -1444,6 +1455,10 @@ namespace
         {
             SuspendableThreadStubArguments* args = static_cast<SuspendableThreadStubArguments*>(argument);
             assert(args != nullptr);
+
+#ifdef __APPLE__
+            SetThreadName(GetCurrentThread(), args->name);
+#endif //__APPLE__
 
             ClrFlsSetThreadType(ThreadType_GC);
             args->Thread->SetGCSpecial();
@@ -1502,6 +1517,9 @@ namespace
         args.Argument = argument;
         args.ThreadStart = threadStart;
         args.Thread = INVALID_HANDLE_VALUE;
+#ifdef __APPLE__
+        args.name = name;
+#endif //__APPLE__
         if (!args.ThreadStartedEvent.CreateAutoEventNoThrow(FALSE))
         {
             return false;
@@ -1511,6 +1529,10 @@ namespace
         {
             ThreadStubArguments* args = static_cast<ThreadStubArguments*>(argument);
             assert(args != nullptr);
+
+#ifdef __APPLE__
+            SetThreadName(GetCurrentThread(), args->name);
+#endif //__APPLE__
 
             ClrFlsSetThreadType(ThreadType_GC);
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
@@ -1605,7 +1627,7 @@ uint32_t GCToEEInterface::GetTotalNumSizedRefHandles()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return SystemDomain::System()->GetTotalNumSizedRefHandles();
+    return 0;
 }
 
 NormalizedTimer analysisTimer;
@@ -1790,4 +1812,9 @@ void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint
 void GCToEEInterface::LogErrorToHost(const char *message)
 {
     ::LogErrorToHost("GC: %s", message);
+}
+
+uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
+{
+    return thread->GetOSThreadId64();
 }

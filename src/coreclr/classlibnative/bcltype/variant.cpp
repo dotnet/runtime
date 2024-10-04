@@ -18,40 +18,6 @@
 #include "vars.hpp"
 #include "variant.h"
 
-extern "C" uint32_t QCALLTYPE Variant_ConvertSystemColorToOleColor(QCall::ObjectHandleOnStack obj)
-{
-    QCALL_CONTRACT;
-
-    uint32_t ret = 0;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-    OBJECTREF srcObj = obj.Get();
-
-    GCPROTECT_BEGIN(srcObj);
-    ret = ConvertSystemColorToOleColor(&srcObj);
-    GCPROTECT_END();
-
-    END_QCALL;
-
-    return ret;
-}
-
-extern "C" void QCALLTYPE Variant_ConvertOleColorToSystemColor(QCall::ObjectHandleOnStack objRet, uint32_t oleColor, MethodTable* pMT)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-    SYSTEMCOLOR systemColor{};
-    ConvertOleColorToSystemColor(oleColor, &systemColor);
-    objRet.Set(pMT->Box(&systemColor));
-
-    END_QCALL;
-}
-
 extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT * pOle)
 {
     QCALL_CONTRACT;

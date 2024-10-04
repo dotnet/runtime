@@ -47,10 +47,10 @@ namespace System.Security.Cryptography
         /// <param name="key">The key-derivation key.</param>
         /// <param name="hashAlgorithm">The HMAC algorithm.</param>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is <see langword="null" />.
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is empty.
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's empty.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <paramref name="hashAlgorithm"/> is not a known or supported hash algorithm.
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography
         /// <param name="hashAlgorithm">The HMAC algorithm.</param>
         /// <exception cref="ArgumentNullException">
         ///   <para>
-        ///     <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is <see langword="null" />.
+        ///     <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's <see langword="null" />.
         ///   </para>
         ///   <para> -or- </para>
         ///   <para>
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography
         ///   </para>
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is empty.
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's empty.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <paramref name="hashAlgorithm"/> is not a known or supported hash algorithm.
@@ -122,11 +122,11 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para> -or- </para>
         ///   <para>
-        ///     <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is <see langword="null" />.
+        ///     <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's <see langword="null" />.
         ///   </para>
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is empty.
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's empty.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///     <paramref name="derivedKeyLengthInBytes" /> is negative or larger than the maximum number of bytes
@@ -180,11 +180,11 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para> -or- </para>
         ///   <para>
-        ///     <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is <see langword="null" />.
+        ///     <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's <see langword="null" />.
         ///   </para>
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is empty.
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's empty.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///     <paramref name="derivedKeyLengthInBytes" /> is negative or larger than the maximum number of bytes
@@ -233,10 +233,10 @@ namespace System.Security.Cryptography
         /// <param name="derivedKeyLengthInBytes">The length of the derived key, in bytes.</param>
         /// <returns>An array containing the derived key.</returns>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is <see langword="null" />.
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is empty.
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's empty.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///     <paramref name="derivedKeyLengthInBytes" /> is negative or larger than the maximum number of bytes
@@ -266,10 +266,10 @@ namespace System.Security.Cryptography
         /// <param name="context">The context containing information related to the derived key.</param>
         /// <param name="destination">The buffer which will receive the derived key.</param>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is <see langword="null" />.
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is empty.
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's empty.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///     <paramref name="destination" /> is larger than the maximum number of bytes that can be derived.
@@ -297,10 +297,10 @@ namespace System.Security.Cryptography
         /// <param name="derivedKeyLengthInBytes">The length of the derived key, in bytes.</param>
         /// <returns>An array containing the derived key.</returns>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is <see langword="null" />.
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is empty.
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's empty.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="derivedKeyLengthInBytes" /> is negative or larger than the maximum number of bytes
@@ -338,10 +338,10 @@ namespace System.Security.Cryptography
         /// <param name="context">The context containing information related to the derived key.</param>
         /// <param name="destination">The buffer which will receive the derived key.</param>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is <see langword="null" />.
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> which is empty.
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" /> that's empty.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///     <paramref name="destination" /> is larger than the maximum number of bytes that can be derived.

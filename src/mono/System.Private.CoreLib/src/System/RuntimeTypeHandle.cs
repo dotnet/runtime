@@ -152,7 +152,7 @@ namespace System
 
         internal static bool IsPrimitive(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return (corElemType >= CorElementType.ELEMENT_TYPE_BOOLEAN && corElemType <= CorElementType.ELEMENT_TYPE_R8) ||
                 corElemType == CorElementType.ELEMENT_TYPE_I ||
                 corElemType == CorElementType.ELEMENT_TYPE_U;
@@ -160,31 +160,31 @@ namespace System
 
         internal static bool IsByRef(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_BYREF;
         }
 
         internal static bool IsPointer(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_PTR;
         }
 
         internal static bool IsFunctionPointer(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_FNPTR;
         }
 
         internal static bool IsArray(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_ARRAY || corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
         }
 
         internal static bool IsSzArray(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
         }
 
@@ -192,7 +192,7 @@ namespace System
 
         internal static bool HasElementType(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
 
             return ((corElemType == CorElementType.ELEMENT_TYPE_ARRAY || corElemType == CorElementType.ELEMENT_TYPE_SZARRAY) // IsArray
                    || (corElemType == CorElementType.ELEMENT_TYPE_PTR)                                          // IsPointer
@@ -302,7 +302,7 @@ namespace System
 
         internal static bool IsGenericVariable(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_VAR || corElemType == CorElementType.ELEMENT_TYPE_MVAR;
         }
 
@@ -344,7 +344,7 @@ namespace System
 
         internal static bool IsTypeDefinition(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             if (!((corElemType >= CorElementType.ELEMENT_TYPE_VOID && corElemType < CorElementType.ELEMENT_TYPE_PTR) ||
                     corElemType == CorElementType.ELEMENT_TYPE_VALUETYPE ||
                     corElemType == CorElementType.ELEMENT_TYPE_CLASS ||
