@@ -2,9 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;$(NetCurrent)</TargetFrameworks>
-    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn);CA1512;CA1513;CA1510;</NoWarn>
+    <NoWarn>$(NoWarn);;</NoWarn>
 
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)/GeneratedFiles</CompilerGeneratedFilesOutputPath>
@@ -16,7 +15,14 @@
       PrivateAssets="all"
       OutputItemType="Analyzer"
       ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\Melanzana.MachO\Melanzana.MachO.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+    <Compile Remove="ThrowHelpers.cs" />
   </ItemGroup>
 
 </Project>

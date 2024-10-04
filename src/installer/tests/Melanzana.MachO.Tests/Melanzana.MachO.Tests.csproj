@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\managed\Melanzana.MachO\Melanzana.MachO.csproj" />
+    <ProjectReference Include="..\..\managed\Melanzana.CodeSign\Melanzana.CodeSign.csproj" />
   </ItemGroup>
 
   <ItemGroup>

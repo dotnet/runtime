@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Melanzana.CodeSign/Melanzana.CodeSign.csproj" />
+    <ProjectReference Include="../Melanzana.CodeSign/Melanzana.CodeSign.csproj" Pack="true" IncludeAssets="all"/>
   </ItemGroup>
 
   <ItemGroup>

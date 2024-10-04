@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -81,7 +82,7 @@ namespace BinaryFormat
                 stringBuilder.AppendLine();
                 GenerateReadMethod(typeDecl, stringBuilder, "BigEndian", "BigEndian", fieldsAndProps);
                 stringBuilder.AppendLine();
-                stringBuilder.AppendLine($"        public static {typeDecl.Identifier} Read(ReadOnlySpan<byte> buffer, bool isLittleEndian, out int bytesRead)");
+                stringBuilder.AppendLine($"        public static {typeDecl.Identifier} Read(System.ReadOnlySpan<byte> buffer, bool isLittleEndian, out int bytesRead)");
                 stringBuilder.AppendLine($"        {{");
                 stringBuilder.AppendLine($"            return isLittleEndian ? ReadLittleEndian(buffer, out bytesRead) : ReadBigEndian(buffer, out bytesRead);");
                 stringBuilder.AppendLine($"        }}");
@@ -90,7 +91,7 @@ namespace BinaryFormat
                 stringBuilder.AppendLine();
                 GenerateWriteMethod(stringBuilder, "BigEndian", "BigEndian", fieldsAndProps);
                 stringBuilder.AppendLine();
-                stringBuilder.AppendLine($"        public void Write(Span<byte> buffer, bool isLittleEndian, out int bytesWritten)");
+                stringBuilder.AppendLine($"        public void Write(System.Span<byte> buffer, bool isLittleEndian, out int bytesWritten)");
                 stringBuilder.AppendLine($"        {{");
                 stringBuilder.AppendLine($"            if (isLittleEndian)");
                 stringBuilder.AppendLine($"            {{");
@@ -179,7 +180,7 @@ namespace BinaryFormat
             StringBuilder variableOffset = new StringBuilder();
             int variableOffsetIndex = 1;
 
-            stringBuilder.AppendLine($"        public static {typeDecl.Identifier} Read{nameSuffix}(ReadOnlySpan<byte> buffer, out int bytesRead)");
+            stringBuilder.AppendLine($"        public static {typeDecl.Identifier} Read{nameSuffix}(System.ReadOnlySpan<byte> buffer, out int bytesRead)");
             stringBuilder.AppendLine($"        {{");
             stringBuilder.AppendLine($"            var result = new {typeDecl.Identifier}");
             stringBuilder.AppendLine($"            {{");
@@ -277,7 +278,7 @@ namespace BinaryFormat
             StringBuilder variableOffset = new StringBuilder();
             int variableOffsetIndex = 1;
 
-            stringBuilder.AppendLine($"        public void Write{nameSuffix}(Span<byte> buffer, out int bytesWritten)");
+            stringBuilder.AppendLine($"        public void Write{nameSuffix}(System.Span<byte> buffer, out int bytesWritten)");
             stringBuilder.AppendLine($"        {{");
 
             foreach (var m in fieldsAndProps)
@@ -291,7 +292,8 @@ namespace BinaryFormat
                 {
                     // FIXME: Namespace
                     memberType = nts.EnumUnderlyingType;
-                    castExpression = $"({memberType.Name})";
+                    castExpression = $"({GetKeywordForSpecialType(nts.EnumUnderlyingType)})";
+;
                 }
 
                 switch (memberType.SpecialType)
@@ -359,6 +361,22 @@ namespace BinaryFormat
 
             stringBuilder.AppendLine($"            bytesWritten = {offset}{variableOffset};");
             stringBuilder.AppendLine($"        }}");
+        }
+        private static string GetKeywordForSpecialType(INamedTypeSymbol nts)
+        {
+            Debug.Assert(nts.SpecialType is not SpecialType.None);
+            return nts.SpecialType switch
+            {
+                SpecialType.System_Char => "char",
+                SpecialType.System_Byte => "byte",
+                SpecialType.System_UInt16 => "ushort",
+                SpecialType.System_UInt32 => "uint",
+                SpecialType.System_UInt64 => "ulong",
+                SpecialType.System_Int16 => "short",
+                SpecialType.System_Int32 => "int",
+                SpecialType.System_Int64 => "long",
+                _ => throw new InvalidOperationException()
+            };
         }
     }
 }
