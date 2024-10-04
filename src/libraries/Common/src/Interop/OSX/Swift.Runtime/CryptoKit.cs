@@ -11,7 +11,7 @@ using System.Security.Cryptography;
 #pragma warning disable CS3016 // Arrays as attribute arguments are not CLS Compliant
 #pragma warning disable SYSLIB1051
 
-namespace Swift.Runtime
+namespace Swift
 {
     /// <summary>
     /// Represents ChaChaPoly in C#.
@@ -37,9 +37,12 @@ namespace Swift.Runtime
             {
                 payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
                 SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
-                void* dataPtr = &data;
 
-                CryptoKit.PInvoke_ChaChaPoly_Nonce_Init2(swiftIndirectResult, dataPtr, data.Metadata(), default(DataProtocol).WitnessTable(data), out SwiftError error);
+                void* metadata = Swift.Runtime.GetMetadata(data);
+                void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
+                void* witnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, metadata, null);
+
+                CryptoKit.PInvoke_ChaChaPoly_Nonce_Init2(swiftIndirectResult, &data, metadata, witnessTable, out SwiftError error);
 
                 if (error.Value != null)
                 {
@@ -65,16 +68,20 @@ namespace Swift.Runtime
 
             internal SealedBox(ChaChaPoly.Nonce nonce, Data ciphertext, Data tag)
             {
-                void* tagPtr = &tag;
-                void* ciphertextPtr = &ciphertext;
+                void* ciphertextMetadata = Swift.Runtime.GetMetadata(ciphertext);
+                void* tagMetadata = Swift.Runtime.GetMetadata(tag);
+                void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
+                void* ciphertextWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, ciphertextMetadata, null);
+                void* tagWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, tagMetadata, null);
+
                 this = CryptoKit.PInvoke_ChaChaPoly_SealedBox_Init(
                     nonce.payload,
-                    ciphertextPtr,
-                    tagPtr,
-                    ciphertext.Metadata(),
-                    tag.Metadata(),
-                    default(DataProtocol).WitnessTable(ciphertext),
-                    default(DataProtocol).WitnessTable(tag),
+                    &ciphertext,
+                    &tag,
+                    ciphertextMetadata,
+                    tagMetadata,
+                    ciphertextWitnessTable,
+                    tagWitnessTable,
                     out SwiftError error);
 
                 if (error.Value != null)
@@ -82,6 +89,49 @@ namespace Swift.Runtime
                     throw new CryptographicException();
                 }
             }
+        }
+
+        /// <summary>
+        /// Encrypts the plaintext using the key, nonce, and authenticated data.
+        /// </summary>
+        internal static unsafe SealedBox seal<Plaintext, AuthenticateData>(Plaintext plaintext, SymmetricKey key, Nonce nonce, AuthenticateData aad, out SwiftError error) where Plaintext : unmanaged, ISwiftObject where AuthenticateData : unmanaged, ISwiftObject {
+            void* plaintextMetadata = Swift.Runtime.GetMetadata(plaintext);
+            void* aadMetadata = Swift.Runtime.GetMetadata(aad);
+            void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
+            void* plaintextWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, plaintextMetadata, null);
+            void* aadWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, aadMetadata, null);
+
+            var sealedBox = CryptoKit.PInvoke_ChaChaPoly_Seal(
+                &plaintext,
+                key.payload,
+                nonce.payload,
+                &aad,
+                plaintextMetadata,
+                aadMetadata,
+                plaintextWitnessTable,
+                aadWitnessTable,
+                out error);
+
+            return sealedBox;
+        }
+
+        /// <summary>
+        /// Decrypts the sealed box using the key and authenticated data.
+        /// </summary>
+        internal static unsafe Data open<AuthenticateData>(SealedBox sealedBox, SymmetricKey key, AuthenticateData aad, out SwiftError error) where AuthenticateData : unmanaged, ISwiftObject {
+            void* metadata = Swift.Runtime.GetMetadata(aad);
+            void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
+            void* witnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, metadata, null);
+
+            var data = CryptoKit.PInvoke_ChaChaPoly_Open(
+                sealedBox,
+                key.payload,
+                &aad,
+                metadata,
+                witnessTable,
+                out error);
+
+            return data;
         }
     }
 
@@ -109,8 +159,12 @@ namespace Swift.Runtime
             {
                 payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
                 SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
-                void* dataPtr = &data;
-                CryptoKit.PInvoke_AesGcm_Nonce_Init2(swiftIndirectResult, dataPtr, data.Metadata(), default(DataProtocol).WitnessTable(data), out SwiftError error);
+
+                void* metadata = Swift.Runtime.GetMetadata(data);
+                void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
+                void* witnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, metadata, null);
+
+                CryptoKit.PInvoke_AesGcm_Nonce_Init2(swiftIndirectResult, &data, metadata, witnessTable, out SwiftError error);
 
                 if (error.Value != null)
                 {
@@ -137,18 +191,22 @@ namespace Swift.Runtime
             {
                 payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
                 SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
-                void* tagPtr = &tag;
-                void* ciphertextPtr = &ciphertext;
+
+                void* ciphertextMetadata = Swift.Runtime.GetMetadata(ciphertext);
+                void* tagMetadata = Swift.Runtime.GetMetadata(tag);
+                void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
+                void* ciphertextWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, ciphertextMetadata, null);
+                void* tagWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, tagMetadata, null);
 
                 CryptoKit.PInvoke_AesGcm_SealedBox_Init(
                     swiftIndirectResult,
                     nonce.payload,
-                    ciphertextPtr,
-                    tagPtr,
-                    ciphertext.Metadata(),
-                    tag.Metadata(),
-                    default(DataProtocol).WitnessTable(ciphertext),
-                    default(DataProtocol).WitnessTable(tag),
+                    &ciphertext,
+                    &tag,
+                    ciphertextMetadata,
+                    tagMetadata,
+                    ciphertextWitnessTable,
+                    tagWitnessTable,
                     out SwiftError error);
 
                 if (error.Value != null)
@@ -166,6 +224,53 @@ namespace Swift.Runtime
             {
                 Marshal.FreeHGlobal(new IntPtr(payload));
             }
+        }
+
+        /// <summary>
+        /// Encrypts the plaintext using the key, nonce, and authenticated data.
+        /// </summary>
+        internal static unsafe SealedBox seal<Plaintext, AuthenticateData>(Plaintext plaintext, SymmetricKey key, Nonce nonce, AuthenticateData aad, out SwiftError error) where Plaintext : unmanaged, ISwiftObject where AuthenticateData : unmanaged, ISwiftObject {
+            var sealedBox = new AesGcm.SealedBox();
+            SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(sealedBox.payload);
+
+            void* plaintextMetadata = Swift.Runtime.GetMetadata(plaintext);
+            void* aadMetadata = Swift.Runtime.GetMetadata(aad);
+            void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
+            void* plaintextWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, plaintextMetadata, null);
+            void* aadWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, aadMetadata, null);
+
+            CryptoKit.PInvoke_AesGcm_Seal(
+                swiftIndirectResult,
+                &plaintext,
+                key.payload,
+                nonce.payload,
+                &aad,
+                plaintextMetadata,
+                aadMetadata,
+                plaintextWitnessTable,
+                aadWitnessTable,
+                out error);
+
+            return sealedBox;
+        }
+
+        /// <summary>
+        /// Decrypts the sealed box using the key and authenticated data.
+        /// </summary>
+        internal static unsafe Data open<AuthenticateData>(SealedBox sealedBox, SymmetricKey key, AuthenticateData aad, out SwiftError error) where AuthenticateData : unmanaged, ISwiftObject {
+            void* metadata = Swift.Runtime.GetMetadata(aad);
+            void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
+            void* witnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, metadata, null);
+
+            var data = CryptoKit.PInvoke_AesGcm_Open(
+                sealedBox.payload,
+                key.payload,
+                &aad,
+                metadata,
+                witnessTable,
+                out error);
+
+            return data;
         }
     }
 
@@ -188,8 +293,12 @@ namespace Swift.Runtime
         {
             payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
             SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
-            void* dataPtr = &data;
-            CryptoKit.PInvoke_SymmetricKey_Init2(swiftIndirectResult, dataPtr, data.Metadata(), default(ContiguousBytes).WitnessTable(data));
+
+            void* metadata = Swift.Runtime.GetMetadata(data);
+            void* conformanceDescriptor = IContiguousBytes.GetConformanceDescriptor;
+            void* witnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, metadata, null);
+
+            CryptoKit.PInvoke_SymmetricKey_Init2(swiftIndirectResult, &data, metadata, witnessTable);
         }
 
         ~SymmetricKey()
@@ -204,12 +313,8 @@ namespace Swift.Runtime
     [StructLayout(LayoutKind.Sequential, Size = 8)]
     internal unsafe partial struct SymmetricKeySize
     {
-        internal const string AppleCryptoKit = "/System/Library/Frameworks/CryptoKit.framework/CryptoKit";
         internal nint bitCount;
 
-        [LibraryImport(AppleCryptoKit, EntryPoint = "$s9CryptoKit16SymmetricKeySizeV8bitCountACSi_tcfC")]
-        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        internal static unsafe partial void PInvoke_init(SwiftIndirectResult result, nint bitCount);
         internal SymmetricKeySize(nint bitCount)
         {
             SymmetricKeySize instance;
@@ -243,7 +348,7 @@ namespace Swift.Runtime
 
         [LibraryImport(Path, EntryPoint = "$s9CryptoKit03ChaC4PolyO9SealedBoxV5nonce10ciphertext3tagAeC5NonceV_xq_tKc10Foundation12DataProtocolRzAkLR_r0_lufC")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        internal static unsafe partial ChaChaPoly.SealedBox PInvoke_ChaChaPoly_SealedBox_Init(void* nonce, void* ciphertext, void* tag, void* metadata1, void* metadata2, void* witnessTable1, void*witnessTable2, out SwiftError error);
+        internal static unsafe partial ChaChaPoly.SealedBox PInvoke_ChaChaPoly_SealedBox_Init(void* nonce, void* ciphertext, void* tag, void* ciphertextMetadata, void* tagMetadata, void* ciphertextWitnessTable, void* tagWitnessTable, out SwiftError error);
 
         [LibraryImport(Path, EntryPoint = "$s9CryptoKit3AESO3GCMO5NonceVAGycfC")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
@@ -263,7 +368,7 @@ namespace Swift.Runtime
 
         [LibraryImport(Path, EntryPoint = "$s9CryptoKit3AESO3GCMO9SealedBoxV5nonce10ciphertext3tagAgE5NonceV_xq_tKc10Foundation12DataProtocolRzAmNR_r0_lufC")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        internal static unsafe partial void PInvoke_AesGcm_SealedBox_Init(SwiftIndirectResult result, void* nonce, void* ciphertext, void* tag, void* metadata1, void* metadata2, void* witnessTable1, void*witnessTable2, out SwiftError error);
+        internal static unsafe partial void PInvoke_AesGcm_SealedBox_Init(SwiftIndirectResult result, void* nonce, void* ciphertext, void* tag, void* ciphertextMetadata, void* tagMetadata, void* ciphertextWitnessTable, void* tagWitnessTable, out SwiftError error);
 
         [LibraryImport(Path, EntryPoint = "$s9CryptoKit12SymmetricKeyV4sizeAcA0cD4SizeV_tcfC")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
@@ -271,22 +376,26 @@ namespace Swift.Runtime
 
         [LibraryImport(Path, EntryPoint = "$s9CryptoKit12SymmetricKeyV4dataACx_tc10Foundation15ContiguousBytesRzlufC")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        internal static unsafe partial void PInvoke_SymmetricKey_Init2(SwiftIndirectResult result, void* data, void* md, void* pwt);
+        internal static unsafe partial void PInvoke_SymmetricKey_Init2(SwiftIndirectResult result, void* data, void* metadata, void* witnessTable);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit16SymmetricKeySizeV8bitCountACSi_tcfC")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial void PInvoke_init(SwiftIndirectResult result, nint bitCount);
 
         [LibraryImport(Path, EntryPoint = "$s9CryptoKit03ChaC4PolyO4seal_5using5nonce14authenticatingAC9SealedBoxVx_AA12SymmetricKeyVAC5NonceVSgq_tK10Foundation12DataProtocolRzAoPR_r0_lFZ")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        internal static unsafe partial ChaChaPoly.SealedBox PInvoke_ChaChaPoly_Seal(void* messagePtr, void* key, void* nonce, void* authenticatedData, void* metadata1, void* metadata2, void* witnessTable1, void* witnessTable2, out SwiftError error);
+        internal static unsafe partial ChaChaPoly.SealedBox PInvoke_ChaChaPoly_Seal(void* plaintext, void* key, void* nonce, void* aad, void* plaintextMetadata, void* aadMetadata, void* plaintextWitnessTable, void* aadWitnessTable, out SwiftError error);
 
         [LibraryImport(Path, EntryPoint = "$s9CryptoKit03ChaC4PolyO4open_5using14authenticating10Foundation4DataVAC9SealedBoxV_AA12SymmetricKeyVxtKAG0I8ProtocolRzlFZ")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        internal static unsafe partial Data PInvoke_ChaChaPoly_Open(ChaChaPoly.SealedBox sealedBox, void* key, void* authenticatedData, void* metadata, void* witnessTable, out SwiftError error);
+        internal static unsafe partial Data PInvoke_ChaChaPoly_Open(ChaChaPoly.SealedBox sealedBox, void* key, void* aad, void* metadata, void* witnessTable, out SwiftError error);
 
         [LibraryImport(Path, EntryPoint = "$s9CryptoKit3AESO3GCMO4seal_5using5nonce14authenticatingAE9SealedBoxVx_AA12SymmetricKeyVAE5NonceVSgq_tK10Foundation12DataProtocolRzAqRR_r0_lFZ")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        internal static unsafe partial void PInvoke_AesGcm_Seal(SwiftIndirectResult result, void* messagePtr, void* key, void* nonce, void* authenticatedData, void* metadata1, void* metadata2, void* witnessTable1, void* witnessTable2, out SwiftError error);
+        internal static unsafe partial void PInvoke_AesGcm_Seal(SwiftIndirectResult result, void* plaintext, void* key, void* nonce, void* aad, void* plaintextMetadata, void* aadMetadata, void* plaintextWitnessTable, void* aadWitnessTable, out SwiftError error);
 
         [LibraryImport(Path, EntryPoint = "$s9CryptoKit3AESO3GCMO4open_5using14authenticating10Foundation4DataVAE9SealedBoxV_AA12SymmetricKeyVxtKAI0I8ProtocolRzlFZ")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        internal static unsafe partial Data PInvoke_AesGcm_Open(void* sealedBox, void* key, void* authenticatedData, void* metadata, void* witnessTable, out SwiftError error);
+        internal static unsafe partial Data PInvoke_AesGcm_Open(void* sealedBox, void* key, void* aad, void* metadata, void* witnessTable, out SwiftError error);
     }
 }

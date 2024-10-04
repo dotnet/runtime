@@ -4,27 +4,22 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Reflection;
 
 #pragma warning disable CS3016 // Arrays as attribute arguments are not CLS Compliant
 #pragma warning disable SYSLIB1051
+#pragma warning disable IDE0060
 
-namespace Swift.Runtime
+namespace Swift
 {
     /// <summary>
     /// Represents a Swift type in C#.
     /// </summary>
-    internal unsafe interface ISwiftType
+    internal unsafe interface ISwiftObject
     {
-        public abstract void* Metadata();
+        public static abstract void* Metadata { get; }
     }
 
-    /// <summary>
-    /// Represents a Swift protocol in C#.
-    /// </summary>
-    internal unsafe interface ISwiftProtocol
-    {
-       public abstract void* WitnessTable(ISwiftType type);
-    }
     // <summary>
     // Represents Swift UnsafePointer in C#.
     // </summary>
@@ -136,10 +131,9 @@ namespace Swift.Runtime
     // </summary>
     [StructLayout(LayoutKind.Sequential, Size = 16)]
     [InlineArray(16)]
-    internal unsafe partial struct Data : ISwiftType
+    internal unsafe partial struct Data : ISwiftObject
     {
         internal byte payload;
-        private static void* metadata = Foundation.PInvoke_Data_GetMetadata(); // Static field after instance field: https://github.com/dotnet/runtime/issues/108522
 
         internal unsafe Data(UnsafeRawPointer pointer, nint count)
         {
@@ -153,29 +147,23 @@ namespace Swift.Runtime
             Foundation.PInvoke_Data_CopyBytes(buffer, count, this);
         }
 
-        public void* Metadata() => metadata;
+        public static void* Metadata => Foundation.PInvoke_Data_GetMetadata();
     }
 
     /// <summary>
     /// Represents Swift Foundation.DataProtocol in C#.
     /// </summary>
-    internal unsafe partial struct DataProtocol : ISwiftProtocol
+    internal unsafe interface IDataProtocol
     {
-        public void* WitnessTable(ISwiftType type)
-        {
-            return Foundation.GetProtocolWitnessTable(type.Metadata(), "$s10Foundation4DataVAA0B8ProtocolAAMc");
-        }
+        public static void* GetConformanceDescriptor => Runtime.GetConformanceDescriptor("$s10Foundation4DataVAA0B8ProtocolAAMc");
     }
 
     /// <summary>
     /// Represents Swift Foundation.ContiguousBytes in C#.
     /// </summary>
-    internal unsafe partial struct ContiguousBytes : ISwiftProtocol
+    internal unsafe interface IContiguousBytes
     {
-        public void* WitnessTable(ISwiftType type)
-        {
-            return Foundation.GetProtocolWitnessTable(type.Metadata(), "$s10Foundation4DataVAA15ContiguousBytesAAMc");
-        }
+        public static void* GetConformanceDescriptor => Runtime.GetConformanceDescriptor("$s10Foundation4DataVAA15ContiguousBytesAAMc");
     }
 
     /// <summary>
@@ -204,14 +192,24 @@ namespace Swift.Runtime
         [LibraryImport(Path, EntryPoint = "$s10Foundation4DataVMa")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         internal static unsafe partial void* PInvoke_Data_GetMetadata();
+    }
 
-        internal static unsafe void* GetProtocolWitnessTable(void* metadata, string conformanceDescriptorSymbol)
+    /// <summary>
+    /// Swift runtime helper methods in C#.
+    /// </summary>
+    internal static partial class Runtime
+    {
+
+        internal static unsafe void* GetMetadata<T>(T type) where T: ISwiftObject
         {
-            IntPtr handle = NativeLibrary.Load(Path);
-            void* conformanceDescriptor = NativeLibrary.GetExport(handle, conformanceDescriptorSymbol).ToPointer();
-            void* witnessTable = PInvoke_Swift_GetWitnessTable(conformanceDescriptor, metadata, null);
-            NativeLibrary.Free(handle);
-            return witnessTable;
+            return T.Metadata;
+        }
+
+        internal static unsafe void* GetConformanceDescriptor(string symbol)
+        {
+            IntPtr handle = NativeLibrary.Load(Foundation.Path);
+            void* conformanceDescriptor = NativeLibrary.GetExport(handle, symbol).ToPointer();
+            return conformanceDescriptor;
         }
     }
 }
