@@ -117,7 +117,7 @@ void Assembly::Initialize()
 // It cannot do any allocations or operations that might fail. Those operations should be done
 // in Assembly::Init()
 //----------------------------------------------------------------------------------------------
-Assembly::Assembly(PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, LoaderAllocator *pLoaderAllocator)
+Assembly::Assembly(PEAssembly* pPEAssembly, LoaderAllocator *pLoaderAllocator)
     : m_pClassLoader(NULL)
     , m_pEntryPoint(NULL)
     , m_pModule(NULL)
@@ -140,7 +140,7 @@ Assembly::Assembly(PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debugge
 #ifdef _DEBUG
     , m_bDisableActivationCheck{false}
 #endif
-    , m_debuggerFlags(debuggerFlags)
+    , m_debuggerFlags{DACF_NONE}
     , m_hExposedObject{}
 {
     CONTRACTL
@@ -166,6 +166,9 @@ Assembly::Assembly(PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debugge
 void Assembly::Init(AllocMemTracker *pamTracker)
 {
     STANDARD_VM_CONTRACT;
+
+    m_debuggerFlags = ComputeDebuggingConfig();
+    LOG((LF_CORDB, LL_INFO10, "Assembly %s: bits=0x%x\n", GetDebugName(), GetDebuggerInfoBits()));
 
     m_pClassLoader = new ClassLoader(this);
     m_pClassLoader->Init(pamTracker);
@@ -319,7 +322,6 @@ void Assembly::Terminate( BOOL signalProfiler )
 
 Assembly * Assembly::Create(
     PEAssembly *                 pPEAssembly,
-    DebuggerAssemblyControlFlags debuggerFlags,
     AllocMemTracker *            pamTracker,
     LoaderAllocator *            pLoaderAllocator)
 {
@@ -332,7 +334,7 @@ Assembly * Assembly::Create(
     }
     CONTRACTL_END
 
-    NewHolder<Assembly> pAssembly (new Assembly(pPEAssembly, debuggerFlags, pLoaderAllocator));
+    NewHolder<Assembly> pAssembly (new Assembly(pPEAssembly, pLoaderAllocator));
 
 #ifdef PROFILING_SUPPORTED
     {
