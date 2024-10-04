@@ -50,11 +50,6 @@ Direct shim to ASN1_OBJECT_free.
 PALEXPORT void CryptoNative_Asn1ObjectFree(ASN1_OBJECT* a);
 
 /*
-Direct shim to ASN1_BIT_STRING_free.
-*/
-PALEXPORT void CryptoNative_Asn1BitStringFree(ASN1_STRING* a);
-
-/*
 Direct shim to ASN1_OCTET_STRING_new.
 */
 PALEXPORT ASN1_OCTET_STRING* CryptoNative_Asn1OctetStringNew(void);

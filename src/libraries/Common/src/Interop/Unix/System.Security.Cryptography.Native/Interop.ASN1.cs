@@ -38,9 +38,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Asn1ObjectFree")]
         internal static partial void Asn1ObjectFree(IntPtr o);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Asn1BitStringFree")]
-        internal static partial void Asn1BitStringFree(IntPtr o);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Asn1OctetStringNew")]
         internal static partial SafeAsn1OctetStringHandle Asn1OctetStringNew();
 

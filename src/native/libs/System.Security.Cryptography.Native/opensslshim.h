@@ -244,7 +244,6 @@ extern bool g_libSslUses32BitTime;
 
 #define FOR_ALL_OPENSSL_FUNCTIONS \
     REQUIRED_FUNCTION(a2d_ASN1_OBJECT) \
-    REQUIRED_FUNCTION(ASN1_BIT_STRING_free) \
     REQUIRED_FUNCTION(ASN1_d2i_bio) \
     REQUIRED_FUNCTION(ASN1_i2d_bio) \
     REQUIRED_FUNCTION(ASN1_GENERALIZEDTIME_free) \
@@ -795,7 +794,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 // Redefine all calls to OpenSSL functions as calls through pointers that are set
 // to the functions from the libssl.so selected by the shim.
 #define a2d_ASN1_OBJECT a2d_ASN1_OBJECT_ptr
-#define ASN1_BIT_STRING_free ASN1_BIT_STRING_free_ptr
 #define ASN1_GENERALIZEDTIME_free ASN1_GENERALIZEDTIME_free_ptr
 #define ASN1_d2i_bio ASN1_d2i_bio_ptr
 #define ASN1_i2d_bio ASN1_i2d_bio_ptr

@@ -33,7 +33,6 @@
 
 static const Entry s_cryptoNative[] =
 {
-    DllImportEntry(CryptoNative_Asn1BitStringFree)
     DllImportEntry(CryptoNative_Asn1ObjectFree)
     DllImportEntry(CryptoNative_Asn1OctetStringFree)
     DllImportEntry(CryptoNative_Asn1OctetStringNew)

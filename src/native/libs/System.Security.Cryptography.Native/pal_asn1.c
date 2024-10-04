@@ -61,11 +61,6 @@ void CryptoNative_Asn1ObjectFree(ASN1_OBJECT* a)
     ASN1_OBJECT_free(a);
 }
 
-void CryptoNative_Asn1BitStringFree(ASN1_STRING* a)
-{
-    ASN1_BIT_STRING_free(a);
-}
-
 ASN1_OCTET_STRING* CryptoNative_Asn1OctetStringNew(void)
 {
     ERR_clear_error();
