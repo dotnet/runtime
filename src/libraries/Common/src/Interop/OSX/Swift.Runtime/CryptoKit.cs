@@ -22,9 +22,9 @@ namespace Swift
         /// <summary>
         /// Represents Nonce in C#.
         /// </summary>
-        internal sealed unsafe partial class Nonce : IDisposable
+        internal sealed unsafe partial class Nonce : IDisposable, ISwiftObject
         {
-            private const int PayloadSize = 16;
+            private static nuint PayloadSize = (nuint)((Runtime.ValueWitnessTable*)Swift.Runtime.GetValueWitnessTable(Metadata))->Size;
 
             private readonly void* _payload;
 
@@ -56,6 +56,8 @@ namespace Swift
             }
 
             internal void* Payload => _payload;
+
+            public static void* Metadata => CryptoKit.PInvoke_ChaChaPoly_Nonce_GetMetadata();
 
             public void Dispose()
             {
@@ -162,9 +164,9 @@ namespace Swift
         /// <summary>
         /// Represents Nonce in C#.
         /// </summary>
-        internal sealed unsafe partial class Nonce : IDisposable
+        internal sealed unsafe partial class Nonce : IDisposable, ISwiftObject
         {
-            private const int PayloadSize = 16;
+            private static nuint PayloadSize = (nuint)((Runtime.ValueWitnessTable*)Swift.Runtime.GetValueWitnessTable(Metadata))->Size;
 
             private readonly void* _payload;
 
@@ -197,6 +199,8 @@ namespace Swift
 
             internal void* Payload => _payload;
 
+            public static void* Metadata => CryptoKit.PInvoke_AesGcm_Nonce_GetMetadata();
+
             public void Dispose()
             {
                 if (!_disposed)
@@ -216,9 +220,9 @@ namespace Swift
         /// <summary>
         /// Represents SealedBox in C#.
         /// </summary>
-        internal sealed unsafe partial class SealedBox : IDisposable
+        internal sealed unsafe partial class SealedBox : IDisposable, ISwiftObject
         {
-            private const int PayloadSize = 24;
+            private static nuint PayloadSize = (nuint)((Runtime.ValueWitnessTable*)Swift.Runtime.GetValueWitnessTable(Metadata))->Size;
 
             private readonly void* _payload;
 
@@ -259,6 +263,8 @@ namespace Swift
             }
 
             internal void* Payload => _payload;
+
+            public static void* Metadata => CryptoKit.PInvoke_AesGcm_SealedBox_GetMetadata();
 
             internal Data Ciphertext => CryptoKit.PInvoke_AesGcm_SealedBox_GetCiphertext(new SwiftSelf(_payload));
 
@@ -331,9 +337,9 @@ namespace Swift
     /// <summary>
     /// Represents SymmetricKey in C#.
     /// </summary>
-    internal sealed unsafe partial class SymmetricKey : IDisposable
+    internal sealed unsafe partial class SymmetricKey : IDisposable, ISwiftObject
     {
-        private const int PayloadSize = 8;
+        private static nuint PayloadSize = (nuint)((Runtime.ValueWitnessTable*)Swift.Runtime.GetValueWitnessTable(Metadata))->Size;
 
         internal readonly void* _payload;
 
@@ -359,6 +365,8 @@ namespace Swift
         }
 
         internal void* Payload => _payload;
+
+        public static void* Metadata => CryptoKit.PInvoke_SymmetricKey_GetMetadata();
 
         public void Dispose()
         {
@@ -407,6 +415,10 @@ namespace Swift
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         internal static unsafe partial void PInvoke_ChaChaPoly_Nonce_Init2(SwiftIndirectResult result, void* data, void* metadata, void* witnessTable, out SwiftError error);
 
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit3AESO3GCMO5NonceVMa")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial void* PInvoke_ChaChaPoly_Nonce_GetMetadata();
+
         [LibraryImport(Path, EntryPoint = "$s9CryptoKit03ChaC4PolyO9SealedBoxV10ciphertext10Foundation4DataVvg")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         internal static unsafe partial Data PInvoke_ChaChaPoly_SealedBox_GetCiphertext(ChaChaPoly.SealedBox sealedBox);
@@ -427,6 +439,10 @@ namespace Swift
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         internal static unsafe partial void PInvoke_AesGcm_Nonce_Init2(SwiftIndirectResult result, void* data, void* metadata, void* witnessTable, out SwiftError error);
 
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit3AESO3GCMO5NonceVMa")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial void* PInvoke_AesGcm_Nonce_GetMetadata();
+
         [LibraryImport(Path, EntryPoint = "$s9CryptoKit3AESO3GCMO9SealedBoxV10ciphertext10Foundation4DataVvg")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         internal static unsafe partial  Data PInvoke_AesGcm_SealedBox_GetCiphertext(SwiftSelf sealedBox);
@@ -439,6 +455,10 @@ namespace Swift
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         internal static unsafe partial void PInvoke_AesGcm_SealedBox_Init(SwiftIndirectResult result, void* nonce, void* ciphertext, void* tag, void* ciphertextMetadata, void* tagMetadata, void* ciphertextWitnessTable, void* tagWitnessTable, out SwiftError error);
 
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit3AESO3GCMO9SealedBoxVMa")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial void* PInvoke_AesGcm_SealedBox_GetMetadata();
+
         [LibraryImport(Path, EntryPoint = "$s9CryptoKit12SymmetricKeyV4sizeAcA0cD4SizeV_tcfC")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         internal static unsafe partial void PInvoke_SymmetricKey_Init(SwiftIndirectResult result, SymmetricKeySize* symmetricKeySize);
@@ -446,6 +466,10 @@ namespace Swift
         [LibraryImport(Path, EntryPoint = "$s9CryptoKit12SymmetricKeyV4dataACx_tc10Foundation15ContiguousBytesRzlufC")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         internal static unsafe partial void PInvoke_SymmetricKey_Init2(SwiftIndirectResult result, void* data, void* metadata, void* witnessTable);
+
+        [LibraryImport(Path, EntryPoint = "$s9CryptoKit12SymmetricKeyVMa")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial void* PInvoke_SymmetricKey_GetMetadata();
 
         [LibraryImport(Path, EntryPoint = "$s9CryptoKit16SymmetricKeySizeV8bitCountACSi_tcfC")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
