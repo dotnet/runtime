@@ -638,7 +638,7 @@ struct InlArgInfo
     GenTree* argBashTmpNode;              // tmp node created, if it may be replaced with actual arg
     unsigned argTmpNum;                   // the argument tmp number
     unsigned argIsUsed               : 1; // is this arg used at all?
-    unsigned argIsInvariant          : 1; // the argument is a constant or a local variable address
+    unsigned argIsInvariant          : 1; // the argument is a constant, a local variable address or a static readonly field
     unsigned argIsLclVar             : 1; // the argument is a local variable
     unsigned argIsThis               : 1; // the argument is the 'this' pointer
     unsigned argHasSideEff           : 1; // the argument has side effects
