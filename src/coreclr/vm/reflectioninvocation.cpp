@@ -783,6 +783,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_GetValueDirect(FieldDesc* fieldDesc
 
     GCX_COOP();
 
+    CorElementType fieldElType;
     TypeHandle fieldType = fieldTypeHandle.AsTypeHandle();
 
     // Find the Object and its type
@@ -803,7 +804,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_GetValueDirect(FieldDesc* fieldDesc
     //  Enum.  We want to process it here.
     // Get the value from the field
     void* p;
-    CorElementType fieldElType = fieldType.GetSignatureCorElementType();
+    fieldElType = fieldType.GetSignatureCorElementType();
     switch (fieldElType)
     {
     case ELEMENT_TYPE_VOID:
@@ -879,13 +880,18 @@ static void DirectObjectFieldSet(FieldDesc *pField, TypeHandle fieldType, TypeHa
     GCPROTECT_END();
 }
 
-extern "C" void QCALLTYPE RuntimeFieldHandle_SetValueDirect(FieldDesc* fieldDesc, TypedByRef *pTarget, QCall::ObjectHandleOnStack value, QCall::TypeHandle fieldTypeHandle, QCall::TypeHandle declaringType)
+extern "C" void QCALLTYPE RuntimeFieldHandle_SetValueDirect(FieldDesc* fieldDesc, TypedByRef *pTarget, QCall::ObjectHandleOnStack newValue, QCall::TypeHandle fieldTypeHandle, QCall::TypeHandle declaringType)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
     GCX_COOP();
+
+    // The ARG_SLOT is used for primitive values.
+    ARG_SLOT value = 0;
+    CorElementType fieldElType = ELEMENT_TYPE_END;
+    BYTE* pDst = NULL;
 
     TypeHandle fieldType = fieldTypeHandle.AsTypeHandle();
     TypeHandle contextType = declaringType.AsTypeHandle();
@@ -894,7 +900,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_SetValueDirect(FieldDesc* fieldDesc
     {
         OBJECTREF Value;
     } gc;
-    gc.Value = value.Get();
+    gc.Value = newValue.Get();
     GCPROTECT_BEGIN(gc);
 
     // Find the Object and its type
@@ -917,11 +923,8 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_SetValueDirect(FieldDesc* fieldDesc
     if (!targetType.CanCastTo(TypeHandle(pEnclosingMT)))
         COMPlusThrowArgumentException(W("obj"), NULL);
 
-    // The ARG_SLOT is used for primitive values.
-    ARG_SLOT value = 0;
-
     // Set the field
-    CorElementType fieldElType = fieldType.GetInternalCorElementType();
+    fieldElType = fieldType.GetInternalCorElementType();
     if (ELEMENT_TYPE_BOOLEAN <= fieldElType && fieldElType <= ELEMENT_TYPE_R8)
     {
         CorElementType objType = gc.Value->GetTypeHandle().GetInternalCorElementType();
@@ -935,7 +938,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_SetValueDirect(FieldDesc* fieldDesc
         }
     }
 
-    BYTE* pDst = ((BYTE*) pTarget->data) + fieldDesc->GetOffset();
+    pDst = ((BYTE*) pTarget->data) + fieldDesc->GetOffset();
     switch (fieldElType)
     {
     case ELEMENT_TYPE_VOID:
