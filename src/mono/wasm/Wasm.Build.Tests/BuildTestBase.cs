@@ -184,9 +184,10 @@ namespace Wasm.Build.Tests
 
                 var outputBuilder = new StringBuilder();
                 var buildRoot = BinaryLog.ReadBuild(logFilePath);
-                buildRoot.VisitAllChildren<Message>(m =>
+                buildRoot.VisitAllChildren<TextNode>(m =>
                 {
-                    outputBuilder.AppendLine(m.Title);
+                    if (m is Message || m is Error || m is Warning)
+                        outputBuilder.AppendLine(m.Title);
                 });
 
                 res = new CommandResult(res.StartInfo, res.ExitCode, outputBuilder.ToString());
