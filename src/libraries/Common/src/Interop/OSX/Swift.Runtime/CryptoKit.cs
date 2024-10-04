@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 
 #pragma warning disable CS3016 // Arrays as attribute arguments are not CLS Compliant
 #pragma warning disable SYSLIB1051
+#pragma warning disable CA1805
 
 namespace Swift
 {
@@ -21,22 +22,24 @@ namespace Swift
         /// <summary>
         /// Represents Nonce in C#.
         /// </summary>
-        internal sealed unsafe partial class Nonce
+        internal sealed unsafe partial class Nonce : IDisposable
         {
             private const int PayloadSize = 16;
 
             private readonly void* _payload;
 
+            private bool _disposed = false;
+
             internal Nonce()
             {
-                _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+                _payload = NativeMemory.Alloc(PayloadSize);
                 SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
                 CryptoKit.PInvoke_ChaChaPoly_Nonce_Init(swiftIndirectResult);
             }
 
             internal Nonce(Data data)
             {
-                _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+                _payload = NativeMemory.Alloc(PayloadSize);
                 SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
 
                 void* metadata = Swift.Runtime.GetMetadata(data);
@@ -47,15 +50,26 @@ namespace Swift
 
                 if (error.Value != null)
                 {
+                    NativeMemory.Free(_payload);
                     throw new CryptographicException();
                 }
             }
 
             internal void* Payload => _payload;
 
+            public void Dispose()
+            {
+                if (!_disposed)
+                {
+                    NativeMemory.Free(_payload);
+                    _disposed = true;
+                    GC.SuppressFinalize(this);
+                }
+            }
+
             ~Nonce()
             {
-                Marshal.FreeHGlobal(new IntPtr(_payload));
+                NativeMemory.Free(_payload);
             }
         }
 
@@ -148,22 +162,24 @@ namespace Swift
         /// <summary>
         /// Represents Nonce in C#.
         /// </summary>
-        internal sealed unsafe partial class Nonce
+        internal sealed unsafe partial class Nonce : IDisposable
         {
             private const int PayloadSize = 16;
 
             private readonly void* _payload;
 
+            private bool _disposed = false;
+
             internal Nonce()
             {
-                _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+                _payload = NativeMemory.Alloc(PayloadSize);
                 SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
                 CryptoKit.PInvoke_AesGcm_Nonce_Init(swiftIndirectResult);
             }
 
             internal Nonce(Data data)
             {
-                _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+                _payload = NativeMemory.Alloc(PayloadSize);
                 SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
 
                 void* metadata = Swift.Runtime.GetMetadata(data);
@@ -174,35 +190,48 @@ namespace Swift
 
                 if (error.Value != null)
                 {
+                    NativeMemory.Free(_payload);
                     throw new CryptographicException();
                 }
             }
 
             internal void* Payload => _payload;
 
+            public void Dispose()
+            {
+                if (!_disposed)
+                {
+                    NativeMemory.Free(_payload);
+                    _disposed = true;
+                    GC.SuppressFinalize(this);
+                }
+            }
+
             ~Nonce()
             {
-                Marshal.FreeHGlobal(new IntPtr(_payload));
+                NativeMemory.Free(_payload);
             }
         }
 
         /// <summary>
         /// Represents SealedBox in C#.
         /// </summary>
-        internal sealed unsafe partial class SealedBox
+        internal sealed unsafe partial class SealedBox : IDisposable
         {
             private const int PayloadSize = 24;
 
             private readonly void* _payload;
 
+            private bool _disposed = false;
+
             internal SealedBox()
             {
-                _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+                _payload = NativeMemory.Alloc(PayloadSize);
             }
 
             internal SealedBox(AesGcm.Nonce nonce, Data ciphertext, Data tag)
             {
-                _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+                _payload = NativeMemory.Alloc(PayloadSize);
                 SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
 
                 void* ciphertextMetadata = Swift.Runtime.GetMetadata(ciphertext);
@@ -224,6 +253,7 @@ namespace Swift
 
                 if (error.Value != null)
                 {
+                    NativeMemory.Free(_payload);
                     throw new CryptographicException();
                 }
             }
@@ -234,9 +264,19 @@ namespace Swift
 
             internal Data Tag => CryptoKit.PInvoke_AesGcm_SealedBox_GetTag(new SwiftSelf(_payload));
 
+            public void Dispose()
+            {
+                if (!_disposed)
+                {
+                    NativeMemory.Free(_payload);
+                    _disposed = true;
+                    GC.SuppressFinalize(this);
+                }
+            }
+
             ~SealedBox()
             {
-                Marshal.FreeHGlobal(new IntPtr(_payload));
+                NativeMemory.Free(_payload);
             }
         }
 
@@ -291,22 +331,24 @@ namespace Swift
     /// <summary>
     /// Represents SymmetricKey in C#.
     /// </summary>
-    internal sealed unsafe partial class SymmetricKey
+    internal sealed unsafe partial class SymmetricKey : IDisposable
     {
         private const int PayloadSize = 8;
 
         internal readonly void* _payload;
 
+        private bool _disposed = false;
+
         internal SymmetricKey(SymmetricKeySize symmetricKeySize)
         {
-            _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+            _payload = NativeMemory.Alloc(PayloadSize);
             SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
             CryptoKit.PInvoke_SymmetricKey_Init(swiftIndirectResult, &symmetricKeySize);
         }
 
         internal SymmetricKey(Data data)
         {
-            _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+            _payload = NativeMemory.Alloc(PayloadSize);
             SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
 
             void* metadata = Swift.Runtime.GetMetadata(data);
@@ -318,9 +360,19 @@ namespace Swift
 
         internal void* Payload => _payload;
 
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                NativeMemory.Free(_payload);
+                _disposed = true;
+                GC.SuppressFinalize(this);
+            }
+        }
+
         ~SymmetricKey()
         {
-            Marshal.FreeHGlobal(new IntPtr(_payload));
+            NativeMemory.Free(_payload);
         }
     }
 

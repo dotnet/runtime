@@ -67,6 +67,9 @@ internal static partial class Interop
 
                 if (error.Value != null)
                 {
+                    chaChaPolyNonce.Dispose();
+                    symmetricKey.Dispose();
+
                     CryptographicOperations.ZeroMemory(ciphertext);
                     CryptographicOperations.ZeroMemory(tag);
                     throw new CryptographicException();
@@ -119,6 +122,9 @@ internal static partial class Interop
 
                 if (error.Value != null)
                 {
+                    chaChaPolyNonce.Dispose();
+                    symmetricKey.Dispose();
+
                     CryptographicOperations.ZeroMemory(plaintext);
 
                     if (AppleCryptoNative_IsAuthenticationFailure(error.Value))
@@ -172,6 +178,10 @@ internal static partial class Interop
 
                 if (error.Value != null)
                 {
+                    sealedBox.Dispose();
+                    aesGcmNonce.Dispose();
+                    symmetricKey.Dispose();
+
                     CryptographicOperations.ZeroMemory(ciphertext);
                     CryptographicOperations.ZeroMemory(tag);
                     throw new CryptographicException();
@@ -224,6 +234,10 @@ internal static partial class Interop
 
                 if (error.Value != null)
                 {
+                    sealedBox.Dispose();
+                    aesGcmNonce.Dispose();
+                    symmetricKey.Dispose();
+
                     CryptographicOperations.ZeroMemory(plaintext);
 
                     if (AppleCryptoNative_IsAuthenticationFailure(error.Value))
