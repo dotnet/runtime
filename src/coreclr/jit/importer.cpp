@@ -13214,6 +13214,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 if (arg.GetNode()->IsCnsIntOrI())
                 {
                     ctxInfo->argIsInvariant = true;
+                    ctxInfo->argIsConstant  = true;
                 }
                 else
                 {
