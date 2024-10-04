@@ -1644,7 +1644,7 @@ get_queue (int queue) {
 void
 mono_jiterp_tlqueue_purge_all (gpointer item) {
 	// HACK: Call get_queue_key to ensure the queues are initialized before enumerating them
-	MonoNativeTlsKey unused = get_queue_key (0);
+	get_queue_key (0);
 
 	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
 	mono_os_mutex_lock (&queue_mutex);
