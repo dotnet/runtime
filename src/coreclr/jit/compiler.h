@@ -6808,6 +6808,9 @@ public:
         // Which EH region forms the key?
         AcdKeyDesignator  acdKeyDsg;
 
+        // Update the key designator, after modifying the region indices
+        bool UpdateKeyDesignator(Compiler* compiler);
+
         SpecialCodeKind acdKind; // what kind of a special block is this?
         bool            acdUsed; // do we need to keep this helper block?
 

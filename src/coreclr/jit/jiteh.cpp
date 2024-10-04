@@ -1520,47 +1520,9 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
                 isModified = true;
             }
 
-            // The ACD may now have a new enclosing region.
-            // Figure out the new parent key designator.
-            //
-            // For example, suppose there is a try that has an array
-            // bounds check and an empty finally, all within a
-            // finally. When we remove the try, the ACD for the bounds
-            // check changes from being enclosed in a try to being
-            // enclosed in a finally.
-            //
-            // (given the above I think we can say the designator
-            // does not change...)
-            AcdKeyDesignator newDsg = add->acdKeyDsg;
-
-            if (!inTry && !inHnd)
-            {
-                // Moved outside of all EH regions.
-                //
-                newDsg = AcdKeyDesignator::KD_NONE;
-            }
-            else if (inTry && (!inHnd || (add->acdTryIndex < add->acdHndIndex)))
-            {
-                // Moved into a parent try region.
-                //
-                newDsg = AcdKeyDesignator::KD_TRY;
-            }
-            else
-            {
-                // Moved into a parent handler region.
-                // Note this cannot be a filter region.
-                //
-                newDsg = AcdKeyDesignator::KD_HND;
-            }
-
-            if (newDsg != add->acdKeyDsg)
-            {
-                assert(isModified);
-                add->acdKeyDsg = newDsg;
-            }
-
             if (isModified)
             {
+                add->UpdateKeyDesignator(this);
                 bool const removed = map->Remove(oldKey);
                 assert(removed);
                 modified.Push(add);

@@ -252,7 +252,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
 
                 // If this ACD is NOT in the try we just removed,
                 // it is unaffected (though it may get updated
-                // when the EH region is removed)..
+                // when the EH region is removed).
                 //
                 bool inTry = add->acdTryIndex > 0;
 
@@ -273,34 +273,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 // with an updated key.
                 //
                 add->acdTryIndex = firstBlock->bbTryIndex;
-                inTry            = add->acdTryIndex > 0;
-
-                // Because we "relocated" this ACD, it now be enclosed
-                // in a different region type. Figure this out.
-                //
-                AcdKeyDesignator newDsg = add->acdKeyDsg;
-
-                if (!inTry && !inHnd)
-                {
-                    // Moved outside of all EH regions.
-                    //
-                    newDsg = AcdKeyDesignator::KD_NONE;
-                }
-                else if (inTry && (!inHnd || (add->acdTryIndex < add->acdHndIndex)))
-                {
-                    // Moved into a parent try region.
-                    //
-                    newDsg = AcdKeyDesignator::KD_TRY;
-                }
-                else
-                {
-                    // Moved into a parent handler region.
-                    // Note this cannot be a filter region.
-                    //
-                    newDsg = AcdKeyDesignator::KD_HND;
-                }
-
-                add->acdKeyDsg = newDsg;
+                add->UpdateKeyDesignator(this);
 
                 // Remove the ACD from the map via its old key
                 //
