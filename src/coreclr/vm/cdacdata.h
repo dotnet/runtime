@@ -18,9 +18,9 @@
 //      class C {
 //      private:
 //          int F;
-//          friend struct ::cdac_data<D>;
+//          friend struct ::cdac_data<C>;
 //      };
-//      template<> struct cdac_data<D> {
+//      template<> struct cdac_data<C> {
 //          static constexpr size_t F_Offset = offsetof(C, F);
 //      };
 //
