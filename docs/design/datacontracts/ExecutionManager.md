@@ -1,6 +1,6 @@
 # Contract ExecutionManager
 
-This contract is for mapping a PC adddress to information about the
+This contract is for mapping a PC address to information about the
 managed method corresponding to that address.
 
 
