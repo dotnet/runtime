@@ -7,17 +7,24 @@
 // See datadescriptor.h
 //
 // This struct enables exposing information that is private to a class to the cDAC. For example,
-// if class C has private information that must be provided, declare cdac_data<T> as a friend of C
-// where T is the specialization of cdac_data that will expose the information. For example:
+// if class C has private information that must be provided, declare cdac_data<D> as a friend of C
+// where D is the specialization of cdac_data that will expose the information. Then provide a 
+// specialization cdac_data<D> with constexpr members exposing the information.
 //
-//     friend struct ::cdac_data<T>;
+// For example, if the offset of field F in class C is required:
 //
-// and provide a specialization cdac_data<C> with constexpr members exposing the information.
-// For example, if the offset of field F is required:
+//      class C {
+//      private:
+//          int F;
+//          friend struct ::cdac_data<D>;
+//      };
+//      template<> struct cdac_data<D> {
+//          static constexpr size_t F_Offset = offsetof(C, F);
+//      };
 //
-//     template<> struct cdac_data<C> {
-//         static constexpr size_t F_Offset = offsetof(C, F);
-//     };
+// Note, in the common case type D will be type C.
+//
+
 template<typename T>
 struct cdac_data
 {
