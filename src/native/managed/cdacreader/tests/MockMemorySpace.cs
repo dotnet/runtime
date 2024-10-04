@@ -54,6 +54,17 @@ internal unsafe static class MockMemorySpace
             _targetTestHelpers = targetTestHelpers;
         }
 
+
+        internal Span<byte> BorrowAddressRange(ulong address, int length)
+        {
+            foreach (var fragment in _heapFragments)
+            {
+                if (address >= fragment.Address && address+(ulong)length <= fragment.Address + (ulong)fragment.Data.Length)
+                    return fragment.Data.AsSpan((int)(address - fragment.Address), length);
+            }
+            throw new InvalidOperationException($"No fragment includes addresses from 0x{address:x} with length {length}");
+        }
+
         // TODO: contracts with versions
         public Builder SetContracts(IReadOnlyCollection<string> contracts)
         {
@@ -188,7 +199,7 @@ internal unsafe static class MockMemorySpace
             return (json, pointerData);
         }
 
-        private ReadContext CreateContext(out ulong contractDescriptorAddress)
+        private ulong CreateDescriptorFragments()
         {
             if (_created)
                 throw new InvalidOperationException("Context already created");
@@ -203,12 +214,25 @@ internal unsafe static class MockMemorySpace
             if (pointerData.Data.Length > 0)
                 AddHeapFragment(pointerData);
 
+            MarkCreated();
+            return descriptor.Address;
+        }
+
+        internal void MarkCreated()
+        {
+            if (_created)
+                throw new InvalidOperationException("Context already created");
+            _created = true;
+        }
+
+        internal ReadContext GetReadContext()
+        {
+            if (!_created)
+                throw new InvalidOperationException("Context not created");
             ReadContext context = new ReadContext
             {
                 HeapFragments = _heapFragments,
             };
-            _created = true;
-            contractDescriptorAddress = descriptor.Address;
             return context;
         }
 
@@ -231,7 +255,10 @@ internal unsafe static class MockMemorySpace
 
         public bool TryCreateTarget([NotNullWhen(true)] out ContractDescriptorTarget? target)
         {
-            ReadContext context = CreateContext(out ulong contractDescriptorAddress);
+            if (_created)
+                throw new InvalidOperationException("Context already created");
+            ulong contractDescriptorAddress = CreateDescriptorFragments();
+            ReadContext context = GetReadContext();
             return ContractDescriptorTarget.TryCreate(contractDescriptorAddress, context.ReadFromTarget, out target);
         }
     }

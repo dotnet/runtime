@@ -204,6 +204,7 @@ internal class TestPlaceholderTarget : Target
         internal Contracts.IThread? ThreadContract { get; set; }
         internal Contracts.IRuntimeTypeSystem? RuntimeTypeSystemContract { get; set; }
         internal Contracts.IDacStreams? DacStreamsContract { get; set; }
+        internal Contracts.IExecutionManager? ExecutionManagerContract { get; set; }
 
         public override Contracts.IException Exception => ExceptionContract ?? throw new NotImplementedException();
         public override Contracts.ILoader Loader => LoaderContract ?? throw new NotImplementedException();
@@ -212,6 +213,7 @@ internal class TestPlaceholderTarget : Target
         public override Contracts.IThread Thread => ThreadContract ?? throw new NotImplementedException();
         public override Contracts.IRuntimeTypeSystem RuntimeTypeSystem => RuntimeTypeSystemContract ?? throw new NotImplementedException();
         public override Contracts.IDacStreams DacStreams => DacStreamsContract ?? throw new NotImplementedException();
+        public override Contracts.IExecutionManager ExecutionManager => ExecutionManagerContract ?? throw new NotImplementedException();
     }
 
     internal class TestDataCache : Target.IDataCache
