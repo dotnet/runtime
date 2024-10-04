@@ -18,7 +18,7 @@ Useful links:
 
 ### Prerequisites
 
-Build the runtime if haven't already:
+Build the runtime if you haven't already:
 ```cmd
 ./build.cmd clr+libs -rc release
 ```
@@ -29,12 +29,13 @@ dotnet tool install --global SharpFuzz.CommandLine
 ```
 
 > [!TIP]
-> The project uses a release runtime + debug libraries configuration by default.
-> If you want to use a different configuration, make sure to also adjust the paths in `run.bat`.
+> The project uses a `Release` runtime + `Debug` libraries configuration by default.
+> Automated fuzzing runs use a `Checked` runtime + `Debug` libraries configuration by default.
+> You can use any configuration locally, but `Checked` is recommended when testing changes in `System.Private.CoreLib`.
 
 ### Fuzzing locally
 
-Build the `DotnetFuzzing` fuzzing project, the project is self contained so it will produce `DotnetFuzzing.exe` and all libraries needed for run into the output.
+Build the `DotnetFuzzing` fuzzing project. It is self-contained, so it will produce `DotnetFuzzing.exe` along with a copy of all required libraries.
 
 ```cmd
 cd src/libraries/Fuzzing/DotnetFuzzing
@@ -42,7 +43,8 @@ cd src/libraries/Fuzzing/DotnetFuzzing
 dotnet build
 ```
 
-Now can `run run.bat` that will finds the path to the `DotnetFuzzing.exe` and run it with required arguments `\path\DotnetFuzzing.exe prepare-onefuzz deployment`. The `prepare-onefuzz` command will create separate directories for each fuzzing target, instrument the relevant assemblies, and generate a helper script for running them locally.
+Now you can run `run.bat`, which will create separate directories for each fuzzing target, instrument the relevant assemblies, and generate a helper script for running them locally.
+When iterating on changes, remember to rebuild the project again: `dotnet build; .\run.bat`.
 
 ```cmd
 run.bat
