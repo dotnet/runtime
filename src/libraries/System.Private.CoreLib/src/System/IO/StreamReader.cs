@@ -111,12 +111,12 @@ namespace System.IO
         {
         }
 
-        public StreamReader(Stream stream, Encoding encoding)
+        public StreamReader(Stream stream, Encoding? encoding)
             : this(stream, encoding, true, DefaultBufferSize, false)
         {
         }
 
-        public StreamReader(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks)
+        public StreamReader(Stream stream, Encoding? encoding, bool detectEncodingFromByteOrderMarks)
             : this(stream, encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize, false)
         {
         }
@@ -131,7 +131,7 @@ namespace System.IO
         // unicode, and big endian unicode text, but that's it.  If neither
         // of those three match, it will use the Encoding you provided.
         //
-        public StreamReader(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
+        public StreamReader(Stream stream, Encoding? encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
             : this(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, false)
         {
         }
