@@ -1596,7 +1596,7 @@ INST1(yield,       "yield",        0,      IF_SN_0A,  0xD503203F)
 INST1(brk_windows, "brk_windows",  0,      IF_SI_0A,  0xD43E0000)
                                    //  brk (windows)                SI_0A  1101010000111110 0000000000000000   D43E 0000   0xF000
 
-INST1(brk_unix,    "brk_unix",     0,      IF_SI_0A,  0xD4200000)
+INST1(brk_unix,    "brk_unix",     0,      IF_SI_0A,  0xD43E0000)
                                    //  brk     imm16                SI_0A  11010100001iiiii iiiiiiiiiii00000   D420 0000   imm16
 
 INST1(dsb,         "dsb",          0,      IF_SI_0B,  0xD503309F)
