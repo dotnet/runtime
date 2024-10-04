@@ -126,6 +126,32 @@ public class NibbleMapTests
     }
 
     [Theory]
+    [InlineData(0u)]
+    [InlineData(0x100u)]
+    [InlineData(0xab00u)]
+    // we don't really expct nibble maps to be this huge...
+    [InlineData(0xabcd_abcd_7fff_ff00u)]
+    public void ExhaustiveNibbbleShifts(ulong irrelevant)
+    {
+        // Try all possible inputs to ComputeNibbleShift.
+        // Given the index of a nibble in the map, compute how much we have to shift a MapUnit to put that
+        // nibble in the least significant position.
+        // Actually we could just go up to 31 (since a map unit is 32 bits), but we'll go up to 255 for good measure
+        int expectedShift = 28;
+        for (int i = 0; i < 255; i++)
+        {
+            ulong input = irrelevant + (ulong)i;
+            int actualShift = NibbleMap.ComputeNibbleShift(input);
+            Assert.True(expectedShift == actualShift, $"Expected {expectedShift}, got {actualShift} for input 0x{input:x}");
+            expectedShift -= 4;
+            if (expectedShift == -4)
+            {
+                expectedShift = 28;
+            }
+        }
+    }
+
+    [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void NibbleMapOneItemLookupOk(MockTarget.Architecture arch)
     {

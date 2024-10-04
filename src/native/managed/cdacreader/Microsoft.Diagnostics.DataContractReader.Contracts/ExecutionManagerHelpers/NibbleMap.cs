@@ -37,11 +37,7 @@ internal sealed class NibbleMap
     }
 
     // Shift the next nibble into the least significant position.
-    private static T NextNibble<T>(T n) where T : IBinaryInteger<T>
-    {
-        return n >>> 4;
-    }
-
+    private static MapUnit NextNibble (MapUnit n) => n >>> 4;
 
     private const uint MapUnitBytes = sizeof(MapUnit); // our units are going to be 32-bit integers
     private const MapUnit NibbleMask = 0x0F;
@@ -49,25 +45,29 @@ internal sealed class NibbleMap
 
     // we will partition the address space into buckets of this many bytes.
     // There is at most one code block header per bucket.
-    // normally we would then need Log2(BytesPerBucket) bits to find the exact start address,
+    // Normally we would then need 5 bits (Log2(BytesPerBucket))to find the exact start address,
     // but because code headers are aligned, we can store the offset in a 4-bit nibble instead and shift appropriately to compute
     // the effective address
     private const ulong BytesPerBucket = 8 * sizeof(MapUnit);
 
 
     // given the index of a nibble in the map, compute how much we have to shift a MapUnit to put that
-    // nible in the least significant position.
-    private static int ComputeNibbleShift(ulong mapIdx)
+    // nibble in the least significant position.
+    internal static int ComputeNibbleShift(ulong mapIdx)
     {
         // the low bits of the nibble index give us how many nibbles we have to shift by.
         int nibbleOffsetInMapUnit = (int)(mapIdx & (NibblesPerMapUnit - 1));
         return 28 - (nibbleOffsetInMapUnit * 4);  // bit shift - 4 bits per nibble
     }
 
+    // Given a map index and a nibble index, compute the byte offset in the address space that they represent
     private static ulong ComputeByteOffset(ulong mapIdx, uint nibble)
     {
         return mapIdx * BytesPerBucket + (nibble - 1) * MapUnitBytes;
     }
+
+    // Given a base address, a map index, and a nibble index, compute the absolute address in memory
+    //  that the index and nibble point to.
     private static TargetPointer GetAbsoluteAddress(TargetPointer baseAddress, ulong mapIdx, uint nibble)
     {
         return baseAddress + ComputeByteOffset(mapIdx, nibble);
@@ -82,6 +82,7 @@ internal sealed class NibbleMap
         System.Diagnostics.Debug.Assert(bucketByteIndex == (bucketByteIndex & NibbleMask));
     }
 
+    // Given a logical index into the map, compute the address in memory where that map unit is located
     private static TargetPointer GetMapUnitAddress(TargetPointer mapStart, ulong mapIdx)
     {
         return mapStart + (mapIdx / NibblesPerMapUnit) * MapUnitBytes;
@@ -91,7 +92,7 @@ internal sealed class NibbleMap
     {
         TargetNUInt relativeAddress = new TargetNUInt(currentPC.Value - mapBase.Value);
         DecomposeAddress(relativeAddress, out ulong mapIdx, out uint bucketByteIndex);
-        return mapBase + ComputeByteOffset(mapIdx, bucketByteIndex);
+        return GetAbsoluteAddress(mapBase, mapIdx, bucketByteIndex);
     }
 
     internal TargetPointer FindMethodCode(TargetPointer mapBase, TargetPointer mapStart, TargetCodePointer currentPC)
