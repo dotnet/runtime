@@ -133,12 +133,14 @@ namespace Swift
     [InlineArray(16)]
     internal unsafe partial struct Data : ISwiftObject
     {
-        internal byte payload;
+        private byte _payload;
 
         internal unsafe Data(UnsafeRawPointer pointer, nint count)
         {
             this = Foundation.PInvoke_Data_InitWithBytes(pointer, count);
         }
+
+        internal byte Payload => _payload;
 
         internal readonly nint Count => Foundation.PInvoke_Data_GetCount(this);
 
@@ -199,7 +201,6 @@ namespace Swift
     /// </summary>
     internal static partial class Runtime
     {
-
         internal static unsafe void* GetMetadata<T>(T type) where T: ISwiftObject
         {
             return T.Metadata;

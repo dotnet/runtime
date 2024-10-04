@@ -23,20 +23,21 @@ namespace Swift
         /// </summary>
         internal sealed unsafe partial class Nonce
         {
-            private const int _payloadSize = 16;
-            internal void* payload;
+            private const int PayloadSize = 16;
+
+            private readonly void* _payload;
 
             internal Nonce()
             {
-                payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
-                SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
+                _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+                SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
                 CryptoKit.PInvoke_ChaChaPoly_Nonce_Init(swiftIndirectResult);
             }
 
             internal Nonce(Data data)
             {
-                payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
-                SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
+                _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+                SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
 
                 void* metadata = Swift.Runtime.GetMetadata(data);
                 void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
@@ -50,9 +51,11 @@ namespace Swift
                 }
             }
 
+            internal void* Payload => _payload;
+
             ~Nonce()
             {
-                Marshal.FreeHGlobal(new IntPtr(payload));
+                Marshal.FreeHGlobal(new IntPtr(_payload));
             }
         }
 
@@ -62,9 +65,7 @@ namespace Swift
         [StructLayout(LayoutKind.Sequential, Size = 16)]
         internal unsafe partial struct SealedBox
         {
-            internal Data combined;
-            internal readonly Data Ciphertext { get => CryptoKit.PInvoke_ChaChaPoly_SealedBox_GetCiphertext(this); }
-            internal readonly Data Tag { get => CryptoKit.PInvoke_ChaChaPoly_SealedBox_GetTag(this); }
+            private readonly Data _combined;
 
             internal SealedBox(ChaChaPoly.Nonce nonce, Data ciphertext, Data tag)
             {
@@ -75,7 +76,7 @@ namespace Swift
                 void* tagWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, tagMetadata, null);
 
                 this = CryptoKit.PInvoke_ChaChaPoly_SealedBox_Init(
-                    nonce.payload,
+                    nonce.Payload,
                     &ciphertext,
                     &tag,
                     ciphertextMetadata,
@@ -89,6 +90,10 @@ namespace Swift
                     throw new CryptographicException();
                 }
             }
+
+            internal Data Ciphertext => CryptoKit.PInvoke_ChaChaPoly_SealedBox_GetCiphertext(this);
+
+            internal Data Tag => CryptoKit.PInvoke_ChaChaPoly_SealedBox_GetTag(this);
         }
 
         /// <summary>
@@ -101,10 +106,10 @@ namespace Swift
             void* plaintextWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, plaintextMetadata, null);
             void* aadWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, aadMetadata, null);
 
-            var sealedBox = CryptoKit.PInvoke_ChaChaPoly_Seal(
+            SealedBox sealedBox = CryptoKit.PInvoke_ChaChaPoly_Seal(
                 &plaintext,
-                key.payload,
-                nonce.payload,
+                key.Payload,
+                nonce.Payload,
                 &aad,
                 plaintextMetadata,
                 aadMetadata,
@@ -123,9 +128,9 @@ namespace Swift
             void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
             void* witnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, metadata, null);
 
-            var data = CryptoKit.PInvoke_ChaChaPoly_Open(
+            Data data = CryptoKit.PInvoke_ChaChaPoly_Open(
                 sealedBox,
-                key.payload,
+                key.Payload,
                 &aad,
                 metadata,
                 witnessTable,
@@ -145,20 +150,21 @@ namespace Swift
         /// </summary>
         internal sealed unsafe partial class Nonce
         {
-            private const int _payloadSize = 16;
-            internal void* payload;
+            private const int PayloadSize = 16;
+
+            private readonly void* _payload;
 
             internal Nonce()
             {
-                payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
-                SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
+                _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+                SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
                 CryptoKit.PInvoke_AesGcm_Nonce_Init(swiftIndirectResult);
             }
 
             internal Nonce(Data data)
             {
-                payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
-                SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
+                _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+                SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
 
                 void* metadata = Swift.Runtime.GetMetadata(data);
                 void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
@@ -172,9 +178,11 @@ namespace Swift
                 }
             }
 
+            internal void* Payload => _payload;
+
             ~Nonce()
             {
-                Marshal.FreeHGlobal(new IntPtr(payload));
+                Marshal.FreeHGlobal(new IntPtr(_payload));
             }
         }
 
@@ -183,14 +191,19 @@ namespace Swift
         /// </summary>
         internal sealed unsafe partial class SealedBox
         {
-            private const int _payloadSize = 24;
-            internal void* payload;
-            public Data Ciphertext { get => CryptoKit.PInvoke_AesGcm_SealedBox_GetCiphertext(new SwiftSelf(payload)); }
-            public Data Tag { get => CryptoKit.PInvoke_AesGcm_SealedBox_GetTag(new SwiftSelf(payload)); }
+            private const int PayloadSize = 24;
+
+            private readonly void* _payload;
+
+            internal SealedBox()
+            {
+                _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+            }
+
             internal SealedBox(AesGcm.Nonce nonce, Data ciphertext, Data tag)
             {
-                payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
-                SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
+                _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+                SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
 
                 void* ciphertextMetadata = Swift.Runtime.GetMetadata(ciphertext);
                 void* tagMetadata = Swift.Runtime.GetMetadata(tag);
@@ -200,7 +213,7 @@ namespace Swift
 
                 CryptoKit.PInvoke_AesGcm_SealedBox_Init(
                     swiftIndirectResult,
-                    nonce.payload,
+                    nonce.Payload,
                     &ciphertext,
                     &tag,
                     ciphertextMetadata,
@@ -215,14 +228,15 @@ namespace Swift
                 }
             }
 
-            internal SealedBox()
-            {
-                payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
-            }
+            internal void* Payload => _payload;
+
+            internal Data Ciphertext => CryptoKit.PInvoke_AesGcm_SealedBox_GetCiphertext(new SwiftSelf(_payload));
+
+            internal Data Tag => CryptoKit.PInvoke_AesGcm_SealedBox_GetTag(new SwiftSelf(_payload));
 
             ~SealedBox()
             {
-                Marshal.FreeHGlobal(new IntPtr(payload));
+                Marshal.FreeHGlobal(new IntPtr(_payload));
             }
         }
 
@@ -230,8 +244,8 @@ namespace Swift
         /// Encrypts the plaintext using the key, nonce, and authenticated data.
         /// </summary>
         internal static unsafe SealedBox seal<Plaintext, AuthenticateData>(Plaintext plaintext, SymmetricKey key, Nonce nonce, AuthenticateData aad, out SwiftError error) where Plaintext : unmanaged, ISwiftObject where AuthenticateData : unmanaged, ISwiftObject {
-            var sealedBox = new AesGcm.SealedBox();
-            SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(sealedBox.payload);
+            AesGcm.SealedBox sealedBox = new AesGcm.SealedBox();
+            SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(sealedBox.Payload);
 
             void* plaintextMetadata = Swift.Runtime.GetMetadata(plaintext);
             void* aadMetadata = Swift.Runtime.GetMetadata(aad);
@@ -242,8 +256,8 @@ namespace Swift
             CryptoKit.PInvoke_AesGcm_Seal(
                 swiftIndirectResult,
                 &plaintext,
-                key.payload,
-                nonce.payload,
+                key.Payload,
+                nonce.Payload,
                 &aad,
                 plaintextMetadata,
                 aadMetadata,
@@ -262,9 +276,9 @@ namespace Swift
             void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
             void* witnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, metadata, null);
 
-            var data = CryptoKit.PInvoke_AesGcm_Open(
-                sealedBox.payload,
-                key.payload,
+            Data data = CryptoKit.PInvoke_AesGcm_Open(
+                sealedBox.Payload,
+                key.Payload,
                 &aad,
                 metadata,
                 witnessTable,
@@ -279,20 +293,21 @@ namespace Swift
     /// </summary>
     internal sealed unsafe partial class SymmetricKey
     {
-        private const int _payloadSize = 8;
-        internal void* payload;
+        private const int PayloadSize = 8;
+
+        internal readonly void* _payload;
 
         internal SymmetricKey(SymmetricKeySize symmetricKeySize)
         {
-            payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
-            SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
+            _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+            SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
             CryptoKit.PInvoke_SymmetricKey_Init(swiftIndirectResult, &symmetricKeySize);
         }
 
         internal SymmetricKey(Data data)
         {
-            payload = Marshal.AllocHGlobal(_payloadSize).ToPointer();
-            SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(payload);
+            _payload = Marshal.AllocHGlobal(PayloadSize).ToPointer();
+            SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
 
             void* metadata = Swift.Runtime.GetMetadata(data);
             void* conformanceDescriptor = IContiguousBytes.GetConformanceDescriptor;
@@ -301,9 +316,11 @@ namespace Swift
             CryptoKit.PInvoke_SymmetricKey_Init2(swiftIndirectResult, &data, metadata, witnessTable);
         }
 
+        internal void* Payload => _payload;
+
         ~SymmetricKey()
         {
-            Marshal.FreeHGlobal(new IntPtr(payload));
+            Marshal.FreeHGlobal(new IntPtr(_payload));
         }
     }
 
@@ -313,12 +330,12 @@ namespace Swift
     [StructLayout(LayoutKind.Sequential, Size = 8)]
     internal unsafe partial struct SymmetricKeySize
     {
-        internal nint bitCount;
+        private readonly nint _bitCount;
 
         internal SymmetricKeySize(nint bitCount)
         {
             SymmetricKeySize instance;
-            PInvoke_init(new SwiftIndirectResult(&instance), bitCount);
+            CryptoKit.PInvoke_init(new SwiftIndirectResult(&instance), bitCount);
             this = instance;
         }
     }

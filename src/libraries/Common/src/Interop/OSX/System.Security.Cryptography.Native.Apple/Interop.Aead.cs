@@ -49,16 +49,16 @@ internal static partial class Interop
             fixed (byte* tagPtr = tag)
             fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
-                var symmetricKeyData = new Data(keyPtr, key.Length);
-                var symmetricKey = new SymmetricKey(symmetricKeyData);
+                Data symmetricKeyData = new Data(keyPtr, key.Length);
+                SymmetricKey symmetricKey = new SymmetricKey(symmetricKeyData);
 
-                var nonceData = new Data(noncePtr, nonce.Length);
-                var chaChaPolyNonce = new ChaChaPoly.Nonce(nonceData);
+                Data nonceData = new Data(noncePtr, nonce.Length);
+                ChaChaPoly.Nonce chaChaPolyNonce = new ChaChaPoly.Nonce(nonceData);
 
-                var plaintextData = new Data(plaintextPtr, plaintext.Length);
-                var aadData = new Data(aadPtr, aad.Length);
+                Data plaintextData = new Data(plaintextPtr, plaintext.Length);
+                Data aadData = new Data(aadPtr, aad.Length);
 
-                var sealedBox = ChaChaPoly.seal(
+                ChaChaPoly.SealedBox sealedBox = ChaChaPoly.seal(
                     plaintextData,
                     symmetricKey,
                     chaChaPolyNonce,
@@ -72,8 +72,8 @@ internal static partial class Interop
                     throw new CryptographicException();
                 }
 
-                var resultCiphertext = sealedBox.Ciphertext;
-                var resultTag = sealedBox.Tag;
+                Data resultCiphertext = sealedBox.Ciphertext;
+                Data resultTag = sealedBox.Tag;
 
                 resultCiphertext.CopyBytes(ciphertextPtr, resultCiphertext.Count);
                 resultTag.CopyBytes(tagPtr, resultTag.Count);
@@ -99,19 +99,19 @@ internal static partial class Interop
             fixed (byte* plaintextPtr = &GetSwiftRef(plaintext))
             fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
-                var symmetricKeyData = new Data(keyPtr, key.Length);
-                var symmetricKey = new SymmetricKey(symmetricKeyData);
+                Data symmetricKeyData = new Data(keyPtr, key.Length);
+                SymmetricKey symmetricKey = new SymmetricKey(symmetricKeyData);
 
-                var nonceData = new Data(noncePtr, nonce.Length);
-                var chaChaPolyNonce = new ChaChaPoly.Nonce(nonceData);
+                Data nonceData = new Data(noncePtr, nonce.Length);
+                ChaChaPoly.Nonce chaChaPolyNonce = new ChaChaPoly.Nonce(nonceData);
 
-                var ciphertextData = new Data(ciphertextPtr, ciphertext.Length);
-                var tagData = new Data(tagPtr, tag.Length);
-                var aadData = new Data(aadPtr, aad.Length);
+                Data ciphertextData = new Data(ciphertextPtr, ciphertext.Length);
+                Data tagData = new Data(tagPtr, tag.Length);
+                Data aadData = new Data(aadPtr, aad.Length);
 
-                var sealedBox = new ChaChaPoly.SealedBox(chaChaPolyNonce, ciphertextData, tagData);
+                ChaChaPoly.SealedBox sealedBox = new ChaChaPoly.SealedBox(chaChaPolyNonce, ciphertextData, tagData);
 
-                var data = ChaChaPoly.open(
+                Data data = ChaChaPoly.open(
                     sealedBox,
                     symmetricKey,
                     aadData,
@@ -154,16 +154,16 @@ internal static partial class Interop
             fixed (byte* tagPtr = tag)
             fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
-                var symmetricKeyData = new Data(keyPtr, key.Length);
-                var symmetricKey = new SymmetricKey(symmetricKeyData);
+                Data symmetricKeyData = new Data(keyPtr, key.Length);
+                SymmetricKey symmetricKey = new SymmetricKey(symmetricKeyData);
 
-                var nonceData = new Data(noncePtr, nonce.Length);
-                var aesGcmNonce = new AesGcm.Nonce(nonceData);
+                Data nonceData = new Data(noncePtr, nonce.Length);
+                AesGcm.Nonce aesGcmNonce = new AesGcm.Nonce(nonceData);
 
-                var plaintextData = new Data(plaintextPtr, plaintext.Length);
-                var aadData = new Data(aadPtr, aad.Length);
+                Data plaintextData = new Data(plaintextPtr, plaintext.Length);
+                Data aadData = new Data(aadPtr, aad.Length);
 
-                var sealedBox = AesGcm.seal(
+                AesGcm.SealedBox sealedBox = AesGcm.seal(
                     plaintextData,
                     symmetricKey,
                     aesGcmNonce,
@@ -177,8 +177,8 @@ internal static partial class Interop
                     throw new CryptographicException();
                 }
 
-                var resultCiphertext = sealedBox.Ciphertext;
-                var resultTag = sealedBox.Tag;
+                Data resultCiphertext = sealedBox.Ciphertext;
+                Data resultTag = sealedBox.Tag;
 
                 resultCiphertext.CopyBytes(ciphertextPtr, resultCiphertext.Count);
                 resultTag.CopyBytes(tagPtr, resultTag.Count);
@@ -204,19 +204,19 @@ internal static partial class Interop
             fixed (byte* plaintextPtr = &GetSwiftRef(plaintext))
             fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
-                var symmetricKeyData = new Data(keyPtr, key.Length);
-                var symmetricKey = new SymmetricKey(symmetricKeyData);
+                Data symmetricKeyData = new Data(keyPtr, key.Length);
+                SymmetricKey symmetricKey = new SymmetricKey(symmetricKeyData);
 
-                var nonceData = new Data(noncePtr, nonce.Length);
-                var aesGcmNonce = new AesGcm.Nonce(nonceData);
+                Data nonceData = new Data(noncePtr, nonce.Length);
+                AesGcm.Nonce aesGcmNonce = new AesGcm.Nonce(nonceData);
 
-                var ciphertextData = new Data(ciphertextPtr, ciphertext.Length);
-                var tagData = new Data(tagPtr, tag.Length);
-                var aadData = new Data(aadPtr, aad.Length);
+                Data ciphertextData = new Data(ciphertextPtr, ciphertext.Length);
+                Data tagData = new Data(tagPtr, tag.Length);
+                Data aadData = new Data(aadPtr, aad.Length);
 
-                var sealedBox = new AesGcm.SealedBox(aesGcmNonce, ciphertextData, tagData);
+                AesGcm.SealedBox sealedBox = new AesGcm.SealedBox(aesGcmNonce, ciphertextData, tagData);
 
-                var data = AesGcm.open(
+                Data data = AesGcm.open(
                     sealedBox,
                     symmetricKey,
                     aadData,
