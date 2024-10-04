@@ -24,7 +24,6 @@
 //          static constexpr size_t F_Offset = offsetof(C, F);
 //      };
 //
-//
 template<typename T>
 struct cdac_data
 {
