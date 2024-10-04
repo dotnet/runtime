@@ -66,49 +66,5 @@ namespace System.Security.Cryptography.X509Certificates
                     });
             }
         }
-
-        public byte[] EncodeX509EnhancedKeyUsageExtension(OidCollection usages)
-        {
-            int numUsages;
-            using (SafeHandle usagesSafeHandle = usages.ToLpstrArray(out numUsages))
-            {
-                unsafe
-                {
-                    CERT_ENHKEY_USAGE enhKeyUsage = new CERT_ENHKEY_USAGE()
-                    {
-                        cUsageIdentifier = numUsages,
-                        rgpszUsageIdentifier = (IntPtr*)(usagesSafeHandle.DangerousGetHandle()),
-                    };
-
-                    return Interop.crypt32.EncodeObject(Oids.EnhancedKeyUsage, &enhKeyUsage);
-                }
-            }
-        }
-
-        public void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
-        {
-            unsafe
-            {
-                usages = encoded.DecodeObject(
-                    CryptDecodeObjectStructType.X509_ENHANCED_KEY_USAGE,
-                    static delegate (void* pvDecoded, int cbDecoded)
-                    {
-
-                        Debug.Assert(cbDecoded >= sizeof(CERT_ENHKEY_USAGE));
-                        CERT_ENHKEY_USAGE* pEnhKeyUsage = (CERT_ENHKEY_USAGE*)pvDecoded;
-                        int count = pEnhKeyUsage->cUsageIdentifier;
-                        var localUsages = new OidCollection(count);
-                        for (int i = 0; i < count; i++)
-                        {
-                            IntPtr oidValuePointer = pEnhKeyUsage->rgpszUsageIdentifier[i];
-                            string oidValue = Marshal.PtrToStringAnsi(oidValuePointer)!;
-                            Oid oid = new Oid(oidValue);
-                            localUsages.Add(oid);
-                        }
-
-                        return localUsages;
-                    });
-            }
-        }
     }
 }

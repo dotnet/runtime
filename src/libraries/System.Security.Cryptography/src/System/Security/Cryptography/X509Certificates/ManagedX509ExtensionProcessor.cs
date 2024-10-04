@@ -53,55 +53,5 @@ namespace System.Security.Cryptography.X509Certificates
             hasPathLengthConstraint = constraints.PathLengthConstraint.HasValue;
             pathLengthConstraint = constraints.PathLengthConstraint.GetValueOrDefault();
         }
-
-        public virtual byte[] EncodeX509EnhancedKeyUsageExtension(OidCollection usages)
-        {
-            // https://tools.ietf.org/html/rfc5280#section-4.2.1.12
-            //
-            // extKeyUsage EXTENSION ::= {
-            //     SYNTAX SEQUENCE SIZE(1..MAX) OF KeyPurposeId
-            //     IDENTIFIED BY id-ce-extKeyUsage
-            // }
-            //
-            // KeyPurposeId ::= OBJECT IDENTIFIER
-
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-
-            using (writer.PushSequence())
-            {
-                foreach (Oid usage in usages)
-                {
-                    writer.WriteObjectIdentifierForCrypto(usage.Value!);
-                }
-            }
-
-            return writer.Encode();
-        }
-
-        public virtual void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
-        {
-            // https://tools.ietf.org/html/rfc5924#section-4.1
-            //
-            // ExtKeyUsageSyntax ::= SEQUENCE SIZE (1..MAX) OF KeyPurposeId
-            //
-            // KeyPurposeId ::= OBJECT IDENTIFIER
-
-            try
-            {
-                AsnReader reader = new AsnReader(encoded, AsnEncodingRules.BER);
-                AsnReader sequenceReader = reader.ReadSequence();
-                reader.ThrowIfNotEmpty();
-                usages = new OidCollection();
-
-                while (sequenceReader.HasData)
-                {
-                    usages.Add(new Oid(sequenceReader.ReadObjectIdentifier(), null));
-                }
-            }
-            catch (AsnContentException e)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-            }
-        }
     }
 }
