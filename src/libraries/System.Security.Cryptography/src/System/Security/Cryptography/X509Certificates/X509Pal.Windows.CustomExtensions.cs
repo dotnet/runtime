@@ -13,53 +13,6 @@ namespace System.Security.Cryptography.X509Certificates
     /// </summary>
     internal sealed partial class X509Pal : IX509Pal
     {
-        public byte[] EncodeX509KeyUsageExtension(X509KeyUsageFlags keyUsages)
-        {
-            unsafe
-            {
-                ushort keyUsagesAsShort = (ushort)keyUsages;
-                Interop.Crypt32.CRYPT_BIT_BLOB blob = new Interop.Crypt32.CRYPT_BIT_BLOB()
-                {
-                    cbData = 2,
-                    pbData = new IntPtr((byte*)&keyUsagesAsShort),
-                    cUnusedBits = 0,
-                };
-                return Interop.crypt32.EncodeObject(CryptDecodeObjectStructType.X509_KEY_USAGE, &blob);
-            }
-        }
-
-        public void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages)
-        {
-            unsafe
-            {
-                uint keyUsagesAsUint = encoded.DecodeObject(
-                    CryptDecodeObjectStructType.X509_KEY_USAGE,
-                    static delegate (void* pvDecoded, int cbDecoded)
-                    {
-                        Debug.Assert(cbDecoded >= sizeof(Interop.Crypt32.CRYPT_BIT_BLOB));
-                        Interop.Crypt32.CRYPT_BIT_BLOB* pBlob = (Interop.Crypt32.CRYPT_BIT_BLOB*)pvDecoded;
-                        byte* pbData = (byte*)pBlob->pbData.ToPointer();
-
-                        if (pbData != null)
-                        {
-                            Debug.Assert((uint)pBlob->cbData < 3, "Unexpected length for X509_KEY_USAGE data");
-
-                            switch (pBlob->cbData)
-                            {
-                                case 1:
-                                    return *pbData;
-                                case 2:
-                                    return *(ushort*)(pbData);
-                            }
-                        }
-
-                        return 0u;
-                    }
-                );
-                keyUsages = (X509KeyUsageFlags)keyUsagesAsUint;
-            }
-        }
-
         public bool SupportsLegacyBasicConstraintsExtension
         {
             get { return true; }

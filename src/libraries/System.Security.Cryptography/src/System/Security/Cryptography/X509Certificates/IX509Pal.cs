@@ -13,8 +13,6 @@ namespace System.Security.Cryptography.X509Certificates
         string X500DistinguishedNameFormat(byte[] encodedDistinguishedName, bool multiLine);
         X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData);
         X509ContentType GetCertContentType(string fileName);
-        byte[] EncodeX509KeyUsageExtension(X509KeyUsageFlags keyUsages);
-        void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages);
         bool SupportsLegacyBasicConstraintsExtension { get; }
         byte[] EncodeX509BasicConstraints2Extension(bool certificateAuthority, bool hasPathLengthConstraint, int pathLengthConstraint);
         void DecodeX509BasicConstraintsExtension(byte[] encoded, out bool certificateAuthority, out bool hasPathLengthConstraint, out int pathLengthConstraint);
