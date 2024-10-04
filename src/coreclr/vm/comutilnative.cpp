@@ -1860,6 +1860,13 @@ extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, 
     return ret;
 }
 
+extern "C" INT32 QCALLTYPE TypeHandle_GetCorElementType(void* typeHnd)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    return (INT32)TypeHandle::FromPtr(typeHnd).GetSignatureCorElementType();
+}
+
 static bool HasOverriddenStreamMethod(MethodTable* streamMT, MethodTable* pMT, WORD slot)
 {
     CONTRACTL
