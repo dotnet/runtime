@@ -1327,6 +1327,8 @@ private:
     // Set in unmanaged code and read in managed code.
     bool          m_IsDead;
 
+    bool          m_IsThreadPool;
+
 protected:
     // the ctor and dtor can do no useful work.
     ThreadBaseObject() {LIMITED_METHOD_CONTRACT;};

@@ -3,7 +3,7 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.InteropServices.JavaScript.JSWebWorker</Target>
-    <Left>ref/net9.0/System.Runtime.InteropServices.JavaScript.dll</Left>
-    <Right>runtimes/browser/lib/net9.0/System.Runtime.InteropServices.JavaScript.dll</Right>
+    <Left>ref/net10.0/System.Runtime.InteropServices.JavaScript.dll</Left>
+    <Right>runtimes/browser/lib/net10.0/System.Runtime.InteropServices.JavaScript.dll</Right>
   </Suppression>
 </Suppressions>

@@ -1,6 +1,6 @@
 # Builds and copies library artifacts into target dotnet sdk image
 ARG BUILD_BASE_IMAGE=mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:8.0
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:latest
 
 FROM $BUILD_BASE_IMAGE as corefxbuild
 
@@ -12,9 +12,12 @@ RUN ./build.sh clr+libs -runtimeconfiguration Release -configuration $CONFIGURAT
 
 FROM $SDK_BASE_IMAGE as target
 
-ARG VERSION=9.0
+ARG VERSION
 ARG CONFIGURATION=Release
 ENV _DOTNET_INSTALL_CHANNEL=$VERSION
+
+# remove the existing SDK, we want to start from a clean slate with latest daily
+RUN rm -rf /usr/share/dotnet
 
 # Install latest daily SDK:
 RUN wget https://dot.net/v1/dotnet-install.sh
@@ -48,8 +51,8 @@ COPY --from=corefxbuild \
     /repo/src/libraries/System.Net.Quic/src/System/Net/Quic/Interop \
     /live-runtime-artifacts/msquic-interop
 
-# Add AspNetCore bits to testhost:
-ENV _ASPNETCORE_SOURCE="/usr/share/dotnet/shared/Microsoft.AspNetCore.App/$VERSION*"
+# Add AspNetCore bits to testhost, there should be only one version since we started from an image without existing SDK:
+ENV _ASPNETCORE_SOURCE="/usr/share/dotnet/shared/Microsoft.AspNetCore.App/*"
 ENV _ASPNETCORE_DEST="/live-runtime-artifacts/testhost/net$VERSION-linux-$CONFIGURATION-x64/shared/Microsoft.AspNetCore.App"
 RUN mkdir -p $_ASPNETCORE_DEST
 RUN cp -r $_ASPNETCORE_SOURCE $_ASPNETCORE_DEST

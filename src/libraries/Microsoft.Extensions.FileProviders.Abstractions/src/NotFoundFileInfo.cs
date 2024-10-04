@@ -8,36 +8,36 @@ using System.IO;
 namespace Microsoft.Extensions.FileProviders
 {
     /// <summary>
-    /// Represents a non-existing file.
+    /// Represents a nonexistent file.
     /// </summary>
     public class NotFoundFileInfo : IFileInfo
     {
         /// <summary>
         /// Initializes an instance of <see cref="NotFoundFileInfo"/>.
         /// </summary>
-        /// <param name="name">The name of the file that could not be found</param>
+        /// <param name="name">The name of the file that could not be found.</param>
         public NotFoundFileInfo(string name)
         {
             Name = name;
         }
 
         /// <summary>
-        /// Always false.
+        /// Gets a value that's always <see langword="false"/>.
         /// </summary>
         public bool Exists => false;
 
         /// <summary>
-        /// Always false.
+        /// Gets a value that's always <see langword="false"/>.
         /// </summary>
         public bool IsDirectory => false;
 
         /// <summary>
-        /// Returns <see cref="DateTimeOffset.MinValue"/>.
+        /// Gets <see cref="DateTimeOffset.MinValue"/>.
         /// </summary>
         public DateTimeOffset LastModified => DateTimeOffset.MinValue;
 
         /// <summary>
-        /// Always equals -1.
+        /// Gets a value that's always -1.
         /// </summary>
         public long Length => -1;
 
@@ -45,15 +45,15 @@ namespace Microsoft.Extensions.FileProviders
         public string Name { get; }
 
         /// <summary>
-        /// Always null.
+        /// Gets a value that's always <see langword="null"/>.
         /// </summary>
         public string? PhysicalPath => null;
 
         /// <summary>
-        /// Always throws. A stream cannot be created for non-existing file.
+        /// Always throws. A stream cannot be created for a nonexistent file.
         /// </summary>
-        /// <exception cref="FileNotFoundException">Always thrown.</exception>
-        /// <returns>Does not return</returns>
+        /// <exception cref="FileNotFoundException">In all cases.</exception>
+        /// <returns>Does not return.</returns>
         [DoesNotReturn]
         public Stream CreateReadStream()
         {

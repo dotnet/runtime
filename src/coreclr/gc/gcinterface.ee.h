@@ -459,6 +459,9 @@ public:
     // The following method is available only with EE_INTERFACE_MAJOR_VERSION >= 1
     virtual
     void LogErrorToHost(const char *message) PURE_VIRTUAL
+
+    virtual
+    uint64_t GetThreadOSThreadId(Thread* thread) PURE_VIRTUAL;
 };
 
 #endif // _GCINTERFACE_EE_H_
