@@ -11,7 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
     <ProjectReference Include="..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
-    <ProjectReference Include="..\Melanzana.MachO.Tests\Melanzana.MachO.Tests.csproj" />
+    <ProjectReference Include="..\Melanzana.CodeSign.Tests\Melanzana.CodeSign.Tests.csproj" />
   </ItemGroup>
 
 </Project>

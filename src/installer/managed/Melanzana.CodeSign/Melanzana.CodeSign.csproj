@@ -3,10 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;$(NetCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn);;</NoWarn>
-
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)/GeneratedFiles</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
