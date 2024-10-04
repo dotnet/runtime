@@ -4054,7 +4054,18 @@ namespace System
 
         internal void InvalidateCachedNestedType() => Cache.InvalidateCachedNestedType();
 
-        internal bool IsGenericCOMObjectImpl() => RuntimeTypeHandle.IsComObject(this, true);
+#if FEATURE_COMINTEROP
+        protected override bool IsCOMObjectImpl() => RuntimeTypeHandle.CanCastTo(this, (RuntimeType)typeof(__ComObject));
+
+        // We need to check the type handle values - not the instances - to determine if the runtime type is a generic ComObject.
+        internal bool IsGenericCOMObjectImpl() => TypeHandle.Value == typeof(__ComObject).TypeHandle.Value;
+#else
+        protected override bool IsCOMObjectImpl() => false;
+
+#pragma warning disable CA1822 // Mark members as static
+        internal bool IsGenericCOMObjectImpl() => false;
+#pragma warning restore CA1822
+#endif
 
         #endregion
 

@@ -254,8 +254,6 @@ namespace System
 
         protected override bool IsPointerImpl() => RuntimeTypeHandle.IsPointer(this);
 
-        protected override bool IsCOMObjectImpl() => RuntimeTypeHandle.IsComObject(this, false);
-
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
             => typeInfo != null && IsAssignableFrom(typeInfo.AsType());
 
