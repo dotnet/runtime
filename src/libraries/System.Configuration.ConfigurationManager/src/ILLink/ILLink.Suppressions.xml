@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.Configuration.ConfigurationManager, Version=10.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">type</property>
+      <property name="Target">T:System.Configuration.BaseConfigurationRecord</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">type</property>
+      <property name="Target">T:System.Configuration.ConfigurationElementCollection</property>
+    </attribute>
+  </assembly>
+</linker>
