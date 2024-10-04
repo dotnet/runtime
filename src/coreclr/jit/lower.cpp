@@ -2480,8 +2480,7 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 
             JITDUMP("\nNew tree:\n")
             DISPTREE(storeBlk);
-            // TODO: This skips lowering srcBlk and storeBlk.
-            *next = storeBlk->gtNext;
+            *next = srcBlk;
             return true;
         }
         else
