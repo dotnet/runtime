@@ -18,28 +18,34 @@ Useful links:
 
 ### Prerequisites
 
-Build the runtime with the following arguments:
+Build the runtime if haven't already:
 ```cmd
-./build.cmd clr+libs+packs+host -rc Checked -c Debug
+./build.cmd clr+libs -rc release
 ```
+
 and install the SharpFuzz command line tool:
 ```cmd
 dotnet tool install --global SharpFuzz.CommandLine
 ```
 
 > [!TIP]
-> The project uses a checked runtime + debug libraries configuration by default.
-> If you want to use a different configuration, make sure to also adjust the artifact paths in `nuget.config`.
+> The project uses a release runtime + debug libraries configuration by default.
+> If you want to use a different configuration, make sure to also adjust the paths in `run.bat`.
 
 ### Fuzzing locally
 
-The `prepare-onefuzz` command will create separate directories for each fuzzing target, instrument the relevant assemblies, and generate a helper script for running them locally.
-Note that this command must be ran on the published artifacts (won't work with `dotnet run`).
+Build the `DotnetFuzzing` fuzzing project, the project is self contained so it will produce `DotnetFuzzing.exe` and all libraries needed for run into the output.
 
 ```cmd
 cd src/libraries/Fuzzing/DotnetFuzzing
 
-dotnet publish -o publish; publish/DotnetFuzzing.exe prepare-onefuzz deployment
+dotnet build
+```
+
+Now can `run run.bat` that will finds the path to the `DotnetFuzzing.exe` and run it with required arguments `\path\DotnetFuzzing.exe prepare-onefuzz deployment`. The `prepare-onefuzz` command will create separate directories for each fuzzing target, instrument the relevant assemblies, and generate a helper script for running them locally.
+
+```cmd
+run.bat
 ```
 
 You can now start fuzzing by running the `local-run.bat` script in the folder of the fuzzer you are interested in.
