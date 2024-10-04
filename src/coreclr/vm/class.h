@@ -1798,7 +1798,7 @@ protected:
     }
 #endif // !DACCESS_COMPILE
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<EEClass>;
 };
 
 template<> struct cdac_data<EEClass>
@@ -1974,7 +1974,7 @@ public:
                                       BOOL fForStubAsIL
     );
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ArrayClass>;
 };
 
 template<> struct cdac_data<ArrayClass>

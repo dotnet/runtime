@@ -3980,7 +3980,7 @@ public:
 
     static void GetStaticsOffsets(StaticsOffsetType staticsOffsetType, bool fGenericsStatics, uint32_t *dwGCOffset, uint32_t *dwNonGCOffset);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<MethodTable>;
 };  // class MethodTable
 
 template<> struct cdac_data<MethodTable>
