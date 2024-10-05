@@ -110,6 +110,7 @@ namespace System
                     return true;
                 }
             }
+
             charsWritten = 0;
             return false;
         }
