@@ -96,7 +96,7 @@ namespace System
         {
             if (m_value)
             {
-                if ("True".AsSpan().TryCopyTo(destination))
+                if ("True".TryCopyTo(destination))
                 {
                     charsWritten = 4;
                     return true;
@@ -104,7 +104,7 @@ namespace System
             }
             else if (!m_value)
             {
-                if ("False".AsSpan().TryCopyTo(destination))
+                if ("False".TryCopyTo(destination))
                 {
                     charsWritten = 5;
                     return true;
