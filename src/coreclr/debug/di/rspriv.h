@@ -4126,10 +4126,73 @@ private:
 
     COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject);
 
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    bool m_fExpectingSingleStep;
-    CORDB_ADDRESS_TYPE * m_patchSkipAddr;
-#endif
+    struct InplaceSteppingThreads
+    {
+        CordbThread *pThread = NULL;
+        InplaceSteppingThreads *pNext = NULL;
+
+        void DeleteAll() 
+        {
+            pThread = NULL;
+            while (pNext)
+            {
+                InplaceSteppingThreads *pNextNext = pNext->pNext;
+                delete pNext;
+                pNext = pNextNext;
+            }
+        }
+
+        void Add(CordbThread *pThread)
+        {
+
+            if (this->pThread != NULL)
+            {
+                InplaceSteppingThreads *pNew = new InplaceSteppingThreads();
+                pNew->pThread = this->pThread;
+                pNew->pNext = this->pNext;
+                this->pNext = pNew;
+            }
+
+            this->pThread = pThread;
+        }
+
+        void Remove(CordbThread *pThread)
+        {
+            InplaceSteppingThreads *pThis = this;
+            while (pThis)
+            {
+                if (pThis->pThread == pThread)
+                {
+                    InplaceSteppingThreads *pNext = pThis->pNext;
+                    pThis->pThread = pNext ? pNext->pThread : NULL;
+                    pThis->pNext = pNext ? pNext->pNext : NULL;
+                    if (pNext)
+                    {
+                        delete pNext;
+                    }
+                    return;
+                }
+                pThis = pThis->pNext;
+            }
+        }
+
+        bool Contains(CordbThread *pThread)
+        {
+            InplaceSteppingThreads *pThis = this;
+            while (pThis)
+            {
+                if (pThis->pThread == pThread)
+                {
+                    return true;
+                }
+                pThis = pThis->pNext;
+            }
+            return false;
+        }
+
+        bool IsEmptry() { return pThread == NULL; }
+    } m_inplaceSteppingThreads;
+
 };
 
 // Some IMDArocess APIs are supported as interop-only.
@@ -6381,10 +6444,16 @@ private:
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 private:
     CordbSafeHashTable<CordbThread>  m_SuspendedThreads;
-    DWORD                 m_dwInternalSuspendCount;
+    DWORD                            m_dwInternalSuspendCount;
+    CORDB_ADDRESS_TYPE *             m_patchSkipAddr;
+
 public:
     HRESULT InternalSuspendOtherThreads(CordbSafeHashTable<CordbThread> *pThreads);
     HRESULT InternalResumeOtherThreads();
+    bool IsExpectingSingleStep() { return m_patchSkipAddr != NULL; }
+    void ClearPatchSkipAddr() { m_patchSkipAddr = NULL; }
+    void SetPatchSkipAddr(CORDB_ADDRESS_TYPE *patchSkipAddr) { m_patchSkipAddr = patchSkipAddr; }
+    void* GetPatchSkipAddr() { return (void*)m_patchSkipAddr; }
 #endif
 };
 

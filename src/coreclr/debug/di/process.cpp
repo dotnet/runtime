@@ -981,11 +981,6 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_fAssertOnTargetInconsistency(false),
     m_runtimeOffsetsInitialized(false),
     m_writableMetadataUpdateMode(LegacyCompatPolicy)
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    ,
-    m_fExpectingSingleStep(false),
-    m_patchSkipAddr(NULL)
-#endif
 {
     _ASSERTE((m_id == 0) == (pShim == NULL));
 
@@ -1354,6 +1349,7 @@ void CordbProcess::Neuter()
     // Take the process lock.
     RSLockHolder lockHolder(GetProcessLock());
 
+    m_inplaceSteppingThreads.DeleteAll();
 
     NeuterChildren();
 
@@ -7293,6 +7289,7 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
         }
         EX_CATCH_HRESULT(hr);
         SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
+        IfFailThrow(hr);
     }
 
     // Since we may have
@@ -11159,7 +11156,7 @@ void CordbProcess::FilterClrNotification(
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 {
-    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded\n"));
+    LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN\n"));
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
     // Before we can read the left side context information, we must:
@@ -11182,21 +11179,21 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     CordbThread * pThread = TryLookupOrCreateThreadByVolatileOSId(dwThreadId);
     if (pThread == NULL)
     {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Failed to find thread\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Failed to find thread\n"));
         ThrowHR(E_UNEXPECTED);
     }
 
     IDacDbiInterface* pDAC = GetDAC();
     if (pDAC == NULL)
     {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - DAC not initialized\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- DAC not initialized\n"));
         ThrowHR(E_UNEXPECTED);
     }
 
     HANDLE hOutOfProcThread = pDAC->GetThreadHandle(pThread->m_vmThreadToken);
     if (hOutOfProcThread == NULL)
     {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Failed to get thread handle\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Failed to get thread handle\n"));
         ThrowHR(E_UNEXPECTED);
     }
 
@@ -11205,7 +11202,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     BOOL fSuccess = DuplicateHandle(UnsafeGetProcessHandle(), hOutOfProcThread, ::GetCurrentProcess(), &hThread, 0, FALSE, DUPLICATE_SAME_ACCESS);
     if (!fSuccess)
     {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from DuplicateHandle\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from DuplicateHandle\n"));
         ThrowHR(HRESULT_FROM_GetLastError());
     }
 
@@ -11213,7 +11210,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     DWORD previousSuspendCount = ::SuspendThread(hThread);
     if (previousSuspendCount == (DWORD)-1)
     {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from SuspendThread\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from SuspendThread\n"));
         ThrowHR(HRESULT_FROM_GetLastError());
     }
 
@@ -11226,7 +11223,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     BOOL success = ::GetThreadContext(hThread, (CONTEXT*)(&context));
     if (!success)
     {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from GetThreadContext\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from GetThreadContext\n"));
         ThrowHR(HRESULT_FROM_GetLastError());
     }
 
@@ -11235,13 +11232,13 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     DWORD contextSize = (DWORD)context.Rdx;
 
     bool fIsInPlaceSingleStep = (bool)context.R8;
-    PRD_TYPE opcode = (PRD_TYPE)context.R9&0xFF;
+    PRD_TYPE opcode = (PRD_TYPE)context.R9;
 
     if (contextSize == 0 || contextSize > sizeof(CONTEXT) + 25000)
     {
-        _ASSERTE(!"Corrupted HandleSetThreadContextNeeded message received");
+        _ASSERTE(!"CDP::HSTCN Corrupted message received");
 
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Corrupted HandleSetThreadContextNeeded message received\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Corrupted message received\n"));
 
         ThrowHR(E_UNEXPECTED);
     }
@@ -11253,7 +11250,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     {
         _ASSERTE(!"ReadVirtual failed");
 
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual (error: 0x%X).\n", hr));
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- ReadVirtual (error: 0x%X).\n", hr));
 
         ThrowHR(CORDBG_E_READVIRTUAL_FAILURE);
     }
@@ -11262,7 +11259,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     {
         _ASSERTE(!"ReadVirtual context size mismatch");
 
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual context size mismatch\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- ReadVirtual context size mismatch\n"));
 
         ThrowHR(ERROR_PARTIAL_COPY);
     }
@@ -11279,12 +11276,12 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     {
         _ASSERTE(!"InitializeContext unexpectedly succeeded or didn't return ERROR_INSUFFICIENT_BUFFER");
 
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - InitializeContext unexpectedly succeeded or didn't return ERROR_INSUFFICIENT_BUFFER\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- InitializeContext unexpectedly succeeded or didn't return ERROR_INSUFFICIENT_BUFFER\n"));
 
         ThrowHR(E_UNEXPECTED);
     }
 
-    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - InitializeContext ContextSize %d\n", contextSize));
+    LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- InitializeContext ContextSize %d\n", contextSize));
 
     PVOID pBuffer = _alloca(contextSize);
     PCONTEXT pFrameContext = NULL;
@@ -11294,7 +11291,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
         _ASSERTE(!"InitializeContext failed");
 
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from InitializeContext (error: 0x%X [%d]).\n", hr, GetLastError()));
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from InitializeContext (error: 0x%X [%d]).\n", hr, GetLastError()));
 
         ThrowHR(hr);
     }
@@ -11302,18 +11299,18 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     _ASSERTE((BYTE*)pFrameContext == pBuffer);
 
     success = CopyContext(pFrameContext, contextFlags, pContext);
-    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - CopyContext=%s %d\n", success?"SUCCESS":"FAIL", GetLastError()));
+    LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- CopyContext=%s %d\n", success?"SUCCESS":"FAIL", GetLastError()));
     if (!success)
     {
         HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
         _ASSERTE(!"CopyContext failed");
 
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from CopyContext (error: 0x%X [%d]).\n", hr, GetLastError()));
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from CopyContext (error: 0x%X [%d]).\n", hr, GetLastError()));
 
         ThrowHR(hr);
     }
 
-    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Set Thread Context - ID = 0x%X, SS enabled = %d\n", dwThreadId,  /*(uint64_t)hThread,*/ (pContext->EFlags & 0x100) != 0));
+    LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Set Thread Context - ID = 0x%X, SS enabled = %d\n", dwThreadId,  /*(uint64_t)hThread,*/ (pContext->EFlags & 0x100) != 0));
 
     DWORD lastError = 0;
 
@@ -11324,25 +11321,25 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         lastError = ::GetLastError();
     }
 
-    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Set Thread Context Completed: Success=%d GetLastError=%d hr=0x%X\n", success, lastError, HRESULT_FROM_WIN32(lastError)));
+    LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Set Thread Context Completed: Success=%d GetLastError=%d hr=0x%X\n", success, lastError, HRESULT_FROM_WIN32(lastError)));
     _ASSERTE(success);
 
     // Now that we have completed the SetThreadContext, resume the thread
     DWORD suspendCount = ::ResumeThread(hThread);
     if (suspendCount == (DWORD)-1)
     {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from ResumeThread\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from ResumeThread\n"));
         ThrowHR(HRESULT_FROM_GetLastError());
     }
     if (suspendCount != previousSuspendCount + 1)
     {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from ResumeThread\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from ResumeThread\n"));
         ThrowHR(E_UNEXPECTED);
     }
 
     if (!success)
     {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from SetThreadContext\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from SetThreadContext\n"));
         ThrowHR(HRESULT_FROM_WIN32(lastError));
     }
 
@@ -11350,19 +11347,18 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     {
         CORDB_ADDRESS_TYPE *patchSkipAddr = (CORDB_ADDRESS_TYPE*)pFrameContext->Rip;
 
-        this->m_patchSkipAddr = patchSkipAddr;
-        this->m_fExpectingSingleStep = true;
-
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - address=0x%p opcode=0x%x\n", patchSkipAddr, opcode));
-        EX_TRY
-        {
-            TargetBuffer tb((void*)patchSkipAddr, sizeof(BYTE));
-            SafeWriteBuffer(tb, (const BYTE*)&opcode); // throws
-        }
-        EX_CATCH_HRESULT(hr);
-        SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
+        pThread->SetPatchSkipAddr(patchSkipAddr);
 
         pThread->InternalSuspendOtherThreads(&m_userThreads);
+
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- address=0x%p opcode=0x%x\n", patchSkipAddr, opcode));
+        HRESULT hr = RemoveRemotePatch(this, (void*)patchSkipAddr, opcode);
+        IfFailThrow(hr);
+
+        {
+            RSLockHolder lockHolder(GetProcessLock());
+            m_inplaceSteppingThreads.Add(pThread);
+        }
     }
 #else
     #error Platform not supported
@@ -11624,29 +11620,32 @@ HRESULT CordbProcess::Filter(
             HandleSetThreadContextNeeded(dwThreadId);
             *pContinueStatus = DBG_CONTINUE;
         }
-        else if (dwFirstChance && pRecord->ExceptionCode == STATUS_SINGLE_STEP && m_fExpectingSingleStep)
+        else if (dwFirstChance && pRecord->ExceptionCode == STATUS_SINGLE_STEP)
         {
-            // we are expecting a single step exception
             CordbThread * pThread = TryLookupOrCreateThreadByVolatileOSId(dwThreadId);
-            if (pThread != NULL)
+            bool fIsInPlaceSingleStep = false;
             {
-                EX_TRY
-                {
-                    BYTE opcode = CORDbg_BREAK_INSTRUCTION;
-                    TargetBuffer tb((void*)m_patchSkipAddr, sizeof(BYTE));
-                    SafeWriteBuffer(tb, (const BYTE*)&opcode); // throws
-                }
-                EX_CATCH_HRESULT(hr);
-                SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
+                RSLockHolder lockHolder(GetProcessLock());
+                fIsInPlaceSingleStep = m_inplaceSteppingThreads.Contains(pThread);
+            }
+            if (pThread != NULL && fIsInPlaceSingleStep)
+            {
+                // we are expecting a single step exception
+                HRESULT hr = ApplyRemotePatch(this, pThread->GetPatchSkipAddr());
+                IfFailThrow(hr);
 
-                m_fExpectingSingleStep = false;
-                m_patchSkipAddr = NULL;
+                pThread->ClearPatchSkipAddr();
+
+                {
+                    RSLockHolder lockHolder(GetProcessLock());
+                    m_inplaceSteppingThreads.Remove(pThread);
+                }
 
                 pThread->InternalResumeOtherThreads();
-            }
 
-            // let the normal debugger stepper logic execute for this single step
-            *pContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
+                // let the normal left side debugger stepper logic execute for this single step
+                *pContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
+            }
         }
 #endif
     }
