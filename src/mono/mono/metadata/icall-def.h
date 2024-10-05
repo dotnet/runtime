@@ -603,8 +603,7 @@ HANDLES(TYPE_1, "internal_from_handle", ves_icall_System_Type_internal_from_hand
 
 ICALL_TYPE(TYPEDR, "System.TypedReference", TYPEDR_1)
 HANDLES(TYPEDR_1, "GetFieldDataReference", ves_icall_System_TypedReference_GetFieldDataReference, gpointer, 2, (MonoObject, MonoClassField_ptr))
-HANDLES(TYPEDR_2, "InternalMakeTypedReference", ves_icall_System_TypedReference_InternalMakeTypedReference, void, 3, (MonoTypedRef_ptr, gpointer, MonoType_ptr))
-HANDLES(TYPEDR_3, "InternalToObject", ves_icall_System_TypedReference_ToObject, MonoObject, 1, (MonoTypedRef_ptr))
+HANDLES(TYPEDR_2, "InternalToObject", ves_icall_System_TypedReference_ToObject, MonoObject, 1, (MonoTypedRef_ptr))
 
 ICALL_TYPE(VALUET, "System.ValueType", VALUET_1)
 HANDLES(VALUET_1, "InternalEquals", ves_icall_System_ValueType_Equals, MonoBoolean, 3, (MonoObject, MonoObject, MonoArrayOut))

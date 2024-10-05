@@ -6426,16 +6426,6 @@ ves_icall_System_TypedReference_ToObject (MonoTypedRef* tref, MonoError *error)
 }
 
 void
-ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, gpointer target, MonoType *ftype, MonoError *error)
-{
-	memset (res, 0, sizeof (MonoTypedRef));
-
-	res->type = ftype;
-	res->klass = mono_class_from_mono_type_internal (ftype);
-	res->value = (guint8 *)target;
-}
-
-void
 ves_icall_System_Runtime_InteropServices_Marshal_Prelink (MonoReflectionMethodHandle method_h, MonoError *error)
 {
 	MonoMethod *method = MONO_HANDLE_GETVAL (method_h, method);

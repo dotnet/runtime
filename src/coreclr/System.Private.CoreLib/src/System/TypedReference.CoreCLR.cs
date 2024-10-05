@@ -25,10 +25,6 @@ namespace System
             _type = type.GetUnderlyingNativeHandle();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe TypedReference MakeTypedReference(ref byte target, RuntimeType lastFieldType)
-            => new TypedReference(ref target, lastFieldType);
-
         private static unsafe ref byte GetFieldDataReference(object target, RuntimeFieldInfo field)
         {
             ByteRef offset = default;

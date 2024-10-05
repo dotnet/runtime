@@ -17,13 +17,11 @@ namespace System
         #pragma warning restore CA1823
         #endregion
 
-        private static unsafe TypedReference MakeTypedReference(ref byte target, RuntimeType lastFieldType)
+        private TypedReference(ref byte target, RuntimeType lastFieldType)
         {
-            TypedReference typedRef = default;
-            {
-                InternalMakeTypedReference(&typedRef, ref target, lastFieldType._impl.Value);
-            }
-            return typedRef;
+            type = new RuntimeTypeHandle(lastFieldType);
+            _value = ref target;
+            _type = lastFieldType.GetUnderlyingNativeHandle();
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -31,10 +29,6 @@ namespace System
 
         private static int GetFieldOffset(RuntimeFieldInfo field)
             => field.GetFieldOffset();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        // reference to TypedReference is banned, so have to pass result as pointer
-        private static extern unsafe void InternalMakeTypedReference(void* result, ref byte target, IntPtr lastFieldType);
 
         public static unsafe object? ToObject(TypedReference value)
         {

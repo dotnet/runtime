@@ -63,7 +63,7 @@ namespace System
                 targetType = fieldType;
             }
 
-            return MakeTypedReference(ref targetRef, targetType);
+            return new TypedReference(ref targetRef, targetType);
         }
 
         private static ref byte GetFieldDataReference(ref byte target, RuntimeFieldInfo field)
