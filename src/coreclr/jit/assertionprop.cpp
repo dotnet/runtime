@@ -4767,31 +4767,15 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*                 
 
         // Check each assertion to find if we have a vn != null assertion.
         //
-        BitVecOps::Iter iter(apTraits, assertions);
-        unsigned        index = 0;
-        while (iter.NextElem(&index))
+
+        for (AssertionIndex assertionIndex = 1; assertionIndex <= optAssertionCount; assertionIndex++)
         {
-            AssertionIndex assertionIndex = GetAssertionIndex(index);
-            if (assertionIndex > optAssertionCount)
-            {
-                break;
-            }
             AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
-            if (!curAssertion->CanPropNonNull())
+            if (curAssertion->CanPropNonNull() && ((curAssertion->op1.vn == vn) || (curAssertion->op1.vn == vnBase)))
             {
-                continue;
+                INDEBUG(*pVnBased = true);
+                return assertionIndex;
             }
-
-            if ((curAssertion->op1.vn != vn) && (curAssertion->op1.vn != vnBase))
-            {
-                continue;
-            }
-
-#ifdef DEBUG
-            *pVnBased = true;
-#endif
-
-            return assertionIndex;
         }
     }
     else
