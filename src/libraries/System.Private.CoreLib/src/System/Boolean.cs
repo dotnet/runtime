@@ -96,7 +96,7 @@ namespace System
         {
             if (m_value)
             {
-                if ("True".TryCopyTo(destination))
+                if (TrueLiteral.TryCopyTo(destination))
                 {
                     charsWritten = 4;
                     return true;
@@ -104,7 +104,7 @@ namespace System
             }
             else if (!m_value)
             {
-                if ("False".TryCopyTo(destination))
+                if (FalseLiteral.TryCopyTo(destination))
                 {
                     charsWritten = 5;
                     return true;
