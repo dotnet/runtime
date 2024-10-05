@@ -36,6 +36,66 @@
 struct RSDebuggingInfo;
 extern RSDebuggingInfo * g_pRSDebuggingInfo;
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+void InplaceSteppingThreads::DeleteAll() 
+{
+    pThread = NULL;
+    while (pNext)
+    {
+        InplaceSteppingThreads *pNextNext = pNext->pNext;
+        delete pNext;
+        pNext = pNextNext;
+    }
+}
+
+void InplaceSteppingThreads::Add(CordbThread *pThread)
+{
+    if (this->pThread != NULL)
+    {
+        InplaceSteppingThreads *pNew = new InplaceSteppingThreads();
+        pNew->pThread = this->pThread;
+        pNew->pNext = this->pNext;
+        this->pNext = pNew;
+    }
+
+    this->pThread = pThread;
+}
+
+void InplaceSteppingThreads::Remove(CordbThread *pThread)
+{
+    InplaceSteppingThreads *pThis = this;
+    while (pThis)
+    {
+        if (pThis->pThread == pThread)
+        {
+            InplaceSteppingThreads *pNext = pThis->pNext;
+            pThis->pThread = pNext ? pNext->pThread : NULL;
+            pThis->pNext = pNext ? pNext->pNext : NULL;
+            if (pNext)
+            {
+                delete pNext;
+            }
+            return;
+        }
+        pThis = pThis->pNext;
+    }
+}
+
+bool InplaceSteppingThreads::Contains(CordbThread *pThread)
+{
+    InplaceSteppingThreads *pThis = this;
+    while (pThis)
+    {
+        if (pThis->pThread == pThread)
+        {
+            return true;
+        }
+        pThis = pThis->pNext;
+    }
+    return false;
+}
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
+
 //---------------------------------------------------------------------------------------
 //
 // OpenVirtualProcessImpl method called by the shim to get an ICorDebugProcess4 instance

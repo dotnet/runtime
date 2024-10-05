@@ -2921,6 +2921,22 @@ public:
     VMPTR_AppDomain m_vmAppDomainDeleted;
 };
 
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+class InplaceSteppingThreads
+{
+    CordbThread *pThread = NULL;
+    InplaceSteppingThreads *pNext = NULL;
+
+public:
+    void DeleteAll();
+    void Add(CordbThread *pThread);
+    void Remove(CordbThread *pThread);
+    bool Contains(CordbThread *pThread);
+    bool IsEmptry() { return pThread == NULL; }
+};
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
+
 class CordbProcess :
     public CordbBase,
     public ICorDebugProcess,
@@ -4126,72 +4142,9 @@ private:
 
     COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject);
 
-    struct InplaceSteppingThreads
-    {
-        CordbThread *pThread = NULL;
-        InplaceSteppingThreads *pNext = NULL;
-
-        void DeleteAll() 
-        {
-            pThread = NULL;
-            while (pNext)
-            {
-                InplaceSteppingThreads *pNextNext = pNext->pNext;
-                delete pNext;
-                pNext = pNextNext;
-            }
-        }
-
-        void Add(CordbThread *pThread)
-        {
-
-            if (this->pThread != NULL)
-            {
-                InplaceSteppingThreads *pNew = new InplaceSteppingThreads();
-                pNew->pThread = this->pThread;
-                pNew->pNext = this->pNext;
-                this->pNext = pNew;
-            }
-
-            this->pThread = pThread;
-        }
-
-        void Remove(CordbThread *pThread)
-        {
-            InplaceSteppingThreads *pThis = this;
-            while (pThis)
-            {
-                if (pThis->pThread == pThread)
-                {
-                    InplaceSteppingThreads *pNext = pThis->pNext;
-                    pThis->pThread = pNext ? pNext->pThread : NULL;
-                    pThis->pNext = pNext ? pNext->pNext : NULL;
-                    if (pNext)
-                    {
-                        delete pNext;
-                    }
-                    return;
-                }
-                pThis = pThis->pNext;
-            }
-        }
-
-        bool Contains(CordbThread *pThread)
-        {
-            InplaceSteppingThreads *pThis = this;
-            while (pThis)
-            {
-                if (pThis->pThread == pThread)
-                {
-                    return true;
-                }
-                pThis = pThis->pNext;
-            }
-            return false;
-        }
-
-        bool IsEmptry() { return pThread == NULL; }
-    } m_inplaceSteppingThreads;
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    InplaceSteppingThreads m_inplaceSteppingThreads;
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 };
 
