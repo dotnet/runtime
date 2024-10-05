@@ -102,7 +102,7 @@ namespace System
                     return true;
                 }
             }
-            else if (!m_value)
+            else
             {
                 if (FalseLiteral.TryCopyTo(destination))
                 {
