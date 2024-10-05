@@ -23,6 +23,7 @@
     <Compile Include="Fuzzers\AssemblyNameInfoFuzzer.cs" />
     <Compile Include="Fuzzers\Base64Fuzzer.cs" />
     <Compile Include="Fuzzers\Base64UrlFuzzer.cs" />
+    <Compile Include="Fuzzers\ConvertToBase64Fuzzer.cs" />
     <Compile Include="Fuzzers\HttpHeadersFuzzer.cs" />
     <Compile Include="Fuzzers\JsonDocumentFuzzer.cs" />
     <Compile Include="Fuzzers\NrbfDecoderFuzzer.cs" />

@@ -37,7 +37,7 @@ namespace DotnetFuzzing.Fuzzers
             decoded = Convert.FromBase64CharArray(dest, 0, written);
 
             Assert.SequenceEqual(input, decoded);
-            Assert.SequenceEqual(toStringResult, dest.AsSpan(0, written));
+            Assert.SequenceEqual(toStringResult.AsSpan(), dest.AsSpan(0, written));
         }
 
         private static int ToBase64_CalculateOutputLength(int inputLength, bool insertLineBreaks)
