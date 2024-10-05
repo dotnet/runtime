@@ -5387,6 +5387,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 		InterpBasicBlock *new_bb = td->offset_to_bb [in_offset];
 		if (new_bb != NULL && td->cbb != new_bb) {
+			if (td->verbose_level)
+				g_print ("BB%d (IL_%04lx):\n", new_bb->index, new_bb->il_offset);
 			/* We are starting a new basic block. Change cbb and link them together */
 			if (link_bblocks) {
 				if (!new_bb->jump_targets && td->cbb->no_inlining) {
