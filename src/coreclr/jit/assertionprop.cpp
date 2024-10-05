@@ -2610,16 +2610,14 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
     CallArg* dstArg = call->gtArgs.GetUserArgByIndex(0);
     CallArg* srcArg = call->gtArgs.GetUserArgByIndex(1);
     CallArg* lenArg = call->gtArgs.GetUserArgByIndex(2);
-
-    ValueNum lenVN = vnStore->VNConservativeNormalValue(lenArg->GetNode()->gtVNPair);
+    ValueNum lenVN  = vnStore->VNConservativeNormalValue(lenArg->GetNode()->gtVNPair);
     if (!vnStore->IsVNConstant(lenVN))
     {
         JITDUMP("...length is not a constant - bail out.\n");
         return nullptr;
     }
 
-    size_t len = vnStore->ConstantValue<size_t>(lenVN);
-
+    size_t len = vnStore->CoercedConstantValue<size_t>(lenVN);
     if (len == 0)
     {
         // Memmove(dst, src, 0) -> nothing. Memmove doesn't dereference the pointers
