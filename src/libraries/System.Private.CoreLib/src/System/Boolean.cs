@@ -96,26 +96,20 @@ namespace System
         {
             if (m_value)
             {
-                if (destination.Length > 3)
+                if ("True".AsSpan().TryCopyTo(destination))
                 {
-                    ulong true_val = BitConverter.IsLittleEndian ? 0x65007500720054ul : 0x54007200750065ul; // "True"
-                    MemoryMarshal.Write(MemoryMarshal.AsBytes(destination), in true_val);
                     charsWritten = 4;
                     return true;
                 }
             }
-            else
+            else if (!m_value)
             {
-                if (destination.Length > 4)
+                if ("False".AsSpan().TryCopyTo(destination))
                 {
-                    ulong fals_val = BitConverter.IsLittleEndian ? 0x73006C00610046ul : 0x460061006C0073ul; // "Fals"
-                    MemoryMarshal.Write(MemoryMarshal.AsBytes(destination), in fals_val);
-                    destination[4] = 'e';
                     charsWritten = 5;
                     return true;
                 }
             }
-
             charsWritten = 0;
             return false;
         }
