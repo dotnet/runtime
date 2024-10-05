@@ -875,7 +875,7 @@ static void DirectObjectFieldSet(FieldDesc *pField, TypeHandle fieldType, TypeHa
     // Validate the target/fld type relationship
     InvokeUtil::ValidateObjectTarget(pField, enclosingType, &objref);
 
-    BOOL isClassInitialized;
+    BOOL isClassInitialized = FALSE;
     InvokeUtil::SetValidField(pField->GetFieldType(), fieldType, pField, &objref, pValue, enclosingType, &isClassInitialized);
     GCPROTECT_END();
 }
