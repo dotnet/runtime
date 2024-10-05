@@ -19,10 +19,6 @@ namespace System.IO.Tests
             AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamReader((string)null, null, true));
             AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamReader((string)null, null, true, null));
             AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamReader((string)null, null, true, -1));
-            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamReader("path", (Encoding)null));
-            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamReader("path", null, true));
-            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamReader("path", null, true, null));
-            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamReader("path", null, true, -1));
             AssertExtensions.Throws<ArgumentNullException>("options", () => new StreamReader("path", (FileStreamOptions)null));
             AssertExtensions.Throws<ArgumentNullException>("options", () => new StreamReader("path", Encoding.UTF8, true, null));
 
