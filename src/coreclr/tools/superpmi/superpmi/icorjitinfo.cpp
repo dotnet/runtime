@@ -1867,3 +1867,16 @@ CORINFO_METHOD_HANDLE MyICJI::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
     CORINFO_METHOD_HANDLE result = jitInstance->mc->repGetSpecialCopyHelper(type);
     return result;
 }
+
+bool MyICJI::getIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum)
+{
+    jitInstance->mc->cr->AddCall("getIsLocalNonEscapes");
+    bool result = jitInstance->mc->repGetIsLocalNonEscapes(method, lclNum);
+    return result;
+}
+
+void MyICJI::setIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum)
+{
+    jitInstance->mc->cr->AddCall("setIsLocalNonEscapes");
+    jitInstance->mc->repGetIsLocalNonEscapes(method, lclNum);
+}

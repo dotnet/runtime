@@ -187,6 +187,8 @@ struct JitInterfaceCallbacks
     uint32_t (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoExceptionClass** ppException);
     uint32_t (* getJitFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORJIT_FLAGS* flags, uint32_t sizeInBytes);
     CORINFO_METHOD_HANDLE (* getSpecialCopyHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE type);
+    bool (* getIsLocalNonEscapes)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, uint32_t lclNum);
+    void (* setIsLocalNonEscapes)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, uint32_t lclNum);
 
 };
 
@@ -1918,5 +1920,24 @@ public:
     CORINFO_METHOD_HANDLE temp = _callbacks->getSpecialCopyHelper(_thisHandle, &pException, type);
     if (pException != nullptr) throw pException;
     return temp;
+}
+
+    virtual bool getIsLocalNonEscapes(
+          CORINFO_METHOD_HANDLE method,
+          uint32_t lclNum)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->getIsLocalNonEscapes(_thisHandle, &pException, method, lclNum);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual void setIsLocalNonEscapes(
+          CORINFO_METHOD_HANDLE method,
+          uint32_t lclNum)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    _callbacks->setIsLocalNonEscapes(_thisHandle, &pException, method, lclNum);
+    if (pException != nullptr) throw pException;
 }
 };

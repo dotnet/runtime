@@ -742,6 +742,14 @@ uint32_t getJitFlags(
 CORINFO_METHOD_HANDLE getSpecialCopyHelper(
           CORINFO_CLASS_HANDLE type) override;
 
+bool getIsLocalNonEscapes(
+          CORINFO_METHOD_HANDLE method,
+          uint32_t lclNum) override;
+
+void setIsLocalNonEscapes(
+          CORINFO_METHOD_HANDLE method,
+          uint32_t lclNum) override;
+
 /**********************************************************************************/
 // clang-format on
 /**********************************************************************************/

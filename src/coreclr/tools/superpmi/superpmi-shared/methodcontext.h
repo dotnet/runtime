@@ -897,6 +897,14 @@ public:
     void recGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper);
     void dmpGetSpecialCopyHelper(DWORDLONG key, DWORDLONG value);
     CORINFO_METHOD_HANDLE repGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type);
+    
+    void recGetIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum, bool result);
+    void dmpGetIsLocalNonEscapes(const Agnostic_LocalNonEscapes& key, bool result);
+    bool repGetIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum);
+
+    void recSetIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum);
+    void dmpSetIsLocalNonEscapes(const Agnostic_LocalNonEscapes& key);
+    void repSetIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum);
 
     void dmpSigInstHandleMap(DWORD key, DWORDLONG value);
 
@@ -1192,6 +1200,7 @@ enum mcPackets
     Packet_GetSpecialCopyHelper = 224,
     Packet_GetClassAssemblyName = 225,
     Packet_GetSZArrayHelperEnumeratorClass = 226,
+    Packet_GetIsLocalNonEscapes = 227,
 };
 
 void SetDebugDumpVariables();

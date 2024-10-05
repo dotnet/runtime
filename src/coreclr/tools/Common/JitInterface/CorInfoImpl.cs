@@ -1636,6 +1636,15 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getOSRInfo"); }
 
 #pragma warning disable CA1822 // Mark members as static
+        private bool getIsLocalNonEscapes(CORINFO_METHOD_STRUCT_* method, uint lclNum)
+        {
+            return false;
+        }
+
+        private void setIsLocalNonEscapes(CORINFO_METHOD_STRUCT_* method, uint lclNum) { }
+#pragma warning restore CA1822 // Mark members as static
+
+#pragma warning disable CA1822 // Mark members as static
         private void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_STRUCT_* method)
 #pragma warning restore CA1822 // Mark members as static
         {

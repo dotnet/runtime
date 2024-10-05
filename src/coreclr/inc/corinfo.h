@@ -3307,6 +3307,10 @@ public:
     virtual void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) = 0;
 
     virtual CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;
+
+    virtual bool getIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum) = 0;
+
+    virtual void setIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum) = 0;
 };
 
 /**********************************************************************************/

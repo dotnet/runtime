@@ -10031,6 +10031,42 @@ CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
     return result;
 }
 
+bool CEEInfo::getIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result = true;
+
+    JIT_TO_EE_TRANSITION();
+
+    MethodDesc* ftn = GetMethod(method);
+    result = ftn->GetLocalNonEscapes(lclNum);
+    
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+void CEEInfo::setIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+    
+    JIT_TO_EE_TRANSITION();
+    
+    MethodDesc* ftn = GetMethod(method);
+    ftn->SetLocalNonEscapes(lclNum);
+
+    EE_TO_JIT_TRANSITION();
+}
+
 /*********************************************************************/
 CORINFO_JUST_MY_CODE_HANDLE CEEInfo::getJustMyCodeHandle(
                 CORINFO_METHOD_HANDLE       method,

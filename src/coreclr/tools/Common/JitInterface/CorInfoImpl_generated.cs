@@ -2605,10 +2605,39 @@ namespace Internal.JitInterface
             }
         }
 
+        [UnmanagedCallersOnly]
+        private static byte _getIsLocalNonEscapes(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, uint lclNum)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getIsLocalNonEscapes(method, lclNum) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static void _setIsLocalNonEscapes(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, uint lclNum)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                _this.setIsLocalNonEscapes(method, lclNum);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+            }
+        }
+
 
         private static IntPtr GetUnmanagedCallbacks()
         {
-            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 176);
+            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 178);
 
             callbacks[0] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte>)&_isIntrinsic;
             callbacks[1] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte>)&_notifyMethodInfoUsage;
@@ -2786,6 +2815,8 @@ namespace Internal.JitInterface
             callbacks[173] = (delegate* unmanaged<IntPtr, IntPtr*, uint>)&_getExpectedTargetArchitecture;
             callbacks[174] = (delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint>)&_getJitFlags;
             callbacks[175] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*>)&_getSpecialCopyHelper;
+            callbacks[176] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint, byte>)&_getIsLocalNonEscapes;
+            callbacks[177] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint, void>)&_setIsLocalNonEscapes;
 
             return (IntPtr)callbacks;
         }

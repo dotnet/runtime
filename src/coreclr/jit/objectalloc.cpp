@@ -30,12 +30,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 PhaseStatus ObjectAllocator::DoPhase()
 {
-    if ((comp->optMethodFlags & OMF_HAS_NEWOBJ) == 0)
-    {
-        JITDUMP("no newobjs in this method; punting\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
     bool        enabled       = IsObjectStackAllocationEnabled();
     const char* disableReason = ": global config";
 
@@ -61,6 +55,12 @@ PhaseStatus ObjectAllocator::DoPhase()
     {
         JITDUMP("disabled%s, punting\n", IsObjectStackAllocationEnabled() ? disableReason : "");
         m_IsObjectStackAllocationEnabled = false;
+    }
+
+    if ((comp->optMethodFlags & OMF_HAS_NEWOBJ) == 0)
+    {
+        JITDUMP("no newobjs in this method; punting\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     const bool didStackAllocate = MorphAllocObjNodes();
@@ -134,7 +134,6 @@ void ObjectAllocator::AddConnGraphEdge(unsigned int sourceLclNum, unsigned int t
 
 void ObjectAllocator::DoAnalysis()
 {
-    assert(m_IsObjectStackAllocationEnabled);
     assert(!m_AnalysisDone);
 
     if (comp->lvaCount > 0)
@@ -144,6 +143,15 @@ void ObjectAllocator::DoAnalysis()
 
         MarkEscapingVarsAndBuildConnGraph();
         ComputeEscapingNodes(&m_bitVecTraits, m_EscapingPointers);
+
+        for (unsigned int lclNum = 0; lclNum < comp->lvaCount; ++lclNum)
+        {
+            if (!CanLclVarEscape(lclNum))
+            {
+                comp->info.compCompHnd->setIsLocalNonEscapes(comp->info.compMethodHnd, lclNum);
+                JITDUMP("V%02u does not escape\n", lclNum);
+            }
+        }
     }
 
     m_AnalysisDone = true;
@@ -719,12 +727,21 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
             case GT_CALL:
             {
-                GenTreeCall* asCall = parent->AsCall();
+                GenTreeCall* asCall  = parent->AsCall();
+                CallArg*     callArg = asCall->gtArgs.FindByNode(tree);
 
                 if (asCall->IsHelperCall())
                 {
                     canLclVarEscapeViaParentStack =
                         !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(asCall->gtCallMethHnd));
+                }
+                else if (asCall->gtCallType == gtCallTypes::CT_USER_FUNC && callArg != nullptr)
+                {
+                    uint32_t argIndex = asCall->gtArgs.GetIndex(callArg);
+                    if (comp->info.compCompHnd->getIsLocalNonEscapes(asCall->gtCallMethHnd, argIndex))
+                    {
+                        canLclVarEscapeViaParentStack = false;
+                    }
                 }
                 break;
             }

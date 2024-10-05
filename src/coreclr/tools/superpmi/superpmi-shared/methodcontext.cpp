@@ -7216,6 +7216,65 @@ CORINFO_METHOD_HANDLE MethodContext::repGetSpecialCopyHelper(CORINFO_CLASS_HANDL
     return (CORINFO_METHOD_HANDLE)value;
 }
 
+
+void MethodContext::recGetIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum, bool result)
+{
+    if (GetIsLocalNonEscapes == nullptr)
+        GetIsLocalNonEscapes = new LightWeightMap<Agnostic_LocalNonEscapes, DWORD>();
+
+    Agnostic_LocalNonEscapes key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.method = CastHandle(method);
+    key.lclNum = lclNum;
+
+    DWORD value = result ? 1 : 0;
+    GetIsLocalNonEscapes->Add(key, value);
+    DEBUG_REC(dmpGetIsLocalNonEscapes(key, value));
+}
+
+void MethodContext::dmpGetIsLocalNonEscapes(const Agnostic_LocalNonEscapes& key, bool result)
+{
+    printf("getIsLocalNonEscapes key { method = %016" PRIX64 ", lclNum=%16X }, value %d" PRIX64 "", key.method,
+           key.lclNum, (DWORD)result);
+}
+
+bool MethodContext::repGetIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum)
+{
+    Agnostic_LocalNonEscapes key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.method = CastHandle(method);
+    key.lclNum = lclNum;
+    DWORD value =
+        LookupByKeyOrMiss(GetIsLocalNonEscapes, key, ": key { method = %016" PRIX64 ", lclNum = %016X }",
+                          key.method, key.lclNum);
+    DEBUG_REP(dmpGetIsLocalNonEscapes(key, value));
+    return value == 0 ? false : true;
+}
+
+void MethodContext::recSetIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum)
+{
+    Agnostic_LocalNonEscapes key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.method = CastHandle(method);
+    key.lclNum = lclNum;
+
+    DEBUG_REC(dmpSetSpecialCopyHelper(key));
+}
+
+void MethodContext::dmpSetIsLocalNonEscapes(const Agnostic_LocalNonEscapes& key)
+{
+    printf("setIsLocalNonEscapes key { method = %016" PRIX64 ", lclNum = %016X }", key.method, key.lclNum);
+}
+
+void MethodContext::repSetIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum)
+{
+    Agnostic_LocalNonEscapes key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.method = CastHandle(method);
+    key.lclNum = lclNum;
+    DEBUG_REP(dmpSetIsLocalNonEscapes(key, value));
+}
+
 void MethodContext::dmpSigInstHandleMap(DWORD key, DWORDLONG value)
 {
     printf("SigInstHandleMap key %u, value %016" PRIX64 "", key, value);

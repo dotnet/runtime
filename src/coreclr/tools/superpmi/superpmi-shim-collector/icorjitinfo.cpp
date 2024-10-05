@@ -2029,3 +2029,18 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(CORINFO_CLASS_HANDL
     mc->recGetSpecialCopyHelper(type, temp);
     return temp;
 }
+
+bool interceptor_ICJI::getIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum)
+{
+    mc->cr->AddCall("getIsLocalNonEscapes");
+    bool result = original_ICorJitInfo->getIsLocalNonEscapes(method, lclNum);
+    mc->recGetIsLocalNonEscapes(method, lclNum, result);
+    return result;
+}
+
+void interceptor_ICJI::setIsLocalNonEscapes(CORINFO_METHOD_HANDLE method, uint32_t lclNum)
+{
+    mc->cr->AddCall("setIsLocalNonEscapes");
+    original_ICorJitInfo->setIsLocalNonEscapes(method, lclNum);
+    mc->recSetIsLocalNonEscapes(method, lclNum);
+}

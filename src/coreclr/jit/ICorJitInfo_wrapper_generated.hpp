@@ -1742,6 +1742,25 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::getSpecialCopyHelper(
     return temp;
 }
 
+bool WrapICorJitInfo::getIsLocalNonEscapes(
+          CORINFO_METHOD_HANDLE method,
+          uint32_t lclNum)
+{
+    API_ENTER(getIsLocalNonEscapes);
+    bool temp = wrapHnd->getIsLocalNonEscapes(method, lclNum);
+    API_LEAVE(getIsLocalNonEscapes);
+    return temp;
+}
+
+void WrapICorJitInfo::setIsLocalNonEscapes(
+          CORINFO_METHOD_HANDLE method,
+          uint32_t lclNum)
+{
+    API_ENTER(setIsLocalNonEscapes);
+    wrapHnd->setIsLocalNonEscapes(method, lclNum);
+    API_LEAVE(setIsLocalNonEscapes);
+}
+
 /**********************************************************************************/
 // clang-format on
 /**********************************************************************************/

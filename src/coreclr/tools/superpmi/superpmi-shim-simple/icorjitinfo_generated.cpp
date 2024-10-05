@@ -1261,3 +1261,17 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(
     return original_ICorJitInfo->getSpecialCopyHelper(type);
 }
 
+bool interceptor_ICJI::getIsLocalNonEscapes(
+          CORINFO_METHOD_HANDLE method,
+          uint32_t lclNum)
+{
+    return original_ICorJitInfo->getIsLocalNonEscapes(method, lclNum);
+}
+
+void interceptor_ICJI::setIsLocalNonEscapes(
+          CORINFO_METHOD_HANDLE method,
+          uint32_t lclNum)
+{
+    original_ICorJitInfo->setIsLocalNonEscapes(method, lclNum);
+}
+

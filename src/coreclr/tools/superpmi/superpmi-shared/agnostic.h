@@ -609,6 +609,12 @@ struct Agnostic_ConfigIntInfo
     DWORD defaultValue;
 };
 
+struct Agnostic_LocalNonEscapes
+{
+    DWORDLONG method;
+    DWORD     lclNum;
+};
+
 // SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
 struct Agnostic_GetSystemVAmd64PassStructInRegisterDescriptor
 {

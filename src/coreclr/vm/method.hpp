@@ -932,6 +932,38 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return (m_wFlags & mdfSynchronized) != 0;
     }
+    
+    inline bool GetLocalNonEscapes(uint32_t lclNum)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (lclNum < 64)
+        {
+            return (m_localNonEscapeData.low & (1ULL << lclNum)) != 0;
+        }
+        if (lclNum < 128)
+        {
+            return (m_localNonEscapeData.high & (1ULL << (lclNum - 64))) != 0;
+        }
+
+        return false;
+    }
+
+    inline void SetLocalNonEscapes(uint32_t lclNum)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (lclNum >= 128)
+        {
+            return;
+        }
+        if (lclNum >= 64)
+        {
+            m_localNonEscapeData.high |= (1ULL << (lclNum - 64));
+        }
+        else
+        {
+            m_localNonEscapeData.low |= (1ULL << lclNum);
+        }
+    }
 
     //==================================================================
     // The MethodDesc in relation to the VTable it is associated with.
@@ -1709,6 +1741,10 @@ protected:
     WORD m_wSlotNumber; // The slot number of this MethodDesc in the vtable array.
     WORD m_wFlags; // See MethodDescFlags
     PTR_MethodDescCodeData m_codeData;
+    struct {
+        uint64_t low;
+        uint64_t high;
+    } m_localNonEscapeData;
 
 public:
 #ifdef DACCESS_COMPILE
