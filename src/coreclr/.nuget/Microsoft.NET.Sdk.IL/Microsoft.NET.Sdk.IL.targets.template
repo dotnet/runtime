@@ -118,6 +118,10 @@ Copyright (c) .NET Foundation. All rights reserved.
           DependsOnTargets="$(CoreCompileDependsOn)">
 
     <PropertyGroup>
+      <_IlasmAssemblyName Condition="'$(IlasmAssemblyName)' != ''">$(IlasmAssemblyName)</_IlasmAssemblyName>
+      <_IlasmAssemblyName Condition="'$(IlasmAssemblyName)' == ''">$(MSBuildProjectName)</_IlasmAssemblyName>
+      <_IlasmAssemblyNameSynthesizedFile>$(IntermediateOutputPath)\synthesized_assembly_name.il</_IlasmAssemblyNameSynthesizedFile>
+
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Library'">-DLL</_OutputTypeArgument>
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Exe'">-EXE</_OutputTypeArgument>
 
@@ -133,7 +137,13 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_IlasmSwitches Condition="'$(IlasmResourceFile)' != ''">$(_IlasmSwitches) -RESOURCES="$(IlasmResourceFile)"</_IlasmSwitches>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(_IlasmDir)ilasm&quot; $(_IlasmSwitches) $(_OutputTypeArgument) $(IlasmFlags) -OUTPUT=&quot;@(IntermediateAssembly)&quot; $(_KeyFileArgument) @(Compile, ' ')">
+    <WriteLinesToFile File="$(_IlasmAssemblyNameSynthesizedFile)"
+        Lines="#define ASSEMBLY_NAME $(_IlasmAssemblyName)"
+        WriteOnlyWhenDifferent="true"
+        Overwrite="true"
+        />
+
+    <Exec Command="&quot;$(_IlasmDir)ilasm&quot; $(_IlasmSwitches) $(_OutputTypeArgument) $(IlasmFlags) -OUTPUT=&quot;@(IntermediateAssembly)&quot; $(_KeyFileArgument) $(_IlasmAssemblyNameSynthesizedFile) @(Compile, ' ')">
       <Output TaskParameter="ExitCode" PropertyName="_ILAsmExitCode" />
     </Exec>
 
@@ -141,7 +151,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <CallTarget Targets="$(TargetsTriggeredByCompilation)" Condition="'$(TargetsTriggeredByCompilation)' != ''"/>
   </Target>
-  
+
   <!-- Target is called by the language server. No-op for ILProj as there is no language service support. -->
   <Target Name="CompileDesignTime" />
 
