@@ -2591,6 +2591,99 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 }
 
 //------------------------------------------------------------------------------
+// optVNBasedFoldExpr_Call_Memmove: Unrolls NI_System_SpanHelpers_Memmove if possible
+//    This functiona effectively duplicates LowerCallMemmove functionality, but
+//    it is able to optimize src into constants with help of VN (it's too late for
+//    LowerCallMemmove to rely on VN).
+//
+// Arguments:
+//    call - NI_System_SpanHelpers_Memmove call to unroll
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
+{
+    JITDUMP("See if we can optimize NI_System_SpanHelpers_Memmove with help of VN...\n")
+    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove));
+
+    CallArg* dstArg = call->gtArgs.GetUserArgByIndex(0);
+    CallArg* srcArg = call->gtArgs.GetUserArgByIndex(1);
+    CallArg* lenArg = call->gtArgs.GetUserArgByIndex(2);
+
+    ValueNum lenVN = vnStore->VNConservativeNormalValue(lenArg->GetNode()->gtVNPair);
+    if (!vnStore->IsVNConstant(lenVN))
+    {
+        JITDUMP("...length is not a constant - bail out.\n");
+        return nullptr;
+    }
+
+    size_t len = vnStore->ConstantValue<size_t>(lenVN);
+
+    if (len == 0)
+    {
+        // Memmove(dst, src, 0) -> nothing. Memmove doesn't dereference the pointers
+        // when the length is zero.
+        JITDUMP("...length is 0 -> optimize to no-op.\n");
+        return gtWrapWithSideEffects(gtNewNothingNode(), call, GTF_ALL_EFFECT, true);
+    }
+
+    var_types type = roundDownMaxType((unsigned)len);
+    if (genTypeSize(type) != len)
+    {
+        // Generally, we have to give up on cases where we need more than one STORIND,
+        // since Memmove has to respect overlapping regions. LowerCallMemmove handles it
+        // by introducing BlkOpKindUnrollMemmove flag in the block operation node.
+        //
+        // Perhaps, we can assume that RVA data never overlaps with dst (if that is not C++ CLI/CX),
+        // and emit a sequence of STOREINDs here?
+        JITDUMP("...length can't be handled here, LowerCallMemmove might have a better luck.\n");
+        return nullptr;
+    }
+
+    ssize_t   byteOffset = 0;
+    uint8_t   buffer[64] = {};
+    FieldSeq* fieldSeq   = nullptr;
+
+    // First, see if 'src' is a string literal (non-gc object):
+    CORINFO_OBJECT_HANDLE obj = NO_OBJECT_HANDLE;
+    if (GetObjectHandleAndOffset(srcArg->GetNode(), &byteOffset, &obj))
+    {
+        if (((size_t)byteOffset > INT32_MAX) ||
+            !info.compCompHnd->getObjectContent(obj, buffer, (int)len, (int)byteOffset))
+        {
+            JITDUMP("...src is not a constant - fallback to LowerCallMemmove.\n");
+            return nullptr;
+        }
+    }
+    // Second, see if 'src' is an RVA data:
+    else if (fgGetStaticFieldSeqAndAddress(vnStore, srcArg->GetNode(), &byteOffset, &fieldSeq))
+    {
+        CORINFO_FIELD_HANDLE fld = fieldSeq->GetFieldHandle();
+        if (((size_t)byteOffset > INT32_MAX) || (fld == nullptr) ||
+            !info.compCompHnd->getStaticFieldContent(fld, buffer, (int)len, (int)byteOffset))
+        {
+            JITDUMP("...src is not a constant - fallback to LowerCallMemmove.\n");
+            return nullptr;
+        }
+    }
+    else
+    {
+        JITDUMP("...src is not a constant - fallback to LowerCallMemmove.\n");
+        return nullptr;
+    }
+
+    JITDUMP("...optimized into STOREIND!:\n");
+    GenTree* srcCns = gtNewGenericCon(type, buffer);
+    fgUpdateConstTreeValueNumber(srcCns);
+    GenTree*         dst    = fgMakeMultiUse(&dstArg->LateNodeRef());
+    GenTreeStoreInd* indir  = gtNewStoreIndNode(type, dst, srcCns, GTF_IND_UNALIGNED);
+    GenTree*         result = gtWrapWithSideEffects(indir, call, GTF_ALL_EFFECT, true);
+    DISPTREE(result);
+    return result;
+}
+
+//------------------------------------------------------------------------------
 // optVNBasedFoldExpr_Call: Folds given call using VN to a simpler tree.
 //
 // Arguments:
@@ -2652,6 +2745,11 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
 
         default:
             break;
+    }
+
+    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove))
+    {
+        return optVNBasedFoldExpr_Call_Memmove(call);
     }
 
     return nullptr;
@@ -6372,7 +6470,8 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
             break;
 
         case GT_CALL:
-            if (!tree->AsCall()->IsPure(this))
+            // The checks aren't for correctness, but to avoid unnecessary work.
+            if (!tree->AsCall()->IsPure(this) && !tree->AsCall()->IsSpecialIntrinsic())
             {
                 return WALK_CONTINUE;
             }
