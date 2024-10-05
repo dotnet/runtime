@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class IpHlpApi
     {
-        [LibraryImport(Libraries.IpHlpApi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16, EntryPoint = "ConvertInterfaceLuidToNameW")]
+        [LibraryImport(Libraries.IpHlpApi, StringMarshalling = StringMarshalling.Utf16, EntryPoint = "ConvertInterfaceLuidToNameW")]
         internal static unsafe partial uint ConvertInterfaceLuidToName(in ulong interfaceLuid, Span<char> name, int nameLength);
     }
 }

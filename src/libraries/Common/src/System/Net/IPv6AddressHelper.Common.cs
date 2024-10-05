@@ -321,6 +321,7 @@ namespace System.Net
             bool numberIsValid = true;
 
             scopeId = ReadOnlySpan<TChar>.Empty;
+
             // Skip the start '[' character, if present. Stop parsing at the end IPv6 address terminator (']').
             for (int i = (address[0] == TChar.CreateTruncating('[') ? 1 : 0); i < address.Length && address[i] != TChar.CreateTruncating(']');)
             {

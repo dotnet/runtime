@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class IpHlpApi
     {
-        [LibraryImport(Libraries.IpHlpApi, SetLastError = true)]
+        [LibraryImport(Libraries.IpHlpApi)]
         internal static unsafe partial uint ConvertInterfaceIndexToLuid(uint ifIndex, ref ulong interfaceLuid);
     }
 }
