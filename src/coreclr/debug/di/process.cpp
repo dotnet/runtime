@@ -1349,7 +1349,9 @@ void CordbProcess::Neuter()
     // Take the process lock.
     RSLockHolder lockHolder(GetProcessLock());
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     m_inplaceSteppingThreads.DeleteAll();
+#endif
 
     NeuterChildren();
 
@@ -15154,7 +15156,11 @@ HRESULT CordbProcess::IsReadyForDetach()
     //
     // If there are any outstanding steppers then fail the detach.
     //
-    if (m_steppers.IsInitialized() && (m_steppers.GetCount() > 0))
+    if (m_steppers.IsInitialized() && (m_steppers.GetCount() > 0) 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+        || !m_inplaceSteppingThreads.IsEmptry()
+#endif
+        )
     {
         return CORDBG_E_DETACH_FAILED_OUTSTANDING_STEPPERS;
     }
