@@ -1854,7 +1854,7 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
         AppDomain *pDomain = AppDomain::GetCurrentDomain();
         if (pDomain->IsDebuggerAttached() && pDomain->ContainsAssembly(m_pAssembly))
         {
-            g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this, pDomain);
+            g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this);
         }
     }
 }
@@ -2327,10 +2327,10 @@ Module::GetAssemblyIfLoaded(
             spec.SetBinder(pBinderForLoadedAssembly);
         }
 
-        DomainAssembly * pDomainAssembly = AppDomain::GetCurrentDomain()->FindCachedAssembly(&spec, FALSE /*fThrow*/);
+        Assembly * pCachedAssembly = AppDomain::GetCurrentDomain()->FindCachedAssembly(&spec, FALSE /*fThrow*/);
 
-        if (pDomainAssembly && pDomainAssembly->GetAssembly()->IsLoaded())
-            pAssembly = pDomainAssembly->GetAssembly();
+        if (pCachedAssembly && pCachedAssembly->IsLoaded())
+            pAssembly = pCachedAssembly;
 
         // Only store in the rid map if working with the current AppDomain.
         if (fCanUseRidMap && pAssembly)
@@ -2951,7 +2951,7 @@ BOOL Module::NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int flags, BOO
             MethodTable * pMT = typeDefIter.GetElement();
             if (pMT != NULL)
             {
-                result = TypeHandle(pMT).NotifyDebuggerLoad(pDomain, attaching) || result;
+                result = TypeHandle(pMT).NotifyDebuggerLoad(attaching) || result;
             }
         }
     }
@@ -2977,7 +2977,7 @@ void Module::NotifyDebuggerUnload()
         MethodTable * pMT = typeDefIter.GetElement();
         if (pMT != NULL)
         {
-            TypeHandle(pMT).NotifyDebuggerUnload(pDomain);
+            TypeHandle(pMT).NotifyDebuggerUnload();
         }
     }
 

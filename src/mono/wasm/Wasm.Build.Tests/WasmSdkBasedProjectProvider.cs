@@ -73,7 +73,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             IsPublish: buildProjectOptions.Publish,
             TargetFramework: buildProjectOptions.TargetFramework,
             BinFrameworkDir: buildProjectOptions.BinFrameworkDir ?? FindBinFrameworkDir(buildArgs.Config, buildProjectOptions.Publish, buildProjectOptions.TargetFramework),
-            PredefinedIcudt: buildProjectOptions.PredefinedIcudt,
+            CustomIcuFile: buildProjectOptions.CustomIcuFile,
             GlobalizationMode: buildProjectOptions.GlobalizationMode,
             AssertSymbolsFile: false,
             ExpectedFileType: buildProjectOptions.Publish && buildArgs.Config == "Release" ? NativeFilesType.Relinked : NativeFilesType.FromRuntimePack

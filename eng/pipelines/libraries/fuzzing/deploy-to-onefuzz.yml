@@ -35,12 +35,13 @@ extends:
 
         - powershell: |
             cd $(Build.SourcesDirectory)
-            ./build.cmd clr+libs+packs+host -rc Checked -c Debug
+            ./build.cmd clr+libs -rc Checked -c Debug
           displayName: Build runtime (checked + debug)
 
         - powershell: |
             cd $(fuzzerProject)
-            $(dotnetPath) publish -o publish
+            $(dotnetPath) build-server shutdown
+            $(dotnetPath) build
           displayName: Build Fuzzing targets
 
         - powershell: |
@@ -50,7 +51,7 @@ extends:
 
         - powershell: |
             cd $(fuzzerProject)
-            publish/DotnetFuzzing.exe prepare-onefuzz deployment
+            ./run.bat
           displayName: Prepare OneFuzz deployment
 
 # OneFuzz can't currently handle a single deployment where multiple jobs share similar assemblies/pdbs.

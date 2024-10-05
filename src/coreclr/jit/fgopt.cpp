@@ -3286,9 +3286,8 @@ bool Compiler::fgExpandRarelyRunBlocks()
 #endif
 
 //-----------------------------------------------------------------------------
-// fgReorderBlocks: reorder blocks to favor frequent fall through paths,
-//   move rare blocks to the end of the method/eh region, and move
-//   funclets to the ends of methods.
+// fgReorderBlocks: reorder blocks to favor frequent fall through paths
+//   and move rare blocks to the end of the method/eh region.
 //
 // Arguments:
 //   useProfile - if true, use profile data (if available) to more aggressively
@@ -3305,8 +3304,6 @@ bool Compiler::fgExpandRarelyRunBlocks()
 bool Compiler::fgReorderBlocks(bool useProfile)
 {
     noway_assert(opts.compDbgCode == false);
-
-    assert(UsesFunclets() == fgFuncletsCreated);
 
     // We can't relocate anything if we only have one block
     if (fgFirstBB->IsLast())
@@ -5299,16 +5296,15 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                             {
                                 fgCompactBlock(otherPred);
                                 fgFoldSimpleCondByForwardSub(otherPred);
+
+                                // Since compaction removes blocks, update lexical pointers
+                                bPrev = block->Prev();
+                                bNext = block->Next();
                             }
                         }
 
                         assert(block->KindIs(BBJ_ALWAYS));
                         bDest = block->GetTarget();
-                    }
-                    else
-                    {
-                        bDest      = block->GetTrueTarget();
-                        bFalseDest = block->GetFalseTarget();
                     }
                 }
             }
