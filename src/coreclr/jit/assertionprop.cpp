@@ -2591,10 +2591,9 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 }
 
 //------------------------------------------------------------------------------
-// optVNBasedFoldExpr_Call_Memmove: Unrolls NI_System_SpanHelpers_Memmove if possible
-//    This functiona effectively duplicates LowerCallMemmove functionality, but
-//    it is able to optimize src into constants with help of VN (it's too late for
-//    LowerCallMemmove to rely on VN).
+// optVNBasedFoldExpr_Call_Memmove: Unrolls NI_System_SpanHelpers_Memmove if possible.
+//    This function effectively duplicates LowerCallMemmove. However, unlike LowerCallMemmove,
+//    it is able to optimize src into constants with help of VN.
 //
 // Arguments:
 //    call - NI_System_SpanHelpers_Memmove call to unroll
