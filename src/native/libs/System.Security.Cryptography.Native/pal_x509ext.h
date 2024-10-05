@@ -47,19 +47,3 @@ PALEXPORT int32_t CryptoNative_DecodeX509BasicConstraints2Extension(const uint8_
                                                                      int32_t* certificateAuthority,
                                                                      int32_t* hasPathLengthConstraint,
                                                                      int32_t* pathLengthConstraint);
-
-/*
-Shims the d2i_EXTENDED_KEY_USAGE method and makes it easier to invoke from managed code.
-*/
-PALEXPORT EXTENDED_KEY_USAGE* CryptoNative_DecodeExtendedKeyUsage(const uint8_t* buf, int32_t len);
-
-/*
-Cleans up and deletes an EXTENDED_KEY_USAGE instance.
-
-Implemented by calling EXTENDED_KEY_USAGE_free.
-
-No-op if a is null.
-The given EXTENDED_KEY_USAGE pointer is invalid after this call.
-Always succeeds.
-*/
-PALEXPORT void CryptoNative_ExtendedKeyUsageDestroy(EXTENDED_KEY_USAGE* a);

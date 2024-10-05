@@ -169,35 +169,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public override void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
-        {
-            OidCollection oids;
-
-            using (SafeEkuExtensionHandle eku = Interop.Crypto.DecodeExtendedKeyUsage(encoded, encoded.Length))
-            {
-                Interop.Crypto.CheckValidOpenSslHandle(eku);
-
-                int count = Interop.Crypto.GetX509EkuFieldCount(eku);
-                oids = new OidCollection(count);
-
-                for (int i = 0; i < count; i++)
-                {
-                    IntPtr oidPtr = Interop.Crypto.GetX509EkuField(eku, i);
-
-                    if (oidPtr == IntPtr.Zero)
-                    {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
-
-                    string oidValue = Interop.Crypto.GetOidValue(oidPtr);
-
-                    oids.Add(new Oid(oidValue));
-                }
-            }
-
-            usages = oids;
-        }
-
         private static RSAOpenSsl BuildRsaPublicKey(byte[] encodedData)
         {
             var rsa = new RSAOpenSsl();
