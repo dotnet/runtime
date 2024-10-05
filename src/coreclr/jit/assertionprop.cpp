@@ -2626,10 +2626,12 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
         return gtWrapWithSideEffects(gtNewNothingNode(), call, GTF_ALL_EFFECT, true);
     }
 
+    const int MaxPossibleWordSize = 64; // Vector512
+
     var_types type = roundDownMaxType((unsigned)len);
-    if (genTypeSize(type) != len)
+    if ((genTypeSize(type) != len) || (len > MaxPossibleWordSize))
     {
-        // Generally, we have to give up on cases where we need more than one STORIND,
+        // Generally, we have to give up on cases where we need more than one STOREIND,
         // since Memmove has to respect overlapping regions. LowerCallMemmove handles it
         // by introducing BlkOpKindUnrollMemmove flag in the block operation node.
         //
@@ -2639,11 +2641,11 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
         return nullptr;
     }
 
-    ssize_t   byteOffset = 0;
-    uint8_t   buffer[64] = {};
-    FieldSeq* fieldSeq   = nullptr;
+    ssize_t   byteOffset                  = 0;
+    uint8_t   buffer[MaxPossibleWordSize] = {};
+    FieldSeq* fieldSeq                    = nullptr;
 
-    // First, see if 'src' is a string literal (non-gc object):
+    // First, see if 'src' is a non-gc object (e.g. string literal):
     CORINFO_OBJECT_HANDLE obj = NO_OBJECT_HANDLE;
     if (GetObjectHandleAndOffset(srcArg->GetNode(), &byteOffset, &obj))
     {
@@ -2654,7 +2656,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
             return nullptr;
         }
     }
-    // Second, see if 'src' is an RVA data:
+    // Second, 'src' might be some static read-only field? (including RVA)
     else if (fgGetStaticFieldSeqAndAddress(vnStore, srcArg->GetNode(), &byteOffset, &fieldSeq))
     {
         CORINFO_FIELD_HANDLE fld = fieldSeq->GetFieldHandle();
