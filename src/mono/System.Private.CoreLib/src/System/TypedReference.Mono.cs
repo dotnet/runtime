@@ -23,16 +23,17 @@ namespace System
             _type = lastFieldType.GetUnderlyingNativeHandle();
         }
 
+        private static ref byte GetFieldDataReference(object target, RuntimeFieldInfo field)
+            => ref InternalGetFieldDataReference(target, field.FieldHandle.Value);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern ref byte GetFieldDataReference(object target, RuntimeFieldInfo field);
+        private static extern ref byte InternalGetFieldDataReference(object target, IntPtr field);
 
         private static int GetFieldOffset(RuntimeFieldInfo field)
             => field.GetFieldOffset();
 
         public static unsafe object? ToObject(TypedReference value)
-        {
-            return InternalToObject(&value);
-        }
+            => InternalToObject(&value);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object InternalToObject(void* value);

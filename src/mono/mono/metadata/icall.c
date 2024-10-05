@@ -6412,11 +6412,12 @@ ves_icall_System_TypedReference_GetFieldDataReference (MonoObjectHandle target, 
 		offset = (intptr_t) mono_metadata_update_added_field_ldflda (MONO_HANDLE_RAW (target), field->type, token, error);
 		mono_error_assert_ok (error);
 	}
+	(void)mono_class_from_mono_type_internal (field->type);
 
 	if (G_LIKELY (relative))
-		return (gpointer)((guint8*)MONO_HANDLE_RAW (target) + offset);
+		return (guint8*)MONO_HANDLE_RAW (target) + offset;
 	else
-		return (gpointer)offset;
+		return (guint8*)offset;
 }
 
 MonoObjectHandle
