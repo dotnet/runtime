@@ -32,21 +32,17 @@ namespace System
         private static unsafe ref byte GetFieldDataReference(object target, RuntimeFieldInfo field)
         {
             ByteRef offset = default;
-            GetFieldDataReference(((RtFieldInfo)field).GetFieldDesc(), ObjectHandleOnStack.Create(ref target), offset.Create());
+            GetFieldDataReference(((RtFieldInfo)field).GetFieldDesc(), ObjectHandleOnStack.Create(ref target), ByteRefOnStack.Create(ref offset));
             Debug.Assert(!Unsafe.IsNullRef(ref offset.Get()));
             GC.KeepAlive(field);
             return ref offset.Get();
         }
 
+        private static int GetFieldOffset(RuntimeFieldInfo field)
+            => RuntimeFieldHandle.GetInstanceFieldOffset((RtFieldInfo)field);
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypedReference_GetFieldDataReference")]
         private static unsafe partial void GetFieldDataReference(IntPtr fieldDesc, ObjectHandleOnStack target, ByteRefOnStack offset);
-
-        private static ref byte GetFieldDataReference(ref byte target, RuntimeFieldInfo field)
-        {
-            Debug.Assert(!Unsafe.IsNullRef(ref target));
-            int offset = RuntimeFieldHandle.GetInstanceFieldOffset((RtFieldInfo)field);
-            return ref Unsafe.AddByteOffset(ref target, offset);
-        }
 
         public static unsafe object? ToObject(TypedReference value)
         {

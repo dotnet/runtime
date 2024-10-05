@@ -66,6 +66,13 @@ namespace System
             return MakeTypedReference(ref targetRef, targetType);
         }
 
+        private static ref byte GetFieldDataReference(ref byte target, RuntimeFieldInfo field)
+        {
+            Debug.Assert(!Unsafe.IsNullRef(ref target));
+            int offset = GetFieldOffset(field);
+            return ref Unsafe.AddByteOffset(ref target, offset);
+        }
+
         public override int GetHashCode()
         {
             if (_type == IntPtr.Zero)

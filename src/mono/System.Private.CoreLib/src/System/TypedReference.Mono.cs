@@ -29,12 +29,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern ref byte GetFieldDataReference(object target, RuntimeFieldInfo field);
 
-        private static ref byte GetFieldDataReference(ref byte target, RuntimeFieldInfo field)
-        {
-            Debug.Assert(!Unsafe.IsNullRef(ref target));
-            int offset = field.GetFieldOffset();
-            return ref Unsafe.AddByteOffset(ref target, offset);
-        }
+        private static int GetFieldOffset(RuntimeFieldInfo field)
+            => field.GetFieldOffset();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         // reference to TypedReference is banned, so have to pass result as pointer
