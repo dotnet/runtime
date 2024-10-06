@@ -339,7 +339,7 @@ void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
         for (unsigned level = 0; level < chkLevel; level++)
         {
             assert((verCurrentState.esStack[level].val->gtFlags & GTF_GLOB_EFFECT) == 0 ||
-                   impIsInvariant(verCurrentState.esStack[level].val)));
+                   impIsInvariant(verCurrentState.esStack[level].val));
         }
     }
 
@@ -363,7 +363,7 @@ void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
             for (unsigned level = 0; level < chkLevel; level++)
             {
                 assert((verCurrentState.esStack[level].val->gtFlags & GTF_GLOB_REF) == 0 ||
-                       impIsInvariant(verCurrentState.esStack[level].val)));
+                       impIsInvariant(verCurrentState.esStack[level].val));
             }
         }
     }
