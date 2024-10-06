@@ -1,0 +1,22 @@
+<Project>
+  <ItemGroup>
+    <!-- reference MSBuild directly to avoid bringing in it's package closure.  These all represent assemblies available to tasks and provided by MSBuild -->
+    <PackageDownloadAndReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" Folder="ref/net472" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net472'))" />
+    <PackageDownloadAndReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" Folder="ref/net8.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
+    <PackageDownloadAndReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" Folder="ref/net472" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net472'))" />
+    <PackageDownloadAndReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" Folder="ref/net8.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
+    <PackageDownloadAndReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" Folder="ref/net472" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net472'))" />
+    <PackageDownloadAndReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" Folder="ref/net8.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
+    <PackageDownloadAndReference Include="System.Reflection.MetadataLoadContext" Version="$(SystemReflectionMetadataLoadContextToolsetVersion)" Folder="lib/netstandard2.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net462'))">
+    <!-- These assemblies and their dependencies are made available by MSBuild on .NET Framework -->
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" ExcludeAssets="Runtime" PrivateAssets="All" />
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" ExcludeAssets="Runtime" PrivateAssets="All" />
+  </ItemGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+</Project>

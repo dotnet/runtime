@@ -30,11 +30,5 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.Bool)] out bool certificateAuthority,
             [MarshalAs(UnmanagedType.Bool)] out bool hasPathLengthConstraint,
             out int pathLengthConstraint);
-
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeExtendedKeyUsage")]
-        internal static partial SafeEkuExtensionHandle DecodeExtendedKeyUsage(byte[] buf, int len);
-
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ExtendedKeyUsageDestroy")]
-        internal static partial void ExtendedKeyUsageDestroy(IntPtr a);
     }
 }

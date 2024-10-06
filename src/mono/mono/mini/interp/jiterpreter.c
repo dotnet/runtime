@@ -203,6 +203,18 @@ mono_jiterp_try_newstr (MonoString **destination, int length) {
 }
 
 EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_try_newarr (MonoArray **destination, MonoVTable *vtable, int length) {
+	if (length < 0)
+		return 0;
+	ERROR_DECL(error);
+	*destination = mono_array_new_specific_checked (vtable, length, error);
+	if (!is_ok (error))
+		*destination = 0;
+	mono_error_cleanup (error); // FIXME: do not swallow the error
+	return *destination != 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_gettype_ref (
 	MonoObject **destination, MonoObject **source
 ) {
@@ -1165,6 +1177,7 @@ mono_jiterp_stelem_ref (
 	return 1;
 }
 
+
 // keep in sync with jiterpreter-enums.ts JiterpMember
 enum {
 	JITERP_MEMBER_VT_INITIALIZED = 0,
@@ -1256,7 +1269,9 @@ enum {
 	JITERP_COUNTER_BACK_BRANCHES_NOT_EMITTED,
 	JITERP_COUNTER_ELAPSED_GENERATION,
 	JITERP_COUNTER_ELAPSED_COMPILATION,
-	JITERP_COUNTER_MAX = JITERP_COUNTER_ELAPSED_COMPILATION
+	JITERP_COUNTER_SWITCH_TARGETS_OK,
+	JITERP_COUNTER_SWITCH_TARGETS_FAILED,
+	JITERP_COUNTER_MAX = JITERP_COUNTER_SWITCH_TARGETS_FAILED
 };
 
 #define JITERP_COUNTER_UNIT 100

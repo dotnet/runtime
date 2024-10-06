@@ -333,6 +333,9 @@
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>
     </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtableOfPointers.cs">
+      <Link>Utilities\LockFreeReaderHashtableOfPointers.cs</Link>
+    </Compile>
     <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelList.cs">
       <Link>System\Collections\Generic\LowLevelList.cs</Link>
     </Compile>

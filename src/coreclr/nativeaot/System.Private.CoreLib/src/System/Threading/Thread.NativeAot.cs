@@ -198,8 +198,19 @@ namespace System.Threading
             get => _managedThreadId.Id;
         }
 
-        // TODO: Inform the debugger and the profiler
-        // private void ThreadNameChanged(string? value) {}
+        // TODO: Support non-current thread
+        private void ThreadNameChanged(string? value)
+        {
+            if (Thread.CurrentThread != this)
+            {
+                return;
+            }
+            if (value == null)
+            {
+                return;
+            }
+            RuntimeImports.RhSetCurrentThreadName(value);
+        }
 
         public ThreadPriority Priority
         {

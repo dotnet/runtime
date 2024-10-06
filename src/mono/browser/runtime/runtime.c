@@ -199,29 +199,43 @@ init_icall_table (void)
 static void*
 get_native_to_interp (MonoMethod *method, void *extra_arg)
 {
-	void *addr;
-
+	void *addr = NULL;
 	MONO_ENTER_GC_UNSAFE;
 	MonoClass *klass = mono_method_get_class (method);
 	MonoImage *image = mono_class_get_image (klass);
 	MonoAssembly *assembly = mono_image_get_assembly (image);
 	MonoAssemblyName *aname = mono_assembly_get_name (assembly);
 	const char *name = mono_assembly_name_get_name (aname);
+	const char *namespace = mono_class_get_namespace (klass);
 	const char *class_name = mono_class_get_name (klass);
 	const char *method_name = mono_method_get_name (method);
-	char key [128];
-	int len;
+	MonoMethodSignature *sig = mono_method_signature (method);
+	uint32_t param_count = mono_signature_get_param_count (sig);
+	uint32_t token = mono_method_get_token (method);
 
-	assert (strlen (name) < 100);
-	snprintf (key, sizeof(key), "%s_%s_%s", name, class_name, method_name);
-	char *fixedName = mono_fixup_symbol_name ("", key, "");
-	addr = wasm_dl_get_native_to_interp (fixedName, extra_arg);
-	free (fixedName);
+	char buf [128];
+	char *key = buf;
+	int len;
+	if (name != NULL) {
+		// the key must match the one used in PInvokeTableGenerator
+		len = snprintf (key, sizeof(buf), "%s#%d:%s:%s:%s", method_name, param_count, name, namespace, class_name);
+
+		if (len >= sizeof (buf)) {
+			// The key is too long, try again with a larger buffer
+			key = g_new (char, len + 1);
+			snprintf (key, len + 1, "%s#%d:%s:%s:%s", method_name, param_count, name, namespace, class_name);
+		}
+
+		addr = wasm_dl_get_native_to_interp (token, key, extra_arg);
+
+		if (key != buf)
+			free (key);
+	}
 	MONO_EXIT_GC_UNSAFE;
 	return addr;
 }
 
-static void *sysglobal_native_handle;
+static void *sysglobal_native_handle = (void *)0xDeadBeef;
 
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
@@ -248,24 +262,33 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 	return NULL;
 }
 
+int
+import_compare_name (const void *k1, const void *k2)
+{
+	const PinvokeImport *e1 = (const PinvokeImport*)k1;
+	const PinvokeImport *e2 = (const PinvokeImport*)k2;
+
+	return strcmp (e1->name, e2->name);
+}
+
 static void*
 wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 {
-	if (handle == sysglobal_native_handle)
-		assert (0);
+	assert (handle != sysglobal_native_handle);
 
 #if WASM_SUPPORTS_DLOPEN
 	if (!wasm_dl_is_pinvoke_tables (handle)) {
 		return dlsym (handle, name);
 	}
 #endif
-
-	PinvokeImport *table = (PinvokeImport*)handle;
-	for (int i = 0; table [i].name; ++i) {
-		if (!strcmp (table [i].name, name))
-			return table [i].func;
-	}
-	return NULL;
+	PinvokeTable* index = (PinvokeTable*)handle;
+	PinvokeImport key = { name, NULL };
+    PinvokeImport* result = (PinvokeImport *)bsearch(&key, index->imports, index->count, sizeof(PinvokeImport), import_compare_name);
+    if (!result) {
+        // *err = g_strdup_printf ("Symbol not found: %s", name);
+        return NULL;
+    }
+    return result->func;
 }
 
 MonoDomain *
@@ -363,6 +386,28 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
 	return result;
 }
 
+MonoMethod*
+mono_wasm_get_method_matching (MonoImage *image, uint32_t token, MonoClass *klass, const char* name, int param_count)
+{
+	MonoMethod *result = NULL;
+	MONO_ENTER_GC_UNSAFE;
+	MonoMethod *method = mono_get_method (image, token, klass);
+	MonoMethodSignature *sig = mono_method_signature (method);
+	// Lookp by token but verify the name and param count in case assembly was trimmed
+	if (mono_signature_get_param_count (sig) == param_count) {
+		const char *method_name = mono_method_get_name (method);
+		if (!strcmp (method_name, name)) {
+			result = method;
+		}
+	}
+	// If the token lookup failed, try to find the method by name and param count
+	if (!result) {
+		result = mono_class_get_method_from_name (klass, name, param_count);
+	}
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
 /*
  * mono_wasm_marshal_get_managed_wrapper:
  * Creates a wrapper for a function pointer to a method marked with
@@ -370,17 +415,21 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
  * This wrapper ensures that the interpreter initializes the pointers.
  */
 void
-mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* namespaceName, const char* typeName, const char* methodName, int num_params)
+mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* namespaceName, const char* typeName, const char* methodName, uint32_t token, int param_count)
 {
 	MonoError error;
 	mono_error_init (&error);
+	MONO_ENTER_GC_UNSAFE;
 	MonoAssembly* assembly = mono_wasm_assembly_load (assemblyName);
 	assert (assembly);
-	MonoClass* class = mono_wasm_assembly_find_class (assembly, namespaceName, typeName);
-	assert (class);
-	MonoMethod* method = mono_wasm_assembly_find_method (class, methodName, num_params);
+	MonoImage *image = mono_assembly_get_image (assembly);
+	assert (image);
+	MonoClass* klass = mono_class_from_name (image, namespaceName, typeName);
+	assert (klass);
+	MonoMethod *method = mono_wasm_get_method_matching (image, token, klass, methodName, param_count);
 	assert (method);
 	MonoMethod *managedWrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, &error);
 	assert (managedWrapper);
 	mono_compile_method (managedWrapper);
+	MONO_EXIT_GC_UNSAFE;
 }

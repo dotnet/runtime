@@ -239,6 +239,8 @@ namespace System.Text.Json.Serialization.Tests
 
                     JsonSerializer.Serialize<SimpleTestClass>(testObj, options);
                     Assert.NotEqual(0, getCount(options));
+                }, new RemoteInvokeOptions() {
+                    TimeOut = RemoteExecutor.FailWaitTimeoutMilliseconds * PlatformDetection.SlowRuntimeTimeoutModifier
                 }).Dispose();
 
             static Func<JsonSerializerOptions, int> CreateCacheCountAccessor()
@@ -294,6 +296,8 @@ namespace System.Text.Json.Serialization.Tests
                         Assert.Same(originalCacheOptions, getCacheOptions(options2));
                     }
                 }
+            }, new RemoteInvokeOptions() {
+                TimeOut = RemoteExecutor.FailWaitTimeoutMilliseconds * PlatformDetection.SlowRuntimeTimeoutModifier
             }).Dispose();
 
             static Func<JsonSerializerOptions, JsonSerializerOptions?> CreateCacheOptionsAccessor()

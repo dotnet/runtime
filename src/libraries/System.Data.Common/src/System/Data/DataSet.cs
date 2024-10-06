@@ -77,6 +77,12 @@ namespace System.Data
         internal bool _useDataSetSchemaOnly; // UseDataSetSchemaOnly  , for YUKON
         internal bool _udtIsWrapped; // if UDT is wrapped , for YUKON
 
+        [FeatureSwitchDefinition("System.Data.DataSet.XmlSerializationIsSupported")]
+        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+#pragma warning disable IL4000
+        internal static bool XmlSerializationIsSupported => AppContext.TryGetSwitch("System.Data.DataSet.XmlSerializationIsSupported", out bool isSupported) ? isSupported : true;
+#pragma warning restore IL4000
+
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.DataSet'/> class.
         /// </summary>
@@ -3459,6 +3465,11 @@ namespace System.Data
 
         XmlSchema? IXmlSerializable.GetSchema()
         {
+            if (!XmlSerializationIsSupported)
+            {
+                throw new NotSupportedException(SR.DataSet_XmlSerializationUnsupported);
+            }
+
             if (GetType() == typeof(DataSet))
             {
                 return null;
@@ -3469,9 +3480,7 @@ namespace System.Data
             XmlWriter writer = new XmlTextWriter(stream, null);
             if (writer != null)
             {
-#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
                 WriteXmlSchema(this, writer);
-#pragma warning restore IL2026
             }
             stream.Position = 0;
             return XmlSchema.Read(new XmlTextReader(stream), null);
@@ -3485,6 +3494,11 @@ namespace System.Data
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
+            if (!XmlSerializationIsSupported)
+            {
+                throw new NotSupportedException(SR.DataSet_XmlSerializationUnsupported);
+            }
+
             bool fNormalization = true;
             XmlTextReader? xmlTextReader = null;
             IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
@@ -3503,9 +3517,7 @@ namespace System.Data
                 }
             }
 
-#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             ReadXmlSerializableInternal(reader);
-#pragma warning restore IL2026
 
             if (xmlTextParser != null)
             {
@@ -3525,9 +3537,12 @@ namespace System.Data
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
+            if (!XmlSerializationIsSupported)
+            {
+                throw new NotSupportedException(SR.DataSet_XmlSerializationUnsupported);
+            }
+
             WriteXmlInternal(writer);
-#pragma warning restore IL2026
         }
 
         [RequiresUnreferencedCode("DataSet.WriteXml uses XmlSerialization underneath which is not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]

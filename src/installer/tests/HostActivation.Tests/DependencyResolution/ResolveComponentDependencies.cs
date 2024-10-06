@@ -53,13 +53,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         public void ComponentWithNoDependenciesCaseChangedOnAsm()
         {
             // Scenario: change the case of the first letter of component.AppDll file name
+            // Resolution should be based on what is in the .deps.json
 
             // Changing the casing of the first letter of a dependent assembly have different behavior in the 3 platforms
             // Wisely the product code stays out of casing on dependent assemblies choosing the 1st assembly
             // Linux: we fail
-            // Windows and Mac, probing succeeds but
-            // Windows: probing returns the original name
-            // Mac: probing return the new name including 2 assembly probing with the original and new name, and the changed deps file
+            // Windows and Mac, resolution succeeds but
+            // Windows: uses original name and deps file as component info, resolution returns the original name
+            // Mac: uses chanegd name and changed deps file as component info, resolution returns the original name
 
             var component = sharedTestState.ComponentWithNoDependencies.Copy();
 
@@ -89,7 +90,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
                     .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
                     .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
                     .And.HaveStdErrContaining($"deps='{changeDepsFile}'")
                     .And.HaveStdErrContaining($"mgd_app='{changeFile}'");
@@ -107,15 +108,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [Fact]
         public void ComponentWithNoDependenciesCaseChangedOnDepsAndAsm()
         {
-
             // Scenario: change the case of the first letter of component.AppDll and component.DepsJson file names
+            // Resolution should be based on what is in the .deps.json
 
             // Changing the casing of the first letter of a dependent assembly have different behavior in the 3 platforms
             // Wisely the product code stays out of casing on dependent assemblies choosing the 1st assembly
             // Linux: we fail
-            // Windows and Mac, probing succeeds but
+            // Windows and Mac, resolution succeeds but
             // Windows: probing returns the original name
-            // Mac: probing return the new name including 2 assembly probing with the original and new name, and the changed deps file
+            // Windows: uses original name and deps file as component info, resolution returns the original name
+            // Mac: uses chanegd name and changed deps file as component info, resolution returns the original name
 
             var component = sharedTestState.ComponentWithNoDependencies.Copy();
 
@@ -146,7 +148,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
                     .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}]")
                     .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
                     .And.HaveStdErrContaining($"deps='{changeDepsFile}'")
                     .And.HaveStdErrContaining($"mgd_app='{changeFile}'");
@@ -164,8 +166,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [Fact]
         public void ComponentWithNoDependenciesNoDepsCaseChangedOnAsm()
         {
-
             // Scenario: change the case of the first letter of component.AppDll file name and delete component.DepsJson file
+            // Resolution should be based on what is in the app-local directory
 
             // Changing the casing of the first letter of a dependent assembly have different behavior in the 3 platforms
             // Wisely the product code stays out of casing on dependent assemblies choosing the 1st assembly
@@ -194,7 +196,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
                     .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{changeFile}{Path.PathSeparator}]")
                     .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
                     .And.HaveStdErrContaining($"deps='{component.DepsJson}'")
                     .And.HaveStdErrContaining($"mgd_app='{component.AppDll}'");

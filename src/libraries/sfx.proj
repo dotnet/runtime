@@ -69,6 +69,27 @@
           UseHardlinksIfPossible="true" />
   </Target>
 
+  <Target Name="ValidateSharedFramework"
+          AfterTargets="Build">
+    <ItemGroup>
+      <!-- exclude private assemblies from ref-->
+      <_expectedRef Include="@(NetCoreAppLibrary)" Condition="!$([System.String]::new('%(Identity)').StartsWith('System.Private'))" />
+      <_expectedSharedFrameworkFile Include="@(_expectedRefs->'$(MicrosoftNetCoreAppRefPackRefDir)%(Identity).dll')" />
+
+      <!-- exclude the full facades from expected docs since they have no types -->
+      <_expectedDoc Include="@(_expectedRefs)" Exclude="netstandard;@(NetFxReference)" />
+      <_expectedSharedFrameworkFile Include="@(_expectedDoc->'$(MicrosoftNetCoreAppRefPackRefDir)%(Identity).xml')" />
+
+      <!-- exclude CoreLib from expected libs, since it's placed in native -->
+      <_expectedLib Include="@(NetCoreAppLibrary)" Exclude="System.Private.CoreLib" />
+      <_expectedSharedFrameworkFile Include="@(_expectedLib->'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)%(Identity).dll')" />
+
+      <_missingSharedFrameworkFile Include="@(_expectedSharedFrameworkFile)" Exclude="@(_expectedSharedFrameworkFile->Exists())" />
+    </ItemGroup>
+
+    <Error Text="The shared framework files '@(_missingSharedFrameworkFile)' were missing." Condition="'@(_missingSharedFrameworkFile)' != ''" />
+  </Target>
+
   <Target Name="GetTrimSharedFrameworkAssembliesInputs"
           DependsOnTargets="ResolveProjectReferences">
     <PropertyGroup>

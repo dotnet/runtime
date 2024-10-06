@@ -455,7 +455,7 @@ namespace pal
 #else // !__APPLE__
         // Use procfs to detect if there is a tracer process.
         // See https://www.kernel.org/doc/html/latest/filesystems/proc.html
-        char status[2048] = { 0 };
+        char status[2048];
         int fd = ::open("/proc/self/status", O_RDONLY);
         if (fd == -1)
         {
@@ -471,6 +471,8 @@ namespace pal
         {
             // We have data. At this point we can likely make a strong decision.
             const char tracer_pid_name[] = "TracerPid:";
+            // null terminate status
+            status[bytes_read] = '\0';
             const char* tracer_pid_ptr = ::strstr(status, tracer_pid_name);
             if (tracer_pid_ptr == nullptr)
                 return debugger_state_t::not_attached;

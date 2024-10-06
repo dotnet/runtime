@@ -191,6 +191,8 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_stopped);
             }
 
+            if (OperatingSystem.IsWasi() && _serverSocket!.Blocking) throw new PlatformNotSupportedException("Only use with Socket.Blocking=false on WASI");
+
             return _serverSocket!.Accept();
         }
 
@@ -200,6 +202,8 @@ namespace System.Net.Sockets
             {
                 throw new InvalidOperationException(SR.net_stopped);
             }
+
+            if (OperatingSystem.IsWasi() && _serverSocket!.Blocking) throw new PlatformNotSupportedException("Only use with Socket.Blocking=false on WASI");
 
             Socket acceptedSocket = _serverSocket!.Accept();
             return new TcpClient(acceptedSocket);
@@ -252,7 +256,7 @@ namespace System.Net.Sockets
             {
                 // If OS supports IPv6 use dual mode so both address families work.
                 listener = new TcpListener(IPAddress.IPv6Any, port);
-                listener.Server.DualMode = true;
+                if (!OperatingSystem.IsWasi()) listener.Server.DualMode = true;
             }
             else
             {
@@ -286,6 +290,8 @@ namespace System.Net.Sockets
 
         private TResult EndAcceptCore<TResult>(IAsyncResult asyncResult)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             try
             {
                 return TaskToAsyncResult.End<TResult>(asyncResult);

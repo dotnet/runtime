@@ -9302,7 +9302,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             // Hardware intrinsics are recognized by name.
             const char* namespaceName = NULL;
             const char* className = NULL;
-            const char* methodName = getMethodName(&m_interpCeeInfo, (CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
+            const char* methodName = getMethodName(&m_interpCeeInfo, (CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName);
             if (
                 (strcmp(namespaceName, "System.Runtime.Intrinsics") == 0 ||
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -11943,7 +11943,7 @@ Interpreter::InterpreterNamedIntrinsics Interpreter::getNamedIntrinsicID(CEEInfo
 
     const char* namespaceName = NULL;
     const char* className = NULL;
-    const char* methodName = getMethodName(info, (CORINFO_METHOD_HANDLE)methodHnd, &className, &namespaceName, NULL);
+    const char* methodName = getMethodName(info, (CORINFO_METHOD_HANDLE)methodHnd, &className, &namespaceName);
 
     if (strncmp(namespaceName, "System", 6) == 0)
     {
@@ -12010,7 +12010,7 @@ Interpreter::InterpreterNamedIntrinsics Interpreter::getNamedIntrinsicID(CEEInfo
 
 // Simple version of getMethodName which supports IL Stubs such as IL_STUB_PInvoke additionally.
 // Also see getMethodNameFromMetadata and printMethodName in corinfo.h
-const char* Interpreter::getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName, const char **enclosingClassName)
+const char* Interpreter::getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName)
 {
     MethodDesc *pMD = GetMethod(hnd);
     if (pMD->IsILStub())
@@ -12022,7 +12022,7 @@ const char* Interpreter::getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd,
         return pMD->GetName();
     }
 
-    return info->getMethodNameFromMetadata(hnd, className, namespaceName, enclosingClassName);
+    return info->getMethodNameFromMetadata(hnd, className, namespaceName, nullptr, 0);
 }
 
 const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** clsName)

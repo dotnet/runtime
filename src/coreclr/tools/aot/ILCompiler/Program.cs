@@ -499,7 +499,7 @@ namespace ILCompiler
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
 
-                ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager);
+                ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager, metadataManager);
 
                 // Use a more precise IL provider that uses whole program analysis for dead branch elimination
                 builder.UseILProvider(ilProvider);

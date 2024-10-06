@@ -127,13 +127,14 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
         try
         {
-            if(!AssemblyStripper.AssemblyStripper.TryStripAssembly(assemblyFile, outputPath))
+            if (!AssemblyStripper.AssemblyStripper.TryStripAssembly(assemblyFile, outputPath))
             {
                 Log.LogMessage(MessageImportance.Low, $"[ILStrip] Skipping {assemblyFile} because it is not a managed assembly.");
             }
             else
             {
-                _processedAssemblies.GetOrAdd(assemblyItem.ItemSpec, GetTrimmedAssemblyItem(assemblyItem, outputPath, assemblyFile));
+                var fullPath = assemblyItem.GetMetadata("FullPath");
+                _processedAssemblies.GetOrAdd(fullPath, GetTrimmedAssemblyItem(assemblyItem, outputPath, assemblyFile));
             }
         }
         catch (Exception ex)

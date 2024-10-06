@@ -469,12 +469,15 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDispatchOnType")]
-        internal static extern unsafe IntPtr RhResolveDispatchOnType(MethodTable* instanceType, MethodTable* interfaceType, ushort slot, MethodTable** pGenericContext);
+        internal static extern unsafe IntPtr RhResolveDispatchOnType(MethodTable* instanceType, MethodTable* interfaceType, ushort slot);
 
-        internal static unsafe IntPtr RhResolveDispatchOnType(MethodTable* instanceType, MethodTable* interfaceType, ushort slot)
-        {
-            return RhResolveDispatchOnType(instanceType, interfaceType, slot, null);
-        }
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhResolveStaticDispatchOnType")]
+        internal static extern unsafe IntPtr RhResolveStaticDispatchOnType(MethodTable* instanceType, MethodTable* interfaceType, ushort slot, MethodTable** pGenericContext);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhResolveDynamicInterfaceCastableDispatchOnType")]
+        internal static extern unsafe IntPtr RhResolveDynamicInterfaceCastableDispatchOnType(MethodTable* instanceType, MethodTable* interfaceType, ushort slot, MethodTable** pGenericContext);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetRuntimeHelperForType")]
@@ -876,6 +879,14 @@ namespace System.Runtime
 #if TARGET_X86 || TARGET_AMD64
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial void RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId);
+#endif
+
+#if TARGET_UNIX
+        [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf8)]
+        internal static partial void RhSetCurrentThreadName(string name);
+#else
+        [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial void RhSetCurrentThreadName(string name);
 #endif
     }
 }

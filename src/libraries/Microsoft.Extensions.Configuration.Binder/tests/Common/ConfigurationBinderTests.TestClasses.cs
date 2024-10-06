@@ -198,6 +198,20 @@ namespace Microsoft.Extensions
             public List<TreeElement>? List { get; set; }
         }
 
+        public class TypeWithValueMutatorPropertySetter
+        {
+            private string _value = "Uninitialized";
+            public string Value
+            {
+                get { return _value; }
+                set
+                {
+                    _value = value == "Uninitialized" ? "Initialized" : value;
+                }
+            }
+            public ISet<string> SomeSet { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
         public record RecordWithArrayParameter(string[] Array);
 
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
@@ -1097,5 +1111,25 @@ namespace Microsoft.Extensions
             IEnumerator IEnumerable.GetEnumerator() => enumerate().GetEnumerator();
         }
 
+        public class ParsableValuesClass
+        {
+            public int? IntValue { get; set; }
+            public double? DoubleValue { get; set; }
+            public bool? BoolValue { get; set; }
+            public decimal? DecimalValue { get; set; }
+            public float? FloatValue { get; set; }
+            public long? LongValue { get; set; }
+            public short? ShortValue { get; set; }
+            public byte? ByteValue { get; set; }
+            public sbyte? SByteValue { get; set; }
+            public uint? UIntValue { get; set; }
+            public ushort? UShortValue { get; set; }
+            public ulong? ULongValue { get; set; }
+            public DateTime? DateTimeValue { get; set; }
+            public DateTimeOffset? DateTimeOffsetValue { get; set; }
+            public TimeSpan? TimeSpanValue { get; set; }
+            public Guid? GuidValue { get; set; }
+            public StringComparison? StringComparisonValue { get; set; }
+        }
     }
 }

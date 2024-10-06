@@ -4,7 +4,6 @@
 include AsmMacros.inc
 include asmconstants.inc
 
-extern JIT_InternalThrow:proc
 extern NDirectImportWorker:proc
 extern ThePreStub:proc
 extern  ProfileEnter:proc
@@ -564,26 +563,6 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT
         pop                     rax
         ret
 NESTED_END ProfileTailcallNaked, _TEXT
-
-
-extern JIT_InternalThrowFromHelper:proc
-
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-
-        test    rcx, rcx
-        jz      NullObject
-
-
-        mov     rax, [rcx + OFFSETOF__DelegateObject___methodPtr]
-        mov     rcx, [rcx + OFFSETOF__DelegateObject___target]  ; replace "this" pointer
-
-        jmp     rax
-
-NullObject:
-        mov     rcx, CORINFO_NullReferenceException_ASM
-        jmp     JIT_InternalThrow
-
-LEAF_END SinglecastDelegateInvokeStub, _TEXT
 
 ifdef FEATURE_TIERED_COMPILATION
 

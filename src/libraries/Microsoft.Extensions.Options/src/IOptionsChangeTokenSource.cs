@@ -6,19 +6,19 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Used to fetch <see cref="IChangeToken"/> used for tracking options changes.
+    /// Fetches a <see cref="IChangeToken"/> that's used for tracking options changes.
     /// </summary>
     /// <typeparam name="TOptions">The options type being changed.</typeparam>
     public interface IOptionsChangeTokenSource<out TOptions>
     {
         /// <summary>
-        /// Returns a <see cref="IChangeToken"/> which can be used to register a change notification callback.
+        /// Returns a <see cref="IChangeToken"/> that can be used to register a change notification callback.
         /// </summary>
-        /// <returns>Change token.</returns>
+        /// <returns>A change token.</returns>
         IChangeToken GetChangeToken();
 
         /// <summary>
-        /// The name of the option instance being changed.
+        /// Gets the name of the option instance being changed.
         /// </summary>
         string? Name { get; }
     }

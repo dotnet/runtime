@@ -14,15 +14,12 @@
 #ifndef _COM_WAITABLE_HANDLE_H
 #define _COM_WAITABLE_HANDLE_H
 
+extern "C" INT32 QCALLTYPE WaitHandle_WaitOneCore(HANDLE handle, INT32 timeout, BOOL useTrivialWaits);
+extern "C" INT32 QCALLTYPE WaitHandle_WaitMultipleIgnoringSyncContext(HANDLE *handleArray, INT32 numHandles, BOOL waitForAll, INT32 timeout);
+extern "C" INT32 QCALLTYPE WaitHandle_SignalAndWait(HANDLE waitHandleSignal, HANDLE waitHandleWait, INT32 timeout);
 
-class WaitHandleNative
-{
-public:
-    static FCDECL3(INT32, CorWaitOneNative, HANDLE handle, INT32 timeout, FC_BOOL_ARG useTrivialWaits);
-    static FCDECL4(INT32, CorWaitMultipleNative, HANDLE *handleArray, INT32 numHandles, FC_BOOL_ARG waitForAll, INT32 timeout);
-    static FCDECL3(INT32, CorSignalAndWaitOneNative, HANDLE waitHandleSignalUNSAFE, HANDLE waitHandleWaitUNSAFE, INT32 timeout);
-};
 #ifdef TARGET_UNIX
-extern "C" INT32 QCALLTYPE WaitHandle_CorWaitOnePrioritizedNative(HANDLE handle, INT32 timeoutMs);
-#endif
-#endif
+extern "C" INT32 QCALLTYPE WaitHandle_WaitOnePrioritized(HANDLE handle, INT32 timeoutMs);
+#endif // TARGET_UNIX
+
+#endif // _COM_WAITABLE_HANDLE_H

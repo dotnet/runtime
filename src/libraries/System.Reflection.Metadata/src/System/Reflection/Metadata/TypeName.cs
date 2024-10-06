@@ -95,7 +95,7 @@ namespace System.Reflection.Metadata
         /// If <see cref="AssemblyName"/> returns null, simply returns <see cref="FullName"/>.
         /// </remarks>
         public string AssemblyQualifiedName
-            => _assemblyQualifiedName ??= AssemblyName is null ? FullName : $"{FullName}, {AssemblyName.FullName}";
+            => _assemblyQualifiedName ??= AssemblyName is null ? FullName : $"{FullName}, {AssemblyName.FullName}"; // see recursion comments in FullName
 
         /// <summary>
         /// Returns assembly name which contains this type, or null if this <see cref="TypeName"/> was not
@@ -142,6 +142,17 @@ namespace System.Reflection.Metadata
         {
             get
             {
+                // This is a recursive method over potentially hostile input. Protection against DoS is offered
+                // via the [Try]Parse method and TypeNameParserOptions.MaxNodes property at construction time.
+                // This FullName property getter and related methods assume that this TypeName instance has an
+                // acceptable node count.
+                //
+                // The node count controls the total amount of work performed by this method, including:
+                // - The max possible stack depth due to the recursive methods calls; and
+                // - The total number of bytes allocated by this function. For a deeply-nested TypeName
+                //   object, the total allocation across the full object graph will be
+                //   O(FullName.Length * GetNodeCount()).
+
                 if (_fullName is null)
                 {
                     if (IsConstructedGenericType)
@@ -245,6 +256,8 @@ namespace System.Reflection.Metadata
         {
             get
             {
+                // Lookups to Name and FullName might be recursive. See comments in FullName property getter.
+
                 if (_name is null)
                 {
                     if (IsConstructedGenericType)
@@ -301,24 +314,28 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public int GetNodeCount()
         {
+            // This method uses checked arithmetic to avoid silent overflows.
+            // It's impossible to parse a TypeName with NodeCount > int.MaxValue
+            // (TypeNameParseOptions.MaxNodes is an int), but it's possible
+            // to create such names with the Make* APIs.
             int result = 1;
 
-            if (IsNested)
+            if (IsArray || IsPointer || IsByRef)
             {
-                result += DeclaringType.GetNodeCount();
+                result = checked(result + GetElementType().GetNodeCount());
             }
             else if (IsConstructedGenericType)
             {
-                result++;
-            }
-            else if (IsArray || IsPointer || IsByRef)
-            {
-                result += GetElementType().GetNodeCount();
-            }
+                result = checked(result + GetGenericTypeDefinition().GetNodeCount());
 
-            foreach (TypeName genericArgument in GetGenericArguments())
+                foreach (TypeName genericArgument in GetGenericArguments())
+                {
+                    result = checked(result + genericArgument.GetNodeCount());
+                }
+            }
+            else if (IsNested)
             {
-                result += genericArgument.GetNodeCount();
+                result = checked(result + DeclaringType.GetNodeCount());
             }
 
             return result;
@@ -421,6 +438,17 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">The current type name is not simple.</exception>
         public TypeName WithAssemblyName(AssemblyNameInfo? assemblyName)
         {
+            // Recursive method. See comments in FullName property getter for more information
+            // on how this is protected against attack.
+            //
+            // n.b. AssemblyNameInfo could also be hostile. The typical exploit is that a single
+            // long AssemblyNameInfo is associated with one or more simple TypeName objects,
+            // leading to an alg. complexity attack (DoS). It's important that TypeName doesn't
+            // actually *do* anything with the provided AssemblyNameInfo rather than store it.
+            // For example, don't use it inside a string concat operation unless the caller
+            // explicitly requested that to happen. If the input is hostile, the caller should
+            // never perform such concats in a loop.
+
             if (!IsSimple)
             {
                 TypeNameParserHelpers.ThrowInvalidOperation_NotSimpleName(FullName);

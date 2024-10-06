@@ -254,10 +254,6 @@ namespace System
 
         protected override bool IsPointerImpl() => RuntimeTypeHandle.IsPointer(this);
 
-        protected override bool IsCOMObjectImpl() => RuntimeTypeHandle.IsComObject(this, false);
-
-        public override bool IsInstanceOfType([NotNullWhen(true)] object? o) => RuntimeTypeHandle.IsInstanceOfType(this, o);
-
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
             => typeInfo != null && IsAssignableFrom(typeInfo.AsType());
 
@@ -737,22 +733,22 @@ namespace System
                     SR.Format(SR.Argument_NotEnoughGenArguments, genericArguments.Length, genericParameters.Length));
         }
 
-        internal static CorElementType GetUnderlyingType(RuntimeType type)
+        internal CorElementType GetUnderlyingCorElementType()
         {
+            RuntimeType type = this;
             if (type.IsActualEnum)
             {
                 type = (RuntimeType)Enum.GetUnderlyingType(type);
             }
 
-            return RuntimeTypeHandle.GetCorElementType(type);
+            return type.GetCorElementType();
         }
-
 
         // AggressiveInlining used since on hot path for reflection.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool TryGetByRefElementType(RuntimeType type, [NotNullWhen(true)] out RuntimeType? elementType)
         {
-            CorElementType corElemType = RuntimeTypeHandle.GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             if (corElemType == CorElementType.ELEMENT_TYPE_BYREF)
             {
                 elementType = RuntimeTypeHandle.GetElementType(type);

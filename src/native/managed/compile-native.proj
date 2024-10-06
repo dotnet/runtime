@@ -50,7 +50,7 @@
         <ProjectReference Include="@(NativeLibsProjectsToBuild)"
                           ReferenceOutputAssembly="false"
                           AdditionalProperties="%(AdditionalProperties);$(SplitSubprojectProps)"
-                          Targets="LinkNative"
+                          Targets="Publish"
                           Condition="$(SupportsNativeAotComponents)"/>
     </ItemGroup>
 </Project>

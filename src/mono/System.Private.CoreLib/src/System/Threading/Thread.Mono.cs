@@ -235,7 +235,7 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void StartInternal(Thread runtimeThread, int stackSize);
 
-        partial void ThreadNameChanged(string? value)
+        private void ThreadNameChanged(string? value)
         {
             // TODO: Should only raise the events
             SetName(this, value);

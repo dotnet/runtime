@@ -16,6 +16,8 @@ using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using System.Reflection.PortableExecutable;
 
+using JoinedString;
+
 public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 {
     /// <summary>
@@ -714,16 +716,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (DirectPInvokes.Length > 0)
         {
-            var directPInvokesSB = new StringBuilder("direct-pinvokes=");
-            Array.ForEach(DirectPInvokes, directPInvokeItem => directPInvokesSB.Append($"{directPInvokeItem.ItemSpec};"));
-            aotArgs.Add(directPInvokesSB.ToString());
+            aotArgs.Add($$"""direct-pinvokes={{DirectPInvokes.Join("", d => $"{d.ItemSpec};")}}""");
         }
 
         if (DirectPInvokeLists.Length > 0)
         {
-            var directPInvokeListsSB = new StringBuilder("direct-pinvoke-lists=");
-            Array.ForEach(DirectPInvokeLists, directPInvokeListItem => directPInvokeListsSB.Append($"{directPInvokeListItem.GetMetadata("FullPath")};"));
-            aotArgs.Add(directPInvokeListsSB.ToString());
+            aotArgs.Add($$"""direct-pinvoke-lists={{DirectPInvokeLists.Join("", d => $"{d.GetMetadata("FullPath")};")}}""");
         }
 
         if (UseDwarfDebug)
@@ -1109,62 +1107,66 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         Directory.CreateDirectory(Path.GetDirectoryName(outputFile)!);
 
         using TempFileName tmpAotModulesTablePath = new();
-        using (var writer = File.CreateText(tmpAotModulesTablePath.Path))
+        using (var writer = new JoinedStringStreamWriter(tmpAotModulesTablePath.Path, false))
         {
             if (parsedAotModulesTableLanguage == MonoAotModulesTableLanguage.C)
             {
-                writer.WriteLine("#include <mono/jit/jit.h>");
+                profilers ??= Array.Empty<string>();
+                writer.Write(
+                    $$"""
+                    #include <mono/jit/jit.h>"
+                    {{symbols.Join(writer.NewLine, s =>
+                    $"extern void *{s};")
+                    }}
 
-                foreach (var symbol in symbols)
-                {
-                    writer.WriteLine($"extern void *{symbol};");
-                }
-                writer.WriteLine("void register_aot_modules (void);");
-                writer.WriteLine("void register_aot_modules (void)");
-                writer.WriteLine("{");
-                foreach (var symbol in symbols)
-                {
-                    writer.WriteLine($"\tmono_aot_register_module ({symbol});");
-                }
-                writer.WriteLine("}");
+                    void register_aot_modules (void);
+                    void register_aot_modules (void)
+                    {
+                    {{symbols.Join(writer.NewLine, s =>
+                    $"    mono_aot_register_module ({s});")
+                    }}
+                    }
 
-                foreach (var profiler in profilers ?? Enumerable.Empty<string>())
-                {
-                    writer.WriteLine($"void mono_profiler_init_{profiler} (const char *desc);");
-                    writer.WriteLine("EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_" + profiler + " (const char *desc) { mono_profiler_init_" + profiler + " (desc); }");
-                }
+                    {{profilers.Join(writer.NewLine, profiler =>
+                    $$$""""
+                    void mono_profiler_init_{{{profiler}}} (const char *desc);
+                    EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_{{{profiler}}} (const char *desc)
+                    {
+                        mono_profiler_init_{{{profiler}}} (desc);
+                    }
+                    """")
+                    }}
 
-                if (parsedAotMode == MonoAotMode.LLVMOnly)
-                {
-                    writer.WriteLine("#define EE_MODE_LLVMONLY 1");
-                }
-
-                if (parsedAotMode == MonoAotMode.LLVMOnlyInterp)
-                {
-                    writer.WriteLine("#define EE_MODE_LLVMONLY_INTERP 1");
-                }
+                    {{parsedAotMode switch
+                        {
+                            MonoAotMode.LLVMOnly => "#define EE_MODE_LLVMONLY 1",
+                            MonoAotMode.LLVMOnlyInterp => "#define EE_MODE_LLVMONLY_INTERP 1",
+                            _ => ""
+                        }
+                    }}
+                    """);
             }
             else if (parsedAotModulesTableLanguage == MonoAotModulesTableLanguage.ObjC)
             {
-                writer.WriteLine("#include <mono/jit/jit.h>");
-                writer.WriteLine("#include <TargetConditionals.h>");
-                writer.WriteLine("");
-                writer.WriteLine("#if TARGET_OS_IPHONE && (!TARGET_IPHONE_SIMULATOR || FORCE_AOT)");
+                writer.Write(
+                    $$"""
+                    #include <mono/jit/jit.h>
+                    #include <TargetConditionals.h>
 
-                foreach (var symbol in symbols)
-                {
-                    writer.WriteLine($"extern void *{symbol};");
-                }
+                    #if TARGET_OS_IPHONE && (!TARGET_IPHONE_SIMULATOR || FORCE_AOT)
+                    {{symbols.Join(writer.NewLine, s =>
+                    $"extern void *{s};")
+                    }}
 
-                writer.WriteLine("void register_aot_modules (void);");
-                writer.WriteLine("void register_aot_modules (void)");
-                writer.WriteLine("{");
-                foreach (var symbol in symbols)
-                {
-                    writer.WriteLine($"\tmono_aot_register_module ({symbol});");
-                }
-                writer.WriteLine("}");
-                writer.WriteLine("#endif");
+                    void register_aot_modules (void);
+                    void register_aot_modules (void)
+                    {
+                    {{symbols.Join(writer.NewLine, s =>
+                    $"    mono_aot_register_module ({s});")
+                    }}
+                    }
+                    #endif
+                    """);
             }
             else
             {

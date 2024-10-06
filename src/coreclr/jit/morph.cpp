@@ -7088,18 +7088,15 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.
     // This needs to be done after the arguments are morphed to ensure constant propagation has already taken place.
-    if (opts.OptimizationEnabled() && call->IsHelperCall() &&
-        (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ARRADDR_ST)))
+    if (opts.OptimizationEnabled() && call->IsHelperCall(this, CORINFO_HELP_ARRADDR_ST))
     {
         assert(call->gtArgs.CountArgs() == 3);
+        GenTree* arr   = call->gtArgs.GetArgByIndex(0)->GetNode();
+        GenTree* index = call->gtArgs.GetArgByIndex(1)->GetNode();
         GenTree* value = call->gtArgs.GetArgByIndex(2)->GetNode();
-        if (value->IsIntegralConst(0))
+
+        if (gtCanSkipCovariantStoreCheck(value, arr))
         {
-            assert(value->OperGet() == GT_CNS_INT);
-
-            GenTree* arr   = call->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree* index = call->gtArgs.GetArgByIndex(1)->GetNode();
-
             // Either or both of the array and index arguments may have been spilled to temps by `fgMorphArgs`. Copy
             // the spill trees as well if necessary.
             GenTree* argSetup = nullptr;
@@ -8482,17 +8479,21 @@ DONE_MORPHING_CHILDREN:
                 assert(op2 == tree->AsOp()->gtGetOp2());
             }
 
-            if (opts.OptimizationEnabled() && fgGlobalMorph)
+            if (opts.OptimizationEnabled() && fgGlobalMorph && tree->OperIs(GT_GT, GT_LT, GT_LE, GT_GE))
             {
+                // Normalize unsigned comparisons to signed if both operands a known to be never negative.
+                if (tree->IsUnsigned() && varTypeIsIntegral(op1) && op1->IsNeverNegative(this) &&
+                    op2->IsNeverNegative(this))
+                {
+                    tree->ClearUnsigned();
+                }
+
                 if (op2->IsIntegralConst() || op1->IsIntegralConst())
                 {
-                    if (tree->OperIs(GT_GT, GT_LT, GT_LE, GT_GE))
+                    tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
+                    if (tree->OperIs(GT_CNS_INT))
                     {
-                        tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
-                        if (tree->OperIs(GT_CNS_INT))
-                        {
-                            return tree;
-                        }
+                        return tree;
                     }
                 }
             }
@@ -11578,12 +11579,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
         // Try to fold it, maybe we get lucky,
         GenTree* morphedTree = gtFoldExpr(tree);
 
-        if (morphedTree != tree)
-        {
-            assert(!fgIsCommaThrow(morphedTree));
-            INDEBUG(morphedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-        }
-        else if (!morphedTree->OperIsHWIntrinsic())
+        if ((morphedTree != tree) || !morphedTree->OperIsHWIntrinsic())
         {
             INDEBUG(morphedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
         }

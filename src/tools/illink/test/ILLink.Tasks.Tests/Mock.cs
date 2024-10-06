@@ -37,8 +37,8 @@ namespace ILLink.Tasks.Tests
 
 		public static string[] OptimizationNames {
 			get {
-				var field = typeof (ILLink).GetField ("_optimizationNames", BindingFlags.NonPublic | BindingFlags.Static);
-				return (string[]) field.GetValue (null);
+				var fieldInfo = typeof (ILLink).GetField ("_optimizationNames", BindingFlags.NonPublic | BindingFlags.Static);
+				return (string[]) fieldInfo.GetValue (null);
 			}
 		}
 

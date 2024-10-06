@@ -61,11 +61,11 @@ integrated with the rest of zlib-ng using hook macros.
 ## Hook macros
 
 DFLTCC takes as arguments a parameter block, an input buffer, an output
-buffer and a window. `ZALLOC_DEFLATE_STATE()`, `ZALLOC_INFLATE_STATE()`,
-`ZFREE_STATE()`, `ZCOPY_DEFLATE_STATE()`, `ZCOPY_INFLATE_STATE()`,
-`ZALLOC_WINDOW()`, `ZCOPY_WINDOW()` and `TRY_FREE_WINDOW()` macros encapsulate
-allocation  details for the parameter block (which is allocated alongside
-zlib-ng state) and the window (which must be page-aligned and large enough).
+buffer, and a window. Parameter blocks are stored alongside zlib states;
+buffers are forwarded from the caller; and window - which must be
+4k-aligned and is always 64k large, is managed using the `PAD_WINDOW()`,
+`WINDOW_PAD_SIZE`, `HINT_ALIGNED_WINDOW` and `DEFLATE_ADJUST_WINDOW_SIZE()`
+and `INFLATE_ADJUST_WINDOW_SIZE()` hooks.
 
 Software and hardware window formats do not match, therefore,
 `deflateSetDictionary()`, `deflateGetDictionary()`, `inflateSetDictionary()`
@@ -117,8 +117,7 @@ converted to calls to functions, which are implemented in
 `arch/s390/dfltcc_*` files. The functions can be grouped in three broad
 categories:
 
-* Base DFLTCC support, e.g. wrapping the machine instruction -
-  `dfltcc()` and allocating aligned memory - `dfltcc_alloc_state()`.
+* Base DFLTCC support, e.g. wrapping the machine instruction - `dfltcc()`.
 * Translating between software and hardware data formats, e.g.
   `dfltcc_deflate_set_dictionary()`.
 * Translating between software and hardware state machines, e.g.
@@ -214,29 +213,31 @@ DFLTCC is a non-privileged instruction, neither special VM/LPAR
 configuration nor root are required.
 
 zlib-ng CI uses an IBM-provided z15 self-hosted builder for the DFLTCC
-testing. There are no IBM Z builds of GitHub Actions runner, and
-stable qemu-user has problems with .NET apps, so the builder runs the
-x86_64 runner version with qemu-user built from the master branch.
+testing. There is no official IBM Z GitHub Actions runner, so we build
+one inspired by `anup-kodlekere/gaplib`.
+Future updates to actions-runner might need an updated patch. The .net
+version number patch has been separated into a separate file to avoid a
+need for constantly changing the patch.
 
 ## Configuring the builder.
 
 ### Install prerequisites.
 
 ```
-$ sudo dnf install docker
+sudo dnf install podman
 ```
 
-### Add services.
+### Add actions-runner service.
 
 ```
-$ sudo cp self-hosted-builder/*.service /etc/systemd/system/
-$ sudo systemctl daemon-reload
+sudo cp self-hosted-builder/actions-runner.service /etc/systemd/system/
+sudo systemctl daemon-reload
 ```
 
-### Create a config file.
+### Create a config file, needs github personal access token.
 
 ```
-$ sudo tee /etc/actions-runner
+# Create file /etc/actions-runner
 repo=<owner>/<name>
 access_token=<ghp_***>
 ```
@@ -245,40 +246,32 @@ Access token should have the repo scope, consult
 https://docs.github.com/en/rest/reference/actions#create-a-registration-token-for-a-repository
 for details.
 
-### Autostart the x86_64 emulation support.
-
-```
-$ sudo systemctl enable --now qemu-user-static
-```
-
-### Autostart the runner.
+### Autostart actions-runner.
 
 ```
 $ sudo systemctl enable --now actions-runner
 ```
 
-## Rebuilding the image
+## Rebuilding the container
 
-In order to update the `iiilinuxibmcom/actions-runner` image, e.g. to get the
-latest OS security fixes, use the following commands:
-
+In order to update the `gaplib-actions-runner` podman container, e.g. to get the
+latest OS security fixes, follow these steps:
 ```
-$ sudo docker build \
-      --pull \
-      -f self-hosted-builder/actions-runner.Dockerfile \
-      -t iiilinuxibmcom/actions-runner
-$ sudo systemctl restart actions-runner
-```
+# Stop actions-runner service
+sudo systemctl stop actions-runner
 
-## Removing persistent data
+# Delete old container
+sudo podman container rm gaplib-actions-runner
 
-The `actions-runner` service stores various temporary data, such as runner
-registration information, work directories and logs, in the `actions-runner`
-volume. In order to remove it and start from scratch, e.g. when switching the
-runner to a different repository, use the following commands:
+# Delete old image
+sudo podman image rm localhost/zlib-ng/actions-runner
 
-```
-$ sudo systemctl stop actions-runner
-$ sudo docker rm -f actions-runner
-$ sudo docker volume rm actions-runner
+# Build image
+sudo podman build --squash -f Dockerfile.zlib-ng --tag zlib-ng/actions-runner --build-arg .
+
+# Build container
+sudo podman create --name=gaplib-actions-runner --env-file=/etc/actions-runner --init --interactive --volume=actions-runner-temp:/home/actions-runner zlib-ng/actions-runner
+
+# Start actions-runner service
+sudo systemctl start actions-runner
 ```

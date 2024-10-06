@@ -2962,7 +2962,10 @@ build_alloca_llvm_type_name (EmitContext *ctx, LLVMTypeRef t, int align, const c
 	 * Have to place all alloca's at the end of the entry bb, since otherwise they would
 	 * get executed every time control reaches them.
 	 */
-	LLVMPositionBuilder (ctx->alloca_builder, get_bb (ctx, ctx->cfg->bb_entry), ctx->last_alloca);
+	if (ctx->last_alloca)
+		LLVMPositionBuilder (ctx->alloca_builder, get_bb (ctx, ctx->cfg->bb_entry), ctx->last_alloca);
+	else
+		LLVMPositionBuilderAtEnd (ctx->alloca_builder, get_bb (ctx, ctx->cfg->bb_entry));
 
 	ctx->last_alloca = mono_llvm_build_alloca (ctx->alloca_builder, t, NULL, align, name);
 	return ctx->last_alloca;
@@ -5617,6 +5620,17 @@ scalar_op_from_vector_op_process_result (ScalarOpFromVectorOpCtx *sctx, LLVMValu
 	return vector_from_scalar (sctx->ctx, sctx->return_type, result);
 }
 
+static gboolean bb_needs_call_handler_target(MonoBasicBlock *bb, EmitContext *ctx)
+{
+		if (ctx->cfg->interp_entry_only || !(bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER)))
+			return FALSE;
+
+		if (ctx->cfg->deopt && MONO_REGION_FLAGS (bb->region) == MONO_EXCEPTION_CLAUSE_FILTER)
+			return FALSE;
+
+		return TRUE;
+}
+
 static void
 emit_llvmonly_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBasicBlockRef cbb)
 {
@@ -5636,8 +5650,13 @@ emit_llvmonly_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBasicBloc
 		}
 	}
 
-	LLVMBuilderRef handler_builder = create_builder (ctx);
 	LLVMBasicBlockRef target_bb = ctx->bblocks [bb->block_num].call_handler_target_bb;
+	if (!target_bb) {
+		g_assert(!bb_needs_call_handler_target (bb, ctx));
+		return;
+	}
+
+	LLVMBuilderRef handler_builder = create_builder (ctx);
 	LLVMPositionBuilderAtEnd (handler_builder, target_bb);
 
 	// Make the handler code end with a jump to cbb
@@ -10401,7 +10420,7 @@ MONO_RESTORE_WARNING
 				int stride_len = 32 / cn;
 				int stride_len_2 = stride_len >> 1;
 				int n_strides = 16 / stride_len;
-				LLVMValueRef swizzle_mask = LLVMConstNull (LLVMVectorType (i8_t, 16));
+				LLVMValueRef swizzle_mask = LLVMConstNull (LLVMVectorType (i1_t, 16));
 				for (int i = 0; i < n_strides; i++)
 					for (int j = 0; j < stride_len; j++)
 						swizzle_mask = LLVMBuildInsertElement (builder, swizzle_mask, const_int8(i * stride_len + ((stride_len_2 + j) % stride_len)), const_int32 (i * stride_len + j), "");
@@ -13406,10 +13425,7 @@ emit_method_inner (EmitContext *ctx)
 		int clause_index;
 		char name [128];
 
-		if (ctx->cfg->interp_entry_only || !(bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER)))
-			continue;
-
-		if (ctx->cfg->deopt && MONO_REGION_FLAGS (bb->region) == MONO_EXCEPTION_CLAUSE_FILTER)
+		if (!bb_needs_call_handler_target(bb, ctx))
 			continue;
 
 		clause_index = MONO_REGION_CLAUSE_INDEX (bb->region);

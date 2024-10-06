@@ -15,9 +15,6 @@ namespace System.Threading
     public sealed partial class Thread
     {
         [ThreadStatic]
-        private static int t_reentrantWaitSuppressionCount;
-
-        [ThreadStatic]
         private static ApartmentType t_apartmentType;
 
         [ThreadStatic]
@@ -404,24 +401,8 @@ namespace System.Threading
 
         public void Interrupt() { throw new PlatformNotSupportedException(); }
 
-        //
-        // Suppresses reentrant waits on the current thread, until a matching call to RestoreReentrantWaits.
-        // This should be used by code that's expected to be called inside the STA message pump, so that it won't
-        // reenter itself.  In an ASTA, this should only be the CCW implementations of IUnknown and IInspectable.
-        //
-        internal static void SuppressReentrantWaits()
-        {
-            t_reentrantWaitSuppressionCount++;
-        }
-
-        internal static void RestoreReentrantWaits()
-        {
-            Debug.Assert(t_reentrantWaitSuppressionCount > 0);
-            t_reentrantWaitSuppressionCount--;
-        }
-
         internal static bool ReentrantWaitsEnabled =>
-            GetCurrentApartmentType() == ApartmentType.STA && t_reentrantWaitSuppressionCount == 0;
+            GetCurrentApartmentType() == ApartmentType.STA;
 
         internal static ApartmentType GetCurrentApartmentType()
         {

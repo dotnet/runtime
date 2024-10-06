@@ -249,7 +249,7 @@ namespace System.Reflection.Emit
                         throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
                 }
 
-                CorElementType corType = RuntimeTypeHandle.GetCorElementType((RuntimeType)type);
+                CorElementType corType = ((RuntimeType)type).GetCorElementType();
 
                 switch (corType)
                 {

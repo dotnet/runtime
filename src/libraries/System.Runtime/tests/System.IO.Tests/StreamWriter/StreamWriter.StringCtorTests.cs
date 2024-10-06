@@ -19,9 +19,6 @@ namespace System.IO.Tests
             AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamWriter((string)null, true));
             AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamWriter((string)null, true, null));
             AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamWriter((string)null, true, null, -1));
-            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamWriter("path", true, null));
-            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamWriter("path", null, null));
-            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamWriter("path", true, null, -1));
         }
 
         [Fact]
@@ -31,6 +28,7 @@ namespace System.IO.Tests
             AssertExtensions.Throws<ArgumentException>("path", () => new StreamWriter(""));
             AssertExtensions.Throws<ArgumentException>("path", () => new StreamWriter("", new FileStreamOptions()));
             AssertExtensions.Throws<ArgumentException>("path", () => new StreamWriter("", true));
+            AssertExtensions.Throws<ArgumentException>("path", () => new StreamWriter("", true, null));
             AssertExtensions.Throws<ArgumentException>("path", () => new StreamWriter("", true, Encoding.UTF8));
             AssertExtensions.Throws<ArgumentException>("path", () => new StreamWriter("", Encoding.UTF8, new FileStreamOptions()));
             AssertExtensions.Throws<ArgumentException>("path", () => new StreamWriter("", true, Encoding.UTF8, -1));

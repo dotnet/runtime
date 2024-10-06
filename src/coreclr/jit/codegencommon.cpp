@@ -527,12 +527,15 @@ void CodeGen::genMarkLabelsForCodegen()
     }
 
     // Walk all the exceptional code blocks and mark them, since they don't appear in the normal flow graph.
-    for (Compiler::AddCodeDsc* add = compiler->fgAddCodeList; add != nullptr; add = add->acdNext)
+    if (compiler->fgHasAddCodeDscMap())
     {
-        if (add->acdUsed)
+        for (Compiler::AddCodeDsc* const add : Compiler::AddCodeDscMap::ValueIteration(compiler->fgGetAddCodeDscMap()))
         {
-            JITDUMP("  " FMT_BB " : throw helper block\n", add->acdDstBlk->bbNum);
-            add->acdDstBlk->SetFlags(BBF_HAS_LABEL);
+            if (add->acdUsed)
+            {
+                JITDUMP("  " FMT_BB " : throw helper block\n", add->acdDstBlk->bbNum);
+                add->acdDstBlk->SetFlags(BBF_HAS_LABEL);
+            }
         }
     }
 
@@ -1593,8 +1596,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
             excpRaisingBlock = failBlk;
 
 #ifdef DEBUG
-            Compiler::AddCodeDsc* add =
-                compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
             assert(add->acdUsed);
             assert(excpRaisingBlock == add->acdDstBlk);
 #if !FEATURE_FIXED_OUT_ARGS
@@ -1605,8 +1607,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
         else
         {
             // Find the helper-block which raises the exception.
-            Compiler::AddCodeDsc* add =
-                compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
             PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
             assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;

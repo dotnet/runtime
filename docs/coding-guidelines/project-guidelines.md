@@ -25,7 +25,7 @@ Below is a list of all the various options we pivot the project builds on:
 ## Individual build properties
 The following are the properties associated with each build pivot
 
-- `$(BuildTargetFramework) -> Any .NETCoreApp or .NETFramework TFM, e.g. net9.0`
+- `$(BuildTargetFramework) -> Any .NETCoreApp or .NETFramework TFM, e.g. net10.0`
 - `$(TargetOS) -> windows | linux | osx | freebsd | ... | [defaults to running OS when empty]`
 - `$(Configuration) -> Debug | Release | [defaults to Debug when empty]`
 - `$(TargetArchitecture) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
@@ -59,7 +59,7 @@ A cross-targeting project which targets specific platform with `$(NetCoreAppCurr
 A full or individual project build is centered around BuildTargetFramework, TargetOS, Configuration and TargetArchitecture.
 
 1. `$(BuildTargetFramework), $(TargetOS), $(Configuration), $(TargetArchitecture)` can individually be passed in to change the default values.
-2. If nothing is passed to the build then we will default value of these properties from the environment. Example: `net9.0-[TargetOS Running On]-Debug-x64`.
+2. If nothing is passed to the build then we will default value of these properties from the environment. Example: `net10.0-[TargetOS Running On]-Debug-x64`.
 3. When building an individual project (either from the CLI or an IDE), all target frameworks are built.
 
 Any of the mentioned properties can be set via `/p:<Property>=<Value>` at the command line. When building using any of the wrapper scripts around it (i.e. build.cmd) a number of these properties have aliases which make them easier to pass (run build.cmd/sh -? for the aliases).
@@ -163,7 +163,7 @@ In the src directory for a library there should be only **one** `.csproj` file t
 
 All libraries should use `<Reference Include="..." />` for all their references to libraries that compose the shared framework of the current .NETCoreApp. That will cause them to be resolved against the locally built targeting pack which is located at `artifacts\bin\microsoft.netcore.app.ref`. The only exception to that rule right now is for partial facades which directly reference System.Private.CoreLib and thus need to directly reference other partial facades to avoid type conflicts.
 
-Other target frameworks than .NETCoreApp latest (i.e. `netstandard2.0`, `net462`, `net6.0`) should use ProjectReference items to reference dependencies.
+Other target frameworks than .NETCoreApp latest (i.e. `netstandard2.0`, `net462`, `net8.0`) should use ProjectReference items to reference dependencies.
 
 ### src\ILLink
 Contains the files used to direct the trimming tool. See [ILLink files](../workflow/trimming/ILLink-files.md).

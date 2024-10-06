@@ -1346,3 +1346,13 @@ FCIMPLEND
 #endif //USE_PORTABLE_HELPERS
 
 #endif // !DACCESS_COMPILE
+
+
+EXTERN_C void QCALLTYPE RhSetCurrentThreadName(const TCHAR* name)
+{
+#ifdef TARGET_WINDOWS
+    PalSetCurrentThreadNameW(name);
+#else
+    PalSetCurrentThreadName(name);
+#endif
+}

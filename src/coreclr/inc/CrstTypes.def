@@ -255,7 +255,7 @@ End
 
 Crst Interop
     AcquiredBefore PinnedHeapHandleTable AvailableParamTypes ClassInit DeadlockDetection GenericDictionaryExpansion
-                   HandleTable InstMethodHashTable InteropData JitGenericHandleCache LoaderHeap SigConvert
+                   HandleTable InstMethodHashTable InteropData LoaderHeap SigConvert
                    StubDispatchCache StubUnwindInfoHeapSegments SyncBlockCache TypeIDMap UnresolvedClassLock
                    PendingTypeLoadEntry
 End
@@ -274,9 +274,6 @@ End
 Crst Jit
     AcquiredBefore DeadlockDetection JumpStubCache
     SameLevelAs ClassInit
-End
-
-Crst JitGenericHandleCache
 End
 
 Crst JitPatchpoint
@@ -446,7 +443,7 @@ End
 Crst ThreadStore
     AcquiredBefore AvailableParamTypes DeadlockDetection DebuggerController
                    DebuggerHeapLock DebuggerJitInfo DynamicIL HandleTable IbcProfile
-                   JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilerGCRefDataFreeList
+                   JumpStubCache LoaderHeap ModuleLookupTable ProfilerGCRefDataFreeList
                    SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList ThreadIdDispenser DebuggerMutex
                    JitInlineTrackingMap
 End

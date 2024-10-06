@@ -3,6 +3,8 @@
 
 using System;
 using System.IO;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -10,12 +12,14 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests;
 
-public abstract class IcuTestsBase : TestMainJsTestBase
+public abstract class IcuTestsBase : WasmTemplateTestsBase
 {
     public IcuTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) { }
 
     private const string _fallbackSundayNameEnUS = "Sunday";
+    protected static string[] templateTypes = { "wasmconsole", "wasmbrowser" };
+    protected static bool[] boolOptions =  { false, true };
 
     protected record SundayNames
     {
@@ -87,7 +91,7 @@ public abstract class IcuTestsBase : TestMainJsTestBase
 
             string expectedSundayName = (expectMissing && !onlyPredefinedCultures)
                                             ? fallbackSundayName
-                                            : testLocale.SundayName;
+                                            : testLocale.SundayName ?? fallbackSundayName;
             var actualLocalizedSundayName = culture.DateTimeFormat.GetDayName(new DateTime(2000,01,02).DayOfWeek);
             if (expectedSundayName != actualLocalizedSundayName)
             {{
@@ -102,28 +106,105 @@ public abstract class IcuTestsBase : TestMainJsTestBase
         public record Locale(string Code, string? SundayName);
         ";
 
-    protected void TestIcuShards(BuildArgs buildArgs, string shardName, string testedLocales, RunHost host, string id, bool onlyPredefinedCultures=false)
+    protected async Task TestIcuShards(string config, string templateType, bool aot, string shardName, string testedLocales, GlobalizationMode globalizationMode, bool onlyPredefinedCultures=false)
     {
-        string projectName = $"shard_{Path.GetFileName(shardName)}_{buildArgs.Config}_{buildArgs.AOT}";
-        bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
-
-        buildArgs = buildArgs with { ProjectName = projectName };
+        bool isBrowser = templateType == "wasmbrowser";
+        string icuProperty = isBrowser ? "BlazorIcuDataFileName" : "WasmIcuDataFileName"; // https://github.com/dotnet/runtime/issues/94133
         // by default, we remove resource strings from an app. ICU tests are checking exception messages contents -> resource string keys are not enough
-        string extraProperties = $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName><UseSystemResourceKeys>false</UseSystemResourceKeys>";
+        string extraProperties = $"<{icuProperty}>{shardName}</{icuProperty}><UseSystemResourceKeys>false</UseSystemResourceKeys><RunAOTCompilation>{aot}</RunAOTCompilation>";
         if (onlyPredefinedCultures)
             extraProperties = $"{extraProperties}<PredefinedCulturesOnly>true</PredefinedCulturesOnly>";
-        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: extraProperties);
+        await BuildAndRunIcuTest(config, templateType, aot, testedLocales, globalizationMode, extraProperties, onlyPredefinedCultures, icuFileName: shardName);
+    }
 
+    protected (BuildArgs buildArgs, string projectFile) CreateIcuProject(
+        string config,
+        string templateType,
+        bool aot,
+        string testedLocales,
+        string extraProperties = "",
+        bool onlyPredefinedCultures=false)
+    {
+        string id = $"icu_{config}_{aot}_{GetRandomId()}";
+        string projectFile = CreateWasmTemplateProject(id, templateType);
+        string projectDirectory = Path.GetDirectoryName(projectFile)!;
+        string projectName = Path.GetFileNameWithoutExtension(projectFile);
+        var buildArgs = new BuildArgs(projectName, config, aot, id, null);
+        buildArgs = ExpandBuildArgs(buildArgs);
+        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
+        
+        string programPath = Path.Combine(projectDirectory, "Program.cs");
         string programText = GetProgramText(testedLocales, onlyPredefinedCultures);
+        File.WriteAllText(programPath, programText);
         _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
-        (_, string output) = BuildProject(buildArgs,
-                        id: id,
-                        new BuildProjectOptions(
-                            InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                            DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                            GlobalizationMode: GlobalizationMode.PredefinedIcu,
-                            PredefinedIcudt: shardName));
 
-        string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+        bool isBrowser = templateType == "wasmbrowser";
+        string mainPath = isBrowser ? Path.Combine("wwwroot", "main.js") : "main.mjs";
+        var replacements = isBrowser ? new Dictionary<string, string> { 
+                { "runMain", "runMainAndExit" },
+                { ".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()" }
+            } : new Dictionary<string, string> { 
+                { ".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()" }
+            };
+        UpdateProjectFile(mainPath, replacements);
+        RemoveContentsFromProjectFile(mainPath, ".create();", "await runMainAndExit();");
+        return (buildArgs, projectFile);
+    }
+
+    protected string BuildIcuTest(
+        BuildArgs buildArgs,
+        bool isBrowser,
+        GlobalizationMode globalizationMode,
+        string icuFileName = "",
+        bool expectSuccess = true,
+        bool assertAppBundle = true)
+    {
+        bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
+        (string _, string buildOutput) = BuildTemplateProject(buildArgs,
+                        id: buildArgs.Id,
+                        new BuildProjectOptions(
+                            DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
+                            CreateProject: false,
+                            HasV8Script: false,
+                            MainJS: isBrowser ? "main.js" : "main.mjs",
+                            Publish: true,
+                            TargetFramework: BuildTestBase.DefaultTargetFramework,
+                            UseCache: false,
+                            IsBrowserProject: isBrowser,
+                            GlobalizationMode: globalizationMode,
+                            CustomIcuFile: icuFileName,
+                            ExpectSuccess: expectSuccess,
+                            AssertAppBundle: assertAppBundle
+                        ));
+        return buildOutput;
+    }
+
+    protected async Task<string> BuildAndRunIcuTest(
+        string config,
+        string templateType,
+        bool aot,
+        string testedLocales,
+        GlobalizationMode globalizationMode,
+        string extraProperties = "",
+        bool onlyPredefinedCultures=false,
+        string language = "en-US",
+        string icuFileName = "")
+    {
+        try
+        {
+            bool isBrowser = templateType == "wasmbrowser";
+            (BuildArgs buildArgs, string projectFile) = CreateIcuProject(
+                config, templateType, aot, testedLocales, extraProperties, onlyPredefinedCultures);
+            string buildOutput = BuildIcuTest(buildArgs, isBrowser, globalizationMode, icuFileName);
+            string runOutput = isBrowser ?
+                await RunBrowser(buildArgs.Config, projectFile, language) :
+                RunConsole(buildArgs, language: language);
+            return $"{buildOutput}\n{runOutput}";
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex}; _testOutput={_testOutput}");
+            throw;
+        }
     }
 }

@@ -583,6 +583,49 @@ enum gc_dynamic_adaptation_mode
     dynamic_adaptation_default = 0,
     dynamic_adaptation_to_application_sizes = 1,
 };
+
+enum hc_record_stage
+{
+    hc_record_set_last_heaps = 0,
+    hc_record_before_check_timeout = 1,
+    hc_record_before_check_gc_start = 2,
+    hc_record_change_done = 3,
+    hc_record_still_active = 4,
+    hc_record_became_active = 5,
+    hc_record_became_inactive = 6,
+    hc_record_inactive_waiting = 7, 
+    hc_record_check_cancelled_prep = 8,
+#ifdef BACKGROUND_GC
+    hc_record_check_cancelled_bgc = 9,
+    hc_record_bgc_active = 10,
+    hc_record_bgc_inactive = 11,
+#endif //BACKGROUND_GC
+};
+
+struct hc_history
+{
+    size_t gc_index;
+    short stage;
+    short last_n_heaps;
+    short n_heaps;
+    short new_n_heaps;
+    short idle_thread_count;
+    short gc_t_join_n_threads;
+    short gc_t_join_join_lock;
+#ifdef BACKGROUND_GC
+    short bgc_t_join_n_threads;
+    // We have observed a problem on Windows in production where GC indicates a BGC thread was created successfully yet we have
+    // invalid fields on the Thread object such as m_OSThreadId. This is to help with debugging that problem.
+    int bgc_thread_os_id;
+    short bgc_t_join_join_lock;
+#endif //BACKGROUND_GC
+    bool gc_t_join_joined_p;
+#ifdef BACKGROUND_GC
+    bool bgc_t_join_joined_p;
+    bool concurrent_p;
+    bool bgc_thread_running;
+#endif //BACKGROUND_GC
+};
 #endif //DYNAMIC_HEAP_COUNT
 
 //encapsulates the mechanism for the current gc
@@ -2611,6 +2654,19 @@ private:
     PER_HEAP_ISOLATED_METHOD void get_msl_wait_time (size_t* soh_msl_wait_time, size_t* uoh_msl_wait_time);
 
     PER_HEAP_ISOLATED_METHOD void process_datas_sample();
+
+    PER_HEAP_METHOD void add_to_hc_history_worker (hc_history* hist, int* current_index, hc_record_stage stage, const char* msg);
+
+    PER_HEAP_METHOD void add_to_hc_history (hc_record_stage stage);
+
+#ifdef BACKGROUND_GC
+    PER_HEAP_METHOD void add_to_bgc_hc_history (hc_record_stage stage);
+
+    PER_HEAP_ISOLATED_METHOD void add_to_bgc_th_creation_history (size_t gc_index,
+                                                                  size_t count_created,
+                                                                  size_t  count_created_th_existed,
+                                                                  size_t count_creation_failed);
+#endif //BACKGROUND_GC
 #endif //DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS
 
@@ -3971,6 +4027,17 @@ private:
     PER_HEAP_FIELD_DIAG_ONLY size_t num_condemned_regions;
 #endif //STRESS_REGIONS
 #endif //USE_REGIONS
+
+#ifdef DYNAMIC_HEAP_COUNT
+#define max_hc_history_count 16
+    PER_HEAP_FIELD_DIAG_ONLY int hchist_index_per_heap;
+    PER_HEAP_FIELD_DIAG_ONLY hc_history hchist_per_heap[max_hc_history_count];
+
+#ifdef BACKGROUND_GC
+    PER_HEAP_FIELD_DIAG_ONLY int bgc_hchist_index_per_heap;
+    PER_HEAP_FIELD_DIAG_ONLY hc_history bgc_hchist_per_heap[max_hc_history_count];
+#endif //BACKGROUND_GC
+#endif //DYNAMIC_HEAP_COUNT
 
 #ifdef FEATURE_EVENT_TRACE
 #define max_etw_item_count 2000
@@ -5334,6 +5401,10 @@ private:
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t last_alloc_reset_suspended_end_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t max_peak_heap_size;
 
+    // Sometimes it's difficult to figure out why we get the gen0 min/max budget.
+    // These fields help figure those out. Making it volatile so it doesn't get optimized out.
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY VOLATILE(size_t) llc_size;
+
 #ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY gc_history_global bgc_data_global;
 
@@ -5361,6 +5432,43 @@ private:
     // it means the bgc info is ready.
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY VOLATILE(bool) is_last_recorded_bgc;
 #endif //BACKGROUND_GC
+
+#ifdef DYNAMIC_HEAP_COUNT
+    // Number of times we bailed from check_heap_count because we didn't have enough memory for the preparation
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t hc_change_cancelled_count_prep;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t total_change_heap_count;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t total_change_heap_count_time;
+
+#ifdef BACKGROUND_GC
+    // We log an entry whenever we needed to create new BGC threads.
+    struct bgc_thread_creation_history
+    {
+        size_t gc_index;
+        short n_heaps;
+        short count_created;
+        // bgc_thread_running was false but bgc_thread was true. 
+        short count_created_th_existed;
+        short count_creation_failed;
+    };
+
+#define max_bgc_thread_creation_count 16
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY int bgc_th_creation_hist_index;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY bgc_thread_creation_history bgc_th_creation_hist[max_bgc_thread_creation_count];
+
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t bgc_th_count_created;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t bgc_th_count_created_th_existed;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t bgc_th_count_creation_failed;
+
+    // The gc index of the very first BGC that happened.
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t bgc_init_gc_index;
+    // The number of heaps during that first BGC. Making it volatile so it doesn't get optimized out.
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY VOLATILE(short) bgc_init_n_heaps;
+
+    // Number of times we bailed from check_heap_count because we noticed BGC is in progress even
+    // though it was not in progress when we check before calling it. 
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t hc_change_cancelled_count_bgc;
+#endif //BACKGROUND_GC
+#endif //DYNAMIC_HEAP_COUNT
 
 #ifdef FEATURE_EVENT_TRACE
     // Initialized each time in mark_phase and background_mark_phase (during the 2nd non concurrent stage)

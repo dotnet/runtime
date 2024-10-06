@@ -19,10 +19,6 @@ class CustomAssemblyBinder;
 
 class AssemblyNative
 {
-    friend class Assembly;
-    friend class BaseDomain;
-    friend class DomainAssembly;
-
 public:
 
     static Assembly* LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage, bool excludeAppPaths = false);
@@ -35,7 +31,7 @@ public:
     //
 
     static
-    FCDECL1(FC_BOOL_RET, IsDynamic, AssemblyBaseObject * pAssemblyUNSAFE);
+    FCDECL1(FC_BOOL_RET, GetIsDynamic, Assembly* pAssembly);
 };
 
 extern "C" uint32_t QCALLTYPE AssemblyNative_GetAssemblyCount();

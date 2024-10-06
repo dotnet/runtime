@@ -649,39 +649,7 @@ void DacDbiInterfaceImpl::GetAppDomainFullName(
     AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
 
     // Get the AppDomain name from the VM without changing anything
-    // We might be able to simplify this, eg. by returning an SString.
-    bool fIsUtf8;
-    PVOID pRawName = pAppDomain->GetFriendlyNameNoSet(&fIsUtf8);
-
-    if (!pRawName)
-    {
-        ThrowHR(E_NOINTERFACE);
-    }
-
-    HRESULT hrStatus = S_OK;
-    if (fIsUtf8)
-    {
-        // we have to allocate a temporary string
-        // we could avoid this by adding a version of IStringHolder::AssignCopy that takes a UTF8 string
-        // We should also probably check to see when fIsUtf8 is ever true (it looks like it should normally be false).
-        ULONG32 dwNameLen = 0;
-        hrStatus = ConvertUtf8((LPCUTF8)pRawName, 0, &dwNameLen, NULL);
-        if (SUCCEEDED( hrStatus ))
-        {
-            NewArrayHolder<WCHAR> pwszName(new WCHAR[dwNameLen]);
-            hrStatus = ConvertUtf8((LPCUTF8)pRawName, dwNameLen, &dwNameLen, pwszName );
-            IfFailThrow(hrStatus);
-
-            hrStatus =  pStrName->AssignCopy(pwszName);
-        }
-    }
-    else
-    {
-        hrStatus =  pStrName->AssignCopy(static_cast<PCWSTR>(pRawName));
-    }
-
-    // Very important that this either sets pStrName or Throws.
-    IfFailThrow(hrStatus);
+    IfFailThrow(pStrName->AssignCopy(pAppDomain->GetFriendlyName()));
 }
 
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3423,7 +3391,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject, Delega
     // - System.Private.CoreLib!System.Delegate.GetMethodImpl and System.Private.CoreLib!System.MulticastDelegate.GetMethodImpl
     // - System.Private.CoreLib!System.Delegate.GetTarget and System.Private.CoreLib!System.MulticastDelegate.GetTarget
     // - coreclr!COMDelegate::GetMethodDesc and coreclr!COMDelegate::FindMethodHandle
-    // - coreclr!COMDelegate::DelegateConstruct and the delegate type table in
+    // - coreclr!Delegate_Construct and the delegate type table in
     // - DELEGATE KINDS TABLE in comdelegate.cpp
 
     *delegateType = DelegateType::kUnknownDelegateType;
@@ -3672,7 +3640,7 @@ HRESULT DacDbiInterfaceImpl::GetLoaderHeapMemoryRanges(DacDbiArrayList<COR_MEMOR
         // it's own LoaderAllocator, but there's no easy way of getting a hand at them other than going through
         // the heap, getting a managed LoaderAllocators, from there getting a Scout, and from there getting a native
         // pointer to the LoaderAllocator tos enumerate.
-        PTR_LoaderAllocator pGlobalAllocator = SystemDomain::System()->GetLoaderAllocator();
+        PTR_LoaderAllocator pGlobalAllocator = SystemDomain::GetGlobalLoaderAllocator();
         _ASSERTE(pGlobalAllocator);
         EnumerateMemRangesForLoaderAllocator(pGlobalAllocator, &memoryRanges);
 
@@ -4453,17 +4421,12 @@ void  DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(
 
     // Pass the magical flags to the loader enumerator to get all Execution-only assemblies.
     iterator = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-    while (iterator.Next(pDomainAssembly.This()))
+    while (iterator.Next(pAssembly.This()))
     {
-        if (!pDomainAssembly->IsVisibleToDebugger())
-        {
-            continue;
-        }
-
         VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
-        vmDomainAssembly.SetHostPtr(pDomainAssembly);
+        vmDomainAssembly.SetHostPtr(pAssembly->GetDomainAssembly());
 
         fpCallback(vmDomainAssembly, pUserData);
     }
@@ -4486,7 +4449,7 @@ void DacDbiInterfaceImpl::EnumerateModulesInAssembly(
     if (pDomainAssembly->GetModule()->IsVisibleToDebugger())
     {
         // If domain assembly isn't yet loaded, just return
-        if (!pDomainAssembly->IsLoaded())
+        if (!pDomainAssembly->GetAssembly()->IsLoaded())
             return;
 
         VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
@@ -5556,6 +5519,8 @@ CorDebugUserState DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread vmThread
     {
         result |= USER_STOPPED;
     }
+
+    // Don't report Thread::TS_AbortRequested
 
     // The interruptible flag is unreliable (see issue 699245)
     // The Debugger_SleepWaitJoin is always accurate when it is present, but it is still
@@ -7587,9 +7552,6 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
     if (mHandleMask & CorHandleStrongDependent)
         result |= (1 << HNDTYPE_DEPENDENT);
 
-    if (mHandleMask & CorHandleStrongSizedByref)
-        result |= (1 << HNDTYPE_SIZEDREF);
-
     return result;
 }
 
@@ -7724,10 +7686,6 @@ HRESULT DacHandleWalker::Next(ULONG count, DacGcReference roots[], ULONG *pFetch
             case HNDTYPE_DEPENDENT:
                 roots[i].dwType = (DWORD)CorHandleStrongDependent;
                 roots[i].i64ExtraData = GetDependentHandleSecondary(CLRDATA_ADDRESS_TO_TADDR(handle.Handle)).GetAddr();
-                break;
-
-            case HNDTYPE_SIZEDREF:
-                roots[i].dwType = (DWORD)CorHandleStrongSizedByref;
                 break;
         }
     }

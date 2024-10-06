@@ -118,9 +118,6 @@ namespace System
         private static extern void PrepareForForeignExceptionRaise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? GetFrozenStackTrace(Exception exception);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern uint GetExceptionCount();
 
         // This is invoked by ExceptionDispatchInfo.Throw to restore the exception stack trace, corresponding to the original throw of the
@@ -226,9 +223,14 @@ namespace System
             }
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetFrozenStackTrace")]
+        private static partial void GetFrozenStackTrace(ObjectHandleOnStack exception, ObjectHandleOnStack stackTrace);
+
         internal DispatchState CaptureDispatchState()
         {
-            object? stackTrace = GetFrozenStackTrace(this);
+            Exception _this = this;
+            object? stackTrace = null;
+            GetFrozenStackTrace(ObjectHandleOnStack.Create(ref _this), ObjectHandleOnStack.Create(ref stackTrace));
 
             return new DispatchState(stackTrace,
                 _remoteStackTraceString, _ipForWatsonBuckets, _watsonBuckets);

@@ -6,12 +6,12 @@ using System.Diagnostics.Metrics;
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
     /// <summary>
-    /// Represents a type used to listen to metrics emitted from the system.
+    /// Listens to metrics emitted from the system.
     /// </summary>
     public interface IMetricsListener
     {
         /// <summary>
-        /// The name of the listener. This is used to identify the listener in the rules configuration.
+        /// Gets the name of the listener. This is used to identify the listener in the rules configuration.
         /// </summary>
         public string Name { get; }
 
@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         /// <param name="instrument">The new <see cref="Instrument"/>.</param>
         /// <param name="userState">Listener state associated with this instrument. This will be returned to <see cref="MeasurementCallback{T}"/>
         /// and <see cref="MeasurementsCompleted(Instrument, object?)"/>.</param>
-        /// <returns>Returns true if the listener wants to subscribe to this instrument, otherwise false.</returns>
+        /// <returns><see langword="true" /> if the listener wants to subscribe to this instrument, otherwise <see langword="false" />.</returns>
         public bool InstrumentPublished(Instrument instrument, out object? userState);
 
         /// <summary>

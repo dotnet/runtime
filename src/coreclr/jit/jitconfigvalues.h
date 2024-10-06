@@ -683,6 +683,9 @@ RELEASE_CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplac
 // Enable partial compilation for Tier0 methods
 RELEASE_CONFIG_INTEGER(TC_PartialCompilation, W("TC_PartialCompilation"), 0)
 
+// If partial compilation is enabled, use random heuristic for patchpoint placement
+CONFIG_INTEGER(JitRandomPartialCompilation, W("JitRandomPartialCompilation"), 0)
+
 // Patchpoint strategy:
 // 0 - backedge sources
 // 1 - backedge targets

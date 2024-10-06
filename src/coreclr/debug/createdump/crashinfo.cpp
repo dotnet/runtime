@@ -199,8 +199,8 @@ CrashInfo::GatherCrashInfo(DumpType dumpType)
     {
         return false;
     }
-    // Add the special (fake) memory region for the special diagnostics info
-    MemoryRegion special(PF_R, SpecialDiagInfoAddress, SpecialDiagInfoAddress + PAGE_SIZE);
+    // Add the special (fake) memory region for the special diagnostics info. Use constructor that doesn't assert PAGE_SIZE alignment.
+    MemoryRegion special(PF_R, SpecialDiagInfoAddress, SpecialDiagInfoAddress + SpecialDiagInfoSize, /* offset */ 0);
     m_memoryRegions.insert(special);
 #ifdef __APPLE__
     InitializeOtherMappings();

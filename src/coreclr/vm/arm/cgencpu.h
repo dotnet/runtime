@@ -47,7 +47,6 @@ class FramedMethodFrame;
 class Module;
 struct DeclActionInfo;
 class ComCallMethodDesc;
-class BaseDomain;
 class ZapNode;
 struct ArgLocDesc;
 
@@ -936,8 +935,6 @@ public:
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
     VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 };
-
-extern "C" void SinglecastDelegateInvokeStub();
 
 #ifdef _MSC_VER
 #pragma warning(push)

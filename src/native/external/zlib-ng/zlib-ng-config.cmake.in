@@ -1,0 +1,10 @@
+set(zlib-ng_VERSION @ZLIBNG_HEADER_VERSION@)
+
+@PACKAGE_INIT@
+
+set_and_check(zlib-ng_INCLUDE_DIR "@PACKAGE_INCLUDE_INSTALL_DIR@")
+set_and_check(zlib-ng_LIB_DIR "@PACKAGE_LIB_INSTALL_DIR@")
+
+include("${CMAKE_CURRENT_LIST_DIR}/zlib-ng.cmake")
+
+check_required_components(zlib-ng)

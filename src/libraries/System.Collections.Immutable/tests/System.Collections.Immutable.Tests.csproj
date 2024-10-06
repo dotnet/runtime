@@ -3,6 +3,7 @@
     <NoWarn>$(NoWarn);0436</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</DebuggerSupport>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,7 +11,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Link="Common\System\Collections\DictionaryExtensions.cs" />
+    <!-- Reference internal product components for testing -->
+    <Compile Include="..\src\System\Polyfills.cs" />
+    <Compile Include="..\src\System\Collections\Frozen\String\Hashing.cs" Link="System\Collections\Frozen\String\Hashing.cs" />
+    <Compile Include="..\src\System\Collections\Frozen\String\KeyAnalyzer.cs" Link="System\Collections\Frozen\String\KeyAnalyzer.cs" />
+    <Compile Include="..\src\Validation\Requires.cs" Link="Validation\Requires.cs" />
     <Compile Include="BadHasher.cs" />
+    <Compile Include="BinaryTreeProxy.cs" />
     <Compile Include="EverythingEqual.cs" />
     <Compile Include="Frozen\FrozenFromKnownValuesTests.cs" />
     <Compile Include="Frozen\KeyAnalyzerTests.cs" />
@@ -29,6 +36,7 @@
     <Compile Include="ImmutableDictionaryTest.cs" />
     <Compile Include="ImmutableHashSetTest.cs" />
     <Compile Include="ImmutableDictionaryTestBase.cs" />
+    <Compile Include="ImmutableListQueries.cs" />
     <Compile Include="ImmutableQueueTest.cs" />
     <Compile Include="ImmutableSetTest.cs" />
     <Compile Include="ImmutableSortedDictionaryBuilderTest.cs" />

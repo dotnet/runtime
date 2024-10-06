@@ -118,7 +118,7 @@ namespace System.Globalization
         {
             Debug.Assert(strInput != null);
 
-            if (OperatingSystem.IsBrowser() && (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))
+            if ((OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())&& (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))
             {
                 // Browser's ICU doesn't contain data needed for FormKC and FormKD
                 throw new PlatformNotSupportedException();
