@@ -7,18 +7,15 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    /// <summary>
-    /// A singleton class that encapsulates the native implementation of various X509 services. (Implementing this as a singleton makes it
-    /// easier to split the class into abstract and implementation classes if desired.)
-    /// </summary>
-    internal sealed partial class X509Pal : IX509Pal
+    internal static class LegacyBasicConstraintsDecoder
     {
-        public bool SupportsLegacyBasicConstraintsExtension
-        {
-            get { return true; }
-        }
+        internal static bool IsSupported => true;
 
-        public void DecodeX509BasicConstraintsExtension(byte[] encoded, out bool certificateAuthority, out bool hasPathLengthConstraint, out int pathLengthConstraint)
+        internal static void DecodeX509BasicConstraintsExtension(
+            byte[] encoded,
+            out bool certificateAuthority,
+            out bool hasPathLengthConstraint,
+            out int pathLengthConstraint)
         {
             unsafe
             {

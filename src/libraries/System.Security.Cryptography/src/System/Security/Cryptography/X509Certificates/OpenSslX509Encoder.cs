@@ -9,7 +9,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    internal sealed class OpenSslX509Encoder : ManagedX509ExtensionProcessor, IX509Pal
+    internal sealed class OpenSslX509Encoder : IX509Pal
     {
         public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
         {

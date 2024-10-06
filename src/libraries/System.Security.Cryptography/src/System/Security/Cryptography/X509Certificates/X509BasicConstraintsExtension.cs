@@ -121,7 +121,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (Oid!.Value == Oids.BasicConstraints)
             {
-                X509Pal.Instance.DecodeX509BasicConstraintsExtension(
+                LegacyBasicConstraintsDecoder.DecodeX509BasicConstraintsExtension(
                     RawData,
                     out _certificateAuthority,
                     out _hasPathLenConstraint,
