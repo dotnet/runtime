@@ -2625,60 +2625,66 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
         return gtWrapWithSideEffects(gtNewNothingNode(), call, GTF_ALL_EFFECT, true);
     }
 
-    const int MaxPossibleWordSize = 64; // Vector512
-
-    var_types type = roundDownMaxType((unsigned)len);
-    if ((genTypeSize(type) != len) || (len > MaxPossibleWordSize))
+    // Dst and Src never overlap so we use a less conservative Memcpy threshold.
+    if (len > getUnrollThreshold(Memcpy))
     {
-        // Generally, we have to give up on cases where we need more than one STOREIND,
-        // since Memmove has to respect overlapping regions. LowerCallMemmove handles it
-        // by introducing BlkOpKindUnrollMemmove flag in the block operation node.
-        //
-        // Perhaps, we can assume that RVA data never overlaps with dst (if that is not C++ CLI/CX),
-        // and emit a sequence of STOREINDs here?
-        JITDUMP("...length can't be handled here, LowerCallMemmove might have a better luck.\n");
+        JITDUMP("...length is too big - bail out.\n");
         return nullptr;
     }
 
-    ssize_t   byteOffset                  = 0;
-    uint8_t   buffer[MaxPossibleWordSize] = {};
-    FieldSeq* fieldSeq                    = nullptr;
-
-    // First, see if 'src' is a non-gc object (e.g. string literal):
-    CORINFO_OBJECT_HANDLE obj = NO_OBJECT_HANDLE;
-    if (GetObjectHandleAndOffset(srcArg->GetNode(), &byteOffset, &obj))
-    {
-        if (((size_t)byteOffset > INT32_MAX) ||
-            !info.compCompHnd->getObjectContent(obj, buffer, (int)len, (int)byteOffset))
-        {
-            JITDUMP("...src is not a constant - fallback to LowerCallMemmove.\n");
-            return nullptr;
-        }
-    }
-    // Second, 'src' might be some static read-only field? (including RVA)
-    else if (fgGetStaticFieldSeqAndAddress(vnStore, srcArg->GetNode(), &byteOffset, &fieldSeq))
-    {
-        CORINFO_FIELD_HANDLE fld = fieldSeq->GetFieldHandle();
-        if (((size_t)byteOffset > INT32_MAX) || (fld == nullptr) ||
-            !info.compCompHnd->getStaticFieldContent(fld, buffer, (int)len, (int)byteOffset))
-        {
-            JITDUMP("...src is not a constant - fallback to LowerCallMemmove.\n");
-            return nullptr;
-        }
-    }
-    else
+    // if GetImmutableDataFromAddress returns true, it means that the src is a read-only constant
+    // so the dst is not expected to overlap with it (it's UB if developer tries to modify it).
+    uint8_t* buffer = getAllocator().allocate<uint8_t>(len);
+    if (!GetImmutableDataFromAddress(srcArg->GetNode(), (int)len, buffer))
     {
         JITDUMP("...src is not a constant - fallback to LowerCallMemmove.\n");
         return nullptr;
     }
 
-    JITDUMP("...optimized into STOREIND!:\n");
-    GenTree* srcCns = gtNewGenericCon(type, buffer);
-    fgUpdateConstTreeValueNumber(srcCns);
-    GenTree*         dst    = fgMakeMultiUse(&dstArg->LateNodeRef());
-    GenTreeStoreInd* indir  = gtNewStoreIndNode(type, dst, srcCns, GTF_IND_UNALIGNED);
-    GenTree*         result = gtWrapWithSideEffects(indir, call, GTF_ALL_EFFECT, true);
+    // if dstArg is not simple, we replace the arg directly with a temp assignment and
+    // continue using that temp - it allows us reliably extract all side effects.
+    GenTree* dst = fgMakeMultiUse(&dstArg->LateNodeRef());
+
+    // Now we're going to emit a chain of STOREIND via COMMA nodes.
+    // the very first tree is expected to be side-effects from the original call (including all args)
+    GenTree* result = nullptr;
+    gtExtractSideEffList(call, &result, GTF_ALL_EFFECT, true);
+
+    unsigned lenRemaining = (unsigned)len;
+    while (lenRemaining > 0)
+    {
+        ssize_t offset = (ssize_t)len - (ssize_t)lenRemaining;
+
+        // Clone dst and add offset if necessary.
+        GenTree* currDst = offset == 0
+                               ? gtCloneExpr(dst)
+                               : gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(dst), gtNewIconNode(offset, TYP_I_IMPL));
+
+        // Create an unaligned STOREIND node using the largest possible word size.
+        var_types        type     = roundDownMaxType(lenRemaining);
+        GenTree*         srcCns   = gtNewGenericCon(type, buffer + offset);
+        GenTreeStoreInd* storeInd = gtNewStoreIndNode(type, currDst, srcCns, GTF_IND_UNALIGNED);
+        fgUpdateConstTreeValueNumber(srcCns);
+
+        if (result == nullptr)
+        {
+            // result can be nullptr only for the first iteration and
+            // if the original call tree had no side effects.
+            assert(offset == 0);
+            result = storeInd;
+        }
+        else
+        {
+            // Merge with the previous result via GT_COMMA.
+            result = gtNewOperNode(GT_COMMA, TYP_VOID, result, storeInd);
+        }
+
+        lenRemaining -= genTypeSize(type);
+    }
+
+    JITDUMP("...optimized into STOREIND(s)!:\n");
     DISPTREE(result);
+    getAllocator().deallocate(buffer);
     return result;
 }
 
