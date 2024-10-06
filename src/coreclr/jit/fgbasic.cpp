@@ -851,10 +851,10 @@ public:
             return false;
         }
         const unsigned argNum = value - SLOT_ARGUMENT;
-        if (argNum < info->argCnt)
+        if ((argNum < info->argCnt) && info->inlArgInfo[argNum].argIsConstant)
         {
             assert(info->inlArgInfo[argNum].argIsInvariant);
-            return info->inlArgInfo[argNum].argIsConstant;
+            return true;
         }
         return false;
     }
