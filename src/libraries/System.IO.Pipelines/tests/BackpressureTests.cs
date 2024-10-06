@@ -241,5 +241,33 @@ namespace System.IO.Pipelines.Tests
             invalidOperationException = await Assert.ThrowsAsync<InvalidOperationException>(async () => await writableBuffer.FlushAsync());
             Assert.Equal("Reader failed", invalidOperationException.Message);
         }
+
+        [Fact]
+        public void FlushAsyncAwaitableDoesNotCompleteWhenReaderUnexamines()
+        {
+            PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(PauseWriterThreshold);
+            ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
+
+            ReadResult result = _pipe.Reader.ReadAsync().GetAwaiter().GetResult();
+            SequencePosition examined = result.Buffer.GetPosition(2);
+            // Examine 2, don't advance consumed
+            _pipe.Reader.AdvanceTo(result.Buffer.Start, examined);
+
+            Assert.False(flushAsync.IsCompleted);
+
+            result = _pipe.Reader.ReadAsync().GetAwaiter().GetResult();
+            // Examine 1 which is less than the previous examined index of 2
+            examined = result.Buffer.GetPosition(1);
+            _pipe.Reader.AdvanceTo(result.Buffer.Start, examined);
+
+            Assert.False(flushAsync.IsCompleted);
+
+            // Just make sure we can still release backpressure
+            result = _pipe.Reader.ReadAsync().GetAwaiter().GetResult();
+            examined = result.Buffer.GetPosition(ResumeWriterThreshold + 1);
+            _pipe.Reader.AdvanceTo(examined, examined);
+
+            Assert.True(flushAsync.IsCompleted);
+        }
     }
 }
