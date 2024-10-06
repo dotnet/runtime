@@ -840,24 +840,23 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsVisible(QCall::TypeHandle pTypeHan
     return fIsExternallyVisible;
 }
 
-FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::GetUtf8Name, MethodTable* pMT, LPCUTF8* name)
+FCIMPL1(LPCUTF8, RuntimeTypeHandle::GetUtf8Name, MethodTable* pMT)
 {
     CONTRACTL
     {
         FCALL_CHECK;
         PRECONDITION(pMT != NULL);
-        PRECONDITION(name != NULL);
     }
     CONTRACTL_END;
 
     INT32 tkTypeDef = (INT32)pMT->GetCl();
-    if (IsNilToken(tkTypeDef))
-        FC_RETURN_BOOL(FALSE);
+    _ASSERTE(!IsNilToken(tkTypeDef));
 
-    if (FAILED(pMT->GetMDImport()->GetNameOfTypeDef(tkTypeDef, name, NULL)))
-        FC_RETURN_BOOL(FALSE);
+    LPCUTF8 name;
+    if (FAILED(pMT->GetMDImport()->GetNameOfTypeDef(tkTypeDef, &name, NULL)))
+        name = NULL;
 
-    FC_RETURN_BOOL(TRUE);
+    return name;
 }
 FCIMPLEND
 
@@ -1506,13 +1505,11 @@ FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
     CONTRACTL
     {
         FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMethod));
+        PRECONDITION(pMethod != NULL);
     }
     CONTRACTL_END;
 
-    LPCUTF8 szName = pMethod->GetName();
-    _ASSERTE(CheckPointer(szName, NULL_OK));
-    return szName;
+    return pMethod->GetName();
 }
 FCIMPLEND
 
@@ -2496,16 +2493,15 @@ FCIMPL1(LPCUTF8, RuntimeFieldHandle::GetUtf8Name, FieldDesc *pField)
     CONTRACTL
     {
         FCALL_CHECK;
-        PRECONDITION(CheckPointer(pField));
+        PRECONDITION(pField != NULL);
     }
     CONTRACTL_END;
 
-    LPCUTF8 szFieldName;
-    if (FAILED(pField->GetName_NoThrow(&szFieldName)))
-    {
-        szFieldName = NULL;
-    }
-    return szFieldName;
+    LPCUTF8 name;
+    if (FAILED(pField->GetName_NoThrow(&name)))
+        name = NULL;
+
+    return name;
 }
 FCIMPLEND
 

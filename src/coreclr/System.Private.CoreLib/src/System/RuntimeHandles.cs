@@ -525,7 +525,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe bool GetUtf8NameInternal(MethodTable* pMT, void** name);
+        private static extern unsafe void* GetUtf8NameInternal(MethodTable* pMT);
 
         internal static unsafe MdUtf8String GetUtf8Name(RuntimeType type)
         {
@@ -535,8 +535,8 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidHandle);
             }
 
-            void* name;
-            if (!GetUtf8NameInternal(th.AsMethodTable(), &name))
+            void* name = GetUtf8NameInternal(th.AsMethodTable());
+            if (name is null)
             {
                 throw new BadImageFormatException();
             }
@@ -951,7 +951,13 @@ namespace System
 
         internal static MdUtf8String GetUtf8Name(RuntimeMethodHandleInternal method)
         {
-            return new MdUtf8String(GetUtf8NameInternal(method));
+            void* name = GetUtf8NameInternal(method);
+            if (name is null)
+            {
+                throw new BadImageFormatException();
+            }
+
+            return new MdUtf8String(name);
         }
 
         [DebuggerStepThrough]
@@ -1244,12 +1250,23 @@ namespace System
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool GetRVAFieldInfo(RuntimeFieldHandleInternal field, out void* address, out uint size);
 
+        internal static ref byte GetFieldDataReference(object target, RtFieldInfo field)
+        {
+            ByteRef offset = default;
+            GetFieldDataReference(field.GetFieldDesc(), ObjectHandleOnStack.Create(ref target), ByteRefOnStack.Create(ref offset));
+            Debug.Assert(!Unsafe.IsNullRef(ref offset.Get()));
+            GC.KeepAlive(field);
+            return ref offset.Get();
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetFieldDataReference")]
+        private static unsafe partial void GetFieldDataReference(IntPtr fieldDesc, ObjectHandleOnStack target, ByteRefOnStack offset);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int GetToken(IntPtr fieldDesc);
 
         internal static int GetToken(RtFieldInfo field)
         {
-            Debug.Assert(field is not null);
             int tk = GetToken(field.GetFieldDesc());
             GC.KeepAlive(field);
             return tk;

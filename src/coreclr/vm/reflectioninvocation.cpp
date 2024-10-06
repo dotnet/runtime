@@ -1144,6 +1144,25 @@ extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(FieldDesc* pField, 
     return ret;
 }
 
+extern "C" void QCALLTYPE RuntimeFieldHandle_GetFieldDataReference(FieldDesc* pField, QCall::ObjectHandleOnStack instance, QCall::ByteRefOnStack offset)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(pField != NULL);
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    _ASSERTE(instance.Get() != NULL);
+
+    offset.Set((BYTE*)pField->GetInstanceAddress(instance.Get()));
+
+    END_QCALL;
+}
+
 extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD)
 {
     QCALL_CONTRACT;
@@ -1850,25 +1869,6 @@ extern "C" int32_t QCALLTYPE ReflectionInvocation_SizeOf(QCall::TypeHandle pType
         return -1;
 
     return handle.GetSize();
-}
-
-extern "C" void QCALLTYPE TypedReference_GetFieldDataReference(FieldDesc* pField, QCall::ObjectHandleOnStack instance, QCall::ByteRefOnStack offset)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(pField != NULL);
-    }
-    CONTRACTL_END;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-    _ASSERTE(instance.Get() != NULL);
-
-    offset.Set((BYTE*)pField->GetInstanceAddress(instance.Get()));
-
-    END_QCALL;
 }
 
 extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(

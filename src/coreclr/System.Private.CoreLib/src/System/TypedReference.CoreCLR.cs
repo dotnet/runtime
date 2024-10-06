@@ -25,20 +25,11 @@ namespace System
             _type = type.GetUnderlyingNativeHandle();
         }
 
-        private static unsafe ref byte GetFieldDataReference(object target, RuntimeFieldInfo field)
-        {
-            ByteRef offset = default;
-            GetFieldDataReference(((RtFieldInfo)field).GetFieldDesc(), ObjectHandleOnStack.Create(ref target), ByteRefOnStack.Create(ref offset));
-            Debug.Assert(!Unsafe.IsNullRef(ref offset.Get()));
-            GC.KeepAlive(field);
-            return ref offset.Get();
-        }
+        private static ref byte GetFieldDataReference(object target, RuntimeFieldInfo field)
+            => ref RuntimeFieldHandle.GetFieldDataReference(target, (RtFieldInfo)field);
 
         private static int GetFieldOffset(RuntimeFieldInfo field)
             => RuntimeFieldHandle.GetInstanceFieldOffset((RtFieldInfo)field);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypedReference_GetFieldDataReference")]
-        private static unsafe partial void GetFieldDataReference(IntPtr fieldDesc, ObjectHandleOnStack target, ByteRefOnStack offset);
 
         public static unsafe object? ToObject(TypedReference value)
         {
