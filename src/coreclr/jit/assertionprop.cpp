@@ -2656,9 +2656,9 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
         ssize_t offset = (ssize_t)len - (ssize_t)lenRemaining;
 
         // Clone dst and add offset if necessary.
-        GenTree* currDst = offset == 0
-                               ? gtCloneExpr(dst)
-                               : gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(dst), gtNewIconNode(offset, TYP_I_IMPL));
+        GenTree* currDst =
+            offset == 0 ? gtCloneExpr(dst)
+                        : gtNewOperNode(GT_ADD, dst->TypeGet(), gtCloneExpr(dst), gtNewIconNode(offset, TYP_I_IMPL));
 
         // Create an unaligned STOREIND node using the largest possible word size.
         var_types        type     = roundDownMaxType(lenRemaining);
