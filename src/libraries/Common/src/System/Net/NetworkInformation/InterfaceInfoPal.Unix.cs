@@ -65,7 +65,7 @@ namespace System.Net.NetworkInformation
             {
                 if (nativeMemory != null)
                 {
-                    int errNo = Marshal.GetLastSystemError();
+                    int errNo = Marshal.GetLastPInvokeError();
 
                     NativeMemory.Free(nativeMemory);
                     Marshal.SetLastPInvokeError(errNo);

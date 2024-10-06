@@ -249,10 +249,26 @@ namespace System.Net
                 for (; current < end; current++)
                 {
                     ch = name[current];
+                    int digitValue;
                     int characterValue = int.CreateTruncating(ch);
-                    int digitValue = HexConverter.FromChar(characterValue);
 
-                    if (digitValue >= numberBase)
+                    if ((numberBase == IPv4AddressHelper.Decimal || numberBase == IPv4AddressHelper.Hex) && '0' <= characterValue && characterValue <= '9')
+                    {
+                        digitValue = characterValue - '0';
+                    }
+                    else if (numberBase == IPv4AddressHelper.Octal && '0' <= characterValue && characterValue <= '7')
+                    {
+                        digitValue = characterValue - '0';
+                    }
+                    else if (numberBase == IPv4AddressHelper.Hex && 'a' <= characterValue && characterValue <= 'f')
+                    {
+                        digitValue = characterValue + 10 - 'a';
+                    }
+                    else if (numberBase == IPv4AddressHelper.Hex && 'A' <= characterValue && characterValue <= 'F')
+                    {
+                        digitValue = characterValue + 10 - 'A';
+                    }
+                    else
                     {
                         break; // Invalid/terminator
                     }
@@ -315,18 +331,24 @@ namespace System.Net
                 case 0: // 0xFFFFFFFF
                     return parts[0];
                 case 1: // 0xFF.0xFFFFFF
+                    Debug.Assert(parts[0] <= 0xFF);
                     if (parts[1] > 0xffffff)
                     {
                         return Invalid;
                     }
                     return (parts[0] << 24) | parts[1];
                 case 2: // 0xFF.0xFF.0xFFFF
+                    Debug.Assert(parts[0] <= 0xFF);
+                    Debug.Assert(parts[1] <= 0xFF);
                     if (parts[2] > 0xffff)
                     {
                         return Invalid;
                     }
                     return (parts[0] << 24) | (parts[1] << 16) | parts[2];
                 case 3: // 0xFF.0xFF.0xFF.0xFF
+                    Debug.Assert(parts[0] <= 0xFF);
+                    Debug.Assert(parts[1] <= 0xFF);
+                    Debug.Assert(parts[2] <= 0xFF);
                     if (parts[3] > 0xff)
                     {
                         return Invalid;
