@@ -16,11 +16,11 @@ namespace System
         #pragma warning restore CA1823
         #endregion
 
-        private TypedReference(ref byte target, RuntimeType lastFieldType)
+        private TypedReference(ref byte target, RuntimeType targetType)
         {
-            type = new RuntimeTypeHandle(lastFieldType);
+            type = new RuntimeTypeHandle(targetType);
             _value = ref target;
-            _type = lastFieldType.GetUnderlyingNativeHandle();
+            _type = targetType.GetUnderlyingNativeHandle();
         }
 
         private static ref byte GetFieldDataReference(object target, RuntimeFieldInfo field)
