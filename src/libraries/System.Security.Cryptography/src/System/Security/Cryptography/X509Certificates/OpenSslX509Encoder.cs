@@ -152,23 +152,6 @@ namespace System.Security.Cryptography.X509Certificates
             throw new CryptographicException();
         }
 
-        public override void DecodeX509BasicConstraints2Extension(
-            byte[] encoded,
-            out bool certificateAuthority,
-            out bool hasPathLengthConstraint,
-            out int pathLengthConstraint)
-        {
-            if (!Interop.Crypto.DecodeX509BasicConstraints2Extension(
-                encoded,
-                encoded.Length,
-                out certificateAuthority,
-                out hasPathLengthConstraint,
-                out pathLengthConstraint))
-            {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
-        }
-
         private static RSAOpenSsl BuildRsaPublicKey(byte[] encodedData)
         {
             var rsa = new RSAOpenSsl();
