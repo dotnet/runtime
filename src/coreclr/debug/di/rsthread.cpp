@@ -85,11 +85,6 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
     m_userState(kInvalidUserState),
     m_hCachedThread(INVALID_HANDLE_VALUE),
     m_hCachedOutOfProcThread(INVALID_HANDLE_VALUE)
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    ,
-    m_SuspendedThreads(11),
-    m_dwInternalSuspendCount(0)
-#endif
 {
     m_fHasUnhandledException = FALSE;
     m_pExceptionRecord = NULL;
@@ -147,28 +142,6 @@ void CordbThread::Neuter()
     }
 
     _ASSERTE(GetProcess()->ThreadHoldsProcessLock());
-
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    InternalResumeOtherThreads(); //  ensure that if we had suspended other threads, they are resumed.
-    if (m_dwInternalSuspendCount > 0)
-    {
-        HANDLE hOutOfProcThread = GetProcess()->GetDAC()->GetThreadHandle(m_vmThreadToken);
-        if (hOutOfProcThread != NULL)
-        {
-            HandleHolder hThread;
-            BOOL fSuccess = DuplicateHandle(GetProcess()->UnsafeGetProcessHandle(), hOutOfProcThread, ::GetCurrentProcess(), &hThread, 0, FALSE, DUPLICATE_SAME_ACCESS);
-            if (fSuccess)
-            {
-                while (m_dwInternalSuspendCount > 0)
-                {
-                    m_dwInternalSuspendCount--;
-                    ::ResumeThread(hThread);
-                }
-            }
-        }
-        m_dwInternalSuspendCount = 0;
-    }
-#endif
 
     delete m_pExceptionRecord;
     m_pExceptionRecord = NULL;
@@ -2813,104 +2786,6 @@ HRESULT CordbThread::GetBlockingObjects(ICorDebugBlockingObjectEnum **ppBlocking
     delete [] blockingObjs;
     return hr;
 }
-
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-HRESULT CordbThread::InternalSuspendOtherThreads(CordbSafeHashTable<CordbThread> *pThreads)
-{
-    RSLockHolder lockHolder(GetProcess()->GetProcessLock());
-    IDacDbiInterface* pDAC = GetProcess()->GetDAC();
-    if (pDAC == NULL)
-    {
-        return E_UNEXPECTED;
-    }
-
-    InternalResumeOtherThreads(); // clear m_SuspendedThreads
-
-    DWORD dwThreadId = pDAC->TryGetVolatileOSThreadID(m_vmThreadToken);
-    HASHFIND find;
-    for (CordbThread * pThread = pThreads->FindFirst(&find);
-        pThread != NULL;
-        pThread =  pThreads->FindNext(&find))
-    {
-        _ASSERTE(pThread != NULL);
-
-        // Get the OS tid. This returns 0 if the thread is switched out.
-        DWORD dwThreadId2 = pDAC->TryGetVolatileOSThreadID(pThread->m_vmThreadToken);
-        if (dwThreadId2 == dwThreadId)
-        {
-            continue;
-        }
-
-        HANDLE hOutOfProcThread = pDAC->GetThreadHandle(pThread->m_vmThreadToken);
-        if (hOutOfProcThread == NULL)
-        {
-            continue;
-        }
-
-        HandleHolder hThread;
-        BOOL fSuccess = DuplicateHandle(GetProcess()->UnsafeGetProcessHandle(), hOutOfProcThread, ::GetCurrentProcess(), &hThread, 0, FALSE, DUPLICATE_SAME_ACCESS);
-        if (!fSuccess)
-        {
-            continue;
-        }
-        if (::SuspendThread(hThread) != (DWORD)-1)
-        {
-            pThread->m_dwInternalSuspendCount++;
-            CordbThread *tmpThread = m_SuspendedThreads.GetBase(VmPtrToCookie(pThread->m_vmThreadToken));
-            _ASSERTE(tmpThread == NULL);
-            if (tmpThread == NULL)
-            {
-                m_SuspendedThreads.AddBaseOrThrow(pThread);
-            }
-        }
-    }
-
-    return S_OK;
-}
-
-HRESULT CordbThread::InternalResumeOtherThreads()
-{
-    RSLockHolder lockHolder(GetProcess()->GetProcessLock());
-
-    IDacDbiInterface* pDAC = GetProcess()->GetDAC();
-    if (pDAC == NULL)
-    {
-        return E_UNEXPECTED;
-    }
-
-    UINT32 count = m_SuspendedThreads.GetCount();
-    UINT32 idx = 0;
-    HASHFIND find;
-    while (idx++ < count)
-    {
-        CordbThread * pThread = m_SuspendedThreads.FindFirst(&find);
-        _ASSERTE(pThread != NULL);
-        if (pThread == NULL)
-        {
-            break;
-        }
-
-        if (pThread->m_dwInternalSuspendCount > 0)
-        {
-            HANDLE hOutOfProcThread = pDAC->GetThreadHandle(pThread->m_vmThreadToken);
-            if (hOutOfProcThread != NULL)
-            {
-                HandleHolder hThread;
-                BOOL fSuccess = DuplicateHandle(GetProcess()->UnsafeGetProcessHandle(), hOutOfProcThread, ::GetCurrentProcess(), &hThread, 0, FALSE, DUPLICATE_SAME_ACCESS);
-                if (fSuccess)
-                {
-                    pThread->m_dwInternalSuspendCount--;
-                    ::ResumeThread(hThread);
-                }
-
-            }
-        }
-        m_SuspendedThreads.RemoveBase(VmPtrToCookie(pThread->m_vmThreadToken));
-    }
-
-    return S_OK;
-}
-#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 #ifdef FEATURE_INTEROP_DEBUGGING
 /* ------------------------------------------------------------------------- *

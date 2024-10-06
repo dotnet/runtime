@@ -36,66 +36,6 @@
 struct RSDebuggingInfo;
 extern RSDebuggingInfo * g_pRSDebuggingInfo;
 
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-void InplaceSteppingThreads::DeleteAll() 
-{
-    pThread = NULL;
-    while (pNext)
-    {
-        InplaceSteppingThreads *pNextNext = pNext->pNext;
-        delete pNext;
-        pNext = pNextNext;
-    }
-}
-
-void InplaceSteppingThreads::Add(CordbThread *pThread)
-{
-    if (this->pThread != NULL)
-    {
-        InplaceSteppingThreads *pNew = new InplaceSteppingThreads();
-        pNew->pThread = this->pThread;
-        pNew->pNext = this->pNext;
-        this->pNext = pNew;
-    }
-
-    this->pThread = pThread;
-}
-
-void InplaceSteppingThreads::Remove(CordbThread *pThread)
-{
-    InplaceSteppingThreads *pThis = this;
-    while (pThis)
-    {
-        if (pThis->pThread == pThread)
-        {
-            InplaceSteppingThreads *pNext = pThis->pNext;
-            pThis->pThread = pNext ? pNext->pThread : NULL;
-            pThis->pNext = pNext ? pNext->pNext : NULL;
-            if (pNext)
-            {
-                delete pNext;
-            }
-            return;
-        }
-        pThis = pThis->pNext;
-    }
-}
-
-bool InplaceSteppingThreads::Contains(CordbThread *pThread)
-{
-    InplaceSteppingThreads *pThis = this;
-    while (pThis)
-    {
-        if (pThis->pThread == pThread)
-        {
-            return true;
-        }
-        pThis = pThis->pNext;
-    }
-    return false;
-}
-#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
-
 //---------------------------------------------------------------------------------------
 //
 // OpenVirtualProcessImpl method called by the shim to get an ICorDebugProcess4 instance
@@ -351,6 +291,85 @@ static inline DWORD CordbGetWaitTimeout()
         return CORDB_WAIT_TIMEOUT;
     }
 }
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+HANDLE UnmanagedThreadTracker::GetThreadHandle(CordbProcess * pProcess)
+{
+    HANDLE hThread = m_hThread;
+    if (hThread == INVALID_HANDLE_VALUE)
+    {
+        // lookup the CordbThread by thread ID, so that we can access the left-side thread handle
+        CordbThread * pThread = pProcess->TryLookupOrCreateThreadByVolatileOSId(m_dwThreadId);
+
+        IDacDbiInterface* pDAC = pProcess->GetDAC();
+        if (pDAC == NULL)
+        {
+            LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - DAC not initialized\n"));
+            ThrowHR(E_UNEXPECTED);
+        }
+
+        HANDLE hOutOfProcThread = pDAC->GetThreadHandle(pThread->m_vmThreadToken);
+        if (hOutOfProcThread == NULL)
+        {
+            LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Failed to get thread handle\n"));
+            ThrowHR(E_UNEXPECTED);
+        }
+
+        // Duplicate the thread handle to the current process
+        BOOL fSuccess = ::DuplicateHandle(pProcess->UnsafeGetProcessHandle(), hOutOfProcThread, ::GetCurrentProcess(), &hThread, 0, FALSE, DUPLICATE_SAME_ACCESS);
+        if (!fSuccess)
+        {
+            LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from DuplicateHandle\n"));
+            ThrowHR(HRESULT_FROM_GetLastError());
+        }
+
+        m_hThread = hThread;
+    }
+
+    return hThread;
+}
+
+void UnmanagedThreadTracker::Suspend()
+{
+    _ASSERTE(m_hThread != INVALID_HANDLE_VALUE);
+    if (m_hThread != INVALID_HANDLE_VALUE)
+    {
+        m_dwSuspendCount++;
+        ::SuspendThread(m_hThread);
+    }
+}
+
+void UnmanagedThreadTracker::Resume()
+{
+    _ASSERTE(m_dwSuspendCount > 0);
+    if (m_dwSuspendCount == 0)
+        return;
+    m_dwSuspendCount--;
+    _ASSERTE(m_hThread != INVALID_HANDLE_VALUE);
+    if (m_hThread != INVALID_HANDLE_VALUE)
+    {
+        ::ResumeThread(m_hThread);
+    }
+}
+
+void UnmanagedThreadTracker::Close()
+{
+    if (m_hThread != INVALID_HANDLE_VALUE)
+    {
+        for (DWORD i = 0; i < m_dwSuspendCount; i++)
+        {
+            ::ResumeThread(m_hThread);
+        }
+    }
+    m_dwSuspendCount = 0;
+    if (m_hThread == INVALID_HANDLE_VALUE)
+    {
+        return;
+    }
+    CloseHandle(m_hThread);
+    m_hThread = INVALID_HANDLE_VALUE;
+}
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 //----------------------------------------------------------------------------
 // Implementation of IDacDbiInterface::IMetaDataLookup.
@@ -1410,7 +1429,12 @@ void CordbProcess::Neuter()
     RSLockHolder lockHolder(GetProcessLock());
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    m_inplaceSteppingThreads.DeleteAll();
+    CUnmanagedThreadHashTableImpl::iterator end = m_unmanagedThreadHashTable.end();
+    for (CUnmanagedThreadHashTableImpl::iterator cur = m_unmanagedThreadHashTable.begin(); cur != end; ++cur )
+    {
+        cur->second.Close();
+    }
+    m_unmanagedThreadHashTable.clear();
 #endif
 
     NeuterChildren();
@@ -7351,7 +7375,6 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
         }
         EX_CATCH_HRESULT(hr);
         SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
-        IfFailThrow(hr);
     }
 
     // Since we may have
@@ -11232,40 +11255,21 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     // However, there are situations where OpenThread can fail with an Access Denied error.
     // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in 
     // Windows causes the process to have higher privileges. 
-    // We are now using the following approach to access the thread handle, which is the same
-    // approach used by CordbThread::RefreshHandle:
-    // 1. Get the thread handle from the DAC
-    // 2. Duplicate the handle to the current process
+    // We are now caching the thread handle in the unmanaged thread hash table when the thread is created.
 
-    // lookup the CordbThread by thread ID, so that we can access the left-side thread handle
-    CordbThread * pThread = TryLookupOrCreateThreadByVolatileOSId(dwThreadId);
-    if (pThread == NULL)
+    CUnmanagedThreadHashTableImpl::iterator curThread = m_unmanagedThreadHashTable.find(dwThreadId);
+
+    if (curThread == m_unmanagedThreadHashTable.end() || curThread->second.GetThreadId() != dwThreadId)
     {
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Failed to find thread\n"));
-        ThrowHR(E_UNEXPECTED);
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Thread not found\n"));
+        ThrowHR(CORDBG_E_BAD_THREAD_STATE);
     }
 
-    IDacDbiInterface* pDAC = GetDAC();
-    if (pDAC == NULL)
+    HANDLE hThread = curThread->second.GetThreadHandle(this);
+    if (hThread == INVALID_HANDLE_VALUE)
     {
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- DAC not initialized\n"));
-        ThrowHR(E_UNEXPECTED);
-    }
-
-    HANDLE hOutOfProcThread = pDAC->GetThreadHandle(pThread->m_vmThreadToken);
-    if (hOutOfProcThread == NULL)
-    {
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Failed to get thread handle\n"));
-        ThrowHR(E_UNEXPECTED);
-    }
-
-    // Duplicate the thread handle to the current process
-    HandleHolder hThread;
-    BOOL fSuccess = DuplicateHandle(UnsafeGetProcessHandle(), hOutOfProcThread, ::GetCurrentProcess(), &hThread, 0, FALSE, DUPLICATE_SAME_ACCESS);
-    if (!fSuccess)
-    {
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from DuplicateHandle\n"));
-        ThrowHR(HRESULT_FROM_GetLastError());
+        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Thread handle not found\n"));
+        ThrowHR(CORDBG_E_BAD_THREAD_STATE);
     }
 
     // Suspend the thread and so that we can read the thread context.
@@ -11409,17 +11413,21 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     {
         CORDB_ADDRESS_TYPE *patchSkipAddr = (CORDB_ADDRESS_TYPE*)pFrameContext->Rip;
 
-        pThread->SetPatchSkipAddr(patchSkipAddr);
-
-        pThread->InternalSuspendOtherThreads(&m_userThreads);
-
         LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- address=0x%p opcode=0x%x\n", patchSkipAddr, opcode));
         HRESULT hr = RemoveRemotePatch(this, (void*)patchSkipAddr, opcode);
         IfFailThrow(hr);
 
+        curThread->second.SetPatchSkipAddress(patchSkipAddr);
+
+        // suspend all other threads
+        CUnmanagedThreadHashTableImpl::iterator end = m_unmanagedThreadHashTable.end();
+        for (CUnmanagedThreadHashTableImpl::iterator cur = m_unmanagedThreadHashTable.begin(); cur != end; ++cur )
         {
-            RSLockHolder lockHolder(GetProcessLock());
-            m_inplaceSteppingThreads.Add(pThread);
+            if (cur->second.GetThreadId() == dwThreadId)
+            {
+                continue;
+            }
+            cur->second.Suspend();
         }
     }
 #else
@@ -11684,26 +11692,28 @@ HRESULT CordbProcess::Filter(
         }
         else if (dwFirstChance && pRecord->ExceptionCode == STATUS_SINGLE_STEP)
         {
-            CordbThread * pThread = TryLookupOrCreateThreadByVolatileOSId(dwThreadId);
-            bool fIsInPlaceSingleStep = false;
-            {
-                RSLockHolder lockHolder(GetProcessLock());
-                fIsInPlaceSingleStep = m_inplaceSteppingThreads.Contains(pThread);
-            }
-            if (pThread != NULL && fIsInPlaceSingleStep)
+            CUnmanagedThreadHashTableImpl::iterator curThread = m_unmanagedThreadHashTable.find(dwThreadId);
+
+            if (curThread != m_unmanagedThreadHashTable.end() && 
+                curThread->second.GetThreadId() == dwThreadId &&
+                curThread->second.IsInPlaceStepping())
             {
                 // we are expecting a single step exception
-                HRESULT hr = ApplyRemotePatch(this, pThread->GetPatchSkipAddr());
+                HRESULT hr = ApplyRemotePatch(this, curThread->second.GetPatchSkipAddress());
                 IfFailThrow(hr);
 
-                pThread->ClearPatchSkipAddr();
+                curThread->second.ClearPatchSkipAddress();
 
+                // resume all other threads
+                CUnmanagedThreadHashTableImpl::iterator end = m_unmanagedThreadHashTable.end();
+                for (CUnmanagedThreadHashTableImpl::iterator cur = m_unmanagedThreadHashTable.begin(); cur != end; ++cur )
                 {
-                    RSLockHolder lockHolder(GetProcessLock());
-                    m_inplaceSteppingThreads.Remove(pThread);
+                    if (cur->second.GetThreadId() == dwThreadId)
+                    {
+                        continue;
+                    }
+                    cur->second.Resume();
                 }
-
-                pThread->InternalResumeOtherThreads();
 
                 // let the normal left side debugger stepper logic execute for this single step
                 *pContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
@@ -15216,14 +15226,23 @@ HRESULT CordbProcess::IsReadyForDetach()
     //
     // If there are any outstanding steppers then fail the detach.
     //
-    if (m_steppers.IsInitialized() && (m_steppers.GetCount() > 0) 
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-        || !m_inplaceSteppingThreads.IsEmptry()
-#endif
-        )
+    if (m_steppers.IsInitialized() && (m_steppers.GetCount() > 0))
     {
         return CORDBG_E_DETACH_FAILED_OUTSTANDING_STEPPERS;
     }
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    {
+        CUnmanagedThreadHashTableImpl::iterator end = m_unmanagedThreadHashTable.end();
+        for (CUnmanagedThreadHashTableImpl::iterator cur = m_unmanagedThreadHashTable.begin(); cur != end; ++cur )
+        {
+            if (cur->second.IsInPlaceStepping() || cur->second.IsSuspended())
+            {
+                return CORDBG_E_DETACH_FAILED_OUTSTANDING_STEPPERS;
+            }
+        }
+    }
+#endif
 
     //
     // If there are any outstanding breakpoints then fail the detach.
@@ -15541,3 +15560,38 @@ void CordbProcess::HandleControlCTrapResult(HRESULT result)
     // Send the reply to the LS.
     SendIPCEvent(&eventControlCResult, sizeof(eventControlCResult));
 }
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+void CordbProcess::HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent)
+{
+    //PUBLIC_API_ENTRY_FOR_SHIM(this);
+
+    switch (pEvent->dwDebugEventCode)
+    {
+        case CREATE_PROCESS_DEBUG_EVENT:
+            {
+                HANDLE hThread = INVALID_HANDLE_VALUE;
+                ::DuplicateHandle(::GetCurrentProcess(), pEvent->u.CreateProcessInfo.hThread, GetCurrentProcess(), &hThread, THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, false, 0);
+                m_unmanagedThreadHashTable.insert(std::make_pair(pEvent->dwThreadId, UnmanagedThreadTracker(pEvent->dwThreadId, hThread)));
+            }
+            break;
+        case CREATE_THREAD_DEBUG_EVENT:
+            {
+                HANDLE hThread = INVALID_HANDLE_VALUE;
+                ::DuplicateHandle(::GetCurrentProcess(), pEvent->u.CreateThread.hThread, GetCurrentProcess(), &hThread, THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, false, 0);
+                m_unmanagedThreadHashTable.insert(std::make_pair(pEvent->dwThreadId, UnmanagedThreadTracker(pEvent->dwThreadId, hThread)));
+            }
+            break;
+        case EXIT_THREAD_DEBUG_EVENT:
+            {
+                CUnmanagedThreadHashTableImpl::iterator it = m_unmanagedThreadHashTable.find(pEvent->dwThreadId);
+                if (it != m_unmanagedThreadHashTable.end())
+                {
+                    it->second.Close();
+                    m_unmanagedThreadHashTable.erase(it);
+                }
+            }
+            break;
+    }
+}
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT

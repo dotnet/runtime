@@ -50,6 +50,8 @@ struct MachineInfo;
 
 #include "eventchannel.h"
 
+#include <unordered_map>
+
 #undef ASSERT
 #define CRASH(x)  _ASSERTE(!(x))
 #define ASSERT(x) _ASSERTE(x)
@@ -2883,6 +2885,10 @@ public:
 #ifdef FEATURE_INTEROP_DEBUGGING
     virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread) = 0;
 #endif
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    virtual void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent) = 0;
+#endif
 };
 
 
@@ -2921,20 +2927,30 @@ public:
     VMPTR_AppDomain m_vmAppDomainDeleted;
 };
 
-
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-class InplaceSteppingThreads
+class UnmanagedThreadTracker
 {
-    CordbThread *pThread = NULL;
-    InplaceSteppingThreads *pNext = NULL;
+    DWORD m_dwThreadId = 0;
+    HANDLE m_hThread = INVALID_HANDLE_VALUE;
+    CORDB_ADDRESS_TYPE *m_pPatchSkipAddress = NULL;
+    DWORD m_dwSuspendCount = 0;
 
 public:
-    void DeleteAll();
-    void Add(CordbThread *pThread);
-    void Remove(CordbThread *pThread);
-    bool Contains(CordbThread *pThread);
-    bool IsEmptry() { return pThread == NULL; }
+    UnmanagedThreadTracker(DWORD wThreadId, HANDLE hThread) : m_dwThreadId(wThreadId), m_hThread(hThread) {}
+    DWORD GetThreadId() { return m_dwThreadId; }
+    HANDLE GetThreadHandle(CordbProcess * pProcess);
+    bool IsInPlaceStepping() { return m_pPatchSkipAddress != NULL; }
+    void SetPatchSkipAddress(CORDB_ADDRESS_TYPE *pPatchSkipAddress) { m_pPatchSkipAddress = pPatchSkipAddress; }
+    CORDB_ADDRESS_TYPE *GetPatchSkipAddress() { return m_pPatchSkipAddress; }
+    void ClearPatchSkipAddress() { m_pPatchSkipAddress = NULL; }
+    bool IsSuspended() { return m_dwSuspendCount > 0; }
+    DWORD SuspendCount() { return m_dwSuspendCount; }
+    void Suspend();
+    void Resume();
+    void Close();
 };
+
+typedef std::unordered_map<DWORD, UnmanagedThreadTracker> CUnmanagedThreadHashTableImpl;
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 class CordbProcess :
@@ -4143,7 +4159,10 @@ private:
     COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject);
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    InplaceSteppingThreads m_inplaceSteppingThreads;
+    CUnmanagedThreadHashTableImpl m_unmanagedThreadHashTable;
+
+public:
+    void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 };
@@ -6393,21 +6412,6 @@ private:
     // offload to the shim to support V2 scenarios.
     HANDLE                m_hCachedThread;
     HANDLE                m_hCachedOutOfProcThread;
-
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-private:
-    CordbSafeHashTable<CordbThread>  m_SuspendedThreads;
-    DWORD                            m_dwInternalSuspendCount;
-    CORDB_ADDRESS_TYPE *             m_patchSkipAddr;
-
-public:
-    HRESULT InternalSuspendOtherThreads(CordbSafeHashTable<CordbThread> *pThreads);
-    HRESULT InternalResumeOtherThreads();
-    bool IsExpectingSingleStep() { return m_patchSkipAddr != NULL; }
-    void ClearPatchSkipAddr() { m_patchSkipAddr = NULL; }
-    void SetPatchSkipAddr(CORDB_ADDRESS_TYPE *patchSkipAddr) { m_patchSkipAddr = patchSkipAddr; }
-    void* GetPatchSkipAddr() { return (void*)m_patchSkipAddr; }
-#endif
 };
 
 /* ------------------------------------------------------------------------- *
