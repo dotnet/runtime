@@ -854,7 +854,7 @@ GenTreeLclVarCommon* Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_
 // Arguments:
 //    life          - The live set that is being computed.
 //    varDsc        - The LclVar descriptor for the variable being used or defined.
-//    node          - The node that is defining the lclVar.
+//    node          - The node that is using the lclVar.
 void Compiler::fgComputeLifeTrackedLocalUse(VARSET_TP& life, LclVarDsc& varDsc, GenTreeLclVarCommon* node)
 {
     assert(node != nullptr);
