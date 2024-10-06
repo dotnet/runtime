@@ -2591,12 +2591,12 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 }
 
 //------------------------------------------------------------------------------
-// optVNBasedFoldExpr_Call_Memmove: Unrolls NI_System_SpanHelpers_Memmove if possible.
-//    This function effectively duplicates LowerCallMemmove. However, unlike LowerCallMemmove,
-//    it is able to optimize src into constants with help of VN.
+// optVNBasedFoldExpr_Call_Memmove: Unrolls NI_System_SpanHelpers_Memmove/CORINFO_HELP_MEMCPY
+//    if possible. This function effectively duplicates LowerCallMemmove.
+//    However, unlike LowerCallMemmove, it is able to optimize src into constants with help of VN.
 //
 // Arguments:
-//    call - NI_System_SpanHelpers_Memmove call to unroll
+//    call - NI_System_SpanHelpers_Memmove/CORINFO_HELP_MEMCPY call to unroll
 //
 // Return Value:
 //    Returns a new tree or nullptr if nothing is changed.
@@ -2604,7 +2604,8 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
 {
     JITDUMP("See if we can optimize NI_System_SpanHelpers_Memmove with help of VN...\n")
-    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove));
+    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) ||
+           call->IsHelperCall(this, CORINFO_HELP_MEMCPY));
 
     CallArg* dstArg = call->gtArgs.GetUserArgByIndex(0);
     CallArg* srcArg = call->gtArgs.GetUserArgByIndex(1);
@@ -2619,21 +2620,20 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
     size_t len = vnStore->CoercedConstantValue<size_t>(lenVN);
     if (len == 0)
     {
-        // Memmove(dst, src, 0) -> nothing. Memmove doesn't dereference the pointers
-        // when the length is zero.
+        // Memmove(dst, src, 0) -> no-op.
+        // Memmove doesn't dereference src/dst pointers if length is 0.
         JITDUMP("...length is 0 -> optimize to no-op.\n");
         return gtWrapWithSideEffects(gtNewNothingNode(), call, GTF_ALL_EFFECT, true);
     }
 
-    // Dst and Src never overlap so we use a less conservative Memcpy threshold.
     if (len > getUnrollThreshold(Memcpy))
     {
-        JITDUMP("...length is too big - bail out.\n");
+        JITDUMP("...length is too big to unroll - bail out.\n");
         return nullptr;
     }
 
-    // if GetImmutableDataFromAddress returns true, it means that the src is a read-only constant
-    // so the dst is not expected to overlap with it (it's UB if developer tries to modify it).
+    // if GetImmutableDataFromAddress returns true, it means that the src is a read-only constant.
+    // Thus, dst and src do not overlap (if they do - it's an UB).
     uint8_t* buffer = getAllocator().allocate<uint8_t>(len);
     if (!GetImmutableDataFromAddress(srcArg->GetNode(), (int)len, buffer))
     {
@@ -2653,12 +2653,14 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
     unsigned lenRemaining = (unsigned)len;
     while (lenRemaining > 0)
     {
-        ssize_t offset = (ssize_t)len - (ssize_t)lenRemaining;
+        const ssize_t offset = (ssize_t)len - (ssize_t)lenRemaining;
 
         // Clone dst and add offset if necessary.
-        GenTree* currDst =
-            offset == 0 ? gtCloneExpr(dst)
-                        : gtNewOperNode(GT_ADD, dst->TypeGet(), gtCloneExpr(dst), gtNewIconNode(offset, TYP_I_IMPL));
+        GenTree* currDst = gtCloneExpr(dst);
+        if (offset != 0)
+        {
+            currDst = gtNewOperNode(GT_ADD, dst->TypeGet(), currDst, gtNewIconNode(offset, TYP_I_IMPL));
+        }
 
         // Create an unaligned STOREIND node using the largest possible word size.
         var_types        type     = roundDownMaxType(lenRemaining);
@@ -2666,18 +2668,8 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
         GenTreeStoreInd* storeInd = gtNewStoreIndNode(type, currDst, srcCns, GTF_IND_UNALIGNED);
         fgUpdateConstTreeValueNumber(srcCns);
 
-        if (result == nullptr)
-        {
-            // result can be nullptr only for the first iteration and
-            // if the original call tree had no side effects.
-            assert(offset == 0);
-            result = storeInd;
-        }
-        else
-        {
-            // Merge with the previous result via GT_COMMA.
-            result = gtNewOperNode(GT_COMMA, TYP_VOID, result, storeInd);
-        }
+        // Merge with the previous result.
+        result = result == nullptr ? storeInd : gtNewOperNode(GT_COMMA, TYP_VOID, result, storeInd);
 
         lenRemaining -= genTypeSize(type);
     }
@@ -2752,7 +2744,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
             break;
     }
 
-    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove))
+    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(this, CORINFO_HELP_MEMCPY))
     {
         return optVNBasedFoldExpr_Call_Memmove(call);
     }

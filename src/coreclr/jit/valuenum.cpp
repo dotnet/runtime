@@ -12048,7 +12048,9 @@ bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, uint8_t* 
     CORINFO_OBJECT_HANDLE obj = NO_OBJECT_HANDLE;
     if (GetObjectHandleAndOffset(address, &byteOffset, &obj) && ((size_t)byteOffset <= INT32_MAX))
     {
-        return info.compCompHnd->getObjectContent(obj, pValue, size, (int)byteOffset);
+        assert(obj != NO_OBJECT_HANDLE);
+        return info.compCompHnd->isObjectImmutable(obj) &&
+               info.compCompHnd->getObjectContent(obj, pValue, size, (int)byteOffset);
     }
 
     // See if 'src' is some static read-only field (including RVA)
