@@ -2284,6 +2284,35 @@ typed_reference_to_object (MonoTypedRef *tref, MonoError *error)
 	HANDLE_FUNCTION_RETURN_REF (MonoObject, result);
 }
 
+gpointer
+ves_icall_System_RuntimeFieldHandle_GetFieldDataReference (MonoObjectHandle target, MonoClassField *field, MonoError *error)
+{
+	g_assert (field);
+
+	(void)mono_handle_class (target);
+
+	/* if relative, offset is from the start of target. Otherwise offset is actually an address */
+	gboolean relative = TRUE;
+	intptr_t offset = 0;
+	if (G_LIKELY (!m_field_is_from_update (field))) {
+		offset = m_field_get_offset (field);
+	} else {
+		/* This field was added by a metadata-update to an exsiting type.
+			* Since it's store outside the object, offset is an absolute address
+			*/
+		relative = FALSE;
+		uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (field));
+		offset = (intptr_t) mono_metadata_update_added_field_ldflda (MONO_HANDLE_RAW (target), field->type, token, error);
+		mono_error_assert_ok (error);
+	}
+	(void)mono_class_from_mono_type_internal (field->type);
+
+	if (G_LIKELY (relative))
+		return (guint8*)MONO_HANDLE_RAW (target) + offset;
+	else
+		return (guint8*)offset;
+}
+
 MonoObjectHandle
 ves_icall_System_RuntimeFieldHandle_GetValueDirect (MonoReflectionFieldHandle field_h, MonoReflectionTypeHandle field_type_h, MonoTypedRef *obj, MonoReflectionTypeHandle context_type_h, MonoError *error)
 {
@@ -6389,35 +6418,6 @@ ves_icall_System_ArgIterator_IntGetNextArgType (MonoArgIterator *iter)
 	g_assert (i < iter->sig->param_count);
 
 	return iter->sig->params [i];
-}
-
-gpointer
-ves_icall_System_TypedReference_GetFieldDataReference (MonoObjectHandle target, MonoClassField *field, MonoError *error)
-{
-	g_assert (field);
-
-	(void)mono_handle_class (target);
-
-	/* if relative, offset is from the start of target. Otherwise offset is actually an address */
-	gboolean relative = TRUE;
-	intptr_t offset = 0;
-	if (G_LIKELY (!m_field_is_from_update (field))) {
-		offset = m_field_get_offset (field);
-	} else {
-		/* This field was added by a metadata-update to an exsiting type.
-			* Since it's store outside the object, offset is an absolute address
-			*/
-		relative = FALSE;
-		uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (field));
-		offset = (intptr_t) mono_metadata_update_added_field_ldflda (MONO_HANDLE_RAW (target), field->type, token, error);
-		mono_error_assert_ok (error);
-	}
-	(void)mono_class_from_mono_type_internal (field->type);
-
-	if (G_LIKELY (relative))
-		return (guint8*)MONO_HANDLE_RAW (target) + offset;
-	else
-		return (guint8*)offset;
 }
 
 MonoObjectHandle

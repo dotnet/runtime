@@ -1144,7 +1144,7 @@ extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(FieldDesc* pField, 
     return ret;
 }
 
-extern "C" void QCALLTYPE RuntimeFieldHandle_GetFieldDataReference(FieldDesc* pField, QCall::ObjectHandleOnStack instance, QCall::ByteRefOnStack offset)
+extern "C" void QCALLTYPE RuntimeFieldHandle_GetFieldDataReference(FieldDesc* pField, QCall::ObjectHandleOnStack instance, QCall::ByteRefOnStack fieldDataRef)
 {
     CONTRACTL
     {
@@ -1158,7 +1158,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_GetFieldDataReference(FieldDesc* pF
     GCX_COOP();
     _ASSERTE(instance.Get() != NULL);
 
-    offset.Set((BYTE*)pField->GetInstanceAddress(instance.Get()));
+    fieldDataRef.Set((BYTE*)pField->GetInstanceAddress(instance.Get()));
 
     END_QCALL;
 }

@@ -480,9 +480,10 @@ HANDLES(ALC_3, "InternalLoadFromStream", ves_icall_System_Runtime_Loader_Assembl
 HANDLES(ALC_6, "PrepareForAssemblyLoadContextRelease", ves_icall_System_Runtime_Loader_AssemblyLoadContext_PrepareForAssemblyLoadContextRelease, void, 2, (gpointer, gpointer))
 
 ICALL_TYPE(RFH, "System.RuntimeFieldHandle", RFH_1)
-HANDLES(RFH_1, "GetValueDirect", ves_icall_System_RuntimeFieldHandle_GetValueDirect, MonoObject, 4, (MonoReflectionField, MonoReflectionType, MonoTypedRef_ptr, MonoReflectionType))
-HANDLES(RFH_1a, "SetValueDirect", ves_icall_System_RuntimeFieldHandle_SetValueDirect, void, 5, (MonoReflectionField, MonoReflectionType, MonoTypedRef_ptr, MonoObject, MonoReflectionType))
-HANDLES_REUSE_WRAPPER(RFH_2, "SetValueInternal", ves_icall_RuntimeFieldInfo_SetValueInternal)
+HANDLES(RFH_1, "GetFieldDataReferenceInternal", ves_icall_System_RuntimeFieldHandle_GetFieldDataReference, gpointer, 2, (MonoObject, MonoClassField_ptr))
+HANDLES(RFH_2, "GetValueDirect", ves_icall_System_RuntimeFieldHandle_GetValueDirect, MonoObject, 4, (MonoReflectionField, MonoReflectionType, MonoTypedRef_ptr, MonoReflectionType))
+HANDLES(RFH_3, "SetValueDirect", ves_icall_System_RuntimeFieldHandle_SetValueDirect, void, 5, (MonoReflectionField, MonoReflectionType, MonoTypedRef_ptr, MonoObject, MonoReflectionType))
+HANDLES_REUSE_WRAPPER(RFH_4, "SetValueInternal", ves_icall_RuntimeFieldInfo_SetValueInternal)
 
 ICALL_TYPE(MHAN, "System.RuntimeMethodHandle", MHAN_1)
 HANDLES(MHAN_1, "GetFunctionPointer", ves_icall_RuntimeMethodHandle_GetFunctionPointer, gpointer, 1, (MonoMethod_ptr))
@@ -602,8 +603,7 @@ ICALL_TYPE(TYPE, "System.Type", TYPE_1)
 HANDLES(TYPE_1, "internal_from_handle", ves_icall_System_Type_internal_from_handle, MonoReflectionType, 1, (MonoType_ref))
 
 ICALL_TYPE(TYPEDR, "System.TypedReference", TYPEDR_1)
-HANDLES(TYPEDR_1, "InternalGetFieldDataReference", ves_icall_System_TypedReference_GetFieldDataReference, gpointer, 2, (MonoObject, MonoClassField_ptr))
-HANDLES(TYPEDR_2, "InternalToObject", ves_icall_System_TypedReference_ToObject, MonoObject, 1, (MonoTypedRef_ptr))
+HANDLES(TYPEDR_1, "InternalToObject", ves_icall_System_TypedReference_ToObject, MonoObject, 1, (MonoTypedRef_ptr))
 
 ICALL_TYPE(VALUET, "System.ValueType", VALUET_1)
 HANDLES(VALUET_1, "InternalEquals", ves_icall_System_ValueType_Equals, MonoBoolean, 3, (MonoObject, MonoObject, MonoArrayOut))

@@ -527,6 +527,9 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void* GetUtf8NameInternal(MethodTable* pMT);
 
+        // Since the returned string is a pointer into metadata, the caller should
+        // ensure the passed in type is alive for at least as long as returned result is
+        // needed.
         internal static unsafe MdUtf8String GetUtf8Name(RuntimeType type)
         {
             TypeHandle th = type.GetNativeTypeHandle();
@@ -540,10 +543,7 @@ namespace System
             {
                 throw new BadImageFormatException();
             }
-
-            var nameUtf8 = new MdUtf8String(name);
-            GC.KeepAlive(type);
-            return nameUtf8;
+            return new MdUtf8String(name);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -949,6 +949,9 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void* GetUtf8NameInternal(RuntimeMethodHandleInternal method);
 
+        // Since the returned string is a pointer into metadata, the caller should
+        // ensure the passed in type is alive for at least as long as returned result is
+        // needed.
         internal static MdUtf8String GetUtf8Name(RuntimeMethodHandleInternal method)
         {
             void* name = GetUtf8NameInternal(method);
@@ -956,7 +959,6 @@ namespace System
             {
                 throw new BadImageFormatException();
             }
-
             return new MdUtf8String(name);
         }
 
@@ -1214,6 +1216,9 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void* GetUtf8NameInternal(RuntimeFieldHandleInternal field);
 
+        // Since the returned string is a pointer into metadata, the caller should
+        // ensure the passed in type is alive for at least as long as returned result is
+        // needed.
         internal static MdUtf8String GetUtf8Name(RuntimeFieldHandleInternal field)
         {
             void* name = GetUtf8NameInternal(field);
@@ -1250,17 +1255,24 @@ namespace System
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool GetRVAFieldInfo(RuntimeFieldHandleInternal field, out void* address, out uint size);
 
-        internal static ref byte GetFieldDataReference(object target, RtFieldInfo field)
+        internal static ref byte GetFieldDataReference(object target, RuntimeFieldInfo field)
         {
-            ByteRef offset = default;
-            GetFieldDataReference(field.GetFieldDesc(), ObjectHandleOnStack.Create(ref target), ByteRefOnStack.Create(ref offset));
-            Debug.Assert(!Unsafe.IsNullRef(ref offset.Get()));
+            ByteRef fieldDataRef = default;
+            GetFieldDataReference(((RtFieldInfo)field).GetFieldDesc(), ObjectHandleOnStack.Create(ref target), ByteRefOnStack.Create(ref fieldDataRef));
+            Debug.Assert(!Unsafe.IsNullRef(ref fieldDataRef.Get()));
             GC.KeepAlive(field);
-            return ref offset.Get();
+            return ref fieldDataRef.Get();
+        }
+
+        internal static ref byte GetFieldDataReference(ref byte target, RuntimeFieldInfo field)
+        {
+            Debug.Assert(!Unsafe.IsNullRef(ref target));
+            int offset = GetInstanceFieldOffset((RtFieldInfo)field);
+            return ref Unsafe.AddByteOffset(ref target, offset);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetFieldDataReference")]
-        private static unsafe partial void GetFieldDataReference(IntPtr fieldDesc, ObjectHandleOnStack target, ByteRefOnStack offset);
+        private static unsafe partial void GetFieldDataReference(IntPtr fieldDesc, ObjectHandleOnStack target, ByteRefOnStack fieldDataRef);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int GetToken(IntPtr fieldDesc);

@@ -4,7 +4,6 @@
 // TypedReference is basically only ever seen on the call stack, and in param arrays.
 //  These are blob that must be dealt with by the compiler.
 
-using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -42,11 +41,6 @@ namespace System
                 }
 
                 RuntimeType fieldType = (RuntimeType)field.FieldType;
-                if (fieldType.IsPrimitive)
-                {
-                    throw new ArgumentException(SR.Format(SR.Arg_TypeRefPrimitive, field.Name));
-                }
-
                 if (i < (flds.Length - 1) && !fieldType.IsValueType)
                 {
                     throw new MissingMemberException(SR.MissingMemberNestErr);
@@ -54,23 +48,16 @@ namespace System
 
                 if (i == 0)
                 {
-                    targetRef = ref GetFieldDataReference(target, field);
+                    targetRef = ref RuntimeFieldHandle.GetFieldDataReference(target, field);
                 }
                 else
                 {
-                    targetRef = ref GetFieldDataReference(ref targetRef, field);
+                    targetRef = ref RuntimeFieldHandle.GetFieldDataReference(ref targetRef, field);
                 }
                 targetType = fieldType;
             }
 
             return new TypedReference(ref targetRef, targetType);
-        }
-
-        private static ref byte GetFieldDataReference(ref byte target, RuntimeFieldInfo field)
-        {
-            Debug.Assert(!Unsafe.IsNullRef(ref target));
-            int offset = GetFieldOffset(field);
-            return ref Unsafe.AddByteOffset(ref target, offset);
         }
 
         public override int GetHashCode()

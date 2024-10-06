@@ -23,15 +23,6 @@ namespace System
             _type = targetType.GetUnderlyingNativeHandle();
         }
 
-        private static ref byte GetFieldDataReference(object target, RuntimeFieldInfo field)
-            => ref InternalGetFieldDataReference(target, field.FieldHandle.Value);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern ref byte InternalGetFieldDataReference(object target, IntPtr field);
-
-        private static int GetFieldOffset(RuntimeFieldInfo field)
-            => field.GetFieldOffset();
-
         public static unsafe object? ToObject(TypedReference value)
             => InternalToObject(&value);
 

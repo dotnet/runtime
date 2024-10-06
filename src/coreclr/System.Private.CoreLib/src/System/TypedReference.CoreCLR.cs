@@ -25,12 +25,6 @@ namespace System
             _type = type.GetUnderlyingNativeHandle();
         }
 
-        private static ref byte GetFieldDataReference(object target, RuntimeFieldInfo field)
-            => ref RuntimeFieldHandle.GetFieldDataReference(target, (RtFieldInfo)field);
-
-        private static int GetFieldOffset(RuntimeFieldInfo field)
-            => RuntimeFieldHandle.GetInstanceFieldOffset((RtFieldInfo)field);
-
         public static unsafe object? ToObject(TypedReference value)
         {
             TypeHandle typeHandle = new((void*)value._type);
