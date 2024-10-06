@@ -113,6 +113,7 @@ static bool IsPermuteVar2xInstruction(instruction ins);
 static bool IsAVXVNNIInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
 static bool IsKInstruction(instruction ins);
+static bool IsKInstructionWithLBit(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);

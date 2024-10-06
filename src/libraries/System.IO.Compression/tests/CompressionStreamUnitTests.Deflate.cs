@@ -219,12 +219,5 @@ namespace System.IO.Compression
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
             }
         }
-
-        [Theory]
-        [MemberData(nameof(UncompressedTestFilesZLib))]
-        public async Task ZLibCompressionLevel_SizeInOrder(string testFile)
-        {
-            await CompressionLevel_SizeInOrderBase(testFile);
-        }
     }
 }

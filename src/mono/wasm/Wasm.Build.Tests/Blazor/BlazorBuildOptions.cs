@@ -18,7 +18,7 @@ public record BlazorBuildOptions
     bool ExpectFingerprintOnDotnetJs = false,
     RuntimeVariant RuntimeType = RuntimeVariant.SingleThreaded,
     GlobalizationMode GlobalizationMode = GlobalizationMode.Sharded,
-    string PredefinedIcudt = "",
+    string CustomIcuFile = "",
     bool AssertAppBundle = true,
     string? BinFrameworkDir = null
 );

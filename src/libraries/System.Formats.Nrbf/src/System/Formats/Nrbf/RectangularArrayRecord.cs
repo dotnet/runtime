@@ -8,13 +8,14 @@ using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Formats.Nrbf.Utils;
+using System.Diagnostics;
 
 namespace System.Formats.Nrbf;
 
 internal sealed class RectangularArrayRecord : ArrayRecord
 {
     private readonly int[] _lengths;
-    private readonly ICollection<object> _values;
+    private readonly List<object> _values;
     private TypeName? _typeName;
 
     private RectangularArrayRecord(Type elementType, ArrayInfo arrayInfo,
@@ -24,18 +25,8 @@ internal sealed class RectangularArrayRecord : ArrayRecord
         MemberTypeInfo = memberTypeInfo;
         _lengths = lengths;
 
-        // A List<T> can hold as many objects as an array, so for multi-dimensional arrays
-        // with more elements than Array.MaxLength we use LinkedList.
-        // Testing that many elements takes a LOT of time, so to ensure that both code paths are tested,
-        // we always use LinkedList code path for Debug builds.
-#if DEBUG
-        _values = new LinkedList<object>();
-#else
-        _values = arrayInfo.TotalElementsCount <= ArrayInfo.MaxArrayLength
-            ? new List<object>(canPreAllocate ? arrayInfo.GetSZArrayLength() : Math.Min(4, arrayInfo.GetSZArrayLength()))
-            : new LinkedList<object>();
-#endif
-
+        // ArrayInfo.GetSZArrayLength ensures to return a value <= Array.MaxLength
+        _values = new List<object>(canPreAllocate ? arrayInfo.GetSZArrayLength() : Math.Min(4, arrayInfo.GetSZArrayLength()));
     }
 
     public override SerializationRecordType RecordType => SerializationRecordType.BinaryArray;
@@ -65,10 +56,12 @@ internal sealed class RectangularArrayRecord : ArrayRecord
 
 #if !NET8_0_OR_GREATER
         int[] indices = new int[_lengths.Length];
+        nuint numElementsWritten = 0; // only for debugging; not used in release builds
 
         foreach (object value in _values)
         {
             result.SetValue(GetActualValue(value), indices);
+            numElementsWritten++;
 
             int dimension = indices.Length - 1;
             while (dimension >= 0)
@@ -87,6 +80,9 @@ internal sealed class RectangularArrayRecord : ArrayRecord
                 break;
             }
         }
+
+        Debug.Assert(numElementsWritten == (uint)_values.Count, "We should have traversed the entirety of the source values collection.");
+        Debug.Assert(numElementsWritten == (ulong)result.LongLength, "We should have traversed the entirety of the destination array.");
 
         return result;
 #else
@@ -108,6 +104,7 @@ internal sealed class RectangularArrayRecord : ArrayRecord
             else if (ElementType == typeof(TimeSpan)) CopyTo<TimeSpan>(_values, result);
             else if (ElementType == typeof(DateTime)) CopyTo<DateTime>(_values, result);
             else if (ElementType == typeof(decimal)) CopyTo<decimal>(_values, result);
+            else throw new InvalidOperationException();
         }
         else
         {
@@ -116,7 +113,7 @@ internal sealed class RectangularArrayRecord : ArrayRecord
 
         return result;
 
-        static void CopyTo<T>(ICollection<object> list, Array array)
+        static void CopyTo<T>(List<object> list, Array array)
         {
             ref byte arrayDataRef = ref MemoryMarshal.GetArrayDataReference(array);
             ref T firstElementRef = ref Unsafe.As<byte, T>(ref arrayDataRef);
@@ -127,6 +124,8 @@ internal sealed class RectangularArrayRecord : ArrayRecord
                 targetElement = (T)GetActualValue(value)!;
                 flattenedIndex++;
             }
+
+            Debug.Assert(flattenedIndex == (ulong)array.LongLength, "We should have traversed the entirety of the array.");
         }
 #endif
     }
@@ -167,7 +166,7 @@ internal sealed class RectangularArrayRecord : ArrayRecord
                 PrimitiveType.Boolean => sizeof(bool),
                 PrimitiveType.Byte => sizeof(byte),
                 PrimitiveType.SByte => sizeof(sbyte),
-                PrimitiveType.Char => sizeof(byte), // it's UTF8
+                PrimitiveType.Char => sizeof(byte), // it's UTF8 (see comment below)
                 PrimitiveType.Int16 => sizeof(short),
                 PrimitiveType.UInt16 => sizeof(ushort),
                 PrimitiveType.Int32 => sizeof(int),
@@ -176,12 +175,29 @@ internal sealed class RectangularArrayRecord : ArrayRecord
                 PrimitiveType.Int64 => sizeof(long),
                 PrimitiveType.UInt64 => sizeof(ulong),
                 PrimitiveType.Double => sizeof(double),
-                _ => -1
+                PrimitiveType.TimeSpan => sizeof(ulong),
+                PrimitiveType.DateTime => sizeof(ulong),
+                PrimitiveType.Decimal => -1, // represented as variable-length string
+                _ => throw new InvalidOperationException()
             };
 
             if (sizeOfSingleValue > 0)
             {
-                long size = arrayInfo.TotalElementsCount * sizeOfSingleValue;
+                // NRBF encodes rectangular char[,,,...] by converting each standalone UTF-16 code point into
+                // its UTF-8 encoding. This means that surrogate code points (including adjacent surrogate
+                // pairs) occurring within a char[,,,...] cannot be encoded by NRBF. BinaryReader will detect
+                // that they're ill-formed and reject them on read.
+                //
+                // Per the comment in ArraySinglePrimitiveRecord.DecodePrimitiveTypes, we'll assume best-case
+                // encoding where 1 UTF-16 char encodes as a single UTF-8 byte, even though this might lead
+                // to encountering an EOF if we realize later that we actually need to read more bytes in
+                // order to fully populate the char[,,,...] array. Any such allocation is still linearly
+                // proportional to the length of the incoming payload, so it's not a DoS vector.
+                // The multiplication below is guaranteed not to overflow because FlattenedLength is bounded
+                // to <= Array.MaxLength (see BinaryArrayRecord.Decode) and sizeOfSingleValue is at most 8.
+                Debug.Assert(arrayInfo.FlattenedLength >= 0 && arrayInfo.FlattenedLength <= long.MaxValue / sizeOfSingleValue);
+
+                long size = arrayInfo.FlattenedLength * sizeOfSingleValue;
                 bool? isDataAvailable = reader.IsDataAvailable(size);
                 if (isDataAvailable.HasValue)
                 {
@@ -215,7 +231,8 @@ internal sealed class RectangularArrayRecord : ArrayRecord
             PrimitiveType.DateTime => typeof(DateTime),
             PrimitiveType.UInt16 => typeof(ushort),
             PrimitiveType.UInt32 => typeof(uint),
-            _ => typeof(ulong)
+            PrimitiveType.UInt64 => typeof(ulong),
+            _ => throw new InvalidOperationException()
         };
 
     private static Type MapPrimitiveArray(PrimitiveType primitiveType)
@@ -235,7 +252,8 @@ internal sealed class RectangularArrayRecord : ArrayRecord
             PrimitiveType.DateTime => typeof(DateTime[]),
             PrimitiveType.UInt16 => typeof(ushort[]),
             PrimitiveType.UInt32 => typeof(uint[]),
-            _ => typeof(ulong[]),
+            PrimitiveType.UInt64 => typeof(ulong[]),
+            _ => throw new InvalidOperationException()
         };
 
     private static object? GetActualValue(object value)

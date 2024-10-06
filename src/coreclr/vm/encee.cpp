@@ -343,8 +343,8 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
             module,
             tkMethod,
             AssemblyIterationFlags(kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        while (it.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (it.Next(pAssembly.This()))
         {
             MethodDesc* pMD = it.Current();
             pMD->ResetCodeEntryPointForEnC();

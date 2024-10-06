@@ -298,7 +298,7 @@ GlobalStringLiteralMap::GlobalStringLiteralMap()
 : m_StringToEntryHashTable(NULL)
 , m_MemoryPool(NULL)
 , m_HashTableCrstGlobal(CrstGlobalStrLiteralMap)
-, m_PinnedHeapHandleTable(SystemDomain::System(), GLOBAL_STRING_TABLE_BUCKET_SIZE)
+, m_PinnedHeapHandleTable(GLOBAL_STRING_TABLE_BUCKET_SIZE)
 {
     CONTRACTL
     {

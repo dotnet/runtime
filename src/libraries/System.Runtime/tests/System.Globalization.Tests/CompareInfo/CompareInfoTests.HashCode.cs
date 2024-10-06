@@ -14,8 +14,9 @@ namespace System.Globalization.Tests
     {
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        // On Apple platforms, string comparison is handled by native Apple functions, which apply normalization techniques 
+        // like `precomposedStringWithCanonicalMapping`. This can lead to differences in behavior compared to other platforms.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         public void CheckHashingInLineWithEqual()
         {
             int additionalCollisions = 0;

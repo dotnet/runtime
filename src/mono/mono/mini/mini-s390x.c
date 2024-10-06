@@ -3471,7 +3471,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_srag (code, ins->dreg, ins->dreg, 0, 32);
 			break;
 		case OP_MOVE_I4_TO_F:
-			s390_slag (code, s390_r0, ins->sreg1, 0, 32);
+			s390_sllg (code, s390_r0, ins->sreg1, 0, 32);
 			s390_ldgr (code, ins->dreg, s390_r0);
 			break;
 		case OP_FCONV_TO_R4:

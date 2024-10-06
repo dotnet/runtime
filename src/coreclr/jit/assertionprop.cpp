@@ -2324,38 +2324,6 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
 
 /*****************************************************************************
  *
- *  Create an assertion on the phi node if some information can be gleaned
- *  from all of the constituent phi operands.
- *
- */
-AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
-{
-    if (!tree->IsPhiDefn())
-    {
-        return NO_ASSERTION_INDEX;
-    }
-
-    // Try to find if all phi arguments are known to be non-null.
-    bool isNonNull = true;
-    for (GenTreePhi::Use& use : tree->AsLclVar()->Data()->AsPhi()->Uses())
-    {
-        if (!vnStore->IsKnownNonNull(use.GetNode()->gtVNPair.GetConservative()))
-        {
-            isNonNull = false;
-            break;
-        }
-    }
-
-    // All phi arguments are non-null implies phi rhs is non-null.
-    if (isNonNull)
-    {
-        return optCreateAssertion(tree->AsOp()->gtOp1, nullptr, OAK_NOT_EQUAL);
-    }
-    return NO_ASSERTION_INDEX;
-}
-
-/*****************************************************************************
- *
  *  If this node creates an assertion then assign an index to the assertion
  *  by adding it to the lookup table, if necessary.
  */
@@ -2387,20 +2355,9 @@ void Compiler::optAssertionGen(GenTree* tree)
             {
                 assertionInfo = optCreateAssertion(tree, tree->AsLclVar()->Data(), OAK_EQUAL);
             }
-            else
-            {
-                assertionInfo = optAssertionGenPhiDefn(tree);
-            }
             break;
 
         case GT_IND:
-            // Dynamic block copy sources could be zero-sized and so should not generate assertions.
-            if (tree->TypeIs(TYP_STRUCT))
-            {
-                break;
-            }
-            FALLTHROUGH;
-
         case GT_XAND:
         case GT_XORR:
         case GT_XADD:
@@ -2657,21 +2614,18 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
         case CORINFO_HELP_ISINSTANCEOFANY:
         case CORINFO_HELP_ISINSTANCEOFINTERFACE:
         {
-            GenTree* castClsArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
-            GenTree* castObjArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-
-            if ((castObjArg->gtFlags & GTF_ALL_EFFECT) != 0)
-            {
-                // It won't be trivial to properly extract side-effects from the call node.
-                // Ideally, we only need side effects from the castClsArg argument as the call itself
-                // won't throw any exceptions. But we should not forget about the EarlyNode (setup args)
-                return nullptr;
-            }
+            CallArg* castClsCallArg = call->gtArgs.GetUserArgByIndex(0);
+            CallArg* castObjCallArg = call->gtArgs.GetUserArgByIndex(1);
+            GenTree* castClsArg     = castClsCallArg->GetNode();
+            GenTree* castObjArg     = castObjCallArg->GetNode();
 
             // If object has the same VN as the cast, then the cast is effectively a no-op.
             //
             if (castObjArg->gtVNPair == call->gtVNPair)
             {
+                // if castObjArg is not simple, we replace the arg with a temp assignment and
+                // continue using that temp - it allows us reliably extract all side effects
+                castObjArg = fgMakeMultiUse(&castObjCallArg->LateNodeRef());
                 return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
             }
 
@@ -2686,6 +2640,9 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
                     CORINFO_CLASS_HANDLE castTo = gtGetHelperArgClassHandle(castClsArg);
                     if (info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
                     {
+                        // if castObjArg is not simple, we replace the arg with a temp assignment and
+                        // continue using that temp - it allows us reliably extract all side effects
+                        castObjArg = fgMakeMultiUse(&castObjCallArg->LateNodeRef());
                         return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
                     }
                 }
@@ -5097,20 +5054,22 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
     GCInfo::WriteBarrierForm barrierType = GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
 
     // First, analyze the value being stored
-    if (value->IsIntegralConst(0) || (value->gtVNPair.GetConservative() == ValueNumStore::VNForNull()))
+    auto vnVisitor = [this](ValueNum vn) -> ValueNumStore::VNVisit {
+        if ((vn == ValueNumStore::VNForNull()) || vnStore->IsVNObjHandle(vn))
+        {
+            // No write barrier is required for null or nongc object handles as values
+            return ValueNumStore::VNVisit::Continue;
+        }
+        return ValueNumStore::VNVisit::Abort;
+    };
+
+    if (vnStore->VNVisitReachingVNs(value->gtVNPair.GetConservative(), vnVisitor) == ValueNumStore::VNVisit::Continue)
     {
-        // The value being stored is null
         barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
     }
-    else if (value->IsIconHandle(GTF_ICON_OBJ_HDL) || vnStore->IsVNObjHandle(value->gtVNPair.GetConservative()))
-    {
-        // The value being stored is a handle
-        barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
-    }
+    // Next, analyze the address if we haven't already determined the barrier type from the value
     else if ((indir->gtFlags & GTF_IND_TGT_HEAP) == 0)
     {
-        // Next, analyze the address if we haven't already determined the barrier type from the value
-        //
         // NOTE: we might want to inspect indirs with GTF_IND_TGT_HEAP flag as well - what if we can prove
         // that they actually need no barrier? But that comes with a TP regression.
         barrierType = GetWriteBarrierForm(vnStore, addr->gtVNPair.GetConservative());
@@ -5162,21 +5121,22 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTANY) ||
             (helper == CORINFO_HELP_CHKCASTCLASS_SPECIAL))
         {
-            GenTree* castToArg = call->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree* objArg    = call->gtArgs.GetArgByIndex(1)->GetNode();
+            CallArg* castToCallArg = call->gtArgs.GetArgByIndex(0);
+            CallArg* objCallArg    = call->gtArgs.GetArgByIndex(1);
+            GenTree* castToArg     = castToCallArg->GetNode();
+            GenTree* objArg        = objCallArg->GetNode();
 
-            // We require objArg to be side effect free due to limitations in gtWrapWithSideEffects
-            if ((objArg->gtFlags & GTF_ALL_EFFECT) == 0)
+            const unsigned index = optAssertionIsSubtype(objArg, castToArg, assertions);
+            if (index != NO_ASSERTION_INDEX)
             {
-                const unsigned index = optAssertionIsSubtype(objArg, castToArg, assertions);
-                if (index != NO_ASSERTION_INDEX)
-                {
-                    JITDUMP("\nDid VN based subtype prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
-                    DISPTREE(call);
+                JITDUMP("\nDid VN based subtype prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
+                DISPTREE(call);
 
-                    objArg = gtWrapWithSideEffects(objArg, call, GTF_SIDE_EFFECT, true);
-                    return optAssertionProp_Update(objArg, call, stmt);
-                }
+                // if castObjArg is not simple, we replace the arg with a temp assignment and
+                // continue using that temp - it allows us reliably extract all side effects
+                objArg = fgMakeMultiUse(&objCallArg->LateNodeRef());
+                objArg = gtWrapWithSideEffects(objArg, call, GTF_SIDE_EFFECT, true);
+                return optAssertionProp_Update(objArg, call, stmt);
             }
 
             // Leave a hint for fgLateCastExpansion that obj is never null.
@@ -5511,63 +5471,11 @@ void Compiler::optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& ac
     noway_assert(assertionIndex != 0);
     noway_assert(assertionIndex <= optAssertionCount);
 
-    AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
-    if (!BitVecOps::IsEmpty(apTraits, activeAssertions))
-    {
-        const ASSERT_TP mappedAssertions = optGetVnMappedAssertions(curAssertion->op1.vn);
-        if (mappedAssertions == nullptr)
-        {
-            return;
-        }
-
-        ASSERT_TP chkAssertions = BitVecOps::MakeCopy(apTraits, mappedAssertions);
-
-        if (curAssertion->op2.kind == O2K_LCLVAR_COPY)
-        {
-            const ASSERT_TP op2Assertions = optGetVnMappedAssertions(curAssertion->op2.vn);
-            if (op2Assertions != nullptr)
-            {
-                BitVecOps::UnionD(apTraits, chkAssertions, op2Assertions);
-            }
-        }
-        BitVecOps::IntersectionD(apTraits, chkAssertions, activeAssertions);
-
-        if (BitVecOps::IsEmpty(apTraits, chkAssertions))
-        {
-            return;
-        }
-
-        // Check each assertion in chkAssertions to see if it can be applied to curAssertion
-        BitVecOps::Iter chkIter(apTraits, chkAssertions);
-        unsigned        chkIndex = 0;
-        while (chkIter.NextElem(&chkIndex))
-        {
-            AssertionIndex chkAssertionIndex = GetAssertionIndex(chkIndex);
-            if (chkAssertionIndex > optAssertionCount)
-            {
-                break;
-            }
-            if (chkAssertionIndex == assertionIndex)
-            {
-                continue;
-            }
-
-            // Determine which one is a copy assertion and use the other to check for implied assertions.
-            AssertionDsc* iterAssertion = optGetAssertion(chkAssertionIndex);
-            if (curAssertion->IsCopyAssertion())
-            {
-                optImpliedByCopyAssertion(curAssertion, iterAssertion, activeAssertions);
-            }
-            else if (iterAssertion->IsCopyAssertion())
-            {
-                optImpliedByCopyAssertion(iterAssertion, curAssertion, activeAssertions);
-            }
-        }
-    }
     // Is curAssertion a constant store of a 32-bit integer?
     // (i.e  GT_LVL_VAR X  == GT_CNS_INT)
-    else if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_LCLVAR) &&
-             (curAssertion->op2.kind == O2K_CONST_INT))
+    AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
+    if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_LCLVAR) &&
+        (curAssertion->op2.kind == O2K_CONST_INT))
     {
         optImpliedByConstAssertion(curAssertion, activeAssertions);
     }

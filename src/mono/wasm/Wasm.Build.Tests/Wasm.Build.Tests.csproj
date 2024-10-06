@@ -46,7 +46,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Playwright" Version="1.21.0" />
+    <PackageReference Include="Microsoft.Playwright" Version="1.47.0" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
     <Compile Include="$(BrowserProjectRoot)debugger\DebuggerTestSuite\BrowserLocator.cs" />
 
@@ -87,8 +87,8 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export IS_RUNNING_ON_CI=true" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set IS_RUNNING_ON_CI=true" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/playwright.sh" />
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/node" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux-x64/playwright.sh" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux-x64/node" />
     </ItemGroup>
 
     <PropertyGroup>

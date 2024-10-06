@@ -737,22 +737,8 @@ namespace System
                 return false;
             }
 
-            Assembly assembly = typeof(System.Runtime.Serialization.Formatters.Binary.BinaryFormatter).Assembly;
-            AssemblyName name = assembly.GetName();
-            Version assemblyVersion = name.Version;
-
-            bool isSupported = true;
-
-            // Version 8.1 is the version in the shared runtime (.NET 9+) that has the type disabled with no config.
-            // Assembly versions beyond 8.1 are the fully functional version from NuGet.
-            // Assembly versions before 8.1 probably won't be encountered, since that's the past.
-
-            if (assemblyVersion.Major == 8 && assemblyVersion.Minor == 1)
-            {
-                isSupported = false;
-            }
-
-            return isSupported;
+            return AppContext.TryGetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", out bool isBinaryFormatterEnabled)
+                && isBinaryFormatterEnabled;
         }
     }
 }

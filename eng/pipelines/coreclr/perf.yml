@@ -1,3 +1,9 @@
+parameters:
+- name: perfBranch
+  displayName: Performance Repo Branch
+  type: string
+  default: 'main'
+
 trigger:
   batch: true
   branches:
@@ -19,7 +25,7 @@ trigger:
     - THIRD-PARTY-NOTICES.TXT
 
 variables:
-  - template: /eng/pipelines/common/variables.yml
+- template: /eng/pipelines/common/variables.yml
 
 #
 # For the 'schedule' case, only wasm/jsc perf jobs are run.
@@ -46,9 +52,12 @@ extends:
       - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
         parameters:
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
+          perfBranch: ${{ parameters.perfBranch }}
           #${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
           #  runProfile: 'non-v8'
           ${{ if ne(variables['System.TeamProject'], 'public') }}:
             runProfile: 'v8'
 
       - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
+        parameters:
+          perfBranch: ${{ parameters.perfBranch }}

@@ -3364,7 +3364,7 @@ interp_try_devirt (MonoClass *this_klass, MonoMethod *target_method)
 	if (m_class_is_valuetype (new_target_method->klass))
 		return NULL;
 
-	// final methods can still be overriden with explicit overrides
+	// final methods can still be overridden with explicit overrides
 	if (m_class_is_sealed (this_klass))
 		return new_target_method;
 
@@ -9241,6 +9241,12 @@ opcode_emit:
 		} else if (opcode == MINT_LDLOCA_S) {
 			// This opcode receives a local but it is not viewed as a sreg since we don't load the value
 			*ip++ = GINT_TO_UINT16 (get_var_offset (td, ins->sregs [0]));
+
+#if HOST_BROWSER
+			// We reserve an extra 2 bytes at the end of ldloca_s so the jiterpreter knows how large
+			//  the var is when taking its address so that it can invalidate a properly sized range.
+			*ip++ = GINT_TO_UINT16 (td->vars [ins->sregs [0]].size);
+#endif
 		}
 
 		int left = interp_get_ins_length (ins) - GPTRDIFF_TO_INT(ip - start_ip);

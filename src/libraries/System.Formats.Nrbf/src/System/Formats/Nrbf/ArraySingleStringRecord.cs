@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Formats.Nrbf.Utils;
+using System.Diagnostics;
 
 namespace System.Formats.Nrbf;
 
@@ -21,7 +22,7 @@ internal sealed class ArraySingleStringRecord : SZArrayRecord<string?>
     public override SerializationRecordType RecordType => SerializationRecordType.ArraySingleString;
 
     /// <inheritdoc />
-    public override TypeName TypeName => TypeNameHelpers.GetPrimitiveSZArrayTypeName(PrimitiveType.String);
+    public override TypeName TypeName => TypeNameHelpers.GetPrimitiveSZArrayTypeName(TypeNameHelpers.StringPrimitiveType);
 
     private List<SerializationRecord> Records { get; }
 
@@ -47,7 +48,8 @@ internal sealed class ArraySingleStringRecord : SZArrayRecord<string?>
     {
         string?[] values = new string?[Length];
 
-        for (int recordIndex = 0, valueIndex = 0; recordIndex < Records.Count; recordIndex++)
+        int valueIndex = 0;
+        for (int recordIndex = 0; recordIndex < Records.Count; recordIndex++)
         {
             SerializationRecord record = Records[recordIndex];
 
@@ -73,6 +75,7 @@ internal sealed class ArraySingleStringRecord : SZArrayRecord<string?>
             }
 
             int nullCount = ((NullsRecord)record).NullCount;
+            Debug.Assert(nullCount > 0, "All implementations of NullsRecord are expected to return a positive value for NullCount.");
             do
             {
                 values[valueIndex++] = null;
@@ -80,6 +83,8 @@ internal sealed class ArraySingleStringRecord : SZArrayRecord<string?>
             }
             while (nullCount > 0);
         }
+
+        Debug.Assert(valueIndex == values.Length, "We should have traversed the entirety of the newly created array.");
 
         return values;
     }

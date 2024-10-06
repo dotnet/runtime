@@ -288,7 +288,7 @@
         // where the tail-calling thread had saved RA, which may not match where we have saved RA.
 
         ld.d  $a1, $a2, OFFSETOF__Thread__m_pvHijackedReturnAddress
-        beq  $a1, $zero, NotHijacked
+        beq  $a1, $zero, LOCAL_LABEL(NotHijacked)
 
         ld.d  $a3, $a2, OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation
 
@@ -298,13 +298,13 @@
         // a3: hijacked return address location
 
         addi.d  $t3, $sp, (STACKSIZEOF_ExInfo + SIZEOF__PAL_LIMITED_CONTEXT) // re-compute SP at callsite
-        bltu  $a3, $t3, TailCallWasHijacked // if (m_ppvHijackedReturnAddressLocation < SP at callsite)
+        bltu  $a3, $t3, LOCAL_LABEL(TailCallWasHijacked) // if (m_ppvHijackedReturnAddressLocation < SP at callsite)
 
         // normal case where a valid return address location is hijacked
         st.d  $a1, $a3, 0
-        b  ClearThreadState
+        b  LOCAL_LABEL(ClearThreadState)
 
-TailCallWasHijacked:
+LOCAL_LABEL(TailCallWasHijacked):
 
         // Abnormal case where the return address location is now invalid because we ended up here via a tail
         // call.  In this case, our hijacked return address should be the correct caller of this method.
@@ -314,13 +314,13 @@ TailCallWasHijacked:
         st.d  $ra, $sp, (rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__RA)
         st.d  $ra, $sp, (rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__IP)
 
-ClearThreadState:
+LOCAL_LABEL(ClearThreadState):
 
         // clear the Thread's hijack state
         st.d  $zero, $a2, OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation
         st.d  $zero, $a2, OFFSETOF__Thread__m_pvHijackedReturnAddress
 
-NotHijacked:
+LOCAL_LABEL(NotHijacked):
 
         addi.d  $a1, $sp, rsp_offsetof_ExInfo            // a1 <- ExInfo*
         st.d  $zero, $a1, OFFSETOF__ExInfo__m_exception  // pExInfo->m_exception = null
@@ -502,21 +502,21 @@ NotHijacked:
         ld.d  $a3, $sp, rsp_offset_a3                           // a3 <- current ExInfo*
         ld.d  $a2, $a2, OFFSETOF__REGDISPLAY__SP                // a2 <- resume SP value
 
-PopExInfoLoop:
+LOCAL_LABEL(PopExInfoLoop):
         ld.d  $a3, $a3, OFFSETOF__ExInfo__m_pPrevExInfo         // a3 <- next ExInfo
-        beq  $a3, $zero, DonePopping                            // if (pExInfo == null) { we're done }
-        blt  $a3, $a2, PopExInfoLoop                            // if (pExInfo < resume SP} { keep going }
+        beq  $a3, $zero, LOCAL_LABEL(DonePopping)               // if (pExInfo == null) { we're done }
+        blt  $a3, $a2, LOCAL_LABEL(PopExInfoLoop)               // if (pExInfo < resume SP} { keep going }
 
-DonePopping:
+LOCAL_LABEL(DonePopping):
         st.d  $a3, $a1, OFFSETOF__Thread__m_pExInfoStackHead    // store the new head on the Thread
 
         PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $a3
 
         andi  $t7, $a3, TrapThreadsFlags_AbortInProgress_Bit
-        beq  $t7, $zero, NoAbort
+        beq  $t7, $zero, LOCAL_LABEL(NoAbort)
 
         ld.d  $a3, $sp, rsp_offset_is_not_handling_thread_abort
-        bne  $a3, $zero, NoAbort
+        bne  $a3, $zero, LOCAL_LABEL(NoAbort)
 
         // It was the ThreadAbortException, so rethrow it
         // reset SP
@@ -525,7 +525,7 @@ DonePopping:
         ori  $sp, $a2, 0
         b  C_FUNC(RhpThrowHwEx)
 
-NoAbort:
+LOCAL_LABEL(NoAbort):
         // reset SP and jump to continuation address
         ori  $sp, $a2, 0
         jirl  $r0, $a0, 0
@@ -618,8 +618,8 @@ NoAbort:
         ld.d  $a2, $sp, rsp_FinallyFunclet_offset_thread
 
         addi.d  $t3, $a2, OFFSETOF__Thread__m_ThreadStateFlags
-        addi.w  $a3, $zero, -17     // $a3 = $a3 & ~TSF_DoNotTriggerGc, TSF_DoNotTriggerGc=0x10.
-        amand_db.w  $a1, $a3, $t3
+        addi.w  $a3, $zero, 16     // $a3 = $a3 | TSF_DoNotTriggerGc, TSF_DoNotTriggerGc=0x10.
+        amor_db.w  $a1, $a3, $t3
 
         fld.d  $f24, $sp, 0x00
         fld.d  $f25, $sp, 0x08
@@ -771,12 +771,12 @@ NoAbort:
         ld.d  $a3, $sp, rsp_offset_a3                    // a3 <- current ExInfo*
         ld.d  $a2, $a2, OFFSETOF__REGDISPLAY__SP         // a2 <- resume SP value
 
-Propagate_PopExInfoLoop:
-        ld.d  $a3, $a3, OFFSETOF__ExInfo__m_pPrevExInfo  // a3 <- next ExInfo
-        beq  $a3, $zero, Propagate_DonePopping           // if (pExInfo == null) { we're done }
-        blt  $a3, $a2, Propagate_PopExInfoLoop           // if (pExInfo < resume SP} { keep going }
+LOCAL_LABEL(Propagate_PopExInfoLoop):
+        ld.d  $a3, $a3, OFFSETOF__ExInfo__m_pPrevExInfo     // a3 <- next ExInfo
+        beq  $a3, $zero, LOCAL_LABEL(Propagate_DonePopping) // if (pExInfo == null) { we're done }
+        blt  $a3, $a2, LOCAL_LABEL(Propagate_PopExInfoLoop) // if (pExInfo < resume SP} { keep going }
 
-Propagate_DonePopping:
+LOCAL_LABEL(Propagate_DonePopping):
         st.d  $a3, $a1, OFFSETOF__Thread__m_pExInfoStackHead // store the new head on the Thread
 
         // restore preemptive mode

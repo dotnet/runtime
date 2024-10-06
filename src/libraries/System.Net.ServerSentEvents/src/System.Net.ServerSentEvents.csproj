@@ -8,11 +8,6 @@
 
 Commonly Used Types:
 System.Net.ServerSentEvents.SseParser</PackageDescription>
-
-    <!-- Disabling baseline validation since this is a brand new package.
-         Once this package has shipped a stable version, the following line
-         should be removed in order to re-enable validation. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +19,7 @@ System.Net.ServerSentEvents.SseParser</PackageDescription>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
+
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>

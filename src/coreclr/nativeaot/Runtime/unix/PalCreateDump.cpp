@@ -48,6 +48,7 @@
 #include "RhConfig.h"
 
 #include <minipal/utils.h>
+#include <minipal/thread.h>
 #include <generatedumpflags.h>
 
 #if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
@@ -58,31 +59,6 @@
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 char* g_szCreateDumpPath = nullptr;
 char* g_ppidarg  = nullptr;
-
-/*++
-Function:
-    PlatformGetCurrentThreadId
-
-    Returns the current thread id
-*/
-
-#if defined(__linux__)
-#define PlatformGetCurrentThreadId() (uint32_t)syscall(SYS_gettid)
-#elif defined(__APPLE__)
-inline uint32_t PlatformGetCurrentThreadId() {
-    uint64_t tid;
-    pthread_threadid_np(pthread_self(), &tid);
-    return (uint32_t)tid;
-}
-#elif defined(__FreeBSD__)
-#include <pthread_np.h>
-#define PlatformGetCurrentThreadId() (uint32_t)pthread_getthreadid_np()
-#elif defined(__NetBSD__)
-#include <lwp.h>
-#define PlatformGetCurrentThreadId() (uint32_t)_lwp_self()
-#else
-#define PlatformGetCurrentThreadId() (uint32_t)pthread_self()
-#endif
 
 const size_t MaxUnsigned32BitDecString = STRING_LENGTH("4294967295");
 const size_t MaxUnsigned64BitDecString = STRING_LENGTH("18446744073709551615");
@@ -386,7 +362,7 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* exceptionRecor
             }
 
             // Add the current thread id to the command line. This function is always called on the crashing thread.
-            crashThreadArg = FormatInt(PlatformGetCurrentThreadId());
+            crashThreadArg = FormatInt(minipal_get_current_thread_id());
             if (crashThreadArg != nullptr)
             {
                 argv[argc++] = "--crashthread";

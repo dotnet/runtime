@@ -828,11 +828,9 @@ void EEStartupHelper()
 
         VirtualCallStubManager::InitStatic();
 
-
         // Setup the domains. Threads are started in a default domain.
 
         // Static initialization
-        BaseDomain::Attach();
         SystemDomain::Attach();
 
         // Start up the EE initializing all the global variables
@@ -843,7 +841,6 @@ void EEStartupHelper()
         ExecutionManager::Init();
 
         JitHost::Init();
-
 
 #ifndef TARGET_UNIX
         if (!RegisterOutOfProcessWatsonCallbacks())
@@ -945,7 +942,6 @@ void EEStartupHelper()
 #ifdef HAVE_GCCOVER
         MethodDesc::Init();
 #endif
-
 
         Assembly::Initialize();
 

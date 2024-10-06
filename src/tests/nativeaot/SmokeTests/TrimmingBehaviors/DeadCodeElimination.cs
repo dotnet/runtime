@@ -529,12 +529,26 @@ class DeadCodeElimination
     {
         class NeverAllocated1 { }
         class NeverAllocated2 { }
+        class NeverAllocated3 { }
 
         class PossiblyAllocated1 { }
         class PossiblyAllocated2 { }
 
+        class MyAttribute : Attribute
+        {
+            public Type TheType;
+
+            public MyAttribute(Type t) => TheType = t;
+        }
+
+        [My(typeof(NeverAllocated3))]
+        class AttributeHolder { }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static Type GetNeverObject() => null;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetNeverAllocated3Type() => typeof(AttributeHolder).GetCustomAttribute<MyAttribute>().TheType;
 
         static volatile Type s_sink;
 
@@ -557,6 +571,15 @@ class DeadCodeElimination
             }
             if (Environment.GetEnvironmentVariable("SURETHING") != null)
                 s_sink = typeof(PossiblyAllocated1);
+
+            if (GetNeverAllocated3Type() == typeof(NeverAllocated3))
+            {
+                Console.WriteLine($"{nameof(NeverAllocated3)} check succeeded");
+            }
+            else
+            {
+                throw new Exception();
+            }
         }
     }
 

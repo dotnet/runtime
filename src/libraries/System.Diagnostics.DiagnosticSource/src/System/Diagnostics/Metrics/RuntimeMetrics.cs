@@ -146,7 +146,7 @@ namespace System.Diagnostics.Metrics
                 unit: "{cpu}",
                 description: "The number of processors available to the process.");
 
-            if (!OperatingSystem.IsBrowser() && !OperatingSystem.IsTvOS() && !(OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()))
+            if (!OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi() && !OperatingSystem.IsTvOS() && !(OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()))
             {
                 s_meter.CreateObservableCounter(
                     "dotnet.process.cpu.time",
@@ -174,7 +174,7 @@ namespace System.Diagnostics.Metrics
         [SupportedOSPlatform("maccatalyst")]
         private static IEnumerable<Measurement<double>> GetCpuTime()
         {
-            Debug.Assert(!OperatingSystem.IsBrowser() && !OperatingSystem.IsTvOS() && !(OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()));
+            Debug.Assert(!OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi() &&!OperatingSystem.IsTvOS() && !(OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()));
 
             Environment.ProcessCpuUsage processCpuUsage = Environment.CpuUsage;
 

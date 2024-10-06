@@ -39,6 +39,7 @@
 
 
       <WasiCommand Condition="'$(_WasiNeedsHttp)' == 'true'"                                         >$(WasiCommand) --wasi http</WasiCommand>
+      <WasiCommand Condition="'$(_WasiNeedsSocket)' == 'true'"                                       >$(WasiCommand) --wasi inherit-network --wasi tcp --wasi udp --wasi allow-ip-name-lookup</WasiCommand>
       <WasiCommand Condition="'$(WasmSingleFileBundle)' != 'true'"                                   >$(WasiCommand) --dir .</WasiCommand>
       <WasiCommand                                                                                   >$(WasiCommand) $(_DotnetWasmName)</WasiCommand>
       <WasiCommand Condition="'$(WasmSingleFileBundle)' != 'true'"                                   >$(WasiCommand) $(_SampleProjectName)</WasiCommand>

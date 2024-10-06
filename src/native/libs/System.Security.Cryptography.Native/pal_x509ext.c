@@ -71,23 +71,3 @@ int32_t CryptoNative_DecodeX509BasicConstraints2Extension(const uint8_t* encoded
 
     return result;
 }
-
-EXTENDED_KEY_USAGE* CryptoNative_DecodeExtendedKeyUsage(const uint8_t* buf, int32_t len)
-{
-    ERR_clear_error();
-
-    if (!buf || !len)
-    {
-        return NULL;
-    }
-
-    return d2i_EXTENDED_KEY_USAGE(NULL, &buf, len);
-}
-
-void CryptoNative_ExtendedKeyUsageDestroy(EXTENDED_KEY_USAGE* a)
-{
-    if (a != NULL)
-    {
-        EXTENDED_KEY_USAGE_free(a);
-    }
-}

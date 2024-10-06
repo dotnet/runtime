@@ -8,7 +8,7 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Caching.Memory
 {
     /// <summary>
-    /// Provide extensions methods for <see cref="ICacheEntry"/> operations.
+    /// Provides extensions methods for <see cref="ICacheEntry"/> operations.
     /// </summary>
     public static class CacheEntryExtensions
     {
@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <summary>
-        /// Expire the cache entry if the given <see cref="IChangeToken"/> expires.
+        /// Expires the cache entry if the given <see cref="IChangeToken"/> expires.
         /// </summary>
         /// <param name="entry">The <see cref="ICacheEntry"/>.</param>
         /// <param name="expirationToken">The <see cref="IChangeToken"/> that causes the cache entry to expire.</param>
@@ -71,8 +71,8 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <summary>
-        /// Sets how long the cache entry can be inactive (e.g. not accessed) before it will be removed.
-        /// This will not extend the entry lifetime beyond the absolute expiration (if set).
+        /// Sets how long the cache entry can be inactive (for example, not accessed) before it will be removed.
+        /// This method does not extend the entry lifetime beyond the absolute expiration (if set).
         /// </summary>
         /// <param name="entry">The <see cref="ICacheEntry"/>.</param>
         /// <param name="offset">A <see cref="TimeSpan"/> representing a sliding expiration.</param>
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <summary>
-        /// The given callback will be fired after the cache entry is evicted from the cache.
+        /// Fires the given callback after the cache entry is evicted from the cache.
         /// </summary>
         /// <param name="entry">The <see cref="ICacheEntry"/>.</param>
         /// <param name="callback">The callback to run after the entry is evicted.</param>
@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <summary>
-        /// The given callback will be fired after the cache entry is evicted from the cache.
+        /// Fires the given callback after the cache entry is evicted from the cache.
         /// </summary>
         /// <param name="entry">The <see cref="ICacheEntry"/>.</param>
         /// <param name="callback">The callback to run after the entry is evicted.</param>

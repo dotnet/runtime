@@ -105,7 +105,7 @@ public class TestMainJsProjectProvider : ProjectProviderBase
                                         MainJS: buildProjectOptions.MainJS ?? "test-main.js",
                                         GlobalizationMode: buildProjectOptions.GlobalizationMode,
                                         HasV8Script: buildProjectOptions.HasV8Script,
-                                        PredefinedIcudt: buildProjectOptions.PredefinedIcudt ?? string.Empty,
+                                        CustomIcuFile: buildProjectOptions.CustomIcuFile ?? string.Empty,
                                         IsBrowserProject: buildProjectOptions.IsBrowserProject,
                                         ExpectedFileType: expectedFileType,
                                         ExpectSymbolsFile: !buildArgs.AOT);

@@ -1039,7 +1039,7 @@ class DebuggerController
     //right side needs to read
     friend class Debugger; // So Debugger can lock, use, unlock the patch
     // table in MapAndBindFunctionBreakpoints
-    friend void Debugger::UnloadModule(Module* pRuntimeModule, AppDomain *pAppDomain);
+    friend void Debugger::UnloadModule(Module* pRuntimeModule);
 
     //
     // Static functionality

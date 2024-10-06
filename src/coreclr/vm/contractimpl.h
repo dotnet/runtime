@@ -120,7 +120,6 @@ public:
 struct DispatchTokenFat
 {
     friend struct DispatchToken;
-    friend class BaseDomain;
 
   private:
     UINT32 m_typeId;

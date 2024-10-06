@@ -1728,6 +1728,7 @@ namespace Mono.Linker.Steps
 			case DependencyKind.AlreadyMarked:
 			case DependencyKind.TypePreserve:
 			case DependencyKind.PreservedMethod:
+			case DependencyKind.MemberOfType:
 				return;
 
 			case DependencyKind.DynamicallyAccessedMemberOnType:
@@ -2597,6 +2598,7 @@ namespace Mono.Linker.Steps
 			case "MulticastDelegate":
 			case "ValueType":
 			case "Enum":
+			case "Array":
 				return td.Namespace == "System";
 			}
 

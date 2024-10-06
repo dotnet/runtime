@@ -43,10 +43,10 @@ public abstract class WasmTemplateTestBase : BuildTestBase
 
         if (addFrameworkArg)
             extraArgs += $" -f {DefaultTargetFramework}";
-        new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
-                .WithWorkingDirectory(_projectDir!)
-                .ExecuteWithCapturedOutput($"new {template} {extraArgs}")
-                .EnsureSuccessful();
+        using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
+        CommandResult result = cmd.WithWorkingDirectory(_projectDir!)
+            .ExecuteWithCapturedOutput($"new {template} {extraArgs}")
+            .EnsureSuccessful();
 
         string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
 
@@ -95,7 +95,9 @@ public abstract class WasmTemplateTestBase : BuildTestBase
     {
         if (buildProjectOptions.ExtraBuildEnvironmentVariables is null)
             buildProjectOptions = buildProjectOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
-        buildProjectOptions.ExtraBuildEnvironmentVariables["ForceNet8Current"] = "false";
+
+        // TODO: reenable this when the SDK supports targetting net10.0
+        //buildProjectOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(id, buildArgs.Config, buildProjectOptions);
         if (buildProjectOptions.UseCache)

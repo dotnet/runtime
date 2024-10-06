@@ -59,11 +59,11 @@ public class MiscTests2 : BlazorWasmTestBase
                                     extraItems: extraItems);
 
         string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}.binlog");
-        return new DotNetCommand(s_buildEnv, _testOutput)
-                        .WithWorkingDirectory(_projectDir!)
-                        .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                        .ExecuteWithCapturedOutput("publish",
-                                                    $"-bl:{publishLogPath}",
-                                                    $"-p:Configuration={config}");
+        using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);
+        return cmd.WithWorkingDirectory(_projectDir!)
+                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                    .ExecuteWithCapturedOutput("publish",
+                                                $"-bl:{publishLogPath}",
+                                                $"-p:Configuration={config}");
     }
 }

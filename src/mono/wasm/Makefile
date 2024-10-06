@@ -38,7 +38,7 @@ test-runner:
 	$(DOTNET) build $(TOP)/src/libraries/Common/tests/WasmTestRunner /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
 
 build-tasks:
-	$(DOTNET) build $(TOP)/src/tasks/tasks.proj /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
+	$(DOTNET) build $(TOP)/src/tasks/tasks.proj /p:Configuration=$(CONFIG) /p:TargetOS=browser $(MSBUILD_ARGS)
 
 clean:
 	$(RM) -rf $(BUILDS_OBJ_DIR)

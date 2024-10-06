@@ -4,7 +4,7 @@ parameters:
   timeoutInMinutes: ''
 
 steps:
-- ${{ if and(eq(parameters.isOfficialBuild, true), ne(variables['Build.Reason'], 'PullRequest'), or(startswith(variables['Build.SourceBranch'], 'refs/heads/release/'), startswith(variables['Build.SourceBranch'], 'refs/heads/internal/release/'), startswith(variables['Build.SourceBranch'], 'refs/heads/reltest/'))) }}:
+- ${{ if and(eq(parameters.isOfficialBuild, true), ne(variables['Build.Reason'], 'PullRequest'), or(startswith(variables['Build.SourceBranch'], 'refs/heads/release/'), startswith(variables['Build.SourceBranch'], 'refs/heads/internal/release/'), startswith(variables['Build.SourceBranch'], 'refs/heads/reltest/')), not(endsWith(variables['Build.SourceBranch'], '-staging'))) }}:
   - task: UseDotNet@2
     displayName: Install .NET 6 SDK for signing.
     inputs:

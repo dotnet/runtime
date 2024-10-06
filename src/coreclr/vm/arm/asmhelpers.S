@@ -152,22 +152,6 @@ CallDescrWorkerInternalReturnAddressOffset:
 
     LEAF_END LazyMachStateCaptureState, _TEXT
 
-// void SinglecastDelegateInvokeStub(Delegate *pThis)
-    LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-        cmp     r0, #0
-        beq     LOCAL_LABEL(LNullThis)
-
-        ldr     r12, [r0, #DelegateObject___methodPtr]
-        ldr     r0, [r0, #DelegateObject___target]
-
-        bx      r12
-
-LOCAL_LABEL(LNullThis):
-        mov     r0, #CORINFO_NullReferenceException_ASM
-        b       C_FUNC(JIT_InternalThrow)
-
-    LEAF_END SinglecastDelegateInvokeStub, _TEXT
-
 //
 // r12 = UMEntryThunk*
 //

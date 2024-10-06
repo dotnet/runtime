@@ -477,19 +477,6 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
     EPILOG_BRANCH_REG  t4
 NESTED_END NDirectImportThunk, _TEXT
 
-// void SinglecastDelegateInvokeStub(Delegate *pThis)
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-    beq  a0, zero, LOCAL_LABEL(LNullThis)
-
-    ld  t4, (DelegateObject___methodPtr)(a0)
-    ld  a0, (DelegateObject___target)(a0)
-    jr  t4
-
-LOCAL_LABEL(LNullThis):
-    addi  a0, zero, CORINFO_NullReferenceException_ASM
-    tail JIT_InternalThrow
-LEAF_END SinglecastDelegateInvokeStub, _TEXT
-
 // ------------------------------------------------------------------
 // ThePreStubPatch()
 LEAF_ENTRY ThePreStubPatch, _TEXT
@@ -819,6 +806,7 @@ LEAF_END setFPReturn, _TEXT
 LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
     ld a1, OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics(a0)
+    fence r,rw
     bnez a1, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
     mv  a0, a1
     ret
@@ -835,6 +823,7 @@ LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
     ld a1, OFFSETOF__DynamicStaticsInfo__m_pGCStatics(a0)
+    fence r,rw
     bnez a1, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
     mv  a0, a1
     ret

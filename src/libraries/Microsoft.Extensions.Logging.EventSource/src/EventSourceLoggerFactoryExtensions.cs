@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Logging
     public static class EventSourceLoggerFactoryExtensions
     {
         /// <summary>
-        /// Adds an logger that writes messages to the <see cref="LoggingEventSource"/> instance.
+        /// Adds a logger that writes messages to the <see cref="LoggingEventSource"/> instance.
         /// </summary>
         /// <param name="factory">The extension method argument.</param>
         /// <returns>The <see cref="ILoggerFactory"/> so that additional calls can be chained.</returns>
@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Adds an logger that writes messages to the <see cref="LoggingEventSource"/> instance.
+        /// Adds a logger that writes messages to the <see cref="LoggingEventSource"/> instance.
         /// </summary>
         /// <param name="builder">The extension method argument.</param>
         /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>

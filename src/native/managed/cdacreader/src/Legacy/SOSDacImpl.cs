@@ -3,9 +3,6 @@
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
@@ -159,7 +156,9 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
                         Contracts.ModuleHandle module = _target.Contracts.Loader.GetModuleHandle(modulePtr);
                         string modulePath = _target.Contracts.Loader.GetPath(module);
                         ReadOnlySpan<char> moduleSpan = modulePath.AsSpan();
-                        int pathNameSpanIndex = moduleSpan.LastIndexOf(_target.DirectorySeparator);
+                        char directorySeparator = (char)_target.ReadGlobal<byte>(Constants.Globals.DirectorySeparator);
+
+                        int pathNameSpanIndex = moduleSpan.LastIndexOf(directorySeparator);
                         if (pathNameSpanIndex != -1)
                         {
                             moduleSpan = moduleSpan.Slice(pathNameSpanIndex + 1);

@@ -434,18 +434,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                 {
                     const int shiftAmount = helper.ImmValue();
-
-                    if (shiftAmount == 0)
-                    {
-                        // TODO: Use emitIns_Mov instead.
-                        //       We do not use it currently because it will still elide the 'mov'
-                        //       even if 'canSkip' is false. We cannot elide the 'mov' here.
-                        GetEmitter()->emitIns_R_R_R(INS_mov, emitTypeSize(node), targetReg, reg, reg);
-                    }
-                    else
-                    {
-                        GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, reg, shiftAmount, opt);
-                    }
+                    assert((shiftAmount != 0) || (intrin.category == HW_Category_ShiftLeftByImmediate));
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, reg, shiftAmount, opt);
                 }
             };
 
@@ -1124,8 +1114,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
                         {
-                            assert((targetReg == op1Reg) || (targetReg != op1Reg));
-                            assert((targetReg == op1Reg) || (targetReg != op3Reg));
+                            assert((targetReg == op2Reg) || ((targetReg != op1Reg) && (targetReg != op3Reg)));
 
                             GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op2Reg,
                                                       /* canSkip */ true);
@@ -1133,8 +1122,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                         else
                         {
-                            assert((targetReg == op1Reg) || (targetReg != op2Reg));
-                            assert((targetReg == op1Reg) || (targetReg != op3Reg));
+                            assert((targetReg == op1Reg) || ((targetReg != op2Reg) && (targetReg != op3Reg)));
 
                             GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
                                                       /* canSkip */ true);
