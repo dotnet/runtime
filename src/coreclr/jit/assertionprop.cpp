@@ -2634,7 +2634,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
 
     // if GetImmutableDataFromAddress returns true, it means that the src is a read-only constant.
     // Thus, dst and src do not overlap (if they do - it's an UB).
-    uint8_t* buffer = getAllocator().allocate<uint8_t>(len);
+    uint8_t* buffer = new (this, CMK_AssertionProp) uint8_t[len];
     if (!GetImmutableDataFromAddress(srcArg->GetNode(), (int)len, buffer))
     {
         JITDUMP("...src is not a constant - fallback to LowerCallMemmove.\n");
@@ -2676,7 +2676,6 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
 
     JITDUMP("...optimized into STOREIND(s)!:\n");
     DISPTREE(result);
-    getAllocator().deallocate(buffer);
     return result;
 }
 
