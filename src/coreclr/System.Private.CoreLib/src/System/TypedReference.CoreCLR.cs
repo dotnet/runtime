@@ -4,11 +4,8 @@
 // TypedReference is basically only ever seen on the call stack, and in param arrays.
 // These are blob that must be dealt with by the compiler.
 
-using System;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace System
