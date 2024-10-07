@@ -757,6 +757,88 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.AdvanceTo(readResult.Buffer.End);
         }
 
+        // Regression test: https://github.com/dotnet/runtime/issues/107213
+        [Fact]
+        public async Task AdvanceToWithoutExaminedCanUnExamine()
+        {
+            PipeWriter buffer = _pipe.Writer;
+            buffer.Write("Hello Worl"u8.ToArray());
+            await buffer.FlushAsync();
+
+            bool gotData = _pipe.Reader.TryRead(out ReadResult result);
+            Assert.True(gotData);
+
+            Assert.Equal("Hello Worl", Encoding.ASCII.GetString(result.Buffer.ToArray()));
+
+            // Advance past 'Hello ' and examine everything else
+            _pipe.Reader.AdvanceTo(result.Buffer.GetPosition(6), result.Buffer.End);
+
+            // Write so that the next ReadAsync will be unblocked
+            buffer.Write("d"u8.ToArray());
+            await buffer.FlushAsync();
+
+            result = await _pipe.Reader.ReadAsync();
+
+            Assert.Equal("World", Encoding.ASCII.GetString(result.Buffer.ToArray()));
+
+            // Previous examine is at the end of 'Worl', calling AdvanceTo without passing examined will unexamine (not externally visible)
+            // But more importantly, it will work and not throw that you're unexamining
+            _pipe.Reader.AdvanceTo(result.Buffer.Start);
+
+            // Double check that ReadAsync is still unblocked and works
+            result = await _pipe.Reader.ReadAsync();
+            Assert.Equal("World", Encoding.ASCII.GetString(result.Buffer.ToArray()));
+        }
+
+        [Fact]
+        public async Task AdvanceToWithExaminedCanUnExamine()
+        {
+            PipeWriter buffer = _pipe.Writer;
+            buffer.Write("Hello Worl"u8.ToArray());
+            await buffer.FlushAsync();
+
+            bool gotData = _pipe.Reader.TryRead(out ReadResult result);
+            Assert.True(gotData);
+
+            Assert.Equal("Hello Worl", Encoding.ASCII.GetString(result.Buffer.ToArray()));
+
+            // Advance past 'Hello ' and examine everything else
+            _pipe.Reader.AdvanceTo(result.Buffer.GetPosition(6), result.Buffer.End);
+
+            // Write so that the next ReadAsync will be unblocked
+            buffer.Write("d"u8.ToArray());
+            await buffer.FlushAsync();
+
+            result = await _pipe.Reader.ReadAsync();
+
+            Assert.Equal("World", Encoding.ASCII.GetString(result.Buffer.ToArray()));
+
+            // Previous examine is at the end of 'Worl', calling AdvanceTo without passing examined will unexamine (not externally visible)
+            // But more importantly, it will work and not throw that you're unexamining
+            _pipe.Reader.AdvanceTo(result.Buffer.Start, result.Buffer.GetPosition(1));
+
+            // Double check that ReadAsync is still unblocked and works
+            result = await _pipe.Reader.ReadAsync();
+            Assert.Equal("World", Encoding.ASCII.GetString(result.Buffer.ToArray()));
+        }
+
+        [Fact]
+        public async Task ExaminedCannotBeBeforeConsumed()
+        {
+            PipeWriter buffer = _pipe.Writer;
+            buffer.Write("Hello World"u8.ToArray());
+            await buffer.FlushAsync();
+
+            bool gotData = _pipe.Reader.TryRead(out ReadResult result);
+            Assert.True(gotData);
+
+            Assert.Equal("Hello World", Encoding.ASCII.GetString(result.Buffer.ToArray()));
+
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
+                () => _pipe.Reader.AdvanceTo(result.Buffer.GetPosition(6), result.Buffer.GetPosition(5)));
+            Assert.Equal("The examined position must be greater than or equal to the consumed position.", ex.Message);
+        }
+
         private bool IsTaskWithResult<T>(ValueTask<T> task)
         {
             return task == new ValueTask<T>(task.Result);

@@ -745,7 +745,7 @@ void InvokeUtil::SetValidField(CorElementType fldType,
                                OBJECTREF *target,
                                OBJECTREF *valueObj,
                                TypeHandle declaringType,
-                               CLR_BOOL *pIsClassInitialized) {
+                               BOOL *pIsClassInitialized) {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -789,7 +789,7 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         {
             pDeclMT->EnsureInstanceActive();
             pDeclMT->CheckRunClassInitThrowing();
-            *pIsClassInitialized = pDeclMT->IsClassInited();            
+            *pIsClassInitialized = pDeclMT->IsClassInited();
         }
         EX_CATCH_THROWABLE(&Throwable);
     }
@@ -969,7 +969,7 @@ void InvokeUtil::SetValidField(CorElementType fldType,
 
 // GetFieldValue
 // This method will return an ARG_SLOT containing the value of the field.
-OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJECTREF* target, TypeHandle declaringType, CLR_BOOL *pIsClassInitialized) {
+OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJECTREF* target, TypeHandle declaringType, BOOL *pIsClassInitialized) {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;

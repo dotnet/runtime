@@ -120,6 +120,7 @@ protected:
     PTR_SLink m_pHead;
     PTR_SLink m_pTail;
 
+    // as a generic data structure, friend to all specializations of cdac_data
     template<typename U> friend struct ::cdac_data;
 
     // get the list node within the object

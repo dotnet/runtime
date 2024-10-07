@@ -130,12 +130,14 @@ namespace System.Globalization
                 }
 
                 int startIndex, endIndex, jump;
+                ReadOnlySpan<char> remainingSource;
                 if (fromBeginning)
                 {
                     // Left to right, from zero to last possible index in the source string.
                     // Incrementing by one after each iteration. Stop condition is last possible index plus 1.
                     startIndex = 0;
                     endIndex = source.Length - target.Length + 1;
+                    remainingSource = source.Slice(endIndex);
                     jump = 1;
                 }
                 else
@@ -144,6 +146,7 @@ namespace System.Globalization
                     // Decrementing by one after each iteration. Stop condition is last possible index minus 1.
                     startIndex = source.Length - target.Length;
                     endIndex = -1;
+                    remainingSource = source.Slice(0, startIndex);
                     jump = -1;
                 }
 
@@ -190,6 +193,12 @@ namespace System.Globalization
                     return i;
 
                 Next: ;
+                }
+
+                // Before we return -1, check if the remaining source contains any special or non-Ascii characters.
+                if (remainingSource.ContainsAnyExcept(s_nonSpecialAsciiChars))
+                {
+                    goto InteropCall;
                 }
 
                 return -1;
@@ -246,12 +255,14 @@ namespace System.Globalization
                 }
 
                 int startIndex, endIndex, jump;
+                ReadOnlySpan<char> remainingSource;
                 if (fromBeginning)
                 {
                     // Left to right, from zero to last possible index in the source string.
                     // Incrementing by one after each iteration. Stop condition is last possible index plus 1.
                     startIndex = 0;
                     endIndex = source.Length - target.Length + 1;
+                    remainingSource = source.Slice(endIndex);
                     jump = 1;
                 }
                 else
@@ -260,6 +271,7 @@ namespace System.Globalization
                     // Decrementing by one after each iteration. Stop condition is last possible index minus 1.
                     startIndex = source.Length - target.Length;
                     endIndex = -1;
+                    remainingSource = source.Slice(0, startIndex);
                     jump = -1;
                 }
 
@@ -295,6 +307,12 @@ namespace System.Globalization
                     return i;
 
                 Next: ;
+                }
+
+                // Before we return -1, check if the remaining source contains any special or non-Ascii characters.
+                if (remainingSource.ContainsAnyExcept(s_nonSpecialAsciiChars))
+                {
+                    goto InteropCall;
                 }
 
                 return -1;
