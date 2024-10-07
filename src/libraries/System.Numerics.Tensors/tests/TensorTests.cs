@@ -1074,6 +1074,27 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(8, resultTensor[1, 3, 1]);
             Assert.Equal(9, resultTensor[1, 4, 0]);
             Assert.Equal(9, resultTensor[1, 4, 1]);
+
+            // stacking 2x2 tensors along dimention 1
+            Tensor<int> v1 = Tensor.Create([1, 2, 3, 4], [2, 2]);
+            Tensor<int> v2 = Tensor.Create([10, 20, 30, 40], [2, 2]);
+            
+            resultTensor = Tensor.StackAlongDimension(1, [v1, v2]);
+            
+            Assert.Equal(3, resultTensor.Rank);
+            Assert.Equal(2, resultTensor.Lengths[0]);
+            Assert.Equal(2, resultTensor.Lengths[1]);
+            Assert.Equal(2, resultTensor.Lengths[2]);
+            
+            Assert.Equal(1, resultTensor[0, 0, 0]);
+            Assert.Equal(2, resultTensor[0, 0, 1]);
+            Assert.Equal(10, resultTensor[0, 1, 0]);
+            Assert.Equal(20, resultTensor[0, 1, 1]);
+            
+            Assert.Equal(3, resultTensor[1, 0, 0]);
+            Assert.Equal(4, resultTensor[1, 0, 1]);
+            Assert.Equal(30, resultTensor[1, 1, 0]);
+            Assert.Equal(40, resultTensor[1, 1, 1]);
         }
 
         [Fact]
