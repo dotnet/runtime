@@ -130,7 +130,7 @@ namespace Microsoft.Win32
         ///  Occurs before the thread that listens for system events is terminated.
         ///  Delegates will be invoked on the events thread.
         /// </summary>
-        [Obsolete("Callbacks are not guaranteed to run before process exits. Use AppDomain.ProcessExit instead.")]
+        [Obsolete(Obsoletions.SystemEventsEventsThreadShutdownMessage, DiagnosticId = Obsoletions.SystemEventsEventsThreadShutdownDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static event EventHandler? EventsThreadShutdown
         {
             // Really only here for GDI+ initialization and shut down

@@ -113,6 +113,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0056`__ |  LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm. |
 |  __`SYSLIB0057`__ | Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates. |
 |  __`SYSLIB0058`__ | KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead. |
+|  __`SYSLIB0059`__ | Callbacks are not guaranteed to run before process exits. Use AppDomain.ProcessExit instead. |
 
 ## Analyzer Warnings
 
