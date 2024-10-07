@@ -2162,9 +2162,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             arg.AbiInfo.SetSplit(true);
             arg.AbiInfo.ByteOffset = 0;
             unsigned regNumIndex   = 0;
-            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
             {
-                const ABIPassingSegment& segment = abiInfo.Segment(i);
                 if (segment.IsPassedInRegister())
                 {
                     if (regNumIndex < MAX_ARG_REG_COUNT)
@@ -2187,10 +2186,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             m_hasRegArgs = true;
 
             unsigned regNumIndex = 0;
-            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
             {
-                const ABIPassingSegment& segment = abiInfo.Segment(i);
-
                 if (regNumIndex < MAX_ARG_REG_COUNT)
                 {
                     arg.AbiInfo.SetRegNum(regNumIndex, segment.GetRegister());
@@ -2976,9 +2973,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
         {
             bool fieldsMatch = true;
 
-            for (unsigned i = 0; i < arg->NewAbiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& seg : arg->NewAbiInfo.Segments())
             {
-                const ABIPassingSegment& seg = arg->NewAbiInfo.Segment(i);
                 if (seg.IsPassedInRegister())
                 {
                     unsigned fieldLclNum = lvaGetFieldLocal(varDsc, seg.Offset);
@@ -3119,9 +3115,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
         newArg = new (this, GT_FIELD_LIST) GenTreeFieldList();
 
-        for (unsigned i = 0; i < arg->NewAbiInfo.NumSegments; i++)
+        for (const ABIPassingSegment& seg : arg->NewAbiInfo.Segments())
         {
-            const ABIPassingSegment& seg = arg->NewAbiInfo.Segment(i);
             if (seg.IsPassedInRegister())
             {
                 var_types regType = seg.GetRegisterType();
