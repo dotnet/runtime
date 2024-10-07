@@ -1184,6 +1184,10 @@ DEFINE_METHOD(GENERICSHELPERS, CLASS, Class, NoSig)
 DEFINE_METHOD(GENERICSHELPERS, METHODWITHSLOTANDMODULE, MethodWithSlotAndModule, NoSig)
 DEFINE_METHOD(GENERICSHELPERS, CLASSWITHSLOTANDMODULE, ClassWithSlotAndModule, NoSig)
 
+DEFINE_CLASS(INITHELPERS, CompilerServices, InitHelpers)
+DEFINE_METHOD(INITHELPERS, INITCLASS, InitClass, NoSig)
+DEFINE_METHOD(INITHELPERS, INITINSTANTIATEDCLASS, InitInstantiatedClass, NoSig)
+
 DEFINE_CLASS_U(CompilerServices, GenericsHelpers+GenericHandleArgs, GenericHandleArgs)
 DEFINE_FIELD_U(signature, GenericHandleArgs, signature)
 DEFINE_FIELD_U(module, GenericHandleArgs, module)
