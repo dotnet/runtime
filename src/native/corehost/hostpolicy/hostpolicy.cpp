@@ -463,7 +463,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_main_with_output_buffer(const int ar
     else
     {
         trace::error(_X("Unknown command: %s"), g_init.host_command.c_str());
-        rc = StatusCode::LibHostUnknownCommand;
+        rc = StatusCode::LibHostInvalidArgs;
     }
 
     return rc;

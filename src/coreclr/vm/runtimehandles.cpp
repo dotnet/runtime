@@ -246,21 +246,6 @@ FCIMPL1(void, RuntimeTypeHandle::GetNextIntroducedMethod, MethodDesc ** ppMethod
 FCIMPLEND
 #include <optdefault.h>
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetCorElementType, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    return refType->GetType().GetSignatureCorElementType();
-}
-FCIMPLEND
-
 FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssemblyIfExists, ReflectClassBaseObject *pTypeUNSAFE)
 {
     FCALL_CONTRACT;
@@ -2616,17 +2601,14 @@ FCIMPL1(ReflectClassBaseObject*, RuntimeFieldHandle::GetApproxDeclaringType, Fie
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeFieldHandle::GetToken, ReflectFieldObject *pFieldUNSAFE) {
-    CONTRACTL {
+FCIMPL1(INT32, RuntimeFieldHandle::GetToken, FieldDesc* pField)
+{
+    CONTRACTL
+    {
         FCALL_CHECK;
+        PRECONDITION(pField != NULL);
     }
     CONTRACTL_END;
-
-    REFLECTFIELDREF refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
-    if (!refField)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    FieldDesc *pField = refField->GetField();
 
     INT32 tkFieldDef = (INT32)pField->GetMemberDef();
     _ASSERTE(!IsNilToken(tkFieldDef) || tkFieldDef == mdFieldDefNil);
