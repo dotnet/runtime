@@ -35,16 +35,13 @@ namespace System.Reflection.Emit
         public override LocalBuilder DeclareLocal(Type localType, bool pinned)
         {
             ArgumentNullException.ThrowIfNull(localType);
-
-            RuntimeLocalBuilder localBuilder;
-
-            RuntimeType? rtType = localType as RuntimeType;
-
-            if (rtType == null)
+            if (localType is not RuntimeType)
+            {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
+            }
 
-            localBuilder = new RuntimeLocalBuilder(m_localCount, localType, m_methodBuilder, pinned);
             // add the localType to local signature
+            RuntimeLocalBuilder localBuilder = new RuntimeLocalBuilder(m_localCount, localType, m_methodBuilder, pinned);
             m_localSignature.AddArgument(localType, pinned);
             m_localCount++;
             return localBuilder;
@@ -64,23 +61,24 @@ namespace System.Reflection.Emit
             DynamicMethod? dynMeth = meth as DynamicMethod;
             if (dynMeth == null)
             {
-                RuntimeMethodInfo? rtMeth = meth as RuntimeMethodInfo;
-                if (rtMeth == null)
+                RuntimeMethodInfo rtMeth = meth as RuntimeMethodInfo ??
                     throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(meth));
 
                 RuntimeType declaringType = rtMeth.GetRuntimeType();
-                if (declaringType != null && (declaringType.IsGenericType || declaringType.IsArray))
-                    token = GetTokenFor(rtMeth, declaringType);
-                else
-                    token = GetTokenFor(rtMeth);
+                token = declaringType != null && (declaringType.IsGenericType || declaringType.IsArray) ?
+                    GetTokenFor(rtMeth, declaringType) :
+                    GetTokenFor(rtMeth);
             }
             else
             {
                 // rule out not allowed operations on DynamicMethods
-                if (opcode.Equals(OpCodes.Ldtoken) || opcode.Equals(OpCodes.Ldftn) || opcode.Equals(OpCodes.Ldvirtftn))
+                if (opcode.Equals(OpCodes.Ldtoken) ||
+                    opcode.Equals(OpCodes.Ldftn) ||
+                    opcode.Equals(OpCodes.Ldvirtftn))
                 {
                     throw new ArgumentException(SR.Argument_InvalidOpCodeOnDynamicMethod);
                 }
+
                 token = GetTokenFor(dynMeth);
             }
 
@@ -112,18 +110,13 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(con);
 
-            RuntimeConstructorInfo? rtConstructor = con as RuntimeConstructorInfo;
-            if (rtConstructor == null)
+            RuntimeConstructorInfo rtConstructor = con as RuntimeConstructorInfo ??
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(con));
 
             RuntimeType declaringType = rtConstructor.GetRuntimeType();
-            int token;
-
-            if (declaringType != null && (declaringType.IsGenericType || declaringType.IsArray))
-                // need to sort out the stack size story
-                token = GetTokenFor(rtConstructor, declaringType);
-            else
-                token = GetTokenFor(rtConstructor);
+            int token = declaringType != null && (declaringType.IsGenericType || declaringType.IsArray) ?
+                GetTokenFor(rtConstructor, declaringType) : // need to sort out the stack size story
+                GetTokenFor(rtConstructor);
 
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -137,11 +130,7 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(type);
 
-            RuntimeType? rtType = type as RuntimeType;
-
-            if (rtType == null)
-                throw new ArgumentException(SR.Argument_MustBeRuntimeType);
-
+            RuntimeType rtType = type as RuntimeType ?? throw new ArgumentException(SR.Argument_MustBeRuntimeType);
             int token = GetTokenFor(rtType);
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -152,15 +141,12 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(field);
 
-            RuntimeFieldInfo? runtimeField = field as RuntimeFieldInfo;
-            if (runtimeField == null)
+            RuntimeFieldInfo runtimeField = field as RuntimeFieldInfo ??
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(field));
 
-            int token;
-            if (field.DeclaringType == null)
-                token = GetTokenFor(runtimeField);
-            else
-                token = GetTokenFor(runtimeField, runtimeField.GetRuntimeType());
+            int token = field.DeclaringType == null ?
+                GetTokenFor(runtimeField) :
+                GetTokenFor(runtimeField, runtimeField.GetRuntimeType());
 
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -280,7 +266,7 @@ namespace System.Reflection.Emit
             stackchange -= methodInfo.GetParameterTypes().Length;
             // Pop the this parameter if the method is non-static and the
             // instruction is not newobj.
-            if (!(methodInfo is SymbolMethod) && !methodInfo.IsStatic && !opcode.Equals(OpCodes.Newobj))
+            if (methodInfo is not SymbolMethod && !methodInfo.IsStatic && !opcode.Equals(OpCodes.Newobj))
                 stackchange--;
             // Pop the optional parameters off the stack.
             if (optionalParameterTypes != null)
@@ -783,11 +769,7 @@ namespace System.Reflection.Emit
             methodHandle = default;
             fieldHandle = default;
 
-            object? handle = m_scope[token];
-
-            if (handle == null)
-                throw new InvalidProgramException();
-
+            object handle = m_scope[token] ?? throw new InvalidProgramException();
             if (handle is RuntimeTypeHandle)
             {
                 typeHandle = ((RuntimeTypeHandle)handle).Value;
@@ -1010,7 +992,7 @@ namespace System.Reflection.Emit
             if (fromMethod == 0)
                 return (byte[]?)this[token];
 
-            if (!(this[token] is VarArgMethod vaMethod))
+            if (this[token] is not VarArgMethod vaMethod)
                 return null;
 
             return vaMethod.m_signature.GetSignature(true);

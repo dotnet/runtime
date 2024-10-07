@@ -1193,28 +1193,15 @@ namespace System
             return ReplaceCore(oldValue, newValue, culture?.CompareInfo, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
-        public string Replace(string oldValue, string? newValue, StringComparison comparisonType)
-        {
-            switch (comparisonType)
+        public string Replace(string oldValue, string? newValue, StringComparison comparisonType) =>
+            comparisonType switch
             {
-                case StringComparison.CurrentCulture:
-                case StringComparison.CurrentCultureIgnoreCase:
-                    return ReplaceCore(oldValue, newValue, CultureInfo.CurrentCulture.CompareInfo, GetCaseCompareOfComparisonCulture(comparisonType));
-
-                case StringComparison.InvariantCulture:
-                case StringComparison.InvariantCultureIgnoreCase:
-                    return ReplaceCore(oldValue, newValue, CompareInfo.Invariant, GetCaseCompareOfComparisonCulture(comparisonType));
-
-                case StringComparison.Ordinal:
-                    return Replace(oldValue, newValue);
-
-                case StringComparison.OrdinalIgnoreCase:
-                    return ReplaceCore(oldValue, newValue, CompareInfo.Invariant, CompareOptions.OrdinalIgnoreCase);
-
-                default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
-            }
-        }
+                StringComparison.CurrentCulture or StringComparison.CurrentCultureIgnoreCase => ReplaceCore(oldValue, newValue, CultureInfo.CurrentCulture.CompareInfo, GetCaseCompareOfComparisonCulture(comparisonType)),
+                StringComparison.InvariantCulture or StringComparison.InvariantCultureIgnoreCase => ReplaceCore(oldValue, newValue, CompareInfo.Invariant, GetCaseCompareOfComparisonCulture(comparisonType)),
+                StringComparison.Ordinal => Replace(oldValue, newValue),
+                StringComparison.OrdinalIgnoreCase => ReplaceCore(oldValue, newValue, CompareInfo.Invariant, CompareOptions.OrdinalIgnoreCase),
+                _ => throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType)),
+            };
 
         private string ReplaceCore(string oldValue, string? newValue, CompareInfo? ci, CompareOptions options)
         {

@@ -640,7 +640,7 @@ namespace System
 
         private static unsafe bool TryGetTimeZoneEntryFromRegistry(RegistryKey key, string name, out REG_TZI_FORMAT dtzi)
         {
-            if (!(key.GetValue(name, null) is byte[] regValue) || regValue.Length != sizeof(REG_TZI_FORMAT))
+            if (key.GetValue(name, null) is not byte[] regValue || regValue.Length != sizeof(REG_TZI_FORMAT))
             {
                 dtzi = default;
                 return false;

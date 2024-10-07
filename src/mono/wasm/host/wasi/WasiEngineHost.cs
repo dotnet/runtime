@@ -35,8 +35,6 @@ internal sealed class WasiEngineHost
 
     private async Task<int> RunAsync()
     {
-        string[] engineArgs = Array.Empty<string>();
-
         string engineBinary = _args.Host switch
         {
             WasmHost.Wasmtime => "wasmtime",
@@ -65,7 +63,8 @@ internal sealed class WasiEngineHost
             args.AddRange(["--env", "DOTNET_WASI_PRINT_EXIT_CODE=1"]);
         };
 
-        args.AddRange(engineArgs);
+        args.AddRange(_args.CommonConfig.HostArguments);
+
         args.Add("--");
 
         if (_args.IsSingleFileBundle)

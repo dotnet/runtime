@@ -1916,7 +1916,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 			MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
-			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
+			MonoClass *swift_error_ptr = swift_error ? mono_class_create_ptr (m_class_get_this_arg (swift_error)) : NULL;
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [pindex]);
 			if ((klass == swift_self || klass == swift_indirect_result) && sig->pinvoke) {
 				guint32 align;
@@ -2269,7 +2269,7 @@ gpointer
 mono_arch_get_swift_error (CallContext *ccontext, MonoMethodSignature *sig, int *arg_index)
 {
 	MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-	MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
+	MonoClass *swift_error_ptr = swift_error ? mono_class_create_ptr (m_class_get_this_arg (swift_error)) : NULL;
 	for (guint i = 0; i < sig->param_count + sig->hasthis; i++) {
 		MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 		if (klass && (klass == swift_error || klass == swift_error_ptr)) {
@@ -5086,6 +5086,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
 		}
+		case OP_ATOMIC_EXCHANGE_U1: {
+			guint8 *buf [16];
+
+			buf [0] = code;
+			arm_ldxrb (code, ARMREG_IP0, sreg1);
+			arm_stlxrb (code, ARMREG_IP1, sreg2, sreg1);
+			arm_cbnzw (code, ARMREG_IP1, buf [0]);
+
+			arm_dmb (code, ARM_DMB_ISH);
+			arm_movx (code, dreg, ARMREG_IP0);
+			break;
+		}
+		case OP_ATOMIC_EXCHANGE_U2: {
+			guint8 *buf [16];
+
+			buf [0] = code;
+			arm_ldxrh (code, ARMREG_IP0, sreg1);
+			arm_stlxrh (code, ARMREG_IP1, sreg2, sreg1);
+			arm_cbnzw (code, ARMREG_IP1, buf [0]);
+
+			arm_dmb (code, ARM_DMB_ISH);
+			arm_movx (code, dreg, ARMREG_IP0);
+			break;
+		}
 		case OP_ATOMIC_EXCHANGE_I4: {
 			guint8 *buf [16];
 
@@ -5106,6 +5130,34 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_stlxrx (code, ARMREG_IP1, sreg2, sreg1);
 			arm_cbnzw (code, ARMREG_IP1, buf [0]);
 
+			arm_dmb (code, ARM_DMB_ISH);
+			arm_movx (code, dreg, ARMREG_IP0);
+			break;
+		}
+		case OP_ATOMIC_CAS_U1: {
+			guint8 *buf [16];
+			buf [0] = code;
+			arm_ldxrb (code, ARMREG_IP0, sreg1);
+			arm_cmpw (code, ARMREG_IP0, ins->sreg3);
+			buf [1] = code;
+			arm_bcc (code, ARMCOND_NE, 0);
+			arm_stlxrb(code, ARMREG_IP1, sreg2, sreg1);
+			arm_cbnzw (code, ARMREG_IP1, buf [0]);
+			arm_patch_rel (buf [1], code, MONO_R_ARM64_BCC);
+			arm_dmb (code, ARM_DMB_ISH);
+			arm_movx (code, dreg, ARMREG_IP0);
+			break;
+		}
+		case OP_ATOMIC_CAS_U2: {
+			guint8 *buf [16];
+			buf [0] = code;
+			arm_ldxrh (code, ARMREG_IP0, sreg1);
+			arm_cmpw (code, ARMREG_IP0, ins->sreg3);
+			buf [1] = code;
+			arm_bcc (code, ARMCOND_NE, 0);
+			arm_stlxrh(code, ARMREG_IP1, sreg2, sreg1);
+			arm_cbnzw (code, ARMREG_IP1, buf [0]);
+			arm_patch_rel (buf [1], code, MONO_R_ARM64_BCC);
 			arm_dmb (code, ARM_DMB_ISH);
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
@@ -6935,8 +6987,12 @@ mono_arch_opcode_supported (int opcode)
 	switch (opcode) {
 	case OP_ATOMIC_ADD_I4:
 	case OP_ATOMIC_ADD_I8:
+	case OP_ATOMIC_EXCHANGE_U1:
+	case OP_ATOMIC_EXCHANGE_U2:
 	case OP_ATOMIC_EXCHANGE_I4:
 	case OP_ATOMIC_EXCHANGE_I8:
+	case OP_ATOMIC_CAS_U1:
+	case OP_ATOMIC_CAS_U2:
 	case OP_ATOMIC_CAS_I4:
 	case OP_ATOMIC_CAS_I8:
 	case OP_ATOMIC_LOAD_I1:

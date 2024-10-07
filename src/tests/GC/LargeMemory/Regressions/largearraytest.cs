@@ -7,10 +7,12 @@
  */
 
 using System;
+using Xunit;
 
 public class LargeArrayTest {
 
-    public static int Main() {
+    [Fact]
+    public static int TestEntryPoint() {
 
         for (int i=0; i<= 100; i++) {
             try {

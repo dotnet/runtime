@@ -2292,9 +2292,8 @@ void LinearScan::buildIntervals()
             }
 
             const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
-            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& seg : abiInfo.Segments())
             {
-                const ABIPassingSegment& seg = abiInfo.Segment(i);
                 if (seg.IsPassedInRegister())
                 {
                     RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
@@ -2841,10 +2840,7 @@ void LinearScan::buildIntervals()
 #ifdef HAS_MORE_THAN_64_REGISTERS
     else if (availableRegCount < (sizeof(regMaskTP) * 8))
     {
-        // Mask out the bits that are between (8 * regMaskTP) ~ availableRegCount
-        // Subtract one extra for stack.
-        unsigned topRegCount = availableRegCount - sizeof(regMaskSmall) * 8 - 1;
-        actualRegistersMask  = regMaskTP(~RBM_NONE, (1ULL << topRegCount) - 1);
+        actualRegistersMask = regMaskTP(~RBM_NONE, availableMaskRegs);
     }
 #endif
     else
@@ -3682,12 +3678,17 @@ int LinearScan::BuildOperandUses(GenTree* node, SingleTypeRegSet candidates)
     {
         GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
 
+        size_t numArgs = hwintrinsic->GetOperandCount();
         if (hwintrinsic->OperIsMemoryLoad())
         {
+#ifdef TARGET_ARM64
+            if (numArgs == 2)
+            {
+                return BuildAddrUses(hwintrinsic->Op(1)) + BuildOperandUses(hwintrinsic->Op(2), candidates);
+            }
+#endif
             return BuildAddrUses(hwintrinsic->Op(1));
         }
-
-        size_t numArgs = hwintrinsic->GetOperandCount();
 
         if (numArgs != 1)
         {
@@ -3844,9 +3845,25 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
             return 0;
         }
     }
+
+    // Don't mark as delay free if there is a mismatch in register types
+    bool addDelayFreeUses = false;
+    // Multi register nodes should not go via this route.
+    assert(!node->IsMultiRegNode());
+    // Multi register nodes should always use fp registers (this includes vectors).
+    assert(varTypeUsesFloatReg(node->TypeGet()) || !node->IsMultiRegNode());
+    if (rmwNode == nullptr || varTypeUsesSameRegType(rmwNode->TypeGet(), node->TypeGet()) ||
+        (rmwNode->IsMultiRegNode() && varTypeUsesFloatReg(node->TypeGet())))
+    {
+        addDelayFreeUses = true;
+    }
+
     if (use != nullptr)
     {
-        AddDelayFreeUses(use, rmwNode);
+        if (addDelayFreeUses)
+        {
+            AddDelayFreeUses(use, rmwNode);
+        }
         if (useRefPositionRef != nullptr)
         {
             *useRefPositionRef = use;
@@ -3862,15 +3879,20 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
     if (addrMode->HasBase() && !addrMode->Base()->isContained())
     {
         use = BuildUse(addrMode->Base(), candidates);
-        AddDelayFreeUses(use, rmwNode);
-
+        if (addDelayFreeUses)
+        {
+            AddDelayFreeUses(use, rmwNode);
+        }
         srcCount++;
     }
+
     if (addrMode->HasIndex() && !addrMode->Index()->isContained())
     {
         use = BuildUse(addrMode->Index(), candidates);
-        AddDelayFreeUses(use, rmwNode);
-
+        if (addDelayFreeUses)
+        {
+            AddDelayFreeUses(use, rmwNode);
+        }
         srcCount++;
     }
 

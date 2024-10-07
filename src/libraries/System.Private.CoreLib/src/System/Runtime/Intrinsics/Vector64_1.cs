@@ -148,7 +148,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the bitwise-and of two vectors.</summary>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-and with <paramref name="left" />.</param>
-        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -165,7 +165,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the bitwise-or of two vectors.</summary>
         /// <param name="left">The vector to bitwise-or with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-or with <paramref name="left" />.</param>
-        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -389,7 +389,22 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements are the unary negation of the corresponding elements in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static Vector64<T> operator -(Vector64<T> vector) => Zero - vector;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<T> operator -(Vector64<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return vector ^ Vector64.Create(-0.0f).As<float, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return vector ^ Vector64.Create(-0.0).As<double, T>();
+            }
+            else
+            {
+                return Zero - vector;
+            }
+        }
 
         /// <summary>Returns a given vector unchanged.</summary>
         /// <param name="value">The vector.</param>

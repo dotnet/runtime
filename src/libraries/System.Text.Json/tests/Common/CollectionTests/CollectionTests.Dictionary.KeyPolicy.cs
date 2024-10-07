@@ -253,7 +253,6 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal("2", value);
 
-
             value = await Serializer.SerializeWrapper(new ClassWithEnumProperties(), options);
 
             Assert.Equal("{\"TestEnumProperty1\":2,\"TestEnumProperty2\":1}", value);
@@ -280,7 +279,7 @@ namespace System.Text.Json.Serialization.Tests
 
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(dict, options));
 
-            Assert.Contains(typeof(CustomJsonNamingPolicy).ToString(), ex.Message);
+            Assert.Contains("uses unsupported identifier", ex.Message);
         }
 
         [Fact]

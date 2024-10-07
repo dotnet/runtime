@@ -605,10 +605,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
-    // Make sure that the return register is reported as live GC-ref so that any GC that kicks in while
-    // executing GS cookie check will not collect the object pointed to by REG_INTRET (R0).
-    if (!pushReg && (compiler->info.compRetNativeType == TYP_REF))
-        gcInfo.gcRegGCrefSetCur |= RBM_INTRET;
+    assert(GetEmitter()->emitGCDisabled());
 
     // We need two temporary registers, to load the GS cookie values and compare them. We can't use
     // any argument registers if 'pushReg' is true (meaning we have a JMP call). They should be
@@ -1508,8 +1505,18 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->GetRegNum();
 
-    inst_Mov(targetType, targetReg, tree->gtSrcReg, /* canSkip */ true);
-    genTransferRegGCState(targetReg, tree->gtSrcReg);
+#ifdef TARGET_ARM64
+    if (varTypeIsMask(targetType))
+    {
+        assert(tree->gtSrcReg == REG_FFR);
+        GetEmitter()->emitIns_R(INS_sve_rdffr, EA_SCALABLE, targetReg);
+    }
+    else
+#endif
+    {
+        inst_Mov(targetType, targetReg, tree->gtSrcReg, /* canSkip */ true);
+        genTransferRegGCState(targetReg, tree->gtSrcReg);
+    }
 
     genProduceReg(tree);
 }
@@ -3496,9 +3503,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         for (CallArg& arg : call->gtArgs.Args())
         {
-            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& seg : arg.NewAbiInfo.Segments())
             {
-                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
                 if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
                 {
                     JITDUMP("Tail call node:\n");
@@ -3731,9 +3737,8 @@ void CodeGen::genJmpPlaceVarArgs()
     for (unsigned varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
-        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+        for (const ABIPassingSegment& segment : abiInfo.Segments())
         {
-            const ABIPassingSegment& segment = abiInfo.Segment(i);
             if (segment.IsPassedInRegister())
             {
                 potentialArgs &= ~segment.GetRegisterMask();

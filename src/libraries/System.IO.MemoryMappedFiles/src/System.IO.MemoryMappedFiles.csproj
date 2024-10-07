@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
@@ -86,11 +86,13 @@
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Windows.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser' ">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi' ">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Close.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs"
              Link="Common\Interop\Unix\Interop.Fcntl.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
@@ -119,6 +121,8 @@
              Link="Common\Interop\Unix\Interop.MAdvise.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ShmOpen.cs"
              Link="Common\Interop\Unix\Interop.ShmOpen.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MemfdCreate.cs"
+             Link="Common\Interop\Unix\Interop.MemfdCreate.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Unlink.cs"
              Link="Common\Interop\Unix\Interop.Unlink.cs" />
   </ItemGroup>

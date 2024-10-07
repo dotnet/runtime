@@ -794,7 +794,7 @@ namespace System.Net.Http
             if (tunnelResponse.StatusCode != HttpStatusCode.OK)
             {
                 tunnelResponse.Dispose();
-                throw new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.Format(SR.net_http_proxy_tunnel_returned_failure_status_code, _proxyUri, (int)tunnelResponse.StatusCode));
+                throw new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.Format(SR.net_http_proxy_tunnel_returned_failure_status_code, _proxyUri, (int)tunnelResponse.StatusCode), statusCode: tunnelResponse.StatusCode);
             }
 
             try

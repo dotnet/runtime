@@ -22,7 +22,10 @@ namespace ILCompiler
             if (owningType.IsIntrinsic && !owningType.HasInstantiation)
             {
                 var owningMdType = (MetadataType)owningType;
-                string ns = owningMdType.ContainingType?.Namespace ?? owningMdType.Namespace;
+                DefType containingType = owningMdType.ContainingType;
+                string ns = containingType?.ContainingType?.Namespace ??
+                            containingType?.Namespace ??
+                            owningMdType.Namespace;
                 return method.Context.Target.Architecture switch
                 {
                     TargetArchitecture.ARM64 => ns == "System.Runtime.Intrinsics.Arm",

@@ -493,7 +493,7 @@ namespace System.IO
                 return Task.CompletedTask;
 
             // If destination is not a memory stream, write there asynchronously:
-            if (!(destination is MemoryStream memStrDest))
+            if (destination is not MemoryStream memStrDest)
                 return destination.WriteAsync(_buffer, pos, n, cancellationToken);
 
             try

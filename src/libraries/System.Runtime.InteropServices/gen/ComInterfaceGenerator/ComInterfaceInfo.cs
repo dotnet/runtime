@@ -2,12 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using InterfaceInfo = (Microsoft.Interop.ComInterfaceInfo InterfaceInfo, Microsoft.CodeAnalysis.INamedTypeSymbol Symbol);
 using DiagnosticOrInterfaceInfo = Microsoft.Interop.DiagnosticOr<(Microsoft.Interop.ComInterfaceInfo InterfaceInfo, Microsoft.CodeAnalysis.INamedTypeSymbol Symbol)>;
+using System.Diagnostics;
 
 namespace Microsoft.Interop
 {
@@ -25,6 +28,7 @@ namespace Microsoft.Interop
         public Guid InterfaceId { get; init; }
         public ComInterfaceOptions Options { get; init; }
         public Location DiagnosticLocation { get; init; }
+        public bool IsExternallyDefined { get; init; }
 
         private ComInterfaceInfo(
             ManagedTypeInfo type,
@@ -90,8 +94,8 @@ namespace Microsoft.Interop
             if (!OptionsAreValid(symbol, syntax, interfaceAttributeData, baseAttributeData, out DiagnosticInfo? optionsDiagnostic))
                 return DiagnosticOrInterfaceInfo.From(optionsDiagnostic);
 
-            return DiagnosticOrInterfaceInfo.From(
-                (new ComInterfaceInfo(
+            InterfaceInfo info = (
+                new ComInterfaceInfo(
                     ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol),
                     symbol.ToDisplayString(),
                     baseSymbol?.ToDisplayString(),
@@ -101,7 +105,72 @@ namespace Microsoft.Interop
                     guid ?? Guid.Empty,
                     interfaceAttributeData.Options,
                     syntax.Identifier.GetLocation()),
-                symbol));
+                symbol);
+
+            // Now that we've validated all of our requirements, we will check for some non-blocking scenarios
+            // and emit diagnostics.
+            ImmutableArray<DiagnosticInfo>.Builder nonFatalDiagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
+
+            // If there is a base interface and it is defined in another assembly,
+            // warn the user that they are in a scenario that has pitfalls.
+            // We check that either the base interface symbol is defined in a non-source assembly (ie an assembly referenced as metadata)
+            // or if it is defined in a different source assembly (ie another C# project in the same solution when loaded in an IDE)
+            // as Roslyn can provide the symbol information in either shape to us depending on the scenario.
+            if (baseSymbol is not null
+                && (baseSymbol.ContainingAssembly is not ISourceAssemblySymbol
+                    || (baseSymbol.ContainingAssembly is ISourceAssemblySymbol { Compilation: Compilation baseComp }
+                        && baseComp != env.Compilation)))
+            {
+                nonFatalDiagnostics.Add(DiagnosticInfo.Create(
+                    GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly,
+                    syntax.Identifier.GetLocation(),
+                    symbol.ToDisplayString(),
+                    baseSymbol.ToDisplayString()));
+            }
+
+            if (nonFatalDiagnostics.Count != 0)
+            {
+                // Report non-fatal diagnostics with the result.
+                return DiagnosticOrInterfaceInfo.From(info, nonFatalDiagnostics.ToArray());
+            }
+
+            // We have no non-fatal diagnostics, so return the result.
+            return DiagnosticOrInterfaceInfo.From(info);
+        }
+
+        public static ImmutableArray<InterfaceInfo> CreateInterfaceInfoForBaseInterfacesInOtherCompilations(
+            INamedTypeSymbol symbol)
+        {
+            if (!TryGetBaseComInterface(symbol, null, out INamedTypeSymbol? baseSymbol, out _) || baseSymbol is null)
+                return ImmutableArray<InterfaceInfo>.Empty;
+
+            if (SymbolEqualityComparer.Default.Equals(baseSymbol.ContainingAssembly, symbol.ContainingAssembly))
+                return ImmutableArray<InterfaceInfo>.Empty;
+
+            ImmutableArray<InterfaceInfo>.Builder builder = ImmutableArray.CreateBuilder<InterfaceInfo>();
+            while (baseSymbol is not null)
+            {
+                var thisSymbol = baseSymbol;
+                TryGetBaseComInterface(thisSymbol, null, out baseSymbol, out _);
+                var interfaceAttributeData = GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(thisSymbol);
+                builder.Add((
+                    new ComInterfaceInfo(
+                        ManagedTypeInfo.CreateTypeInfoForTypeSymbol(thisSymbol),
+                        thisSymbol.ToDisplayString(),
+                        baseSymbol?.ToDisplayString(),
+                        null!,
+                        default,
+                        default,
+                        Guid.Empty,
+                        interfaceAttributeData.Options,
+                        Location.None)
+                    {
+                        IsExternallyDefined = true
+                    },
+                    thisSymbol));
+            }
+
+            return builder.ToImmutable();
         }
 
         private static bool IsInPartialContext(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, [NotNullWhen(false)] out DiagnosticInfo? diagnostic)
@@ -219,8 +288,9 @@ namespace Microsoft.Interop
         /// <summary>
         /// Returns true if there is 0 or 1 base Com interfaces (i.e. the inheritance is valid), and returns false when there are 2 or more base Com interfaces and sets <paramref name="diagnostic"/>.
         /// </summary>
-        private static bool TryGetBaseComInterface(INamedTypeSymbol comIface, InterfaceDeclarationSyntax syntax, out INamedTypeSymbol? baseComIface, [NotNullWhen(false)] out DiagnosticInfo? diagnostic)
+        private static bool TryGetBaseComInterface(INamedTypeSymbol comIface, InterfaceDeclarationSyntax? syntax, out INamedTypeSymbol? baseComIface, [NotNullWhen(false)] out DiagnosticInfo? diagnostic)
         {
+            diagnostic = null;
             baseComIface = null;
             foreach (var implemented in comIface.Interfaces)
             {
@@ -230,17 +300,23 @@ namespace Microsoft.Interop
                     {
                         if (baseComIface is not null)
                         {
-                            diagnostic = DiagnosticInfo.Create(
-                                GeneratorDiagnostics.MultipleComInterfaceBaseTypes,
-                                syntax.Identifier.GetLocation(),
-                                comIface.ToDisplayString());
+                            // If we're inspecting an external symbol,
+                            // we don't have syntax.
+                            // In that case, don't report a diagnostic. One will be reported
+                            // when building that symbol's compilation.
+                            if (syntax is not null)
+                            {
+                                diagnostic = DiagnosticInfo.Create(
+                                    GeneratorDiagnostics.MultipleComInterfaceBaseTypes,
+                                    syntax.Identifier.GetLocation(),
+                                    comIface.ToDisplayString());
+                            }
                             return false;
                         }
                         baseComIface = implemented;
                     }
                 }
             }
-            diagnostic = null;
             return true;
         }
 

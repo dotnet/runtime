@@ -46,6 +46,7 @@
 #include <openssl/store.h>
 #include <openssl/params.h>
 #include <openssl/core_names.h>
+#include <openssl/kdf.h>
 #endif
 
 #if HAVE_OPENSSL_ENGINE
@@ -101,6 +102,24 @@ void ERR_put_error(int32_t lib, int32_t func, int32_t reason, const char* file, 
 #define ERR_R_UNSUPPORTED 0x8010C
 #else
 c_static_assert(ERR_R_UNSUPPORTED == 0x8010C);
+#endif
+
+#ifndef EVP_KDF_HKDF_MODE_EXTRACT_AND_EXPAND
+#define EVP_KDF_HKDF_MODE_EXTRACT_AND_EXPAND 0
+#else
+c_static_assert(EVP_KDF_HKDF_MODE_EXTRACT_AND_EXPAND == 0);
+#endif
+
+#ifndef EVP_KDF_HKDF_MODE_EXTRACT_ONLY
+#define EVP_KDF_HKDF_MODE_EXTRACT_ONLY 1
+#else
+c_static_assert(EVP_KDF_HKDF_MODE_EXTRACT_ONLY == 1);
+#endif
+
+#ifndef EVP_KDF_HKDF_MODE_EXPAND_ONLY
+#define EVP_KDF_HKDF_MODE_EXPAND_ONLY 2
+#else
+c_static_assert(EVP_KDF_HKDF_MODE_EXPAND_ONLY == 2);
 #endif
 
 #if defined FEATURE_DISTRO_AGNOSTIC_SSL || OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
@@ -225,7 +244,6 @@ extern bool g_libSslUses32BitTime;
 
 #define FOR_ALL_OPENSSL_FUNCTIONS \
     REQUIRED_FUNCTION(a2d_ASN1_OBJECT) \
-    REQUIRED_FUNCTION(ASN1_BIT_STRING_free) \
     REQUIRED_FUNCTION(ASN1_d2i_bio) \
     REQUIRED_FUNCTION(ASN1_i2d_bio) \
     REQUIRED_FUNCTION(ASN1_GENERALIZEDTIME_free) \
@@ -280,9 +298,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(CRYPTO_malloc) \
     LEGACY_FUNCTION(CRYPTO_num_locks) \
     LEGACY_FUNCTION(CRYPTO_set_locking_callback) \
-    REQUIRED_FUNCTION(d2i_ASN1_BIT_STRING) \
     REQUIRED_FUNCTION(d2i_BASIC_CONSTRAINTS) \
-    REQUIRED_FUNCTION(d2i_EXTENDED_KEY_USAGE) \
     REQUIRED_FUNCTION(d2i_OCSP_RESPONSE) \
     REQUIRED_FUNCTION(d2i_PKCS12_fp) \
     REQUIRED_FUNCTION(d2i_PKCS7) \
@@ -411,6 +427,11 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EVP_DigestSqueeze) \
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
     REQUIRED_FUNCTION(EVP_get_digestbyname) \
+    LIGHTUP_FUNCTION(EVP_KDF_CTX_free) \
+    LIGHTUP_FUNCTION(EVP_KDF_CTX_new) \
+    LIGHTUP_FUNCTION(EVP_KDF_derive) \
+    LIGHTUP_FUNCTION(EVP_KDF_fetch) \
+    LIGHTUP_FUNCTION(EVP_KDF_free) \
     LIGHTUP_FUNCTION(EVP_MAC_fetch) \
     LIGHTUP_FUNCTION(EVP_MAC_final) \
     LIGHTUP_FUNCTION(EVP_MAC_free) \
@@ -479,7 +500,6 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EVP_sha3_512) \
     LIGHTUP_FUNCTION(EVP_shake128) \
     LIGHTUP_FUNCTION(EVP_shake256) \
-    REQUIRED_FUNCTION(EXTENDED_KEY_USAGE_free) \
     REQUIRED_FUNCTION(GENERAL_NAMES_free) \
     REQUIRED_FUNCTION(HMAC) \
     LEGACY_FUNCTION(HMAC_CTX_cleanup) \
@@ -545,6 +565,8 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(OSSL_STORE_load) \
     LIGHTUP_FUNCTION(OSSL_STORE_open_ex) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_octet_string) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_construct_utf8_string) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_construct_int) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_int32) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_end) \
     REQUIRED_FUNCTION(PKCS8_PRIV_KEY_INFO_free) \
@@ -770,7 +792,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 // Redefine all calls to OpenSSL functions as calls through pointers that are set
 // to the functions from the libssl.so selected by the shim.
 #define a2d_ASN1_OBJECT a2d_ASN1_OBJECT_ptr
-#define ASN1_BIT_STRING_free ASN1_BIT_STRING_free_ptr
 #define ASN1_GENERALIZEDTIME_free ASN1_GENERALIZEDTIME_free_ptr
 #define ASN1_d2i_bio ASN1_d2i_bio_ptr
 #define ASN1_i2d_bio ASN1_i2d_bio_ptr
@@ -825,9 +846,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define CRYPTO_malloc CRYPTO_malloc_ptr
 #define CRYPTO_num_locks CRYPTO_num_locks_ptr
 #define CRYPTO_set_locking_callback CRYPTO_set_locking_callback_ptr
-#define d2i_ASN1_BIT_STRING d2i_ASN1_BIT_STRING_ptr
 #define d2i_BASIC_CONSTRAINTS d2i_BASIC_CONSTRAINTS_ptr
-#define d2i_EXTENDED_KEY_USAGE d2i_EXTENDED_KEY_USAGE_ptr
 #define d2i_OCSP_RESPONSE d2i_OCSP_RESPONSE_ptr
 #define d2i_PKCS12_fp d2i_PKCS12_fp_ptr
 #define d2i_PKCS7 d2i_PKCS7_ptr
@@ -957,6 +976,11 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
 #define EVP_md5 EVP_md5_ptr
+#define EVP_KDF_CTX_free EVP_KDF_CTX_free_ptr
+#define EVP_KDF_CTX_new EVP_KDF_CTX_new_ptr
+#define EVP_KDF_derive EVP_KDF_derive_ptr
+#define EVP_KDF_fetch EVP_KDF_fetch_ptr
+#define EVP_KDF_free EVP_KDF_free_ptr
 #define EVP_MAC_fetch EVP_MAC_fetch_ptr
 #define EVP_MAC_final EVP_MAC_final_ptr
 #define EVP_MAC_free EVP_MAC_free_ptr
@@ -1024,7 +1048,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_sha3_512 EVP_sha3_512_ptr
 #define EVP_shake128 EVP_shake128_ptr
 #define EVP_shake256 EVP_shake256_ptr
-#define EXTENDED_KEY_USAGE_free EXTENDED_KEY_USAGE_free_ptr
 #define GENERAL_NAMES_free GENERAL_NAMES_free_ptr
 #define HMAC HMAC_ptr
 #define HMAC_CTX_cleanup HMAC_CTX_cleanup_ptr
@@ -1091,6 +1114,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define OSSL_STORE_load OSSL_STORE_load_ptr
 #define OSSL_STORE_open_ex OSSL_STORE_open_ex_ptr
 #define OSSL_PARAM_construct_octet_string OSSL_PARAM_construct_octet_string_ptr
+#define OSSL_PARAM_construct_utf8_string OSSL_PARAM_construct_utf8_string_ptr
+#define OSSL_PARAM_construct_int OSSL_PARAM_construct_int_ptr
 #define OSSL_PARAM_construct_int32 OSSL_PARAM_construct_int32_ptr
 #define OSSL_PARAM_construct_end OSSL_PARAM_construct_end_ptr
 #define PKCS8_PRIV_KEY_INFO_free PKCS8_PRIV_KEY_INFO_free_ptr

@@ -111,6 +111,7 @@ HRESULT EEConfig::Init()
     fJitFramed = false;
     fJitMinOpts = false;
     fJitEnableOptionalRelocs = false;
+    fDisableOptimizedThreadStaticAccess = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
     fStressLog = false;
@@ -424,6 +425,8 @@ HRESULT EEConfig::sync()
     iGCConservative =  (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConservative) != 0);
 #endif // FEATURE_CONSERVATIVE_GC
 
+    fCheckDoubleReporting = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_CheckDoubleReporting, iGCStress ? 1 : 0) != 0);
+
 #ifdef HOST_64BIT
     iGCAllowVeryLargeObjects = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_gcAllowVeryLargeObjects) != 0);
 #endif
@@ -502,6 +505,8 @@ HRESULT EEConfig::sync()
     fJitEnableOptionalRelocs = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JitEnableOptionalRelocs) == 1);
     iJitOptimizeType      =  CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitOptimizeType);
     if (iJitOptimizeType > OPT_RANDOM)     iJitOptimizeType = OPT_DEFAULT;
+
+    fDisableOptimizedThreadStaticAccess = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableOptimizedThreadStaticAccess) != 0;
 
 #ifdef TARGET_X86
     fPInvokeRestoreEsp = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Jit_NetFx40PInvokeStackResilience);

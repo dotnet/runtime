@@ -127,20 +127,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected override void ComputeValueTypeFieldPadding()
-        {
-            DefType defType = _type as DefType;
-
-            // Types of indeterminate sizes don't have computed ValueTypeFieldPadding
-            if (defType != null && defType.InstanceByteCount.IsIndeterminate)
-            {
-                Debug.Assert(_type.IsCanonicalSubtype(CanonicalFormKind.Universal));
-                return;
-            }
-
-            base.ComputeValueTypeFieldPadding();
-        }
-
         public override int ClassCode => -1798018602;
     }
 }

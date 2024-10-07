@@ -135,18 +135,23 @@ namespace System
             Justification = "Arrays of reference types are safe to create.")]
         private static Attribute[] Instantiate(IEnumerable<CustomAttributeData> cads, Type actualElementType)
         {
-            LowLevelList<Attribute> attributes = new LowLevelList<Attribute>();
+            ArrayBuilder<Attribute> attributes = default;
             foreach (CustomAttributeData cad in cads)
             {
                 Attribute instantiatedAttribute = cad.Instantiate();
                 attributes.Add(instantiatedAttribute);
             }
-            int count = attributes.Count;
-            Attribute[] result = actualElementType.ContainsGenericParameters
-                ? new Attribute[count]
-                : (Attribute[])Array.CreateInstance(actualElementType, count);
-            attributes.CopyTo(result, 0);
-            return result;
+
+            if (actualElementType.ContainsGenericParameters)
+            {
+                return attributes.ToArray();
+            }
+            else
+            {
+                Attribute[] result = (Attribute[])Array.CreateInstance(actualElementType, attributes.Count);
+                attributes.CopyTo(result);
+                return result;
+            }
         }
     }
 }

@@ -151,7 +151,7 @@
 //    Also, initialize all the OBJECTREF's first.  Like this:
 //
 //    FCIMPL4(Object*, COMNlsInfo::nativeChangeCaseString, LocaleIDObject* localeUNSAFE,
-//            INT_PTR pNativeTextInfo, StringObject* pStringUNSAFE, CLR_BOOL bIsToUpper)
+//            INT_PTR pNativeTextInfo, StringObject* pStringUNSAFE, FC_BOOL_ARG bIsToUpper)
 //    {
 //      [ignoring CONTRACT for now]
 //      struct _gc
@@ -1242,29 +1242,9 @@ public:
         return 0;                                               \
     }
 
-//==============================================================================================
-// Like FCThrow but can be used for a VOID-returning FCall. The only
-// difference is in the "return" statement.
-//==============================================================================================
-#define FCThrowVoid(reKind) FCThrowExVoid(reKind, 0, 0, 0, 0)
-
-//==============================================================================================
-// This version lets you attach a message with inserts (similar to
-// COMPlusThrow()).
-//==============================================================================================
-#define FCThrowExVoid(reKind, resID, arg1, arg2, arg3)          \
-    {                                                           \
-        while (NULL ==                                          \
-            __FCThrow(__me, reKind, resID, arg1, arg2, arg3)) {}; \
-        return;                                                 \
-    }
-
 // Use FCThrowRes to throw an exception with a localized error message from the
 // ResourceManager in managed code.
 #define FCThrowRes(reKind, resourceName) FCThrowArgumentEx(reKind, NULL, resourceName)
-#define FCThrowArgumentNull(argName) FCThrowArgumentEx(kArgumentNullException, argName, NULL)
-#define FCThrowArgumentOutOfRange(argName, message) FCThrowArgumentEx(kArgumentOutOfRangeException, argName, message)
-#define FCThrowArgument(argName, message) FCThrowArgumentEx(kArgumentException, argName, message)
 
 #define FCThrowArgumentEx(reKind, argName, resourceName)        \
     {                                                           \
@@ -1276,9 +1256,6 @@ public:
 // Use FCThrowRes to throw an exception with a localized error message from the
 // ResourceManager in managed code.
 #define FCThrowResVoid(reKind, resourceName) FCThrowArgumentVoidEx(reKind, NULL, resourceName)
-#define FCThrowArgumentNullVoid(argName) FCThrowArgumentVoidEx(kArgumentNullException, argName, NULL)
-#define FCThrowArgumentOutOfRangeVoid(argName, message) FCThrowArgumentVoidEx(kArgumentOutOfRangeException, argName, message)
-#define FCThrowArgumentVoid(argName, message) FCThrowArgumentVoidEx(kArgumentException, argName, message)
 
 #define FCThrowArgumentVoidEx(reKind, argName, resourceName)    \
     {                                                           \
@@ -1335,7 +1312,10 @@ typedef UINT32 FC_UINT8_RET;
 typedef INT32 FC_INT16_RET;
 typedef UINT32 FC_UINT16_RET;
 
+// Small primitive args are not widened.
+typedef INT32 FC_BOOL_ARG;
 
+#define FC_ACCESS_BOOL(x) ((BYTE)x != 0)
 
 // The fcall entrypoints has to be at unique addresses. Use this helper macro to make
 // the code of the fcalls unique if you get assert in ecall.cpp that mentions it.
