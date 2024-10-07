@@ -7,7 +7,7 @@ namespace System.Buffers
 {
     public static unsafe partial class BoundedMemory
     {
-        private static DefaultImplementation<T> AllocateWithoutDataPopulationDefault<T>(int elementCount, PoisonPagePlacement placement) where T : unmanaged
+        private static DefaultImplementation<T> AllocateWithoutDataPopulationDefault<T>(int elementCount, PoisonPagePlacement _) where T : unmanaged
         {
             // On non-Windows platforms, we don't yet have support for changing the permissions of individual pages.
             // We'll instead use AllocHGlobal / FreeHGlobal to carve out a r+w section of unmanaged memory.

@@ -1907,7 +1907,7 @@ public:
     static void Init();
 #endif
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<MethodDesc>;
 };
 
 template<> struct cdac_data<MethodDesc>
@@ -2351,7 +2351,7 @@ private:
 
     // Followed by array of method descs...
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<MethodDescChunk>;
 };
 
 template<>
@@ -2438,7 +2438,7 @@ public:
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<StoredSigMethodDesc>;
 };
 
 template<>
@@ -2696,7 +2696,7 @@ public:
     // following implementations defined in DynamicMethod.cpp
     //
     void Destroy();
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<DynamicMethodDesc>;
 };
 
 template<>
@@ -3455,7 +3455,7 @@ private:
                                                              MethodDesc* pSharedMDescForStub,
                                                              Instantiation methodInst,
                                                              BOOL getSharedNotStub);
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<InstantiatedMethodDesc>;
 };
 
 template<> struct cdac_data<InstantiatedMethodDesc>
