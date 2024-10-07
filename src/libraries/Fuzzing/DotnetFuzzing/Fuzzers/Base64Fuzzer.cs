@@ -8,7 +8,7 @@ namespace DotnetFuzzing.Fuzzers
 {
     internal sealed class Base64Fuzzer : IFuzzer
     {
-        private const int Base64LineBreakPosition = 76; // Need to be in sink Convert.Base64LineBreakPosition private field
+        private const int Base64LineBreakPosition = 76; // Needs to be in sync with Convert.Base64LineBreakPosition
 
         public string[] TargetAssemblies => [];
 
@@ -17,11 +17,10 @@ namespace DotnetFuzzing.Fuzzers
         public void FuzzTarget(ReadOnlySpan<byte> bytes)
         {
             using PooledBoundedMemory<byte> inputPoisonBefore = PooledBoundedMemory<byte>.Rent(bytes, PoisonPagePlacement.Before);
-            Span<byte> input = inputPoisonBefore.Span;
-            TestCases(input, PoisonPagePlacement.Before);
             using PooledBoundedMemory<byte> inputPoisonAfter = PooledBoundedMemory<byte>.Rent(bytes, PoisonPagePlacement.After);
-            input = inputPoisonBefore.Span;
-            TestCases(input, PoisonPagePlacement.After);
+
+            TestCases(inputPoisonBefore.Span, PoisonPagePlacement.Before);
+            TestCases(inputPoisonAfter.Span, PoisonPagePlacement.After);
         }
 
         private void TestCases(Span<byte> input, PoisonPagePlacement poison)
@@ -40,7 +39,6 @@ namespace DotnetFuzzing.Fuzzers
             Span<byte> decoderDest = decoderDestPoisoned.Span;
             { // IsFinalBlock = true
                 OperationStatus status = Base64.EncodeToUtf8(input, encoderDest, out int bytesConsumed, out int bytesEncoded);
-                 
                 Assert.Equal(OperationStatus.Done, status);
                 Assert.Equal(input.Length, bytesConsumed);
                 Assert.Equal(true, maxEncodedLength >= bytesEncoded && maxEncodedLength - 2 <= bytesEncoded);
