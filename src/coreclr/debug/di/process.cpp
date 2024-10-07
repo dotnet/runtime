@@ -11241,7 +11241,7 @@ void CordbProcess::FilterClrNotification(
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 {
-    LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN\n"));
+    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded \n"));
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
     // Before we can read the left side context information, we must:
@@ -11261,14 +11261,14 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 
     if (curThread == m_unmanagedThreadHashTable.end() || curThread->second.GetThreadId() != dwThreadId)
     {
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Thread not found\n"));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Thread not found\n"));
         ThrowHR(CORDBG_E_BAD_THREAD_STATE);
     }
 
     HANDLE hThread = curThread->second.GetThreadHandle(this);
     if (hThread == INVALID_HANDLE_VALUE)
     {
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Thread handle not found\n"));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Thread handle not found\n"));
         ThrowHR(CORDBG_E_BAD_THREAD_STATE);
     }
 
@@ -11276,7 +11276,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     DWORD previousSuspendCount = ::SuspendThread(hThread);
     if (previousSuspendCount == (DWORD)-1)
     {
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from SuspendThread\n"));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from SuspendThread\n"));
         ThrowHR(HRESULT_FROM_GetLastError());
     }
 
@@ -11289,7 +11289,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     BOOL success = ::GetThreadContext(hThread, (CONTEXT*)(&context));
     if (!success)
     {
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from GetThreadContext\n"));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from GetThreadContext\n"));
         ThrowHR(HRESULT_FROM_GetLastError());
     }
 
@@ -11302,9 +11302,9 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 
     if (contextSize == 0 || contextSize > sizeof(CONTEXT) + 25000)
     {
-        _ASSERTE(!"CDP::HSTCN Corrupted message received");
+        _ASSERTE(!"RS HandleSetThreadContextNeeded  Corrupted message received");
 
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Corrupted message received\n"));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Corrupted message received\n"));
 
         ThrowHR(E_UNEXPECTED);
     }
@@ -11316,7 +11316,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     {
         _ASSERTE(!"ReadVirtual failed");
 
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- ReadVirtual (error: 0x%X).\n", hr));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual (error: 0x%X).\n", hr));
 
         ThrowHR(CORDBG_E_READVIRTUAL_FAILURE);
     }
@@ -11325,7 +11325,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     {
         _ASSERTE(!"ReadVirtual context size mismatch");
 
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- ReadVirtual context size mismatch\n"));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual context size mismatch\n"));
 
         ThrowHR(ERROR_PARTIAL_COPY);
     }
@@ -11342,12 +11342,12 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     {
         _ASSERTE(!"InitializeContext unexpectedly succeeded or didn't return ERROR_INSUFFICIENT_BUFFER");
 
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- InitializeContext unexpectedly succeeded or didn't return ERROR_INSUFFICIENT_BUFFER\n"));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - InitializeContext unexpectedly succeeded or didn't return ERROR_INSUFFICIENT_BUFFER\n"));
 
         ThrowHR(E_UNEXPECTED);
     }
 
-    LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- InitializeContext ContextSize %d\n", contextSize));
+    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - InitializeContext ContextSize %d\n", contextSize));
 
     PVOID pBuffer = _alloca(contextSize);
     PCONTEXT pFrameContext = NULL;
@@ -11357,7 +11357,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
         _ASSERTE(!"InitializeContext failed");
 
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from InitializeContext (error: 0x%X [%d]).\n", hr, GetLastError()));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from InitializeContext (error: 0x%X [%d]).\n", hr, GetLastError()));
 
         ThrowHR(hr);
     }
@@ -11365,18 +11365,18 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     _ASSERTE((BYTE*)pFrameContext == pBuffer);
 
     success = CopyContext(pFrameContext, contextFlags, pContext);
-    LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- CopyContext=%s %d\n", success?"SUCCESS":"FAIL", GetLastError()));
+    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - CopyContext=%s %d\n", success?"SUCCESS":"FAIL", GetLastError()));
     if (!success)
     {
         HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
         _ASSERTE(!"CopyContext failed");
 
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from CopyContext (error: 0x%X [%d]).\n", hr, GetLastError()));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from CopyContext (error: 0x%X [%d]).\n", hr, GetLastError()));
 
         ThrowHR(hr);
     }
 
-    LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Set Thread Context - ID = 0x%X, SS enabled = %d\n", dwThreadId,  /*(uint64_t)hThread,*/ (pContext->EFlags & 0x100) != 0));
+    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Set Thread Context - ID = 0x%X, SS enabled = %d\n", dwThreadId,  /*(uint64_t)hThread,*/ (pContext->EFlags & 0x100) != 0));
 
     DWORD lastError = 0;
 
@@ -11387,25 +11387,25 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         lastError = ::GetLastError();
     }
 
-    LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Set Thread Context Completed: Success=%d GetLastError=%d hr=0x%X\n", success, lastError, HRESULT_FROM_WIN32(lastError)));
+    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Set Thread Context Completed: Success=%d GetLastError=%d hr=0x%X\n", success, lastError, HRESULT_FROM_WIN32(lastError)));
     _ASSERTE(success);
 
     // Now that we have completed the SetThreadContext, resume the thread
     DWORD suspendCount = ::ResumeThread(hThread);
     if (suspendCount == (DWORD)-1)
     {
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from ResumeThread\n"));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from ResumeThread\n"));
         ThrowHR(HRESULT_FROM_GetLastError());
     }
     if (suspendCount != previousSuspendCount + 1)
     {
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from ResumeThread\n"));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from ResumeThread\n"));
         ThrowHR(E_UNEXPECTED);
     }
 
     if (!success)
     {
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- Unexpected result from SetThreadContext\n"));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from SetThreadContext\n"));
         ThrowHR(HRESULT_FROM_WIN32(lastError));
     }
 
@@ -11413,7 +11413,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     {
         CORDB_ADDRESS_TYPE *patchSkipAddr = (CORDB_ADDRESS_TYPE*)pFrameContext->Rip;
 
-        LOG((LF_CORDB, LL_INFO10000, "CDP::HSTCN- address=0x%p opcode=0x%x\n", patchSkipAddr, opcode));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - address=0x%p opcode=0x%x\n", patchSkipAddr, opcode));
         HRESULT hr = RemoveRemotePatch(this, (void*)patchSkipAddr, opcode);
         IfFailThrow(hr);
 
