@@ -1512,6 +1512,28 @@ namespace WebAssemblyInfo
             return false;
         }
 
+        void PrintWitSummary()
+        {
+            var sectionsInfo = new Dictionary<SectionId, (UInt32 size, UInt32 count)>();
+
+            foreach (var section in sections)
+            {
+                if (sectionsInfo.ContainsKey(section.id))
+                {
+                    sectionsInfo[section.id] = (sectionsInfo[section.id].size + section.size, sectionsInfo[section.id].count + 1);
+                }
+                else
+                {
+                    sectionsInfo[section.id] = (section.size, 1);
+                }
+            }
+
+            foreach (var entry in sectionsInfo)
+            {
+                Console.WriteLine($"  id: {entry.Key,-15} count: {entry.Value.count,4} total size: {entry.Value.size,12:N0}");
+            }
+        }
+
         public void PrintSummary()
         {
             var moduleName = string.IsNullOrEmpty(this.ModuleName) ? null : $" name: {this.ModuleName}";
@@ -1520,15 +1542,20 @@ namespace WebAssemblyInfo
             Console.WriteLine($"  binary format version: {Version}");
             Console.WriteLine($"  sections: {sections.Count}");
 
-            int customSectionOffset = 0;
-            for (int i = 0; i < sections.Count; i++)
+            if (InWitComponent)
+                PrintWitSummary();
+            else
             {
-                var id = sections[i].id;
-                var sectionName = (id == SectionId.Custom && customSectionOffset < customSectionNames.Count) ? $" name: {customSectionNames[customSectionOffset++]}" : "";
-                Console.WriteLine($"    id: {id}{sectionName} size: {sections[i].size:N0}");
+                int customSectionOffset = 0;
+                for (int i = 0; i < sections.Count; i++)
+                {
+                    var id = sections[i].id;
+                    var sectionName = (id == SectionId.Custom && customSectionOffset < customSectionNames.Count) ? $" name: {customSectionNames[customSectionOffset++]}" : "";
+                    Console.WriteLine($"    id: {id,-8}{sectionName,-22} size: {sections[i].size,12:N0}");
+                }
             }
 
-            foreach(var reader in ModuleReaders) {
+            foreach (var reader in ModuleReaders) {
                 reader.PrintSummary();
             }
         }
