@@ -140,9 +140,9 @@ public class NibbleMapTests
         int expectedShift = 28;
         for (int i = 0; i < 255; i++)
         {
-            ulong input = irrelevant + (ulong)i;
+            NibbleMap.MapKey input = new (irrelevant + (ulong)i);
             int actualShift = NibbleMap.ComputeNibbleShift(input);
-            Assert.True(expectedShift == actualShift, $"Expected {expectedShift}, got {actualShift} for input 0x{input:x}");
+            Assert.True(expectedShift == actualShift, $"Expected {expectedShift}, got {actualShift} for input {input}");
             expectedShift -= 4;
             if (expectedShift == -4)
             {
