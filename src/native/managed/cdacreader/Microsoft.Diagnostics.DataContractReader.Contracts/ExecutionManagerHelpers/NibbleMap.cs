@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Numerics;
+using System.Diagnostics;
+using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
@@ -20,7 +22,8 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 // units until we find a non-zero nibble.
 internal sealed class NibbleMap
 {
-    // The contents of the map are 32-bit integers, where each nibble is a 4-bit integer.
+    // We load the map contents as 32-bit integers, which contains 8 4-bit nibbles.
+    // The algorithm will focus on each nibble in a map unit before moving on to the previous map unit
     internal readonly struct MapUnit
     {
         public const int SizeInBytes = sizeof(uint);
@@ -29,17 +32,90 @@ internal sealed class NibbleMap
 
         public MapUnit(uint value) => Value = value;
 
-        public override string ToString() => Value.ToString();
-
-        public MapUnit LogicalShiftRight(int bits) => new MapUnit(Value >> bits);
+        public override string ToString() => $"0x{Value:x}";
 
         // Shift the next nibble into the least significant position.
         public MapUnit ShiftNextNibble => new MapUnit(Value >>> 4);
 
         public const uint NibbleMask = 0x0Fu;
-        public uint Nibble => Value & NibbleMask;
+        internal Nibble Nibble => new ((int)(Value & NibbleMask));
 
         public bool IsZero => Value == 0;
+
+        // Assuming mapIdx is the index of a nibble within the current map unit,
+        // shift the unit so that nibble is in the least significant position and return the result.
+        public MapUnit FocusOnIndexedNibble(MapKey mapIdx)
+        {
+            int shift = mapIdx.GetNibbleShift();
+            return new MapUnit (Value >>> shift);
+        }
+    }
+
+    // Each nibble is a 4-bit integer that gives a 5-bit offset within a bucket.
+    // We reserse 0 to mean that there is no method starting at any offset within a bucket
+    internal readonly struct Nibble
+    {
+        public readonly int Value;
+
+        public Nibble(int value)
+        {
+            Debug.Assert (value >= 0 && value <= 0xF);
+            Value = value;
+        }
+
+        public static Nibble Zero => new Nibble(0);
+        public bool IsEmpty => Value == 0;
+
+        public ulong TargetByteOffset
+        {
+            get
+            {
+                Debug.Assert(Value != 0);
+                return (uint)(Value - 1) * MapUnit.SizeInBytes;
+            }
+        }
+    }
+
+    // The key to the map is the index of an individual nibble
+    internal readonly struct MapKey
+    {
+        private readonly ulong MapIdx;
+        public MapKey(ulong mapIdx) => MapIdx = mapIdx;
+        public override string ToString() => $"0x{MapIdx:x}";
+
+        // The offset of the address in the target space that this map index represents
+        public ulong TargetByteOffset => MapIdx * BytesPerBucket;
+
+        // The index of the map unit that contains this map index
+        public ulong ContainingMapUnitIndex => MapIdx / MapUnit.SizeInNibbles;
+
+        // The offset of the map unit that contains this map index
+        public ulong ContainingMapUnitByteOffset => ContainingMapUnitIndex * MapUnit.SizeInBytes;
+
+        // The map index is the index of a nibble within the map, this gives the index of that nibble within a map unit.
+        public int NibbleIndexInMapUnit => (int)(MapIdx & (MapUnit.SizeInNibbles - 1));
+
+        // go to the previous nibble
+        public MapKey Prev => new MapKey(MapIdx - 1);
+
+        // to to the previous map unit
+        public MapKey PrevMapUnit => new MapKey(MapIdx - MapUnit.SizeInNibbles);
+
+        // Get a MapKey that is aligned to the first nibble in the map unit that contains this map index
+        public MapKey AlignDownToMapUnit() =>new MapKey(MapIdx & (~(MapUnit.SizeInNibbles - 1)));
+
+        // If the map index is less than the size of a map unit, we are before the first code header and
+        // can stop searching
+        public bool BeforeFirstCodeHeader => MapIdx < MapUnit.SizeInNibbles;
+
+        public bool IsZero => MapIdx == 0;
+
+        // given the index of a nibble in the map, compute how much we have to shift a MapUnit to put that
+        // nibble in the least significant position.
+        internal int GetNibbleShift()
+        {
+            return 28 - (NibbleIndexInMapUnit * 4);  // bit shift - 4 bits per nibble
+        }
     }
 
     public static NibbleMap Create(Target target)
@@ -63,69 +139,54 @@ internal sealed class NibbleMap
     private const ulong BytesPerBucket = 8 * MapUnit.SizeInBytes;
 
 
-    // given the index of a nibble in the map, compute how much we have to shift a MapUnit to put that
-    // nibble in the least significant position.
-    internal static int ComputeNibbleShift(ulong mapIdx)
-    {
-        // the low bits of the nibble index give us how many nibbles we have to shift by.
-        int nibbleOffsetInMapUnit = (int)(mapIdx & (MapUnit.SizeInNibbles - 1));
-        return 28 - (nibbleOffsetInMapUnit * 4);  // bit shift - 4 bits per nibble
-    }
+    // for tests
+    internal static int ComputeNibbleShift(MapKey mapIdx) => mapIdx.GetNibbleShift();
 
-    // Given a map index and a nibble index, compute the byte offset in the address space that they represent
-    private static ulong ComputeByteOffset(ulong mapIdx, uint nibble)
-    {
-        return mapIdx * BytesPerBucket + (nibble - 1) * MapUnit.SizeInBytes;
-    }
-
-    // Given a base address, a map index, and a nibble index, compute the absolute address in memory
+    // Given a base address, a map index, and a nibble value, compute the absolute address in memory
     //  that the index and nibble point to.
-    private static TargetPointer GetAbsoluteAddress(TargetPointer baseAddress, ulong mapIdx, uint nibble)
+    private static TargetPointer GetAbsoluteAddress(TargetPointer baseAddress, MapKey mapIdx, Nibble nibble)
     {
-        return baseAddress + ComputeByteOffset(mapIdx, nibble);
+        return baseAddress + mapIdx.TargetByteOffset + nibble.TargetByteOffset;
     }
 
     // Given a relative address, decompose it into
     //  the bucket index and an offset within the bucket.
-    private static void DecomposeAddress(TargetNUInt relative, out ulong mapIdx, out uint bucketByteIndex)
+    private static void DecomposeAddress(TargetNUInt relative, out MapKey mapIdx, out Nibble bucketByteIndex)
     {
-        mapIdx = relative.Value / BytesPerBucket;
-        bucketByteIndex = ((uint)(relative.Value & (BytesPerBucket - 1)) / MapUnit.SizeInBytes) + 1;
-        System.Diagnostics.Debug.Assert(bucketByteIndex == (bucketByteIndex & MapUnit.NibbleMask));
-    }
-
-    // Given a logical index into the map, compute the address in memory where that map unit is located
-    private static TargetPointer GetMapUnitAddress(TargetPointer mapStart, ulong mapIdx)
-    {
-        ulong bucketIndex = mapIdx / MapUnit.SizeInNibbles;
-        return mapStart + bucketIndex * MapUnit.SizeInBytes;
+        mapIdx = new (relative.Value / BytesPerBucket);
+        int bucketByteOffset = (int)(relative.Value & (BytesPerBucket - 1));
+        bucketByteIndex = new Nibble ((bucketByteOffset / MapUnit.SizeInBytes) + 1);
     }
 
     internal static TargetPointer RoundTripAddress(TargetPointer mapBase, TargetPointer currentPC)
     {
         TargetNUInt relativeAddress = new TargetNUInt(currentPC.Value - mapBase.Value);
-        DecomposeAddress(relativeAddress, out ulong mapIdx, out uint bucketByteIndex);
+        DecomposeAddress(relativeAddress, out MapKey mapIdx, out Nibble bucketByteIndex);
         return GetAbsoluteAddress(mapBase, mapIdx, bucketByteIndex);
     }
 
-    private MapUnit ReadMapUnit(TargetPointer mapStart, ulong mapIdx)
+    private MapUnit ReadMapUnit(TargetPointer mapStart, MapKey mapIdx)
     {
-        return new MapUnit (_target.Read<uint>(GetMapUnitAddress(mapStart, mapIdx)));
+        // Given a logical index into the map, compute the address in memory where that map unit is located
+        TargetPointer mapUnitAdderss = mapStart + mapIdx.ContainingMapUnitByteOffset;
+        return new MapUnit (_target.Read<uint>(mapUnitAdderss));
     }
 
     internal TargetPointer FindMethodCode(TargetPointer mapBase, TargetPointer mapStart, TargetCodePointer currentPC)
     {
         TargetNUInt relativeAddress = new TargetNUInt(currentPC.Value - mapBase.Value);
-        DecomposeAddress(relativeAddress, out ulong mapIdx, out uint bucketByteIndex);
+        DecomposeAddress(relativeAddress, out MapKey mapIdx, out Nibble bucketByteIndex);
 
         MapUnit t = ReadMapUnit(mapStart, mapIdx);
 
         // shift the nibble we want to the least significant position
-        t = t.LogicalShiftRight(ComputeNibbleShift(mapIdx));
-        uint nibble = t.Nibble;
-        if (nibble != 0 && nibble <= bucketByteIndex)
+        t = t.FocusOnIndexedNibble(mapIdx);
+
+        // if the nibble is non-zero, we have found the start of a method,
+        // but we need to check that the start is before the current address, not after
+        if (!t.Nibble.IsEmpty && t.Nibble.Value <= bucketByteIndex.Value)
         {
-            return GetAbsoluteAddress(mapBase, mapIdx, nibble);
+            return GetAbsoluteAddress(mapBase, mapIdx, t.Nibble);
         }
 
         // search backwards through the current map unit
@@ -135,60 +196,55 @@ internal sealed class NibbleMap
         // if there's any nibble set in the current unit, find it
         if (!t.IsZero)
         {
-            mapIdx--;
-            nibble = t.Nibble;
-            while (nibble == 0)
+            mapIdx = mapIdx.Prev;
+            while (t.Nibble.IsEmpty)
             {
                 t = t.ShiftNextNibble;
-                mapIdx--;
-                nibble = t.Nibble;
+                mapIdx = mapIdx.Prev;
             }
-            return GetAbsoluteAddress(mapBase, mapIdx, nibble);
+            return GetAbsoluteAddress(mapBase, mapIdx, t.Nibble);
         }
 
         // if we were near the beginning of the address space, there is not enough space for the code header,
         // so we can stop
-        if (mapIdx < MapUnit.SizeInNibbles)
+        if (mapIdx.BeforeFirstCodeHeader)
         {
             return TargetPointer.Null;
         }
 
-        // We're now done with the current map index.
-        // Align the map index and move to the previous map unit, then move back one nibble.
-#pragma warning disable IDE0054 // use compound assignment
-        mapIdx = mapIdx & (~(MapUnit.SizeInNibbles - 1));
-        mapIdx--;
-#pragma warning restore IDE0054 // use compound assignment
+        // We're now done with the current map unit.
+        // Align the map index to the current map unit, then move back one nibble into the previous map unit
+        mapIdx = mapIdx.AlignDownToMapUnit();
+        mapIdx = mapIdx.Prev;
 
         // read the map unit containing mapIdx and skip over it if it is all zeros
-        while (mapIdx >= MapUnit.SizeInNibbles)
+        while (!mapIdx.BeforeFirstCodeHeader)
         {
             t = ReadMapUnit(mapStart, mapIdx);
             if (!t.IsZero)
                 break;
-            mapIdx -= MapUnit.SizeInNibbles;
+            mapIdx = mapIdx.PrevMapUnit;
         }
 
         // if we went all the way to the front, we didn't find a code header
-        if (mapIdx < MapUnit.SizeInNibbles)
+        if (mapIdx.BeforeFirstCodeHeader)
         {
             return TargetPointer.Null;
         }
 
         // move to the correct nibble in the map unit
-        while (mapIdx != 0 && t.Nibble == 0)
+        while (!mapIdx.IsZero && t.Nibble.IsEmpty)
         {
             t = t.ShiftNextNibble;
-            mapIdx--;
+            mapIdx = mapIdx.Prev;
         }
 
-        if (mapIdx == 0 && t.IsZero)
+        if (mapIdx.IsZero && t.IsZero)
         {
             return TargetPointer.Null;
         }
 
-        nibble = t.Nibble;
-        return GetAbsoluteAddress(mapBase, mapIdx, nibble);
+        return GetAbsoluteAddress(mapBase, mapIdx, t.Nibble);
     }
     public TargetPointer FindMethodCode(Data.CodeHeapListNode heapListNode, TargetCodePointer jittedCodeAddress)
     {
