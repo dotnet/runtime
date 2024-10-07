@@ -2897,8 +2897,6 @@ public:
     bool     ehAnyFunclets();  // Are there any funclets in this function?
     unsigned ehFuncletCount(); // Return the count of funclets in the function
 
-    unsigned bbThrowIndex(BasicBlock* blk); // Get the index to use as the cache key for sharing throw blocks
-
     FlowEdge* BlockPredsWithEH(BasicBlock* blk);
     FlowEdge* BlockDominancePreds(BasicBlock* blk);
 
@@ -3694,6 +3692,8 @@ public:
         }
         return callMethodHandle == info.compMethodHnd;
     }
+
+    bool gtCanSkipCovariantStoreCheck(GenTree* value, GenTree* array);
 
     //-------------------------------------------------------------------------
 
@@ -5153,8 +5153,6 @@ private:
     bool impIsImplicitTailCallCandidate(
         OPCODE curOpcode, const BYTE* codeAddrOfNextOpcode, const BYTE* codeEnd, int prefixFlags, bool isRecursive);
 
-    bool impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array);
-
     methodPointerInfo* impAllocateMethodPointerInfo(const CORINFO_RESOLVED_TOKEN& token, mdToken tokenConstrained);
 
     /*
@@ -5315,6 +5313,8 @@ public:
                                       BasicBlock* afterBlk,
                                       unsigned    xcptnIndex,
                                       bool        putInTryRegion);
+
+    BasicBlock* fgNewBBatTryRegionEnd(BBKinds jumpKind, unsigned tryIndex);
 
     void fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk);
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
@@ -6792,29 +6792,48 @@ private:
     //  range checking or explicit calls to enable GC, and so on.
     //
 public:
+
+    enum class AcdKeyDesignator { KD_NONE, KD_TRY, KD_HND, KD_FLT };
+
     struct AddCodeDsc
     {
-        AddCodeDsc*     acdNext;
-
-        // Initially the source block of the exception. After fgCreateThrowHelperBlocks, the block to which
+        // After fgCreateThrowHelperBlocks, the block to which
         // we jump to raise the exception.
         BasicBlock*     acdDstBlk;
 
+        // EH region key used to look up this dsc in the map
         unsigned        acdData;
+
+        // EH regions for this dsc
+        unsigned short acdTryIndex;
+        unsigned short acdHndIndex;
+
+        // Which EH region forms the key?
+        AcdKeyDesignator  acdKeyDsg;
+
         SpecialCodeKind acdKind; // what kind of a special block is this?
         bool            acdUsed; // do we need to keep this helper block?
+
 #if !FEATURE_FIXED_OUT_ARGS
         bool     acdStkLvlInit; // has acdStkLvl value been already set?
         unsigned acdStkLvl;     // stack level in stack slots.
 #endif                          // !FEATURE_FIXED_OUT_ARGS
+
+        INDEBUG(unsigned acdNum);
     };
+
+    unsigned acdCount = 0;
+
+    // Get the index to use as part of the AddCodeDsc key for sharing throw blocks
+    unsigned bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg); 
 
     struct AddCodeDscKey
     {
     public:
         AddCodeDscKey(): acdKind(SCK_NONE), acdData(0) {}
-        AddCodeDscKey(SpecialCodeKind kind, unsigned data): acdKind(kind), acdData(data) {}
-
+        AddCodeDscKey(SpecialCodeKind kind, BasicBlock* block, Compiler* comp);
+        AddCodeDscKey(AddCodeDsc* add);
+        
         static bool Equals(const AddCodeDscKey& x, const AddCodeDscKey& y)
         {
             return (x.acdData == y.acdData) && (x.acdKind == y.acdKind);
@@ -6825,36 +6844,31 @@ public:
             return (x.acdData << 3) | (unsigned) x.acdKind;
         }
 
+        unsigned Data() const { return acdData; }
+
     private:
+
         SpecialCodeKind acdKind;
         unsigned acdData;
     };
 
     typedef JitHashTable<AddCodeDscKey, AddCodeDscKey, AddCodeDsc*> AddCodeDscMap;
-
     AddCodeDscMap* fgGetAddCodeDscMap();
 
 private:
     static unsigned acdHelper(SpecialCodeKind codeKind);
 
-    AddCodeDsc* fgAddCodeList = nullptr;
     bool        fgRngChkThrowAdded = false;
     AddCodeDscMap* fgAddCodeDscMap = nullptr;
 
     void fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind);
     PhaseStatus fgCreateThrowHelperBlocks();
 
-
 public:
-    AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData);
 
+    bool fgHasAddCodeDscMap() const { return fgAddCodeDscMap != nullptr; }
+    AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock);
     bool fgUseThrowHelperBlocks();
-
-    AddCodeDsc* fgGetAdditionalCodeDescriptors()
-    {
-        return fgAddCodeList;
-    }
-
     void fgCreateThrowHelperBlockCode(AddCodeDsc* add);
 
 private:
@@ -7064,8 +7078,6 @@ public:
 
     void optCompactLoops();
     void optCompactLoop(FlowGraphNaturalLoop* loop);
-    BasicBlock* optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* top);
-    BasicBlock* optTryAdvanceLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* insertionPoint, BasicBlock* top, BasicBlock* bottom);
     bool optCreatePreheader(FlowGraphNaturalLoop* loop);
     void optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicBlock* block);
 
@@ -7551,7 +7563,9 @@ public:
                                              CORINFO_CONTEXT_HANDLE contextHandle,
                                              unsigned               methodAttr,
                                              unsigned               classAttr,
-                                             unsigned               likelihood);
+                                             unsigned               likelihood,
+                                             bool                   arrayInterface,
+                                             CORINFO_CONTEXT_HANDLE originalContextHandle);
 
     int getGDVMaxTypeChecks()
     {
@@ -8054,7 +8068,6 @@ public:
     // Assertion Gen functions.
     void           optAssertionGen(GenTree* tree);
     AssertionIndex optAssertionGenCast(GenTreeCast* cast);
-    AssertionIndex optAssertionGenPhiDefn(GenTree* tree);
     AssertionInfo  optCreateJTrueBoundsAssertion(GenTree* tree);
     AssertionInfo  optAssertionGenJtrue(GenTree* tree);
     AssertionIndex optCreateJtrueAssertions(GenTree*                   op1,
@@ -8294,7 +8307,9 @@ public:
     bool eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
     bool eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
 
-    var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd = nullptr);
+    var_types eeGetFieldType(CORINFO_FIELD_HANDLE  fldHnd,
+                             CORINFO_CLASS_HANDLE* pStructHnd   = nullptr,
+                             CORINFO_CLASS_HANDLE  memberParent = NO_CLASS_HANDLE);
 
     template <typename TPrint>
     void eeAppendPrint(class StringPrinter* printer, TPrint print);
@@ -8334,6 +8349,8 @@ public:
 
     void        eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle);
     const char* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
+
+    const char* eeGetClassAssemblyName(CORINFO_CLASS_HANDLE clsHnd);
 
 #if defined(DEBUG)
     unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
@@ -10847,11 +10864,11 @@ private:
 
 public:
 #ifdef DEBUG
-    unsigned compGenTreeID    = 0;
-    unsigned compStatementID  = 0;
-    unsigned compBasicBlockID = 0;
+    unsigned compGenTreeID   = 0;
+    unsigned compStatementID = 0;
 #endif
-    LONG compMethodID = 0;
+    unsigned compBasicBlockID = 0;
+    LONG     compMethodID     = 0;
 
     BasicBlock* compCurBB = nullptr; // the current basic block in process
     Statement*  compCurStmt;         // the current statement in process

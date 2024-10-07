@@ -25,9 +25,6 @@ namespace System
         internal RuntimeType GetTypeChecked() =>
             m_type ?? throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o);
-
         /// <summary>
         /// Returns a new <see cref="RuntimeTypeHandle"/> object created from a handle to a RuntimeType.
         /// </summary>
@@ -82,7 +79,7 @@ namespace System
 
         internal static bool IsTypeDefinition(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             if (!((corElemType >= CorElementType.ELEMENT_TYPE_VOID && corElemType < CorElementType.ELEMENT_TYPE_PTR) ||
                     corElemType == CorElementType.ELEMENT_TYPE_VALUETYPE ||
                     corElemType == CorElementType.ELEMENT_TYPE_CLASS ||
@@ -100,42 +97,42 @@ namespace System
 
         internal static bool IsPrimitive(RuntimeType type)
         {
-            return RuntimeHelpers.IsPrimitiveType(GetCorElementType(type));
+            return RuntimeHelpers.IsPrimitiveType(type.GetCorElementType());
         }
 
         internal static bool IsByRef(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_BYREF;
         }
 
         internal static bool IsPointer(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_PTR;
         }
 
         internal static bool IsArray(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_ARRAY || corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
         }
 
         internal static bool IsSZArray(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
         }
 
         internal static bool IsFunctionPointer(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_FNPTR;
         }
 
         internal static bool HasElementType(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
 
             return corElemType == CorElementType.ELEMENT_TYPE_ARRAY || corElemType == CorElementType.ELEMENT_TYPE_SZARRAY // IsArray
                    || (corElemType == CorElementType.ELEMENT_TYPE_PTR)                                          // IsPointer
@@ -292,25 +289,61 @@ namespace System
             Interop.BOOL* pfCtorIsPublic);
 
 #if FEATURE_COMINTEROP
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_AllocateComObject")]
+        private static partial void AllocateComObject(void* pClassFactory, ObjectHandleOnStack result);
+
         // Referenced by unmanaged layer (see GetActivationInfo).
         // First parameter is ComClassFactory*.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object AllocateComObject(void* pClassFactory);
-#endif
+        private static object AllocateComObject(void* pClassFactory)
+        {
+            object? result = null;
+            AllocateComObject(pClassFactory, ObjectHandleOnStack.Create(ref result));
+            return result!;
+        }
+#endif // FEATURE_COMINTEROP
 
         internal RuntimeType GetRuntimeType()
         {
             return m_type;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern CorElementType GetCorElementType(RuntimeType type);
+        internal static RuntimeAssembly GetAssembly(RuntimeType type)
+        {
+            return GetAssemblyIfExists(type) ?? GetAssemblyWorker(type);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static RuntimeAssembly GetAssemblyWorker(RuntimeType type)
+            {
+                RuntimeAssembly? assembly = null;
+                GetAssemblySlow(ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref assembly));
+                return assembly!;
+            }
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeAssembly GetAssembly(RuntimeType type);
+        private static extern RuntimeAssembly? GetAssemblyIfExists(RuntimeType type);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetAssemblySlow")]
+        private static partial void GetAssemblySlow(ObjectHandleOnStack type, ObjectHandleOnStack assembly);
+
+        internal static RuntimeModule GetModule(RuntimeType type)
+        {
+            return GetModuleIfExists(type) ?? GetModuleWorker(type);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static RuntimeModule GetModuleWorker(RuntimeType type)
+            {
+                RuntimeModule? module = null;
+                GetModuleSlow(ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref module));
+                return module!;
+            }
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeModule GetModule(RuntimeType type);
+        private static extern RuntimeModule? GetModuleIfExists(RuntimeType type);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetModuleSlow")]
+        private static partial void GetModuleSlow(ObjectHandleOnStack type, ObjectHandleOnStack module);
 
         public ModuleHandle GetModuleHandle()
         {
@@ -456,19 +489,6 @@ namespace System
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
             RuntimeTypeHandle nativeInterfaceHandle = interfaceHandle.GetNativeHandle();
             return GetInterfaceMethodImplementation(new QCallTypeHandle(ref nativeHandle), new QCallTypeHandle(ref nativeInterfaceHandle), interfaceMethodHandle);
-        }
-
-        internal static bool IsComObject(RuntimeType type, bool isGenericCOM)
-        {
-#if FEATURE_COMINTEROP
-            // We need to check the type handle values - not the instances - to determine if the runtime type is a ComObject.
-            if (isGenericCOM)
-                return type.TypeHandle.Value == typeof(__ComObject).TypeHandle.Value;
-
-            return CanCastTo(type, (RuntimeType)typeof(__ComObject));
-#else
-            return false;
-#endif
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsVisible")]
@@ -1186,16 +1206,60 @@ namespace System
         internal static partial bool GetRVAFieldInfo(RuntimeFieldHandleInternal field, out void* address, out uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetToken(RtFieldInfo field);
+        private static extern int GetToken(IntPtr fieldDesc);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object? GetValue(RtFieldInfo field, object? instance, RuntimeType fieldType, RuntimeType? declaringType, ref bool isClassInitialized);
+        internal static int GetToken(RtFieldInfo field)
+        {
+            Debug.Assert(field is not null);
+            int tk = GetToken(field.GetFieldDesc());
+            GC.KeepAlive(field);
+            return tk;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetValue")]
+        private static partial void GetValue(
+            IntPtr fieldDesc,
+            ObjectHandleOnStack instance,
+            QCallTypeHandle fieldType,
+            QCallTypeHandle declaringType,
+            [MarshalAs(UnmanagedType.Bool)] ref bool isClassInitialized,
+            ObjectHandleOnStack result);
+
+        internal static object? GetValue(RtFieldInfo field, object? instance, RuntimeType fieldType, RuntimeType? declaringType, ref bool isClassInitialized)
+        {
+            if (field is null || fieldType is null)
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            object? result = null;
+            GetValue(field.GetFieldDesc(), ObjectHandleOnStack.Create(ref instance), new QCallTypeHandle(ref fieldType), new QCallTypeHandle(ref declaringType!), ref isClassInitialized, ObjectHandleOnStack.Create(ref result));
+            GC.KeepAlive(field);
+            return result;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object? GetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, RuntimeType? contextType);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void SetValue(RtFieldInfo field, object? obj, object? value, RuntimeType fieldType, RuntimeType? declaringType, ref bool isClassInitialized);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_SetValue")]
+        private static partial void SetValue(
+            IntPtr fieldDesc,
+            ObjectHandleOnStack instance,
+            ObjectHandleOnStack value,
+            QCallTypeHandle fieldType,
+            QCallTypeHandle declaringType,
+            [MarshalAs(UnmanagedType.Bool)] ref bool isClassInitialized);
+
+        internal static void SetValue(RtFieldInfo field, object? obj, object? value, RuntimeType fieldType, RuntimeType? declaringType, ref bool isClassInitialized)
+        {
+            if (field is null || fieldType is null)
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            SetValue(field.GetFieldDesc(), ObjectHandleOnStack.Create(ref obj), ObjectHandleOnStack.Create(ref value), new QCallTypeHandle(ref fieldType), new QCallTypeHandle(ref declaringType!), ref isClassInitialized);
+            GC.KeepAlive(field);
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void SetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, object? value, RuntimeType? contextType);
