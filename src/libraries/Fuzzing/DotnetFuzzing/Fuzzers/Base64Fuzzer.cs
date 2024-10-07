@@ -7,7 +7,7 @@ using System.Buffers.Text;
 
 namespace DotnetFuzzing.Fuzzers
 {
-    internal class Base64Fuzzer : IFuzzer
+    internal sealed class Base64Fuzzer : IFuzzer
     {
         public string[] TargetAssemblies => [];
 
@@ -27,8 +27,8 @@ namespace DotnetFuzzing.Fuzzers
 
                 Assert.Equal(OperationStatus.Done, status);
                 Assert.Equal(bytes.Length, bytesConsumed);
-                Assert.Equal(true, maxEncodedLength >= bytesEncoded && maxEncodedLength - 2 <= bytesEncoded);       
-                
+                Assert.Equal(true, maxEncodedLength >= bytesEncoded && maxEncodedLength - 2 <= bytesEncoded);
+
                 status = Base64.DecodeFromUtf8(encoderDest.Slice(0, bytesEncoded), decoderDest, out int bytesRead, out int bytesDecoded);
 
                 Assert.Equal(OperationStatus.Done, status);

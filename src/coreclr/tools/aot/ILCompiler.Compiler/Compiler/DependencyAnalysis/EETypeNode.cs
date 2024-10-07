@@ -400,10 +400,10 @@ namespace ILCompiler.DependencyAnalysis
 
                         // If this is an abstract type, only request a tentative entrypoint (whose body
                         // might just be stubbed out). This lets us avoid generating method bodies for
-                        // virtual method on abstract types that are overriden in all their children.
+                        // virtual method on abstract types that are overridden in all their children.
                         //
                         // We don't do this if the method can be placed in the sealed vtable since
-                        // those can never be overriden by children anyway.
+                        // those can never be overridden by children anyway.
                         bool canUseTentativeMethod = isNonInterfaceAbstractType
                             && !decl.CanMethodBeInSealedVTable(factory)
                             && factory.CompilationModuleGroup.AllowVirtualMethodOnAbstractTypeOptimization(canonImpl);
@@ -539,10 +539,10 @@ namespace ILCompiler.DependencyAnalysis
                                 if (!isStaticInterfaceMethod && defaultIntfMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                                 {
                                     // Canonical instance default methods need to go through a thunk that adds the right generic context
-                                    defaultIntfMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(defaultIntfMethod, defType.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType);
+                                    defaultIntfMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(defaultIntfMethod, defType.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType, out int providingInterfaceIndex);
 
                                     // The above thunk will index into interface list to find the right context. Make sure to keep all interfaces prior to this one
-                                    for (int i = 0; i < interfaceIndex; i++)
+                                    for (int i = 0; i <= providingInterfaceIndex; i++)
                                     {
                                         result.Add(new CombinedDependencyListEntry(
                                             factory.InterfaceUse(defTypeRuntimeInterfaces[i].GetTypeDefinition()),
@@ -1031,7 +1031,7 @@ namespace ILCompiler.DependencyAnalysis
                     // If the type we're generating now is abstract, and the implementation comes from an abstract type,
                     // only use a tentative method entrypoint that can have its body replaced by a throwing stub
                     // if no "hard" reference to that entrypoint exists in the program.
-                    // This helps us to eliminate method bodies for virtual methods on abstract types that are fully overriden
+                    // This helps us to eliminate method bodies for virtual methods on abstract types that are fully overridden
                     // in the children of that abstract type.
                     bool canUseTentativeEntrypoint = implType is MetadataType mdImplType && mdImplType.IsAbstract && !mdImplType.IsInterface
                         && implMethod.OwningType is MetadataType mdImplMethodType && mdImplMethodType.IsAbstract

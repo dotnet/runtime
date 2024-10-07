@@ -4867,13 +4867,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_COMPUTE_BLOCK_WEIGHTS, &Compiler::fgComputeBlockWeights);
 
-    if (UsesFunclets())
-    {
-        // Create funclets from the EH handlers.
-        //
-        DoPhase(this, PHASE_CREATE_FUNCLETS, &Compiler::fgCreateFunclets);
-    }
-
     if (opts.OptimizationEnabled())
     {
         // Invert loops
@@ -5141,6 +5134,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
 #endif
 
+    if (UsesFunclets())
+    {
+        // Create funclets from the EH handlers.
+        //
+        DoPhase(this, PHASE_CREATE_FUNCLETS, &Compiler::fgCreateFunclets);
+    }
+
     // Expand casts
     DoPhase(this, PHASE_EXPAND_CASTS, &Compiler::fgLateCastExpansion);
 
@@ -5170,13 +5170,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
 
-        // Conditional to Switch conversion
-        //
-        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
-
         // Optimize block order
         //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+
+        // Conditional to Switch conversion
+        //
+        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
 
         // Determine start of cold region if we are hot/cold splitting
         //
@@ -7018,12 +7018,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         }
     }
 
-#ifdef DEBUG
     if (compIsForInlining())
     {
         compBasicBlockID = impInlineInfo->InlinerCompiler->compBasicBlockID;
     }
-#endif
 
     const bool forceInline = !!(info.compFlags & CORINFO_FLG_FORCEINLINE);
 
@@ -7250,11 +7248,15 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     if (compIsForInlining())
     {
-        impInlineInfo->InlinerCompiler->compGenTreeID    = compGenTreeID;
-        impInlineInfo->InlinerCompiler->compStatementID  = compStatementID;
-        impInlineInfo->InlinerCompiler->compBasicBlockID = compBasicBlockID;
+        impInlineInfo->InlinerCompiler->compGenTreeID   = compGenTreeID;
+        impInlineInfo->InlinerCompiler->compStatementID = compStatementID;
     }
 #endif
+
+    if (compIsForInlining())
+    {
+        impInlineInfo->InlinerCompiler->compBasicBlockID = compBasicBlockID;
+    }
 
 _Next:
 

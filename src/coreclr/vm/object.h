@@ -462,7 +462,7 @@ class Object
  private:
     VOID ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<Object>;
 };
 
 template<>
@@ -638,7 +638,7 @@ public:
     inline static unsigned GetBoundsOffset(MethodTable* pMT);
     inline static unsigned GetLowerBoundsOffset(MethodTable* pMT);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ArrayBase>;
 };
 
 #ifndef DACCESS_COMPILE
@@ -950,7 +950,7 @@ private:
     static STRINGREF* EmptyStringRefPtr;
     static bool EmptyStringIsFrozen;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<StringObject>;
 };
 
 template<>
@@ -1326,6 +1326,8 @@ private:
 
     // Set in unmanaged code and read in managed code.
     bool          m_IsDead;
+
+    bool          m_IsThreadPool;
 
 protected:
     // the ctor and dtor can do no useful work.
@@ -2435,7 +2437,7 @@ private:
     INT32       _xcode;
     INT32       _HResult;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ExceptionObject>;
 };
 
 template<>
