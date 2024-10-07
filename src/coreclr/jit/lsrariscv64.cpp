@@ -812,8 +812,8 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
         assert(!addr->isContained());
 
         // Vector3 is read/written as two reads/writes: 8 byte and 4 byte.
-        // To assemble the vector properly we would need an additional int register
-        buildInternalIntRegisterDefForNode(indirTree);
+        // To assemble the vector properly we would need an additional float register
+        buildInternalFloatRegisterDefForNode(indirTree);
     }
 #endif // FEATURE_SIMD
 
