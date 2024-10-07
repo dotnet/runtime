@@ -17424,7 +17424,7 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
     else
     {
         // Extract upper 4-bytes from data
-        regNumber tmpReg = codeGen->internalRegisters.GetSingle(tmpRegProvider, RBM_ALLFLOAT);
+        regNumber tmpReg = codeGen->internalRegisters.GetSingle(tmpRegProvider);
         emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
 
         // 4-byte write
