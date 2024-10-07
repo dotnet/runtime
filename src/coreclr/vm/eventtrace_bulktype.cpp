@@ -367,16 +367,9 @@ void BulkComLogger::AddCcwHandle(Object **handle)
     curr->Handles[curr->Count++] = handle;
 }
 
-
-
-
 //---------------------------------------------------------------------------------------
 // BulkStaticsLogger: Batches up and logs static variable roots
 //---------------------------------------------------------------------------------------
-
-
-
-#include "domainassembly.h"
 
 BulkStaticsLogger::BulkStaticsLogger(BulkTypeEventLogger *typeLogger)
     : m_buffer(0), m_used(0), m_count(0), m_domain(0), m_typeLogger(typeLogger)
@@ -525,8 +518,8 @@ void BulkStaticsLogger::LogAllStatics()
             if (module == NULL)
                 continue;
 
-            DomainAssembly *domainAssembly = module->GetDomainAssembly();
-            if (domainAssembly == NULL)
+            Assembly *assembly = module->GetRootAssembly();
+            if (assembly == NULL)
                 continue;
 
             // Ensure the module has fully loaded.

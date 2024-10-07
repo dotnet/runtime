@@ -451,7 +451,7 @@ typedef DPTR(class DebuggerModule) PTR_DebuggerModule;
 class DebuggerModule
 {
   public:
-    DebuggerModule(Module * pRuntimeModule, DomainAssembly * pDomainAssembly);
+    DebuggerModule(Module * pRuntimeModule, Assembly * pAssembly);
 
     // Do we have any optimized code in the module?
     // JMC-probes aren't emitted in optimized code,
@@ -467,10 +467,10 @@ class DebuggerModule
 
     Module * GetRuntimeModule();
 
-    DomainAssembly * GetDomainAssembly()
+    Assembly * GetRootAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pRuntimeDomainAssembly;
+        return m_pRuntimeAssembly;
     }
 
     void SetCanChangeJitFlags(bool fCanChangeJitFlags);
@@ -479,7 +479,7 @@ class DebuggerModule
     BOOL            m_enableClassLoadCallbacks;
 
     PTR_Module     m_pRuntimeModule;
-    PTR_DomainAssembly m_pRuntimeDomainAssembly;
+    PTR_Assembly m_pRuntimeAssembly;
 
     bool m_fHasOptimizedCode;
 
@@ -1983,9 +1983,9 @@ public:
                     LPCWSTR pszModuleName,
                     DWORD dwModuleName,
                     Assembly *pAssembly,
-                    DomainAssembly * pDomainAssembly,
+                    Assembly * pRootAssembly,
                     BOOL fAttaching);
-    DebuggerModule * AddDebuggerModule(DomainAssembly * pDomainAssembly);
+    DebuggerModule * AddDebuggerModule(Assembly * pRootAssembly);
 
     void UnloadModule(Module* pRuntimeModule);
     void DestructModule(Module *pModule);
@@ -2012,7 +2012,7 @@ public:
 
     BOOL ShouldSendCatchHandlerFound(Thread* pThread);
 
-    BOOL ShouldSendCustomNotification(DomainAssembly *pAssembly, mdTypeDef typeDef);
+    BOOL ShouldSendCustomNotification(Assembly *pAssembly, mdTypeDef typeDef);
 
     void SendCatchHandlerFound(Thread *pThread,
                                FramePointer fp,
@@ -2156,8 +2156,8 @@ public:
 
     bool HandleIPCEvent(DebuggerIPCEvent* event);
 
-    DebuggerModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly);
-    DebuggerModule * LookupOrCreateModule(DomainAssembly * pDomainAssembly);
+    DebuggerModule * LookupOrCreateModule(VMPTR_Assembly vmAssembly);
+    DebuggerModule * LookupOrCreateModule(Assembly * pAssembly);
     DebuggerModule * LookupOrCreateModule(Module * pModule);
 
     HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent *event);
@@ -2530,7 +2530,7 @@ public:
     }
 
     // send a custom debugger notification to the RS
-    void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomain, mdTypeDef classToken);
+    void SendCustomDebuggerNotification(Thread * pThread, Assembly * pAssembly, mdTypeDef classToken);
 
     // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
     void SendMDANotification(
@@ -2626,10 +2626,10 @@ public:
     void SendCreateAppDomainEvent(AppDomain * pAppDomain);
 
     // Notify the debugger that an assembly has been loaded
-    void LoadAssembly(DomainAssembly * pDomainAssembly);
+    void LoadAssembly(Assembly * pAssembly);
 
     // Notify the debugger that an assembly has been unloaded
-    void UnloadAssembly(DomainAssembly * pDomainAssembly);
+    void UnloadAssembly(Assembly * pAssembly);
 
     HRESULT FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo, BYTE **argDataArea, DebuggerEval **debuggerEvalKey);
     HRESULT FuncEvalAbort(DebuggerEval *debuggerEvalKey);

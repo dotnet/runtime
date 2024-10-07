@@ -315,12 +315,12 @@ public:
         m_debuggerFlags = flags;
     }
 
-    DomainAssembly* GetNextAssemblyInSameALC()
+    Assembly* GetNextAssemblyInSameALC()
     {
         return m_NextAssemblyInSameALC;
     }
 
-    void SetNextAssemblyInSameALC(DomainAssembly* assembly)
+    void SetNextAssemblyInSameALC(Assembly* assembly)
     {
         _ASSERTE(m_NextAssemblyInSameALC == NULL);
         m_NextAssemblyInSameALC = assembly;
@@ -374,8 +374,8 @@ public:
 
     //****************************************************************************************
 
-    DomainAssembly *GetDomainAssembly();
-    void SetDomainAssembly(DomainAssembly *pAssembly);
+    Assembly *GetRootAssembly();
+    void SetRootAssembly(Assembly *pAssembly);
 
 #if defined(FEATURE_COLLECTIBLE_TYPES) && !defined(DACCESS_COMPILE)
     OBJECTHANDLE GetLoaderAllocatorObjectHandle() { WRAPPER_NO_CONTRACT; return GetLoaderAllocator()->GetLoaderAllocatorObjectHandle(); }
@@ -535,7 +535,7 @@ private:
 
     LOADERHANDLE          m_hExposedObject;
 
-    DomainAssembly*             m_NextAssemblyInSameALC;
+    Assembly*             m_NextAssemblyInSameALC;
 };
 
 #ifndef DACCESS_COMPILE

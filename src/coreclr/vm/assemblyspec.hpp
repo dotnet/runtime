@@ -14,7 +14,6 @@
 
 #include "hash.h"
 #include "assemblyspecbase.h"
-#include "domainassembly.h"
 #include "holder.h"
 
 enum FileLoadLevel

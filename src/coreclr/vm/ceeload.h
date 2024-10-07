@@ -887,9 +887,9 @@ protected:
     MethodTable *GetGlobalMethodTable();
     bool         NeedsGlobalMethodTable();
 
-    DomainAssembly *GetDomainAssembly();
+    Assembly *GetRootAssembly();
 
-    void SetDomainAssembly(DomainAssembly *pDomainAssembly);
+    void SetRootAssembly(Assembly *pAssembly);
 
     OBJECTREF GetExposedObject();
     OBJECTREF GetExposedObjectIfExists();
@@ -1333,7 +1333,7 @@ private:
 public:
 
     // Debugger stuff
-    BOOL NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int level, BOOL attaching);
+    BOOL NotifyDebuggerLoad(Assembly * pAssembly, int level, BOOL attaching);
     void NotifyDebuggerUnload();
 
     void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits);
@@ -1511,7 +1511,7 @@ public:
 
 protected:
 
-    PTR_DomainAssembly      m_pDomainAssembly;
+    PTR_Assembly      m_pRootAssembly;
 
 public:
     //-----------------------------------------------------------------------------------------

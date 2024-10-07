@@ -67,7 +67,7 @@ public:
                             LPCWSTR      psModuleName,    // module file name
                             DWORD        dwModuleName,    // number of characters in file name excludign null
                             Assembly *   pAssembly,       // the assembly the module belongs to
-                            DomainAssembly * pDomainAssembly,
+                            Assembly * pRootAssembly,
                             BOOL         fAttaching) = 0; // true if this notification is due to a debugger
                                                           // being attached to the process
 
@@ -244,7 +244,7 @@ public:
 
     // send a custom notification from the target to the RS. This will become an ICorDebugThread and
     // ICorDebugAppDomain on the RS.
-    virtual void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomainAssembly, mdTypeDef classToken) = 0;
+    virtual void SendCustomDebuggerNotification(Thread * pThread, Assembly * pAssembly, mdTypeDef classToken) = 0;
 
     // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
     virtual void SendMDANotification(
@@ -300,7 +300,7 @@ public:
     // This is called only when a debugger is attached, and will occur after the
     // related AddAppDomainToIPCBlock call and before any LoadModule or
     // LoadClass calls for this assembly.
-    virtual void LoadAssembly(DomainAssembly * pDomainAssembly) = 0; // the assembly being loaded
+    virtual void LoadAssembly(Assembly * pAssembly) = 0; // the assembly being loaded
 
 
     // Called for all assemblies in an AppDomain when the AppDomain is unloaded.
@@ -309,7 +309,7 @@ public:
     // and UnloadModule calls and before any RemoveAppDomainFromIPCBlock calls realted
     // to this assembly.  On CLR shutdown, we are not guaranteed to get UnloadAssembly calls for
     // all outstanding loaded assemblies.
-    virtual void UnloadAssembly(DomainAssembly * pDomainAssembly) = 0;
+    virtual void UnloadAssembly(Assembly * pAssembly) = 0;
 
     virtual HRESULT SetILInstrumentedCodeMap(MethodDesc *fd,
                                              BOOL fStartJit,

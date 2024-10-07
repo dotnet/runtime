@@ -44,17 +44,17 @@ inline void LoaderAllocatorID::Init()
     m_type = LAT_Assembly;
 };
 
-inline void LoaderAllocatorID::AddDomainAssembly(DomainAssembly* pAssembly)
+inline void LoaderAllocatorID::AddRootAssembly(Assembly* pAssembly)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(m_type == LAT_Assembly);
 
     // Link domain assembly together
-    if (m_pDomainAssembly != NULL)
+    if (m_pRootAssembly != NULL)
     {
-        pAssembly->GetAssembly()->SetNextAssemblyInSameALC(m_pDomainAssembly);
+        pAssembly->SetNextAssemblyInSameALC(m_pRootAssembly);
     }
-    m_pDomainAssembly = pAssembly;
+    m_pRootAssembly = pAssembly;
 }
 
 inline VOID* LoaderAllocatorID::GetValue()
@@ -75,11 +75,11 @@ inline LoaderAllocatorType LoaderAllocatorID::GetType()
     return m_type;
 }
 
-inline DomainAssemblyIterator LoaderAllocatorID::GetDomainAssemblyIterator()
+inline AssemblyIterator LoaderAllocatorID::GetAssemblyIterator()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     _ASSERTE(m_type == LAT_Assembly);
-    return DomainAssemblyIterator(m_pDomainAssembly);
+    return AssemblyIterator(m_pRootAssembly);
 }
 
 inline LoaderAllocatorID* AssemblyLoaderAllocator::Id()

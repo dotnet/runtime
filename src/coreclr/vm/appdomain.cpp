@@ -1761,7 +1761,7 @@ void AppDomain::Stop()
 
 #ifndef DACCESS_COMPILE
 
-void AppDomain::AddAssembly(DomainAssembly * assem)
+void AppDomain::AddAssembly(Assembly * assem)
 {
     CONTRACTL
     {
@@ -1791,7 +1791,7 @@ void AppDomain::AddAssembly(DomainAssembly * assem)
     }
 }
 
-void AppDomain::RemoveAssembly(DomainAssembly * pAsm)
+void AppDomain::RemoveAssembly(Assembly * pAsm)
 {
     CONTRACTL
     {
@@ -2021,7 +2021,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
 
                 // Dev11 bug 236344
                 // In AppDomain::IsLoading, if the lock is taken on m_pList and then FindFileLock returns NULL,
-                // we depend on the DomainAssembly's load level being up to date. Hence we must update the load
+                // we depend on the RootAssembly's load level being up to date. Hence we must update the load
                 // level while the m_pList lock is held.
                 if (success)
                     m_pAssembly->SetLoadLevel(level);
@@ -2447,11 +2447,11 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
             pLoaderAllocator = this->GetLoaderAllocator();
         }
 
-        // Allocate the DomainAssembly a bit early to avoid GC mode problems. We could potentially avoid
+        // Allocate the RootAssembly a bit early to avoid GC mode problems. We could potentially avoid
         // a rare redundant allocation by moving this closer to FileLoadLock::Create, but it's not worth it.
         AllocMemTracker amTracker;
         AllocMemTracker *pamTracker = &amTracker;
-        NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator, pamTracker);
+        NewHolder<Assembly> pAssembly = Assembly::Create(pPEAssembly, pamTracker, pLoaderAllocator);
 
         LoadLockHolder lock(this);
 
@@ -2464,19 +2464,19 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
             result = FindAssembly(pPEAssembly, FindAssemblyOptions_IncludeFailedToLoad);
             if (result == NULL)
             {
-                // We are the first one in - create the DomainAssembly
+                // We are the first one in - create the RootAssembly
                 registerNewAssembly = true;
-                fileLock = FileLoadLock::Create(lock, pPEAssembly, pDomainAssembly->GetAssembly());
-                pDomainAssembly.SuppressRelease();
+                fileLock = FileLoadLock::Create(lock, pPEAssembly, pAssembly);
+                pAssembly.SuppressRelease();
                 pamTracker->SuppressRelease();
 
                 // Set the assembly module to be tenured now that we know it won't be deleted
-                pDomainAssembly->GetAssembly()->SetIsTenured();
-                if (pDomainAssembly->GetAssembly()->IsCollectible())
+                pAssembly->SetIsTenured();
+                if (pAssembly->IsCollectible())
                 {
                     // We add the assembly to the LoaderAllocator only when we are sure that it can be added
                     // and won't be deleted in case of a concurrent load from the same ALC
-                    ((AssemblyLoaderAllocator *)pLoaderAllocator)->AddDomainAssembly(pDomainAssembly);
+                    ((AssemblyLoaderAllocator *)pLoaderAllocator)->AddRootAssembly(pAssembly);
                 }
             }
         }
@@ -2503,7 +2503,7 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
 
         if (registerNewAssembly)
         {
-            pPEAssembly->GetAssemblyBinder()->AddLoadedAssembly(pDomainAssembly->GetAssembly());
+            pPEAssembly->GetAssemblyBinder()->AddLoadedAssembly(pAssembly);
         }
     }
     else
@@ -2711,7 +2711,7 @@ CHECK AppDomain::CheckValidModule(Module * pModule)
     }
     CONTRACTL_END;
 
-    if (pModule->GetDomainAssembly() != NULL)
+    if (pModule->GetRootAssembly() != NULL)
         CHECK_OK;
 
     CHECK_OK;
@@ -4056,13 +4056,12 @@ AppDomain::AssemblyIterator::Next_Unlocked(
     while (m_Iterator.Next())
     {
         // Get element from the list/iterator (without adding reference to the assembly)
-        DomainAssembly * pDomainAssembly = dac_cast<PTR_DomainAssembly>(m_Iterator.GetElement());
-        if (pDomainAssembly == NULL)
+        Assembly * pAssembly = dac_cast<PTR_Assembly>(m_Iterator.GetElement());
+        if (pAssembly == NULL)
         {
             continue;
         }
 
-        Assembly* pAssembly = pDomainAssembly->GetAssembly();
         if (pAssembly->IsError())
         {
             if (m_assemblyIterationFlags & kIncludeFailedToLoad)
@@ -4123,7 +4122,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
 
             // Un-tenured collectible assemblies should not be returned. (This can only happen in a brief
             // window during collectible assembly creation. No thread should need to have a pointer
-            // to the just allocated DomainAssembly at this stage.)
+            // to the just allocated RootAssembly at this stage.)
             if (!pAssembly->GetModule()->IsTenured())
             {
                 continue; // reject

@@ -1,17 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-
 #ifndef _METHODDESCITER_H_
 #define _METHODDESCITER_H_
 
 #include "instmethhash.h"
 #include "method.hpp"
 #include "appdomain.hpp"
-#include "domainassembly.h"
 #include "typehash.h"
-
 
 // Iterate all the currently loaded instantiations of a mdMethodDef
 // in a given AppDomain.  Can be used for both generic + nongeneric methods.

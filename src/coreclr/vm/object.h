@@ -78,7 +78,6 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
 class MethodTable;
 class Thread;
 class Assembly;
-class DomainAssembly;
 class AssemblyNative;
 class WaitHandleNative;
 class ArgDestination;

@@ -162,19 +162,19 @@ struct MSLAYOUT TargetBuffer
 
 //===================================================================================
 // Module properties, retrieved by DAC.
-// Describes a VMPTR_DomainAssembly representing a module.
+// Describes a VMPTR_Assembly representing a module.
 // In the VM, a raw Module may be domain neutral and shared by many appdomains.
-// Whereas a DomainAssembly is like a { AppDomain, Module} pair. DomainAssembly corresponds
+// Whereas a root Assembly is like a { AppDomain, Module} pair. Root Assembly corresponds
 // much more to ICorDebugModule (which also has appdomain affinity).
 //===================================================================================
-struct MSLAYOUT DomainAssemblyInfo
+struct MSLAYOUT AssemblyInfo
 {
-    // The appdomain that the DomainAssembly is associated with.
-    // Although VMPTR_Module may be shared across multiple domains, a DomainAssembly has appdomain affinity.
+    // The appdomain that the root Assembly is associated with.
+    // Although VMPTR_Module may be shared across multiple domains, a root Assembly has appdomain affinity.
     VMPTR_AppDomain vmAppDomain;
 
     // The assembly this module belongs to. All modules live in an assembly.
-    VMPTR_DomainAssembly vmDomainAssembly;
+    VMPTR_Assembly vmAssembly;
 };
 
 struct MSLAYOUT ModuleInfo
@@ -623,7 +623,7 @@ public:
               mdFieldDef       fieldToken,
               CorElementType   elementType,
               mdTypeDef        metadataToken,
-              VMPTR_DomainAssembly vmDomainAssembly);
+              VMPTR_Assembly vmAssembly);
 
     DebuggerIPCE_BasicTypeData GetObjectTypeData() const { return m_objectTypeData; };
     mdFieldDef GetFieldToken() const { return m_fldToken; };
@@ -659,7 +659,7 @@ enum AreValueTypesBoxed { NoValueTypeBoxing, OnlyPrimitivesUnboxed, AllBoxed };
 typedef struct MSLAYOUT
 {
     // domain file for the type
-    VMPTR_DomainAssembly vmDomainAssembly;
+    VMPTR_Assembly vmAssembly;
     // metadata token for the type. This may be a typeRef (for requests) or a typeDef (for responses).
     mdToken          typeToken;
 } TypeRefData;
@@ -745,7 +745,7 @@ struct MSLAYOUT DacGcReference
 struct MSLAYOUT DacExceptionCallStackData
 {
     VMPTR_AppDomain vmAppDomain;
-    VMPTR_DomainAssembly vmDomainAssembly;
+    VMPTR_Assembly vmAssembly;
     CORDB_ADDRESS ip;
     mdMethodDef methodDef;
     BOOL isLastForeignExceptionFrame;

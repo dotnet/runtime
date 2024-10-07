@@ -52,13 +52,13 @@ inline DebuggerModuleTable * Debugger::GetModuleTable()
 // @dbgtodo inspection - get rid of this entire class as we move things out-of-proc.
 //-----------------------------------------------------------------------------
 inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
-                                      DomainAssembly *  pDomainAssembly) :
+                                      Assembly *  pAssembly) :
         m_enableClassLoadCallbacks(FALSE),
         m_pRuntimeModule(pRuntimeModule),
-        m_pRuntimeDomainAssembly(pDomainAssembly)
+        m_pRuntimeAssembly(pAssembly)
 {
     LOG((LF_CORDB,LL_INFO10000, "DM::DM this:0x%x Module:0x%x DF:0x%x\n",
-        this, pRuntimeModule, pDomainAssembly));
+        this, pRuntimeModule, pAssembly));
 
     // Do we have any optimized code?
     DWORD dwDebugBits = pRuntimeModule->GetDebuggerInfoBits();

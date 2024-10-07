@@ -172,7 +172,7 @@ BOOL ProfilerObjectEnum::Init()
 // Assemblies appear in the debugging API enumerations as soon as they begin to load,
 // whereas Assemblies (like all other entities) appear in the profiling API enumerations
 // once their load is complete (i.e., just before AssemblyLoadFinished).  Also,
-// debuggers enumerate DomainModules and DomainAssemblies, whereas profilers enumerate
+// debuggers enumerate DomainModules and root Assemblies, whereas profilers enumerate
 // Modules and Assemblies.
 //
 // For information about other synchronization issues with profiler catch-up, see
@@ -291,7 +291,7 @@ HRESULT IterateUnsharedModules(AppDomain * pAppDomain,
     //             enumerable.
     //
     // Note: To determine what happens in a given load stage of a module or assembly,
-    // look at the switch statement in code:DomainAssembly::DoIncrementalLoad, and keep in
+    // look at the switch statement in code:Assembly::DoIncrementalLoad, and keep in
     // mind that it takes cases on the *next* load stage; in other words, the actions
     // that appear in a case for a given load stage are actually executed as we attempt
     // to transition TO that load stage, and thus they actually execute while the module
@@ -432,9 +432,9 @@ HRESULT ProfilerModuleEnum::Init()
 
     HRESULT hr = S_OK;
 
-    // When an assembly is loaded into an AppDomain, a DomainAssembly is
+    // When an assembly is loaded into an AppDomain, a root Assembly is
     // created (one per pairing of the AppDomain with the assembly). This means
-    // that we'll create multiple DomainAssemblys for the same module if it is loaded
+    // that we'll create multiple root Assemblys for the same module if it is loaded
     // domain-neutral (i.e., "shared"). The profiling API callbacks shield the profiler
     // from this, and only report a given module the first time it's loaded. So a
     // profiler sees only one ModuleLoadFinished for a module loaded domain-neutral, even

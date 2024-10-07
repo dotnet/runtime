@@ -761,10 +761,10 @@ namespace ETW
             typedef enum _EnumerationOptions
             {
                 None=                               0x00000000,
-                DomainAssemblyModuleLoad=           0x00000001,
-                DomainAssemblyModuleUnload=         0x00000002,
-                DomainAssemblyModuleDCStart=        0x00000004,
-                DomainAssemblyModuleDCEnd=          0x00000008,
+                RootAssemblyModuleLoad=             0x00000001,
+                RootAssemblyModuleUnload=           0x00000002,
+                RootAssemblyModuleDCStart=          0x00000004,
+                RootAssemblyModuleDCEnd=            0x00000008,
                 JitMethodLoad=                      0x00000010,
                 JitMethodUnload=                    0x00000020,
                 JitMethodDCStart=                   0x00000040,

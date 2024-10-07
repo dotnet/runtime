@@ -2572,10 +2572,10 @@ HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbAppDomain* pAppD
 {
     VMPTR_AppDomain appDomain;
     VMPTR_Module mod;
-    VMPTR_DomainAssembly domainAssembly;
+    VMPTR_Assembly assembly;
 
     HRESULT hr = E_FAIL;
-    if (GetDAC()->GetAppDomainForObject(addr, &appDomain, &mod, &domainAssembly))
+    if (GetDAC()->GetAppDomainForObject(addr, &appDomain, &mod, &assembly))
     {
         if (pAppDomainOverride)
         {
@@ -4304,15 +4304,15 @@ public:
     // Callback invoked from DAC enumeration.
     //
     // arguments:
-    //    vmDomainAssembly - VMPTR for assembly
+    //    vmAssembly - VMPTR for assembly
     //    pData - a 'this' pointer
     //
-    static void Callback(VMPTR_DomainAssembly vmDomainAssembly, void * pData)
+    static void Callback(VMPTR_Assembly vmAssembly, void * pData)
     {
         ShimAssemblyCallbackData * pThis = static_cast<ShimAssemblyCallbackData *> (pData);
         INTERNAL_DAC_CALLBACK(pThis->m_pProcess);
 
-        CordbAssembly * pAssembly = pThis->m_pAppDomain->LookupOrCreateAssembly(vmDomainAssembly);
+        CordbAssembly * pAssembly = pThis->m_pAppDomain->LookupOrCreateAssembly(vmAssembly);
 
         pThis->SetAndMoveNext(pAssembly);
     }
@@ -4439,15 +4439,15 @@ public:
     // Callback invoked from DAC enumeration.
     //
     // arguments:
-    //    vmDomainAssembly - VMPTR for Module
+    //    vmAssembly - VMPTR for Module
     //    pData - a 'this' pointer
     //
-    static void Callback(VMPTR_DomainAssembly vmDomainAssembly, void * pData)
+    static void Callback(VMPTR_Assembly vmAssembly, void * pData)
     {
         ShimModuleCallbackData * pThis = static_cast<ShimModuleCallbackData *> (pData);
         INTERNAL_DAC_CALLBACK(pThis->m_pProcess);
 
-        CordbModule * pModule = pThis->m_pAssembly->GetAppDomain()->LookupOrCreateModule(vmDomainAssembly);
+        CordbModule * pModule = pThis->m_pAssembly->GetAppDomain()->LookupOrCreateModule(vmAssembly);
 
         pThis->SetAndMoveNext(pModule);
     }
@@ -4537,7 +4537,7 @@ void CordbProcess::GetModulesInLoadOrder(
 
     // Enumerate through and fill out pModules table.
     GetDAC()->EnumerateModulesInAssembly(
-        pAssemblyInternal->GetDomainAssemblyPtr(),
+        pAssemblyInternal->GetRootAssemblyPtr(),
         ShimModuleCallbackData::Callback,
         &data); // user data
 
@@ -5073,7 +5073,7 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_METADATA_UPDATE:
         {
-            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->MetadataUpdateData.vmDomainAssembly);
+            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->MetadataUpdateData.vmAssembly);
             pModule->RefreshMetaData();
         }
         break;
@@ -5081,7 +5081,7 @@ void CordbProcess::RawDispatchEvent(
     case DB_IPCE_LOAD_MODULE:
         {
             _ASSERTE (pAppDomain != NULL);
-            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->LoadModuleData.vmDomainAssembly);
+            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->LoadModuleData.vmAssembly);
 
             {
                 pModule->SetLoadEventContinueMarker();
@@ -5133,12 +5133,12 @@ void CordbProcess::RawDispatchEvent(
         {
             STRESS_LOG3(LF_CORDB, LL_INFO100, "RCET::HRCE: unload module on thread %#x Mod:0x%x AD:0x%08x\n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->UnloadModuleData.vmDomainAssembly),
+                 VmPtrToCookie(pEvent->UnloadModuleData.vmAssembly),
                  VmPtrToCookie(pEvent->vmAppDomain));
 
             PREFIX_ASSUME (pAppDomain != NULL);
 
-            CordbModule *module = pAppDomain->LookupOrCreateModule(pEvent->UnloadModuleData.vmDomainAssembly);
+            CordbModule *module = pAppDomain->LookupOrCreateModule(pEvent->UnloadModuleData.vmAssembly);
 
             if (module == NULL)
             {
@@ -5159,7 +5159,7 @@ void CordbProcess::RawDispatchEvent(
                 pCallback1->UnloadModule(pAppDomain, module);
             }
 
-            pAppDomain->m_modules.RemoveBase(VmPtrToCookie(pEvent->UnloadModuleData.vmDomainAssembly));
+            pAppDomain->m_modules.RemoveBase(VmPtrToCookie(pEvent->UnloadModuleData.vmAssembly));
         }
         break;
 
@@ -5171,13 +5171,13 @@ void CordbProcess::RawDispatchEvent(
                  "RCET::HRCE: load class on thread %#x Tok:0x%08x Mod:0x%08x Asm:0x%08x AD:0x%08x\n",
                  dwVolatileThreadId,
                  pEvent->LoadClass.classMetadataToken,
-                 VmPtrToCookie(pEvent->LoadClass.vmDomainAssembly),
+                 VmPtrToCookie(pEvent->LoadClass.vmAssembly),
                  LsPtrToCookie(pEvent->LoadClass.classDebuggerAssemblyToken),
                  VmPtrToCookie(pEvent->vmAppDomain)));
 
             _ASSERTE (pAppDomain != NULL);
 
-            CordbModule* pModule = pAppDomain->LookupOrCreateModule(pEvent->LoadClass.vmDomainAssembly);
+            CordbModule* pModule = pAppDomain->LookupOrCreateModule(pEvent->LoadClass.vmAssembly);
             if (pModule == NULL)
             {
                 LOG((LF_CORDB, LL_INFO100, "Load Class on not-loaded Module - continue()ing!" ));
@@ -5229,13 +5229,13 @@ void CordbProcess::RawDispatchEvent(
                  "RCET::HRCE: unload class on thread %#x Tok:0x%08x Mod:0x%08x AD:0x%08x\n",
                  dwVolatileThreadId,
                  pEvent->UnloadClass.classMetadataToken,
-                 VmPtrToCookie(pEvent->UnloadClass.vmDomainAssembly),
+                 VmPtrToCookie(pEvent->UnloadClass.vmAssembly),
                  VmPtrToCookie(pEvent->vmAppDomain)));
 
             // get the appdomain object
             _ASSERTE (pAppDomain != NULL);
 
-            CordbModule *pModule = pAppDomain->LookupOrCreateModule(pEvent->UnloadClass.vmDomainAssembly);
+            CordbModule *pModule = pAppDomain->LookupOrCreateModule(pEvent->UnloadClass.vmAssembly);
             if (pModule == NULL)
             {
                 LOG((LF_CORDB, LL_INFO100, "Unload Class on not-loaded Module - continue()ing!" ));
@@ -5312,7 +5312,7 @@ void CordbProcess::RawDispatchEvent(
             // determine first whether custom notifications for this type are enabled -- if not
             // we just return without doing anything.
             CordbClass * pNotificationClass = LookupClass(pAppDomain,
-                                                          pEvent->CustomNotification.vmDomainAssembly,
+                                                          pEvent->CustomNotification.vmAssembly,
                                                           pEvent->CustomNotification.classToken);
 
             // if the class is NULL, that means the debugger never enabled notifications for it. Otherwise,
@@ -5412,13 +5412,13 @@ void CordbProcess::RawDispatchEvent(
             LOG((LF_CORDB, LL_INFO100,
                 "RCET::HRCE: load assembly on thread %#x Asm:0x%08x AD:0x%08x \n",
                 dwVolatileThreadId,
-                VmPtrToCookie(pEvent->AssemblyData.vmDomainAssembly),
+                VmPtrToCookie(pEvent->AssemblyData.vmAssembly),
                 VmPtrToCookie(pEvent->vmAppDomain)));
 
             _ASSERTE (pAppDomain != NULL);
 
             // Determine if this Assembly is cached.
-            CordbAssembly * pAssembly = pAppDomain->LookupOrCreateAssembly(pEvent->AssemblyData.vmDomainAssembly);
+            CordbAssembly * pAssembly = pAppDomain->LookupOrCreateAssembly(pEvent->AssemblyData.vmAssembly);
             _ASSERTE(pAssembly != NULL); // throws on error
 
             // If created, or have, an Assembly, notify callback.
@@ -5434,12 +5434,12 @@ void CordbProcess::RawDispatchEvent(
         {
             LOG((LF_CORDB, LL_INFO100, "RCET::DRCE: unload assembly on thread %#x Asm:0x%x AD:0x%x\n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->AssemblyData.vmDomainAssembly),
+                 VmPtrToCookie(pEvent->AssemblyData.vmAssembly),
                  VmPtrToCookie(pEvent->vmAppDomain)));
 
             _ASSERTE (pAppDomain != NULL);
 
-            CordbAssembly * pAssembly = pAppDomain->LookupOrCreateAssembly(pEvent->AssemblyData.vmDomainAssembly);
+            CordbAssembly * pAssembly = pAppDomain->LookupOrCreateAssembly(pEvent->AssemblyData.vmAssembly);
 
             if (pAssembly == NULL)
             {
@@ -5457,7 +5457,7 @@ void CordbProcess::RawDispatchEvent(
                 hr = pCallback1->UnloadAssembly(pAppDomain, pAssembly);
             }
 
-            pAppDomain->RemoveAssemblyFromCache(pEvent->AssemblyData.vmDomainAssembly);
+            pAppDomain->RemoveAssemblyFromCache(pEvent->AssemblyData.vmAssembly);
         }
 
         break;
@@ -5588,7 +5588,7 @@ void CordbProcess::RawDispatchEvent(
             _ASSERTE (pAppDomain != NULL);
 
             // Find the Right Side module for this module.
-            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->UpdateModuleSymsData.vmDomainAssembly);
+            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->UpdateModuleSymsData.vmAssembly);
             _ASSERTE(pModule != NULL);
 
             // This is a legacy event notification for updated PDBs.
@@ -5662,7 +5662,7 @@ void CordbProcess::RawDispatchEvent(
 
             _ASSERTE(NULL != pAppDomain);
 
-            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->EnCRemap.vmDomainAssembly);
+            CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->EnCRemap.vmAssembly);
             PREFIX_ASSUME(pModule != NULL);
 
             CordbFunction * pCurFunction    = NULL;
@@ -5718,7 +5718,7 @@ void CordbProcess::RawDispatchEvent(
 
             _ASSERTE(NULL != pAppDomain);
 
-            CordbModule* pModule = pAppDomain->LookupOrCreateModule(pEvent->EnCRemap.vmDomainAssembly);
+            CordbModule* pModule = pAppDomain->LookupOrCreateModule(pEvent->EnCRemap.vmAssembly);
             PREFIX_ASSUME(pModule != NULL);
 
             // Find the function we're remapping to, which must be the latest version
@@ -15193,16 +15193,16 @@ void CordbProcess::UpdateThreadsForAdUnload(CordbAppDomain * pAppDomain)
 // CordbProcess::LookupClass
 // Looks up a previously constructed CordbClass instance without creating. May return NULL if the
 // CordbClass instance doesn't exist.
-// Argument: (in) vmDomainAssembly - pointer to the domain assembly for the module
+// Argument: (in) vmAssembly - pointer to the domain assembly for the module
 //           (in) mdTypeDef    - metadata token for the class
 // Return value: pointer to a previously created CordbClass instance or NULL in none exists
-CordbClass * CordbProcess::LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_DomainAssembly vmDomainAssembly, mdTypeDef classToken)
+CordbClass * CordbProcess::LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_Assembly vmAssembly, mdTypeDef classToken)
 {
     _ASSERTE(ThreadHoldsProcessLock());
 
     if (pAppDomain != NULL)
     {
-        CordbModule * pModule = ((CordbAppDomain *)pAppDomain)->m_modules.GetBase(VmPtrToCookie(vmDomainAssembly));
+        CordbModule * pModule = ((CordbAppDomain *)pAppDomain)->m_modules.GetBase(VmPtrToCookie(vmAssembly));
         if (pModule != NULL)
         {
             return pModule->LookupClass(classToken);
@@ -15215,7 +15215,7 @@ CordbClass * CordbProcess::LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_Do
 // Look for a specific module in the process.
 //
 // Arguments:
-//    vmDomainAssembly - non-null module to lookup
+//    vmAssembly - non-null module to lookup
 //
 // Returns:
 //    a CordbModule object for the given cookie. Object may be from the cache, or created
@@ -15223,23 +15223,23 @@ CordbClass * CordbProcess::LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_Do
 //    Never returns null.  Throws on error.
 //
 // Notes:
-//    A VMPTR_DomainAssembly has appdomain affinity, but is ultimately scoped to a process.
-//    So if we get a raw VMPTR_DomainAssembly (eg, from the stackwalker or from some other
+//    A VMPTR_Assembly has appdomain affinity, but is ultimately scoped to a process.
+//    So if we get a raw VMPTR_Assembly (eg, from the stackwalker or from some other
 //    lookup function), then we need to do a process wide lookup since we don't know which
 //    appdomain it's in. If you know the appdomain, you can use code:CordbAppDomain::LookupOrCreateModule.
 //
-CordbModule * CordbProcess::LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly)
+CordbModule * CordbProcess::LookupOrCreateModule(VMPTR_Assembly vmAssembly)
 {
     INTERNAL_API_ENTRY(this);
 
     RSLockHolder lockHolder(GetProcess()->GetProcessLock());
-    _ASSERTE(!vmDomainAssembly.IsNull());
+    _ASSERTE(!vmAssembly.IsNull());
 
-    DomainAssemblyInfo data;
-    GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &data); // throws
+    AssemblyInfo data;
+    GetDAC()->GetRootAssemblyData(vmAssembly, &data); // throws
 
     CordbAppDomain * pAppDomain = LookupOrCreateAppDomain(data.vmAppDomain);
-    return pAppDomain->LookupOrCreateModule(vmDomainAssembly);
+    return pAppDomain->LookupOrCreateModule(vmAssembly);
 }
 
 //---------------------------------------------------------------------------------------
