@@ -726,12 +726,10 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 #endif
 }
 
-
-ShuffleThunkCache *COMDelegate::m_pShuffleThunkCache = NULL;
-
-CrstStatic   COMDelegate::s_DelegateToFPtrHashCrst;
-PtrHashMap*  COMDelegate::s_pDelegateToFPtrHash = NULL;
-
+static ShuffleThunkCache* s_pShuffleThunkCache = NULL;
+static CrstStatic s_DelegateToFPtrHashCrst;         // Lock for the following hash.
+static PtrHashMap* s_pDelegateToFPtrHash = NULL;    // Hash table containing the Delegate->FPtr pairs
+                                                    // passed out to unmanaged code.
 
 // One time init.
 void COMDelegate::Init()
@@ -748,10 +746,10 @@ void COMDelegate::Init()
 
     s_pDelegateToFPtrHash = ::new PtrHashMap();
 
-    LockOwner lock = {&COMDelegate::s_DelegateToFPtrHashCrst, IsOwnerOfCrst};
+    LockOwner lock = {&s_DelegateToFPtrHashCrst, IsOwnerOfCrst};
     s_pDelegateToFPtrHash->Init(TRUE, &lock);
 
-    m_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
+    s_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -792,7 +790,7 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
 }
 
 
-Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
+static Stub* SetupShuffleThunk(MethodTable* pDelMT, MethodDesc* pTargetMeth)
 {
     CONTRACTL
     {
@@ -812,7 +810,7 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
     StackSArray<ShuffleEntry> rShuffleEntryArray;
     GenerateShuffleArray(pMD, pTargetMeth, &rShuffleEntryArray);
 
-    ShuffleThunkCache* pShuffleThunkCache = m_pShuffleThunkCache;
+    ShuffleThunkCache* pShuffleThunkCache = s_pShuffleThunkCache;
 
     LoaderAllocator* pLoaderAllocator = pDelMT->GetLoaderAllocator();
     if (pLoaderAllocator->IsCollectible())
@@ -847,8 +845,6 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
 
     return pShuffleThunk;
 }
-
-
 
 static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
 {
@@ -1299,11 +1295,11 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
                 LPVOID key = (LPVOID)pUMEntryThunk;
 
                 // Assert that the entry isn't already in the hash.
-                _ASSERTE((LPVOID)INVALIDENTRY == COMDelegate::s_pDelegateToFPtrHash->LookupValue((UPTR)key, 0));
+                _ASSERTE((LPVOID)INVALIDENTRY == s_pDelegateToFPtrHash->LookupValue((UPTR)key, 0));
 
                 {
-                    CrstHolder ch(&COMDelegate::s_DelegateToFPtrHashCrst);
-                    COMDelegate::s_pDelegateToFPtrHash->InsertValue((UPTR)key, pUMEntryThunk->GetObjectHandle());
+                    CrstHolder ch(&s_DelegateToFPtrHashCrst);
+                    s_pDelegateToFPtrHash->InsertValue((UPTR)key, pUMEntryThunk->GetObjectHandle());
                 }
             }
 
@@ -1342,7 +1338,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     // Otherwise, we'll treat this as an unmanaged callsite.
     // Make sure that the pointer doesn't have the value of 1 which is our hash table deleted item marker.
     LPVOID DelegateHnd = (pUMEntryThunk != NULL) && ((UPTR)pUMEntryThunk != (UPTR)1)
-        ? COMDelegate::s_pDelegateToFPtrHash->LookupValue((UPTR)pUMEntryThunk, 0)
+        ? s_pDelegateToFPtrHash->LookupValue((UPTR)pUMEntryThunk, 0)
         : (LPVOID)INVALIDENTRY;
 
     if (DelegateHnd != (LPVOID)INVALIDENTRY)
@@ -1476,8 +1472,8 @@ void COMDelegate::RemoveEntryFromFPtrHash(UPTR key)
     WRAPPER_NO_CONTRACT;
 
     // Remove this entry from the lookup hash.
-    CrstHolder ch(&COMDelegate::s_DelegateToFPtrHashCrst);
-    COMDelegate::s_pDelegateToFPtrHash->DeleteValue(key, NULL);
+    CrstHolder ch(&s_DelegateToFPtrHashCrst);
+    s_pDelegateToFPtrHash->DeleteValue(key, NULL);
 }
 
 extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method)
@@ -1566,114 +1562,97 @@ uint32_t MethodDescToNumFixedArgs(MethodDesc *pMD)
     return data;
 }
 
-// This is the single constructor for all Delegates.  The compiler
-//  doesn't provide an implementation of the Delegate constructor.  We
-//  provide that implementation through an ECall call to this method.
-FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* targetUNSAFE, PCODE method)
+// This is the single constructor for all Delegates. The compiler
+// doesn't provide an implementation of the Delegate constructor. We
+// provide that implementation through a QCall call to this method.
+extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, QCall::ObjectHandleOnStack target, PCODE method)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+
     // If you modify this logic, please update DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateType,
     // DacDbiInterfaceImpl::GetDelegateFunctionData, and DacDbiInterfaceImpl::GetDelegateTargetObject.
 
+    _ASSERTE(method != (PCODE)NULL);
+    BEGIN_QCALL;
 
-    struct _gc
-    {
-        DELEGATEREF refThis;
-        OBJECTREF target;
-    } gc;
+    GCX_COOP();
 
-    gc.refThis = (DELEGATEREF) ObjectToOBJECTREF(refThisUNSAFE);
-    gc.target  = (OBJECTREF) targetUNSAFE;
+    DELEGATEREF refThis = (DELEGATEREF) ObjectToOBJECTREF(_this.Get());
+    _ASSERTE(refThis != NULL);
 
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
+    GCPROTECT_BEGIN(refThis);
 
-    // via reflection you can pass in just about any value for the method.
-    // we can do some basic verification up front to prevent EE exceptions.
-    if (method == (PCODE)NULL)
-        COMPlusThrowArgumentNull(W("method"));
-
-    _ASSERTE(gc.refThis);
-    _ASSERTE(method);
-
-    //  programmers could feed garbage data to DelegateConstruct().
+    // Programmers could feed garbage data to DelegateConstruct().
     // It's difficult to validate a method code pointer, but at least we'll
     // try to catch the easy garbage.
     _ASSERTE(isMemoryReadable(method, 1));
 
-    MethodTable *pMTTarg = NULL;
+    MethodTable* pMTTarg = NULL;
+    if (target.Get() != NULL)
+        pMTTarg = target.Get()->GetMethodTable();
 
-    if (gc.target != NULL)
-    {
-        pMTTarg = gc.target->GetMethodTable();
-    }
-
-    MethodDesc *pMethOrig = Entry2MethodDesc(method, pMTTarg);
-    MethodDesc *pMeth = pMethOrig;
-
-    MethodTable* pDelMT = gc.refThis->GetMethodTable();
+    MethodTable* pDelMT = refThis->GetMethodTable();
+    MethodDesc* pMethOrig = Entry2MethodDesc(method, pMTTarg);
+    MethodDesc* pMeth = pMethOrig;
+    _ASSERTE(pMeth != NULL);
 
     LOG((LF_STUBS, LL_INFO1000, "In DelegateConstruct: for delegate type %s binding to method %s::%s%s, static = %d\n",
          pDelMT->GetDebugClassName(),
          pMeth->m_pszDebugClassName, pMeth->m_pszDebugMethodName, pMeth->m_pszDebugMethodSignature, pMeth->IsStatic()));
-
-    _ASSERTE(pMeth);
 
 #ifdef _DEBUG
     // Assert that everything is OK...This is not some bogus
     //  address...Very unlikely that the code below would work
     //  for a random address in memory....
     MethodTable* p = pMeth->GetMethodTable();
-    _ASSERTE(p);
+    _ASSERTE(p != NULL);
     _ASSERTE(p->ValidateWithPossibleAV());
 #endif // _DEBUG
 
     if (Nullable::IsNullableType(pMeth->GetMethodTable()))
         COMPlusThrow(kNotSupportedException);
 
-    DelegateEEClass *pDelCls = (DelegateEEClass*)pDelMT->GetClass();
-    MethodDesc *pDelegateInvoke = COMDelegate::FindDelegateInvokeMethod(pDelMT);
+    DelegateEEClass* pDelCls = (DelegateEEClass*)pDelMT->GetClass();
+    MethodDesc* pDelegateInvoke = COMDelegate::FindDelegateInvokeMethod(pDelMT);
 
     UINT invokeArgCount = MethodDescToNumFixedArgs(pDelegateInvoke);
     UINT methodArgCount = MethodDescToNumFixedArgs(pMeth);
     BOOL isStatic = pMeth->IsStatic();
     if (!isStatic)
-    {
         methodArgCount++; // count 'this'
-    }
 
-    if (NeedsWrapperDelegate(pMeth))
-        gc.refThis = CreateWrapperDelegate(gc.refThis, pMeth);
+    if (COMDelegate::NeedsWrapperDelegate(pMeth))
+        refThis = COMDelegate::CreateWrapperDelegate(refThis, pMeth);
 
     if (pMeth->GetLoaderAllocator()->IsCollectible())
-        gc.refThis->SetMethodBase(pMeth->GetLoaderAllocator()->GetExposedObject());
+        refThis->SetMethodBase(pMeth->GetLoaderAllocator()->GetExposedObject());
 
     // Open delegates.
     if (invokeArgCount == methodArgCount)
     {
         // set the target
-        gc.refThis->SetTarget(gc.refThis);
+        refThis->SetTarget(refThis);
 
         // set the shuffle thunk
-        Stub *pShuffleThunk = NULL;
-        if (!pMeth->IsStatic() && pMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
-            pShuffleThunk = pDelCls->m_pInstRetBuffCallStub;
-        else
-            pShuffleThunk = pDelCls->m_pStaticCallStub;
-        if (!pShuffleThunk)
+        Stub *pShuffleThunk = (!pMeth->IsStatic() && pMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+            ? pDelCls->m_pInstRetBuffCallStub
+            : pDelCls->m_pStaticCallStub;
+
+        if (pShuffleThunk == NULL)
             pShuffleThunk = SetupShuffleThunk(pDelMT, pMeth);
 
-        gc.refThis->SetMethodPtr(pShuffleThunk->GetEntryPoint());
+        refThis->SetMethodPtr(pShuffleThunk->GetEntryPoint());
 
         // set the ptr aux according to what is needed, if virtual need to call make virtual stub dispatch
         if (!pMeth->IsStatic() && pMeth->IsVirtual() && !pMeth->GetMethodTable()->IsValueType())
         {
             PCODE pTargetCall = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
-            gc.refThis->SetMethodPtrAux(pTargetCall);
-            gc.refThis->SetInvocationCount((INT_PTR)(void *)pMeth);
+            refThis->SetMethodPtrAux(pTargetCall);
+            refThis->SetInvocationCount((INT_PTR)(void *)pMeth);
         }
         else
         {
-            gc.refThis->SetMethodPtrAux(method);
+            refThis->SetMethodPtrAux(method);
         }
     }
     else
@@ -1682,7 +1661,10 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
 
         if (!pMeth->IsStatic())
         {
-            if (pMTTarg)
+            if (target.Get() == NULL)
+                COMPlusThrow(kArgumentException, W("Arg_DlgtNullInst"));
+
+            if (pMTTarg != NULL)
             {
                 // Use the Unboxing stub for value class methods, since the value
                 // class is constructed using the boxed instance.
@@ -1711,24 +1693,21 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
                     method = pMeth->GetMultiCallableAddrOfCode();
                 }
             }
-
-            if (gc.target == NULL)
-            {
-                COMPlusThrow(kArgumentException, W("Arg_DlgtNullInst"));
-            }
         }
 #ifdef HAS_THISPTR_RETBUF_PRECODE
         else if (pMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+        {
             method = pMeth->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pMeth, PRECODE_THISPTR_RETBUF);
+        }
 #endif // HAS_THISPTR_RETBUF_PRECODE
 
-        gc.refThis->SetTarget(gc.target);
-        gc.refThis->SetMethodPtr((PCODE)(void *)method);
+        refThis->SetTarget(target.Get());
+        refThis->SetMethodPtr((PCODE)(void *)method);
     }
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
 {
