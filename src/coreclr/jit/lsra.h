@@ -816,32 +816,6 @@ private:
         return ((lsraStressMask & LSRA_SELECT_NEAREST) != 0);
     }
 
-    // This controls the order in which basic blocks are visited during allocation
-    enum LsraTraversalOrder
-    {
-        LSRA_TRAVERSE_LAYOUT     = 0x20,
-        LSRA_TRAVERSE_PRED_FIRST = 0x40,
-        LSRA_TRAVERSE_RANDOM     = 0x60, // NYI
-        LSRA_TRAVERSE_DEFAULT    = LSRA_TRAVERSE_PRED_FIRST,
-        LSRA_TRAVERSE_MASK       = 0x60
-    };
-    LsraTraversalOrder getLsraTraversalOrder()
-    {
-        if ((lsraStressMask & LSRA_TRAVERSE_MASK) == 0)
-        {
-            return LSRA_TRAVERSE_DEFAULT;
-        }
-        return (LsraTraversalOrder)(lsraStressMask & LSRA_TRAVERSE_MASK);
-    }
-    bool isTraversalLayoutOrder()
-    {
-        return getLsraTraversalOrder() == LSRA_TRAVERSE_LAYOUT;
-    }
-    bool isTraversalPredFirstOrder()
-    {
-        return getLsraTraversalOrder() == LSRA_TRAVERSE_PRED_FIRST;
-    }
-
     // This controls whether lifetimes should be extended to the entire method.
     // Note that this has no effect under MinOpts
     enum LsraExtendLifetimes
@@ -1659,20 +1633,12 @@ private:
     // The order in which the blocks will be allocated.
     // This is any array of BasicBlock*, in the order in which they should be traversed.
     BasicBlock** blockSequence;
-    // The verifiedAllBBs flag indicates whether we have verified that all BBs have been
-    // included in the blockSeuqence above, during setBlockSequence().
-    bool            verifiedAllBBs;
-    void            setBlockSequence();
-    int             compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block2, bool useBlockWeights);
-    BasicBlockList* blockSequenceWorkList;
-    bool            blockSequencingDone;
+    void         setBlockSequence();
+    bool         blockSequencingDone;
 #ifdef DEBUG
     // LSRA must not change number of blocks and blockEpoch that it initializes at start.
     unsigned blockEpoch;
 #endif // DEBUG
-    void        addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlock* block, BlockSet& predSet);
-    void        removeFromBlockSequenceWorkList(BasicBlockList* listNode, BasicBlockList* prevNode);
-    BasicBlock* getNextCandidateFromWorkList();
 
     // Indicates whether the allocation pass has been completed.
     bool allocationPassComplete;

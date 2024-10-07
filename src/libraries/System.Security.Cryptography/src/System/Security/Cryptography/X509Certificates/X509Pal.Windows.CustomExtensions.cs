@@ -13,53 +13,6 @@ namespace System.Security.Cryptography.X509Certificates
     /// </summary>
     internal sealed partial class X509Pal : IX509Pal
     {
-        public byte[] EncodeX509KeyUsageExtension(X509KeyUsageFlags keyUsages)
-        {
-            unsafe
-            {
-                ushort keyUsagesAsShort = (ushort)keyUsages;
-                Interop.Crypt32.CRYPT_BIT_BLOB blob = new Interop.Crypt32.CRYPT_BIT_BLOB()
-                {
-                    cbData = 2,
-                    pbData = new IntPtr((byte*)&keyUsagesAsShort),
-                    cUnusedBits = 0,
-                };
-                return Interop.crypt32.EncodeObject(CryptDecodeObjectStructType.X509_KEY_USAGE, &blob);
-            }
-        }
-
-        public void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages)
-        {
-            unsafe
-            {
-                uint keyUsagesAsUint = encoded.DecodeObject(
-                    CryptDecodeObjectStructType.X509_KEY_USAGE,
-                    static delegate (void* pvDecoded, int cbDecoded)
-                    {
-                        Debug.Assert(cbDecoded >= sizeof(Interop.Crypt32.CRYPT_BIT_BLOB));
-                        Interop.Crypt32.CRYPT_BIT_BLOB* pBlob = (Interop.Crypt32.CRYPT_BIT_BLOB*)pvDecoded;
-                        byte* pbData = (byte*)pBlob->pbData.ToPointer();
-
-                        if (pbData != null)
-                        {
-                            Debug.Assert((uint)pBlob->cbData < 3, "Unexpected length for X509_KEY_USAGE data");
-
-                            switch (pBlob->cbData)
-                            {
-                                case 1:
-                                    return *pbData;
-                                case 2:
-                                    return *(ushort*)(pbData);
-                            }
-                        }
-
-                        return 0u;
-                    }
-                );
-                keyUsages = (X509KeyUsageFlags)keyUsagesAsUint;
-            }
-        }
-
         public bool SupportsLegacyBasicConstraintsExtension
         {
             get { return true; }
@@ -110,50 +63,6 @@ namespace System.Security.Cryptography.X509Certificates
                         return (pBasicConstraints2->fCA != 0,
                                 pBasicConstraints2->fPathLenConstraint != 0,
                                 pBasicConstraints2->dwPathLenConstraint);
-                    });
-            }
-        }
-
-        public byte[] EncodeX509EnhancedKeyUsageExtension(OidCollection usages)
-        {
-            int numUsages;
-            using (SafeHandle usagesSafeHandle = usages.ToLpstrArray(out numUsages))
-            {
-                unsafe
-                {
-                    CERT_ENHKEY_USAGE enhKeyUsage = new CERT_ENHKEY_USAGE()
-                    {
-                        cUsageIdentifier = numUsages,
-                        rgpszUsageIdentifier = (IntPtr*)(usagesSafeHandle.DangerousGetHandle()),
-                    };
-
-                    return Interop.crypt32.EncodeObject(Oids.EnhancedKeyUsage, &enhKeyUsage);
-                }
-            }
-        }
-
-        public void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
-        {
-            unsafe
-            {
-                usages = encoded.DecodeObject(
-                    CryptDecodeObjectStructType.X509_ENHANCED_KEY_USAGE,
-                    static delegate (void* pvDecoded, int cbDecoded)
-                    {
-
-                        Debug.Assert(cbDecoded >= sizeof(CERT_ENHKEY_USAGE));
-                        CERT_ENHKEY_USAGE* pEnhKeyUsage = (CERT_ENHKEY_USAGE*)pvDecoded;
-                        int count = pEnhKeyUsage->cUsageIdentifier;
-                        var localUsages = new OidCollection(count);
-                        for (int i = 0; i < count; i++)
-                        {
-                            IntPtr oidValuePointer = pEnhKeyUsage->rgpszUsageIdentifier[i];
-                            string oidValue = Marshal.PtrToStringAnsi(oidValuePointer)!;
-                            Oid oid = new Oid(oidValue);
-                            localUsages.Add(oid);
-                        }
-
-                        return localUsages;
                     });
             }
         }

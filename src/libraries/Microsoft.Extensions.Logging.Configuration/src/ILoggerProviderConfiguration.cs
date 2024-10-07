@@ -6,13 +6,13 @@ using Microsoft.Extensions.Configuration;
 namespace Microsoft.Extensions.Logging.Configuration
 {
     /// <summary>
-    /// Allows access to configuration section associated with logger provider
+    /// Allows access to configuration section associated with logger provider.
     /// </summary>
-    /// <typeparam name="T">Type of logger provider to get configuration for</typeparam>
+    /// <typeparam name="T">The type of logger provider to get configuration for.</typeparam>
     public interface ILoggerProviderConfiguration<T>
     {
         /// <summary>
-        /// Configuration section for requested logger provider
+        /// Gets the configuration section for the requested logger provider.
         /// </summary>
         IConfiguration Configuration { get; }
     }

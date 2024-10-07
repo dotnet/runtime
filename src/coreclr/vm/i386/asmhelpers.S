@@ -126,20 +126,6 @@ LEAF_ENTRY RestoreFPUContext, _TEXT
     ret     4
 LEAF_END RestoreFPUContext, _TEXT
 
-NESTED_ENTRY StubRareDisableTHROW, _TEXT, NoHandler
-    push    eax
-    push    edx
-
-    push    ebx     // Thread
-
-    CHECK_STACK_ALIGNMENT
-    call    C_FUNC(StubRareDisableTHROWWorker)
-
-    pop     edx
-    pop     eax
-    ret
-NESTED_END StubRareDisableTHROW, _TEXT
-
 // ------------------------------------------------------------------------------
 //  This helper routine enregisters the appropriate arguments and makes the
 //  actual call.
@@ -736,27 +722,6 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     // Now jump to the target
     jmp         eax // continue on into the method
 NESTED_END ResolveWorkerAsmStub, _TEXT
-
-#ifdef FEATURE_STUBS_AS_IL
-// ==========================================================================
-// void SinglecastDelegateInvokeStub();
-//
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-
-    test        ecx, ecx
-    jz          LOCAL_LABEL(NullObject)
-
-    mov         eax, [ecx + DelegateObject___methodPtr]
-    mov         ecx, [ecx + DelegateObject___target]    // replace "this" pointer
-    jmp         eax
-
-LOCAL_LABEL(NullObject):
-
-    mov         ecx, CORINFO_NullReferenceException_ASM
-    jmp         C_FUNC(JIT_InternalThrow)
-
-LEAF_END SinglecastDelegateInvokeStub, _TEXT
-#endif // FEATURE_STUBS_AS_IL
 
 // =======================================================================================
 // void ResolveWorkerChainLookupAsmStub();

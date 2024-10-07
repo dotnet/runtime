@@ -4,7 +4,7 @@
 namespace Microsoft.Extensions.Caching.Memory
 {
     /// <summary>
-    /// Signature of the callback which gets called when a cache entry expires.
+    /// Represents the callback method that gets called when a cache entry expires.
     /// </summary>
     /// <param name="key">The key of the entry being evicted.</param>
     /// <param name="value">The value of the entry being evicted.</param>
