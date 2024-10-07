@@ -34,6 +34,13 @@ namespace System.Globalization
             return week;
         }
 
+        /// <summary>
+        /// Calculates the ISO week number of a given Gregorian date.
+        /// </summary>
+        /// <param name="date">A date in the Gregorian calendar.</param>
+        /// <returns>A number between 1 and 53 representing the ISO week number of the given Gregorian date.</returns>
+        public static int GetWeekOfYear(DateOnly date) => GetWeekOfYear(date.GetEquivalentDateTime());
+
         public static int GetYear(DateTime date)
         {
             int week = GetWeekNumber(date);
@@ -54,6 +61,13 @@ namespace System.Globalization
 
             return date.Year;
         }
+
+        /// <summary>
+        /// Calculates the ISO week-numbering year (also called ISO year informally) mapped to the input Gregorian date.
+        /// </summary>
+        /// <param name="date">A date in the Gregorian calendar.</param>
+        /// <returns>The ISO week-numbering year, between 1 and 9999</returns>
+        public static int GetYear(DateOnly date) => GetYear(date.GetEquivalentDateTime());
 
         // The year parameter represents an ISO week-numbering year (also called ISO year informally).
         // Each week's year is the Gregorian year in which the Thursday falls.
@@ -137,6 +151,16 @@ namespace System.Globalization
 
             return new DateTime(year, month: 1, day: 1).AddDays(ordinal - 1);
         }
+
+
+        /// <summary>
+        /// Maps the ISO week date represented by a specified ISO year, week number, and day of week to the equivalent Gregorian date.
+        /// </summary>
+        /// <param name="year">An ISO week-numbering year (also called an ISO year informally).</param>
+        /// <param name="week">The ISO week number in the given ISO week-numbering year.</param>
+        /// <param name="dayOfWeek">The day of week inside the given ISO week.</param>
+        /// <returns>The Gregorian date equivalent to the input ISO week date.</returns>
+        public static DateOnly ToDateOnly(int year, int week, DayOfWeek dayOfWeek) => DateOnly.FromDateTime(ToDateTime(year, week, dayOfWeek));
 
         // From https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_of_a_given_date:
         //
