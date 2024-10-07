@@ -81,6 +81,25 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
+      # Re-enable when fixing https://github.com/dotnet/runtime/issues/108628
+      # #
+      # # Build CoreCLR GC with TRACE_GC
+      # #
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
+      #     buildConfig: Checked
+      #     runtimeFlavor: coreclr
+      #     platforms:
+      #       - linux_x64
+      #     jobParameters:
+      #       nameSuffix: CoreCLR_GC_TRACE_GC
+      #       buildArgs: -s clr.runtime -c $(_BuildConfig) -cmakeargs -DTRACE_GC=1
+      #       condition: >-
+      #         or(
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr_GC.containsChange'], true),
+      #           eq(variables['isRollingBuild'], true))
+
       #
       # Build Libraries AllConfigurations. This exercises the code path where we build libraries and tests for all
       # configurations on a non Windows operating system.
