@@ -2917,7 +2917,7 @@ BOOL Module::NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int flags, BOO
     // Always capture metadata, even if no debugger is attached. If a debugger later attaches, it will use
     // this data.
     {
-        Module * pModule = pDomainAssembly->GetModule();
+        Module * pModule = pDomainAssembly->GetAssembly()->GetModule();
         pModule->UpdateDynamicMetadataIfNeeded();
     }
 
@@ -4502,10 +4502,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         EMEM_OUT(("MEM: %p Module\n", dac_cast<TADDR>(this)));
     }
 
-    if (m_pDomainAssembly.IsValid())
-    {
-        m_pDomainAssembly->EnumMemoryRegions(flags);
-    }
     if (m_pPEAssembly.IsValid())
     {
         m_pPEAssembly->EnumMemoryRegions(flags);

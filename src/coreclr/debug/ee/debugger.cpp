@@ -5134,8 +5134,8 @@ DebuggerModule * Debugger::LookupOrCreateModule(DomainAssembly * pDomainAssembly
 {
     _ASSERTE(pDomainAssembly != NULL);
     LOG((LF_CORDB, LL_INFO1000, "D::LOCM df=%p\n", pDomainAssembly));
-    DebuggerModule * pDModule = LookupOrCreateModule(pDomainAssembly->GetModule());
-    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p ad=%p -> dm=%p\n", pDomainAssembly->GetModule(), AppDomain::GetCurrentDomain(), pDModule));
+    DebuggerModule * pDModule = LookupOrCreateModule(pDomainAssembly->GetAssembly()->GetModule());
+    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p ad=%p -> dm=%p\n", pDomainAssembly->GetAssembly()->GetModule(), AppDomain::GetCurrentDomain(), pDModule));
     _ASSERTE(pDModule != NULL);
     _ASSERTE(pDModule->GetDomainAssembly() == pDomainAssembly);
 
@@ -5235,7 +5235,7 @@ DebuggerModule* Debugger::AddDebuggerModule(DomainAssembly * pDomainAssembly)
     LOG((LF_CORDB, LL_INFO1000, "D::ADM df=0x%x\n", pDomainAssembly));
     DebuggerDataLockHolder chInfo(this);
 
-    Module *     pRuntimeModule = pDomainAssembly->GetModule();
+    Module *     pRuntimeModule = pDomainAssembly->GetAssembly()->GetModule();
 
     HRESULT hr = CheckInitModuleTable();
     IfFailThrow(hr);
@@ -8041,7 +8041,7 @@ BOOL Debugger::ShouldSendCustomNotification(DomainAssembly *pAssembly, mdTypeDef
     }
     CONTRACTL_END;
 
-    Module *pModule = pAssembly->GetModule();
+    Module *pModule = pAssembly->GetAssembly()->GetModule();
     TypeInModule tim(pModule, typeDef);
     return !(m_pCustomNotificationTable->Lookup(tim).IsNull());
 }
@@ -9402,7 +9402,7 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     // We should simply things when we actually get rid of DebuggerModule, possibly by just passing the
     // DomainAssembly around.
     _ASSERTE(module->GetDomainAssembly()    == pDomainAssembly);
-    _ASSERTE(module->GetRuntimeModule() == pDomainAssembly->GetModule());
+    _ASSERTE(module->GetRuntimeModule() == pDomainAssembly->GetAssembly()->GetModule());
 
     // Send a load module event to the Right Side.
     ipce = m_pRCThread->GetIPCEventSendBuffer();
@@ -10830,7 +10830,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                 // unexpected in an OOM situation.  Quickly just sanity check them.
                 //
                 Thread * pThread = pEvent->SetIP.vmThreadToken.GetRawPtr();
-                Module * pModule = pEvent->SetIP.vmDomainAssembly.GetRawPtr()->GetModule();
+                Module * pModule = pEvent->SetIP.vmDomainAssembly.GetRawPtr()->GetAssembly()->GetModule();
 
                 // Get the DJI for this function
                 DebuggerMethodInfo * pDMI = GetOrCreateMethodInfo(pModule, pEvent->SetIP.mdMethod);
