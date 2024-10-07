@@ -693,8 +693,6 @@ namespace Microsoft.Win32
                         hInstance, IntPtr.Zero);
                 }
             }
-
-            AppDomain.CurrentDomain.ProcessExit += new EventHandler(Shutdown);
         }
 
         /// <summary>
@@ -1070,67 +1068,6 @@ namespace Microsoft.Win32
             }
         }
 
-        private static void Shutdown()
-        {
-            if (s_systemEvents is null)
-            {
-                return;
-            }
-
-            lock (s_procLockObject)
-            {
-                if (s_systemEvents is null)
-                {
-                    return;
-                }
-
-                // If we are using system events from another thread, request that it terminate
-                if (s_windowThread is not null)
-                {
-#if DEBUG
-                    unsafe
-                    {
-                        int pid;
-                        int thread = Interop.User32.GetWindowThreadProcessId(s_systemEvents._windowHandle, &pid);
-                        Debug.Assert(thread != Interop.Kernel32.GetCurrentThreadId(), "Don't call Shutdown on the system events thread");
-
-                    }
-#endif
-                    // The handle could be valid, Zero or invalid depending on the state of the thread
-                    // that is processing the messages. We optimistically expect it to be valid to
-                    // notify the thread to shutdown. The Zero or invalid values should be present
-                    // only when the thread is already shutting down due to external factors.
-                    if (s_systemEvents._windowHandle != IntPtr.Zero)
-                    {
-                        InvokeOnEventsThread(() => Interop.User32.PostQuitMessage(0));
-                    }
-
-                    // Don't wait for the SystemEvents thread to finish to avoid blocking the Finalizer thread.
-                    // When the main thread kicks off shutdown, the Finalizer thread will raise a ProcessExit event,
-                    // which will callback to here waiting for this method to finish.
-                    // This occurs before AppDomain.IsFinalizingForUnload or Environment.HasShutdownStarted is set to true.
-                    // Because of this, any code that needs a response from the main thread will not know main thread will not respond
-                    // since it is in the middle of shutdown. This can cause synchronous callbacks to deadlock.
-                    // For example, in https://github.com/dotnet/winforms/issues/11944, WindowsFormsSynchronizationContext will block the
-                    // SystemEvents thread to wait for tasks to complete on the main thread. It cannot see that main thread is trying to
-                    // shut down, but is stuck waiting for the Finalizer thread to finish, which is waiting for SystemEvents thread to finish.
-                }
-                else
-                {
-                    s_systemEvents.Dispose();
-                    s_systemEvents = null;
-                }
-            }
-        }
-
-#if FEATURE_CER
-        [PrePrepareMethod]
-#endif
-        private static void Shutdown(object? sender, EventArgs e)
-        {
-            Shutdown();
-        }
-
         /// <summary>
         ///  A standard Win32 window proc for our broadcast window.
         /// </summary>
@@ -1258,8 +1195,8 @@ namespace Microsoft.Win32
         }
 
         /// <summary>
-        ///  This is the method that runs our window thread.  This method
-        ///  creates a window and spins up a message loop.  The window
+        ///  This is the method that runs our window thread. This method
+        ///  creates a window and spins up a message loop. The window
         ///  is made visible with a size of 0, 0, so that it will trap
         ///  global broadcast messages.
         /// </summary>
@@ -1272,7 +1209,7 @@ namespace Microsoft.Win32
 
                 if (_windowHandle != IntPtr.Zero)
                 {
-                    Interop.User32.MSG msg = default(Interop.User32.MSG);
+                    Interop.User32.MSG msg = default;
 
                     while (Interop.User32.GetMessageW(ref msg, _windowHandle, 0, 0) > 0)
                     {
@@ -1285,11 +1222,11 @@ namespace Microsoft.Win32
             }
             catch (Exception e)
             {
-                // In case something very very wrong happend during the creation action.
+                // In case something very very wrong happened during the creation action.
                 // This will unblock the calling thread.
                 s_eventWindowReady!.Set();
 
-                if (!((e is ThreadInterruptedException) || (e is ThreadAbortException)))
+                if (e is not (ThreadInterruptedException or ThreadAbortException))
                 {
                     Debug.Fail("Unexpected thread exception in system events window thread proc", e.ToString());
                 }

@@ -21,11 +21,6 @@ public class ShutdownTest : SystemEventsTest
 
             // Fake Restart Manager behavior by sending external WM_CLOSE message
             SendMessage(Interop.User32.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
-
-            // Emulate calling the Shutdown event
-            var shutdownMethod = typeof(SystemEvents).GetMethod("Shutdown", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic, null, new Type[0], null);
-            Assert.NotNull(shutdownMethod);
-            shutdownMethod.Invoke(null, null);
         }).Dispose();
     }
 
