@@ -2288,8 +2288,7 @@ gpointer
 ves_icall_System_RuntimeFieldHandle_GetFieldDataReference (MonoObjectHandle target, MonoClassField *field, MonoError *error)
 {
 	g_assert (field);
-
-	(void)mono_handle_class (target);
+	g_assert (!MONO_HANDLE_IS_NULL(target));
 
 	/* if relative, offset is from the start of target. Otherwise offset is actually an address */
 	gboolean relative = TRUE;
@@ -2305,7 +2304,6 @@ ves_icall_System_RuntimeFieldHandle_GetFieldDataReference (MonoObjectHandle targ
 		offset = (intptr_t) mono_metadata_update_added_field_ldflda (MONO_HANDLE_RAW (target), field->type, token, error);
 		mono_error_assert_ok (error);
 	}
-	(void)mono_class_from_mono_type_internal (field->type);
 
 	if (G_LIKELY (relative))
 		return (guint8*)MONO_HANDLE_RAW (target) + offset;

@@ -4,6 +4,7 @@
 // TypedReference is basically only ever seen on the call stack, and in param arrays.
 //  These are blob that must be dealt with by the compiler.
 
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -52,6 +53,7 @@ namespace System
                 }
                 else
                 {
+                    Debug.Assert(targetType.IsValueType);
                     targetRef = ref RuntimeFieldHandle.GetFieldDataReference(ref targetRef, field);
                 }
                 targetType = fieldType;
