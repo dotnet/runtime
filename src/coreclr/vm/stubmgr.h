@@ -148,11 +148,11 @@ public:
         this->stubManager = NULL;
     }
 
-    
-    void InitForMulticastDelegateHelper(PCODE addr)
+
+    void InitForMulticastDelegateHelper()
     {
         this->type = TRACE_MULTICAST_DELEGATE_HELPER;
-        this->address = addr;
+        this->address = (PCODE)NULL;
         this->stubManager = NULL;
     }
 

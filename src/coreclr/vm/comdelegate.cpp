@@ -2137,7 +2137,6 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
             dwReturnValNum = pCode->NewLocal(sig.GetRetTypeHandleNT());
 
         ILCodeLabel *nextDelegate = pCode->NewCodeLabel();
-        ILCodeLabel *checkCount = pCode->NewCodeLabel();
 
         // initialize counter
         pCode->EmitLDC(0);
@@ -2150,15 +2149,14 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         ILCodeLabel *invokeTraceHelper = pCode->NewCodeLabel();
         ILCodeLabel *debuggerCheckEnd = pCode->NewCodeLabel();
 
-        // Call MulticastDebuggerTraceHelper only if any debugger is attached
-        pCode->EmitLDC((DWORD_PTR)&g_CORDebuggerControlFlags);
+        // Call MulticastDebuggerTraceHelper only if we have a controller subscribing to the event
+        pCode->EmitLDC((DWORD_PTR)&g_multicastDelegateTraceEnabled);
         pCode->EmitCONV_I();
         pCode->EmitLDIND_I4();
-
-        // (g_CORDebuggerControlFlags & DBCF_ATTACHED) != 0
-        pCode->EmitLDC(DBCF_ATTACHED);
-        pCode->EmitAND();
-        pCode->EmitBRTRUE(invokeTraceHelper);
+        // g_multicastDelegateTraceEnabled != 0
+        pCode->EmitLDC(0);
+        pCode->EmitCEQ();
+        pCode->EmitBRFALSE(invokeTraceHelper);
 
         pCode->EmitLabel(debuggerCheckEnd);
 #endif // DEBUGGING_SUPPORTED

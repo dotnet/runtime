@@ -118,7 +118,7 @@ const CHAR * TraceDestination::DbgToString(SString & buffer)
                 buffer.Printf("TRACE_MGR_PUSH(addr=%p, sm=%s)", GetAddress(), this->GetStubManager()->DbgGetName());
                 pValue = buffer.GetUTF8();
                 break;
-            
+
             case TRACE_MULTICAST_DELEGATE_HELPER:
                 buffer.Printf("TRACE_MULTICAST_DELEGATE_HELPER(addr=%p)", GetAddress());
                 pValue = buffer.GetUTF8();
@@ -1717,7 +1717,7 @@ BOOL ILStubManager::DoTraceStub(PCODE stubStartAddress,
     MethodDesc* pStubMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
     if (pStubMD != NULL && pStubMD->AsDynamicMethodDesc()->IsMulticastStub())
     {
-        trace->InitForMulticastDelegateHelper(GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper));
+        trace->InitForMulticastDelegateHelper();
     }
     else
     {

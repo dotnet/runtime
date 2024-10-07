@@ -737,12 +737,18 @@ FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
 }
 FCIMPLEND
 
-FCIMPL2(void, StubHelpers::MulticastDebuggerTraceHelper, Object* element, INT32 count)
+extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::ObjectHandleOnStack element, INT32 count)
 {
-    FCALL_CONTRACT;
-    g_pDebugger->MulticastTraceNextStep((DELEGATEREF)ObjectToOBJECTREF(element), count);
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    g_pDebugger->MulticastTraceNextStep((DELEGATEREF)(element.Get()), count);
+
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL0(void*, StubHelpers::NextCallReturnAddress)
 {

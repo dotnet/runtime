@@ -3906,6 +3906,7 @@ void DebuggerController::EnableMultiCastDelegate()
     {
         LOG((LF_CORDB, LL_INFO1000000, "DC::EnableMultiCastDel, this=%p, already set\n", this));
     }
+    g_multicastDelegateTraceEnabled += 1;
 }
 
 void DebuggerController::DisableMultiCastDelegate()
@@ -3918,7 +3919,6 @@ void DebuggerController::DisableMultiCastDelegate()
     CONTRACTL_END;
 
     ControllerLockHolder chController;
-
     if (m_multicastDelegateHelper)
     {
         LOG((LF_CORDB, LL_INFO10000, "DC::DisableMultiCastDel, this=%p, previously set\n", this));
@@ -3928,6 +3928,7 @@ void DebuggerController::DisableMultiCastDelegate()
     {
         LOG((LF_CORDB, LL_INFO10000, "DC::DisableMultiCastDel, this=%p, already disabled\n", this));
     }
+    g_multicastDelegateTraceEnabled -= 1;
 }
 
 // Loop through controllers and dispatch TriggerMulticastDelegate
