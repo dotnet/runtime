@@ -6319,10 +6319,13 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VBMI_VL);
         }
 
-        if ((JitConfig.EnableAVX512F() != 0) && (JitConfig.EnableAVX512F_VL() != 0) &&
-            (JitConfig.EnableAVX512BW() != 0) && (JitConfig.EnableAVX512BW_VL() != 0) &&
-            (JitConfig.EnableAVX512CD() != 0) && (JitConfig.EnableAVX512CD_VL() != 0) &&
-            (JitConfig.EnableAVX512DQ() != 0) && (JitConfig.EnableAVX512DQ_VL() != 0))
+        if (JitConfig.EnableAVX10v1() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1);
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1_V512);
+        }
+
+        if ((JitConfig.EnableAVX512F() != 0) || (JitConfig.EnableAVX10v1() != 0))
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_EVEX);
         }
