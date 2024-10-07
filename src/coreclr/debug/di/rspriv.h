@@ -2938,13 +2938,11 @@ class UnmanagedThreadTracker
 public:
     UnmanagedThreadTracker(DWORD wThreadId, HANDLE hThread) : m_dwThreadId(wThreadId), m_hThread(hThread) {}
     DWORD GetThreadId() { return m_dwThreadId; }
-    HANDLE GetThreadHandle(CordbProcess * pProcess);
+    HANDLE GetThreadHandle() { return m_hThread; }
     bool IsInPlaceStepping() { return m_pPatchSkipAddress != NULL; }
     void SetPatchSkipAddress(CORDB_ADDRESS_TYPE *pPatchSkipAddress) { m_pPatchSkipAddress = pPatchSkipAddress; }
     CORDB_ADDRESS_TYPE *GetPatchSkipAddress() { return m_pPatchSkipAddress; }
     void ClearPatchSkipAddress() { m_pPatchSkipAddress = NULL; }
-    bool IsSuspended() { return m_dwSuspendCount > 0; }
-    DWORD SuspendCount() { return m_dwSuspendCount; }
     void Suspend();
     void Resume();
     void Close();
@@ -4160,7 +4158,7 @@ private:
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     CUnmanagedThreadHashTableImpl m_unmanagedThreadHashTable;
-
+    DWORD m_dwOutOfProcessStepping;
 public:
     void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
