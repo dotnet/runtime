@@ -52,7 +52,7 @@ inline void LoaderAllocatorID::AddDomainAssembly(DomainAssembly* pAssembly)
     // Link domain assembly together
     if (m_pDomainAssembly != NULL)
     {
-        pAssembly->SetNextDomainAssemblyInSameALC(m_pDomainAssembly);
+        pAssembly->GetAssembly()->SetNextAssemblyInSameALC(m_pDomainAssembly);
     }
     m_pDomainAssembly = pAssembly;
 }
