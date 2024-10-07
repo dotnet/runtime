@@ -11241,7 +11241,7 @@ void CordbProcess::FilterClrNotification(
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 {
-    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded \n"));
+    LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded\n"));
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
     // Before we can read the left side context information, we must:
