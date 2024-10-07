@@ -1300,9 +1300,10 @@ namespace Internal.JitInterface
         {
             // Initialize OUT fields
             info->devirtualizedMethod = null;
-            info->requiresInstMethodTableArg = false;
             info->exactContext = null;
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
+            info->requiresInstMethodTableArg = false;
+            info->wasArrayInterfaceDevirt = false;
 
             TypeDesc objType = HandleToObject(info->objClass);
 
@@ -1519,6 +1520,17 @@ namespace Internal.JitInterface
             TypeDesc comparand = HandleToObject(elemType);
             TypeDesc comparer = IL.Stubs.ComparerIntrinsics.GetEqualityComparerForType(comparand);
             return comparer != null ? ObjectToHandle(comparer) : null;
+        }
+
+        private CORINFO_CLASS_STRUCT_* getSZArrayHelperEnumeratorClass(CORINFO_CLASS_STRUCT_* elemType)
+        {
+            TypeDesc elementType = HandleToObject(elemType);
+            MetadataType placeholderType = _compilation.TypeSystemContext.SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
+            if (placeholderType == null)
+            {
+                return null;
+            }
+            return ObjectToHandle(placeholderType.MakeInstantiatedType(elementType));
         }
 
         private bool isIntrinsicType(CORINFO_CLASS_STRUCT_* classHnd)
@@ -2092,12 +2104,17 @@ namespace Internal.JitInterface
             return (uint)result;
         }
 
-        private CORINFO_MODULE_STRUCT_* getClassModule(CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException("getClassModule"); }
-        private CORINFO_ASSEMBLY_STRUCT_* getModuleAssembly(CORINFO_MODULE_STRUCT_* mod)
-        { throw new NotImplementedException("getModuleAssembly"); }
-        private byte* getAssemblyName(CORINFO_ASSEMBLY_STRUCT_* assem)
-        { throw new NotImplementedException("getAssemblyName"); }
+        private byte* getClassAssemblyName(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            if (type is MetadataType mdType)
+            {
+                return (byte*)GetPin(StringToUTF8(mdType.Module.Assembly.GetName().Name));
+            }
+
+            return null;
+        }
 
 #pragma warning disable CA1822 // Mark members as static
         private void* LongLifetimeMalloc(UIntPtr sz)
@@ -2902,18 +2919,13 @@ namespace Internal.JitInterface
             TypeDesc type1 = HandleToObject(cls1);
             TypeDesc type2 = HandleToObject(cls2);
 
-            // If we have a mixture of shared and unshared types,
-            // consider the unshared type as more specific.
-            bool isType1CanonSubtype = type1.IsCanonicalSubtype(CanonicalFormKind.Any);
-            bool isType2CanonSubtype = type2.IsCanonicalSubtype(CanonicalFormKind.Any);
-            if (isType1CanonSubtype != isType2CanonSubtype)
+            // If both types have the same type definition while
+            // hnd1 is shared and hnd2 is not - consider hnd2 more specific.
+            if (type1.HasSameTypeDefinition(type2))
             {
-                // Only one of type1 and type2 is shared.
-                // type2 is more specific if type1 is the shared type.
-                return isType1CanonSubtype;
+                return type1.IsCanonicalSubtype(CanonicalFormKind.Any) && !type2.IsCanonicalSubtype(CanonicalFormKind.Any);
             }
 
-            // Otherwise both types are either shared or not shared.
             // Look for a common parent type.
             TypeDesc merged = TypeExtensions.MergeTypesToCommonParent(type1, type2);
 
@@ -3106,7 +3118,7 @@ namespace Internal.JitInterface
             return ObjectToHandle(fieldDesc.OwningType);
         }
 
-        private CorInfoType getFieldType(CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* memberParent)
+        private CorInfoType getFieldType(CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* fieldOwnerHint)
         {
             FieldDesc fieldDesc = HandleToObject(field);
             TypeDesc fieldType = fieldDesc.FieldType;
@@ -4463,6 +4475,11 @@ namespace Internal.JitInterface
                 }
             }
             return false;
+        }
+
+        private CORINFO_METHOD_STRUCT_* getSpecialCopyHelper(CORINFO_CLASS_STRUCT_* type)
+        {
+            throw new NotImplementedException("getSpecialCopyHelper");
         }
     }
 }

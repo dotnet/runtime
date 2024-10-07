@@ -3797,8 +3797,8 @@ void MethodTable::CheckRunClassInitThrowing()
     // To find GC hole easier...
     TRIGGERSGC();
 
-    // Don't initialize shared generic instantiations (e.g. MyClass<__Canon>)
-    if (IsSharedByGenericInstantiations())
+    // Don't initialize shared generic instantiations (e.g. MyClass<__Canon>), or an already initialized MethodTable
+    if (IsClassInited() || IsSharedByGenericInstantiations())
         return;
 
     _ASSERTE(!ContainsGenericVariables());
@@ -3903,7 +3903,11 @@ void MethodTable::EnsureTlsIndexAllocated()
     CONTRACTL_END;
 
     PTR_MethodTableAuxiliaryData pAuxiliaryData = GetAuxiliaryDataForWrite();
-    if (!pAuxiliaryData->IsTlsIndexAllocated() && GetNumThreadStaticFields() > 0)
+
+    if (pAuxiliaryData->IsTlsIndexAllocated())
+        return;
+
+    if (GetNumThreadStaticFields() > 0)
     {
         ThreadStaticsInfo *pThreadStaticsInfo = MethodTableAuxiliaryData::GetThreadStaticsInfo(GetAuxiliaryDataForWrite());
         // Allocate space for normal statics if we might have them
@@ -6009,7 +6013,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     GuidInfo *pInfo = GetClass()->GetGuidInfo();
 
     // First check to see if we have already cached the guid for this type.
-    // We currently only cache guids on interfaces and WinRT delegates.
+    // We currently only cache guids on interfaces.
     // In classic mode, though, ensure we don't retrieve the GuidInfo for redirected interfaces
     if ((IsInterface()) && pInfo != NULL
         && (!bClassic))
@@ -7825,8 +7829,9 @@ MethodTable::ResolveVirtualStaticMethod(
     ClassLoadLevel level)
 {
     CONTRACTL{
-       THROWS;
-       GC_TRIGGERS;
+        MODE_ANY;
+        THROWS;
+        GC_TRIGGERS;
     } CONTRACTL_END;
 
     bool verifyImplemented = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::VerifyImplemented) != ResolveVirtualStaticMethodFlags::None;
@@ -7986,6 +7991,12 @@ MethodTable::ResolveVirtualStaticMethod(
 MethodDesc*
 MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level)
 {
+    CONTRACTL{
+        MODE_ANY;
+        THROWS;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
     bool instantiateMethodParameters = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc) != ResolveVirtualStaticMethodFlags::None;
     bool allowVariance = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::AllowVariantMatches) != ResolveVirtualStaticMethodFlags::None;
     bool verifyImplemented = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::VerifyImplemented) != ResolveVirtualStaticMethodFlags::None;
@@ -8041,7 +8052,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         {
             // Allow variant, but not equivalent interface match
             if (!pInterfaceType->HasSameTypeDefAs(pInterfaceMT) ||
-                !pInterfaceMT->CanCastTo(pInterfaceType, NULL))
+                !TypeHandle(pInterfaceMT).CanCastTo(pInterfaceType, NULL))
             {
                 continue;
             }

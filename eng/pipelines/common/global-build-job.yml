@@ -35,6 +35,7 @@ parameters:
   preBuildSteps: []
   templatePath: 'templates'
   templateContext: ''
+  disableComponentGovernance: ''
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml

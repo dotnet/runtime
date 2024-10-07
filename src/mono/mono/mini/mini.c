@@ -420,6 +420,7 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	case MONO_TYPE_VALUETYPE:
 		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_LOADX_MEMBASE;
+		return OP_LOADV_MEMBASE;
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_LOADV_MEMBASE;
 	case MONO_TYPE_GENERICINST:

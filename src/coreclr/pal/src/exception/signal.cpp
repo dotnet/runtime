@@ -190,8 +190,13 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv);
 #else
         handle_signal(SIGTRAP, sigtrap_handler, &g_previous_sigtrap);
+        int additionalFlagsForSigSegv = 0;
+#ifndef TARGET_SUNOS
+        // On platforms that support signal handlers that don't return,
         // SIGSEGV handler runs on a separate stack so that we can handle stack overflow
-        handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv, SA_ONSTACK);
+        additionalFlagsForSigSegv |= SA_ONSTACK;
+#endif
+        handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv, additionalFlagsForSigSegv);
 
         if (!pthrCurrent->EnsureSignalAlternateStack())
         {
@@ -344,7 +349,7 @@ Return :
 --*/
 bool IsRunningOnAlternateStack(void *context)
 {
-#if HAVE_MACH_EXCEPTIONS
+#if HAVE_MACH_EXCEPTIONS || defined(TARGET_SUNOS)
     return false;
 #else
     bool isRunningOnAlternateStack;
@@ -641,15 +646,14 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
                 {
                     PROCAbort(SIGSEGV, siginfo);
                 }
-
-                // The current executable (shared library) doesn't have hardware exception handler installed or opted to not to 
-                // handle it. So this handler will invoke the previously installed handler at the end of this function.
             }
             else
             {
                 (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
-                PROCAbort(SIGSEGV, siginfo);
             }
+
+            // The current executable (shared library) doesn't have hardware exception handler installed or opted to not to
+            // handle it. So this handler will invoke the previously installed handler at the end of this function.
         }
         else
         {

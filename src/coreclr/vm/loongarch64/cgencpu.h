@@ -434,8 +434,6 @@ public:
     void EmitLoadFloatRegImm(FloatReg ft, IntReg base, int offset);
 };
 
-extern "C" void SinglecastDelegateInvokeStub();
-
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 8
