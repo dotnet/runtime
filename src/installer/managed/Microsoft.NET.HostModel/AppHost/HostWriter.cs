@@ -7,7 +7,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Text;
-using Melanzana.CodeSign;
+using Microsoft.NET.HostModel.MachO.CodeSign;
 
 namespace Microsoft.NET.HostModel.AppHost
 {

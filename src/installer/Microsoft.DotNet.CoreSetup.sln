@@ -23,13 +23,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.NET.HostModel.Tes
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "managed", "managed", "{9D78613B-C4A1-43C6-8BF1-6F91AA1627B6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Melanzana.BinaryFormat.Generator", "managed\Melanzana.BinaryFormat.Generator\Melanzana.BinaryFormat.Generator.csproj", "{51193AE2-50BE-4899-9068-AA8E9C2A9C7D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Melanzana.CodeSign", "managed\Melanzana.CodeSign\Melanzana.CodeSign.csproj", "{5ED844D4-DDEA-4801-B274-21CEC28C9C83}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{DDD740C6-C716-45A7-99C5-4F8B2F2D77A5}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Melanzana.CodeSign.Tests", "tests\Melanzana.CodeSign.Tests\Melanzana.CodeSign.Tests.csproj", "{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.NET.HostModel.MachO.BinaryFormat.Generator", "managed\Microsoft.NET.HostModel.MachO.BinaryFormat.Generator\Microsoft.NET.HostModel.MachO.BinaryFormat.Generator.csproj", "{51193AE2-50BE-4899-9068-AA8E9C2A9C7D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -155,38 +149,6 @@ Global
 		{51193AE2-50BE-4899-9068-AA8E9C2A9C7D}.RelWithDebInfo|Any CPU.Build.0 = Debug|Any CPU
 		{51193AE2-50BE-4899-9068-AA8E9C2A9C7D}.RelWithDebInfo|x64.ActiveCfg = Debug|Any CPU
 		{51193AE2-50BE-4899-9068-AA8E9C2A9C7D}.RelWithDebInfo|x64.Build.0 = Debug|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.Debug|x64.Build.0 = Debug|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.MinSizeRel|Any CPU.ActiveCfg = Debug|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.MinSizeRel|Any CPU.Build.0 = Debug|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.MinSizeRel|x64.ActiveCfg = Debug|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.MinSizeRel|x64.Build.0 = Debug|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.Release|x64.ActiveCfg = Release|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.Release|x64.Build.0 = Release|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.RelWithDebInfo|Any CPU.ActiveCfg = Debug|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.RelWithDebInfo|Any CPU.Build.0 = Debug|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.RelWithDebInfo|x64.ActiveCfg = Debug|Any CPU
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83}.RelWithDebInfo|x64.Build.0 = Debug|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.Debug|x64.Build.0 = Debug|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.MinSizeRel|Any CPU.ActiveCfg = Debug|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.MinSizeRel|Any CPU.Build.0 = Debug|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.MinSizeRel|x64.ActiveCfg = Debug|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.MinSizeRel|x64.Build.0 = Debug|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.Release|x64.ActiveCfg = Release|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.Release|x64.Build.0 = Release|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.RelWithDebInfo|Any CPU.ActiveCfg = Debug|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.RelWithDebInfo|Any CPU.Build.0 = Debug|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.RelWithDebInfo|x64.ActiveCfg = Debug|Any CPU
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B}.RelWithDebInfo|x64.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -196,7 +158,5 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{51193AE2-50BE-4899-9068-AA8E9C2A9C7D} = {9D78613B-C4A1-43C6-8BF1-6F91AA1627B6}
-		{5ED844D4-DDEA-4801-B274-21CEC28C9C83} = {9D78613B-C4A1-43C6-8BF1-6F91AA1627B6}
-		{C0790B96-7FB8-4B9F-B8D7-AD1C9F585A1B} = {DDD740C6-C716-45A7-99C5-4F8B2F2D77A5}
 	EndGlobalSection
 EndGlobal

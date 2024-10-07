@@ -11,8 +11,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 using FluentAssertions;
-using Melanzana.CodeSign;
-using Melanzana.MachO;
+using Microsoft.NET.HostModel.MachO.CodeSign;
+using Microsoft.NET.HostModel.MachO;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup;
 using Microsoft.DotNet.CoreSetup.Test;
@@ -479,7 +479,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         private static readonly byte[] s_placeholderData = AppBinaryPathPlaceholderSearchValue.Concat(DotNetSearchPlaceholderValue).ToArray();
         public static string PrepareMockMachAppHostFile(string directory)
         {
-            var objectFile = Melanzana.MachO.Tests.ReadTests.GetMachExecutable();
+            var objectFile = Microsoft.NET.HostModel.MachO.Tests.ReadTests.GetMachExecutable();
             var segments = objectFile.LoadCommands.OfType<MachSegment>().ToArray();
 
             var textSegment = segments.Single(s => s.Name == "__TEXT");

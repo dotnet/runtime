@@ -25,8 +25,8 @@
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="../Melanzana.CodeSign/Melanzana.CodeSign.csproj" Pack="true" IncludeAssets="all"/>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,5 +39,16 @@
     <Compile Include="$(CoreClrProjectRoot)tools\Common\System\Collections\Generic\ArrayBuilder.cs" Link="Common\ArrayBuilder.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference
+      Include="..\Microsoft.NET.HostModel.MachO.BinaryFormat.Generator\Microsoft.NET.HostModel.MachO.BinaryFormat.Generator.csproj"
+      PrivateAssets="all"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+    <Compile Remove="ThrowHelpers.cs" />
+  </ItemGroup>
 
 </Project>

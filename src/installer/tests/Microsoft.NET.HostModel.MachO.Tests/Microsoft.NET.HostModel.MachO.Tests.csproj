@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <NoWarn>NU1605;NU1604;$(NoWarn)</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
+    <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Data\*" />
+  </ItemGroup>
+
+</Project>
