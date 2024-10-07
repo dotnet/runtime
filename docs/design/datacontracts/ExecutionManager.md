@@ -108,14 +108,15 @@ Suppose there is code starting at address 304 (0x130)
 
 * Then the map index will be 304 / 32 = 9 and the byte offset will be 304 % 32 = 16
 * Because addresses are 4-byte aligned, the nibble value will be 1 + 16 / 4 = 5  (we reserve 0 to mean no method).
-* So the map unit containing index 9 will contain the value 0x5 << 22 (the map index 2 means we want the second nibble in the second map unit, and we number the nibbles starting from the most significant) , or 0x1400000
+* So the map unit containing index 9 will contain the value 0x5 << 24 (the map index 9 means we want the second nibble in the second map unit, and we number the nibbles starting from the most significant) , or 
+0x05000000
 
 
 Now suppose we do a lookup for address 306 (0x132)
 * The map index will be 306 / 32 = 9 and the byte offset will be 306 % 32 = 18
 * The nibble value will be 1 + 18 / 4 = 5
-* To do the lookup, we will load the map unit with index 9 (so the second 32-bit unit in the map) and get the value 0x1400000
-* We will then shift to focus on the nibble with map index 9 (which again has nibble shift 22), so
+* To do the lookup, we will load the map unit with index 9 (so the second 32-bit unit in the map) and get the value 0x05000000
+* We will then shift to focus on the nibble with map index 9 (which again has nibble shift 24), so
  the map unit will be 0x00000005 and we will get the nibble value 5.
 * Therefore we know that there is a method start at map index 9, nibble value 5.
 * The map index corresponds to an offset of 288 bytes and the nibble value 5 corresponds to an offset of (5 - 1) * 4 = 16 bytes
@@ -125,7 +126,7 @@ Now suppose we do a lookup for address 302 (0x12E)
 
 * The map index will be 302 / 32 = 9 and the byte offset will be 302 % 32 = 14
 * The nibble value will be 1 + 14 / 4 = 4
-* To do the lookup, we will load the map unit containing map index 9 and get the value 0x1400000
+* To do the lookup, we will load the map unit containing map index 9 and get the value 0x05000000
 * We will then shift to focus on the nibble with map index 9 (which again has nibble shift 22), so we will get
   the nibble value 5.
 * Therefore we know that there is a method start at map index 9, nibble value 5.
