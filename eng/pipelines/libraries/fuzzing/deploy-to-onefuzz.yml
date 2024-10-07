@@ -94,14 +94,6 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
-            onefuzzDropDirectory: $(fuzzerProject)/deployment/ConvertToBase64Fuzzer
-            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-          displayName: Send ConvertToBase64Fuzzer to OneFuzz
-
-        - task: onefuzz-task@0
-          inputs:
-            onefuzzOSes: 'Windows'
-          env:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/HttpHeadersFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send HttpHeadersFuzzer to OneFuzz
