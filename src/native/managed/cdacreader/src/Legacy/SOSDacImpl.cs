@@ -519,7 +519,16 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = contract.GetModuleHandle(addr);
-            *peBase = contract.GetILBase(handle);
+            Contracts.ModuleFlags flags = contract.GetFlags(handle);
+
+            if (!flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit))
+            {
+                *peBase = contract.GetILBase(handle);
+            }
+            else
+            {
+                *peBase = 0;
+            }
         }
         catch (System.Exception ex)
         {
