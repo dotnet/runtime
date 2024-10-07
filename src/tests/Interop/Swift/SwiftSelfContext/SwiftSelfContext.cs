@@ -100,7 +100,9 @@ public class SelfContextTests
     [Fact]
     public unsafe static void TestSelfIsFrozenNonEnregisteredStructWithExtraArgs()
     {
-        float sum = SumFrozenNonEnregisteredStructWithExtraArgs(3f, 4f, new SwiftSelf(new FrozenNonEnregisteredStruct { A = 10, B = 20, C = 30, D = 40, E = 50 }));
+        var nonEnregisteredStruct = new FrozenNonEnregisteredStruct { A = 10, B = 20, C = 30, D = 40, E = 50 };
+        var self = new SwiftSelf(&nonEnregisteredStruct);
+        float sum = SumFrozenNonEnregisteredStructWithExtraArgs(3f, 4f, self);
         Assert.Equal(157f, sum);
     }
 }
