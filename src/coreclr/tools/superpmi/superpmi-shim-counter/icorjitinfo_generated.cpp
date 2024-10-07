@@ -176,6 +176,13 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(
     return original_ICorJitInfo->getDefaultEqualityComparerClass(elemType);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getSZArrayHelperEnumeratorClass(
+          CORINFO_CLASS_HANDLE elemType)
+{
+    mcs->AddCall("getSZArrayHelperEnumeratorClass");
+    return original_ICorJitInfo->getSZArrayHelperEnumeratorClass(elemType);
+}
+
 void interceptor_ICJI::expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_METHOD_HANDLE callerHandle,
