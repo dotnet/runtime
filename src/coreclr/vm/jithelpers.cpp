@@ -533,77 +533,17 @@ HCIMPL1(void*, JIT_GetStaticFieldAddr, FieldDesc* pFD)
 HCIMPLEND
 #include <optdefault.h>
 
-// Slow helper to tailcall from the fast one
-NOINLINE HCIMPL1(void, JIT_InitClass_Framed, MethodTable* pMT)
+// Helper for the managed InitClass implementations
+extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT)
 {
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    // We don't want to be calling JIT_InitClass at all for perf reasons
-    // on the Global Class <Module> as the Class loading logic ensures that we
-    // already have initialized the Global Class <Module>
-    CONSISTENCY_CHECK(!pMT->IsGlobalClass());
-
-    _ASSERTE(pMT->IsFullyLoaded());
-    pMT->CheckRunClassInitThrowing();
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-
-/*************************************************************/
-#include <optsmallperfcritical.h>
-HCIMPL1(void, JIT_InitClass, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHnd(typeHnd_);
-    MethodTable *pMT = typeHnd.AsMethodTable();
-
-    if (pMT->IsClassInited())
-        return;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    HCCALL1(JIT_InitClass_Framed, pMT);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*************************************************************/
-HCIMPL2(void, JIT_InitInstantiatedClass, CORINFO_CLASS_HANDLE typeHnd_, CORINFO_METHOD_HANDLE methHnd_)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(methHnd_ != NULL);
-    } CONTRACTL_END;
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-
-    MethodTable * pMT = (MethodTable*) typeHnd_;
-    MethodDesc *  pMD = (MethodDesc*)  methHnd_;
-
-    MethodTable * pTemplateMT = pMD->GetMethodTable();
-    if (pTemplateMT->IsSharedByGenericInstantiations())
-    {
-        pMT = ClassLoader::LoadGenericInstantiationThrowing(pTemplateMT->GetModule(),
-                                                            pTemplateMT->GetCl(),
-                                                            pMD->GetExactClassInstantiation(pMT)).AsMethodTable();
-    }
-    else
-    {
-        pMT = pTemplateMT;
-    }
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
 
     _ASSERTE(pMT->IsFullyLoaded());
     pMT->EnsureInstanceActive();
     pMT->CheckRunClassInitThrowing();
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-HCIMPLEND
-
 
 //========================================================================
 //
@@ -613,38 +553,6 @@ HCIMPLEND
 
 #include <optsmallperfcritical.h>
 
-HCIMPL1(void*, JIT_GetNonGCStaticBase_Portable, MethodTable* pMT)
-{
-    FCALL_CONTRACT;
-
-    PTR_BYTE pBase;
-    if (pMT->GetDynamicStaticsInfo()->GetIsInitedAndNonGCStaticsPointerIfInited(&pBase))
-    {
-        return pBase;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetNonGCStaticBase_Helper, pMT);
-}
-HCIMPLEND
-
-
-HCIMPL1(void*, JIT_GetDynamicNonGCStaticBase_Portable, DynamicStaticsInfo* pStaticsInfo)
-{
-    FCALL_CONTRACT;
-
-    PTR_BYTE pBase;
-    if (pStaticsInfo->GetIsInitedAndNonGCStaticsPointerIfInited(&pBase))
-    {
-        return pBase;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetNonGCStaticBase_Helper, pStaticsInfo->GetMethodTable());
-}
-HCIMPLEND
 // No constructor version of JIT_GetSharedNonGCStaticBase.  Does not check if class has
 // been initialized.
 HCIMPL1(void*, JIT_GetNonGCStaticBaseNoCtor_Portable, MethodTable* pMT)
@@ -662,38 +570,6 @@ HCIMPL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicStaticsInfo*
     FCALL_CONTRACT;
 
     return pDynamicStaticsInfo->GetNonGCStaticsPointerAssumeIsInited();
-}
-HCIMPLEND
-
-HCIMPL1(void*, JIT_GetGCStaticBase_Portable, MethodTable* pMT)
-{
-    FCALL_CONTRACT;
-
-    PTR_OBJECTREF pBase;
-    if (pMT->GetDynamicStaticsInfo()->GetIsInitedAndGCStaticsPointerIfInited(&pBase))
-    {
-        return pBase;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetGCStaticBase_Helper, pMT);
-}
-HCIMPLEND
-
-HCIMPL1(void*, JIT_GetDynamicGCStaticBase_Portable, DynamicStaticsInfo* pStaticsInfo)
-{
-    FCALL_CONTRACT;
-
-    PTR_OBJECTREF pBase;
-    if (pStaticsInfo->GetIsInitedAndGCStaticsPointerIfInited(&pBase))
-    {
-        return pBase;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetGCStaticBase_Helper, pStaticsInfo->GetMethodTable());
 }
 HCIMPLEND
 
@@ -718,37 +594,6 @@ HCIMPL1(void*, JIT_GetDynamicGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pD
 HCIMPLEND
 
 #include <optdefault.h>
-
-
-// The following two functions can be tail called from platform dependent versions of
-// JIT_GetSharedGCStaticBase and JIT_GetShareNonGCStaticBase
-HCIMPL1(void*, JIT_GetNonGCStaticBase_Helper, MethodTable* pMT)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    PREFIX_ASSUME(pMT != NULL);
-    pMT->CheckRunClassInitThrowing();
-    HELPER_METHOD_FRAME_END();
-
-    return (void*)pMT->GetDynamicStaticsInfo()->GetNonGCStaticsPointer();
-}
-HCIMPLEND
-
-HCIMPL1(void*, JIT_GetGCStaticBase_Helper, MethodTable* pMT)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    PREFIX_ASSUME(pMT != NULL);
-    pMT->CheckRunClassInitThrowing();
-    HELPER_METHOD_FRAME_END();
-
-    return (void*)pMT->GetDynamicStaticsInfo()->GetGCStaticsPointer();
-}
-HCIMPLEND
 
 //========================================================================
 //
