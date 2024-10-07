@@ -20,7 +20,39 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 // If the nibble is non-zero, we have the start of a method and it is near the given address.
 // If the nibble is zero, we have to search backward first through the current map unit, and then through previous map
 // units until we find a non-zero nibble.
-internal sealed class NibbleMap
+//
+// For example (all code addresses are relative to some unspecified base):
+//  Suppose there is code starting at address 304 (0x130)
+//  Then the map index will be 304 / 32 = 9 and the byte offset will be 304 % 32 = 16
+//  Because addresses are 4-byte aligned, the nibble value will be 1 + 16 / 4 = 5  (we reserve 0 to mean no method).
+//  So the map unit containing index 9 will contain the value 0x5 << 22 (the map index 2 means we want the second nibble in the second map unit, and we number the nibbles starting from the most significant)
+//  Or 0x1400000
+//
+//  Now suppose we do a lookup for address 306 (0x132)
+//  The map index will be 306 / 32 = 9 and the byte offset will be 306 % 32 = 18
+//  The nibble value will be 1 + 18 / 4 = 5
+//  To do the lookup, we will load the map unit with index 9 (so the second 32-bit unit in the map) and get the value 0x1400000
+//  We will then shift to focus on the nibble with map index 9 (which again has nibble shift 22), so
+//  the map unit will be 0x00000005 and we will get the nibble value 5.
+//  Therefore we know that there is a method start at map index 9, nibble value 5.
+//  The map index corresponds to an offset of 288 bytes and the nibble value 5 corresponds to an offset of (5 - 1) * 4 = 16 bytes
+//  So the method starts at offset 288 + 16 = 304, which is the address we were looking for.
+//
+//  Now suppose we do a lookup for address 302 (0x12E)
+//  The map index will be 302 / 32 = 9 and the byte offset will be 302 % 32 = 14
+//  The nibble value will be 1 + 14 / 4 = 4
+//  To do the lookup, we will load the map unit containing map index 9 and get the value 0x1400000
+//  We will then shift to focus on the nibble with map index 9 (which again has nibble shift 22), so we will get
+//  the nibble value 5.
+//  Therefore we know that there is a method start at map index 9, nibble value 5.
+//  But the address we're looking for is map index 9, nibble value 4.
+//  We know that methods can't start within 32-bytes of each other, so we know that the method we're looking for is not in the current nibble.
+//  We will then try to shift to the previous nibble in the map unit (0x00000005 >> 4 = 0x00000000)
+//  Therefore we know there is no method start at any map index in the current map unit.
+//  We will then align the map index to the start of the current map unit (map index 8) and move back to the previous map unit (map index 7)
+//  At that point, we scan backwards for non-zero map units. Since there are none, we return null.
+
+internal class NibbleMap
 {
     // We load the map contents as 32-bit integers, which contains 8 4-bit nibbles.
     // The algorithm will focus on each nibble in a map unit before moving on to the previous map unit
@@ -104,9 +136,9 @@ internal sealed class NibbleMap
         // Get a MapKey that is aligned to the first nibble in the map unit that contains this map index
         public MapKey AlignDownToMapUnit() =>new MapKey(MapIdx & (~(MapUnit.SizeInNibbles - 1)));
 
-        // If the map index is less than the size of a map unit, we are before the first code header and
+        // If the map index is less than the size of a map unit, we are in the first MapUnit and
         // can stop searching
-        public bool BeforeFirstCodeHeader => MapIdx < MapUnit.SizeInNibbles;
+        public bool InFirstMapUnit => MapIdx < MapUnit.SizeInNibbles;
 
         public bool IsZero => MapIdx == 0;
 
@@ -205,9 +237,9 @@ internal sealed class NibbleMap
             return GetAbsoluteAddress(mapBase, mapIdx, t.Nibble);
         }
 
-        // if we were near the beginning of the address space, there is not enough space for the code header,
-        // so we can stop
-        if (mapIdx.BeforeFirstCodeHeader)
+        // We finished the current map unit, we want to move to the previous one.
+        // But if we were in the first map unit, we can stop
+        if (mapIdx.InFirstMapUnit)
         {
             return TargetPointer.Null;
         }
@@ -218,19 +250,21 @@ internal sealed class NibbleMap
         mapIdx = mapIdx.Prev;
 
         // read the map unit containing mapIdx and skip over it if it is all zeros
-        while (!mapIdx.BeforeFirstCodeHeader)
+        while (true)
         {
             t = ReadMapUnit(mapStart, mapIdx);
             if (!t.IsZero)
                 break;
+            if (mapIdx.InFirstMapUnit)
+            {
+                // we're at the first map unit and all the bits in the map unit are zero,
+                // there is no code header to find
+                return TargetPointer.Null;
+            }
             mapIdx = mapIdx.PrevMapUnit;
         }
 
-        // if we went all the way to the front, we didn't find a code header
-        if (mapIdx.BeforeFirstCodeHeader)
-        {
-            return TargetPointer.Null;
-        }
+        Debug.Assert(!t.IsZero);
 
         // move to the correct nibble in the map unit
         while (!mapIdx.IsZero && t.Nibble.IsEmpty)
