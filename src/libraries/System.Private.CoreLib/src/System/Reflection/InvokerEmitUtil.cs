@@ -20,9 +20,6 @@ namespace System.Reflection
         {
             Debug.Assert(!method.ContainsGenericParameters);
 
-            bool emitNew = method is RuntimeConstructorInfo;
-            bool hasThis = !emitNew && !method.IsStatic;
-
             Type[] delegateParameters = [typeof(object), typeof(object), typeof(object), typeof(object), typeof(object)];
 
             string declaringTypeName = method.DeclaringType != null ? method.DeclaringType.Name + "." : string.Empty;
@@ -36,7 +33,7 @@ namespace System.Reflection
             ILGenerator il = dm.GetILGenerator();
 
             // Handle instance methods.
-            if (hasThis)
+            if (!method.IsStatic)
             {
                 il.Emit(OpCodes.Ldarg_0);
                 if (method.DeclaringType!.IsValueType)
@@ -77,7 +74,7 @@ namespace System.Reflection
                 }
             }
 
-            EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
+            EmitCallAndReturnHandling(il, method, backwardsCompat);
 
             // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
             return (InvokeFunc_Obj4Args)dm.CreateDelegate(typeof(InvokeFunc_Obj4Args), target: null);
@@ -87,10 +84,6 @@ namespace System.Reflection
         {
             Debug.Assert(!method.ContainsGenericParameters);
 
-            bool emitNew = method is RuntimeConstructorInfo;
-            bool hasThis = !emitNew && !method.IsStatic;
-
-            // The first parameter is unused but supports treating the DynamicMethod as an instance method which is slightly faster than a static.
             Type[] delegateParameters = [typeof(object), typeof(Span<object>)];
 
             string declaringTypeName = method.DeclaringType != null ? method.DeclaringType.Name + "." : string.Empty;
@@ -104,7 +97,7 @@ namespace System.Reflection
             ILGenerator il = dm.GetILGenerator();
 
             // Handle instance methods.
-            if (hasThis)
+            if (!method.IsStatic)
             {
                 il.Emit(OpCodes.Ldarg_0);
                 if (method.DeclaringType!.IsValueType)
@@ -134,7 +127,7 @@ namespace System.Reflection
                 }
             }
 
-            EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
+            EmitCallAndReturnHandling(il, method, backwardsCompat);
 
             // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
             return (InvokeFunc_ObjSpanArgs)dm.CreateDelegate(typeof(InvokeFunc_ObjSpanArgs), target: null);
@@ -144,11 +137,7 @@ namespace System.Reflection
         {
             Debug.Assert(!method.ContainsGenericParameters);
 
-            bool emitNew = method is RuntimeConstructorInfo;
-            bool hasThis = !(emitNew || method.IsStatic);
-
-            // The first parameter is unused but supports treating the DynamicMethod as an instance method which is slightly faster than a static.
-            Type[] delegateParameters = [typeof(object), typeof(object), typeof(IntPtr*)];
+            Type[] delegateParameters = [typeof(object), typeof(IntPtr*)];
 
             string declaringTypeName = method.DeclaringType != null ? method.DeclaringType.Name + "." : string.Empty;
             var dm = new DynamicMethod(
@@ -161,9 +150,9 @@ namespace System.Reflection
             ILGenerator il = dm.GetILGenerator();
 
             // Handle instance methods.
-            if (hasThis)
+            if (!method.IsStatic)
             {
-                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Ldarg_0);
                 if (method.DeclaringType!.IsValueType)
                 {
                     il.Emit(OpCodes.Unbox, method.DeclaringType);
@@ -174,7 +163,7 @@ namespace System.Reflection
             ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
             for (int i = 0; i < parameters.Length; i++)
             {
-                il.Emit(OpCodes.Ldarg_2);
+                il.Emit(OpCodes.Ldarg_1);
                 if (i != 0)
                 {
                     il.Emit(OpCodes.Ldc_I4, i * IntPtr.Size);
@@ -190,7 +179,7 @@ namespace System.Reflection
                 }
             }
 
-            EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
+            EmitCallAndReturnHandling(il, method, backwardsCompat);
 
             // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
             return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
@@ -205,7 +194,7 @@ namespace System.Reflection
             il.Emit(OpCodes.Ldobj, parameterType);
         }
 
-        private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool emitNew, bool backwardsCompat)
+        private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool backwardsCompat)
         {
             // For CallStack reasons, don't inline target method.
             // Mono interpreter does not support\need this.
@@ -219,31 +208,26 @@ namespace System.Reflection
 #endif
             }
 
-            // Invoke the method.
-            if (emitNew)
+            if (method is RuntimeConstructorInfo rci)
             {
-                il.Emit(OpCodes.Newobj, (ConstructorInfo)method);
-            }
-            else if (method.IsStatic || method.DeclaringType!.IsValueType)
-            {
-                il.Emit(OpCodes.Call, (MethodInfo)method);
-            }
-            else
-            {
-                il.Emit(OpCodes.Callvirt, (MethodInfo)method);
-            }
+                Debug.Assert(!method.IsStatic);
+                Debug.Assert(!method.IsVirtual);
 
-            // Handle the return.
-            if (emitNew)
-            {
-                Type returnType = method.DeclaringType!;
-                if (returnType.IsValueType)
-                {
-                    il.Emit(OpCodes.Box, returnType);
-                }
+                il.Emit(OpCodes.Call, rci);
+                il.Emit(OpCodes.Ldnull);
             }
             else
             {
+                if (method.IsStatic || method.DeclaringType!.IsValueType)
+                {
+                    il.Emit(OpCodes.Call, (MethodInfo)method);
+                }
+                else
+                {
+                    il.Emit(OpCodes.Callvirt, (MethodInfo)method);
+                }
+
+                // Handle the return.
                 RuntimeType returnType;
                 if (method is RuntimeMethodInfo rmi)
                 {
@@ -309,6 +293,16 @@ namespace System.Reflection
             }
 
             il.Emit(OpCodes.Ret);
+        }
+
+        private static Type GetParameterTypeForCallI(Type type)
+        {
+            if (type.IsByRef || type.IsValueType || type.IsPointer || type.IsFunctionPointer)
+            {
+                return type;
+            }
+
+            return typeof(object);
         }
 
         private static class ThrowHelper

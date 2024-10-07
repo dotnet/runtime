@@ -12,7 +12,7 @@ namespace System.Reflection
     internal sealed partial class MethodBaseInvoker
     {
         // The rarely used scenario of calling the constructor on an existing instance.
-        internal unsafe object? InvokeConstructorWithoutAlloc(
+        internal unsafe void InvokeConstructorWithoutAlloc(
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
@@ -20,7 +20,6 @@ namespace System.Reflection
             CultureInfo? culture)
         {
             bool wrapInTargetInvocationException = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            object? ret;
             int argCount = _argCount;
 
             scoped Span<bool> shouldCopyBack = stackalloc bool[argCount];
@@ -48,7 +47,7 @@ namespace System.Reflection
                 try
                 {
                     // Use the interpreted version to avoid having to generate a new method that doesn't allocate.
-                    ret = InterpretedInvoke_Constructor(obj, pByRefStorage);
+                    InterpretedInvoke_Constructor(obj, pByRefStorage);
                 }
                 catch (Exception e) when (wrapInTargetInvocationException)
                 {
@@ -56,7 +55,6 @@ namespace System.Reflection
                 }
 
                 CopyBack(parameters, copyOfArgs, shouldCopyBack);
-                return ret;
             }
             finally
             {
@@ -65,12 +63,12 @@ namespace System.Reflection
             }
         }
 
-        internal unsafe object? InvokeConstructorWithoutAlloc(object? obj, bool wrapInTargetInvocationException)
+        internal unsafe void InvokeConstructorWithoutAlloc(object? obj, bool wrapInTargetInvocationException)
         {
             try
             {
                 // Use the interpreted version to avoid having to generate a new method that doesn't allocate.
-                return InterpretedInvoke_Constructor(obj, null);
+                InterpretedInvoke_Constructor(obj, null);
             }
             catch (Exception e) when (wrapInTargetInvocationException)
             {

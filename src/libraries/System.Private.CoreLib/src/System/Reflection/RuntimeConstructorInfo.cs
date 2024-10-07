@@ -104,7 +104,9 @@ namespace System.Reflection
             CultureInfo? culture)
         {
             if ((InvocationFlags & InvocationFlags.NoInvoke) != 0)
+            {
                 ThrowNoInvokeException();
+            }
 
             if (!IsStatic)
             {
@@ -126,9 +128,23 @@ namespace System.Reflection
                 return null;
             }
 
-            return argCount == 0 ?
-                Invoker.InvokeConstructorWithoutAlloc(obj!, (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0) :
-                Invoker.InvokeConstructorWithoutAlloc(obj!, invokeAttr, binder, parameters!, culture);
+            switch (argCount)
+            {
+                case 0 :
+                    Invoker.InvokeWithNoArgs(obj, invokeAttr);
+                    break;
+                case 1 :
+                    Invoker.InvokeWithOneArg(obj, invokeAttr, binder, parameters!, culture);
+                    break;
+                case 2 or 3 or 4 :
+                    Invoker.InvokeWithFewArgs(obj, invokeAttr, binder, parameters!, culture);
+                    break;
+                default:
+                    Invoker.InvokeWithManyArgs(obj, invokeAttr, binder, parameters!, culture);
+                    break;
+            };
+
+            return null;
         }
 
         [DebuggerStepThrough]
@@ -150,13 +166,33 @@ namespace System.Reflection
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
 
-            return argCount switch
+            object obj;
+            try
             {
-                0 => Invoker.InvokeWithNoArgs(obj: null, invokeAttr)!,
-                1 => Invoker.InvokeWithOneArg(obj: null, invokeAttr, binder, parameters!, culture)!,
-                2 or 3 or 4 => Invoker.InvokeWithFewArgs(obj: null, invokeAttr, binder, parameters!, culture)!,
-                _ => Invoker.InvokeWithManyArgs(obj: null, invokeAttr, binder, parameters!, culture)!,
+                obj = ((RuntimeType)DeclaringType!).GetUninitializedObject();
+            }
+            catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+            {
+                throw new TargetInvocationException(e);
+            }
+
+            switch (argCount)
+            {
+                case 0:
+                    Invoker.InvokeWithNoArgs(obj, invokeAttr);
+                    break;
+                case 1:
+                    Invoker.InvokeWithOneArg(obj, invokeAttr, binder, parameters!, culture);
+                    break;
+                case 2 or 3 or 4:
+                    Invoker.InvokeWithFewArgs(obj, invokeAttr, binder, parameters!, culture);
+                    break;
+                default:
+                    Invoker.InvokeWithManyArgs(obj, invokeAttr, binder, parameters!, culture);
+                    break;
             };
+
+            return obj;
         }
     }
 }

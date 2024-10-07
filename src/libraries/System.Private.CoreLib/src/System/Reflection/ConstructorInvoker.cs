@@ -176,10 +176,12 @@ namespace System.Reflection
                     break;
             }
 
+            object obj = ((RuntimeType)_method.DeclaringType!).GetUninitializedObject();
+
             // Check fast path first.
             if (_invokeFunc_Obj4Args is not null)
             {
-                return _invokeFunc_Obj4Args(obj: null, arg1, arg2, arg3, arg4)!;
+                return _invokeFunc_Obj4Args(obj, arg1, arg2, arg3, arg4)!;
             }
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_Obj4Args) == 0)
@@ -187,7 +189,7 @@ namespace System.Reflection
                 DetermineStrategy_Obj4Args(ref _strategy, ref _invokeFunc_Obj4Args, _method, _needsByRefStrategy, backwardsCompat: false);
                 if (_invokeFunc_Obj4Args is not null)
                 {
-                    return _invokeFunc_Obj4Args(obj: null, arg1, arg2, arg3, arg4)!;
+                    return _invokeFunc_Obj4Args(obj, arg1, arg2, arg3, arg4)!;
                 }
             }
 
@@ -255,10 +257,12 @@ namespace System.Reflection
                 copyOfArgs[i] = arg;
             }
 
+            object obj = ((RuntimeType)_method.DeclaringType!).GetUninitializedObject();
+
             // Check fast path first.
             if (_invokeFunc_ObjSpanArgs is not null)
             {
-                return _invokeFunc_ObjSpanArgs(obj: null, copyOfArgs)!;
+                return _invokeFunc_ObjSpanArgs(obj, copyOfArgs)!;
                 // No need to call CopyBack here since there are no ref values.
             }
 
@@ -267,13 +271,13 @@ namespace System.Reflection
                 DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: false);
                 if (_invokeFunc_ObjSpanArgs is not null)
                 {
-                    return _invokeFunc_ObjSpanArgs(obj: null, copyOfArgs)!;
+                    return _invokeFunc_ObjSpanArgs(obj, copyOfArgs)!;
                 }
             }
 
-            object ret = InvokeDirectByRefWithFewArgs(copyOfArgs);
+            InvokeDirectByRefWithFewArgs(copyOfArgs);
             CopyBack(arguments, copyOfArgs, shouldCopyBack);
-            return ret;
+            return obj;
         }
 
         internal object InvokeDirectByRef(object? arg1 = null, object? arg2 = null, object? arg3 = null, object? arg4 = null)
@@ -299,19 +303,21 @@ namespace System.Reflection
                     ByReference.Create(ref copyOfArgs[i]);
             }
 
-            return _invokeFunc_RefArgs!(obj: null, pByRefFixedStorage)!;
+            object obj = ((RuntimeType)_method.DeclaringType!).GetUninitializedObject();
+            return _invokeFunc_RefArgs!(obj, pByRefFixedStorage)!;
         }
 
         internal unsafe object InvokeWithManyArgs(Span<object?> arguments)
         {
             Span<object?> copyOfArgs;
             GCFrameRegistration regArgStorage;
-            object ret;
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
                 DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: false);
             }
+
+            object obj = ((RuntimeType)_method.DeclaringType!).GetUninitializedObject();
 
             if (_invokeFunc_ObjSpanArgs is not null)
             {
@@ -331,7 +337,7 @@ namespace System.Reflection
                         copyOfArgs[i] = arg;
                     }
 
-                    ret = _invokeFunc_ObjSpanArgs(obj: null, copyOfArgs)!;
+                    _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
                     // No need to call CopyBack here since there are no ref values.
                 }
                 finally
@@ -371,7 +377,7 @@ namespace System.Reflection
                             ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i));
                     }
 
-                    ret = _invokeFunc_RefArgs!(obj: null, pByRefStorage)!;
+                    _invokeFunc_RefArgs!(obj, pByRefStorage);
                     CopyBack(arguments, copyOfArgs, shouldCopyBack);
                 }
                 finally
@@ -381,7 +387,7 @@ namespace System.Reflection
                 }
             }
 
-            return ret;
+            return obj;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
