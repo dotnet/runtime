@@ -2266,7 +2266,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 return SidType.FakeObject;
             }
 
-            // Is the SID S - 1 - 5 - 0 - 0 - 0 - RID(sentinel SID) ?
+            // Is the SID S-1-5-0-0-0-RID(sentinel SID)?
             if (IsSentinelSID(pSid))
             {
                 return SidType.FakeObject;
@@ -2334,8 +2334,8 @@ namespace System.DirectoryServices.ActiveDirectory
         //
         // The sentinel SID were placed in the domain SID range S-1-5-21-X-Y-Z-R with R < 512 because the existing domain controllers would always filter those SIDs out at boundaries.
         // That way, the sentinel SID which says the claims or compound data is safe to consume would be removed should the claims or compound PAC ever pass through a domain controller
-        // that did not know how to apply security checks. S-1-5-21-X-Y-Z-R means that the SID belongs to a domain(including the local account domain) unless X = Y = Z = 0 in which
-        // case it’s a sentinel SID, a special type of pseudo-object that can’t be interpreted in isolation.
+        // that did not know how to apply security checks. S-1-5-21-X-Y-Z-R means that the SID belongs to a domain(including the local account domain) unless X=Y=Z=0 in which
+        // case itï¿½s a sentinel SID, a special type of pseudo-object that canï¿½t be interpreted in isolation.
         //
         internal static bool IsSentinelSID(IntPtr pSid)
         {
@@ -2379,7 +2379,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             //
-            // This means X=Y-Z=0
+            // This means X=Y=Z=0
             //
             return true;
         }
