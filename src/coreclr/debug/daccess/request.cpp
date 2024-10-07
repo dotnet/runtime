@@ -2625,7 +2625,7 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
 
             DacAssertsEnabledHolder assertsEnabled;
             _ASSERTE(hr == hrLocal);
-            _ASSERTE(baseLocal == NULL || *base == baseLocal);
+            _ASSERTE(*base == baseLocal);
         }
 #endif
     }
