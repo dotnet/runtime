@@ -38,7 +38,6 @@ PhaseStatus Compiler::optSwitchRecognition()
 
     if (modified)
     {
-        fgRenumberBlocks();
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 #endif
