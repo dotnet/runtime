@@ -529,6 +529,7 @@ HANDLES(RTH_19, "GetGenericParameterInfo", ves_icall_RuntimeTypeHandle_GetGeneri
 HANDLES(RTH_6, "GetGenericTypeDefinition_impl", ves_icall_RuntimeTypeHandle_GetGenericTypeDefinition_impl, void, 2, (MonoQCallTypeHandle, MonoObjectHandleOnStack))
 HANDLES(RTH_7, "GetMetadataToken", ves_icall_RuntimeTypeHandle_GetMetadataToken, guint32, 1, (MonoQCallTypeHandle))
 HANDLES(RTH_8, "GetModule", ves_icall_RuntimeTypeHandle_GetModule, void, 2, (MonoQCallTypeHandle, MonoObjectHandleOnStack))
+HANDLES(RTH_8a, "GetMonoClass", ves_icall_RuntimeTypeHandle_GetMonoClass, gpointer, 1, (MonoQCallTypeHandle))
 NOHANDLES(ICALL(RTH_9, "HasInstantiation", ves_icall_RuntimeTypeHandle_HasInstantiation))
 HANDLES(RTH_20, "HasReferences", ves_icall_RuntimeTypeHandle_HasReferences, MonoBoolean, 1, (MonoQCallTypeHandle))
 HANDLES(RTH_21, "IsByRefLike", ves_icall_RuntimeTypeHandle_IsByRefLike, MonoBoolean, 1, (MonoQCallTypeHandle))

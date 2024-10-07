@@ -20,7 +20,7 @@ namespace System
         {
             type = new RuntimeTypeHandle(targetType);
             _value = ref target;
-            _type = targetType.GetUnderlyingNativeHandle();
+            _type = RuntimeTypeHandle.GetMonoClass(targetType);
         }
 
         public static unsafe object? ToObject(TypedReference value)

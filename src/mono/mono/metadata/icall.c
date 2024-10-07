@@ -3024,6 +3024,13 @@ ves_icall_RuntimeTypeHandle_GetModule (MonoQCallTypeHandle type_handle, MonoObje
 	HANDLE_ON_STACK_SET (res, MONO_HANDLE_RAW (module));
 }
 
+gpointer
+ves_icall_RuntimeTypeHandle_GetMonoClass (MonoQCallTypeHandle type_handle, MonoError *error)
+{
+	MonoType *t = type_handle.type;
+	return mono_class_from_mono_type_internal (t);
+}
+
 void
 ves_icall_RuntimeTypeHandle_GetAssembly (MonoQCallTypeHandle type_handle, MonoObjectHandleOnStack res, MonoError *error)
 {
