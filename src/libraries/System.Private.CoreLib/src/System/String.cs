@@ -432,14 +432,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyTo(Span<char> destination)
         {
-            if ((uint)Length <= (uint)destination.Length)
-            {
-                Buffer.Memmove(ref destination._reference, ref _firstChar, (uint)Length);
-            }
-            else
+            if (destination.Length < Length)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
+
+            Buffer.Memmove(ref destination._reference, ref _firstChar, (uint)Length);
         }
 
         /// <summary>Copies the contents of this string into the destination span.</summary>
@@ -448,13 +446,13 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryCopyTo(Span<char> destination)
         {
-            bool retVal = false;
-            if ((uint)Length <= (uint)destination.Length)
+            if (destination.Length < Length)
             {
-                Buffer.Memmove(ref destination._reference, ref _firstChar, (uint)Length);
-                retVal = true;
+                return false;
             }
-            return retVal;
+
+            Buffer.Memmove(ref destination._reference, ref _firstChar, (uint)Length);
+            return true;
         }
 
         // Returns the entire string as an array of characters.
