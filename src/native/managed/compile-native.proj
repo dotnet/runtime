@@ -28,13 +28,6 @@
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == ''">false</SupportsNativeAotComponents>
     </PropertyGroup>
 
-    <!-- some special kinds of runtime builds need extra NativeAOT flags -->
-    <PropertyGroup>
-        <SysRoot Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
-        <LinkerFlavor Condition="'$(CrossBuild)' == 'true' and '$(TargetsLinux)' == 'true'">lld</LinkerFlavor>
-        <CustomLinkerArgToolchainArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'">--gcc-toolchain=$(ROOTFS_DIR)/usr</CustomLinkerArgToolchainArg>
-    </PropertyGroup>
-
     <ItemGroup>
         <!-- additional native compilation-specific properties to pass down to the ProjectReference -->
         <SubprojectProps Include="NativeLib" Value="$(NativeLibKind)"/>
@@ -45,7 +38,7 @@
     </ItemGroup>
 
     <Import Project=".\subproject.props" />
-    
+
     <ItemGroup>
         <ProjectReference Include="@(NativeLibsProjectsToBuild)"
                           ReferenceOutputAssembly="false"
