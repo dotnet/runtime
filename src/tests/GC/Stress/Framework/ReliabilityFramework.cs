@@ -278,7 +278,7 @@ public class ReliabilityFramework
         catch (OutOfMemoryException)
         {
             // hang and let someone debug if we can't even break in...
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Exception while running tests: {0}", OutOfMemoryException));
+            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "Out of memory");
         }
     }
 
@@ -740,7 +740,7 @@ public class ReliabilityFramework
                     Thread.Sleep(250);	// give the CPU a bit of a rest if we don't need to start a new test.
                     if (_curTestSet.DebugBreakOnMissingTest && DateTime.Now.Subtract(_startTime) > minTimeToStartTest)
                     {
-                        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("New tests not starting."));
+                        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("New tests not starting"));
                     }
                 }
             }
