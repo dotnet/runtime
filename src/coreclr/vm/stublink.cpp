@@ -86,6 +86,15 @@ struct LabelRef : public CodeElement
     LabelRef            *m_nextLabelRef;
 };
 
+#ifdef TARGET_ARM
+void StubLinker::DescribeProlog(UINT cCalleeSavedRegs, UINT cbStackFrame, BOOL fPushArgRegs)
+{
+    m_fProlog = TRUE;
+    m_cCalleeSavedRegs = cCalleeSavedRegs;
+    m_cbStackFrame = cbStackFrame;
+    m_fPushArgRegs = fPushArgRegs;
+}
+#endif // TARGET_ARM
 
 //************************************************************************
 // StubLinker
@@ -114,12 +123,6 @@ StubLinker::StubLinker()
     m_cCalleeSavedRegs  = 0;
     m_cbStackFrame      = 0;
     m_fPushArgRegs      = FALSE;
-#endif
-#ifdef TARGET_RISCV64
-    m_fProlog           = FALSE;
-    m_cIntRegArgs       = 0;
-    m_cFpRegArgs        = 0;
-    m_cbStackSpace      = 0;
 #endif
 }
 

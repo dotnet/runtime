@@ -168,7 +168,11 @@ class StubLinker
 
         void SetDataOnly(BOOL fDataOnly = TRUE) { LIMITED_METHOD_CONTRACT; m_fDataOnly = fDataOnly; }
 
-public:
+#ifdef TARGET_ARM
+        void DescribeProlog(UINT cCalleeSavedRegs, UINT cbStackFrame, BOOL fPushArgRegs);
+#endif
+
+    public:
 
         //---------------------------------------------------------------
         // Generate the actual stub. The returned stub has a refcount of 1.
@@ -190,7 +194,16 @@ public:
                                             //   internals.
         BOOL          m_fDataOnly;          // the stub contains only data - does not need FlushInstructionCache
 
+#ifdef TARGET_ARM
+    protected:
+        BOOL            m_fProlog;              // True if DescribeProlog has been called
+        UINT            m_cCalleeSavedRegs;     // Count of callee saved registers (0 == none, 1 == r4, 2 ==
+                                                // r4-r5 etc. up to 8 == r4-r11)
+        UINT            m_cbStackFrame;         // Count of bytes in the stack frame (excl of saved regs)
+        BOOL            m_fPushArgRegs;         // If true, r0-r3 are saved before callee saved regs
+#endif // TARGET_ARM
 
+    private:
         CodeRun *AppendNewEmptyCodeRun();
 
 
@@ -499,7 +512,6 @@ class Stub
         }
 
     protected:
-        // fMC: Set to true if the stub is a multicast delegate, false otherwise
         void SetupStub(int numCodeBytes, DWORD flags);
         void DeleteStub();
 
