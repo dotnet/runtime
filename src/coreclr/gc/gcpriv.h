@@ -1573,9 +1573,7 @@ public:
 
 private:
 
-#ifdef BACKGROUND_GC
-    PER_HEAP_ISOLATED_METHOD const char* str_gc_type();
-#endif // BACKGROUND_GC
+    PER_HEAP_ISOLATED_METHOD const char* get_str_gc_type();
 
 #ifdef TRACE_GC
     PER_HEAP_METHOD void print_free_list (int gen, heap_segment* seg);

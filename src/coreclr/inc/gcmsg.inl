@@ -64,12 +64,6 @@
         }
     }
 
-    static const char* gcDetailedStartMsgNoBGC()
-    {
-        STATIC_CONTRACT_LEAF;
-        return GC_DETAILED_START_PREFIX "(alloc: %zd)";
-    }
-
 #undef GC_DETAILED_START_PREFIX
 #undef GC_DETAILED_START_STRESSLOG
 #undef GC_DETAILED_START_DPRINTF_EXTRA
