@@ -156,10 +156,8 @@ namespace
             case DynamicMethodDesc::StubWrapperDelegate:    return "IL_STUB_WrapperDelegate_Invoke";
             case DynamicMethodDesc::StubTailCallStoreArgs:  return "IL_STUB_StoreTailCallArgs";
             case DynamicMethodDesc::StubTailCallCallTarget: return "IL_STUB_CallTailCallTarget";
-            case DynamicMethodDesc::StubVirtualStaticMethodDispatch: return "IL_STUB_bVirtualStaticMethodDispatch";
-#ifdef TARGET_RISCV64
-            case DynamicMethodDesc::StubDelegateShuffleThunk: return "IL_STUB_bDelegateShuffleThunk";
-#endif
+            case DynamicMethodDesc::StubVirtualStaticMethodDispatch: return "IL_STUB_VirtualStaticMethodDispatch";
+            case DynamicMethodDesc::StubDelegateShuffleThunk: return "IL_STUB_DelegateShuffleThunk";
             default:
                 UNREACHABLE_MSG("Unknown stub type");
         }
@@ -306,13 +304,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         pMD->SetILStubType(DynamicMethodDesc::StubVirtualStaticMethodDispatch);
     }
     else
-#ifdef TARGET_RISCV64
     if (SF_IsDelegateShuffleThunk(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubDelegateShuffleThunk);
     }
     else
-#endif // TARGET_RISCV64
     {
         // mark certain types of stub MDs with random flags so ILStubManager recognizes them
         if (SF_IsReverseStub(dwStubFlags))
