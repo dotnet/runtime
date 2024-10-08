@@ -11382,16 +11382,46 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         ThrowHR(HRESULT_FROM_WIN32(lastError));
     }
 
-
     if (fIsInPlaceSingleStep)
     {
         CORDB_ADDRESS_TYPE *patchSkipAddr = (CORDB_ADDRESS_TYPE*)pFrameContext->Rip;
 
         printf("RS HandleSetThreadContextNeeded - fIsInPlaceSingleStep=%d opcode=%x address=%p\n", fIsInPlaceSingleStep, (DWORD)opcode, (void*)patchSkipAddr);
 
+
+        HANDLE hProcess = UnsafeGetProcessHandle();
+        LPVOID baseAddress = (LPVOID)(patchSkipAddr);
+        DWORD oldProt;
+
+        if (!VirtualProtectEx(hProcess,
+                            baseAddress,
+                            CORDbg_BREAK_INSTRUCTION_SIZE,
+                            PAGE_EXECUTE_READWRITE, &oldProt))
+        {
+            // we may be seeing unwriteable directly mapped executable memory.
+            // let's try copy-on-write instead,
+            if (!VirtualProtectEx(hProcess,
+                baseAddress,
+                CORDbg_BREAK_INSTRUCTION_SIZE,
+                PAGE_EXECUTE_WRITECOPY, &oldProt))
+            {
+                _ASSERTE(!"VirtualProtect of code page failed");
+                ThrowHR(HRESULT_FROM_GetLastError());
+            }
+        }
+
         LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - address=0x%p opcode=0x%x\n", patchSkipAddr, opcode));
         HRESULT hr = RemoveRemotePatch(this, (void*)patchSkipAddr, opcode);
         IfFailThrow(hr);
+
+        if (!VirtualProtectEx(hProcess,
+                    baseAddress,
+                    CORDbg_BREAK_INSTRUCTION_SIZE,
+                    oldProt, &oldProt))
+        {
+            _ASSERTE(!"VirtualProtect of code page failed");
+            ThrowHR(HRESULT_FROM_GetLastError());
+        }
 
         curThread->second.SetPatchSkipAddress(patchSkipAddr);
 
@@ -11410,6 +11440,72 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 #else
     #error Platform not supported
 #endif
+}
+
+bool CordbProcess::HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAddress)
+{
+    printf("RS Filter - Single Step at 0x%p\n", pExceptionAddress);
+    CUnmanagedThreadHashTableIterator curThread = m_unmanagedThreadHashTable.find(dwThreadId);
+    _ASSERTE(curThread != m_unmanagedThreadHashTable.end());
+    if (curThread != m_unmanagedThreadHashTable.end() && 
+        curThread->second.GetThreadId() == dwThreadId &&
+        curThread->second.IsInPlaceStepping())
+    {
+        // this is an in-place step, so place the breakpoint instruction back to the patch location
+        printf("RS Filter - Single Step at 0x%p - clear patch skip at 0x%p\n", pExceptionAddress, curThread->second.GetPatchSkipAddress());
+
+        HANDLE hProcess = UnsafeGetProcessHandle();
+        LPVOID baseAddress = (LPVOID)( curThread->second.GetPatchSkipAddress());
+        DWORD oldProt;
+
+        if (!VirtualProtectEx(hProcess,
+                            baseAddress,
+                            CORDbg_BREAK_INSTRUCTION_SIZE,
+                            PAGE_EXECUTE_READWRITE, &oldProt))
+        {
+            // we may be seeing unwriteable directly mapped executable memory.
+            // let's try copy-on-write instead,
+            if (!VirtualProtectEx(hProcess,
+                baseAddress,
+                CORDbg_BREAK_INSTRUCTION_SIZE,
+                PAGE_EXECUTE_WRITECOPY, &oldProt))
+            {
+                _ASSERTE(!"VirtualProtect of code page failed");
+                ThrowHR(HRESULT_FROM_GetLastError());
+            }
+        }
+
+        HRESULT hr = ApplyRemotePatch(this, curThread->second.GetPatchSkipAddress());
+        IfFailThrow(hr);
+
+        if (!VirtualProtectEx(hProcess,
+            baseAddress,
+            CORDbg_BREAK_INSTRUCTION_SIZE,
+            oldProt, &oldProt))
+        {
+            _ASSERTE(!"VirtualProtect of code page failed");
+            ThrowHR(HRESULT_FROM_GetLastError());
+        }
+
+        curThread->second.ClearPatchSkipAddress();
+
+        m_dwOutOfProcessStepping--;
+
+        // resume all other threads
+        CUnmanagedThreadHashTableIterator end = m_unmanagedThreadHashTable.end();
+        for (CUnmanagedThreadHashTableIterator cur = m_unmanagedThreadHashTable.begin(); cur != end; ++cur )
+        {
+            if (cur->second.GetThreadId() == dwThreadId)
+            {
+                continue;
+            }
+            cur->second.Resume();
+        }
+
+        return true;
+    }
+
+    return false;
 }
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
@@ -11669,34 +11765,10 @@ HRESULT CordbProcess::Filter(
         }
         else if (dwFirstChance && pRecord->ExceptionCode == STATUS_SINGLE_STEP && m_dwOutOfProcessStepping > 0)
         {
-            printf("RS Filter - Single Step at 0x%p\n", (void*)pRecord->ExceptionAddress);
-            CUnmanagedThreadHashTableIterator curThread = m_unmanagedThreadHashTable.find(dwThreadId);
-            _ASSERTE(curThread != m_unmanagedThreadHashTable.end());
-            if (curThread != m_unmanagedThreadHashTable.end() && 
-                curThread->second.GetThreadId() == dwThreadId &&
-                curThread->second.IsInPlaceStepping())
+            // this may be an in-place step, and if so place the breakpoint instruction back to the patch location and resume the threads
+
+            if (HandleInPlaceSingleStep(dwThreadId, pRecord->ExceptionAddress))
             {
-                // we are expecting a single step exception
-                HRESULT hr = ApplyRemotePatch(this, curThread->second.GetPatchSkipAddress());
-                IfFailThrow(hr);
-
-                printf("RS Filter - Single Step at 0x%p - clear patch skip at 0x%p\n", (void*)pRecord->ExceptionAddress, curThread->second.GetPatchSkipAddress());
-
-                curThread->second.ClearPatchSkipAddress();
-
-                m_dwOutOfProcessStepping--;
-
-                // resume all other threads
-                CUnmanagedThreadHashTableIterator end = m_unmanagedThreadHashTable.end();
-                for (CUnmanagedThreadHashTableIterator cur = m_unmanagedThreadHashTable.begin(); cur != end; ++cur )
-                {
-                    if (cur->second.GetThreadId() == dwThreadId)
-                    {
-                        continue;
-                    }
-                    cur->second.Resume();
-                }
-
                 // let the normal left side debugger stepper logic execute for this single step
                 *pContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
             }
