@@ -229,7 +229,7 @@
 
   <Target Name="_AddWorkItemsForLibraryTests" Condition="'$(IsRunningLibraryTests)' == 'true'">
     <ItemGroup Label="Add samples">
-      <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnChrome' OR '$(Scenario)' == 'WasmTestOnFirefox" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnChrome' or '$(Scenario)' == 'WasmTestOnFirefox'" />
       <_WasmWorkItem Include="$(TestArchiveRoot)chromeonly/**/*.zip"      Condition="'$(Scenario)' == 'WasmTestOnChrome'" />
 
       <HelixWorkItem Include="@(_WasmWorkItem -> '$(WorkItemPrefix)%(FileName)')">
