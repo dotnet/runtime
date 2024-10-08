@@ -1273,6 +1273,7 @@ namespace System.Text.Json.SourceGeneration
                         JsonKnownNamingPolicy.SnakeCaseUpper => nameof(JsonNamingPolicy.SnakeCaseUpper),
                         JsonKnownNamingPolicy.KebabCaseLower => nameof(JsonNamingPolicy.KebabCaseLower),
                         JsonKnownNamingPolicy.KebabCaseUpper => nameof(JsonNamingPolicy.KebabCaseUpper),
+                        JsonKnownNamingPolicy.PascalCase => nameof(JsonNamingPolicy.PascalCase),
                         _ => null,
                     };
 
