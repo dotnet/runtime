@@ -53104,6 +53104,12 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #ifndef BACKGROUND_GC
     gcDacVars->minor_version_number |= 2;
 #endif //!BACKGROUND_GC
+#ifdef DYNAMIC_HEAP_COUNT
+    if (gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
+    {
+        gcDacVars->minor_version_number |= 4;
+    }
+#endif //DYNAMIC_HEAP_COUNT
     gcDacVars->built_with_svr = &g_built_with_svr_gc;
     gcDacVars->build_variant = &g_build_variant;
     gcDacVars->gc_structures_invalid_cnt = const_cast<int32_t*>(&GCScan::m_GcStructuresInvalidCnt);
