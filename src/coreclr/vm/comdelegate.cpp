@@ -2150,10 +2150,10 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         ILCodeLabel *debuggerCheckEnd = pCode->NewCodeLabel();
 
         // Call MulticastDebuggerTraceHelper only if we have a controller subscribing to the event
-        pCode->EmitLDC((DWORD_PTR)&g_multicastDelegateTraceEnabled);
+        pCode->EmitLDC((DWORD_PTR)&g_multicastDelegateTraceActiveCount);
         pCode->EmitCONV_I();
         pCode->EmitLDIND_I4();
-        // g_multicastDelegateTraceEnabled != 0
+        // g_multicastDelegateTraceActiveCount != 0
         pCode->EmitLDC(0);
         pCode->EmitCEQ();
         pCode->EmitBRFALSE(invokeTraceHelper);

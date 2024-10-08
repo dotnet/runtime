@@ -145,7 +145,7 @@ GVAL_IMPL_INIT(DWORD,         g_CORDebuggerControlFlags, DBCF_NORMAL_OPERATION);
 GPTR_IMPL(EEDbgInterfaceImpl, g_pEEDbgInterfaceImpl);
 
 #ifndef DACCESS_COMPILE
-GVAL_IMPL_INIT(DWORD, g_multicastDelegateTraceEnabled, 0);
+GVAL_IMPL_INIT(DWORD, g_multicastDelegateTraceActiveCount, 0);
 #endif // DACCESS_COMPILE
 
 #endif // DEBUGGING_SUPPORTED

@@ -413,7 +413,7 @@ GVAL_DECL(DWORD,              g_CORDebuggerControlFlags);
 GPTR_DECL(EEDbgInterfaceImpl, g_pEEDbgInterfaceImpl);
 
 #ifndef DACCESS_COMPILE
-GVAL_DECL(DWORD, g_multicastDelegateTraceEnabled);
+GVAL_DECL(DWORD, g_multicastDelegateTraceActiveCount);
 #endif // DACCESS_COMPILE
 
 #endif // DEBUGGING_SUPPORTED

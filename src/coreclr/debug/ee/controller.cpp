@@ -2368,7 +2368,7 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
 
     case TRACE_FRAME_PUSH:
         LOG((LF_CORDB, LL_INFO10000,
-             "Setting frame patch at 0x%p(%p)\n", trace->GetAddress(), fp.GetSPValue()));
+             "Setting frame patch at %p(%p)\n", trace->GetAddress(), fp.GetSPValue()));
 
         AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE *)trace->GetAddress(),
                  fp,
@@ -2378,7 +2378,7 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
 
     case TRACE_MGR_PUSH:
         LOG((LF_CORDB, LL_INFO10000,
-            "Setting frame patch (TRACE_MGR_PUSH) at 0x%p(%p)\n",
+            "Setting frame patch (TRACE_MGR_PUSH) at %p(%p)\n",
             trace->GetAddress(), fp.GetSPValue()));
         dcp = AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE *)trace->GetAddress(),
                     LEAF_MOST_FRAME, // But Mgr_push can't have fp affinity!
@@ -3901,12 +3901,12 @@ void DebuggerController::EnableMultiCastDelegate()
     {
         LOG((LF_CORDB, LL_INFO1000000, "DC::EnableMultiCastDel, this=%p, previously disabled\n", this));
         m_multicastDelegateHelper = true;
+        g_multicastDelegateTraceActiveCount += 1;
     }
     else
     {
         LOG((LF_CORDB, LL_INFO1000000, "DC::EnableMultiCastDel, this=%p, already set\n", this));
     }
-    g_multicastDelegateTraceEnabled += 1;
 }
 
 void DebuggerController::DisableMultiCastDelegate()
@@ -3921,14 +3921,14 @@ void DebuggerController::DisableMultiCastDelegate()
     ControllerLockHolder chController;
     if (m_multicastDelegateHelper)
     {
-        LOG((LF_CORDB, LL_INFO10000, "DC::DisableMultiCastDel, this=%p, previously set\n", this));
+        LOG((LF_CORDB, LL_INFO10000, "DC::DisableMultiCastDelegate, this=%p, previously set\n", this));
         m_multicastDelegateHelper = false;
+        g_multicastDelegateTraceActiveCount -= 1;
     }
     else
     {
-        LOG((LF_CORDB, LL_INFO10000, "DC::DisableMultiCastDel, this=%p, already disabled\n", this));
+        LOG((LF_CORDB, LL_INFO10000, "DC::DisableMultiCastDelegate, this=%p, already disabled\n", this));
     }
-    g_multicastDelegateTraceEnabled -= 1;
 }
 
 // Loop through controllers and dispatch TriggerMulticastDelegate
@@ -7637,20 +7637,10 @@ void DebuggerStepper::TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateC
     TraceDestination trace;
     FramePointer fp = LEAF_MOST_FRAME;
 
-    INT_PTR totalDelegateCount = pDel->GetInvocationCount();
-    if (delegateCount == totalDelegateCount)
-    {
-        PCODE addr = (PCODE)NULL;
-        trace.InitForOther(addr);
-        LOG((LF_CORDB, LL_INFO10000, "DS::TMD this:0x%x, Fired all delegates\n", this));
-    }
-    else
-    {
-        PTRARRAYREF pDelInvocationList = (PTRARRAYREF) pDel->GetInvocationList();
-        DELEGATEREF pCurrentInvokeDel = (DELEGATEREF) pDelInvocationList->GetAt(delegateCount);
+    PTRARRAYREF pDelInvocationList = (PTRARRAYREF) pDel->GetInvocationList();
+    DELEGATEREF pCurrentInvokeDel = (DELEGATEREF) pDelInvocationList->GetAt(delegateCount);
 
-        StubLinkStubManager::TraceDelegateObject((BYTE*)OBJECTREFToObject(pCurrentInvokeDel), &trace);
-    }
+    StubLinkStubManager::TraceDelegateObject((BYTE*)OBJECTREFToObject(pCurrentInvokeDel), &trace);
 
     g_pEEInterface->FollowTrace(&trace);
     //fStopInUnmanaged only matters for TRACE_UNMANAGED

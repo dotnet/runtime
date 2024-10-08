@@ -120,8 +120,7 @@ const CHAR * TraceDestination::DbgToString(SString & buffer)
                 break;
 
             case TRACE_MULTICAST_DELEGATE_HELPER:
-                buffer.Printf("TRACE_MULTICAST_DELEGATE_HELPER(addr=%p)", GetAddress());
-                pValue = buffer.GetUTF8();
+                pValue = "TRACE_MULTICAST_DELEGATE_HELPER";
                 break;
 
             case TRACE_OTHER:
