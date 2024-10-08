@@ -1536,7 +1536,6 @@ enum class PhaseChecks : unsigned int
     CHECK_LIKELIHOODS    = 1 << 5, // profile data likelihood integrity
     CHECK_PROFILE        = 1 << 6, // profile data full integrity
     CHECK_LINKED_LOCALS  = 1 << 7, // check linked list of locals
-    CHECK_FG_ANNOTATIONS = 1 << 8, // check flowgraph annotation data structures
 };
 
 inline constexpr PhaseChecks operator ~(PhaseChecks a)

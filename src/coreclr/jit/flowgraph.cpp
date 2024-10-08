@@ -4267,9 +4267,6 @@ FlowGraphDfsTree* Compiler::fgComputeLoopAwareDfs()
 {
     if (m_dfsTree == nullptr)
     {
-        // Computing a profile-aware RPO means the DFS computation won't match the debug check's expectations,
-        // so make sure these checks have already been disabled.
-        assert(!hasFlag(activePhaseChecks, PhaseChecks::CHECK_FG_ANNOTATIONS));
         m_dfsTree = fgComputeDfs</* useProfile */ true>();
     }
 
