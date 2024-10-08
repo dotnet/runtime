@@ -1308,24 +1308,23 @@ void Compiler::fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast)
 void Compiler::fgFindEHRegionEnds()
 {
     assert(compHndBBtabCount != 0);
-    bool* const tryEndsSet = new (this, CMK_Generic) bool[compHndBBtabCount * 2]{};
-    bool* const hndEndsSet = tryEndsSet + compHndBBtabCount;
-    unsigned unsetTryEnds  = compHndBBtabCount;
-    unsigned unsetHndEnds  = compHndBBtabCount;
+    bool* const tryEndsSet   = new (this, CMK_Generic) bool[compHndBBtabCount * 2]{};
+    bool* const hndEndsSet   = tryEndsSet + compHndBBtabCount;
+    unsigned    unsetTryEnds = compHndBBtabCount;
+    unsigned    unsetHndEnds = compHndBBtabCount;
 
     // Updates the try region's (and all of its parent regions') end block to 'block,'
     // if the try region's end block hasn't been updated yet.
     auto setTryEnd = [this, tryEndsSet, &unsetTryEnds](BasicBlock* block) {
         for (unsigned tryIndex = block->getTryIndex(); tryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
-             tryIndex = ehGetEnclosingTryIndex(tryIndex))
+             tryIndex          = ehGetEnclosingTryIndex(tryIndex))
         {
             if (!tryEndsSet[tryIndex])
             {
                 assert(unsetTryEnds != 0);
                 ehGetDsc(tryIndex)->ebdTryLast = block;
-                tryEndsSet[tryIndex] = true;
+                tryEndsSet[tryIndex]           = true;
                 unsetTryEnds--;
-
             }
             else
             {
@@ -1338,13 +1337,13 @@ void Compiler::fgFindEHRegionEnds()
     // if the handler region's end block hasn't been updated yet.
     auto setHndEnd = [this, hndEndsSet, &unsetHndEnds](BasicBlock* block) {
         for (unsigned hndIndex = block->getHndIndex(); hndIndex != EHblkDsc::NO_ENCLOSING_INDEX;
-             hndIndex = ehGetEnclosingHndIndex(hndIndex))
+             hndIndex          = ehGetEnclosingHndIndex(hndIndex))
         {
             if (!hndEndsSet[hndIndex])
             {
                 assert(unsetHndEnds != 0);
                 ehGetDsc(hndIndex)->ebdHndLast = block;
-                hndEndsSet[hndIndex] = true;
+                hndEndsSet[hndIndex]           = true;
                 unsetHndEnds--;
             }
             else
@@ -1355,8 +1354,7 @@ void Compiler::fgFindEHRegionEnds()
     };
 
     // Iterate backwards through the main method body, and update each try region's end block
-    for (BasicBlock* block = fgLastBBInMainFunction(); (unsetTryEnds != 0) && (block != nullptr);
-         block = block->Prev())
+    for (BasicBlock* block = fgLastBBInMainFunction(); (unsetTryEnds != 0) && (block != nullptr); block = block->Prev())
     {
         if (block->hasTryIndex())
         {
@@ -1369,7 +1367,7 @@ void Compiler::fgFindEHRegionEnds()
 
     // If we do have a funclet section, update the ends of any try regions nested in funclets
     for (BasicBlock* block = fgLastBB; (unsetTryEnds != 0) && (block != fgLastBBInMainFunction());
-         block = block->Prev())
+         block             = block->Prev())
     {
         if (block->hasTryIndex())
         {
