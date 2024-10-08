@@ -554,6 +554,7 @@ public:
     }
 
     friend struct ::cdac_data<RangeSection>;
+    friend struct ::cdac_data<RangeSectionMap>;
 };
 
 struct RangeSection
