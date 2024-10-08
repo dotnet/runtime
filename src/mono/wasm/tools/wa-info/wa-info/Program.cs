@@ -21,6 +21,8 @@ namespace WebAssemblyInfo
         static internal Regex? TypeFilter;
         public static bool AotStats;
         public static bool Disassemble;
+        public static bool ListWitImports;
+        public static bool ListWitExports;
         public static bool PrintOffsets;
         public static bool ShowFunctionSize;
         public static bool ShowConstLoad = true;
@@ -36,11 +38,17 @@ namespace WebAssemblyInfo
                 var reader = new WasmReader(file);
                 reader.Parse();
 
-                if (!Disassemble && !AotStats)
+                if (!Disassemble && !AotStats && !ListWitImports && !ListWitExports)
                 {
                     reader.PrintSummary();
                     continue;
                 }
+
+                if (ListWitExports)
+                    reader.PrintWitExports();
+
+                if (ListWitImports)
+                    reader.PrintWitImports();
 
                 if (Disassemble)
                     reader.PrintFunctions();
@@ -126,6 +134,12 @@ namespace WebAssemblyInfo
                 { "v|verbose",
                     "Output information about progress during the run of the tool. Use multiple times to increase verbosity, like -vv",
                     v => VerboseLevel++ },
+                { "wit-imports",
+                    "List WIT imports",
+                    v => ListWitImports = true },
+                { "wit-exports",
+                    "List WIT exports",
+                    v => ListWitExports = true },
             };
 
             var remaining = options.Parse(args);

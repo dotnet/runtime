@@ -1687,5 +1687,31 @@ namespace WebAssemblyInfo
                 reader.PrintSummary();
             }
         }
+
+        public void PrintWitImports()
+        {
+            if (witImports == null)
+                return;
+
+            Console.WriteLine($"wit imports: {witImports.Count}");
+
+            foreach (var import in witImports)
+            {
+                Console.WriteLine($"  {import}");
+            }
+        }
+
+        public void PrintWitExports()
+        {
+            if (witExports == null)
+                return;
+
+            Console.WriteLine($"wit exports: {witExports.Count}");
+
+            foreach (var export in witExports)
+            {
+                Console.WriteLine($"  {export}");
+            }
+        }
     }
 }
