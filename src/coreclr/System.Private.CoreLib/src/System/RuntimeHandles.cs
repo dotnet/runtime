@@ -491,19 +491,6 @@ namespace System
             return GetInterfaceMethodImplementation(new QCallTypeHandle(ref nativeHandle), new QCallTypeHandle(ref nativeInterfaceHandle), interfaceMethodHandle);
         }
 
-        internal static bool IsComObject(RuntimeType type, bool isGenericCOM)
-        {
-#if FEATURE_COMINTEROP
-            // We need to check the type handle values - not the instances - to determine if the runtime type is a ComObject.
-            if (isGenericCOM)
-                return type.TypeHandle.Value == typeof(__ComObject).TypeHandle.Value;
-
-            return CanCastTo(type, (RuntimeType)typeof(__ComObject));
-#else
-            return false;
-#endif
-        }
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsVisible")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool _IsVisible(QCallTypeHandle typeHandle);

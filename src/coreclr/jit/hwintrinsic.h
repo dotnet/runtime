@@ -948,12 +948,6 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_Scalable) != 0;
     }
 
-    static bool IsMaskedOperation(NamedIntrinsic id)
-    {
-        const HWIntrinsicFlag flags = lookupFlags(id);
-        return IsLowMaskedOperation(id) || IsOptionalEmbeddedMaskedOperation(id) || IsExplicitMaskedOperation(id);
-    }
-
     static bool IsLowMaskedOperation(NamedIntrinsic id)
     {
         const HWIntrinsicFlag flags                = lookupFlags(id);

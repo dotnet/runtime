@@ -6797,8 +6797,6 @@ public:
 
     struct AddCodeDsc
     {
-        AddCodeDsc*     acdNext;
-
         // After fgCreateThrowHelperBlocks, the block to which
         // we jump to raise the exception.
         BasicBlock*     acdDstBlk;
@@ -6855,30 +6853,22 @@ public:
     };
 
     typedef JitHashTable<AddCodeDscKey, AddCodeDscKey, AddCodeDsc*> AddCodeDscMap;
-
     AddCodeDscMap* fgGetAddCodeDscMap();
 
 private:
     static unsigned acdHelper(SpecialCodeKind codeKind);
 
-    AddCodeDsc* fgAddCodeList = nullptr;
     bool        fgRngChkThrowAdded = false;
     AddCodeDscMap* fgAddCodeDscMap = nullptr;
 
     void fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind);
     PhaseStatus fgCreateThrowHelperBlocks();
 
-
 public:
+
+    bool fgHasAddCodeDscMap() const { return fgAddCodeDscMap != nullptr; }
     AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock);
-
     bool fgUseThrowHelperBlocks();
-
-    AddCodeDsc* fgGetAdditionalCodeDescriptors()
-    {
-        return fgAddCodeList;
-    }
-
     void fgCreateThrowHelperBlockCode(AddCodeDsc* add);
 
 private:
@@ -8078,7 +8068,6 @@ public:
     // Assertion Gen functions.
     void           optAssertionGen(GenTree* tree);
     AssertionIndex optAssertionGenCast(GenTreeCast* cast);
-    AssertionIndex optAssertionGenPhiDefn(GenTree* tree);
     AssertionInfo  optCreateJTrueBoundsAssertion(GenTree* tree);
     AssertionInfo  optAssertionGenJtrue(GenTree* tree);
     AssertionIndex optCreateJtrueAssertions(GenTree*                   op1,
