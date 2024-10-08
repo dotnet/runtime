@@ -479,18 +479,22 @@ namespace System.Diagnostics
             dataBlock.Validate(data.Length);
 
             int typePos = dataBlock.HeaderLength;
+            ReadOnlySpan<byte> dataSpan;
+
             for (int i = 0; i < dataBlock.NumObjectTypes; i++)
             {
-                ref readonly PERF_OBJECT_TYPE type = ref MemoryMarshal.AsRef<PERF_OBJECT_TYPE>(data.Slice(typePos));
-                type.Validate(data.Length);
+                dataSpan = data.Slice(typePos);
+                ref readonly PERF_OBJECT_TYPE type = ref MemoryMarshal.AsRef<PERF_OBJECT_TYPE>(dataSpan);
+                type.Validate(dataSpan.Length);
 
                 PERF_COUNTER_DEFINITION[] counters = new PERF_COUNTER_DEFINITION[type.NumCounters];
 
                 int counterPos = typePos + type.HeaderLength;
                 for (int j = 0; j < type.NumCounters; j++)
                 {
-                    ref readonly PERF_COUNTER_DEFINITION counter = ref MemoryMarshal.AsRef<PERF_COUNTER_DEFINITION>(data.Slice(counterPos));
-                    counter.Validate(data.Length);
+                    dataSpan = data.Slice(counterPos);
+                    ref readonly PERF_COUNTER_DEFINITION counter = ref MemoryMarshal.AsRef<PERF_COUNTER_DEFINITION>(dataSpan);
+                    counter.Validate(dataSpan.Length);
 
                     string counterName = library.GetCounterName(counter.CounterNameTitleIndex);
 
@@ -506,8 +510,9 @@ namespace System.Diagnostics
                 int instancePos = typePos + type.DefinitionLength;
                 for (int j = 0; j < type.NumInstances; j++)
                 {
-                    ref readonly PERF_INSTANCE_DEFINITION instance = ref MemoryMarshal.AsRef<PERF_INSTANCE_DEFINITION>(data.Slice(instancePos));
-                    instance.Validate(data.Length);
+                    dataSpan = data.Slice(instancePos);
+                    ref readonly PERF_INSTANCE_DEFINITION instance = ref MemoryMarshal.AsRef<PERF_INSTANCE_DEFINITION>(dataSpan);
+                    instance.Validate(dataSpan.Length);
 
                     ReadOnlySpan<char> instanceName = PERF_INSTANCE_DEFINITION.GetName(in instance, data.Slice(instancePos));
 
@@ -567,8 +572,10 @@ namespace System.Diagnostics
 
                     instancePos += instance.ByteLength;
 
-                    ref readonly PERF_COUNTER_BLOCK perfCounterBlock = ref MemoryMarshal.AsRef<PERF_COUNTER_BLOCK>(data.Slice(instancePos));
-                    perfCounterBlock.Validate(data.Length);
+                    dataSpan = data.Slice(instancePos);
+                    ref readonly PERF_COUNTER_BLOCK perfCounterBlock = ref MemoryMarshal.AsRef<PERF_COUNTER_BLOCK>(dataSpan);
+                    perfCounterBlock.Validate(dataSpan.Length);
+
                     instancePos += perfCounterBlock.ByteLength;
                 }
 
