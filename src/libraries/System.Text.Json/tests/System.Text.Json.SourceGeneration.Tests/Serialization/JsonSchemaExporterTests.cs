@@ -65,6 +65,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(IntEnum))]
         [JsonSerializable(typeof(StringEnum))]
         [JsonSerializable(typeof(FlagsStringEnum))]
+        [JsonSerializable(typeof(EnumWithNameAttributes))]
         // Nullable<T> types
         [JsonSerializable(typeof(bool?))]
         [JsonSerializable(typeof(int?))]
@@ -106,6 +107,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(PocoCombiningPolymorphicTypeAndDerivedTypes))]
         [JsonSerializable(typeof(ClassWithComponentModelAttributes))]
         [JsonSerializable(typeof(ClassWithJsonPointerEscapablePropertyNames))]
+        [JsonSerializable(typeof(ClassWithOptionalObjectParameter))]
         // Collection types
         [JsonSerializable(typeof(int[]))]
         [JsonSerializable(typeof(List<bool>))]

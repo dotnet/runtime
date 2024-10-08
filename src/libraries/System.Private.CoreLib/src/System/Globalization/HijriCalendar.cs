@@ -344,7 +344,7 @@ namespace System.Globalization
             return HijriEra;
         }
 
-        public override int[] Eras => new int[] { HijriEra };
+        public override int[] Eras => [HijriEra];
 
         public override int GetMonth(DateTime time)
         {

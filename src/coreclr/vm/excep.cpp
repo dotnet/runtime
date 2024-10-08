@@ -2509,8 +2509,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
     RealCOMPlusThrow(throwable, FALSE);
 }
 
-#ifdef USE_CHECKED_OBJECTREFS
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(Object *exceptionObj)
+VOID DECLSPEC_NORETURN PropagateExceptionThroughNativeFrames(Object *exceptionObj)
 {
     CONTRACTL
     {
@@ -2523,7 +2522,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(Object *exceptionObj)
     OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
     RealCOMPlusThrowWorker(throwable, FALSE);
 }
-#endif // USE_CHECKED_OBJECTREFS
 
 // this function finds the managed callback to get a resource
 // string from the then current local domain and calls it
@@ -2975,7 +2973,7 @@ void StackTraceInfo::EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t 
         {
             memmoveGCRefs(pNewKeepAliveArray->GetDataPtr(),
                           (*ppKeepAliveArray)->GetDataPtr(),
-                          neededSize * sizeof(Object *));        
+                          (*ppKeepAliveArray)->GetNumComponents() * sizeof(Object *));
         }
         // Update the keepAlive array
         *ppKeepAliveArray = pNewKeepAliveArray;
@@ -5201,6 +5199,10 @@ BOOL NotifyAppDomainsOfUnhandledException(
 
     GCPROTECT_END();
 
+#ifdef HOST_WINDOWS
+    CreateCrashDumpIfEnabled();
+#endif
+
 #ifdef _DEBUG
     // Do not care about lock check for unhandled exception.
     while (unbreakableLockCount)
@@ -5702,9 +5704,6 @@ void AdjustContextForThreadStop(Thread* pThread,
 #endif // !FEATURE_EH_FUNCLETS
 
     pThread->ResetThrowControlForThread();
-
-    // Should never get here if we're already throwing an exception.
-    _ASSERTE(!pThread->IsExceptionInProgress() || pThread->IsRudeAbort());
 
     // Should never get here if we're already abort initiated.
     _ASSERTE(!pThread->IsAbortInitiated() || pThread->IsRudeAbort());
@@ -6361,6 +6360,11 @@ void FaultingExceptionFrame::Init(CONTEXT *pContext)
     m_ReturnAddress = ::GetIP(pContext);
     CopyOSContext(&m_ctx, pContext);
 #endif // !FEATURE_EH_FUNCLETS
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    m_SSP = 0;
+#endif
+
 }
 
 //
@@ -7351,10 +7355,6 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                     pFrame = pFrame->Next();
                 }
                 STRESS_LOG0(LF_EH, LL_INFO100, "CLRVectoredExceptionHandlerShim: stack");
-                while (count < 20 && sp < stopPoint)
-                {
-                    sp += 1;
-                }
             }
         }
 #endif // _DEBUG
@@ -7506,7 +7506,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         }
         else
         {
-            DispatchManagedException(orThrowable, /* preserveStackTrace */ false);
+            DispatchManagedException(orThrowable);
         }
     }
     else
@@ -7953,14 +7953,17 @@ BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT)
     // find the slot corresponding to get_StackTrace
     for (DWORD slot = g_pObjectClass->GetNumVirtuals(); slot < g_pExceptionClass->GetNumVirtuals(); slot++)
     {
-        MethodDesc *pMD = g_pExceptionClass->GetMethodDescForSlot(slot);
-        LPCUTF8 name = pMD->GetName();
-
-        if (name != NULL && strcmp(name, "get_StackTrace") == 0)
+        MethodDesc *pMD = g_pExceptionClass->GetMethodDescForSlot_NoThrow(slot);
+        if (pMD != nullptr)
         {
-            // see if the slot is overridden by pMT
-            MethodDesc *pDerivedMD = pMT->GetMethodDescForSlot(slot);
-            return (pDerivedMD != pMD);
+            LPCUTF8 name = pMD->GetName();
+
+            if (name != NULL && strcmp(name, "get_StackTrace") == 0)
+            {
+                // see if the slot is overridden by pMT
+                MethodDesc *pDerivedMD = pMT->GetMethodDescForSlot_NoThrow(slot);
+                return (pDerivedMD != pMD);
+            }
         }
     }
 
@@ -11550,3 +11553,79 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
 #endif // FEATURE_COMINTEROP
     return pUserMD;
 }
+
+
+#ifdef FEATURE_EH_FUNCLETS
+
+void SoftwareExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *dac_cast<PTR_SIZE_T>((TADDR)m_ContextPointers.regname);
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = m_ContextPointers.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = m_Context.regname;
+    ENUM_FP_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    SetIP(pRD->pCurrentContext, ::GetIP(&m_Context));
+    SetSP(pRD->pCurrentContext, ::GetSP(&m_Context));
+
+    pRD->ControlPC = ::GetIP(&m_Context);
+    pRD->SP = ::GetSP(&m_Context);
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+}
+
+#ifndef DACCESS_COMPILE
+//
+// Init a new frame
+//
+void SoftwareExceptionFrame::Init()
+{
+    WRAPPER_NO_CONTRACT;
+
+#define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = NULL;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#ifndef TARGET_UNIX
+    Thread::VirtualUnwindCallFrame(&m_Context, &m_ContextPointers);
+#else // !TARGET_UNIX
+    BOOL success = PAL_VirtualUnwind(&m_Context, &m_ContextPointers);
+    if (!success)
+    {
+        _ASSERTE(!"SoftwareExceptionFrame::Init failed");
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    }
+#endif // !TARGET_UNIX
+
+#define CALLEE_SAVED_REGISTER(regname) if (m_ContextPointers.regname == NULL) m_ContextPointers.regname = &m_Context.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    _ASSERTE(ExecutionManager::IsManagedCode(::GetIP(&m_Context)));
+
+    m_ReturnAddress = ::GetIP(&m_Context);
+}
+
+//
+// Init and Link in a new frame
+//
+void SoftwareExceptionFrame::InitAndLink(Thread *pThread)
+{
+    WRAPPER_NO_CONTRACT;
+
+    Init();
+
+    Push(pThread);
+}
+
+#endif // DACCESS_COMPILE
+#endif // FEATURE_EH_FUNCLETS

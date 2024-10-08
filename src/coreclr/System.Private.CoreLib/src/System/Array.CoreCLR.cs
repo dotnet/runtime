@@ -574,7 +574,7 @@ namespace System
                     CorElementType targetType = pElementMethodTable->GetPrimitiveCorElementType();
 
                     // Get a properly widened type
-                    if (!InvokeUtils.CanPrimitiveWiden(srcType, targetType))
+                    if (!RuntimeHelpers.CanPrimitiveWiden(srcType, targetType))
                         throw new ArgumentException(SR.Arg_PrimWiden);
 
                     if (srcType == targetType)
@@ -740,6 +740,8 @@ namespace System
             Debug.Fail("Hey! How'd I get here?");
         }
 
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal IEnumerator<T> GetEnumerator<T>()
         {
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above

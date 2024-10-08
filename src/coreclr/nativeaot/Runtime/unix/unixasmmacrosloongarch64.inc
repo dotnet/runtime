@@ -158,15 +158,9 @@ C_FUNC(\Name):
     st.d  $ra, $sp, -0x8
     addi.d  $sp, $sp, -16
 
-    // This sequence of instructions is recognized and potentially patched
+    // This instruction is recognized and potentially patched
     // by the linker (GD->IE/LE relaxation).
-    // TODO-LOONGARCH64: Fix once TLSDESC is supported by LLVM
-    //la.local  $a0, \var
-    //ld.d  \target, $a0, 0
-    //.tlsdesccall \var
-    //jirl  $ra, \target, 0
-    la.tls.ie   $a0, \var
-    // End of the sequence
+    la.tls.desc  $a0, \var
 
     ori  \target, $tp, 0
     add.d  \target, \target, $a0
@@ -271,12 +265,12 @@ C_FUNC(\Name):
 .endm
 
 // Note: these must match the defs in PInvokeTransitionFrameFlags
-PTFF_SAVE_SP            = 0x00000200
-PTFF_SAVE_R4            = 0x00001000
-PTFF_SAVE_R5            = 0x00002000
-PTFF_SAVE_ALL_PRESERVED = 0x000001FF // NOTE: r23-r31
+#define PTFF_SAVE_SP            0x00000200
+#define PTFF_SAVE_R4            0x00001000
+#define PTFF_SAVE_R5            0x00002000
+#define PTFF_SAVE_ALL_PRESERVED 0x000001FF // NOTE: r23-r31
 
-DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
+#define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP)
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
 
@@ -315,7 +309,7 @@ DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 .endm
 
 // Bit position for the flags above, to be used with andi+beq/bne instructions
-PTFF_THREAD_ABORT_BIT = 36
+#define PTFF_THREAD_ABORT_BIT 36
 
 //
 // CONSTANTS -- INTEGER
@@ -326,8 +320,8 @@ PTFF_THREAD_ABORT_BIT = 36
 #define TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC 0x18
 
 // Bit position for the flags above, to be used with andi+beq/bne instructions
-TrapThreadsFlags_AbortInProgress_Bit = 0
-TrapThreadsFlags_TrapThreads_Bit     = 1
+#define TrapThreadsFlags_AbortInProgress_Bit 0
+#define TrapThreadsFlags_TrapThreads_Bit     1
 
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0

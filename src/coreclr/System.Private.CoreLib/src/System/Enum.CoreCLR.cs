@@ -33,7 +33,7 @@ namespace System
 
         // Indexed by CorElementType
         private static readonly RuntimeType?[] s_underlyingTypes =
-        {
+        [
             null,
             null,
             (RuntimeType)typeof(bool),
@@ -60,7 +60,7 @@ namespace System
             null,
             (RuntimeType)typeof(nint),
             (RuntimeType)typeof(nuint)
-        };
+        ];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe RuntimeType InternalGetUnderlyingType(RuntimeType enumType)

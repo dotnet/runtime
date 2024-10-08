@@ -65,8 +65,6 @@ namespace ILCompiler
         private readonly HashSet<string> _trimmedAssemblies;
         private readonly List<string> _satelliteAssemblyFiles;
 
-        internal FlowAnnotations FlowAnnotations { get; }
-
         internal Logger Logger { get; }
 
         public UsageBasedMetadataManager(
@@ -86,12 +84,11 @@ namespace ILCompiler
             IEnumerable<string> additionalRootedAssemblies,
             IEnumerable<string> trimmedAssemblies,
             IEnumerable<string> satelliteAssemblyFilePaths)
-            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options, flowAnnotations)
         {
             _compilationModuleGroup = group;
             _generationOptions = generationOptions;
 
-            FlowAnnotations = flowAnnotations;
             Logger = logger;
 
             _linkAttributesHashTable = new LinkAttributesHashTable(Logger, featureSwitchValues);
@@ -784,13 +781,15 @@ namespace ILCompiler
             return true;
         }
 
-        public override void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
+        public override void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod, TypeSystemEntity origin)
         {
             baseMethod = baseMethod.GetTypicalMethodDefinition();
             overridingMethod = overridingMethod.GetTypicalMethodDefinition();
 
             if (baseMethod == overridingMethod)
                 return;
+
+            origin ??= overridingMethod;
 
             bool baseMethodTypeIsInterface = baseMethod.OwningType.IsInterface;
             foreach (var requiresAttribute in _requiresAttributeMismatchNameAndId)
@@ -803,7 +802,7 @@ namespace ILCompiler
                     string message = MessageFormat.FormatRequiresAttributeMismatch(overridingMethod.DoesMethodRequire(requiresAttribute.AttributeName, out _),
                         baseMethodTypeIsInterface, requiresAttribute.AttributeName, overridingMethodName, baseMethodName);
 
-                    Logger.LogWarning(overridingMethod, requiresAttribute.Id, message);
+                    Logger.LogWarning(origin, requiresAttribute.Id, message);
                 }
             }
 
@@ -811,7 +810,7 @@ namespace ILCompiler
             bool overridingMethodRequiresDataflow = FlowAnnotations.RequiresVirtualMethodDataflowAnalysis(overridingMethod);
             if (baseMethodRequiresDataflow || overridingMethodRequiresDataflow)
             {
-                FlowAnnotations.ValidateMethodAnnotationsAreSame(overridingMethod, baseMethod);
+                FlowAnnotations.ValidateMethodAnnotationsAreSame(overridingMethod, baseMethod, origin);
             }
         }
 
@@ -894,7 +893,7 @@ namespace ILCompiler
             }
 
             return new AnalysisBasedMetadataManager(
-                _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy,
+                _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy, FlowAnnotations,
                 _modulesWithMetadata, _typesWithForcedEEType, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
                 reflectableFields.ToEnumerable(), _customAttributesWithMetadata, _options);
         }

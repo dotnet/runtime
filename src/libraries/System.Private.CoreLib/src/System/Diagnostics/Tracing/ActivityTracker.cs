@@ -165,7 +165,7 @@ namespace System.Diagnostics.Tracing
                 ActivityInfo? orphan = currentActivity;
                 while (orphan != activityToStop && orphan != null)
                 {
-                    if (orphan.m_stopped != 0)      // Skip dead activities.
+                    if (orphan.m_stopped)      // Skip dead activities.
                     {
                         orphan = orphan.m_creator;
                         continue;
@@ -177,14 +177,13 @@ namespace System.Diagnostics.Tracing
                     }
                     else
                     {
-                        orphan.m_stopped = 1;
-                        Debug.Assert(orphan.m_stopped != 0);
+                        orphan.m_stopped = true;
                     }
                     orphan = orphan.m_creator;
                 }
 
                 // try to Stop the activity atomically.  Other threads may be trying to do this as well.
-                if (Interlocked.CompareExchange(ref activityToStop.m_stopped, 1, 0) == 0)
+                if (!Interlocked.Exchange(ref activityToStop.m_stopped, true))
                 {
                     // I succeeded stopping this activity. Now we update our m_current pointer
 
@@ -239,7 +238,7 @@ namespace System.Diagnostics.Tracing
             ActivityInfo? activity = startLocation;
             while (activity != null)
             {
-                if (name == activity.m_name && activity.m_stopped == 0)
+                if (name == activity.m_name && !activity.m_stopped)
                     return activity;
                 activity = activity.m_creator;
             }
@@ -309,7 +308,7 @@ namespace System.Diagnostics.Tracing
 
             public override string ToString()
             {
-                return m_name + "(" + Path(this) + (m_stopped != 0 ? ",DEAD)" : ")");
+                return m_name + "(" + Path(this) + (m_stopped ? ",DEAD)" : ")");
             }
 
             public static string LiveActivities(ActivityInfo? list)
@@ -520,7 +519,7 @@ namespace System.Diagnostics.Tracing
             internal readonly int m_level;                          // current depth of the Path() of the activity (used to keep recursion under control)
             internal readonly EventActivityOptions m_eventOptions;  // Options passed to start.
             internal long m_lastChildID;                            // used to create a unique ID for my children activities
-            internal int m_stopped;                                 // This work item has stopped
+            internal bool m_stopped;                                 // This work item has stopped
             internal readonly ActivityInfo? m_creator;               // My parent (creator).  Forms the Path() for the activity.
             internal readonly Guid m_activityIdToRestore;           // The Guid to restore after a stop.
             #endregion
@@ -578,7 +577,7 @@ namespace System.Diagnostics.Tracing
             while (cur != null)
             {
                 // We found a live activity (typically the first time), set it to that.
-                if (cur.m_stopped == 0)
+                if (!cur.m_stopped)
                 {
                     EventSource.SetCurrentThreadActivityId(cur.ActivityId);
                     return;

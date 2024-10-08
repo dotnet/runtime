@@ -45,7 +45,7 @@
       <_SampleAssembly Condition="'$(_SampleAssembly)' == ''">$(TargetFileName)</_SampleAssembly>
       <BuildAdditionalArgs Condition="'$(MonoDiagnosticsMock)' != ''">$(BuildAdditionalArgs) /p:MonoDiagnosticsMock=$(MonoDiagnosticsMock) </BuildAdditionalArgs>
     </PropertyGroup>
-    <Exec Command="$(_Dotnet) publish -bl /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=browser $(_AOTFlag) $(_HybridGlobalizationFlag) $(_WasmEnableThreadsFlag) $(_SampleProject) $(BuildAdditionalArgs)" />
+    <Exec Command="$(_Dotnet) publish -bl:publish-browser.binlog /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=browser $(_AOTFlag) $(_HybridGlobalizationFlag) $(_WasmEnableThreadsFlag) $(_SampleProject) $(BuildAdditionalArgs)" />
   </Target>
   <Target Name="_ComputeMainJSFileName">
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />

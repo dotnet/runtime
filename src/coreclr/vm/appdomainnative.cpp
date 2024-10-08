@@ -70,14 +70,14 @@ extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandle
         //  loaded into this appdomain, on another thread.
         AppDomain::AssemblyIterator i = pApp->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-        while (i.Next(pDomainAssembly.This()) && (numAssemblies < nArrayElems))
+        while (i.Next(pAssembly.This()) && (numAssemblies < nArrayElems))
         {
             // Do not change this code.  This is done this way to
             //  prevent a GC hole in the SetObjectReference() call.  The compiler
             //  is free to pick the order of evaluation.
-            OBJECTREF o = (OBJECTREF)pDomainAssembly->GetExposedAssemblyObject();
+            OBJECTREF o = (OBJECTREF)pAssembly->GetExposedObject();
             if (o == NULL)
             {   // The assembly was collected and is not reachable from managed code anymore
                 continue;

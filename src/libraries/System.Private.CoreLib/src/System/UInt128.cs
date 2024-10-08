@@ -1197,8 +1197,8 @@ namespace System
                 // block of the divisor. Thus, guessing digits of the quotient
                 // will be more precise. Additionally we'll get r = a % b.
 
-                uint divHi = right[right.Length - 1];
-                uint divLo = right.Length > 1 ? right[right.Length - 2] : 0;
+                uint divHi = right[^1];
+                uint divLo = right.Length > 1 ? right[^2] : 0;
 
                 // We measure the leading zeros of the divisor
                 int shift = BitOperations.LeadingZeroCount(divHi);
@@ -1207,7 +1207,7 @@ namespace System
                 // And, we make sure the most significant bit is set
                 if (shift > 0)
                 {
-                    uint divNx = right.Length > 2 ? right[right.Length - 3] : 0;
+                    uint divNx = right.Length > 2 ? right[^3] : 0;
 
                     divHi = (divHi << shift) | (divLo >> backShift);
                     divLo = (divLo << shift) | (divNx >> backShift);

@@ -14,6 +14,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner.ILVerification;
@@ -77,6 +78,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						Assert.IsNotNull (assemblyRef, $"Type reference '{typeRef.FullName}' has a reference to assembly '{typeRef.Scope.Name}' which is not a reference of '{linked.FullName}'");
 						continue;
 					}
+				case ModuleDefinition: {
+						// There should be a Module row for this assembly
+						Assert.AreEqual (linked.MainModule.Name, typeRef.Scope.Name, $"Type reference '{typeRef.FullName}' has a reference to module '{typeRef.Scope.Name}' which is not the module of '{linked.FullName}'");
+						continue;
+				}
 				default:
 					throw new NotImplementedException ($"Unexpected scope type '{typeRef.Scope.GetType ()}' for type reference '{typeRef.FullName}'");
 				}

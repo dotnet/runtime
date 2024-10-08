@@ -29,6 +29,7 @@
              Link="System\Drawing\ColorConverterCommon.cs" />
     <Compile Include="$(CommonPath)System\Drawing\ColorTable.cs"
              Link="System\Drawing\ColorTable.cs" />
+    <Compile Include="$(CommonPath)System\Experimentals.cs" Link="Common\System\Experimentals.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
@@ -36,8 +37,12 @@
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetSysColor.cs"
              Link="Common\Interop\Windows\User32\Interop.GetSysColor.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.HIGHCONTRASTW.cs"
+             Link="Common\Interop\Windows\User32\Interop.HIGHCONTRASTW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.Win32SystemColors.cs"
              Link="Common\Interop\Windows\User32\Interop.Win32SystemColors.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.SystemParametersInfo.cs"
+             Link="Common\Interop\Windows\User32\Interop.SystemParametersInfo.cs" />
   </ItemGroup>
 
   <ItemGroup>
