@@ -231,6 +231,11 @@ namespace System.Net.Sockets
             {
                 return SocketPal.GetSocketErrorForErrorCode(CloseHandle(handle));
             }
+            if (OperatingSystem.IsWasi())
+            {
+                // WASI never blocks and doesn't support linger options
+                return SocketPal.GetSocketErrorForErrorCode(CloseHandle(handle));
+            }
 
             // If abortive is not set, we're not running on the finalizer thread, so it's safe to block here.
             // We can honor the linger options set on the socket.  It also means closesocket() might return
