@@ -346,6 +346,6 @@
     <value>Access to the registry key '{0}' is denied.</value>
   </data>
   <data name="InvalidPerfData" xml:space="preserve">
-    <value>Invalid performance counter data.</value>
+    <value>Invalid performance counter data with type '{0}'.</value>
   </data>
 </root>
