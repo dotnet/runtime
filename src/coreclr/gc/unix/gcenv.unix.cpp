@@ -898,7 +898,7 @@ static void GetLogicalProcessorCacheSizeFromSysFs(size_t* cacheLevel, size_t* ca
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
     //
-    // Fallback to retrieve cachesize via /sys/.. if sysconf was not available
+    // Retrieve cachesize via sysfs by reading the file /sys/devices/system/cpu/cpu0/cache/index{LastLevelCache}/size
     // for the platform. Currently musl and arm64 should be only cases to use
     // this method to determine cache size.
     //
@@ -936,9 +936,7 @@ static void GetLogicalProcessorCacheSizeFromHeuristic(size_t* cacheLevel, size_t
 
 #if (defined(TARGET_LINUX) && !defined(TARGET_APPLE))
     {
-        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
-        // from most of the machines.
-        // Hence, just use the following heuristics at best depending on the CPU count
+        // Use the following heuristics at best depending on the CPU count
         // 1 ~ 4   :  4 MB
         // 5 ~ 16  :  8 MB
         // 17 ~ 64 : 16 MB
@@ -966,12 +964,12 @@ static void GetLogicalProcessorCacheSizeFromHeuristic(size_t* cacheLevel, size_t
 #endif
 }
 
-static size_t GetLogicalProcessorCacheSizeFromOS(bool useSysConf)
+static size_t GetLogicalProcessorCacheSizeFromOS()
 {
     size_t cacheLevel = 0;
     size_t cacheSize = 0;
 
-    if (useSysConf)
+    if (GCConfig::GetGCCacheSizeFromSysConf())
     {
         GetLogicalProcessorCacheSizeFromSysConf(&cacheLevel, &cacheSize);
     }
@@ -1075,18 +1073,17 @@ static bool ReadMemAvailable(uint64_t* memAvailable)
 //             the processor architecture
 // Return:
 //  Size of the cache
-size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
+size_t GCToOSInterface::GetCacheSizePerLogicalCpu()
 {
     static volatile size_t s_maxSize;
     static volatile size_t s_maxTrueSize;
-    bool useSysConf = GCConfig::GetGCCacheSizeFromSysConf();
 
     size_t size = trueSize ? s_maxTrueSize : s_maxSize;
     if (size != 0)
         return size;
 
     size_t maxSize, maxTrueSize;
-    maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS(useSysConf); // Returns the size of the highest level processor cache
+    maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS(); // Returns the size of the highest level processor cache
 
     s_maxSize = maxSize;
     s_maxTrueSize = maxTrueSize;
