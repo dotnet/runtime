@@ -13,24 +13,34 @@ try {
 
     await runMain("Wasm.Browser.Sample", []);
 
+    let linear;
+    let tm;
     const library = await getAssemblyExports("Wasm.Browser.Sample");
     const testClass = library.Sample.TestClass;
     console.log("Start allocating objects...");
     for (var i = 0; i < 389; i++) {
-        const tm = testClass?.AllocateObjects();
-        const linear = Module.HEAP32.byteLength;
+        tm = testClass?.AllocateObjects();
+        linear = Module.HEAP32.byteLength;
         console.log(`${i}: managed ${tm} WASM ${linear} bytes. Ratio ${linear / tm}`);
     }
+
+    console.log("Forcing GC ...");
+    tm = testClass.ForceGC();
+    linear = Module.HEAP32.byteLength;
+    console.log(`${i}: managed ${tm} WASM ${linear} bytes. Ratio ${linear / tm}`);
+
     console.log("Disposing allocated objects...");
     testClass.DisposeObjects();
 
-    const tm = testClass.AllocateObjects();
-    const linear = Module.HEAP32.byteLength;
+    tm = testClass.AllocateObjects();
+    linear = Module.HEAP32.byteLength;
     console.log(`${i}: managed ${tm} WASM ${linear} bytes. Ratio ${linear / tm}`);
 
     testClass.DisposeObjects();
-    const tm2 = testClass.ForceGC();
-    console.log(`${i}: managed ${tm2} WASM ${linear} bytes. Ratio ${linear / tm}`);
+    console.log("Forcing GC ...");
+    tm = testClass.ForceGC();
+    console.log(`${i}: managed ${tm} WASM ${linear} bytes. Ratio ${linear / tm}`);
+    console.log("");
     console.log("Tadaaaa!");
 }
 catch (err) {

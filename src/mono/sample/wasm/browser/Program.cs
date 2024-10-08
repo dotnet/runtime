@@ -39,8 +39,11 @@ public partial class TestClass
     [return: JSMarshalAs<JSType.Number>]
     public static long AllocateObjects()
     {
-        var child = new ChildClass(_parent);
-        _objects.Add(child);
+        for (int i = 0; i < 10; i++)
+        {
+            var child = new ChildClass(_parent);
+            _objects.Add(child);
+        }
 
         return GetStats();
     }
@@ -67,7 +70,7 @@ public partial class TestClass
 public sealed class ChildClass : IDisposable
 {
     private readonly ParentClass _parent;
-    private byte[] _junk = new byte[2_500_000];
+    private byte[] _junk = new byte[250_000];
 
     public ChildClass(ParentClass parent)
     {
