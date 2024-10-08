@@ -1000,9 +1000,9 @@ BOOL Thread::ReadyForAsyncException()
         }
         else
         {
-             CONTEXT ctx;
-             SetIP(&ctx, 0);
-             SetSP(&ctx, 0);
+             CONTEXT ctx = { 0 };
+            //  SetIP(&ctx, 0);
+            //  SetSP(&ctx, 0);
              FillRegDisplay(&rd, &ctx);
         }
     }
