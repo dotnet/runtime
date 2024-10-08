@@ -3357,6 +3357,11 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             fgDoReversePostOrderLayout();
             fgMoveColdBlocks();
 
+            if (compHndBBtabCount != 0)
+            {
+                fgFindEHRegionEnds();
+            }
+
             // Renumber blocks to facilitate LSRA's order of block visitation
             // TODO: Consider removing this, and using traversal order in lSRA
             //
