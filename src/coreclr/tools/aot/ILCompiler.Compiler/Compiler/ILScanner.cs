@@ -541,16 +541,27 @@ namespace ILCompiler
                             }
 
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                            TypeDesc baseType;
 
-                            if (!canonType.IsDefType || !((MetadataType)canonType).IsAbstract)
+                            if (canonType is not MetadataType { IsAbstract: true })
+                            {
                                 _canonConstructedTypes.Add(canonType.GetClosestDefType());
+                                baseType = canonType.BaseType;
+                                while (baseType != null)
+                                {
+                                    baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                                    if (!_canonConstructedTypes.Add(baseType))
+                                        break;
+                                    baseType = baseType.BaseType;
+                                }
+                            }
 
-                            TypeDesc baseType = canonType.BaseType;
-                            bool added = true;
-                            while (baseType != null && added)
+                            baseType = canonType.BaseType;
+                            while (baseType != null)
                             {
                                 baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                                added = _unsealedTypes.Add(baseType);
+                                if (!_unsealedTypes.Add(baseType))
+                                    break;
                                 baseType = baseType.BaseType;
                             }
 
@@ -686,20 +697,16 @@ namespace ILCompiler
 
             protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
             {
-                MethodDesc result = base.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
-                if (result != null)
+                // If we would resolve into a type that wasn't seen as allocated, don't allow devirtualization.
+                // It would go past what we scanned in the scanner and that doesn't lead to good things.
+                if (!_canonConstructedTypes.Contains(implType.ConvertToCanonForm(CanonicalFormKind.Specific)))
                 {
-                    // If we would resolve into a type that wasn't seen as allocated, don't allow devirtualization.
-                    // It would go past what we scanned in the scanner and that doesn't lead to good things.
-                    if (!_canonConstructedTypes.Contains(result.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)))
-                    {
-                        // FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE is close enough...
-                        devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE;
-                        return null;
-                    }
+                    // FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE is close enough...
+                    devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE;
+                    return null;
                 }
 
-                return result;
+                return base.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
             }
 
             public override bool CanReferenceConstructedMethodTable(TypeDesc type)
