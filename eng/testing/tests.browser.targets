@@ -246,9 +246,8 @@
                       '$(Scenario)' != 'WasmTestOnChrome' and 
                       '$(Scenario)' != 'WasmTestOnFirefox' and 
                       '$(Scenario)' != 'WasmTestOnNodeJS' and 
-                      '$(Scenario)' != 'WasmDebuggerTests' and 
                       '$(Scenario)' != 'BuildWasmApps'" 
-                      Text="Only supported scenarios are WasmTestOnV8, WasmTestOnNodeJS, WasmTestOnChrome, WasmTestOnFirefox, WasmDebuggerTests and BuildWasmApps at the moment. It was $(Scenario)." />
+                      Text="Only supported scenarios are WasmTestOnV8, WasmTestOnNodeJS, WasmTestOnChrome, WasmTestOnFirefox and BuildWasmApps at the moment. It was $(Scenario)." />
 
     <!-- Restore NPM packages -->
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
