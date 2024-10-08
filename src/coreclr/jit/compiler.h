@@ -6284,8 +6284,10 @@ public:
 
     template <const bool useProfile = false>
     FlowGraphDfsTree* fgComputeDfs();
-    FlowGraphDfsTree* fgComputeLoopAwareDfs();
     void fgInvalidateDfsTree();
+
+    template <typename TFunc>
+    void fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, BlockToNaturalLoopMap* blockToLoop, TFunc func);
 
     void fgRemoveReturnBlock(BasicBlock* block);
 

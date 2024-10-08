@@ -4970,6 +4970,61 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
     return preOrderIndex;
 }
 
+//------------------------------------------------------------------------
+// fgVisitBlocksInLoopAwareRPO: Visit the blocks in 'dfsTree' in reverse post-order,
+// but ensure loop bodies are visited before loop successors.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Parameters:
+//   dfsTree     - The DFS tree of the flow graph
+//   blockToLoop - A mapping of each block in 'dfsTree' to its containing loop, if applicable
+//   func        - Callback functor that operates on a BasicBlock*
+//
+// Returns:
+//   A postorder traversal with compact loop bodies.
+//
+template <typename TFunc>
+void Compiler::fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, BlockToNaturalLoopMap* blockToLoop, TFunc func)
+{
+    assert(dfsTree != nullptr);
+    assert(blockToLoop != nullptr);
+
+    EnsureBasicBlockEpoch();
+    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
+
+    auto visitBlock = [this, func, &visitedBlocks](BasicBlock* block) -> BasicBlockVisit {
+        // If this block is in a loop, we will try to visit it more than once
+        // (first when we visit its containing loop, and then later as we iterate
+        // through the initial RPO).
+        // Thus, we need to keep track of visited blocks.
+        if (!BlockSetOps::IsMember(this, visitedBlocks, block->bbNum))
+        {
+            func(block);
+            BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
+        }
+
+        return BasicBlockVisit::Continue;
+    };
+
+    for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+    {
+        BasicBlock* const           block = dfsTree->GetPostOrder(i - 1);
+        FlowGraphNaturalLoop* const loop  = blockToLoop->GetLoop(block);
+
+        // If this block is a loop header, visit the entire loop before moving on
+        if ((loop != nullptr) && (block == loop->GetHeader()))
+        {
+            loop->VisitLoopBlocksReversePostOrder(visitBlock);
+        }
+        else
+        {
+            visitBlock(block);
+        }
+    }
+}
+
 //------------------------------------------------------------------------------
 // FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder: Visit all of the
 // loop's blocks in reverse post order.

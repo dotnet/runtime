@@ -951,17 +951,32 @@ void LinearScan::setBlockSequence()
     // Initialize the "visited" blocks set.
     bbVisitedSet = BlockSetOps::MakeEmpty(compiler);
 
-    // fgComputeLoopAwareDfs already bails on the "loop-aware" part early if the DFS doesn't have any cycles,
-    // but in MinOpts, we'd prefer to skip the extra computation in cases where there are loops.
-    // If we aren't optimizing, we would've skipped optFindLoopsPhase, so fgMightHaveNaturalLoops should be false.
-    compiler->m_dfsTree = compiler->fgMightHaveNaturalLoops ? compiler->fgComputeLoopAwareDfs()
-                                                            : compiler->fgComputeDfs</* useProfile */ true>();
-
     assert((blockSequence == nullptr) && (bbSeqCount == 0));
-    FlowGraphDfsTree* const dfsTree = compiler->m_dfsTree;
-    blockSequence                   = dfsTree->GetPostOrder();
-    bbNumMaxBeforeResolution        = compiler->fgBBNumMax;
-    blockInfo                       = new (compiler, CMK_LSRA) LsraBlockInfo[bbNumMaxBeforeResolution + 1];
+    FlowGraphDfsTree* const dfsTree = compiler->fgComputeDfs</* useProfile */ true>();
+
+    if (compiler->opts.OptimizationEnabled() && dfsTree->HasCycle())
+    {
+        // Ensure loop bodies are compact in the visitation order
+        FlowGraphNaturalLoops* const loops       = FlowGraphNaturalLoops::Find(dfsTree);
+        BlockToNaturalLoopMap* const blockToLoop = BlockToNaturalLoopMap::Build(loops);
+        blockSequence                            = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
+        unsigned index                           = dfsTree->GetPostOrderCount();
+
+        auto addToSequence = [this, &index](BasicBlock* block) {
+            assert(index != 0);
+            blockSequence[--index] = block;
+        };
+
+        compiler->fgVisitBlocksInLoopAwareRPO(dfsTree, blockToLoop, addToSequence);
+    }
+    else
+    {
+        // TODO: Just use lexical block order in MinOpts
+        blockSequence = dfsTree->GetPostOrder();
+    }
+
+    bbNumMaxBeforeResolution = compiler->fgBBNumMax;
+    blockInfo                = new (compiler, CMK_LSRA) LsraBlockInfo[bbNumMaxBeforeResolution + 1];
 
     // Flip the DFS traversal to get the reverse post-order traversal
     // (this is the order in which blocks will be allocated)
