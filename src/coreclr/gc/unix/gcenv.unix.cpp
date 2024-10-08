@@ -1073,7 +1073,7 @@ static bool ReadMemAvailable(uint64_t* memAvailable)
 //             the processor architecture
 // Return:
 //  Size of the cache
-size_t GCToOSInterface::GetCacheSizePerLogicalCpu()
+size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 {
     static volatile size_t s_maxSize;
     static volatile size_t s_maxTrueSize;
