@@ -20,9 +20,9 @@ internal struct EECodeInfoHandle
     // Return a handle for the information, or null if an owning code block cannot be found.
     EECodeInfoHandle? GetEECodeInfoHandle(TargetCodePointer ip);
     // Get the method descriptor corresponding to the given code block
-    TargetPointer GetMethodDesc(EECodeInfoHandle codeInfoHandle) => throw new NotImplementedException();
+    TargetPointer GetMethodDesc(EECodeInfoHandle codeInfoHandle);
     // Get the instruction pointer address of the start of the code block
-    TargetCodePointer GetStartAddress(EECodeInfoHandle codeInfoHandle) => throw new NotImplementedException();
+    TargetCodePointer GetStartAddress(EECodeInfoHandle codeInfoHandle);
 ```
 
 ## Version 1
