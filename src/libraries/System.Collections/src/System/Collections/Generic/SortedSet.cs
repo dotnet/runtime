@@ -754,24 +754,31 @@ namespace System.Collections.Generic
             {
                 foreach (T i in this)
                 {
-                    if (Comparer.Compare(item, i) == 0)
+                    int order = comparer.Compare(item, i);
+                    if (order == 0)
                     {
                         return count;
+                    }
+                    else if (order < 0)
+                    {
+                        break;
                     }
                     count++;
                 }
             }
-
-            while (current != null)
+            else
             {
-                int order = comparer.Compare(item, current.Item);
-                if (order == 0)
+                while (current != null)
                 {
-                    return count;
-                }
+                    int order = comparer.Compare(item, current.Item);
+                    if (order == 0)
+                    {
+                        return count;
+                    }
 
-                current = order < 0 ? current.Left : current.Right;
-                count = order < 0 ? (2 * count + 1) : (2 * count + 2);
+                    current = order < 0 ? current.Left : current.Right;
+                    count = order < 0 ? (2 * count + 1) : (2 * count + 2);
+                }
             }
 
             return -1;
