@@ -973,6 +973,10 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 fprintf(fgxFile, "\n            hot=\"true\"");
             }
+            if (block->HasFlag(BBF_HAS_NEWARR))
+            {
+                fprintf(fgxFile, "\n            callsNewArr=\"true\"");
+            }
             if (block->HasFlag(BBF_HAS_NEWOBJ))
             {
                 fprintf(fgxFile, "\n            callsNew=\"true\"");
