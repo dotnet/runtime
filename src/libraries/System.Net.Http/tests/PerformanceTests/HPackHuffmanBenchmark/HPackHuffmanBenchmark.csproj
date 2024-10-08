@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppMinimum)</TargetFramework>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
     <StringResourcesPath>../../../src/Resources/Strings.resx</StringResourcesPath>
     <Nullable>enable</Nullable>
   </PropertyGroup>

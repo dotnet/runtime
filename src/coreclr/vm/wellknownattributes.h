@@ -29,7 +29,6 @@ enum class WellKnownAttribute : DWORD
     ManagedToNativeComInteropStub,
     UnmanagedCallConv,
     UnmanagedCallersOnly,
-    NativeCallableInternal, // This is needed to support MCG scenarios
     TypeIdentifier,
     UnmanagedFunctionPointer,
     ThreadStatic,
@@ -92,8 +91,6 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.Runtime.InteropServices.UnmanagedCallConvAttribute";
         case WellKnownAttribute::UnmanagedCallersOnly:
             return "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute";
-        case WellKnownAttribute::NativeCallableInternal:
-            return "System.Runtime.InteropServices.NativeCallableInternalAttribute";
         case WellKnownAttribute::TypeIdentifier:
             return "System.Runtime.InteropServices.TypeIdentifierAttribute";
         case WellKnownAttribute::UnmanagedFunctionPointer:

@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace One
 {
@@ -80,9 +81,10 @@ namespace Three {
         }
     }
 
-    class Test
+    public class Test
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             CreateObj temp = new CreateObj();
 

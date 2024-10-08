@@ -350,7 +350,7 @@ export function prepareAssets () {
         }
 
 
-        if (config.debugLevel != 0) {
+        if (config.debugLevel != 0 && loaderHelpers.isDebuggingSupported()) {
             if (resources.corePdb) {
                 for (const name in resources.corePdb) {
                     addAsset({
@@ -375,12 +375,12 @@ export function prepareAssets () {
         if (config.loadAllSatelliteResources && resources.satelliteResources) {
             for (const culture in resources.satelliteResources) {
                 for (const name in resources.satelliteResources[culture]) {
-                    assetsToLoad.push({
+                    addAsset({
                         name,
                         hash: resources.satelliteResources[culture][name],
                         behavior: "resource",
                         culture
-                    });
+                    }, !resources.coreAssembly);
                 }
             }
         }

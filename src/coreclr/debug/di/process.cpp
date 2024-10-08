@@ -11157,17 +11157,49 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded\n"));
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    HandleHolder hThread = OpenThread(
-        THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_QUERY_INFORMATION | THREAD_SUSPEND_RESUME,
-        FALSE, // thread handle is not inheritable.
-        dwThreadId);
+    // Before we can read the left side context information, we must:
+    // 1. obtain the thread handle
+    // 2. suspened the thread
+    // 3. read the thread context, and from that read the pointer to the left-side context and the size of the context
+    // 4. then we can perform the actual SetThreadContext operation
+    // 5. lastly, we must resume the thread
+    // For the first step of obtaining the thread handle, 
+    // we have previously attempted to use ::OpenThread to get a handle to the thread.
+    // However, there are situations where OpenThread can fail with an Access Denied error.
+    // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in 
+    // Windows causes the process to have higher privileges. 
+    // We are now using the following approach to access the thread handle, which is the same
+    // approach used by CordbThread::RefreshHandle:
+    // 1. Get the thread handle from the DAC
+    // 2. Duplicate the handle to the current process
 
-    if (hThread == NULL)
+    // lookup the CordbThread by thread ID, so that we can access the left-side thread handle
+    CordbThread * pThread = TryLookupOrCreateThreadByVolatileOSId(dwThreadId);
+
+    IDacDbiInterface* pDAC = GetDAC();
+    if (pDAC == NULL)
     {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from OpenThread\n"));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - DAC not initialized\n"));
         ThrowHR(E_UNEXPECTED);
     }
 
+    HANDLE hOutOfProcThread = pDAC->GetThreadHandle(pThread->m_vmThreadToken);
+    if (hOutOfProcThread == NULL)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Failed to get thread handle\n"));
+        ThrowHR(E_UNEXPECTED);
+    }
+
+    // Duplicate the thread handle to the current process
+    HandleHolder hThread;
+    BOOL fSuccess = DuplicateHandle(UnsafeGetProcessHandle(), hOutOfProcThread, ::GetCurrentProcess(), &hThread, 0, FALSE, DUPLICATE_SAME_ACCESS);
+    if (!fSuccess)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from DuplicateHandle\n"));
+        ThrowHR(HRESULT_FROM_GetLastError());
+    }
+
+    // Suspend the thread and so that we can read the thread context.
     DWORD previousSuspendCount = ::SuspendThread(hThread);
     if (previousSuspendCount == (DWORD)-1)
     {
@@ -11178,12 +11210,22 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     DT_CONTEXT context = { 0 };
     context.ContextFlags = CONTEXT_FULL;
 
-    HRESULT hr = GetDataTarget()->GetThreadContext(dwThreadId, CONTEXT_FULL, sizeof(DT_CONTEXT), reinterpret_cast<BYTE*> (&context));
-    IfFailThrow(hr);
+    // we originally used GetDataTarget()->GetThreadContext, but 
+    // the implementation uses ShimLocalDataTarget::GetThreadContext which 
+    // depends on OpenThread which might fail with an Access Denied error (see note above)
+    BOOL success = ::GetThreadContext(hThread, (CONTEXT*)(&context));
+    if (!success)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from GetThreadContext\n"));
+        ThrowHR(HRESULT_FROM_GetLastError());
+    }
 
+    // Read the pointer to the left-side context and the size of the context from the thread context.
     TADDR lsContextAddr = (TADDR)context.Rcx;
     DWORD contextSize = (DWORD)context.Rdx;
 
+    // Read the expected Rip and Rsp from the thread context.  This is used to 
+    // validate the context read from the left-side.
     TADDR expectedRip = (TADDR)context.R8;
     TADDR expectedRsp = (TADDR)context.R9;
 
@@ -11198,7 +11240,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 
     PCONTEXT pContext = (PCONTEXT)_alloca(contextSize);
     ULONG32 cbRead;
-    hr = GetDataTarget()->ReadVirtual(lsContextAddr, reinterpret_cast<BYTE*>(pContext), contextSize, &cbRead);
+    HRESULT hr = GetDataTarget()->ReadVirtual(lsContextAddr, reinterpret_cast<BYTE*>(pContext), contextSize, &cbRead);
     if (FAILED(hr))
     {
         _ASSERTE(!"ReadVirtual failed");
@@ -11232,7 +11274,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     // The initialize call should fail but return contextSize
     contextSize = 0;
     DWORD contextFlags = pContext->ContextFlags;
-    BOOL success = InitializeContext(NULL, contextFlags, NULL, &contextSize);
+    success = InitializeContext(NULL, contextFlags, NULL, &contextSize);
 
     if(success || GetLastError() != ERROR_INSUFFICIENT_BUFFER)
     {
@@ -11276,6 +11318,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 
     DWORD lastError = 0;
 
+    // Perform the actual SetThreadContext operation.
     success = ::SetThreadContext(hThread, pFrameContext);
     if (!success)
     {
@@ -11285,6 +11328,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Set Thread Context Completed: Success=%d GetLastError=%d hr=0x%X\n", success, lastError, HRESULT_FROM_WIN32(lastError)));
     _ASSERTE(success);
 
+    // Now that we have completed the SetThreadContext, resume the thread
     DWORD suspendCount = ::ResumeThread(hThread);
     if (suspendCount == (DWORD)-1)
     {

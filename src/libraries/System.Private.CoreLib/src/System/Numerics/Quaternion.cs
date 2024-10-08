@@ -82,7 +82,7 @@ namespace System.Numerics
 
         /// <summary>Gets a value that indicates whether the current instance is the identity quaternion.</summary>
         /// <value><see langword="true" /> if the current instance is the identity quaternion; otherwise, <see langword="false" />.</value>
-        /// <altmember cref="Identity"/>
+        /// <altmember cref="Identity" />
         public readonly bool IsIdentity => this == Identity;
 
         /// <summary>Adds each element in one quaternion with its corresponding element in a second quaternion.</summary>

@@ -16,6 +16,9 @@ namespace Microsoft.Extensions.Http.Logging
 {
     public class RedactedLogValueIntegrationTest
     {
+        private const string OuterLoggerName = "System.Net.Http.HttpClient.test.LogicalHandler";
+        private const string InnerLoggerName = "System.Net.Http.HttpClient.test.ClientHandler";
+
         private static class EventIds
         {
             public static readonly EventId RequestHeader = new EventId(102, "RequestHeader");
@@ -23,6 +26,91 @@ namespace Microsoft.Extensions.Http.Logging
 
             public static readonly EventId RequestPipelineRequestHeader = new EventId(102, "RequestPipelineRequestHeader");
             public static readonly EventId RequestPipelineResponseHeader = new EventId(103, "RequestPipelineResponseHeader");
+        }
+
+        [Fact]
+        public async Task RedactLoggedHeadersNotCalled_AllValuesAreRedactedBeforeLogging()
+        {
+            // Arrange
+            var sink = new TestSink();
+
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddLogging();
+            serviceCollection.AddSingleton<ILoggerFactory>(new TestLoggerFactory(sink, enabled: true));
+
+            // Act
+            serviceCollection
+                .AddHttpClient("test")
+                .ConfigurePrimaryHttpMessageHandler(() => new TestMessageHandler());
+
+            // Assert
+            var services = serviceCollection.BuildServiceProvider();
+
+            var client = services.GetRequiredService<IHttpClientFactory>().CreateClient("test");
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com");
+            request.Headers.Authorization = new AuthenticationHeaderValue("fake", "secret value");
+            request.Headers.CacheControl = new CacheControlHeaderValue() { NoCache = true, };
+
+            await client.SendAsync(request);
+
+            var messages = sink.Writes.ToArray();
+
+            var message = Assert.Single(messages.Where(m =>
+            {
+                return
+                    m.EventId == EventIds.RequestPipelineRequestHeader &&
+                    m.LoggerName == OuterLoggerName;
+            }));
+            Assert.StartsWith(LineEndingsHelper.Normalize(
+                """
+                Request Headers:
+                Authorization: *
+                Cache-Control: *
+                """),
+                message.Message);
+
+            message = Assert.Single(messages.Where(m =>
+            {
+                return
+                    m.EventId == EventIds.RequestHeader &&
+                    m.LoggerName == InnerLoggerName;
+            }));
+            Assert.StartsWith(LineEndingsHelper.Normalize(
+	            """
+	            Request Headers:
+	            Authorization: *
+	            Cache-Control: *
+	            """),
+	            message.Message);
+
+            message = Assert.Single(messages.Where(m =>
+            {
+                return
+                    m.EventId == EventIds.ResponseHeader &&
+                    m.LoggerName == InnerLoggerName;
+            }));
+            Assert.StartsWith(LineEndingsHelper.Normalize(
+	            """
+	            Response Headers:
+	            X-Sensitive: *
+	            Y-Non-Sensitive: *
+	            """),
+	            message.Message);
+
+            message = Assert.Single(messages.Where(m =>
+            {
+                return
+                    m.EventId == EventIds.RequestPipelineResponseHeader &&
+                    m.LoggerName == OuterLoggerName;
+            }));
+            Assert.StartsWith(LineEndingsHelper.Normalize(
+	            """
+	            Response Headers:
+	            X-Sensitive: *
+	            Y-Non-Sensitive: *
+	            """),
+	            message.Message);
         }
 
         [Fact]
@@ -58,7 +146,7 @@ namespace Microsoft.Extensions.Http.Logging
             {
                 return
                     m.EventId == EventIds.RequestPipelineRequestHeader &&
-                    m.LoggerName == "System.Net.Http.HttpClient.test.LogicalHandler";
+                    m.LoggerName == OuterLoggerName;
             }));
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Request Headers:
@@ -70,7 +158,7 @@ Cache-Control: no-cache
             {
                 return
                     m.EventId == EventIds.RequestHeader &&
-                    m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler";
+                    m.LoggerName == InnerLoggerName;
             }));
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Request Headers:
@@ -82,7 +170,7 @@ Cache-Control: no-cache
             {
                 return
                     m.EventId == EventIds.ResponseHeader &&
-                    m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler";
+                    m.LoggerName == InnerLoggerName;
             }));
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Response Headers:
@@ -94,7 +182,7 @@ Y-Non-Sensitive: innocuous value
             {
                 return
                     m.EventId == EventIds.RequestPipelineResponseHeader &&
-                    m.LoggerName == "System.Net.Http.HttpClient.test.LogicalHandler";
+                    m.LoggerName == OuterLoggerName;
             }));
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Response Headers:
@@ -139,7 +227,7 @@ Y-Non-Sensitive: innocuous value
             {
                 return
                     m.EventId == EventIds.RequestPipelineRequestHeader &&
-                    m.LoggerName == "System.Net.Http.HttpClient.test.LogicalHandler";
+                    m.LoggerName == OuterLoggerName;
             }));
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Request Headers:
@@ -151,7 +239,7 @@ Cache-Control: no-cache
             {
                 return
                     m.EventId == EventIds.RequestHeader &&
-                    m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler";
+                    m.LoggerName == InnerLoggerName;
             }));
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Request Headers:
@@ -163,7 +251,7 @@ Cache-Control: no-cache
             {
                 return
                     m.EventId == EventIds.ResponseHeader &&
-                    m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler";
+                    m.LoggerName == InnerLoggerName;
             }));
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Response Headers:
@@ -175,7 +263,7 @@ Y-Non-Sensitive: innocuous value
             {
                 return
                     m.EventId == EventIds.RequestPipelineResponseHeader &&
-                    m.LoggerName == "System.Net.Http.HttpClient.test.LogicalHandler";
+                    m.LoggerName == OuterLoggerName;
             }));
             Assert.StartsWith(LineEndingsHelper.Normalize(
 @"Response Headers:

@@ -82,7 +82,6 @@ namespace System.Formats.Cbor
         /// <summary>Reads the next data item as a CBOR negative integer representation (major type 1).</summary>
         /// <returns>An unsigned integer denoting -1 minus the integer.</returns>
         /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.</exception>
-        /// <exception cref="OverflowException">The encoded integer is out of range for <see cref="uint" /></exception>
         /// <exception cref="CborContentException"><para>The next value has an invalid CBOR encoding.</para>
         /// <para>-or-</para>
         /// <para>There was an unexpected end of CBOR encoding data.</para>

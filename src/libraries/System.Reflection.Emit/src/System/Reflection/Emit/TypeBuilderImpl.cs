@@ -212,7 +212,7 @@ namespace System.Reflection.Emit
             // Get the parent class's default constructor and add it to the IL
             ConstructorInfo? con;
             if (_typeParent!.IsConstructedGenericType &&
-                (_typeParent.GetGenericTypeDefinition() is TypeBuilderImpl || ModuleBuilderImpl.ContainsTypeBuilder(_typeParent.GetGenericArguments())))
+                (_typeParent.GetGenericTypeDefinition() is TypeBuilderImpl || _module.ContainsTypeBuilder(_typeParent.GetGenericArguments())))
             {
                 // When TypeBuilder involved need to construct the parent constructor using TypeBuilder.GetConstructor() static method
                 con = GetConstructor(_typeParent, _typeParent.GetGenericTypeDefinition().GetConstructor(
@@ -305,7 +305,6 @@ namespace System.Reflection.Emit
         {
             ThrowIfCreated();
 
-
             MethodBuilderImpl methodBuilder = new(name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers,
                 returnTypeOptionalCustomModifiers, parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers, _module, this);
             _methodDefinitions.Add(methodBuilder);
@@ -327,7 +326,7 @@ namespace System.Reflection.Emit
             {
                 if (im.Exists(pair => pair.ifaceMethod.Equals(methodInfoDeclaration)))
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_MethodOverriden, methodInfoBody.Name, FullName), nameof(methodInfoDeclaration));
+                    throw new ArgumentException(SR.Format(SR.Argument_MethodOverridden, methodInfoBody.Name, FullName), nameof(methodInfoDeclaration));
                 }
 
                 im.Add((methodInfoDeclaration, methodInfoBody));
@@ -616,23 +615,22 @@ namespace System.Reflection.Emit
         public override string? Namespace => _namespace;
         public override Assembly Assembly => _module.Assembly;
         public override Module Module => _module;
-        public override Type UnderlyingSystemType
-        {
-            get
-            {
-                if (IsEnum)
-                {
-                    if (_enumUnderlyingType == null)
-                    {
-                        throw new InvalidOperationException(SR.InvalidOperation_NoUnderlyingTypeOnEnum);
-                    }
+        public override Type UnderlyingSystemType => this;
 
-                    return _enumUnderlyingType;
-                }
-                else
+        public override Type GetEnumUnderlyingType()
+        {
+            if (IsEnum)
+            {
+                if (_enumUnderlyingType == null)
                 {
-                    return this;
+                    throw new InvalidOperationException(SR.InvalidOperation_NoUnderlyingTypeOnEnum);
                 }
+
+                return _enumUnderlyingType;
+            }
+            else
+            {
+                throw new ArgumentException(SR.Argument_MustBeEnum);
             }
         }
         public override bool IsSZArray => false;

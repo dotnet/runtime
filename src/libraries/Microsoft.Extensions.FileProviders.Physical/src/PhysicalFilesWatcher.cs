@@ -17,12 +17,8 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.FileProviders.Physical
 {
     /// <summary>
-    ///     <para>
-    ///     A file watcher that watches a physical filesystem for changes.
-    ///     </para>
-    ///     <para>
-    ///     Triggers events on <see cref="IChangeToken" /> when files are created, change, renamed, or deleted.
-    ///     </para>
+    /// Watches a physical file system for changes and triggers events on
+    /// <see cref="IChangeToken" /> when files are created, change, renamed, or deleted.
     /// </summary>
     public class PhysicalFilesWatcher : IDisposable
     {
@@ -46,13 +42,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         /// <summary>
         /// Initializes an instance of <see cref="PhysicalFilesWatcher" /> that watches files in <paramref name="root" />.
-        /// Wraps an instance of <see cref="System.IO.FileSystemWatcher" />
+        /// Wraps an instance of <see cref="System.IO.FileSystemWatcher" />.
         /// </summary>
-        /// <param name="root">Root directory for the watcher</param>
-        /// <param name="fileSystemWatcher">The wrapped watcher that is watching <paramref name="root" /></param>
+        /// <param name="root">Root directory for the watcher.</param>
+        /// <param name="fileSystemWatcher">The wrapped watcher that's watching <paramref name="root" />.</param>
         /// <param name="pollForChanges">
-        /// True when the watcher should use polling to trigger instances of
-        /// <see cref="IChangeToken" /> created by <see cref="CreateFileChangeToken(string)" />
+        /// <see langword="true"/> for the poller to use polling to trigger instances of
+        /// <see cref="IChangeToken" /> created by <see cref="CreateFileChangeToken(string)" />.
         /// </param>
         public PhysicalFilesWatcher(
             string root,
@@ -64,13 +60,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         /// <summary>
         /// Initializes an instance of <see cref="PhysicalFilesWatcher" /> that watches files in <paramref name="root" />.
-        /// Wraps an instance of <see cref="System.IO.FileSystemWatcher" />
+        /// Wraps an instance of <see cref="System.IO.FileSystemWatcher" />.
         /// </summary>
-        /// <param name="root">Root directory for the watcher</param>
-        /// <param name="fileSystemWatcher">The wrapped watcher that is watching <paramref name="root" /></param>
+        /// <param name="root">Root directory for the watcher.</param>
+        /// <param name="fileSystemWatcher">The wrapped watcher that is watching <paramref name="root" />.</param>
         /// <param name="pollForChanges">
-        /// True when the watcher should use polling to trigger instances of
-        /// <see cref="IChangeToken" /> created by <see cref="CreateFileChangeToken(string)" />
+        /// <see langword="true"/> for the poller to use polling to trigger instances of
+        /// <see cref="IChangeToken" /> created by <see cref="CreateFileChangeToken(string)" />.
         /// </param>
         /// <param name="filters">Specifies which files or directories are excluded. Notifications of changes to are not raised to these.</param>
         public PhysicalFilesWatcher(
@@ -89,7 +85,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             if (fileSystemWatcher != null)
             {
 #if NET
-                if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
                 {
                     throw new PlatformNotSupportedException(SR.Format(SR.FileSystemWatcher_PlatformNotSupported, typeof(FileSystemWatcher)));
                 }
@@ -118,19 +114,17 @@ namespace Microsoft.Extensions.FileProviders.Physical
         internal ConcurrentDictionary<IPollingChangeToken, IPollingChangeToken> PollingChangeTokens { get; }
 
         /// <summary>
-        ///     <para>
-        ///     Creates an instance of <see cref="IChangeToken" /> for all files and directories that match the
-        ///     <paramref name="filter" />
-        ///     </para>
-        ///     <para>
-        ///     Globbing patterns are relative to the root directory given in the constructor
-        ///     <seealso cref="PhysicalFilesWatcher(string, FileSystemWatcher, bool)" />. Globbing patterns
-        ///     are interpreted by <seealso cref="Matcher" />.
-        ///     </para>
+        /// Creates an instance of <see cref="IChangeToken" /> for all files and directories that match the
+        /// <paramref name="filter" />.
         /// </summary>
-        /// <param name="filter">A globbing pattern for files and directories to watch</param>
-        /// <returns>A change token for all files that match the filter</returns>
-        /// <exception cref="ArgumentNullException">When <paramref name="filter" /> is null</exception>
+        /// <param name="filter">A globbing pattern for files and directories to watch.</param>
+        /// <returns>A change token for all files that match the filter.</returns>
+        /// <remarks>
+        /// Globbing patterns are relative to the root directory given in the constructor
+        /// <see cref="PhysicalFilesWatcher(string, FileSystemWatcher, bool)" />. Globbing patterns
+        /// are interpreted by <see cref="Matcher" />.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="filter" /> is <see langword="null"/>.</exception>
         public IChangeToken CreateFileChangeToken(string filter)
         {
             ThrowHelper.ThrowIfNull(filter);
@@ -276,6 +270,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -312,6 +307,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -321,6 +317,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -334,6 +331,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -360,6 +358,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -400,6 +399,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -421,6 +421,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]

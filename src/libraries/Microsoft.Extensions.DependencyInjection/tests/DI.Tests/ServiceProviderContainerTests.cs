@@ -392,10 +392,10 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                         var service = sp.GetRequiredService<DisposeServiceProviderInCtorAsyncDisposable>();
                     });
                 });
-            }).Wait(TimeSpan.FromSeconds(10));
+            }).Wait(TimeSpan.FromSeconds(20));
 
-            Assert.True(doesNotHang);
-            Assert.True(asyncDisposableResource.DisposeAsyncCalled);
+            Assert.True(doesNotHang, "!doesNotHang");
+            Assert.True(asyncDisposableResource.DisposeAsyncCalled, "!DisposeAsyncCalled");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

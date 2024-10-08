@@ -303,10 +303,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return size > EnregisteredParamTypeMaxSize;
         }
 
-        public void ComputeReturnValueTreatment(CorElementType type, TypeHandle thRetType, bool isVarArgMethod, out bool usesRetBuffer, out uint fpReturnSize)
+        public void ComputeReturnValueTreatment(CorElementType type, TypeHandle thRetType, bool isVarArgMethod, out bool usesRetBuffer, out uint fpReturnSize, out uint returnedFpFieldOffset1st, out uint returnedFpFieldOffset2nd)
         {
             usesRetBuffer = false;
             fpReturnSize = 0;
+            returnedFpFieldOffset1st = 0;
+            returnedFpFieldOffset2nd = 0;
 
             switch (type)
             {
@@ -397,8 +399,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             if (size <= EnregisteredReturnTypeIntegerMaxSize)
                             {
                                 if (IsLoongArch64 || IsRiscV64)
-                                    fpReturnSize = (uint)RiscVLoongArch64FpStruct.GetFpStructInRegistersInfo(
-                                        thRetType.GetRuntimeTypeHandle(), Architecture).flags;
+                                {
+                                    FpStructInRegistersInfo info = RiscVLoongArch64FpStruct.GetFpStructInRegistersInfo(
+                                        thRetType.GetRuntimeTypeHandle(), Architecture);
+                                    fpReturnSize = (uint)info.flags;
+                                    returnedFpFieldOffset1st = info.offset1st;
+                                    returnedFpFieldOffset2nd = info.offset2nd;
+                                }
                                 break;
                             }
 
