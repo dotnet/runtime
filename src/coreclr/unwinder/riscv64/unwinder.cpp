@@ -647,7 +647,6 @@ Return Value:
     ULONG UnwindIndex;
     ULONG UnwindWords;
 
-    assert(!"---------------RISCV64 ShouldNotReachHere");
     //
     // Unless a special frame is encountered, assume that any unwinding
     // will return us to the return address of a call and set the flag
