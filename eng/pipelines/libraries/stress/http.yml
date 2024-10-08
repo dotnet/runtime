@@ -35,6 +35,7 @@ extends:
         timeoutInMinutes: 240
         variables:
           DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
+          DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
         pool:
           name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals 1es-ubuntu-1804-open
@@ -58,10 +59,9 @@ extends:
 
         - bash: |
             cd '$(httpStressProject)'
-            export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/3.0"
-            export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/3.0"
-            export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0"
-            export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
+            export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0"
+            export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
+            mkdir -p $DUMPS_SHARE
             docker-compose up --abort-on-container-exit --no-color
           timeoutInMinutes: 35 # In case the HTTP/3.0 run hangs, we timeout shortly after the expected 30 minute run
           displayName: Run HttpStress - HTTP 3.0
@@ -69,20 +69,18 @@ extends:
 
         - bash: |
             cd '$(httpStressProject)'
-            export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/2.0"
-            export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/2.0"
-            export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
-            export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
+            export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
+            export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
+            mkdir -p $DUMPS_SHARE
             docker-compose up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 2.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
         - bash: |
             cd '$(httpStressProject)'
-            export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/1.1"
-            export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/1.1"
-            export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
-            export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
+            export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
+            export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
+            mkdir -p $DUMPS_SHARE
             docker-compose up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 1.1
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
@@ -100,10 +98,8 @@ extends:
         displayName: Docker NanoServer
         timeoutInMinutes: 150
         variables:
-          # This will get assigned to the DUMPS_SHARE_MOUNT_ROOT environment
-          # variable in the stress test script. We need to keep the
-          # DUMPS_SHARE_MOUNT_ROOT variable empty during the build step.
-          DUMPS_SHARE_MOUNT_ROOT_PATH: "C:/dumps-share"
+          DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
+          DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
 
           # The 1es-windows-2022-open image has an issue where the Chocolatey-installed V1 docker-compose takes precendence over the
           # V2 docker-compose required by the stress tests, see: https://github.com/actions/runner-images/issues/7080
@@ -144,39 +140,27 @@ extends:
 
         - powershell: |
             cd '$(httpStressProject)'
-            $env:DUMPS_SHARE_MOUNT_ROOT = $env:DUMPS_SHARE_MOUNT_ROOT_PATH
-            $env:CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/3.0"
-            $env:SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/3.0"
-            New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
-            New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
-            $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
-            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
+            $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
+            $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
+            New-Item -Force $env:DUMPS_SHARE -ItemType Directory
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 3.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
         - powershell: |
             cd '$(httpStressProject)'
-            $env:DUMPS_SHARE_MOUNT_ROOT = $env:DUMPS_SHARE_MOUNT_ROOT_PATH
-            $env:CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/2.0"
-            $env:SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/2.0"
-            New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
-            New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
-            $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
-            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
+            $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
+            $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
+            New-Item -Force $env:DUMPS_SHARE -ItemType Directory
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 2.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
         - powershell: |
             cd '$(httpStressProject)'
-            $env:DUMPS_SHARE_MOUNT_ROOT = $env:DUMPS_SHARE_MOUNT_ROOT_PATH
-            $env:CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/1.1"
-            $env:SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/1.1"
-            New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
-            New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
-            $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
-            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
+            $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
+            $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
+            New-Item -Force $env:DUMPS_SHARE -ItemType Directory
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 1.1
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
