@@ -2949,6 +2949,7 @@ public:
 };
 
 typedef std::unordered_map<DWORD, UnmanagedThreadTracker> CUnmanagedThreadHashTableImpl;
+typedef CUnmanagedThreadHashTableImpl::iterator CUnmanagedThreadHashTableIterator; // iterator for the hash table
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 class CordbProcess :

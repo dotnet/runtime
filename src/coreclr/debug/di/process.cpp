@@ -1047,6 +1047,11 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     // This is cleared in code:CordbProcess::Neuter
     m_pProcess.Assign(this);
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    m_unmanagedThreadHashTable.reserve(512);  // reserve 512 buckets for threads
+    m_unmanagedThreadHashTable.max_load_factor(0.75f); // keep the load factor below 0.75
+#endif
+
 #ifdef _DEBUG
     // On Debug builds, we'll ASSERT by default whenever the target appears to be corrupt or
     // otherwise inconsistent (both in DAC and DBI).  But we also need the ability to
@@ -1396,8 +1401,8 @@ void CordbProcess::Neuter()
     RSLockHolder lockHolder(GetProcessLock());
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    CUnmanagedThreadHashTableImpl::iterator end = m_unmanagedThreadHashTable.end();
-    for (CUnmanagedThreadHashTableImpl::iterator cur = m_unmanagedThreadHashTable.begin(); cur != end; ++cur )
+    CUnmanagedThreadHashTableIterator end = m_unmanagedThreadHashTable.end();
+    for (CUnmanagedThreadHashTableIterator cur = m_unmanagedThreadHashTable.begin(); cur != end; ++cur )
     {
         cur->second.Close();
     }
@@ -11225,7 +11230,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     // Windows causes the process to have higher privileges. 
     // We are now caching the thread handle in the unmanaged thread hash table when the thread is created.
 
-    CUnmanagedThreadHashTableImpl::iterator curThread = m_unmanagedThreadHashTable.find(dwThreadId);
+    CUnmanagedThreadHashTableIterator curThread = m_unmanagedThreadHashTable.find(dwThreadId);
 
     if (curThread == m_unmanagedThreadHashTable.end() || curThread->second.GetThreadId() != dwThreadId)
     {
@@ -11265,7 +11270,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     TADDR lsContextAddr = (TADDR)context.Rcx;
     DWORD contextSize = (DWORD)context.Rdx;
 
-    bool fIsInPlaceSingleStep = (bool)context.R8;
+    bool fIsInPlaceSingleStep = (bool)(context.R8&0x1);
     PRD_TYPE opcode = (PRD_TYPE)context.R9;
 
     if (contextSize == 0 || contextSize > sizeof(CONTEXT) + 25000)
@@ -11377,9 +11382,12 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         ThrowHR(HRESULT_FROM_WIN32(lastError));
     }
 
+
     if (fIsInPlaceSingleStep)
     {
         CORDB_ADDRESS_TYPE *patchSkipAddr = (CORDB_ADDRESS_TYPE*)pFrameContext->Rip;
+
+        printf("RS HandleSetThreadContextNeeded - fIsInPlaceSingleStep=%d opcode=%x address=%p\n", fIsInPlaceSingleStep, (DWORD)opcode, (void*)patchSkipAddr);
 
         LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - address=0x%p opcode=0x%x\n", patchSkipAddr, opcode));
         HRESULT hr = RemoveRemotePatch(this, (void*)patchSkipAddr, opcode);
@@ -11389,8 +11397,8 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 
         // suspend all other threads
         m_dwOutOfProcessStepping++;
-        CUnmanagedThreadHashTableImpl::iterator end = m_unmanagedThreadHashTable.end();
-        for (CUnmanagedThreadHashTableImpl::iterator cur = m_unmanagedThreadHashTable.begin(); cur != end; ++cur )
+        CUnmanagedThreadHashTableIterator end = m_unmanagedThreadHashTable.end();
+        for (CUnmanagedThreadHashTableIterator cur = m_unmanagedThreadHashTable.begin(); cur != end; ++cur )
         {
             if (cur->second.GetThreadId() == dwThreadId)
             {
@@ -11661,7 +11669,8 @@ HRESULT CordbProcess::Filter(
         }
         else if (dwFirstChance && pRecord->ExceptionCode == STATUS_SINGLE_STEP && m_dwOutOfProcessStepping > 0)
         {
-            CUnmanagedThreadHashTableImpl::iterator curThread = m_unmanagedThreadHashTable.find(dwThreadId);
+            printf("RS Filter - Single Step at 0x%p\n", (void*)pRecord->ExceptionAddress);
+            CUnmanagedThreadHashTableIterator curThread = m_unmanagedThreadHashTable.find(dwThreadId);
             _ASSERTE(curThread != m_unmanagedThreadHashTable.end());
             if (curThread != m_unmanagedThreadHashTable.end() && 
                 curThread->second.GetThreadId() == dwThreadId &&
@@ -11671,13 +11680,15 @@ HRESULT CordbProcess::Filter(
                 HRESULT hr = ApplyRemotePatch(this, curThread->second.GetPatchSkipAddress());
                 IfFailThrow(hr);
 
+                printf("RS Filter - Single Step at 0x%p - clear patch skip at 0x%p\n", (void*)pRecord->ExceptionAddress, curThread->second.GetPatchSkipAddress());
+
                 curThread->second.ClearPatchSkipAddress();
 
                 m_dwOutOfProcessStepping--;
 
                 // resume all other threads
-                CUnmanagedThreadHashTableImpl::iterator end = m_unmanagedThreadHashTable.end();
-                for (CUnmanagedThreadHashTableImpl::iterator cur = m_unmanagedThreadHashTable.begin(); cur != end; ++cur )
+                CUnmanagedThreadHashTableIterator end = m_unmanagedThreadHashTable.end();
+                for (CUnmanagedThreadHashTableIterator cur = m_unmanagedThreadHashTable.begin(); cur != end; ++cur )
                 {
                     if (cur->second.GetThreadId() == dwThreadId)
                     {
@@ -15531,21 +15542,31 @@ void CordbProcess::HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent
 {
     //PUBLIC_API_ENTRY_FOR_SHIM(this);
 
+    const DWORD dwDesiredAccess = THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION | THREAD_SET_CONTEXT | THREAD_SET_INFORMATION | THREAD_SUSPEND_RESUME | THREAD_TERMINATE;
+
     switch (pEvent->dwDebugEventCode)
     {
         case CREATE_PROCESS_DEBUG_EVENT:
             if (GetProcessId(pEvent->u.CreateProcessInfo.hProcess) == GetProcessId(UnsafeGetProcessHandle()))
             {
                 HANDLE hThread = INVALID_HANDLE_VALUE;
-                ::DuplicateHandle(::GetCurrentProcess(), pEvent->u.CreateProcessInfo.hThread, ::GetCurrentProcess(), &hThread, THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, false, 0);
+                ::DuplicateHandle(::GetCurrentProcess(), pEvent->u.CreateProcessInfo.hThread, ::GetCurrentProcess(), &hThread, dwDesiredAccess, false, 0);
                 m_unmanagedThreadHashTable.insert(std::make_pair(pEvent->dwThreadId, UnmanagedThreadTracker(pEvent->dwThreadId, hThread)));
             }
             break;
         case CREATE_THREAD_DEBUG_EVENT:
             {
                 HANDLE hThread = INVALID_HANDLE_VALUE;
-                ::DuplicateHandle(::GetCurrentProcess(), pEvent->u.CreateThread.hThread, ::GetCurrentProcess(), &hThread, THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, false, 0);
-                std::pair<CUnmanagedThreadHashTableImpl::iterator, bool> newItem = m_unmanagedThreadHashTable.insert(std::make_pair(pEvent->dwThreadId, UnmanagedThreadTracker(pEvent->dwThreadId, hThread)));
+                ::DuplicateHandle(::GetCurrentProcess(), pEvent->u.CreateThread.hThread, ::GetCurrentProcess(), &hThread, dwDesiredAccess, false, 0);
+                std::pair<CUnmanagedThreadHashTableIterator, bool> newItem = m_unmanagedThreadHashTable.insert(std::make_pair(pEvent->dwThreadId, UnmanagedThreadTracker(pEvent->dwThreadId, hThread)));
+                _ASSERTE(newItem.second);
+                if (!newItem.second)
+                {
+                    // If the insert failed, we need to close the stagnant item and replace it with the new one
+                    newItem.first->second.Close();
+                    m_unmanagedThreadHashTable.erase(newItem.first);
+                    newItem = m_unmanagedThreadHashTable.insert(std::make_pair(pEvent->dwThreadId, UnmanagedThreadTracker(pEvent->dwThreadId, hThread)));
+                }
                 _ASSERTE(newItem.second);
                 if (newItem.second && m_dwOutOfProcessStepping > 0) // if the insert was successful and we have out-of-process stepping enabled
                 {
@@ -15558,7 +15579,7 @@ void CordbProcess::HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent
             break;
         case EXIT_THREAD_DEBUG_EVENT:
             {
-                CUnmanagedThreadHashTableImpl::iterator it = m_unmanagedThreadHashTable.find(pEvent->dwThreadId);
+                CUnmanagedThreadHashTableIterator it = m_unmanagedThreadHashTable.find(pEvent->dwThreadId);
                 if (it != m_unmanagedThreadHashTable.end())
                 {
                     it->second.Close();

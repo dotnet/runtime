@@ -1517,9 +1517,9 @@ class DebuggerPatchSkip : public DebuggerController
     CORDB_ADDRESS_TYPE      *m_address;
     int                      m_iOrigDisp;        // the original displacement of a relative call or jump
     InstructionAttribute     m_instrAttrib;      // info about the instruction being skipped over
-#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     bool                     m_fInPlaceSS;       // is this an in-place single-step instruction?
-#endif
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 #ifndef FEATURE_EMULATE_SINGLESTEP
     // this is shared among all the skippers and the controller. see the comments
     // right before the definition of SharedPatchBypassBuffer for lifetime info.
@@ -1537,7 +1537,7 @@ public:
     { 
         // only in-place single steps over call intructions are supported at this time
 #ifndef FEATURE_EMULATE_SINGLESTEP
-        return m_instrAttrib.m_fIsCall && m_fInPlaceSS; 
+        return m_instrAttrib.m_fIsCall && m_fInPlaceSS;
 #else
 #error single step emulation not supported with out of process set thread context
 #endif

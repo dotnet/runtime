@@ -4470,12 +4470,12 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
 
     NativeWalker::DecodeInstructionForPatchSkip(patchBypassRX, &(m_instrAttrib));
 
-#if !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     if (g_pDebugInterface->IsOutOfProcessSetContextEnabled() && m_instrAttrib.m_fIsCall)
     {
         m_fInPlaceSS = true;
     }
-#endif // !defined(FEATURE_EMULATE_SINGLESTEP) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+#endif
 
 #if defined(TARGET_AMD64)
 
