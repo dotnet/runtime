@@ -109,7 +109,7 @@ const char *getFacilityName(DWORD_PTR lf)
 /* be altered if format string contains %s                                         */
 // TODO: This function assumes the pointer size of the target equals the pointer size of the host
 // TODO: replace uses of void* with appropriate TADDR or CLRDATA_ADDRESS
-void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inout __inout_z char* format, uint64_t threadId, double timeStamp, DWORD_PTR facility, ___in void** args, bool fPrintFormatString)
+void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inout __inout_z char* format, uint64_t threadId, double timeStamp, DWORD_PTR facility, uint32_t numArgs, ___in void** inArgs, bool fPrintFormatString)
 {
     if (threadId & 0x8000000000000000)
         fprintf(file, "GC%2d %13.9f : ", (unsigned)threadId, timeStamp);
@@ -123,6 +123,15 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
     {
         fprintf(file, "***|\"%s\"|*** ", format);
     }
+
+    // Below we are going to pass substrings of the format with as-big-as-possibly-needed portions
+    // of the args array.  This allocates a larger args array to avoid buffer overruns.  Formats
+    // will have at most 16 arguments because the EE/GC interface doesn't allow more than that.
+    const int extraArgSlots = 16;
+    void** args = (void**)_alloca((numArgs + extraArgSlots) * sizeof(void*));
+    memcpy(args, inArgs, numArgs * sizeof(void*));
+    memset(&args[numArgs], 0, sizeof(extraArgSlots * sizeof(void*)));
+
     CQuickBytes fullname;
     void** argsPtr = args;
     static char formatCopy[256];
@@ -157,7 +166,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                         // Print the string up to that point
                     c = *ptr;
                     *ptr = 0;       // Terminate the string temporarily
-                    fprintf(file, format, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10]);
+                    fprintf(file, format, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15]);
                     *ptr = c;       // Put it back
 
                         // move the argument pointers past the part the was printed
@@ -299,7 +308,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
     }
 
     // Print anything after the last special format instruction.
-    fprintf(file, format, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10]);
+    fprintf(file, format, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15]);
     fprintf(file, "\n");
 }
 
@@ -519,8 +528,10 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
                 }
                 else
                 {
+                    uint32_t numberOfArgs = latestMsg.GetNumberOfArgs();
                     args = latestMsg.GetArgs();
-                    formatOutput(memCallBack, file, format, (unsigned)latestLog->threadId, deltaTime, latestMsg.GetFacility(), args);
+                    formatOutput(memCallBack, file, format, (unsigned)latestLog->threadId, deltaTime, latestMsg.GetFacility(),
+                        numberOfArgs, args);
                 }
             }
             msgCtr++;

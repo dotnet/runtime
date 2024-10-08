@@ -1241,13 +1241,9 @@ static void PrintFriendlyNumber(LONGLONG n)
 
 static void PrintMessage(CorClrData& corClrData, FILE *outputFile, uint64_t threadId, StressMsgReader msg)
 {
-    void* argBuffer[StressMsg::maxArgCnt];
     char* format = (char*)(s_hdr->moduleImage + msg.GetFormatOffset());
-    int numberOfArgs = msg.GetNumberOfArgs();
-    for (int i = 0; i < numberOfArgs; i++)
-    {
-        argBuffer[i] = msg.GetArgs()[i];
-    }
+    void** args = msg.GetArgs();
+    uint32_t numberOfArgs = msg.GetNumberOfArgs();
     double deltaTime = ((double)(msg.GetTimeStamp() - s_hdr->startTimeStamp)) / s_hdr->tickFrequency;
     if (!s_printHexTidForGcThreads)
     {
@@ -1261,7 +1257,7 @@ static void PrintMessage(CorClrData& corClrData, FILE *outputFile, uint64_t thre
                 threadId |= 0x4000000000000000;
         }
     }
-    formatOutput(&corClrData, outputFile, format, threadId, deltaTime, msg.GetFacility(), argBuffer, s_fPrintFormatStrings);
+    formatOutput(&corClrData, outputFile, format, threadId, deltaTime, msg.GetFacility(), numberOfArgs, args, s_fPrintFormatStrings);
 }
 
 int ProcessStressLog(void* baseAddress, int argc, char* argv[])
