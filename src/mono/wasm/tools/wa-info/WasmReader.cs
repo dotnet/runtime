@@ -111,6 +111,12 @@ namespace WebAssemblyInfo
                     EndOfModulePositions.Pop();
                     InWitComponent = true;
                     break;
+                case SectionId.WitImport:
+                    ReadWitImportSection();
+                    break;
+                case SectionId.WitExport:
+                    ReadWitExportSection();
+                    break;
                 default:
                     break;
             }
@@ -407,7 +413,10 @@ namespace WebAssemblyInfo
 
             for (int i = 0; i < count; i++)
             {
-                Console.Write($" {Reader.ReadByte():x}");
+                var b = Reader.ReadByte();
+                Console.Write($" {b:x}");
+                if (b >= 0x20 && b < 0x7f)
+                    Console.Write($" '{(char)b}'");
             }
 
             Console.WriteLine();
@@ -1364,6 +1373,125 @@ namespace WebAssemblyInfo
             idx = nameToFunction[name] - functionImportsCount;
 
             return true;
+        }
+
+        List<WitImport>? witImports;
+
+        void ReadWitExternDescription(ref WitExternDescription ed)
+        {
+                ed.Kind = (WitExternDescriptionKind) Reader.ReadByte();
+                if (Program.Verbose2)
+                    Console.WriteLine($" extern description kind: {ed.Kind}");
+
+                switch(ed.Kind) {
+                    case WitExternDescriptionKind.CoreModule:
+                    case WitExternDescriptionKind.Function:
+                    case WitExternDescriptionKind.Component:
+                    case WitExternDescriptionKind.Instance:
+                        var typeIdx = ReadU32();
+                    if (Program.Verbose2)
+                        Console.WriteLine($" idx: {typeIdx}");
+                        break;
+                    case WitExternDescriptionKind.Type:
+                        ed.TypeBound = (WitTypeBound) Reader.ReadByte();
+                        if (ed.TypeBound == WitTypeBound.Eq)
+                            ed.Idx = ReadU32();
+                        if (Program.Verbose2)
+                            Console.WriteLine($" typebound: {ed.ValueBound} idx: {ed.Idx}");
+                        break;
+                    case WitExternDescriptionKind.Value:
+                        ed.ValueBound = (WitValueBound) Reader.ReadByte();
+                        if (ed.ValueBound == WitValueBound.Eq)
+                            ed.Idx = ReadU32();
+                        else
+                            ReadWitValueType(ref ed.ValueType);
+                        if (Program.Verbose2)
+                            Console.WriteLine($" valuebound: {ed.ValueBound} idx: {ed.Idx}");
+                        break;
+                }
+        }
+
+        void ReadWitValueType(ref WitValueType vt)
+        {
+            var v = Reader.ReadByte();
+            vt.Kind = v >= 0x73 && v < 0x7f ? WitValueTypeKind.PrimaryValueType : WitValueTypeKind.Type;
+            if (Program.Verbose2)
+                Console.WriteLine($" kind: {vt.Kind}");
+            if (vt.Kind == WitValueTypeKind.PrimaryValueType)
+                vt.PrimaryValueType = (WitPrimaryValueType) v;
+            else {
+                Reader.BaseStream.Seek(-1, SeekOrigin.Current);
+                vt.TypeIdx = ReadU32();
+            }
+        }
+
+        void ReadWitImportSection()
+        {
+            UInt32 count = ReadU32();
+
+            if (Program.Verbose)
+                Console.Write($" count: {count}");
+
+            if (Program.Verbose2)
+                Console.WriteLine();
+
+            witImports ??= new ();
+
+            for (int i = 0; i < count; i++)
+            {
+                var import = new WitImport();
+                import.Length = ReadU32();
+                import.Name = ReadString();
+                if (Program.Verbose2)
+                    Console.WriteLine($" len: {import.Length} name: {import.Name}");
+
+                ReadWitExternDescription(ref import.ExternDescription);
+
+                witImports.Add(import);
+            }
+        }
+
+        List<WitExport>? witExports;
+
+        void ReadWitExportSection()
+        {
+            UInt32 count = ReadU32();
+
+            if (Program.Verbose)
+                Console.Write($" count: {count}");
+
+            if (Program.Verbose2)
+                Console.WriteLine();
+
+            witExports ??= new ();
+
+
+            for (int i = 0; i < count; i++)
+            {
+                var export = new WitExport();
+                export.Length = ReadU32();
+                export.Name = ReadString();
+                if (Program.Verbose2)
+                    Console.WriteLine($" len: {export.Length} name: {export.Name}");
+
+                export.Sort = (WitSort) Reader.ReadByte();
+                if (Program.Verbose2)
+                    Console.WriteLine($" sort: {export.Sort}");
+
+                if (export.Sort == WitSort.CoreSort) {
+                    export.CoreSort = (WitCoreSort) Reader.ReadByte();
+                    Console.WriteLine($" core:sort: {export.CoreSort}");
+                }
+
+                export.SortIdx = ReadU32();
+
+                if (Program.Verbose2)
+                    Console.WriteLine($" sort idx: {export.SortIdx}");
+
+                ReadWitExternDescription(ref export.ExternDescription);
+
+                witExports.Add(export);
+            }
         }
 
         protected delegate void ProcessFunction(UInt32 idx, string? name, object? data);

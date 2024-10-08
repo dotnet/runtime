@@ -453,6 +453,130 @@ namespace WebAssemblyInfo
         public UInt32 TypeIdx;
     }
 
+    enum WitExternDescriptionKind : Byte
+    {
+        CoreModule = 0,
+        Function,
+        Value,
+        Type,
+        Component,
+        Instance,
+    }
+
+    enum WitTypeBound : byte {
+        Eq = 0,
+        Sub,
+    }
+
+    enum WitValueBound : byte {
+        Eq = 0,
+        Type,
+    }
+
+    enum WitPrimaryValueType : byte {
+        String = 0x73,
+        Char,
+        F64,
+        F32,
+        U64,
+        S64,
+        U32,
+        S32,
+        U16,
+        S16,
+        U8,
+        S8,
+        Bool,
+    }
+
+    enum WitValueTypeKind {
+        Type,
+        PrimaryValueType,
+    }
+
+    struct WitValueType {
+        public WitValueTypeKind Kind;
+        public UInt32 TypeIdx;
+        public WitPrimaryValueType PrimaryValueType;
+
+        override public string ToString()
+        {
+            return Kind == WitValueTypeKind.Type ? $"typeidx: {TypeIdx}" : $"primaryvaluetype: {PrimaryValueType}";
+        }
+    }
+
+    struct WitExternDescription {
+        public WitExternDescriptionKind Kind;
+        public WitTypeBound TypeBound;
+        public WitValueBound ValueBound;
+        public WitValueType ValueType;
+        public UInt32 Idx;
+    }
+
+    struct WitImport
+    {
+        public string Name;
+        public UInt32 Length;
+
+        public WitExternDescription ExternDescription;
+
+        override public string ToString()
+        {
+            var tail = "";
+            switch(ExternDescription.Kind)
+            {
+                case WitExternDescriptionKind.CoreModule:
+                case WitExternDescriptionKind.Function:
+                case WitExternDescriptionKind.Component:
+                case WitExternDescriptionKind.Instance:
+                    tail = $" typeidx: {ExternDescription.Idx}";
+                    break;
+                case WitExternDescriptionKind.Type:
+                    tail =  ExternDescription.TypeBound == WitTypeBound.Eq ? $" typebound eq: {ExternDescription.Idx}" : $" typebound sub resource";
+                    break;
+                case WitExternDescriptionKind.Value:
+                    tail = ExternDescription.ValueBound == WitValueBound.Eq ? $" valuebound eq: {ExternDescription.Idx}" : $" valuebound t: {ExternDescription.ValueType}";
+                    break;
+            }
+
+            return $"import name: \"{Name}\" externdesc kind: {ExternDescription.Kind}{tail}";
+        }
+    }
+
+    enum WitCoreSort {
+        Function = 0,
+        Table,
+        Memory,
+        Global,
+        Type = 0x10,
+        Module,
+        Instance,
+    }
+
+    enum WitSort {
+        CoreSort = 0,
+        Function,
+        Value,
+        Type,
+        Component,
+        Instance,
+    }
+
+    struct WitExport
+    {
+        public string Name;
+        public UInt32 Length;
+        public UInt32 SortIdx;
+        public WitSort Sort;
+        public WitCoreSort CoreSort;
+        public WitExternDescription ExternDescription;
+
+        override public string ToString()
+        {
+            return $"export name: \"{Name}\" sort: {Sort} sortidx: {SortIdx} externdesc kind: {ExternDescription.Kind} typeidx: {ExternDescription.Idx}";
+        }
+    }
+
     enum NumberType : Byte
     {
         i32 = 0x7f,
