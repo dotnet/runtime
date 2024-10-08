@@ -139,7 +139,7 @@ bool LookupGcThread(uint64_t threadId, GcThread *gcThread)
 d(IS_UNKNOWN,                   "")                                                                                         \
 d(IS_THREAD_WAIT,               ThreadStressLog::gcServerThread0StartMsg())                                                 \
 d(IS_THREAD_WAIT_DONE,          ThreadStressLog::gcServerThreadNStartMsg())                                                 \
-d(IS_GCSTART,                   ThreadStressLog::gcDetailedStartMsg())                                                      \
+d(IS_GCSTART,                   ThreadStressLog::gcDetailedStartPrefix())                                                   \
 d(IS_GCEND,                     ThreadStressLog::gcDetailedEndMsg())                                                        \
 d(IS_MARK_START,                ThreadStressLog::gcStartMarkMsg())                                                          \
 d(IS_PLAN_START,                ThreadStressLog::gcStartPlanMsg())                                                          \

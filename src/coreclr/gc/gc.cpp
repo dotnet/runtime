@@ -43414,7 +43414,7 @@ generation* gc_heap::expand_heap (int condemned_generation,
     BOOL should_promote_ephemeral = FALSE;
     ptrdiff_t eph_size = total_ephemeral_size;
 #ifdef BACKGROUND_GC
-    dprintf(2,("%s: ---- Heap Expansion ----", (gc_heap::background_running_p() ? "FGC" : "NGC")));
+    dprintf(2,("%s: ---- Heap Expansion ----", str_gc_type()));
 #endif //BACKGROUND_GC
     settings.heap_expansion = TRUE;
 
@@ -48141,7 +48141,7 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
     dprintf (2,("[%s]GC#%zu(%s): Verifying heap - begin",
         (begin_gc_p ? "BEG" : "END"),
         VolatileLoad(&settings.gc_index),
-        (settings.concurrent ? "BGC" : (gc_heap::background_running_p() ? "FGC" : "NGC"))));
+        str_gc_type()));
 #else
     dprintf (2,("[%s]GC#%zu: Verifying heap - begin",
                 (begin_gc_p ? "BEG" : "END"), VolatileLoad(&settings.gc_index)));
@@ -48548,7 +48548,7 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
 
 #ifdef BACKGROUND_GC
     dprintf (2, ("(%s)(%s)(%s) total_objects_verified is %zd, total_objects_verified_deep is %zd",
-                 (settings.concurrent ? "BGC" : (gc_heap::background_running_p () ? "FGC" : "NGC")),
+                 str_gc_type(),
                  (begin_gc_p ? "BEG" : "END"),
                  ((current_c_gc_state == c_gc_state_planning) ? "in plan" : "not in plan"),
                  total_objects_verified, total_objects_verified_deep));
@@ -48601,7 +48601,7 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
     }
     dprintf (2,("GC%zu(%s): Verifying heap - end",
         VolatileLoad(&settings.gc_index),
-        (settings.concurrent ? "BGC" : (gc_heap::background_running_p() ? "FGC" : "NGC"))));
+        str_gc_type()));
 #else
     dprintf (2,("GC#d: Verifying heap - end", VolatileLoad(&settings.gc_index)));
 #endif //BACKGROUND_GC
@@ -50362,6 +50362,13 @@ last_recorded_gc_info* gc_heap::get_completed_bgc_info()
 }
 #endif //BACKGROUND_GC
 
+#ifdef BACKGROUND_GC
+const char* gc_heap::str_gc_type()
+{
+    return (settings.concurrent ? "BGC" : (gc_heap::background_running_p () ? "FGC" : "NGC"));
+}
+#endif // BACKGROUND_GC
+
 void gc_heap::do_pre_gc()
 {
     STRESS_LOG_GC_STACK;
@@ -50390,6 +50397,10 @@ void gc_heap::do_pre_gc()
 #ifdef TRACE_GC
     size_t total_allocated_since_last_gc[total_oh_count];
     get_total_allocated_since_last_gc (total_allocated_since_last_gc);
+    bool compatibleWithStressLog = true;
+#ifdef SIMPLE_DPRINTF
+    compatibleWithStressLog = false;
+#endif //SIMPLE_DPRINTF
 
 #ifdef BACKGROUND_GC
     size_t heap_size_before = get_total_heap_size();
@@ -50397,7 +50408,7 @@ void gc_heap::do_pre_gc()
     uint64_t elapsed_since_last_gc_us = start_gc_time - last_alloc_reset_suspended_end_time;
     max_peak_heap_size = max (max_peak_heap_size, heap_size_before);
 
-    dprintf (6666, (ThreadStressLog::gcDetailedStartMsg(),
+    dprintf (6666, (ThreadStressLog::gcDetailedStartMsg(compatibleWithStressLog),
         VolatileLoad(&settings.gc_index),
         dd_collection_count (hp->dynamic_data_of (0)),
         settings.condemned_generation,
@@ -50410,17 +50421,17 @@ void gc_heap::do_pre_gc()
         (elapsed_since_last_gc_us ? (total_allocated_since_last_gc[gc_oh_num::loh] / 1000.0 / elapsed_since_last_gc_us) : 0),
         total_allocated_since_last_gc[gc_oh_num::poh],
         (elapsed_since_last_gc_us ? (total_allocated_since_last_gc[gc_oh_num::poh] / 1000.0 / elapsed_since_last_gc_us) : 0),
-        (settings.concurrent ? "BGC" : (gc_heap::background_running_p() ? "FGC" : "NGC")),
+        str_gc_type(),
         settings.b_state,
-        n_heaps,
-        (heap_size_before / 1000.0 / 1000.0),
-        (max_peak_heap_size / 1000.0 / 1000.0)));
+        n_heaps
+        SIMPLE_DPRINTF_ARG(heap_size_before / 1000.0 / 1000.0)
+        SIMPLE_DPRINTF_ARG(max_peak_heap_size / 1000.0 / 1000.0)));
 #else
-    dprintf (1, ("*GC* %d(gen0:%d)(%d)(alloc: %zd)",
+    dprintf (1, (ThreadStressLog::gcDetailedStartMsgNoBGC(),
         VolatileLoad(&settings.gc_index),
         dd_collection_count(hp->dynamic_data_of(0)),
         settings.condemned_generation,
-        (total_allocated_since_last_gc[0] + total_allocated_since_last_gc[1] + total_allocated_since_last_gc[2])));
+        (total_allocated_since_last_gc[gc_oh_num::soh] + total_allocated_since_last_gc[gc_oh_num::loh] + total_allocated_since_last_gc[gc_oh_num::poh])));
 #endif //BACKGROUND_GC
 
     if (heap_hard_limit)
@@ -50841,9 +50852,9 @@ void gc_heap::do_post_gc()
 #endif //BGC_SERVO_TUNING
 
 #ifdef BACKGROUND_GC
-    const char* str_gc_type = (settings.concurrent ? "BGC" : (gc_heap::background_running_p () ? "FGC" : "NGC"));
+    const char* string_gc_type = str_gc_type();
 #else
-    const char* str_gc_type = "NGC";
+    const char* string_gc_type = "NGC";
 #endif //BACKGROUND_GC
 
     dprintf (6666, (ThreadStressLog::gcDetailedEndMsg(),
@@ -50851,7 +50862,7 @@ void gc_heap::do_post_gc()
         dd_collection_count (hp->dynamic_data_of (0)),
         (get_total_heap_size() / 1000.0 / 1000.0),
         settings.condemned_generation,
-        str_gc_type,
+        string_gc_type,
         (settings.compaction ? "C" : "S"),
         (settings.promotion ? "P" : "S"),
         settings.entry_memory_load,
