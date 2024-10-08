@@ -13,6 +13,8 @@ internal sealed class ComposeCommand : CliCommand
     private readonly CliArgument<string[]> inputFiles = new("INPUT [INPUTS...]") { Arity = ArgumentArity.OneOrMore, Description = "One or more input files" };
     private readonly CliOption<string> outputFile = new("-o") { Arity = ArgumentArity.ExactlyOne, HelpName = "OUTPUT", Required = true, Description = "Output file" };
     private readonly CliOption<string[]> contractFile = new("-c") { Arity = ArgumentArity.ZeroOrMore, HelpName = "CONTRACT", Description = "Contract file (may be specified multiple times)" };
+    private readonly CliOption<string> baselinePath = new("-b", "--baseline") { Arity = ArgumentArity.ExactlyOne, HelpName = "BASELINEPATH", Description = "Directory containing the baseline contracts"};
+    private readonly CliOption<string> templateFile = new ("-i", "--input-template") { Arity = ArgumentArity.ExactlyOne, HelpName = "TEMPLATE", Description = "Contract descriptor template to be filled in" };
     private readonly CliOption<bool> _verboseOption;
     public ComposeCommand(CliOption<bool> verboseOption) : base("compose")
     {
@@ -20,6 +22,8 @@ internal sealed class ComposeCommand : CliCommand
         Add(inputFiles);
         Add(outputFile);
         Add(contractFile);
+        Add(baselinePath);
+        Add(templateFile);
         SetAction(Run);
     }
 
@@ -37,9 +41,33 @@ internal sealed class ComposeCommand : CliCommand
             Console.Error.WriteLine("No output file specified");
             return 1;
         }
+        var baselinesDir = parse.GetValue(baselinePath);
+        if (baselinesDir == null)
+        {
+            Console.Error.WriteLine("No baseline path specified");
+            return 1;
+        }
+        baselinesDir = System.IO.Path.GetFullPath(baselinesDir);
+        if (!System.IO.Directory.Exists(baselinesDir))
+        {
+            Console.Error.WriteLine($"Baseline path {baselinesDir} does not exist");
+            return 1;
+        }
+        var templateFilePath = parse.GetValue(templateFile);
+        if (templateFilePath == null)
+        {
+            Console.Error.WriteLine("No template file specified");
+            return 1;
+        }
+        templateFilePath = System.IO.Path.GetFullPath(templateFilePath);
+        if (!System.IO.File.Exists(templateFilePath))
+        {
+            Console.Error.WriteLine($"Template file {templateFilePath} does not exist");
+            return 1;
+        }
         var contracts = parse.GetValue(contractFile);
         var verbose = parse.GetValue(_verboseOption);
-        var builder = new DataDescriptorModel.Builder();
+        var builder = new DataDescriptorModel.Builder(baselinesDir);
         var scraper = new ObjectFileScraper(verbose, builder);
         foreach (var input in inputs)
         {
@@ -70,7 +98,7 @@ internal sealed class ComposeCommand : CliCommand
         }
         EnsureDirectoryExists(output);
         using var writer = new System.IO.StreamWriter(output);
-        var emitter = new ContractDescriptorSourceFileEmitter();
+        var emitter = new ContractDescriptorSourceFileEmitter(templateFilePath);
         emitter.SetPlatformFlags(model.PlatformFlags);
         emitter.SetPointerDataCount(model.PointerDataCount);
         emitter.SetJsonDescriptor(model.ToJson());

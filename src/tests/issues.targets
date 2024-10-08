@@ -1031,9 +1031,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/reflection\DefaultInterfaceMethods\GetInterfaceMapConsumer\*">
             <Issue>https://github.com/dotnet/runtimelab/issues/861</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop\IDynamicInterfaceCastable\IDynamicInterfaceCastable\*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/1442</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\Interop\PInvoke\Variant\VariantTestBuiltInComDisabled\*">
             <Issue>https://github.com/dotnet/runtimelab/issues/306</Issue>
         </ExcludeList>
