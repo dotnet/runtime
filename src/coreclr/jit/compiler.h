@@ -1527,15 +1527,15 @@ extern const char* PhaseEnums[];
 // clang-format off
 enum class PhaseChecks : unsigned int
 {
-    CHECK_NONE           = 0,
-    CHECK_IR             = 1 << 0, // ir flags, etc
-    CHECK_UNIQUE         = 1 << 1, // tree node uniqueness
-    CHECK_FG             = 1 << 2, // flow graph integrity
-    CHECK_EH             = 1 << 3, // eh table integrity
-    CHECK_LOOPS          = 1 << 4, // loop integrity/canonicalization
-    CHECK_LIKELIHOODS    = 1 << 5, // profile data likelihood integrity
-    CHECK_PROFILE        = 1 << 6, // profile data full integrity
-    CHECK_LINKED_LOCALS  = 1 << 7, // check linked list of locals
+    CHECK_NONE          = 0,
+    CHECK_IR            = 1 << 0, // ir flags, etc
+    CHECK_UNIQUE        = 1 << 1, // tree node uniqueness
+    CHECK_FG            = 1 << 2, // flow graph integrity
+    CHECK_EH            = 1 << 3, // eh table integrity
+    CHECK_LOOPS         = 1 << 4, // loop integrity/canonicalization
+    CHECK_LIKELIHOODS   = 1 << 5, // profile data likelihood integrity
+    CHECK_PROFILE       = 1 << 6, // profile data full integrity
+    CHECK_LINKED_LOCALS = 1 << 7, // check linked list of locals
 };
 
 inline constexpr PhaseChecks operator ~(PhaseChecks a)
