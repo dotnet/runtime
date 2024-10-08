@@ -3917,6 +3917,10 @@ inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
 }
 #endif
 
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
+
 #if !__has_builtin(_rotl) && !defined(_rotl)
 /*++
 Function:
