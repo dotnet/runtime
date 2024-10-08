@@ -1308,22 +1308,28 @@ void Compiler::fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast)
 void Compiler::fgFindEHRegionEnds()
 {
     assert(compHndBBtabCount != 0);
-    bool* const tryEndsSet   = new (this, CMK_Generic) bool[compHndBBtabCount * 2]{};
-    bool* const hndEndsSet   = tryEndsSet + compHndBBtabCount;
-    unsigned    unsetTryEnds = compHndBBtabCount;
-    unsigned    unsetHndEnds = compHndBBtabCount;
+    unsigned unsetTryEnds = compHndBBtabCount;
+    unsigned unsetHndEnds = compHndBBtabCount;
+
+    // Null out each clause's end pointers.
+    // A non-null end pointer indicates we already updated the clause.
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        HBtab->ebdTryLast = nullptr;
+        HBtab->ebdHndLast = nullptr;
+    }
 
     // Updates the try region's (and all of its parent regions') end block to 'block,'
     // if the try region's end block hasn't been updated yet.
-    auto setTryEnd = [this, tryEndsSet, &unsetTryEnds](BasicBlock* block) {
+    auto setTryEnd = [this, &unsetTryEnds](BasicBlock* block) {
         for (unsigned tryIndex = block->getTryIndex(); tryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
              tryIndex          = ehGetEnclosingTryIndex(tryIndex))
         {
-            if (!tryEndsSet[tryIndex])
+            EHblkDsc* const HBtab = ehGetDsc(tryIndex);
+            if (HBtab->ebdTryLast == nullptr)
             {
                 assert(unsetTryEnds != 0);
-                ehGetDsc(tryIndex)->ebdTryLast = block;
-                tryEndsSet[tryIndex]           = true;
+                HBtab->ebdTryLast = block;
                 unsetTryEnds--;
             }
             else
@@ -1335,15 +1341,15 @@ void Compiler::fgFindEHRegionEnds()
 
     // Updates the handler region's (and all of its parent regions') end block to 'block,'
     // if the handler region's end block hasn't been updated yet.
-    auto setHndEnd = [this, hndEndsSet, &unsetHndEnds](BasicBlock* block) {
+    auto setHndEnd = [this, &unsetHndEnds](BasicBlock* block) {
         for (unsigned hndIndex = block->getHndIndex(); hndIndex != EHblkDsc::NO_ENCLOSING_INDEX;
              hndIndex          = ehGetEnclosingHndIndex(hndIndex))
         {
-            if (!hndEndsSet[hndIndex])
+            EHblkDsc* const HBtab = ehGetDsc(hndIndex);
+            if (HBtab->ebdHndLast == nullptr)
             {
                 assert(unsetHndEnds != 0);
-                ehGetDsc(hndIndex)->ebdHndLast = block;
-                hndEndsSet[hndIndex]           = true;
+                HBtab->ebdHndLast = block;
                 unsetHndEnds--;
             }
             else
