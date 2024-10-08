@@ -2610,6 +2610,37 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
 
     SOSDacEnter();
 
+    if (m_cdacSos != NULL)
+    {
+        hr = m_cdacSos->GetPEFileBase(moduleAddr, base);
+        if (FAILED(hr))
+        {
+            hr = GetPEFileBaseImpl(moduleAddr, base);
+        }
+#ifdef _DEBUG
+        else
+        {
+            CLRDATA_ADDRESS baseLocal = 0;
+            HRESULT hrLocal = GetPEFileBaseImpl(moduleAddr, &baseLocal);
+
+            DacAssertsEnabledHolder assertsEnabled;
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(*base == baseLocal);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetPEFileBaseImpl(moduleAddr, base);
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetPEFileBaseImpl(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
+{
     PTR_Module pModule = PTR_Module(TO_TADDR(moduleAddr));
 
     // More fields later?
@@ -2622,8 +2653,7 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
         *base = (CLRDATA_ADDRESS)NULL;
     }
 
-    SOSDacLeave();
-    return hr;
+    return S_OK;
 }
 
 DWORD DACGetNumComponents(TADDR addr, ICorDebugDataTarget* target)
