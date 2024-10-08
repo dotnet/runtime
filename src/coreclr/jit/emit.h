@@ -1725,6 +1725,17 @@ protected:
             assert(!idIsEvexNdContextSet());
             _idEvexNdContext = 1;
         }
+
+        bool idIsEvexNfContextSet() const
+        {
+            return _idEvexNfContext != 0;
+        }
+
+        void idSetEvexNfContext()
+        {
+            assert(!idIsEvexNfContextSet());
+            _idEvexNfContext = 1;
+        }
 #endif
 
 #ifdef TARGET_ARMARCH

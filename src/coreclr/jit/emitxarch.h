@@ -135,10 +135,12 @@ bool HasVexEncoding(instruction ins) const;
 bool HasEvexEncoding(instruction ins) const;
 bool HasRex2Encoding(instruction ins) const;
 bool HasApxNdd(instruction ins) const;
+bool HasApxNf(instruction ins) const;
 bool IsVexEncodableInstruction(instruction ins) const;
 bool IsEvexEncodableInstruction(instruction ins) const;
 bool IsRex2EncodableInstruction(instruction ins) const;
 bool IsApxNDDEncodableInstruction(instruction ins) const;
+bool IsApxNFEncodableInstruction(instruction ins) const;
 bool IsApxExtendedEvexInstruction(instruction ins) const;
 bool IsShiftInstruction(instruction ins) const;
 bool IsLegacyMap1(code_t code) const;
@@ -542,6 +544,27 @@ void SetEvexNdIfNeeded(instrDesc* id, insOpts instOptions)
     else
     {
         assert((instOptions & INS_OPTS_EVEX_nd_MASK) == 0);
+    }
+}
+
+//------------------------------------------------------------------------
+// SetEvexNdIfNeeded: set Evex.nf on instrDesc
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetEvexNfIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_EVEX_nf_MASK) != 0)
+    {
+        assert(UsePromotedEVEXEncoding());
+        assert(IsApxNFEncodableInstruction(id->idIns()));
+        id->idSetEvexNfContext();
+    }
+    else
+    {
+        assert((instOptions & INS_OPTS_EVEX_nf_MASK) == 0);
     }
 }
 

@@ -242,6 +242,12 @@ bool emitter::HasApxNdd(instruction ins) const
     return (flags & INS_Flags_Has_NDD) != 0;
 }
 
+bool emitter::HasApxNf(instruction ins) const
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & INS_Flags_Has_NF) != 0;
+}
+
 bool emitter::IsVexEncodableInstruction(instruction ins) const
 {
     if (!UseVEXEncoding())
@@ -309,6 +315,25 @@ bool emitter::IsApxNDDEncodableInstruction(instruction ins) const
 }
 
 //------------------------------------------------------------------------
+// IsApxNFEncodableInstruction: Answer the question - does this instruction have Evex.nf supported
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if ins is Evex.nf supported.
+//
+bool emitter::IsApxNFEncodableInstruction(instruction ins) const
+{
+    if(!UsePromotedEVEXEncoding())
+    {
+        return false;
+    }
+
+    return HasApxNf(ins);
+}
+
+//------------------------------------------------------------------------
 // IsApxExtendedEvexInstruction: Answer the question - does this instruction have apx extended evex form.
 //
 // Arguments:
@@ -327,7 +352,7 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
 
     // TODO-XArch-apx:
     // add EVEX.NF check when the feature is available in JIT.
-    return HasApxNdd(ins);
+    return HasApxNdd(ins) || HasApxNf(ins);
 }
 
 //------------------------------------------------------------------------
@@ -1537,6 +1562,11 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
         return true;
     }
 
+    if (id->idIsEvexNfContextSet())
+    {
+        return true;
+    }
+
     // TODO-XArch-apx:
     // better keep a table there to confirm the instruction should be emitted with NDD form.
 
@@ -1579,6 +1609,7 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
 
 #define MAP4_IN_BYTE_EVEX_PREFIX 0x4000000000000ULL
 #define NDBIT_IN_BYTE_EVEX_PREFIX 0x1000000000ULL
+#define NFBIT_IN_BYTE_EVEX_PREFIX 0x400000000ULL
 #define EXTENDED_EVEX_PP_BITS 0x10000000000ULL
 //------------------------------------------------------------------------
 // AddEvexPrefix: Add default EVEX prefix with only LL' bits set.
@@ -1596,7 +1627,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     // Only AVX512 instructions require EVEX prefix
     // After APX, some instructions in legacy or vex space will be promoted to EVEX.
     instruction ins = id->idIns();
-    assert(IsEvexEncodableInstruction(ins) || IsApxNDDEncodableInstruction(ins));
+    assert(IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
     // Shouldn't have already added EVEX prefix
     assert(!hasEvexPrefix(code));
@@ -1605,7 +1636,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
     code |= DEFAULT_BYTE_EVEX_PREFIX;
 
-    if (IsApxNDDEncodableInstruction(ins))
+    if (IsApxExtendedEvexInstruction(ins))
     {
         //Handle EVEX prefix for NDD first.
         code |= MAP4_IN_BYTE_EVEX_PREFIX;
@@ -1617,6 +1648,11 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             code |= NDBIT_IN_BYTE_EVEX_PREFIX;
         }
 
+        if (id->idIsEvexNfContextSet())
+        {
+            code |= NFBIT_IN_BYTE_EVEX_PREFIX;
+        }
+
         if (attr == EA_2BYTE)
         {
             code |= EXTENDED_EVEX_PP_BITS;
@@ -1626,7 +1662,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     }
 
     // No APX-NDD instructions should reach code below.
-    assert(!IsApxNDDEncodableInstruction(ins));
+    assert(!IsApxExtendedEvexInstruction(ins));
 
     if (attr == EA_32BYTE)
     {
@@ -7277,6 +7313,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     id->idReg2(reg2);
 
     SetEvexNdIfNeeded(id, instOptions);
+    SetEvexNfIfNeeded(id, instOptions);
 
     if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
     {
@@ -7743,6 +7780,7 @@ void emitter::emitIns_R_R_R(
     }
     SetEvexEmbMaskIfNeeded(id, instOptions);
     SetEvexNdIfNeeded(id, instOptions);
+    SetEvexNfIfNeeded(id, instOptions);
 
     if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
     {
@@ -11734,7 +11772,7 @@ void emitter::emitDispEmbRounding(instrDesc* id) const
         return;
     }
 
-    if (IsApxNDDEncodableInstruction(id->idIns()))
+    if (IsApxExtendedEvexInstruction(id->idIns()))
     {
         // Apx-Evex.nd shared the same bit(s) with Evex.b,
         // for ndd case, we don't need to display any thing special.
@@ -11919,6 +11957,14 @@ void emitter::emitDispIns(
     }
 
     /* Display the instruction name */
+
+#ifdef TARGET_AMD64
+    if (IsApxNFEncodableInstruction(id->idIns()) && id->idIsEvexNfContextSet())
+    {
+        // print the EVEX.NF indication in psudeo prefix style.
+        printf("{nf}    ");
+    }
+#endif // TARGET_AMD64
 
     sstr = codeGen->genInsDisplayName(id);
     printf(" %-9s", sstr);
