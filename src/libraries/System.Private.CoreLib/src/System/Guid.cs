@@ -944,7 +944,7 @@ namespace System
         // Returns whether bytes are successfully written to given span.
         public bool TryWriteBytes(Span<byte> destination)
         {
-            if ((uint)destination.Length < 16)
+            if (destination.Length < 16)
                 return false;
 
             if (BitConverter.IsLittleEndian)
@@ -963,7 +963,7 @@ namespace System
         // Returns whether bytes are successfully written to given span.
         public bool TryWriteBytes(Span<byte> destination, bool bigEndian, out int bytesWritten)
         {
-            if ((uint)destination.Length < 16)
+            if (destination.Length < 16)
             {
                 bytesWritten = 0;
                 return false;
