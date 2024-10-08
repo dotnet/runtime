@@ -6287,7 +6287,7 @@ public:
     void fgInvalidateDfsTree();
 
     template <typename TFunc>
-    void fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, BlockToNaturalLoopMap* blockToLoop, TFunc func);
+    void fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphNaturalLoops* loops, TFunc func);
 
     void fgRemoveReturnBlock(BasicBlock* block);
 

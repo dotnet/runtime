@@ -4978,50 +4978,64 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
 //   TFunc - Callback functor type
 //
 // Parameters:
-//   dfsTree     - The DFS tree of the flow graph
-//   blockToLoop - A mapping of each block in 'dfsTree' to its containing loop, if applicable
-//   func        - Callback functor that operates on a BasicBlock*
+//   dfsTree - The DFS tree of the flow graph
+//   loops   - A collection of the loops in the flow graph
+//   func    - Callback functor that operates on a BasicBlock*
 //
 // Returns:
 //   A postorder traversal with compact loop bodies.
 //
 template <typename TFunc>
-void Compiler::fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, BlockToNaturalLoopMap* blockToLoop, TFunc func)
+void Compiler::fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphNaturalLoops* loops, TFunc func)
 {
     assert(dfsTree != nullptr);
-    assert(blockToLoop != nullptr);
+    assert(loops != nullptr);
 
-    EnsureBasicBlockEpoch();
-    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
+    // We will start by visiting blocks in reverse post-order.
+    // If we encounter the header of a loop, we will visit the loop's remaining blocks next
+    // to keep the loop body compact in the visitation order.
+    // We have to do this recursively to handle nested loops.
+    // Since the presence of loops implies we will try to visit some blocks more than once,
+    // we need to track visited blocks.
+    struct LoopAwareVisitor
+    {
+        BitVecTraits           traits;
+        BitVec                 visitedBlocks;
+        FlowGraphNaturalLoops* loops;
+        TFunc                  func;
 
-    auto visitBlock = [this, func, &visitedBlocks](BasicBlock* block) -> BasicBlockVisit {
-        // If this block is in a loop, we will try to visit it more than once
-        // (first when we visit its containing loop, and then later as we iterate
-        // through the initial RPO).
-        // Thus, we need to keep track of visited blocks.
-        if (!BlockSetOps::IsMember(this, visitedBlocks, block->bbNum))
+        LoopAwareVisitor(FlowGraphDfsTree* dfsTree, FlowGraphNaturalLoops* loops, TFunc func)
+            : traits(dfsTree->PostOrderTraits())
+            , visitedBlocks(BitVecOps::MakeEmpty(&traits))
+            , loops(loops)
+            , func(func)
         {
-            func(block);
-            BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
         }
 
-        return BasicBlockVisit::Continue;
+        void VisitBlock(BasicBlock* block)
+        {
+            if (BitVecOps::TryAddElemD(&traits, visitedBlocks, block->bbPostorderNum))
+            {
+                func(block);
+
+                FlowGraphNaturalLoop* const loop = loops->GetLoopByHeader(block);
+                if (loop != nullptr)
+                {
+                    loop->VisitLoopBlocksReversePostOrder([&](BasicBlock* block) {
+                        VisitBlock(block);
+                        return BasicBlockVisit::Continue;
+                    });
+                }
+            }
+        }
     };
+
+    LoopAwareVisitor visitor(dfsTree, loops, func);
 
     for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
     {
-        BasicBlock* const           block = dfsTree->GetPostOrder(i - 1);
-        FlowGraphNaturalLoop* const loop  = blockToLoop->GetLoop(block);
-
-        // If this block is a loop header, visit the entire loop before moving on
-        if ((loop != nullptr) && (block == loop->GetHeader()))
-        {
-            loop->VisitLoopBlocksReversePostOrder(visitBlock);
-        }
-        else
-        {
-            visitBlock(block);
-        }
+        BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+        visitor.VisitBlock(block);
     }
 }
 

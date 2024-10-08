@@ -957,17 +957,16 @@ void LinearScan::setBlockSequence()
     if (compiler->opts.OptimizationEnabled() && dfsTree->HasCycle())
     {
         // Ensure loop bodies are compact in the visitation order
-        FlowGraphNaturalLoops* const loops       = FlowGraphNaturalLoops::Find(dfsTree);
-        BlockToNaturalLoopMap* const blockToLoop = BlockToNaturalLoopMap::Build(loops);
-        blockSequence                            = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
-        unsigned index                           = dfsTree->GetPostOrderCount();
+        FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
+        blockSequence                      = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
+        unsigned index                     = dfsTree->GetPostOrderCount();
 
         auto addToSequence = [this, &index](BasicBlock* block) {
             assert(index != 0);
             blockSequence[--index] = block;
         };
 
-        compiler->fgVisitBlocksInLoopAwareRPO(dfsTree, blockToLoop, addToSequence);
+        compiler->fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
     }
     else
     {
