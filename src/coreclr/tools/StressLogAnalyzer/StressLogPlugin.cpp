@@ -1299,6 +1299,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     memset(&mapImageToStringId, 0, sizeof(mapImageToStringId));
     memset(s_interestingStringFilter, 0, sizeof(s_interestingStringFilter));
     memset(s_interestingStringMatchMode, 0, sizeof(s_interestingStringMatchMode));
+    s_interestingStringMatchMode[IS_GCSTART] = true;
     memset(s_printEarliestMessageFromGcThread, 0, sizeof(s_printEarliestMessageFromGcThread));
 
     if (!ParseOptions(argc, argv))
