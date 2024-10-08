@@ -602,6 +602,25 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal(2, clients.Count());
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void AddHttpClient_AddTypedClient_WithoutConstructorParameter_ThrowsError()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddHttpClient<TestTypedClientMissingConstructorParameter>();
+
+            var services = serviceCollection.BuildServiceProvider();
+
+            // Act
+            var ex = Assert.Throws<InvalidOperationException>(() => services.GetRequiredService<TestTypedClientMissingConstructorParameter>());
+
+            Assert.Equal(
+                "A suitable constructor for type 'TestTypedClientMissingConstructorParameter' could not be located. " +
+                "A suitable constructor must have an HttpClient parameter. " +
+                "Ensure also that the type is concrete and all parameters of the constructor are registered as services.",
+                ex.Message);
+        }
+
         [Fact]
         public void AddHttpClient_AddSameNameWithTypedClientTwice_ThrowsError()
         {
