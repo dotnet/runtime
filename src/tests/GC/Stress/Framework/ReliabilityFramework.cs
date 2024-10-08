@@ -277,7 +277,6 @@ public class ReliabilityFramework
         }
         catch (OutOfMemoryException)
         {
-            // hang and let someone debug if we can't even break in...
             _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "Out of memory");
         }
     }
