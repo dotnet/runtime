@@ -38,8 +38,6 @@ public class RangeSectionMapTests
         private ulong _nextMapAddress;
         public Builder(MockTarget.Architecture arch) : this (DefaultTopLevelAddress, new MockMemorySpace.Builder (new TargetTestHelpers(arch)))
         {
-            _targetTestHelpers = new TargetTestHelpers(arch);
-            _builder = new MockMemorySpace.Builder(_targetTestHelpers);
         }
 
         public Builder (TargetPointer topLevelAddress, MockMemorySpace.Builder builder)
