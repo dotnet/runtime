@@ -11386,9 +11386,6 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     {
         CORDB_ADDRESS_TYPE *patchSkipAddr = (CORDB_ADDRESS_TYPE*)pFrameContext->Rip;
 
-        printf("RS HandleSetThreadContextNeeded - fIsInPlaceSingleStep=%d opcode=%x address=%p\n", fIsInPlaceSingleStep, (DWORD)opcode, (void*)patchSkipAddr);
-
-
         HANDLE hProcess = UnsafeGetProcessHandle();
         LPVOID baseAddress = (LPVOID)(patchSkipAddr);
         DWORD oldProt;
@@ -11444,7 +11441,6 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 
 bool CordbProcess::HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAddress)
 {
-    printf("RS Filter - Single Step at 0x%p\n", pExceptionAddress);
     CUnmanagedThreadHashTableIterator curThread = m_unmanagedThreadHashTable.find(dwThreadId);
     _ASSERTE(curThread != m_unmanagedThreadHashTable.end());
     if (curThread != m_unmanagedThreadHashTable.end() && 
@@ -11452,7 +11448,6 @@ bool CordbProcess::HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAdd
         curThread->second.IsInPlaceStepping())
     {
         // this is an in-place step, so place the breakpoint instruction back to the patch location
-        printf("RS Filter - Single Step at 0x%p - clear patch skip at 0x%p\n", pExceptionAddress, curThread->second.GetPatchSkipAddress());
 
         HANDLE hProcess = UnsafeGetProcessHandle();
         LPVOID baseAddress = (LPVOID)( curThread->second.GetPatchSkipAddress());
@@ -15612,7 +15607,7 @@ void CordbProcess::HandleControlCTrapResult(HRESULT result)
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 void CordbProcess::HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent)
 {
-    //PUBLIC_API_ENTRY_FOR_SHIM(this);
+    PUBLIC_API_ENTRY_FOR_SHIM(this);
 
     const DWORD dwDesiredAccess = THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION | THREAD_SET_CONTEXT | THREAD_SET_INFORMATION | THREAD_SUSPEND_RESUME | THREAD_TERMINATE;
 

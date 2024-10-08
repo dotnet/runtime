@@ -16749,23 +16749,14 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo
     // adjust context size if the context pointer is not aligned with the buffer we allocated
     contextSize -= (DWORD)((BYTE*)pContext-(BYTE*)pBuffer);
 
-    bool fIsInPlaceSingleStep = false;
-    PRD_TYPE opcode = CORDbg_BREAK_INSTRUCTION;
-    if (pDebuggerSteppingInfo)
-    {
-        fIsInPlaceSingleStep = pDebuggerSteppingInfo->IsInPlaceSingleStep();
-        opcode = pDebuggerSteppingInfo->GetOpcode();
-    }
+    bool fIsInPlaceSingleStep = pDebuggerSteppingInfo != NULL && pDebuggerSteppingInfo->IsInPlaceSingleStep();
+    PRD_TYPE opcode = pDebuggerSteppingInfo != NULL ? pDebuggerSteppingInfo->GetOpcode() : CORDbg_BREAK_INSTRUCTION;
 
     // send the context to the right side
     LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d fIsInPlaceSingleStep=%d opcode=%x\n", contextFlags, contextSize, fIsInPlaceSingleStep, opcode));
     EX_TRY
     {
-        //printf("D::SSTCN fIsInPlaceSingleStep=%d opcode=%x address=%p\n", fIsInPlaceSingleStep, (DWORD)opcode, (void*)pContext->Rip);
-        SetThreadContextNeededFlare((TADDR)pContext, 
-                                    contextSize, 
-                                    fIsInPlaceSingleStep, 
-                                    opcode);
+        SetThreadContextNeededFlare((TADDR)pContext, contextSize, fIsInPlaceSingleStep, opcode);
     }
     EX_CATCH
     {
