@@ -811,7 +811,6 @@ void EEStartupHelper()
 
         CoreLibBinder::Startup();
 
-        Stub::Init();
         StubLinkerCPU::Init();
         StubPrecode::StaticInitialize();
         FixupPrecode::StaticInitialize();

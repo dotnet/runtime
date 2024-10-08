@@ -307,14 +307,6 @@ class StubLinkerCPU : public StubLinker
 
         VOID X86EmitRegLoad(X86Reg reg, UINT_PTR imm);
 
-        VOID X86EmitRegSave(X86Reg altreg, int32_t ofs)
-        {
-            LIMITED_METHOD_CONTRACT;
-            X86EmitEspOffset(0x89, altreg, ofs);
-            // X86Reg values never are outside a byte.
-            UnwindSavedReg(static_cast<UCHAR>(altreg), ofs);
-        }
-
         VOID X86_64BitOperands ()
         {
             WRAPPER_NO_CONTRACT;
@@ -349,11 +341,6 @@ class StubLinkerCPU : public StubLinker
 
 #ifdef _DEBUG
         VOID X86EmitDebugTrashReg(X86Reg reg);
-#endif
-
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-        virtual VOID EmitUnwindInfoCheckWorker (CodeLabel *pCheckLabel);
-        virtual VOID EmitUnwindInfoCheckSubfunction();
 #endif
 
     private:

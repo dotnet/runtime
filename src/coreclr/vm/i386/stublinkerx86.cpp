@@ -33,11 +33,6 @@
 #include "stublink.inl"
 
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-#include <psapi.h>
-#endif
-
-
 #ifndef DACCESS_COMPILE
 
 #if defined(TARGET_AMD64)
@@ -850,7 +845,7 @@ VOID StubLinkerCPU::X86EmitMovRegSP(X86Reg destReg)
     X86EmitMovRegReg(destReg, kESP);
 }
 
-
+#ifdef TARGET_X86
 //---------------------------------------------------------------
 // Emits:
 //    PUSH <reg32>
@@ -859,31 +854,9 @@ VOID StubLinkerCPU::X86EmitPushReg(X86Reg reg)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    X86Reg origReg = reg;
-#endif
-
-#ifdef TARGET_AMD64
-    if (reg >= kR8)
-    {
-        Emit8(REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT | REX_OPCODE_REG_EXT);
-        reg = X86RegFromAMD64Reg(reg);
-    }
-#endif
     Emit8(static_cast<UINT8>(0x50 + reg));
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    if (IsPreservedReg(origReg))
-    {
-        UnwindPushedReg(origReg);
-    }
-    else
-#endif
-    {
-        Push(sizeof(void*));
-    }
+    Push(sizeof(void*));
 }
-
 
 //---------------------------------------------------------------
 // Emits:
@@ -892,14 +865,6 @@ VOID StubLinkerCPU::X86EmitPushReg(X86Reg reg)
 VOID StubLinkerCPU::X86EmitPopReg(X86Reg reg)
 {
     STANDARD_VM_CONTRACT;
-
-#ifdef TARGET_AMD64
-    if (reg >= kR8)
-    {
-        Emit8(REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT | REX_OPCODE_REG_EXT);
-        reg = X86RegFromAMD64Reg(reg);
-    }
-#endif // TARGET_AMD64
 
     Emit8(static_cast<UINT8>(0x58 + reg));
     Pop(sizeof(void*));
@@ -953,13 +918,9 @@ VOID StubLinkerCPU::X86EmitPushImmPtr(LPVOID value BIT64_ARG(X86Reg tmpReg /*=kR
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef TARGET_AMD64
-    X86EmitRegLoad(tmpReg, (UINT_PTR) value);
-    X86EmitPushReg(tmpReg);
-#else
     X86EmitPushImm32((UINT_PTR) value);
-#endif
 }
+#endif // TARGET_X86
 
 //---------------------------------------------------------------
 // Emits:
@@ -2684,165 +2645,6 @@ VOID StubLinkerCPU::EmitInstantiatingMethodStub(MethodDesc* pMD, void* extra)
     EmitTailJumpToMethod(pMD);
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE) && !defined(FEATURE_INSTANTIATINGSTUB_AS_IL) && defined(TARGET_X86)
-
-
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-
-typedef BOOL GetModuleInformationProc(
-  HANDLE hProcess,
-  HMODULE hModule,
-  LPMODULEINFO lpmodinfo,
-  DWORD cb
-);
-
-GetModuleInformationProc *g_pfnGetModuleInformation = NULL;
-
-extern "C" VOID __cdecl DebugCheckStubUnwindInfoWorker (CONTEXT *pStubContext)
-{
-    LOG((LF_STUBS, LL_INFO1000000, "checking stub unwind info:\n"));
-
-    //
-    // Make a copy of the CONTEXT.  RtlVirtualUnwind will modify this copy.
-    // DebugCheckStubUnwindInfo will need to restore registers from the
-    // original CONTEXT.
-    //
-    CONTEXT ctx = *pStubContext;
-    ctx.ContextFlags = (CONTEXT_CONTROL | CONTEXT_INTEGER);
-
-    //
-    // Find the upper bound of the stack and address range of KERNEL32.  This
-    // is where we expect the unwind to stop.
-    //
-    void *pvStackTop = GetThread()->GetCachedStackBase();
-
-    if (!g_pfnGetModuleInformation)
-    {
-        HMODULE hmodPSAPI = GetModuleHandle(W("PSAPI.DLL"));
-
-        if (!hmodPSAPI)
-        {
-            hmodPSAPI = WszLoadLibrary(W("PSAPI.DLL"));
-            if (!hmodPSAPI)
-            {
-                _ASSERTE(!"unable to load PSAPI.DLL");
-                goto ErrExit;
-            }
-        }
-
-        g_pfnGetModuleInformation = (GetModuleInformationProc*)GetProcAddress(hmodPSAPI, "GetModuleInformation");
-        if (!g_pfnGetModuleInformation)
-        {
-            _ASSERTE(!"can't find PSAPI!GetModuleInformation");
-            goto ErrExit;
-        }
-
-        // Intentionally leak hmodPSAPI.  We don't want to
-        // LoadLibrary/FreeLibrary every time, this is slow + produces lots of
-        // debugger spew.  This is just debugging code after all...
-    }
-
-    HMODULE hmodKERNEL32 = GetModuleHandle(W("KERNEL32"));
-    _ASSERTE(hmodKERNEL32);
-
-    MODULEINFO modinfoKERNEL32;
-    if (!g_pfnGetModuleInformation(GetCurrentProcess(), hmodKERNEL32, &modinfoKERNEL32, sizeof(modinfoKERNEL32)))
-    {
-        _ASSERTE(!"unable to get bounds of KERNEL32");
-        goto ErrExit;
-    }
-
-    //
-    // Unwind until IP is 0, sp is at the stack top, and callee IP is in kernel32.
-    //
-
-    for (;;)
-    {
-        ULONG64 ControlPc = (ULONG64)GetIP(&ctx);
-
-        LOG((LF_STUBS, LL_INFO1000000, "pc %p, sp %p\n", ControlPc, GetSP(&ctx)));
-
-        ULONG64 ImageBase;
-        T_RUNTIME_FUNCTION *pFunctionEntry = RtlLookupFunctionEntry(
-                ControlPc,
-                &ImageBase,
-                NULL);
-        if (pFunctionEntry)
-        {
-            PVOID HandlerData;
-            ULONG64 EstablisherFrame;
-
-            RtlVirtualUnwind(
-                    0,
-                    ImageBase,
-                    ControlPc,
-                    pFunctionEntry,
-                    &ctx,
-                    &HandlerData,
-                    &EstablisherFrame,
-                    NULL);
-
-            ULONG64 NewControlPc = (ULONG64)GetIP(&ctx);
-
-            LOG((LF_STUBS, LL_INFO1000000, "function %p, image %p, new pc %p, new sp %p\n", pFunctionEntry, ImageBase, NewControlPc, GetSP(&ctx)));
-
-            if (!NewControlPc)
-            {
-                if (dac_cast<PTR_BYTE>(GetSP(&ctx)) < (BYTE*)pvStackTop - 0x100)
-                {
-                    _ASSERTE(!"SP did not end up at top of stack");
-                    goto ErrExit;
-                }
-
-                if (!(   ControlPc > (ULONG64)modinfoKERNEL32.lpBaseOfDll
-                      && ControlPc < (ULONG64)modinfoKERNEL32.lpBaseOfDll + modinfoKERNEL32.SizeOfImage))
-                {
-                    _ASSERTE(!"PC did not end up in KERNEL32");
-                    goto ErrExit;
-                }
-
-                break;
-            }
-        }
-        else
-        {
-            // Nested functions that do not use any stack space or nonvolatile
-            // registers are not required to have unwind info (ex.
-            // USER32!ZwUserCreateWindowEx).
-            ctx.Rip = *(ULONG64*)(ctx.Rsp);
-            ctx.Rsp += sizeof(ULONG64);
-        }
-    }
-ErrExit:
-    return;
-}
-
-//virtual
-VOID StubLinkerCPU::EmitUnwindInfoCheckWorker (CodeLabel *pCheckLabel)
-{
-    STANDARD_VM_CONTRACT;
-    X86EmitCall(pCheckLabel, 0);
-}
-
-//virtual
-VOID StubLinkerCPU::EmitUnwindInfoCheckSubfunction()
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef TARGET_AMD64
-    // X86EmitCall will generate "mov rax, target/jmp rax", so we have to save
-    // rax on the stack.  DO NOT use X86EmitPushReg.  That will induce infinite
-    // recursion, since the push may require more unwind info.  This "push rax"
-    // will be accounted for by DebugCheckStubUnwindInfo's unwind info
-    // (considered part of its locals), so there doesn't have to be unwind
-    // info for it.
-    Emit8(0x50);
-#endif
-
-    X86EmitNearJump(NewExternalCodeLabel(DebugCheckStubUnwindInfo));
-}
-
-#endif // defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-
 
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 {
