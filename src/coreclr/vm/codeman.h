@@ -553,7 +553,7 @@ public:
         return end;
     }
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<RangeSection>;
 };
 
 struct RangeSection
@@ -626,7 +626,7 @@ struct RangeSection
 
     RangeSection* _pRangeSectionNextForDelete = NULL; // Used for adding to the cleanup list
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<RangeSection>;
 };
 
 template<> struct cdac_data<RangeSection>
@@ -1444,7 +1444,7 @@ public:
     }
 #endif// DACCESS_COMPILE
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<RangeSectionMap>;
 };
 
 template<>
@@ -2274,7 +2274,7 @@ public:
         JumpStubTable m_Table;
     };
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ExecutionManager>;
 };
 
 #ifndef DACCESS_COMPILE
@@ -2590,7 +2590,6 @@ private:
     UNWIND_INFO * GetUnwindInfoHelper(ULONG unwindInfoOffset);
 #endif // TARGET_AMD64
 
-    template<typename T> friend struct ::cdac_data;
 };
 
 #include "codeman.inl"
