@@ -266,6 +266,7 @@ public:
     bool                IsCurrentThreadInCooperativeMode();
 
     PInvokeTransitionFrame* GetTransitionFrameForStackTrace();
+    PInvokeTransitionFrame* GetTransitionFrameForSampling() { return GetTransitionFrame(); }
     void *              GetCurrentThreadPInvokeReturnAddress();
 
     //
