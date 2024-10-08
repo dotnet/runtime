@@ -92,7 +92,7 @@ mono_valloc_aligned (size_t size, size_t alignment, int flags, MonoMemAccountTyp
 {
 #ifdef DISABLE_THREADS
 	void *old_sbrk = NULL;
-	if (flags & MONO_MMAP_NOZERO) {
+	if ((flags & MONO_MMAP_NOZERO) == 0) {
 		old_sbrk = sbrk (0);
 	}
 #endif
