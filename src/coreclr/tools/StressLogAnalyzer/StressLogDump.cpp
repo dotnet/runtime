@@ -125,7 +125,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
     }
 
     // Below we are going to pass substrings of the format with as-big-as-possibly-needed portions
-    // of the args array.  This allocates a larger args array to avoid buffer overruns.  Formats
+    // of the args array.  This allocates a larger args array to avoid buffer over-reads.  Formats
     // will have at most 16 arguments because the EE/GC interface doesn't allow more than that.
     const int extraArgSlots = 16;
     void** args = (void**)_alloca((numArgs + extraArgSlots) * sizeof(void*));
