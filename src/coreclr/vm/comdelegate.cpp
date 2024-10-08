@@ -420,21 +420,6 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
             return FALSE;
     }
 
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
-    {
-        UINT stackSizeSrc = sArgPlacerSrc.SizeOfArgStack();
-        UINT stackSizeDst = sArgPlacerDst.SizeOfArgStack();
-
-        // Windows X86 calling convention requires the stack to shrink when removing
-        // arguments, as it is callee pop
-        if (stackSizeDst > stackSizeSrc)
-        {
-            // we can drop arguments but we can never make them up - this is definitely not allowed
-            COMPlusThrow(kVerificationException);
-        }
-    }
-#endif // Callee pop architectures - defined(TARGET_X86) && !defined(UNIX_X86_ABI)
-
     INT ofsSrc;
     INT ofsDst;
     ArgLocDesc sArgSrc;
