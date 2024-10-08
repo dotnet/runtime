@@ -71,7 +71,7 @@ On 32-bit targets a 2 level map is used
 
 That is, level 2 in the map has 256 entries pointing to level 1 maps (or null if there's nothing allocated), each level 1 map has 256 entries pointing covering a 64 KiB chunk and pointing to a linked list of range section fragments that fall within that 64 KiB chunk.
 
-On 64-bit targets, we take advantage of the fact that the most architectures don't support a full 64-bit addressable space: arm64 supports 52 bits of addressable memoryy and x86-64 supports 57 bits.  The runtime ignores the top bits 63-57 and uses 5 levels of mapping
+On 64-bit targets, we take advantage of the fact that the most architectures don't support a full 64-bit addressable space: arm64 supports 52 bits of addressable memory and x86-64 supports 57 bits.  The runtime ignores the top bits 63-57 and uses 5 levels of mapping
 
 | 63-57 | 56-49 | 48-41 | 40-33 | 32-25 | 24-17 | 16-0 |
 |:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:----:|
@@ -108,8 +108,7 @@ Suppose there is code starting at address 304 (0x130)
 
 * Then the map index will be 304 / 32 = 9 and the byte offset will be 304 % 32 = 16
 * Because addresses are 4-byte aligned, the nibble value will be 1 + 16 / 4 = 5  (we reserve 0 to mean no method).
-* So the map unit containing index 9 will contain the value 0x5 << 24 (the map index 9 means we want the second nibble in the second map unit, and we number the nibbles starting from the most significant) , or 
-0x05000000
+* So the map unit containing index 9 will contain the value 0x5 << 24 (the map index 9 means we want the second nibble in the second map unit, and we number the nibbles starting from the most significant) , or 0x05000000
 
 
 Now suppose we do a lookup for address 306 (0x132)
