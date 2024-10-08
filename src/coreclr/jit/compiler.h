@@ -2939,6 +2939,8 @@ public:
 
     void fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast);
 
+    void fgFindEHRegionEnds();
+
     void fgSkipRmvdBlocks(EHblkDsc* handlerTab);
 
     void fgAllocEHTable();
