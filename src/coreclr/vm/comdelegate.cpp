@@ -913,7 +913,8 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 
     // We haven't already setup a shuffle thunk, go do it now (which will cache the result automatically).
     StackSArray<ShuffleEntry> rShuffleEntryArray;
-    if (GenerateShuffleArray(pMD, pTargetMeth, &rShuffleEntryArray))
+    bool isSimple = GenerateShuffleArray(pMD, pTargetMeth, &rShuffleEntryArray);
+    if (isSimple)
     {
         ShuffleThunkCache* pShuffleThunkCache = s_pShuffleThunkCache;
 
@@ -945,8 +946,15 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
     Stub* pExistingThunk = InterlockedCompareExchangeT(ppThunk, pShuffleThunk, NULL);
     if (pExistingThunk != NULL)
     {
-        ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
-        shuffleThunkWriterHolder.GetRW()->DecRef();
+        if (isSimple)
+        {
+            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
+            shuffleThunkWriterHolder.GetRW()->DecRef();
+        }
+        else
+        {
+            pShuffleThunk->DecRef();
+        }
         pShuffleThunk = pExistingThunk;
     }
 
