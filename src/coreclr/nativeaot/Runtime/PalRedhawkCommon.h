@@ -131,12 +131,6 @@ struct PAL_LIMITED_CONTEXT
 
     uintptr_t  A0;
     uintptr_t  A1;
-    uintptr_t  A2;
-    uintptr_t  A3;
-    uintptr_t  A4;
-    uintptr_t  A5;
-    uintptr_t  A6;
-    uintptr_t  A7;
     uintptr_t  S1;
     uintptr_t  S2;
     uintptr_t  S3;
@@ -148,13 +142,7 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t  S9;
     uintptr_t  S10;
     uintptr_t  S11;
-    uintptr_t  T0;
-    uintptr_t  T1;
-    uintptr_t  T2;
-    uintptr_t  T3;
-    uintptr_t  T4;
-    uintptr_t  T5;
-    uintptr_t  T6;
+
     uintptr_t  SP;
     uintptr_t  IP;
 

@@ -215,6 +215,7 @@ struct UNIX_CONTEXT
 
 #elif defined(TARGET_RISCV64)
 
+    uint64_t& R0();
     uint64_t& Ra();
     uint64_t& Sp();
     uint64_t& Gp();
@@ -257,7 +258,7 @@ struct UNIX_CONTEXT
         // It is expected that registers are stored in a contiguous manner
         // Here are some asserts to check
         ASSERT(&A0() + 1 == &A1());
-        ASSERT(&A0() + 8 == &A7());
+        ASSERT(&A0() + 7 == &A7());
 
         for (uint64_t* pReg = &Ra(); pReg <= &T6(); pReg++)
             lambda((size_t*)pReg);

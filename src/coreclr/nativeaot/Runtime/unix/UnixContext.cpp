@@ -118,6 +118,7 @@
 
 #elif defined(HOST_RISCV64)
 
+#define MCREG_R0(mc)      ((mc).__gregs[0])
 #define MCREG_Ra(mc)      ((mc).__gregs[1])
 #define MCREG_Sp(mc)      ((mc).__gregs[2])
 #define MCREG_Gp(mc)      ((mc).__gregs[3])
@@ -224,6 +225,7 @@
 
 #elif defined(HOST_RISCV64)
 
+#define MCREG_R0(mc)      ((mc).__gregs[0])
 #define MCREG_Ra(mc)      ((mc).__gregs[1])
 #define MCREG_Sp(mc)      ((mc).__gregs[2])
 #define MCREG_Gp(mc)      ((mc).__gregs[3])
@@ -404,6 +406,7 @@
 
 #elif defined(HOST_RISCV64)
 
+#define MCREG_R0(mc)      ((mc).regs[0])
 #define MCREG_Ra(mc)      ((mc).regs[1])
 #define MCREG_Sp(mc)      ((mc).regs[2])
 #define MCREG_Gp(mc)      ((mc).regs[3])
@@ -618,13 +621,9 @@
     ASSIGN_REG(S6, S6)     \
     ASSIGN_REG(S7, S7)     \
     ASSIGN_REG(S8, S8)     \
-    ASSIGN_REG(T0, T0)     \
-    ASSIGN_REG(T1, T1)     \
-    ASSIGN_REG(T2, T2)     \
-    ASSIGN_REG(T3, T3)     \
-    ASSIGN_REG(T4, T4)     \
-    ASSIGN_REG(T5, T5)     \
-    ASSIGN_REG(T6, T6)
+    ASSIGN_REG(S9, S9)     \
+    ASSIGN_REG(S10, S10)   \
+    ASSIGN_REG(S11, S11)
 
 #define ASSIGN_TWO_ARGUMENT_REGS \
     MCREG_A0(nativeContext->uc_mcontext) = arg0Reg;       \
@@ -832,6 +831,7 @@ uint64_t GetPC(void* context)
 
 #elif TARGET_RISCV64
 
+    uint64_t& UNIX_CONTEXT::R0() { return (uint64_t&)MCREG_R0(ctx.uc_mcontext); }
     uint64_t& UNIX_CONTEXT::Ra() { return (uint64_t&)MCREG_Ra(ctx.uc_mcontext); }
     uint64_t& UNIX_CONTEXT::Sp() { return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); }
     uint64_t& UNIX_CONTEXT::Gp() { return (uint64_t&)MCREG_Gp(ctx.uc_mcontext); }

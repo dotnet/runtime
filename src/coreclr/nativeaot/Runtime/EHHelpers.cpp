@@ -206,12 +206,6 @@ FCIMPL3(void, RhpCopyContextFromExInfo, void * pOSContext, int32_t cbOSContext, 
 #elif defined(HOST_RISCV64)
     pContext->A0 = pPalContext->A0;
     pContext->A1 = pPalContext->A1;
-    pContext->A2 = pPalContext->A2;
-    pContext->A3 = pPalContext->A3;
-    pContext->A4 = pPalContext->A4;
-    pContext->A5 = pPalContext->A5;
-    pContext->A6 = pPalContext->A6;
-    pContext->A7 = pPalContext->A7;
     pContext->S1 = pPalContext->S1;
     pContext->S2 = pPalContext->S2;
     pContext->S3 = pPalContext->S3;

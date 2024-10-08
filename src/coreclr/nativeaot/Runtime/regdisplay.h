@@ -235,9 +235,24 @@ struct REGDISPLAY
 
 struct REGDISPLAY
 {
+    PTR_uintptr_t pR0;
     PTR_uintptr_t pRA;
 
+    PTR_uintptr_t pGP;
+    PTR_uintptr_t pTP;
+    PTR_uintptr_t pT0;
+    PTR_uintptr_t pT1;
+    PTR_uintptr_t pT2;
+    PTR_uintptr_t pFP;
     PTR_uintptr_t pS1;
+    PTR_uintptr_t pA0;
+    PTR_uintptr_t pA1;
+    PTR_uintptr_t pA2;
+    PTR_uintptr_t pA3;
+    PTR_uintptr_t pA4;
+    PTR_uintptr_t pA5;
+    PTR_uintptr_t pA6;
+    PTR_uintptr_t pA7;
     PTR_uintptr_t pS2;
     PTR_uintptr_t pS3;
     PTR_uintptr_t pS4;
@@ -245,38 +260,16 @@ struct REGDISPLAY
     PTR_uintptr_t pS6;
     PTR_uintptr_t pS7;
     PTR_uintptr_t pS8;
-
-    PTR_uintptr_t pFP;
-    uintptr_t SP;
-
-    PTR_uintptr_t pT0;
-    PTR_uintptr_t pT1;
-    PTR_uintptr_t pT2;
+    PTR_uintptr_t pS9;
+    PTR_uintptr_t pS10;
+    PTR_uintptr_t pS11;
     PTR_uintptr_t pT3;
     PTR_uintptr_t pT4;
     PTR_uintptr_t pT5;
     PTR_uintptr_t pT6;
-    PTR_uintptr_t pT7;
-    PTR_uintptr_t pT8;
-    PTR_uintptr_t pT9;
-    PTR_uintptr_t pT10;
-    PTR_uintptr_t pT11;
 
-    // Adding missing registers
-    PTR_uintptr_t pT12;
-    PTR_uintptr_t pT13;
-    PTR_uintptr_t pT14;
-    PTR_uintptr_t pT15;
-    PTR_uintptr_t pT16;
-    PTR_uintptr_t pT17;
-    PTR_uintptr_t pT18;
-    PTR_uintptr_t pT19;
-    PTR_uintptr_t pT20;
-    PTR_uintptr_t pT21;
-    PTR_uintptr_t pT22;
-    PTR_uintptr_t pT23;
-
-    PCODE IP;
+    uintptr_t   SP;
+    PCODE        IP;
 
     uint64_t F[32];  // Expanded to cover all F registers
 

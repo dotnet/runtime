@@ -200,6 +200,9 @@ private:
         PTR_uintptr_t pS6;
         PTR_uintptr_t pS7;
         PTR_uintptr_t pS8;
+        PTR_uintptr_t pS9;
+        PTR_uintptr_t pS10;
+        PTR_uintptr_t pS11;
         PTR_uintptr_t pFP;
 #elif defined(UNIX_AMD64_ABI)
         PTR_uintptr_t pRbp;

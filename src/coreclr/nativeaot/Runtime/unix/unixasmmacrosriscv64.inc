@@ -277,10 +277,10 @@ C_FUNC(\Name):
 .endm
 
 // Note: these must match the defs in PInvokeTransitionFrameFlags
-#define PTFF_SAVE_SP            0x00000400
-#define PTFF_SAVE_A4            0x00000800
-#define PTFF_SAVE_A5            0x00001000
-#define PTFF_SAVE_ALL_PRESERVED 0x000003FF  // NOTE: x19-x28
+#define PTFF_SAVE_SP            0x00000800
+#define PTFF_SAVE_A0            0x00004000
+#define PTFF_SAVE_A1            0x00008000
+#define PTFF_SAVE_ALL_PRESERVED 0x000007FF  // NOTE: S1-S11
 
 #define DEFAULT_FRAME_SAVE_FLAGS PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 
