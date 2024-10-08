@@ -188,6 +188,8 @@ void Phase::PostPhase(PhaseStatus status)
         {
             comp->fgDebugCheckLinkedLocals();
         }
+
+        comp->fgDebugCheckFlowGraphAnnotations();
     }
 #endif // DEBUG
 }
