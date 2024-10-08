@@ -12449,10 +12449,10 @@ const instruction INS_SQRT = INS_vsqrt;
 
 #ifdef TARGET_ARM64
 
-const instruction INS_MULADD = INS_madd;
+const instruction INS_MULADD     = INS_madd;
 const instruction INS_BREAKPOINT = INS_brk;
-const instruction INS_ABS  = INS_fabs;
-const instruction INS_SQRT = INS_fsqrt;
+const instruction INS_ABS        = INS_fabs;
+const instruction INS_SQRT       = INS_fsqrt;
 
 #endif // TARGET_ARM64
 
