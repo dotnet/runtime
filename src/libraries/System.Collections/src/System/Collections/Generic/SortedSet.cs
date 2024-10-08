@@ -752,18 +752,14 @@ namespace System.Collections.Generic
 
             if (Count > InternalIndexOfCountThreshold)
             {
-                int index = -1;
-                InOrderTreeWalk(current =>
+                foreach (T i in this)
                 {
-                    int order = comparer.Compare(item, current.Item);
-                    if (order == 0)
+                    if (Comparer.Compare(item, i) == 0)
                     {
-                        index = count;
+                        return count;
                     }
                     count++;
-                    return order < 0;
-                });
-                return index;
+                }
             }
 
             while (current != null)
