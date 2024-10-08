@@ -4,18 +4,95 @@
 using System;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.InteropServices;
+using System.ComponentModel;
+using System.Collections.Generic;
 
-namespace Sample
+#pragma warning disable CS8632
+
+namespace Sample;
+
+public partial class TestClass
 {
-    public partial class Test
-    {
-        public static int Main(string[] args)
-        {
-            DisplayMeaning(42);
-            return 0;
-        }
+    private static readonly ParentClass _parent = new();
+    private static readonly HashSet<ChildClass> _objects = [];
 
-        [JSImport("Sample.Test.displayMeaning", "main.js")]
-        internal static partial void DisplayMeaning(int meaning);
+    public static int Main(string[] args)
+    {
+        //GC.AddMemoryPressure(1024*1024*512);
+        var tm = GetStats();
+        Console.WriteLine($"TotalMemory: {tm}");
+        return 0;
+    }
+
+    public static long GetStats()
+    {
+        var tm = GC.GetTotalMemory(forceFullCollection: false);
+        // Console.WriteLine($"TotalMemory: {tm}");
+
+        //var mi = GC.GetGCMemoryInfo();
+        //Console.WriteLine($"HighMemoryLoadThresholdBytes: {mi.HighMemoryLoadThresholdBytes}");
+        //Console.WriteLine($"TotalAvailableMemoryBytes: {mi.TotalAvailableMemoryBytes}");
+        return tm;
+    }
+
+    [JSExport]
+    [return: JSMarshalAs<JSType.Number>]
+    public static long AllocateObjects()
+    {
+        var child = new ChildClass(_parent);
+        _objects.Add(child);
+
+        return GetStats();
+    }
+
+    [JSExport]
+    public static void DisposeObjects()
+    {
+        foreach (var child in _objects)
+        {
+            child.Dispose();
+        }
+        _objects.Clear();
+    }
+
+    [JSExport]
+    [return: JSMarshalAs<JSType.Number>]
+    public static long ForceGC()
+    {
+        GC.Collect();
+        return GetStats();
+    }
+}
+
+public sealed class ChildClass : IDisposable
+{
+    private readonly ParentClass _parent;
+    private byte[] _junk = new byte[2_500_000];
+
+    public ChildClass(ParentClass parent)
+    {
+        _parent = parent;
+        _parent.PropertyChanged += OnPropertyChanged;
+    }
+
+    public void Dispose()
+    {
+        _parent.PropertyChanged -= OnPropertyChanged;
+        _junk=null;
+        GC.SuppressFinalize(this);
+    }
+
+    private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+    }
+}
+
+public sealed class ParentClass
+{
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public void NotifyChilderen()
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Foo"));
     }
 }
