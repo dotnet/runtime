@@ -1,3 +1,12 @@
+### Release version 0.3
+
+Changes:
+
+ * parse WitExportSection
+ * parse WitImportSection
+ * new options to print WIT exports/imports
+ * removed forgotten debug print
+
 ### Release version 0.2
 
 Changes:
