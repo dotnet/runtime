@@ -883,7 +883,7 @@ static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTarg
     ILStubResolver* pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
     pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
 
-    return Stub::NewStub(JitILStub(pStubMD));
+    return Stub::NewStub(JitILStub(pStubMD), NEWSTUB_FL_SHUFFLE_THUNK);
 }
 #endif // TARGET_RISCV64
 
@@ -940,6 +940,7 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
     {
         COMPlusThrowOM();
     }
+    _ASSERTE(pShuffleThunk->HasExternalEntryPoint() == !isSimple);
 
     // Cache the shuffle thunk
     Stub** ppThunk = isInstRetBuff ? &pClass->m_pInstRetBuffCallStub : &pClass->m_pStaticCallStub;
