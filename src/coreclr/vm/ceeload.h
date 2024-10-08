@@ -90,7 +90,7 @@ struct DynamicMetadata
 {
     uint32_t Size;
     BYTE Data[0];
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<DynamicMetadata>;
 };
 
 template<>
@@ -1333,8 +1333,8 @@ private:
 public:
 
     // Debugger stuff
-    BOOL NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAssembly, int level, BOOL attaching);
-    void NotifyDebuggerUnload(AppDomain *pDomain);
+    BOOL NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int level, BOOL attaching);
+    void NotifyDebuggerUnload();
 
     void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits);
 
@@ -1634,7 +1634,7 @@ public:
     uint32_t GetNativeMetadataAssemblyCount();
 #endif // !defined(DACCESS_COMPILE)
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<Module>;
 };
 
 template<>

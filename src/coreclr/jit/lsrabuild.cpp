@@ -2292,9 +2292,8 @@ void LinearScan::buildIntervals()
             }
 
             const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
-            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& seg : abiInfo.Segments())
             {
-                const ABIPassingSegment& seg = abiInfo.Segment(i);
                 if (seg.IsPassedInRegister())
                 {
                     RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
@@ -3846,6 +3845,15 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
             return 0;
         }
     }
+
+#ifdef TARGET_ARM64
+    // Multi register nodes should not go via this route.
+    assert(!node->IsMultiRegNode());
+    // The rmwNode should have the same register type as the node
+    assert(rmwNode == nullptr || varTypeUsesSameRegType(rmwNode->TypeGet(), node->TypeGet()) ||
+           (rmwNode->IsMultiRegNode() && varTypeUsesFloatReg(node->TypeGet())));
+#endif
+
     if (use != nullptr)
     {
         AddDelayFreeUses(use, rmwNode);
@@ -3865,14 +3873,13 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
     {
         use = BuildUse(addrMode->Base(), candidates);
         AddDelayFreeUses(use, rmwNode);
-
         srcCount++;
     }
+
     if (addrMode->HasIndex() && !addrMode->Index()->isContained())
     {
         use = BuildUse(addrMode->Index(), candidates);
         AddDelayFreeUses(use, rmwNode);
-
         srcCount++;
     }
 
