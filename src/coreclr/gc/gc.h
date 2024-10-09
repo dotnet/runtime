@@ -344,7 +344,7 @@ inline bool IsServerHeap()
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
 
-// #define TRACE_GC
+#define TRACE_GC
 // #define SIMPLE_DPRINTF
 
 #ifdef TRACE_GC
@@ -380,7 +380,8 @@ void GCLog (const char *fmt, ... );
 #else //SIMPLE_DPRINTF
 
 #ifdef HOST_64BIT
-#define dprintf(l,x) STRESS_LOG_VA(l,x);
+#define dprintf(l,x) if (l == 1) {STRESS_LOG_VA(0,x);}
+//#define dprintf(l,x) STRESS_LOG_VA(l,x);
 //#define dprintf(l,x) {if ((l <= 2) || (l == 6666)) {STRESS_LOG_VA(l,x);}}
 #define SIMPLE_DPRINTF_ARG(x)
 #else //HOST_64BIT
