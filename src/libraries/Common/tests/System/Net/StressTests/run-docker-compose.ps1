@@ -21,13 +21,6 @@ $COMPOSE_FILE = "$TestProjectDir/docker-compose.yml"
 [xml]$xml = Get-Content (Join-Path $RepoRoot "eng\Versions.props")
 $VERSION = "$($xml.Project.PropertyGroup.MajorVersion[0]).$($xml.Project.PropertyGroup.MinorVersion[0])"
 
-# This is a workaround for an issue with 1es-windows-2022-open, which should be eventually removed.
-# See comments in <repo>/eng/pipelines/libraries/stress/ssl.yml for more info.
-$dockerComposeCmd = $env:DOCKER_COMPOSE_CMD
-if (!(Test-Path $dockerComposeCmd -ErrorAction SilentlyContinue)) {
-    $dockerComposeCmd = "docker-compose"
-}
-
 if (!$dumpsSharePath) {
     $dumpsSharePath = "$TestProjectDir/dumps"
 }
@@ -72,10 +65,10 @@ if (!$noBuild) {
     $originalErrorPreference = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        write-output "docker-compose --file $COMPOSE_FILE build $buildArgs"
+        write-output "docker compose --file $COMPOSE_FILE build $buildArgs"
         docker compose --file $COMPOSE_FILE build @buildArgs 2>&1
         if ($LASTEXITCODE -ne 0) {
-            throw "docker-compose exited with error code $LASTEXITCODE"
+            throw "docker compose exited with error code $LASTEXITCODE"
         }
     }
     finally {
@@ -99,5 +92,5 @@ if (!$buildOnly) {
 
     $env:STRESS_CLIENT_ARGS = $clientStressArgs
     $env:STRESS_SERVER_ARGS = $serverStressArgs
-    & $dockerComposeCmd --file "$COMPOSE_FILE" up --abort-on-container-exit
+    docker compose --file "$COMPOSE_FILE" up --abort-on-container-exit
 }
