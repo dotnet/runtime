@@ -27,10 +27,6 @@ if (!$dumpsSharePath) {
 
 # Build runtime libraries and place in a docker image
 if ($buildCurrentLibraries) {
-    if ([string]::IsNullOrEmpty($sdkImageName)) {
-        $sdkImageName = "dotnet-sdk-libs-current"
-    }
-
     $LIBRARIES_BUILD_ARGS = " -t $sdkImageName -c $configuration"
     if ($useWindowsContainers) {
         $LIBRARIES_BUILD_ARGS += " -w"
@@ -78,17 +74,15 @@ if (!$noBuild) {
 
 # Run the stress app
 if (!$buildOnly) {
-    if ($dumpsSharePath) {
-        if ($useWindowsContainers) {
-            $env:DUMPS_SHARE_MOUNT_ROOT = "C:/dumps-share"
-        }
-        else {
-            $env:DUMPS_SHARE_MOUNT_ROOT = "/dumps-share"
-        }
-
-        $env:DUMPS_SHARE = $dumpsSharePath
-        New-Item -Force $env:DUMPS_SHARE -ItemType Directory
+    if ($useWindowsContainers) {
+        $env:DUMPS_SHARE_MOUNT_ROOT = "C:/dumps-share"
     }
+    else {
+        $env:DUMPS_SHARE_MOUNT_ROOT = "/dumps-share"
+    }
+
+    $env:DUMPS_SHARE = $dumpsSharePath
+    New-Item -Force $env:DUMPS_SHARE -ItemType Directory
 
     $env:STRESS_CLIENT_ARGS = $clientStressArgs
     $env:STRESS_SERVER_ARGS = $serverStressArgs
