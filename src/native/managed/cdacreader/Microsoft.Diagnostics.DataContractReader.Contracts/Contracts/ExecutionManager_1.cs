@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -29,6 +28,8 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
         _r2rJitManager = new ReadyToRunJitManager(_target);
     }
 
+    // Note, because of RelativeOffset, this code info is per code pointer, not per method
+    // TODO: rethink whether this makes sense. We don't need to copy the runtime's notion of EECodeInfo verbatim
     private class EECodeInfo
     {
         private readonly int _codeHeaderOffset;
@@ -165,14 +166,16 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
     }
     EECodeInfoHandle? IExecutionManager.GetEECodeInfoHandle(TargetCodePointer ip)
     {
-        // TODO: some kind of cache based on ip, too?
-        // we don't know if the ip is the start of the code.
+        TargetPointer key = ip.AsTargetPointer; // FIXME: thumb bit. It's harmless (we potentialy have 2 cache entries per IP), but we should fix it
+        if (_codeInfos.ContainsKey(key))
+        {
+            return new EECodeInfoHandle(key);
+        }
         EECodeInfo? info = GetEECodeInfo(ip);
         if (info == null || !info.Valid)
         {
             return null;
         }
-        TargetPointer key = info.CodeHeaderAddress;
         _codeInfos.TryAdd(key, info);
         return new EECodeInfoHandle(key);
     }
