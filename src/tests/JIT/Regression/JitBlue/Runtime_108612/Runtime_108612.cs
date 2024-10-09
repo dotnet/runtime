@@ -26,7 +26,7 @@ public class Runtime_108612
     Vector64<byte> v64_byte_67 = Vector64.CreateScalar((byte)5);
     Vector128<int> v128_int_81 = Vector128.Create(-1, 6, 2, 1);
     private static List<string> toPrint = new List<string>();
-    public void Method0()
+    private void Method0()
     {
         unchecked
         {
