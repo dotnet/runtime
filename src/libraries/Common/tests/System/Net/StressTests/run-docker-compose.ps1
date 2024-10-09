@@ -9,6 +9,7 @@ Param(
     [switch][Alias('b')]$buildCurrentLibraries, # Drives the stress test using libraries built from current source
     [switch][Alias('pa')]$privateAspNetCore, # Drive the stress test using a private Asp.Net Core package, requires -b to be set
     [switch][Alias('o')]$buildOnly, # Build, but do not run the stress app
+    [switch][Alias('n')]$noBuild, # Do not build the docker image
     [string][Alias('t')]$sdkImageName = "dotnet-sdk-libs-current", # Name of the sdk image name, if built from source.
     [string]$clientStressArgs = "",
     [string]$serverStressArgs = "",
@@ -55,29 +56,31 @@ elseif ($privateAspNetCore) {
     exit 1
 }
 
-# Dockerize the stress app using docker-compose
-$BuildArgs = @(
-    "--build-arg", "VERSION=$Version",
-    "--build-arg", "CONFIGURATION=$configuration"
-)
-if (![string]::IsNullOrEmpty($sdkImageName)) {
-    $BuildArgs += "--build-arg", "SDK_BASE_IMAGE=$sdkImageName"
-}
 if ($useWindowsContainers) {
     $env:DOCKERFILE = "windows.Dockerfile"
 }
 
-$originalErrorPreference = $ErrorActionPreference
-$ErrorActionPreference = 'Continue'
-try {
-    write-output "$dockerComposeCmd --log-level DEBUG --file $COMPOSE_FILE build $buildArgs"
-    & $dockerComposeCmd --log-level DEBUG --file $COMPOSE_FILE build @buildArgs 2>&1 | ForEach-Object { "$_" }
-    if ($LASTEXITCODE -ne 0) {
-        throw "docker-compose exited with error code $LASTEXITCODE"
+if (!$noBuild) {
+    # Dockerize the stress app using docker-compose
+    $BuildArgs = @(
+        "--build-arg", "VERSION=$Version",
+        "--build-arg", "CONFIGURATION=$configuration"
+    )
+    if (![string]::IsNullOrEmpty($sdkImageName)) {
+        $BuildArgs += "--build-arg", "SDK_BASE_IMAGE=$sdkImageName"
     }
-}
-finally {
-    $ErrorActionPreference = $originalErrorPreference
+    $originalErrorPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        write-output "docker-compose --file $COMPOSE_FILE build $buildArgs"
+        docker compose --file $COMPOSE_FILE build @buildArgs 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            throw "docker-compose exited with error code $LASTEXITCODE"
+        }
+    }
+    finally {
+        $ErrorActionPreference = $originalErrorPreference
+    }
 }
 
 # Run the stress app
