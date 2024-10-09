@@ -184,8 +184,6 @@ struct REGDISPLAY
     PTR_uintptr_t pRA;
     PTR_uintptr_t pR2;
 
-    uintptr_t   SP;
-
     PTR_uintptr_t pR4;
     PTR_uintptr_t pR5;
     PTR_uintptr_t pR6;
@@ -215,6 +213,7 @@ struct REGDISPLAY
     PTR_uintptr_t pR30;
     PTR_uintptr_t pR31;
 
+    uintptr_t    SP;
     PCODE        IP;
 
     uint64_t       F[32-24]; // Only the F registers F24..F31 needs to be preserved
