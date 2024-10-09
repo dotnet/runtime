@@ -130,7 +130,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
     const int extraArgSlots = 16;
     void** args = (void**)_alloca((numArgs + extraArgSlots) * sizeof(void*));
     memcpy(args, inArgs, numArgs * sizeof(void*));
-    memset(&args[numArgs], 0, sizeof(extraArgSlots * sizeof(void*)));
+    memset(&args[numArgs], 0, extraArgSlots * sizeof(void*));
 
     CQuickBytes fullname;
     void** argsPtr = args;
