@@ -1722,7 +1722,7 @@ struct MSLAYOUT DebuggerIPCE_FuncEvalInfo
     DebuggerIPCE_FuncEvalType  funcEvalType;
     mdMethodDef                funcMetadataToken;
     mdTypeDef                  funcClassMetadataToken;
-    VMPTR_Assembly       vmAssembly;
+    VMPTR_Assembly             vmAssembly;
     RSPTR_CORDBEVAL            funcEvalKey;
     bool                       evalDuringException;
 
