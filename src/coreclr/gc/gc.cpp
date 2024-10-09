@@ -50405,7 +50405,7 @@ void gc_heap::do_pre_gc()
 #endif //SIMPLE_DPRINTF
     bgc_state b_state = bgc_not_in_process;
 #ifdef BACKGROUND_GC
-    bgc_state b_state = settings.b_state;
+    b_state = settings.b_state;
 #endif //BACKGROUND_GC
 
     size_t heap_size_before = get_total_heap_size();
