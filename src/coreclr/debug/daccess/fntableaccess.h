@@ -65,12 +65,6 @@ typedef struct _FakeHpCodeHdr
 #define FAKE_STUB_CODE_BLOCK_LAST 0xF
 
 
-enum FakeEEDynamicFunctionTableType
-{
-    FAKEDYNFNTABLE_JIT = 0,
-};
-
-
 #ifdef CHECK_DUPLICATED_STRUCT_LAYOUTS
 
 //

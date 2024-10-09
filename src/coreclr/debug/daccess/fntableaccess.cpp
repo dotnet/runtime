@@ -139,11 +139,11 @@ static NTSTATUS OutOfProcessFindHeader(ReadMemoryFunction fpReadMemory,PVOID pUs
         pHeader = tmp;                                      \
     }
 
-static NTSTATUS OutOfProcessFunctionTableCallback_JIT(IN  ReadMemoryFunction    fpReadMemory,
-                                                      IN  PVOID                 pUserContext,
-                                                      IN  PVOID                 TableAddress,
-                                                      OUT PULONG                pnEntries,
-                                                      OUT PT_RUNTIME_FUNCTION*    ppFunctions)
+extern "C" NTSTATUS OutOfProcessFunctionTableCallbackEx(IN  ReadMemoryFunction    fpReadMemory,
+                                                        IN  PVOID				  pUserContext,
+                                                        IN  PVOID                 TableAddress,
+                                                        OUT PULONG                pnEntries,
+                                                        OUT PT_RUNTIME_FUNCTION*  ppFunctions)
 {
     if (NULL == pnEntries)      { return STATUS_INVALID_PARAMETER_3; }
     if (NULL == ppFunctions)    { return STATUS_INVALID_PARAMETER_4; }
@@ -282,38 +282,6 @@ extern "C" NTSTATUS OutOfProcessFunctionTableCallback(IN  HANDLE                
                                                       OUT PT_RUNTIME_FUNCTION*    ppFunctions)
 {
     return OutOfProcessFunctionTableCallbackEx(&ReadMemory, hProcess, TableAddress, pnEntries, ppFunctions);
-}
-
-extern "C" NTSTATUS OutOfProcessFunctionTableCallbackEx(IN  ReadMemoryFunction    fpReadMemory,
-                                                        IN  PVOID				  pUserContext,
-                                                        IN  PVOID                 TableAddress,
-                                                        OUT PULONG                pnEntries,
-                                                        OUT PT_RUNTIME_FUNCTION*    ppFunctions)
-{
-    if (NULL == pnEntries)      { return STATUS_INVALID_PARAMETER_3; }
-    if (NULL == ppFunctions)    { return STATUS_INVALID_PARAMETER_4; }
-
-    DYNAMIC_FUNCTION_TABLE * pTable = (DYNAMIC_FUNCTION_TABLE *) TableAddress;
-    PVOID pvContext;
-
-    move(pvContext, &pTable->Context);
-
-    FakeEEDynamicFunctionTableType type = (FakeEEDynamicFunctionTableType)((SIZE_T)pvContext & 3);
-
-    switch (type)
-    {
-    case FAKEDYNFNTABLE_JIT:
-        return OutOfProcessFunctionTableCallback_JIT(
-                fpReadMemory,
-                pUserContext,
-                TableAddress,
-                pnEntries,
-                ppFunctions);
-    default:
-        break;
-    }
-
-    return STATUS_UNSUCCESSFUL;
 }
 
 #else

@@ -2611,8 +2611,7 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
                   (PVOID)pStartRange,
                   (ULONG)((ULONG64)pEndRange - (ULONG64)pStartRange),
                   GetRuntimeFunctionCallback,
-                  this,
-                  DYNFNTABLE_JIT);
+                  this);
     }
     EX_CATCH
     {
