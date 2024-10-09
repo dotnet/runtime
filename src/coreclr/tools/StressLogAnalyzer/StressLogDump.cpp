@@ -154,6 +154,11 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
         {
             while (isdigit(*ptr))
             {
+                // This is enough to handle %5s. It doesn't need to handle %0.3f because the below code will
+                // work in the sense that it consider the specifier finished at the '.', but that's good enough
+                // because the entire specifier will end up being passed to fprintf later.
+                //
+                // To handle %5p, we would need to parse and use the width specifier in the 'p' code below.
                 ptr++;
             }
 
