@@ -5257,6 +5257,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             auto lateLayoutPhase = [this] {
                 fgDoReversePostOrderLayout();
                 fgMoveColdBlocks();
+
+                if (compHndBBtabCount != 0)
+                {
+                    fgFindEHRegionEnds();
+                }
+
                 return PhaseStatus::MODIFIED_EVERYTHING;
             };
 
