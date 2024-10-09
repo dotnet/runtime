@@ -22,34 +22,14 @@
         <target state="translated">データ拡張プロパティの型が無効です。</target>
         <note />
       </trans-unit>
-      <trans-unit id="DerivedJsonConverterAttributesNotSupportedMessageFormat">
-        <source>The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</source>
-        <target state="translated">JsonConverterAttribute から派生するカスタム属性 '{0}' は、ソース ジェネレーターではサポートされていません。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="DerivedJsonConverterAttributesNotSupportedTitle">
-        <source>Attributes deriving from JsonConverterAttribute are not supported by the source generator.</source>
-        <target state="translated">JsonConverterAttribute から派生する属性は、ソース ジェネレーターではサポートされていません。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
-        <source>There are multiple types named '{0}'. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
-        <target state="translated">'{0}' と名前が付けられた種類が複数あります。最初に検出されたものに対してソースが生成されました。この問題を解決するには、'JsonSerializableAttribute.TypeInfoPropertyName' を使用します。</target>
+        <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
+        <target state="new">There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameTitle">
         <source>Duplicate type name.</source>
         <target state="translated">重複した種類名。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FastPathPolymorphismNotSupportedMessageFormat">
-        <source>Type '{0}' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
-        <target state="translated">型 '{0}' は 'JsonDerivedTypeAttribute' の注釈が付けられていますが、これは 'JsonSourceGenerationMode.Serialization' でサポートされていません。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FastPathPolymorphismNotSupportedTitle">
-        <source>'JsonDerivedTypeAttribute' is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
-        <target state="translated">'JsonDerivedTypeAttribute' は 'JsonSourceGenerationMode.Serialization' ではサポートされていません。</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
@@ -70,56 +50,6 @@
       <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
         <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
         <target state="translated">現在、ソース生成モードでは init-only プロパティの逆シリアル化はサポートされていません。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonConstructorInaccessibleMessageFormat">
-        <source>The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</source>
-        <target state="translated">型 '{0}' のコンストラクターには JsonConstructorAttribute で注釈が付けられますが、ソース ジェネレーターからアクセスすることはできません。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonConstructorInaccessibleTitle">
-        <source>Constructor annotated with JsonConstructorAttribute is inaccessible.</source>
-        <target state="translated">JsonConstructorAttribute で注釈が付けられたコンストラクターにアクセスできません。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
-        <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
-        <target state="translated">メンバー '{1}' で指定されている 'JsonConverterAttribute' 型 '{0}' はコンバーター型ではないか、アクセス可能なパラメーターなしのコンストラクターを含んでいません。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
-        <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
-        <target state="translated">'JsonConverterAttribute.Type' に無効な、またはアクセスできない引数が含まれています。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonSerializableAttributeOnNonContextTypeMessageFormat">
-        <source>The type '{0}' has been annotated with JsonSerializableAttribute but does not derive from JsonSerializerContext. No source code will be generated.</source>
-        <target state="translated">型 '{0}' は JsonSerializableAttribute で注釈が付けられていますが、JsonSerializerContext から派生したものではありません。ソース コードは生成されません。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonSerializableAttributeOnNonContextTypeTitle">
-        <source>Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext.</source>
-        <target state="translated">JsonSerializableAttribute で注釈が付けられた型は、JsonSerializerContext から派生するクラスである必要があります。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
-        <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
-        <target state="translated">メンバー '{0}' には、ネイティブ AOT ではサポートされていない 'JsonStringEnumConverter' の注釈が付けられています。 代わりに汎用の 'JsonStringEnumConverter&lt;TEnum&gt;' を使用することを検討してください。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonStringEnumConverterNotSupportedTitle">
-        <source>The non-generic 'JsonStringEnumConverter' requires dynamic code.</source>
-        <target state="translated">非ジェネリック 'JsonStringEnumConverter' には動的コードが必要です。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
-        <source>The System.Text.Json source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="translated">System.Text.Json ソース ジェネレーターは、C# {0}では使用できません。言語バージョン {1} 以上を使用してください。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonUnsupportedLanguageVersionTitle">
-        <source>C# language version not supported by the source generator.</source>
-        <target state="translated">ソース ジェネレーターでサポートされていない C# 言語バージョン。</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">
