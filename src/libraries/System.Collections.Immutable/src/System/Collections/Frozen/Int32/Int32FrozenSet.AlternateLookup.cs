@@ -9,8 +9,27 @@ namespace System.Collections.Frozen
 {
     internal sealed partial class Int32FrozenSet
     {
-        /// <inheritdoc />
-        private protected override int FindItemIndex<TAlternate>(TAlternate item)
+
+        private protected override AlternateLookupDelegate<TAlternate> GetAlternateLookupDelegate<TAlternate>()
+            => AlternateKeyDelegateHolder<TAlternate>.Instance;
+
+        private static class AlternateKeyDelegateHolder<TAlternate>
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            where TAlternate : allows ref struct
+#pragma warning restore SA1001
+#endif
+        {
+            public static AlternateLookupDelegate<TAlternate> Instance = (set, item)
+                => ((Int32FrozenSet)set).FindItemIndexAlternate(item);
+        }
+
+        private int FindItemIndexAlternate<TAlternate>(TAlternate item)
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            where TAlternate : allows ref struct
+#pragma warning restore SA1001
+#endif
         {
             var comparer = GetAlternateEqualityComparer<TAlternate>();
 

@@ -329,18 +329,55 @@ namespace System.Collections.Frozen
         /// <returns>The index of the value, or -1 if not found.</returns>
         private protected abstract int FindItemIndex(T item);
 
-        /// <summary>Finds the index of a specific value in a set.</summary>
-        /// <param name="item">The value to lookup.</param>
-        /// <returns>The index of the value, or -1 if not found.</returns>
-        private protected virtual int FindItemIndex<TAlternate>(TAlternate item)
+        /// <summary>
+        /// Retrieves a delegate which calls a method equivalent to <see cref="FindItemIndex"/>
+        /// for the <typeparamref name="TAlternate"/>.
+        /// Generic Virtual methods are very slow and could negate much of the benefit of
+        /// using Alternate Keys. Doing it this way moves the generic virtual method invocation
+        /// to the point when the alternate lookup is prepared and instead we only pay for delegate
+        /// invocation which is much cheaper.
+        /// </summary>
+        private protected virtual AlternateLookupDelegate<TAlternate> GetAlternateLookupDelegate<TAlternate>()
 #if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
             // This method will only ever be used on .NET 9+. However, because of how everything is structured,
             // and to avoid a proliferation of conditional files for many of the derived types (in particular
             // for the OrdinalString* implementations), we still build this method into all builds, even though
             // it'll be unused. But we can't use the allows ref struct constraint downlevel, hence the #if.
             where TAlternate : allows ref struct
+#pragma warning restore SA1001
 #endif
-            => -1;
+            => AlternateLookupHolder<TAlternate>.Instance;
+
+        /// <summary>
+        /// Invokes a method equivalent to <see cref="FindItemIndex"/>
+        /// for the <typeparamref name="TAlternate"/>.
+        /// </summary>
+        internal delegate int AlternateLookupDelegate<TAlternate>(FrozenSet<T> set, TAlternate key)
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            // This method will only ever be used on .NET 9+. However, because of how everything is structured,
+            // and to avoid a proliferation of conditional files for many of the derived types (in particular
+            // for the OrdinalString* implementations), we still build this method into all builds, even though
+            // it'll be unused. But we can't use the allows ref struct constraint downlevel, hence the #if.
+            where TAlternate : allows ref struct
+#pragma warning restore SA1001
+#endif
+            ;
+
+        /// <summary>
+        /// Holds an implementation of <see cref="AlternateLookupDelegate{TAlternate}"/> which always returns -1.
+        /// </summary>
+        private static class AlternateLookupHolder<TAlternate>
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            where TAlternate : allows ref struct
+#pragma warning restore SA1001
+#endif
+        {
+            public static AlternateLookupDelegate<TAlternate> Instance = (_, _) => -1;
+        }
+
 
         /// <summary>Returns an enumerator that iterates through the set.</summary>
         /// <returns>An enumerator that iterates through the set.</returns>

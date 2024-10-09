@@ -9,12 +9,17 @@ namespace System.Collections.Frozen
 {
     internal sealed partial class LengthBucketsFrozenDictionary<TValue>
     {
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private protected override ref readonly TValue GetValueRefOrNullRefCore<TAlternateKey>(TAlternateKey alternate)
+        private static AlternateLookupDelegate<ReadOnlySpan<char>> s_alternateLookup = (dictionary, key)
+            => ref ((LengthBucketsFrozenDictionary<TValue>)dictionary).GetValueRefOrNullRefCoreAlternate(key);
+
+        private protected override AlternateLookupDelegate<TAlternateKey> GetAlternateLookupDelegate<TAlternateKey>()
         {
             Debug.Assert(typeof(TAlternateKey) == typeof(ReadOnlySpan<char>));
-            ReadOnlySpan<char> key = Unsafe.As<TAlternateKey, ReadOnlySpan<char>>(ref alternate);
+            return (AlternateLookupDelegate<TAlternateKey>)(object)s_alternateLookup;
+        }
 
+        private ref readonly TValue GetValueRefOrNullRefCoreAlternate(ReadOnlySpan<char> key)
+        {
             IAlternateEqualityComparer<ReadOnlySpan<char>, string> comparer = GetAlternateEqualityComparer<ReadOnlySpan<char>>();
 
             // If the length doesn't have an associated bucket, the key isn't in the dictionary.
