@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// DacDbiImplStackWalk.cpp
-//
 
+//*****************************************************************************
+// File: DacDbiImplStackWalk.cpp
 //
 // This file contains the implementation of the stackwalking-related functions on the DacDbiInterface.
-//
 // ======================================================================================
 
 #include "stdafx.h"
