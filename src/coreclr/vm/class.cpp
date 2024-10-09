@@ -137,16 +137,8 @@ void EEClass::Destruct(MethodTable * pOwningMT)
             }
             else
             {
-                // Collect data to remove stub entry from StubManager if stub is deleted.
-                BYTE* entry = (BYTE*)pThunk->GetEntryPoint();
-                UINT length = pThunk->GetNumCodeBytes();
-
                 ExecutableWriterHolder<Stub> stubWriterHolder(pThunk, sizeof(Stub));
-                BOOL fStubDeleted = stubWriterHolder.GetRW()->DecRef();
-                if (fStubDeleted)
-                {
-                    StubLinkStubManager::g_pManager->RemoveStubRange(entry, length);
-                }
+                stubWriterHolder.GetRW()->DecRef();
             }
         }
     }

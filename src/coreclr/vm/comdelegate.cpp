@@ -913,8 +913,7 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 
     // We haven't already setup a shuffle thunk, go do it now (which will cache the result automatically).
     StackSArray<ShuffleEntry> rShuffleEntryArray;
-    bool isSimple = GenerateShuffleArray(pMD, pTargetMeth, &rShuffleEntryArray);
-    if (isSimple)
+    if (GenerateShuffleArray(pMD, pTargetMeth, &rShuffleEntryArray))
     {
         ShuffleThunkCache* pShuffleThunkCache = s_pShuffleThunkCache;
 
@@ -940,21 +939,20 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
     {
         COMPlusThrowOM();
     }
-    _ASSERTE(pShuffleThunk->HasExternalEntryPoint() == !isSimple);
 
     // Cache the shuffle thunk
     Stub** ppThunk = isInstRetBuff ? &pClass->m_pInstRetBuffCallStub : &pClass->m_pStaticCallStub;
     Stub* pExistingThunk = InterlockedCompareExchangeT(ppThunk, pShuffleThunk, NULL);
     if (pExistingThunk != NULL)
     {
-        if (isSimple)
+        if (pShuffleThunk->HasExternalEntryPoint()) // IL thunk
         {
-            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
-            shuffleThunkWriterHolder.GetRW()->DecRef();
+            pShuffleThunk->DecRef();
         }
         else
         {
-            pShuffleThunk->DecRef();
+            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
+            shuffleThunkWriterHolder.GetRW()->DecRef();
         }
         pShuffleThunk = pExistingThunk;
     }
