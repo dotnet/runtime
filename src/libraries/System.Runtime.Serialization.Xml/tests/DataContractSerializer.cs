@@ -4477,8 +4477,11 @@ public static partial class DataContractSerializerTests
         Assert.NotNull(actual);
     }
 
+    // Random OSR might cause a stack overflow on Windows x64
+    private static bool IsNotWindowsRandomOSR => !PlatformDetection.IsWindows || (Environment.GetEnvironmentVariable("DOTNET_JitRandomOnStackReplacement") == null);
+
     [SkipOnPlatform(TestPlatforms.Browser, "Causes a stack overflow")]
-    [Fact]
+    [ConditionalFact(nameof(IsNotWindowsRandomOSR))]
     public static void DCS_DeeplyLinkedData()
     {
         TypeWithLinkedProperty head = new TypeWithLinkedProperty();

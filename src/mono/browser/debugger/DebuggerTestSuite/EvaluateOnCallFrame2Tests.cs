@@ -841,5 +841,16 @@ namespace DebuggerTests
                await RuntimeEvaluateAndCheck(
                    ("myVar.MyMethod()", TNumber(10)));
            });
+        
+        // https://github.com/dotnet/runtime/issues/106311
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task EvaluateOnValueTypeWithoutExtraSpace() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateOnValueTypeWithoutExtraSpace", "run", 3, "DebuggerTests.EvaluateOnValueTypeWithoutExtraSpace.run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateOnValueTypeWithoutExtraSpace:run'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               await RuntimeEvaluateAndCheck(
+                   ("f1.DistSquaredXY(f2)", TNumber(2)));
+           });
     }
 }

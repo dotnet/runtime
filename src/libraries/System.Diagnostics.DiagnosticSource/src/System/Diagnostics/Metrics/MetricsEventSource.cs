@@ -278,11 +278,28 @@ namespace System.Diagnostics.Metrics
         }
 
         /// <summary>
+        /// Used to send version information.
+        /// </summary>
+        [Event(18, Keywords = Keywords.Messages)]
+        public void Version(int Major, int Minor, int Patch)
+        {
+            WriteEvent(18, Major, Minor, Patch);
+        }
+
+        /// <summary>
         /// Called when the EventSource gets a command from a EventListener or ETW.
         /// </summary>
         [NonEvent]
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
+            if (command.Command == EventCommand.Enable)
+            {
+                Version(
+                    ThisAssembly.AssemblyFileVersion.Major,
+                    ThisAssembly.AssemblyFileVersion.Minor,
+                    ThisAssembly.AssemblyFileVersion.Build);
+            }
+
             lock (this)
             {
                 Handler.OnEventCommand(command);
@@ -698,6 +715,11 @@ namespace System.Diagnostics.Metrics
                 {
                     Log.GaugeValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
                         lastValueStats.LastValue.HasValue ? lastValueStats.LastValue.Value.ToString(CultureInfo.InvariantCulture) : "", instrumentId);
+                }
+                else if (stats.AggregationStatistics is SynchronousLastValueStatistics synchronousLastValueStats)
+                {
+                    Log.GaugeValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
+                        synchronousLastValueStats.LastValue.ToString(CultureInfo.InvariantCulture), instrumentId);
                 }
                 else if (stats.AggregationStatistics is HistogramStatistics histogramStats)
                 {

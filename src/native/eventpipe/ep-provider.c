@@ -493,6 +493,7 @@ provider_free (EventPipeProvider * provider)
 
 	dn_list_custom_free (provider->event_list, event_free_func);
 
+	ep_rt_wait_event_free (&provider->callbacks_complete_event);
 	ep_rt_utf16_string_free (provider->provider_name_utf16);
 	ep_rt_utf8_string_free (provider->provider_name);
 	ep_rt_object_free (provider);

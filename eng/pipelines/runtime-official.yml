@@ -41,12 +41,13 @@ extends:
       # Localization build
       #
 
-      - template: /eng/common/templates-official/job/onelocbuild.yml
-        parameters:
-          MirrorRepo: runtime
-          MirrorBranch: main
-          LclSource: lclFilesfromPackage
-          LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/9.0') }}:
+        - template: /eng/common/templates-official/job/onelocbuild.yml
+          parameters:
+            MirrorRepo: runtime
+            MirrorBranch: release/9.0
+            LclSource: lclFilesfromPackage
+            LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
 
       #
       # Source Index Build
@@ -574,7 +575,7 @@ extends:
         parameters:
           platforms:
           - name: Linux_x64
-            targetRid: linux-x64
+            targetRID: linux-x64
             container: SourceBuild_linux_x64
 
       #

@@ -54,6 +54,7 @@ import {
     bitmaskTable, createScalarTable,
     simdExtractTable, simdReplaceTable,
     simdLoadTable, simdStoreTable,
+    xchgTable, cmpxchgTable,
 } from "./jiterpreter-tables";
 import { mono_log_error, mono_log_info } from "./logging";
 import { mono_assert, runtimeHelpers } from "./globals";
@@ -218,6 +219,7 @@ export function generateBackwardBranchTable (
 
         switch (opcode) {
             case MintOpcode.MINT_CALL_HANDLER:
+            case MintOpcode.MINT_CALL_HANDLER_S:
                 // While this formally isn't a backward branch target, we want to record
                 //  the offset of its following instruction so that the jiterpreter knows
                 //  to generate the necessary dispatch code to enable branching back to it.
@@ -243,7 +245,6 @@ export function generateWasmBody (
 ): number {
     const abort = <MintOpcodePtr><any>0;
     let isFirstInstruction = true, isConditionallyExecuted = false,
-        containsSimd = false,
         pruneOpcodes = false, hasEmittedUnreachable = false;
     let result = 0,
         prologueOpcodeCounter = 0,
@@ -505,15 +506,21 @@ export function generateWasmBody (
             }
 
             // Other conditional branch types are handled by the relop table.
+            case MintOpcode.MINT_BRFALSE_I4_S:
+            case MintOpcode.MINT_BRTRUE_I4_S:
             case MintOpcode.MINT_BRFALSE_I4_SP:
             case MintOpcode.MINT_BRTRUE_I4_SP:
+            case MintOpcode.MINT_BRFALSE_I8_S:
+            case MintOpcode.MINT_BRTRUE_I8_S:
                 if (!emit_branch(builder, ip, frame, opcode))
                     ip = abort;
                 else
                     isConditionallyExecuted = true;
                 break;
 
+            case MintOpcode.MINT_BR_S:
             case MintOpcode.MINT_CALL_HANDLER:
+            case MintOpcode.MINT_CALL_HANDLER_S:
                 if (!emit_branch(builder, ip, frame, opcode))
                     ip = abort;
                 else {
@@ -1286,6 +1293,7 @@ export function generateWasmBody (
             // These are generated in place of regular LEAVEs inside of the body of a catch clause.
             // We can safely assume that during normal execution, catch clauses won't be running.
             case MintOpcode.MINT_LEAVE_CHECK:
+            case MintOpcode.MINT_LEAVE_S_CHECK:
                 append_bailout(builder, ip, BailoutReason.LeaveCheck);
                 pruneOpcodes = true;
                 break;
@@ -1457,26 +1465,6 @@ export function generateWasmBody (
                 break;
             }
 
-            case MintOpcode.MINT_MONO_CMPXCHG_I4:
-                builder.local("pLocals");
-                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load); // dest
-                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load); // newVal
-                append_ldloc(builder, getArgU16(ip, 4), WasmOpcode.i32_load); // expected
-                builder.callImport("cmpxchg_i32");
-                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
-                break;
-            case MintOpcode.MINT_MONO_CMPXCHG_I8:
-                // because i64 values can't pass through JS cleanly (c.f getRawCwrap and
-                // EMSCRIPTEN_KEEPALIVE), we pass addresses of newVal, expected and the return value
-                // to the helper function.  The "dest" for the compare-exchange is already a
-                // pointer, so load it normally
-                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load); // dest
-                append_ldloca(builder, getArgU16(ip, 3), 0); // newVal
-                append_ldloca(builder, getArgU16(ip, 4), 0); // expected
-                append_ldloca(builder, getArgU16(ip, 1), 8); // oldVal
-                builder.callImport("cmpxchg_i64");
-                break;
-
             case MintOpcode.MINT_LOG2_I4:
             case MintOpcode.MINT_LOG2_I8: {
                 const isI64 = (opcode === MintOpcode.MINT_LOG2_I8);
@@ -1639,13 +1627,19 @@ export function generateWasmBody (
                     (opcode >= MintOpcode.MINT_SIMD_V128_LDC) &&
                     (opcode <= MintOpcode.MINT_SIMD_INTRINS_P_PPP)
                 ) {
+                    builder.containsSimd = true;
                     if (!emit_simd(builder, ip, opcode, opname, simdIntrinsArgCount, simdIntrinsIndex))
                         ip = abort;
-                    else {
-                        containsSimd = true;
+                    else
                         // We need to do dreg invalidation differently for simd, especially to handle ldc
                         skipDregInvalidation = true;
-                    }
+                } else if (
+                    (opcode >= MintOpcode.MINT_MONO_MEMORY_BARRIER) &&
+                    (opcode <= MintOpcode.MINT_MONO_CMPXCHG_I8)
+                ) {
+                    builder.containsAtomics = true;
+                    if (!emit_atomics(builder, ip, opcode))
+                        ip = abort;
                 } else if (opcodeValue === 0) {
                     // This means it was explicitly marked as no-value in the opcode value table
                     //  so we can just skip over it. This is done for things like nops.
@@ -1732,7 +1726,7 @@ export function generateWasmBody (
     // HACK: Traces containing simd will be *much* shorter than non-simd traces,
     //  which will cause both the heuristic and our length requirement outside
     //  to reject them. For now, just add a big constant to the length
-    if (containsSimd)
+    if (builder.containsSimd)
         result += 10240;
     return result;
 }
@@ -2735,9 +2729,10 @@ function emit_unop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode)
 
 function append_call_handler_store_ret_ip (
     builder: WasmBuilder, ip: MintOpcodePtr,
-    frame: NativePointer
+    frame: NativePointer, opcode: MintOpcode
 ) {
-    const retIp = <any>ip + (4 * 2),
+    const shortOffset = (opcode === MintOpcode.MINT_CALL_HANDLER_S),
+        retIp = shortOffset ? <any>ip + (3 * 2) : <any>ip + (4 * 2),
         clauseIndex = getU16(retIp - 2),
         clauseDataOffset = get_imethod_clause_data_offset(frame, clauseIndex);
 
@@ -2752,21 +2747,6 @@ function append_call_handler_store_ret_ip (
     builder.callHandlerReturnAddresses.push(retIp);
 }
 
-function getBranchImmediate (
-    ip: MintOpcodePtr, opcode: MintOpcode
-): number | undefined {
-    const opArgType = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.OpArgType),
-        payloadOffset = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs),
-        payloadAddress = <any>ip + 2 + (payloadOffset * 2);
-
-    switch (opArgType) {
-        case MintOpArgType.MintOpShortAndBranch:
-            return getI16(payloadAddress);
-        default:
-            return undefined;
-    }
-}
-
 function getBranchDisplacement (
     ip: MintOpcodePtr, opcode: MintOpcode
 ): number | undefined {
@@ -2779,8 +2759,11 @@ function getBranchDisplacement (
         case MintOpArgType.MintOpBranch:
             result = getI32_unaligned(payloadAddress);
             break;
-        case MintOpArgType.MintOpShortAndBranch:
-            result = getI32_unaligned(payloadAddress + 2);
+        case MintOpArgType.MintOpShortBranch:
+            result = getI16(payloadAddress);
+            break;
+        case MintOpArgType.MintOpShortAndShortBranch:
+            result = getI16(payloadAddress + 2);
             break;
         default:
             return undefined;
@@ -2800,10 +2783,8 @@ function emit_branch (
         (opcode <= MintOpcode.MINT_BLT_UN_I8_IMM_SP);
 
     const displacement = getBranchDisplacement(ip, opcode);
-    if (typeof (displacement) !== "number") {
-        // mono_log_info(`Failed to decode branch displacement for ${getOpcodeName(opcode)}`);
+    if (typeof (displacement) !== "number")
         return false;
-    }
 
     // If the branch is taken we bail out to allow the interpreter to do it.
     // So for brtrue, we want to do 'cond == 0' to produce a bailout only
@@ -2813,8 +2794,11 @@ function emit_branch (
     //  branch target (if possible), bailing out at the end otherwise
     switch (opcode) {
         case MintOpcode.MINT_CALL_HANDLER:
-        case MintOpcode.MINT_BR: {
-            const isCallHandler = opcode === MintOpcode.MINT_CALL_HANDLER;
+        case MintOpcode.MINT_CALL_HANDLER_S:
+        case MintOpcode.MINT_BR:
+        case MintOpcode.MINT_BR_S: {
+            const isCallHandler = (opcode === MintOpcode.MINT_CALL_HANDLER) ||
+                (opcode === MintOpcode.MINT_CALL_HANDLER_S);
 
             const destination = <any>ip + (displacement * 2);
 
@@ -2826,7 +2810,7 @@ function emit_branch (
                     if (builder.backBranchTraceLevel > 1)
                         mono_log_info(`0x${(<any>ip).toString(16)} performing backward branch to 0x${destination.toString(16)}`);
                     if (isCallHandler)
-                        append_call_handler_store_ret_ip(builder, ip, frame);
+                        append_call_handler_store_ret_ip(builder, ip, frame, opcode);
                     builder.cfg.branch(destination, true, CfgBranchType.Unconditional);
                     modifyCounter(JiterpCounter.BackBranchesEmitted, 1);
                     return true;
@@ -2851,32 +2835,32 @@ function emit_branch (
                 //  the current branch block after updating eip
                 builder.branchTargets.add(destination);
                 if (isCallHandler)
-                    append_call_handler_store_ret_ip(builder, ip, frame);
+                    append_call_handler_store_ret_ip(builder, ip, frame, opcode);
                 builder.cfg.branch(destination, false, CfgBranchType.Unconditional);
                 return true;
             }
         }
 
-        case MintOpcode.MINT_BRTRUE_I4:
-        case MintOpcode.MINT_BRFALSE_I4:
+        case MintOpcode.MINT_BRTRUE_I4_S:
+        case MintOpcode.MINT_BRFALSE_I4_S:
         case MintOpcode.MINT_BRTRUE_I4_SP:
         case MintOpcode.MINT_BRFALSE_I4_SP:
-        case MintOpcode.MINT_BRTRUE_I8:
-        case MintOpcode.MINT_BRFALSE_I8: {
-            const is64 = (opcode === MintOpcode.MINT_BRTRUE_I8) ||
-                (opcode === MintOpcode.MINT_BRFALSE_I8);
+        case MintOpcode.MINT_BRTRUE_I8_S:
+        case MintOpcode.MINT_BRFALSE_I8_S: {
+            const is64 = (opcode === MintOpcode.MINT_BRTRUE_I8_S) ||
+                (opcode === MintOpcode.MINT_BRFALSE_I8_S);
 
             // Load the condition
 
             append_ldloc(builder, getArgU16(ip, 1), is64 ? WasmOpcode.i64_load : WasmOpcode.i32_load);
             if (
-                (opcode === MintOpcode.MINT_BRFALSE_I4) ||
+                (opcode === MintOpcode.MINT_BRFALSE_I4_S) ||
                 (opcode === MintOpcode.MINT_BRFALSE_I4_SP)
             )
                 builder.appendU8(WasmOpcode.i32_eqz);
-            else if (opcode === MintOpcode.MINT_BRFALSE_I8) {
+            else if (opcode === MintOpcode.MINT_BRFALSE_I8_S) {
                 builder.appendU8(WasmOpcode.i64_eqz);
-            } else if (opcode === MintOpcode.MINT_BRTRUE_I8) {
+            } else if (opcode === MintOpcode.MINT_BRTRUE_I8_S) {
                 // do (i64 == 0) == 0 because br_if can only branch on an i32 operand
                 builder.appendU8(WasmOpcode.i64_eqz);
                 builder.appendU8(WasmOpcode.i32_eqz);
@@ -2890,6 +2874,9 @@ function emit_branch (
             //  treat it like a brtrue
             if (relopbranchTable[opcode] === undefined)
                 throw new Error(`Unsupported relop branch opcode: ${getOpcodeName(opcode)}`);
+
+            if (cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length) !== 4)
+                throw new Error(`Unsupported long branch opcode: ${getOpcodeName(opcode)}`);
 
             break;
         }
@@ -2934,10 +2921,8 @@ function emit_relop_branch (
     frame: NativePointer, opcode: MintOpcode
 ): boolean {
     const relopBranchInfo = relopbranchTable[opcode];
-    if (!relopBranchInfo) {
-        // mono_log_info(`No info for relop branch ${getOpcodeName(opcode)}`);
+    if (!relopBranchInfo)
         return false;
-    }
 
     const relop = Array.isArray(relopBranchInfo)
         ? relopBranchInfo[0]
@@ -2946,10 +2931,8 @@ function emit_relop_branch (
     const relopInfo = binopTable[relop];
     const intrinsicFpBinop = intrinsicFpBinops[relop];
 
-    if (!relopInfo && !intrinsicFpBinop) {
-        // mono_log_info(`No info for relop ${getOpcodeName(opcode)} -> ${getOpcodeName(relop)}`);
+    if (!relopInfo && !intrinsicFpBinop)
         return false;
-    }
 
     const operandLoadOp = relopInfo
         ? relopInfo[1]
@@ -2966,13 +2949,11 @@ function emit_relop_branch (
 
     // Compare with immediate
     if (Array.isArray(relopBranchInfo) && relopBranchInfo[1]) {
-        const immediate = getBranchImmediate(ip, opcode);
-        mono_assert(immediate !== undefined, `Failed to decode immediate for branch opcode ${getOpcodeName(opcode)}`);
         // For i8 immediates we need to generate an i64.const even though
         //  the immediate is 16 bits, so we store the relevant opcode
         //  in the relop branch info table
         builder.appendU8(relopBranchInfo[1]);
-        builder.appendLeb(immediate);
+        builder.appendLeb(getArgI16(ip, 2));
     } else
         append_ldloc(builder, getArgU16(ip, 2), operandLoadOp);
 
@@ -3968,3 +3949,53 @@ function emit_simd_4 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
             return false;
     }
 }
+
+function emit_atomics (
+    builder: WasmBuilder, ip: MintOpcodePtr, opcode: number
+) {
+    if (!builder.options.enableAtomics)
+        return false;
+
+    // FIXME: memory barrier might be worthwhile to implement
+    // FIXME: We could probably unify most of the xchg/cmpxchg implementation into one implementation
+
+    const xchg = xchgTable[opcode];
+    if (xchg) {
+        const is64 = xchg[2] > 2;
+        // TODO: Generate alignment check to produce a better runtime error when address is not aligned?
+        builder.local("pLocals"); // stloc head
+        append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true); // address
+        append_ldloc(builder, getArgU16(ip, 3), is64 ? WasmOpcode.i64_load : WasmOpcode.i32_load); // replacement
+        builder.appendAtomic(xchg[0], false);
+        builder.appendMemarg(0, xchg[2]);
+        // Fixup the result if necessary
+        if (xchg[1] !== WasmOpcode.unreachable)
+            builder.appendU8(xchg[1]);
+        // store old value
+        append_stloc_tail(builder, getArgU16(ip, 1), is64 ? WasmOpcode.i64_store : WasmOpcode.i32_store);
+        return true;
+    }
+
+    const cmpxchg = cmpxchgTable[opcode];
+    if (cmpxchg) {
+        const is64 = cmpxchg[2] > 2;
+        // TODO: Generate alignment check to produce a better runtime error when address is not aligned?
+        builder.local("pLocals"); // stloc head
+        append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true); // address
+        // FIXME: Do these loads need to be sized? I think it's well-defined even if there are garbage bytes in the i32,
+        //  based on language from the spec that looks like this: 'expected wrapped from i32 to i8, 8-bit compare equal'
+        append_ldloc(builder, getArgU16(ip, 4), is64 ? WasmOpcode.i64_load : WasmOpcode.i32_load); // expected
+        append_ldloc(builder, getArgU16(ip, 3), is64 ? WasmOpcode.i64_load : WasmOpcode.i32_load); // replacement
+        builder.appendAtomic(cmpxchg[0], false);
+        builder.appendMemarg(0, cmpxchg[2]);
+        // Fixup the result if necessary
+        if (cmpxchg[1] !== WasmOpcode.unreachable)
+            builder.appendU8(cmpxchg[1]);
+        // store old value
+        append_stloc_tail(builder, getArgU16(ip, 1), is64 ? WasmOpcode.i64_store : WasmOpcode.i32_store);
+        return true;
+    }
+
+    return false;
+}
+

@@ -1857,11 +1857,11 @@ extends:
           parameters:
             platforms:
               - name: CentOS8
-                targetRid: centos.8-x64
+                targetRID: centos.8-x64
                 nonPortable: true
                 container: SourceBuild_centos_x64
               - name: NonexistentRID
                 baseOS: linux
-                targetRid: banana.24-x64
+                targetRID: banana.24-x64
                 nonPortable: true
                 container: SourceBuild_centos_x64

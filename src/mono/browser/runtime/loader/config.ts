@@ -278,15 +278,6 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
     }
 }
 
-export function isDebuggingSupported (): boolean {
-    // Copied from blazor MonoDebugger.ts/attachDebuggerHotkey
-    if (!globalThis.navigator) {
-        return false;
-    }
-
-    return loaderHelpers.isChromium || loaderHelpers.isFirefox;
-}
-
 async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
     const defaultConfigSrc = loaderHelpers.locateFile(module.configSrc!);
 

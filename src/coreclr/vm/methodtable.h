@@ -598,12 +598,12 @@ public:
     TADDR m_pGCStatics; // Always access through helper methods to properly handle the ISCLASSNOTINITED bit
     TADDR m_pNonGCStatics; // Always access through helper methods to properly handle the ISCLASSNOTINITED bit
     PTR_MethodTable m_pMethodTable;
-    PTR_OBJECTREF GetGCStaticsPointer() { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pGCStatics); return dac_cast<PTR_OBJECTREF>(staticsVal & STATICSPOINTERMASK); }
-    PTR_BYTE GetNonGCStaticsPointer() { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pNonGCStatics); return dac_cast<PTR_BYTE>(staticsVal & STATICSPOINTERMASK); }
+    PTR_OBJECTREF GetGCStaticsPointer() { TADDR staticsVal = VolatileLoad(&m_pGCStatics); return dac_cast<PTR_OBJECTREF>(staticsVal & STATICSPOINTERMASK); }
+    PTR_BYTE GetNonGCStaticsPointer() { TADDR staticsVal = VolatileLoad(&m_pNonGCStatics); return dac_cast<PTR_BYTE>(staticsVal & STATICSPOINTERMASK); }
     PTR_OBJECTREF GetGCStaticsPointerAssumeIsInited() { TADDR staticsVal = m_pGCStatics; _ASSERTE(staticsVal != 0); _ASSERTE((staticsVal & (ISCLASSNOTINITEDMASK)) == 0); return dac_cast<PTR_OBJECTREF>(staticsVal); }
     PTR_BYTE GetNonGCStaticsPointerAssumeIsInited() { TADDR staticsVal = m_pNonGCStatics; _ASSERTE(staticsVal != 0); _ASSERTE((staticsVal & (ISCLASSNOTINITEDMASK)) == 0); return dac_cast<PTR_BYTE>(staticsVal); }
-    bool GetIsInitedAndGCStaticsPointerIfInited(PTR_OBJECTREF *ptrResult) { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pGCStatics); *ptrResult = dac_cast<PTR_OBJECTREF>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
-    bool GetIsInitedAndNonGCStaticsPointerIfInited(PTR_BYTE *ptrResult) { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pNonGCStatics); *ptrResult = dac_cast<PTR_BYTE>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
+    bool GetIsInitedAndGCStaticsPointerIfInited(PTR_OBJECTREF *ptrResult) { TADDR staticsVal = VolatileLoad(&m_pGCStatics); *ptrResult = dac_cast<PTR_OBJECTREF>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
+    bool GetIsInitedAndNonGCStaticsPointerIfInited(PTR_BYTE *ptrResult) { TADDR staticsVal = VolatileLoad(&m_pNonGCStatics); *ptrResult = dac_cast<PTR_BYTE>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
 
     // This function sets the pointer portion of a statics pointer. It returns false if the statics value was already set.
     bool InterlockedUpdateStaticsPointer(bool isGC, TADDR newVal, bool isClassInitedByUpdatingStaticPointer)
@@ -802,35 +802,6 @@ typedef DPTR(SystemVStructRegisterPassingHelper) SystemVStructRegisterPassingHel
 #endif // UNIX_AMD64_ABI_ITF
 
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-// StructFloatFieldInfoFlags: used on LoongArch64 and RISC-V architecture as a legacy representation of
-// FpStructInRegistersInfo, returned by FpStructInRegistersInfo::ToOldFlags()
-//
-// `STRUCT_NO_FLOAT_FIELD` means structs are not passed using the float register(s).
-//
-// Otherwise, and only for structs with no more than two fields and a total struct size no larger
-// than two pointers:
-//
-// The lowest four bits denote the floating-point info:
-//   bit 0: `1` means there is only one float or double field within the struct.
-//   bit 1: `1` means only the first field is floating-point type.
-//   bit 2: `1` means only the second field is floating-point type.
-//   bit 3: `1` means the two fields are both floating-point type.
-// The bits[5:4] denoting whether the field size is 8-bytes:
-//   bit 4: `1` means the first field's size is 8.
-//   bit 5: `1` means the second field's size is 8.
-//
-// Note that bit 0 and 3 cannot both be set.
-enum StructFloatFieldInfoFlags
-{
-    STRUCT_NO_FLOAT_FIELD         = 0x0,
-    STRUCT_FLOAT_FIELD_ONLY_ONE   = 0x1,
-    STRUCT_FLOAT_FIELD_ONLY_TWO   = 0x8,
-    STRUCT_FLOAT_FIELD_FIRST      = 0x2,
-    STRUCT_FLOAT_FIELD_SECOND     = 0x4,
-    STRUCT_FIRST_FIELD_SIZE_IS8   = 0x10,
-    STRUCT_SECOND_FIELD_SIZE_IS8  = 0x20,
-};
-
 // Bitfields for FpStructInRegistersInfo::flags
 namespace FpStruct
 {
@@ -882,17 +853,6 @@ struct FpStructInRegistersInfo
             case FpStruct::IntFloat: return "IntFloat";
             default: return "?";
         }
-    }
-
-    StructFloatFieldInfoFlags ToOldFlags() const
-    {
-        return StructFloatFieldInfoFlags(
-            ((flags & FpStruct::OnlyOne) ? STRUCT_FLOAT_FIELD_ONLY_ONE : 0) |
-            ((flags & FpStruct::BothFloat) ? STRUCT_FLOAT_FIELD_ONLY_TWO : 0) |
-            ((flags & FpStruct::FloatInt) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
-            ((flags & FpStruct::IntFloat) ? STRUCT_FLOAT_FIELD_SECOND : 0) |
-            ((SizeShift1st() == 3) ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
-            ((SizeShift2nd() == 3) ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0));
     }
 };
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
@@ -2607,10 +2567,10 @@ public:
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer(PTR_Thread pThread);
     inline PTR_BYTE GetGCThreadStaticsBasePointer(PTR_Thread pThread);
 
-    inline DWORD IsDynamicStatics()
+    inline BOOL IsDynamicStatics()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return GetFlag(enum_flag_DynamicStatics);
+        return GetFlag(enum_flag_DynamicStatics) == enum_flag_DynamicStatics;
     }
 
     inline void SetDynamicStatics()

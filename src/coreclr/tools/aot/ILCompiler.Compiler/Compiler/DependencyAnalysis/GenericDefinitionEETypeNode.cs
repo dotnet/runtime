@@ -30,17 +30,12 @@ namespace ILCompiler.DependencyAnalysis
             return dependencyList;
         }
 
-        protected internal override void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
-        {
-        }
-
         protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory, relocsOnly);
 
             dataBuilder.RequireInitialPointerAlignment();
             dataBuilder.AddSymbol(this);
-            EETypeRareFlags rareFlags = 0;
 
             uint flags = EETypeBuilderHelpers.ComputeFlags(_type);
 
@@ -51,26 +46,16 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeFlags.GenericVarianceFlag;
 
             if (_type.IsByRefLike)
-                rareFlags |= EETypeRareFlags.IsByRefLikeFlag;
-
-            if (rareFlags != 0)
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, (uint)rareFlags);
-
-            if (HasOptionalFields)
-                flags |= (uint)EETypeFlags.OptionalFieldsFlag;
-
-            flags |= (uint)EETypeFlags.HasComponentSizeFlag;
-            flags |= (ushort)_type.Instantiation.Length;
+                flags |= (uint)EETypeFlagsEx.IsByRefLikeFlag;
 
             dataBuilder.EmitUInt(flags);
-            dataBuilder.EmitInt(0);         // Base size is always 0
+            dataBuilder.EmitInt(checked((ushort)_type.Instantiation.Length)); // Base size (we put instantiation length)
             dataBuilder.EmitZeroPointer();  // No related type
             dataBuilder.EmitShort(0);       // No VTable
             dataBuilder.EmitShort(0);       // No interface map
             dataBuilder.EmitInt(_type.GetHashCode());
             OutputTypeManagerIndirection(factory, ref dataBuilder);
             OutputWritableData(factory, ref dataBuilder);
-            OutputOptionalFields(factory, ref dataBuilder);
 
             // Generic composition only meaningful if there's variance
             if ((flags & (uint)EETypeFlags.GenericVarianceFlag) != 0)

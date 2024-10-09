@@ -263,7 +263,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1222`__ | Constructor annotated with JsonConstructorAttribute is inaccessible. |
 |  __`SYSLIB1223`__ | Attributes deriving from JsonConverterAttribute are not supported by the source generator. |
 |  __`SYSLIB1224`__ | Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext. |
-|  __`SYSLIB1225`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1225`__ | Type includes ref like property, field or constructor parameter. |
 |  __`SYSLIB1226`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
 |  __`SYSLIB1227`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
 |  __`SYSLIB1228`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
@@ -310,3 +310,4 @@ Diagnostic id values for experimental APIs must not be recycled, as that could s
 |  __`SYSLIB5002`__ |     .NET 9 |     TBD | `SystemColors` alternate colors are experimental in .NET 9 |
 |  __`SYSLIB5003`__ |     .NET 9 |     TBD | `System.Runtime.Intrinsics.Arm.Sve` is experimental in .NET 9 |
 |  __`SYSLIB5004`__ |     .NET 9 |     TBD | `X86Base.DivRem` is experimental in .NET 9 since performance is not as optimized as `T.DivRem` |
+|  __`SYSLIB5005`__ |     .NET 9 |     TBD | `System.Formats.Nrbf` is experimental in .NET 9 |

@@ -98,9 +98,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_ShapesNotBroadcastCompatible()
+        public static void ThrowArgument_LengthsNotBroadcastCompatible()
         {
-            throw new ArgumentException(SR.ThrowArgument_ShapesNotBroadcastCompatible);
+            throw new ArgumentException(SR.ThrowArgument_LengthsNotBroadcastCompatible);
         }
 
         [DoesNotReturn]
@@ -221,6 +221,12 @@ namespace System
         internal static void ThrowArgument_StackShapesNotSame()
         {
             throw new ArgumentException(SR.ThrowArgument_StackShapesNotSame);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgument_CannotReshapeNonContiguousOrDense()
+        {
+            throw new ArgumentException(SR.Argument_CannotReshapeNonContiguousOrDense);
         }
     }
 }

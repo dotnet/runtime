@@ -414,6 +414,8 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
     m_loaderAllocator = GetAssembly()->GetLoaderAllocator();
     m_pSimpleName = m_pPEAssembly->GetSimpleName();
+    m_path = m_pPEAssembly->GetPath().GetUnicode();
+    _ASSERTE(m_path != NULL);
     m_baseAddress = m_pPEAssembly->HasLoadedPEImage() ? m_pPEAssembly->GetLoadedLayout()->GetBase() : NULL;
     if (m_pPEAssembly->IsReflectionEmit())
         m_dwTransientFlags |= IS_REFLECTION_EMIT;
@@ -471,11 +473,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_dwTypeCount = 0;
     m_dwExportedTypeCount = 0;
     m_dwCustomAttributeCount = 0;
-
-    if (m_AssemblyRefByNameTable == NULL)
-    {
-        Module::CreateAssemblyRefByNameTable(pamTracker);
-    }
 
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     m_pJitInlinerTrackingMap = NULL;
@@ -4872,59 +4869,6 @@ class CheckAsmOffsets
 };
 
 //-------------------------------------------------------------------------------
-
-#ifndef DACCESS_COMPILE
-
-void Module::CreateAssemblyRefByNameTable(AllocMemTracker *pamTracker)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    LoaderHeap *        pHeap       = GetLoaderAllocator()->GetLowFrequencyHeap();
-    IMDInternalImport * pImport     = GetMDImport();
-
-    DWORD               dwMaxRid    = pImport->GetCountWithTokenKind(mdtAssemblyRef);
-    if (dwMaxRid == 0)
-        return;
-
-    S_SIZE_T            dwAllocSize = S_SIZE_T(sizeof(LPWSTR)) * S_SIZE_T(dwMaxRid);
-    m_AssemblyRefByNameTable = (LPCSTR *) pamTracker->Track( pHeap->AllocMem(dwAllocSize) );
-
-    DWORD dwCount = 0;
-    for (DWORD rid=1; rid <= dwMaxRid; rid++)
-    {
-        mdAssemblyRef mdToken = TokenFromRid(rid,mdtAssemblyRef);
-        LPCSTR        szName;
-        HRESULT       hr;
-
-        hr = pImport->GetAssemblyRefProps(mdToken, NULL, NULL, &szName, NULL, NULL, NULL, NULL);
-
-        if (SUCCEEDED(hr))
-        {
-            m_AssemblyRefByNameTable[dwCount++] = szName;
-        }
-    }
-    m_AssemblyRefByNameCount = dwCount;
-}
-
-bool Module::HasReferenceByName(LPCUTF8 pModuleName)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    for (DWORD i=0; i < m_AssemblyRefByNameCount; i++)
-    {
-        if (0 == strcmp(pModuleName, m_AssemblyRefByNameTable[i]))
-            return true;
-    }
-
-    return false;
-}
-#endif
 
 #ifdef DACCESS_COMPILE
 void DECLSPEC_NORETURN ModuleBase::ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,

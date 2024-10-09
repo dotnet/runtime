@@ -66,14 +66,14 @@ namespace System.Threading.Tasks
                 throw new ArgumentOutOfRangeException(nameof(delay));
             }
 
-            if (delay == TimeSpan.Zero)
-            {
-                return Task.CompletedTask;
-            }
-
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
+            }
+
+            if (delay == TimeSpan.Zero)
+            {
+                return Task.CompletedTask;
             }
 
             DelayState state = new(cancellationToken);
@@ -161,14 +161,14 @@ namespace System.Threading.Tasks
                 return task;
             }
 
-            if (timeout == TimeSpan.Zero)
-            {
-                return Task.FromException(new TimeoutException());
-            }
-
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
+            }
+
+            if (timeout == TimeSpan.Zero)
+            {
+                return Task.FromException(new TimeoutException());
             }
 
             WaitAsyncState state = new(cancellationToken);

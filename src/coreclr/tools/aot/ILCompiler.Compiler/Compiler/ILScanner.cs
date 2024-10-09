@@ -559,7 +559,7 @@ namespace ILCompiler
                                 if (currentType == null)
                                     return vtable;
 
-                                BuildVTable(factory, currentType.BaseType?.ConvertToCanonForm(CanonicalFormKind.Specific), implType, vtable);
+                                BuildVTable(factory, currentType.BaseType, implType, vtable);
 
                                 IReadOnlyList<MethodDesc> slice = factory.VTable(currentType).Slots;
                                 foreach (MethodDesc decl in slice)
@@ -571,19 +571,19 @@ namespace ILCompiler
                                 return vtable;
                             }
 
-                            baseType = canonType.BaseType?.ConvertToCanonForm(CanonicalFormKind.Specific);
-                            if (!canonType.IsArray && baseType != null)
+                            baseType = type.BaseType;
+                            if (!type.IsArray && baseType != null)
                             {
                                 if (!vtables.TryGetValue(baseType, out List<MethodDesc> baseVtable))
                                     vtables.Add(baseType, baseVtable = BuildVTable(factory, baseType, baseType, new List<MethodDesc>()));
 
-                                if (!vtables.TryGetValue(canonType, out List<MethodDesc> vtable))
-                                    vtables.Add(canonType, vtable = BuildVTable(factory, canonType, canonType, new List<MethodDesc>()));
+                                if (!vtables.TryGetValue(type, out List<MethodDesc> vtable))
+                                    vtables.Add(type, vtable = BuildVTable(factory, type, type, new List<MethodDesc>()));
 
                                 for (int i = 0; i < baseVtable.Count; i++)
                                 {
                                     if (baseVtable[i] != vtable[i])
-                                        _overridenMethods.Add(baseVtable[i]);
+                                        _overridenMethods.Add(baseVtable[i].GetCanonMethodTarget(CanonicalFormKind.Specific));
                                 }
                             }
                         }
@@ -850,8 +850,9 @@ namespace ILCompiler
 
                         types.Add(t);
 
-                        // N.B. for ARM32, we would need to deal with > PointerSize alignments.
-                        //      GCStaticEEType does not currently set RequiresAlign8Flag
+                        // N.B. for ARM32, we would need to deal with > PointerSize alignments. We
+                        // currently don't support inlined thread statics on ARM32, regular GCStaticEEType
+                        // handles this with RequiresAlign8Flag
                         Debug.Assert(t.ThreadGcStaticFieldAlignment.AsInt <= factory.Target.PointerSize);
                         nextDataOffset = nextDataOffset.AlignUp(t.ThreadGcStaticFieldAlignment.AsInt);
 

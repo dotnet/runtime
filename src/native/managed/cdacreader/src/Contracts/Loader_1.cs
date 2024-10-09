@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -35,6 +36,31 @@ internal readonly struct Loader_1 : ILoader
         return (ModuleFlags)module.Flags;
     }
 
+    string ILoader.GetPath(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+
+        // TODO: [cdac] Add/use APIs on Target for reading strings in target endianness
+        TargetPointer addr = module.Path;
+        while (true)
+        {
+            // Read characters until we find the null terminator
+            char nameChar = _target.Read<char>(addr);
+            if (nameChar == 0)
+                break;
+
+            addr += sizeof(char);
+        }
+
+        int length = (int)(addr.Value - module.Path.Value);
+        if (length == 0)
+            return string.Empty;
+
+        Span<byte> span = stackalloc byte[length];
+        _target.ReadBuffer(module.Path, span);
+        return new string(MemoryMarshal.Cast<byte, char>(span));
+    }
+
     TargetPointer ILoader.GetLoaderAllocator(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
@@ -53,39 +79,6 @@ internal readonly struct Loader_1 : ILoader
         return module.Base;
     }
 
-    TargetPointer ILoader.GetMetadataAddress(ModuleHandle handle, out ulong size)
-    {
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        return module.GetLoadedMetadata(out size);
-    }
-
-    AvailableMetadataType ILoader.GetAvailableMetadataType(ModuleHandle handle)
-    {
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-
-        AvailableMetadataType flags = AvailableMetadataType.None;
-
-        if (module.DynamicMetadata != TargetPointer.Null)
-            flags |= AvailableMetadataType.ReadWriteSavedCopy;
-        else
-            flags |= AvailableMetadataType.ReadOnly;
-
-        // TODO(cdac) implement direct reading of unsaved ReadWrite metadata
-        return flags;
-    }
-
-    TargetPointer ILoader.GetReadWriteSavedMetadataAddress(ModuleHandle handle, out ulong size)
-    {
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        Data.DynamicMetadata dynamicMetadata = _target.ProcessedData.GetOrAdd<Data.DynamicMetadata>(module.DynamicMetadata);
-        TargetPointer result = dynamicMetadata.Data;
-        size = dynamicMetadata.Size;
-        return result;
-    }
-
-    TargetEcmaMetadata ILoader.GetReadWriteMetadata(ModuleHandle handle) => throw new NotImplementedException();
-
-
     ModuleLookupTables ILoader.GetLookupTables(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
@@ -95,6 +88,7 @@ internal readonly struct Loader_1 : ILoader
             module.MemberRefToDescMap,
             module.MethodDefToDescMap,
             module.TypeDefToMethodTableMap,
-            module.TypeRefToMethodTableMap);
+            module.TypeRefToMethodTableMap,
+            module.MethodDefToILCodeVersioningStateMap);
     }
 }

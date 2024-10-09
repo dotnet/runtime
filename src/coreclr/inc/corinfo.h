@@ -933,7 +933,6 @@ struct PatchpointInfo;
 // Cookie types consumed by the code generator (these are opaque values
 // not inspected by the code generator):
 
-typedef struct CORINFO_ASSEMBLY_STRUCT_*    CORINFO_ASSEMBLY_HANDLE;
 typedef struct CORINFO_MODULE_STRUCT_*      CORINFO_MODULE_HANDLE;
 typedef struct CORINFO_DEPENDENCY_STRUCT_*  CORINFO_DEPENDENCY_HANDLE;
 typedef struct CORINFO_CLASS_STRUCT_*       CORINFO_CLASS_HANDLE;
@@ -2324,18 +2323,9 @@ public:
             CORINFO_CLASS_HANDLE    cls
             ) = 0;
 
-    virtual CORINFO_MODULE_HANDLE getClassModule (
-            CORINFO_CLASS_HANDLE    cls
-            ) = 0;
-
-    // Returns the assembly that contains the module "mod".
-    virtual CORINFO_ASSEMBLY_HANDLE getModuleAssembly (
-            CORINFO_MODULE_HANDLE   mod
-            ) = 0;
-
-    // Returns the name of the assembly "assem".
-    virtual const char* getAssemblyName (
-            CORINFO_ASSEMBLY_HANDLE assem
+    // Returns the assembly name of the class "cls", or nullptr if there is none.    
+    virtual const char* getClassAssemblyName (
+            CORINFO_CLASS_HANDLE cls
             ) = 0;
 
     // Allocate and delete process-lifetime objects.  Should only be
@@ -2994,15 +2984,19 @@ public:
             size_t*               pRequiredBufferSize = nullptr
             ) = 0;
 
-    // Return method name as in metadata, or nullptr if there is none,
-    // and optionally return the class, enclosing class, and namespace names
-    // as in metadata.
+    // Return method name as in metadata, or nullptr if there is none, and
+    // optionally return the class, enclosing classes, and namespace name as
+    // in metadata. Enclosing classes are returned from inner-most enclosed class
+    // to outer-most, with nullptr in the array indicating that no more
+    // enclosing classes were left. The namespace returned corresponds to the
+    // outer most (potentially enclosing) class that was returned.
     // Suitable for non-debugging use.
     virtual const char* getMethodNameFromMetadata(
-            CORINFO_METHOD_HANDLE       ftn,                  /* IN */
-            const char                **className,            /* OUT */
-            const char                **namespaceName,        /* OUT */
-            const char                **enclosingClassName    /* OUT */
+            CORINFO_METHOD_HANDLE       ftn,                   /* IN */
+            const char**                className,             /* OUT */
+            const char**                namespaceName,         /* OUT */
+            const char**                enclosingClassNames,   /* OUT */
+            size_t                      maxEnclosingClassNames /* IN */
             ) = 0;
 
     // this function is for debugging only.  It returns a value that
