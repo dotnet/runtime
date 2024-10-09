@@ -47292,18 +47292,18 @@ void gc_heap::descr_generations (const char* msg)
 #endif //!TRACE_GC
 
 #ifdef STRESS_LOG
-    if (StressLog::StressLogOn(LF_GC, LL_INFO10))
+    if (StressLog::StressLogOn(LF_GC, LL_INFO1000))
     {
         gc_heap* hp = 0;
 #ifdef MULTIPLE_HEAPS
         hp= this;
 #endif //MULTIPLE_HEAPS
 
-        STRESS_LOG1(LF_GC, LL_INFO10, "GC Heap %p\n", hp);
+        STRESS_LOG1(LF_GC, LL_INFO1000, "GC Heap %p\n", hp);
         for (int n = max_generation; n >= 0; --n)
         {
 #ifndef USE_REGIONS
-            STRESS_LOG4(LF_GC, LL_INFO10, "    Generation %d [%p, %p] cur = %p\n",
+            STRESS_LOG4(LF_GC, LL_INFO1000, "    Generation %d [%p, %p] cur = %p\n",
                     n,
                     generation_allocation_start(generation_of(n)),
                     generation_allocation_limit(generation_of(n)),
@@ -47313,7 +47313,7 @@ void gc_heap::descr_generations (const char* msg)
             heap_segment* seg = generation_start_segment(generation_of(n));
             while (seg)
             {
-                STRESS_LOG4(LF_GC, LL_INFO10, "        Segment mem %p alloc = %p used %p committed %p\n",
+                STRESS_LOG4(LF_GC, LL_INFO1000, "        Segment mem %p alloc = %p used %p committed %p\n",
                         heap_segment_mem(seg),
                         heap_segment_allocated(seg),
                         heap_segment_used(seg),
