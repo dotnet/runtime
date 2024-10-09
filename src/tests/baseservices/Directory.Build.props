@@ -7,5 +7,6 @@
     <RunAnalyzers>true</RunAnalyzers>
     <NoWarn>$(NoWarn);xUnit1013</NoWarn>
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <SynthesizeIlasmAssemblyName>true</SynthesizeIlasmAssemblyName>
   </PropertyGroup>
 </Project>
