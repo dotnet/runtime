@@ -152,6 +152,11 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
             ptr[-1] = '{';
         else if (c == '%')
         {
+            while (isdigit(*ptr))
+            {
+                ptr++;
+            }
+
             argsPtr++;          // This format will consume one of the args
             if (*ptr == '%')
             {
