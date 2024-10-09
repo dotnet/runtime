@@ -42,6 +42,12 @@ struct _EventPipeProvider_Internal {
 	// True if the provider has been deleted, but that deletion
 	// has been deferred until tracing is stopped.
 	bool delete_deferred;
+	// The number of pending EventPipeProvider callbacks that have
+	// not completed.
+	int64_t callbacks_pending;
+	// Event object used to signal eventpipe provider deletion
+	// that all in flight callbacks have completed.
+	ep_rt_wait_event_handle_t callbacks_complete_event;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_PROVIDER_GETTER_SETTER)

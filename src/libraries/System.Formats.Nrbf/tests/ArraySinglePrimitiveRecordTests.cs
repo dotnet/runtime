@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Serialization;
+using System.Text;
 using Xunit;
 
 namespace System.Formats.Nrbf.Tests;
@@ -22,6 +24,51 @@ public class ArraySinglePrimitiveRecordTests : ReadTests
             yield return new object[] { size, true };
             yield return new object[] { size, false };
         }
+    }
+
+    [Fact]
+    public void DontCastBytesToBooleans()
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        writer.Write((byte)SerializationRecordType.ArraySinglePrimitive);
+        writer.Write(1); // object ID
+        writer.Write(2); // length
+        writer.Write((byte)PrimitiveType.Boolean); // element type
+        writer.Write((byte)0x01);
+        writer.Write((byte)0x02);
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+        stream.Position = 0;
+
+        SZArrayRecord<bool> serializationRecord = (SZArrayRecord<bool>)NrbfDecoder.Decode(stream);
+
+        bool[] bools = serializationRecord.GetArray();
+        bool a = bools[0];
+        Assert.True(a);
+        bool b = bools[1];
+        Assert.True(b);
+        bool c = a && b;
+        Assert.True(c);
+    }
+
+    [Fact]
+    public void DontCastBytesToDateTimes()
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        writer.Write((byte)SerializationRecordType.ArraySinglePrimitive);
+        writer.Write(1); // object ID
+        writer.Write(1); // length
+        writer.Write((byte)PrimitiveType.DateTime); // element type
+        writer.Write(ulong.MaxValue); // un-representable DateTime
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+        stream.Position = 0;
+
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
     [Theory]
@@ -94,6 +141,7 @@ public class ArraySinglePrimitiveRecordTests : ReadTests
         SZArrayRecord<T> arrayRecord = (SZArrayRecord<T>)NrbfDecoder.Decode(stream);
 
         Assert.Equal(size, arrayRecord.Length);
+        Assert.Equal(size, arrayRecord.FlattenedLength);
         T?[] output = arrayRecord.GetArray();
         Assert.Equal(input, output);
         Assert.Same(output, arrayRecord.GetArray());

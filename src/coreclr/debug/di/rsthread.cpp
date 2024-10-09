@@ -6451,6 +6451,126 @@ UINT_PTR * CordbNativeFrame::GetAddressOfRegister(CorDebugRegister regNum) const
     case REGISTER_RISCV64_T6:
         ret = (UINT_PTR*)&m_rd.T6;
         break;
+#elif defined(TARGET_LOONGARCH64)
+    case REGISTER_LOONGARCH64_PC:
+        ret = (UINT_PTR*)&m_rd.PC;
+        break;
+
+    case REGISTER_LOONGARCH64_RA:
+        ret = (UINT_PTR*)&m_rd.RA;
+        break;
+
+    case REGISTER_LOONGARCH64_TP:
+        ret = (UINT_PTR*)&m_rd.TP;
+        break;
+
+    case REGISTER_LOONGARCH64_A0:
+        ret = (UINT_PTR*)&m_rd.A0;
+        break;
+
+    case REGISTER_LOONGARCH64_A1:
+        ret = (UINT_PTR*)&m_rd.A1;
+        break;
+
+    case REGISTER_LOONGARCH64_A2:
+        ret = (UINT_PTR*)&m_rd.A2;
+        break;
+
+    case REGISTER_LOONGARCH64_A3:
+        ret = (UINT_PTR*)&m_rd.A3;
+        break;
+
+    case REGISTER_LOONGARCH64_A4:
+        ret = (UINT_PTR*)&m_rd.A4;
+        break;
+
+    case REGISTER_LOONGARCH64_A5:
+        ret = (UINT_PTR*)&m_rd.A5;
+        break;
+
+    case REGISTER_LOONGARCH64_A6:
+        ret = (UINT_PTR*)&m_rd.A6;
+        break;
+
+    case REGISTER_LOONGARCH64_A7:
+        ret = (UINT_PTR*)&m_rd.A7;
+        break;
+
+    case REGISTER_LOONGARCH64_T0:
+        ret = (UINT_PTR*)&m_rd.T0;
+        break;
+
+    case REGISTER_LOONGARCH64_T1:
+        ret = (UINT_PTR*)&m_rd.T1;
+        break;
+
+    case REGISTER_LOONGARCH64_T2:
+        ret = (UINT_PTR*)&m_rd.T2;
+        break;
+
+    case REGISTER_LOONGARCH64_T3:
+        ret = (UINT_PTR*)&m_rd.T3;
+        break;
+
+    case REGISTER_LOONGARCH64_T4:
+        ret = (UINT_PTR*)&m_rd.T4;
+        break;
+
+    case REGISTER_LOONGARCH64_T5:
+        ret = (UINT_PTR*)&m_rd.T5;
+        break;
+
+    case REGISTER_LOONGARCH64_T6:
+        ret = (UINT_PTR*)&m_rd.T6;
+        break;
+
+    case REGISTER_LOONGARCH64_T7:
+        ret = (UINT_PTR*)&m_rd.T7;
+        break;
+
+    case REGISTER_LOONGARCH64_T8:
+        ret = (UINT_PTR*)&m_rd.T8;
+        break;
+
+    case REGISTER_LOONGARCH64_X0:
+        ret = (UINT_PTR*)&m_rd.X0;
+        break;
+
+    case REGISTER_LOONGARCH64_S0:
+        ret = (UINT_PTR*)&m_rd.S0;
+        break;
+
+    case REGISTER_LOONGARCH64_S1:
+        ret = (UINT_PTR*)&m_rd.S1;
+        break;
+
+    case REGISTER_LOONGARCH64_S2:
+        ret = (UINT_PTR*)&m_rd.S2;
+        break;
+
+    case REGISTER_LOONGARCH64_S3:
+        ret = (UINT_PTR*)&m_rd.S3;
+        break;
+
+    case REGISTER_LOONGARCH64_S4:
+        ret = (UINT_PTR*)&m_rd.S4;
+        break;
+
+    case REGISTER_LOONGARCH64_S5:
+        ret = (UINT_PTR*)&m_rd.S5;
+        break;
+
+    case REGISTER_LOONGARCH64_S6:
+        ret = (UINT_PTR*)&m_rd.S6;
+        break;
+
+    case REGISTER_LOONGARCH64_S7:
+        ret = (UINT_PTR*)&m_rd.S7;
+        break;
+
+    case REGISTER_LOONGARCH64_S8:
+        ret = (UINT_PTR*)&m_rd.S8;
+        break;
 #endif
 
     default:
@@ -7132,6 +7252,11 @@ HRESULT CordbNativeFrame::GetLocalFloatingPointValue(DWORD index,
         (index <= REGISTER_ARM_D31)))
         return E_INVALIDARG;
     index -= REGISTER_ARM_D0;
+#elif defined(TARGET_RISCV64)
+    if (!((index >= REGISTER_RISCV64_F0) &&
+        (index <= REGISTER_RISCV64_F31)))
+        return E_INVALIDARG;
+    index -= REGISTER_RISCV64_F0;
 #else
     if (!((index >= REGISTER_X86_FPSTACK_0) &&
           (index <= REGISTER_X86_FPSTACK_7)))

@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Channels;
@@ -213,6 +214,14 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Set when CONNECTED is received.
     /// </summary>
     private SslApplicationProtocol _negotiatedApplicationProtocol;
+    /// <summary>
+    /// Set when CONNECTED is received.
+    /// </summary>
+    private TlsCipherSuite _negotiatedCipherSuite;
+    /// <summary>
+    /// Set when CONNECTED is received.
+    /// </summary>
+    private SslProtocols _negotiatedSslProtocol;
 
     /// <summary>
     /// Will contain TLS secret after CONNECTED event is received and store it into SSLKEYLOGFILE.
@@ -286,6 +295,17 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Final, negotiated application protocol.
     /// </summary>
     public SslApplicationProtocol NegotiatedApplicationProtocol => _negotiatedApplicationProtocol;
+
+    /// <summary>
+    /// Gets the cipher suite which was negotiated for this connection.
+    /// </summary>
+    [CLSCompliant(false)]
+    public TlsCipherSuite NegotiatedCipherSuite => _negotiatedCipherSuite;
+
+    /// <summary>
+    /// Gets a <see cref="System.Security.Authentication.SslProtocols"/> value that indicates the security protocol used to authenticate this connection.
+    /// </summary>
+    public SslProtocols SslProtocol => _negotiatedSslProtocol;
 
     /// <inheritdoc />
     public override string ToString() => _handle.ToString();
@@ -608,6 +628,15 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private unsafe int HandleEventConnected(ref CONNECTED_DATA data)
     {
         _negotiatedApplicationProtocol = new SslApplicationProtocol(new Span<byte>(data.NegotiatedAlpn, data.NegotiatedAlpnLength).ToArray());
+
+        QUIC_HANDSHAKE_INFO info = MsQuicHelpers.GetMsQuicParameter<QUIC_HANDSHAKE_INFO>(_handle, QUIC_PARAM_TLS_HANDSHAKE_INFO);
+
+        // QUIC_CIPHER_SUITE and QUIC_TLS_PROTOCOL_VERSION use the same values as the corresponding TlsCipherSuite and SslProtocols members.
+        _negotiatedCipherSuite = (TlsCipherSuite)info.CipherSuite;
+        _negotiatedSslProtocol = (SslProtocols)info.TlsProtocolVersion;
+
+        // currently only TLS 1.3 is defined for QUIC
+        Debug.Assert(_negotiatedSslProtocol == SslProtocols.Tls13, $"Unexpected TLS version {info.TlsProtocolVersion}");
 
         QuicAddr remoteAddress = MsQuicHelpers.GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS);
         _remoteEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(&remoteAddress);

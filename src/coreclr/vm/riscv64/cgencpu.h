@@ -104,6 +104,8 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
+#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
+#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 //**********************************************************************
 // Frames
@@ -206,14 +208,14 @@ inline void SetRA( T_CONTEXT * context, TADDR ip) {
 inline TADDR GetReg(T_CONTEXT * context, int Regnum)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(Regnum >= 0 && Regnum < 32 );
+    _ASSERTE(Regnum >= 0 && Regnum < 32);
      return (TADDR)(&context->R0 + Regnum);
 }
 
 inline void SetReg(T_CONTEXT * context, int Regnum, PCODE RegContent)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(Regnum >= 0 && Regnum <=28 );
+    _ASSERTE(Regnum >= 0 && Regnum < 32);
     *(&context->R0 + Regnum) = RegContent;
 }
 
@@ -413,8 +415,6 @@ public:
     void EmitProlog(unsigned short cIntRegArgs, unsigned short cFpRegArgs, unsigned short cbStackSpace = 0);
     void EmitEpilog();
 };
-
-extern "C" void SinglecastDelegateInvokeStub();
 
 
 // preferred alignment for data

@@ -449,7 +449,7 @@ namespace Internal.JitInterface
             var relocs = _codeRelocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
 
-            int alignment = JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
+            int alignment = JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) && !JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_ENABLE_CFG) ?
                 _compilation.NodeFactory.Target.MinimumFunctionAlignment :
                 _compilation.NodeFactory.Target.OptimumFunctionAlignment;
 
@@ -1300,9 +1300,10 @@ namespace Internal.JitInterface
         {
             // Initialize OUT fields
             info->devirtualizedMethod = null;
-            info->requiresInstMethodTableArg = false;
             info->exactContext = null;
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
+            info->requiresInstMethodTableArg = false;
+            info->wasArrayInterfaceDevirt = false;
 
             TypeDesc objType = HandleToObject(info->objClass);
 
@@ -1519,6 +1520,17 @@ namespace Internal.JitInterface
             TypeDesc comparand = HandleToObject(elemType);
             TypeDesc comparer = IL.Stubs.ComparerIntrinsics.GetEqualityComparerForType(comparand);
             return comparer != null ? ObjectToHandle(comparer) : null;
+        }
+
+        private CORINFO_CLASS_STRUCT_* getSZArrayHelperEnumeratorClass(CORINFO_CLASS_STRUCT_* elemType)
+        {
+            TypeDesc elementType = HandleToObject(elemType);
+            MetadataType placeholderType = _compilation.TypeSystemContext.SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
+            if (placeholderType == null)
+            {
+                return null;
+            }
+            return ObjectToHandle(placeholderType.MakeInstantiatedType(elementType));
         }
 
         private bool isIntrinsicType(CORINFO_CLASS_STRUCT_* classHnd)
@@ -2092,12 +2104,17 @@ namespace Internal.JitInterface
             return (uint)result;
         }
 
-        private CORINFO_MODULE_STRUCT_* getClassModule(CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException("getClassModule"); }
-        private CORINFO_ASSEMBLY_STRUCT_* getModuleAssembly(CORINFO_MODULE_STRUCT_* mod)
-        { throw new NotImplementedException("getModuleAssembly"); }
-        private byte* getAssemblyName(CORINFO_ASSEMBLY_STRUCT_* assem)
-        { throw new NotImplementedException("getAssemblyName"); }
+        private byte* getClassAssemblyName(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            if (type is MetadataType mdType)
+            {
+                return (byte*)GetPin(StringToUTF8(mdType.Module.Assembly.GetName().Name));
+            }
+
+            return null;
+        }
 
 #pragma warning disable CA1822 // Mark members as static
         private void* LongLifetimeMalloc(UIntPtr sz)
@@ -2902,18 +2919,13 @@ namespace Internal.JitInterface
             TypeDesc type1 = HandleToObject(cls1);
             TypeDesc type2 = HandleToObject(cls2);
 
-            // If we have a mixture of shared and unshared types,
-            // consider the unshared type as more specific.
-            bool isType1CanonSubtype = type1.IsCanonicalSubtype(CanonicalFormKind.Any);
-            bool isType2CanonSubtype = type2.IsCanonicalSubtype(CanonicalFormKind.Any);
-            if (isType1CanonSubtype != isType2CanonSubtype)
+            // If both types have the same type definition while
+            // hnd1 is shared and hnd2 is not - consider hnd2 more specific.
+            if (type1.HasSameTypeDefinition(type2))
             {
-                // Only one of type1 and type2 is shared.
-                // type2 is more specific if type1 is the shared type.
-                return isType1CanonSubtype;
+                return type1.IsCanonicalSubtype(CanonicalFormKind.Any) && !type2.IsCanonicalSubtype(CanonicalFormKind.Any);
             }
 
-            // Otherwise both types are either shared or not shared.
             // Look for a common parent type.
             TypeDesc merged = TypeExtensions.MergeTypesToCommonParent(type1, type2);
 
@@ -3106,7 +3118,7 @@ namespace Internal.JitInterface
             return ObjectToHandle(fieldDesc.OwningType);
         }
 
-        private CorInfoType getFieldType(CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* memberParent)
+        private CorInfoType getFieldType(CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* fieldOwnerHint)
         {
             FieldDesc fieldDesc = HandleToObject(field);
             TypeDesc fieldType = fieldDesc.FieldType;
@@ -3373,11 +3385,10 @@ namespace Internal.JitInterface
             return PrintFromUtf16(method.Name, buffer, bufferSize, requiredBufferSize);
         }
 
-        private static string getMethodNameFromMetadataImpl(MethodDesc method, out string className, out string namespaceName, out string enclosingClassName)
+        private static string getMethodNameFromMetadataImpl(MethodDesc method, out string className, out string namespaceName, string[] enclosingClassName)
         {
             className = null;
             namespaceName = null;
-            enclosingClassName = null;
 
             string result = method.Name;
 
@@ -3389,10 +3400,14 @@ namespace Internal.JitInterface
 
                 // Query enclosingClassName when the method is in a nested class
                 // and get the namespace of enclosing classes (nested class's namespace is empty)
-                var containingType = owningType.ContainingType;
-                if (containingType != null)
+                DefType containingType = owningType;
+                for (int i = 0; i < enclosingClassName.Length; i++)
                 {
-                    enclosingClassName = containingType.Name;
+                    containingType = containingType.ContainingType;
+                    if (containingType == null)
+                        break;
+
+                    enclosingClassName[i] = containingType.Name;
                     namespaceName = containingType.Namespace;
                 }
             }
@@ -3400,9 +3415,12 @@ namespace Internal.JitInterface
             return result;
         }
 
-        private byte* getMethodNameFromMetadata(CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName, byte** enclosingClassName)
+        private byte* getMethodNameFromMetadata(CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName, byte** enclosingClassNames, nuint maxEnclosingClassNames)
         {
             MethodDesc method = HandleToObject(ftn);
+
+            for (nuint i = 0; i < maxEnclosingClassNames; i++)
+                enclosingClassNames[i] = null;
 
             if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
             {
@@ -3412,15 +3430,18 @@ namespace Internal.JitInterface
                 if (className != null)
                     *className = reader.GetTypeNamePointer(owningType.Handle);
                 if (namespaceName != null)
-                *namespaceName = reader.GetTypeNamespacePointer(owningType.Handle);
+                    *namespaceName = reader.GetTypeNamespacePointer(owningType.Handle);
 
                 // Query enclosingClassName when the method is in a nested class
                 // and get the namespace of enclosing classes (nested class's namespace is empty)
-                var containingType = owningType.ContainingType as EcmaType;
-                if (containingType != null)
+                EcmaType containingType = owningType;
+                for (nuint i = 0; i < maxEnclosingClassNames; i++)
                 {
-                    if (enclosingClassName != null)
-                        *enclosingClassName = reader.GetTypeNamePointer(containingType.Handle);
+                    containingType = containingType.ContainingType as EcmaType;
+                    if (containingType == null)
+                        break;
+
+                    enclosingClassNames[i] = reader.GetTypeNamePointer(containingType.Handle);
                     if (namespaceName != null)
                         *namespaceName = reader.GetTypeNamespacePointer(containingType.Handle);
                 }
@@ -3432,16 +3453,16 @@ namespace Internal.JitInterface
                 string result;
                 string classResult;
                 string namespaceResult;
-                string enclosingResult;
+                string[] enclosingResults = new string[maxEnclosingClassNames];
 
-                result = getMethodNameFromMetadataImpl(method, out classResult, out namespaceResult, out enclosingResult);
+                result = getMethodNameFromMetadataImpl(method, out classResult, out namespaceResult, enclosingResults);
 
                 if (className != null)
                     *className = classResult != null ? (byte*)GetPin(StringToUTF8(classResult)) : null;
                 if (namespaceName != null)
                     *namespaceName = namespaceResult != null ? (byte*)GetPin(StringToUTF8(namespaceResult)) : null;
-                if (enclosingClassName != null)
-                    *enclosingClassName = enclosingResult != null ? (byte*)GetPin(StringToUTF8(enclosingResult)) : null;
+                for (nuint i = 0; i < maxEnclosingClassNames; i++)
+                    enclosingClassNames[i] = enclosingResults[i] != null ? (byte*)GetPin(StringToUTF8(enclosingResults[i])) : null;
 
                 return result != null ? (byte*)GetPin(StringToUTF8(result)) : null;
             }
@@ -4384,11 +4405,43 @@ namespace Internal.JitInterface
                 // By policy we code review all changes into corelib, such that failing to use an instruction
                 // set is not a reason to not support usage of it. Except for functions which check if a given
                 // feature is supported or hardware accelerated.
-                if (!isMethodDefinedInCoreLib() ||
-                    MethodBeingCompiled.Name == "get_IsSupported" ||
-                    MethodBeingCompiled.Name == "get_IsHardwareAccelerated")
+                if (!isMethodDefinedInCoreLib())
                 {
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
+                }
+                else
+                {
+                    ReadOnlySpan<char> methodName = MethodBeingCompiled.Name.AsSpan();
+
+                    if (methodName.StartsWith("System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector"))
+                    {
+                        // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+                        // but, they all prefix the qualified name of the interface first, so we'll check for that and
+                        // skip the prefix before trying to resolve the method.
+
+                        ReadOnlySpan<char> partialMethodName = methodName.Slice(70);
+
+                        if (partialMethodName.StartsWith("<T>,T>."))
+                        {
+                            methodName = partialMethodName.Slice(7);
+                        }
+                        else if (partialMethodName.StartsWith("64<T>,T>."))
+                        {
+                            methodName = partialMethodName.Slice(9);
+                        }
+                        else if (partialMethodName.StartsWith("128<T>,T>.") ||
+                                 partialMethodName.StartsWith("256<T>,T>.") ||
+                                 partialMethodName.StartsWith("512<T>,T>."))
+                        {
+                            methodName = partialMethodName.Slice(10);
+                        }
+                    }
+
+                    if (methodName.Equals("get_IsSupported", StringComparison.Ordinal) ||
+                        methodName.Equals("get_IsHardwareAccelerated", StringComparison.Ordinal))
+                    {
+                        _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
+                    }
                 }
             }
             return supportEnabled;
@@ -4422,6 +4475,11 @@ namespace Internal.JitInterface
                 }
             }
             return false;
+        }
+
+        private CORINFO_METHOD_STRUCT_* getSpecialCopyHelper(CORINFO_CLASS_STRUCT_* type)
+        {
+            throw new NotImplementedException("getSpecialCopyHelper");
         }
     }
 }

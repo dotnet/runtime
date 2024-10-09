@@ -8,168 +8,6 @@
 
 // Flowgraph Construction and Maintenance
 
-void Compiler::fgInit()
-{
-    impInit();
-
-    /* Initialization for fgWalkTreePre() and fgWalkTreePost() */
-
-    fgFirstBBScratch = nullptr;
-
-#ifdef DEBUG
-    fgPrintInlinedMethods = false;
-#endif // DEBUG
-
-    /* We haven't yet computed the bbPreds lists */
-    fgPredsComputed = false;
-
-    /* We haven't yet computed block weights */
-    fgCalledCount = BB_ZERO_WEIGHT;
-
-    /* Initialize the basic block list */
-
-    fgFirstBB          = nullptr;
-    fgLastBB           = nullptr;
-    fgFirstColdBlock   = nullptr;
-    fgEntryBB          = nullptr;
-    fgOSREntryBB       = nullptr;
-    fgEntryBBExtraRefs = 0;
-
-    fgFirstFuncletBB  = nullptr;
-    fgFuncletsCreated = false;
-
-    fgBBcount = 0;
-
-#ifdef DEBUG
-    fgBBOrder = nullptr;
-#endif // DEBUG
-
-    fgMightHaveNaturalLoops = false;
-    fgBBNumMax              = 0;
-    fgEdgeCount             = 0;
-    fgDomBBcount            = 0;
-    fgBBVarSetsInited       = false;
-    fgReturnCount           = 0;
-    fgThrowCount            = 0;
-
-    m_dfsTree          = nullptr;
-    m_loops            = nullptr;
-    m_loopSideEffects  = nullptr;
-    m_blockToLoop      = nullptr;
-    m_domTree          = nullptr;
-    m_reachabilitySets = nullptr;
-
-    // Initialize BlockSet data.
-    fgCurBBEpoch             = 0;
-    fgCurBBEpochSize         = 0;
-    fgBBSetCountInSizeTUnits = 0;
-
-    genReturnBB    = nullptr;
-    genReturnLocal = BAD_VAR_NUM;
-
-#ifdef SWIFT_SUPPORT
-    genReturnErrorLocal = BAD_VAR_NUM;
-#endif // SWIFT_SUPPORT
-
-    /* We haven't reached the global morphing phase */
-    fgGlobalMorph     = false;
-    fgGlobalMorphDone = false;
-
-    fgModified = false;
-
-#ifdef DEBUG
-    fgSafeBasicBlockCreation = true;
-    fgSafeFlowEdgeCreation   = true;
-#endif // DEBUG
-
-    fgLocalVarLivenessDone = false;
-    fgIsDoingEarlyLiveness = false;
-    fgDidEarlyLiveness     = false;
-
-    /* Statement list is not threaded yet */
-
-    fgNodeThreading = NodeThreading::None;
-
-    // Initialize the logic for adding code. This is used to insert code such
-    // as the code that raises an exception when an array range check fails.
-    fgAddCodeList   = nullptr;
-    fgAddCodeDscMap = nullptr;
-
-    /* Keep track of the max count of pointer arguments */
-    fgPtrArgCntMax = 0;
-
-    /* This global flag is set whenever we remove a statement */
-    fgStmtRemoved = false;
-
-    // This global flag is set when we create throw helper blocks
-    fgRngChkThrowAdded = false;
-
-    /* Keep track of whether or not EH statements have been optimized */
-    fgOptimizedFinally = false;
-
-    /* We will record a list of all BBJ_RETURN blocks here */
-    fgReturnBlocks = nullptr;
-
-    fgUsedSharedTemps = nullptr;
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-    ehMaxHndNestingCount = 0;
-#endif // FEATURE_EH_WINDOWS_X86
-
-    /* Init the fgBigOffsetMorphingTemps to be BAD_VAR_NUM. */
-    for (int i = 0; i < TYP_COUNT; i++)
-    {
-        fgBigOffsetMorphingTemps[i] = BAD_VAR_NUM;
-    }
-
-    fgNoStructPromotion      = false;
-    fgNoStructParamPromotion = false;
-
-    optValnumCSE_phase = false; // referenced in fgMorphSmpOp()
-
-#ifdef DEBUG
-    fgNormalizeEHDone = false;
-#endif // DEBUG
-
-#ifdef DEBUG
-    if (!compIsForInlining())
-    {
-        const int noStructPromotionValue = JitConfig.JitNoStructPromotion();
-        assert(0 <= noStructPromotionValue && noStructPromotionValue <= 2);
-        if (noStructPromotionValue == 1)
-        {
-            fgNoStructPromotion = true;
-        }
-        if (noStructPromotionValue == 2)
-        {
-            fgNoStructParamPromotion = true;
-        }
-    }
-#endif // DEBUG
-
-#ifdef FEATURE_SIMD
-    fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
-#endif
-
-    fgHasSwitch                  = false;
-    fgPgoDisabled                = false;
-    fgPgoSchema                  = nullptr;
-    fgPgoData                    = nullptr;
-    fgPgoSchemaCount             = 0;
-    fgNumProfileRuns             = 0;
-    fgPgoBlockCounts             = 0;
-    fgPgoEdgeCounts              = 0;
-    fgPgoClassProfiles           = 0;
-    fgPgoMethodProfiles          = 0;
-    fgPgoInlineePgo              = 0;
-    fgPgoInlineeNoPgo            = 0;
-    fgPgoInlineeNoPgoSingleBlock = 0;
-    fgCountInstrumentor          = nullptr;
-    fgHistogramInstrumentor      = nullptr;
-    fgValueInstrumentor          = nullptr;
-    fgPredListSortVector         = nullptr;
-}
-
 //------------------------------------------------------------------------
 // fgEnsureFirstBBisScratch: Ensure that fgFirstBB is a scratch BasicBlock
 //
@@ -794,7 +632,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
 // Note that the successor block's bbRefs is not changed, since it has the same number of
 // references as before, just from a different predecessor block.
 //
-// Also note this may cause sorting of the pred list.
+// Also note this may cause reordering of the pred list.
 //
 void Compiler::fgReplacePred(FlowEdge* edge, BasicBlock* const newPred)
 {
@@ -802,13 +640,18 @@ void Compiler::fgReplacePred(FlowEdge* edge, BasicBlock* const newPred)
     assert(newPred != nullptr);
     assert(edge->getSourceBlock() != newPred);
 
-    edge->setSourceBlock(newPred);
-
-    // We may now need to reorder the pred list.
+    // Remove the edge, modify it, then add it back
     //
-    BasicBlock* succBlock = edge->getDestinationBlock();
-    assert(succBlock != nullptr);
-    succBlock->ensurePredListOrder(this);
+    BasicBlock* const target  = edge->getDestinationBlock();
+    BasicBlock* const oldPred = edge->getSourceBlock();
+    FlowEdge**        listp   = fgGetPredInsertPoint(oldPred, target);
+    assert(*listp == edge);
+    *listp = edge->getNextPredEdge();
+    edge->setSourceBlock(newPred);
+    listp = fgGetPredInsertPoint(newPred, target);
+    edge->setNextPredEdge(*listp);
+    *listp = edge;
+    assert(target->checkPredListOrder());
 }
 
 /*****************************************************************************
@@ -5100,23 +4943,13 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
     // Set weight for newBlock
     //
-    if (curr->KindIs(BBJ_ALWAYS))
+    FlowEdge* const currNewEdge = fgGetPredForBlock(newBlock, curr);
+    newBlock->bbWeight          = currNewEdge->getLikelyWeight();
+    newBlock->CopyFlags(curr, BBF_PROF_WEIGHT);
+
+    if (newBlock->bbWeight == BB_ZERO_WEIGHT)
     {
-        newBlock->inheritWeight(curr);
-    }
-    else
-    {
-        if (curr->hasProfileWeight())
-        {
-            FlowEdge* const currNewEdge = fgGetPredForBlock(newBlock, curr);
-            newBlock->setBBProfileWeight(currNewEdge->getLikelyWeight());
-        }
-        else
-        {
-            // Todo: use likelihood even w/o profile?
-            //
-            newBlock->inheritWeightPercentage(curr, 50);
-        }
+        newBlock->bbSetRunRarely();
     }
 
     // The bbLiveIn and bbLiveOut are both equal to the bbLiveIn of 'succ'
@@ -5537,8 +5370,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 //   renumber the blocks, none of them actually change number, but we shrink the
 //   maximum assigned block number. This affects the block set epoch).
 //
-//   As a consequence of renumbering, block pred lists may need to be reordered.
-//
 bool Compiler::fgRenumberBlocks()
 {
     assert(fgPredsComputed);
@@ -5579,10 +5410,6 @@ bool Compiler::fgRenumberBlocks()
     //
     if (renumbered)
     {
-        for (BasicBlock* const block : Blocks())
-        {
-            block->ensurePredListOrder(this);
-        }
         JITDUMP("\n*************** After renumbering the basic blocks\n");
         JITDUMPEXEC(fgDispBasicBlocks());
         JITDUMPEXEC(fgDispHandlerTab());
@@ -6883,6 +6710,39 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
 #endif
 
     return newBlk;
+}
+
+//-----------------------------------------------------------------------------
+// fgNewBBatTryRegionEnd: Creates and inserts a new block at the end of the specified
+// try region, updating the end pointers in the EH table as necessary.
+//
+// Arguments:
+//    jumpKind - The jump kind of the new block
+//    tryIndex - The index of the try region to insert the new block in
+//
+// Returns:
+//    The new block
+//
+BasicBlock* Compiler::fgNewBBatTryRegionEnd(BBKinds jumpKind, unsigned tryIndex)
+{
+    EHblkDsc*         HBtab      = ehGetDsc(tryIndex);
+    BasicBlock* const oldTryBeg  = HBtab->ebdTryBeg;
+    BasicBlock* const oldTryLast = HBtab->ebdTryLast;
+    BasicBlock* const newBlock   = fgNewBBafter(jumpKind, oldTryLast, /* extendRegion */ false);
+    newBlock->setTryIndex(tryIndex);
+    newBlock->copyHndIndex(oldTryBeg);
+
+    // Update this try region's (and all parent try regions') last block pointer
+    //
+    for (unsigned XTnum = tryIndex; (XTnum < compHndBBtabCount) && (HBtab->ebdTryLast == oldTryLast); XTnum++, HBtab++)
+    {
+        assert((XTnum == tryIndex) || (XTnum == ehGetEnclosingTryIndex(XTnum - 1)));
+        fgSetTryEnd(HBtab, newBlock);
+    }
+
+    assert(newBlock->getTryIndex() == tryIndex);
+    assert(BasicBlock::sameHndRegion(newBlock, oldTryBeg));
+    return newBlock;
 }
 
 //------------------------------------------------------------------------

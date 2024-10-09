@@ -92,7 +92,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             string bundleDirectory = GetUniqueSubdirectory("bundle");
             var bundler = new Bundler(
-                Binaries.GetExeFileNameForCurrentPlatform(AppName),
+                Binaries.GetExeName(AppName),
                 bundleDirectory,
                 options,
                 targetFrameworkVersion: bundleVersion,

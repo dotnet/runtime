@@ -105,6 +105,9 @@ CORINFO_CLASS_HANDLE getDefaultComparerClass(
 CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
           CORINFO_CLASS_HANDLE elemType) override;
 
+CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(
+          CORINFO_CLASS_HANDLE elemType) override;
+
 void expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_METHOD_HANDLE callerHandle,
@@ -193,14 +196,8 @@ bool isValueClass(
 uint32_t getClassAttribs(
           CORINFO_CLASS_HANDLE cls) override;
 
-CORINFO_MODULE_HANDLE getClassModule(
+const char* getClassAssemblyName(
           CORINFO_CLASS_HANDLE cls) override;
-
-CORINFO_ASSEMBLY_HANDLE getModuleAssembly(
-          CORINFO_MODULE_HANDLE mod) override;
-
-const char* getAssemblyName(
-          CORINFO_ASSEMBLY_HANDLE assem) override;
 
 void* LongLifetimeMalloc(
           size_t sz) override;
@@ -395,7 +392,7 @@ CORINFO_CLASS_HANDLE getFieldClass(
 CorInfoType getFieldType(
           CORINFO_FIELD_HANDLE field,
           CORINFO_CLASS_HANDLE* structType,
-          CORINFO_CLASS_HANDLE memberParent) override;
+          CORINFO_CLASS_HANDLE fieldOwnerHint) override;
 
 unsigned getFieldOffset(
           CORINFO_FIELD_HANDLE field) override;
@@ -507,7 +504,8 @@ const char* getMethodNameFromMetadata(
           CORINFO_METHOD_HANDLE ftn,
           const char** className,
           const char** namespaceName,
-          const char** enclosingClassName) override;
+          const char** enclosingClassNames,
+          size_t maxEnclosingClassNames) override;
 
 unsigned getMethodHash(
           CORINFO_METHOD_HANDLE ftn) override;
@@ -740,6 +738,9 @@ uint32_t getExpectedTargetArchitecture() override;
 uint32_t getJitFlags(
           CORJIT_FLAGS* flags,
           uint32_t sizeInBytes) override;
+
+CORINFO_METHOD_HANDLE getSpecialCopyHelper(
+          CORINFO_CLASS_HANDLE type) override;
 
 /**********************************************************************************/
 // clang-format on
