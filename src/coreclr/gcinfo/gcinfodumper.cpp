@@ -359,7 +359,11 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
                 break;
             }
 #elif defined(TARGET_LOONGARCH64)
-            bool isVolatile = (iReg == 0 || (iReg >= 4 && iReg <= 21));
+            if (iEncodedReg > 1)
+            {
+                iEncodedReg++; // We have to compensate for not tracking tp
+            }
+            bool isVolatile = (iReg == 0 || (iReg >= 3 && iReg <= 20));
             if (ctx == 0)
             {
                 if (!isVolatile)

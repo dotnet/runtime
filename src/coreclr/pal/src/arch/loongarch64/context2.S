@@ -96,7 +96,6 @@ LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT):
     andi  $t1, $r21, (1 << CONTEXT_INTEGER_BIT)
     beqz  $t1, LOCAL_LABEL(No_Restore_CONTEXT_INTEGER)
 
-    ld.d  $tp, $a0, CONTEXT_Tp
     ld.d  $a1, $a0, CONTEXT_A1
     ld.d  $a2, $a0, CONTEXT_A2
     ld.d  $a3, $a0, CONTEXT_A3
@@ -185,7 +184,6 @@ LOCAL_LABEL(Done_CONTEXT_CONTROL):
     ld.d  $t1, $sp, 8
     ld.d  $t3, $sp, 16
 
-    st.d  $tp, $a0, CONTEXT_Tp
     st.d  $a0, $a0, CONTEXT_A0
     st.d  $a1, $a0, CONTEXT_A1
     st.d  $a2, $a0, CONTEXT_A2

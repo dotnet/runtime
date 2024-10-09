@@ -159,10 +159,9 @@ struct TransitionBlock
             INT64 s6;
             INT64 s7;
             INT64 s8;
-            INT64 tp;
         };
     };
-    //TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
+    TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
     ArgumentRegisters       m_argumentRegisters;
 #elif defined(TARGET_RISCV64)
     union {
