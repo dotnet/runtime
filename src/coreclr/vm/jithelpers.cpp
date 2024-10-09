@@ -1036,19 +1036,6 @@ HCIMPLEND_RAW
 //
 //========================================================================
 
-TypeHandle::CastResult STDCALL ObjIsInstanceOfCached(Object *pObject, TypeHandle toTypeHnd)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pObject));
-    } CONTRACTL_END;
-
-    MethodTable* pMT = pObject->GetMethodTable();
-    return CastCache::TryGetFromCache(pMT, toTypeHnd);
-}
-
 BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException)
 {
     CONTRACTL {
@@ -2097,7 +2084,7 @@ extern "C" void* QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnSt
 
     if (staticTH.IsNull())
     {
-        // This may be NULL on input for cases where the methodHnd is not an interface method, or if getting the method table from the 
+        // This may be NULL on input for cases where the methodHnd is not an interface method, or if getting the method table from the
         // MethodDesc will return an exact type.
         if (pStaticMD->IsInterface())
         {
@@ -2688,39 +2675,6 @@ HCIMPLEND
 
 /*************************************************************/
 
-#ifdef FEATURE_EH_FUNCLETS
-void ThrowNew(OBJECTREF oref)
-{
-    if (oref == 0)
-        DispatchManagedException(kNullReferenceException);
-    else
-    if (!IsException(oref->GetMethodTable()))
-    {
-        GCPROTECT_BEGIN(oref);
-
-        WrapNonCompliantException(&oref);
-
-        GCPROTECT_END();
-    }
-    else
-    {   // We know that the object derives from System.Exception
-
-        // If the flag indicating ForeignExceptionRaise has been set,
-        // then do not clear the "_stackTrace" field of the exception object.
-        if (GetThread()->GetExceptionState()->IsRaisingForeignException())
-        {
-            ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
-        }
-        else
-        {
-            ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
-        }
-    }
-
-    DispatchManagedException(oref);
-}
-#endif // FEATURE_EH_FUNCLETS
-
 HCIMPL1(void, IL_Throw,  Object* obj)
 {
     FCALL_CONTRACT;
@@ -2730,22 +2684,58 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
     FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
 
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
     OBJECTREF oref = ObjectToOBJECTREF(obj);
+
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        Thread *pThread = GetThread();
+
+        FrameWithCookie<SoftwareExceptionFrame> exceptionFrame;
+        *(&exceptionFrame)->GetGSCookiePtr() = GetProcessGSCookie();
+        RtlCaptureContext(exceptionFrame.GetContext());
+        exceptionFrame.InitAndLink(pThread);
+
+        FC_CAN_TRIGGER_GC();
+
+        if (oref == 0)
+            DispatchManagedException(kNullReferenceException);
+        else
+        if (!IsException(oref->GetMethodTable()))
+        {
+            GCPROTECT_BEGIN(oref);
+
+            WrapNonCompliantException(&oref);
+
+            GCPROTECT_END();
+        }
+        else
+        {   // We know that the object derives from System.Exception
+
+            // If the flag indicating ForeignExceptionRaise has been set,
+            // then do not clear the "_stackTrace" field of the exception object.
+            if (pThread->GetExceptionState()->IsRaisingForeignException())
+            {
+                ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
+            }
+            else
+            {
+                ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
+            }
+        }
+
+        DispatchManagedException(oref, exceptionFrame.GetContext());
+        FC_CAN_TRIGGER_GC_END();
+        UNREACHABLE();
+    }
+#endif // FEATURE_EH_FUNCLETS
+
+    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
 
 #if defined(_DEBUG) && defined(TARGET_X86)
     __helperframe.InsureInit(NULL);
     g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
 #endif // defined(_DEBUG) && defined(TARGET_X86)
-
-#ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        ThrowNew(oref);
-        UNREACHABLE();
-    }
-#endif
 
     if (oref == 0)
         COMPlusThrow(kNullReferenceException);
@@ -2781,48 +2771,47 @@ HCIMPLEND
 
 /*************************************************************/
 
-#ifdef FEATURE_EH_FUNCLETS
-void RethrowNew()
-{
-    Thread *pThread = GetThread();
-
-    ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
-
-    CONTEXT exceptionContext;
-    RtlCaptureContext(&exceptionContext);
-
-    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, &exceptionContext, ExKind::None);
-
-    GCPROTECT_BEGIN(exInfo.m_exception);
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
-
-    pThread->IncPreventAbort();
-
-    //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
-    CALL_MANAGED_METHOD_NORET(args)
-    GCPROTECT_END();
-}
-#endif // FEATURE_EH_FUNCLETS
-
 HCIMPL0(void, IL_Rethrow)
 {
     FCALL_CONTRACT;
 
     FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
 
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
 #ifdef FEATURE_EH_FUNCLETS
     if (g_isNewExceptionHandlingEnabled)
     {
-        RethrowNew();
+        Thread *pThread = GetThread();
+
+        FrameWithCookie<SoftwareExceptionFrame> exceptionFrame;
+        *(&exceptionFrame)->GetGSCookiePtr() = GetProcessGSCookie();
+        RtlCaptureContext(exceptionFrame.GetContext());
+        exceptionFrame.InitAndLink(pThread);
+
+        ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+
+        ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, exceptionFrame.GetContext(), ExKind::None);
+
+        FC_CAN_TRIGGER_GC();
+
+        GCPROTECT_BEGIN(exInfo.m_exception);
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
+        DECLARE_ARGHOLDER_ARRAY(args, 2);
+
+        args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
+        args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+        pThread->IncPreventAbort();
+
+        //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
+        CALL_MANAGED_METHOD_NORET(args)
+        GCPROTECT_END();
+
+        FC_CAN_TRIGGER_GC_END();
         UNREACHABLE();
     }
 #endif
+
+    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
 
     OBJECTREF throwable = GetThread()->GetThrowable();
     if (throwable != NULL)
@@ -3724,7 +3713,13 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     DWORD dwLastError = ::GetLastError();
     PerPatchpointInfo* ppInfo = NULL;
     bool isNewMethod = false;
-    CONTEXT frameContext;
+    CONTEXT* pFrameContext = NULL;
+
+#if !defined(TARGET_WINDOWS) || !defined(TARGET_AMD64)
+    CONTEXT originalFrameContext;
+    originalFrameContext.ContextFlags = CONTEXT_FULL;
+    pFrameContext = &originalFrameContext;
+#endif
 
     // Patchpoint identity is the helper return address
     PCODE ip = (PCODE)_ReturnAddress();
@@ -3830,32 +3825,66 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
 #endif
 
     // Find context for the original method
-    frameContext.ContextFlags = CONTEXT_FULL;
-    RtlCaptureContext(&frameContext);
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    DWORD contextSize = 0;
+    ULONG64 xStateCompactionMask = 0;
+    DWORD contextFlags = CONTEXT_FULL;
+    if (Thread::AreShadowStacksEnabled())
+    {
+        xStateCompactionMask = XSTATE_MASK_CET_U;
+        contextFlags |= CONTEXT_XSTATE;
+    }
+
+    // The initialize call should fail but return contextSize
+    BOOL success = g_pfnInitializeContext2 ?
+        g_pfnInitializeContext2(NULL, contextFlags, NULL, &contextSize, xStateCompactionMask) :
+        InitializeContext(NULL, contextFlags, NULL, &contextSize);
+
+    _ASSERTE(!success && (GetLastError() == ERROR_INSUFFICIENT_BUFFER));
+
+    PVOID pBuffer = _alloca(contextSize);
+    success = g_pfnInitializeContext2 ?
+        g_pfnInitializeContext2(pBuffer, contextFlags, &pFrameContext, &contextSize, xStateCompactionMask) :
+        InitializeContext(pBuffer, contextFlags, &pFrameContext, &contextSize);
+    _ASSERTE(success);
+#else // TARGET_WINDOWS && TARGET_AMD64
+    _ASSERTE(pFrameContext != nullptr);
+#endif // TARGET_WINDOWS && TARGET_AMD64
+
+    // Find context for the original method
+    RtlCaptureContext(pFrameContext);
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    if (Thread::AreShadowStacksEnabled())
+    {
+        pFrameContext->ContextFlags |= CONTEXT_XSTATE;
+        SetXStateFeaturesMask(pFrameContext, xStateCompactionMask);
+        SetSSP(pFrameContext, _rdsspq());
+    }
+#endif // TARGET_WINDOWS && TARGET_AMD64
 
     // Walk back to the original method frame
-    pThread->VirtualUnwindToFirstManagedCallFrame(&frameContext);
+    Thread::VirtualUnwindToFirstManagedCallFrame(pFrameContext);
 
     // Remember original method FP and SP because new method will inherit them.
-    UINT_PTR currentSP = GetSP(&frameContext);
-    UINT_PTR currentFP = GetFP(&frameContext);
+    UINT_PTR currentSP = GetSP(pFrameContext);
+    UINT_PTR currentFP = GetFP(pFrameContext);
 
     // We expect to be back at the right IP
-    if ((UINT_PTR)ip != GetIP(&frameContext))
+    if ((UINT_PTR)ip != GetIP(pFrameContext))
     {
         // Should be fatal
         STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "Jit_PartialCompilationPatchpoint: patchpoint (0x%p) TRANSITION"
-            " unexpected context IP 0x%p\n", ip, GetIP(&frameContext));
+            " unexpected context IP 0x%p\n", ip, GetIP(pFrameContext));
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
 
     // Now unwind back to the original method caller frame.
-    EECodeInfo callerCodeInfo(GetIP(&frameContext));
-    frameContext.ContextFlags = CONTEXT_FULL;
+    EECodeInfo callerCodeInfo(GetIP(pFrameContext));
     ULONG_PTR establisherFrame = 0;
     PVOID handlerData = NULL;
-    RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(&frameContext), callerCodeInfo.GetFunctionEntry(),
-        &frameContext, &handlerData, &establisherFrame, NULL);
+    RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(pFrameContext), callerCodeInfo.GetFunctionEntry(),
+        pFrameContext, &handlerData, &establisherFrame, NULL);
 
     // Now, set FP and SP back to the values they had just before this helper was called,
     // since the new method must have access to the original method frame.
@@ -3868,13 +3897,19 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     // method sees the "expected" SP misalgnment on entry.
     _ASSERTE(currentSP % 16 == 0);
     currentSP -= 8;
-#endif
 
-    SetSP(&frameContext, currentSP);
+#if defined(TARGET_WINDOWS)
+    DWORD64 ssp = GetSSP(pFrameContext);
+    if (ssp != 0)
+    {
+        SetSSP(pFrameContext, ssp - 8);
+    }
+#endif // TARGET_WINDOWS
 
-#if defined(TARGET_AMD64)
-    frameContext.Rbp = currentFP;
-#endif
+    pFrameContext->Rbp = currentFP;
+#endif // TARGET_AMD64
+
+    SetSP(pFrameContext, currentSP);
 
     // Note we can get here w/o triggering, if there is an existing OSR method and
     // we hit the patchpoint.
@@ -3882,7 +3917,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_PartialCompilationPatchpoint: patchpoint [%d] (0x%p) TRANSITION to ip 0x%p\n", ppId, ip, osrMethodCode));
 
     // Install new entry point as IP
-    SetIP(&frameContext, osrMethodCode);
+    SetIP(pFrameContext, osrMethodCode);
 
     // This method doesn't return normally so we have to manually restore things.
     HELPER_METHOD_FRAME_END();
@@ -3891,7 +3926,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
 
     // Transition!
     __asan_handle_no_return();
-    RtlRestoreContext(&frameContext, NULL);
+    ClrRestoreNonvolatileContext(pFrameContext);
 }
 HCIMPLEND
 

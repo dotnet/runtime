@@ -42,6 +42,7 @@
 #include <sys/time.h>
 #include <cstdarg>
 #include <signal.h>
+#include <minipal/thread.h>
 
 #if HAVE_PTHREAD_GETTHREADID_NP
 #include <pthread_np.h>
@@ -718,15 +719,14 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCall
 
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetCurrentThreadName(const char* name)
 {
-    const int MAX_THREAD_NAME_SIZE = 15;
-    char name_copy[MAX_THREAD_NAME_SIZE + 1];
-    strncpy(name_copy, name, MAX_THREAD_NAME_SIZE);
-    name_copy[MAX_THREAD_NAME_SIZE] = '\0';
-#ifdef __APPLE__
-    pthread_setname_np(name_copy);
-#else
-    pthread_setname_np(pthread_self(), name_copy);
-#endif //__APPLE__
+    // Ignore requests to set the main thread name because
+    // it causes the value returned by Process.ProcessName to change.
+    if ((pid_t)PalGetCurrentOSThreadId() != getpid())
+    {
+        int setNameResult = minipal_set_thread_name(pthread_self(), name);
+        (void)setNameResult; // used
+        assert(setNameResult == 0);
+    }
     return true;
 }
 
@@ -1292,19 +1292,5 @@ extern "C" uint64_t PalQueryPerformanceFrequency()
 
 extern "C" uint64_t PalGetCurrentOSThreadId()
 {
-#if defined(__linux__)
-    return (uint64_t)syscall(SYS_gettid);
-#elif defined(__APPLE__)
-    uint64_t tid;
-    pthread_threadid_np(pthread_self(), &tid);
-    return (uint64_t)tid;
-#elif HAVE_PTHREAD_GETTHREADID_NP
-    return (uint64_t)pthread_getthreadid_np();
-#elif HAVE_LWP_SELF
-    return (uint64_t)_lwp_self();
-#else
-    // Fallback in case we don't know how to get integer thread id on the current platform
-    return (uint64_t)pthread_self();
-#endif
+    return (uint64_t)minipal_get_current_thread_id();
 }
-

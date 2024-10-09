@@ -20,6 +20,7 @@ public enum DataType
     pointer,
 
     GCHandle,
+    CodePointer,
     Thread,
     ThreadStore,
     GCAllocContext,

@@ -2472,7 +2472,7 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
 
                 // Set the assembly module to be tenured now that we know it won't be deleted
                 pDomainAssembly->GetAssembly()->SetIsTenured();
-                if (pDomainAssembly->IsCollectible())
+                if (pDomainAssembly->GetAssembly()->IsCollectible())
                 {
                     // We add the assembly to the LoaderAllocator only when we are sure that it can be added
                     // and won't be deleted in case of a concurrent load from the same ALC
@@ -4427,7 +4427,7 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
 
     while (assem.Next(pAssembly.This()))
     {
-        pAssembly->GetDomainAssembly()->EnumMemoryRegions(flags);
+        pAssembly->EnumMemoryRegions(flags);
     }
 }
 

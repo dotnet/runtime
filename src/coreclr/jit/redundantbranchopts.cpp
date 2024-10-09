@@ -2173,6 +2173,16 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
     if (!usedCopy)
     {
         fgRemoveStmt(block, candidateStmt);
+
+        // Make sure the removed store node isn't referenced by an SSA definition
+        assert(candidateStmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR));
+        GenTreeLclVarCommon* const rootNode = candidateStmt->GetRootNode()->AsLclVarCommon();
+        LclVarDsc* const           varDsc   = lvaGetDesc(rootNode);
+        LclSsaVarDsc* const        defDsc   = varDsc->GetPerSsaData(rootNode->GetSsaNum());
+        assert(defDsc->GetDefNode() == rootNode);
+        defDsc->SetDefNode(nullptr);
+
+        DEBUG_DESTROY_NODE(rootNode);
     }
     else
     {

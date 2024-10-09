@@ -3405,7 +3405,6 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     // Allocate a new entry and prepend it to the list
     //
     add              = new (this, CMK_Unknown) AddCodeDsc;
-    add->acdNext     = fgAddCodeList;
     add->acdDstBlk   = nullptr;
     add->acdTryIndex = srcBlk->bbTryIndex;
     add->acdHndIndex = srcBlk->bbHndIndex;
@@ -3421,8 +3420,6 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     add->acdStkLvlInit = false;
 #endif // !FEATURE_FIXED_OUT_ARGS
     INDEBUG(add->acdNum = acdCount++);
-
-    fgAddCodeList = add;
 
     // Add to map
     //
@@ -3451,7 +3448,7 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 //
 PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 {
-    if (fgAddCodeList == nullptr)
+    if (fgAddCodeDscMap == nullptr)
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
@@ -3472,7 +3469,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
 
-    for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
+    for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(fgAddCodeDscMap))
     {
         // Create the target basic block in the region indicated by the acd info
         //

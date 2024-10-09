@@ -232,6 +232,38 @@ public:
     };
 
     //
+    // ByteRefOnStack type is used for returning on stack byref to byte.
+    //
+    struct ByteRefOnStack final
+    {
+        struct ByteRef
+        {
+            BYTE* m_pByte;
+        };
+
+        ByteRef* m_pByteRef;
+
+#ifndef DACCESS_COMPILE
+        void Set(BYTE* data)
+        {
+            CONTRACTL
+            {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_COOPERATIVE;
+                PRECONDITION(m_pByteRef != NULL);
+            }
+            CONTRACTL_END;
+
+            // The space for the return value has to be on the stack
+            _ASSERTE(Thread::IsAddressInCurrentStack(m_pByteRef));
+
+            m_pByteRef->m_pByte = data;
+        }
+#endif // !DACCESS_COMPILE
+    };
+
+    //
     // StackCrawlMarkHandle is used for passing StackCrawlMark into QCalls
     //
     struct StackCrawlMarkHandle

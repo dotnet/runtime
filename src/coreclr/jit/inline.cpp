@@ -1289,7 +1289,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
         context->m_Code             = info->methInfo.ILCode;
         context->m_ILSize           = info->methInfo.ILCodeSize;
         context->m_ActualCallOffset = info->ilOffset;
-        context->m_RuntimeContext   = info->exactContextHnd;
+        context->m_RuntimeContext   = info->exactContextHandle;
 
 #ifdef DEBUG
         // All inline candidates should get their own statements that have

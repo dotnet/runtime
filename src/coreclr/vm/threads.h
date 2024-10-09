@@ -3965,7 +3965,7 @@ private:
 private:
     bool m_hasPendingActivation;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<Thread>;
 };
 
 template<>
@@ -4247,7 +4247,7 @@ public:
     bool ShouldTriggerGCForDeadThreads();
     void TriggerGCForDeadThreadsIfNecessary();
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ThreadStore>;
 };
 
 template<>

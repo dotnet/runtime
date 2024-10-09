@@ -1308,14 +1308,17 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
     // make that INT32_MAX.
     //
 
-    StubUnwindInfoHeader *pHeader = pStubRW->GetUnwindInfoHeader();
-    _ASSERTE(IS_ALIGNED(pHeader, sizeof(void*)));
+    StubUnwindInfoHeader *pHeaderRW = pStubRW->GetUnwindInfoHeader();
+    StubUnwindInfoHeader *pHeaderRX = pStubRX->GetUnwindInfoHeader();
+    _ASSERTE(IS_ALIGNED(pHeaderRW, sizeof(void*)));
 
-    BYTE *pbBaseAddress = pbRegionBaseAddress;
+    BYTE *pbBaseAddressRX = pbRegionBaseAddress;
+    BYTE *pbBaseAddressRW = (BYTE*)((uint64_t)pbRegionBaseAddress + (uint64_t)pHeaderRW - (uint64_t)pHeaderRX);
 
-    while ((size_t)((BYTE*)pHeader - pbBaseAddress) > MaxSegmentSize)
+    while ((size_t)((BYTE*)pHeaderRX - pbBaseAddressRX) > MaxSegmentSize)
     {
-        pbBaseAddress += MaxSegmentSize;
+        pbBaseAddressRX += MaxSegmentSize;
+        pbBaseAddressRW += MaxSegmentSize;
     }
 
     //
@@ -1327,7 +1330,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
     // allocations are freed.
     //
 
-    if ((size_t)(pCode + globalsize - pbBaseAddress) > MaxSegmentSize)
+    if ((size_t)(pCode + globalsize - pbBaseAddressRX) > MaxSegmentSize)
     {
         return false;
     }
@@ -1442,17 +1445,17 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
     PT_RUNTIME_FUNCTION pCurFunction = &pUnwindInfoHeader->FunctionEntry;
     _ASSERTE(IS_ALIGNED(pCurFunction, sizeof(ULONG)));
 
-    S_UINT32 sBeginAddress = S_BYTEPTR(pCode) - S_BYTEPTR(pbBaseAddress);
+    S_UINT32 sBeginAddress = S_BYTEPTR(pCode) - S_BYTEPTR(pbBaseAddressRX);
     if (sBeginAddress.IsOverflow())
         COMPlusThrowArithmetic();
     pCurFunction->BeginAddress = sBeginAddress.Value();
 
-    S_UINT32 sEndAddress = S_BYTEPTR(pCode) + S_BYTEPTR(globalsize) - S_BYTEPTR(pbBaseAddress);
+    S_UINT32 sEndAddress = S_BYTEPTR(pCode) + S_BYTEPTR(globalsize) - S_BYTEPTR(pbBaseAddressRX);
     if (sEndAddress.IsOverflow())
         COMPlusThrowArithmetic();
     pCurFunction->EndAddress = sEndAddress.Value();
 
-    S_UINT32 sTemp = S_BYTEPTR(pUnwindInfo) - S_BYTEPTR(pbBaseAddress);
+    S_UINT32 sTemp = S_BYTEPTR(pUnwindInfo) - S_BYTEPTR(pbBaseAddressRW);
     if (sTemp.IsOverflow())
         COMPlusThrowArithmetic();
     RUNTIME_FUNCTION__SetUnwindInfoAddress(pCurFunction, sTemp.Value());
@@ -1465,12 +1468,12 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
     PT_RUNTIME_FUNCTION pCurFunction = &pUnwindInfoHeader->FunctionEntry;
     _ASSERTE(IS_ALIGNED(pCurFunction, sizeof(ULONG)));
 
-    S_UINT32 sBeginAddress = S_BYTEPTR(pCode) - S_BYTEPTR(pbBaseAddress);
+    S_UINT32 sBeginAddress = S_BYTEPTR(pCode) - S_BYTEPTR(pbBaseAddressRX);
     if (sBeginAddress.IsOverflow())
         COMPlusThrowArithmetic();
     RUNTIME_FUNCTION__SetBeginAddress(pCurFunction, sBeginAddress.Value());
 
-    S_UINT32 sTemp = S_BYTEPTR(pUnwindInfo) - S_BYTEPTR(pbBaseAddress);
+    S_UINT32 sTemp = S_BYTEPTR(pUnwindInfo) - S_BYTEPTR(pbBaseAddressRW);
     if (sTemp.IsOverflow())
         COMPlusThrowArithmetic();
     RUNTIME_FUNCTION__SetUnwindInfoAddress(pCurFunction, sTemp.Value());
@@ -1620,11 +1623,11 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
 
         _ASSERTE(IS_ALIGNED(pCurFunction, sizeof(void*)));
 
-        S_UINT32 sBeginAddress = S_BYTEPTR(pCode) - S_BYTEPTR(pbBaseAddress);
+        S_UINT32 sBeginAddress = S_BYTEPTR(pCode) - S_BYTEPTR(pbBaseAddressRX);
         if (sBeginAddress.IsOverflow())
             COMPlusThrowArithmetic();
 
-        S_UINT32 sTemp = S_BYTEPTR(pUnwindInfo) - S_BYTEPTR(pbBaseAddress);
+        S_UINT32 sTemp = S_BYTEPTR(pUnwindInfo) - S_BYTEPTR(pbBaseAddressRW);
         if (sTemp.IsOverflow())
             COMPlusThrowArithmetic();
 
@@ -1749,14 +1752,14 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
          (pStubHeapSegment = *ppPrevStubHeapSegment);
          (ppPrevStubHeapSegment = &pStubHeapSegment->pNext))
     {
-        if (pbBaseAddress < pStubHeapSegment->pbBaseAddress)
+        if (pbBaseAddressRX < pStubHeapSegment->pbBaseAddress)
         {
             // The list is ordered, so address is between segments
             pStubHeapSegment = NULL;
             break;
         }
 
-        if (pbBaseAddress == pStubHeapSegment->pbBaseAddress)
+        if (pbBaseAddressRX == pStubHeapSegment->pbBaseAddress)
         {
             // Found an existing segment
             break;
@@ -1768,7 +1771,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
         //
         // RtlInstallFunctionTableCallback will only accept a ULONG for the
         // region size.  We've already checked above that the RUNTIME_FUNCTION
-        // offsets will work relative to pbBaseAddress.
+        // offsets will work relative to pbBaseAddressRX.
         //
 
         SIZE_T cbSegment = findBlockArgs.cbBlockSize;
@@ -1779,7 +1782,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
         NewHolder<StubUnwindInfoHeapSegment> pNewStubHeapSegment = new StubUnwindInfoHeapSegment();
 
 
-        pNewStubHeapSegment->pbBaseAddress = pbBaseAddress;
+        pNewStubHeapSegment->pbBaseAddress = pbBaseAddressRX;
         pNewStubHeapSegment->cbSegment = cbSegment;
         pNewStubHeapSegment->pUnwindHeaderList = NULL;
 #ifdef TARGET_AMD64
@@ -1796,7 +1799,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
 
         InstallEEFunctionTable(
                 pNewStubHeapSegment,
-                pbBaseAddress,
+                pbBaseAddressRX,
                 (ULONG)cbSegment,
                 &FindStubFunctionEntry,
                 pNewStubHeapSegment,
@@ -1807,8 +1810,8 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
     // Link the new stub into the segment.
     //
 
-    pHeader->pNext = pStubHeapSegment->pUnwindHeaderList;
-                     pStubHeapSegment->pUnwindHeaderList = pHeader;
+    pHeaderRW->pNext = pStubHeapSegment->pUnwindHeaderList;
+    pStubHeapSegment->pUnwindHeaderList = pHeaderRW;
 
 #ifdef TARGET_AMD64
     // Publish Unwind info to ETW stack crawler
@@ -1819,8 +1822,8 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
 #endif
 
 #ifdef _DEBUG
-    _ASSERTE(pHeader->IsRegistered());
-    _ASSERTE(   &pHeader->FunctionEntry
+    _ASSERTE(pHeaderRW->IsRegistered());
+    _ASSERTE(   &pHeaderRW->FunctionEntry
              == FindStubFunctionEntry((ULONG64)pCode,                  EncodeDynamicFunctionTableContext(pStubHeapSegment, DYNFNTABLE_STUB)));
 #endif
 

@@ -9,6 +9,7 @@
           Condition="'$(DisableVersionCheckImported)' != 'true'" />
 
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
+  <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
 
   <PropertyGroup>
     <GCStressDependsOnCoreDisTools>false</GCStressDependsOnCoreDisTools>

@@ -244,7 +244,6 @@ extern bool g_libSslUses32BitTime;
 
 #define FOR_ALL_OPENSSL_FUNCTIONS \
     REQUIRED_FUNCTION(a2d_ASN1_OBJECT) \
-    REQUIRED_FUNCTION(ASN1_BIT_STRING_free) \
     REQUIRED_FUNCTION(ASN1_d2i_bio) \
     REQUIRED_FUNCTION(ASN1_i2d_bio) \
     REQUIRED_FUNCTION(ASN1_GENERALIZEDTIME_free) \
@@ -260,7 +259,6 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(ASN1_TIME_set) \
     FALLBACK_FUNCTION(ASN1_TIME_to_tm) \
     REQUIRED_FUNCTION(ASN1_TIME_free) \
-    REQUIRED_FUNCTION(BASIC_CONSTRAINTS_free) \
     REQUIRED_FUNCTION(BIO_ctrl) \
     REQUIRED_FUNCTION(BIO_ctrl_pending) \
     REQUIRED_FUNCTION(BIO_free) \
@@ -299,9 +297,6 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(CRYPTO_malloc) \
     LEGACY_FUNCTION(CRYPTO_num_locks) \
     LEGACY_FUNCTION(CRYPTO_set_locking_callback) \
-    REQUIRED_FUNCTION(d2i_ASN1_BIT_STRING) \
-    REQUIRED_FUNCTION(d2i_BASIC_CONSTRAINTS) \
-    REQUIRED_FUNCTION(d2i_EXTENDED_KEY_USAGE) \
     REQUIRED_FUNCTION(d2i_OCSP_RESPONSE) \
     REQUIRED_FUNCTION(d2i_PKCS12_fp) \
     REQUIRED_FUNCTION(d2i_PKCS7) \
@@ -503,7 +498,6 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EVP_sha3_512) \
     LIGHTUP_FUNCTION(EVP_shake128) \
     LIGHTUP_FUNCTION(EVP_shake256) \
-    REQUIRED_FUNCTION(EXTENDED_KEY_USAGE_free) \
     REQUIRED_FUNCTION(GENERAL_NAMES_free) \
     REQUIRED_FUNCTION(HMAC) \
     LEGACY_FUNCTION(HMAC_CTX_cleanup) \
@@ -796,7 +790,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 // Redefine all calls to OpenSSL functions as calls through pointers that are set
 // to the functions from the libssl.so selected by the shim.
 #define a2d_ASN1_OBJECT a2d_ASN1_OBJECT_ptr
-#define ASN1_BIT_STRING_free ASN1_BIT_STRING_free_ptr
 #define ASN1_GENERALIZEDTIME_free ASN1_GENERALIZEDTIME_free_ptr
 #define ASN1_d2i_bio ASN1_d2i_bio_ptr
 #define ASN1_i2d_bio ASN1_i2d_bio_ptr
@@ -812,7 +805,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define ASN1_TIME_new ASN1_TIME_new_ptr
 #define ASN1_TIME_set ASN1_TIME_set_ptr
 #define ASN1_TIME_to_tm ASN1_TIME_to_tm_ptr
-#define BASIC_CONSTRAINTS_free BASIC_CONSTRAINTS_free_ptr
 #define BIO_ctrl BIO_ctrl_ptr
 #define BIO_ctrl_pending BIO_ctrl_pending_ptr
 #define BIO_free BIO_free_ptr
@@ -851,9 +843,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define CRYPTO_malloc CRYPTO_malloc_ptr
 #define CRYPTO_num_locks CRYPTO_num_locks_ptr
 #define CRYPTO_set_locking_callback CRYPTO_set_locking_callback_ptr
-#define d2i_ASN1_BIT_STRING d2i_ASN1_BIT_STRING_ptr
-#define d2i_BASIC_CONSTRAINTS d2i_BASIC_CONSTRAINTS_ptr
-#define d2i_EXTENDED_KEY_USAGE d2i_EXTENDED_KEY_USAGE_ptr
 #define d2i_OCSP_RESPONSE d2i_OCSP_RESPONSE_ptr
 #define d2i_PKCS12_fp d2i_PKCS12_fp_ptr
 #define d2i_PKCS7 d2i_PKCS7_ptr
@@ -1055,7 +1044,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_sha3_512 EVP_sha3_512_ptr
 #define EVP_shake128 EVP_shake128_ptr
 #define EVP_shake256 EVP_shake256_ptr
-#define EXTENDED_KEY_USAGE_free EXTENDED_KEY_USAGE_free_ptr
 #define GENERAL_NAMES_free GENERAL_NAMES_free_ptr
 #define HMAC HMAC_ptr
 #define HMAC_CTX_cleanup HMAC_CTX_cleanup_ptr

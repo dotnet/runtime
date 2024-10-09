@@ -132,6 +132,9 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_Instantiate)
     DllImportEntry(RuntimeTypeHandle_GetGenericTypeDefinition)
     DllImportEntry(RuntimeTypeHandle_GetActivationInfo)
+#ifdef FEATURE_COMINTEROP
+    DllImportEntry(RuntimeTypeHandle_AllocateComObject)
+#endif // FEATURE_COMINTEROP
     DllImportEntry(RuntimeTypeHandle_AllocateTypeAssociatedMemory)
     DllImportEntry(RuntimeTypeHandle_RegisterCollectibleTypeDependency)
     DllImportEntry(MethodBase_GetCurrentMethod)
@@ -146,7 +149,12 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeModule_GetScopeName)
     DllImportEntry(RuntimeModule_GetFullyQualifiedName)
     DllImportEntry(RuntimeModule_GetTypes)
+    DllImportEntry(RuntimeFieldHandle_GetValue)
+    DllImportEntry(RuntimeFieldHandle_SetValue)
+    DllImportEntry(RuntimeFieldHandle_GetValueDirect)
+    DllImportEntry(RuntimeFieldHandle_SetValueDirect)
     DllImportEntry(RuntimeFieldHandle_GetRVAFieldInfo)
+    DllImportEntry(RuntimeFieldHandle_GetFieldDataReference)
     DllImportEntry(StackTrace_GetStackFramesInternal)
     DllImportEntry(StackFrame_GetMethodDescFromNativeIP)
     DllImportEntry(ModuleBuilder_GetStringConstant)
@@ -371,6 +379,12 @@ static const Entry s_QCall[] =
     DllImportEntry(ReflectionInvocation_RunModuleConstructor)
     DllImportEntry(ReflectionInvocation_CompileMethod)
     DllImportEntry(ReflectionInvocation_PrepareMethod)
+    DllImportEntry(ReflectionInvocation_PrepareDelegate)
+#ifdef FEATURE_COMINTEROP
+    DllImportEntry(ReflectionInvocation_InvokeDispMethod)
+    DllImportEntry(ReflectionInvocation_GetComObjectGuid)
+#endif // FEATURE_COMINTEROP
+    DllImportEntry(ReflectionInvocation_GetGuid)
     DllImportEntry(ReflectionInvocation_SizeOf)
     DllImportEntry(ReflectionInvocation_GetBoxInfo)
     DllImportEntry(ReflectionSerialization_GetCreateUninitializedObjectInfo)
@@ -452,6 +466,7 @@ static const Entry s_QCall[] =
     DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)
     DllImportEntry(StubHelpers_ValidateObject)
     DllImportEntry(StubHelpers_ValidateByref)
+    DllImportEntry(StubHelpers_MulticastDebuggerTraceHelper)
 #ifdef PROFILING_SUPPORTED
     DllImportEntry(StubHelpers_ProfilerBeginTransitionCallback)
     DllImportEntry(StubHelpers_ProfilerEndTransitionCallback)

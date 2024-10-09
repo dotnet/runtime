@@ -29,6 +29,8 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/utils.h"
 #include "pal/virtual.h"
 
+#include <minipal/thread.h>
+
 #if defined(__NetBSD__) && !HAVE_PTHREAD_GETCPUCLOCKID
 #include <sys/cdefs.h>
 #include <sys/param.h>
@@ -74,14 +76,6 @@ typedef cpuset_t cpu_set_t;
 #endif
 
 using namespace CorUnix;
-
-#ifdef __APPLE__
-#define MAX_THREAD_NAME_SIZE 63
-#elif defined(__FreeBSD__)
-#define MAX_THREAD_NAME_SIZE MAXCOMLEN
-#else
-#define MAX_THREAD_NAME_SIZE 15
-#endif
 
 /* ------------------- Definitions ------------------------------*/
 
@@ -1474,138 +1468,51 @@ SetThreadDescription(
     IN HANDLE hThread,
     IN PCWSTR lpThreadDescription)
 {
-    CPalThread *pThread;
-    PAL_ERROR palError;
-
     PERF_ENTRY(SetThreadDescription);
     ENTRY("SetThreadDescription(hThread=%p,lpThreadDescription=%p)\n", hThread, lpThreadDescription);
 
-    pThread = InternalGetCurrentThread();
+    CPalThread *pThread = InternalGetCurrentThread();
 
-    palError = InternalSetThreadDescription(
-        pThread,
-        hThread,
-        lpThreadDescription
-        );
+    CPalThread *pTargetThread = NULL;
+    IPalObject *pobjThread = NULL;
+    int nameSize;
+    char *nameBuf = NULL;
 
-    if (NO_ERROR != palError)
+    PAL_ERROR palError = InternalGetThreadDataFromHandle(pThread, hThread, &pTargetThread, &pobjThread);
+    if (palError != NO_ERROR)
     {
-        pThread->SetLastError(palError);
+        // Ignore requests to set the main thread name because
+        // it causes the value returned by Process.ProcessName to change.
+        if ((pid_t)pTargetThread->GetThreadId() != getpid())
+        {
+            nameSize = WideCharToMultiByte(CP_ACP, 0, lpThreadDescription, -1, NULL, 0, NULL, NULL);
+            if (nameSize > 0)
+            {
+                nameBuf = (char *)malloc(nameSize);
+                if (nameBuf == NULL || WideCharToMultiByte(CP_ACP, 0, lpThreadDescription, -1, nameBuf, nameSize, NULL, NULL) != nameSize)
+                {
+                    pThread->SetLastError(ERROR_INSUFFICIENT_BUFFER);
+                }
+
+                int setNameResult = minipal_set_thread_name(pTargetThread->GetPThreadSelf(), nameBuf);
+                (void)setNameResult; // used
+                _ASSERTE(setNameResult == 0);
+
+                free(nameBuf);
+            }
+            else
+            {
+                pThread->SetLastError(ERROR_INVALID_PARAMETER);
+            }
+        }
+
+        pobjThread->ReleaseReference(pThread);
     }
 
     LOGEXIT("SetThreadDescription");
     PERF_EXIT(SetThreadDescription);
 
     return HRESULT_FROM_WIN32(palError);
-}
-
-PAL_ERROR
-CorUnix::InternalSetThreadDescription(
-    CPalThread *pThread,
-    HANDLE hTargetThread,
-    PCWSTR lpThreadDescription
-)
-{
-    PAL_ERROR palError = NO_ERROR;
-    CPalThread *pTargetThread = NULL;
-    IPalObject *pobjThread = NULL;
-    int error = 0;
-    int maxNameSize = 0;
-    int nameSize;
-    char *nameBuf = NULL;
-
-// The exact API of pthread_setname_np varies very wildly depending on OS.
-// For now, only Linux, macOS and FreeBSD are implemented.
-#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
-
-    palError = InternalGetThreadDataFromHandle(
-        pThread,
-        hTargetThread,
-        &pTargetThread,
-        &pobjThread
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto InternalSetThreadDescriptionExit;
-    }
-
-    pTargetThread->Lock(pThread);
-
-    // Ignore requests to set the main thread name because
-    // it causes the value returned by Process.ProcessName to change.
-    if ((pid_t)pTargetThread->GetThreadId() == getpid())
-    {
-        goto InternalSetThreadDescriptionExit;
-    }
-
-    /* translate the wide char lpThreadDescription string to multibyte string */
-    nameSize = WideCharToMultiByte(CP_ACP, 0, lpThreadDescription, -1, NULL, 0, NULL, NULL);
-
-    if (0 == nameSize)
-    {
-        palError = ERROR_INTERNAL_ERROR;
-        goto InternalSetThreadDescriptionExit;
-    }
-
-    nameBuf = (char *)malloc(nameSize);
-    if (nameBuf == NULL)
-    {
-        palError = ERROR_OUTOFMEMORY;
-        goto InternalSetThreadDescriptionExit;
-    }
-
-    if (WideCharToMultiByte(CP_ACP, 0, lpThreadDescription, -1, nameBuf, nameSize, NULL,
-                            NULL) != nameSize)
-    {
-        palError = ERROR_INTERNAL_ERROR;
-        goto InternalSetThreadDescriptionExit;
-    }
-
-    // Null terminate early.
-    // pthread_setname_np only accepts up to 16 chars on Linux,
-    // 64 chars on macOS and 20 chars on FreeBSD.
-    if (nameSize > MAX_THREAD_NAME_SIZE)
-    {
-        nameBuf[MAX_THREAD_NAME_SIZE] = '\0';
-    }
-
-    #if defined(__linux__) || defined(__FreeBSD__)
-    error = pthread_setname_np(pTargetThread->GetPThreadSelf(), nameBuf);
-    #endif
-
-    #if defined(__APPLE__)
-    // on macOS, pthread_setname_np only works for the calling thread.
-    if (PlatformGetCurrentThreadId() == pTargetThread->GetThreadId())
-    {
-        error = pthread_setname_np(nameBuf);
-    }
-    #endif
-
-    if (error != 0)
-    {
-        palError = ERROR_INTERNAL_ERROR;
-    }
-
-InternalSetThreadDescriptionExit:
-
-    if (NULL != pTargetThread)
-    {
-        pTargetThread->Unlock(pThread);
-    }
-
-    if (NULL != pobjThread)
-    {
-        pobjThread->ReleaseReference(pThread);
-    }
-
-    if (NULL != nameBuf) {
-        free(nameBuf);
-    }
-
-#endif //defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
-
-    return palError;
 }
 
 void *
@@ -2568,7 +2475,7 @@ void *
 CPalThread::GetStackBase()
 {
     void* stackBase;
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
     // This is a Mac specific method
     stackBase = pthread_get_stackaddr_np(pthread_self());
 #else
@@ -2608,7 +2515,7 @@ void *
 CPalThread::GetStackLimit()
 {
     void* stackLimit;
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
     // This is a Mac specific method
     stackLimit = ((BYTE *)pthread_get_stackaddr_np(pthread_self()) -
                    pthread_get_stacksize_np(pthread_self()));

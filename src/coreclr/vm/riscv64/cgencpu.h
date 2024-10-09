@@ -208,14 +208,14 @@ inline void SetRA( T_CONTEXT * context, TADDR ip) {
 inline TADDR GetReg(T_CONTEXT * context, int Regnum)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(Regnum >= 0 && Regnum < 32 );
+    _ASSERTE(Regnum >= 0 && Regnum < 32);
      return (TADDR)(&context->R0 + Regnum);
 }
 
 inline void SetReg(T_CONTEXT * context, int Regnum, PCODE RegContent)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(Regnum >= 0 && Regnum <=28 );
+    _ASSERTE(Regnum >= 0 && Regnum < 32);
     *(&context->R0 + Regnum) = RegContent;
 }
 
