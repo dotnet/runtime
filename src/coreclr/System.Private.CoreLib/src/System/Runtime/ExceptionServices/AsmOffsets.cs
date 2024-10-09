@@ -47,9 +47,9 @@ class AsmOffsets
     public const int OFFSETOF__REGDISPLAY__SP = 0x628;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x630;
 #elif TARGET_LOONGARCH64
-    public const int SIZEOF__REGDISPLAY = 0xc70;
-    public const int OFFSETOF__REGDISPLAY__SP = 0xbb8;
-    public const int OFFSETOF__REGDISPLAY__ControlPC = 0xbc0;
+    public const int SIZEOF__REGDISPLAY = 0xc60;
+    public const int OFFSETOF__REGDISPLAY__SP = 0xba8;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0xbb0;
 #endif
 
 #if TARGET_64BIT
@@ -99,9 +99,9 @@ class AsmOffsets
     public const int OFFSETOF__REGDISPLAY__SP = 0x620;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x628;
 #elif TARGET_LOONGARCH64
-    public const int SIZEOF__REGDISPLAY = 0xc60;
-    public const int OFFSETOF__REGDISPLAY__SP = 0xbb0;
-    public const int OFFSETOF__REGDISPLAY__ControlPC = 0xbb8;
+    public const int SIZEOF__REGDISPLAY = 0xc50;
+    public const int OFFSETOF__REGDISPLAY__SP = 0xba0;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0xba8;
 #endif
 
 #if TARGET_64BIT

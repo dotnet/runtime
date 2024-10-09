@@ -80,10 +80,10 @@ ASMCONSTANTS_C_ASSERT(FpStruct__BothFloat == (int)FpStruct::BothFloat)
 ASMCONSTANTS_C_ASSERT(MachState__captureCalleeSavedRegisters == offsetof(MachState, captureCalleeSavedRegisters))
 
 // Offset of the array containing the address of preserved registers in MachState
-#define MachState__ptrCalleeSavedRegisters 0x58
+#define MachState__ptrCalleeSavedRegisters 0x50
 ASMCONSTANTS_C_ASSERT(MachState__ptrCalleeSavedRegisters == offsetof(MachState, ptrCalleeSavedRegisters))
 
-#define MachState__isValid 0xc0
+#define MachState__isValid 0xb0
 ASMCONSTANTS_C_ASSERT(MachState__isValid == offsetof(MachState, _isValid))
 
 #define LazyMachState_captureCalleeSavedRegisters MachState__captureCalleeSavedRegisters

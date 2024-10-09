@@ -194,7 +194,6 @@ BOOL GcInfoDumper::ReportPointerRecord (
 #define vREG(reg, field) { offsetof(LoongArch64VolatileContextPointer, field) }
         vREG(zero, R0),
         REG(ra, Ra),
-        REG(tp, Tp),
         { offsetof(T_CONTEXT, Sp) },
         vREG(a0, A0),
         vREG(a1, A1),
@@ -727,11 +726,9 @@ GcInfoDumper::EnumerateStateChangesResults GcInfoDumper::EnumerateStateChanges (
         *(ppCallerReg  + iReg) = &regdisp.pCallerContext->S0 + iReg;
     }
 
-    // Set Ra, Tp, Fp
+    // Set Ra, Fp
     regdisp.pCurrentContextPointers->Ra = &regdisp.pCurrentContext->Ra;
     regdisp.pCallerContextPointers->Ra  = &regdisp.pCallerContext->Ra;
-    regdisp.pCurrentContextPointers->Tp = &regdisp.pCurrentContext->Tp;
-    regdisp.pCallerContextPointers->Tp  = &regdisp.pCallerContext->Tp;
     regdisp.pCurrentContextPointers->Fp = &regdisp.pCurrentContext->Fp;
     regdisp.pCallerContextPointers->Fp  = &regdisp.pCallerContext->Fp;
 

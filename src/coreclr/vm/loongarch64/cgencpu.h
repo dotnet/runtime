@@ -26,8 +26,7 @@
     CALLEE_SAVED_REGISTER(S5) \
     CALLEE_SAVED_REGISTER(S6) \
     CALLEE_SAVED_REGISTER(S7) \
-    CALLEE_SAVED_REGISTER(S8) \
-    CALLEE_SAVED_REGISTER(Tp)
+    CALLEE_SAVED_REGISTER(S8)
 
 #define ENUM_FP_CALLEE_SAVED_REGISTERS() \
     CALLEE_SAVED_REGISTER(F[24]) \
@@ -471,7 +470,7 @@ struct HijackArgs
         DWORD64 Ra;
         size_t ReturnAddress;
     };
-    DWORD64 S0, S1, S2, S3, S4, S5, S6, S7, S8, Tp;
+    DWORD64 S0, S1, S2, S3, S4, S5, S6, S7, S8;
     union
     {
         struct {
