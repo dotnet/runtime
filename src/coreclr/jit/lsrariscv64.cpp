@@ -94,7 +94,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // We need an internal register different from targetReg in which 'tree' produces its result
                 // because both targetReg and internal reg will be in use at the same time.
-                buildInternalFloatRegisterDefForNode(tree, allSIMDRegs());
+                buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
                 buildInternalRegisterUses();
             }
@@ -812,8 +812,8 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
         assert(!addr->isContained());
 
         // Vector3 is read/written as two reads/writes: 8 byte and 4 byte.
-        // To assemble the vector properly we would need an additional float register
-        buildInternalFloatRegisterDefForNode(indirTree);
+        // To assemble the vector properly we would need an additional int register
+        buildInternalIntRegisterDefForNode(indirTree);
     }
 #endif // FEATURE_SIMD
 
