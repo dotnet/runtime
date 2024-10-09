@@ -3072,16 +3072,25 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 			g_print ("Inline end method %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
 		UnlockedIncrement (&mono_interp_stats.inlined_methods);
 
-		interp_link_bblocks (td, prev_cbb, td->entry_bb);
-		prev_cbb->next_bb = td->entry_bb;
-
 		// Make sure all bblocks that were added will now be offset from the original method that
 		// is being transformed.
 		InterpBasicBlock *tmp_bb = td->entry_bb;
+		int call_offset = GPTRDIFF_TO_INT (prev_ip - prev_il_code);
 		while (tmp_bb != NULL) {
-			tmp_bb->il_offset = GPTRDIFF_TO_INT (prev_ip - prev_il_code);
+			tmp_bb->il_offset = call_offset;
 			tmp_bb = tmp_bb->next_bb;
 		}
+
+		// exit_bb will have the il offset of the instruction following the call
+		td->cbb->il_offset = call_offset + 5;
+		if (prev_cbb->il_offset != call_offset) {
+			// previous cbb doesn't include the inlined call, update the offset_to_bb
+			// so it no longer points to prev_cbb
+			prev_offset_to_bb [call_offset] = td->entry_bb;
+		}
+
+		interp_link_bblocks (td, prev_cbb, td->entry_bb);
+		prev_cbb->next_bb = td->entry_bb;
 	}
 
 	td->ip = prev_ip;
@@ -3173,12 +3182,17 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 	mheader = interp_method_get_header (target_method, error);
 	goto_if_nok (error, fail);
 
+	// FIXME In interp_transform_call this method is called with td->ip pointing to call instruction
+	// We should have same convention between the two inlining locations.
+	td->ip -= 5;
 	if (!interp_inline_method (td, target_method, mheader, error))
 		goto fail;
+	td->ip += 5;
 
 	push_var (td, dreg);
 	return TRUE;
 fail:
+	td->ip += 5;
 	mono_metadata_free_mh (mheader);
 	// Restore the state
 	td->sp = td->stack + prev_sp_offset;
