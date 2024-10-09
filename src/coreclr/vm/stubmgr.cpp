@@ -1897,6 +1897,11 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Delegate Invoke Method\n"));
         return StubLinkStubManager::TraceDelegateObject((BYTE*)pThis, trace);
     }
+    else if (pStubMD->IsDelegateShuffleThunk())
+    {
+        LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Delegate Shuffle Thunk\n"));
+        return TraceShuffleThunk(trace, pContext, pRetAddr);
+    }
     else
     {
         LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: No known target, IL Stub is a leaf\n"));
