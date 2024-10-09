@@ -2832,9 +2832,6 @@ public:
     EHblkDsc* ehIsBlockHndLast(BasicBlock* block);
     bool ehIsBlockEHLast(BasicBlock* block);
 
-    template <typename GetTryLast, typename SetTryLast>
-    void ehUpdateTryLasts(GetTryLast getTryLast, SetTryLast setTryLast);
-
     bool ehBlockHasExnFlowDsc(BasicBlock* block);
 
     // Return the region index of the most nested EH region this block is in.
@@ -2938,6 +2935,8 @@ public:
     void fgSetTryEnd(EHblkDsc* handlerTab, BasicBlock* newTryLast);
 
     void fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast);
+
+    void fgFindEHRegionEnds();
 
     void fgSkipRmvdBlocks(EHblkDsc* handlerTab);
 
@@ -5956,6 +5955,7 @@ public:
         }
     }
 
+    bool GetImmutableDataFromAddress(GenTree* address, int size, uint8_t* pValue);
     bool GetObjectHandleAndOffset(GenTree* tree, ssize_t* byteOffset, CORINFO_OBJECT_HANDLE* pObj);
 
     // Convert a BYTE which represents the VM's CorInfoGCtype to the JIT's var_types
@@ -8040,6 +8040,7 @@ public:
     GenTree*     optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
     GenTree*     optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
     GenTree*     optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call);
+    GenTree*     optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call);
     GenTree*     optExtractSideEffListFromConst(GenTree* tree);
 
     AssertionIndex GetAssertionCount()
@@ -12456,17 +12457,10 @@ const instruction INS_SQRT = INS_vsqrt;
 
 #ifdef TARGET_ARM64
 
-const instruction        INS_MULADD = INS_madd;
-inline const instruction INS_BREAKPOINT_osHelper()
-{
-    // GDB needs the encoding of brk #0
-    // Windbg needs the encoding of brk #F000
-    return TargetOS::IsUnix ? INS_brk_unix : INS_brk_windows;
-}
-#define INS_BREAKPOINT INS_BREAKPOINT_osHelper()
-
-const instruction INS_ABS  = INS_fabs;
-const instruction INS_SQRT = INS_fsqrt;
+const instruction INS_MULADD     = INS_madd;
+const instruction INS_BREAKPOINT = INS_brk;
+const instruction INS_ABS        = INS_fabs;
+const instruction INS_SQRT       = INS_fsqrt;
 
 #endif // TARGET_ARM64
 
