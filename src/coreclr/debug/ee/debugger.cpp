@@ -5202,7 +5202,7 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule)
         HRESULT hr = S_OK;
         EX_TRY
         {
-            Assembly * pAssembly = pModule->GetRootAssembly();
+            Assembly * pAssembly = pModule->GetAssembly();
             SIMPLIFYING_ASSUMPTION(pAssembly != NULL);
             dmod = AddDebuggerModule(pAssembly); // throws
         }
@@ -9569,7 +9569,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
 
         STRESS_LOG6(LF_CORDB, LL_INFO10000,
             "D::UM: Unloading RTMod:%#08x (DomFile: %#08x, IsISStream:%#08x); DMod:%#08x(RTMod:%#08x DomFile: %#08x)\n",
-            pRuntimeModule, pRuntimeModule->GetRootAssembly(), false,
+            pRuntimeModule, pRuntimeModule->GetAssembly(), false,
             module, module->GetRuntimeModule(), module->GetRootAssembly());
 
         // Send the unload module event to the Right Side.
@@ -9812,7 +9812,7 @@ BOOL Debugger::SendSystemClassLoadUnloadEvent(mdTypeDef classMetadataToken,
         // triggers too early in the loading process. FindRootAssembly will not become
         // non-NULL until the module is fully loaded into the domain which is what we
         // want.
-        if (classModule->GetRootAssembly() != NULL )
+        if (classModule->GetAssembly() != NULL )
         {
             // Find the Left Side module that this class belongs in.
             DebuggerModule* pModule = LookupOrCreateModule(classModule);

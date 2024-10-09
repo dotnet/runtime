@@ -497,7 +497,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         {
             // We add the assembly to the LoaderAllocator only when we are sure that it can be added
             // and won't be deleted in case of a concurrent load from the same ALC
-            ((AssemblyLoaderAllocator *)(LoaderAllocator *)pLoaderAllocator)->AddRootAssembly(pAssem);
+            ((AssemblyLoaderAllocator *)(LoaderAllocator *)pLoaderAllocator)->AddAssembly(pAssem);
         }
     }
 
@@ -548,27 +548,12 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     RETURN pRetVal;
 } // Assembly::CreateDynamic
 
-void Assembly::SetRootAssembly(Assembly *pAssembly)
-{
-    CONTRACTL
-    {
-        PRECONDITION(CheckPointer(pAssembly));
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    GetModule()->SetRootAssembly(pAssembly);
-
-}
-
 #endif // #ifndef DACCESS_COMPILE
 
 Assembly *Assembly::GetRootAssembly()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return GetModule()->GetRootAssembly();
+    return GetModule()->GetAssembly();
 }
 
 PTR_LoaderHeap Assembly::GetLowFrequencyHeap()

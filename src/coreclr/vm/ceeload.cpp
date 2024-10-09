@@ -829,13 +829,6 @@ BOOL Module::IsCollectible()
     return GetAssembly()->IsCollectible();
 }
 
-Assembly* Module::GetRootAssembly()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return m_pAssembly;
-}
-
 #ifndef DACCESS_COMPILE
 #include "staticallocationhelpers.inl"
 
@@ -1139,13 +1132,6 @@ BOOL Module::IsRuntimeMarshallingEnabled()
         (hr == S_OK ? 0 : RUNTIME_MARSHALLING_ENABLED));
 
     return hr != S_OK;
-}
-
-void Module::SetRootAssembly(Assembly *pAssembly)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_pAssembly = pAssembly;
 }
 
 //---------------------------------------------------------------------------------------

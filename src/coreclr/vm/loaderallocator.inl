@@ -44,7 +44,7 @@ inline void LoaderAllocatorID::Init()
     m_type = LAT_Assembly;
 };
 
-inline void LoaderAllocatorID::AddRootAssembly(Assembly* pAssembly)
+inline void LoaderAllocatorID::AddAssembly(Assembly* pAssembly)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(m_type == LAT_Assembly);

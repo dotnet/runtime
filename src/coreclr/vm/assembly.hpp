@@ -375,7 +375,6 @@ public:
     //****************************************************************************************
 
     Assembly *GetRootAssembly();
-    void SetRootAssembly(Assembly *pAssembly);
 
 #if defined(FEATURE_COLLECTIBLE_TYPES) && !defined(DACCESS_COMPILE)
     OBJECTHANDLE GetLoaderAllocatorObjectHandle() { WRAPPER_NO_CONTRACT; return GetLoaderAllocator()->GetLoaderAllocatorObjectHandle(); }

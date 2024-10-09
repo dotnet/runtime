@@ -518,7 +518,7 @@ void BulkStaticsLogger::LogAllStatics()
             if (module == NULL)
                 continue;
 
-            Assembly *assembly = module->GetRootAssembly();
+            Assembly *assembly = module->GetAssembly();
             if (assembly == NULL)
                 continue;
 

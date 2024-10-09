@@ -2476,7 +2476,7 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
                 {
                     // We add the assembly to the LoaderAllocator only when we are sure that it can be added
                     // and won't be deleted in case of a concurrent load from the same ALC
-                    ((AssemblyLoaderAllocator *)pLoaderAllocator)->AddRootAssembly(pAssembly);
+                    ((AssemblyLoaderAllocator *)pLoaderAllocator)->AddAssembly(pAssembly);
                 }
             }
         }
@@ -2711,7 +2711,7 @@ CHECK AppDomain::CheckValidModule(Module * pModule)
     }
     CONTRACTL_END;
 
-    if (pModule->GetRootAssembly() != NULL)
+    if (pModule->GetAssembly() != NULL)
         CHECK_OK;
 
     CHECK_OK;

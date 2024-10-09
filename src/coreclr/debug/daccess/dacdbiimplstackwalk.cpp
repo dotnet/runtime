@@ -575,7 +575,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
 #endif // FEATURE_COMINTEROP
 
             Module *     pModule = (pMD ? pMD->GetModule() : NULL);
-            Assembly * pAssembly = (pModule ? pModule->GetRootAssembly() : NULL);
+            Assembly * pAssembly = (pModule ? pModule->GetAssembly() : NULL);
 
             if (frameData.stubFrame.frameType == STUBFRAME_FUNC_EVAL)
             {
@@ -770,7 +770,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         Assembly *pAssembly = NULL;
         EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
         {
-            pAssembly = (pModule ? pModule->GetRootAssembly() : NULL);
+            pAssembly = (pModule ? pModule->GetAssembly() : NULL);
             _ASSERTE(pAssembly != NULL);
         }
         EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY

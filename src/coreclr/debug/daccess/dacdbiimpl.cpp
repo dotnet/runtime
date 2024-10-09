@@ -2479,7 +2479,7 @@ void DacDbiInterfaceImpl::GetClassTypeInfo(TypeHandle                      typeH
     pTypeInfo->ClassTypeData.vmModule.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule));
     if (pAppDomain)
     {
-        pTypeInfo->ClassTypeData.vmAssembly.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetRootAssembly()));
+        pTypeInfo->ClassTypeData.vmAssembly.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetAssembly()));
     }
     else
     {
@@ -2566,7 +2566,7 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
             pTypeInfo->vmModule.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule));
             if (pAppDomain)
             {
-                pTypeInfo->vmAssembly.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetRootAssembly()));
+                pTypeInfo->vmAssembly.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetAssembly()));
             }
             else
             {
@@ -3296,7 +3296,7 @@ void DacDbiInterfaceImpl::GetSimpleType(VMPTR_AppDomain    vmAppDomain,
 
         if (pAppDomain)
         {
-            pVmAssembly->SetHostPtr(pModule->GetRootAssembly());
+            pVmAssembly->SetHostPtr(pModule->GetAssembly());
             if (pVmAssembly->IsNull())
                 ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
         }
@@ -3488,7 +3488,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateFunctionData(
     if (hr != S_OK)
         return hr;
 
-    ppFunctionAssembly->SetDacTargetPtr(dac_cast<TADDR>(pMD.GetDacPtr()->GetModule()->GetRootAssembly()));
+    ppFunctionAssembly->SetDacTargetPtr(dac_cast<TADDR>(pMD.GetDacPtr()->GetModule()->GetAssembly()));
     *pMethodDef = pMD.GetDacPtr()->GetMemberDef();
 
     return hr;
@@ -3694,7 +3694,7 @@ void DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, Dac
             _ASSERTE(pDomain != NULL);
 
             Module* pModule = currentElement.pFunc->GetModule();
-            Assembly* pAssembly = pModule->GetRootAssembly();
+            Assembly* pAssembly = pModule->GetAssembly();
             _ASSERTE(pAssembly != NULL);
 
             currentFrame.vmAppDomain.SetHostPtr(pDomain);
@@ -4079,7 +4079,7 @@ void DacDbiInterfaceImpl::ResolveTypeReference(const TypeRefData * pTypeRefInfo,
         _ASSERTE(pTargetModule != NULL);
         _ASSERTE( TypeFromToken(targetTypeDef) == mdtTypeDef );
 
-        pTargetRefInfo->vmAssembly.SetDacTargetPtr(PTR_HOST_TO_TADDR(pTargetModule->GetRootAssembly()));
+        pTargetRefInfo->vmAssembly.SetDacTargetPtr(PTR_HOST_TO_TADDR(pTargetModule->GetAssembly()));
         pTargetRefInfo->typeToken = targetTypeDef;
     }
     else
@@ -6999,7 +6999,7 @@ bool DacDbiInterfaceImpl::GetAppDomainForObject(CORDB_ADDRESS addr, OUT VMPTR_Ap
 
     pAppDomain->SetDacTargetPtr(PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain()));
     pModule->SetDacTargetPtr(PTR_HOST_TO_TADDR(module));
-    pAssembly->SetDacTargetPtr(PTR_HOST_TO_TADDR(module->GetRootAssembly()));
+    pAssembly->SetDacTargetPtr(PTR_HOST_TO_TADDR(module->GetAssembly()));
 
     return true;
 }

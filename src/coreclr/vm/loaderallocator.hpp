@@ -236,7 +236,7 @@ public:
     };
     VOID Init();
     LoaderAllocatorType GetType();
-    VOID AddRootAssembly(Assembly* pAssembly);
+    VOID AddAssembly(Assembly* pAssembly);
     AssemblyIterator GetAssemblyIterator();
     BOOL Equals(LoaderAllocatorID* pId);
     COUNT_T Hash();
@@ -915,10 +915,10 @@ public:
     void Init();
     virtual BOOL CanUnload();
 
-    void AddRootAssembly(Assembly *pAssembly)
+    void AddAssembly(Assembly *pAssembly)
     {
         WRAPPER_NO_CONTRACT;
-        m_Id.AddRootAssembly(pAssembly);
+        m_Id.AddAssembly(pAssembly);
     }
 
     ShuffleThunkCache* GetShuffleThunkCache()

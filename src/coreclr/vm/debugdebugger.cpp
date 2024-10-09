@@ -886,7 +886,7 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
     StrongHandleHolder objHandle = pAppDomain->CreateStrongHandle(data.Get());
     MethodTable* pMT = data.Get()->GetGCSafeMethodTable();
     Module* pModule = pMT->GetModule();
-    Assembly* pAssembly = pModule->GetRootAssembly();
+    Assembly* pAssembly = pModule->GetAssembly();
     mdTypeDef classToken = pMT->GetCl();
 
     pThread->SetThreadCurrNotification(objHandle);

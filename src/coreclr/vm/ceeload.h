@@ -887,10 +887,6 @@ protected:
     MethodTable *GetGlobalMethodTable();
     bool         NeedsGlobalMethodTable();
 
-    Assembly *GetRootAssembly();
-
-    void SetRootAssembly(Assembly *pAssembly);
-
     OBJECTREF GetExposedObject();
     OBJECTREF GetExposedObjectIfExists();
 
