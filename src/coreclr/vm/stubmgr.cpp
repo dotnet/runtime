@@ -1232,15 +1232,6 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
 
 #endif // DACCESS_COMPILE
 
-void StubLinkStubManager::RemoveStubRange(BYTE* start, UINT length)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(start != NULL && length > 0);
-
-    BYTE* end = start + length;
-    GetRangeList()->RemoveRanges((LPVOID)start, start, end);
-}
-
 BOOL StubLinkStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 {
     WRAPPER_NO_CONTRACT;
