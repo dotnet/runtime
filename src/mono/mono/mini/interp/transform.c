@@ -6108,14 +6108,7 @@ retry_emit:
 				ptrdiff_t target = next_ip - td->il_code + offset;
 				InterpBasicBlock *target_bb = td->offset_to_bb [target];
 				g_assert (target_bb);
-				if (offset < 0) {
-#if DEBUG_INTERP
-					if (stack_height > 0 && stack_height != target_bb->stack_height)
-						g_warning ("SWITCH with back branch and non-empty stack");
-#endif
-				} else {
-					init_bb_stack_state (td, target_bb);
-				}
+				init_bb_stack_state (td, target_bb);
 				target_bb_table [i] = target_bb;
 				interp_link_bblocks (td, td->cbb, target_bb);
 				td->ip += 4;
@@ -8774,6 +8767,7 @@ retry_emit:
 		if (next_bb->emit_state == BB_STATE_NOT_EMITTED && next_bb != exit_bb) {
 			if (td->verbose_level)
 				g_print ("Unlink BB%d\n", next_bb->index);
+			td->offset_to_bb [next_bb->il_offset] = NULL;
 			prev_bb->next_bb = next_bb->next_bb;
 			next_bb = prev_bb->next_bb;
 		} else {
@@ -9519,19 +9513,34 @@ interp_squash_initlocals (TransformData *td)
 	}
 }
 
+// If precise is true, il_offset should point to the offset of a bblock
+// If precise is false, il_offset points to the end of a block, so we just
+// return the native offset of the first live bblock that we can find after it
 static int
-get_native_offset (TransformData *td, int il_offset)
+get_native_offset (TransformData *td, int il_offset, gboolean precise)
 {
-	// We can't access offset_to_bb for header->code_size IL offset. Also, offset_to_bb
-	// is not set for dead bblocks at method end.
-	if (GINT_TO_UINT32(il_offset) < td->header->code_size && td->offset_to_bb [il_offset]) {
+	if (GINT_TO_UINT32(il_offset) < td->header->code_size) {
 		InterpBasicBlock *bb = td->offset_to_bb [il_offset];
-		g_assert (!bb->dead);
-		return bb->native_offset;
-	} else {
-		return GPTRDIFF_TO_INT (td->new_code_end - td->new_code);
+		if (bb) {
+			g_assert (!bb->dead);
+			return bb->native_offset;
+		} else {
+			if (precise)
+				return -1;
+			while (GINT_TO_UINT32(il_offset) < td->header->code_size) {
+				bb = td->offset_to_bb [il_offset];
+				if (bb) {
+					g_assert (!bb->dead);
+					return bb->native_offset;
+				}
+				il_offset++;
+			}
+		}
 	}
+	return GPTRDIFF_TO_INT (td->new_code_end - td->new_code);
 }
+
+void mono_break (void);
 
 static void
 generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoGenericContext *generic_context, MonoError *error)
@@ -9702,15 +9711,25 @@ retry:
 	for (guint i = 0; i < header->num_clauses; i++) {
 		MonoExceptionClause *c = rtm->clauses + i;
 		int end_off = c->try_offset + c->try_len;
-		c->try_offset = get_native_offset (td, c->try_offset);
-		c->try_len = get_native_offset (td, end_off) - c->try_offset;
+		if (td->verbose_level)
+			mono_break ();
+		int try_native_offset = get_native_offset (td, c->try_offset, TRUE);
+		// Try block could have been unreachable code, skip clause
+		if (try_native_offset == -1) {
+			// reset try range so nothing is protected
+			c->try_offset = code_len_u16;
+			c->try_len = 0;
+			continue;
+		}
+		c->try_offset = try_native_offset;
+		c->try_len = get_native_offset (td, end_off, FALSE) - c->try_offset;
 		g_assert ((c->try_offset + c->try_len) <= code_len_u16);
 		end_off = c->handler_offset + c->handler_len;
-		c->handler_offset = get_native_offset (td, c->handler_offset);
-		c->handler_len = get_native_offset (td, end_off) - c->handler_offset;
+		c->handler_offset = get_native_offset (td, c->handler_offset, TRUE);
+		c->handler_len = get_native_offset (td, end_off, FALSE) - c->handler_offset;
 		g_assert (c->handler_len >= 0 && (c->handler_offset + c->handler_len) <= code_len_u16);
 		if (c->flags & MONO_EXCEPTION_CLAUSE_FILTER)
-			c->data.filter_offset = get_native_offset (td, c->data.filter_offset);
+			c->data.filter_offset = get_native_offset (td, c->data.filter_offset, TRUE);
 	}
 	// When optimized (using the var offset allocator), total_locals_size contains also the param area.
 	// When unoptimized, the param area is stored in the same order, within the IL execution stack.
