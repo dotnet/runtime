@@ -97,7 +97,6 @@ enum LogFacility
     LF_GC       = 0x00000001,
     LF_GCALLOC  = 0x00000100,
     LF_GCROOTS  = 0x00080000,
-    LF_ALWAYS   = 0x80000000,
 };
 
 enum LogLevel
@@ -240,7 +239,7 @@ public:
 
     static void LogMsg(unsigned dprintfLevel, const StressLogMsg& msg)
     {
-        GCToEEInterface::LogStressMsg(LL_ALWAYS, LF_ALWAYS|(dprintfLevel<<16)|LF_GC, msg);
+        GCToEEInterface::LogStressMsg(LL_ALWAYS, (dprintfLevel<<16)|LF_GC, msg);
     }
 
     static void LogMsg(unsigned level, unsigned facility, const StressLogMsg& msg)
