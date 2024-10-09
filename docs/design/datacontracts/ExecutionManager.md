@@ -53,10 +53,110 @@ Contracts used:
 | Contract Name |
 | --- |
 
+The bulk of the work is donee by the `GetEECodeInfoHandle` API that maps a code pointer to information about the containing jitted method.
+
 ```csharp
+    private EECodeInfo? GetEECodeInfo(TargetCodePointer jittedCodeAddress)
+    {
+        RangeSection range = RangeSection.Find(_topRangeSectionMap, jittedCodeAddress);
+        if (range.Data == null)
+        {
+            return null;
+        }
+        JitManager jitManager = GetJitManager(range.Data);
+        if (jitManager.GetMethodInfo(range, jittedCodeAddress, out EECodeInfo? info))
+        {
+            return info;
+        }
+        else
+        {
+            return null;
+        }
+    }
+    EECodeInfoHandle? IExecutionManager.GetEECodeInfoHandle(TargetCodePointer ip)
+    {
+        EECodeInfo? info = GetEECodeInfo(ip);
+        if (info == null || !info.Valid)
+        {
+            return null;
+        }
+        TargetPointer key = info.CodeHeaderAddress;
+        AddToCache(key, info);/* add a mapping from key to info to a chache */
+        return new EECodeInfoHandle(key);
+    }
 ```
 
-**TODO** Methods
+Here `RangeSection.Find` implements the range section lookup, summarized below.
+
+There are two `JitManager`s: the "EE JitManager" for jitted code and "R2R JitManager" for ReadyToRun code.
+
+The EE JitManager `GetMethodInfo` implements the nibble map lookup, summarized below, followed by returning the `RealCodeHeader` data:
+
+```csharp
+    bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out EECodeInfo? info)
+    {
+        TargetPointer start = FindMethodCode(rangeSection, jittedCodeAddress); // nibble map lookup
+        if (start == TargetPointer.Null)
+        {
+            return false;
+        }
+        TargetNUInt relativeOffset = jittedCodeAddress - start;
+        int codeHeaderOffset = Target.PointerSize;
+        TargetPointer codeHeaderIndirect = start - codeHeaderOffset;
+        if (RangeSection.IsStubCodeBlock(Target, codeHeaderIndirect))
+        {
+            return false;
+        }
+        TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
+        Data.RealCodeHeader realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
+        info = new EECodeInfo(jittedCodeAddress, codeHeaderOffset, relativeOffset, realCodeHeader, rangeSection.Data!.JitManager);
+        return true;
+    }
+```
+
+The `EECodeInfo` encapsulates the `RealCodeHeader` data from the target runtime together with the start of the jitted method
+
+```csharp
+class EECodeInfo
+{
+    private readonly int _codeHeaderOffset;
+
+    public TargetCodePointer StartAddress { get; }
+    // note: this is the address of the pointer to the "real code header", you need to
+    // dereference it to get the address of _codeHeaderData
+    public TargetPointer CodeHeaderAddress => StartAddress - _codeHeaderOffset;
+    private Data.RealCodeHeader _codeHeaderData;
+    public TargetPointer JitManagerAddress { get; }
+    public TargetNUInt RelativeOffset { get; }
+    public EECodeInfo(TargetCodePointer startAddress, int codeHeaderOffset, TargetNUInt relativeOffset, Data.RealCodeHeader codeHeaderData, TargetPointer jitManagerAddress)
+    {
+        _codeHeaderOffset = codeHeaderOffset;
+        StartAddress = startAddress;
+        _codeHeaderData = codeHeaderData;
+        RelativeOffset = relativeOffset;
+        JitManagerAddress = jitManagerAddress;
+    }
+
+    public TargetPointer MethodDescAddress => _codeHeaderData.MethodDesc;
+    public bool Valid => JitManagerAddress != TargetPointer.Null;
+}
+```
+
+The remaining contract APIs extract fields of the `EECodeInfo`:
+
+```csharp
+    TargetPointer IExecutionManager.GetMethodDesc(EECodeInfoHandle codeInfoHandle)
+    {
+        /* find EECodeInfo info for codeInfoHandle.Address*/
+        return info.MethodDescAddress;
+    }
+
+    TargetCodePointer IExecutionManager.GetStartAddress(EECodeInfoHandle codeInfoHandle)
+    {
+        /* find EECodeInfo info for codeInfoHandle.Address*/
+        return info.StartAddress;
+    }
+```
 
 ### RangeSectionMap
 
