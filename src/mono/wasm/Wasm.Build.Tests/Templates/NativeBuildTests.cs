@@ -45,10 +45,10 @@ namespace Wasm.Build.Templates.Tests
             File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir!, "undefined_xyz.c"));
 
-            CommandResult result = new DotNetCommand(s_buildEnv, _testOutput)
-                .WithWorkingDirectory(_projectDir!)
-                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("build", "-c Release");
+            using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);
+            CommandResult result = cmd.WithWorkingDirectory(_projectDir!)
+                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                    .ExecuteWithCapturedOutput("build", "-c Release");
 
             if (allowUndefined)
             {
@@ -83,17 +83,17 @@ namespace Wasm.Build.Templates.Tests
                                     Path.Combine(_projectDir!, "Program.cs"),
                                     overwrite: true);
 
-            CommandResult result = new DotNetCommand(s_buildEnv, _testOutput)
-                .WithWorkingDirectory(_projectDir!)
-                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("build", $"-c {config} -bl");
+            using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);
+            CommandResult result = cmd.WithWorkingDirectory(_projectDir!)
+                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                    .ExecuteWithCapturedOutput("build", $"-c {config} -bl");
 
             Assert.True(result.ExitCode == 0, "Expected build to succeed");
 
-            CommandResult res = new RunCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(_projectDir!)
-                                        .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config}")
-                                        .EnsureSuccessful();
+            using RunCommand runCmd = new RunCommand(s_buildEnv, _testOutput);
+            CommandResult res = runCmd.WithWorkingDirectory(_projectDir!)
+                    .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config}")
+                    .EnsureSuccessful();
             Assert.Contains("Hello, Console!", res.Output);
             Assert.Contains("Hello, World! Greetings from node version", res.Output);
         }

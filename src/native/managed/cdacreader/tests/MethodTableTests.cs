@@ -32,7 +32,7 @@ public unsafe class MethodTableTests
             builder = configure(builder);
         }
 
-        bool success = builder.TryCreateTarget(out Target? target);
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
         Assert.True(success);
 
         testCase(target);
