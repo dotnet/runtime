@@ -931,7 +931,7 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
         pShuffleThunk = CreateILDelegateShuffleThunk(pMD, isInstRetBuff);
 #else
         _ASSERTE(FALSE);
-        return NULL;
+        return (PCODE)NULL;
 #endif // TARGET_RISCV64
     }
 
