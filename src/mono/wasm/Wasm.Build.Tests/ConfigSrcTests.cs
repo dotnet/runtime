@@ -26,7 +26,7 @@ public class ConfigSrcTests : TestMainJsTestBase
                         id: id,
                         new BuildProjectOptions(
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                            DotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release")));
+                            DotnetWasmFromRuntimePack: IsDotnetWasmFromRuntimePack(buildArgs)));
 
         string binDir = GetBinDir(baseDir: _projectDir!, config: buildArgs.Config);
         string bundleDir = Path.Combine(binDir, "AppBundle");

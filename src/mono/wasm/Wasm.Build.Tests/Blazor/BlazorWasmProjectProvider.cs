@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using Xunit.Abstractions;
 
 #nullable enable
@@ -9,9 +10,10 @@ namespace Wasm.Build.Tests;
 
 public class BlazorWasmProjectProvider : WasmSdkBasedProjectProvider
 {
-    public BlazorWasmProjectProvider(ITestOutputHelper _testOutput, string? _projectDir = null)
-            : base(_testOutput, _projectDir)
-    {}
+    public BlazorWasmProjectProvider(ITestOutputHelper _testOutput, string defaultTargetFramework, string? _projectDir = null)
+            : base(_testOutput, defaultTargetFramework, _projectDir)
+    { }
+    public override string BundleDirName { get { return "AppBundle"; } }
 
     public void AssertBundle(BlazorBuildOptions options)
         => AssertBundle(new AssertWasmSdkBundleOptions(
@@ -27,4 +29,14 @@ public class BlazorWasmProjectProvider : WasmSdkBasedProjectProvider
                 AssertIcuAssets: true,
                 AssertSymbolsFile: false // FIXME: not supported yet
             ));
+    
+    public override string FindBinFrameworkDir(string config, bool forPublish, string framework, string? projectDir = null)
+    {
+        EnsureProjectDirIsSet();
+        string basePath = Path.Combine(projectDir ?? ProjectDir!, "bin", config, framework);
+        if (forPublish)
+            basePath = FindSubDirIgnoringCase(basePath, "publish");
+
+        return Path.Combine(basePath, BundleDirName, "_framework");
+    }
 }

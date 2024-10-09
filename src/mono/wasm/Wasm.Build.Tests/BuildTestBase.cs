@@ -179,6 +179,8 @@ namespace Wasm.Build.Tests
             return (res, logFilePath);
         }
 
+        protected bool IsDotnetWasmFromRuntimePack(BuildArgs buildArgs) => !(buildArgs.AOT || buildArgs.Config == "Release");
+
         protected string RunAndTestWasmApp(BuildArgs buildArgs,
                                            RunHost host,
                                            string id,

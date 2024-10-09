@@ -23,16 +23,16 @@ public record AssertTestMainJsAppBundleOptions(
     bool AssertSymbolsFile = true,
     bool HasV8Script = false,
     bool IsBrowserProject = true)
-        : AssertBundleOptionsBase(
+        : AssertWasmSdkBundleOptions(
                Config: Config,
                IsPublish: IsPublish,
                TargetFramework: TargetFramework,
                BinFrameworkDir: BinFrameworkDir,
                CustomIcuFile: CustomIcuFile,
                GlobalizationMode: GlobalizationMode,
+               BootJsonFileName: BootJsonFileName,
                ExpectedFileType: ExpectedFileType,
                RuntimeType: RuntimeType,
-               BootJsonFileName: BootJsonFileName,
                ExpectFingerprintOnDotnetJs: ExpectFingerprintOnDotnetJs,
                ExpectSymbolsFile: ExpectSymbolsFile,
                AssertIcuAssets: AssertIcuAssets,
