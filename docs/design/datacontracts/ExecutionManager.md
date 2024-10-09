@@ -7,10 +7,10 @@ managed method corresponding to that address.
 ## APIs of contract
 
 ```csharp
-internal struct EECodeInfoHandle
+struct EECodeInfoHandle
 {
-    // no public constructor
     public readonly TargetPointer Address;
+    // no public constructor
     internal EECodeInfoHandle(TargetPointer address) => Address = address;
 }
 ```
@@ -75,13 +75,18 @@ The bulk of the work is donee by the `GetEECodeInfoHandle` API that maps a code 
     }
     EECodeInfoHandle? IExecutionManager.GetEECodeInfoHandle(TargetCodePointer ip)
     {
+        TargetPointer key = ip.AsTargetPointer;
+        if (/*cache*/.ContainsKey(key))
+        {
+            return new EECodeInfoHandle(key);
+        }
         EECodeInfo? info = GetEECodeInfo(ip);
         if (info == null || !info.Valid)
         {
             return null;
         }
-        TargetPointer key = info.CodeHeaderAddress;
-        AddToCache(key, info);/* add a mapping from key to info to a chache */
+        /*cache*/.TryAdd(key, info);
+        return new EECodeInfoHandle(key);
         return new EECodeInfoHandle(key);
     }
 ```
