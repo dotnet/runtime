@@ -150,7 +150,7 @@ BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
     }
 }
 
-void RangeList::RemoveRangesWorker(void *id, const BYTE* start, const BYTE* end)
+void RangeList::RemoveRangesWorker(void *id)
 {
     CONTRACTL
     {
@@ -177,24 +177,9 @@ void RangeList::RemoveRangesWorker(void *id, const BYTE* start, const BYTE* end)
 
         while (r < rEnd)
         {
-            if (r->id != (TADDR)NULL)
+            if (r->id == (TADDR)id)
             {
-                if (start != NULL)
-                {
-                    _ASSERTE(end != NULL);
-
-                    if (r->start >= (TADDR)start && r->start < (TADDR)end)
-                    {
-                        CONSISTENCY_CHECK_MSGF(r->end >= (TADDR)start &&
-                                               r->end <= (TADDR)end,
-                                               ("r: %p start: %p end: %p", r, start, end));
-                        r->id = (TADDR)NULL;
-                    }
-                }
-                else if (r->id == (TADDR)id)
-                {
-                    r->id = (TADDR)NULL;
-                }
+                r->id = (TADDR)NULL;
             }
 
             r++;

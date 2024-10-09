@@ -360,15 +360,6 @@ struct FloatReg
     WORD Mask() const { return 1 << reg; }
 };
 
-struct CondCode
-{
-    int cond;
-    CondCode(int cond):cond(cond)
-    {
-        _ASSERTE(0 <= cond && cond < 16);
-    }
-};
-
 const IntReg RegSp  = IntReg(2);
 const IntReg RegFp  = IntReg(8);
 const IntReg RegRa  = IntReg(1);
@@ -400,15 +391,15 @@ public:
     void EmitMovConstant(IntReg target, UINT64 constant);
     void EmitJumpRegister(IntReg regTarget);
     void EmitMovReg(IntReg dest, IntReg source);
-    void EmitMovReg(FloatReg dest, FloatReg source);
 
-    void EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value);
-    void EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value);
+    void EmitSubImm(IntReg Xd, IntReg Xn, int value);
+    void EmitAddImm(IntReg Xd, IntReg Xn, int value);
     void EmitSllImm(IntReg Xd, IntReg Xn, unsigned int value);
     void EmitLuImm(IntReg Xd, unsigned int value);
 
     void EmitLoad(IntReg dest, IntReg srcAddr, int offset = 0);
     void EmitLoad(FloatReg dest, IntReg srcAddr, int offset = 0);
+
     void EmitStore(IntReg src, IntReg destAddr, int offset = 0);
     void EmitStore(FloatReg src, IntReg destAddr, int offset = 0);
 
