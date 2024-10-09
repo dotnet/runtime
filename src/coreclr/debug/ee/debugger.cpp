@@ -26,6 +26,7 @@
 #include "../../vm/dwreport.h"
 #include "../../vm/eepolicy.h"
 #include "../../vm/excep.h"
+
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
 #include "dbgtransportsession.h"
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
@@ -5134,8 +5135,8 @@ DebuggerModule * Debugger::LookupOrCreateModule(DomainAssembly * pDomainAssembly
 {
     _ASSERTE(pDomainAssembly != NULL);
     LOG((LF_CORDB, LL_INFO1000, "D::LOCM df=%p\n", pDomainAssembly));
-    DebuggerModule * pDModule = LookupOrCreateModule(pDomainAssembly->GetModule());
-    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p ad=%p -> dm=%p\n", pDomainAssembly->GetModule(), AppDomain::GetCurrentDomain(), pDModule));
+    DebuggerModule * pDModule = LookupOrCreateModule(pDomainAssembly->GetAssembly()->GetModule());
+    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p ad=%p -> dm=%p\n", pDomainAssembly->GetAssembly()->GetModule(), AppDomain::GetCurrentDomain(), pDModule));
     _ASSERTE(pDModule != NULL);
     _ASSERTE(pDModule->GetDomainAssembly() == pDomainAssembly);
 
@@ -5235,7 +5236,7 @@ DebuggerModule* Debugger::AddDebuggerModule(DomainAssembly * pDomainAssembly)
     LOG((LF_CORDB, LL_INFO1000, "D::ADM df=0x%x\n", pDomainAssembly));
     DebuggerDataLockHolder chInfo(this);
 
-    Module *     pRuntimeModule = pDomainAssembly->GetModule();
+    Module *     pRuntimeModule = pDomainAssembly->GetAssembly()->GetModule();
 
     HRESULT hr = CheckInitModuleTable();
     IfFailThrow(hr);
@@ -8041,7 +8042,7 @@ BOOL Debugger::ShouldSendCustomNotification(DomainAssembly *pAssembly, mdTypeDef
     }
     CONTRACTL_END;
 
-    Module *pModule = pAssembly->GetModule();
+    Module *pModule = pAssembly->GetAssembly()->GetModule();
     TypeInModule tim(pModule, typeDef);
     return !(m_pCustomNotificationTable->Lookup(tim).IsNull());
 }
@@ -9402,7 +9403,7 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     // We should simply things when we actually get rid of DebuggerModule, possibly by just passing the
     // DomainAssembly around.
     _ASSERTE(module->GetDomainAssembly()    == pDomainAssembly);
-    _ASSERTE(module->GetRuntimeModule() == pDomainAssembly->GetModule());
+    _ASSERTE(module->GetRuntimeModule() == pDomainAssembly->GetAssembly()->GetModule());
 
     // Send a load module event to the Right Side.
     ipce = m_pRCThread->GetIPCEventSendBuffer();
@@ -9433,14 +9434,13 @@ void Debugger::LoadModule(Module* pRuntimeModule,
 //
 // Arguments:
 //   pRuntimeModule - required, module to send symbols for. May be domain neutral.
-//   pAppDomain - required, appdomain that module is in.
 //
 // Notes:
 //   This is just a ping event. Debugger must query for actual symbol contents.
 //   This keeps the launch + attach cases identical.
 //   This just sends the raw event and does not synchronize the runtime.
 //   Use code:Debugger.SendUpdateModuleSymsEventAndBlock for that.
-void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule, AppDomain *pAppDomain)
+void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule)
 {
     CONTRACTL
     {
@@ -9474,7 +9474,7 @@ void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule, AppDomain *p
     ipce = m_pRCThread->GetIPCEventSendBuffer();
     InitIPCEvent(ipce, DB_IPCE_UPDATE_MODULE_SYMS,
                  g_pEEInterface->GetThread(),
-                 pAppDomain);
+                 AppDomain::GetCurrentDomain());
 
     ipce->UpdateModuleSymsData.vmDomainAssembly.SetRawPtr((module ? module->GetDomainAssembly() : NULL));
 
@@ -9487,8 +9487,6 @@ void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule, AppDomain *p
 //
 // Arguments:
 //   pRuntimeModule - required, module to send symbols for. May be domain neutral.
-//   pAppDomain - required, appdomain that module is in.
-//
 //
 // Notes:
 //    This will send the event (via code:Debugger.SendRawUpdateModuleSymsEvent) and then synchronize
@@ -9496,7 +9494,7 @@ void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule, AppDomain *p
 //
 //    This should only be called in cases where we reasonably expect to send symbols.
 //    However, this may not send symbols if the symbols aren't available.
-void Debugger::SendUpdateModuleSymsEventAndBlock(Module* pRuntimeModule, AppDomain *pAppDomain)
+void Debugger::SendUpdateModuleSymsEventAndBlock(Module* pRuntimeModule)
 {
     CONTRACTL
     {
@@ -9525,7 +9523,7 @@ void Debugger::SendUpdateModuleSymsEventAndBlock(Module* pRuntimeModule, AppDoma
     // Actually send the event
     if (CORDebuggerAttached())
     {
-        SendRawUpdateModuleSymsEvent(pRuntimeModule, pAppDomain);
+        SendRawUpdateModuleSymsEvent(pRuntimeModule);
         TrapAllRuntimeThreads();
     }
 
@@ -9722,7 +9720,6 @@ void Debugger::RemoveModuleReferences( Module* pModule )
 void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
                                          DebuggerModule * pClassDebuggerModule,
                                          Assembly *pAssembly,
-                                         AppDomain *pAppDomain,
                                          BOOL fIsLoadEvent)
 {
     CONTRACTL
@@ -9733,8 +9730,8 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
     CONTRACTL_END;
 
 
-    LOG((LF_CORDB,LL_INFO10000, "D::SCLUE: Tok:0x%x isLoad:0x%x Mod:%#08x AD:%#08x\n",
-        classMetadataToken, fIsLoadEvent, pClassDebuggerModule, pAppDomain));
+    LOG((LF_CORDB,LL_INFO10000, "D::SCLUE: Tok:0x%x isLoad:0x%x Mod:%#08x\n",
+        classMetadataToken, fIsLoadEvent, pClassDebuggerModule));
 
     DebuggerIPCEvent * pEvent = m_pRCThread->GetIPCEventSendBuffer();
 
@@ -9747,7 +9744,7 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
         // V1.1 sent Sym Update first so that binding at the class load has the latest symbols.
         // However, The Class Load may need to be in sync with updating new metadata,
         // and that has to come before the Sym update.
-        InitIPCEvent(pEvent, DB_IPCE_LOAD_CLASS, g_pEEInterface->GetThread(), pAppDomain);
+        InitIPCEvent(pEvent, DB_IPCE_LOAD_CLASS, g_pEEInterface->GetThread(), AppDomain::GetCurrentDomain());
 
         pEvent->LoadClass.classMetadataToken = classMetadataToken;
         pEvent->LoadClass.vmDomainAssembly.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetDomainAssembly() : NULL));
@@ -9759,7 +9756,7 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
     }
     else
     {
-        InitIPCEvent(pEvent, DB_IPCE_UNLOAD_CLASS, g_pEEInterface->GetThread(), pAppDomain);
+        InitIPCEvent(pEvent, DB_IPCE_UNLOAD_CLASS, g_pEEInterface->GetThread(), AppDomain::GetCurrentDomain());
 
         pEvent->UnloadClass.classMetadataToken = classMetadataToken;
         pEvent->UnloadClass.vmDomainAssembly.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetDomainAssembly() : NULL));
@@ -9771,7 +9768,7 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
     if (fIsLoadEvent && fIsReflection)
     {
         // Send the raw event, but don't actually sync and block the runtime.
-        SendRawUpdateModuleSymsEvent(pClassDebuggerModule->GetRuntimeModule(), pAppDomain);
+        SendRawUpdateModuleSymsEvent(pClassDebuggerModule->GetRuntimeModule());
     }
 
 }
@@ -9828,7 +9825,6 @@ BOOL Debugger::SendSystemClassLoadUnloadEvent(mdTypeDef classMetadataToken,
                 SendClassLoadUnloadEvent(classMetadataToken,
                                          pModule,
                                          pAssembly,
-                                         pAppDomain,
                                          fIsLoadEvent);
                 fRetVal = TRUE;
             }
@@ -9848,8 +9844,7 @@ BOOL Debugger::SendSystemClassLoadUnloadEvent(mdTypeDef classMetadataToken,
 // Returns TRUE if an event is sent, FALSE otherwise
 BOOL  Debugger::LoadClass(TypeHandle th,
                           mdTypeDef  classMetadataToken,
-                          Module    *classModule,
-                          AppDomain *pAppDomain)
+                          Module    *classModule)
 {
     CONTRACTL
     {
@@ -9868,14 +9863,9 @@ BOOL  Debugger::LoadClass(TypeHandle th,
     if (CORDBUnrecoverableError(this))
         return FALSE;
 
-    // Note that pAppDomain may be null.  The AppDomain isn't used here, and doesn't make a lot of sense since
-    // we may be delivering the notification for a class in an assembly which is loaded into multiple AppDomains.  We
-    // handle this in SendSystemClassLoadUnloadEvent below by looping through all AppDomains and dispatching
-    // events for each that contain this assembly.
-
-    LOG((LF_CORDB, LL_INFO10000, "D::LC: load class Tok:%#08x Mod:%#08x AD:%#08x classMod:%#08x modName:%s\n",
-         classMetadataToken, (pAppDomain == NULL) ? NULL : LookupOrCreateModule(classModule),
-         pAppDomain, classModule, classModule->GetDebugName()));
+    LOG((LF_CORDB, LL_INFO10000, "D::LC: load class Tok:%#08x Mod:%#08x classMod:%#08x modName:%s\n",
+         classMetadataToken, LookupOrCreateModule(classModule),
+         classModule, classModule->GetDebugName()));
 
     //
     // If we're attaching, then we only need to send the event. We
@@ -9909,8 +9899,7 @@ BOOL  Debugger::LoadClass(TypeHandle th,
 // UnloadClass is called when a Runtime thread unloads a Class.
 //
 void Debugger::UnloadClass(mdTypeDef classMetadataToken,
-                           Module *classModule,
-                           AppDomain *pAppDomain)
+                           Module *classModule)
 {
     CONTRACTL
     {
@@ -9928,8 +9917,8 @@ void Debugger::UnloadClass(mdTypeDef classMetadataToken,
         return;
     }
 
-    LOG((LF_CORDB, LL_INFO10000, "D::UC: unload class Tok:0x%08x Mod:%#08x AD:%#08x runtimeMod:%#08x modName:%s\n",
-         classMetadataToken, LookupOrCreateModule(classModule), pAppDomain, classModule, classModule->GetDebugName()));
+    LOG((LF_CORDB, LL_INFO10000, "D::UC: unload class Tok:0x%08x Mod:%#08x \runtimeMod:%#08x modName:%s\n",
+         classMetadataToken, LookupOrCreateModule(classModule), classModule, classModule->GetDebugName()));
 
     Assembly *pAssembly = classModule->GetClassLoader()->GetAssembly();
     DebuggerModule *pModule = LookupOrCreateModule(classModule);
@@ -9943,9 +9932,9 @@ void Debugger::UnloadClass(mdTypeDef classMetadataToken,
 
     if (CORDebuggerAttached())
     {
-        _ASSERTE((pAppDomain != NULL) && (pAssembly != NULL) && (pModule != NULL));
+        _ASSERTE((pAssembly != NULL) && (pModule != NULL));
 
-        SendClassLoadUnloadEvent(classMetadataToken, pModule, pAssembly, pAppDomain, FALSE);
+        SendClassLoadUnloadEvent(classMetadataToken, pModule, pAssembly, FALSE);
 
         // Stop all Runtime threads
         TrapAllRuntimeThreads();
@@ -10842,7 +10831,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                 // unexpected in an OOM situation.  Quickly just sanity check them.
                 //
                 Thread * pThread = pEvent->SetIP.vmThreadToken.GetRawPtr();
-                Module * pModule = pEvent->SetIP.vmDomainAssembly.GetRawPtr()->GetModule();
+                Module * pModule = pEvent->SetIP.vmDomainAssembly.GetRawPtr()->GetAssembly()->GetModule();
 
                 // Get the DJI for this function
                 DebuggerMethodInfo * pDMI = GetOrCreateMethodInfo(pModule, pEvent->SetIP.mdMethod);
@@ -12600,7 +12589,7 @@ bool Debugger::IsThreadAtSafePlace(Thread *thread)
     // any thread handling a SO is not at a safe place.
     // NOTE: don't check for thread->IsExceptionInProgress(), SO has special handling
     // that directly sets the last thrown object without ever creating a tracker.
-    // (Tracker is what thread->IsExceptionInProgress() checks for)   
+    // (Tracker is what thread->IsExceptionInProgress() checks for)
     if (g_pEEInterface->GetThreadException(thread) == CLRException::GetPreallocatedStackOverflowExceptionHandle())
     {
         return false;
@@ -16787,6 +16776,12 @@ BOOL Debugger::IsOutOfProcessSetContextEnabled()
 }
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 #endif // DACCESS_COMPILE
+#ifndef DACCESS_COMPILE
+void Debugger::MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count)
+{
+    DebuggerController::DispatchMulticastDelegate(pbDel, count);
+}
+#endif //DACCESS_COMPILE
 
 #endif //DEBUGGING_SUPPORTED
 
