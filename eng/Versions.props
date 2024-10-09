@@ -136,7 +136,7 @@
     <runtimenativeSystemIOPortsVersion>10.0.0-alpha.1.24504.10</runtimenativeSystemIOPortsVersion>
     <!-- Keep toolset versions in sync with dotnet/msbuild and dotnet/sdk -->
     <SystemCollectionsImmutableToolsetVersion>8.0.0</SystemCollectionsImmutableToolsetVersion>
-    <SystemTextJsonToolsetVersion>8.0.4</SystemTextJsonToolsetVersion>
+    <SystemTextJsonToolsetVersion>8.0.5</SystemTextJsonToolsetVersion>
     <SystemReflectionMetadataToolsetVersion>8.0.0</SystemReflectionMetadataToolsetVersion>
     <SystemReflectionMetadataLoadContextToolsetVersion>8.0.0</SystemReflectionMetadataLoadContextToolsetVersion>
     <!-- Runtime-Assets dependencies -->
