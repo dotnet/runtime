@@ -99,7 +99,7 @@ if [[ "$nobuild" -eq 0 ]]; then
         build_args="$build_args --build-arg SDK_BASE_IMAGE=$imagename"
     fi
 
-    if ! docker-compose --file "$compose_file" build $build_args; then
+    if ! docker compose --file "$compose_file" build $build_args; then
         exit $?
     fi
 fi
@@ -112,6 +112,6 @@ if [[ "$buildonly" -eq 0 ]]; then
 
     export STRESS_CLIENT_ARGS=$clientstressargs
     export STRESS_SERVER_ARGS=$serverstressargs
-    docker-compose --file "$compose_file" up --abort-on-container-exit
+    docker compose --file "$compose_file" up --abort-on-container-exit
     exit $?
 fi
