@@ -2380,6 +2380,29 @@ public:
     static FlowGraphDominatorTree* Build(const FlowGraphDfsTree* dfsTree);
 };
 
+class FlowGraphDominanceFrontiers
+{
+    FlowGraphDominatorTree* m_domTree;
+    BlkToBlkVectorMap m_map;
+    BitVecTraits m_poTraits;
+    BitVec m_visited;
+
+    FlowGraphDominanceFrontiers(FlowGraphDominatorTree* domTree);
+
+#ifdef DEBUG
+    void Dump();
+#endif
+
+public:
+    FlowGraphDominatorTree* GetDomTree()
+    {
+        return m_domTree;
+    }
+
+    static FlowGraphDominanceFrontiers* Build(FlowGraphDominatorTree* domTree);
+    void ComputeIteratedDominanceFrontier(BasicBlock* block, BlkVector* result);
+};
+
 // Represents a reverse mapping from block back to its (most nested) containing loop.
 class BlockToNaturalLoopMap
 {
@@ -5200,6 +5223,7 @@ public:
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
     // in order to avoid the need for SSA reconstruction and an "out of SSA" phase).
     FlowGraphDominatorTree* m_domTree = nullptr;
+    FlowGraphDominanceFrontiers* m_domFrontiers = nullptr;
     BlockReachabilitySets* m_reachabilitySets = nullptr;
 
     // Do we require loops to be in canonical form? The canonical form ensures that:
@@ -5460,7 +5484,7 @@ public:
 
     void fgMergeBlockReturn(BasicBlock* block);
 
-    bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
+    bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg), bool invalidateDFSTreeOnFGChange = true);
     void fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt);
 
     bool gtRemoveTreesAfterNoReturnCall(BasicBlock* block, Statement* stmt);
@@ -5758,7 +5782,7 @@ public:
 
     // The value numbers for this compilation.
     ValueNumStore* vnStore = nullptr;
-    class ValueNumberState* vnState;
+    class ValueNumberState* vnState = nullptr;
 
 public:
     ValueNumStore* GetValueNumStore()
@@ -12173,7 +12197,7 @@ private:
 
 public:
     //------------------------------------------------------------------------
-    // WalkTree: Walk the dominator tree.
+    // WalkTree: Walk the dominator tree starting from the first BB.
     //
     // Parameter:
     //    domTree - Dominator tree.
