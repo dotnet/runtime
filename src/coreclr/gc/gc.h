@@ -344,7 +344,7 @@ inline bool IsServerHeap()
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
 
-#define TRACE_GC
+// #define TRACE_GC
 // #define SIMPLE_DPRINTF
 
 #ifdef TRACE_GC
