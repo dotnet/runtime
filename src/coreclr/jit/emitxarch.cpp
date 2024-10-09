@@ -2343,7 +2343,6 @@ emitter::code_t emitter::AddRexBPrefix(const instrDesc* id, code_t code)
     }
     else if (TakesApxExtendedEvexPrefix(id))
     {
-        assert(hasEvexPrefix(code));
         assert(IsApxExtendedEvexInstruction(ins));
         // R-bit is added in bit-inverted form.
         return code & 0xFFDFFFFFFFFFFFFFULL;
@@ -6233,7 +6232,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
  *  Add an instruction referencing a single register.
  */
 
-void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
+void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts instOptions /* = INS_OPTS_NONE */)
 {
     emitAttr size = EA_SIZE(attr);
 
@@ -6308,6 +6307,8 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(reg);
+
+    SetEvexNfIfNeeded(id, instOptions);
 
     // Vex bytes
     sz += emitGetAdjustedSize(id, insEncodeMRreg(id, reg, attr, insCodeMR(ins)));
@@ -6384,7 +6385,8 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
 void emitter::emitIns_R_I(instruction ins,
                           emitAttr    attr,
                           regNumber   reg,
-                          ssize_t val DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
+                          ssize_t val,
+                          insOpts instOptions DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     emitAttr size = EA_SIZE(attr);
 
@@ -6523,6 +6525,8 @@ void emitter::emitIns_R_I(instruction ins,
     id->idDebugOnlyInfo()->idFlags     = gtFlags;
     id->idDebugOnlyInfo()->idMemCookie = targetHandle;
 #endif
+
+    SetEvexNfIfNeeded(id, instOptions);
 
     if (isSimdInsAndValInByte)
     {
@@ -10067,6 +10071,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
 
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
+    SetEvexNfIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs);
     id->idCodeSize(sz);
@@ -15651,7 +15656,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
 
                 // Can't use the compact form, use the long form
                 ins = (instruction)(ins + 1);
-                if (size == EA_2BYTE)
+                if (size == EA_2BYTE && !TakesApxExtendedEvexPrefix(id))
                 {
                     // Output a size prefix for a 16-bit operand
                     dst += emitOutputByte(dst, 0x66);
@@ -15667,6 +15672,14 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
                 if (TakesRex2Prefix(id))
                 {
                     code = AddRex2Prefix(ins, code);
+                }
+                else if (TakesApxExtendedEvexPrefix(id))
+                {
+                    // TODO-Ruihan::
+                    // now the use cases of REX2 and APX-EVEX are not overlapped,
+                    // eventually, we will need to have REX2 preferred when EVEX
+                    // features are not used.
+                    code = AddEvexPrefix(id, code, size);
                 }
 
                 if (TakesRexWPrefix(id))
