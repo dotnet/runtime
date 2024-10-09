@@ -16,6 +16,7 @@ using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using Microsoft.Build.Logging.StructuredLogger;
 
 #nullable enable
 
@@ -175,6 +176,24 @@ namespace Wasm.Build.Tests
                 res.EnsureSuccessful();
             else if (res.ExitCode == 0)
                 throw new XunitException($"Build should have failed, but it didn't. Process exited with exitCode : {res.ExitCode}");
+
+            // Ensure we got all output.
+            string[] successMessages = ["Build succeeded"];
+            string[] errorMessages = ["Build failed", "Build FAILED", "Restore failed", "Stopping the build"];
+            if ((res.ExitCode == 0 && successMessages.All(m => !res.Output.Contains(m))) || (res.ExitCode != 0 && errorMessages.All(m => !res.Output.Contains(m))))
+            {
+                _testOutput.WriteLine("Replacing dotnet process output with messages from binlog");
+
+                var outputBuilder = new StringBuilder();
+                var buildRoot = BinaryLog.ReadBuild(logFilePath);
+                buildRoot.VisitAllChildren<TextNode>(m =>
+                {
+                    if (m is Message || m is Error || m is Warning)
+                        outputBuilder.AppendLine(m.Title);
+                });
+
+                res = new CommandResult(res.StartInfo, res.ExitCode, outputBuilder.ToString());
+            }
 
             return (res, logFilePath);
         }
@@ -622,7 +641,6 @@ namespace Wasm.Build.Tests
         private static IHostRunner GetHostRunnerFromRunHost(RunHost host) => host switch
         {
             RunHost.V8 => new V8HostRunner(),
-            RunHost.NodeJS => new NodeJSHostRunner(),
             _ => new BrowserHostRunner(),
         };
     }
