@@ -184,11 +184,24 @@
 
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
   <Target Name="_SetupEmscripten" BeforeTargets="_SetupToolchain">
+    <Exec Command="dotnet nuget locals all -l" ConsoleToMSBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="NuGetLocalsOutput" />
+    </Exec>
     <PropertyGroup>
+      <GlobalPackagesPath>$([System.Text.RegularExpressions.Regex]::Match($(NuGetLocalsOutput), 'global-packages:\s*([^;]+)').Groups[1].Value)</GlobalPackagesPath>
+    </PropertyGroup>
+    <Message Text="Global Packages Path: $(GlobalPackagesPath)" Importance="High" />
+    <PropertyGroup>
+      <NodeTransportDir>$([System.IO.Path]::Combine($(GlobalPackagesPath), 'runtime.$(_portableHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.wasm.node.transport'))</NodeTransportDir>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenSdkToolsPath)' == '' or !Exists('$(EmscriptenSdkToolsPath)'))">%24(EmscriptenSdkToolsPath)=$(EmscriptenSdkToolsPath) </_EMSDKMissingPaths>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenNodeToolsPath)' == '' or !Exists('$(EmscriptenNodeToolsPath)'))">%24(EmscriptenNodeToolsPath)=$(EmscriptenNodeToolsPath) </_EMSDKMissingPaths>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenUpstreamBinPath)' == '' or !Exists('$(EmscriptenUpstreamBinPath)'))">%24(EmscriptenUpstreamBinPath)=$(EmscriptenUpstreamBinPath) </_EMSDKMissingPaths>
     </PropertyGroup>
+
+    <ItemGroup>
+      <NodeTransportDirContents Include="$(NodeTransportDir)\*" />
+      <PackagesDirContents Include="$(GlobalPackagesPath)\*" />
+    </ItemGroup>
 
     <PropertyGroup>
       <_ToolchainMissingErrorMessage Condition="'$(EMSDK_PATH)' == '' and '$(EmscriptenSdkToolsPath)' == ''">Could not find emscripten sdk. Either set %24(EMSDK_PATH), or use workloads to get the sdk.</_ToolchainMissingErrorMessage>
@@ -198,19 +211,24 @@
       <_ToolchainMissingErrorMessage Condition="'$(_ToolchainMissingErrorMessage)' == '' and '$(_UsingEMSDK_PATH)' == 'true' and '$(_EMSDKMissingPaths)' != ''">Specified Emscripten sdk at %24(EMSDK_PATH)=$(EMSDK_PATH) is missing some paths: $(_EMSDKMissingPaths).</_ToolchainMissingErrorMessage>
 
       <_IsToolchainMissing Condition="'$(_ToolchainMissingErrorMessage)' != ''">true</_IsToolchainMissing>
+      <_ToolchainMissingErrorMessage>$(_ToolchainMissingErrorMessage); [DEBUG] Directories at $(NodeTransportDir): %(NodeTransportDirContents.Identity); Directories at $(PackagesDir): %(PackagesDirContents.Identity);</_ToolchainMissingErrorMessage>
     </PropertyGroup>
 
     <PropertyGroup>
       <EmscriptenSdkToolsPath    Condition="'$(EmscriptenSdkToolsPath)' != ''"   >$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)))</EmscriptenSdkToolsPath>
       <EmscriptenNodeToolsPath   Condition="'$(EmscriptenNodeToolsPath)' != ''"  >$([MSBuild]::NormalizeDirectory($(EmscriptenNodeToolsPath)))</EmscriptenNodeToolsPath>
       <EmscriptenUpstreamBinPath Condition="'$(EmscriptenUpstreamBinPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenUpstreamBinPath)))</EmscriptenUpstreamBinPath>
+      <_EmscriptenNodePath>$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))</_EmscriptenNodePath>
     </PropertyGroup>
 
     <!-- Environment variables required for running emsdk commands like `emcc` -->
     <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != ''">
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
+      <EmscriptenEnvVars Include="EM_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
-      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
+      <EmscriptenEnvVars Condition="'$(OS)' == 'Windows_NT'" Include="EM_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
+      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$(_EmscriptenNodePath)" />
+      <EmscriptenEnvVars Include="EM_NODE_JS=$(_EmscriptenNodePath)" />
     </ItemGroup>
 
     <ItemGroup>
