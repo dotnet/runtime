@@ -2694,7 +2694,7 @@ HRESULT CordbModule::SetJITCompilerFlags(DWORD dwFlags)
             if (SUCCEEDED(hr))
             {
                 // DD interface will check if it's a valid time to change the flags.
-                hr = pProcess->GetDAC()->SetCompilerFlags(GetRuntimeRootAssembly(), fAllowJitOpts, fEnableEnC);
+                hr = pProcess->GetDAC()->SetCompilerFlags(GetRuntimeAssembly(), fAllowJitOpts, fEnableEnC);
             }
         }
     }
@@ -2730,7 +2730,7 @@ HRESULT CordbModule::GetJITCompilerFlags(DWORD *pdwFlags )
         BOOL fEnableEnC;
 
         pProcess->GetDAC()->GetCompilerFlags (
-            GetRuntimeRootAssembly(),
+            GetRuntimeAssembly(),
             &fAllowJitOpts,
             &fEnableEnC);
 

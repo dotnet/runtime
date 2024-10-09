@@ -9888,7 +9888,7 @@ HRESULT CordbEval::CallParameterizedFunction(ICorDebugFunction *pFunction,
         event.FuncEval.vmThreadToken = m_thread->m_vmThreadToken;
         event.FuncEval.funcEvalType = m_evalType;
         event.FuncEval.funcMetadataToken = m_function->GetMetadataToken();
-        event.FuncEval.vmAssembly = m_function->GetModule()->GetRuntimeRootAssembly();
+        event.FuncEval.vmAssembly = m_function->GetModule()->GetRuntimeAssembly();
         event.FuncEval.funcEvalKey = hFuncEval.Ptr();
         event.FuncEval.argCount = nArgs;
         event.FuncEval.genericArgsCount = nTypeArgs;
@@ -10071,7 +10071,7 @@ HRESULT CordbEval::NewParameterizedObject(ICorDebugFunction * pConstructor,
     event.FuncEval.vmThreadToken = m_thread->m_vmThreadToken;
     event.FuncEval.funcEvalType = m_evalType;
     event.FuncEval.funcMetadataToken = m_function->GetMetadataToken();
-    event.FuncEval.vmAssembly = m_function->GetModule()->GetRuntimeRootAssembly();
+    event.FuncEval.vmAssembly = m_function->GetModule()->GetRuntimeAssembly();
     event.FuncEval.funcEvalKey = hFuncEval.Ptr();
     event.FuncEval.argCount = nArgs;
     event.FuncEval.genericArgsCount = nTypeArgs;
@@ -10172,7 +10172,7 @@ HRESULT CordbEval::NewParameterizedObjectNoConstructor(ICorDebugClass * pClass,
     event.FuncEval.funcEvalType = m_evalType;
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = (mdTypeDef)m_class->m_id;
-    event.FuncEval.vmAssembly = m_class->GetModule()->GetRuntimeRootAssembly();
+    event.FuncEval.vmAssembly = m_class->GetModule()->GetRuntimeAssembly();
     event.FuncEval.funcEvalKey = hFuncEval.Ptr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = nTypeArgs;

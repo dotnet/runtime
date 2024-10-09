@@ -781,7 +781,7 @@ void CordbClass::Init(ClassLoadLevel desiredLoadLevel)
         if(desiredLoadLevel == FullInfo)
         {
             VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
-            VMPTR_Assembly vmAssembly = m_pModule->GetRuntimeRootAssembly();
+            VMPTR_Assembly vmAssembly = m_pModule->GetRuntimeAssembly();
             if (!vmAssembly.IsNull())
             {
                 AssemblyInfo info;
@@ -941,7 +941,7 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
                         fieldToken,
                         ELEMENT_TYPE_MAX,
                         classToken,
-                        m_pModule->GetRuntimeRootAssembly());
+                        m_pModule->GetRuntimeAssembly());
     }
     else
     {
@@ -966,7 +966,7 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
                                                                     // This is used only for log messages, and could
                                                                     // be removed.
                         classToken,                                 // metadata token for the class
-                        m_pModule->GetRuntimeRootAssembly());         // Root file for the class
+                        m_pModule->GetRuntimeAssembly());         // Root file for the class
     }
 } // CordbClass::InitFieldData
 

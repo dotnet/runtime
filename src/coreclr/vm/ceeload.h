@@ -1505,10 +1505,6 @@ public:
     const ReadyToRun_MethodIsGenericMap *m_pMethodIsGenericMap = &ReadyToRun_MethodIsGenericMap::EmptyInstance;
     const ReadyToRun_TypeGenericInfoMap *m_pTypeGenericInfoMap = &ReadyToRun_TypeGenericInfoMap::EmptyInstance;
 
-protected:
-
-    PTR_Assembly      m_pRootAssembly;
-
 public:
     //-----------------------------------------------------------------------------------------
     // Returns a BOOL to indicate if we have computed whether compiler has instructed us to

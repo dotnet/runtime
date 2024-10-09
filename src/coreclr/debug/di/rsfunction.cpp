@@ -780,7 +780,7 @@ HRESULT CordbFunction::GetILCodeAndSigToken()
                 // and we also fallback on creating an empty ILCode object.
                 // See issue DD 273199 for cases where IL and NGEN metadata mismatch (different RVAs).
                 ALLOW_DATATARGET_MISSING_OR_INCONSISTENT_MEMORY(
-                    pProcess->GetDAC()->GetILCodeAndSig(m_pModule->GetRuntimeRootAssembly(),
+                    pProcess->GetDAC()->GetILCodeAndSig(m_pModule->GetRuntimeAssembly(),
                                                             m_MDToken,
                                                             &codeInfo,
                                                             &localVarSigToken);
@@ -857,7 +857,7 @@ HRESULT CordbFunction::InitParentClassOfFunction()
         }
 
         mdTypeDef classMetadataToken;
-        VMPTR_Assembly vmAssembly = m_pModule->GetRuntimeRootAssembly();
+        VMPTR_Assembly vmAssembly = m_pModule->GetRuntimeAssembly();
 
         classMetadataToken = InitParentClassOfFunctionHelper(m_MDToken);
 
@@ -925,7 +925,7 @@ HRESULT CordbFunction::InitNativeCodeInfo()
             // All we actually need is the start address and method desc which are cheap to get relative
             // to some of the other members. So far this doesn't appear to be a perf hotspot, but if it
             // shows up in some scenario it wouldn't be too hard to improve it
-            pProcess->GetDAC()->GetNativeCodeInfo(m_pModule->GetRuntimeRootAssembly(), m_MDToken, &codeInfo);
+            pProcess->GetDAC()->GetNativeCodeInfo(m_pModule->GetRuntimeAssembly(), m_MDToken, &codeInfo);
         }
 
         // populate the m_nativeCode pointer with the code info we found
@@ -979,7 +979,7 @@ HRESULT CordbFunction::SetJMCStatus(BOOL fIsUserCode)
 
     DebuggerIPCEvent event;
     pProcess->InitIPCEvent(&event, DB_IPCE_SET_METHOD_JMC_STATUS, true, m_pModule->GetAppDomain()->GetADToken());
-    event.SetJMCFunctionStatus.vmAssembly = m_pModule->GetRuntimeRootAssembly();
+    event.SetJMCFunctionStatus.vmAssembly = m_pModule->GetRuntimeAssembly();
     event.SetJMCFunctionStatus.funcMetadataToken   = m_MDToken;
     event.SetJMCFunctionStatus.dwStatus            = fIsUserCode;
 
@@ -1031,7 +1031,7 @@ HRESULT CordbFunction::GetJMCStatus(BOOL * pfIsUserCode)
     // Ask the left-side if a method is user code or not.
     DebuggerIPCEvent event;
     pProcess->InitIPCEvent(&event, DB_IPCE_GET_METHOD_JMC_STATUS, true, m_pModule->GetAppDomain()->GetADToken());
-    event.SetJMCFunctionStatus.vmAssembly = m_pModule->GetRuntimeRootAssembly();
+    event.SetJMCFunctionStatus.vmAssembly = m_pModule->GetRuntimeAssembly();
     event.SetJMCFunctionStatus.funcMetadataToken   = m_MDToken;
 
 

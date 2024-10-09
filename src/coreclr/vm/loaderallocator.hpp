@@ -222,7 +222,7 @@ protected:
     LoaderAllocatorType m_type;
     union
     {
-        Assembly* m_pRootAssembly;
+        Assembly* m_pAssembly;
         void* m_pValue;
     };
 

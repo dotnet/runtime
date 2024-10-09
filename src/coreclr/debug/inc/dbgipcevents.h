@@ -2141,7 +2141,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // Apply an EnC edit
         struct MSLAYOUT
         {
-            VMPTR_Assembly vmAssembly;      // Module to edit
+            VMPTR_Assembly vmAssembly;          // Module to edit
             DWORD cbDeltaMetadata;              // size of blob pointed to by pDeltaMetadata
             CORDB_ADDRESS pDeltaMetadata;       // pointer to delta metadata in debuggee
                                                 // it's the RS's responsibility to allocate and free

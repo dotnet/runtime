@@ -731,7 +731,7 @@ public:
     // Gets properties for a module
     void GetModuleData(VMPTR_Module vmModule, ModuleInfo * pData);
 
-    // Gets properties for a domain assembly
+    // Gets properties for an assembly
     void GetRootAssemblyData(VMPTR_Assembly vmAssembly, AssemblyInfo * pData);
 
     void GetModuleForRootAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule);

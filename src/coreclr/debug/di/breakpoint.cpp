@@ -201,7 +201,7 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL fActivate)
         pProcess->InitIPCEvent(pEvent, DB_IPCE_BREAKPOINT_ADD, true, pAppDomain->GetADToken());
 
         pEvent->BreakpointData.funcMetadataToken = m_code->GetMetadataToken();
-        pEvent->BreakpointData.vmAssembly = m_code->GetModule()->GetRuntimeRootAssembly();
+        pEvent->BreakpointData.vmAssembly = m_code->GetModule()->GetRuntimeAssembly();
         pEvent->BreakpointData.encVersion = m_code->GetVersion();
 
         BOOL codeIsIL = m_code->IsIL();

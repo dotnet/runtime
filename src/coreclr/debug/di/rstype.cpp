@@ -1704,7 +1704,7 @@ HRESULT CordbType::InitInstantiationFieldInfo(BOOL fForceInit)
             // this may be called multiple times. Each call will discard previous values in m_fieldList and reinitialize
             // the list with updated information
             RSLockHolder lockHolder(pProcess->GetProcessLock());
-            pProcess->GetDAC()->GetInstantiationFieldInfo(m_pClass->GetModule()->GetRuntimeRootAssembly(),
+            pProcess->GetDAC()->GetInstantiationFieldInfo(m_pClass->GetModule()->GetRuntimeAssembly(),
                                                           m_typeHandleExact,
                                                           typeHandleApprox,
                                                           &m_fieldList,

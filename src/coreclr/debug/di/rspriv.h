@@ -4352,7 +4352,7 @@ public:
 
     const WCHAR * GetNGenImagePath();
 
-    const VMPTR_Assembly GetRuntimeRootAssembly ()
+    const VMPTR_Assembly GetRuntimeAssembly ()
     {
         return m_vmRootAssembly;
     }
