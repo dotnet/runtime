@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
@@ -34,6 +35,7 @@ namespace System.Text.Json
         public JsonTypeInfo JsonTypeInfo;
         public StackFrameObjectState ObjectState; // State tracking the current object.
 
+        public LargeJsonObjectExtensionDataSerializationState? LargeJsonObjectExtensionDataSerializationState;
         // Validate EndObject token on array with preserve semantics.
         public bool ValidateEndTokenOnArray;
 

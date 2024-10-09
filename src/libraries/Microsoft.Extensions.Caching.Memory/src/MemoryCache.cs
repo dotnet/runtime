@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Internal;
@@ -23,7 +25,8 @@ namespace Microsoft.Extensions.Caching.Memory
         internal readonly ILogger _logger;
 
         private readonly MemoryCacheOptions _options;
-        private readonly ConcurrentDictionary<object, CacheEntry> _entries;
+        private readonly ConcurrentDictionary<string, CacheEntry> _stringKeyEntries;
+        private readonly ConcurrentDictionary<object, CacheEntry> _nonStringKeyEntries;
 
         private long _cacheSize;
         private bool _disposed;
@@ -56,7 +59,8 @@ namespace Microsoft.Extensions.Caching.Memory
             _options = optionsAccessor.Value;
             _logger = loggerFactory.CreateLogger<MemoryCache>();
 
-            _entries = new ConcurrentDictionary<object, CacheEntry>();
+            _stringKeyEntries = new ConcurrentDictionary<string, CacheEntry>(StringKeyComparer.Instance);
+            _nonStringKeyEntries = new ConcurrentDictionary<object, CacheEntry>();
 
             if (_options.Clock == null)
             {
@@ -74,12 +78,14 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Gets the count of the current entries for diagnostic purposes.
         /// </summary>
-        public int Count => _entries.Count;
+        public int Count => _stringKeyEntries.Count + _nonStringKeyEntries.Count;
 
         // internal for testing
         internal long Size { get => Interlocked.Read(ref _cacheSize); }
 
-        private ICollection<KeyValuePair<object, CacheEntry>> EntriesCollection => _entries;
+        private ICollection<KeyValuePair<string, CacheEntry>> StringKeyEntriesCollection => _stringKeyEntries;
+
+        private ICollection<KeyValuePair<object, CacheEntry>> NonStringKeyEntriesCollection => _nonStringKeyEntries;
 
         /// <inheritdoc />
         public ICacheEntry CreateEntry(object key)
@@ -129,7 +135,16 @@ namespace Microsoft.Extensions.Caching.Memory
             // Initialize the last access timestamp at the time the entry is added
             entry.LastAccessed = utcNow;
 
-            if (_entries.TryGetValue(entry.Key, out CacheEntry priorEntry))
+            CacheEntry priorEntry = null;
+            string s = entry.Key as string;
+            if (s != null)
+            {
+                if (_stringKeyEntries.TryGetValue(s, out priorEntry))
+                {
+                    priorEntry.SetExpired(EvictionReason.Replaced);
+                }
+            }
+            else if (_nonStringKeyEntries.TryGetValue(entry.Key, out priorEntry))
             {
                 priorEntry.SetExpired(EvictionReason.Replaced);
             }
@@ -143,12 +158,26 @@ namespace Microsoft.Extensions.Caching.Memory
                 if (priorEntry == null)
                 {
                     // Try to add the new entry if no previous entries exist.
-                    entryAdded = _entries.TryAdd(entry.Key, entry);
+                    if (s != null)
+                    {
+                        entryAdded = _stringKeyEntries.TryAdd(s, entry);
+                    }
+                    else
+                    {
+                        entryAdded = _nonStringKeyEntries.TryAdd(entry.Key, entry);
+                    }
                 }
                 else
                 {
                     // Try to update with the new entry if a previous entries exist.
-                    entryAdded = _entries.TryUpdate(entry.Key, entry, priorEntry);
+                    if (s != null)
+                    {
+                        entryAdded = _stringKeyEntries.TryUpdate(s, entry, priorEntry);
+                    }
+                    else
+                    {
+                        entryAdded = _nonStringKeyEntries.TryUpdate(entry.Key, entry, priorEntry);
+                    }
 
                     if (entryAdded)
                     {
@@ -163,7 +192,14 @@ namespace Microsoft.Extensions.Caching.Memory
                         // The update will fail if the previous entry was removed after retrival.
                         // Adding the new entry will succeed only if no entry has been added since.
                         // This guarantees removing an old entry does not prevent adding a new entry.
-                        entryAdded = _entries.TryAdd(entry.Key, entry);
+                        if (s != null)
+                        {
+                            entryAdded = _stringKeyEntries.TryAdd(s, entry);
+                        }
+                        else
+                        {
+                            entryAdded = _nonStringKeyEntries.TryAdd(entry.Key, entry);
+                        }
                     }
                 }
 
@@ -223,7 +259,18 @@ namespace Microsoft.Extensions.Caching.Memory
 
             DateTimeOffset utcNow = _options.Clock.UtcNow;
 
-            if (_entries.TryGetValue(key, out CacheEntry entry))
+            bool found;
+            CacheEntry entry;
+            if (key is string s)
+            {
+                found = _stringKeyEntries.TryGetValue(s, out entry);
+            }
+            else
+            {
+                found = _nonStringKeyEntries.TryGetValue(key, out entry);
+            }
+
+            if (found)
             {
                 // Check if expired due to expiration tokens, timers, etc. and if so, remove it.
                 // Allow a stale Replaced value to be returned due to concurrent calls to SetExpired during SetEntry.
@@ -262,7 +309,18 @@ namespace Microsoft.Extensions.Caching.Memory
             ValidateCacheKey(key);
 
             CheckDisposed();
-            if (_entries.TryRemove(key, out CacheEntry entry))
+            bool removed;
+            CacheEntry entry;
+            if (key is string s)
+            {
+                removed = _stringKeyEntries.TryRemove(s, out entry);
+            }
+            else
+            {
+                removed = _nonStringKeyEntries.TryRemove(key, out entry);
+            }
+
+            if (removed)
             {
                 if (_options.SizeLimit.HasValue)
                 {
@@ -278,7 +336,17 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void RemoveEntry(CacheEntry entry)
         {
-            if (EntriesCollection.Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
+            bool removed;
+            if (entry.Key is string s)
+            {
+                removed = StringKeyEntriesCollection.Remove(new KeyValuePair<string, CacheEntry>(s, entry));
+            }
+            else
+            {
+                removed = NonStringKeyEntriesCollection.Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry));
+            }
+
+            if (removed)
             {
                 if (_options.SizeLimit.HasValue)
                 {
@@ -317,10 +385,8 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             DateTimeOffset now = cache._lastExpirationScan = cache._options.Clock.UtcNow;
 
-            foreach (KeyValuePair<object, CacheEntry> item in cache._entries)
+            foreach (CacheEntry entry in cache.GetCacheEntries())
             {
-                CacheEntry entry = item.Value;
-
                 if (entry.CheckExpired(now))
                 {
                     cache.RemoveEntry(entry);
@@ -388,8 +454,24 @@ namespace Microsoft.Extensions.Caching.Memory
         /// ?. Larger objects - estimated by object graph size, inaccurate.
         public void Compact(double percentage)
         {
-            int removalCountTarget = (int)(_entries.Count * percentage);
+            int removalCountTarget = (int)(Count * percentage);
             Compact(removalCountTarget, _ => 1);
+        }
+
+        private IEnumerable<CacheEntry> GetCacheEntries()
+        {
+            // note this mimics the outgoing code in that we don't just access
+            // .Values, which has additional overheads; this is only used for rare
+            // calls - compaction, clear, etc - so the additional overhead of a
+            // generated enumerator is not alarming
+            foreach (KeyValuePair<string, CacheEntry> item in _stringKeyEntries)
+            {
+                yield return item.Value;
+            }
+            foreach (KeyValuePair<object, CacheEntry> item in _nonStringKeyEntries)
+            {
+                yield return item.Value;
+            }
         }
 
         private void Compact(long removalSizeTarget, Func<CacheEntry, long> computeEntrySize)
@@ -403,9 +485,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
             // Sort items by expired & priority status
             DateTimeOffset now = _options.Clock.UtcNow;
-            foreach (KeyValuePair<object, CacheEntry> item in _entries)
+            foreach (CacheEntry entry in GetCacheEntries())
             {
-                CacheEntry entry = item.Value;
                 if (entry.CheckExpired(now))
                 {
                     entriesToRemove.Add(entry);
@@ -526,5 +607,34 @@ namespace Microsoft.Extensions.Caching.Memory
 
             static void Throw() => throw new ArgumentNullException(nameof(key));
         }
+
+#if NETCOREAPP
+        // on .NET Core, the inbuilt comparer has Marvin built in; no need to intercept
+        private static class StringKeyComparer
+        {
+            internal static IEqualityComparer<string> Instance => EqualityComparer<string>.Default;
+        }
+#else
+        // otherwise, we need a custom comparer that manually implements Marvin
+        private sealed class StringKeyComparer : IEqualityComparer<string>, IEqualityComparer
+        {
+            private StringKeyComparer() { }
+
+            internal static readonly IEqualityComparer<string> Instance = new StringKeyComparer();
+
+            // special-case string keys and use Marvin hashing
+            public int GetHashCode(string? s) => s is null ? 0
+                : Marvin.ComputeHash32(MemoryMarshal.AsBytes(s.AsSpan()), Marvin.DefaultSeed);
+
+            public bool Equals(string? x, string? y)
+                => string.Equals(x, y);
+
+            bool IEqualityComparer.Equals(object x, object y)
+                => object.Equals(x, y);
+
+            int IEqualityComparer.GetHashCode(object obj)
+                => obj is string s ? Marvin.ComputeHash32(MemoryMarshal.AsBytes(s.AsSpan()), Marvin.DefaultSeed) : 0;
+        }
+#endif
     }
 }
