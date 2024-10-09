@@ -118,7 +118,7 @@ Copyright (c) .NET Foundation. All rights reserved.
           DependsOnTargets="$(CoreCompileDependsOn)">
 
     <PropertyGroup>
-      <IlasmAssemblyName Condition="('$(IlasmAssemblyName)' == '') and ('$(SynthesizeIlasmAssemblyName)' == 'true')">$(MSBuildProjectName)</_IlasmAssemblyName>
+      <IlasmAssemblyName Condition="('$(IlasmAssemblyName)' == '') and ('$(SynthesizeIlasmAssemblyName)' == 'true')">$(MSBuildProjectName)</IlasmAssemblyName>
 
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Library'">-DLL</_OutputTypeArgument>
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Exe'">-EXE</_OutputTypeArgument>
