@@ -29,6 +29,8 @@ public class ExecutionManagerTests
                         return (T)(object)new Data.RangeSectionMap(_target, address);
                     break;
                 default:
+                     if (typeof(T) == typeof(Data.RangeSectionFragment))
+                        return (T)(object)new Data.RangeSectionFragment(_target, address);
                      break;
                 }
                 return base.GetOrAdd<T>(address);
@@ -43,6 +45,14 @@ public class ExecutionManagerTests
                     Fields = new Dictionary<string, FieldInfo>() {
                         [nameof(Data.RangeSectionMap.TopLevelData)] = new () {Offset = 0}},
                     },
+                [DataType.RangeSectionFragment] = new TypeInfo() {
+                    Fields = new Dictionary<string, FieldInfo>() {
+                        [nameof(Data.RangeSectionFragment.RangeBegin)] = new () {Offset = 0},
+                        [nameof(Data.RangeSectionFragment.RangeEndOpen)] = new () {Offset = 8},
+                        [nameof(Data.RangeSectionFragment.RangeSection)] = new () {Offset = 16},
+                        [nameof(Data.RangeSectionFragment.Next)] = new () {Offset = 24},
+                    },
+                },
             };
             SetDataCache(new ExecutionManagerDataCache(this));
             IContractFactory<IExecutionManager> emfactory = new ExecutionManagerFactory();
@@ -94,4 +104,32 @@ public class ExecutionManagerTests
         Assert.Null(eeInfo);
     }
 
+#if false // TODO: implement this test
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void LookupNonNullOneRangeOneMethod(MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
+        const uint codeRangeSize = 0xc000u; // arbitrary
+        TargetCodePointer methodStart = new (0x0a0a_0040); // arbitrary, inside [codeRangeStart,codeRangeStart+codeRangeSize]
+        int methodSize = 0x100; // arbitrary
+        ulong nibbleMapStart = 0x00ee_0000; // arbitrary
+
+        TargetPointer rangeSectionFragmentAddress = new (0x00dd_0000);
+
+        TargetTestHelpers targetTestHelpers = new (arch);
+        MockMemorySpace.Builder builder = new (targetTestHelpers);
+        RangeSectionMapTests.Builder rsmBuilder = new (ExecutionManagerCodeRangeMapAddress, builder);
+        rsmBuilder.InsertAddressRange(codeRangeStart, codeRangeSize, rangeSectionFragmentAddress);
+        NibbleMapTests.NibbleMapTestBuilder nibBuilder = new NibbleMapTests.NibbleMapTestBuilder(codeRangeStart, codeRangeSize, nibbleMapStart, arch);
+        nibBuilder.AllocateCodeChunk(methodStart, methodSize);
+        // TODO: connect nibbleMapStart to rangeSectionFragmentAddress
+        builder.MarkCreated();
+        ExecutionManagerTestTarget target = new(arch, builder.GetReadContext().ReadFromTarget);
+        var em = target.Contracts.ExecutionManager;
+        Assert.NotNull(em);
+        var eeInfo = em.GetEECodeInfoHandle(methodStart);
+        Assert.NotNull(eeInfo);
+    }
+#endif
 }
