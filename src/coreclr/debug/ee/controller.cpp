@@ -287,7 +287,7 @@ StackTraceTicket::StackTraceTicket(DebuggerUserBreakpoint * p)
 //      caller wants information about a specific frame.
 // CONTEXT* pContext:  A pointer to a CONTEXT structure.  Can be null,
 // we use our temp context.
-// bool suppressUMChainFromComPlusMethodFrameGeneric - A ridiculous flag that is trying to narrowly
+// bool suppressUMChainFromCLRToCOMMethodFrameGeneric - A ridiculous flag that is trying to narrowly
 //      target a fix for issue 650903.
 // StackTraceTicket - ticket to ensure that we actually have permission for this stacktrace
 void ControllerStackInfo::GetStackInfo(
@@ -295,7 +295,7 @@ void ControllerStackInfo::GetStackInfo(
     Thread *thread,
     FramePointer targetFP,
     CONTEXT *pContext,
-    bool suppressUMChainFromComPlusMethodFrameGeneric
+    bool suppressUMChainFromCLRToCOMMethodFrameGeneric
     )
 {
     _ASSERTE(thread != NULL);
@@ -323,7 +323,7 @@ void ControllerStackInfo::GetStackInfo(
     m_targetFP  = targetFP;
     m_targetFrameFound = (m_targetFP == LEAF_MOST_FRAME);
     m_specialChainReason = CHAIN_NONE;
-    m_suppressUMChainFromComPlusMethodFrameGeneric = suppressUMChainFromComPlusMethodFrameGeneric;
+    m_suppressUMChainFromCLRToCOMMethodFrameGeneric = suppressUMChainFromCLRToCOMMethodFrameGeneric;
 
     int result = DebuggerWalkStack(thread,
                                    LEAF_MOST_FRAME,
@@ -387,18 +387,18 @@ StackWalkAction ControllerStackInfo::WalkStack(FrameInfo *pInfo, void *data)
     // This is part of the targeted fix for issue 650903 (see the other
     // parts in code:TrackUMChain and code:DebuggerStepper::TrapStepOut).
     //
-    // pInfo->fIgnoreThisFrameIfSuppressingUMChainFromComPlusMethodFrameGeneric has been
+    // pInfo->fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric has been
     // set by TrackUMChain to help us remember that the current frame we're looking at is
-    // ComPlusMethodFrameGeneric (we can't rely on looking at pInfo->frame to check
-    // this), and i->m_suppressUMChainFromComPlusMethodFrameGeneric has been set by the
+    // CLRToCOMMethodFrameGeneric (we can't rely on looking at pInfo->frame to check
+    // this), and i->m_suppressUMChainFromCLRToCOMMethodFrameGeneric has been set by the
     // dude initiating this walk to remind us that our goal in life is to do a Step Out
     // during managed-only debugging. These two things together tell us we should ignore
     // this frame, rather than erroneously identifying it as the target frame.
     //
 #ifdef FEATURE_COMINTEROP
-    if(i->m_suppressUMChainFromComPlusMethodFrameGeneric &&
+    if(i->m_suppressUMChainFromCLRToCOMMethodFrameGeneric &&
         (pInfo->chainReason == CHAIN_ENTER_UNMANAGED) &&
-        (pInfo->fIgnoreThisFrameIfSuppressingUMChainFromComPlusMethodFrameGeneric))
+        (pInfo->fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric))
     {
         return SWA_CONTINUE;
     }
@@ -943,7 +943,8 @@ DebuggerController::DebuggerController(Thread * pThread, AppDomain * pAppDomain)
     m_unwindFP(LEAF_MOST_FRAME),
     m_eventQueuedCount(0),
     m_deleted(false),
-    m_fEnableMethodEnter(false)
+    m_fEnableMethodEnter(false),
+    m_multicastDelegateHelper(false)
 {
     CONTRACTL
     {
@@ -1109,7 +1110,7 @@ void DebuggerController::DisableAll()
         // thus leaving the patchtable in an inconsistent state such that we may fail trying to walk it.
         // Since we're exiting anyways, leaving int3 in the code can't harm anybody.
         //
-        if (!g_fProcessDetach)
+        if (!IsAtProcessExit())
         {
             HASHFIND f;
             for (DebuggerControllerPatch *patch = g_patches->GetFirstPatch(&f);
@@ -1133,6 +1134,8 @@ void DebuggerController::DisableAll()
             DisableTraceCall();
         if (m_fEnableMethodEnter)
             DisableMethodEnter();
+        if (m_multicastDelegateHelper)
+            DisableMultiCastDelegate();
     }
 }
 
@@ -1898,7 +1901,7 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
                                   BOOL offsetIsIL)
 {
     _ASSERTE(g_patches != NULL);
-    _ASSERTE(md != NULL);
+    _ASSERTE(md != 0);
     _ASSERTE(module != NULL);
 
     BOOL fOk = FALSE;
@@ -1930,7 +1933,7 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
         // Iterate through every existing NativeCodeBlob (with the same EnC version).
         // This includes generics + prejitted code.
         DebuggerMethodInfo::DJIIterator it;
-        dmi->IterateAllDJIs(pAppDomain, NULL /* module filter */, pMethodDescFilter, &it);
+        dmi->IterateAllDJIs(pAppDomain, pMethodDescFilter, &it);
 
         if (it.IsAtEnd())
         {
@@ -2279,6 +2282,7 @@ static bool _AddrIsJITHelper(PCODE addr)
 // method & return true.
 //
 // Return true if we set a patch, else false
+#ifndef DACCESS_COMPILE
 bool DebuggerController::PatchTrace(TraceDestination *trace,
                                     FramePointer fp,
                                     bool fStopInUnmanaged)
@@ -2364,7 +2368,7 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
 
     case TRACE_FRAME_PUSH:
         LOG((LF_CORDB, LL_INFO10000,
-             "Setting frame patch at 0x%p(%p)\n", trace->GetAddress(), fp.GetSPValue()));
+             "Setting frame patch at %p(%p)\n", trace->GetAddress(), fp.GetSPValue()));
 
         AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE *)trace->GetAddress(),
                  fp,
@@ -2374,13 +2378,12 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
 
     case TRACE_MGR_PUSH:
         LOG((LF_CORDB, LL_INFO10000,
-             "Setting frame patch (TRACE_MGR_PUSH) at 0x%p(%p)\n",
-             trace->GetAddress(), fp.GetSPValue()));
-
+            "Setting frame patch (TRACE_MGR_PUSH) at %p(%p)\n",
+            trace->GetAddress(), fp.GetSPValue()));
         dcp = AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE *)trace->GetAddress(),
-                       LEAF_MOST_FRAME, // But Mgr_push can't have fp affinity!
-                       TRUE,
-                       DPT_DEFAULT_TRACE_TYPE); // TRACE_OTHER
+                    LEAF_MOST_FRAME, // But Mgr_push can't have fp affinity!
+                    TRUE,
+                    DPT_DEFAULT_TRACE_TYPE); // TRACE_OTHER
         // Now copy over the trace field since TriggerPatch will expect this
         // to be set for this case.
         if (dcp != NULL)
@@ -2388,6 +2391,10 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
             dcp->trace = *trace;
         }
 
+        return true;
+
+    case TRACE_MULTICAST_DELEGATE_HELPER:
+        EnableMultiCastDelegate();
         return true;
 
     case TRACE_OTHER:
@@ -2400,6 +2407,7 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
         return false;
     }
 }
+#endif
 
 //-----------------------------------------------------------------------------
 // Checks if the patch matches the context + thread.
@@ -3202,7 +3210,7 @@ void DebuggerController::ApplyTraceFlag(Thread *thread)
     g_pEEInterface->MarkThreadForDebugStepping(thread, true);
     LOG((LF_CORDB,LL_INFO1000, "DC::ApplyTraceFlag marked thread for debug stepping\n"));
 
-    SetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread));
+    SetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread) LOONGARCH64_ARG(thread));
 }
 
 //
@@ -3232,14 +3240,14 @@ void DebuggerController::UnapplyTraceFlag(Thread *thread)
         // so there should be nothing to do. However, we still assert b/c we want to know how
         // we'd actually hit this.
         // @todo - is there a path if TriggerUnwind() calls DisableAll(). But why would
-        CONSISTENCY_CHECK_MSGF(false, ("How did we get here?. thread=%p\n", thread));
+        //CONSISTENCY_CHECK_MSGF(false, ("How did we get here?. thread=%p\n", thread)); it can be caused in a scenario where we are stepping and an AV is thrown
         LOG((LF_CORDB,LL_INFO1000, "DC::UnapplyTraceFlag couldn't get context.\n"));
         return;
     }
 
     // Always need to unmark for stepping
     g_pEEInterface->MarkThreadForDebugStepping(thread, false);
-    UnsetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread));
+    UnsetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread) LOONGARCH64_ARG(thread));
 }
 
 void DebuggerController::EnableExceptionHook()
@@ -3879,6 +3887,73 @@ void DebuggerController::DispatchMethodEnter(void * pIP, FramePointer fp)
 
 }
 
+void DebuggerController::EnableMultiCastDelegate()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    ControllerLockHolder chController;
+    if (!m_multicastDelegateHelper)
+    {
+        LOG((LF_CORDB, LL_INFO1000000, "DC::EnableMultiCastDel, this=%p, previously disabled\n", this));
+        m_multicastDelegateHelper = true;
+        g_multicastDelegateTraceActiveCount += 1;
+    }
+    else
+    {
+        LOG((LF_CORDB, LL_INFO1000000, "DC::EnableMultiCastDel, this=%p, already set\n", this));
+    }
+}
+
+void DebuggerController::DisableMultiCastDelegate()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    ControllerLockHolder chController;
+    if (m_multicastDelegateHelper)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "DC::DisableMultiCastDelegate, this=%p, previously set\n", this));
+        m_multicastDelegateHelper = false;
+        g_multicastDelegateTraceActiveCount -= 1;
+    }
+    else
+    {
+        LOG((LF_CORDB, LL_INFO10000, "DC::DisableMultiCastDelegate, this=%p, already disabled\n", this));
+    }
+}
+
+// Loop through controllers and dispatch TriggerMulticastDelegate
+void DebuggerController::DispatchMulticastDelegate(DELEGATEREF pbDel, INT32 countDel)
+{
+    LOG((LF_CORDB, LL_INFO10000, "DC::DispatchMulticastDelegate\n"));
+
+    Thread * pThread = g_pEEInterface->GetThread();
+    _ASSERTE(pThread  != NULL);
+
+    ControllerLockHolder lockController;
+
+    DebuggerController *p = g_controllers;
+    while (p != NULL)
+    {
+        if (p->m_multicastDelegateHelper)
+        {
+            if ((p->GetThread() == NULL) || (p->GetThread() == pThread))
+            {
+                p->TriggerMulticastDelegate(pbDel, countDel);
+            }
+        }
+        p = p->m_next;
+    }
+}
 //
 // AddProtection adds page protection to (at least) the given range of
 // addresses
@@ -4022,6 +4097,10 @@ void DebuggerController::DispatchFuncEvalExit(Thread * thread)
     }
 
 
+}
+void DebuggerController::TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateCount)
+{
+    _ASSERTE(!"This code should be unreachable. If your controller enables MulticastDelegateHelper events,it should also override this callback to do something useful when the event arrives.");
 }
 
 
@@ -6058,6 +6137,8 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
         }
     }
     LOG((LF_CORDB,LL_INFO1000,"Ending TrapStep\n"));
+
+    return false;
 }
 
 bool DebuggerStepper::IsAddrWithinFrame(DebuggerJitInfo *dji,
@@ -6257,7 +6338,6 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
         _ASSERTE(IsCloserToLeaf(dbgLastFP, info->m_activeFrame.fp));
 #endif
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
         if (info->m_activeFrame.md != nullptr && info->m_activeFrame.md->IsILStub() && info->m_activeFrame.md->AsDynamicMethodDesc()->IsMulticastStub())
         {
             LOG((LF_CORDB, LL_INFO10000,
@@ -6282,12 +6362,10 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                 && g_pEEInterface->FollowTrace(&trace)
                 && PatchTrace(&trace, info->m_activeFrame.fp,
                               true))
-                break;
+                continue;
         }
-        else
-#endif // FEATURE_MULTICASTSTUB_AS_IL
-        if (info->m_activeFrame.md != nullptr && info->m_activeFrame.md->IsILStub() &&
-            info->m_activeFrame.md->AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubTailCallCallTarget)
+        else if (info->m_activeFrame.md != nullptr && info->m_activeFrame.md->IsILStub() &&
+                 info->m_activeFrame.md->AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubTailCallCallTarget)
         {
             // Normally the stack trace would not include IL stubs, but we
             // include this specific IL stub so that we can check if a call into
@@ -7096,11 +7174,11 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
                         {
                             // Find the method that the return is to.
                             mdNative = g_pEEInterface->GetNativeCodeMethodDesc(dac_cast<PCODE>(traceManagerRetAddr));
-                            _ASSERTE(g_pEEInterface->GetFunctionAddress(mdNative) != NULL);
+                            _ASSERTE(g_pEEInterface->GetFunctionAddress(mdNative) != (PCODE)NULL);
                             pcodeNative = g_pEEInterface->GetFunctionAddress(mdNative);
                         }
 
-                        _ASSERTE(mdNative != NULL && pcodeNative != NULL);
+                        _ASSERTE(mdNative != NULL && pcodeNative != (PCODE)NULL);
                         SIZE_T offsetRet = dac_cast<TADDR>(traceManagerRetAddr - pcodeNative);
                         LOG((LF_CORDB, LL_INFO10000,
                              "DS::TP: Before normally managed code AddPatch"
@@ -7279,6 +7357,9 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
     // the assert if we end up in the method we started in (which could happen if we trace call
     // instructions before the JMC probe).
     // m_StepInStartMethod may be null (if this step-in didn't start from managed code).
+#if defined(TARGET_ARM64) && defined(__APPLE__)
+    LOG((LF_CORDB, LL_INFO10000, "DebuggerStepper::TriggerMethodEnter: Consistency_check_MSGF not needed because we skip setting breakpoints in certain patches on arm64-macOS\n"));
+#else
     if ((m_StepInStartMethod != pDesc) &&
         (!m_StepInStartMethod->IsLCGMethod()))
     {
@@ -7289,27 +7370,27 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
 
         SString sLog;
         StubManager::DbgGetLog(&sLog);
-
-        // Assert b/c the Stub-manager should have caught us first.
-        // We don't want people relying on TriggerMethodEnter as the real implementation for Traditional Step-in
-        // (see above for reasons why). However, using TME will provide a bandage for the final retail product
-        // in cases where we are missing a stub-manager.
-        CONSISTENCY_CHECK_MSGF(false, (
-            "\nThe Stubmanagers failed to identify and trace a stub on step-in. The stub-managers for this code-path path need to be fixed.\n"
-            "See http://team/sites/clrdev/Devdocs/StubManagers.rtf for more information on StubManagers.\n"
-            "Stepper this=0x%p, startMethod='%s::%s'\n"
-            "---------------------------------\n"
-            "Stub manager log:\n%s"
-            "\n"
-            "The thread is now in managed method '%s::%s'.\n"
-            "---------------------------------\n",
-            this,
-            ((m_StepInStartMethod == NULL) ? "unknown" : m_StepInStartMethod->m_pszDebugClassName),
-            ((m_StepInStartMethod == NULL) ? "unknown" : m_StepInStartMethod->m_pszDebugMethodName),
-            sLog.GetUTF8(),
-            pDesc->m_pszDebugClassName, pDesc->m_pszDebugMethodName
-            ));
+            // Assert b/c the Stub-manager should have caught us first.
+            // We don't want people relying on TriggerMethodEnter as the real implementation for Traditional Step-in
+            // (see above for reasons why). However, using TME will provide a bandage for the final retail product
+            // in cases where we are missing a stub-manager.
+            CONSISTENCY_CHECK_MSGF(false, (
+                "\nThe Stubmanagers failed to identify and trace a stub on step-in. The stub-managers for this code-path path need to be fixed.\n"
+                "See http://team/sites/clrdev/Devdocs/StubManagers.rtf for more information on StubManagers.\n"
+                "Stepper this=0x%p, startMethod='%s::%s'\n"
+                "---------------------------------\n"
+                "Stub manager log:\n%s"
+                "\n"
+                "The thread is now in managed method '%s::%s'.\n"
+                "---------------------------------\n",
+                this,
+                ((m_StepInStartMethod == NULL) ? "unknown" : m_StepInStartMethod->m_pszDebugClassName),
+                ((m_StepInStartMethod == NULL) ? "unknown" : m_StepInStartMethod->m_pszDebugMethodName),
+                sLog.GetUTF8(),
+                pDesc->m_pszDebugClassName, pDesc->m_pszDebugMethodName
+                ));
     }
+#endif //defined(TARGET_ARM64) && defined(__APPLE__)
 #endif
 
     // Place a patch to stop us.
@@ -7551,6 +7632,21 @@ void DebuggerStepper::TriggerUnwind(Thread *thread,
     m_reason = unwindReason;
 }
 
+void DebuggerStepper::TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateCount)
+{
+    TraceDestination trace;
+    FramePointer fp = LEAF_MOST_FRAME;
+
+    PTRARRAYREF pDelInvocationList = (PTRARRAYREF) pDel->GetInvocationList();
+    DELEGATEREF pCurrentInvokeDel = (DELEGATEREF) pDelInvocationList->GetAt(delegateCount);
+
+    StubLinkStubManager::TraceDelegateObject((BYTE*)OBJECTREFToObject(pCurrentInvokeDel), &trace);
+
+    g_pEEInterface->FollowTrace(&trace);
+    //fStopInUnmanaged only matters for TRACE_UNMANAGED
+    PatchTrace(&trace, fp, /*fStopInUnmanaged*/false);
+    this->DisableMultiCastDelegate();
+}
 
 // Prepare for sending an event.
 // This is called 1:1 w/ SendEvent, but this method can be called in a GC_TRIGGERABLE context
@@ -8188,7 +8284,7 @@ TP_RESULT DebuggerThreadStarter::TriggerPatch(DebuggerControllerPatch *patch,
         {
             // If we've got a frame that is transitioning to native, there's no reason to try to keep tracing. So we
             // bail early and save ourselves some effort. This also works around a problem where we deadlock trying to
-            // do too much work to determine the destination of a ComPlusMethodFrame. (See issue 87103.)
+            // do too much work to determine the destination of a CLRToCOMMethodFrame. (See issue 87103.)
             //
             // Note: trace call is still enabled, so we can just ignore this patch and wait for trace call to fire
             // again...

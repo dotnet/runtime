@@ -212,7 +212,7 @@ namespace System.Reflection.Emit
             // Get the parent class's default constructor and add it to the IL
             ConstructorInfo? con;
             if (_typeParent!.IsConstructedGenericType &&
-                (_typeParent.GetGenericTypeDefinition() is TypeBuilderImpl || ModuleBuilderImpl.ContainsTypeBuilder(_typeParent.GetGenericArguments())))
+                (_typeParent.GetGenericTypeDefinition() is TypeBuilderImpl || _module.ContainsTypeBuilder(_typeParent.GetGenericArguments())))
             {
                 // When TypeBuilder involved need to construct the parent constructor using TypeBuilder.GetConstructor() static method
                 con = GetConstructor(_typeParent, _typeParent.GetGenericTypeDefinition().GetConstructor(
@@ -305,7 +305,6 @@ namespace System.Reflection.Emit
         {
             ThrowIfCreated();
 
-
             MethodBuilderImpl methodBuilder = new(name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers,
                 returnTypeOptionalCustomModifiers, parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers, _module, this);
             _methodDefinitions.Add(methodBuilder);
@@ -321,15 +320,13 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.ArgumentException_BadMethodImplBody);
             }
             Type baseType = methodInfoDeclaration.DeclaringType!;
-            ValidateBaseType(baseType, methodInfoDeclaration.Name);
-            ValidateImplementedMethod(methodInfoBody, methodInfoDeclaration);
             _methodOverrides ??= new();
 
             if (_methodOverrides.TryGetValue(baseType, out List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>? im))
             {
                 if (im.Exists(pair => pair.ifaceMethod.Equals(methodInfoDeclaration)))
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_MethodOverriden, methodInfoBody.Name, FullName), nameof(methodInfoDeclaration));
+                    throw new ArgumentException(SR.Format(SR.Argument_MethodOverridden, methodInfoBody.Name, FullName), nameof(methodInfoDeclaration));
                 }
 
                 im.Add((methodInfoDeclaration, methodInfoBody));
@@ -339,24 +336,6 @@ namespace System.Reflection.Emit
                 im = new List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>();
                 im.Add((methodInfoDeclaration, methodInfoBody));
                 _methodOverrides.Add(baseType, im);
-            }
-        }
-
-        private void ValidateBaseType(Type baseType, string methodName)
-        {
-            if (baseType.IsInterface)
-            {
-                if (!IsInterfaceImplemented(baseType))
-                {
-                    throw ArgumentExceptionInvalidMethodOverride(methodName);
-                }
-
-                return;
-            }
-
-            if (!baseType.IsAssignableFrom(_typeParent))
-            {
-                throw ArgumentExceptionInvalidMethodOverride(methodName);
             }
         }
 
@@ -389,47 +368,6 @@ namespace System.Reflection.Emit
 
         private ArgumentException ArgumentExceptionInvalidMethodOverride(string methodName) =>
             new ArgumentException(SR.Format(SR.Argument_InvalidMethodOverride, FullName, methodName), "methodInfoBody");
-
-        private void ValidateImplementedMethod(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
-        {
-            if ((methodInfoBody.IsVirtual || methodInfoBody.IsStatic) &&
-                (methodInfoDeclaration.IsAbstract || methodInfoDeclaration.IsVirtual) &&
-                methodInfoDeclaration.ReturnType.IsAssignableFrom(methodInfoBody.ReturnType))
-            {
-                ParameterInfo[] bodyParameters = methodInfoBody.GetParameters();
-                ParameterInfo[] declarationParameters = methodInfoDeclaration.GetParameters();
-                if (bodyParameters.Length == declarationParameters.Length)
-                {
-                    for (int i = 0; i < bodyParameters.Length; i++)
-                    {
-                        Type? bodyType = bodyParameters[i].ParameterType;
-                        Type? declType = declarationParameters[i].ParameterType;
-
-                        if (bodyType.IsArray != declType.IsArray ||
-                            bodyType.IsByRef != declType.IsByRef ||
-                            bodyType.IsPointer != declType.IsPointer)
-                        {
-                            throw ArgumentExceptionInvalidMethodOverride(methodInfoDeclaration.Name);
-                        }
-
-                        if (bodyType.HasElementType || declType.HasElementType)
-                        {
-                            bodyType = bodyType.GetElementType();
-                            declType = declType.GetElementType();
-                        }
-
-                        if (bodyType == null || !bodyType.Equals(declType))
-                        {
-                            throw ArgumentExceptionInvalidMethodOverride(methodInfoDeclaration.Name);
-                        }
-                    }
-
-                    return;
-                }
-            }
-
-            throw ArgumentExceptionInvalidMethodOverride(methodInfoDeclaration.Name);
-        }
 
         protected override TypeBuilder DefineNestedTypeCore(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize)
@@ -469,7 +407,7 @@ namespace System.Reflection.Emit
         }
 
         protected override PropertyBuilder DefinePropertyCore(string name, PropertyAttributes attributes, CallingConventions callingConvention,
-            Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
+            Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
             Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             PropertyBuilderImpl property = new PropertyBuilderImpl(name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers,
@@ -500,6 +438,7 @@ namespace System.Reflection.Emit
             return DefineDataHelper(name, new byte[size], size, attributes);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:DynamicallyAccessedMembers", Justification = "The members of 'ValueType' are not referenced in this context")]
         private FieldBuilder DefineDataHelper(string name, byte[] data, int size, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -517,7 +456,7 @@ namespace System.Reflection.Emit
                 TypeAttributes typeAttributes = TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Class | TypeAttributes.Sealed | TypeAttributes.AnsiClass;
 
                 // Define the backing value class
-                valueClassType = (TypeBuilderImpl)_module.DefineType(strValueClassName, typeAttributes, typeof(ValueType), PackingSize.Size1, size);
+                valueClassType = (TypeBuilderImpl)_module.DefineType(strValueClassName, typeAttributes, _module.GetTypeFromCoreAssembly(CoreTypeId.ValueType), PackingSize.Size1, size);
                 valueClassType.CreateType();
             }
 
@@ -676,23 +615,22 @@ namespace System.Reflection.Emit
         public override string? Namespace => _namespace;
         public override Assembly Assembly => _module.Assembly;
         public override Module Module => _module;
-        public override Type UnderlyingSystemType
-        {
-            get
-            {
-                if (IsEnum)
-                {
-                    if (_enumUnderlyingType == null)
-                    {
-                        throw new InvalidOperationException(SR.InvalidOperation_NoUnderlyingTypeOnEnum);
-                    }
+        public override Type UnderlyingSystemType => this;
 
-                    return _enumUnderlyingType;
-                }
-                else
+        public override Type GetEnumUnderlyingType()
+        {
+            if (IsEnum)
+            {
+                if (_enumUnderlyingType == null)
                 {
-                    return this;
+                    throw new InvalidOperationException(SR.InvalidOperation_NoUnderlyingTypeOnEnum);
                 }
+
+                return _enumUnderlyingType;
+            }
+            else
+            {
+                throw new ArgumentException(SR.Argument_MustBeEnum);
             }
         }
         public override bool IsSZArray => false;
@@ -706,6 +644,7 @@ namespace System.Reflection.Emit
         protected override bool IsByRefImpl() => false;
         protected override bool IsPointerImpl() => false;
         protected override bool IsPrimitiveImpl() => false;
+        protected override bool IsValueTypeImpl() => IsSubclassOf(_module.GetTypeFromCoreAssembly(CoreTypeId.ValueType));
         protected override bool HasElementTypeImpl() => false;
         protected override TypeAttributes GetAttributeFlagsImpl() => _attributes;
         protected override bool IsCOMObjectImpl()

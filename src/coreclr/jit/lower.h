@@ -44,6 +44,8 @@ public:
         lowerer.LowerRange(range);
     }
 
+    void FinalizeOutgoingArgSpace();
+
 private:
     // LowerRange handles new code that is introduced by or after Lowering.
     void LowerRange(LIR::ReadOnlyRange& range)
@@ -155,7 +157,7 @@ private:
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void       LowerJmpMethod(GenTree* jmp);
     void       LowerRet(GenTreeOp* ret);
-    void       LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
+    GenTree*   LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void       LowerRetStruct(GenTreeUnOp* ret);
     void       LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
     void       LowerCallStruct(GenTreeCall* call);
@@ -175,17 +177,23 @@ private:
                                       GenTreeCall* callNode);
     void     InsertProfTailCallHook(GenTreeCall* callNode, GenTree* insertionPoint);
     GenTree* FindEarliestPutArg(GenTreeCall* call);
-    size_t   MarkPutArgNodes(GenTree* node);
+    size_t   MarkCallPutArgAndFieldListNodes(GenTreeCall* call);
+    size_t   MarkPutArgAndFieldListNodes(GenTree* node);
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void     LowerArgsForCall(GenTreeCall* call);
     void     ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    void LowerSpecialCopyArgs(GenTreeCall* call);
+    void InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum);
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
     GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, var_types type);
     void     LowerArg(GenTreeCall* call, CallArg* callArg, bool late);
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GenTree* LowerFloatArg(GenTree** pArg, CallArg* callArg);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
 #endif
+    void LegalizeArgPlacement(GenTreeCall* call);
 
     void     InsertPInvokeCallProlog(GenTreeCall* call);
     void     InsertPInvokeCallEpilog(GenTreeCall* call);
@@ -345,13 +353,16 @@ private:
     bool GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescingData* data) const;
 
     // Per tree node member functions
-    void     LowerStoreIndirCommon(GenTreeStoreInd* ind);
+    GenTree* LowerStoreIndirCommon(GenTreeStoreInd* ind);
     GenTree* LowerIndir(GenTreeIndir* ind);
-    bool     OptimizeForLdp(GenTreeIndir* ind);
+    bool     OptimizeForLdpStp(GenTreeIndir* ind);
     bool     TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indir);
+    bool     IsStoreToLoadForwardingCandidateInLoop(GenTreeIndir* prevIndir, GenTreeIndir* indir);
+    bool     TryMoveAddSubRMWAfterIndir(GenTreeLclVarCommon* store);
+    bool     TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclVarCommon* store);
     void     MarkTree(GenTree* root);
     void     UnmarkTree(GenTree* root);
-    void     LowerStoreIndir(GenTreeStoreInd* node);
+    GenTree* LowerStoreIndir(GenTreeStoreInd* node);
     void     LowerStoreIndirCoalescing(GenTreeIndir* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
@@ -397,22 +408,22 @@ private:
     bool LowerRMWMemOp(GenTreeIndir* storeInd);
 #endif
 
-    void WidenSIMD12IfNecessary(GenTreeLclVarCommon* node);
-    bool CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount);
-    void LowerStoreLoc(GenTreeLclVarCommon* tree);
-    void LowerRotate(GenTree* tree);
-    void LowerShift(GenTreeOp* shift);
+    void     WidenSIMD12IfNecessary(GenTreeLclVarCommon* node);
+    bool     CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount);
+    GenTree* LowerStoreLoc(GenTreeLclVarCommon* tree);
+    void     LowerRotate(GenTree* tree);
+    void     LowerShift(GenTreeOp* shift);
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void     LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
     GenTree* LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
     GenTree* LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
     void     LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
-    GenTree* LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
@@ -425,6 +436,7 @@ private:
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
     void LowerModPow2(GenTree* node);
     bool TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
+    void StoreFFRValue(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
                                                  GenTree*    op1,
@@ -600,7 +612,6 @@ private:
     }
 
     void RequireOutgoingArgSpace(GenTree* node, unsigned numBytes);
-    void FinalizeOutgoingArgSpace();
 
     LinearScan*           m_lsra;
     unsigned              vtableCallTemp;       // local variable we use as a temp for vtable calls
@@ -626,6 +637,7 @@ private:
         }
     };
     ArrayStack<SavedIndir> m_blockIndirs;
+    bool                   m_ffrTrashed;
 #endif
 };
 

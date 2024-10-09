@@ -3873,7 +3873,18 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 					uint32_t len = (uint32_t) strlen (info->d.unsafe_accessor.member_name);
 					encode_value (len, p, &p);
 					encode_string (info->d.unsafe_accessor.member_name, p, &p);
+				} else {
+					encode_value (0, p, &p);
 				}
+				if (method->is_inflated) {
+					encode_value(1, p, &p);
+					MonoMethodInflated *inflated = (MonoMethodInflated*)method;
+					MonoGenericContext *ctx = &inflated->context;
+					encode_generic_context (acfg, ctx, p, &p);
+				} else {
+					encode_value(0, p, &p);
+				}
+
 			}
 			else if (info->subtype == WRAPPER_SUBTYPE_INTERP_IN)
 				encode_signature (acfg, info->d.interp_in.sig, p, &p);
@@ -4821,6 +4832,19 @@ mono_aot_can_enter_interp (MonoMethod *method)
 	return FALSE;
 }
 
+static MonoMethod*
+replace_generated_method (MonoAotCompile *acfg, MonoMethod *method, MonoError *error)
+{
+	MonoMethod *wrapper = mini_replace_generated_method (method, error);
+	if (!is_ok (error)) {
+		char *method_name = mono_method_get_full_name (method);
+		aot_printerrf (acfg, "Could not get generated wrapper for %s due to %s", method_name, mono_error_get_message (error));
+		g_free (method_name);
+	}
+
+	return wrapper;
+}
+
 static void
 add_full_aot_wrappers (MonoAotCompile *acfg)
 {
@@ -5311,25 +5335,6 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
 		}
 	}
-
-	/* unsafe accessor wrappers */
-	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
-	for (int i = 0; i < rows; ++i) {
-		ERROR_DECL (error);
-		token = MONO_TOKEN_METHOD_DEF | (i + 1);
-		method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
-		report_loader_error (acfg, error, TRUE, "Failed to load method token 0x%x due to %s\n", i, mono_error_get_message (error));
-
-		if (G_LIKELY (mono_method_metadata_has_header (method)))
-			continue;
-
-		char *member_name = NULL;
-		int accessor_kind = -1;
-		if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
-			add_extra_method (acfg, mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name));
-		}
-	}
-
 }
 
 static void
@@ -5412,7 +5417,7 @@ add_native_to_managed_wrappers (MonoAotCompile *acfg)
 
 				/* this cannot be enforced by the C# compiler so we must give the user some warning before aborting */
 				if (!(method->flags & METHOD_ATTRIBUTE_STATIC)) {
-					g_warning ("AOT restriction: Method '%s' must be static since it is decorated with [MonoPInvokeCallback]. See https://docs.microsoft.com/xamarin/ios/internals/limitations#reverse-callbacks",
+					g_warning ("AOT restriction: Method '%s' must be static since it is decorated with [MonoPInvokeCallback]. See https://learn.microsoft.com/xamarin/ios/internals/limitations#reverse-callbacks",
 						mono_method_full_name (method, TRUE));
 					exit (1);
 				}
@@ -5420,7 +5425,7 @@ add_native_to_managed_wrappers (MonoAotCompile *acfg)
 				sig = mono_method_signature_internal (e->ctor);
 
 				if (sig->param_count != 1 || !(sig->params [0]->type == MONO_TYPE_CLASS && !strcmp (m_class_get_name (mono_class_from_mono_type_internal (sig->params [0])), "Type"))) {
-					g_warning ("AOT restriction: The attribute [MonoPInvokeCallback] used on method '%s' must take a System.Type argument. See https://docs.microsoft.com/xamarin/ios/internals/limitations#reverse-callbacks",
+					g_warning ("AOT restriction: The attribute [MonoPInvokeCallback] used on method '%s' must take a System.Type argument. See https://learn.microsoft.com/xamarin/ios/internals/limitations#reverse-callbacks",
 						mono_method_full_name (method, TRUE));
 					exit (1);
 				}
@@ -6024,6 +6029,16 @@ add_generic_instances (MonoAotCompile *acfg)
 			continue;
 		}
 
+		if (mono_aot_mode_is_full (&acfg->aot_opts)) {
+			MonoMethod *gen = replace_generated_method (acfg, method, error);
+			if (!is_ok (error)) {
+				mono_error_cleanup (error);
+				continue;
+			} else if (gen != NULL) {
+				method = gen;
+			}
+		}
+
 		if (m_class_get_image (method->klass) != acfg->image)
 			continue;
 
@@ -6119,6 +6134,8 @@ add_generic_instances (MonoAotCompile *acfg)
 		add_extra_method (acfg, method);
 	}
 
+	// TODO: [UnsafeAccessor] if there's a typespec from another assembly that has an
+	//  unsafe accessor, we need to add it here.
 	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPESPEC]);
 	for (int i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
@@ -7590,6 +7607,8 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		flags |= MONO_AOT_METHOD_FLAG_HAS_CTX;
 	if (cfg->interp_entry_only)
 		flags |= MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY;
+	if (cfg->uses_simd_intrinsics && cfg->compile_llvm)
+		flags |= MONO_AOT_METHOD_FLAG_HAS_LLVM_INTRINSICS;
 	/* Saved into another table so it can be accessed without having access to this data */
 	cfg->aot_method_flags = flags;
 
@@ -8727,8 +8746,14 @@ mono_aot_split_options (const char *aot_options)
 	g_return_val_if_fail (aot_options != NULL, NULL);
 
 	while ((cur = *aot_options) != '\0') {
-		if (state == MONO_AOT_OPTION_STATE_ESCAPE)
+		if (state == MONO_AOT_OPTION_STATE_ESCAPE) {
+			// After the escaped character, we're back inside quotes
+			//
+			// Note: we don't seem to remove the "" or the \ from the option here.
+			// Perhaps the caller is expected to take care of it?
+			state = MONO_AOT_OPTION_STATE_STRING;
 			goto next;
+		}
 
 		switch (cur) {
 		case '"':
@@ -9355,6 +9380,17 @@ add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
 					if (mono_aot_mode_is_full (&acfg->aot_opts) && !method_has_type_vars (m))
 						add_extra_method_with_depth (acfg, mono_marshal_get_native_wrapper (m, TRUE, TRUE), depth + 1);
 				} else {
+					if (mono_aot_mode_is_full (&acfg->aot_opts)) {
+						ERROR_DECL(error);
+						MonoMethod *gen = replace_generated_method (acfg, m, error);
+						if (!is_ok (error)) {
+							mono_error_cleanup (error);
+							return;
+						} else if (gen != NULL) {
+							m = gen;
+						}
+					}
+					
 					add_extra_method_with_depth (acfg, m, depth + 1);
 					add_types_from_method_header (acfg, m);
 				}
@@ -12914,7 +12950,7 @@ emit_unwind_info_sections_win32 (MonoAotCompile *acfg, const char *function_star
  * Returns: TRUE - extra method should be generated, otherwise FALSE
  */
 static gboolean
-should_emit_extra_method_for_generics (MonoMethod *method, gboolean reference_type)
+should_emit_extra_method_for_generics (MonoMethod *method, gboolean reference_type, MonoError *error)
 {
 	MonoGenericContainer *gen_container = NULL;
 	MonoGenericParam *gen_param = NULL;
@@ -12925,8 +12961,14 @@ should_emit_extra_method_for_generics (MonoMethod *method, gboolean reference_ty
 		// For now always generate extra methods.
 		return TRUE;
 	} else if (method->is_generic) {
+		MonoMethodSignature* sig = mono_method_signature_checked(method, error);
+
+		if (!is_ok (error)) {
+			return FALSE;
+		}
+
 		gen_container = mono_method_get_generic_container (method);
-		gen_param_count = mono_method_signature_internal (method)->generic_param_count;
+		gen_param_count = sig->generic_param_count;
 	} else if (mono_class_is_gtd (method->klass)) {
 		gen_container = mono_class_get_generic_container (method->klass);
 		gen_param_count = gen_container->type_argc;
@@ -12948,7 +12990,7 @@ should_emit_extra_method_for_generics (MonoMethod *method, gboolean reference_ty
 }
 
 static gboolean
-should_emit_gsharedvt_method (MonoAotCompile *acfg, MonoMethod *method)
+should_emit_gsharedvt_method (MonoAotCompile *acfg, MonoMethod *method, MonoError* error)
 {
 #ifdef TARGET_WASM
 	if (acfg->image == mono_get_corlib () && !strcmp (m_class_get_name (method->klass), "Vector`1"))
@@ -12958,7 +13000,7 @@ should_emit_gsharedvt_method (MonoAotCompile *acfg, MonoMethod *method)
 	if (acfg->image == mono_get_corlib () && !strcmp (m_class_get_name (method->klass), "Volatile"))
 		/* Read<T>/Write<T> are not needed and cause JIT failures */
 		return FALSE;
-	return should_emit_extra_method_for_generics (method, FALSE);
+	return should_emit_extra_method_for_generics (method, FALSE, error);
 }
 
 static gboolean
@@ -12993,6 +13035,17 @@ collect_methods (MonoAotCompile *acfg)
 			method = wrapper;
 		}
 
+		if (mono_aot_mode_is_full (&acfg->aot_opts)) {
+			// if the method has no body, see if it's an [UnsafeAccessor] method and replace it by the wrapper.
+			MonoMethod *gen = replace_generated_method (acfg, method, error);
+			if (!is_ok (error)) {
+				mono_error_cleanup (error);
+				return FALSE;
+			} else if (gen != NULL) {
+				method = gen;
+			}
+		}
+
 		/* FIXME: Some mscorlib methods don't have debug info */
 		/*
 		if (acfg->aot_opts.soft_debug && !method->wrapper_type) {
@@ -13008,15 +13061,25 @@ collect_methods (MonoAotCompile *acfg)
 		}
 		*/
 
-		if (should_emit_extra_method_for_generics (method, TRUE)) {
+		gboolean warn_and_skip = FALSE;
+		if (should_emit_extra_method_for_generics (method, TRUE, error)) {
 			/* Compile the ref shared version instead */
+			mono_error_assert_ok (error);
 			method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
-			if (!method) {
-				aot_printerrf (acfg, "Failed to load method 0x%x from '%s' due to %s.\n", token, image->name, mono_error_get_message (error));
-				aot_printerrf (acfg, "Run with MONO_LOG_LEVEL=debug for more information.\n");
-				mono_error_cleanup (error);
-				return FALSE;
+
+			if (!method || !is_ok (error)) {
+				warn_and_skip = TRUE;
 			}
+		}
+		else if (!is_ok (error)) {
+			warn_and_skip = TRUE;
+		}
+
+		if (warn_and_skip) {
+			aot_printerrf (acfg, "Failed to load method 0x%x from '%s' due to %s.\n", token, image->name, mono_error_get_message (error));
+			aot_printerrf (acfg, "Run with MONO_LOG_LEVEL=debug for more information.\n");
+			mono_error_cleanup (error);
+			return FALSE;
 		}
 
 		/* Since we add the normal methods first, their index will be equal to their zero based token index */
@@ -13037,13 +13100,31 @@ collect_methods (MonoAotCompile *acfg)
 		method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
 		report_loader_error (acfg, error, TRUE, "Failed to load method token 0x%x due to %s\n", i, mono_error_get_message (error));
 
-		if ((method->is_generic || mono_class_is_gtd (method->klass)) && should_emit_gsharedvt_method (acfg, method)) {
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && !mono_method_metadata_has_header (method)) {
+			// if the method has no body, see if it's an [UnsafeAccessor] method and replace it by the wrapper.
+			char *member_name = NULL;
+			int accessor_kind = -1;
+			if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+				MonoMethod *wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
+				method = wrapper;
+			} else if (!is_ok (error)) {
+				aot_printerrf (acfg, "Could not get unsafe accessor wrapper due to %s ", mono_error_get_message (error));
+				mono_error_cleanup (error);
+				return FALSE;
+			}
+		}
+
+		if ((method->is_generic || mono_class_is_gtd (method->klass)) && should_emit_gsharedvt_method (acfg, method, error)) {
 			MonoMethod *gshared;
 
 			gshared = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
 			mono_error_assert_ok (error);
 
 			add_extra_method (acfg, gshared);
+		}
+		else if (!is_ok (error)) {
+			g_warning ("Failed to generate extra gsharedvt method for %s in '%s' due to %s.\n", method->name, image->name, mono_error_get_message (error));
+			mono_error_cleanup (error);
 		}
 	}
 

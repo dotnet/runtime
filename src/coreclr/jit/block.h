@@ -413,7 +413,7 @@ public:
 // BasicBlockFlags: a bitmask of flags for BasicBlock
 //
 // clang-format off
-enum BasicBlockFlags : unsigned __int64
+enum BasicBlockFlags : uint64_t
 {
 #define MAKE_BBFLAG(bit) (1ULL << (bit))
     BBF_EMPTY                = 0,
@@ -468,7 +468,7 @@ enum BasicBlockFlags : unsigned __int64
     // Flags to update when two blocks are compacted
 
     BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_BACKWARD_JUMP | \
-                      BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF,
+                      BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_LOOP_HEAD,
 
     // Flags a block should not have had before it is split.
 
@@ -500,31 +500,31 @@ enum BasicBlockFlags : unsigned __int64
 FORCEINLINE
 constexpr BasicBlockFlags operator ~(BasicBlockFlags a)
 {
-    return (BasicBlockFlags)(~(unsigned __int64)a);
+    return (BasicBlockFlags)(~(uint64_t)a);
 }
 
 FORCEINLINE
 constexpr BasicBlockFlags operator |(BasicBlockFlags a, BasicBlockFlags b)
 {
-    return (BasicBlockFlags)((unsigned __int64)a | (unsigned __int64)b);
+    return (BasicBlockFlags)((uint64_t)a | (uint64_t)b);
 }
 
 FORCEINLINE
 constexpr BasicBlockFlags operator &(BasicBlockFlags a, BasicBlockFlags b)
 {
-    return (BasicBlockFlags)((unsigned __int64)a & (unsigned __int64)b);
+    return (BasicBlockFlags)((uint64_t)a & (uint64_t)b);
 }
 
 FORCEINLINE 
 BasicBlockFlags& operator |=(BasicBlockFlags& a, BasicBlockFlags b)
 {
-    return a = (BasicBlockFlags)((unsigned __int64)a | (unsigned __int64)b);
+    return a = (BasicBlockFlags)((uint64_t)a | (uint64_t)b);
 }
 
 FORCEINLINE 
 BasicBlockFlags& operator &=(BasicBlockFlags& a, BasicBlockFlags b)
 {
-    return a = (BasicBlockFlags)((unsigned __int64)a & (unsigned __int64)b);
+    return a = (BasicBlockFlags)((uint64_t)a & (uint64_t)b);
 }
 
 enum class BasicBlockVisit
@@ -1163,6 +1163,7 @@ public:
 #define BB_UNITY_WEIGHT_UNSIGNED 100   // how much a normal execute once block weighs
 #define BB_LOOP_WEIGHT_SCALE     8.0   // synthetic profile scale factor for loops
 #define BB_ZERO_WEIGHT           0.0
+#define BB_COLD_WEIGHT           0.01    // Upper bound for cold weights; used during block layout
 #define BB_MAX_WEIGHT            FLT_MAX // maximum finite weight  -- needs rethinking.
 
     weight_t bbWeight; // The dynamic execution weight of this block
@@ -1259,6 +1260,11 @@ public:
     bool isMaxBBWeight() const
     {
         return (bbWeight >= BB_MAX_WEIGHT);
+    }
+
+    bool isBBWeightCold(Compiler* comp) const
+    {
+        return getBBWeight(comp) < BB_COLD_WEIGHT;
     }
 
     // Returns "true" if the block is empty. Empty here means there are no statement
@@ -1531,11 +1537,9 @@ public:
         return PredBlockList<true>(bbPreds);
     }
 
-    // Pred list maintenance
-    //
+#ifdef DEBUG
     bool checkPredListOrder();
-    void ensurePredListOrder(Compiler* compiler);
-    void reorderPredList(Compiler* compiler);
+#endif
 
     union
     {
@@ -1605,8 +1609,6 @@ public:
     unsigned bbMemorySsaNumIn[MemoryKindCount];  // The SSA # of memory on entry to the block.
     unsigned bbMemorySsaNumOut[MemoryKindCount]; // The SSA # of memory on exit from the block.
 
-    VARSET_TP bbScope; // variables in scope over the block
-
     void InitVarSets(class Compiler* comp);
 
     /* The following are the standard bit sets for dataflow analysis.
@@ -1668,9 +1670,10 @@ public:
     // still in the BB list by whether they have the same stamp (with high probability).
     unsigned bbTraversalStamp;
 
+#endif // DEBUG
+
     // bbID is a unique block identifier number that does not change: it does not get renumbered, like bbNum.
     unsigned bbID;
-#endif // DEBUG
 
     unsigned    bbStackDepthOnEntry() const;
     void        bbSetStack(StackEntry* stack);

@@ -98,14 +98,12 @@ ABIPassingInformation Arm32Classifier::Classify(Compiler*    comp,
         numInRegs = 0;
     }
 
-    ABIPassingInformation info;
-    info.NumSegments = numInRegs + (anyOnStack ? 1 : 0);
-    info.Segments    = new (comp, CMK_ABI) ABIPassingSegment[info.NumSegments];
+    ABIPassingInformation info(comp, numInRegs + (anyOnStack ? 1 : 0));
 
     for (unsigned i = 0; i < numInRegs; i++)
     {
         unsigned endOffs = min((i + 1) * 4, size);
-        info.Segments[i] =
+        info.Segment(i) =
             ABIPassingSegment::InRegister(static_cast<regNumber>(static_cast<unsigned>(REG_R0) + m_nextIntReg + i),
                                           i * 4, endOffs - (i * 4));
     }
@@ -114,9 +112,9 @@ ABIPassingInformation Arm32Classifier::Classify(Compiler*    comp,
 
     if (anyOnStack)
     {
-        m_stackArgSize           = roundUp(m_stackArgSize, alignment);
-        unsigned stackSize       = size - (numInRegs * 4);
-        info.Segments[numInRegs] = ABIPassingSegment::OnStack(m_stackArgSize, numInRegs * 4, stackSize);
+        m_stackArgSize          = roundUp(m_stackArgSize, alignment);
+        unsigned stackSize      = size - (numInRegs * 4);
+        info.Segment(numInRegs) = ABIPassingSegment::OnStack(m_stackArgSize, numInRegs * 4, stackSize);
         m_stackArgSize += roundUp(stackSize, 4);
 
         // As soon as any int arg goes on stack we cannot put anything else in
@@ -181,14 +179,12 @@ ABIPassingInformation Arm32Classifier::ClassifyFloat(Compiler* comp, var_types t
         assert((m_floatRegs & usedRegsMask) == usedRegsMask);
 
         m_floatRegs ^= usedRegsMask;
-        ABIPassingInformation info;
-        info.NumSegments        = numElems;
-        info.Segments           = new (comp, CMK_ABI) ABIPassingSegment[numElems];
-        unsigned numRegsPerElem = type == TYP_FLOAT ? 1 : 2;
+        ABIPassingInformation info(comp, numElems);
+        unsigned              numRegsPerElem = type == TYP_FLOAT ? 1 : 2;
         for (unsigned i = 0; i < numElems; i++)
         {
             regNumber reg = static_cast<regNumber>(static_cast<unsigned>(REG_F0) + startRegIndex + i * numRegsPerElem);
-            info.Segments[i] = ABIPassingSegment::InRegister(reg, i * genTypeSize(type), genTypeSize(type));
+            info.Segment(i) = ABIPassingSegment::InRegister(reg, i * genTypeSize(type), genTypeSize(type));
         }
 
         return info;

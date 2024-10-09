@@ -37,6 +37,8 @@ endif(FEATURE_JIT_PITCHING)
 if(FEATURE_PERFTRACING)
     set(CORECLR_EVENTPIPE_SHIM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eventing/eventpipe)
     include_directories(${CORECLR_EVENTPIPE_SHIM_DIR})
+    set(CORECLR_USEREVENTS_SHIM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eventing/userevents)
+    include_directories(${CORECLR_USEREVENTS_SHIM_DIR})
 endif(FEATURE_PERFTRACING)
 
 set(VM_SOURCES_DAC_AND_WKS_COMMON
@@ -343,7 +345,6 @@ set(VM_SOURCES_WKS
     nativeeventsource.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
-    objectlist.cpp
     olevariant.cpp
     pendingload.cpp
     pinvokeoverride.cpp
@@ -389,7 +390,7 @@ set(VM_HEADERS_WKS
     callhelpers.h
     callsiteinspect.h
     callconvbuilder.hpp
-    cdacoffsets.h
+    cdacdata.h
     ceemain.h
     clrconfignative.h
     clrex.h
@@ -442,7 +443,6 @@ set(VM_HEADERS_WKS
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h
-    objectlist.h
     olevariant.h
     pendingload.h
     profdetach.h
@@ -577,7 +577,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         comtoclrcall.cpp
         dispatchinfo.cpp
         dispparammarshaler.cpp
-        mngstdinterfaces.cpp
         olecontexthelpers.cpp
         runtimecallablewrapper.cpp
         stdinterfaces.cpp
@@ -593,7 +592,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         comtoclrcall.h
         dispatchinfo.h
         dispparammarshaler.h
-        mngstdinterfaces.h
         olecontexthelpers.h
         runtimecallablewrapper.h
         stdinterfaces.h
@@ -618,11 +616,10 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/CallDescrWorkerAMD64.asm
         ${ARCH_SOURCES_DIR}/ComCallPreStub.asm
         ${ARCH_SOURCES_DIR}/GenericComCallStubs.asm
-        ${ARCH_SOURCES_DIR}/GenericComPlusCallStubs.asm
+        ${ARCH_SOURCES_DIR}/GenericCLRToCOMCallStubs.asm
         ${ARCH_SOURCES_DIR}/getstate.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
-        ${ARCH_SOURCES_DIR}/JitHelpers_InlineGetThread.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_SingleAppDomain.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_Slow.asm
         ${ARCH_SOURCES_DIR}/patchedcode.asm
@@ -841,6 +838,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
 
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
+        ${ARCH_SOURCES_DIR}/singlestepper.cpp
         gcinfodecoder.cpp
     )
 elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)

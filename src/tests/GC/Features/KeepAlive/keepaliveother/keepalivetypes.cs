@@ -4,66 +4,66 @@
 // Tests KeepAlive() with different types of inputs
 
 using System;
+using Xunit;
 
 public class Test {
 
-	public class Dummy {
+    public class Dummy {
 
-		public static bool visited;
-		~Dummy() {
-			//Console.WriteLine("In Finalize() of Dummy");	
-			visited=true;
-		}
-	}
+        public static bool visited;
+        ~Dummy() {
+            //Console.WriteLine("In Finalize() of Dummy");  
+            visited=true;
+        }
+    }
 
-	public struct StrDummy {
-		public int val;
-		public static bool flag;
+    public struct StrDummy {
+        public int val;
+        public static bool flag;
 
-		public StrDummy(int v) {
-			val=v;
-			flag=true;
-		}
-	}
+        public StrDummy(int v) {
+            val=v;
+            flag=true;
+        }
+    }
 
-	public enum Color
-	{
-		Red, Blue, Green
-	}
+    public enum Color
+    {
+        Red, Blue, Green
+    }
 
-	public static int  Main() {
+    [Fact]
+    public static int TestEntryPoint()
+    {
 
         int returnValue = 0;
-		Dummy obj = new Dummy();
-		StrDummy strobj = new StrDummy(999);
-		Color enumobj = new Color();
-	
-		GC.Collect();
-		GC.WaitForPendingFinalizers();
-		
-			
-		if((Dummy.visited == false) && (StrDummy.flag==true)) {  // has not visited the Finalize()
+        Dummy obj = new Dummy();
+        StrDummy strobj = new StrDummy(999);
+        Color enumobj = new Color();
+    
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        
+            
+        if((Dummy.visited == false) && (StrDummy.flag==true)) {  // has not visited the Finalize()
             returnValue = 100;
-			Console.WriteLine("Test passed!");
-		}
-		else {
+            Console.WriteLine("Test passed!");
+        }
+        else {
             returnValue = 1;
-			Console.WriteLine("Test failed!");
-		}
+            Console.WriteLine("Test failed!");
+        }
 
-		GC.KeepAlive(obj);	// will keep alive 'obj' till this point
-		GC.KeepAlive(1000000);
-		GC.KeepAlive("long string for testing");
-		GC.KeepAlive(-12345678);
-		GC.KeepAlive(3456.8989);
-		GC.KeepAlive(true);
-		GC.KeepAlive(strobj);
-		GC.KeepAlive(enumobj);
+        GC.KeepAlive(obj);  // will keep alive 'obj' till this point
+        GC.KeepAlive(1000000);
+        GC.KeepAlive("long string for testing");
+        GC.KeepAlive(-12345678);
+        GC.KeepAlive(3456.8989);
+        GC.KeepAlive(true);
+        GC.KeepAlive(strobj);
+        GC.KeepAlive(enumobj);
 
         return returnValue;
-		
-	}
+        
+    }
 }
-
-
-

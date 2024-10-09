@@ -95,7 +95,7 @@ namespace System.Reflection.Emit
         protected override bool IsCOMObjectImpl() => false;
         protected override bool HasElementTypeImpl() => false;
         protected override TypeAttributes GetAttributeFlagsImpl() => TypeAttributes.Public;
-        public override Type GetElementType() => throw new NotSupportedException();
+        public override Type? GetElementType() => null;
         public override object[] GetCustomAttributes(bool inherit) => throw new NotSupportedException();
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotSupportedException();
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotSupportedException();

@@ -59,6 +59,8 @@ public abstract class AppTestBase : BlazorWasmTestBase
         string? binFrameworkDir = null,
         RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
         bool assertAppBundle = true,
+        bool expectSuccess = true,
+        string bootConfigFileName = "blazor.boot.json",
         params string[] extraArgs)
     {
         (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(
@@ -66,20 +68,31 @@ public abstract class AppTestBase : BlazorWasmTestBase
             Config: configuration,
             BinFrameworkDir: binFrameworkDir,
             RuntimeType: runtimeType,
-            AssertAppBundle: assertAppBundle), extraArgs);
-        result.EnsureSuccessful();
+            AssertAppBundle: assertAppBundle,
+            BootConfigFileName: bootConfigFileName,
+            ExpectSuccess: expectSuccess), extraArgs);
+        if (expectSuccess)
+        {
+            result.EnsureSuccessful();
+        }
+        else
+        {
+            result.EnsureFailed();
+        }
     }
 
     protected void PublishProject(
         string configuration,
         RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
         bool assertAppBundle = true,
+        string bootConfigFileName = "blazor.boot.json",
         params string[] extraArgs)
     {
         (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(
             Id: Id,
             Config: configuration,
             RuntimeType: runtimeType,
+            BootConfigFileName: bootConfigFileName,
             AssertAppBundle: assertAppBundle), extraArgs);
         result.EnsureSuccessful();
     }

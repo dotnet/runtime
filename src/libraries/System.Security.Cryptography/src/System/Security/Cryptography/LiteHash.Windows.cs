@@ -92,6 +92,12 @@ namespace System.Security.Cryptography
             }
         }
 
+        private LiteKmac(SafeBCryptHashHandle hashHandle, int finishFlags)
+        {
+            _hashHandle = hashHandle;
+            _finishFlags = finishFlags;
+        }
+
         public int HashSizeInBytes
         {
             get
@@ -143,6 +149,12 @@ namespace System.Security.Cryptography
             }
 
             return destination.Length;
+        }
+
+        public LiteKmac Clone()
+        {
+            SafeBCryptHashHandle clone = Interop.BCrypt.BCryptDuplicateHash(_hashHandle);
+            return new LiteKmac(clone, _finishFlags);
         }
 
         public void Dispose()
@@ -244,6 +256,9 @@ namespace System.Security.Cryptography
                 return destination.Length;
             }
         }
+
+        // Windows's Finalize always does a reset.
+        public int FinalizeAndReset(Span<byte> destination) => Finalize(destination);
 
         public void Reset() => Finalize(Span<byte>.Empty);
 

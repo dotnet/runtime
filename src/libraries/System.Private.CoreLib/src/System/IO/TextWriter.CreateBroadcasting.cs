@@ -268,7 +268,7 @@ namespace System.IO
                 }
             }
 
-            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
             {
                 foreach (TextWriter writer in _writers)
                 {
@@ -436,7 +436,7 @@ namespace System.IO
                 }
             }
 
-            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
             {
                 foreach (TextWriter writer in _writers)
                 {

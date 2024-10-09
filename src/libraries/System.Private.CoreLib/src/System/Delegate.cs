@@ -35,7 +35,7 @@ namespace System
         /// Returns <see langword="null" /> if <paramref name="delegates"/> is <see langword="null" />,
         /// if <paramref name="delegates"/> contains zero elements, or if every entry in <paramref name="delegates"/> is <see langword="null" />.
         /// </returns>
-        public static Delegate? Combine(/*params*/ ReadOnlySpan<Delegate?> delegates)
+        public static Delegate? Combine(params ReadOnlySpan<Delegate?> delegates)
         {
             Delegate? d = null;
 
@@ -72,7 +72,7 @@ namespace System
 
         protected virtual Delegate? RemoveImpl(Delegate d) => d.Equals(this) ? null : this;
 
-        public virtual Delegate[] GetInvocationList() => new Delegate[] { this };
+        public virtual Delegate[] GetInvocationList() => [this];
 
         /// <summary>
         /// Gets a value that indicates whether the <see cref="Delegate"/> has a single invocation target.

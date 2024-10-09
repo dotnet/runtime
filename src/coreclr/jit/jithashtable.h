@@ -76,9 +76,9 @@ public:
     // Compute `numerator` / `prime` using magic division
     unsigned magicNumberDivide(unsigned numerator) const
     {
-        unsigned __int64 num     = numerator;
-        unsigned __int64 mag     = magic;
-        unsigned __int64 product = (num * mag) >> (32 + shift);
+        uint64_t num     = numerator;
+        uint64_t mag     = magic;
+        uint64_t product = (num * mag) >> (32 + shift);
         return (unsigned)product;
     }
 

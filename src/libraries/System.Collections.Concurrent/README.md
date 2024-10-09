@@ -1,7 +1,7 @@
 # System.Collections.Concurrent
 This is the assembly that surfaces concurrent collections such as [`ConcurrentDictionary<TKey, TValue>`](https://learn.microsoft.com/dotnet/api/system.collections.concurrent.concurrentdictionary-2) and [`ConcurrentBag<T>`](https://learn.microsoft.com/dotnet/api/system.collections.concurrent.concurrentbag-1). It provides thread-safe collections that should be used whenever multiple threads are accessing the collection concurrently.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.collections.concurrent.
+Documentation can be found at https://learn.microsoft.com/dotnet/api/system.collections.concurrent.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)

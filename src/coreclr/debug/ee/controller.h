@@ -183,7 +183,7 @@ public:
     //      caller wants information about a specific frame.
     // CONTEXT* pContext:  A pointer to a CONTEXT structure.  Can be null,
     //      we use our temp context.
-    // bool suppressUMChainFromComPlusMethodFrameGeneric - A ridiculous flag that is trying to narrowly
+    // bool suppressUMChainFromCLRToCOMMethodFrameGeneric - A ridiculous flag that is trying to narrowly
     //      target a fix for issue 650903.
     // StackTraceTicket - ticket ensuring that we have permission to call this.
     void GetStackInfo(
@@ -191,7 +191,7 @@ public:
         Thread *thread,
         FramePointer targetFP,
         CONTEXT *pContext,
-        bool suppressUMChainFromComPlusMethodFrameGeneric = false
+        bool suppressUMChainFromCLRToCOMMethodFrameGeneric = false
         );
 
     //bool ControllerStackInfo::HasReturnFrame()  Returns
@@ -217,7 +217,7 @@ private:
     // A ridiculous flag that is targeting a very narrow fix at issue 650903
     // (4.5.1/Blue).  This is set for the duration of a stackwalk designed to
     // help us "Step Out" to a managed frame (i.e., managed-only debugging).
-    bool                    m_suppressUMChainFromComPlusMethodFrameGeneric;
+    bool                    m_suppressUMChainFromCLRToCOMMethodFrameGeneric;
 
     // Track if this stackwalk actually happened.
     // This is used by the StackTraceTicket(ControllerStackInfo * info) ticket.
@@ -1039,7 +1039,7 @@ class DebuggerController
     //right side needs to read
     friend class Debugger; // So Debugger can lock, use, unlock the patch
     // table in MapAndBindFunctionBreakpoints
-    friend void Debugger::UnloadModule(Module* pRuntimeModule, AppDomain *pAppDomain);
+    friend void Debugger::UnloadModule(Module* pRuntimeModule);
 
     //
     // Static functionality
@@ -1089,6 +1089,7 @@ class DebuggerController
     // pIP is the ip right after the prolog of the method we've entered.
     // fp is the frame pointer for that method.
     static void DispatchMethodEnter(void * pIP, FramePointer fp);
+    static void DispatchMulticastDelegate(DELEGATEREF pbDel, INT32 countDel);
 
 
     // Delete any patches that exist for a specific module and optionally a specific AppDomain.
@@ -1299,6 +1300,9 @@ public:
     void EnableMethodEnter();
     void DisableMethodEnter();
 
+    void EnableMultiCastDelegate();
+    void DisableMultiCastDelegate();
+
     void DisableAll();
 
     virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void )
@@ -1398,6 +1402,7 @@ public:
                                     const BYTE * ip,
                                     FramePointer fp);
 
+    virtual void TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateCount);
 
     // Send the managed debug event.
     // This is called after TriggerPatch/TriggerSingleStep actually trigger.
@@ -1437,6 +1442,7 @@ private:
     int                 m_eventQueuedCount;
     bool                m_deleted;
     bool                m_fEnableMethodEnter;
+    bool                m_multicastDelegateHelper;
 
 #endif // !DACCESS_COMPILE
 };
@@ -1638,7 +1644,7 @@ protected:
 
 
     virtual void TriggerMethodEnter(Thread * thread, DebuggerJitInfo * dji, const BYTE * ip, FramePointer fp);
-
+    void TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateCount);
 
     void ResetRange();
 

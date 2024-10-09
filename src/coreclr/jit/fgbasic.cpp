@@ -8,168 +8,6 @@
 
 // Flowgraph Construction and Maintenance
 
-void Compiler::fgInit()
-{
-    impInit();
-
-    /* Initialization for fgWalkTreePre() and fgWalkTreePost() */
-
-    fgFirstBBScratch = nullptr;
-
-#ifdef DEBUG
-    fgPrintInlinedMethods = false;
-#endif // DEBUG
-
-    /* We haven't yet computed the bbPreds lists */
-    fgPredsComputed = false;
-
-    /* We haven't yet computed block weights */
-    fgCalledCount = BB_ZERO_WEIGHT;
-
-    /* Initialize the basic block list */
-
-    fgFirstBB          = nullptr;
-    fgLastBB           = nullptr;
-    fgFirstColdBlock   = nullptr;
-    fgEntryBB          = nullptr;
-    fgOSREntryBB       = nullptr;
-    fgEntryBBExtraRefs = 0;
-
-    fgFirstFuncletBB  = nullptr;
-    fgFuncletsCreated = false;
-
-    fgBBcount = 0;
-
-#ifdef DEBUG
-    fgBBOrder = nullptr;
-#endif // DEBUG
-
-    fgMightHaveNaturalLoops = false;
-    fgBBNumMax              = 0;
-    fgEdgeCount             = 0;
-    fgDomBBcount            = 0;
-    fgBBVarSetsInited       = false;
-    fgReturnCount           = 0;
-    fgThrowCount            = 0;
-
-    m_dfsTree          = nullptr;
-    m_loops            = nullptr;
-    m_loopSideEffects  = nullptr;
-    m_blockToLoop      = nullptr;
-    m_domTree          = nullptr;
-    m_reachabilitySets = nullptr;
-
-    // Initialize BlockSet data.
-    fgCurBBEpoch             = 0;
-    fgCurBBEpochSize         = 0;
-    fgBBSetCountInSizeTUnits = 0;
-
-    genReturnBB    = nullptr;
-    genReturnLocal = BAD_VAR_NUM;
-
-#ifdef SWIFT_SUPPORT
-    genReturnErrorLocal = BAD_VAR_NUM;
-#endif // SWIFT_SUPPORT
-
-    /* We haven't reached the global morphing phase */
-    fgGlobalMorph     = false;
-    fgGlobalMorphDone = false;
-
-    fgModified = false;
-
-#ifdef DEBUG
-    fgSafeBasicBlockCreation = true;
-    fgSafeFlowEdgeCreation   = true;
-#endif // DEBUG
-
-    fgLocalVarLivenessDone = false;
-    fgIsDoingEarlyLiveness = false;
-    fgDidEarlyLiveness     = false;
-
-    /* Statement list is not threaded yet */
-
-    fgNodeThreading = NodeThreading::None;
-
-    // Initialize the logic for adding code. This is used to insert code such
-    // as the code that raises an exception when an array range check fails.
-    fgAddCodeList   = nullptr;
-    fgAddCodeDscMap = nullptr;
-
-    /* Keep track of the max count of pointer arguments */
-    fgPtrArgCntMax = 0;
-
-    /* This global flag is set whenever we remove a statement */
-    fgStmtRemoved = false;
-
-    // This global flag is set when we create throw helper blocks
-    fgRngChkThrowAdded = false;
-
-    /* Keep track of whether or not EH statements have been optimized */
-    fgOptimizedFinally = false;
-
-    /* We will record a list of all BBJ_RETURN blocks here */
-    fgReturnBlocks = nullptr;
-
-    fgUsedSharedTemps = nullptr;
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-    ehMaxHndNestingCount = 0;
-#endif // FEATURE_EH_WINDOWS_X86
-
-    /* Init the fgBigOffsetMorphingTemps to be BAD_VAR_NUM. */
-    for (int i = 0; i < TYP_COUNT; i++)
-    {
-        fgBigOffsetMorphingTemps[i] = BAD_VAR_NUM;
-    }
-
-    fgNoStructPromotion      = false;
-    fgNoStructParamPromotion = false;
-
-    optValnumCSE_phase = false; // referenced in fgMorphSmpOp()
-
-#ifdef DEBUG
-    fgNormalizeEHDone = false;
-#endif // DEBUG
-
-#ifdef DEBUG
-    if (!compIsForInlining())
-    {
-        const int noStructPromotionValue = JitConfig.JitNoStructPromotion();
-        assert(0 <= noStructPromotionValue && noStructPromotionValue <= 2);
-        if (noStructPromotionValue == 1)
-        {
-            fgNoStructPromotion = true;
-        }
-        if (noStructPromotionValue == 2)
-        {
-            fgNoStructParamPromotion = true;
-        }
-    }
-#endif // DEBUG
-
-#ifdef FEATURE_SIMD
-    fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
-#endif
-
-    fgHasSwitch                  = false;
-    fgPgoDisabled                = false;
-    fgPgoSchema                  = nullptr;
-    fgPgoData                    = nullptr;
-    fgPgoSchemaCount             = 0;
-    fgNumProfileRuns             = 0;
-    fgPgoBlockCounts             = 0;
-    fgPgoEdgeCounts              = 0;
-    fgPgoClassProfiles           = 0;
-    fgPgoMethodProfiles          = 0;
-    fgPgoInlineePgo              = 0;
-    fgPgoInlineeNoPgo            = 0;
-    fgPgoInlineeNoPgoSingleBlock = 0;
-    fgCountInstrumentor          = nullptr;
-    fgHistogramInstrumentor      = nullptr;
-    fgValueInstrumentor          = nullptr;
-    fgPredListSortVector         = nullptr;
-}
-
 //------------------------------------------------------------------------
 // fgEnsureFirstBBisScratch: Ensure that fgFirstBB is a scratch BasicBlock
 //
@@ -794,7 +632,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
 // Note that the successor block's bbRefs is not changed, since it has the same number of
 // references as before, just from a different predecessor block.
 //
-// Also note this may cause sorting of the pred list.
+// Also note this may cause reordering of the pred list.
 //
 void Compiler::fgReplacePred(FlowEdge* edge, BasicBlock* const newPred)
 {
@@ -802,13 +640,18 @@ void Compiler::fgReplacePred(FlowEdge* edge, BasicBlock* const newPred)
     assert(newPred != nullptr);
     assert(edge->getSourceBlock() != newPred);
 
-    edge->setSourceBlock(newPred);
-
-    // We may now need to reorder the pred list.
+    // Remove the edge, modify it, then add it back
     //
-    BasicBlock* succBlock = edge->getDestinationBlock();
-    assert(succBlock != nullptr);
-    succBlock->ensurePredListOrder(this);
+    BasicBlock* const target  = edge->getDestinationBlock();
+    BasicBlock* const oldPred = edge->getSourceBlock();
+    FlowEdge**        listp   = fgGetPredInsertPoint(oldPred, target);
+    assert(*listp == edge);
+    *listp = edge->getNextPredEdge();
+    edge->setSourceBlock(newPred);
+    listp = fgGetPredInsertPoint(newPred, target);
+    edge->setNextPredEdge(*listp);
+    *listp = edge;
+    assert(target->checkPredListOrder());
 }
 
 /*****************************************************************************
@@ -1064,13 +907,16 @@ private:
 //------------------------------------------------------------------------
 // fgFindJumpTargets: walk the IL stream, determining jump target offsets
 //
+// Type arguments:
+//   makeInlineObservations - whether or not to record inline observations about the method
+//
 // Arguments:
 //    codeAddr   - base address of the IL code buffer
 //    codeSize   - number of bytes in the IL code buffer
 //    jumpTarget - [OUT] bit vector for flagging jump targets
 //
 // Notes:
-//    If inlining or prejitting the root, this method also makes
+//    If "makeInlineObservations" is true this method also makes
 //    various observations about the method that factor into inline
 //    decisions.
 //
@@ -1080,6 +926,7 @@ private:
 //
 //    Also sets m_addrExposed and lvHasILStoreOp, ilHasMultipleILStoreOp in lvaTable[].
 //
+template <bool makeInlineObservations>
 void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, FixedBitVect* jumpTarget)
 {
     const BYTE* codeBegp = codeAddr;
@@ -1088,13 +935,12 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     var_types   varType      = DUMMY_INIT(TYP_UNDEF); // TYP_ type
     bool        typeIsNormed = false;
     FgStack     pushedStack;
-    const bool  isForceInline          = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
-    const bool  makeInlineObservations = (compInlineResult != nullptr);
-    const bool  isInlining             = compIsForInlining();
-    unsigned    retBlocks              = 0;
-    int         prefixFlags            = 0;
-    bool        preciseScan            = makeInlineObservations && compInlineResult->GetPolicy()->RequiresPreciseScan();
-    const bool  resolveTokens          = preciseScan;
+    const bool  isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
+    const bool  isInlining    = compIsForInlining();
+    unsigned    retBlocks     = 0;
+    int         prefixFlags   = 0;
+    bool        preciseScan   = makeInlineObservations && compInlineResult->GetPolicy()->RequiresPreciseScan();
+    const bool  resolveTokens = preciseScan;
 
     // Track offsets where IL instructions begin in DEBUG builds. Used to
     // validate debug info generated by the JIT.
@@ -1155,7 +1001,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
         INDEBUG(ilInstsSet->bitVectSet((UINT)(codeAddr - codeBegp)));
 
-        codeAddr += sizeof(__int8);
+        codeAddr += sizeof(int8_t);
 
         if (!handled && preciseScan)
         {
@@ -1194,7 +1040,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     goto TOO_FAR;
                 }
                 opcode = (OPCODE)(256 + getU1LittleEndian(codeAddr));
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
                 goto DECODE_OPCODE;
             }
 
@@ -1382,7 +1228,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_System_Type_get_IsValueType:
                             case NI_System_Type_get_IsPrimitive:
                             case NI_System_Type_get_IsByRefLike:
+                            case NI_System_Type_get_IsGenericType:
                             case NI_System_Type_GetTypeFromHandle:
+                            case NI_System_Type_GetGenericTypeDefinition:
                             case NI_System_String_get_Length:
                             case NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness:
 #if defined(FEATURE_HW_INTRINSICS)
@@ -1395,19 +1243,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector64_CreateScalar:
                             case NI_Vector64_CreateScalarUnsafe:
 #endif // TARGET_ARM64
-                            case NI_Vector2_Create:
-                            case NI_Vector2_CreateBroadcast:
-                            case NI_Vector3_Create:
-                            case NI_Vector3_CreateBroadcast:
-                            case NI_Vector3_CreateFromVector2:
-                            case NI_Vector4_Create:
-                            case NI_Vector4_CreateBroadcast:
-                            case NI_Vector4_CreateFromVector2:
-                            case NI_Vector4_CreateFromVector3:
                             case NI_Vector128_Create:
                             case NI_Vector128_CreateScalar:
                             case NI_Vector128_CreateScalarUnsafe:
-                            case NI_VectorT_CreateBroadcast:
+                            case NI_VectorT_Create:
 #if defined(TARGET_XARCH)
                             case NI_BMI1_TrailingZeroCount:
                             case NI_BMI1_X64_TrailingZeroCount:
@@ -1675,6 +1514,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_VectorT_AsVectorUInt16:
                             case NI_VectorT_AsVectorUInt32:
                             case NI_VectorT_AsVectorUInt64:
+                            case NI_VectorT_op_Explicit:
                             case NI_VectorT_op_UnaryPlus:
 #if defined(TARGET_XARCH)
                             case NI_Vector256_As:
@@ -1704,6 +1544,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector512_AsUInt16:
                             case NI_Vector512_AsUInt32:
                             case NI_Vector512_AsUInt64:
+                            case NI_Vector512_op_UnaryPlus:
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
                             case NI_SRCS_UNSAFE_As:
@@ -1726,12 +1567,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector64_get_One:
                             case NI_Vector64_get_Zero:
 #endif // TARGET_ARM64
-                            case NI_Vector2_get_One:
-                            case NI_Vector2_get_Zero:
-                            case NI_Vector3_get_One:
-                            case NI_Vector3_get_Zero:
-                            case NI_Vector4_get_One:
-                            case NI_Vector4_get_Zero:
                             case NI_Vector128_get_AllBitsSet:
                             case NI_Vector128_get_One:
                             case NI_Vector128_get_Zero:
@@ -2255,10 +2090,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
             case CEE_UNALIGNED:
             {
-                noway_assert(sz == sizeof(__int8));
+                noway_assert(sz == sizeof(int8_t));
                 prefixFlags |= PREFIX_UNALIGNED;
 
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
 
                 impValidateMemoryAccessOpcode(codeAddr, codeEndp, false);
                 handled = true;
@@ -3137,7 +2972,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         BBswtDesc*      swtDsc  = nullptr;
         unsigned        nxtBBoffs;
         OPCODE          opcode = (OPCODE)getU1LittleEndian(codeAddr);
-        codeAddr += sizeof(__int8);
+        codeAddr += sizeof(int8_t);
         BBKinds jmpKind = BBJ_COUNT;
 
     DECODE_OPCODE:
@@ -3160,7 +2995,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 }
 
                 opcode = (OPCODE)(256 + getU1LittleEndian(codeAddr));
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
                 goto DECODE_OPCODE;
 
                 /* Check to see if we have a jump/return opcode */
@@ -3626,7 +3461,14 @@ void Compiler::fgFindBasicBlocks()
     FixedBitVect* jumpTarget = FixedBitVect::bitVectInit(info.compILCodeSize + 1, this);
 
     // Walk the instrs to find all jump targets
-    fgFindJumpTargets(info.compCode, info.compILCodeSize, jumpTarget);
+    if (compInlineResult != nullptr)
+    {
+        fgFindJumpTargets<true>(info.compCode, info.compILCodeSize, jumpTarget);
+    }
+    else
+    {
+        fgFindJumpTargets<false>(info.compCode, info.compILCodeSize, jumpTarget);
+    }
     if (compDonotInline())
     {
         return;
@@ -5101,23 +4943,13 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
     // Set weight for newBlock
     //
-    if (curr->KindIs(BBJ_ALWAYS))
+    FlowEdge* const currNewEdge = fgGetPredForBlock(newBlock, curr);
+    newBlock->bbWeight          = currNewEdge->getLikelyWeight();
+    newBlock->CopyFlags(curr, BBF_PROF_WEIGHT);
+
+    if (newBlock->bbWeight == BB_ZERO_WEIGHT)
     {
-        newBlock->inheritWeight(curr);
-    }
-    else
-    {
-        if (curr->hasProfileWeight())
-        {
-            FlowEdge* const currNewEdge = fgGetPredForBlock(newBlock, curr);
-            newBlock->setBBProfileWeight(currNewEdge->getLikelyWeight());
-        }
-        else
-        {
-            // Todo: use likelihood even w/o profile?
-            //
-            newBlock->inheritWeightPercentage(curr, 50);
-        }
+        newBlock->bbSetRunRarely();
     }
 
     // The bbLiveIn and bbLiveOut are both equal to the bbLiveIn of 'succ'
@@ -5538,8 +5370,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 //   renumber the blocks, none of them actually change number, but we shrink the
 //   maximum assigned block number. This affects the block set epoch).
 //
-//   As a consequence of renumbering, block pred lists may need to be reordered.
-//
 bool Compiler::fgRenumberBlocks()
 {
     assert(fgPredsComputed);
@@ -5580,10 +5410,6 @@ bool Compiler::fgRenumberBlocks()
     //
     if (renumbered)
     {
-        for (BasicBlock* const block : Blocks())
-        {
-            block->ensurePredListOrder(this);
-        }
         JITDUMP("\n*************** After renumbering the basic blocks\n");
         JITDUMPEXEC(fgDispBasicBlocks());
         JITDUMPEXEC(fgDispHandlerTab());
@@ -6154,7 +5980,7 @@ BasicBlock* Compiler::fgNewBBFromTreeAfter(
  */
 void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
 {
-    if (insertBeforeBlk->IsFirst())
+    if (fgFirstBB == insertBeforeBlk)
     {
         newBlk->SetNext(fgFirstBB);
 
@@ -6884,6 +6710,39 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
 #endif
 
     return newBlk;
+}
+
+//-----------------------------------------------------------------------------
+// fgNewBBatTryRegionEnd: Creates and inserts a new block at the end of the specified
+// try region, updating the end pointers in the EH table as necessary.
+//
+// Arguments:
+//    jumpKind - The jump kind of the new block
+//    tryIndex - The index of the try region to insert the new block in
+//
+// Returns:
+//    The new block
+//
+BasicBlock* Compiler::fgNewBBatTryRegionEnd(BBKinds jumpKind, unsigned tryIndex)
+{
+    EHblkDsc*         HBtab      = ehGetDsc(tryIndex);
+    BasicBlock* const oldTryBeg  = HBtab->ebdTryBeg;
+    BasicBlock* const oldTryLast = HBtab->ebdTryLast;
+    BasicBlock* const newBlock   = fgNewBBafter(jumpKind, oldTryLast, /* extendRegion */ false);
+    newBlock->setTryIndex(tryIndex);
+    newBlock->copyHndIndex(oldTryBeg);
+
+    // Update this try region's (and all parent try regions') last block pointer
+    //
+    for (unsigned XTnum = tryIndex; (XTnum < compHndBBtabCount) && (HBtab->ebdTryLast == oldTryLast); XTnum++, HBtab++)
+    {
+        assert((XTnum == tryIndex) || (XTnum == ehGetEnclosingTryIndex(XTnum - 1)));
+        fgSetTryEnd(HBtab, newBlock);
+    }
+
+    assert(newBlock->getTryIndex() == tryIndex);
+    assert(BasicBlock::sameHndRegion(newBlock, oldTryBeg));
+    return newBlock;
 }
 
 //------------------------------------------------------------------------

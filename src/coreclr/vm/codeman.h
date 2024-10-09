@@ -108,9 +108,6 @@ enum StubCodeBlockKind : int
     STUB_CODE_BLOCK_NOCODE,
     STUB_CODE_BLOCK_MANAGED,
     STUB_CODE_BLOCK_STUBLINK,
-    // Placeholdes used by NGen images
-    STUB_CODE_BLOCK_VIRTUAL_METHOD_THUNK,
-    STUB_CODE_BLOCK_EXTERNAL_METHOD_THUNK,
     // Placeholdes used by ReadyToRun images
     STUB_CODE_BLOCK_METHOD_CALL_THUNK,
 };
@@ -2258,7 +2255,7 @@ inline CodeHeader * EEJitManager::GetCodeHeader(const METHODTOKEN& MethodToken)
 inline CodeHeader * EEJitManager::GetCodeHeaderFromStartAddress(TADDR methodStartAddress)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(methodStartAddress != NULL);
+    _ASSERTE(methodStartAddress != (TADDR)NULL);
     ARM_ONLY(_ASSERTE((methodStartAddress & THUMB_CODE) == 0));
     return dac_cast<PTR_CodeHeader>(methodStartAddress - sizeof(CodeHeader));
 }

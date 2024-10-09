@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -37,9 +38,9 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void Select_Success()
+        public async Task Select_Success()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 var myProxy = new MyWebProxy();
 
@@ -82,7 +83,7 @@ namespace System.Net.Tests
                 Assert.NotNull(GlobalProxySelection.Select);
                 Assert.True(GlobalProxySelection.Select.IsBypassed(null)); // This is true for EmptyWebProxy, but not for most proxies
 #pragma warning restore 0618
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [Fact]

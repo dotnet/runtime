@@ -45,7 +45,7 @@ inline static bool isHighSimdReg(regNumber reg)
 // code_t is a type used to accumulate bits of opcode + prefixes. On amd64, it must be 64 bits
 // to support the REX prefixes. On both x86 and amd64, it must be 64 bits to support AVX, with
 // its 3-byte VEX prefix.
-typedef unsigned __int64 code_t;
+typedef uint64_t code_t;
 
 struct CnsVal
 {
@@ -113,6 +113,7 @@ static bool IsPermuteVar2xInstruction(instruction ins);
 static bool IsAVXVNNIInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
 static bool IsKInstruction(instruction ins);
+static bool IsKInstructionWithLBit(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
@@ -484,6 +485,7 @@ bool        IsThreeOperandAVXInstruction(instruction ins) const;
 static bool HasRegularWideForm(instruction ins);
 static bool HasRegularWideImmediateForm(instruction ins);
 static bool DoesWriteZeroFlag(instruction ins);
+static bool DoesWriteParityFlag(instruction ins);
 static bool DoesWriteSignFlag(instruction ins);
 static bool DoesResetOverflowAndCarryFlags(instruction ins);
 bool        IsFlagsAlwaysModified(instrDesc* id);
@@ -1017,7 +1019,8 @@ void emitIns_Call(EmitCallType          callType,
                   regNumber             xreg     = REG_NA,
                   unsigned              xmul     = 0,
                   ssize_t               disp     = 0,
-                  bool                  isJump   = false);
+                  bool                  isJump   = false,
+                  bool                  noSafePoint   = false);
 // clang-format on
 
 #ifdef TARGET_AMD64

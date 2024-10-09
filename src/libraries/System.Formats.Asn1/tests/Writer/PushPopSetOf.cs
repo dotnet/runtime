@@ -465,6 +465,18 @@ namespace System.Formats.Asn1.Tests.Writer
             Assert.Throws<InvalidOperationException>(() => writer.TryEncode(buf, out written));
             Assert.Throws<InvalidOperationException>(() => writer.EncodedValueEquals(buf));
             Assert.Equal(-5, written);
+
+#if NET9_0_OR_GREATER
+            Assert.Throws<InvalidOperationException>(() => writer.Encode<object>(_ => {
+                Assert.Fail("Callback should not have been called.");
+                return null;
+            }));
+
+            Assert.Throws<InvalidOperationException>(() => writer.Encode<object, object>(null, (_, _) => {
+                Assert.Fail("Callback should not have been called.");
+                return null;
+            }));
+#endif
         }
 
         [Theory]

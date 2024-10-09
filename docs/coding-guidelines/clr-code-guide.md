@@ -83,7 +83,11 @@ Written in 2006, by:
     * [2.10.4 When is it safe to use a runtime contract?](#2.10.4)
     * [2.10.5 Do not make unscoped changes to the ClrDebugState](#2.10.5)
     * [2.10.6 For more details...](#2.10.6)
-  * [2.11 Is your code DAC compliant?](#2.11)
+  * [2.11 Using standard headers](#2.11)
+    * [2.11.1 Do not use wchar_t](#2.11.1)
+	* [2.11.2 Do not use C++ Standard-defined exceptions](#2.11.2)
+	* [2.11.3 Do not use getenv on Unix platforms](#2.11.3)
+  * [2.12 Is your code DAC compliant?](#2.12)
 
 # <a name="1"></a>1 Why you must read this document
 
@@ -1028,14 +1032,14 @@ Here are some immediate tips for working well with the managed-debugging service
 - Do not change behavior when under the debugger. An app should behave identically when run outside or under the debugger. This is absolutely necessary else we get complaints like "my program only crashes when run under the debugger". This is also necessary because somebody may attach a debugger to an app after the fact. Specific examples of this:
   - Don't assume that just because an app is under the debugger that somebody is trying to debug it.
   - Don't add additional run-time error checks when under the debugger. For example, avoid code like:  if ((IsDebuggerPresent() && (argument == null)) { throw MyException(); }
-  - Avoid massive perf changes when under the debugger. For example, don't use an interpreted stub just because you're under the debugger. We then get bugs like [my app is 100x slower when under a debugger](https://docs.microsoft.com/en-us/archive/blogs/jmstall/psa-pinvokes-may-be-100x-slower-under-the-debugger).
+  - Avoid massive perf changes when under the debugger. For example, don't use an interpreted stub just because you're under the debugger. We then get bugs like [my app is 100x slower when under a debugger](https://learn.microsoft.com/archive/blogs/jmstall/psa-pinvokes-may-be-100x-slower-under-the-debugger).
   - Avoid algorithmic changes. For example, do not make the JIT generate non-optimized code just because an app is under the debugger. Do not make the loader policy resolve to a debuggable-ngen image just because an app is under the debugger.
 - Separate your code into a) side-effect-free (non-mutating) read-only accessors and b) functions that change state. The motivation is that the debugger needs to be able to read-state in a non-invasive way. For example, don't just have GetFoo() that will lazily create a Foo if it's not available. Instead, split it out like so:
   - GetFoo() - fails if a Foo does not exist. Being non-mutating, this should also be GC_NOTRIGGER. Non-mutating will also make it much easier to DAC-ize. This is what the debugger will call.
   - and GetOrCreateFoo() that is built around GetFoo(). The rest of the runtime can call this.
   - The debugger can then just call GetFoo(), and deal with the failure accordingly.
 - If you add a new stub (or way to call managed code), make sure that you can source-level step-in (F11) it under the debugger. The debugger is not psychic. A source-level step-in needs to be able to go from the source-line before a call to the source-line after the call, or managed code developers will be very confused. If you make that call transition be a giant 500 line stub, you must cooperate with the debugger for it to know how to step-through it. (This is what StubManagers are all about. See [src\vm\stubmgr.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/stubmgr.h)). Try doing a step-in through your new codepath under the debugger.
-- **Beware of timeouts** : The debugger may completely suspend your process at arbitrary points. In most cases, the debugger will do the right thing (and suspend your timeout too), but not always. For example, if you have some other process waiting for info from the debuggee, it [may hit a timeout](https://docs.microsoft.com/en-us/archive/blogs/jmstall/why-you-sometimes-get-a-bogus-contextswitchdeadlock-mda-under-the-debugger).
+- **Beware of timeouts** : The debugger may completely suspend your process at arbitrary points. In most cases, the debugger will do the right thing (and suspend your timeout too), but not always. For example, if you have some other process waiting for info from the debuggee, it [may hit a timeout](https://learn.microsoft.com/archive/blogs/jmstall/why-you-sometimes-get-a-bogus-contextswitchdeadlock-mda-under-the-debugger).
 - **Use CLR synchronization primitives (like Crst)**. In addition to all the reasons listed in the synchronization section, the CLR-aware primitives can cooperate with the debugging services. For example:
   - The debugger needs to know when threads are modifying sensitive data (which correlates to when the threads lock that data).
   - Timeouts for CLR synchronization primitives may operate better in the face of being debugged.
@@ -1252,10 +1256,40 @@ This data is meant to be changed in a scoped manner only. In particular, the CON
 
 See the big block comment at the start of [src\inc\contract.h][contract.h].
 
-## <a name="2.11"></a>2.11 Is your code DAC compliant?
+## <a name="2.11"></a>2.11 Using standard headers
+
+The C and C++ standard headers are available for usage in the CoreCLR code-base. However, there are restrictions on using the standard-provided APIs for code that will run as part of CoreCLR.
+
+Code that will only run in other processes, such as `createdump` or other extraneous tools, do not have the same set of restrictions.
+
+### <a name="2.11.1"></a> 2.11.1 Do not use wchar_t
+
+The `wchar_t` type is implementation-defined, with Windows and Unix-based platforms using different definitions (2 byte vs 4 byte). Use the `WCHAR` alias instead, which is always 2 bytes. The CoreCLR PAL provides implementations of a variety of the C standard `wchar_t` APIs with the `WCHAR` type instead. These methods, as well as the methods in the [CoreCLR minipal](https://github.com/dotnet/runtime/tree/main/src/coreclr/minipal) and in the [repo minipal](https://github.com/dotnet/runtime/tree/main/src/native/minipal) should be used. In these minipals, the APIs may use `char16_t` or a locally-defined `CHAR16_T` type. In both cases, these types are compatible with the `WCHAR` alias in CoreCLR. If a minipal API exists, it should be used instead of the PAL API.
+
+### <a name="2.11.2"></a> 2.11.2 Do not use C++ Standard-defined exceptions
+
+The exception handling mechanisms in CoreCLR only handle `Exception`-derived types and `PAL_SEHException`. As a result, standard C++ exceptions, derived from `std::exception`, will cause runtime instability and should never be used. There is one standard C++ exception type the CoreCLR infrastructure supports, `std::bad_alloc`. Since CoreCLR supports `std::bad_alloc`, the standard container allocators, `std::allocator<T>` and the standard C++ containers, can be used as long as only the non-throwing members are used.
+
+For example, `std::vector<T>::at()` should not be used as it may throw an `std::out_of_range` exception. Check the C++ standard or [cppreference.com](https://en.cppreference.com) for each member you plan to use to ensure that it will not throw a C++ standard exception other than `std::bad_alloc`.
+
+### <a name="2.11.3"></a> 2.11.3 Do not use getenv on Unix platforms
+
+The POSIX API `setenv` is not thread safe with `getenv` and can lead to crashes. CoreCLR provides a `PAL_getenv` API that is thread-safe. This API should be used instead when on non-Windows platforms.
+
+### <a name="2.11.4"></a> 2.11.4 Limit usage of standard template types in shipping executables
+
+For Linux x64 and amd64 platforms, we build against a very old libstdc++, the version that shipped with Ubuntu 16.04. As a result, we strive to reduce our usage of template types (where code from the headers will be inserted into our binaries) in shipping executables and libraries.
+
+This rule applies to both `coreclr` as well as shipping external executables like `createdump`.
+
+For non-shipping native code, like the `superpmi` tools suite, standard headers can be used without limitation.
+
+## <a name="2.12"></a>2.12 Is your code DAC compliant?
 
 At a high level, DAC is a technique to enable execution of CLR algorithms from out-of-process (eg. on a memory dump). Core CLR code is compiled in a special mode (with DACCESS_COMPILE defined) where all pointer dereferences are intercepted.
 
 Various tools (most notably the debugger and SOS) rely on portions of the CLR code being properly "DACized". Writing code in this way can be tricky and error-prone. Use the following references for more details:
 
 - The best documentation is in the code itself. See the large comments at the top of [src\inc\daccess.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/daccess.h).
+
+C++ standard collections are not DAC-ized and cannot be DAC-ized, so they should never be used as fields in data structures or in global variables that need to be read by the DAC, even when using a CoreCLR compatible allocator. They can be used as intermediate values; however. See [2.11](#2.11) for more rules about using C++ standard headers.

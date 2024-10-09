@@ -1,7 +1,7 @@
 Interop Guidelines
 ==================
 
-We follow the [best practices for native interop](https://learn.microsoft.com/en-us/dotnet/standard/native-interop/best-practices) with the additional guidelines below that are specific to this repo.
+We follow the [best practices for native interop](https://learn.microsoft.com/dotnet/standard/native-interop/best-practices) with the additional guidelines below that are specific to this repo.
 
 ## Goals
 We have the following goals related to interop code being used in dotnet/runtime:
@@ -166,7 +166,7 @@ Using enums instead of partial, static classes can lead to needing lots of casts
 
 ## P/Invoke Definitions
 
-When defining the P/Invoke signatures and structs, we follow the guidelines in the [interop best practices documentation](https://docs.microsoft.com/en-us/dotnet/standard/native-interop/best-practices).
+When defining the P/Invoke signatures and structs, we follow the guidelines in the [interop best practices documentation](https://learn.microsoft.com/dotnet/standard/native-interop/best-practices).
 
 The runtime repo makes use of [source-generated p/invokes](../design/features/source-generator-pinvokes.md) whenever possible (see [the compatibility doc](../design/libraries/LibraryImportGenerator/Compatibility.md) for unsupported scenarios). Methods should be marked `LibraryImport` and be `static` and `partial`.
 

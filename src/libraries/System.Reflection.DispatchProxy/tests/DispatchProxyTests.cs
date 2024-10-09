@@ -557,6 +557,39 @@ namespace DispatchProxyTests
             Assert.NotNull(propertyInfo);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Proxy_Declares_Interface_Static_Virtual_Properties(bool useGenericCreate)
+        {
+            TestType_IStaticVirtualPropertyService proxy = CreateHelper<TestType_IStaticVirtualPropertyService, TestDispatchProxy>(useGenericCreate);
+            PropertyInfo? propertyInfo = proxy.GetType().GetTypeInfo().GetDeclaredProperty(nameof(TestType_IStaticVirtualPropertyService.TestProperty));
+            Assert.NotNull(propertyInfo);
+            Assert.True(propertyInfo.GetMethod!.IsStatic);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Proxy_Declares_Interface_Static_Virtual_Methods(bool useGenericCreate)
+        {
+            TestType_IStaticVirtualMethodService proxy = CreateHelper<TestType_IStaticVirtualMethodService, TestDispatchProxy>(useGenericCreate);
+            MethodInfo? methodInfo = proxy.GetType().GetTypeInfo().GetDeclaredMethod(nameof(TestType_IStaticVirtualMethodService.TestMethod));
+            Assert.NotNull(methodInfo);
+            Assert.True(methodInfo.IsStatic);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Invoke_Static_Virtual_Method_Throws_NotSupportedException(bool useGenericCreate)
+        {
+            TestType_IStaticVirtualMethodService proxy = CreateHelper<TestType_IStaticVirtualMethodService, TestDispatchProxy>(useGenericCreate);
+            MethodInfo? methodInfo = proxy.GetType().GetTypeInfo().GetDeclaredMethod(nameof(TestType_IStaticVirtualMethodService.TestMethod));
+            Assert.NotNull(methodInfo);
+            Assert.Throws<NotSupportedException>(() => methodInfo.Invoke(proxy, BindingFlags.DoNotWrapExceptions, null, null, null));
+        }
+
 #if NET
         [Fact]
         public static void Invoke_Event_Add_And_Remove_And_Raise_Invokes_Correct_Methods_Generic_And_Non_Generic_Tests()

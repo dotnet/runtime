@@ -16,7 +16,7 @@ namespace System.Collections.Immutable
     [CollectionBuilder(typeof(ImmutableList), nameof(ImmutableList.Create))]
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-    public sealed partial class ImmutableList<T> : IImmutableList<T>, IList<T>, IList, IOrderedCollection<T>, IImmutableListQueries<T>, IStrongEnumerable<T, ImmutableList<T>.Enumerator>
+    public sealed partial class ImmutableList<T> : IImmutableList<T>, IList<T>, IList, IStrongEnumerable<T, ImmutableList<T>.Enumerator>
     {
         /// <summary>
         /// An empty immutable list.
@@ -180,15 +180,6 @@ namespace System.Collections.Immutable
 
         #endregion
 
-        #region IOrderedCollection<T> Indexers
-
-        /// <summary>
-        /// Gets the element in the collection at a given index.
-        /// </summary>
-        T IOrderedCollection<T>.this[int index] => this[index];
-
-        #endregion
-
         #region Public methods
 
         /// <summary>
@@ -305,7 +296,7 @@ namespace System.Collections.Immutable
         public ImmutableList<T> RemoveRange(int index, int count)
         {
             Requires.Range(index >= 0 && index <= this.Count, nameof(index));
-            Requires.Range(count >= 0 && index + count <= this.Count, nameof(count));
+            Requires.Range(count >= 0 && index <= this.Count - count, nameof(count));
 
             ImmutableList<T>.Node result = _root;
             int remaining = count;
@@ -1098,11 +1089,6 @@ namespace System.Collections.Immutable
         public Enumerator GetEnumerator() => new Enumerator(_root);
 
         /// <summary>
-        /// Returns the root <see cref="Node"/> of the list
-        /// </summary>
-        internal Node Root => _root;
-
-        /// <summary>
         /// Creates a new sorted set wrapper for a node tree.
         /// </summary>
         /// <param name="root">The root of the collection.</param>
@@ -1191,7 +1177,7 @@ namespace System.Collections.Immutable
             // index into that sequence like a list, so the one possible piece of
             // garbage produced is a temporary array to store the list while
             // we build the tree.
-            IOrderedCollection<T> list = items.AsOrderedCollection();
+            IReadOnlyList<T> list = items.AsReadOnlyList();
             if (list.Count == 0)
             {
                 return Empty;

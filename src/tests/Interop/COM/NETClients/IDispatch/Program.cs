@@ -5,6 +5,7 @@ using Xunit;
 namespace NetClient
 {
     using System;
+    using System.Drawing;
     using System.Globalization;
     using System.Reflection;
     using System.Runtime.InteropServices;
@@ -189,12 +190,21 @@ namespace NetClient
             var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
             var expected = System.Linq.Enumerable.Range(0, 10);
 
-            Console.WriteLine($"Calling {nameof(DispatchTesting.GetEnumerator)} ...");
-            var enumerator = dispatchTesting.GetEnumerator();
-            AssertExtensions.CollectionEqual(expected, GetEnumerable(enumerator));
+            {
+                Console.WriteLine($"Calling IEnumerable through cast ...");
+                var enumerable = (System.Collections.IEnumerable)dispatchTesting;
+                AssertExtensions.CollectionEqual(expected, ConvertEnumerable(enumerable));
+                AssertExtensions.CollectionEqual(expected, GetEnumerable(enumerable.GetEnumerator()));
+            }
 
-            enumerator.Reset();
-            AssertExtensions.CollectionEqual(expected, GetEnumerable(enumerator));
+            {
+                Console.WriteLine($"Calling {nameof(DispatchTesting.GetEnumerator)} ...");
+                var enumerator = dispatchTesting.GetEnumerator();
+                AssertExtensions.CollectionEqual(expected, GetEnumerable(enumerator));
+
+                enumerator.Reset();
+                AssertExtensions.CollectionEqual(expected, GetEnumerable(enumerator));
+            }
 
             Console.WriteLine($"Calling {nameof(DispatchTesting.ExplicitGetEnumerator)} ...");
             var enumeratorExplicit = dispatchTesting.ExplicitGetEnumerator();
@@ -203,12 +213,23 @@ namespace NetClient
             enumeratorExplicit.Reset();
             AssertExtensions.CollectionEqual(expected, GetEnumerable(enumeratorExplicit));
 
-            System.Collections.Generic.IEnumerable<int> GetEnumerable(System.Collections.IEnumerator e)
+            static System.Collections.Generic.IEnumerable<int> GetEnumerable(System.Collections.IEnumerator e)
             {
                var list = new System.Collections.Generic.List<int>();
                while (e.MoveNext())
                {
                    list.Add((int)e.Current);
+               }
+
+               return list;
+            }
+
+            static System.Collections.Generic.IEnumerable<int> ConvertEnumerable(System.Collections.IEnumerable e)
+            {
+               var list = new System.Collections.Generic.List<int>();
+               foreach (object i in e)
+               {
+                   list.Add((int)i);
                }
 
                return list;
@@ -245,11 +266,6 @@ namespace NetClient
                 Assert.Equal(expected, result);
             }
 
-            // Invalid: Rejected before reaching coerce
-            Console.WriteLine("Invalid variant type should throw InvalidOleVariantTypeException.");
-            var variantException = Assert.Throws<InvalidOleVariantTypeException>(() => dispatchCoerceTesting.ReturnToManaged(0x7FFF));
-            Assert.Equal(unchecked((int)0x80131531), variantException.HResult);
-
             // Not supported source or destination type: COMException { HResult: 0x80020005 }
 
             // DISP_E_PARAMNOTFOUND: Converts to Missing
@@ -257,19 +273,60 @@ namespace NetClient
             var comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged(unchecked((short)((short)VarEnum.VT_ERROR | 0x8000))));
             Assert.Equal(unchecked((int)0x80020005), comException.HResult);
 
+            // Types rejected by OAVariantLib
+            VarEnum[] unsupportedTypes =
+            {
+                VarEnum.VT_ERROR | (VarEnum)0x8000,
+            };
+
+            // Types rejected by VariantChangeTypeEx
+            VarEnum[] invalidCastTypes =
+            {
+                VarEnum.VT_UNKNOWN,
+                VarEnum.VT_NULL,
+            };
+
+            foreach (var vt in invalidCastTypes)
+            {
+                Console.WriteLine($"Converting {vt} to int should fail from VariantChangeTypeEx.");
+                Assert.Throws<InvalidCastException>(() => dispatchCoerceTesting.ReturnToManaged((short)vt));
+            }
+
+            // Invalid: Rejected before reaching coerce
+            Console.WriteLine("Invalid variant type should throw InvalidOleVariantTypeException.");
+            var variantException = Assert.Throws<InvalidOleVariantTypeException>(() => dispatchCoerceTesting.ReturnToManaged(0x7FFF));
+            Assert.Equal(unchecked((int)0x80131531), variantException.HResult);
+
+            Console.WriteLine("Invoking void-returning method should not allocate return buffer.");
+            // E_POINTER translates to NullReferenceException
+            Assert.Throws<NullReferenceException>(() => dispatchCoerceTesting.ReturnToManaged_Void(0));
+
+            Console.WriteLine("Converting int to double should be supported.");
+            Assert.Equal(1234d, dispatchCoerceTesting.ReturnToManaged_Double(1234));
+
+            Console.WriteLine("Converting int to string should be supported.");
+            Assert.Equal("1234", dispatchCoerceTesting.ReturnToManaged_String(1234));
+
+            Console.WriteLine("Converting int to decimal should be supported.");
+            Assert.Equal(1234m, dispatchCoerceTesting.ReturnToManaged_Decimal(1234));
+
+            Console.WriteLine("Converting int to DateTime should be supported.");
+            Assert.Equal(new DateTime(100, 1, 1), dispatchCoerceTesting.ReturnToManaged_DateTime(-657434));
+            Assert.Throws<OverflowException>(() => dispatchCoerceTesting.ReturnToManaged_DateTime(-657435));
+            Assert.Equal(new DateTime(9999, 12, 31), dispatchCoerceTesting.ReturnToManaged_DateTime(2958465));
+            Assert.Throws<OverflowException>(() => dispatchCoerceTesting.ReturnToManaged_DateTime(2958466));
+
+            Console.WriteLine("Converting int to System.Drawing.Color should be supported.");
+            Assert.Equal(Color.FromKnownColor(KnownColor.ActiveBorder), dispatchCoerceTesting.ReturnToManaged_Color(unchecked((int)0x8000000A)));
+            Assert.Equal(ColorTranslator.FromOle(1234), dispatchCoerceTesting.ReturnToManaged_Color(1234));
+
             Console.WriteLine("Converting int to VT_MISSING should be rejected.");
-            comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged_Missing());
+            comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged_Missing(0));
             Assert.Equal(unchecked((int)0x80020005), comException.HResult);
 
             Console.WriteLine("Converting int to VT_NULL should be rejected.");
-            comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged_DBNull());
+            comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged_DBNull(0));
             Assert.Equal(unchecked((int)0x80020005), comException.HResult);
-
-            // Rejected by VariantChangeTypeEx
-            Console.WriteLine("Converting VT_UNKNOWN to int should fail from VariantChangeTypeEx.");
-            Assert.Throws<InvalidCastException>(() => dispatchCoerceTesting.ReturnToManaged((short)VarEnum.VT_UNKNOWN));
-            Console.WriteLine("Converting VT_NULL to int should fail from VariantChangeTypeEx.");
-            Assert.Throws<InvalidCastException>(() => dispatchCoerceTesting.ReturnToManaged((short)VarEnum.VT_NULL));
 
             // LOCAL_BOOL
             Console.WriteLine("VARIANT_BOOL should convert to non-numeric string.");

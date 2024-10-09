@@ -55,11 +55,6 @@ extern g_pStringClass:QWORD
 extern FramedAllocateString:proc
 extern JIT_NewArr1:proc
 
-extern JIT_GetSharedNonGCStaticBase_Helper:proc
-extern JIT_GetSharedGCStaticBase_Helper:proc
-
-extern JIT_InternalThrow:proc
-
 ifdef _DEBUG
 ; Version for when we're sure to be in the GC, checks whether or not the card
 ; needs to be updated
@@ -227,7 +222,7 @@ NESTED_ENTRY JIT_BoxFastUP, _TEXT
         mov     [g_global_alloc_lock], -1
 
         ; Check whether the object contains pointers
-        test    dword ptr [rcx + OFFSETOF__MethodTable__m_dwFlags], MethodTable__enum_flag_ContainsPointers
+        test    dword ptr [rcx + OFFSETOF__MethodTable__m_dwFlags], MethodTable__enum_flag_ContainsGCPointers
         jnz     ContainsPointers
 
         ; We have no pointers - emit a simple inline copy loop

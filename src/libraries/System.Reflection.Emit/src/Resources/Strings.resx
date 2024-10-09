@@ -243,7 +243,7 @@
   <data name="Argument_InterfaceNotFound" xml:space="preserve">
     <value>Interface not found.</value>
   </data>
-  <data name="Argument_MethodOverriden" xml:space="preserve">
+  <data name="Argument_MethodOverridden" xml:space="preserve">
     <value>Method '{0}' on type '{1}' is overriding a method that has been overridden.</value>
   </data>
   <data name="Argument_MustBeInterface" xml:space="preserve">
@@ -302,5 +302,8 @@
   </data>
   <data name="InvalidOperation_UnmatchingSymScope" xml:space="preserve">
     <value>Unmatching symbol scope.</value>
+  </data>
+  <data name="Argument_MustBeEnum" xml:space="preserve">
+    <value>Type provided must be an Enum.</value>
   </data>
 </root>

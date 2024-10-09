@@ -53,7 +53,7 @@ DLLEXPORT errno_t __cdecl memcpy_s(
     size_t sizeInBytes,
     const void * src,
     size_t count
-) THROW_DECL
+)
 {
     if (count == 0)
     {

@@ -21,12 +21,10 @@ namespace System.Threading
             createdNew = true;
         }
 
-#pragma warning disable IDE0060
         private static OpenExistingResult OpenExistingWorker(string name, out Semaphore? result)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
         }
-#pragma warning restore IDE0060
 
         private int ReleaseCore(int releaseCount)
         {

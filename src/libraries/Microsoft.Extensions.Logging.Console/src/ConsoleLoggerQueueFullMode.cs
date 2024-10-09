@@ -4,7 +4,7 @@
 namespace Microsoft.Extensions.Logging.Console
 {
     /// <summary>
-    /// Determines the console logger behavior when the queue becomes full.
+    /// Describes the console logger behavior when the queue becomes full.
     /// </summary>
     public enum ConsoleLoggerQueueFullMode
     {

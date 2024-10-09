@@ -4,7 +4,7 @@
 internal static partial class Interop
 {
     /// <summary>
-    /// <a href="https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-security_quality_of_service">SECURITY_QUALITY_OF_SERVICE</a> structure.
+    /// <a href="https://learn.microsoft.com/windows/win32/api/winnt/ns-winnt-security_quality_of_service">SECURITY_QUALITY_OF_SERVICE</a> structure.
     ///  Used to support client impersonation. Client specifies this to a server to allow
     ///  it to impersonate the client.
     /// </summary>

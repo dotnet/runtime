@@ -380,7 +380,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class UnsupportedDictionaryWrapper
         {
-            public Dictionary<int[], int> Dictionary { get; set; }
+            public Dictionary<int[], int>? Dictionary { get; set; }
         }
 
         public class FixedNamingPolicy : JsonNamingPolicy

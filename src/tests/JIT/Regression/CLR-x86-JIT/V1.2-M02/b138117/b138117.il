@@ -41,9 +41,6 @@
     .maxstack  2
     .locals init (valuetype VT V_0,
              int32 V_1)
-    IL_0000:  ldsflda    valuetype VT ldsfldainitonlyvt::vt1
-    IL_0005:  ldc.i4.s   100
-    IL_0007:  stfld      int32 VT::m
     IL_000c:  ldloca.s   V_0
     IL_000e:  initobj    VT
     IL_0014:  ldloca.s   V_0
@@ -78,4 +75,12 @@ FAIL:
     IL_0006:  ret
   } // end of method ldsfldainitonlyvt::.ctor
 
+  .method private hidebysig specialname rtspecialname static void .cctor() cil managed
+  {
+    .maxstack  2
+    IL_0000:  ldsflda    valuetype VT ldsfldainitonlyvt::vt1
+    IL_0005:  ldc.i4.s   100
+    IL_0007:  stfld      int32 VT::m
+    ret
+  }
 }

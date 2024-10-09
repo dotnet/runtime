@@ -8,7 +8,7 @@ import { VoidPtr, CharPtr } from "./types/emscripten";
 import cwraps, { I52Error } from "./cwraps";
 import { Module, mono_assert, runtimeHelpers } from "./globals";
 import { utf8ToString } from "./strings";
-import { mono_log_warn } from "./logging";
+import { mono_log_warn, mono_log_error } from "./logging";
 
 const alloca_stack: Array<VoidPtr> = [];
 const alloca_buffer_size = 32 * 1024;
@@ -327,6 +327,10 @@ export function withStackAlloc<T1, T2, T3, TResult> (bytesWanted: number, f: (pt
 export function mono_wasm_load_bytes_into_heap (bytes: Uint8Array): VoidPtr {
     // pad sizes by 16 bytes for simd
     const memoryOffset = Module._malloc(bytes.length + 16);
+    if (<any>memoryOffset <= 0) {
+        mono_log_error(`malloc failed to allocate ${(bytes.length + 16)} bytes.`);
+        throw new Error("Out of memory");
+    }
     const heapBytes = new Uint8Array(localHeapViewU8().buffer, <any>memoryOffset, bytes.length);
     heapBytes.set(bytes);
     return memoryOffset;
@@ -338,11 +342,20 @@ export function mono_wasm_load_bytes_into_heap (bytes: Uint8Array): VoidPtr {
 export function mono_wasm_load_bytes_into_heap_persistent (bytes: Uint8Array): VoidPtr {
     // pad sizes by 16 bytes for simd
     const desiredSize = bytes.length + 16;
-    // wasm memory page size is 64kb. allocations smaller than that are probably best
-    //  serviced by malloc
-    const memoryOffset = (desiredSize < (64 * 1024))
-        ? Module._malloc(desiredSize)
-        : Module._sbrk(desiredSize);
+    // sbrk doesn't allocate whole pages so we can ask it for as many bytes as we want.
+    let memoryOffset = Module._sbrk(desiredSize);
+    if (<any>memoryOffset <= 0) {
+        // sbrk failed. Due to identical bugs in v8 and spidermonkey, this isn't guaranteed to be OOM.
+        // We use this function early during startup, when OOM shouldn't be possible anyway!
+        // Log a warning, then retry.
+        memoryOffset = Module._sbrk(desiredSize);
+        if (<any>memoryOffset <= 0) {
+            mono_log_error(`sbrk failed to allocate ${desiredSize} bytes, and failed upon retry.`);
+            throw new Error("Out of memory");
+        } else {
+            mono_log_warn(`sbrk failed to allocate ${desiredSize} bytes, but succeeded upon retry!`);
+        }
+    }
     const heapBytes = new Uint8Array(localHeapViewU8().buffer, <any>memoryOffset, bytes.length);
     heapBytes.set(bytes);
     return memoryOffset;

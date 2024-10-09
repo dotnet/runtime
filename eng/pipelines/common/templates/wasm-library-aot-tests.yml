@@ -10,6 +10,7 @@ parameters:
   runAOT: false
   shouldRunSmokeOnly: false
   shouldContinueOnError: false
+  scenarios: []
 
 jobs:
 
@@ -31,9 +32,12 @@ jobs:
       shouldRunSmokeOnly: ${{ parameters.shouldRunSmokeOnly }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       scenarios:
-        - ${{ if eq(platform, 'browser_wasm') }}:
-          - WasmTestOnV8
-        - ${{ if eq(platform, 'browser_wasm_win') }}:
-          - WasmTestOnChrome
-        - ${{ if or(eq(platform, 'wasi_wasm_win'), eq(platform, 'wasi_wasm')) }}:
-          - WasmTestOnWasmtime
+        - ${{ if ne(parameters.scenarios[0], '') }}:
+          - ${{ parameters.scenarios }}
+        - ${{ else }}:
+          - ${{ if eq(platform, 'browser_wasm') }}:
+            - WasmTestOnV8
+          - ${{ if eq(platform, 'browser_wasm_win') }}:
+            - WasmTestOnChrome
+          - ${{ if or(eq(platform, 'wasi_wasm_win'), eq(platform, 'wasi_wasm')) }}:
+            - WasmTestOnWasmtime
