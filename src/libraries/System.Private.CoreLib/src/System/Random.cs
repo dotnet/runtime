@@ -199,11 +199,16 @@ namespace System
 
             // The most expensive part of this operation is the call to get random data. We can
             // do so potentially many fewer times if:
+            // - the instance was constructed as `new Random()` or is `Random.Shared`, such that it's not seeded nor is it
+            //   a custom derived type. We don't want to observably change the deterministically-produced sequence from previous releases.
             // - the number of choices is <= 256. This let's us get a single byte per choice.
             // - the number of choices is a power of two. This let's us use a byte and simply mask off
             //   unnecessary bits cheaply rather than needing to use rejection sampling.
             // In such a case, we can grab a bunch of random bytes in one call.
-            if (BitOperations.IsPow2(choices.Length) && choices.Length <= 256)
+            ImplBase impl = _impl;
+            if ((impl is null || impl.GetType() == typeof(XoshiroImpl)) &&
+                BitOperations.IsPow2(choices.Length) &&
+                choices.Length <= 256)
             {
                 Span<byte> randomBytes = stackalloc byte[512]; // arbitrary size, a balance between stack consumed and number of random calls required
                 while (!destination.IsEmpty)
