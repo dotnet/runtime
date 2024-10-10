@@ -12,8 +12,8 @@ namespace System
             // Check if build and revision are -1 and default them to 0
             int major = version.Major;
             int minor = version.Minor;
-            int build = version.Build >= 0 ? version.Build : 0;
-            int revision = version.Revision >= 0 ? version.Revision : 0;
+            int build = version.Build < 0 ? 0 : version.Build;
+            int revision = version.Revision < 0 ? 0 : version.Revision;
 
             version = new Version(major, minor, build, revision);
 
