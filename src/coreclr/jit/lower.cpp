@@ -2917,7 +2917,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
 
         BlockRange().InsertBefore(call, std::move(controlExprRange));
 
-#ifndef TARGET_XARCH
+#ifndef TARGET_X86
         if (call->IsDelegateInvoke() && comp->GetInterruptible())
         {
             // If the target's backend doesn't support indirect calls with immediate operands (contained)
