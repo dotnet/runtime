@@ -4487,6 +4487,11 @@ FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByIndex(unsigned index)
 //
 FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByHeader(BasicBlock* block)
 {
+    if (!m_dfsTree->Contains(block))
+    {
+        return nullptr;
+    }
+    
     // Loops are stored in reverse post-order,
     // so we can binary-search for the desired loop's header by its post-order number.
     size_t min = 0;
