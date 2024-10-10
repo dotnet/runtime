@@ -103,7 +103,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
 
         internal static bool IsStubCodeBlock(Target target, TargetPointer codeHeaderIndirect)
         {
-            uint stubCodeBlockLast = target.ReadGlobal<uint>(Constants.Globals.StubCodeBlockLast);
+            byte stubCodeBlockLast = target.ReadGlobal<byte>(Constants.Globals.StubCodeBlockLast);
             return codeHeaderIndirect.Value <= stubCodeBlockLast;
         }
 
