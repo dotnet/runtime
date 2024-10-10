@@ -14813,17 +14813,16 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         switch (size)
         {
             case EA_1BYTE:
+#ifdef TARGET_AMD64
+                assert((ins != INS_lzcnt_evex) && (ins != INS_tzcnt_evex) && (ins != INS_popcnt_evex));
+#endif TARGET_AMD64
                 break;
 
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
                 {
-                    if (TakesApxExtendedEvexPrefix(id))
+                    if (!TakesApxExtendedEvexPrefix(id))
                     {
-                        assert(hasEvexPrefix(code));
-                        code |= EXTENDED_EVEX_PP_BITS;
-                    }
-                    else {
                         dst += emitOutputByte(dst, 0x66);
                     }
                 }
@@ -14845,8 +14844,14 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                     {
                         assert(hasEvexPrefix(code));
                         code = AddRexWPrefix(id, code);
-                    }                
+                    }
+#ifdef TARGET_AMD64
+                    if ((ins != INS_lzcnt_evex) && (ins != INS_tzcnt_evex) && (ins != INS_popcnt_evex))
+                    // These instructions do not support 1-byte inputs and the opcode is exact.
+#endif // TARGET_AMD64
+                    {
                     code |= 0x01;
+                    }     
                     break;
                 }
 
@@ -15988,7 +15993,11 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     }
 #ifdef FEATURE_HW_INTRINSICS
     else if ((ins == INS_bsf) || (ins == INS_bsr) || (ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt) ||
-             (ins == INS_tzcnt))
+             (ins == INS_tzcnt)
+#ifdef TARGET_AMD64
+             || (ins == INS_lzcnt_evex) || (ins == INS_tzcnt_evex) || (ins == INS_popcnt_evex)
+#endif // TARGET_AMD64
+            )
     {
         assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
         code = insCodeRM(ins);
@@ -15999,7 +16008,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
             code |= 0x0100;
         }
 
-        if (size == EA_2BYTE)
+        if (size == EA_2BYTE && !TakesApxExtendedEvexPrefix(id))
         {
             assert(ins == INS_crc32);
             dst += emitOutputByte(dst, 0x66);
@@ -20937,6 +20946,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vshuff64x2:
         case INS_vshufi32x4:
         case INS_vshufi64x2:
+#ifdef TARGET_AMD64
+        case INS_popcnt_evex:
+        case INS_lzcnt_evex:
+        case INS_tzcnt_evex:
+#endif // TARGET_AMD64
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_3C;
