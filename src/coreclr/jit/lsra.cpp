@@ -953,9 +953,29 @@ void LinearScan::setBlockSequence()
 
     assert((blockSequence == nullptr) && (bbSeqCount == 0));
     FlowGraphDfsTree* const dfsTree = compiler->fgComputeDfs</* useProfile */ true>();
-    blockSequence                   = dfsTree->GetPostOrder();
-    bbNumMaxBeforeResolution        = compiler->fgBBNumMax;
-    blockInfo                       = new (compiler, CMK_LSRA) LsraBlockInfo[bbNumMaxBeforeResolution + 1];
+
+    if (compiler->opts.OptimizationEnabled() && dfsTree->HasCycle())
+    {
+        // Ensure loop bodies are compact in the visitation order
+        FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
+        blockSequence                      = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
+        unsigned index                     = dfsTree->GetPostOrderCount();
+
+        auto addToSequence = [this, &index](BasicBlock* block) {
+            assert(index != 0);
+            blockSequence[--index] = block;
+        };
+
+        compiler->fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
+    }
+    else
+    {
+        // TODO: Just use lexical block order in MinOpts
+        blockSequence = dfsTree->GetPostOrder();
+    }
+
+    bbNumMaxBeforeResolution = compiler->fgBBNumMax;
+    blockInfo                = new (compiler, CMK_LSRA) LsraBlockInfo[bbNumMaxBeforeResolution + 1];
 
     // Flip the DFS traversal to get the reverse post-order traversal
     // (this is the order in which blocks will be allocated)
