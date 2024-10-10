@@ -335,7 +335,12 @@ namespace System
             {
                 return current.Minor > minor;
             }
-            if (current.Build >= 0 && current.Build != build)
+            if (current.Build < 0)
+            {
+                // Unspecified component satisfies any required version
+                return true;
+            }
+            if (current.Build != build)
             {
                 return current.Build > build;
             }
