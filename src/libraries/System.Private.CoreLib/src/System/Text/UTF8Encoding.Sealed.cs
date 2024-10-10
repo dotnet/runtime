@@ -81,8 +81,10 @@ namespace System.Text
                 if ((uint)charCount > (int.MaxValue / MaxUtf8BytesPerChar) - 1)
                 {
                     // Move the throw out of the hot path to allow for inlining.
-                    ThrowArgumentException(charCount);
-                    static void ThrowArgumentException(int charCount)
+                    ThrowArgumentException(this, charCount);
+#pragma warning disable IDE0060 // 'this' taken explicitly to avoid argument shuffling by caller
+                    static void ThrowArgumentException(object @this, int charCount)
+#pragma warning restore IDE0060
                     {
                         throw new ArgumentOutOfRangeException(
                             paramName: nameof(charCount),
@@ -103,8 +105,10 @@ namespace System.Text
                 if ((uint)byteCount > int.MaxValue - 1)
                 {
                     // Move the throw out of the hot path to allow for inlining.
-                    ThrowArgumentException(byteCount);
-                    static void ThrowArgumentException(int byteCount)
+                    ThrowArgumentException(this, byteCount);
+#pragma warning disable IDE0060 // 'this' taken explicitly to avoid argument shuffling by caller
+                    static void ThrowArgumentException(object @this, int byteCount)
+#pragma warning restore IDE0060
                     {
                         throw new ArgumentOutOfRangeException(
                             paramName: nameof(byteCount),

@@ -527,12 +527,14 @@ namespace System.Threading.Tasks
             if ((options & ~(ConfigureAwaitOptions.ContinueOnCapturedContext |
                              ConfigureAwaitOptions.ForceYielding)) != 0)
             {
-                ThrowForInvalidOptions(options);
+                ThrowForInvalidOptions(this, options);
             }
 
             return new ConfiguredTaskAwaitable<TResult>(this, options);
 
-            static void ThrowForInvalidOptions(ConfigureAwaitOptions options) =>
+#pragma warning disable IDE0060 // 'this' taken explicitly to avoid argument shuffling by caller
+            static void ThrowForInvalidOptions(object @this, ConfigureAwaitOptions options) =>
+#pragma warning restore IDE0060
                 throw ((options & ConfigureAwaitOptions.SuppressThrowing) == 0 ?
                     new ArgumentOutOfRangeException(nameof(options)) :
                     new ArgumentOutOfRangeException(nameof(options), SR.TaskT_ConfigureAwait_InvalidOptions));
