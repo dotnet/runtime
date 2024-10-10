@@ -38,7 +38,7 @@ public class Runtime_108612
     }
 
     [Fact]
-    public static void TestEntryPoint(string[] args)
+    public static void TestEntryPoint()
     {
         if (AdvSimd.IsSupported)
         {
