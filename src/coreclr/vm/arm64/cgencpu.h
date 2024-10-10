@@ -494,7 +494,6 @@ public:
     void EmitJumpRegister(IntReg regTarget);
     void EmitMovReg(IntReg dest, IntReg source);
 
-    void EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value);
     void EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value);
 
     void EmitLoadStoreRegPairImm(DWORD flags, IntReg Xt1, IntReg Xt2, IntReg Xn, int offset=0);

@@ -1189,30 +1189,16 @@ void StubLinkerCPU::EmitLoad(IntReg dest, IntReg srcAddr, int offset)
     Emit32(ITypeInstr(0x3, 0x3, dest, srcAddr, offset));  // ld
     LOG((LF_STUBS, LL_EVERYTHING, "ld %s, %i(%s)\n", intRegAbiNames[dest], offset, intRegAbiNames[srcAddr]));
 }
-void StubLinkerCPU::EmitLoad(FloatReg dest, IntReg srcAddr, int offset)
-{
-    Emit32(ITypeInstr(0x7, 0x3, dest, srcAddr, offset));  // fld
-    LOG((LF_STUBS, LL_EVERYTHING, "fld %s, %i(%s)\n", fpRegAbiNames[dest], offset, intRegAbiNames[srcAddr]));
-}
 
 void StubLinkerCPU:: EmitStore(IntReg src, IntReg destAddr, int offset)
 {
     Emit32(STypeInstr(0x23, 0x3, destAddr, src, offset));  // sd
     LOG((LF_STUBS, LL_EVERYTHING, "sd %s, %i(%s)\n", intRegAbiNames[src], offset, intRegAbiNames[destAddr]));
 }
-void StubLinkerCPU::EmitStore(FloatReg src, IntReg destAddr, int offset)
-{
-    Emit32(STypeInstr(0x27, 0x3, destAddr, src, offset));  // fsd
-    LOG((LF_STUBS, LL_EVERYTHING, "fsd %s, %i(%s)\n", fpRegAbiNames[src], offset, intRegAbiNames[destAddr]));
-}
 
 void StubLinkerCPU::EmitMovReg(IntReg Xd, IntReg Xm)
 {
     EmitAddImm(Xd, Xm, 0);
-}
-void StubLinkerCPU::EmitSubImm(IntReg Xd, IntReg Xn, int value)
-{
-    EmitAddImm(Xd, Xn, -value);
 }
 void StubLinkerCPU::EmitAddImm(IntReg Xd, IntReg Xn, int value)
 {

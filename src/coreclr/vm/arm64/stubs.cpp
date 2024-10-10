@@ -1316,19 +1316,6 @@ void StubLinkerCPU::EmitMovReg(IntReg Xd, IntReg Xm)
     }
 }
 
-void StubLinkerCPU::EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value)
-{
-    // sub <Xd|SP>, <Xn|SP>, #imm{, <shift>}
-    // Encoding: sf|1|0|1|0|0|0|1|shift(2)|imm(12)|Rn|Rd
-    // where <shift> is encoded as LSL #0 (no shift) when shift=00 and LSL #12 when shift=01. (No shift in this impl)
-    // imm(12) is an unsigned immediate in the range of 0 to 4095
-    // Rn and Rd are both encoded as SP=31
-    // sf = 1 for 64-bit variant
-    _ASSERTE((0 <= value) && (value <= 4095));
-    Emit32((DWORD) ((0xD1 << 24) | (value << 10) | (Xd << 5) | Xn));
-
-}
-
 void StubLinkerCPU::EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value)
 {
     // add SP, SP, #imm{, <shift>}
