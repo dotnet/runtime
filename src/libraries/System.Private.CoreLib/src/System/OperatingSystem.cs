@@ -331,7 +331,7 @@ namespace System
             {
                 return current.Major > major;
             }
-            if (current.Minor >= 0 && current.Minor != minor)
+            if (current.Minor != minor)
             {
                 return current.Minor > minor;
             }
