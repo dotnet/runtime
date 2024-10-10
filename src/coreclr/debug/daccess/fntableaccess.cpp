@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// ===========================================================================
 
-//
+// ===========================================================================
 // File: DebugSupport.cpp
 //
 // Support routines for debugging the CLR
@@ -13,12 +12,8 @@
 #ifndef TARGET_UNIX
 #ifndef TARGET_X86
 
-//
-//
 // @TODO: This is old code that should be easy to implement on top of the existing DAC support.
 //        This code was originally written prior to DAC.
-//
-//
 
 #include <winwrap.h>
 #include <windows.h>

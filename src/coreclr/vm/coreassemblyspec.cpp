@@ -15,7 +15,6 @@
 #include "appdomain.inl"
 #include <peimage.h>
 #include "peimagelayout.inl"
-#include "domainassembly.h"
 #include "holder.h"
 #include "bundle.h"
 #include "strongnameinternal.h"

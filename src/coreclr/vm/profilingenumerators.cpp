@@ -172,7 +172,7 @@ BOOL ProfilerObjectEnum::Init()
 // Assemblies appear in the debugging API enumerations as soon as they begin to load,
 // whereas Assemblies (like all other entities) appear in the profiling API enumerations
 // once their load is complete (i.e., just before AssemblyLoadFinished).  Also,
-// debuggers enumerate DomainModules and DomainAssemblies, whereas profilers enumerate
+// debuggers enumerate DomainModules and Assemblies, whereas profilers enumerate
 // Modules and Assemblies.
 //
 // For information about other synchronization issues with profiler catch-up, see
@@ -291,7 +291,7 @@ HRESULT IterateUnsharedModules(AppDomain * pAppDomain,
     //             enumerable.
     //
     // Note: To determine what happens in a given load stage of a module or assembly,
-    // look at the switch statement in code:DomainAssembly::DoIncrementalLoad, and keep in
+    // look at the switch statement in code:Assembly::DoIncrementalLoad, and keep in
     // mind that it takes cases on the *next* load stage; in other words, the actions
     // that appear in a case for a given load stage are actually executed as we attempt
     // to transition TO that load stage, and thus they actually execute while the module
@@ -432,17 +432,15 @@ HRESULT ProfilerModuleEnum::Init()
 
     HRESULT hr = S_OK;
 
-    // When an assembly is loaded into an AppDomain, a DomainAssembly is
-    // created (one per pairing of the AppDomain with the assembly). This means
-    // that we'll create multiple DomainAssemblys for the same module if it is loaded
-    // domain-neutral (i.e., "shared"). The profiling API callbacks shield the profiler
-    // from this, and only report a given module the first time it's loaded. So a
-    // profiler sees only one ModuleLoadFinished for a module loaded domain-neutral, even
-    // though the module may be used by multiple AppDomains. The module enumerator must
-    // mirror the behavior of the profiling API callbacks, by avoiding duplicate Modules
-    // in the module list we return to the profiler. So first add unshared modules (non
-    // domain-neutral) to the enumerator, and then separately add any shared modules that
-    // were loaded into at least one AD.
+    // When an assembly is loaded into the AppDomain (since .NET Core only has one AppDomain),
+    // an Assembly object is created. For assemblies that are shared across multiple contexts
+    // (e.g., loaded into multiple AssemblyLoadContexts or marked as domain-neutral in older
+    // runtimes), the profiling API ensures that the profiler only sees the module once.
+    // The profiler will only receive a single ModuleLoadFinished callback for a module, even if
+    // the assembly is used across multiple contexts. The module enumerator must mirror this
+    // behavior, avoiding duplicate modules in the list returned to the profiler.
+    // Therefore, we first add non-shared assemblies (those specific to a single ALC) to the enumerator,
+    // and then separately add any shared modules that are loaded across multiple contexts.
 
     // First, iterate through all ADs. For each one, call
     // AddUnsharedModulesFromAppDomain, which iterates through all UNSHARED modules and
