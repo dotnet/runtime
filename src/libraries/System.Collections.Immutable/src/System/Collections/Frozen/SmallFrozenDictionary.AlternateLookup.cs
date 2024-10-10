@@ -9,7 +9,29 @@ namespace System.Collections.Frozen
 {
     internal sealed partial class SmallFrozenDictionary<TKey, TValue>
     {
-        private protected override ref readonly TValue GetValueRefOrNullRefCore<TAlternateKey>(TAlternateKey key)
+
+        private protected override AlternateLookupDelegate<TAlternateKey> GetAlternateLookupDelegate<TAlternateKey>()
+            => AlternateKeyDelegateHolder<TAlternateKey>.Instance;
+
+        private static class AlternateKeyDelegateHolder<TAlternateKey>
+            where TAlternateKey : notnull
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            , allows ref struct
+#pragma warning restore SA1001
+#endif
+        {
+            public static AlternateLookupDelegate<TAlternateKey> Instance = (dictionary, key)
+                => ref ((SmallFrozenDictionary<TKey, TValue>)dictionary).GetValueRefOrNullRefCoreAlternate(key);
+        }
+
+        private ref readonly TValue GetValueRefOrNullRefCoreAlternate<TAlternateKey>(TAlternateKey key)
+            where TAlternateKey : notnull
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            , allows ref struct
+#pragma warning restore SA1001
+#endif
         {
             IAlternateEqualityComparer<TAlternateKey, TKey> comparer = GetAlternateEqualityComparer<TAlternateKey>();
 

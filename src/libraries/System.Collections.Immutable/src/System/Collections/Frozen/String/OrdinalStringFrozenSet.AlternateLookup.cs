@@ -8,6 +8,15 @@ namespace System.Collections.Frozen
 {
     internal abstract partial class OrdinalStringFrozenSet
     {
+        private static AlternateLookupDelegate<ReadOnlySpan<char>> s_alternateLookup = (set, key)
+            => ((OrdinalStringFrozenSet)set).FindItemIndexAlternate(key);
+
+        private protected override AlternateLookupDelegate<TAlternateKey> GetAlternateLookupDelegate<TAlternateKey>()
+        {
+            Debug.Assert(typeof(TAlternateKey) == typeof(ReadOnlySpan<char>));
+            return (AlternateLookupDelegate<TAlternateKey>)(object)s_alternateLookup;
+        }
+
         // We want to avoid having to implement FindItemIndex for each of the multiple types
         // that derive from this one, but each of those needs to supply its own notion of Equals/GetHashCode.
         // To avoid lots of virtual calls, we have every derived type override FindItemIndex and
@@ -16,11 +25,8 @@ namespace System.Collections.Frozen
         // into each unique copy of the code.
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private protected override int FindItemIndex<TAlternate>(TAlternate alternate)
+        private protected virtual int FindItemIndexAlternate(ReadOnlySpan<char> item)
         {
-            Debug.Assert(typeof(TAlternate) == typeof(ReadOnlySpan<char>));
-            ReadOnlySpan<char> item = Unsafe.As<TAlternate, ReadOnlySpan<char>>(ref alternate);
-
             if ((uint)(item.Length - _minimumLength) <= (uint)_maximumLengthDiff)
             {
                 if (CheckLengthQuick((uint)item.Length))
@@ -42,5 +48,62 @@ namespace System.Collections.Frozen
 
             return -1;
         }
+    }
+
+    // See comment above for why these overrides exist. Do not remove.
+
+    internal sealed partial class OrdinalStringFrozenSet_Full
+    {
+        private protected override int FindItemIndexAlternate(ReadOnlySpan<char> item) => base.FindItemIndexAlternate(item);
+    }
+
+    internal sealed partial class OrdinalStringFrozenSet_FullCaseInsensitive
+    {
+        private protected override int FindItemIndexAlternate(ReadOnlySpan<char> item) => base.FindItemIndexAlternate(item);
+    }
+
+    internal sealed partial class OrdinalStringFrozenSet_FullCaseInsensitiveAscii
+    {
+        private protected override int FindItemIndexAlternate(ReadOnlySpan<char> item) => base.FindItemIndexAlternate(item);
+    }
+
+    internal sealed partial class OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveAsciiSubstring
+    {
+        private protected override int FindItemIndexAlternate(ReadOnlySpan<char> item) => base.FindItemIndexAlternate(item);
+    }
+
+    internal sealed partial class OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveSubstring
+    {
+        private protected override int FindItemIndexAlternate(ReadOnlySpan<char> item) => base.FindItemIndexAlternate(item);
+    }
+
+    internal sealed partial class OrdinalStringFrozenSet_LeftJustifiedSingleChar
+    {
+        private protected override int FindItemIndexAlternate(ReadOnlySpan<char> item) => base.FindItemIndexAlternate(item);
+    }
+
+    internal sealed partial class OrdinalStringFrozenSet_LeftJustifiedSubstring
+    {
+        private protected override int FindItemIndexAlternate(ReadOnlySpan<char> item) => base.FindItemIndexAlternate(item);
+    }
+
+    internal sealed partial class OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveAsciiSubstring
+    {
+        private protected override int FindItemIndexAlternate(ReadOnlySpan<char> item) => base.FindItemIndexAlternate(item);
+    }
+
+    internal sealed partial class OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveSubstring
+    {
+        private protected override int FindItemIndexAlternate(ReadOnlySpan<char> item) => base.FindItemIndexAlternate(item);
+    }
+
+    internal sealed partial class OrdinalStringFrozenSet_RightJustifiedSingleChar
+    {
+        private protected override int FindItemIndexAlternate(ReadOnlySpan<char> item) => base.FindItemIndexAlternate(item);
+    }
+
+    internal sealed partial class OrdinalStringFrozenSet_RightJustifiedSubstring
+    {
+        private protected override int FindItemIndexAlternate(ReadOnlySpan<char> item) => base.FindItemIndexAlternate(item);
     }
 }
