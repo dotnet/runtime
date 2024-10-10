@@ -798,7 +798,6 @@ HRESULT MDInternalRO::FindMethodDef(    // S_OK or error.
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     mdMethodDef *pmethoddef)            // Put MemberDef token here.
 {
-
     return FindMethodDefUsingCompare(classdef,
                                      szName,
                                      pvSigBlob,
@@ -1227,7 +1226,6 @@ HRESULT MDInternalRO::GetItemGuid(      // return hresult
     mdToken     tkObj,                  // given item
     CLSID       *pGuid)
 {
-
     HRESULT     hr;                     // A result.
     const BYTE  *pBlob = NULL;          // Blob with dispid.
     ULONG       cbBlob;                 // Length of blob.
