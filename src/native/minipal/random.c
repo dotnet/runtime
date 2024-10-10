@@ -1,20 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "minipalconfig.h"
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <assert.h>
-#include <unistd.h>
 #include <time.h>
 #include <errno.h>
+#if HAVE_BCRYPT_H
+#include <windows.h>
+#include <bcrypt.h>
+#else
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#endif
 #if defined(__APPLE__) && __APPLE__
 #include <CommonCrypto/CommonRandom.h>
 #endif
 
-#include "minipalconfig.h"
 #include "random.h"
 
 /*
@@ -29,6 +35,9 @@ void minipal_get_non_cryptographically_secure_random_bytes(uint8_t* buffer, int3
 
 #if HAVE_ARC4RANDOM_BUF
     arc4random_buf(buffer, (size_t)bufferLength);
+#elif HAVE_BCRYPT_H
+    // Fall back to the secure version
+    minipal_get_cryptographically_secure_random_bytes(buffer, bufferLength);
 #else
     long num = 0;
     static bool sInitializedMRand;
@@ -86,6 +95,9 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
     {
         return 0;
     }
+#elif HAVE_BCRYPT_H
+    NTSTATUS status = BCryptGenRandom(NULL, buffer, (ULONG)bufferLength, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+    return BCRYPT_SUCCESS(status) ? 0 : -1;
 #else
 
     static volatile int rand_des = -1;

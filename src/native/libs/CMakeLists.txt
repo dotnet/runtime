@@ -2,10 +2,15 @@ cmake_minimum_required(VERSION 3.20)
 
 include(CheckCCompilerFlag)
 
-project(CoreFX C)
+project(LibsNative C)
 
-include(../../../eng/native/configurepaths.cmake)
-include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
+if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
+    # This is our root CMakeList.txt, so we need to set up some global settings and include the minipal here.
+    include(../../../eng/native/configurepaths.cmake)
+    include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
+
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal minipal)
+endif()
 
 include_directories(${CLR_SRC_NATIVE_DIR})
 

@@ -1,0 +1,60 @@
+name: DNMD
+
+on:
+  push:
+    branches: [ master ]
+    paths-ignore:
+      - '**/*.md'
+  pull_request:
+    branches: [ master ]
+    paths-ignore:
+      - '**/*.md'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        flavor: [Debug, Release]
+        use-vendored-libs: [true, false]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.os }}, ${{ matrix.flavor }}, Single Build = ${{ matrix.use-vendored-libs }})
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+        dotnet-quality: 'preview'
+    
+    - name: List dotnet information
+      run: dotnet --info
+
+    - name: Build Vendored Dependencies
+      if: ${{ !matrix.use-vendored-libs }}
+      run: |
+        cmake -S external/dncp -B dncp-artifacts -DCMAKE_BUILD_TYPE=${{ matrix.flavor }}
+        cmake --build dncp-artifacts --config ${{ matrix.flavor }} --target install
+
+    - name: Set CMake Module Path
+      if: ${{ !matrix.use-vendored-libs }}
+      run: echo "CMAKE_PREFIX_PATH=${{ github.workspace }}/dncp-artifacts" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Build
+      run: |
+        cmake -S . -B artifacts -DCMAKE_BUILD_TYPE=${{ matrix.flavor }} -DINCLUDE_VENDORED_LIBS=${{ matrix.use-vendored-libs }}
+        cmake --build artifacts --config ${{ matrix.flavor }} --target install
+
+    - name: Run Tests
+      run: ctest --test-dir artifacts --output-on-failure -C ${{ matrix.flavor }}
+
+    # - name: Upload Test Results
+    #   if: always()
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: TestResults-${{ matrix.os }}-${{ matrix.flavor }}
+    #     path: ./test/Regression.UnitTests/TestResults-${{ matrix.os }}-${{ matrix.flavor }}
