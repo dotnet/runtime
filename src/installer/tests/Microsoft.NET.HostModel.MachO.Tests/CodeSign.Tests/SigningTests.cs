@@ -50,7 +50,8 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             string tmpFileName = Path.GetFileName(tmpFilePath);
             Console.WriteLine($"tmpFilePath: {tmpFilePath}");
             long originalFileLength = objectFile.GetOriginalStream().Length;
-            long tmpFileSize = originalFileLength + Signer.GetCodeSignatureSize(originalFileLength);
+            // Add space for signature since memorymapped files can't be resized
+            long tmpFileSize = originalFileLength + 0x8000;
 
             using (var fileStream = new FileStream(tmpFilePath, FileMode.Open, FileAccess.ReadWrite))
             {

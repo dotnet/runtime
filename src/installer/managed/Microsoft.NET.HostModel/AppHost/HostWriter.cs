@@ -113,6 +113,10 @@ namespace Microsoft.NET.HostModel.AppHost
                 {
                     PEUtils.RemoveCetCompatBit(mappedFile, accessor);
                 }
+                if (appHostIsPEImage && enableMacOSCodeSign)
+                {
+                    throw new InvalidDataException("Cannot sign a PE image with MacOS code signing.");
+                }
             }
 
             try
@@ -126,7 +130,6 @@ namespace Microsoft.NET.HostModel.AppHost
                     {
                         // Open the source host file.
                         appHostSourceStream = new FileStream(appHostSourceFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
-                        appHostSourceStream.SetLength(appHostSourceStream.Length + Signer.GetCodeSignatureSize(appHostSourceStream.Length));
                         memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
                         memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
 
@@ -138,22 +141,24 @@ namespace Microsoft.NET.HostModel.AppHost
                         RewriteAppHost(memoryMappedFile, memoryMappedViewAccessor);
 
                         // Save the transformed host.
-                        using (FileStream fileStream = new FileStream(appHostDestinationFilePath, FileMode.Create))
+                        using (FileStream fileStream = new FileStream(appHostDestinationFilePath, FileMode.Create, FileAccess.ReadWrite))
                         {
                             BinaryUtils.WriteToStream(memoryMappedViewAccessor, fileStream, sourceAppHostLength);
 
                             // Remove the signature from MachO hosts.
                             if (!appHostIsPEImage)
                             {
-                                Signer.TryRemoveCodesign(fileStream, out _);
-
+                                if (Signer.TryRemoveCodesign(fileStream, out long newLength))
+                                {
+                                    fileStream.SetLength(newLength);
+                                }
                                 if (enableMacOSCodeSign)
                                 {
-                                    Signer.AdHocSign(fileStream, Path.GetFileName(appHostDestinationFilePath));
+                                    newLength = Signer.AdHocSign(fileStream, Path.GetFileName(appHostDestinationFilePath));
+                                    fileStream.SetLength(newLength);
                                 }
                             }
-
-                            if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
+                            else if (assemblyToCopyResourcesFrom != null)
                             {
                                 using var updater = new ResourceUpdater(fileStream, true);
                                 updater.AddResourcesFromPEImage(assemblyToCopyResourcesFrom);

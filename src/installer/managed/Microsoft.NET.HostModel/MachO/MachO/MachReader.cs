@@ -445,12 +445,12 @@ namespace Microsoft.NET.HostModel.MachO
         internal static IList<MachObjectFile> Read(Stream stream)
         {
             var magic = ReadMagic(stream);
-            var magicBuffer = new byte[4];
 
             List<MachObjectFile> values = new List<MachObjectFile>();
 
             if (magic == MachMagic.FatMagicLittleEndian || magic == MachMagic.FatMagicBigEndian)
             {
+                var magicBuffer = new byte[4];
                 var headerBuffer = new byte[Math.Max(FatHeader.BinarySize, FatArchHeader.BinarySize)];
                 stream.ReadFully(headerBuffer.AsSpan(0, FatHeader.BinarySize));
                 var fatHeader = FatHeader.Read(headerBuffer, isLittleEndian: magic == MachMagic.FatMagicLittleEndian, out var _);

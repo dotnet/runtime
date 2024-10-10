@@ -74,7 +74,6 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign
 
             using (FileStream inputFile = File.Open(executablePath, FileMode.Open, FileAccess.ReadWrite))
             {
-                inputFile.SetLength(inputFile.Length + GetCodeSignatureSize(inputFile.Length));
                 long newSize = AdHocSignMachO(inputFile, bundleIdentifier);
                 inputFile.SetLength(newSize);
             }
@@ -192,14 +191,14 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign
             return ((long)codeSignatureCommand.FileOffset) + codeSignatureSize;
         }
 
-        public static void AdHocSign(Stream stream, string identifier)
+        public static long AdHocSign(Stream stream, string identifier)
         {
             if (!MachReader.IsMachOImage(stream))
             {
                 throw new ArgumentException("Stream does not contain a Mach-O image");
             }
 
-            AdHocSignMachO(stream, identifier);
+            return AdHocSignMachO(stream, identifier);
         }
 
         public static void AdHocSign(string path)
@@ -274,11 +273,6 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign
                 machStream.SetLength(newSize);
             }
             return removed;
-        }
-
-        internal static long GetCodeSignatureSize(long _)
-        {
-            return 1 << 15;
         }
     }
 }

@@ -100,5 +100,10 @@ namespace Microsoft.NET.HostModel.MachO
 
             return stream.Slice(0, stream.Length);
         }
+
+        internal void SetStreamLength(long length)
+        {
+            stream.SetLength(length);
+        }
     }
 }

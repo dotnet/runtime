@@ -30,12 +30,13 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign
 
         public void EnsureSpace()
         {
-            if (objectFile.LoadCommands.OfType<MachCodeSignature>().Single() is { FileOffset: var offset, FileSize: var size}
-                && offset + size <= objectFile.GetOriginalStream().Length)
+            var codeSignature = objectFile.LoadCommands.OfType<MachCodeSignature>().Single();
+            var requiredSize = codeSignature.FileOffset + codeSignature.FileSize;
+            if (requiredSize <= objectFile.GetOriginalStream().Length)
             {
                 return;
             }
-            throw new InvalidDataException("Code signature is not within the file bounds");
+            objectFile.SetStreamLength(requiredSize);
         }
 
         private MachCodeSignature UpdateCodeSignatureLayout(uint codeSignatureSize)
