@@ -500,9 +500,12 @@ async function instantiate_wasm_module (
         replace_linker_placeholders(imports);
         const compiledModule = await loaderHelpers.wasmCompilePromise.promise;
         const compiledInstance = await WebAssembly.instantiate(compiledModule, imports);
+        const memory = compiledInstance.exports.memory as WebAssembly.Memory;
+        mono_log_debug("A " + memory.grow(0) * 65536);
+        mono_log_debug("B " + memory.grow(0x90000000 / 65536) * 65536);
+        mono_log_debug("C " + memory.grow(0) * 65536);
+        mono_log_debug("D " + (memory.grow(0) * 65536) / (1024 * 1024));
         successCallback(compiledInstance, compiledModule);
-
-        mono_log_debug("instantiate_wasm_module done");
 
         runtimeHelpers.afterInstantiateWasm.promise_control.resolve();
     } catch (err) {
@@ -527,6 +530,13 @@ async function ensureUsedWasmFeatures () {
 export async function start_runtime () {
     try {
         const mark = startMeasure();
+        /*
+        for (let i = 0; i < 10; i++) {
+            const new_sbrk = Module._sbrk(0x10000000) as any;
+            mono_log_debug("bumped memory to " + new_sbrk.toString(16));
+        }
+        mono_log_debug("bumped memory to " + Module.HEAP8.byteLength / (1024 * 1024) + "MB");
+        */
         mono_log_debug("Initializing mono runtime");
         for (const k in runtimeHelpers.config.environmentVariables) {
             const v = runtimeHelpers.config.environmentVariables![k];
