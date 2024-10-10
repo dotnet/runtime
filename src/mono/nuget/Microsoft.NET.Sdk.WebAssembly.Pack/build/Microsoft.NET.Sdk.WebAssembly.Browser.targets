@@ -201,7 +201,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">false</_WasmFingerprintDotnetJs>
       <_WasmBootConfigFileName>$(WasmBootConfigFileName)</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == ''">blazor.boot.json</_WasmBootConfigFileName>
-      <_WasmPublishBootConfigFileName>publish.$(_WasmBootConfigFileName)</_WasmPublishBootConfigFileName>
+      <_WasmPublishBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == 'blazor.boot.json'">blazor.publish.boot.json</_WasmPublishBootConfigFileName>
+      <_WasmPublishBootConfigFileName Condition="'$(_WasmPublishBootConfigFileName)' == ''">publish.$(_WasmBootConfigFileName)</_WasmPublishBootConfigFileName>
 
       <!-- Workaround for https://github.com/dotnet/sdk/issues/12114-->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
