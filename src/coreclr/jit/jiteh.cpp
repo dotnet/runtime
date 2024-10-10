@@ -1460,7 +1460,6 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 {
     assert(compHndBBtabCount > 0);
     assert(XTnum < compHndBBtabCount);
-    assert((fgAddCodeDscMap == nullptr) || (fgAddCodeDscMap->GetCount() == 0));
 
     EHblkDsc* HBtab;
 
@@ -1560,6 +1559,88 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
         {
             /* Last entry. Don't need to do anything */
             noway_assert(XTnum == compHndBBtabCount);
+        }
+    }
+
+    // We also need to update any AddCodeDesc records and map entries
+    //
+    if (!fgHasAddCodeDscMap())
+    {
+        JITDUMP("No ACD entries to update");
+    }
+    else
+    {
+        // There are three possibilities for each ACD entry
+        //
+        // 1. remains as is (stays in same region with same indices)
+        // 2. gets merged with ACD from parent region
+        // 3. gets updated (moves to parent region with new indices)
+        //
+        // First, update each ACD, and remove any modified ones from the
+        // map (via their old key)
+        //
+        AddCodeDscMap* const    map = fgGetAddCodeDscMap();
+        ArrayStack<AddCodeDsc*> modified(getAllocator(CMK_Unknown));
+
+        for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(map))
+        {
+            bool          isModified = false;
+            AddCodeDscKey oldKey(add);
+
+            // We expect callers have already updated any ACDs that
+            // reference the EH region being removed.
+            //
+            bool inTry = add->acdTryIndex > 0;
+            bool inHnd = add->acdHndIndex > 0;
+            assert(!inTry || ((unsigned)(add->acdTryIndex - 1) != XTnum));
+            assert(!inHnd || ((unsigned)(add->acdHndIndex - 1) != XTnum));
+
+            if (add->acdTryIndex > XTnum)
+            {
+                add->acdTryIndex--;
+                inTry      = add->acdTryIndex > 0;
+                isModified = true;
+            }
+
+            if (add->acdHndIndex > XTnum)
+            {
+                add->acdHndIndex--;
+                inHnd      = add->acdHndIndex > 0;
+                isModified = true;
+            }
+
+            if (isModified)
+            {
+                add->UpdateKeyDesignator(this);
+                bool const removed = map->Remove(oldKey);
+                assert(removed);
+                modified.Push(add);
+            }
+        }
+
+        // Second, walk the modified ACDs and either "merge" them into some
+        // other ACD, or re-insert into the map.
+        //
+        // (Note this can't easily be done in the first pass, since we need to know
+        // the potential merge target won't itself get subsequently modified, and the
+        // order of ACD enumeration is unrelated to the order of EH regions).
+        //
+        while (modified.Height() > 0)
+        {
+            AddCodeDsc* const add = modified.Pop();
+            AddCodeDscKey     newKey(add);
+            AddCodeDsc*       existing = nullptr;
+            if (map->Lookup(newKey, &existing))
+            {
+                JITDUMP("ACD%u merged into ACD%u\n", add->acdNum, existing->acdNum);
+                JITDUMPEXEC(existing->Dump());
+            }
+            else
+            {
+                JITDUMP("ACD%u updated\n", add->acdNum);
+                map->Set(newKey, add);
+                JITDUMPEXEC(add->Dump());
+            }
         }
     }
 }
