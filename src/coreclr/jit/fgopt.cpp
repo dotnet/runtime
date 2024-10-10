@@ -5047,11 +5047,11 @@ bool Compiler::fgDedupReturnComparison(BasicBlock* block)
 
     // The following check is purely to improve TP and handle some size regressions we fail to handle
     // Eventually, we should remove it.
-    bool profitable = (cmpOp1->IsLocal() && cmpOp2->IsCnsIntOrI()) || (cmpOp2->IsLocal() && cmpOp1->IsCnsIntOrI());
+    /*bool profitable = (cmpOp1->IsLocal() && cmpOp2->IsCnsIntOrI()) || (cmpOp2->IsLocal() && cmpOp1->IsCnsIntOrI());
     if (!profitable)
     {
         return false;
-    }
+    }*/
 
     cmp->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
     rootNode->ChangeOper(GT_JTRUE);
