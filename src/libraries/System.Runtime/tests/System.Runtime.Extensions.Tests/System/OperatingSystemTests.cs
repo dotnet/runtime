@@ -236,11 +236,18 @@ namespace System.Tests
                     isCurrentOS = true;
                 }
 
+                // Four-parameter overload
                 AssertVersionChecks(isCurrentOS, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast(platformName, major, minor, build, revision));
                 AssertVersionChecks(isCurrentOS, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast(platformName.ToLower(), major, minor, build, revision));
                 AssertVersionChecks(isCurrentOS, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast(platformName.ToUpper(), major, minor, build, revision));
+
+                // Three-parameter overload
+                AssertVersionChecks(isCurrentOS, (major, minor, build) => OperatingSystem.IsOSPlatformVersionAtLeast(platformName, major, minor, build));
+
+                // Two-parameter overload
+                AssertVersionChecks(isCurrentOS, (major, minor) => OperatingSystem.IsOSPlatformVersionAtLeast(platformName, major, minor));
             }
-            
+
             AssertVersionChecks(currentOSName.Equals("Android", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsAndroidVersionAtLeast);
             AssertVersionChecks(currentOSName == "MacCatalyst" || currentOSName.Equals("iOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsIOSVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("macOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsMacOSVersionAtLeast);
@@ -280,6 +287,19 @@ namespace System.Tests
             Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major - 1, current.Minor, current.Build));
             Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor - 1, current.Build));
             Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor, current.Build - 1));
+        }
+
+        private static void AssertVersionChecks(bool isCurrentOS, Func<int, int, bool> isOSVersionAtLeast)
+        {
+            Version current = Environment.OSVersion.Version;
+
+            Assert.False(isOSVersionAtLeast(current.Major + 1, current.Minor));
+            Assert.False(isOSVersionAtLeast(current.Major, current.Minor + 1));
+
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor));
+
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major - 1, current.Minor));
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor - 1));
         }
     }
 }
