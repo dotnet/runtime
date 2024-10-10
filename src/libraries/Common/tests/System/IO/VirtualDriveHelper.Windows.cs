@@ -87,7 +87,7 @@ namespace System.IO
                 List<char> existingDrives = DriveInfo.GetDrives().Select(x => x.Name[0]).ToList();
 
                 // A,B are reserved, C is usually reserved
-                IEnumerable<int> range = Enumerable.Range('D', 'Z' - 'D');
+                IEnumerable<int> range = Enumerable.Range((int)'D', 'Z' - 'D');
                 IEnumerable<char> castRange = range.Select(x => Convert.ToChar(x));
                 IEnumerable<char> allDrivesLetters = castRange.Except(existingDrives);
 
