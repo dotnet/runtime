@@ -228,4 +228,7 @@
   <data name="ThrowArgument_StackShapesNotSame" xml:space="preserve">
     <value>All tensors must have the same shape.</value>
   </data>
+  <data name="Argument_CannotReshapeNonContiguousOrDense" xml:space="preserve">
+    <value>The Tensor provided is either non-contiguous or non-dense. Reshape only works with contigous and dense memory. You may need to Broadcast or Copy the data to be contigous.</value>
+  </data>
 </root>
