@@ -27,7 +27,7 @@
     <PropertyGroup>
       <WasmMainAssemblyFileName>$(TestAssemblyFileName)</WasmMainAssemblyFileName>
       <WasmAppDir>$(AppDir)</WasmAppDir>
-      <WasmMainJSPath>$(CORE_ROOT)\runtime-test\test-main.js</WasmMainJSPath>
+      <WasmMainJSPath>$(CORE_ROOT)\runtime-test\test-main.mjs</WasmMainJSPath>
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
       <WasmSkipMissingAssemblies>true</WasmSkipMissingAssemblies>
@@ -35,7 +35,7 @@
 
     <ItemGroup>
       <WasmExtraFilesToDeploy Include="$(CORE_ROOT)\runtime-test\index.html" />
-      <WasmExtraFilesToDeploy Include="$(CORE_ROOT)\runtime-test\test-main.js" />
+      <WasmExtraFilesToDeploy Include="$(CORE_ROOT)\runtime-test\test-main.mjs" />
       <WasmAssembliesToBundle Include="$(TestBinDir)\*.dll" />
       <WasmAssembliesToBundle Include="$(CORE_ROOT)\System.Runtime.InteropServices.JavaScript.dll" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native"/>

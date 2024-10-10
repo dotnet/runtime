@@ -368,7 +368,7 @@ async function run() {
                 const main_assembly_name = runArgs.applicationArguments[1];
                 const app_args = runArgs.applicationArguments.slice(2);
                 const result = await App.runtime.runMain(main_assembly_name, app_args);
-                console.log(`test-main.js exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} with result ${result} and linear memory ${App.runtime.Module.HEAPU8.length} bytes`);
+                console.log(`test-main.mjs exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} with result ${result} and linear memory ${App.runtime.Module.HEAPU8.length} bytes`);
                 mono_exit(result);
             } catch (error) {
                 if (error.name != "ExitStatus") {
