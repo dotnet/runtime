@@ -344,11 +344,11 @@ inline bool IsServerHeap()
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
 
-#ifdef _DEBUG
+// #define SIMPLE_DPRINTF
+
+#if defined(SIMPLE_DPRINTF) || (defined(_DEBUG) && defined(HOST_64BIT))
 #define TRACE_GC
 #endif // _DEBUG
-
-// #define SIMPLE_DPRINTF
 
 #ifdef TRACE_GC
 #define MIN_CUSTOM_LOG_LEVEL 7
