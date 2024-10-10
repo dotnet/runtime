@@ -19,9 +19,9 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 {
     protected readonly BlazorWasmProjectProvider _provider;
     protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-                : base(output, buildContext)
+                : base(output, buildContext, new BlazorWasmProjectProvider(output, DefaultTargetFrameworkForBlazor))
     {
-        _provider = new BlazorWasmProjectProvider(output, DefaultTargetFrameworkForBlazor, _projectDir);
+        _provider = GetProvider<BlazorWasmProjectProvider>();
     }
 
     public void InitBlazorWasmProjectDir(string id, string targetFramework = DefaultTargetFrameworkForBlazor)

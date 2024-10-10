@@ -65,6 +65,9 @@ namespace Wasm.Build.Tests
         public static string GetNuGetConfigPathFor(string targetFramework)
             => Path.Combine(BuildEnvironment.TestDataPath, targetFramework == "net9.0" ? "nuget9.config" : "nuget8.config");
 
+        public TProvider GetProvider<TProvider>() where TProvider : ProjectProviderBase
+            => (TProvider)_providerOfBaseType;
+
         protected string? _projectDir
         {
             get => _providerOfBaseType.ProjectDir;

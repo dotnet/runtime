@@ -10,7 +10,7 @@ namespace Wasm.Build.Tests;
 
 public class BlazorWasmProjectProvider : WasmSdkBasedProjectProvider
 {
-    public BlazorWasmProjectProvider(ITestOutputHelper _testOutput, string defaultTargetFramework, string? _projectDir)
+    public BlazorWasmProjectProvider(ITestOutputHelper _testOutput, string defaultTargetFramework, string? _projectDir = null)
             : base(_testOutput, defaultTargetFramework, _projectDir)
     { }
     protected override string BundleDirName { get { return "AppBundle"; } }

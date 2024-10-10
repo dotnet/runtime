@@ -19,12 +19,12 @@ public class WasmTemplateTestsBase : BuildTestBase
 {
     private readonly WasmSdkBasedProjectProvider _provider;
     protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
-    public WasmTemplateTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-        : base(new WasmSdkBasedProjectProvider(output, DefaultTargetFramework), output, buildContext)
+    public WasmTemplateTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext, ProjectProviderBase? provider = null)
+        : base(provider ?? new WasmSdkBasedProjectProvider(output, DefaultTargetFramework), output, buildContext)
     {
-        _provider = new WasmSdkBasedProjectProvider(output, DefaultTargetFramework);
+        _provider = GetProvider<WasmSdkBasedProjectProvider>();
     }
-    
+
     public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, bool addFrameworkArg = false, string? extraProperties = null)
     {
         InitPaths(id);
