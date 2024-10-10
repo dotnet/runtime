@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" Link="Common\System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System\Runtime\InteropServices\Marshalling\ComInterfaceOptions.cs" Link="Production\ComInterfaceOptions.cs" />
     <Compile Include="..\..\tests\Common\ExceptionMarshalling.cs" Link="Common\ExceptionMarshalling.cs" />
     <Compile Include="$(CommonPath)\Roslyn\DiagnosticDescriptorHelper.cs" Link="Common\Roslyn\DiagnosticDescriptorHelper.cs" />

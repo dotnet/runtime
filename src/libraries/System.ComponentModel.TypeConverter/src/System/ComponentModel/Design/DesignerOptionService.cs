@@ -461,7 +461,7 @@ namespace System.ComponentModel.Design
             {
                 if (destinationType == typeof(string))
                 {
-                    return SR.UsingResourceKeys() ? "(Collection)" : SR.CollectionConverterText;
+                    return SR.UsingResourceKeys ? "(Collection)" : SR.CollectionConverterText;
                 }
                 return base.ConvertTo(cxt, culture, value, destinationType);
             }

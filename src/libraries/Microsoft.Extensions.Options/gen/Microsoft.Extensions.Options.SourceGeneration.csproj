@@ -38,4 +38,8 @@
     <Compile Include="TypeDeclarationSyntaxReceiver.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
+  </ItemGroup>
+
 </Project>
