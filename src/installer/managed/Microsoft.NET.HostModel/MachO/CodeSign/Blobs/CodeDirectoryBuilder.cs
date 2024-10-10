@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
-using Microsoft.NET.HostModel.MachO;
 using Microsoft.NET.HostModel.MachO.Streams;
 
 namespace Microsoft.NET.HostModel.MachO.CodeSign.Blobs

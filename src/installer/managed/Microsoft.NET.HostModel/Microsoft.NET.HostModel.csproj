@@ -23,9 +23,6 @@
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
     <!-- The SDK distributes the live version of Json we can't reference that https://github.com/dotnet/runtime/issues/108262 -->
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
@@ -45,10 +42,6 @@
       PrivateAssets="all"
       OutputItemType="Analyzer"
       ReferenceOutputAssembly="false" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
-    <Compile Remove="ThrowHelpers.cs" />
   </ItemGroup>
 
 </Project>

@@ -1,18 +1,20 @@
-using Xunit;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.IO;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+using Microsoft.NET.HostModel.AppHost;
 using Microsoft.NET.HostModel.MachO;
 using Microsoft.NET.HostModel.MachO.Streams;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
-using Microsoft.DotNet.CoreSetup.Test;
-using System;
-using FluentAssertions;
-using Microsoft.NET.HostModel.AppHost;
 using Microsoft.DotNet.CoreSetup;
-using System.IO.MemoryMappedFiles;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollector.InProcDataCollector;
-using System.Runtime.CompilerServices;
+using Microsoft.DotNet.CoreSetup.Test;
+using Xunit;
+using FluentAssertions;
 
 namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 {
@@ -28,6 +30,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 
         internal static bool IsSigned(string filePath)
         {
+            // Validate the signature if we can, otherwise, at least ensure there is a signature LoadCommand present
             if (Codesign.IsAvailable())
             {
                 return Codesign.Run("--verify", filePath).ExitCode == 0;
@@ -43,44 +46,10 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         }
 
         [Fact]
-        public void UseMemoryMappedFile()
-        {
-            var objectFile = GetMachObjectFileFromResource("Microsoft.NET.HostModel.MachO.Tests.Data.a.out");
-            string tmpFilePath = Path.GetTempFileName();
-            string tmpFileName = Path.GetFileName(tmpFilePath);
-            Console.WriteLine($"tmpFilePath: {tmpFilePath}");
-            long originalFileLength = objectFile.GetOriginalStream().Length;
-            // Add space for signature since memorymapped files can't be resized
-            long tmpFileSize = originalFileLength + 0x8000;
-
-            using (var fileStream = new FileStream(tmpFilePath, FileMode.Open, FileAccess.ReadWrite))
-            {
-                objectFile.GetOriginalStream().CopyTo(fileStream);
-                fileStream.SetLength(tmpFileSize);
-                // Disregard the new size -- we want to reserve extra space for the signature since memorymapped files can't be resized
-                Signer.TryRemoveCodesign(fileStream, out _);
-
-                using (var mmf = MemoryMappedFile.CreateFromFile(fileStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true))
-                {
-                    using (MemoryMappedViewStream accessor = mmf.CreateViewStream(0, 0, MemoryMappedFileAccess.CopyOnWrite))
-                    {
-                        long newSize = Signer.AdHocSignMachO(accessor, tmpFileName);
-                        accessor.Flush();
-                        accessor.Position = 0;
-                        fileStream.Position = 0;
-                        accessor.CopyTo(fileStream);
-                        fileStream.SetLength(newSize);
-                    }
-                }
-            }
-
-            Assert.True(IsSigned(tmpFilePath));
-        }
-
-        [Fact]
         [PlatformSpecific(TestPlatforms.OSX)]
         public void RemoveSignatureMatchesCodesignOutput()
         {
+            // Ensure that the managed RemoveSignature is byte-for-byute identical to the `codesign --remove-signature` output
             using var testArtifact = TestArtifact.Create(nameof(RemoveSignatureMatchesCodesignOutput));
             var aOutStream = typeof(SigningTests).Assembly.GetManifestResourceStream("Microsoft.NET.HostModel.MachO.Tests.Data.a.out")!;
             Span<byte> aOut = new byte[aOutStream.Length];
@@ -104,9 +73,9 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         }
 
         [Fact]
-        public void RemoveSignature()
+        public void CanRemoveSignatureUsingPath()
         {
-            using var testPath = TestArtifact.Create(nameof(RemoveSignature));
+            using var testPath = TestArtifact.Create(nameof(CanRemoveSignatureUsingPath));
             var filePath = Path.Combine(testPath.Location, "a.out");
             var objectFile = GetMachObjectFileFromResource("Microsoft.NET.HostModel.MachO.Tests.Data.a.out");
             using (var originalFileTmpStream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write))
@@ -126,29 +95,29 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         }
 
         [Fact]
-        public void RemoveSignatureStream()
+        public void CanRemoveSignatureUsingStream()
         {
-            using var testArtifact = TestArtifact.Create(nameof(RemoveSignatureStream));
+            using var testArtifact = TestArtifact.Create(nameof(CanRemoveSignatureUsingStream));
+            var tmpFile = Path.Combine(testArtifact.Location, "a.out");
             var objectFile = GetMachObjectFileFromResource("Microsoft.NET.HostModel.MachO.Tests.Data.a.out");
             using (_ = objectFile.GetOriginalStream())
-            using (var originalFileTmpStream = new MemoryStream())
+            using (var streamCopy = new MemoryStream())
             {
-                MachWriter.Write(originalFileTmpStream, objectFile);
-                originalFileTmpStream.Position = 0;
-                long originalSize = originalFileTmpStream.Length;
+                MachWriter.Write(streamCopy, objectFile);
+                streamCopy.Position = 0;
+                long originalSize = streamCopy.Length;
 
-                Assert.True(Signer.TryRemoveCodesign(originalFileTmpStream, out long newSize));
+                Assert.True(Signer.TryRemoveCodesign(streamCopy, out long newSize));
 
                 Assert.True(newSize < originalSize);
                 Assert.True(newSize > 0);
-                var tmpFile = Path.Combine(testArtifact.Location, "a.out");
-                using var fileStream = new FileStream(tmpFile, FileMode.Create);
+                using (var fileStream = new FileStream(tmpFile, FileMode.Create))
                 {
-                    originalFileTmpStream.Position = 0;
-                    originalFileTmpStream.CopyTo(fileStream);
+                    streamCopy.Position = 0;
+                    streamCopy.CopyTo(fileStream);
                 }
-                Assert.False(IsSigned(tmpFile));
             }
+            Assert.False(IsSigned(tmpFile));
         }
 
         [Fact]
@@ -172,9 +141,9 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         }
 
         [Fact]
-        public void DoubleRemoveSignature()
+        public void CanRemoveSignatureTwice()
         {
-            using var testArtifact = TestArtifact.Create(nameof(DoubleRemoveSignature));
+            using var testArtifact = TestArtifact.Create(nameof(CanRemoveSignatureTwice));
             var fileName = Path.Combine(testArtifact.Location, "a.out");
             var objectFile = GetMachObjectFileFromResource("Microsoft.NET.HostModel.MachO.Tests.Data.a.out");
             using (var originalFileTmpStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.Write))
@@ -190,9 +159,9 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         }
 
         [Fact]
-        public void RemoveSignatureAndSign()
+        public void CanRemoveSignatureAndThenSign()
         {
-            using var testArtifact = TestArtifact.Create(nameof(RemoveSignatureAndSign));
+            using var testArtifact = TestArtifact.Create(nameof(CanRemoveSignatureAndThenSign));
 
             string tmpFilePath = Path.Combine(testArtifact.Location, "a.out");
             var objectFile = GetMachObjectFileFromResource("Microsoft.NET.HostModel.MachO.Tests.Data.a.out");
@@ -214,9 +183,9 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         }
 
         [Fact]
-        public void RemoveSignatureAndSignTwice()
+        public void CanRemoveSignatureAndSignTwice()
         {
-            using var testArtifact = TestArtifact.Create(nameof(RemoveSignatureAndSignTwice));
+            using var testArtifact = TestArtifact.Create(nameof(CanRemoveSignatureAndSignTwice));
             string tmpFilePath = Path.Combine(testArtifact.Location, "a.out");
             var objectFile = GetMachObjectFileFromResource("Microsoft.NET.HostModel.MachO.Tests.Data.a.out");
             using (var strippedFileTmpStream = new FileStream(tmpFilePath, FileMode.Create))

@@ -3,7 +3,6 @@
 
 using Microsoft.NET.HostModel.MachO.Streams;
 using System.IO;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 

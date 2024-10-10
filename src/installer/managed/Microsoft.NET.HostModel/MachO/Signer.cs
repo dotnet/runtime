@@ -7,33 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.NET.HostModel.MachO.CodeSign.Blobs;
-using Microsoft.NET.HostModel.MachO;
 using Microsoft.NET.HostModel.MachO.Streams;
-using System.Runtime.CompilerServices;
-
-[assembly: InternalsVisibleTo("Microsoft.NET.HostModel.Tests, PublicKey="
-        + "00240000048000009400000006020000"
-        + "00240000525341310004000001000100"
-        + "b5fc90e7027f67871e773a8fde8938c8"
-        + "1dd402ba65b9201d60593e96c492651e"
-        + "889cc13f1415ebb53fac1131ae0bd333"
-        + "c5ee6021672d9718ea31a8aebd0da007"
-        + "2f25d87dba6fc90ffd598ed4da35e44c"
-        + "398c454307e8e33b8426143daec9f596"
-        + "836f97c8f74750e5975c64e2189f45de"
-        + "f46b2a2b1247adc3652bf5c308055da9")]
-
-[assembly: InternalsVisibleTo("Microsoft.NET.HostModel.MachO.Tests, PublicKey="
-        + "00240000048000009400000006020000"
-        + "00240000525341310004000001000100"
-        + "b5fc90e7027f67871e773a8fde8938c8"
-        + "1dd402ba65b9201d60593e96c492651e"
-        + "889cc13f1415ebb53fac1131ae0bd333"
-        + "c5ee6021672d9718ea31a8aebd0da007"
-        + "2f25d87dba6fc90ffd598ed4da35e44c"
-        + "398c454307e8e33b8426143daec9f596"
-        + "836f97c8f74750e5975c64e2189f45de"
-        + "f46b2a2b1247adc3652bf5c308055da9")]
 
 namespace Microsoft.NET.HostModel.MachO.CodeSign
 {
@@ -66,17 +40,6 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign
                 }
             }
             return new[] { HashType.SHA1, HashType.SHA256 };
-        }
-
-        private static void AdHocSignMachO(string executablePath)
-        {
-            var bundleIdentifier = Path.GetFileName(executablePath);
-
-            using (FileStream inputFile = File.Open(executablePath, FileMode.Open, FileAccess.ReadWrite))
-            {
-                long newSize = AdHocSignMachO(inputFile, bundleIdentifier);
-                inputFile.SetLength(newSize);
-            }
         }
 
         public static long AdHocSignMachO(Stream machStream, string bundleId)
@@ -116,8 +79,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign
             {
                 codeSignatureCommand = codeSignAllocate.SetCodeSignatureSize((uint)signatureSizeEstimate);
             }
-            // The streams passed in should allocate extra space at the end of the stream for the new signature
-            codeSignAllocate.EnsureSpace();
+            codeSignAllocate.AllocateSpace();
 
             using (var tmpStream = new MemoryStream())
             {
@@ -155,8 +117,6 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign
             blobs.Add((CodeDirectorySpecialSlot.CmsWrapper, cmsWrapperBlob));
 
             // TODO: Hic sunt leones (all code below)
-
-            // FIXME: Adjust the size to match LinkEdit section?
             long size = blobs.Sum(b => b.Data != null ? b.Data.Length + 8 : 0);
 
             var embeddedSignatureBuffer = new byte[12 + (blobs.Count * 8)];
@@ -201,15 +161,21 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign
             return AdHocSignMachO(stream, identifier);
         }
 
-        public static void AdHocSign(string path)
+        internal static void AdHocSign(string executablePath)
         {
-            var attributes = File.GetAttributes(path);
+            var attributes = File.GetAttributes(executablePath);
 
             if (attributes.HasFlag(FileAttributes.Directory))
             {
                 throw new NotImplementedException("Signing bundles is not yet supported");
             }
-            AdHocSignMachO(path);
+
+            var bundleIdentifier = Path.GetFileName(executablePath);
+            using (FileStream inputFile = File.Open(executablePath, FileMode.Open, FileAccess.ReadWrite))
+            {
+                long newSize = AdHocSignMachO(inputFile, bundleIdentifier);
+                inputFile.SetLength(newSize);
+            }
         }
 
         internal static bool TryRemoveCodesign(Stream inputStream, out long newSize)
@@ -259,7 +225,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign
         /// <summary>
         /// Removes the code signature from the Mach-O file on disk.
         /// </summary>
-        public static bool TryRemoveCodesign(string inputPath, string outputPath = null)
+        internal static bool TryRemoveCodesign(string inputPath, string outputPath = null)
         {
             if (outputPath is not null)
             {

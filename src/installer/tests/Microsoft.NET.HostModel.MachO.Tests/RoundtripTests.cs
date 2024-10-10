@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -60,50 +63,6 @@ namespace Microsoft.NET.HostModel.MachO.Tests
         {
             var aOutStream = typeof(RoundtripTests).Assembly.GetManifestResourceStream("Microsoft.NET.HostModel.MachO.Tests.Data.rpath.out")!;
             TestRoundtrip(aOutStream);
-        }
-
-        [Theory]
-        [InlineData("WebDriverAgentRunner-Runner.app/WebDriverAgentRunner-Runner")]
-        [InlineData("WebDriverAgentRunner-Runner.app/Frameworks/XCTAutomationSupport.framework/XCTAutomationSupport")]
-        [InlineData("WebDriverAgentRunner-Runner.app/Frameworks/XCTest.framework/XCTest")]
-        [InlineData("WebDriverAgentRunner-Runner.app/Frameworks/XCTestCore.framework/XCTestCore")]
-        [InlineData("WebDriverAgentRunner-Runner.app/Frameworks/XCUIAutomation.framework/XCUIAutomation")]
-        [InlineData("WebDriverAgentRunner-Runner.app/Frameworks/XCUnit.framework/XCUnit")]
-        [InlineData("WebDriverAgentRunner-Runner.app/PlugIns/WebDriverAgentRunner.xctest/WebDriverAgentRunner")]
-        [InlineData("WebDriverAgentRunner-Runner.app/PlugIns/WebDriverAgentRunner.xctest/Frameworks/WebDriverAgentLib.framework/WebDriverAgentLib")]
-        public async Task WebDriverAgentRunnerRoundtrip(string entryName)
-        {
-            await DownloadWebDriverAgent(WebDriverAgentFileName);
-
-            using (var bundleStream = File.OpenRead(WebDriverAgentFileName))
-            using (var zipArchive = new ZipArchive(bundleStream, ZipArchiveMode.Read))
-            using (var machObjectZipStream = zipArchive.GetEntry(entryName)!.Open())
-            using (var machObjectStream = new MemoryStream())
-            {
-                machObjectZipStream.CopyTo(machObjectStream);
-
-                if (MachReader.IsFatMach(machObjectStream))
-                {
-                    TestFatRoundtrip(machObjectStream);
-                }
-                else
-                {
-                    TestRoundtrip(machObjectStream);
-                }
-            }
-        }
-
-        private async Task DownloadWebDriverAgent(string path, string version = "v4.10.10")
-        {
-            if (!File.Exists(path))
-            {
-                using (var targetStream = File.Create(path))
-                using (var client = new HttpClient())
-                using (var sourceStream = await client.GetStreamAsync($"https://github.com/appium/WebDriverAgent/releases/download/{version}/WebDriverAgentRunner-Runner.zip"))
-                {
-                    await sourceStream.CopyToAsync(targetStream);
-                }
-            }
         }
     }
 }

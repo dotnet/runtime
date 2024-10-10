@@ -457,6 +457,8 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                     Assert.Equal(preRemovalSize, new FileInfo(testAppHostPath).Length);
                 }
                 Signer.AdHocSign(testAppHostPath);
+                Codesign.Run("-v", testAppHostPath).ExitCode.Should().Be(0);
+
                 File.SetUnixFileMode(testAppHostPath, UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
                 var executedCommand = Command.Create(testAppHostPath)
                     .CaptureStdErr()
@@ -489,7 +491,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 textStream.Write(s_placeholderData);
             }
             // The __TEXT segment has its sections at the end of the segment, with padding at the beginning
-            // We can move the file offset back
+            // We can safely move the file offset back to make room for the placeholder data
             textSection.FileOffset -= (uint)(AppBinaryPathPlaceholderSearchValue.Length + DotNetSearchPlaceholderValue.Length);
             string outputFilePath = Path.Combine(directory, "SourceAppHost.mach.o.mock");
             using var outputFileStream = File.OpenWrite(outputFilePath);

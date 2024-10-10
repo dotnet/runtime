@@ -1,12 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using Microsoft.NET.HostModel.MachO;
-using Microsoft.NET.HostModel.MachO.Streams;
 
 namespace Microsoft.NET.HostModel.MachO.CodeSign
 {
@@ -28,7 +23,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign
             return UpdateCodeSignatureLayout(codeSignatureSize);
         }
 
-        public void EnsureSpace()
+        public void AllocateSpace()
         {
             var codeSignature = objectFile.LoadCommands.OfType<MachCodeSignature>().Single();
             var requiredSize = codeSignature.FileOffset + codeSignature.FileSize;
