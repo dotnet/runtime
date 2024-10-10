@@ -528,14 +528,12 @@ struct ProcessModIter
                 kIncludeLoaded | kIncludeExecution));
         }
 
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        if (!m_assemIter.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        if (!m_assemIter.Next(pAssembly.This()))
         {
             return NULL;
         }
 
-        // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-        CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
         return pAssembly;
     }
 
@@ -1243,6 +1241,7 @@ public:
     HRESULT GetObjectDataImpl(CLRDATA_ADDRESS addr, struct DacpObjectData *objectData);
     HRESULT GetObjectExceptionDataImpl(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data);
     HRESULT GetObjectStringDataImpl(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR *stringData, unsigned int *pNeeded);
+    HRESULT GetPEFileBaseImpl(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base);
     HRESULT GetPEFileNameImpl(CLRDATA_ADDRESS moduleAddr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded);
     HRESULT GetUsefulGlobalsImpl(struct DacpUsefulGlobalsData *globalsData);
     HRESULT GetMethodDescDataImpl(CLRDATA_ADDRESS methodDesc, CLRDATA_ADDRESS ip, struct DacpMethodDescData *data, ULONG cRevertedRejitVersions, DacpReJitData * rgRevertedRejitData, ULONG * pcNeededRevertedRejitData);

@@ -34,6 +34,9 @@ extends:
       - job: linux
         displayName: Docker Linux
         timeoutInMinutes: 120
+        variables:
+          DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
+          DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
         pool:
           name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals Build.Ubuntu.2204.Amd64.Open
@@ -53,8 +56,15 @@ extends:
 
         - bash: |
             cd '$(sslStressProject)'
+            export STRESS_CLIENT_ARGS=$SSLSTRESS_CLIENT_ARGS
+            export STRESS_SERVER_ARGS=$SSLSTRESS_SERVER_ARGS
+            mkdir -p $DUMPS_SHARE
             docker-compose up --abort-on-container-exit --no-color
           displayName: Run SslStress
+
+        - publish: $(Build.ArtifactStagingDirectory)/dumps
+          artifact: DumpsLinux
+          condition: failed()
 
       - job: windows
         displayName: Docker NanoServer
@@ -63,6 +73,8 @@ extends:
           name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals 1es-windows-2022-open
         variables:
+          DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
+          DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
           # The 1es-windows-2022-open image has an issue where the Chocolatey-installed V1 docker-compose takes precendence over the
           # V2 docker-compose required by the stress tests, see: https://github.com/actions/runner-images/issues/7080
           # This is worked around by handpicking the V2 executable.
@@ -87,5 +99,12 @@ extends:
 
         - powershell: |
             cd '$(sslStressProject)'
+            $env:STRESS_CLIENT_ARGS = $env:SSLSTRESS_CLIENT_ARGS
+            $env:STRESS_SERVER_ARGS = $env:SSLSTRESS_SERVER_ARGS
+            New-Item -Force $env:DUMPS_SHARE -ItemType Directory
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run SslStress
+
+        - publish: $(Build.ArtifactStagingDirectory)/dumps
+          artifact: DumpsWindows
+          condition: failed()
