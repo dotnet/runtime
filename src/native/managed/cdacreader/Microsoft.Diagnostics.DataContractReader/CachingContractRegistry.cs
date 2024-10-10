@@ -32,6 +32,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(IThread)] = new ThreadFactory(),
             [typeof(IRuntimeTypeSystem)] = new RuntimeTypeSystemFactory(),
             [typeof(IDacStreams)] = new DacStreamsFactory(),
+            [typeof(IExecutionManager)] = new ExecutionManagerFactory(),
         };
         configureFactories?.Invoke(_factories);
     }
@@ -43,6 +44,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
     public override IThread Thread => GetContract<IThread>();
     public override IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IRuntimeTypeSystem>();
     public override IDacStreams DacStreams => GetContract<IDacStreams>();
+    public override IExecutionManager ExecutionManager => GetContract<IExecutionManager>();
 
     private TContract GetContract<TContract>() where TContract : IContract
     {

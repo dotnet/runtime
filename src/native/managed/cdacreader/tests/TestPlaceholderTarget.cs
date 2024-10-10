@@ -197,23 +197,27 @@ internal class TestPlaceholderTarget : Target
     internal class TestRegistry : ContractRegistry
     {
         public TestRegistry() { }
-        internal Contracts.IException? ExceptionContract { get; set; }
-        internal Contracts.ILoader? LoaderContract { get; set; }
-        internal Contracts.IEcmaMetadata? EcmaMetadataContract { get; set; }
-        internal Contracts.IObject? ObjectContract { get; set; }
-        internal Contracts.IThread? ThreadContract { get; set; }
-        internal Contracts.IRuntimeTypeSystem? RuntimeTypeSystemContract { get; set; }
-        internal Contracts.IDacStreams? DacStreamsContract { get; set; }
+        internal Lazy<Contracts.IException>? ExceptionContract { get; set; }
+        internal Lazy<Contracts.ILoader>? LoaderContract { get; set; }
+        internal Lazy<Contracts.IEcmaMetadata>? EcmaMetadataContract { get; set; }
+        internal Lazy<Contracts.IObject>? ObjectContract { get; set; }
+        internal Lazy<Contracts.IThread>? ThreadContract { get; set; }
+        internal Lazy<Contracts.IRuntimeTypeSystem>? RuntimeTypeSystemContract { get; set; }
+        internal Lazy<Contracts.IDacStreams>? DacStreamsContract { get; set; }
+        internal Lazy<Contracts.IExecutionManager> ExecutionManagerContract { get; set; }
 
-        public override Contracts.IException Exception => ExceptionContract ?? throw new NotImplementedException();
-        public override Contracts.ILoader Loader => LoaderContract ?? throw new NotImplementedException();
-        public override Contracts.IEcmaMetadata EcmaMetadata => EcmaMetadataContract ?? throw new NotImplementedException();
-        public override Contracts.IObject Object => ObjectContract ?? throw new NotImplementedException();
-        public override Contracts.IThread Thread => ThreadContract ?? throw new NotImplementedException();
-        public override Contracts.IRuntimeTypeSystem RuntimeTypeSystem => RuntimeTypeSystemContract ?? throw new NotImplementedException();
-        public override Contracts.IDacStreams DacStreams => DacStreamsContract ?? throw new NotImplementedException();
+        public override Contracts.IException Exception => ExceptionContract.Value ?? throw new NotImplementedException();
+        public override Contracts.ILoader Loader => LoaderContract.Value ?? throw new NotImplementedException();
+        public override Contracts.IEcmaMetadata EcmaMetadata => EcmaMetadataContract.Value ?? throw new NotImplementedException();
+        public override Contracts.IObject Object => ObjectContract.Value ?? throw new NotImplementedException();
+        public override Contracts.IThread Thread => ThreadContract.Value ?? throw new NotImplementedException();
+        public override Contracts.IRuntimeTypeSystem RuntimeTypeSystem => RuntimeTypeSystemContract.Value ?? throw new NotImplementedException();
+        public override Contracts.IDacStreams DacStreams => DacStreamsContract.Value ?? throw new NotImplementedException();
+        public override Contracts.IExecutionManager ExecutionManager => ExecutionManagerContract.Value ?? throw new NotImplementedException();
     }
 
+    // a data cache that throws NotImplementedException for all methods,
+    // useful for subclassing to override specific methods
     internal class TestDataCache : Target.IDataCache
     {
         public TestDataCache() {}
@@ -237,4 +241,53 @@ internal class TestPlaceholderTarget : Target
             throw new NotImplementedException();
         }
     }
+
+    // A data cache that stores data in a dictionary and calls IData.Create to construct the data.
+    internal class DefaultDataCache : Target.IDataCache
+    {
+        protected readonly Target _target;
+        protected readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
+
+        public DefaultDataCache(Target target)
+        {
+            _target = target;
+        }
+
+        public virtual T GetOrAdd<T>(TargetPointer address) where T : Data.IData<T> => DefaultGetOrAdd<T>(address);
+
+        protected T DefaultGetOrAdd<T>(TargetPointer address) where T : Data.IData<T>
+        {
+            if (address == TargetPointer.Null)
+                throw new ArgumentNullException(nameof(address));
+            if (TryGet(address, out T? result))
+                return result;
+
+            T constructed = T.Create(_target, address);
+            if (_readDataByAddress.TryAdd((address, typeof(T)), constructed))
+                return constructed;
+
+            bool found = TryGet(address, out result);
+            if (!found) {
+                throw new InvalidOperationException($"Failed to add {typeof(T)} at 0x{address:x8}.");
+            }
+            return result!;
+        }
+
+        public virtual bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data) => DefaultTryGet<T>(address, out data);
+
+        protected bool DefaultTryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
+        {
+            data = default;
+            if (!_readDataByAddress.TryGetValue((address, typeof(T)), out object? dataObj))
+                return false;
+
+            if (dataObj is T dataMaybe)
+            {
+                data = dataMaybe;
+                return true;
+            }
+            return false;
+        }
+    }
+
 }
