@@ -529,7 +529,6 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         WCHAR *pEqualOrColon = EqualOrColon(argv[i]);
                         if (pEqualOrColon == NULL) goto InvalidOption;
                         MAKE_UTF8PTR_FROMWIDE_NOTHROW(anameOverride, pEqualOrColon + 1);
-                        fprintf(stderr, "ANAME %s\n", anameOverride);
                         pAsm->m_pOverrideAssemblyName = anameOverride;
                     }
                     else
