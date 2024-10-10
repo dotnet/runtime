@@ -366,14 +366,16 @@ RestoreCompleteContext(
 );
 #endif
 
-__attribute__((noinline))
+__attribute__((noinline)) DISABLE_ASAN
 static void PAL_DispatchExceptionInner(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord)
 {
     // Stash the inner context record into a local in a frame other than PAL_DispatchException
     // to ensure we have a compiler-defined callee stack frame state to record the context record
     // local before we call SEHProcessException. The instrumentation introduced by native sanitizers
     // doesn't interface that well with the fake caller frames we define for PAL_DispatchException,
-    // but they work fine for any callees of PAL_DispatchException.
+    // but they work fine for any callees of PAL_DispatchException. However, we still need to disable
+    // sanitizers for this function to avoid using any "fake stack" features
+    // that would break the "frame offset" calculations done below.
     CONTEXT *contextRecord = pContext;
     g_hardware_exception_context_locvar_offset = (int)((char*)&contextRecord - (char*)__builtin_frame_address(0));
 
