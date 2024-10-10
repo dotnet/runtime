@@ -1629,6 +1629,16 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     instruction ins = id->idIns();
     assert(IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
+    if (instrIsExtendedReg3opImul(ins))
+    {
+        // the only case imul(0x68) will need EVEX prefix is EVEX.NF feature enabled.
+        assert(id->idIsEvexNfContextSet());
+        // imul(0x68) opcode comes with ModR/M.REG byte to indicate implicit register use,
+        // when it is using extended registers (>= REG_R8), it comes with built-in REX prefix,
+        // remove them first and add the counter part in EVEX.
+        code &= 0xFFFFFFFF;
+    }
+
     // Shouldn't have already added EVEX prefix
     assert(!hasEvexPrefix(code));
 
@@ -1656,6 +1666,12 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
         if (attr == EA_2BYTE)
         {
             code |= EXTENDED_EVEX_PP_BITS;
+        }
+
+        if (instrIsExtendedReg3opImul(ins))
+        {
+            // EVEX.R3
+            code &= 0xFF7FFFFFFFFFFFFFULL;
         }
 
         return code;
@@ -15815,22 +15831,21 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
         default:
 
             assert(id->idGCref() == GCT_NONE);
-
-            code = insEncodeMRreg(id, reg, size, insCodeMR(ins));
+            code = insCodeMR(ins);
+            code = AddX86PrefixIfNeeded(id, code, size);
+            code = insEncodeMRreg(id, reg, size, code);
 
             if (size != EA_1BYTE)
             {
                 // Set the 'w' bit to get the large version
                 code |= 0x1;
 
-                if (size == EA_2BYTE)
+                if (size == EA_2BYTE && !TakesApxExtendedEvexPrefix(id))
                 {
                     // Output a size prefix for a 16-bit operand
                     dst += emitOutputByte(dst, 0x66);
                 }
             }
-
-            code = AddX86PrefixIfNeeded(id, code, size);
 
             if (TakesRexWPrefix(id))
             {
@@ -16766,7 +16781,10 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         case EA_2BYTE:
             // Output a size prefix for a 16-bit operand
-            dst += emitOutputByte(dst, 0x66);
+            if (!TakesApxExtendedEvexPrefix(id))
+            {
+                dst += emitOutputByte(dst, 0x66);
+            }
             FALLTHROUGH;
 
         case EA_4BYTE:
@@ -18099,7 +18117,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 
             // Output a size prefix for a 16-bit operand
-            if (size == EA_2BYTE)
+            if (size == EA_2BYTE && !TakesApxExtendedEvexPrefix(id))
             {
                 dst += emitOutputByte(dst, 0x66);
             }
