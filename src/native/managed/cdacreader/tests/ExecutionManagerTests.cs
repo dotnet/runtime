@@ -15,6 +15,10 @@ public class ExecutionManagerTests
     const int RangeSectionFragmentSize = 0x20; // must be big enough for the offsets of RangeSectionFragment size in ExecutionManagerTestTarget, below
     const int RangeSectionSize = 0x38; // must be big enough for the offsets of RangeSection size in ExecutionManagerTestTarget, below
 
+    const int CodeHeapListNodeSize = 0x40; // must be big enough for the offsets of CodeHeapListNode size in ExecutionManagerTestTarget, below
+
+    const int RealCodeHeaderSize = 0x08; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
+
     internal class ExecutionManagerTestBuilder
     {
         public MockMemorySpace.Builder Builder { get; }
@@ -36,7 +40,7 @@ public class ExecutionManagerTests
             return nibBuilder;
         }
 
-        public void InsertRangeSection(ulong codeRangeStart, uint codeRangeSize, TargetPointer rangeSectionAddress)
+        public void InsertRangeSection(ulong codeRangeStart, uint codeRangeSize, TargetPointer jitManagerAddress, TargetPointer rangeSectionAddress, TargetPointer codeHeapListNodeAddress)
         {
             MockMemorySpace.HeapFragment rangeSection = new MockMemorySpace.HeapFragment
             {
@@ -52,7 +56,11 @@ public class ExecutionManagerTests
             /* RangeEndOpen */
             Builder.TargetTestHelpers.WritePointer(rs.Slice(8, pointerSize), codeRangeStart + codeRangeSize);
             /* Flags */
-            Builder.TargetTestHelpers.Write(rs.Slice(32, 4), (int)0x02); // Flags, 0x02 -= RangeSectionFlags.CodeHeap
+            Builder.TargetTestHelpers.Write(rs.Slice(32, sizeof(uint)), (uint)0x02); // Flags, 0x02 -= RangeSectionFlags.CodeHeap
+            /* HeapList */
+            Builder.TargetTestHelpers.WritePointer(rs.Slice(40, pointerSize), codeHeapListNodeAddress);
+            /* JitManager */
+            Builder.TargetTestHelpers.WritePointer(rs.Slice(24, pointerSize), jitManagerAddress);
             // FIXME: other fields
         }
 
@@ -77,6 +85,54 @@ public class ExecutionManagerTests
             Builder.TargetTestHelpers.WritePointer(rsf.Slice(16, pointerSize), rangeSectionAddress);
             /* Next = nullptr */
             // nothing
+        }
+
+        public void InsertCodeHeapListNode(ulong codeHeapListNodeAddress, TargetPointer next, TargetPointer startAddress, TargetPointer endAddress, TargetPointer mapBase, TargetPointer headerMap)
+        {
+            MockMemorySpace.HeapFragment codeHeapListNode = new MockMemorySpace.HeapFragment
+            {
+                Address = codeHeapListNodeAddress,
+                Data = new byte[CodeHeapListNodeSize],
+                Name = "CodeHeapListNode"
+            };
+            Builder.AddHeapFragment(codeHeapListNode);
+            int pointerSize = Builder.TargetTestHelpers.PointerSize;
+            Span<byte> chln = Builder.BorrowAddressRange(codeHeapListNodeAddress, CodeHeapListNodeSize);
+            /* Next */
+            Builder.TargetTestHelpers.WritePointer(chln.Slice(0, pointerSize), next);
+            /* StartAddress */
+            Builder.TargetTestHelpers.WritePointer(chln.Slice(8, pointerSize), startAddress);
+            /* EndAddress */
+            Builder.TargetTestHelpers.WritePointer(chln.Slice(16, pointerSize), endAddress);
+            /* MapBase */
+            Builder.TargetTestHelpers.WritePointer(chln.Slice(24, pointerSize), mapBase);
+            /* HeaderMap */
+            Builder.TargetTestHelpers.WritePointer(chln.Slice(32, pointerSize), headerMap);
+        }
+
+        public void AllocateMethod(TargetCodePointer codeStart, int codeSize, TargetPointer codeHeaderAddress, TargetPointer methodDescAddress)
+        {
+            int codeHeaderOffset = Builder.TargetTestHelpers.PointerSize;
+
+            TargetPointer methodFragmentStart = codeStart.AsTargetPointer - (ulong)codeHeaderOffset;
+            MockMemorySpace.HeapFragment methodFragment = new MockMemorySpace.HeapFragment
+            {
+                Address = methodFragmentStart,
+                Data = new byte[codeSize + codeHeaderOffset],
+                Name = "Method Header & Code"
+            };
+            Builder.AddHeapFragment(methodFragment);
+            Span<byte> mfPtr = Builder.BorrowAddressRange(methodFragmentStart, codeHeaderOffset);
+            Builder.TargetTestHelpers.WritePointer(mfPtr.Slice(0, Builder.TargetTestHelpers.PointerSize), codeHeaderAddress);
+            MockMemorySpace.HeapFragment codeHeaderFragment = new MockMemorySpace.HeapFragment
+            {
+                Address = codeHeaderAddress,
+                Data = new byte[RealCodeHeaderSize],
+                Name = "RealCodeHeader"
+            };
+            Builder.AddHeapFragment(codeHeaderFragment);
+            Span<byte> chf = Builder.BorrowAddressRange(codeHeaderAddress, RealCodeHeaderSize);
+            Builder.TargetTestHelpers.WritePointer(chf.Slice(0, Builder.TargetTestHelpers.PointerSize), methodDescAddress);
         }
 
         public void MarkCreated() => Builder.MarkCreated();
@@ -113,6 +169,20 @@ public class ExecutionManagerTests
                         [nameof(Data.RangeSection.R2RModule)] = new () {Offset = 48},
                     },
                 },
+                [DataType.CodeHeapListNode] = new TypeInfo() {
+                    Fields = new Dictionary<string, FieldInfo>() {
+                        [nameof(Data.CodeHeapListNode.Next)] = new () {Offset = 0},
+                        [nameof(Data.CodeHeapListNode.StartAddress)] = new () {Offset = 8},
+                        [nameof(Data.CodeHeapListNode.EndAddress)] = new () {Offset = 16},
+                        [nameof(Data.CodeHeapListNode.MapBase)] = new () {Offset = 24},
+                        [nameof(Data.CodeHeapListNode.HeaderMap)] = new () {Offset = 32},
+                    },
+                },
+                [DataType.RealCodeHeader] = new TypeInfo() {
+                    Fields = new Dictionary<string, FieldInfo>() {
+                        [nameof(Data.RealCodeHeader.MethodDesc)] = new () {Offset = 0},
+                    },
+                },
             };
             SetDataCache(new DefaultDataCache(this));
             IContractFactory<IExecutionManager> emfactory = new ExecutionManagerFactory();
@@ -130,6 +200,21 @@ public class ExecutionManagerTests
             default:
                 return base.ReadGlobalPointer(global);
             }
+        }
+
+        public override T ReadGlobal<T>(string name)
+        {
+            switch (name)
+            {
+            case Constants.Globals.StubCodeBlockLast:
+                if (typeof(T) == typeof(byte))
+                    return (T)(object)(byte)0x0Fu;
+                break;
+            default:
+                break;
+            }
+            return base.ReadGlobal<T>(name);
+
         }
 
     }
@@ -174,15 +259,24 @@ public class ExecutionManagerTests
         int methodSize = 0x100; // arbitrary
         ulong nibbleMapStart = 0x00ee_0000; // arbitrary
 
+        TargetPointer jitManagerAddress = new (0x000b_ff00); // arbitrary
+
+        TargetPointer methodCodeHeaderAddress = new (0x0033_4000);
+        TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
+
         TargetPointer rangeSectionAddress = new (0x00dd_1000);
         TargetPointer rangeSectionFragmentAddress = new (0x00dd_2000);
+        TargetPointer codeHeapListNodeAddress = new (0x00dd_3000);
 
         ExecutionManagerTestBuilder emBuilder = new (arch);
 
-        emBuilder.InsertRangeSection(codeRangeStart, codeRangeSize, rangeSectionAddress);
+        emBuilder.InsertRangeSection(codeRangeStart, codeRangeSize, jitManagerAddress: jitManagerAddress, rangeSectionAddress: rangeSectionAddress, codeHeapListNodeAddress: codeHeapListNodeAddress);
+        emBuilder.InsertCodeHeapListNode(codeHeapListNodeAddress, TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibbleMapStart);
         emBuilder.InsertAddressRange(codeRangeStart, codeRangeSize, rangeSectionFragmentAddress, rangeSectionAddress);
 
         emBuilder.AddNibbleMap(codeRangeStart, codeRangeSize, nibbleMapStart).AllocateCodeChunk(methodStart, methodSize);
+
+        emBuilder.AllocateMethod(methodStart, methodSize, methodCodeHeaderAddress, expectedMethodDescAddress);
 
         emBuilder.MarkCreated();
 
@@ -194,5 +288,7 @@ public class ExecutionManagerTests
         Assert.NotNull(em);
         var eeInfo = em.GetEECodeInfoHandle(methodStart);
         Assert.NotNull(eeInfo);
+        TargetPointer actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
+        Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
     }
 }
