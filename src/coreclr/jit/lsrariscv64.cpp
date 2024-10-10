@@ -1284,7 +1284,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 int LinearScan::BuildCast(GenTreeCast* cast)
 {
     enum CodeGen::GenIntCastDesc::CheckKind kind = CodeGen::GenIntCastDesc(cast).CheckKind();
-    if ((kind != CodeGen::GenIntCastDesc::CHECK_NONE) && (kind != CodeGen::GenIntCastDesc::CHECK_POSITIVE))
+    if ((kind != CodeGen::GenIntCastDesc::CHECK_NONE))
     {
         buildInternalIntRegisterDefForNode(cast);
     }
