@@ -15,4 +15,16 @@ namespace Microsoft.Extensions.Http
 
         public HttpClient HttpClient { get; }
     }
+
+    // Simple typed client but the HttpClient parameter is missing
+    public class TestTypedClientMissingConstructorParameter
+    {
+        // This is an error case - do not use Typed clients like this!
+        public TestTypedClientMissingConstructorParameter(IHttpClientFactory httpClientFactory)
+        {
+            HttpClientFactory = httpClientFactory;
+        }
+
+        public IHttpClientFactory HttpClientFactory { get; }
+    }
 }
