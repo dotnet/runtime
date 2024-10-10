@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
@@ -39,6 +40,8 @@ namespace System.Text.Json
         public object? ReturnValue; // The current return value used for re-entry.
         public JsonTypeInfo JsonTypeInfo;
         public StackFrameObjectState ObjectState; // State tracking the current object.
+
+        public LargeJsonObjectExtensionDataSerializationState? LargeJsonObjectExtensionDataSerializationState;
 
         // Current object can contain metadata
         public bool CanContainMetadata;

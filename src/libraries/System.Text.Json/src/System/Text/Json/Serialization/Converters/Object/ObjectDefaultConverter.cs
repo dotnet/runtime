@@ -254,6 +254,9 @@ namespace System.Text.Json.Serialization.Converters
                 jsonTypeInfo.UpdateSortedPropertyCache(ref state.Current);
             }
 
+            // Complete any JsonObject extension data deserializations.
+            state.Current.LargeJsonObjectExtensionDataSerializationState?.Complete();
+
             return true;
         }
 
@@ -299,6 +302,9 @@ namespace System.Text.Json.Serialization.Converters
             {
                 jsonTypeInfo.UpdateSortedPropertyCache(ref state.Current);
             }
+
+            // Complete any JsonObject extension data deserializations.
+            state.Current.LargeJsonObjectExtensionDataSerializationState?.Complete();
         }
 
         internal sealed override bool OnTryWrite(

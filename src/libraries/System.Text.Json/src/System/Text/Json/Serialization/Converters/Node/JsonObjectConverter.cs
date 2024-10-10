@@ -27,10 +27,18 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(obj is JsonObject);
             JsonObject jObject = (JsonObject)obj;
 
-            Debug.Assert(value == null || value is JsonNode);
-            JsonNode? jNodeValue = value;
+            if (jObject.Count < LargeJsonObjectExtensionDataSerializationState.LargeObjectThreshold)
+            {
+                jObject[propertyName] = value;
+            }
+            else
+            {
+                LargeJsonObjectExtensionDataSerializationState deserializationState =
+                    state.Current.LargeJsonObjectExtensionDataSerializationState ??= new(jObject);
 
-            jObject[propertyName] = jNodeValue;
+                Debug.Assert(ReferenceEquals(deserializationState.Destination, jObject));
+                deserializationState.AddProperty(propertyName, value);
+            }
         }
 
         public override void Write(Utf8JsonWriter writer, JsonObject? value, JsonSerializerOptions options)
