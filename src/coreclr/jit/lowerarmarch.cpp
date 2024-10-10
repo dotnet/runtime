@@ -2611,7 +2611,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             //   ...
 
             tmp2 =
-                comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, simdSize);
+                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD8, tmp1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, simdSize);
             BlockRange().InsertAfter(tmp1, tmp2);
             LowerNode(tmp2);
         }
