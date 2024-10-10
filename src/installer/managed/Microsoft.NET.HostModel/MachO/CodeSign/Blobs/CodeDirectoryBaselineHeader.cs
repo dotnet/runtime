@@ -21,5 +21,6 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Blobs
         public byte Platform;
         public byte Log2PageSize;
         public uint Reserved;
+        public uint ScatterOffset;
     }
 }

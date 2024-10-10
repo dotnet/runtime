@@ -16,33 +16,31 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign
     /// </summary>
     internal sealed class CodeSignAllocate
     {
-        public IList<MachObjectFile> objectFiles;
+        public MachObjectFile objectFile;
 
-        public CodeSignAllocate(IList<MachObjectFile> objectFiles)
+        public CodeSignAllocate(MachObjectFile objectFiles)
         {
-            this.objectFiles = objectFiles;
+            this.objectFile = objectFiles;
         }
 
-        public void SetArchSize(MachObjectFile machO, uint codeSignatureSize)
+        public MachCodeSignature SetCodeSignatureSize(uint codeSignatureSize)
         {
-            // Page alignment
-            // codeSignatureSize = (codeSignatureSize + 0x3fffu) & ~0x3fffu;
-            Debug.Assert(objectFiles.Contains(machO));
-
-            UpdateCodeSignatureLayout(machO, codeSignatureSize);
+            return UpdateCodeSignatureLayout(codeSignatureSize);
         }
 
-        public string Allocate()
+        public void EnsureSpace()
         {
-            var tempFileName = Path.GetTempFileName();
-            using var output = File.OpenWrite(tempFileName);
-            MachWriter.Write(output, objectFiles);
-            return tempFileName;
+            if (objectFile.LoadCommands.OfType<MachCodeSignature>().Single() is { FileOffset: var offset, FileSize: var size}
+                && offset + size <= objectFile.GetOriginalStream().Length)
+            {
+                return;
+            }
+            throw new InvalidDataException("Code signature is not within the file bounds");
         }
 
-        private static void UpdateCodeSignatureLayout(MachObjectFile machO, uint codeSignatureSize)
+        private MachCodeSignature UpdateCodeSignatureLayout(uint codeSignatureSize)
         {
-            var linkEditSegment = machO.LoadCommands.OfType<MachSegment>().First(s => s.Name == "__LINKEDIT");
+            MachObjectFile machO = objectFile;
             var codeSignatureCommand = machO.LoadCommands.OfType<MachCodeSignature>().FirstOrDefault();
 
             if (codeSignatureCommand == null)
@@ -53,6 +51,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign
             }
 
             codeSignatureCommand.Data.Size = codeSignatureSize;
+            return codeSignatureCommand;
         }
     }
 }

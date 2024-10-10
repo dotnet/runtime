@@ -3,7 +3,7 @@
 
 namespace Microsoft.NET.HostModel
 {
-    internal static class MathHelpers
+    internal static class Utils
     {
         internal static uint Log2(uint value)
         {
@@ -14,6 +14,21 @@ namespace Microsoft.NET.HostModel
                 result++;
             }
             return result;
+        }
+
+        internal static int Align(int value, int alignment)
+        {
+            return (value + (alignment - 1)) & ~(alignment - 1);
+        }
+
+        internal static uint Align(uint value, uint alignment)
+        {
+            return (value + (alignment - 1)) & ~(alignment - 1);
+        }
+
+        internal static ulong Align(ulong value, ulong alignment)
+        {
+            return (value + (alignment - 1)) & ~(alignment - 1);
         }
     }
 }

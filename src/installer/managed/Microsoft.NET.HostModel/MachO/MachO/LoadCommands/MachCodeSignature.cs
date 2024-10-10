@@ -5,12 +5,12 @@ namespace Microsoft.NET.HostModel.MachO
 {
     internal sealed class MachCodeSignature : MachLinkEdit
     {
-        public MachCodeSignature(MachObjectFile objectFile)
+        internal MachCodeSignature(MachObjectFile objectFile)
             : base(objectFile)
         {
         }
 
-        public MachCodeSignature(MachObjectFile objectFile, MachLinkEditData data)
+        internal MachCodeSignature(MachObjectFile objectFile, MachLinkEditData data)
             : base(objectFile, data)
         {
         }

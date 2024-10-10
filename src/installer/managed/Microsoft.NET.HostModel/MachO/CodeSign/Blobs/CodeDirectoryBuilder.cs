@@ -88,6 +88,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Blobs
             byte[] blobBuffer = new byte[size];
 
             var textSegment = executable.LoadCommands.OfType<MachSegment>().First(s => s.Name == "__TEXT");
+            var textSection = textSegment.Sections.OfType<MachSection>().First(s => s.SectionName == "__text");
             Debug.Assert(textSegment != null);
 
             var baselineHeader = new CodeDirectoryBaselineHeader();
@@ -103,7 +104,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Blobs
             baselineHeader.HashSize = hashSize;
             baselineHeader.HashType = HashType;
             baselineHeader.Platform = 0; // TODO
-            baselineHeader.Log2PageSize = (byte)MathHelpers.Log2(pageSize);
+            baselineHeader.Log2PageSize = (byte)Utils.Log2(pageSize);
             baselineHeader.Reserved = 0;
             var scatterHeader = new CodeDirectoryScatterHeader();
             scatterHeader.ScatterOffset = 0;
@@ -123,6 +124,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Blobs
             if (version >= CodeDirectoryVersion.SupportsScatter)
             {
                 // TODO
+                ;
             }
 
             // Identifier

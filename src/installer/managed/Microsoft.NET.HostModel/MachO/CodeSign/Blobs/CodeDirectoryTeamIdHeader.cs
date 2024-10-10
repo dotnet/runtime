@@ -7,8 +7,6 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Blobs
     [BigEndian]
     internal sealed partial class CodeDirectoryTeamIdHeader
     {
-#pragma warning disable CS0649
         internal uint TeamIdOffset;
-#pragma warning restore CS0649
     }
 }

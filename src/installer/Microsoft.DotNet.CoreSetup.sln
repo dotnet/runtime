@@ -25,6 +25,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "managed", "managed", "{9D78
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.NET.HostModel.MachO.BinaryFormat.Generator", "managed\Microsoft.NET.HostModel.MachO.BinaryFormat.Generator\Microsoft.NET.HostModel.MachO.BinaryFormat.Generator.csproj", "{51193AE2-50BE-4899-9068-AA8E9C2A9C7D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{3AF4EECE-3308-4935-A3D1-E08C505514D5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.NET.HostModel.MachO.Tests", "tests\Microsoft.NET.HostModel.MachO.Tests\Microsoft.NET.HostModel.MachO.Tests.csproj", "{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -149,6 +153,22 @@ Global
 		{51193AE2-50BE-4899-9068-AA8E9C2A9C7D}.RelWithDebInfo|Any CPU.Build.0 = Debug|Any CPU
 		{51193AE2-50BE-4899-9068-AA8E9C2A9C7D}.RelWithDebInfo|x64.ActiveCfg = Debug|Any CPU
 		{51193AE2-50BE-4899-9068-AA8E9C2A9C7D}.RelWithDebInfo|x64.Build.0 = Debug|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.Debug|x64.Build.0 = Debug|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.MinSizeRel|Any CPU.ActiveCfg = Debug|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.MinSizeRel|Any CPU.Build.0 = Debug|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.MinSizeRel|x64.ActiveCfg = Debug|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.MinSizeRel|x64.Build.0 = Debug|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.Release|x64.ActiveCfg = Release|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.Release|x64.Build.0 = Release|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.RelWithDebInfo|Any CPU.ActiveCfg = Debug|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.RelWithDebInfo|Any CPU.Build.0 = Debug|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.RelWithDebInfo|x64.ActiveCfg = Debug|Any CPU
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE}.RelWithDebInfo|x64.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -158,5 +178,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{51193AE2-50BE-4899-9068-AA8E9C2A9C7D} = {9D78613B-C4A1-43C6-8BF1-6F91AA1627B6}
+		{F250CD66-0E8A-48D5-ADA8-E39ED45D34EE} = {3AF4EECE-3308-4935-A3D1-E08C505514D5}
 	EndGlobalSection
 EndGlobal

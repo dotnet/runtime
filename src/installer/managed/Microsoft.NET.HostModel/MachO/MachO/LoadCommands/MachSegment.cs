@@ -102,9 +102,9 @@ namespace Microsoft.NET.HostModel.MachO
             {
                 if (IsLinkEditSegment)
                 {
-                    const uint pageAlignment = 0x4000 - 1;
+                    const uint pageAlignment = 0x4000;
                     ulong requiredSpace = Math.Max(FileSize, size);
-                    return (requiredSpace + pageAlignment) & ~pageAlignment;
+                    return Utils.Align(requiredSpace, pageAlignment);
                 }
 
                 return size;

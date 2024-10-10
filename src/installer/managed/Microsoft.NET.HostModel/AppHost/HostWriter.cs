@@ -126,6 +126,7 @@ namespace Microsoft.NET.HostModel.AppHost
                     {
                         // Open the source host file.
                         appHostSourceStream = new FileStream(appHostSourceFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
+                        appHostSourceStream.SetLength(appHostSourceStream.Length + Signer.GetCodeSignatureSize(appHostSourceStream.Length));
                         memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
                         memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
 
@@ -144,7 +145,12 @@ namespace Microsoft.NET.HostModel.AppHost
                             // Remove the signature from MachO hosts.
                             if (!appHostIsPEImage)
                             {
-                                Signer.TryRemoveCodesign(fileStream, fileStream);
+                                Signer.TryRemoveCodesign(fileStream, out _);
+
+                                if (enableMacOSCodeSign)
+                                {
+                                    Signer.AdHocSign(fileStream, Path.GetFileName(appHostDestinationFilePath));
+                                }
                             }
 
                             if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
@@ -179,10 +185,6 @@ namespace Microsoft.NET.HostModel.AppHost
                     {
                         throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {appHostDestinationFilePath}.");
                     }
-                }
-                if (enableMacOSCodeSign)
-                {
-                    Signer.AdHocSign(appHostDestinationFilePath);
                 }
             }
             catch (Exception ex)

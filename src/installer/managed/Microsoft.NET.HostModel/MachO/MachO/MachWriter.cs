@@ -146,7 +146,7 @@ namespace Microsoft.NET.HostModel.MachO
         }
 
         private static int AlignedSize(int size, bool is64bit)
-            => is64bit ? (size + 7) & ~7 : (size + 3) & ~3;
+            => is64bit ? Utils.Align(size, 8) : Utils.Align(size, 4);
 
         private static void WriteDylibCommand(Stream stream, MachLoadCommandType commandType, MachDylibCommand dylibCommand, bool isLittleEndian, bool is64Bit)
         {
@@ -636,14 +636,14 @@ namespace Microsoft.NET.HostModel.MachO
             {
                 uint size = (uint)objectFile.GetSize();
 
-                offset = (offset + alignment - 1) & ~(alignment - 1);
+                offset = Utils.Align(offset, alignment);
                 var fatArchHeader = new FatArchHeader
                 {
                     CpuType = objectFile.CpuType,
                     CpuSubType = objectFile.CpuSubType,
                     Offset = offset,
                     Size = size,
-                    Alignment = MathHelpers.Log2(alignment),
+                    Alignment = Utils.Log2(alignment),
                 };
 
                 fatArchHeader.Write(fatArchHeaderBytes, isLittleEndian: false, out var _);
@@ -656,7 +656,7 @@ namespace Microsoft.NET.HostModel.MachO
             foreach (var objectFile in objectFiles)
             {
                 uint size = (uint)objectFile.GetSize();
-                uint alignedOffset = (offset + alignment - 1) & ~(alignment - 1);
+                uint alignedOffset = Utils.Align(offset, alignment);
                 stream.WritePadding(alignedOffset - offset);
                 Write(stream, objectFile);
                 offset = alignedOffset + size;
