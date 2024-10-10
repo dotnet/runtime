@@ -55,7 +55,7 @@ if (!$noBuild) {
         "--build-arg", "VERSION=$Version",
         "--build-arg", "CONFIGURATION=$configuration"
     )
-    if (![string]::IsNullOrEmpty($sdkImageName)) {
+    if ($sdkImageName) {
         $BuildArgs += "--build-arg", "SDK_BASE_IMAGE=$sdkImageName"
     }
     $originalErrorPreference = $ErrorActionPreference
