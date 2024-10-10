@@ -6286,6 +6286,9 @@ public:
     FlowGraphDfsTree* fgComputeDfs();
     void fgInvalidateDfsTree();
 
+    template <typename TFunc>
+    void fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphNaturalLoops* loops, TFunc func);
+
     void fgRemoveReturnBlock(BasicBlock* block);
 
     void fgConvertBBToThrowBB(BasicBlock* block);

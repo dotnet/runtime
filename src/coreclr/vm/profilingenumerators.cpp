@@ -432,14 +432,14 @@ HRESULT ProfilerModuleEnum::Init()
 
     HRESULT hr = S_OK;
 
-    // When an assembly is loaded into the AppDomain (since .NET Core only has one AppDomain), 
-    // an Assembly object is created. For assemblies that are shared across multiple contexts 
-    // (e.g., loaded into multiple AssemblyLoadContexts or marked as domain-neutral in older 
-    // runtimes), the profiling API ensures that the profiler only sees the module once. 
-    // The profiler will only receive a single ModuleLoadFinished callback for a module, even if 
-    // the assembly is used across multiple contexts. The module enumerator must mirror this 
-    // behavior, avoiding duplicate modules in the list returned to the profiler. 
-    // Therefore, we first add non-shared assemblies (those specific to a single ALC) to the enumerator, 
+    // When an assembly is loaded into the AppDomain (since .NET Core only has one AppDomain),
+    // an Assembly object is created. For assemblies that are shared across multiple contexts
+    // (e.g., loaded into multiple AssemblyLoadContexts or marked as domain-neutral in older
+    // runtimes), the profiling API ensures that the profiler only sees the module once.
+    // The profiler will only receive a single ModuleLoadFinished callback for a module, even if
+    // the assembly is used across multiple contexts. The module enumerator must mirror this
+    // behavior, avoiding duplicate modules in the list returned to the profiler.
+    // Therefore, we first add non-shared assemblies (those specific to a single ALC) to the enumerator,
     // and then separately add any shared modules that are loaded across multiple contexts.
 
     // First, iterate through all ADs. For each one, call

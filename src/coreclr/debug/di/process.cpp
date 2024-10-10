@@ -11163,11 +11163,11 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     // 3. read the thread context, and from that read the pointer to the left-side context and the size of the context
     // 4. then we can perform the actual SetThreadContext operation
     // 5. lastly, we must resume the thread
-    // For the first step of obtaining the thread handle, 
+    // For the first step of obtaining the thread handle,
     // we have previously attempted to use ::OpenThread to get a handle to the thread.
     // However, there are situations where OpenThread can fail with an Access Denied error.
-    // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in 
-    // Windows causes the process to have higher privileges. 
+    // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in
+    // Windows causes the process to have higher privileges.
     // We are now using the following approach to access the thread handle, which is the same
     // approach used by CordbThread::RefreshHandle:
     // 1. Get the thread handle from the DAC
@@ -11210,8 +11210,8 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     DT_CONTEXT context = { 0 };
     context.ContextFlags = CONTEXT_FULL;
 
-    // we originally used GetDataTarget()->GetThreadContext, but 
-    // the implementation uses ShimLocalDataTarget::GetThreadContext which 
+    // we originally used GetDataTarget()->GetThreadContext, but
+    // the implementation uses ShimLocalDataTarget::GetThreadContext which
     // depends on OpenThread which might fail with an Access Denied error (see note above)
     BOOL success = ::GetThreadContext(hThread, (CONTEXT*)(&context));
     if (!success)
@@ -11224,7 +11224,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     TADDR lsContextAddr = (TADDR)context.Rcx;
     DWORD contextSize = (DWORD)context.Rdx;
 
-    // Read the expected Rip and Rsp from the thread context.  This is used to 
+    // Read the expected Rip and Rsp from the thread context.  This is used to
     // validate the context read from the left-side.
     TADDR expectedRip = (TADDR)context.R8;
     TADDR expectedRsp = (TADDR)context.R9;
