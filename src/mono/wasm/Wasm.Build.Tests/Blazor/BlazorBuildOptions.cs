@@ -11,6 +11,7 @@ public record BlazorBuildOptions
     string Config,
     NativeFilesType ExpectedFileType = NativeFilesType.FromRuntimePack,
     string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
+    string BootConfigFileName = "blazor.boot.json",
     bool IsPublish = false,
     bool WarnAsError = true,
     bool ExpectSuccess = true,
