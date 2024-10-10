@@ -104,7 +104,7 @@ PALEXPORT EVP_PKEY* CryptoNative_LoadPrivateKeyFromEngine(const char* engineName
 Load a named key, via ENGINE_load_public_key, from the named engine.
 
 Returns a valid EVP_PKEY* on success, NULL on failure.
-haveEngine is 1 if OpenSSL ENGINE's are supported, otherwise 0.
+*haveEngine is 1 if OpenSSL ENGINE's are supported, otherwise 0.
 */
 PALEXPORT EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const char* keyName, int32_t* haveEngine);
 
@@ -114,8 +114,10 @@ Load a key by URI from a specified OSSL_PROVIDER.
 Returns a valid EVP_PKEY* on success, NULL on failure.
 On success extraHandle may be non-null value which we need to keep alive
 until the EVP_PKEY is destroyed.
+
+*haveProvider is 1 if OpenSSL providers are supported, otherwise 0.
 */
-PALEXPORT EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle);
+PALEXPORT EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle, int32_t* haveProvider);
 
 /*
 It's a wrapper for EVP_PKEY_CTX_new_from_pkey and EVP_PKEY_CTX_new

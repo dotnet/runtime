@@ -17,55 +17,22 @@ public unsafe class ObjectTests
     {
         TargetTestHelpers targetTestHelpers = new(arch);
 
-        (string Name, ulong Value, string? Type)[] globals = MockObject.Globals(targetTestHelpers);
+        MockMemorySpace.Builder builder = new(targetTestHelpers);
+        builder = builder
+            .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem) ])
+            .SetGlobals(MockObject.Globals(targetTestHelpers))
+            .SetTypes(MockObject.Types(targetTestHelpers));
 
-        string typesJson = TargetTestHelpers.MakeTypesJson(MockObject.Types(targetTestHelpers));
-        string globalsJson = TargetTestHelpers.MakeGlobalsJson(globals);
-        byte[] json = Encoding.UTF8.GetBytes($$"""
-        {
-            "version": 0,
-            "baseline": "empty",
-            "contracts": {
-                "{{nameof(Contracts.Object)}}": 1,
-                "{{nameof(Contracts.RuntimeTypeSystem)}}": 1
-            },
-            "types": { {{typesJson}} },
-            "globals": { {{globalsJson}} }
-        }
-        """);
-        Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
-        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, globals.Length);
+        builder = MockObject.AddGlobalPointers(targetTestHelpers, builder);
 
-        int pointerSize = targetTestHelpers.PointerSize;
-        Span<byte> pointerData = stackalloc byte[globals.Length * pointerSize];
-        for (int i = 0; i < globals.Length; i++)
+        if (configure != null)
         {
-            var (_, value, _) = globals[i];
-            targetTestHelpers.WritePointer(pointerData.Slice(i * pointerSize), value);
+            builder = configure(builder);
         }
 
-        fixed (byte* jsonPtr = json)
-        {
-            MockMemorySpace.Builder builder = new();
-            builder = builder.SetDescriptor(descriptor)
-                    .SetJson(json)
-                    .SetPointerData(pointerData);
-
-            builder = MockObject.AddGlobalPointers(targetTestHelpers, builder);
-
-            if (configure != null)
-            {
-                builder = configure(builder);
-            }
-
-            using MockMemorySpace.ReadContext context = builder.Create();
-
-            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
-            Assert.True(success);
-            testCase(target);
-        }
-
-        GC.KeepAlive(json);
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        Assert.True(success);
+        testCase(target);
     }
 
     [Theory]
@@ -156,6 +123,44 @@ public unsafe class ObjectTests
                     Assert.Equal((uint)nonZeroLowerBound.Length, count);
                     Assert.Equal(NonZeroLowerBoundArrayAddress + targetTestHelpers.ArrayBaseSize, boundsStart.Value);
                     Assert.Equal(boundsStart.Value + (ulong)(nonZeroLowerBound.Rank * sizeof(int)), lowerBounds.Value);
+                }
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ComData(MockTarget.Architecture arch)
+    {
+        const ulong TestComObjectAddress = 0x00000000_10000010;
+        const ulong TestNonComObjectAddress = 0x00000000_10000020;
+
+        TargetPointer expectedRCW = 0xaaaa;
+        TargetPointer expectedCCW = 0xbbbb;
+
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ObjectContractHelper(arch,
+            (builder) =>
+            {
+                uint syncBlockIndex = 0;
+                builder = MockObject.AddObjectWithSyncBlock(targetTestHelpers, builder, TestComObjectAddress, 0, syncBlockIndex++, expectedRCW, expectedCCW);
+                builder = MockObject.AddObjectWithSyncBlock(targetTestHelpers, builder, TestNonComObjectAddress, 0, syncBlockIndex++, TargetPointer.Null, TargetPointer.Null);
+                return builder;
+            },
+            (target) =>
+            {
+                Contracts.IObject contract = target.Contracts.Object;
+                Assert.NotNull(contract);
+                {
+                    bool res = contract.GetBuiltInComData(TestComObjectAddress, out TargetPointer rcw, out TargetPointer ccw);
+                    Assert.True(res);
+                    Assert.Equal(expectedRCW.Value, rcw.Value);
+                    Assert.Equal(expectedCCW.Value, ccw.Value);
+                }
+                {
+                    bool res = contract.GetBuiltInComData(TestNonComObjectAddress, out TargetPointer rcw, out TargetPointer ccw);
+                    Assert.False(res);
+                    Assert.Equal(TargetPointer.Null.Value, rcw.Value);
+                    Assert.Equal(TargetPointer.Null.Value, ccw.Value);
                 }
             });
     }

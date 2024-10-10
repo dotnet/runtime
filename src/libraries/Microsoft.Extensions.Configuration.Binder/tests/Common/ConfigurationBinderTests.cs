@@ -1523,6 +1523,218 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("the color is Green", options.Color);
         }
 
+        /// <summary>
+        /// This test to ensure the binding of the constructor/property array is done once and not duplicating values in the array.
+        /// </summary>
+        [Fact]
+        public void CanBindOnParametersAndProperties_RecordWithArrayConstructorParameter()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                { "Array:0", "a" },
+                { "Array:1", "b" },
+                { "Array:2", "c" },
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<RecordWithArrayParameter>();
+            Assert.Equal(new string[] { "a", "b", "c" }, options.Array);
+        }
+
+
+        public static IEnumerable<object[]> Configuration_TestData()
+        {
+            yield return new object[]
+            {
+                new ConfigurationBuilder()
+                    .AddJsonStream(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(@"{
+                            ""IntValue"" :              """",
+                            ""DoubleValue"" :           """",
+                            ""BoolValue"" :             """",
+                            ""DecimalValue"" :          """",
+                            ""FloatValue"" :            """",
+                            ""LongValue"" :             """",
+                            ""ShortValue"" :            """",
+                            ""ByteValue"" :             """",
+                            ""SByteValue"" :            """",
+                            ""UIntValue"" :             """",
+                            ""UShortValue"" :           """",
+                            ""ULongValue"" :            """",
+                            ""DateTimeValue"" :         """",
+                            ""DateTimeOffsetValue"" :   """",
+                            ""TimeSpanValue"" :         """",
+                            ""GuidValue"" :             """",
+                            ""StringComparisonValue"" : """"
+                        }"
+                    ))).Build()
+            };
+
+            yield return new object[]
+            {
+                new ConfigurationBuilder().AddInMemoryCollection(
+                    new Dictionary<string, string>
+                    {
+                        { "IntValue",               null },
+                        { "DoubleValue",            null },
+                        { "BoolValue",              null },
+                        { "DecimalValue",           null },
+                        { "FloatValue",             null },
+                        { "LongValue",              null },
+                        { "ShortValue",             null },
+                        { "ByteValue",              null },
+                        { "SByteValue",             null },
+                        { "UIntValue",              null },
+                        { "UShortValue",            null },
+                        { "ULongValue",             null },
+                        { "DateTimeValue",          null },
+                        { "DateTimeOffsetValue",    null },
+                        { "TimeSpanValue",          null },
+                        { "GuidValue",              null },
+                        { "StringComparisonValue",  null },
+                    }).Build()
+            };
+        }
+
+        /// <summary>
+        /// Test binding a value parsable types to null configuration values.
+        /// The test ensure the binding will succeed without exceptions and the value will be null (not set).
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Configuration_TestData))]
+        public void BindToKnownParsableTypesWithNullValueTest(IConfiguration configuration)
+        {
+            ParsableValuesClass instance = configuration.Get<ParsableValuesClass>();
+            Assert.Null(instance.IntValue);
+            Assert.Null(instance.DoubleValue);
+            Assert.Null(instance.BoolValue);
+            Assert.Null(instance.DecimalValue);
+            Assert.Null(instance.FloatValue);
+            Assert.Null(instance.LongValue);
+            Assert.Null(instance.ShortValue);
+            Assert.Null(instance.ByteValue);
+            Assert.Null(instance.SByteValue);
+            Assert.Null(instance.UIntValue);
+            Assert.Null(instance.UShortValue);
+            Assert.Null(instance.ULongValue);
+            Assert.Null(instance.DateTimeValue);
+            Assert.Null(instance.DateTimeOffsetValue);
+            Assert.Null(instance.TimeSpanValue);
+            Assert.Null(instance.GuidValue);
+            Assert.Null(instance.StringComparisonValue);
+        }
+
+        /// <summary>
+        /// Test binding to recursive types using Dictionary or Collections.
+        /// This ensure no stack overflow will occur during the compilation through the source gen or at runtime.
+        /// </summary>
+        [Fact]
+        public void BindToRecursiveTypesTest()
+        {
+            string jsonConfig = @"{
+                ""Tree"": {
+                    ""Branch1"": {
+                        ""Leaf1"": {},
+                        ""Leaf2"": {}
+                    },
+                    ""Branch2"": {
+                        ""Leaf3"": {}
+                    }
+                },
+                ""Flat"": [
+                    {
+                        ""Element1"": {
+                            ""SubElement1"": {}
+                        }
+                    },
+                    {
+                        ""Element2"": {
+                            ""SubElement2"": {}
+                        }
+                    },
+                    {
+                        ""Element3"": {}
+                    }
+                ],
+                ""List"": [
+                    {
+                        ""Item1"": {
+                            ""NestedItem1"": {}
+                        }
+                    },
+                    {
+                        ""Item2"": {}
+                    },
+                ]
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonConfig)))
+                        .Build();
+
+            var instance = new TypeWithRecursionThroughCollections();
+            configuration.Bind(instance);
+
+            // Validate the dictionary
+            Assert.NotNull(instance.Tree);
+            Assert.Equal(2, instance.Tree.Count);
+            Assert.NotNull(instance.Tree["Branch1"]);
+            Assert.Equal(2, instance.Tree["Branch1"].Count);
+            Assert.Equal(["Leaf1", "Leaf2"], instance.Tree["Branch1"].Keys);
+            Assert.Equal(["Leaf3"], instance.Tree["Branch2"].Keys);
+
+            // Validate the array
+            Assert.NotNull(instance.Flat);
+            Assert.Equal(3, instance.Flat.Length);
+            Assert.Equal(["Element1"], instance.Flat[0].Keys);
+            Assert.Equal(["Element2"], instance.Flat[1].Keys);
+            Assert.Equal(["Element3"], instance.Flat[2].Keys);
+            Assert.Equal(1, instance.Flat[0].Values.Count);
+            Assert.Equal(["SubElement1"], instance.Flat[0].Values.ToArray()[0].Keys);
+            Assert.Equal(1, instance.Flat[1].Values.Count);
+            Assert.Equal(["SubElement2"], instance.Flat[1].Values.ToArray()[0].Keys);
+            Assert.Equal(1, instance.Flat[2].Values.Count);
+
+            // Validate the List
+            Assert.NotNull(instance.Flat);
+            Assert.Equal(2, instance.List.Count);
+            Assert.Equal(["Item1"], instance.List[0].Keys);
+            Assert.Equal(["Item2"], instance.List[1].Keys);
+            Assert.Equal(1, instance.List[0].Values.Count);
+            Assert.Equal(["NestedItem1"], instance.List[0].Values.ToArray()[0].Keys);
+            Assert.Equal(1, instance.List[1].Values.Count);
+        }
+
+        /// <summary>
+        /// This test ensures that the property setter is invoked during binding, even when there is no configuration for the property.
+        /// </summary>
+        [Fact]
+        public void PropertySetterCalledTest()
+        {
+            string jsonConfig = @"{
+              ""Configuration"": {
+                ""SomeSet"": [
+                  ""path""
+                  ]
+              }
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonConfig)))
+                        .Build();
+
+            TypeWithValueMutatorPropertySetter t1 = new();
+            Assert.Equal(0, t1.SomeSet.Count);
+            Assert.Equal("Uninitialized", t1.Value);
+
+            TypeWithValueMutatorPropertySetter t2 = configuration.GetSection("Configuration").Get<TypeWithValueMutatorPropertySetter>()!;
+            Assert.Equal(1, t2.SomeSet.Count);
+            Assert.True(t2.SomeSet.Contains("path"));
+            Assert.Equal("Initialized", t2.Value);
+        }
+
         [Fact]
         public void CanBindReadonlyRecordStructOptions()
         {
@@ -2525,7 +2737,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         {
             /// the source generator will bind to the most derived property only.
             /// the reflection binder will bind the same data to all properties (including hidden).
-            
+
             var config = TestHelpers.GetConfigurationFromJsonString("""
                 {
                     "A": "AVal",
@@ -2580,6 +2792,28 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             Assert.Equal(53, obj.X);
             Assert.Equal(53, obj.XBase);
+        }
+
+        [Fact]
+        public void CanGetEnumerableNotCollection()
+        {
+            var builder = new ConfigurationBuilder();
+            builder.AddInMemoryCollection(new KeyValuePair<string, string?>[]
+            {
+                new("Names", "John,Jane,Stephen"),
+                new("Enabled", "true"),
+                new("Keywords:1", "new"),
+                new("Keywords:2", "class"),
+                new("Keywords:3", "rosebud")
+            });
+
+            var config = builder.Build();
+
+            var result = config.Get<EnumerableNotCollection>();
+
+            Assert.Equal("John,Jane,Stephen", result.Names);
+            Assert.True(result.Enabled);
+            Assert.Equal(new [] { "new", "class", "rosebud"}, result.Keywords);
         }
     }
 }

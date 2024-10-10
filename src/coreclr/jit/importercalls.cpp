@@ -207,7 +207,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         const char* namespaceName;
         const char* className;
         const char* methodName =
-            info.compCompHnd->getMethodNameFromMetadata(methHnd, &className, &namespaceName, nullptr);
+            info.compCompHnd->getMethodNameFromMetadata(methHnd, &className, &namespaceName, nullptr, 0);
         if ((namespaceName != nullptr) && (className != nullptr) && (methodName != nullptr) &&
             (strcmp(namespaceName, "System.Runtime.CompilerServices") == 0) &&
             (strcmp(className, "JitTestLabel") == 0) && (strcmp(methodName, "Mark") == 0))
@@ -376,8 +376,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
                 call->gtFlags |= GTF_CALL_VIRT_VTABLE;
 
-                // Mark this method to expand the virtual call target early in fgMorphCall
-                call->AsCall()->SetExpandedEarly();
+                if (opts.OptimizationEnabled())
+                {
+                    // Mark this method to expand the virtual call target early in fgMorphCall
+                    call->AsCall()->SetExpandedEarly();
+                }
                 break;
             }
 
@@ -969,6 +972,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             // Devirtualization may change which method gets invoked. Update our local cache.
             //
             methHnd = callInfo->hMethod;
+
+            // If we devirtualized to an intrinsic, assume this is one of the special cases.
+            //
+            if ((callInfo->methodFlags & CORINFO_FLG_INTRINSIC) != 0)
+            {
+                call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+            }
         }
         else if (call->AsCall()->IsDelegateInvoke())
         {
@@ -1346,12 +1356,26 @@ DONE_CALL:
             eeGetCallSiteSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, sig);
         }
 
+        CORINFO_CLASS_HANDLE retTypeClass = sig->retTypeClass;
+
         // Sometimes "call" is not a GT_CALL (if we imported an intrinsic that didn't turn into a call)
         if (!bIntrinsicImported)
         {
             assert(call->IsCall());
+            GenTreeCall* const origCall = call->AsCall();
 
-            GenTreeCall* origCall = call->AsCall();
+            // If the call is a special intrisic, we may know a more exact return type.
+            //
+            if (origCall->IsSpecialIntrinsic())
+            {
+                CORINFO_CLASS_HANDLE updatedRetTypeClass = impGetSpecialIntrinsicExactReturnType(origCall);
+
+                if (updatedRetTypeClass != NO_CLASS_HANDLE)
+                {
+                    JITDUMP("Updating method return type to %s\n", eeGetClassName(updatedRetTypeClass));
+                    retTypeClass = updatedRetTypeClass;
+                }
+            }
 
             const bool isFatPointerCandidate              = origCall->IsFatPointerCandidate();
             const bool isInlineCandidate                  = origCall->IsInlineCandidate();
@@ -1360,7 +1384,7 @@ DONE_CALL:
             if (varTypeIsStruct(callRetTyp))
             {
                 // Need to treat all "split tree" cases here, not just inline candidates
-                call       = impFixupCallStructReturn(call->AsCall(), sig->retTypeClass);
+                call       = impFixupCallStructReturn(call->AsCall(), retTypeClass);
                 callRetTyp = call->TypeGet();
             }
 
@@ -1513,7 +1537,7 @@ DONE_CALL:
             }
         }
 
-        typeInfo tiRetVal = verMakeTypeInfo(sig->retType, sig->retTypeClass);
+        typeInfo tiRetVal = verMakeTypeInfo(sig->retType, retTypeClass);
         impPushOnStack(call, tiRetVal);
     }
 
@@ -2046,9 +2070,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
 //    call - The call
 //
 // Remarks:
-//   This makes use of the fact that TYP_I_IMPL <-> TYP_BYREF casts are
-//   implicit in JIT IR, allowing us to change the types directly without
-//   inserting a cast node.
+//   Make the "casting away" of GC explicit here instead of retyping.
 //
 void Compiler::impRetypeUnmanagedCallArgs(GenTreeCall* call)
 {
@@ -2059,7 +2081,7 @@ void Compiler::impRetypeUnmanagedCallArgs(GenTreeCall* call)
         // We should not be passing gc typed args to an unmanaged call.
         if (varTypeIsGC(argNode->TypeGet()))
         {
-            // Tolerate byrefs by retyping to native int.
+            // Tolerate byrefs by casting to native int.
             //
             // This is needed or we'll generate inconsistent GC info
             // for this arg at the call site (gc info says byref,
@@ -2067,7 +2089,8 @@ void Compiler::impRetypeUnmanagedCallArgs(GenTreeCall* call)
             //
             if (argNode->TypeGet() == TYP_BYREF)
             {
-                argNode->ChangeType(TYP_I_IMPL);
+                GenTree* cast = gtNewCastNode(TYP_I_IMPL, argNode, false, TYP_I_IMPL);
+                arg.SetEarlyNode(cast);
             }
             else
             {
@@ -2908,12 +2931,9 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
         return nullptr;
     }
 
-    CORINFO_CLASS_HANDLE fieldOwnerHnd = info.compCompHnd->getFieldClass(fieldToken);
-
     CORINFO_CLASS_HANDLE fieldClsHnd;
-    var_types            fieldElementType =
-        JITtype2varType(info.compCompHnd->getFieldType(fieldToken, &fieldClsHnd, fieldOwnerHnd));
-    unsigned totalFieldSize;
+    var_types            fieldElementType = JITtype2varType(info.compCompHnd->getFieldType(fieldToken, &fieldClsHnd));
+    unsigned             totalFieldSize;
 
     // Most static initialization data fields are of some structure, but it is possible for them to be of various
     // primitive types as well
@@ -3558,6 +3578,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                 bool refOrContains = varTypeIsGC(fromType) || (fromLayout != nullptr && fromLayout->HasGCPtr());
                 retNode            = refOrContains ? gtNewIconNode(1) : gtNewIconNode(0);
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable:
+            {
+                retNode = gtNewMethodTableLookup(impPopStack().val);
                 break;
             }
 
@@ -4665,6 +4691,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     // We'll try to unroll this in lower for constant input.
                     isSpecial = true;
                 }
+                break;
+            }
+
+            case NI_System_SZArrayHelper_GetEnumerator:
+            case NI_System_Array_T_GetEnumerator:
+            {
+                // We may know the exact type these return
+                isSpecial = true;
                 break;
             }
 
@@ -6184,6 +6218,18 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             argNode = impImplicitR4orR8Cast(argNode, jitSigType);
             // insert any widening or narrowing casts for backwards compatibility
             argNode = impImplicitIorI4Cast(argNode, jitSigType);
+
+            if ((compAppleArm64Abi() || TargetArchitecture::IsArm32) && call->IsUnmanaged() &&
+                varTypeIsSmall(jitSigType))
+            {
+                // Apple arm64 and arm32 ABIs require arguments to be zero/sign
+                // extended up to 32 bit. The managed ABI does not require
+                // this.
+                if (fgCastNeeded(argNode, jitSigType))
+                {
+                    argNode = gtNewCastNode(TYP_INT, argNode, false, jitSigType);
+                }
+            }
         }
 
         NewCallArg arg;
@@ -6962,6 +7008,14 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     unsigned              likelihoods[MAX_GDV_TYPE_CHECKS]   = {};
     int                   candidatesCount                    = 0;
 
+    // Remember the original context, if any.
+    //
+    CORINFO_CONTEXT_HANDLE originalContext = nullptr;
+    if (pContextHandle != nullptr)
+    {
+        originalContext = *pContextHandle;
+    }
+
     // We currently only get likely class guesses when there is PGO data
     // with class profiles.
     //
@@ -7023,9 +7077,12 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 CORINFO_DEVIRTUALIZATION_INFO dvInfo;
                 dvInfo.virtualMethod               = baseMethod;
                 dvInfo.objClass                    = exactCls;
-                dvInfo.context                     = *pContextHandle;
-                dvInfo.exactContext                = *pContextHandle;
+                dvInfo.context                     = originalContext;
+                dvInfo.exactContext                = originalContext;
                 dvInfo.pResolvedTokenVirtualMethod = nullptr;
+
+                JITDUMP("GDV exact: resolveVirtualMethod (method %p class %p context %p)\n", dvInfo.virtualMethod,
+                        dvInfo.objClass, dvInfo.context);
 
                 if (!info.compCompHnd->resolveVirtualMethod(&dvInfo))
                 {
@@ -7035,8 +7092,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                     break;
                 }
 
-                CORINFO_METHOD_HANDLE exactMethod      = dvInfo.devirtualizedMethod;
-                uint32_t              exactMethodAttrs = info.compCompHnd->getMethodAttribs(exactMethod);
+                CORINFO_CONTEXT_HANDLE exactContext     = dvInfo.exactContext;
+                CORINFO_METHOD_HANDLE  exactMethod      = dvInfo.devirtualizedMethod;
+                uint32_t               exactMethodAttrs = info.compCompHnd->getMethodAttribs(exactMethod);
 
                 // NOTE: This is currently used only with NativeAOT. In theory, we could also check if we
                 // have static PGO data to decide which class to guess first. Presumably, this is a rare case.
@@ -7050,8 +7108,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                     likelyHood += 100 - likelyHood * numExactClasses;
                 }
 
-                addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, dvInfo.exactContext, exactMethodAttrs,
-                                                    clsAttrs, likelyHood);
+                addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
+                                                    clsAttrs, likelyHood, dvInfo.wasArrayInterfaceDevirt,
+                                                    originalContext);
             }
 
             if (call->GetInlineCandidatesCount() == numExactClasses)
@@ -7074,11 +7133,12 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     // Iterate over the guesses
     for (int candidateId = 0; candidateId < candidatesCount; candidateId++)
     {
-        CORINFO_CLASS_HANDLE  likelyClass  = likelyClasses[candidateId];
-        CORINFO_METHOD_HANDLE likelyMethod = likelyMethods[candidateId];
-        unsigned              likelihood   = likelihoods[candidateId];
+        CORINFO_CLASS_HANDLE  likelyClass    = likelyClasses[candidateId];
+        CORINFO_METHOD_HANDLE likelyMethod   = likelyMethods[candidateId];
+        unsigned              likelihood     = likelihoods[candidateId];
+        bool                  arrayInterface = false;
 
-        CORINFO_CONTEXT_HANDLE likelyContext = NULL;
+        CORINFO_CONTEXT_HANDLE likelyContext = originalContext;
 
         uint32_t likelyClassAttribs = 0;
         if (likelyClass != NO_CLASS_HANDLE)
@@ -7101,9 +7161,12 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
             CORINFO_DEVIRTUALIZATION_INFO dvInfo;
             dvInfo.virtualMethod               = baseMethod;
             dvInfo.objClass                    = likelyClass;
-            dvInfo.context                     = *pContextHandle;
-            dvInfo.exactContext                = *pContextHandle;
+            dvInfo.context                     = originalContext;
+            dvInfo.exactContext                = originalContext;
             dvInfo.pResolvedTokenVirtualMethod = nullptr;
+
+            JITDUMP("GDV likely: resolveVirtualMethod (method %p class %p context %p)\n", dvInfo.virtualMethod,
+                    dvInfo.objClass, dvInfo.context);
 
             const bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
 
@@ -7115,8 +7178,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 break;
             }
 
-            likelyContext = dvInfo.exactContext;
-            likelyMethod  = dvInfo.devirtualizedMethod;
+            likelyContext  = dvInfo.exactContext;
+            likelyMethod   = dvInfo.devirtualizedMethod;
+            arrayInterface = dvInfo.wasArrayInterfaceDevirt;
         }
         else
         {
@@ -7191,7 +7255,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         // Add this as a potential candidate.
         //
         addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyContext, likelyMethodAttribs,
-                                            likelyClassAttribs, likelihood);
+                                            likelyClassAttribs, likelihood, arrayInterface, originalContext);
     }
 }
 
@@ -7212,9 +7276,12 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 //    call - potential guarded devirtualization candidate
 //    methodHandle - method that will be invoked if the class test succeeds
 //    classHandle - class that will be tested for at runtime
+//    contextHandle - context for the devirtualized method/class
 //    methodAttr - attributes of the method
 //    classAttr - attributes of the class
 //    likelihood - odds that this class is the class seen at runtime
+//    arrayInterface - devirtualization of an array interface call
+//    originalContextHandle - context for the original call
 //
 void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
                                                    CORINFO_METHOD_HANDLE  methodHandle,
@@ -7222,7 +7289,9 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
                                                    CORINFO_CONTEXT_HANDLE contextHandle,
                                                    unsigned               methodAttr,
                                                    unsigned               classAttr,
-                                                   unsigned               likelihood)
+                                                   unsigned               likelihood,
+                                                   bool                   arrayInterface,
+                                                   CORINFO_CONTEXT_HANDLE originalContextHandle)
 {
     // This transformation only makes sense for delegate and virtual calls
     assert(call->IsDelegateInvoke() || call->IsVirtual());
@@ -7293,9 +7362,11 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
     pInfo->guardedMethodHandle             = methodHandle;
     pInfo->guardedMethodUnboxedEntryHandle = nullptr;
     pInfo->guardedClassHandle              = classHandle;
+    pInfo->originalContextHandle           = originalContextHandle;
     pInfo->likelihood                      = likelihood;
     pInfo->requiresInstMethodTableArg      = false;
-    pInfo->exactContextHnd                 = contextHandle;
+    pInfo->exactContextHandle              = contextHandle;
+    pInfo->arrayInterface                  = arrayInterface;
 
     // If the guarded class is a value class, look for an unboxed entry point.
     //
@@ -7533,7 +7604,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         {
             fncHandle = gdvCandidate->guardedMethodHandle;
         }
-        exactContextHnd = gdvCandidate->exactContextHnd;
+        exactContextHnd = gdvCandidate->exactContextHandle;
         methAttr        = info.compCompHnd->getMethodAttribs(fncHandle);
     }
     else
@@ -7954,8 +8025,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // might become virtual in some update.
     //
     // In non-R2R modes CALLVIRT <nonvirtual> will be turned into a
-    // regular call+nullcheck upstream, so we won't reach this
-    // point.
+    // regular call+nullcheck by normal call importation.
+    //
     if ((baseMethodAttribs & CORINFO_FLG_VIRTUAL) == 0)
     {
         assert(call->IsVirtualStub());
@@ -8064,6 +8135,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     dvInfo.detail                      = CORINFO_DEVIRTUALIZATION_UNKNOWN;
     dvInfo.pResolvedTokenVirtualMethod = pResolvedToken;
 
+    JITDUMP("ResolveVirtualMethod (method %p class %p context %p)\n", dvInfo.virtualMethod, dvInfo.objClass,
+            dvInfo.context);
+
     info.compCompHnd->resolveVirtualMethod(&dvInfo);
 
     CORINFO_METHOD_HANDLE   derivedMethod         = dvInfo.devirtualizedMethod;
@@ -8074,8 +8148,20 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     if (derivedMethod != nullptr)
     {
         assert(exactContext != nullptr);
-        assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
-        derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
+
+        if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
+        {
+            assert(!dvInfo.wasArrayInterfaceDevirt);
+            derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
+        }
+        else
+        {
+            // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
+            //
+            assert(dvInfo.wasArrayInterfaceDevirt);
+            assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
+            derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
+        }
     }
 
     DWORD derivedMethodAttribs = 0;
@@ -8158,7 +8244,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, pContextHandle);
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, objClass, pContextHandle);
         return;
     }
 
@@ -8509,7 +8595,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     if (pExactContextHandle != nullptr)
     {
-        *pExactContextHandle = MAKE_CLASSCONTEXT(derivedClass);
+        *pExactContextHandle = exactContext;
     }
 
     // We might have created a new recursive tail call candidate.
@@ -8658,6 +8744,11 @@ Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
 // Returns:
 //     Exact class handle returned by the intrinsic call, if known.
 //     Nullptr if not known, or not likely to lead to beneficial optimization.
+//
+// Notes:
+//     This computes the return type for generic factory methods, where
+//     the type returned is determined by a generic method or class parameter.
+//
 CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall* call)
 {
     CORINFO_METHOD_HANDLE methodHnd = call->gtCallMethHnd;
@@ -8671,6 +8762,7 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
     {
         case NI_System_Collections_Generic_Comparer_get_Default:
         case NI_System_Collections_Generic_EqualityComparer_get_Default:
+        case NI_System_Array_T_GetEnumerator:
         {
             // Expect one class generic parameter; figure out which it is.
             CORINFO_SIG_INFO sig;
@@ -8695,10 +8787,14 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
             {
                 result = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
             }
+            else if (ni == NI_System_Collections_Generic_Comparer_get_Default)
+            {
+                result = info.compCompHnd->getDefaultComparerClass(typeHnd);
+            }
             else
             {
-                assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
-                result = info.compCompHnd->getDefaultComparerClass(typeHnd);
+                assert(ni == NI_System_Array_T_GetEnumerator);
+                result = info.compCompHnd->getSZArrayHelperEnumeratorClass(typeHnd);
             }
 
             if (result != NO_CLASS_HANDLE)
@@ -8708,7 +8804,44 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
             }
             else
             {
-                JITDUMP("Special intrinsic for type %s: type undetermined, so deferring opt\n",
+                JITDUMP("Special intrinsic for type %s: return type undetermined, so deferring opt\n",
+                        eeGetClassName(typeHnd));
+            }
+            break;
+        }
+
+        case NI_System_SZArrayHelper_GetEnumerator:
+        {
+            // Expect one method generic parameter; figure out which it is.
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(methodHnd, &sig);
+            assert(sig.sigInst.methInstCount == 1);
+            assert(sig.sigInst.classInstCount == 0);
+
+            CORINFO_CLASS_HANDLE typeHnd = sig.sigInst.methInst[0];
+            assert(typeHnd != nullptr);
+
+            CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+            if (instParam != nullptr)
+            {
+                assert(instParam->GetNext() == nullptr);
+                CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetNode());
+                if (hClass != NO_CLASS_HANDLE)
+                {
+                    typeHnd = getTypeInstantiationArgument(hClass, 0);
+                }
+            }
+
+            result = info.compCompHnd->getSZArrayHelperEnumeratorClass(typeHnd);
+
+            if (result != NO_CLASS_HANDLE)
+            {
+                JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
+                        result != nullptr ? eeGetClassName(result) : "unknown");
+            }
+            else
+            {
+                JITDUMP("Special intrinsic for type %s: return type undetermined, so deferring opt\n",
                         eeGetClassName(typeHnd));
             }
             break;
@@ -8997,14 +9130,16 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             pInfo->guardedClassHandle              = nullptr;
             pInfo->guardedMethodHandle             = nullptr;
             pInfo->guardedMethodUnboxedEntryHandle = nullptr;
+            pInfo->originalContextHandle           = nullptr;
             pInfo->likelihood                      = 0;
             pInfo->requiresInstMethodTableArg      = false;
+            pInfo->arrayInterface                  = false;
         }
 
         pInfo->methInfo                       = methInfo;
         pInfo->ilCallerHandle                 = pParam->pThis->info.compMethodHnd;
         pInfo->clsHandle                      = clsHandle;
-        pInfo->exactContextHnd                = pParam->exactContextHnd;
+        pInfo->exactContextHandle             = pParam->exactContextHnd;
         pInfo->retExpr                        = nullptr;
         pInfo->preexistingSpillTemp           = BAD_VAR_NUM;
         pInfo->clsAttr                        = clsAttr;
@@ -9862,11 +9997,12 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 //
 NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 {
-    const char* className          = nullptr;
-    const char* namespaceName      = nullptr;
-    const char* enclosingClassName = nullptr;
+    const char* className              = nullptr;
+    const char* namespaceName          = nullptr;
+    const char* enclosingClassNames[2] = {nullptr};
     const char* methodName =
-        info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, &enclosingClassName);
+        info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, enclosingClassNames,
+                                                    ArrLen(enclosingClassNames));
 
     JITDUMP("Named Intrinsic ");
 
@@ -9874,9 +10010,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     {
         JITDUMP("%s.", namespaceName);
     }
-    if (enclosingClassName != nullptr)
+    if (enclosingClassNames[1] != nullptr)
     {
-        JITDUMP("%s.", enclosingClassName);
+        JITDUMP("%s.", enclosingClassNames[1]);
+    }
+    if (enclosingClassNames[0] != nullptr)
+    {
+        JITDUMP("%s.", enclosingClassNames[0]);
     }
     if (className != nullptr)
     {
@@ -9959,6 +10099,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "GetUpperBound") == 0)
                         {
                             result = NI_System_Array_GetUpperBound;
+                        }
+                    }
+                    else if (strcmp(className, "Array`1") == 0)
+                    {
+                        if (strcmp(methodName, "GetEnumerator") == 0)
+                        {
+                            result = NI_System_Array_T_GetEnumerator;
                         }
                     }
                     break;
@@ -10192,6 +10339,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             result = NI_System_String_EndsWith;
                         }
                     }
+                    else if (strcmp(className, "SZArrayHelper") == 0)
+                    {
+                        if (strcmp(methodName, "GetEnumerator") == 0)
+                        {
+                            result = NI_System_SZArrayHelper_GetEnumerator;
+                        }
+                    }
+
                     break;
                 }
 
@@ -10312,10 +10467,24 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     else
                     {
 #ifdef FEATURE_HW_INTRINSICS
+                        if (strncmp(methodName,
+                                    "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0)
+                        {
+                            // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where
+                            // possible but, they all prefix the qualified name of the interface first, so we'll check
+                            // for that and skip the prefix before trying to resolve the method.
+
+                            if (strncmp(methodName + 70, "<T>,T>.", 7) == 0)
+                            {
+                                methodName += 77;
+                            }
+                        }
+
                         CORINFO_SIG_INFO sig;
                         info.compCompHnd->getMethodSig(method, &sig);
 
-                        result = SimdAsHWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName);
+                        result =
+                            SimdAsHWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassNames[0]);
 #endif // FEATURE_HW_INTRINSICS
 
                         if (result == NI_Illegal)
@@ -10378,6 +10547,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result =
                                     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
+                            }
+                            else if (strcmp(methodName, "GetMethodTable") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
                             }
                         }
                         else if (strcmp(className, "Unsafe") == 0)
@@ -10530,12 +10703,32 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 #error Unsupported platform
 #endif
 
+                        if (strncmp(methodName,
+                                    "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0)
+                        {
+                            // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where
+                            // possible but, they all prefix the qualified name of the interface first, so we'll check
+                            // for that and skip the prefix before trying to resolve the method.
+
+                            if (strncmp(methodName + 70, "64<T>,T>.", 9) == 0)
+                            {
+                                methodName += 79;
+                            }
+                            else if ((strncmp(methodName + 70, "128<T>,T>.", 10) == 0) ||
+                                     (strncmp(methodName + 70, "256<T>,T>.", 10) == 0) ||
+                                     (strncmp(methodName + 70, "512<T>,T>.", 10) == 0))
+                            {
+                                methodName += 80;
+                            }
+                        }
+
                         if ((namespaceName[0] == '\0') || (strcmp(namespaceName, platformNamespaceName) == 0))
                         {
                             CORINFO_SIG_INFO sig;
                             info.compCompHnd->getMethodSig(method, &sig);
 
-                            result = HWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName);
+                            result = HWIntrinsicInfo::lookupId(this, &sig, className, methodName,
+                                                               enclosingClassNames[0], enclosingClassNames[1]);
                         }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -10609,7 +10802,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     {
                         if (strcmp(methodName, "ReadUtf8") == 0)
                         {
-                            assert(strcmp(enclosingClassName, "UTF8Encoding") == 0);
+                            assert(strcmp(enclosingClassNames[0], "UTF8Encoding") == 0);
                             result = NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8;
                         }
                     }

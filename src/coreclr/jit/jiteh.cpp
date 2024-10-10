@@ -1051,55 +1051,6 @@ unsigned Compiler::ehFuncletCount()
 }
 
 /*****************************************************************************
- *
- *  Get the index to use as the cache key for sharing throw blocks.
- *  For non-funclet platforms, this is just the block's bbTryIndex, to ensure
- *  that throw is protected by the correct set of trys.  However, when we have
- *  funclets we also have to ensure that the throw blocks are *not* shared
- *  across funclets, so we use EHblkDsc index of either the funclet or
- *  the containing try region, whichever is inner-most.  We differentiate
- *  between the 3 cases by setting the high bits (0 = try, 1 = handler,
- *  2 = filter)
- *
- */
-unsigned Compiler::bbThrowIndex(BasicBlock* blk)
-{
-    if (UsesFunclets())
-    {
-        if (!blk->hasTryIndex() && !blk->hasHndIndex())
-        {
-            return -1;
-        }
-
-        const unsigned tryIndex = blk->hasTryIndex() ? blk->getTryIndex() : USHRT_MAX;
-        const unsigned hndIndex = blk->hasHndIndex() ? blk->getHndIndex() : USHRT_MAX;
-        assert(tryIndex != hndIndex);
-        assert(tryIndex != USHRT_MAX || hndIndex != USHRT_MAX);
-
-        if (tryIndex < hndIndex)
-        {
-            // The most enclosing region is a try body, use it
-            assert(tryIndex <= 0x3FFFFFFF);
-            return tryIndex;
-        }
-
-        // The most enclosing region is a handler which will be a funclet
-        // Now we have to figure out if blk is in the filter or handler
-        assert(hndIndex <= 0x3FFFFFFF);
-        if (ehGetDsc(hndIndex)->InFilterRegionBBRange(blk))
-        {
-            return hndIndex | 0x40000000;
-        }
-
-        return hndIndex | 0x80000000;
-    }
-    else
-    {
-        return blk->bbTryIndex;
-    }
-}
-
-/*****************************************************************************
  * Determine the emitter code cookie for a block, for unwind purposes.
  */
 
@@ -1302,6 +1253,95 @@ void Compiler::fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast)
     }
 }
 
+//-------------------------------------------------------------
+// fgFindEHRegionEnds: Walk the block list, and set each try/handler region's end block.
+//
+void Compiler::fgFindEHRegionEnds()
+{
+    assert(compHndBBtabCount != 0);
+    unsigned unsetTryEnds = compHndBBtabCount;
+    unsigned unsetHndEnds = compHndBBtabCount;
+
+    // Null out each clause's end pointers.
+    // A non-null end pointer indicates we already updated the clause.
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        HBtab->ebdTryLast = nullptr;
+        HBtab->ebdHndLast = nullptr;
+    }
+
+    // Updates the try region's (and all of its parent regions') end block to 'block,'
+    // if the try region's end block hasn't been updated yet.
+    auto setTryEnd = [this, &unsetTryEnds](BasicBlock* block) {
+        for (unsigned tryIndex = block->getTryIndex(); tryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
+             tryIndex          = ehGetEnclosingTryIndex(tryIndex))
+        {
+            EHblkDsc* const HBtab = ehGetDsc(tryIndex);
+            if (HBtab->ebdTryLast == nullptr)
+            {
+                assert(unsetTryEnds != 0);
+                HBtab->ebdTryLast = block;
+                unsetTryEnds--;
+            }
+            else
+            {
+                break;
+            }
+        }
+    };
+
+    // Updates the handler region's (and all of its parent regions') end block to 'block,'
+    // if the handler region's end block hasn't been updated yet.
+    auto setHndEnd = [this, &unsetHndEnds](BasicBlock* block) {
+        for (unsigned hndIndex = block->getHndIndex(); hndIndex != EHblkDsc::NO_ENCLOSING_INDEX;
+             hndIndex          = ehGetEnclosingHndIndex(hndIndex))
+        {
+            EHblkDsc* const HBtab = ehGetDsc(hndIndex);
+            if (HBtab->ebdHndLast == nullptr)
+            {
+                assert(unsetHndEnds != 0);
+                HBtab->ebdHndLast = block;
+                unsetHndEnds--;
+            }
+            else
+            {
+                break;
+            }
+        }
+    };
+
+    // Iterate backwards through the main method body, and update each try region's end block
+    for (BasicBlock* block = fgLastBBInMainFunction(); (unsetTryEnds != 0) && (block != nullptr); block = block->Prev())
+    {
+        if (block->hasTryIndex())
+        {
+            setTryEnd(block);
+        }
+    }
+
+    // If we don't have a funclet section, then all of the try regions should have been updated above
+    assert((unsetTryEnds == 0) || (fgFirstFuncletBB != nullptr));
+
+    // If we do have a funclet section, update the ends of any try regions nested in funclets
+    for (BasicBlock* block = fgLastBB; (unsetTryEnds != 0) && (block != fgLastBBInMainFunction());
+         block             = block->Prev())
+    {
+        if (block->hasTryIndex())
+        {
+            setTryEnd(block);
+        }
+    }
+
+    // Finally, update the handler regions' ends
+    for (BasicBlock* block = fgLastBB; (unsetHndEnds != 0) && (block != nullptr); block = block->Prev())
+    {
+        if (block->hasHndIndex())
+        {
+            setHndEnd(block);
+        }
+    }
+}
+
 /*****************************************************************************
  *
  *  Given a EH handler table entry update the ebdTryLast and ebdHndLast pointers
@@ -1420,6 +1460,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 {
     assert(compHndBBtabCount > 0);
     assert(XTnum < compHndBBtabCount);
+    assert((fgAddCodeDscMap == nullptr) || (fgAddCodeDscMap->GetCount() == 0));
 
     EHblkDsc* HBtab;
 
@@ -4512,32 +4553,4 @@ bool Compiler::fgCheckEHCanInsertAfterBlock(BasicBlock* blk, unsigned regionInde
     } // end of for(;;)
 
     return insertOK;
-}
-
-//------------------------------------------------------------------------
-// fgIsFirstBlockOfFilterOrHandler: return true if the given block is the first block of an EH handler
-// or filter.
-//
-// Arguments:
-//    block - the BasicBlock in question
-//
-// Return Value:
-//    As described above.
-//
-bool Compiler::fgIsFirstBlockOfFilterOrHandler(BasicBlock* block)
-{
-    if (!block->hasHndIndex())
-    {
-        return false;
-    }
-    EHblkDsc* ehDsc = ehGetDsc(block->getHndIndex());
-    if (ehDsc->ebdHndBeg == block)
-    {
-        return true;
-    }
-    if (ehDsc->HasFilter() && (ehDsc->ebdFilter == block))
-    {
-        return true;
-    }
-    return false;
 }

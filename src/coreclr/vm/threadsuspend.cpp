@@ -28,26 +28,6 @@ ThreadSuspend::SUSPEND_REASON ThreadSuspend::m_suspendReason;
 void* ThreadSuspend::g_returnAddressHijackTarget = NULL;
 #endif // TARGET_WINDOWS
 
-#if defined(TARGET_ARM64)
-// Mirror the XSTATE_ARM64_SVE flags from winnt.h
-
-#ifndef XSTATE_ARM64_SVE
-#define XSTATE_ARM64_SVE (2)
-#endif // XSTATE_ARM64_SVE
-
-#ifndef XSTATE_MASK_ARM64_SVE
-#define XSTATE_MASK_ARM64_SVE (1ui64 << (XSTATE_ARM64_SVE))
-#endif // XSTATE_MASK_ARM64_SVE
-
-#ifndef CONTEXT_ARM64_XSTATE
-#define CONTEXT_ARM64_XSTATE (CONTEXT_ARM64 | 0x20L)
-#endif // CONTEXT_ARM64_XSTATE
-
-#ifndef CONTEXT_XSTATE
-#define CONTEXT_XSTATE CONTEXT_ARM64_XSTATE
-#endif // CONTEXT_XSTATE
-#endif // TARGET_ARM64
-
 // If you add any thread redirection function, make sure the debugger can 1) recognize the redirection
 // function, and 2) retrieve the original CONTEXT.  See code:Debugger.InitializeHijackFunctionAddress and
 // code:DacDbiInterfaceImpl.RetrieveHijackedContext.
@@ -3755,6 +3735,9 @@ ThrowControlForThread(
 #ifdef FEATURE_EH_FUNCLETS
         FaultingExceptionFrame *pfef
 #endif // FEATURE_EH_FUNCLETS
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+        , TADDR ssp
+#endif // TARGET_AMD64 && TARGET_WINDOWS
         )
 {
     STATIC_CONTRACT_THROWS;
@@ -3803,6 +3786,10 @@ ThrowControlForThread(
     FaultingExceptionFrame *pfef = &fef;
 #endif // FEATURE_EH_FUNCLETS
     pfef->InitAndLink(pThread->m_OSContext);
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    pfef->SetSSP(ssp);
+#endif
 
     // !!! Can not assert here.  Sometimes our EHInfo for catch clause extends beyond
     // !!! Jit_EndCatch.  Not sure if we have guarantee on catch clause.

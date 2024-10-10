@@ -24,8 +24,6 @@ namespace System.Formats.Nrbf;
 internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
     where T : unmanaged
 {
-    private static TypeName? s_typeName;
-
     internal ArraySinglePrimitiveRecord(ArrayInfo arrayInfo, IReadOnlyList<T> values) : base(arrayInfo)
     {
         Values = values;
@@ -35,8 +33,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
     public override SerializationRecordType RecordType => SerializationRecordType.ArraySinglePrimitive;
 
     /// <inheritdoc />
-    public override TypeName TypeName
-        => s_typeName ??= TypeName.Parse((typeof(T[]).FullName + "," + TypeNameExtensions.CoreLibAssemblyName).AsSpan());
+    public override TypeName TypeName => TypeNameHelpers.GetPrimitiveSZArrayTypeName(TypeNameHelpers.GetPrimitiveType<T>());
 
     internal IReadOnlyList<T> Values { get; }
 
@@ -44,17 +41,9 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
     public override T[] GetArray(bool allowNulls = true)
         => (T[])(_arrayNullsNotAllowed ??= (Values is T[] array ? array : Values.ToArray()));
 
-    internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType()
-    {
-        Debug.Fail("GetAllowedRecordType should never be called on ArraySinglePrimitiveRecord");
-        throw new InvalidOperationException();
-    }
+    internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType() => throw new InvalidOperationException();
 
-    private protected override void AddValue(object value)
-    {
-        Debug.Fail("AddValue should never be called on ArraySinglePrimitiveRecord");
-        throw new InvalidOperationException();
-    }
+    private protected override void AddValue(object value) => throw new InvalidOperationException();
 
     internal static IReadOnlyList<T> DecodePrimitiveTypes(BinaryReader reader, int count)
     {
@@ -64,8 +53,32 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             return (List<T>)(object)DecodeDecimals(reader, count);
         }
 
+        // char[] has a unique representation in NRBF streams. Typical strings are transcoded
+        // to UTF-8 and prefixed with the number of bytes in the UTF-8 representation. char[]
+        // is also serialized as UTF-8, but it is instead prefixed with the number of chars
+        // in the UTF-16 representation, not the number of bytes in the UTF-8 representation.
+        // This number doesn't directly precede the UTF-8 contents in the NRBF stream; it's
+        // instead contained within the ArrayInfo structure (passed to this method as the
+        // 'count' argument).
+        //
+        // The practical consequence of this is that we don't actually know how many UTF-8
+        // bytes we need to consume in order to ensure we've read 'count' chars. We know that
+        // an n-length UTF-16 string turns into somewhere between [n .. 3n] UTF-8 bytes.
+        // The best we can do is that when reading an n-element char[], we'll ensure that
+        // there are at least n bytes remaining in the input stream. We'll still need to
+        // account for that even with this check, we might hit EOF before fully populating
+        // the char[]. But from a safety perspective, it does appropriately limit our
+        // allocations to be proportional to the amount of data present in the input stream,
+        // which is a sufficient defense against DoS.
+
         long requiredBytes = count;
-        if (typeof(T) != typeof(char)) // the input is UTF8
+        if (typeof(T) == typeof(DateTime) || typeof(T) == typeof(TimeSpan))
+        {
+            // We can't assume DateTime as represented by the runtime is 8 bytes.
+            // The only assumption we can make is that it's 8 bytes on the wire.
+            requiredBytes *= 8;
+        }
+        else if (typeof(T) != typeof(char))
         {
             requiredBytes *= Unsafe.SizeOf<T>();
         }
@@ -88,7 +101,11 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
         }
         else if (typeof(T) == typeof(char))
         {
-            return (T[])(object)reader.ReadChars(count);
+            return (T[])(object)reader.ParseChars(count);
+        }
+        else if (typeof(T) == typeof(TimeSpan) || typeof(T) == typeof(DateTime))
+        {
+            return DecodeTime(reader, count);
         }
 
         // It's safe to pre-allocate, as we have ensured there is enough bytes in the stream.
@@ -97,7 +114,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
 #if NET
         reader.BaseStream.ReadExactly(resultAsBytes);
 #else
-        byte[] bytes = ArrayPool<byte>.Shared.Rent(Math.Min(count * Unsafe.SizeOf<T>(), 256_000));
+        byte[] bytes = ArrayPool<byte>.Shared.Rent((int)Math.Min(requiredBytes, 256_000));
 
         while (!resultAsBytes.IsEmpty)
         {
@@ -141,8 +158,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
                 }
 #endif
             }
-            else if (typeof(T) == typeof(long) || typeof(T) == typeof(ulong) || typeof(T) == typeof(double)
-                  || typeof(T) == typeof(DateTime) || typeof(T) == typeof(TimeSpan))
+            else if (typeof(T) == typeof(long) || typeof(T) == typeof(ulong) || typeof(T) == typeof(double))
             {
                 Span<long> span = MemoryMarshal.Cast<T, long>(result);
 #if NET
@@ -156,37 +172,62 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             }
         }
 
+        if (typeof(T) == typeof(bool))
+        {
+            // See DontCastBytesToBooleans test to see what could go wrong.
+            bool[] booleans = (bool[])(object)result;
+            resultAsBytes = MemoryMarshal.AsBytes<T>(result);
+            for (int i = 0; i < booleans.Length; i++)
+            {
+                // We don't use the bool array to get the value, as an optimizing compiler or JIT could elide this.
+                if (resultAsBytes[i] != 0) // it can be any byte different than 0
+                {
+                    booleans[i] = true; // set it to 1 in explicit way
+                }
+            }
+        }
+
         return result;
     }
 
     private static List<decimal> DecodeDecimals(BinaryReader reader, int count)
     {
         List<decimal> values = new();
-#if NET
-        Span<byte> buffer = stackalloc byte[256];
         for (int i = 0; i < count; i++)
         {
-            int stringLength = reader.Read7BitEncodedInt();
-            if (!(stringLength > 0 && stringLength <= buffer.Length))
+            values.Add(reader.ParseDecimal());
+        }
+        return values;
+    }
+
+    private static T[] DecodeTime(BinaryReader reader, int count)
+    {
+        T[] values = new T[count];
+        for (int i = 0; i < values.Length; i++)
+        {
+            if (typeof(T) == typeof(DateTime))
             {
-                ThrowHelper.ThrowInvalidValue(stringLength);
+                values[i] = (T)(object)Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadUInt64());
             }
-
-            reader.BaseStream.ReadExactly(buffer.Slice(0, stringLength));
-
-            values.Add(decimal.Parse(buffer.Slice(0, stringLength), CultureInfo.InvariantCulture));
+            else if (typeof(T) == typeof(TimeSpan))
+            {
+                values[i] = (T)(object)new TimeSpan(reader.ReadInt64());
+            }
+            else
+            {
+                throw new InvalidOperationException();
+            }
         }
-#else
-        for (int i = 0; i < count; i++)
-        {
-            values.Add(decimal.Parse(reader.ReadString(), CultureInfo.InvariantCulture));
-        }
-#endif
+
         return values;
     }
 
     private static List<T> DecodeFromNonSeekableStream(BinaryReader reader, int count)
     {
+        // The count arg could originate from untrusted input, so we shouldn't
+        // pass it as-is to the ctor's capacity arg. We'll instead rely on
+        // List<T>.Add's O(1) amortization to keep the entire loop O(count).
+
         List<T> values = new List<T>(Math.Min(count, 4));
         for (int i = 0; i < count; i++)
         {
@@ -204,7 +245,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             }
             else if (typeof(T) == typeof(char))
             {
-                values.Add((T)(object)reader.ReadChar());
+                values.Add((T)(object)reader.ParseChar());
             }
             else if (typeof(T) == typeof(short))
             {
@@ -240,13 +281,15 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             }
             else if (typeof(T) == typeof(DateTime))
             {
-                values.Add((T)(object)Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadInt64()));
+                values.Add((T)(object)Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadUInt64()));
+            }
+            else if (typeof(T) == typeof(TimeSpan))
+            {
+                values.Add((T)(object)new TimeSpan(reader.ReadInt64()));
             }
             else
             {
-                Debug.Assert(typeof(T) == typeof(TimeSpan));
-
-                values.Add((T)(object)new TimeSpan(reader.ReadInt64()));
+                throw new InvalidOperationException();
             }
         }
 
