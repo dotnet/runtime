@@ -60,6 +60,18 @@
             %pK     // The pointer is a code address (used for stack track)
 */
 
+/*  STRESS_LOG_VA was added to allow sending GC trace output to the stress log. msg must be enclosed
+    in ()'s and contain a format string followed by 0 to 12 arguments. The arguments must be numbers
+     or string literals. This was done because GC Trace uses dprintf which doesn't contain info on
+    how many arguments are getting passed in and using va_args would require parsing the format
+    string during the GC
+*/
+#define STRESS_LOG_VA(dprintfLevel,msg) do {                                                        \
+            if (StressLog::LogOn(LF_GC, LL_ALWAYS))                                                 \
+                StressLog::LogMsg(LL_ALWAYS, LF_ALWAYS|(dprintfLevel<<16)|LF_GC, StressLogMsg msg); \
+            LOGALWAYS(msg);                                                                         \
+            } while(0)
+
 #define STRESS_LOG_WRITE(facility, level, msg, ...) do {                                      \
             if (StressLog::StressLogOn(facility, level))                                      \
                 StressLog::LogMsgOL(facility, level, msg, __VA_ARGS__);                       \
