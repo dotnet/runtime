@@ -3,6 +3,7 @@
 
 using System.Configuration.Internal;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -32,6 +33,7 @@ namespace System.Configuration
         private ExeConfigurationFileMap _fileMap; // optional file map
         private bool _initComplete;
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal ClientConfigurationHost()
         {
             Host = new InternalConfigHost();
@@ -423,6 +425,7 @@ namespace System.Configuration
             return level;
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal static Configuration OpenExeConfiguration(ConfigurationFileMap fileMap, bool isMachine,
             ConfigurationUserLevel userLevel, string exePath)
         {

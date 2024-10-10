@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Configuration
 {
@@ -29,6 +30,7 @@ namespace System.Configuration
         }
 
         // Add a section definition update to the correct location update.
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal DefinitionUpdate AddUpdate(OverrideModeSetting overrideMode, bool inheritInChildApps, bool moved,
             string updatedXml, SectionRecord sectionRecord)
         {
