@@ -350,6 +350,7 @@ namespace System
                 // Unspecified component satisfies any required version
                 return true;
             }
+
             return current.Revision >= revision;
         }
     }
