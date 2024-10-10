@@ -263,8 +263,8 @@ namespace System.Tests
 
             Assert.False(isOSVersionAtLeast(current.Major + 1, current.Minor, current.Build, current.Revision));
             Assert.False(isOSVersionAtLeast(current.Major, current.Minor + 1, current.Build, current.Revision));
-            Assert.Equal(current.Build < 0, isOSVersionAtLeast(current.Major, current.Minor, current.Build + 1, current.Revision));
-            Assert.Equal(current.Revision < 0, isOSVersionAtLeast(current.Major, current.Minor, current.Build, current.Revision + 1));
+            Assert.Equal(isCurrentOS && current.Build < 0, isOSVersionAtLeast(current.Major, current.Minor, current.Build + 1, current.Revision));
+            Assert.Equal(isCurrentOS && current.Revision < 0, isOSVersionAtLeast(current.Major, current.Minor, current.Build, current.Revision + 1));
 
             Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor, current.Build, current.Revision));
 
@@ -280,7 +280,7 @@ namespace System.Tests
 
             Assert.False(isOSVersionAtLeast(current.Major + 1, current.Minor, current.Build));
             Assert.False(isOSVersionAtLeast(current.Major, current.Minor + 1, current.Build));
-            Assert.Equal(current.Build < 0, isOSVersionAtLeast(current.Major, current.Minor, current.Build + 1));
+            Assert.Equal(isCurrentOS && current.Build < 0, isOSVersionAtLeast(current.Major, current.Minor, current.Build + 1));
 
             Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor, current.Build));
 
