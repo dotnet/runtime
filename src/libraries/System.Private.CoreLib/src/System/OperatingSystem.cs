@@ -331,17 +331,16 @@ namespace System
             {
                 return current.Major > major;
             }
-            if (current.Minor != minor)
+            if (current.Minor >= 0 && current.Minor != minor)
             {
                 return current.Minor > minor;
             }
-            if (current.Build != build)
+            if (current.Build >= 0 && current.Build != build)
             {
                 return current.Build > build;
             }
 
-            return current.Revision >= revision
-                || (current.Revision == -1 && revision == 0); // it is unavailable on OSX and Environment.OSVersion.Version.Revision returns -1
+            return current.Revision < 0 || current.Revision >= revision;
         }
     }
 }
