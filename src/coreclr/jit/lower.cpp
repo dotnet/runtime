@@ -2928,7 +2928,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
             BlockRange().InsertBefore(controlExpr, startNonGCNode);
             if (!call->IsTailCall())
             {
-                BlockRange().InsertAfter(call, stopNonGCNode);
+                BlockRange().InsertBefore(call, stopNonGCNode);
             }
         }
 #endif
