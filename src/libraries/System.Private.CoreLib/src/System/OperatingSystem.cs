@@ -335,13 +335,23 @@ namespace System
             {
                 return current.Minor > minor;
             }
+            if (current.Build < 0)
+            {
+                // Unspecified component satisfies any required version
+                return true;
+            }
             if (current.Build != build)
             {
                 return current.Build > build;
             }
 
-            return current.Revision >= revision
-                || (current.Revision == -1 && revision == 0); // it is unavailable on OSX and Environment.OSVersion.Version.Revision returns -1
+            if (current.Revision < 0)
+            {
+                // Unspecified component satisfies any required version
+                return true;
+            }
+
+            return current.Revision >= revision;
         }
     }
 }
