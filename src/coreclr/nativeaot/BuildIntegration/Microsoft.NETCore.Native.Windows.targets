@@ -47,6 +47,9 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
       <NativeLibrary Include="$(IlcSdkPath)$(StandaloneGCSupportName)$(LibrarySuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)zlibstatic$(LibFileExt)" />
+      <NativeLibrary Include="$(IlcSdkPath)brotlicommon$(LibFileExt)" />
+      <NativeLibrary Include="$(IlcSdkPath)brotlienc$(LibFileExt)" />
+      <NativeLibrary Include="$(IlcSdkPath)brotlidec$(LibFileExt)" />
     </ItemGroup>
 
     <ItemGroup>
