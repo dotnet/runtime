@@ -1948,8 +1948,15 @@ namespace Mono.Linker.Steps
 
 			var typeOrigin = new MessageOrigin (type);
 
-			foreach (Action<TypeDefinition> handleMarkType in MarkContext.MarkTypeActions)
-				handleMarkType (type);
+			if (MarkContext.MarkTypeActions.Count > 0) {
+				foreach (Action<TypeDefinition> handleMarkType in MarkContext.MarkTypeActions)
+					handleMarkType (type);
+
+				if (Context.HasCustomMarkHandler) {
+					// Rebuild type info for the type in case a mark action added new methods.
+					Annotations.TypeMapInfo.MapType (type);
+				}
+			}
 
 			MarkType (type.BaseType, new DependencyInfo (DependencyKind.BaseType, type), typeOrigin);
 
