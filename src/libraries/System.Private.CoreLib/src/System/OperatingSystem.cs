@@ -345,7 +345,12 @@ namespace System
                 return current.Build > build;
             }
 
-            return current.Revision < 0 || current.Revision >= revision;
+            if (current.Revision < 0)
+            {
+                // Unspecified component satisfies any required version
+                return true;
+            }
+            return current.Revision >= revision;
         }
     }
 }
