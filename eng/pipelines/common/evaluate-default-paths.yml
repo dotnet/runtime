@@ -203,6 +203,12 @@ jobs:
       - src/coreclr/pal/*
       - src/coreclr/vm/*
 
+    # We have some GC code variants that only effect GC code.
+    # Only run legs that validate those variants on GC changes.
+    - subset: coreclr_GC
+      include:
+      - src/coreclr/gc/*
+
     #
     # ** WASM **
     # Changes in *only* Wasm.Build.Tests, debugger, or runtime-tests are very

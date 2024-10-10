@@ -192,18 +192,24 @@ struct StressLogMsg
     }
 };
 
-template<>
-void* StressLogMsg::ConvertArgument(float arg) = delete;
-
 #if TARGET_64BIT
 template<>
 inline void* StressLogMsg::ConvertArgument(double arg)
 {
     return (void*)(size_t)(*((uint64_t*)&arg));
 }
+// COMPAT: Convert 32-bit floats to 64-bit doubles.
+template<>
+inline void* StressLogMsg::ConvertArgument(float arg)
+{
+    return StressLogMsg::ConvertArgument((double)arg);
+}
 #else
 template<>
 void* StressLogMsg::ConvertArgument(double arg) = delete;
+
+template<>
+void* StressLogMsg::ConvertArgument(float arg) = delete;
 
 // COMPAT: Truncate 64-bit integer arguments to 32-bit
 template<>
