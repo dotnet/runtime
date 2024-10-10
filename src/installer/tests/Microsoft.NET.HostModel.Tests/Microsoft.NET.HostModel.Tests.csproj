@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
     <ProjectReference Include="..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
+    <ProjectReference Include="..\Microsoft.NET.HostModel.MachO.Tests\Microsoft.NET.HostModel.MachO.Tests.csproj" />
   </ItemGroup>
 
 </Project>
