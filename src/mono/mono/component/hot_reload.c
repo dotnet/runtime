@@ -1898,8 +1898,12 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 		/* TODO: See CMiniMdRW::ApplyDelta for how to drive this.
 		 */
 		switch (func_code) {
-		case ENC_FUNC_DEFAULT: /* default */
+		case ENC_FUNC_DEFAULT: /* default */ {
+			if (!is_addition && token_table == MONO_TABLE_FIELD) {
+				add_member_typedef = log_token;
+			}
 			break;
+		}
 		case ENC_FUNC_ADD_METHOD: {
 			g_assert (token_table == MONO_TABLE_TYPEDEF);
 			add_member_typedef = log_token;
@@ -2023,35 +2027,40 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			break;
 		}
 		case MONO_TABLE_FIELD: {
-			g_assert (is_addition);
 			g_assert (add_member_typedef);
-			if (pass2_context_is_skeleton (ctx, add_member_typedef)) {
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new field 0x%08x to new class 0x%08x", log_token, add_member_typedef);
-				pass2_context_add_skeleton_member (ctx, add_member_typedef, log_token);
-				add_member_parent (base_info, add_member_typedef, log_token);
+			if (is_addition) {
+				if (pass2_context_is_skeleton (ctx, add_member_typedef)) {
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new field 0x%08x to new class 0x%08x", log_token, add_member_typedef);
+					pass2_context_add_skeleton_member (ctx, add_member_typedef, log_token);
+					add_member_parent (base_info, add_member_typedef, log_token);
+				} else {
+					MonoClass *add_member_klass = mono_class_get_checked (image_base, add_member_typedef, error);
+					if (!is_ok (error)) {
+						mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Can't get class with token 0x%08x due to: %s", add_member_typedef, mono_error_get_message (error));
+						return FALSE;
+					}
+
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new field 0x%08x to class %s.%s", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
+
+					uint32_t mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, log_token);
+					uint32_t field_flags = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_FIELD], mapped_token - 1, MONO_FIELD_FLAGS);
+
+					add_field_to_baseline (base_info, delta_info, add_member_klass, log_token);
+
+					/* This actually does slightly more than
+					 * mono_class_setup_basic_field_info and sets MonoClassField:offset
+					 * to -1 to make it easier to spot that the field is special.
+					 */
+					metadata_update_field_setup_basic_info (image_base, base_info, generation, delta_info, add_member_klass, log_token, field_flags);
+					if (!is_ok (error)) {
+						mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_METADATA_UPDATE, "Could not setup field (token 0x%08x) due to: %s", log_token, mono_error_get_message (error));
+						return FALSE;
+					}
+				}
 			} else {
-				MonoClass *add_member_klass = mono_class_get_checked (image_base, add_member_typedef, error);
-				if (!is_ok (error)) {
-					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Can't get class with token 0x%08x due to: %s", add_member_typedef, mono_error_get_message (error));
-					return FALSE;
-				}
-
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new field 0x%08x to class %s.%s", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
-
-				uint32_t mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, log_token);
-				uint32_t field_flags = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_FIELD], mapped_token - 1, MONO_FIELD_FLAGS);
-
-				add_field_to_baseline (base_info, delta_info, add_member_klass, log_token);
-
-				/* This actually does slightly more than
-				 * mono_class_setup_basic_field_info and sets MonoClassField:offset
-				 * to -1 to make it easier to spot that the field is special.
-				 */
-				metadata_update_field_setup_basic_info (image_base, base_info, generation, delta_info, add_member_klass, log_token, field_flags);
-				if (!is_ok (error)) {
-					mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_METADATA_UPDATE, "Could not setup field (token 0x%08x) due to: %s", log_token, mono_error_get_message (error));
-					return FALSE;
-				}
+				MonoClass *add_member_klass = NULL;
+				MonoClassField* field = mono_field_from_token_checked (image_base, add_member_typedef, &add_member_klass, NULL, error);
+				mono_field_resolve_type(field, error);
 			}
 
 			add_member_typedef = 0;
