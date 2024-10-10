@@ -823,7 +823,6 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
-            - WasmTestOnV8
             - WasmTestOnChrome
             - WasmTestOnFirefox
 

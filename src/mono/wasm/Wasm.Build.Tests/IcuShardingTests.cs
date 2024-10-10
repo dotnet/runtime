@@ -35,7 +35,6 @@ public class IcuShardingTests : IcuTestsBase
             { "ja-JP", GetCjkTestedLocales(SundayNames.Japanese) },
             { "sk-SK", GetNocjkTestedLocales(SundayNames.Slovak) }
         }; 
-        // "wasmconsole": https://github.com/dotnet/runtime/issues/82593
         return from aot in boolOptions
             from locale in locales
             select new object[] { config, "wasmbrowser", aot, locale.Key, locale.Value };

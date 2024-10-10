@@ -65,8 +65,6 @@ public class IcuTests : IcuTestsBase
             globalizationMode: invariant ? GlobalizationMode.Invariant : fullIcu ? GlobalizationMode.FullIcu : GlobalizationMode.Sharded,
             extraProperties:
                 // https://github.com/dotnet/runtime/issues/94133: "wasmbrowser" should use WasmIncludeFullIcuData, not BlazorWebAssemblyLoadAllGlobalizationData
-                templateType == "wasmconsole" ?
-                $"<InvariantGlobalization>{invariant}</InvariantGlobalization><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData><RunAOTCompilation>{aot}</RunAOTCompilation>" :
                 $"<InvariantGlobalization>{invariant}</InvariantGlobalization><BlazorWebAssemblyLoadAllGlobalizationData>{fullIcu}</BlazorWebAssemblyLoadAllGlobalizationData><RunAOTCompilation>{aot}</RunAOTCompilation>");
 
     [Theory]
@@ -90,35 +88,25 @@ public class IcuTests : IcuTestsBase
     [MemberData(nameof(IncorrectIcuTestData), parameters: new object[] { "Release" })]
     public void NonExistingCustomFileAssertError(string config, string templateType, string customIcu, bool isFilenameFormCorrect)
     {        
-        bool isBrowser = templateType == "wasmbrowser";
-        string customIcuProperty = isBrowser ? "BlazorIcuDataFileName" : "WasmIcuDataFileName";
+        string customIcuProperty = "BlazorIcuDataFileName";
         string extraProperties = $"<{customIcuProperty}>{customIcu}</{customIcuProperty}>";
     
         (BuildArgs buildArgs, string projectFile) = CreateIcuProject(
             config, templateType, aot: false, "Array.Empty<Locale>()", extraProperties);
         string output = BuildIcuTest(
             buildArgs,
-            isBrowser,
             GlobalizationMode.Custom,
             customIcu,
             expectSuccess: false,
             assertAppBundle: false);
         
-        if (isBrowser)
+        if (isFilenameFormCorrect)
         {
-            if (isFilenameFormCorrect)
-            {
-                Assert.Contains($"Could not find $({customIcuProperty})={customIcu}, or when used as a path relative to the runtime pack", output);
-            }
-            else
-            {
-                Assert.Contains($"File name in $({customIcuProperty}) has to start with 'icudt'.", output);
-            }
+            Assert.Contains($"Could not find $({customIcuProperty})={customIcu}, or when used as a path relative to the runtime pack", output);
         }
         else
         {
-            // https://github.com/dotnet/runtime/issues/102743: console apps should also require "icudt" at the beginning, unify it
-            Assert.Contains($"File in location $({customIcuProperty})={customIcu} cannot be found neither when used as absolute path nor a relative runtime pack path.", output);
+            Assert.Contains($"File name in $({customIcuProperty}) has to start with 'icudt'.", output);
         }
     }
 }

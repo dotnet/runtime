@@ -23,13 +23,13 @@ public class WasmAppBuilderDebugLevelTests : DebugLevelTestsBase
     protected override void SetupProject(string projectId)
     {
         Id = $"{projectId}_{GetRandomId()}";
-        string projectfile = CreateWasmTemplateProject(Id, "wasmconsole");
+        string projectfile = CreateWasmTemplateProject(Id, "wasmbrowser");
         string projectDir = Path.GetDirectoryName(projectfile)!;
-        string mainJs = Path.Combine(projectDir, "main.mjs");
+        string mainJs = Path.Combine(projectDir, "wwwroot", "main.js");
         string mainJsContent = File.ReadAllText(mainJs);
         mainJsContent = mainJsContent
             .Replace("import { dotnet }", "import { dotnet, exit }")
-            .Replace("await runMainAndExit()", "console.log('TestOutput -> WasmDebugLevel: ' + config.debugLevel); exit(0)");
+            .Replace("await runMain()", "console.log('TestOutput -> WasmDebugLevel: ' + config.debugLevel); exit(0)");
         File.WriteAllText(mainJs, mainJsContent);
     }
 

@@ -89,7 +89,6 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
-        - WasmTestOnV8
         - WasmTestOnChrome
 
   # EAT Library tests - only run on linux
