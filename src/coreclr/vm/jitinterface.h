@@ -1022,23 +1022,6 @@ extern "C" const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT];
 
 #endif
 
-#if defined(_DEBUG) && (defined(TARGET_AMD64) || defined(TARGET_X86)) && !defined(TARGET_UNIX)
-typedef struct {
-    void*       pfnRealHelper;
-    const char* helperName;
-    LONG        count;
-    LONG        helperSize;
-} VMHELPCOUNTDEF;
-
-extern "C" VMHELPCOUNTDEF hlpFuncCountTable[CORINFO_HELP_COUNT+1];
-
-void InitJitHelperLogging();
-void WriteJitHelperCountToSTRESSLOG();
-#else
-inline void InitJitHelperLogging() { }
-inline void WriteJitHelperCountToSTRESSLOG() { }
-#endif
-
 // enum for dynamically assigned helper calls
 enum DynamicCorInfoHelpFunc {
 #define JITHELPER(code, pfnHelper, binderId)

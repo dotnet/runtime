@@ -950,8 +950,6 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     s_dwNumInstancesOfLoaderHeaps++;
     m_pEventList                 = NULL;
     m_dwDebugFlags               = LoaderHeapSniffer::InitDebugFlags();
-    m_fPermitStubsWithUnwindInfo = FALSE;
-    m_fStubUnwindInfoUnregistered= FALSE;
 #endif
 
     m_kind = kind;
@@ -977,8 +975,6 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
         FORBID_FAULT;
     }
     CONTRACTL_END
-
-    _ASSERTE(!m_fPermitStubsWithUnwindInfo || m_fStubUnwindInfoUnregistered);
 
     if (m_pRangeList != NULL)
         m_pRangeList->RemoveRanges((void *) this);

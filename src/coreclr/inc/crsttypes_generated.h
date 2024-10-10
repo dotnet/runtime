@@ -102,25 +102,24 @@ enum CrstType
     CrstStressLog = 84,
     CrstStubCache = 85,
     CrstStubDispatchCache = 86,
-    CrstStubUnwindInfoHeapSegments = 87,
-    CrstSyncBlockCache = 88,
-    CrstSyncHashLock = 89,
-    CrstSystemDomain = 90,
-    CrstSystemDomainDelayedUnloadList = 91,
-    CrstThreadIdDispenser = 92,
-    CrstThreadLocalStorageLock = 93,
-    CrstThreadStore = 94,
-    CrstTieredCompilation = 95,
-    CrstTypeEquivalenceMap = 96,
-    CrstTypeIDMap = 97,
-    CrstUMEntryThunkCache = 98,
-    CrstUMEntryThunkFreeListLock = 99,
-    CrstUniqueStack = 100,
-    CrstUnresolvedClassLock = 101,
-    CrstUnwindInfoTableLock = 102,
-    CrstVSDIndirectionCellLock = 103,
-    CrstWrapperTemplate = 104,
-    kNumberOfCrstTypes = 105
+    CrstSyncBlockCache = 87,
+    CrstSyncHashLock = 88,
+    CrstSystemDomain = 89,
+    CrstSystemDomainDelayedUnloadList = 90,
+    CrstThreadIdDispenser = 91,
+    CrstThreadLocalStorageLock = 92,
+    CrstThreadStore = 93,
+    CrstTieredCompilation = 94,
+    CrstTypeEquivalenceMap = 95,
+    CrstTypeIDMap = 96,
+    CrstUMEntryThunkCache = 97,
+    CrstUMEntryThunkFreeListLock = 98,
+    CrstUniqueStack = 99,
+    CrstUnresolvedClassLock = 100,
+    CrstUnwindInfoTableLock = 101,
+    CrstVSDIndirectionCellLock = 102,
+    CrstWrapperTemplate = 103,
+    kNumberOfCrstTypes = 104
 };
 
 #endif // __CRST_TYPES_INCLUDED
@@ -216,9 +215,8 @@ int g_rgCrstLevelMap[] =
     3,          // CrstSigConvert
     4,          // CrstSingleUseLock
     -1,         // CrstStressLog
-    4,          // CrstStubCache
+    3,          // CrstStubCache
     0,          // CrstStubDispatchCache
-    3,          // CrstStubUnwindInfoHeapSegments
     2,          // CrstSyncBlockCache
     0,          // CrstSyncHashLock
     14,         // CrstSystemDomain
@@ -328,7 +326,6 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstStressLog",
     "CrstStubCache",
     "CrstStubDispatchCache",
-    "CrstStubUnwindInfoHeapSegments",
     "CrstSyncBlockCache",
     "CrstSyncHashLock",
     "CrstSystemDomain",
