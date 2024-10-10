@@ -22,7 +22,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         _defaultTargetFramework = defaultTargetFramework;
         IsFingerprintingSupported = true;
     }
-    public override string BundleDirName { get { return "wwwroot"; } }
+    protected override string BundleDirName { get { return "wwwroot"; } }
 
     protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptionsBase assertOptions)
         => new SortedDictionary<string, bool>()

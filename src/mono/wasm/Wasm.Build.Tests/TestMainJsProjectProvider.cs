@@ -15,7 +15,7 @@ public class TestMainJsProjectProvider : ProjectProviderBase
     public TestMainJsProjectProvider(ITestOutputHelper _testOutput, string? _projectDir = null)
             : base(_testOutput, _projectDir)
     { }
-    public override string BundleDirName { get { return "AppBundle"; } }
+    protected override string BundleDirName { get { return "AppBundle"; } }
 
     // no fingerprinting
     protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptionsBase assertOptions)

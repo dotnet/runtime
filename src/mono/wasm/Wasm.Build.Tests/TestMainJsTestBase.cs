@@ -17,7 +17,7 @@ public abstract class TestMainJsTestBase : BuildTestBase
     protected TestMainJsTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
                 : base(new TestMainJsProjectProvider(output), output, buildContext)
     {
-        _provider = GetProvider<TestMainJsProjectProvider>();
+        _provider = new TestMainJsProjectProvider(output, _projectDir);
     }
 
     public (string projectDir, string buildOutput) BuildProject(BuildArgs buildArgs,

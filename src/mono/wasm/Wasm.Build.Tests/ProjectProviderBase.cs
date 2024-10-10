@@ -36,7 +36,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public string? ProjectDir { get; set; } = _projectDir;
     protected ITestOutputHelper _testOutput = new TestOutputWrapper(_testOutput);
     protected BuildEnvironment _buildEnv = BuildTestBase.s_buildEnv;
-    public virtual string BundleDirName { get { return "AppBundle"; } }
+    protected abstract string BundleDirName { get; }
 
     public bool IsFingerprintingSupported { get; protected set; }
 

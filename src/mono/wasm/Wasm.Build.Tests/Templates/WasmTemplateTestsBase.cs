@@ -22,7 +22,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     public WasmTemplateTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(new WasmSdkBasedProjectProvider(output, DefaultTargetFramework), output, buildContext)
     {
-        _provider = GetProvider<WasmSdkBasedProjectProvider>();
+        _provider = new WasmSdkBasedProjectProvider(output, DefaultTargetFramework);
     }
     
     public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, bool addFrameworkArg = false, string? extraProperties = null)
