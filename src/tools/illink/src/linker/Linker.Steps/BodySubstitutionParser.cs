@@ -117,7 +117,9 @@ namespace Mono.Linker.Steps
 
 			string init = GetAttribute (fieldNav, "initialize");
 			if (init?.ToLowerInvariant () == "true") {
-				_substitutionInfo.SetFieldInit (field);
+				// We would need to also mess with the cctor of the type to set the field to this value,
+				// and doing so correctly is difficult.
+				throw new NotSupportedException ();
 			}
 		}
 

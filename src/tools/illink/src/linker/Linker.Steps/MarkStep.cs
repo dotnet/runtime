@@ -1714,11 +1714,6 @@ namespace Mono.Linker.Steps
 				};
 				MarkStaticConstructor (parent, cctorReason, fieldOrigin);
 			}
-
-			if (Annotations.HasSubstitutedInit (field)) {
-				Annotations.SetPreservedStaticCtor (parent);
-				Annotations.SetSubstitutedInit (parent);
-			}
 		}
 
 		void ProcessAnalysisAnnotationsForField (FieldDefinition field, DependencyKind dependencyKind, in MessageOrigin origin)
