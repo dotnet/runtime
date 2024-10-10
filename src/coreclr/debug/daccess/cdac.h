@@ -7,7 +7,7 @@
 class CDAC final
 {
 public: // static
-    static CDAC Create(uint64_t descriptorAddr, ICorDebugDataTarget *pDataTarget);
+    static CDAC Create(uint64_t descriptorAddr, ICorDebugDataTarget *pDataTarget, IUnknown* legacyImpl);
 
 public:
     CDAC() = default;
@@ -53,7 +53,7 @@ public:
     IUnknown* SosInterface();
 
 private:
-    CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target);
+    CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target, IUnknown* legacyImpl);
 
 private:
     HMODULE m_module;

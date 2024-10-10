@@ -43,7 +43,7 @@ namespace
     }
 }
 
-CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target)
+CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown* legacyImpl)
 {
     HMODULE cdacLib;
     if (!TryLoadCDACLibrary(&cdacLib))
@@ -59,10 +59,10 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target)
         return {};
     }
 
-    return CDAC{cdacLib, handle, target};
+    return CDAC{cdacLib, handle, target, legacyImpl};
 }
 
-CDAC::CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target)
+CDAC::CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target, IUnknown* legacyImpl)
     : m_module{module}
     , m_cdac_handle{handle}
     , m_target{target}
@@ -72,7 +72,7 @@ CDAC::CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target)
     m_target->AddRef();
     decltype(&cdac_reader_get_sos_interface) getSosInterface = reinterpret_cast<decltype(&cdac_reader_get_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_get_sos_interface"));
     _ASSERTE(getSosInterface != nullptr);
-    getSosInterface(m_cdac_handle, &m_sos);
+    getSosInterface(m_cdac_handle, legacyImpl, &m_sos);
 }
 
 CDAC::~CDAC()
