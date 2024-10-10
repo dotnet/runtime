@@ -64,6 +64,28 @@ namespace System.Collections.Generic
 
         internal const int StackAllocThreshold = 100;
 
+        // If Count is below or equal InternalIndexOfCountThreshold, InternalIndexOf returns a index
+        // referring to the position in a full tree:
+        //
+        //    0
+        //  1   2
+        // 3 4 5 6
+        // .......
+        //
+        // If Count is above InternalIndexOfCountThreshold,  it simply returns the index if it is enumerated
+        // Note that this is not used in SortedSet.TreeSubSet
+        //
+        // Some values for threshold, their respective max height and count of all indices of a full tree:
+        //
+        // | Threshold | MaxHeight | Full tree count
+        // |        30 |         8 |             511
+        // |        62 |        10 |            2047
+        // |       126 |        12 |            8191
+        // |       254 |        14 |           32767
+        // |       510 |        16 |          131071
+        // |      1022 |        18 |          524287
+        private const int InternalIndexOfCountThreshold = 254;
+
         #endregion
 
         #region Constructors
@@ -714,30 +736,66 @@ namespace System.Collections.Generic
         /// <returns>The item's zero-based index in this set, or -1 if it isn't found.</returns>
         /// <remarks>
         /// <para>
-        /// This implementation is based off of http://en.wikipedia.org/wiki/Binary_Tree#Methods_for_storing_binary_trees.
+        /// This implementation is based off of http://en.wikipedia.org/wiki/Binary_Tree#Methods_for_storing_binary_trees
+        /// if Count is not greater than InternalIndexOfCountThreshold, otherwise it returns the index according to the order of the set's elements.
         /// </para>
         /// <para>
         /// This method is used with the <see cref="BitHelper"/> class. Note that this implementation is
         /// completely different from <see cref="TreeSubSet"/>'s, and that the two should not be mixed.
+        /// If this method is overridden, <see cref="MaxInternalIndexOfPlusOne"/> needs to be changed accordingly as well.
         /// </para>
         /// </remarks>
         internal virtual int InternalIndexOf(T item)
         {
             Node? current = root;
             int count = 0;
-            while (current != null)
-            {
-                int order = comparer.Compare(item, current.Item);
-                if (order == 0)
-                {
-                    return count;
-                }
 
-                current = order < 0 ? current.Left : current.Right;
-                count = order < 0 ? (2 * count + 1) : (2 * count + 2);
+            if (Count > InternalIndexOfCountThreshold)
+            {
+                foreach (T i in this)
+                {
+                    int order = comparer.Compare(item, i);
+                    if (order == 0)
+                    {
+                        return count;
+                    }
+                    else if (order < 0)
+                    {
+                        break;
+                    }
+                    count++;
+                }
+            }
+            else
+            {
+                while (current != null)
+                {
+                    int order = comparer.Compare(item, current.Item);
+                    if (order == 0)
+                    {
+                        return count;
+                    }
+
+                    current = order < 0 ? current.Left : current.Right;
+                    count = order < 0 ? (2 * count + 1) : (2 * count + 2);
+                }
             }
 
             return -1;
+        }
+
+        internal virtual int MaxInternalIndexOfPlusOne()
+        {
+            if (Count > InternalIndexOfCountThreshold)
+            {
+                return Count;
+            }
+
+            // The maximum height of a red-black tree is 2*lg(n+1).
+            // See page 264 of "Introduction to algorithms" by Thomas H. Cormen
+            int maximumHeight = 2 * Log2(Count + 1);
+            // Maximum count (of a full tree of height H) is M = 2^0 + 2^1 + ... + 2^(H-1) = 2^H - 1
+            return (1 << maximumHeight) - 1;
         }
 
         internal Node? FindRange(T? from, T? to) => FindRange(from, to, lowerBoundActive: true, upperBoundActive: true);
@@ -1385,8 +1443,8 @@ namespace System.Collections.Generic
                 return result;
             }
 
-            int originalLastIndex = Count;
-            int intArrayLength = BitHelper.ToIntArrayLength(originalLastIndex);
+            int maxCount = MaxInternalIndexOfPlusOne();
+            int intArrayLength = BitHelper.ToIntArrayLength(maxCount);
 
             Span<int> span = stackalloc int[StackAllocThreshold];
             BitHelper bitHelper = intArrayLength <= StackAllocThreshold ?
@@ -1403,6 +1461,7 @@ namespace System.Collections.Generic
                 int index = InternalIndexOf(item);
                 if (index >= 0)
                 {
+                    Debug.Assert(index < maxCount);
                     if (!bitHelper.IsMarked(index))
                     {
                         // item hasn't been seen yet

@@ -304,6 +304,11 @@ namespace System.Collections.Generic
                 return -1;
             }
 
+            internal override int MaxInternalIndexOfPlusOne()
+            {
+                return Count;
+            }
+
             /// <summary>
             /// Checks whether this subset is out of date, and updates it if necessary.
             /// </summary>
