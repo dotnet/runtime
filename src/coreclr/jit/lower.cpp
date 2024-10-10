@@ -5694,23 +5694,18 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     BlockRange().Remove(thisArgNode);
     BlockRange().InsertBefore(call, newThisAddr, newThis, thisArgNode);
 
-#if !defined(TARGET_XARCH)
+//#if !defined(TARGET_XARCH)
     if (comp->GetInterruptible())
     {
         // If the target's backend doesn't support indirect calls with immediate operands (contained)
         // and the method is marked as interruptible, we need to insert a GT_START_NONGC before the call.
         // to keep the delegate object alive while we're obtaining the function pointer.
-        GenTree* startNonGCNode = new (comp, GT_START_NONGC) GenTree(GT_START_NONGC, TYP_VOID);
-        GenTree* stopNonGCNode  = new (comp, GT_STOP_NONGC) GenTree(GT_STOP_NONGC, TYP_VOID);
-        BlockRange().InsertAfter(base, startNonGCNode);
-        /*if (!call->IsTailCall())
-        {
-            // We don't have to insert the STOP_NONGC node for tail calls, as the call itself is
-            // a safe point and effectively the last node.
-            BlockRange().InsertAfter(call, stopNonGCNode);
-        }*/
+        //GenTree* startNonGCNode = new (comp, GT_START_NONGC) GenTree(GT_START_NONGC, TYP_VOID);
+        //GenTree* stopNonGCNode  = new (comp, GT_STOP_NONGC) GenTree(GT_STOP_NONGC, TYP_VOID);
+        //BlockRange().InsertAfter(base, startNonGCNode);
+        //BlockRange().InsertAfter(call, stopNonGCNode);
     }
-#endif
+//#endif
 
     ContainCheckIndir(newThis->AsIndir());
 
