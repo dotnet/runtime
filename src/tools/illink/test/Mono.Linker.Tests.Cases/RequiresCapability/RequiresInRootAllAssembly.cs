@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -54,6 +54,17 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			public static int Property { get; set; }
 
 			public static event EventHandler PropertyChanged;
+		}
+
+		[AttributeWithRequires]
+		[ExpectedWarning ("IL2026")]
+		public sealed class ClassWithAttributeWithRequires
+		{
+		}
+
+		[RequiresUnreferencedCode ("--AttributeWithRequiresAttribute--")]
+		public sealed class AttributeWithRequiresAttribute : Attribute
+		{
 		}
 	}
 }

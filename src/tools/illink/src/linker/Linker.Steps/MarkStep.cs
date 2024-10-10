@@ -326,8 +326,6 @@ namespace Mono.Linker.Steps
 			}
 
 			MarkTypeVisibleToReflection (type, reason, origin);
-			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type), origin);
-			MarkTypeSpecialCustomAttributes (type, origin);
 
 			if (type.HasInterfaces) {
 				foreach (InterfaceImplementation iface in type.Interfaces)
