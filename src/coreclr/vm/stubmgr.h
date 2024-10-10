@@ -475,8 +475,6 @@ class StubLinkStubManager : public StubManager
         return PTR_RangeList(addr);
     }
 
-    void RemoveStubRange(BYTE* start, UINT length);
-
     virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
 
     virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
