@@ -1066,19 +1066,12 @@ void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
 
     // Since ADDIW use sign extension for immediate
     // we have to adjust higher 19 bit loaded by LUI
-    // for case when low part is bigger than 0x800.
+    // for case when the low 12-bit part is negative.
     UINT32 high19 = (high31 + 0x800) >> 12;
 
     EmitLuImm(reg, high19);
-    if (high31 & 0x800)
-    {
-        // EmitAddImm does not allow negative immediate values, so use EmitSubImm.
-        EmitSubImm(reg, reg, (~high31 + 1) & 0xFFF);
-    }
-    else
-    {
-        EmitAddImm(reg, reg, high31 & 0x7FF);
-    }
+    int low12 = int(high31) << (32-12) >> (32-12);
+    EmitAddImm(reg, reg, low12);
 
     // And load remaining part by batches of 11 bits size.
     INT32 remainingShift = msb - 30;
@@ -1110,10 +1103,6 @@ void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
     }
 }
 
-void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)
-{
-    Emit32(0x00000067 | (regTarget << 15));
-}
 
 void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cFpRegArgs, unsigned short cbStackSpace)
 {
@@ -1186,8 +1175,9 @@ void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cFpReg
     EmitStore(RegFp, RegSp, cbStackSpace);
     EmitStore(RegRa, RegSp, cbStackSpace + sizeof(void*));
 
-    // 3. Set the frame pointer
-    EmitMovReg(RegFp, RegSp);
+    // 3. Set the frame pointer to the Canonical Frame Address or CFA, which is the stack pointer value on entry to the
+    // current procedure
+    EmitAddImm(RegFp, RegSp, totalPaddedFrameSize);
 
     // 4. Store floating point argument registers
     _ASSERTE(cFpRegArgs <= 8);
@@ -1282,51 +1272,78 @@ static unsigned BTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsig
     return opcode | (immLo4 << 8) | (funct3 << 12) | (rs1 << 15) | (rs2 << 20) | (immHi6 << 25) | (immLo1 << 7) | (immHi1 << 31);
 }
 
+static const char* intRegAbiNames[] = {
+    "zero", "ra", "sp", "gp", "tp",
+    "t0", "t1", "t2",
+    "fp", "s1",
+    "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
+    "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11",
+    "t3", "t4", "t5", "t6"
+};
+
+static const char* fpRegAbiNames[] = {
+    "ft0", "ft1", "ft2", "ft3", "ft4", "ft5", "ft6", "ft7",
+    "fs0", "fs1",
+    "fa0", "fa1", "fa2", "fa3", "fa4", "fa5", "fa6", "fa7",
+    "fs2", "fs3", "fs4", "fs5", "fs6", "fs7", "fs8", "fs9", "fs10", "fs11",
+    "ft8", "ft9", "ft10", "ft11"
+};
+
+void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)
+{
+    Emit32(0x00000067 | (regTarget << 15));
+    LOG((LF_STUBS, LL_EVERYTHING, "jalr zero, 0(%s)\n", intRegAbiNames[regTarget]));
+}
+
 void StubLinkerCPU::EmitLoad(IntReg dest, IntReg srcAddr, int offset)
 {
     Emit32(ITypeInstr(0x3, 0x3, dest, srcAddr, offset));  // ld
+    LOG((LF_STUBS, LL_EVERYTHING, "ld %s, %i(%s)\n", intRegAbiNames[dest], offset, intRegAbiNames[srcAddr]));
 }
 void StubLinkerCPU::EmitLoad(FloatReg dest, IntReg srcAddr, int offset)
 {
     Emit32(ITypeInstr(0x7, 0x3, dest, srcAddr, offset));  // fld
+    LOG((LF_STUBS, LL_EVERYTHING, "fld %s, %i(%s)\n", fpRegAbiNames[dest], offset, intRegAbiNames[srcAddr]));
 }
 
 void StubLinkerCPU:: EmitStore(IntReg src, IntReg destAddr, int offset)
 {
     Emit32(STypeInstr(0x23, 0x3, destAddr, src, offset));  // sd
+    LOG((LF_STUBS, LL_EVERYTHING, "sd %s, %i(%s)\n", intRegAbiNames[src], offset, intRegAbiNames[destAddr]));
 }
 void StubLinkerCPU::EmitStore(FloatReg src, IntReg destAddr, int offset)
 {
     Emit32(STypeInstr(0x27, 0x3, destAddr, src, offset));  // fsd
+    LOG((LF_STUBS, LL_EVERYTHING, "fsd %s, %i(%s)\n", fpRegAbiNames[src], offset, intRegAbiNames[destAddr]));
 }
 
 void StubLinkerCPU::EmitMovReg(IntReg Xd, IntReg Xm)
 {
     EmitAddImm(Xd, Xm, 0);
 }
-void StubLinkerCPU::EmitMovReg(FloatReg dest, FloatReg source)
+void StubLinkerCPU::EmitSubImm(IntReg Xd, IntReg Xn, int value)
 {
-    Emit32(RTypeInstr(0x53, 0, 0x11, dest, source, source));  // fsgnj.d
+    EmitAddImm(Xd, Xn, -value);
 }
-
-void StubLinkerCPU::EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value)
-{
-    _ASSERTE(value <= 0x800);
-    EmitAddImm(Xd, Xn, ~value + 0x1);
-}
-void StubLinkerCPU::EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value)
+void StubLinkerCPU::EmitAddImm(IntReg Xd, IntReg Xn, int value)
 {
     Emit32(ITypeInstr(0x13, 0, Xd, Xn, value));  // addi
+    if (value)
+        LOG((LF_STUBS, LL_EVERYTHING, "addi %s, %s, %i\n", intRegAbiNames[Xd], intRegAbiNames[Xn], value));
+    else
+        LOG((LF_STUBS, LL_EVERYTHING, "mv %s, %s\n", intRegAbiNames[Xd], intRegAbiNames[Xn]));
 }
 void StubLinkerCPU::EmitSllImm(IntReg Xd, IntReg Xn, unsigned int value)
 {
     _ASSERTE(!(value >> 6));
     Emit32(ITypeInstr(0x13, 0x1, Xd, Xn, value));  // slli
+    LOG((LF_STUBS, LL_EVERYTHING, "slli %s, %s, %u\n", intRegAbiNames[Xd], intRegAbiNames[Xn], value));
 }
 void StubLinkerCPU::EmitLuImm(IntReg Xd, unsigned int value)
 {
     _ASSERTE(value <= 0xFFFFF);
     Emit32((DWORD)(0x00000037 | (value << 12) | (Xd << 7))); // lui Xd, value
+    LOG((LF_STUBS, LL_EVERYTHING, "lui %s, %u\n", intRegAbiNames[Xd], value));
 }
 
 void StubLinkerCPU::Init()
@@ -1334,10 +1351,35 @@ void StubLinkerCPU::Init()
     new (gBranchIF) BranchInstructionFormat();
 }
 
+static bool InRegister(UINT16 ofs)
+{
+    _ASSERTE(ofs != ShuffleEntry::SENTINEL);
+    return (ofs & ShuffleEntry::REGMASK);
+}
+static bool IsRegisterFloating(UINT16 ofs)
+{
+    _ASSERTE(InRegister(ofs));
+    return (ofs & ShuffleEntry::FPREGMASK);
+}
+
+static const int argRegBase = 10;  // first argument register: a0, fa0
+static const IntReg lastIntArgReg = argRegBase + NUM_ARGUMENT_REGISTERS - 1; // a7
+static const IntReg intTempReg = 29; // t4
+
+static int GetRegister(UINT16 ofs)
+{
+    _ASSERTE(InRegister(ofs));
+    return (ofs & ShuffleEntry::OFSREGMASK) + argRegBase;
+}
+static unsigned GetStackSlot(UINT16 ofs)
+{
+    _ASSERTE(!InRegister(ofs));
+    return ofs;
+}
+
 // Emits code to adjust arguments for static delegate target.
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 {
-    static const int argRegBase = 10;  // first argument register: a0, fa0
     static const IntReg t6 = 31, t5 = 30, a0 = argRegBase + 0;
     // On entry a0 holds the delegate instance. Look up the real target address stored in the MethodPtrAux
     // field and saved in t6. Tailcall to the target method after re-arranging the arguments
@@ -1345,113 +1387,38 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     // load the indirection cell into t5 used by ResolveWorkerAsmStub
     EmitAddImm(t5, a0, DelegateObject::GetOffsetOfMethodPtrAux());
 
-    int delay_index[8] = {-1};
-    bool is_store = false;
-    UINT16 index = 0;
-    int i = 0;
-    for (ShuffleEntry* pEntry = pShuffleEntryArray; pEntry->srcofs != ShuffleEntry::SENTINEL; pEntry++, i++)
+    const ShuffleEntry* entry = pShuffleEntryArray;
+    // Shuffle integer argument registers
+    for (; entry->srcofs != ShuffleEntry::SENTINEL && InRegister(entry->dstofs) && InRegister(entry->srcofs); ++entry)
     {
-        if (pEntry->srcofs & ShuffleEntry::REGMASK)
+        _ASSERTE(!IsRegisterFloating(entry->srcofs));
+        _ASSERTE(!IsRegisterFloating(entry->dstofs));
+        IntReg src = GetRegister(entry->srcofs);
+        IntReg dst = GetRegister(entry->dstofs);
+        _ASSERTE((src - dst) == 1 || (src - dst) == 2);
+        EmitMovReg(dst, src);
+    }
+
+    if (entry->srcofs != ShuffleEntry::SENTINEL)
+    {
+        _ASSERTE(!IsRegisterFloating(entry->dstofs));
+        _ASSERTE(GetStackSlot(entry->srcofs) == 0);
+        _ASSERTE(lastIntArgReg == GetRegister(entry->dstofs));
+        EmitLoad(lastIntArgReg, RegSp, 0);
+        ++entry;
+
+        // All further shuffling is (stack) <- (stack+1)
+        for (unsigned dst = 0; entry->srcofs != ShuffleEntry::SENTINEL; ++entry, ++dst)
         {
-            // Source in register, destination in register
-
-            // Both the srcofs and dstofs must be of the same kind of registers - float or general purpose.
-            // If source is present in register then destination may be a stack-slot.
-            _ASSERTE(((pEntry->dstofs & ShuffleEntry::FPREGMASK) == (pEntry->srcofs & ShuffleEntry::FPREGMASK)) || !(pEntry->dstofs & (ShuffleEntry::FPREGMASK | ShuffleEntry::REGMASK)));
-            _ASSERTE((pEntry->dstofs & ShuffleEntry::OFSREGMASK) <= 8);//should amend for offset!
-            _ASSERTE((pEntry->srcofs & ShuffleEntry::OFSREGMASK) <= 8);
-
-            if (pEntry->srcofs & ShuffleEntry::FPREGMASK)
-            {
-                int j = 1;
-                while (pEntry[j].srcofs & ShuffleEntry::FPREGMASK)
-                {
-                    j++;
-                }
-                assert((pEntry->dstofs - pEntry->srcofs) == index);
-                assert(8 > index);
-
-                int tmp_reg = 0; // ft0.
-                ShuffleEntry* tmp_entry = pShuffleEntryArray + delay_index[0];
-                while (index)
-                {
-                    EmitLoad(FloatReg(tmp_reg), RegSp, tmp_entry->srcofs * sizeof(void*));
-                    tmp_reg++;
-                    index--;
-                    tmp_entry++;
-                }
-
-                j -= 1;
-                tmp_entry = pEntry + j;
-                i += j;
-                while (pEntry[j].srcofs & ShuffleEntry::FPREGMASK)
-                {
-                    FloatReg src = (pEntry[j].srcofs & ShuffleEntry::OFSREGMASK) + argRegBase;
-                    if (pEntry[j].dstofs & ShuffleEntry::FPREGMASK) {
-                        FloatReg dst = (pEntry[j].dstofs & ShuffleEntry::OFSREGMASK) + argRegBase;
-                        EmitMovReg(dst, src);
-                    }
-                    else
-                    {
-                        EmitStore(src, RegSp, pEntry[j].dstofs * sizeof(void*));
-                    }
-                    j--;
-                }
-
-                assert(tmp_reg <= 7);
-                while (tmp_reg > 0)
-                {
-                    tmp_reg--;
-                    EmitMovReg(FloatReg(index + argRegBase), FloatReg(tmp_reg));
-                    index++;
-                }
-                index = 0;
-                pEntry = tmp_entry;
-            }
-            else
-            {
-                assert(pEntry->dstofs & ShuffleEntry::REGMASK);
-                IntReg dst = (pEntry->dstofs & ShuffleEntry::OFSREGMASK) + argRegBase;
-                IntReg src = (pEntry->srcofs & ShuffleEntry::OFSREGMASK) + argRegBase;
-                assert(dst < src);
-                EmitMovReg(dst, src);
-            }
-        }
-        else if (pEntry->dstofs & ShuffleEntry::REGMASK)
-        {
-            // source must be on the stack
-            _ASSERTE(!(pEntry->srcofs & ShuffleEntry::REGMASK));
-
-            int dstReg = (pEntry->dstofs & ShuffleEntry::OFSREGMASK) + argRegBase;
-            int srcOfs = (pEntry->srcofs & ShuffleEntry::OFSMASK) * sizeof(void*);
-            if (pEntry->dstofs & ShuffleEntry::FPREGMASK)
-            {
-                if (!is_store)
-                {
-                    delay_index[index++] = i;
-                    continue;
-                }
-                EmitLoad(FloatReg(dstReg), RegSp, srcOfs);
-            }
-            else
-            {
-                EmitLoad(IntReg(dstReg), RegSp, srcOfs);
-            }
-        }
-        else
-        {
-            // source & dest must be on the stack
-            _ASSERTE(!(pEntry->srcofs & ShuffleEntry::REGMASK));
-            _ASSERTE(!(pEntry->dstofs & ShuffleEntry::REGMASK));
-
-            IntReg t4 = 29;
-            EmitLoad(t4, RegSp, pEntry->srcofs * sizeof(void*));
-            EmitStore(t4, RegSp, pEntry->dstofs * sizeof(void*));
+            unsigned src = dst + 1;
+            _ASSERTE(src == GetStackSlot(entry->srcofs));
+            _ASSERTE(dst == GetStackSlot(entry->dstofs));
+            EmitLoad (intTempReg, RegSp, src * sizeof(void*));
+            EmitStore(intTempReg, RegSp, dst * sizeof(void*));
         }
     }
-    // Tailcall to target
-    // jalr x0, 0(t6)
-    EmitJumpRegister(t6);
+
+    EmitJumpRegister(t6); // Tailcall to target
 }
 
 // Emits code to adjust arguments for static delegate target.
@@ -1461,26 +1428,24 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
 
     for (ShuffleEntry* pEntry = pShuffleEntryArray; pEntry->srcofs != ShuffleEntry::SENTINEL; pEntry++)
     {
-        _ASSERTE(pEntry->dstofs & ShuffleEntry::REGMASK);
-        _ASSERTE(pEntry->srcofs & ShuffleEntry::REGMASK);
-        _ASSERTE(!(pEntry->dstofs & ShuffleEntry::FPREGMASK));
-        _ASSERTE(!(pEntry->srcofs & ShuffleEntry::FPREGMASK));
+        _ASSERTE(!IsRegisterFloating(pEntry->srcofs));
+        _ASSERTE(!IsRegisterFloating(pEntry->dstofs));
         _ASSERTE(pEntry->dstofs != ShuffleEntry::HELPERREG);
         _ASSERTE(pEntry->srcofs != ShuffleEntry::HELPERREG);
-
-        EmitMovReg(IntReg((pEntry->dstofs & ShuffleEntry::OFSREGMASK) + 10), IntReg((pEntry->srcofs & ShuffleEntry::OFSREGMASK) + 10));
+        EmitMovReg(IntReg(GetRegister(pEntry->dstofs)), IntReg(GetRegister(pEntry->srcofs)));
     }
 
     MetaSig msig(pSharedMD);
     ArgIterator argit(&msig);
 
+    static const IntReg a0 = argRegBase + 0;
     if (argit.HasParamType())
     {
         ArgLocDesc sInstArgLoc;
         argit.GetParamTypeLoc(&sInstArgLoc);
         int regHidden = sInstArgLoc.m_idxGenReg;
         _ASSERTE(regHidden != -1);
-        regHidden += 10;//NOTE: RISCV64 should start at a0=10;
+        regHidden += argRegBase;//NOTE: RISCV64 should start at a0=10;
 
         if (extraArg == NULL)
         {
@@ -1488,8 +1453,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
             {
                 // Unboxing stub case
                 // Fill param arg with methodtable of this pointer
-                // ld regHidden, a0, 0
-                EmitLoad(IntReg(regHidden), IntReg(10));
+                EmitLoad(IntReg(regHidden), a0);
             }
         }
         else
@@ -1502,8 +1466,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
     {
         // Unboxing stub case
         // Address of the value type is address of the boxed instance plus sizeof(MethodDesc*).
-        //  addi a0, a0, sizeof(MethodDesc*)
-        EmitAddImm(IntReg(10), IntReg(10), sizeof(MethodDesc*));
+        EmitAddImm(a0, a0, sizeof(MethodDesc*));
     }
 
     // Tail call the real target.
@@ -1563,13 +1526,6 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     while (p < pStart + cbAligned) { *(DWORD*)p = 0xffffff0f/*badcode*/; p += 4; }\
     ClrFlushInstructionCache(pStart, cbAligned); \
     return (PCODE)pStart
-// Uses x8 as scratch register to store address of data label
-// After load x8 is increment to point to next data
-// only accepts positive offsets
-static void LoadRegPair(BYTE* p, int reg1, int reg2, UINT32 offset)
-{
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-}
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
