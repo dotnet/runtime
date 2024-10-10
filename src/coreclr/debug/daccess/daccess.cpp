@@ -7122,7 +7122,8 @@ CLRDataCreateInstance(REFIID iid,
     InitializeLogging();
 #endif
 
-    IUnknown* cdacInterface = nullptr;
+    // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
+    NonVMComHolder<IUnknown> cdacInterface = nullptr;
 #ifdef CAN_USE_CDAC
     CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
     if (enable.IsSet())
@@ -7139,14 +7140,14 @@ CLRDataCreateInstance(REFIID iid,
                 _ASSERTE(SUCCEEDED(qiRes));
                 CDAC& cdac = pClrDataAccess->m_cdac;
                 cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pTarget, thisImpl);
-
-                // Release the AddRef from the QI.
-                pClrDataAccess->Release();
                 if (cdac.IsValid())
                 {
                     // Get SOS interfaces from the cDAC if available.
-                    cdacInterface = cdac.SosInterface();
+                    cdac.GetSosInterface(&cdacInterface);
                 }
+
+                // Release the AddRef from the QI.
+                pClrDataAccess->Release();
             }
         }
     }

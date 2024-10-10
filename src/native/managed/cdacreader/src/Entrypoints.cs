@@ -56,8 +56,6 @@ internal static class Entrypoints
             ? cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None)
             : null;
         Legacy.SOSDacImpl impl = new(target, legacyImpl);
-        Marshal.Release(legacyImplPtr);
-
         nint ptr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
         *obj = ptr;
         return 0;

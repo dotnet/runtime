@@ -66,13 +66,11 @@ CDAC::CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target, IUnknow
     : m_module{module}
     , m_cdac_handle{handle}
     , m_target{target}
+    , m_legacyImpl{legacyImpl}
 {
     _ASSERTE(m_module != NULL && m_cdac_handle != 0 && m_target != NULL);
 
     m_target->AddRef();
-    decltype(&cdac_reader_get_sos_interface) getSosInterface = reinterpret_cast<decltype(&cdac_reader_get_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_get_sos_interface"));
-    _ASSERTE(getSosInterface != nullptr);
-    getSosInterface(m_cdac_handle, legacyImpl, &m_sos);
 }
 
 CDAC::~CDAC()
@@ -88,7 +86,10 @@ CDAC::~CDAC()
         ::FreeLibrary(m_module);
 }
 
-IUnknown* CDAC::SosInterface()
+void CDAC::GetSosInterface(IUnknown** sos)
 {
-    return m_sos;
+    decltype(&cdac_reader_get_sos_interface) getSosInterface = reinterpret_cast<decltype(&cdac_reader_get_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_get_sos_interface"));
+    _ASSERTE(getSosInterface != nullptr);
+    int ret = getSosInterface(m_cdac_handle, m_legacyImpl, sos);
+    _ASSERTE(ret == 0);
 }
