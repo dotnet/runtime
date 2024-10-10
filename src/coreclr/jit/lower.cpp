@@ -743,7 +743,6 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
     // Create the expression `*(array_addr + lenOffset)`
 
     GenTree* addr;
-    noway_assert(arr->gtNext == node);
 
     if ((arr->gtOper == GT_CNS_INT) && (arr->AsIntCon()->gtIconVal == 0))
     {
@@ -2917,6 +2916,24 @@ GenTree* Lowering::LowerCall(GenTree* node)
         ContainCheckRange(controlExprRange);
 
         BlockRange().InsertBefore(call, std::move(controlExprRange));
+
+#ifndef TARGET_X86
+        if (call->IsDelegateInvoke() && comp->GetInterruptible())
+        {
+            // If the target's backend doesn't support indirect calls with immediate operands (contained)
+            // and the method is marked as interruptible, we need to insert a GT_START_NONGC before the call.
+            // to keep the delegate object alive while we're obtaining the function pointer.
+            GenTree* startNonGCNode = new (comp, GT_START_NONGC) GenTree(GT_START_NONGC, TYP_VOID);
+            BlockRange().InsertBefore(controlExpr, startNonGCNode);
+            if (!call->IsTailCall())
+            {
+                GenTree* stopNonGCNode = new (comp, GT_STOP_NONGC) GenTree(GT_STOP_NONGC, TYP_VOID);
+                BlockRange().InsertAfter(call, stopNonGCNode);
+                BlockRange().InsertAfter(stopNonGCNode, new (comp, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID));
+            }
+        }
+#endif
+
         call->gtControlExpr = controlExpr;
     }
 
