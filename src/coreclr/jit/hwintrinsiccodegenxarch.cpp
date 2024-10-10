@@ -2240,7 +2240,22 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         {
             assert(instOptions == INS_OPTS_NONE);
 
-            assert(!op2->isUsedFromReg() || (op2->GetRegNum() != targetReg) || (op1Reg == targetReg));
+#ifdef DEBUG
+            if (op2->isUsedFromReg() && (op2->GetRegNum() == targetReg) && (op1Reg != targetReg))
+            {
+                // The move we are issuing is going to overwrite 'op2' with
+                // 'op1'. This is still ok if 'op1' and 'op2' are the same
+                // local; normally they would be in the same register in that
+                // case, but LSRA may have inserted a copy for one of the
+                // operands (either due to stress or for any other reason).
+                // This check mirrors what happens in genCodeForBinary.
+                GenTree* op1Skip = op1->gtSkipReloadOrCopy();
+                GenTree* op2Skip = op2->gtSkipReloadOrCopy();
+                assert(op1Skip->OperIsLocalRead() && GenTree::Compare(op1Skip, op2Skip) &&
+                       "'mov' to set up crc32 RMW is going to overwrite op2!");
+            }
+#endif
+
             emit->emitIns_Mov(INS_mov, emitTypeSize(targetType), targetReg, op1Reg, /* canSkip */ true);
 
             if ((baseType == TYP_UBYTE) || (baseType == TYP_USHORT)) // baseType is the type of the second argument
