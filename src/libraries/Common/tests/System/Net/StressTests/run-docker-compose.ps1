@@ -22,10 +22,11 @@ $VERSION = "$($xml.Project.PropertyGroup.MajorVersion[0]).$($xml.Project.Propert
 
 # This is a workaround for an issue with 1es-windows-2022-open, which should be eventually removed.
 # See comments in <repo>/eng/pipelines/libraries/stress/ssl.yml for more info.
-$dockerComposeCmd = $env:DOCKER_COMPOSE_CMD
-if (!(Test-Path $dockerComposeCmd -ErrorAction SilentlyContinue)) {
-    $dockerComposeCmd = "docker-compose"
-}
+# $dockerComposeCmd = $env:DOCKER_COMPOSE_CMD
+# if (!(Test-Path $dockerComposeCmd -ErrorAction SilentlyContinue)) {
+#     $dockerComposeCmd = "docker-compose"
+# }
+$dockerComposeCmd ="docker-compose"
 
 if (!$dumpsSharePath) {
     $dumpsSharePath = "$TestProjectDir/dumps"
