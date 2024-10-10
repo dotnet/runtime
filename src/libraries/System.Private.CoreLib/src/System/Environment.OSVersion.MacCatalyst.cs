@@ -7,7 +7,16 @@ namespace System
     {
         private static OperatingSystem GetOSVersion()
         {
-            Version version = new Version(Interop.Sys.iOSSupportVersion());
+            Version version = Version.Parse(Interop.Sys.iOSSupportVersion());
+
+            // Check if build and revision are -1 and default them to 0
+            int major = version.Major;
+            int minor = version.Minor;
+            int build = version.Build >= 0 ? version.Build : 0;
+            int revision = version.Revision >= 0 ? version.Revision : 0;
+
+            version = new Version(major, minor, build, revision);
+
             return new OperatingSystem(PlatformID.Unix, version);
         }
     }
