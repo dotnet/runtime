@@ -2514,7 +2514,7 @@ public:
 public:
     ULONG               m_AppDomainId;
 
-    CordbAssembly * LookupOrCreateRootAssembly(VMPTR_Assembly vmAssembly);
+    CordbAssembly * LookupOrCreateRuntimeAssembly(VMPTR_Assembly vmAssembly);
     CordbAssembly * LookupOrCreateAssembly(VMPTR_Assembly vmAssembly);
     void RemoveAssemblyFromCache(VMPTR_Assembly vmAssembly);
 
@@ -2529,7 +2529,7 @@ public:
                                          // them as special cases.
     CordbSafeHashTable<CordbType>        m_sharedtypes;
 
-    CordbAssembly * CacheRootAssembly(VMPTR_Assembly vmRootAssembly);
+    CordbAssembly * CacheRuntimeAssembly(VMPTR_Assembly vmAssembly);
     CordbAssembly * CacheAssembly(VMPTR_Assembly vmAssembly);
 
 
@@ -2586,7 +2586,7 @@ class CordbAssembly : public CordbBase, public ICorDebugAssembly, ICorDebugAssem
 public:
     CordbAssembly(CordbAppDomain *      pAppDomain,
                   VMPTR_Assembly        vmAssembly,
-                  VMPTR_Assembly  vmRootAssembly);
+                  VMPTR_Assembly  vmRuntimeAssembly);
     virtual ~CordbAssembly();
     virtual void Neuter();
 
@@ -2663,10 +2663,10 @@ public:
 
     CordbAppDomain * GetAppDomain()     { return m_pAppDomain; }
 
-    VMPTR_Assembly    GetRootAssemblyPtr() { return m_vmRootAssembly; }
+    VMPTR_Assembly    GetAssemblyPtr() { return m_vmRuntimeAssembly; }
 private:
     VMPTR_Assembly          m_vmAssembly;
-    VMPTR_Assembly    m_vmRootAssembly;
+    VMPTR_Assembly          m_vmRuntimeAssembly;
     CordbAppDomain *        m_pAppDomain;
 
     StringCopyHolder        m_strAssemblyFileName;
@@ -4353,7 +4353,7 @@ public:
 
     const VMPTR_Assembly GetRuntimeAssembly ()
     {
-        return m_vmRootAssembly;
+        return m_vmAssembly;
     }
 
     const VMPTR_Module GetRuntimeModule()
@@ -4388,7 +4388,7 @@ public:
 
     // The real handle into the VM for a module. This is appdomain aware.
     // This is the primary VM counterpart for the CordbModule.
-    VMPTR_Assembly m_vmRootAssembly;
+    VMPTR_Assembly m_vmAssembly;
 
     VMPTR_Module m_vmModule;
 
@@ -4803,7 +4803,7 @@ public:
     void DestNaryType(Instantiation *pInst);
 
     CorElementType GetElementType() { return m_elementType; }
-    VMPTR_Assembly GetRootAssembly();
+    VMPTR_Assembly GetAssembly();
     VMPTR_Module GetModule();
 
     // If this is a ptr type, get the CordbType that it points to.

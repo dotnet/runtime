@@ -5138,7 +5138,7 @@ DebuggerModule * Debugger::LookupOrCreateModule(Assembly * pAssembly)
     DebuggerModule * pDModule = LookupOrCreateModule(pAssembly->GetModule());
     LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p ad=%p -> dm=%p\n", pAssembly->GetModule(), AppDomain::GetCurrentDomain(), pDModule));
     _ASSERTE(pDModule != NULL);
-    _ASSERTE(pDModule->GetRootAssembly() == pAssembly);
+    _ASSERTE(pDModule->GetAssembly() == pAssembly);
 
     return pDModule;
 }
@@ -5212,7 +5212,7 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule)
     }
 
     LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=%p -> dm=%p(Mod=%p, DomFile=%p)\n",
-        pModule, dmod, dmod->GetRuntimeModule(), dmod->GetRootAssembly()));
+        pModule, dmod, dmod->GetRuntimeModule(), dmod->GetAssembly()));
     return dmod;
 }
 
@@ -6149,7 +6149,7 @@ void Debugger::LockAndSendEnCRemapEvent(DebuggerJitInfo * dji, SIZE_T currentIP,
     Module *pRuntimeModule = pMD->GetModule();
 
     DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule);
-    ipce->EnCRemap.vmAssembly.SetRawPtr((pDModule ? pDModule->GetRootAssembly() : NULL));
+    ipce->EnCRemap.vmAssembly.SetRawPtr((pDModule ? pDModule->GetAssembly() : NULL));
 
     LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: %s::%s dmod:%p\n",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, pDModule));
@@ -6194,7 +6194,7 @@ void Debugger::LockAndSendEnCRemapCompleteEvent(MethodDesc *pMD)
     Module *pRuntimeModule = pMD->GetModule();
 
     DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule);
-    ipce->EnCRemapComplete.vmAssembly.SetRawPtr((pDModule ? pDModule->GetRootAssembly() : NULL));
+    ipce->EnCRemapComplete.vmAssembly.SetRawPtr((pDModule ? pDModule->GetAssembly() : NULL));
 
     LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: %s::%s dmod:%p, methodDef:0x%08x \n",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName,
@@ -6257,7 +6257,7 @@ void Debugger::SendEnCUpdateEvent(DebuggerIPCEventType eventType,
     _ASSERTE(pModule);
 
     DebuggerModule * pDModule = LookupOrCreateModule(pModule);
-    event->EnCUpdate.vmAssembly.SetRawPtr((pDModule ? pDModule->GetRootAssembly() : NULL));
+    event->EnCUpdate.vmAssembly.SetRawPtr((pDModule ? pDModule->GetAssembly() : NULL));
 
     m_pRCThread->SendIPCEvent();
 
@@ -9358,7 +9358,7 @@ void Debugger::LoadModule(Module* pRuntimeModule,
                           LPCWSTR pszModuleName, // module file name.
                           DWORD dwModuleName, // length of pszModuleName in chars, not including null.
                           Assembly *pAssembly,
-                          Assembly *  pRootAssembly,
+                          Assembly *  pRuntimeAssembly,
                           BOOL fAttaching)
 {
 
@@ -9389,7 +9389,7 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     // The RS has logic to ignore duplicate ModuleLoad events. We have to send what could possibly be a dup, though,
     // due to some really nasty issues with getting proper assembly and module load events from the loader when dealing
     // with shared assemblies.
-    module = LookupOrCreateModule(pRootAssembly);
+    module = LookupOrCreateModule(pRuntimeAssembly);
     _ASSERTE(module != NULL);
 
 
@@ -9399,17 +9399,17 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     module->SetCanChangeJitFlags(true);
 
 
-    // @dbgtodo  inspection - Check whether the root Assembly we get is consistent with the Module and AppDomain we get.
+    // @dbgtodo  inspection - Check whether the Assembly we get is consistent with the Module and AppDomain we get.
     // We should simply things when we actually get rid of DebuggerModule, possibly by just passing the
-    // root Assembly around.
-    _ASSERTE(module->GetRootAssembly()    == pRootAssembly);
-    _ASSERTE(module->GetRuntimeModule() == pRootAssembly->GetModule());
+    // assembly around.
+    _ASSERTE(module->GetAssembly()    == pRuntimeAssembly);
+    _ASSERTE(module->GetRuntimeModule() == pRuntimeAssembly->GetModule());
 
     // Send a load module event to the Right Side.
     ipce = m_pRCThread->GetIPCEventSendBuffer();
     InitIPCEvent(ipce,DB_IPCE_LOAD_MODULE, pThread, AppDomain::GetCurrentDomain());
 
-    ipce->LoadModuleData.vmAssembly.SetRawPtr(pRootAssembly);
+    ipce->LoadModuleData.vmAssembly.SetRawPtr(pRuntimeAssembly);
 
     m_pRCThread->SendIPCEvent();
 
@@ -9476,7 +9476,7 @@ void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule)
                  g_pEEInterface->GetThread(),
                  AppDomain::GetCurrentDomain());
 
-    ipce->UpdateModuleSymsData.vmAssembly.SetRawPtr((module ? module->GetRootAssembly() : NULL));
+    ipce->UpdateModuleSymsData.vmAssembly.SetRawPtr((module ? module->GetAssembly() : NULL));
 
     m_pRCThread->SendIPCEvent();
 }
@@ -9571,12 +9571,12 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
         STRESS_LOG6(LF_CORDB, LL_INFO10000,
             "D::UM: Unloading RTMod:%#08x (DomFile: %#08x, IsISStream:%#08x); DMod:%#08x(RTMod:%#08x DomFile: %#08x)\n",
             pRuntimeModule, pRuntimeModule->GetAssembly(), false,
-            module, module->GetRuntimeModule(), module->GetRootAssembly());
+            module, module->GetRuntimeModule(), module->GetAssembly());
 
         // Send the unload module event to the Right Side.
         DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
         InitIPCEvent(ipce, DB_IPCE_UNLOAD_MODULE, thread, AppDomain::GetCurrentDomain());
-        ipce->UnloadModuleData.vmAssembly.SetRawPtr((module ? module->GetRootAssembly() : NULL));
+        ipce->UnloadModuleData.vmAssembly.SetRawPtr((module ? module->GetAssembly() : NULL));
         ipce->UnloadModuleData.debuggerAssemblyToken.Set(pRuntimeModule->GetClassLoader()->GetAssembly());
         m_pRCThread->SendIPCEvent();
 
@@ -9747,7 +9747,7 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
         InitIPCEvent(pEvent, DB_IPCE_LOAD_CLASS, g_pEEInterface->GetThread(), AppDomain::GetCurrentDomain());
 
         pEvent->LoadClass.classMetadataToken = classMetadataToken;
-        pEvent->LoadClass.vmAssembly.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetRootAssembly() : NULL));
+        pEvent->LoadClass.vmAssembly.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetAssembly() : NULL));
         pEvent->LoadClass.classDebuggerAssemblyToken.Set(pAssembly);
 
 
@@ -9759,7 +9759,7 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
         InitIPCEvent(pEvent, DB_IPCE_UNLOAD_CLASS, g_pEEInterface->GetThread(), AppDomain::GetCurrentDomain());
 
         pEvent->UnloadClass.classMetadataToken = classMetadataToken;
-        pEvent->UnloadClass.vmAssembly.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetRootAssembly() : NULL));
+        pEvent->UnloadClass.vmAssembly.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetAssembly() : NULL));
         pEvent->UnloadClass.classDebuggerAssemblyToken.Set(pAssembly);
     }
 
@@ -9810,7 +9810,7 @@ BOOL Debugger::SendSystemClassLoadUnloadEvent(mdTypeDef classMetadataToken,
 
         // Only notify for app domains where the module has been fully loaded already
         // We used to make a different check here domain->ContainsAssembly() but that
-        // triggers too early in the loading process. FindRootAssembly will not become
+        // triggers too early in the loading process. FindAssembly will not become
         // non-NULL until the module is fully loaded into the domain which is what we
         // want.
         if (classModule->GetAssembly() != NULL )
@@ -11756,7 +11756,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
                                                                              // only set if instantiated
             res->metadataToken = th.GetCl();
             DebuggerModule * pDModule = LookupOrCreateModule(th.GetModule());
-            res->vmAssembly.SetRawPtr((pDModule ? pDModule->GetRootAssembly() : NULL));
+            res->vmAssembly.SetRawPtr((pDModule ? pDModule->GetAssembly() : NULL));
             break;
         }
 
@@ -11835,7 +11835,7 @@ treatAllValuesAsBoxed:
             res->ClassTypeData.typeHandle = th.HasInstantiation() ? WrapTypeHandle(th) : VMPTR_TypeHandle::NullPtr(); // only set if instantiated
             res->ClassTypeData.metadataToken = th.GetCl();
             DebuggerModule * pModule = LookupOrCreateModule(th.GetModule());
-            res->ClassTypeData.vmAssembly.SetRawPtr((pModule ? pModule->GetRootAssembly() : NULL));
+            res->ClassTypeData.vmAssembly.SetRawPtr((pModule ? pModule->GetAssembly() : NULL));
             _ASSERTE(!res->ClassTypeData.vmAssembly.IsNull());
             break;
         }

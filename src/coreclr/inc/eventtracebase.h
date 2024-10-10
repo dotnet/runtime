@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // File: eventtracebase.h
 // Abstract: This module implements base Event Tracing support (excluding some of the
 // CLR VM-specific ETW helpers).
 //
 
-//
-
-//
 //
 // #EventTracing
 // Windows
@@ -761,10 +759,10 @@ namespace ETW
             typedef enum _EnumerationOptions
             {
                 None=                               0x00000000,
-                RootAssemblyModuleLoad=             0x00000001,
-                RootAssemblyModuleUnload=           0x00000002,
-                RootAssemblyModuleDCStart=          0x00000004,
-                RootAssemblyModuleDCEnd=            0x00000008,
+                AssemblyModuleLoad=                 0x00000001,
+                AssemblyModuleUnload=               0x00000002,
+                AssemblyModuleDCStart=              0x00000004,
+                AssemblyModuleDCEnd=                0x00000008,
                 JitMethodLoad=                      0x00000010,
                 JitMethodUnload=                    0x00000020,
                 JitMethodDCStart=                   0x00000040,

@@ -588,27 +588,27 @@ public:
     //    pData - required out parameter which will be filled out with module properties
     //
     // Notes:
-    //    See definition of root AssemblyInfo for more details about what properties
+    //    See definition of AssemblyInfo for more details about what properties
     //    this gives back.
     virtual
     void GetModuleData(VMPTR_Module vmModule, OUT ModuleInfo * pData) = 0;
 
 
     //
-    // Get properties for a root Assembly
+    // Get properties for an assembly
     //
     // Arguments:
-    //    vmAssembly - vm handle to a root Assembly
+    //    vmAssembly - vm handle to an assembly
     //    pData - required out parameter which will be filled out with module properties
     //
     // Notes:
-    //    See definition of root AssemblyInfo for more details about what properties
+    //    See definition of AssemblyInfo for more details about what properties
     //    this gives back.
     virtual
-    void GetRootAssemblyData(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData) = 0;
+    void GetRuntimeAssemblyData(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData) = 0;
 
     virtual
-    void GetModuleForRootAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule) = 0;
+    void GetModuleForRuntimeAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule) = 0;
 
     //.........................................................................
     // These methods were the methods that DBI was calling from IXClrData in V2.
@@ -672,7 +672,7 @@ public:
     // Get the values of the JIT Optimization and EnC flags.
     //
     // Arguments:
-    //    vmAssembly -   (input) VM root Assembly (module) for which we are retrieving flags
+    //    vmAssembly -   (input) VM Assembly (module) for which we are retrieving flags
     //    pfAllowJITOpts - (mandatory output) true iff this is not compiled for debug,
     //                      i.e., without optimization
     //    pfEnableEnc -    (mandatory output) true iff this module has EnC enabled
@@ -695,7 +695,7 @@ public:
     // Set the values of the JIT optimization and EnC flags.
     //
     // Arguments:
-    //    vmAssembly -   (input) VM root Assembly (module) for which we are retrieving flags
+    //    vmAssembly -   (input) VM Assembly (module) for which we are retrieving flags
     //    pfAllowJITOpts - (input) true iff this should not be compiled for debug,
     //                      i.e., without optimization
     //    pfEnableEnc -    (input) true iff this module should have EnC enabled. If this is
@@ -1994,7 +1994,7 @@ public:
     //             simpleType  - CorElementType value corresponding to a simple type
     //     output: pMetadataToken - the metadata token corresponding to simpleType,
     //                              in the scope of vmAssembly.
-    //             vmAssembly   - the root Assembly for simpleType
+    //             vmAssembly   - the assembly for simpleType
     // Notes:
     //    This is inspection-only. If the type is not yet loaded, it will throw CORDBG_E_CLASS_NOT_LOADED.
     //    It will not try to load a type.

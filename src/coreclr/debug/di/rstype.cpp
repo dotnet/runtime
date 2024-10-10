@@ -1,18 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: rstype.cpp
-//
-
 //
 // Define implementation of ICorDebugType
 //*****************************************************************************
 
-
 #include "stdafx.h"
 #include "winbase.h"
 #include "corpriv.h"
-
 
 //-----------------------------------------------------------------------------
 // Public method to get the static field from a type.
@@ -1876,14 +1873,14 @@ CordbType::GetUnboxedObjectSize(ULONG32 *pObjectSize)
     }
 }
 
-VMPTR_Assembly CordbType::GetRootAssembly()
+VMPTR_Assembly CordbType::GetAssembly()
 {
     if (m_pClass != NULL)
     {
         CordbModule * pModule = m_pClass->GetModule();
         if (pModule)
         {
-            return pModule->m_vmRootAssembly;
+            return pModule->m_vmAssembly;
         }
         else
         {
@@ -1950,7 +1947,7 @@ HRESULT CordbType::TypeToBasicTypeData(DebuggerIPCE_BasicTypeData *data)
         _ASSERTE(m_pClass != NULL);
         data->elementType = m_pClass->IsValueClassNoInit() ? ELEMENT_TYPE_VALUETYPE : ELEMENT_TYPE_CLASS;
         data->metadataToken = m_pClass->MDToken();
-	    data->vmAssembly = GetRootAssembly();
+	    data->vmAssembly = GetAssembly();
         data->vmTypeHandle = m_typeHandleExact;
         if (m_pClass->HasTypeParams() && data->vmTypeHandle.IsNull())
         {
@@ -2001,7 +1998,7 @@ void CordbType::TypeToExpandedTypeData(DebuggerIPCE_ExpandedTypeData *data)
         {
             data->elementType = m_pClass->IsValueClassNoInit() ? ELEMENT_TYPE_VALUETYPE : ELEMENT_TYPE_CLASS;
             data->ClassTypeData.metadataToken = m_pClass->GetToken();
-            data->ClassTypeData.vmAssembly = GetRootAssembly();
+            data->ClassTypeData.vmAssembly = GetAssembly();
             data->ClassTypeData.vmModule = GetModule();
             data->ClassTypeData.typeHandle = VMPTR_TypeHandle::NullPtr();
 

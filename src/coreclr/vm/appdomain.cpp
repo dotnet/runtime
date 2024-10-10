@@ -2021,7 +2021,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
 
                 // Dev11 bug 236344
                 // In AppDomain::IsLoading, if the lock is taken on m_pList and then FindFileLock returns NULL,
-                // we depend on the RootAssembly's load level being up to date. Hence we must update the load
+                // we depend on the runtime Assembly's load level being up to date. Hence we must update the load
                 // level while the m_pList lock is held.
                 if (success)
                     m_pAssembly->SetLoadLevel(level);
@@ -2447,7 +2447,7 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
             pLoaderAllocator = this->GetLoaderAllocator();
         }
 
-        // Allocate the RootAssembly a bit early to avoid GC mode problems. We could potentially avoid
+        // Allocate the runtime Assembly a bit early to avoid GC mode problems. We could potentially avoid
         // a rare redundant allocation by moving this closer to FileLoadLock::Create, but it's not worth it.
         AllocMemTracker amTracker;
         AllocMemTracker *pamTracker = &amTracker;
@@ -2464,7 +2464,7 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
             result = FindAssembly(pPEAssembly, FindAssemblyOptions_IncludeFailedToLoad);
             if (result == NULL)
             {
-                // We are the first one in - create the RootAssembly
+                // We are the first one in - create the runtime Assembly
                 registerNewAssembly = true;
                 fileLock = FileLoadLock::Create(lock, pPEAssembly, pAssembly);
                 pAssembly.SuppressRelease();
@@ -4122,7 +4122,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
 
             // Un-tenured collectible assemblies should not be returned. (This can only happen in a brief
             // window during collectible assembly creation. No thread should need to have a pointer
-            // to the just allocated RootAssembly at this stage.)
+            // to the just allocated runtime Assembly at this stage.)
             if (!pAssembly->GetModule()->IsTenured())
             {
                 continue; // reject

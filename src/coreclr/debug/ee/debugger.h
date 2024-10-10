@@ -467,10 +467,10 @@ class DebuggerModule
 
     Module * GetRuntimeModule();
 
-    Assembly * GetRootAssembly()
+    Assembly * GetAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pRuntimeAssembly;
+        return m_pAssembly;
     }
 
     void SetCanChangeJitFlags(bool fCanChangeJitFlags);
@@ -479,7 +479,7 @@ class DebuggerModule
     BOOL            m_enableClassLoadCallbacks;
 
     PTR_Module     m_pRuntimeModule;
-    PTR_Assembly m_pRuntimeAssembly;
+    PTR_Assembly m_pAssembly;
 
     bool m_fHasOptimizedCode;
 
@@ -1983,9 +1983,9 @@ public:
                     LPCWSTR pszModuleName,
                     DWORD dwModuleName,
                     Assembly *pAssembly,
-                    Assembly * pRootAssembly,
+                    Assembly * pRuntimeAssembly,
                     BOOL fAttaching);
-    DebuggerModule * AddDebuggerModule(Assembly * pRootAssembly);
+    DebuggerModule * AddDebuggerModule(Assembly * pAssembly);
 
     void UnloadModule(Module* pRuntimeModule);
     void DestructModule(Module *pModule);

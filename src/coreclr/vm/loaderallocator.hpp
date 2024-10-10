@@ -179,7 +179,7 @@ private:
     bool _collectible;
 };
 
-// Iterator over a root Assembly in the same ALC
+// Iterator over assemblies in the same ALC
 class AssemblyIterator
 {
     Assembly* pCurrentAssembly;

@@ -490,7 +490,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
             pLoaderAllocator.SuppressRelease();
         }
 
-        // Create a root assembly
+        // Create an assembly
         pAssem = Create(pPEAssembly, pamTracker, pLoaderAllocator);
         pAssem->m_isDynamic = true;
         if (pAssem->IsCollectible())
@@ -549,12 +549,6 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
 } // Assembly::CreateDynamic
 
 #endif // #ifndef DACCESS_COMPILE
-
-Assembly *Assembly::GetRootAssembly()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return GetModule()->GetAssembly();
-}
 
 PTR_LoaderHeap Assembly::GetLowFrequencyHeap()
 {
@@ -2274,7 +2268,7 @@ void Assembly::Begin()
         AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
         AppDomain::GetCurrentDomain()->AddAssembly(this);
     }
-    // Make it possible to find this root Assembly object from associated BINDER_SPACE::Assembly.
+    // Make it possible to find this assembly object from associated BINDER_SPACE::Assembly.
     RegisterWithHostAssembly();
 }
 
@@ -2478,7 +2472,7 @@ BOOL Assembly::NotifyDebuggerLoad(int flags, BOOL attaching)
     {
         if (ShouldNotifyDebugger())
         {
-            g_pDebugInterface->LoadAssembly(GetRootAssembly());
+            g_pDebugInterface->LoadAssembly(this);
         }
         result = TRUE;
     }
@@ -2486,12 +2480,12 @@ BOOL Assembly::NotifyDebuggerLoad(int flags, BOOL attaching)
     if(this->ShouldNotifyDebugger())
     {
         result = result ||
-            this->GetModule()->NotifyDebuggerLoad(GetRootAssembly(), flags, attaching);
+            this->GetModule()->NotifyDebuggerLoad(this, flags, attaching);
     }
 
     if( ShouldNotifyDebugger())
     {
-           result |= m_pModule->NotifyDebuggerLoad(GetRootAssembly(), ATTACH_MODULE_LOAD, attaching);
+           result |= m_pModule->NotifyDebuggerLoad(this, ATTACH_MODULE_LOAD, attaching);
            SetDebuggerNotified();
     }
 
@@ -2509,7 +2503,7 @@ void Assembly::NotifyDebuggerUnload()
     // a previous load event (such as if debugger attached after the modules was loaded).
     this->GetModule()->NotifyDebuggerUnload();
 
-    g_pDebugInterface->UnloadAssembly(GetRootAssembly());
+    g_pDebugInterface->UnloadAssembly(this);
 }
 
 FriendAssemblyDescriptor::FriendAssemblyDescriptor()

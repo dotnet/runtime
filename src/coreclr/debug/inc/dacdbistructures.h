@@ -164,13 +164,13 @@ struct MSLAYOUT TargetBuffer
 // Module properties, retrieved by DAC.
 // Describes a VMPTR_Assembly representing a module.
 // In the VM, a raw Module may be domain neutral and shared by many appdomains.
-// Whereas a root Assembly is like a { AppDomain, Module} pair. Root Assembly corresponds
+// Whereas a runtime assembly is like a { AppDomain, Module} pair. Runtime assembly corresponds
 // much more to ICorDebugModule (which also has appdomain affinity).
 //===================================================================================
 struct MSLAYOUT AssemblyInfo
 {
-    // The appdomain that the root Assembly is associated with.
-    // Although VMPTR_Module may be shared across multiple domains, a root Assembly has appdomain affinity.
+    // The appdomain that the runtime assembly is associated with.
+    // Although VMPTR_Module may be shared across multiple domains, a runtime assembly has appdomain affinity.
     VMPTR_AppDomain vmAppDomain;
 
     // The assembly this module belongs to. All modules live in an assembly.

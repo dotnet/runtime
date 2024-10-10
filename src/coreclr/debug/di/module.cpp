@@ -58,7 +58,7 @@ CordbModule::CordbModule(
     m_pAppDomain(0),
     m_classes(11),
     m_functions(101),
-    m_vmRootAssembly(vmAssembly),
+    m_vmAssembly(vmAssembly),
     m_vmModule(vmModule),
     m_EnCCount(0),
     m_fForceMetaDataSerialize(FALSE),
@@ -88,10 +88,10 @@ CordbModule::CordbModule(
     {
         AssemblyInfo dfInfo;
 
-        pProcess->GetDAC()->GetRootAssemblyData(vmAssembly, &dfInfo); // throws
+        pProcess->GetDAC()->GetRuntimeAssemblyData(vmAssembly, &dfInfo); // throws
 
         m_pAppDomain = pProcess->LookupOrCreateAppDomain(dfInfo.vmAppDomain);
-        m_pAssembly  = m_pAppDomain->LookupOrCreateRootAssembly(dfInfo.vmAssembly);
+        m_pAssembly  = m_pAppDomain->LookupOrCreateRuntimeAssembly(dfInfo.vmAssembly);
     }
     else
     {
@@ -123,9 +123,9 @@ void DbgAssertModuleDeletedCallback(VMPTR_Assembly vmAssembly, void * pUserData)
     CordbModule * pThis = reinterpret_cast<CordbModule *>(pUserData);
     INTERNAL_DAC_CALLBACK(pThis->GetProcess());
 
-    if (!pThis->m_vmRootAssembly.IsNull())
+    if (!pThis->m_vmAssembly.IsNull())
     {
-        VMPTR_Assembly vmAssemblyDeleted = pThis->m_vmRootAssembly;
+        VMPTR_Assembly vmAssemblyDeleted = pThis->m_vmAssembly;
 
         CONSISTENCY_CHECK_MSGF((vmAssemblyDeleted != vmAssembly),
             ("A Module Unload event was sent for a module, but it still shows up in the enumeration.\n vmAssemblyDeleted=%p\n",
@@ -144,7 +144,7 @@ void DbgAssertModuleDeletedCallback(VMPTR_Assembly vmAssembly, void * pUserData)
 void CordbModule::DbgAssertModuleDeleted()
 {
     GetProcess()->GetDAC()->EnumerateModulesInAssembly(
-        m_pAssembly->GetRootAssemblyPtr(),
+        m_pAssembly->GetAssemblyPtr(),
         DbgAssertModuleDeletedCallback,
         this);
 }
@@ -1499,7 +1499,7 @@ HRESULT CordbModule::EnableClassLoadCallbacks(BOOL bClassLoadCallbacks)
     if (m_fDynamic && !bClassLoadCallbacks)
         return E_INVALIDARG;
 
-    if (m_vmRootAssembly.IsNull())
+    if (m_vmAssembly.IsNull())
         return E_UNEXPECTED;
 
     // Send a Set Class Load Flag event to the left side. There is no need to wait for a response, and this can be
@@ -1511,7 +1511,7 @@ HRESULT CordbModule::EnableClassLoadCallbacks(BOOL bClassLoadCallbacks)
                            DB_IPCE_SET_CLASS_LOAD_FLAG,
                            false,
                            (GetAppDomain()->GetADToken()));
-    event.SetClassLoad.vmAssembly = this->m_vmRootAssembly;
+    event.SetClassLoad.vmAssembly = this->m_vmAssembly;
     event.SetClassLoad.flag = (bClassLoadCallbacks == TRUE);
 
     HRESULT hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event,
@@ -2041,7 +2041,7 @@ HRESULT CordbModule::ResolveTypeRef(mdTypeRef token, CordbClass **ppClass)
         return E_INVALIDARG;
     }
 
-    if (m_vmRootAssembly.IsNull() || m_pAppDomain == NULL)
+    if (m_vmAssembly.IsNull() || m_pAppDomain == NULL)
     {
         return E_UNEXPECTED;
     }
@@ -2050,7 +2050,7 @@ HRESULT CordbModule::ResolveTypeRef(mdTypeRef token, CordbClass **ppClass)
     *ppClass = NULL;
     EX_TRY
     {
-        TypeRefData inData = {m_vmRootAssembly, token};
+        TypeRefData inData = {m_vmAssembly, token};
         TypeRefData outData;
 
         {
@@ -2271,7 +2271,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
     FAIL_IF_NEUTERED(this);
     INTERNAL_SYNC_API_ENTRY(this->GetProcess()); //
 
-    if (m_vmRootAssembly.IsNull())
+    if (m_vmAssembly.IsNull())
         return E_UNEXPECTED;
 
 #ifdef FEATURE_REMAP_FUNCTION
@@ -2288,7 +2288,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
         DebuggerIPCEvent event;
         GetProcess()->InitIPCEvent(&event, DB_IPCE_APPLY_CHANGES, false, VMPTR_AppDomain::NullPtr());
 
-        event.ApplyChanges.vmAssembly = this->m_vmRootAssembly;
+        event.ApplyChanges.vmAssembly = this->m_vmAssembly;
 
         // Have the left-side create a buffer for us to store the delta into
         ULONG cbSize = cbMetaData+cbIL;
@@ -2412,7 +2412,7 @@ HRESULT CordbModule::SetJMCStatus(
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    if (m_vmRootAssembly.IsNull())
+    if (m_vmAssembly.IsNull())
         return E_UNEXPECTED;
 
     // @todo -allow the other parameters. These are functions that have default status
@@ -2431,7 +2431,7 @@ HRESULT CordbModule::SetJMCStatus(
     // Tell the LS that this module is/is not user code
     DebuggerIPCEvent event;
     pProcess->InitIPCEvent(&event, DB_IPCE_SET_MODULE_JMC_STATUS, true, this->GetAppDomain()->GetADToken());
-    event.SetJMCFunctionStatus.vmAssembly = m_vmRootAssembly;
+    event.SetJMCFunctionStatus.vmAssembly = m_vmAssembly;
     event.SetJMCFunctionStatus.dwStatus = fIsUserCode;
 
 
@@ -2520,10 +2520,10 @@ CordbAssembly * CordbModule::ResolveAssemblyInternal(mdToken tkAssemblyRef)
 
     CordbAssembly *    pAssembly = NULL;
 
-    if (!m_vmRootAssembly.IsNull())
+    if (!m_vmAssembly.IsNull())
     {
         // Get DAC to do the real work to resolve the assembly
-        VMPTR_Assembly vmAssembly = GetProcess()->GetDAC()->ResolveAssembly(m_vmRootAssembly, tkAssemblyRef);
+        VMPTR_Assembly vmAssembly = GetProcess()->GetDAC()->ResolveAssembly(m_vmAssembly, tkAssemblyRef);
 
         // now find the ICorDebugAssembly corresponding to it
         if (!vmAssembly.IsNull() && m_pAppDomain != NULL)

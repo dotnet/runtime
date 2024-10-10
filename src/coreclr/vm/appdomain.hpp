@@ -278,7 +278,7 @@ typedef PEFileListLock::Holder PEFileListLockHolder;
 
 // Loading infrastructure:
 //
-// a root Assembly is a file being loaded.  Files are loaded in layers to enable loading in the
+// An assembly is a file being loaded.  Files are loaded in layers to enable loading in the
 // presence of dependency loops.
 //
 // FileLoadLevel describes the various levels available.  These are implemented slightly

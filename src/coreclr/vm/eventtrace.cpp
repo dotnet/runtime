@@ -2011,7 +2011,7 @@ VOID ETW::EnumerationLog::StartRundown()
                                             TRACE_LEVEL_INFORMATION,
                                             CLR_RUNDOWNLOADER_KEYWORD))
             {
-                enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCStart;
+                enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCStart;
             }
             if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context,
                                             TRACE_LEVEL_INFORMATION,
@@ -2070,7 +2070,7 @@ DWORD ETW::EnumerationLog::GetEnumerationOptionsFromRuntimeKeywords()
         TRACE_LEVEL_INFORMATION,
         CLR_LOADER_KEYWORD))
     {
-        enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleUnload;
+        enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::AssemblyModuleUnload;
     }
     if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
         TRACE_LEVEL_INFORMATION,
@@ -2201,7 +2201,7 @@ VOID ETW::EnumerationLog::EndRundown()
                                             TRACE_LEVEL_INFORMATION,
                                             CLR_RUNDOWNLOADER_KEYWORD))
             {
-                enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCEnd;
+                enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCEnd;
             }
             if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context,
                                             TRACE_LEVEL_INFORMATION,
@@ -2976,7 +2976,7 @@ VOID ETW::LoaderLog::DomainLoadReal(_In_opt_ LPWSTR wszFriendlyName)
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_LOADER_KEYWORD))
         {
-            DWORD dwEventOptions = ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleLoad;
+            DWORD dwEventOptions = ETW::EnumerationLog::EnumerationStructs::AssemblyModuleLoad;
             ETW::LoaderLog::SendDomainEvent(dwEventOptions, wszFriendlyName);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
@@ -3860,7 +3860,7 @@ VOID ETW::LoaderLog::ModuleLoad(Module *pModule, LONG liReportedSharedModule)
             {
 
                 if(bTraceFlagLoaderSet)
-                    enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleLoad;
+                    enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::AssemblyModuleLoad;
                 if (bTraceFlagPerfTrackSet)
                     enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoad;
                 if(bTraceFlagNgenMethodSet && bTraceFlagStartRundownSet)
@@ -3870,14 +3870,14 @@ VOID ETW::LoaderLog::ModuleLoad(Module *pModule, LONG liReportedSharedModule)
                     ETW::LoaderLog::SendAssemblyEvent(pModule->GetAssembly(), enumerationOptions);
 
                 if(bTraceFlagLoaderSet || bTraceFlagPerfTrackSet)
-                    ETW::LoaderLog::SendModuleEvent(pModule, ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleLoad | ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoad);
+                    ETW::LoaderLog::SendModuleEvent(pModule, ETW::EnumerationLog::EnumerationStructs::AssemblyModuleLoad | ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoad);
 
                 ETW::EnumerationLog::EnumerationHelper(pModule, enumerationOptions);
             }
 
             // we want to report domainmodule events whenever they are loaded in any AppDomain
             if(bTraceFlagLoaderSet)
-                ETW::LoaderLog::SendModuleEvent(pModule, ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleLoad, TRUE);
+                ETW::LoaderLog::SendModuleEvent(pModule, ETW::EnumerationLog::EnumerationStructs::AssemblyModuleLoad, TRUE);
         }
 
         {
@@ -3952,28 +3952,28 @@ VOID ETW::LoaderLog::SendDomainEvent(DWORD dwEventOptions, LPCWSTR wszFriendlyNa
     /* prepare events args for ETW and ETM */
     szDtraceOutput1 = (PCWSTR)lpswzDomainName;
 
-    if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleLoad)
+    if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleLoad)
     {
         FireEtwAppDomainLoad_V1(ullDomainId, ulDomainFlags, szDtraceOutput1, DefaultADID, GetClrInstanceId());
     }
-    else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleUnload)
+    else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleUnload)
     {
         FireEtwAppDomainUnload_V1(ullDomainId, ulDomainFlags, szDtraceOutput1, DefaultADID, GetClrInstanceId());
     }
-    else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCStart)
+    else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCStart)
     {
         FireEtwAppDomainDCStart_V1(ullDomainId, ulDomainFlags, szDtraceOutput1, DefaultADID, GetClrInstanceId());
     }
-    else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCEnd)
+    else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCEnd)
     {
         FireEtwAppDomainDCEnd_V1(ullDomainId, ulDomainFlags, szDtraceOutput1, DefaultADID, GetClrInstanceId());
     }
     else
     {
-        _ASSERTE((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleLoad) ||
-                 (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleUnload) ||
-                 (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCStart) ||
-                 (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCEnd));
+        _ASSERTE((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleLoad) ||
+                 (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleUnload) ||
+                 (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCStart) ||
+                 (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCEnd));
     }
 }
 
@@ -4081,28 +4081,28 @@ VOID ETW::LoaderLog::SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions
 /* prepare events args for ETW and ETM */
     szDtraceOutput1 = (PCWSTR)lpszAssemblyPath;
 
-    if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleLoad)
+    if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleLoad)
     {
         FireEtwAssemblyLoad_V1(ullAssemblyId, ullDomainId, ullBindingID, ulAssemblyFlags, szDtraceOutput1, GetClrInstanceId());
     }
-    else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleUnload)
+    else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleUnload)
     {
         FireEtwAssemblyUnload_V1(ullAssemblyId, ullDomainId, ullBindingID, ulAssemblyFlags, szDtraceOutput1, GetClrInstanceId());
     }
-    else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCStart)
+    else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCStart)
     {
         FireEtwAssemblyDCStart_V1(ullAssemblyId, ullDomainId, ullBindingID, ulAssemblyFlags, szDtraceOutput1, GetClrInstanceId());
     }
-    else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCEnd)
+    else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCEnd)
     {
         FireEtwAssemblyDCEnd_V1(ullAssemblyId, ullDomainId, ullBindingID, ulAssemblyFlags, szDtraceOutput1, GetClrInstanceId());
     }
     else
     {
-        _ASSERTE((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleLoad) ||
-                 (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleUnload) ||
-                 (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCStart) ||
-                 (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCEnd));
+        _ASSERTE((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleLoad) ||
+                 (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleUnload) ||
+                 (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCStart) ||
+                 (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCEnd));
     }
 }
 
@@ -4373,49 +4373,49 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     if(bFireDomainModuleEvents)
     {
         ULONGLONG ullAppDomainId = (ULONGLONG)AppDomain::GetCurrentDomain();
-        if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleLoad)
+        if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleLoad)
         {
             FireEtwDomainModuleLoad_V1(ullModuleId, ullAssemblyId, ullAppDomainId, ulFlags, ulReservedFlags, szDtraceOutput1, szDtraceOutput2, GetClrInstanceId());
         }
-        else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCStart)
+        else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCStart)
         {
             FireEtwDomainModuleDCStart_V1(ullModuleId, ullAssemblyId, ullAppDomainId, ulFlags, ulReservedFlags, szDtraceOutput1, szDtraceOutput2, GetClrInstanceId());
         }
-        else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCEnd)
+        else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCEnd)
         {
             FireEtwDomainModuleDCEnd_V1(ullModuleId, ullAssemblyId, ullAppDomainId, ulFlags, ulReservedFlags, szDtraceOutput1, szDtraceOutput2, GetClrInstanceId());
         }
         else
         {
-            _ASSERTE((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleLoad) ||
-                     (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCStart) ||
-                     (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCEnd));
+            _ASSERTE((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleLoad) ||
+                     (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCStart) ||
+                     (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCEnd));
         }
     }
     else
     {
-        if((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleLoad) || (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoad))
+        if((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleLoad) || (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoad))
         {
             FireEtwModuleLoad_V1_or_V2(ullModuleId, ullAssemblyId, ulFlags, ulReservedFlags, szDtraceOutput1, szDtraceOutput2, GetClrInstanceId(), &cvInfoIL.signature, cvInfoIL.age, managedPdbPath, &cvInfoNative.signature, cvInfoNative.age, nativePdbPath);
         }
-        else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleUnload)
+        else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleUnload)
         {
             FireEtwModuleUnload_V1_or_V2(ullModuleId, ullAssemblyId, ulFlags, ulReservedFlags, szDtraceOutput1, szDtraceOutput2, GetClrInstanceId(), &cvInfoIL.signature, cvInfoIL.age, managedPdbPath, &cvInfoNative.signature, cvInfoNative.age, nativePdbPath);
         }
-        else if((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCStart) || (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeDCStart))
+        else if((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCStart) || (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeDCStart))
         {
             FireEtwModuleDCStart_V1_or_V2(ullModuleId, ullAssemblyId, ulFlags, ulReservedFlags, szDtraceOutput1, szDtraceOutput2, GetClrInstanceId(), &cvInfoIL.signature, cvInfoIL.age, managedPdbPath, &cvInfoNative.signature, cvInfoNative.age, nativePdbPath);
         }
-        else if((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCEnd) || (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeDCEnd))
+        else if((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCEnd) || (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeDCEnd))
         {
             FireEtwModuleDCEnd_V1_or_V2(ullModuleId, ullAssemblyId, ulFlags, ulReservedFlags, szDtraceOutput1, szDtraceOutput2, GetClrInstanceId(), &cvInfoIL.signature, cvInfoIL.age, managedPdbPath, &cvInfoNative.signature, cvInfoNative.age, nativePdbPath);
         }
         else
         {
-            _ASSERTE((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleLoad) ||
-                     (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleUnload) ||
-                     (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCStart) ||
-                     (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCEnd) ||
+            _ASSERTE((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleLoad) ||
+                     (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleUnload) ||
+                     (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCStart) ||
+                     (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCEnd) ||
                      (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeEnabledAny));
 
         }
@@ -5360,7 +5360,7 @@ VOID ETW::EnumerationLog::IterateAppDomain(DWORD enumerationOptions)
     EX_TRY
     {
         // DC Start events for Domain
-        if(enumerationOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCStart)
+        if(enumerationOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCStart)
         {
             ETW::LoaderLog::SendDomainEvent(enumerationOptions);
         }
@@ -5376,7 +5376,7 @@ VOID ETW::EnumerationLog::IterateAppDomain(DWORD enumerationOptions)
         CollectibleAssemblyHolder<Assembly *> pAssembly;
         while (assemblyIterator.Next(pAssembly.This()))
         {
-            if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCStart)
+            if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCStart)
             {
                 ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
             }
@@ -5384,8 +5384,8 @@ VOID ETW::EnumerationLog::IterateAppDomain(DWORD enumerationOptions)
             Module * pModule = pAssembly->GetModule();
             ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
 
-            if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCEnd) ||
-                (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleUnload))
+            if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCEnd) ||
+                (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleUnload))
             {
                 ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
             }
@@ -5398,8 +5398,8 @@ VOID ETW::EnumerationLog::IterateAppDomain(DWORD enumerationOptions)
         }
 
         // DC End or Unload events for Domain
-        if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCEnd) ||
-           (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleUnload))
+        if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCEnd) ||
+           (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleUnload))
         {
             ETW::LoaderLog::SendDomainEvent(enumerationOptions);
         }
@@ -5432,7 +5432,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
             ETW::MethodLog::SendEventsForJitMethods(FALSE /*getCodeVersionIds*/, pLoaderAllocator, enumerationOptions);
         }
 
-        // Iterate on all root Assembly loaded from the same AssemblyLoaderAllocator
+        // Iterate on all assemblies loaded from the same AssemblyLoaderAllocator
         AssemblyIterator assemblyIt = pLoaderAllocator->Id()->GetAssemblyIterator();
         while (!assemblyIt.end())
         {
@@ -5441,7 +5441,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
             Module* pModule = assemblyIt->GetModule();
             ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
 
-            if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleUnload)
+            if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleUnload)
             {
                 ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
             }
@@ -5472,22 +5472,22 @@ VOID ETW::EnumerationLog::IterateAssembly(Assembly *pAssembly, DWORD enumeration
     EX_TRY
     {
         // DC Start events for Assembly
-        if(enumerationOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCStart)
+        if(enumerationOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCStart)
         {
             ETW::LoaderLog::SendAssemblyEvent(pAssembly, enumerationOptions);
         }
 
         // DC Start, DCEnd, events for DomainModule
-        if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCEnd) ||
-           (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCStart))
+        if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCEnd) ||
+           (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCStart))
         {
             Module* pModule = pAssembly->GetModule();
             ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions, TRUE);
         }
 
         // DC End or Unload events for Assembly
-        if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCEnd) ||
-           (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleUnload))
+        if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCEnd) ||
+           (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleUnload))
         {
             ETW::LoaderLog::SendAssemblyEvent(pAssembly, enumerationOptions);
         }
@@ -5509,7 +5509,7 @@ VOID ETW::EnumerationLog::IterateModule(Module *pModule, DWORD enumerationOption
     EX_TRY
     {
         // DC Start events for Module
-        if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCStart) ||
+        if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCStart) ||
            (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeDCStart))
         {
             ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions);
@@ -5525,8 +5525,8 @@ VOID ETW::EnumerationLog::IterateModule(Module *pModule, DWORD enumerationOption
         }
 
         // DC End or Unload events for Module
-        if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleDCEnd) ||
-           (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::RootAssemblyModuleUnload) ||
+        if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleDCEnd) ||
+           (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::AssemblyModuleUnload) ||
            (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::ModuleRangeDCEnd))
         {
             ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions);

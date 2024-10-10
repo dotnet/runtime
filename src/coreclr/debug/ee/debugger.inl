@@ -55,7 +55,7 @@ inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
                                       Assembly *  pAssembly) :
         m_enableClassLoadCallbacks(FALSE),
         m_pRuntimeModule(pRuntimeModule),
-        m_pRuntimeAssembly(pAssembly)
+        m_pAssembly(pAssembly)
 {
     LOG((LF_CORDB,LL_INFO10000, "DM::DM this:0x%x Module:0x%x DF:0x%x\n",
         this, pRuntimeModule, pAssembly));

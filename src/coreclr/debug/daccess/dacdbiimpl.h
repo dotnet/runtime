@@ -731,9 +731,9 @@ public:
     void GetModuleData(VMPTR_Module vmModule, ModuleInfo * pData);
 
     // Gets properties for an assembly
-    void GetRootAssemblyData(VMPTR_Assembly vmAssembly, AssemblyInfo * pData);
+    void GetRuntimeAssemblyData(VMPTR_Assembly vmAssembly, AssemblyInfo * pData);
 
-    void GetModuleForRootAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule);
+    void GetModuleForRuntimeAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule);
 
     // Yields true if the address is a CLR stub.
     BOOL IsTransitionStub(CORDB_ADDRESS address);
@@ -829,7 +829,7 @@ public:
     // Return the current appdomain the specified thread is in.
     VMPTR_AppDomain GetCurrentAppDomain(VMPTR_Thread vmThread);
 
-    // Given an assembly ref token and metadata scope (via the root Assembly), resolve the assembly.
+    // Given an assembly ref token and metadata scope (via the runtime assembly), resolve the assembly.
     VMPTR_Assembly ResolveAssembly(VMPTR_Assembly vmScope, mdToken tkAssemblyRef);
 
 

@@ -1633,7 +1633,7 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
 
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    VMPTR_Assembly vmAssembly = pNativeCode->GetModule()->m_vmRootAssembly;
+    VMPTR_Assembly vmAssembly = pNativeCode->GetModule()->m_vmAssembly;
     _ASSERTE(!vmAssembly.IsNull());
 
     // If this thread is stopped due to an exception, never allow SetIP

@@ -26,13 +26,13 @@
  * ------------------------------------------------------------------------- */
 CordbAssembly::CordbAssembly(CordbAppDomain *       pAppDomain,
                              VMPTR_Assembly         vmAssembly,
-                             VMPTR_Assembly   vmRootAssembly)
+                             VMPTR_Assembly   vmRuntimeAssembly)
 
     : CordbBase(pAppDomain->GetProcess(),
-                vmRootAssembly.IsNull() ? VmPtrToCookie(vmAssembly) : VmPtrToCookie(vmRootAssembly),
+                vmRuntimeAssembly.IsNull() ? VmPtrToCookie(vmAssembly) : VmPtrToCookie(vmRuntimeAssembly),
                 enumCordbAssembly),
       m_vmAssembly(vmAssembly),
-      m_vmRootAssembly(vmRootAssembly),
+      m_vmRuntimeAssembly(vmRuntimeAssembly),
       m_pAppDomain(pAppDomain)
 {
     _ASSERTE(!vmAssembly.IsNull());
@@ -90,7 +90,7 @@ void CordbAssembly::DbgAssertAssemblyDeletedCallback(VMPTR_Assembly vmAssembly, 
     CordbAssembly * pThis = reinterpret_cast<CordbAssembly * >(pUserData);
     INTERNAL_DAC_CALLBACK(pThis->GetProcess());
 
-    VMPTR_Assembly vmAssemblyDeleted = pThis->m_vmRootAssembly;
+    VMPTR_Assembly vmAssemblyDeleted = pThis->m_vmRuntimeAssembly;
 
     CONSISTENCY_CHECK_MSGF((vmAssemblyDeleted != vmAssembly),
         ("An Assembly Unload event was sent, but the assembly still shows up in the enumeration.\n vmAssemblyDeleted=%p\n",
@@ -286,7 +286,7 @@ HRESULT CordbAssembly::IsFullyTrusted( BOOL *pbFullyTrusted )
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     VALIDATE_POINTER_TO_OBJECT(pbFullyTrusted, BOOL*);
 
-    if (m_vmRootAssembly.IsNull())
+    if (m_vmRuntimeAssembly.IsNull())
         return E_UNEXPECTED;
 
     // Check for cached result
@@ -303,7 +303,7 @@ HRESULT CordbAssembly::IsFullyTrusted( BOOL *pbFullyTrusted )
         CordbProcess * pProcess = m_pAppDomain->GetProcess();
         IDacDbiInterface * pDac = pProcess->GetDAC();
 
-        BOOL fIsFullTrust = pDac->IsAssemblyFullyTrusted(m_vmRootAssembly);
+        BOOL fIsFullTrust = pDac->IsAssemblyFullyTrusted(m_vmRuntimeAssembly);
 
         // Once the trust level of an assembly is known, it cannot change.
         m_foptIsFullTrust = fIsFullTrust;

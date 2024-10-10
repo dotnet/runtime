@@ -374,8 +374,6 @@ public:
 
     //****************************************************************************************
 
-    Assembly *GetRootAssembly();
-
 #if defined(FEATURE_COLLECTIBLE_TYPES) && !defined(DACCESS_COMPILE)
     OBJECTHANDLE GetLoaderAllocatorObjectHandle() { WRAPPER_NO_CONTRACT; return GetLoaderAllocator()->GetLoaderAllocatorObjectHandle(); }
 #endif // FEATURE_COLLECTIBLE_TYPES

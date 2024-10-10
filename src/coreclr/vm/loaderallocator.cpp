@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 #include "common.h"
 #include "stringliteralmap.h"
 #include "virtualcallstub.h"
@@ -507,9 +506,9 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
 
     AppDomain* pAppDomain = AppDomain::GetCurrentDomain();
 
-    // Collect all LoaderAllocators that don't have anymore root Assemblies alive
+    // Collect all LoaderAllocators that don't have anymore assemblies alive
     // Note: that it may not collect our pOriginalLoaderAllocator in case this
-    // LoaderAllocator hasn't loaded any root Assembly. We handle this case in the next loop.
+    // LoaderAllocator hasn't loaded any assembly. We handle this case in the next loop.
     // Note: The removed LoaderAllocators are not reachable outside of this function anymore, because we
     // removed them from the assembly list
     pFirstDestroyedLoaderAllocator = GCLoaderAllocators_RemoveAssemblies(pAppDomain);
@@ -544,7 +543,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         pDomainLoaderAllocatorDestroyIterator = pDomainLoaderAllocatorDestroyIterator->m_pLoaderAllocatorDestroyNext;
     }
 
-    // If the original LoaderAllocator was not processed, it is most likely a LoaderAllocator without any loaded root Assembly
+    // If the original LoaderAllocator was not processed, it is most likely a LoaderAllocator without any loaded assembly
     // But we still want to collect it so we add it to the list of LoaderAllocator to destroy
     if (!isOriginalLoaderAllocatorFound && !pOriginalLoaderAllocator->IsAlive())
     {
@@ -552,7 +551,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         pFirstDestroyedLoaderAllocator = pOriginalLoaderAllocator;
     }
 
-    // Iterate through free list, deleting root Assemblies
+    // Iterate through free list, deleting assemblies
     pDomainLoaderAllocatorDestroyIterator = pFirstDestroyedLoaderAllocator;
     while (pDomainLoaderAllocatorDestroyIterator != NULL)
     {
@@ -576,8 +575,8 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
 
         // The following code was previously happening on delete ~Assembly->Terminate
         // We are moving this part here in order to make sure that we can unload a LoaderAllocator
-        // that didn't have a root Assembly
-        // (we have now a LoaderAllocator with 0-n root Assembly)
+        // that didn't have a assembly
+        // (we have now a LoaderAllocator with 0-n assembly)
 
         // This cleanup code starts resembling parts of AppDomain::Terminate too much.
         // It would be useful to reduce duplication and also establish clear responsibilities
@@ -622,7 +621,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         pDomainLoaderAllocatorDestroyIterator = pLoaderAllocatorDestroyNext;
     }
 
-    // Deleting the root Assemblies will have created a list of LoaderAllocator's on the AppDomain
+    // Deleting the assemblies will have created a list of LoaderAllocator's on the AppDomain
     // Call this shutdown function to clean those up.
     pAppDomain->ShutdownFreeLoaderAllocators();
 } // LoaderAllocator::GCLoaderAllocators
@@ -669,7 +668,7 @@ BOOL LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
         Assembly* pAssembly = (Assembly*)(pID->GetAssemblyIterator());
         if (pAssembly != NULL)
         {
-            pLoaderAllocator->m_pFirstAssemblyFromSameALCToDelete = pAssembly->GetRootAssembly();
+            pLoaderAllocator->m_pFirstAssemblyFromSameALCToDelete = pAssembly;
         }
 
         // Iterate through all references to other loader allocators and decrement their reference

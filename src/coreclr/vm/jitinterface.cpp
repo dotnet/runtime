@@ -13116,7 +13116,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                 QueryPerformanceCounter(&methodJitTimeStop);
 
                 SString moduleName;
-                ftn->GetModule()->GetRootAssembly()->GetPEAssembly()->GetPathOrCodeBase(moduleName);
+                ftn->GetModule()->GetPEAssembly()->GetPathOrCodeBase(moduleName);
 
                 SString codeBase;
                 codeBase.AppendPrintf("%s,0x%x,%d,%d\n",

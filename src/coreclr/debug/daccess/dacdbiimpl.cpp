@@ -7,7 +7,6 @@
 // Implement DAC/DBI interface
 //*****************************************************************************
 
-
 #include "stdafx.h"
 
 #include "dacdbiinterface.h"
@@ -3997,15 +3996,13 @@ void DacDbiInterfaceImpl::GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEn
 } // DacDbiInterfaceImpl::GetEnCHangingFieldInfo
 
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
-void DacDbiInterfaceImpl::GetAssemblyFromRootAssembly(VMPTR_Assembly vmRootAssembly, VMPTR_Assembly *vmAssembly)
+void DacDbiInterfaceImpl::GetAssemblyFromRootAssembly(VMPTR_Assembly vmRuntimeAssembly, VMPTR_Assembly *vmAssembly)
 {
     DD_ENTER_MAY_THROW;
 
     _ASSERTE(vmAssembly != NULL);
 
-    Assembly * pAssembly = vmRootAssembly.GetDacPtr();
+    Assembly * pAssembly = vmRuntimeAssembly.GetDacPtr();
     vmAssembly->SetHostPtr(pAssembly);
 }
 
@@ -4308,7 +4305,7 @@ void DacDbiInterfaceImpl::GetSymbolsBuffer(VMPTR_Module vmModule, TargetBuffer *
 
 
 
-void DacDbiInterfaceImpl::GetModuleForRootAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule)
+void DacDbiInterfaceImpl::GetModuleForRuntimeAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule)
 {
     DD_ENTER_MAY_THROW;
 
@@ -4319,8 +4316,8 @@ void DacDbiInterfaceImpl::GetModuleForRootAssembly(VMPTR_Assembly vmAssembly, OU
 }
 
 
-// Implement IDacDbiInterface::GetRootAssemblyData
-void DacDbiInterfaceImpl::GetRootAssemblyData(VMPTR_Assembly vmAssembly, AssemblyInfo * pData)
+// Implement IDacDbiInterface::GetRuntimeAssemblyData
+void DacDbiInterfaceImpl::GetRuntimeAssemblyData(VMPTR_Assembly vmAssembly, AssemblyInfo * pData)
 {
     DD_ENTER_MAY_THROW;
 
@@ -4424,7 +4421,7 @@ void  DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(
     while (iterator.Next(pAssembly.This()))
     {
         VMPTR_Assembly vmAssembly = VMPTR_Assembly::NullPtr();
-        vmAssembly.SetHostPtr(pAssembly->GetRootAssembly());
+        vmAssembly.SetHostPtr(pAssembly);
 
         fpCallback(vmAssembly, pUserData);
     }
@@ -4446,7 +4443,7 @@ void DacDbiInterfaceImpl::EnumerateModulesInAssembly(
     // Debugger isn't notified of Resource / Inspection-only modules.
     if (pAssembly->GetModule()->IsVisibleToDebugger())
     {
-        // If root assembly isn't yet loaded, just return
+        // If the assembly isn't yet loaded, just return
         if (!pAssembly->IsLoaded())
             return;
 
@@ -4466,15 +4463,15 @@ VMPTR_Assembly DacDbiInterfaceImpl::ResolveAssembly(
     DD_ENTER_MAY_THROW;
 
 
-    Assembly * pRootAssembly  = vmScope.GetDacPtr();
-    Module     * pModule      = pRootAssembly->GetModule();
+    Assembly * pRuntimeAssembly  = vmScope.GetDacPtr();
+    Module     * pModule      = pRuntimeAssembly->GetModule();
 
     VMPTR_Assembly vmAssembly = VMPTR_Assembly::NullPtr();
 
     Assembly * pAssembly = pModule->LookupAssemblyRef(tkAssemblyRef);
     if (pAssembly != NULL)
     {
-        vmAssembly.SetHostPtr(pAssembly->GetRootAssembly());
+        vmAssembly.SetHostPtr(pAssembly);
     }
     return vmAssembly;
 }

@@ -67,7 +67,7 @@ public:
                             LPCWSTR      psModuleName,    // module file name
                             DWORD        dwModuleName,    // number of characters in file name excludign null
                             Assembly *   pAssembly,       // the assembly the module belongs to
-                            Assembly * pRootAssembly,
+                            Assembly * pRuntimeAssembly,
                             BOOL         fAttaching) = 0; // true if this notification is due to a debugger
                                                           // being attached to the process
 

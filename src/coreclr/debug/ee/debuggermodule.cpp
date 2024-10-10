@@ -141,7 +141,7 @@ void DebuggerModuleTable::RemoveModule(Module* pModule)
         if (pRuntimeModule == pModule)
         {
             LOG((LF_CORDB, LL_INFO1000, "DMT::RM Removing DebuggerMod:0x%x - Module:0x%x DF:0x%x\n",
-                pDM, pModule, pDM->GetRootAssembly()));
+                pDM, pModule, pDM->GetAssembly()));
             TRACE_FREE(pDM);
             DeleteInteropSafe(pDM);
             Delete(HASH(pRuntimeModule), (HASHENTRY *) pDME);

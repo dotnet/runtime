@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: RsAppDomain.cpp
 //
-
-//
 //*****************************************************************************
+
 #include "stdafx.h"
 #include "primitives.h"
 #include "safewrap.h"
@@ -19,7 +19,6 @@
 #include "corpriv.h"
 #include "../../dlls/mscorrc/resource.h"
 #include <limits.h>
-
 
 /* ------------------------------------------------------------------------- *
  * AppDomain class methods
@@ -388,7 +387,7 @@ void CordbAppDomain::AssemblyEnumerationCallback(VMPTR_Assembly vmAssembly, void
 // Cache a new assembly
 //
 // Arguments:
-//      vmRootAssembly - new assembly to add to cache
+//      vmAssembly - new assembly to add to cache
 //
 // Return Value:
 //    Pointer to Assembly in cache.
@@ -400,12 +399,12 @@ void CordbAppDomain::AssemblyEnumerationCallback(VMPTR_Assembly vmAssembly, void
 //
 // Notes:
 //
-CordbAssembly * CordbAppDomain::CacheRootAssembly(VMPTR_Assembly vmRootAssembly)
+CordbAssembly * CordbAppDomain::CacheRuntimeAssembly(VMPTR_Assembly vmRuntimeAssembly)
 {
     INTERNAL_API_ENTRY(GetProcess());
 
     VMPTR_Assembly vmAssembly;
-    GetProcess()->GetDAC()->GetAssemblyFromRootAssembly(vmRootAssembly, &vmAssembly);
+    GetProcess()->GetDAC()->GetAssemblyFromRootAssembly(vmRuntimeAssembly, &vmAssembly);
 
     RSInitHolder<CordbAssembly> pAssembly(new CordbAssembly(this, vmAssembly, vmAssembly));
 
@@ -799,14 +798,14 @@ void CordbAppDomain::RemoveAssemblyFromCache(VMPTR_Assembly vmAssembly)
 //     or newly created if not yet in the cache.
 //     Never returns NULL. Throws on error (eg, oom).
 //
-CordbAssembly * CordbAppDomain::LookupOrCreateRootAssembly(VMPTR_Assembly vmAssembly)
+CordbAssembly * CordbAppDomain::LookupOrCreateRuntimeAssembly(VMPTR_Assembly vmAssembly)
 {
     CordbAssembly * pAssembly = m_assemblies.GetBase(VmPtrToCookie(vmAssembly));
     if (pAssembly != NULL)
     {
         return pAssembly;
     }
-    return CacheRootAssembly(vmAssembly);
+    return CacheRuntimeAssembly(vmAssembly);
 }
 
 CordbAssembly * CordbAppDomain::LookupOrCreateAssembly(VMPTR_Assembly vmAssembly)
@@ -850,7 +849,7 @@ CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_Module vmModule, VMPTR_A
     }
 
     if (vmModule.IsNull())
-        GetProcess()->GetDAC()->GetModuleForRootAssembly(vmAssembly, &vmModule);
+        GetProcess()->GetDAC()->GetModuleForRuntimeAssembly(vmAssembly, &vmModule);
 
     RSInitHolder<CordbModule> pModuleInit(new CordbModule(GetProcess(), vmModule, vmAssembly));
     pModule = pModuleInit.TransferOwnershipToHash(&m_modules);
@@ -931,7 +930,7 @@ void CordbAppDomain::PrepopulateModules()
 
         // DD-primitive  that invokes a callback.
         GetProcess()->GetDAC()->EnumerateModulesInAssembly(
-            pAssembly->GetRootAssemblyPtr(),
+            pAssembly->GetAssemblyPtr(),
             CordbAppDomain::ModuleEnumerationCallback,
             this); // user data
 

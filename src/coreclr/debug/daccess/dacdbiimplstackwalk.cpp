@@ -582,7 +582,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
 
                 frameData.stubFrame.funcMetadataToken = pDE->m_methodToken;
                 frameData.stubFrame.vmAssembly.SetHostPtr(
-                    pDE->m_debuggerModule ? pDE->m_debuggerModule->GetRootAssembly() : NULL);
+                    pDE->m_debuggerModule ? pDE->m_debuggerModule->GetAssembly() : NULL);
                 frameData.stubFrame.vmMethodDesc = VMPTR_MethodDesc::NullPtr();
             }
             else

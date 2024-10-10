@@ -4537,7 +4537,7 @@ void CordbProcess::GetModulesInLoadOrder(
 
     // Enumerate through and fill out pModules table.
     GetDAC()->EnumerateModulesInAssembly(
-        pAssemblyInternal->GetRootAssemblyPtr(),
+        pAssemblyInternal->GetAssemblyPtr(),
         ShimModuleCallbackData::Callback,
         &data); // user data
 
@@ -15236,7 +15236,7 @@ CordbModule * CordbProcess::LookupOrCreateModule(VMPTR_Assembly vmAssembly)
     _ASSERTE(!vmAssembly.IsNull());
 
     AssemblyInfo data;
-    GetDAC()->GetRootAssemblyData(vmAssembly, &data); // throws
+    GetDAC()->GetRuntimeAssemblyData(vmAssembly, &data); // throws
 
     CordbAppDomain * pAppDomain = LookupOrCreateAppDomain(data.vmAppDomain);
     return pAppDomain->LookupOrCreateModule(vmAssembly);
