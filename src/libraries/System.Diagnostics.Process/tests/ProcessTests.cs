@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.DirectoryServices.ActiveDirectory;
+using System.Globalization;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
@@ -252,6 +253,31 @@ namespace System.Diagnostics.Tests
             AssertExtensions.ThrowsContains<Win32Exception>(
                 () => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }),
                 fileToOpen);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        public void ProcessStart_UseShellExecute_DisableInheritHandles_ThrowsInvalidOperationException()
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                UseShellExecute = true,
+                InheritHandles = false,
+            };
+            AssertExtensions.Throws<InvalidOperationException>(() => Process.Start(psi));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        public void ProcessStart_UseUserName_DisableInheritHandles_ThrowsInvalidOperationException()
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                InheritHandles = false,
+                UserName = "Administrator",
+                PasswordInClearText = "password",
+            };
+            AssertExtensions.Throws<InvalidOperationException>(() => Process.Start(psi));
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasWindowsShell))]
@@ -2764,6 +2790,95 @@ namespace System.Diagnostics.Tests
             else
             {
                 test();
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        public void ProcessStart_InheritHandles_InfluencesTheInheritanceOfHandles(bool inheritHandles, bool redirectStreams)
+        {
+            using (var tmpFile = File.Open(GetTestFilePath(), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Inheritable))
+            {
+                tmpFile.WriteByte(42);
+                tmpFile.Flush();
+                tmpFile.Position = 0;
+
+                var options = new RemoteInvokeOptions();
+                options.StartInfo.InheritHandles = inheritHandles;
+                if (redirectStreams)
+                {
+                    options.StartInfo.RedirectStandardInput = true;
+                    options.StartInfo.RedirectStandardOutput = true;
+                    options.StartInfo.RedirectStandardError = true;
+                }
+                string handleStr = tmpFile.SafeFileHandle.DangerousGetHandle().ToString(CultureInfo.InvariantCulture);
+
+                using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(static (string handleStr, string inheritHandlesStr, string redirectStreamsStr) =>
+                {
+                    nint handle = nint.Parse(handleStr);
+                    bool inheritHandles = bool.Parse(inheritHandlesStr);
+                    bool redirectStreams = bool.Parse(redirectStreamsStr);
+                    // set ownsHandle to false to prevent trying to close a potentially invalid handle
+                    var fileHandle = new SafeFileHandle(handle, ownsHandle: false);
+
+                    if (redirectStreams)
+                    {
+                        Assert.Equal("input", Console.ReadLine());
+                        Console.WriteLine("output");
+                        Console.Error.WriteLine("error");
+                    }
+
+                    // To avoid asserts when trying to read from an invalid handle,
+                    // ensure that what we have is at least a normal file.
+                    bool handleIsValid = FileHandleIsValid(fileHandle);
+                    if (inheritHandles)
+                    {
+                        Assert.True(handleIsValid);
+                    }
+                    else if (!handleIsValid)
+                    {
+                        return RemoteExecutor.SuccessExitCode;
+                    }
+
+                    byte[] buf = new byte[100];
+                    long bytesRead;
+                    try
+                    {
+                        bytesRead = RandomAccess.Read(fileHandle, buf.AsSpan(), 0);
+                    }
+                    catch (Exception) when (!inheritHandles)
+                    {
+                        // It it hard to predict what could go wrong when we are reading from a random
+                        // file handle.
+                        return RemoteExecutor.SuccessExitCode;
+                    }
+
+                    if (inheritHandles)
+                    {
+                        Assert.Equal(1, bytesRead);
+                        Assert.Equal(42, buf[0]);
+                    }
+                    else
+                    {
+                        // Hypothetically there could be a handle with the same value in this process
+                        // as in the parent process. Make sure that we are looking at a different file.
+                        Assert.False(bytesRead == 1 && buf[0] == 42);
+                    }
+
+                    return RemoteExecutor.SuccessExitCode;
+                }, handleStr, inheritHandles.ToString(), redirectStreams.ToString(), options))
+                {
+                    if (redirectStreams)
+                    {
+                        handle.Process.StandardInput.WriteLine("input");
+                        Assert.Equal("output", handle.Process.StandardOutput.ReadLine());
+                        Assert.Equal("error", handle.Process.StandardError.ReadLine());
+                    }
+                }
             }
         }
     }
