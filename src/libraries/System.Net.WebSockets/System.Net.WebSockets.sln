@@ -19,7 +19,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebSockets", "re
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebSockets", "src\System.Net.WebSockets.csproj", "{D701D3C7-0CCD-4245-97C4-A90F3972DFDC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebSockets.Tests", "tests\System.Net.WebSockets.Tests.csproj", "{5886B73F-4547-4C88-AD69-8D29668CB05B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebSockets.Tests", "tests\FunctionalTests\System.Net.WebSockets.Tests.csproj", "{5886B73F-4547-4C88-AD69-8D29668CB05B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ObjectModel", "..\System.ObjectModel\ref\System.ObjectModel.csproj", "{323F115C-7DA7-4120-B50A-3FDD0A0186E4}"
 EndProject

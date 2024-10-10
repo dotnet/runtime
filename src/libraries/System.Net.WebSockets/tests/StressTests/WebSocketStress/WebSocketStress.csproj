@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!--<TargetFramework>$(NetCoreAppCurrent)</TargetFramework>-->
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Compile Include="c:\_dev\rt\src\libraries\Common\tests\System\IO\Compression\CRC.cs" Link="Utils\CRC.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine.Experimental" Version="0.3.0-alpha.19577.1" />
+    <PackageReference Include="System.IO.Pipelines" Version="6.0.0-preview.5.21301.5" />
+  </ItemGroup>
+</Project>
