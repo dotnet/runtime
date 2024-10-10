@@ -91,33 +91,6 @@ jobs:
       scenarios:
         - WasmTestOnChrome
 
-  # this only runs on the extra pipeline
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
-      nameSuffix: _NodeJs
-      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-      scenarios:
-        - WasmTestOnNodeJS
-
-  # Library tests - Windows - this only runs on the extra pipeline
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm_win
-      nameSuffix: _NodeJs
-      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      # Don't run for rolling builds, as this is covered
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-      scenarios:
-        - WasmTestOnNodeJS
-
   # EAT Library tests - only run on linux
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
@@ -200,7 +173,6 @@ jobs:
       scenarios:
         - WasmTestOnChrome
         - WasmTestOnFirefox
-        - WasmTestOnNodeJS
 
   # # Hybrid Globalization AOT tests
   # # ActiveIssue: https://github.com/dotnet/runtime/issues/51746
@@ -217,7 +189,6 @@ jobs:
   #     alwaysRun: true
   #     scenarios:
   #       - WasmTestOnChrome
-  #       - WasmTestOnNodeJS
 
 - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
   # Builds only

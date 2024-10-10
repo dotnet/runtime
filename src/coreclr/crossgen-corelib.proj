@@ -1,9 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
-  <PropertyGroup>
-    <UseCrossArchCrossgen2 Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != ''">true</UseCrossArchCrossgen2>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_inbuild.csproj" OutputItemType="Crossgen2" />
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/dotnet-pgo/dotnet-pgo.csproj" OutputItemType="DotNetPgo" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
@@ -99,10 +95,12 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <Crossgen2OutputPath>%(Crossgen2.RootDir)%(Crossgen2.Directory)</Crossgen2OutputPath>
+      <Crossgen2OutputPath>%(Crossgen2.RootDir)/%(Crossgen2.Directory)</Crossgen2OutputPath>
     </PropertyGroup>
     <ItemGroup>
-      <Crossgen2Files Include="$(Crossgen2OutputPath)/*.dll;$(Crossgen2OutputPath)/*.so;$(Crossgen2OutputPath)/*.dylib" />
+      <Crossgen2Files Include="$(Crossgen2OutputPath)/*.dll" />
+      <Crossgen2Files Include="$(Crossgen2OutputPath)/*.so" />
+      <Crossgen2Files Include="$(Crossgen2OutputPath)/*.dylib" />
     </ItemGroup>
   </Target>
 
