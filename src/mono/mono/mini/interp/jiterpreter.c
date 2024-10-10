@@ -1604,6 +1604,7 @@ static void
 free_queue (void *ptr) {
 	mono_os_mutex_lock (&queue_mutex);
 	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
+	g_assert (shared_queues);
 	g_ptr_array_remove_fast (shared_queues, ptr);
 	g_ptr_array_free ((GPtrArray *)ptr, TRUE);
 	mono_os_mutex_unlock (&queue_mutex);
@@ -1645,8 +1646,9 @@ get_queue (int queue) {
 	GPtrArray *result = NULL;
 	if ((result = (GPtrArray *)mono_native_tls_get_value (key)) == NULL) {
 		g_assert (mono_native_tls_set_value (key, result = g_ptr_array_new ()));
-		mono_os_mutex_lock (&queue_mutex);
 		// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
+		mono_os_mutex_lock (&queue_mutex);
+		g_assert (shared_queues);
 		g_ptr_array_add (shared_queues, result);
 		mono_os_mutex_unlock (&queue_mutex);
 	}
@@ -1656,8 +1658,11 @@ get_queue (int queue) {
 // Purges this item from all queues
 void
 mono_jiterp_tlqueue_purge_all (gpointer item) {
-	mono_os_mutex_lock (&queue_mutex);
+	// HACK: Call get_queue_key to ensure the queues are initialized before enumerating them
+	get_queue_key (0);
+
 	// WARNING: Ensure we do not call into the runtime or JS while holding this mutex!
+	mono_os_mutex_lock (&queue_mutex);
 	for (int i = 0; i < shared_queues->len; i++) {
 		GPtrArray *queue = (GPtrArray *)g_ptr_array_index (shared_queues, i);
 		gboolean ok = g_ptr_array_remove_fast (queue, item);

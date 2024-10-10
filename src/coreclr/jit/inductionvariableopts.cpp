@@ -779,7 +779,7 @@ bool Compiler::optWidenIVs(ScalarEvolutionContext& scevContext,
         JITDUMP("\n");
         DISPSTMT(stmt);
 
-        Scev* scev = scevContext.Analyze(loop->GetHeader(), stmt->GetRootNode());
+        Scev* scev = scevContext.Analyze(loop->GetHeader(), stmt->GetRootNode()->AsLclVarCommon()->Data());
         if (scev == nullptr)
         {
             JITDUMP("  Could not analyze header PHI\n");
@@ -1417,7 +1417,7 @@ bool StrengthReductionContext::TryStrengthReduce()
         DISPSTMT(stmt);
 
         GenTreeLclVarCommon* primaryIVLcl = stmt->GetRootNode()->AsLclVarCommon();
-        Scev*                candidate    = m_scevContext.Analyze(m_loop->GetHeader(), primaryIVLcl);
+        Scev*                candidate    = m_scevContext.Analyze(m_loop->GetHeader(), primaryIVLcl->Data());
         if (candidate == nullptr)
         {
             JITDUMP("  Could not analyze header PHI\n");

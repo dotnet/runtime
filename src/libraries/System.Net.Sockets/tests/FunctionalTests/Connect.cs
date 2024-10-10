@@ -17,7 +17,7 @@ namespace System.Net.Sockets.Tests
         public Connect(ITestOutputHelper output) : base(output) {}
 
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         [MemberData(nameof(Loopbacks))]
         public async Task Connect_Success(IPAddress listenAt)
         {
@@ -45,7 +45,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(client.Connected);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         [MemberData(nameof(Loopbacks))]
         public async Task Connect_Dns_Success(IPAddress listenAt)
         {
@@ -68,7 +68,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         [MemberData(nameof(Loopbacks))]
         public async Task Connect_MultipleIPAddresses_Success(IPAddress listenAt)
         {
@@ -85,7 +85,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         public async Task Connect_OnConnectedSocket_Fails()
         {
             int port;
@@ -102,7 +102,7 @@ namespace System.Net.Sockets.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)] // Unix currently does not support Disconnect
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         public async Task Connect_AfterDisconnect_Fails()
         {
             int port;
@@ -205,6 +205,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop("Connection failure takes long on Windows.")]
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task Connect_WithoutListener_ThrowSocketExceptionWithAppropriateInfo()
         {
             using PortBlocker portBlocker = new PortBlocker(() =>
@@ -227,6 +228,7 @@ namespace System.Net.Sockets.Tests
 
         [Theory]
         [MemberData(nameof(LoopbacksAndAny))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task Connect_DatagramSockets_DontThrowConnectedException_OnSecondAttempt(IPAddress listenAt, IPAddress secondConnection)
         {
             using Socket listener = new Socket(listenAt.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
@@ -241,16 +243,19 @@ namespace System.Net.Sockets.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ConnectSync : Connect<SocketHelperArraySync>
     {
         public ConnectSync(ITestOutputHelper output) : base(output) {}
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ConnectSyncForceNonBlocking : Connect<SocketHelperSyncForceNonBlocking>
     {
         public ConnectSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ConnectApm : Connect<SocketHelperApm>
     {
         public ConnectApm(ITestOutputHelper output) : base(output) {}
@@ -265,7 +270,7 @@ namespace System.Net.Sockets.Tests
     {
         public ConnectEap(ITestOutputHelper output) : base(output) {}
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectAsync_WithData_DataReceived(bool useArrayApi)
@@ -484,7 +489,7 @@ namespace System.Net.Sockets.Tests
         {
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         public async Task Connect_DualMode_MultiAddressFamilyConnect_RetrievedEndPoints_Success()
         {
             if (!SupportsMultiConnect)
@@ -503,7 +508,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         public async Task Connect_DualMode_DnsConnect_RetrievedEndPoints_Success()
         {
             var localhostAddresses = Dns.GetHostAddresses("localhost");
@@ -539,11 +544,13 @@ namespace System.Net.Sockets.Tests
         public ConnectSync_NonParallel(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ConnectSyncForceNonBlocking_NonParallel : Connect_NonParallel<SocketHelperSyncForceNonBlocking>
     {
         public ConnectSyncForceNonBlocking_NonParallel(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ConnectApm_NonParallel : Connect_NonParallel<SocketHelperApm>
     {
         public ConnectApm_NonParallel(ITestOutputHelper output) : base(output) { }

@@ -11,11 +11,46 @@ class Devirtualization
 {
     internal static int Run()
     {
+        TestDevirtualizationIntoAbstract.Run();
         RegressionBug73076.Run();
+        RegressionGenericHierarchy.Run();
         DevirtualizationCornerCaseTests.Run();
         DevirtualizeIntoUnallocatedGenericType.Run();
 
         return 100;
+    }
+
+    class TestDevirtualizationIntoAbstract
+    {
+        class Something { }
+
+        abstract class Base
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public virtual Type GetSomething() => typeof(Something);
+        }
+
+        sealed class Derived : Base { }
+
+        class Unrelated : Base
+        {
+            public override Type GetSomething() => typeof(Unrelated);
+        }
+
+        public static void Run()
+        {
+            TestUnrelated(new Unrelated());
+
+            // We were getting a scanning failure because GetSomething got devirtualized into
+            // Base.GetSomething, but that's unreachable.
+            Test(null);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type Test(Derived d) => d?.GetSomething();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type TestUnrelated(Base d) => d?.GetSomething();
+        }
     }
 
     class RegressionBug73076
@@ -50,6 +85,36 @@ class Devirtualization
             var made = factory.Make<object>();
             if (made.GetId() != "Derived")
                 throw new Exception();
+        }
+    }
+
+    class RegressionGenericHierarchy
+    {
+        class Base<T>
+        {
+            public virtual string Print() => "Base<T>";
+        }
+
+        class Mid : Base<Atom>
+        {
+            public override string Print() => "Mid";
+            public override string ToString() => Print();
+        }
+
+        class Derived : Mid
+        {
+            public override string Print() => "Derived";
+        }
+
+        class Atom { }
+
+        public static void Run()
+        {
+            if (Get().ToString() != "Derived")
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static object Get() => new Derived();
         }
     }
 

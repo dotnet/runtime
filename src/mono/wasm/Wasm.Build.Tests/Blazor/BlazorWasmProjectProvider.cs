@@ -16,6 +16,7 @@ public class BlazorWasmProjectProvider : WasmSdkBasedProjectProvider
     public void AssertBundle(BlazorBuildOptions options)
         => AssertBundle(new AssertWasmSdkBundleOptions(
                 Config: options.Config,
+                BootConfigFileName: options.BootConfigFileName,
                 IsPublish: options.IsPublish,
                 TargetFramework: options.TargetFramework,
                 BinFrameworkDir: options.BinFrameworkDir ?? FindBinFrameworkDir(options.Config, options.IsPublish, options.TargetFramework),

@@ -21,6 +21,7 @@
 #include "gcenv.unix.inl"
 #include "volatile.h"
 #include "numasupport.h"
+#include <minipal/thread.h>
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
@@ -389,18 +390,7 @@ void GCToOSInterface::Shutdown()
 //  Numeric id of the current thread, as best we can retrieve it.
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
 {
-#if defined(__linux__)
-    return (uint64_t)syscall(SYS_gettid);
-#elif HAVE_PTHREAD_GETTHREADID_NP
-    return (uint64_t)pthread_getthreadid_np();
-#elif HAVE_PTHREAD_THREADID_NP
-    unsigned long long tid;
-    pthread_threadid_np(pthread_self(), &tid);
-    return (uint64_t)tid;
-#else
-    // Fallback in case we don't know how to get integer thread id on the current platform
-    return (uint64_t)pthread_self();
-#endif
+    return (uint64_t)minipal_get_current_thread_id();
 }
 
 // Get the process ID of the process.

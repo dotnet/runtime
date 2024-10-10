@@ -544,12 +544,12 @@ private:
     LoaderAllocator * GetLoaderAllocator(DomainAssembly * pDomainAssembly)
     {
         WRAPPER_NO_CONTRACT;
-        return pDomainAssembly->GetLoaderAllocator();
+        return pDomainAssembly->GetAssembly()->GetLoaderAllocator();
     }
     BOOL IsCollectible(DomainAssembly * pDomainAssembly)
     {
         WRAPPER_NO_CONTRACT;
-        return pDomainAssembly->IsCollectible();
+        return pDomainAssembly->GetAssembly()->IsCollectible();
     }
     LoaderAllocator * GetLoaderAllocator(Assembly * pAssembly)
     {

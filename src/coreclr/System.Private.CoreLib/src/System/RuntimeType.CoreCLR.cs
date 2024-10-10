@@ -301,7 +301,7 @@ namespace System
                                 break; // end of list; stop iteration and fall through to slower path
                             }
 
-                            if (candidate is RtFieldInfo candidateRtFI && candidateRtFI.GetFieldHandle() == field.Value)
+                            if (candidate is RtFieldInfo candidateRtFI && candidateRtFI.GetFieldDesc() == field.Value)
                             {
                                 return candidateRtFI; // match!
                             }
@@ -3306,6 +3306,13 @@ namespace System
             return false;
         }
 
+        public override unsafe bool IsInstanceOfType([NotNullWhen(true)] object? o)
+        {
+            bool ret = CastHelpers.IsInstanceOfAny(GetUnderlyingNativeHandle().ToPointer(), o) is not null;
+            GC.KeepAlive(this);
+            return ret;
+        }
+
 #if FEATURE_TYPEEQUIVALENCE
         // Reflexive, symmetric, transitive.
         public override bool IsEquivalentTo([NotNullWhen(true)] Type? other)
@@ -3363,18 +3370,48 @@ namespace System
 
         #region Attributes
 
-        public override Guid GUID
+        public override unsafe Guid GUID
         {
             get
             {
-                Guid result = default;
-                GetGUID(ref result);
+                TypeHandle th = GetNativeTypeHandle();
+                if (th.IsTypeDesc || th.AsMethodTable()->IsArray)
+                {
+                    return Guid.Empty;
+                }
+
+                Guid result;
+#if FEATURE_COMINTEROP
+                // The fully qualified name is needed since the RuntimeType has a TypeHandle property.
+                if (System.Runtime.CompilerServices.TypeHandle.AreSameType(th, System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<__ComObject>()))
+                {
+                    GetComObjectGuidWorker(this, &result);
+                }
+                else
+#endif // FEATURE_COMINTEROP
+                {
+                    GetGuid(th.AsMethodTable(), &result);
+                }
+                GC.KeepAlive(this); // Ensure TypeHandle remains alive.
                 return result;
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void GetGUID(ref Guid result);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetGuid")]
+        private static unsafe partial void GetGuid(MethodTable* pMT, Guid* result);
+
+#if FEATURE_COMINTEROP
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe void GetComObjectGuidWorker(RuntimeType type, Guid* result)
+        {
+            Debug.Assert(type.IsGenericCOMObjectImpl());
+            Debug.Assert(result is not null);
+            GetComObjectGuid(ObjectHandleOnStack.Create(ref type), result);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetComObjectGuid")]
+        private static unsafe partial void GetComObjectGuid(ObjectHandleOnStack type, Guid* result);
+#endif // FEATURE_COMINTEROP
 
         protected override unsafe bool IsValueTypeImpl()
         {
@@ -4017,22 +4054,58 @@ namespace System
 
         internal void InvalidateCachedNestedType() => Cache.InvalidateCachedNestedType();
 
-        internal bool IsGenericCOMObjectImpl() => RuntimeTypeHandle.IsComObject(this, true);
+#if FEATURE_COMINTEROP
+        protected override bool IsCOMObjectImpl() => RuntimeTypeHandle.CanCastTo(this, (RuntimeType)typeof(__ComObject));
+
+        // We need to check the type handle values - not the instances - to determine if the runtime type is a generic ComObject.
+        internal bool IsGenericCOMObjectImpl() => TypeHandle.Value == typeof(__ComObject).TypeHandle.Value;
+#else
+        protected override bool IsCOMObjectImpl() => false;
+
+#pragma warning disable CA1822 // Mark members as static
+        internal bool IsGenericCOMObjectImpl() => false;
+#pragma warning restore CA1822
+#endif
 
         #endregion
 
-        #region Legacy internal static
-
 #if FEATURE_COMINTEROP
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern object InvokeDispMethod(
-            string name, BindingFlags invokeAttr, object target, object?[]? args,
-            bool[]? byrefModifiers, int culture, string[]? namedParameters);
-#endif // FEATURE_COMINTEROP
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_InvokeDispMethod")]
+        private static partial void InvokeDispMethod(
+            ObjectHandleOnStack type,
+            ObjectHandleOnStack name,
+            BindingFlags invokeAttr,
+            ObjectHandleOnStack target,
+            ObjectHandleOnStack args,
+            ObjectHandleOnStack byrefModifiers,
+            int lcid,
+            ObjectHandleOnStack namedParameters,
+            ObjectHandleOnStack result);
 
-        #endregion
+        private object InvokeDispMethod(
+            string name,
+            BindingFlags invokeAttr,
+            object target,
+            object?[]? args,
+            bool[]? byrefModifiers,
+            int culture,
+            string[]? namedParameters)
+        {
+            RuntimeType _this = this;
+            object? result = null;
+            InvokeDispMethod(
+                ObjectHandleOnStack.Create(ref _this),
+                ObjectHandleOnStack.Create(ref name),
+                invokeAttr,
+                ObjectHandleOnStack.Create(ref target),
+                ObjectHandleOnStack.Create(ref args),
+                ObjectHandleOnStack.Create(ref byrefModifiers),
+                culture,
+                ObjectHandleOnStack.Create(ref namedParameters),
+                ObjectHandleOnStack.Create(ref result));
+            return result!;
+        }
 
-#if FEATURE_COMINTEROP
         [RequiresUnreferencedCode("The member might be removed")]
         private object? ForwardCallToInvokeMember(
             string memberName,

@@ -1054,7 +1054,6 @@ static struct cmsghdr* GET_CMSG_NXTHDR(struct msghdr* mhdr, struct cmsghdr* cmsg
 #pragma clang diagnostic pop
 #endif
 }
-#endif // CMSG_SPACE
 
 int32_t
 SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo)
@@ -1064,7 +1063,6 @@ SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isI
         return 0;
     }
 
-#if defined(CMSG_SPACE)
     struct msghdr header;
     ConvertMessageHeaderToMsghdr(&header, messageHeader, -1);
 
@@ -1093,13 +1091,35 @@ SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isI
     }
 
     return 0;
-#else // CMSG_SPACE
-    (void)messageHeader;
-    (void)isIPv4;
-    (void)packetInfo;
-    return Error_ENOTSUP;
-#endif // CMSG_SPACE
 }
+#else // !CMSG_SPACE
+int32_t
+SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo)
+{
+    if (messageHeader == NULL || packetInfo == NULL)
+    {
+        return 0;
+    }
+
+    if (isIPv4 != 0)
+    {
+        struct sockaddr_in* inetSockAddr = (struct sockaddr_in*)messageHeader->SocketAddress;
+
+        ConvertInAddrToByteArray(&packetInfo->Address.Address[0], NUM_BYTES_IN_IPV4_ADDRESS, &inetSockAddr->sin_addr);
+        packetInfo->Address.IsIPv6 = 0;
+    }
+    else
+    {
+        struct sockaddr_in6* inet6SockAddr = (struct sockaddr_in6*)messageHeader->SocketAddress;
+
+        ConvertIn6AddrToByteArray(&packetInfo->Address.Address[0], NUM_BYTES_IN_IPV6_ADDRESS, &inet6SockAddr->sin6_addr);
+        packetInfo->Address.IsIPv6 = 1;
+        packetInfo->Address.ScopeId = inet6SockAddr->sin6_scope_id;
+    }
+    packetInfo->InterfaceIndex = 0;
+    return 1;
+}
+#endif // !CMSG_SPACE
 
 static int8_t GetMulticastOptionName(int32_t multicastOption, int8_t isIPv6, int* optionName)
 {
@@ -1554,9 +1574,10 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
 
     ssize_t res;
 #if !defined(CMSG_SPACE)
-    // TODO https://github.com/dotnet/runtime/issues/98957
-    return Error_ENOTSUP;
-#else // !CMSG_SPACE
+    // we will only use 0th buffer
+    struct iovec* msg_iov = (struct iovec*)messageHeader->IOVectors;
+    while ((res = recvfrom(fd, msg_iov[0].iov_base, msg_iov[0].iov_len, socketFlags, (sockaddr *)messageHeader->SocketAddress, (socklen_t*) &(messageHeader->SocketAddressLen))) < 0 && errno == EINTR);
+#else // CMSG_SPACE
     struct msghdr header;
     ConvertMessageHeaderToMsghdr(&header, messageHeader, fd);
 
@@ -1572,6 +1593,7 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
     messageHeader->ControlBufferLen = Min((int32_t)header.msg_controllen, messageHeader->ControlBufferLen);
 
     messageHeader->Flags = ConvertSocketFlagsPlatformToPal(header.msg_flags);
+#endif // CMSG_SPACE
 
     if (res != -1)
     {
@@ -1581,7 +1603,6 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
 
     *received = 0;
     return SystemNative_ConvertErrorPlatformToPal(errno);
-#endif // !CMSG_SPACE
 }
 
 int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* sent)
@@ -1635,11 +1656,8 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
         return Error_ENOTSUP;
     }
 
-#if !defined(CMSG_SPACE)
-    // TODO https://github.com/dotnet/runtime/issues/98957
-    return Error_ENOTSUP;
-#else // !CMSG_SPACE
     ssize_t res;
+#if defined(CMSG_SPACE)
     struct msghdr header;
     ConvertMessageHeaderToMsghdr(&header, messageHeader, fd);
 
@@ -1652,6 +1670,12 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
 #else
     while ((res = sendmsg(fd, &header, socketFlags)) < 0 && errno == EINTR);
 #endif
+#else // CMSG_SPACE
+    // we will only use 0th buffer
+    struct iovec* msg_iov = (struct iovec*)messageHeader->IOVectors;
+    while ((res = sendto(fd, msg_iov[0].iov_base, msg_iov[0].iov_len, socketFlags, (sockaddr *)messageHeader->SocketAddress, (socklen_t)messageHeader->SocketAddressLen)) < 0 && errno == EINTR);
+#endif // CMSG_SPACE
+
     if (res != -1)
     {
         *sent = res;
@@ -1660,7 +1684,6 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
 
     *sent = 0;
     return SystemNative_ConvertErrorPlatformToPal(errno);
-#endif // !CMSG_SPACE
 }
 
 int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, intptr_t* acceptedSocket)
@@ -1675,7 +1698,11 @@ int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* so
     socklen_t addrLen = (socklen_t)*socketAddressLen;
     int accepted;
 #if HAVE_ACCEPT4 && defined(SOCK_CLOEXEC)
+#if defined(TARGET_WASI) // WASI is always FD_CLOEXEC and we always need SOCK_NONBLOCK. SOCK_CLOEXEC doesn't make sense in WASI.
+    while ((accepted = accept4(fd, (struct sockaddr*)socketAddress, &addrLen, SOCK_NONBLOCK)) < 0 && errno == EINTR);
+#else // !TARGET_WASI
     while ((accepted = accept4(fd, (struct sockaddr*)socketAddress, &addrLen, SOCK_CLOEXEC)) < 0 && errno == EINTR);
+#endif // !TARGET_WASI
 #else
     while ((accepted = accept(fd, (struct sockaddr*)socketAddress, &addrLen)) < 0 && errno == EINTR);
 #if defined(FD_CLOEXEC)
@@ -1690,7 +1717,6 @@ int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* so
         errno = oldErrno;
     }
 #endif
-#endif
 #if !defined(__linux__)
     // On macOS and FreeBSD new socket inherits flags from accepting fd.
     // Our socket code expects new socket to be in blocking mode by default.
@@ -1701,6 +1727,7 @@ int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* so
         accepted = -1;
         errno = oldErrno;
     }
+#endif
 #endif
     if (accepted == -1)
     {
@@ -2221,7 +2248,11 @@ int32_t SystemNative_GetSockOpt(
             socklen_t optLen = (socklen_t)*optionLen;
             // On Unix, SO_REUSEPORT controls the ability to bind multiple sockets to the same address.
             int err = getsockopt(fd, SOL_SOCKET, SO_REUSEPORT, optionValue, &optLen);
-
+#elif defined(SO_REUSEADDR)
+            socklen_t optLen = (socklen_t)*optionLen;
+            int err = getsockopt(fd, SOL_SOCKET, SO_REUSEADDR, optionValue, &optLen);
+#endif
+#if defined(SO_REUSEPORT) || defined(SO_REUSEADDR)
             if (err != 0)
             {
                 return SystemNative_ConvertErrorPlatformToPal(errno);
@@ -2238,7 +2269,7 @@ int32_t SystemNative_GetSockOpt(
                 value = value == 0 ? 1 : 0;
             }
             *(int32_t*)optionValue = value;
-#else // !SO_REUSEPORT
+#else // !SO_REUSEPORT !SO_REUSEADDR
             *optionValue = 0;
 #endif
             return Error_SUCCESS;
@@ -2358,7 +2389,6 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
         // We make both SocketOptionName_SO_REUSEADDR and SocketOptionName_SO_EXCLUSIVEADDRUSE control SO_REUSEPORT/SO_REUSEADDR.
         if (socketOptionName == SocketOptionName_SO_EXCLUSIVEADDRUSE || socketOptionName == SocketOptionName_SO_REUSEADDR)
         {
-#ifdef SO_REUSEPORT
             if (optionLen != sizeof(int32_t))
             {
                 return Error_EINVAL;
@@ -2379,6 +2409,7 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
                 }
             }
 
+#ifdef SO_REUSEPORT
             // An application that sets SO_REUSEPORT/SO_REUSEADDR can reuse the endpoint with another
             // application that sets the same option. If one application sets SO_REUSEPORT and another
             // sets SO_REUSEADDR the second application will fail to bind. We set both options, this
@@ -2389,7 +2420,10 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
                 err = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &value, (socklen_t)optionLen);
             }
             return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
-#else // !SO_REUSEPORT
+#elif defined(SO_REUSEADDR)
+            int err = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &value, (socklen_t)optionLen);
+            return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+#else // !SO_REUSEPORT !SO_REUSEADDR
             return Error_SUCCESS;
 #endif
         }
@@ -2779,6 +2813,9 @@ int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t p
 #ifdef SOCK_CLOEXEC
     platformSocketType |= SOCK_CLOEXEC;
 #endif
+#if defined(TARGET_WASI)
+    platformSocketType |= SOCK_NONBLOCK; // WASI sockets are always non-blocking, because in ST we don't have another thread which could be blocked
+#endif
     *createdSocket = socket(platformAddressFamily, platformSocketType, platformProtocolType);
     if (*createdSocket == -1)
     {
@@ -2841,6 +2878,11 @@ int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int3
         !TryConvertSocketTypePlatformToPal(typeValue, socketType))
 #endif
     {
+#if defined(TARGET_WASI)
+        if (errno == EBADF){
+            return Error_ENOTSOCK;
+        }
+#endif // TARGET_WASI
         *socketType = SocketType_UNKNOWN;
     }
 
@@ -3303,7 +3345,8 @@ static int32_t WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32
     return Error_SUCCESS;
 }
 
-#else
+#else // !HAVE_KQUEUE !HAVE_EPOLL
+
 static const size_t SocketEventBufferElementSize = 0;
 
 static int32_t CloseSocketEventPortInner(int32_t port)
@@ -3324,8 +3367,37 @@ static int32_t WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32
 {
     return Error_ENOSYS;
 }
+#endif  // !HAVE_KQUEUE !HAVE_EPOLL
 
-#endif
+#if defined(TARGET_WASI)
+// from https://github.com/WebAssembly/wasi-libc/blob/230d4be6c54bec93181050f9e25c87150506bdd0/libc-bottom-half/headers/private/wasi/descriptor_table.h
+bool descriptor_table_get_ref(int fd, void **entry);
+
+// this method is invading private implementation details of wasi-libc
+// we could get rid of it when https://github.com/WebAssembly/wasi-libc/issues/542 is resolved
+// or after WASIp3 promises are implemented, whatever comes first
+int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry)
+{
+    if (entry == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd = ToFileDescriptor(socket);
+    if(!descriptor_table_get_ref(fd, entry))
+    {
+        return Error_EFAULT;
+    }
+    return Error_SUCCESS;
+}
+#else
+int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry)
+{
+    (void)socket;
+    (void)entry;
+    return Error_ENOSYS;
+}
+#endif  // TARGET_WASI
 
 int32_t SystemNative_CreateSocketEventPort(intptr_t* port)
 {

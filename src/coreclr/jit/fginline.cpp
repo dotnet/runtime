@@ -69,7 +69,7 @@ bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* 
 {
     // We disallow inlining the exact same instantiation.
     if ((ancestor->GetCallee() == inlineInfo->fncHandle) &&
-        (ancestor->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHnd))
+        (ancestor->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHandle))
     {
         JITDUMP("Call site is trivially recursive\n");
         return true;
@@ -80,7 +80,7 @@ bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* 
     // involved this can quickly consume a large amount of resources, so try to
     // verify that we aren't inlining recursively with complex contexts.
     if (info.compCompHnd->haveSameMethodDefinition(inlineInfo->fncHandle, ancestor->GetCallee()) &&
-        ContextComplexityExceeds(inlineInfo->inlineCandidateInfo->exactContextHnd, 64))
+        ContextComplexityExceeds(inlineInfo->inlineCandidateInfo->exactContextHandle, 64))
     {
         JITDUMP("Call site is recursive with a complex generic context\n");
         return true;
@@ -1300,7 +1300,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                     ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext, pParam->inlineInfo->iciStmt,
                                               pParam->inlineInfo->iciCall);
             pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
-            pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHnd;
+            pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHandle;
 
             JITLOG_THIS(pParam->pThis,
                                      (LL_INFO100000, "INLINER: inlineInfo.tokenLookupContextHandle for %s set to 0x%p:\n",
@@ -2042,7 +2042,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
     if (inlineInfo->inlineCandidateInfo->initClassResult & CORINFO_INITCLASS_USE_HELPER)
     {
-        CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(inlineInfo->inlineCandidateInfo->exactContextHnd);
+        CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(inlineInfo->inlineCandidateInfo->exactContextHandle);
 
         tree    = fgGetSharedCCtor(exactClass);
         newStmt = gtNewStmt(tree, callDI);

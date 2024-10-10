@@ -40,6 +40,41 @@ public:
     static ABIPassingSegment OnStack(unsigned stackOffset, unsigned offset, unsigned size);
 };
 
+class ABIPassingSegmentIterator
+{
+    const ABIPassingSegment* m_value;
+public:
+    explicit ABIPassingSegmentIterator(const ABIPassingSegment* value)
+        : m_value(value)
+    {
+    }
+
+    const ABIPassingSegment& operator*() const
+    {
+        return *m_value;
+    }
+    const ABIPassingSegment* operator->() const
+    {
+        return m_value;
+    }
+
+    ABIPassingSegmentIterator& operator++()
+    {
+        m_value++;
+        return *this;
+    }
+
+    bool operator==(const ABIPassingSegmentIterator& other) const
+    {
+        return m_value == other.m_value;
+    }
+
+    bool operator!=(const ABIPassingSegmentIterator& other) const
+    {
+        return m_value != other.m_value;
+    }
+};
+
 struct ABIPassingInformation
 {
 private:
@@ -71,8 +106,9 @@ public:
 
     ABIPassingInformation(Compiler* comp, unsigned numSegments);
 
-    const ABIPassingSegment& Segment(unsigned index) const;
-    ABIPassingSegment&       Segment(unsigned index);
+    const ABIPassingSegment&                Segment(unsigned index) const;
+    ABIPassingSegment&                      Segment(unsigned index);
+    IteratorPair<ABIPassingSegmentIterator> Segments() const;
 
     bool     HasAnyRegisterSegment() const;
     bool     HasAnyFloatingRegisterSegment() const;

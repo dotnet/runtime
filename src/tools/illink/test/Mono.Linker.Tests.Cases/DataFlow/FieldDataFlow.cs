@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
@@ -11,6 +12,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// Note: this test's goal is to validate that the product correctly reports unrecognized patterns
 	//   - so the main validation is done by the ExpectedWarning attributes.
 	[SkipKeptItemsValidation]
+	[SetupCompileArgument ("/unsafe")]
 	[ExpectedNoWarnings]
 	public class FieldDataFlow
 	{
@@ -394,11 +396,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				GenericField<Type>.field = GetUnknownType ();
 			}
 
+			[ExpectedWarning ("IL2097")]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			unsafe static delegate*<void> functionPointer;
+
+			unsafe static void TestFunctionPointer ()
+			{
+				functionPointer = null;
+			}
+
 			public static void Test ()
 			{
 				TestUnsupportedType ();
 				StringRef.Test ();
 				TestTypeGenericParameter ();
+				TestFunctionPointer ();
 			}
 		}
 

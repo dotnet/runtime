@@ -692,6 +692,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ChainPal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\FindPal.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\LegacyBasicConstraintsDecoder.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.NotSupported.cs" />
@@ -906,8 +907,8 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePolicy.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ChainPal.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\FindPal.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\LegacyBasicConstraintsDecoder.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ManagedCertificateFinder.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\ManagedX509ExtensionProcessor.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslCachedDirectoryStoreProvider.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslCachedSystemStoreProvider.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslCertificateAssetDownloader.cs" />
@@ -1052,8 +1053,8 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePolicy.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ChainPal.Android.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\FindPal.Android.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\LegacyBasicConstraintsDecoder.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ManagedCertificateFinder.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\ManagedX509ExtensionProcessor.cs" />
     <Compile Include="System\Security\Cryptography\Shake128.NonWindows.cs" />
     <Compile Include="System\Security\Cryptography\Shake256.NonWindows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.Android.cs" />
@@ -1183,8 +1184,8 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePolicy.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ChainPal.Apple.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\FindPal.Apple.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\LegacyBasicConstraintsDecoder.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ManagedCertificateFinder.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\ManagedX509ExtensionProcessor.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixChainVerifier.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixExportProvider.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.cs" />
@@ -1784,6 +1785,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\ChainPal.Windows.BuildChain.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ChainPal.Windows.GetChainStatusInformation.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\FindPal.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\LegacyBasicConstraintsDecoder.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\SafeLocalAllocHandle.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.Windows.Export.cs" />
@@ -1793,7 +1795,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\WindowsStructs.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.CustomExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.GetCertContentType.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.PublicKey.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.X500DistinguishedName.cs" />
