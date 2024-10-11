@@ -884,7 +884,6 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
         // target memory back to the debugger.
         DWORD dwImageTimeStamp = 0;
         DWORD dwImageSize = 0;
-        bool isNGEN = false; // unused
         StringCopyHolder filePath;
 
 
@@ -893,7 +892,6 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
         if (!this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
                                                                          dwImageTimeStamp,
                                                                          dwImageSize,
-                                                                         isNGEN,
                                                                          &filePath))
         {
             LOG((LF_CORDB,LL_WARNING, "CM::IM: Couldn't get metadata info for file \"%s\"\n", pszFullPathName));
@@ -1275,29 +1273,15 @@ HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_
         {
             DWORD dwImageTimeStamp = 0; // unused
             DWORD dwImageSize = 0;      // unused
-            bool isNGEN = false;
             StringCopyHolder filePath;
 
             _ASSERTE(!m_vmPEFile.IsNull());
             if (this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
                                                                              dwImageTimeStamp,
                                                                              dwImageSize,
-                                                                             isNGEN,
                                                                              &filePath))
             {
                 _ASSERTE(filePath.IsSet());
-
-                // Unfortunately, metadata lookup preferentially takes the ngen image - so in this case,
-                //  we need to go back and get the IL image's name instead.
-                if ((isNGEN) &&
-                    (this->GetProcess()->GetDAC()->GetILImageInfoFromNgenPEFile(m_vmPEFile,
-                                                                                dwImageTimeStamp,
-                                                                                dwImageSize,
-                                                                                &filePath)))
-                {
-                    _ASSERTE(filePath.IsSet());
-                }
-
                 hr = CopyOutString(filePath, cchName, pcchName, szName);
             }
         }

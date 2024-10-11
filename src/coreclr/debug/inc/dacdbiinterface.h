@@ -2383,7 +2383,6 @@ public:
     bool GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly,
                                        DWORD & dwTimeStamp,
                                        DWORD & dwImageSize,
-                                       bool  & isNGEN,
                                        IStringHolder* pStrFilename) = 0;
 
     virtual

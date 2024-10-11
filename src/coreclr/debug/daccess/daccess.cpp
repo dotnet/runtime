@@ -6414,7 +6414,6 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
                                              DWORD &dwSize,
                                              DWORD &dwDataSize,
                                              DWORD &dwRvaHint,
-                                             bool  &isNGEN,
                                              _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                              const DWORD cchFilePath)
 {
@@ -6424,7 +6423,6 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
     IMAGE_DATA_DIRECTORY *pDir = NULL;
     COUNT_T uniPathChars = 0;
 
-    isNGEN = false;
     if (pDir == NULL || pDir->Size == 0)
     {
         mdImage = pPEAssembly->GetPEImage();
@@ -6505,7 +6503,6 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
     void* buffer = NULL;
     WCHAR uniPath[MAX_LONGPATH] = {0};
     bool isAlt = false;
-    bool isNGEN = false;
     DAC_INSTANCE* inst = NULL;
     HRESULT  hr = S_OK;
     DWORD ulRvaHint;
@@ -6534,7 +6531,6 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
             imageSize,
             dataSize,
             ulRvaHint,
-            isNGEN,
             uniPath,
             ARRAY_SIZE(uniPath)))
     {
@@ -6588,65 +6584,6 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
             dataSize,
             (BYTE*)buffer,
             NULL);
-    }
-    if (FAILED(hr) && isNGEN)
-    {
-        // We failed to locate the ngen'ed image. We should try to
-        // find the matching IL image
-        //
-        isAlt = true;
-        if (!ClrDataAccess::GetILImageInfoFromNgenPEFile(
-                pPEAssembly,
-                imageTimestamp,
-                imageSize,
-                uniPath,
-                ARRAY_SIZE(uniPath)))
-        {
-            goto ErrExit;
-        }
-
-        const WCHAR* ilExtension = W("dll");
-        WCHAR ngenImageName[MAX_LONGPATH] = {0};
-        if (wcscpy_s(ngenImageName, ARRAY_SIZE(ngenImageName), uniPath) != 0)
-        {
-            goto ErrExit;
-        }
-        if (wcscpy_s(uniPath, ARRAY_SIZE(uniPath), ngenImageName) != 0)
-        {
-            goto ErrExit;
-        }
-
-        // RVA size in ngen image and IL image is the same. Because the only
-        // different is in RVA. That is 4 bytes column fixed.
-        //
-
-        // try again
-        if (m_legacyMetaDataLocator)
-        {
-            hr = m_legacyMetaDataLocator->GetMetadata(
-                uniPath,
-                imageTimestamp,
-                imageSize,
-                NULL,           // MVID - not used yet
-                0,              // pass zero hint here... important
-                0,              // flags - reserved for future.
-                dataSize,
-                (BYTE*)buffer,
-                NULL);
-        }
-        else
-        {
-            hr = m_target3->GetMetaData(
-                uniPath,
-                imageTimestamp,
-                imageSize,
-                NULL,           // MVID - not used yet
-                0,              // pass zero hint here... important
-                0,              // flags - reserved for future.
-                dataSize,
-                (BYTE*)buffer,
-                NULL);
-        }
     }
 
     if (FAILED(hr))

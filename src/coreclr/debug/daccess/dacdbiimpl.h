@@ -1108,7 +1108,6 @@ public:
     bool GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly,
                                        DWORD &dwTimeStamp,
                                        DWORD &dwSize,
-                                       bool  &isNGEN,
                                        IStringHolder* pStrFilename);
 
     bool GetILImageInfoFromNgenPEFile(VMPTR_PEAssembly vmPEAssembly,

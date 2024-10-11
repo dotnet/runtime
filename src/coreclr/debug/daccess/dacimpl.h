@@ -1519,7 +1519,6 @@ public:
                                               DWORD &dwImageSize,
                                               DWORD &dwDataSize,
                                               DWORD &dwRvaHint,
-                                              bool  &isNGEN,
                                               _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                               DWORD cchFilePath);
 
