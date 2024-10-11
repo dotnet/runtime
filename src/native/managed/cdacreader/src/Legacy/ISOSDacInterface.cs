@@ -459,7 +459,7 @@ internal unsafe partial interface ISOSDacInterface3
 internal unsafe partial interface ISOSDacInterface4
 {
     [PreserveSig]
-    int GetClrNotification([In, MarshalUsing(CountElementName = nameof(count))] ulong[] arguments, int count, int* pNeeded);
+    int GetClrNotification([In, Out, MarshalUsing(CountElementName = nameof(count))] ulong[] arguments, int count, int* pNeeded);
 };
 
 [GeneratedComInterface]
