@@ -48,7 +48,11 @@ public class Runtime_108612
 
     private static int Antigen()
     {
-        new Runtime_108612().Method0();
+        try
+        {
+            new Runtime_108612().Method0();
+        }
+        catch (Exception e) { }
         return string.Join(Environment.NewLine, toPrint).GetHashCode();
     }
 }
