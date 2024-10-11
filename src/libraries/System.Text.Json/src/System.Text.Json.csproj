@@ -321,7 +321,7 @@ System.Text.Json.Utf8JsonReader</PackageDescription>
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="Common\System\Buffers\ArrayBufferWriter.cs" />
   </ItemGroup>
   <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
   </ItemGroup>
@@ -338,9 +338,11 @@ System.Text.Json.Utf8JsonReader</PackageDescription>
     <Reference Include="System.Reflection.Primitives" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.Loader" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Text.Encodings.Web" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Tasks.Extensions" />
