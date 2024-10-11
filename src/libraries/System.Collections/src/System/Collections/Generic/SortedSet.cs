@@ -65,7 +65,7 @@ namespace System.Collections.Generic
         internal const int StackAllocThreshold = 100;
 
         // If Count is below or equal InternalIndexOfCountThreshold, InternalIndexOf returns a index
-        // referring to the position in a full tree:
+        // referring to the position in a perfect tree:
         //
         //    0
         //  1   2
@@ -75,9 +75,9 @@ namespace System.Collections.Generic
         // If Count is above InternalIndexOfCountThreshold,  it simply returns the index if it is enumerated
         // Note that this is not used in SortedSet.TreeSubSet
         //
-        // Some values for threshold, their respective max height and count of all indices of a full tree:
+        // Some values for threshold, their respective max height and count of all indices of a perfect tree:
         //
-        // | Threshold | MaxHeight | Full tree count
+        // | Threshold | MaxHeight | Perfect tree count (bits required)
         // |        30 |         8 |             511
         // |        62 |        10 |            2047
         // |       126 |        12 |            8191
@@ -794,7 +794,7 @@ namespace System.Collections.Generic
             // The maximum height of a red-black tree is 2*lg(n+1).
             // See page 264 of "Introduction to algorithms" by Thomas H. Cormen
             int maximumHeight = 2 * Log2(Count + 1);
-            // Maximum count (of a full tree of height H) is M = 2^0 + 2^1 + ... + 2^(H-1) = 2^H - 1
+            // Maximum count (of a perfect tree of height H) is M = 2^0 + 2^1 + ... + 2^(H-1) = 2^H - 1
             return (1 << maximumHeight) - 1;
         }
 
