@@ -46,6 +46,14 @@ public class NibbleMapTests
             };
         }
 
+        public NibbleMapTestBuilder(TargetPointer mapBase, ulong mapRangeSize, MockMemorySpace.BumpAllocator allocator, MockTarget.Architecture arch)
+        {
+            MapBase = mapBase;
+            Arch = arch;
+            int nibbleMapSize = (int)Addr2Pos(mapRangeSize);
+            NibbleMapFragment = allocator.Allocate((ulong)nibbleMapSize, "Nibble Map");
+        }
+
         const int Log2CodeAlign = 2; // N.B. this might be different on 64-bit in the future
         const int Log2NibblesPerDword = 3;
         const int Log2BytesPerBucket = Log2CodeAlign + Log2NibblesPerDword;
