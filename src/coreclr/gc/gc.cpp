@@ -25767,7 +25767,7 @@ void gc_heap::calculate_new_heap_count ()
 
                     dprintf (6666, ("we want to grow but DATAS is limiting, trigger a gen2 right away"));
 #ifdef BACKGROUND_GC
-                    if (background_running_p())
+                    if (is_bgc_in_progress())
                     {
                         trigger_initial_gen2_p = false;
                     }
