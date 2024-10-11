@@ -6998,6 +6998,42 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             return next;
         }
 
+        while (op1->OperIs(GT_ADD) && op2->IsIntegralConst() && op1->gtGetOp2()->IsIntegralConst() &&
+               !node->gtOverflow() && !op1->gtOverflow() && !op2->AsIntConCommon()->ImmedValNeedsReloc(comp) &&
+               !op1->gtGetOp2()->AsIntConCommon()->ImmedValNeedsReloc(comp))
+        {
+            JITDUMP("Folding (x + c1) + c2. Before:\n");
+            DISPTREERANGE(BlockRange(), node);
+
+            int64_t c1 = op1->gtGetOp2()->AsIntConCommon()->IntegralValue();
+            int64_t c2 = op2->AsIntConCommon()->IntegralValue();
+
+            int64_t result;
+            if (node->TypeIs(TYP_LONG))
+            {
+                result = c1 + c2;
+            }
+            else
+            {
+                result = static_cast<int32_t>(c1) + static_cast<int32_t>(c2);
+            }
+
+            op2->AsIntConCommon()->SetIntegralValue(result);
+            node->gtOp1 = op1->gtGetOp1();
+
+            BlockRange().Remove(op1->gtGetOp2());
+            BlockRange().Remove(op1);
+
+            op1 = node->gtGetOp1();
+
+            // We will recompute containment/reg optionality below.
+            op1->ClearRegOptional();
+            op1->ClearContained();
+
+            JITDUMP("\nAfter:\n");
+            DISPTREERANGE(BlockRange(), node);
+        }
+
         // Fold ADD(CNS1, CNS2). We mainly target a very specific pattern - byref ADD(frozen_handle, cns_offset)
         // We could do this folding earlier, but that is not trivial as we'll have to introduce a way to restore
         // the original object from a byref constant for optimizations.
@@ -7012,40 +7048,6 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             BlockRange().Remove(op1);
             BlockRange().Remove(op2);
             node->BashToConst(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(), node->TypeGet());
-        }
-        else
-        {
-            while (op1->OperIs(GT_ADD) && op2->IsIntegralConst() && op1->gtGetOp2()->IsIntegralConst() &&
-                   !node->gtOverflow() && !op1->gtOverflow() && !op2->AsIntConCommon()->ImmedValNeedsReloc(comp) &&
-                   !op1->gtGetOp2()->AsIntConCommon()->ImmedValNeedsReloc(comp))
-            {
-                JITDUMP("Folding (x + c1) + c2. Before:\n");
-                DISPTREERANGE(BlockRange(), node);
-
-                int64_t c1 = op1->gtGetOp2()->AsIntConCommon()->IntegralValue();
-                int64_t c2 = op2->AsIntConCommon()->IntegralValue();
-
-                int64_t result;
-                if (node->TypeIs(TYP_LONG))
-                {
-                    result = c1 + c2;
-                }
-                else
-                {
-                    result = static_cast<int32_t>(c1) + static_cast<int32_t>(c2);
-                }
-
-                op2->AsIntConCommon()->SetIntegralValue(result);
-                node->gtOp1 = op1->gtGetOp1();
-
-                BlockRange().Remove(op1->gtGetOp2());
-                BlockRange().Remove(op1);
-
-                op1 = node->gtGetOp1();
-
-                JITDUMP("\nAfter:\n");
-                DISPTREERANGE(BlockRange(), node);
-            }
         }
 
 #ifdef TARGET_XARCH
