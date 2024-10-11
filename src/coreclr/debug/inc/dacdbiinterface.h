@@ -2362,13 +2362,6 @@ public:
                                        IStringHolder* pStrFilename) = 0;
 
     virtual
-    bool GetILImageInfoFromNgenPEFile(VMPTR_PEAssembly vmPEAssembly,
-                                      DWORD & dwTimeStamp,
-                                      DWORD & dwSize,
-                                      IStringHolder* pStrFilename) = 0;
-
-
-    virtual
     bool IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread) = 0;
 
 

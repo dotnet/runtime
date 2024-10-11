@@ -6473,28 +6473,6 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
     return true;
 }
 
-/* static */
-bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
-                                                 DWORD &dwTimeStamp,
-                                                 DWORD &dwSize,
-                                                 _Out_writes_(cchFilePath) LPWSTR wszFilePath,
-                                                 const DWORD cchFilePath)
-{
-    SUPPORTS_DAC_HOST_ONLY;
-    DWORD dwWritten = 0;
-
-    // use the IL File name
-    if (!pPEAssembly->GetPath().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten)))
-    {
-        // Use DAC hint to retrieve the IL name.
-        pPEAssembly->GetModuleFileNameHint().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten));
-    }
-    dwTimeStamp = 0;
-    dwSize = 0;
-
-    return true;
-}
-
 void *
 ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
                                    bool* isAlternate)

@@ -1512,8 +1512,7 @@ protected:
 #endif
 
 public:
-    // APIs for picking up the info needed for a debugger to look up an ngen image or IL image
-    // from it's search path.
+    // API for picking up the info needed for a debugger to look up an image from its search path.
     static bool GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
                                               DWORD &dwImageTimestamp,
                                               DWORD &dwImageSize,
@@ -1521,12 +1520,6 @@ public:
                                               DWORD &dwRvaHint,
                                               _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                               DWORD cchFilePath);
-
-    static bool GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
-                                             DWORD &dwTimeStamp,
-                                             DWORD &dwSize,
-                                             _Out_writes_(cchPath) LPWSTR wszPath,
-                                             const DWORD cchPath);
 };
 
 extern ClrDataAccess* g_dacImpl;

@@ -1099,18 +1099,11 @@ private:
                                       TargetBuffer * pIL);
 
 public:
-    // APIs for picking up the info needed for a debugger to look up an ngen image or IL image
-    // from it's search path.
+    // API for picking up the info needed for a debugger to look up an image from its search path.
     bool GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly,
                                        DWORD &dwTimeStamp,
                                        DWORD &dwSize,
                                        IStringHolder* pStrFilename);
-
-    bool GetILImageInfoFromNgenPEFile(VMPTR_PEAssembly vmPEAssembly,
-                                      DWORD &dwTimeStamp,
-                                      DWORD &dwSize,
-                                      IStringHolder* pStrFilename);
-
 };
 
 

@@ -1250,17 +1250,6 @@ bool DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAss
     return ret;
 }
 
-
-bool DacDbiInterfaceImpl::GetILImageInfoFromNgenPEFile(VMPTR_PEAssembly vmPEAssembly,
-                                                       DWORD &dwTimeStamp,
-                                                       DWORD &dwSize,
-                                                       IStringHolder* pStrFilename)
-{
-
-    return false;
-
-}
-
 // Get start addresses and sizes for hot and cold regions for a native code blob.
 // Arguments:
 //    Input:
