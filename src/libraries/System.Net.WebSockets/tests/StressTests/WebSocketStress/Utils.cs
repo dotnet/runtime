@@ -12,8 +12,6 @@ namespace WebSocketStress;
 
 internal static class Utils
 {
-    public static string OobEndpointPath { get; } = Path.Combine(Directory.GetCurrentDirectory(), "oob_socket");
-
     public static Random NextRandom(this Random random) => new Random(Seed: random.Next());
 
     public static UInt128 GetConnectionId(int workerId, ulong jobId) => new UInt128((ulong)workerId, jobId);

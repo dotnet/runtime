@@ -43,15 +43,31 @@ internal class StressClient
 
     private Dictionary<UInt128, bool> _expectCancellation = new Dictionary<UInt128, bool>();
 
+    private async Task<Socket> CreateDiagnosticSocket()
+    {
+        Socket diagnosticSocket = new Socket(_config.DiagnosticEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+        using CancellationTokenSource cts = new CancellationTokenSource(5_000);
+        try
+        {
+            await diagnosticSocket.ConnectAsync(_config.DiagnosticEndpoint, cts.Token);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Diagnostic socket failed to connect to {_config.DiagnosticEndpoint}.");
+            Console.WriteLine(ex);
+            Environment.Exit(1);
+        }
+        return diagnosticSocket;
+    }
+
     private async Task StartCore()
     {
         _stopwatch.Start();
 
-        // An out-of-band UDS socket so the server can report WebSocket close status (normal, aborted) to the client.
-        // Aborted status is only valid if the client initiated cancellation.
-        using Socket oobSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-        await oobSocket.ConnectAsync(new UnixDomainSocketEndPoint(Utils.OobEndpointPath));
-
+        // Create an out-of-band socket so the server can report WebSocket close status (normal, aborted) to the client.
+        // The Aborted status is only valid if the client initiated cancellation.
+        using Socket diagnosticSocket = await CreateDiagnosticSocket();
+        
         // Spin up a thread dedicated to outputting stats for each defined interval
         new Thread(() =>
         {
@@ -73,7 +89,7 @@ internal class StressClient
                 int totalReceived = 0;
                 while (totalReceived < oobBuffer.Length)
                 {
-                    totalReceived += await oobSocket.ReceiveAsync(oobBuffer.Slice(totalReceived, oobBuffer.Length - totalReceived));
+                    totalReceived += await diagnosticSocket.ReceiveAsync(oobBuffer.Slice(totalReceived, oobBuffer.Length - totalReceived));
                 }
 
                 UInt128 connectionId = BinaryPrimitives.ReadUInt128BigEndian(oobBuffer.Span);

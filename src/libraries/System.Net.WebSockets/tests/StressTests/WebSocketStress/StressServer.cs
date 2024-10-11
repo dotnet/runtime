@@ -26,7 +26,7 @@ internal class StressServer
     private Task? _serverTask;
     private Socket _listener;
 
-    private Socket _oobListener;
+    private Socket _diagnosticListener;
 
     public StressServer(Configuration config)
     {
@@ -47,12 +47,8 @@ internal class StressServer
         _listener = new Socket(ep.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
         _listener.Bind(ep);
 
-        if (File.Exists(Utils.OobEndpointPath))
-        {
-            File.Delete(Utils.OobEndpointPath);
-        }
-        _oobListener = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-        _oobListener.Bind(new UnixDomainSocketEndPoint(Utils.OobEndpointPath));
+        _diagnosticListener = new Socket(_config.DiagnosticEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+        _diagnosticListener.Bind(_config.DiagnosticEndpoint);
     }
 
     public Task Start()
@@ -65,8 +61,7 @@ internal class StressServer
     {
         try
         {
-            _oobListener.Close();
-            File.Delete(Utils.OobEndpointPath);
+            _diagnosticListener.Close();
         }
         catch { }
         return Task.CompletedTask;
@@ -75,11 +70,11 @@ internal class StressServer
     private async Task StartCore()
     {
         _listener.Listen();
-        _oobListener.Listen();
+        _diagnosticListener.Listen();
 
-        // An out-of-band UDS socket to report WebSocket closure status (normal, aborted) to the client.
-        // Aborted status is only valid if the client initiated cancellation.
-        using Socket oobSocket = await _oobListener.AcceptAsync();
+        // An out-of-band socket so the server can report WebSocket close status (normal, aborted) to the client.
+        // The Aborted status is only valid if the client initiated a cancellation.
+        using Socket diagnosticSocket = await _diagnosticListener.AcceptAsync();
 
         IEnumerable<Task> workers = Enumerable.Range(1, 2 * _config.MaxConnections).Select(_ => RunSingleWorker());
         try
@@ -135,7 +130,7 @@ internal class StressServer
                     int totalSent = 0;
                     while (totalSent < oobBuffer.Length)
                     {
-                        totalSent += await oobSocket.SendAsync(oobBuffer.Slice(totalSent, oobBuffer.Length - totalSent));
+                        totalSent += await diagnosticSocket.SendAsync(oobBuffer.Slice(totalSent, oobBuffer.Length - totalSent));
                     }
 
                     log?.WriteLine($"HandleConnection DONE. aborted={aborted}");

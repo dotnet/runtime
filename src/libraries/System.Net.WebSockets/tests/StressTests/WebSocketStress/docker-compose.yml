@@ -6,12 +6,15 @@ services:
     links:
       - server
     environment:
-      - STRESS_ARGS=--mode client --server-endpoint server:5001 ${STRESS_CLIENT_ARGS}
+      - STRESS_ARGS=--mode client --server-endpoint server:5001 --diagnostic-endpoint server:5002 ${STRESS_CLIENT_ARGS}
+      - DUMPS_SHARE_MOUNT_ROOT=${DUMPS_SHARE_MOUNT_ROOT}
   server:
     build:
       context: ../../../../ # ~> src/libraries
       dockerfile: ./System.Net.WebSockets/tests/StressTests/WebSocketStress/${DOCKERFILE:-Dockerfile}
     ports:
       - "5001:5001"
+      - "5002:5002"
     environment:
-      - STRESS_ARGS=--mode server --server-endpoint 0.0.0.0:5001 ${STRESS_SERVER_ARGS}
+      - STRESS_ARGS=--mode server --server-endpoint 0.0.0.0:5001 --diagnostic-endpoint 0.0.0.0:5002 ${STRESS_SERVER_ARGS}
+      - DUMPS_SHARE_MOUNT_ROOT=${DUMPS_SHARE_MOUNT_ROOT}

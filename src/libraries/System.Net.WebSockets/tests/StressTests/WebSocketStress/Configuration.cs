@@ -10,6 +10,7 @@ namespace WebSocketStress;
 public class Configuration
 {
     public IPEndPoint ServerEndpoint { get; set; } = new IPEndPoint(IPAddress.Loopback, 0);
+    public IPEndPoint DiagnosticEndpoint { get; set; } = new IPEndPoint(IPAddress.Loopback, 0);
     public RunMode RunMode { get; set; }
     public int RandomSeed { get; set; }
     public double CancellationProbability { get; set; }
@@ -33,7 +34,8 @@ public class Configuration
         cmd.AddOption(new Option(["--mode", "-m"], "Stress suite execution mode. Defaults to 'both'.") { Argument = new Argument<RunMode>("runMode", RunMode.both) });
         cmd.AddOption(new Option(["--cancellation-probability", "-p"], "Cancellation probability 0 <= p <= 1 for a given connection. Defaults to 0.1") { Argument = new Argument<double>("probability", 0.1) });
         cmd.AddOption(new Option(["--num-connections", "-n"], "Max number of connections to open concurrently.") { Argument = new Argument<int>("connections", Environment.ProcessorCount) });
-        cmd.AddOption(new Option(["--server-endpoint", "-e"], "Endpoint to bind to if server, endpoint to listen to if client.") { Argument = new Argument<string>("ipEndpoint", "127.0.0.1:5002") });
+        cmd.AddOption(new Option(["--server-endpoint", "-e"], "SUT endpoint to bind to if server or connect to if client.") { Argument = new Argument<string>("ipEndpoint", "127.0.0.1:5002") });
+        cmd.AddOption(new Option(["--diagnostic-endpoint", "-E"], "Diagnostic endpoint to bind to if server or connect to if client.") { Argument = new Argument<string>("ipEndpoint", "127.0.0.1:5003") });
         cmd.AddOption(new Option(["--max-execution-time", "-t"], "Maximum stress suite execution time, in minutes. Defaults to infinity.") { Argument = new Argument<double?>("minutes", null) });
         cmd.AddOption(new Option(["--max-buffer-length", "-b"], "Maximum buffer length to write on ssl stream. Defaults to 8192.") { Argument = new Argument<int>("bytes", 8192) });
         cmd.AddOption(new Option(["--display-interval", "-i"], "Client stats display interval, in seconds. Defaults to 5 seconds.") { Argument = new Argument<double>("seconds", 5) });
@@ -62,6 +64,7 @@ public class Configuration
             MaxConnections = parseResult.ValueForOption<int>("-n"),
             CancellationProbability = Math.Max(0, Math.Min(1, parseResult.ValueForOption<double>("-p"))),
             ServerEndpoint = ParseEndpoint(parseResult.ValueForOption<string>("-e")),
+            DiagnosticEndpoint = ParseEndpoint(parseResult.ValueForOption<string>("-E")),
             MaxExecutionTime = parseResult.ValueForOption<double?>("-t")?.Pipe(TimeSpan.FromMinutes),
             MaxBufferLength = parseResult.ValueForOption<int>("-b"),
             DisplayInterval = TimeSpan.FromSeconds(parseResult.ValueForOption<double>("-i")),
