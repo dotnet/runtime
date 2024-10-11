@@ -25,6 +25,12 @@ public class WasmTemplateTestsBase : BuildTestBase
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
     }
 
+    private Dictionary<string, string> browserProgramReplacements = new Dictionary<string, string>
+        {
+            { "while(true)", $"int i = 0;{Environment.NewLine}while(i++ < 10)" },
+            { "partial class StopwatchSample", $"return 42;{Environment.NewLine}partial class StopwatchSample" }
+        };
+
     public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, bool addFrameworkArg = false, string? extraProperties = null)
     {
         InitPaths(id);
@@ -103,7 +109,10 @@ public class WasmTemplateTestsBase : BuildTestBase
         return newContent;
     }
 
-    protected void UpdateProjectFile(string pathRelativeToProjectDir, Dictionary<string, string> replacements)
+    protected void UpdateBrowserProgramFile() =>
+        UpdateFile("Program.cs", browserProgramReplacements);
+
+    protected void UpdateFile(string pathRelativeToProjectDir, Dictionary<string, string> replacements)
     {
         var path = Path.Combine(_projectDir!, pathRelativeToProjectDir);
         string text = File.ReadAllText(path);
@@ -168,11 +177,17 @@ public class WasmTemplateTestsBase : BuildTestBase
         File.WriteAllText(mainJsPath, mainJsContent);
     }
 
-    protected async Task<string> RunBrowser(string config, string projectFile, string language = "en-US", string extraArgs = "")
+    protected async Task<string> RunBuiltBrowserApp(string config, string projectFile, string language = "en-US", string extraArgs = "")
+        => await RunBrowser($"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console {extraArgs}", language);
+
+    protected async Task<string> RunPublishedBrowserApp(string config, string publishFrameworkDir, string language = "en-US", string extraArgs = "")
+        => await RunBrowser($"serve --directory \"{publishFrameworkDir}\" {extraArgs}", language);
+
+    private async Task<string> RunBrowser(string command, string language = "en-US")
     {
         using var runCommand = new RunCommand(s_buildEnv, _testOutput).WithWorkingDirectory(_projectDir!);
         await using var runner = new BrowserRunner(_testOutput);
-        var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console {extraArgs}", language: language);
+        var page = await runner.RunAsync(runCommand, command, language: language);
         await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
         Assert.Contains("WASM EXIT 42", string.Join(Environment.NewLine, runner.OutputLines));
         return string.Join("\n", runner.OutputLines);

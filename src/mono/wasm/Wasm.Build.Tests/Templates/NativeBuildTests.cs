@@ -96,7 +96,7 @@ namespace Wasm.Build.Templates.Tests
                                     TargetFramework: DefaultTargetFramework,
                                     IsBrowserProject: true)
                                 );
-            string runOutput = await RunBrowser(config, projectFile);
+            string runOutput = await RunBuiltBrowserApp(config, projectFile);
 
             Assert.Contains("Hello, Console!", runOutput);
             Assert.Contains("Hello, World! Greetings from node version", runOutput);

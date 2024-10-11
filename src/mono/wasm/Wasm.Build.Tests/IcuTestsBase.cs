@@ -142,7 +142,7 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
                 { "runMain", "runMainAndExit" },
                 { ".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()" }
             };
-        UpdateProjectFile(mainPath, replacements);
+        UpdateFile(mainPath, replacements);
         RemoveContentsFromProjectFile(mainPath, ".create();", "await runMainAndExit();");
         return (buildArgs, projectFile);
     }
@@ -190,7 +190,7 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
             (BuildArgs buildArgs, string projectFile) = CreateIcuProject(
                 config, templateType, aot, testedLocales, extraProperties, onlyPredefinedCultures);
             string buildOutput = BuildIcuTest(buildArgs, globalizationMode, icuFileName);
-            string runOutput = await RunBrowser(buildArgs.Config, projectFile, language);
+            string runOutput = await RunBuiltBrowserApp(buildArgs.Config, projectFile, language);
             return $"{buildOutput}\n{runOutput}";
         }
         catch(Exception ex)

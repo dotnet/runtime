@@ -80,10 +80,6 @@ public abstract class AppTestBase : BlazorWasmTestBase
         result.EnsureSuccessful();
     }
 
-    protected ToolCommand CreateDotNetCommand() => new DotNetCommand(s_buildEnv, _testOutput)
-        .WithWorkingDirectory(_projectDir!)
-        .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir);
-
     protected Task<RunResult> RunSdkStyleAppForBuild(RunOptions options)
         => RunSdkStyleApp(options, BlazorRunHost.DotnetRun);
 

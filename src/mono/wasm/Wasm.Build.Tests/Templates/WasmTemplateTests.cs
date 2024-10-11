@@ -22,12 +22,6 @@ namespace Wasm.Build.Tests
         {
         }
 
-        private Dictionary<string, string> browserProgramReplacements = new Dictionary<string, string>
-        {
-            { "while(true)", $"int i = 0;{Environment.NewLine}while(i++ < 10)" },
-            { "partial class StopwatchSample", $"return 42;{Environment.NewLine}partial class StopwatchSample" }
-        };
-
         private BuildProjectOptions _basePublishProjectOptions = new BuildProjectOptions(
                             DotnetWasmFromRuntimePack: false,
                             CreateProject: false,
@@ -52,7 +46,7 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            UpdateProjectFile("Program.cs", browserProgramReplacements);
+            UpdateBrowserProgramFile();
             UpdateBrowserMainJs();
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
@@ -120,7 +114,7 @@ namespace Wasm.Build.Tests
             string id = $"browser_{config}_{GetRandomId()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
 
-            UpdateProjectFile("Program.cs", browserProgramReplacements);
+            UpdateBrowserProgramFile();
             UpdateBrowserMainJs();
 
             if (!string.IsNullOrEmpty(extraProperties))
@@ -176,7 +170,7 @@ namespace Wasm.Build.Tests
             AddItemsPropertiesToProject(projectFile, extraProperties);
 
             if (targetFramework != "net8.0")
-                UpdateProjectFile("Program.cs", browserProgramReplacements);
+                UpdateBrowserProgramFile();
             UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 
             using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
@@ -187,7 +181,7 @@ namespace Wasm.Build.Tests
             buildArgs = ExpandBuildArgs(buildArgs);
             BuildTemplateProject(buildArgs, id: id, _baseBuildProjectOptions);
 
-            string runOutput = await RunBrowser(config, projectFile);
+            string runOutput = await RunBuiltBrowserApp(config, projectFile);
             Assert.Contains("Hello, Browser!", runOutput);
         }
 
@@ -203,7 +197,7 @@ namespace Wasm.Build.Tests
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
             string projectDirectory = Path.GetDirectoryName(projectFile)!;
 
-            UpdateProjectFile("Program.cs", browserProgramReplacements);
+            UpdateBrowserProgramFile();
             UpdateBrowserMainJs();
 
             string extraPropertiesForDBP = string.Empty;
@@ -247,7 +241,7 @@ namespace Wasm.Build.Tests
             buildArgs = ExpandBuildArgs(buildArgs);
             BuildTemplateProject(buildArgs, id: id, buildOptions);
 
-            await RunBrowser(config, projectFile, extraArgs: "x y z");
+            await RunBuiltBrowserApp(config, projectFile, extraArgs: "x y z");
         }
 
         [Theory]
@@ -262,7 +256,7 @@ namespace Wasm.Build.Tests
             string projectDirectory = Path.GetDirectoryName(projectFile)!;
             bool aot = true;
 
-            UpdateProjectFile("Program.cs", browserProgramReplacements);
+            UpdateBrowserProgramFile();
             UpdateBrowserMainJs();
 
             string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
@@ -279,7 +273,7 @@ namespace Wasm.Build.Tests
                             AssertAppBundle = false
                         });
 
-            await RunBrowser(config, projectFile);
+            await RunBuiltBrowserApp(config, projectFile);
             string frameworkDir = FindBinFrameworkDir(config, forPublish: false);
             string objBuildDir = Path.Combine(projectDirectory, "obj", config, BuildTestBase.DefaultTargetFramework, "wasm", "for-publish");
             TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
