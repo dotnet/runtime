@@ -2679,6 +2679,101 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
     return result;
 }
 
+GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
+{
+    JITDUMP("See if we can optimize NI_System_SpanHelpers_Memmove with help of VN...\n")
+    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual));
+
+    CallArg* leftArg  = call->gtArgs.GetUserArgByIndex(0);
+    CallArg* rightArg = call->gtArgs.GetUserArgByIndex(1);
+    CallArg* lenArg   = call->gtArgs.GetUserArgByIndex(2);
+    ValueNum lenVN    = vnStore->VNConservativeNormalValue(lenArg->GetNode()->gtVNPair);
+    if (!vnStore->IsVNConstant(lenVN))
+    {
+        JITDUMP("...length is not a constant - bail out.\n");
+        return nullptr;
+    }
+
+    size_t len = vnStore->CoercedConstantValue<size_t>(lenVN);
+    if (len == 0)
+    {
+        JITDUMP("...length is 0 -> optimize to true\n");
+        return gtWrapWithSideEffects(gtNewTrue(), call, GTF_ALL_EFFECT, true);
+    }
+
+    if (len > 32)
+    {
+        JITDUMP("...length is too big to unroll - bail out.\n");
+        return nullptr;
+    }
+
+    CallArg* varArg = leftArg;
+    uint8_t* buffer = new (this, CMK_AssertionProp) uint8_t[len];
+    if (!GetImmutableDataFromAddress(leftArg->GetNode(), (int)len, buffer))
+    {
+        if (!GetImmutableDataFromAddress(rightArg->GetNode(), (int)len, buffer))
+        {
+            JITDUMP("...src is not a constant - fallback to LowerCallMemmove.\n");
+            return nullptr;
+        }
+        varArg = rightArg;
+    }
+
+    GenTree*  varPtr   = fgInsertCommaFormTemp(&varArg->LateNodeRef());
+    GenTree*  result   = nullptr;
+    var_types readType = roundDownMaxType((unsigned)len);
+
+    if (genTypeSize(readType) > TARGET_POINTER_SIZE)
+    {
+        // Don't use SIMD
+        readType = TYP_I_IMPL;
+    }
+
+    unsigned lenRemaining = (unsigned)len;
+    while (lenRemaining > 0)
+    {
+        if (lenRemaining < genTypeSize(readType))
+            lenRemaining = genTypeSize(readType);
+
+        ssize_t offset = (ssize_t)len - (ssize_t)lenRemaining;
+
+        // Clone dst and add offset if necessary.
+        GenTree* currVarPtr = gtCloneExpr(varPtr);
+        if (offset != 0)
+            currVarPtr = gtNewOperNode(GT_ADD, varPtr->TypeGet(), currVarPtr, gtNewIconNode(offset, TYP_I_IMPL));
+
+        GenTree* srcCns   = gtNewGenericCon(readType, buffer + offset);
+        GenTree* varChunk = gtNewIndir(readType, currVarPtr, GTF_IND_UNALIGNED);
+
+        if (genTypeSize(readType) == len)
+        {
+            result = gtNewOperNode(GT_EQ, TYP_INT, srcCns, varChunk);
+            break;
+        }
+
+        GenTree* xorNode = gtNewOperNode(GT_XOR, readType, varChunk, srcCns);
+
+        // Merge with the previous result.
+        result = result == nullptr ? xorNode : gtNewOperNode(GT_OR, readType, result, xorNode);
+        lenRemaining -= genTypeSize(readType);
+    }
+
+    if (!result->OperIs(GT_EQ))
+    {
+        result = gtNewOperNode(GT_EQ, TYP_INT, result, gtNewZeroConNode(readType));
+    }
+
+    GenTree* sideEffects = nullptr;
+    gtExtractSideEffList(call, &sideEffects, GTF_ALL_EFFECT, true);
+    if (sideEffects != nullptr)
+    {
+        result = gtNewOperNode(GT_COMMA, TYP_INT, sideEffects, result);
+    }
+
+    DISPTREE(result);
+    return result;
+}
+
 //------------------------------------------------------------------------------
 // optVNBasedFoldExpr_Call: Folds given call using VN to a simpler tree.
 //
@@ -2746,6 +2841,11 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
     if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(this, CORINFO_HELP_MEMCPY))
     {
         return optVNBasedFoldExpr_Call_Memmove(call);
+    }
+
+    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
+    {
+        return optVNBasedFoldExpr_Call_Memcmp(call);
     }
 
     return nullptr;
