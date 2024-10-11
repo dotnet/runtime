@@ -6,16 +6,13 @@ using Xunit;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System.Collections.Generic;
 using System;
+using System.Drawing;
+using System.Reflection;
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public class ExecutionManagerTests
 {
     private const ulong ExecutionManagerCodeRangeMapAddress = 0x000a_fff0;
-
-    const int RangeSectionFragmentSize = 0x20; // must be big enough for the offsets of RangeSectionFragment size in ExecutionManagerTestTarget, below
-    const int RangeSectionSize = 0x38; // must be big enough for the offsets of RangeSection size in ExecutionManagerTestTarget, below
-
-    const int CodeHeapListNodeSize = 0x40; // must be big enough for the offsets of CodeHeapListNode size in ExecutionManagerTestTarget, below
 
     const int RealCodeHeaderSize = 0x08; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
 
@@ -26,14 +23,77 @@ public class ExecutionManagerTests
 
         private readonly MockMemorySpace.BumpAllocator _rangeSectionMapAllocator;
 
-        public ExecutionManagerTestBuilder(MockTarget.Architecture arch,  (ulong start, ulong size) rangeSectionMapRegion) : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), rangeSectionMapRegion)
+        public readonly Dictionary<DataType, Target.TypeInfo> TypeInfoCache = new();
+
+        public ExecutionManagerTestBuilder(MockTarget.Architecture arch,  (ulong start, ulong end) rangeSectionMapRegion) : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), rangeSectionMapRegion)
         {}
 
-        public ExecutionManagerTestBuilder(MockMemorySpace.Builder builder, (ulong start, ulong size) rangeSectionMapRegion)
+
+        public ExecutionManagerTestBuilder(MockMemorySpace.Builder builder, (ulong start, ulong end) rangeSectionMapRegion, Dictionary<DataType, Target.TypeInfo>? typeInfoCache = null)
         {
             Builder = builder;
             _rsmBuilder = new RangeSectionMapTests.Builder(ExecutionManagerCodeRangeMapAddress, builder);
-            _rangeSectionMapAllocator = Builder.CreateAllocator(rangeSectionMapRegion.start, rangeSectionMapRegion.size);
+            _rangeSectionMapAllocator = Builder.CreateAllocator(rangeSectionMapRegion.start, rangeSectionMapRegion.end);
+            TypeInfoCache = typeInfoCache ?? CreateTypeInfoCache(Builder.TargetTestHelpers);
+        }
+
+        public static Dictionary<DataType, Target.TypeInfo> CreateTypeInfoCache(TargetTestHelpers targetTestHelpers)
+        {
+            Dictionary<DataType, Target.TypeInfo> typeInfoCache = new();
+            AddToTypeInfoCache(targetTestHelpers, typeInfoCache);
+            return typeInfoCache;
+        }
+
+        public static void AddToTypeInfoCache(TargetTestHelpers targetTestHelpers, Dictionary<DataType, Target.TypeInfo> typeInfoCache)
+        {
+            var layout = targetTestHelpers.LayoutFields([
+                (nameof(Data.RangeSectionMap.TopLevelData), DataType.pointer),
+            ]);
+            typeInfoCache[DataType.RangeSectionMap] = new Target.TypeInfo() {
+                    Fields = layout.Fields,
+                    Size = layout.Stride,
+            };
+            layout = targetTestHelpers.LayoutFields([
+                (nameof(Data.RangeSectionFragment.RangeBegin), DataType.pointer),
+                (nameof(Data.RangeSectionFragment.RangeEndOpen), DataType.pointer),
+                (nameof(Data.RangeSectionFragment.RangeSection), DataType.pointer),
+                (nameof(Data.RangeSectionFragment.Next), DataType.pointer)
+            ]);
+            typeInfoCache[DataType.RangeSectionFragment] = new Target.TypeInfo() {
+                    Fields = layout.Fields,
+                    Size = layout.Stride,
+            };
+            layout = targetTestHelpers.LayoutFields([
+                (nameof(Data.RangeSection.RangeBegin), DataType.pointer),
+                (nameof(Data.RangeSection.RangeEndOpen), DataType.pointer),
+                (nameof(Data.RangeSection.NextForDelete), DataType.pointer),
+                (nameof(Data.RangeSection.JitManager), DataType.pointer),
+                (nameof(Data.RangeSection.Flags), DataType.int32),
+                (nameof(Data.RangeSection.HeapList), DataType.pointer),
+                (nameof(Data.RangeSection.R2RModule), DataType.pointer),
+            ]);
+            typeInfoCache[DataType.RangeSection] = new Target.TypeInfo() {
+                    Fields = layout.Fields,
+                    Size = layout.Stride,
+            };
+            layout = targetTestHelpers.LayoutFields([
+                (nameof(Data.CodeHeapListNode.Next), DataType.pointer),
+                (nameof(Data.CodeHeapListNode.StartAddress), DataType.pointer),
+                (nameof(Data.CodeHeapListNode.EndAddress), DataType.pointer),
+                (nameof(Data.CodeHeapListNode.MapBase), DataType.pointer),
+                (nameof(Data.CodeHeapListNode.HeaderMap), DataType.pointer),
+            ]);
+            typeInfoCache[DataType.CodeHeapListNode] = new Target.TypeInfo() {
+                    Fields = layout.Fields,
+                    Size = layout.Stride,
+            };
+            layout = targetTestHelpers.LayoutFields([
+                (nameof(Data.RealCodeHeader.MethodDesc), DataType.pointer),
+            ]);
+            typeInfoCache[DataType.RealCodeHeader] = new Target.TypeInfo() {
+                    Fields = layout.Fields,
+                    Size = layout.Stride,
+            };
         }
 
         public NibbleMapTests.NibbleMapTestBuilder AddNibbleMap(ulong codeRangeStart, uint codeRangeSize, ulong nibbleMapStart)
@@ -45,20 +105,18 @@ public class ExecutionManagerTests
 
         public TargetPointer InsertRangeSection(ulong codeRangeStart, uint codeRangeSize, TargetPointer jitManagerAddress, TargetPointer codeHeapListNodeAddress)
         {
-            MockMemorySpace.HeapFragment rangeSection = _rangeSectionMapAllocator.Allocate(RangeSectionSize, "RangeSection");
+            var tyInfo = TypeInfoCache[DataType.RangeSection];
+            uint rangeSectionSize = tyInfo.Size.Value;
+            MockMemorySpace.HeapFragment rangeSection = _rangeSectionMapAllocator.Allocate(rangeSectionSize, "RangeSection");
             Builder.AddHeapFragment(rangeSection);
             int pointerSize = Builder.TargetTestHelpers.PointerSize;
-            Span<byte> rs = Builder.BorrowAddressRange(rangeSection.Address, RangeSectionSize);
-            /* RangeBegin */
-            Builder.TargetTestHelpers.WritePointer(rs.Slice(0, pointerSize), codeRangeStart);
-            /* RangeEndOpen */
-            Builder.TargetTestHelpers.WritePointer(rs.Slice(8, pointerSize), codeRangeStart + codeRangeSize);
-            /* Flags */
-            Builder.TargetTestHelpers.Write(rs.Slice(32, sizeof(uint)), (uint)0x02); // Flags, 0x02 -= RangeSectionFlags.CodeHeap
-            /* HeapList */
-            Builder.TargetTestHelpers.WritePointer(rs.Slice(40, pointerSize), codeHeapListNodeAddress);
-            /* JitManager */
-            Builder.TargetTestHelpers.WritePointer(rs.Slice(24, pointerSize), jitManagerAddress);
+            Span<byte> rs = Builder.BorrowAddressRange(rangeSection.Address, (int)rangeSectionSize);
+            Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.RangeBegin)].Offset, pointerSize), codeRangeStart);
+            Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.RangeEndOpen)].Offset, pointerSize), codeRangeStart + codeRangeSize);
+            // 0x02 = RangeSectionFlags.CodeHeap
+            Builder.TargetTestHelpers.Write(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.Flags)].Offset, sizeof(uint)), (uint)0x02);
+            Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.HeapList)].Offset, pointerSize), codeHeapListNodeAddress);
+            Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.JitManager)].Offset, pointerSize), jitManagerAddress);
             // FIXME: other fields
 
             return rangeSection.Address;
@@ -66,18 +124,17 @@ public class ExecutionManagerTests
 
         public TargetPointer InsertAddressRange(ulong codeRangeStart, uint codeRangeSize, TargetPointer rangeSectionAddress)
         {
-            MockMemorySpace.HeapFragment rangeSectionFragment = _rangeSectionMapAllocator.Allocate(RangeSectionFragmentSize, "RangeSectionFragment");
+            var tyInfo = TypeInfoCache[DataType.RangeSectionFragment];
+            uint rangeSectionFragmentSize = tyInfo.Size.Value;
+            MockMemorySpace.HeapFragment rangeSectionFragment = _rangeSectionMapAllocator.Allocate(rangeSectionFragmentSize, "RangeSectionFragment");
             // FIXME: this shouldn't really be called InsertAddressRange, but maybe InsertRangeSectionFragment?
             _rsmBuilder.InsertAddressRange(codeRangeStart, codeRangeSize, rangeSectionFragment.Address);
             Builder.AddHeapFragment(rangeSectionFragment);
             int pointerSize = Builder.TargetTestHelpers.PointerSize;
-            Span<byte> rsf = Builder.BorrowAddressRange(rangeSectionFragment.Address, RangeSectionFragmentSize);
-            /* RangeStart */
-            Builder.TargetTestHelpers.WritePointer(rsf.Slice(0, pointerSize), codeRangeStart);
-            /* RangeEndOpen */
-            Builder.TargetTestHelpers.WritePointer(rsf.Slice(8, pointerSize), codeRangeStart + codeRangeSize);
-            /* RangeSection */
-            Builder.TargetTestHelpers.WritePointer(rsf.Slice(16, pointerSize), rangeSectionAddress);
+            Span<byte> rsf = Builder.BorrowAddressRange(rangeSectionFragment.Address, (int)rangeSectionFragmentSize);
+            Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeBegin)].Offset, pointerSize), codeRangeStart);
+            Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeEndOpen)].Offset, pointerSize), codeRangeStart + codeRangeSize);
+            Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeSection)].Offset, pointerSize), rangeSectionAddress);
             /* Next = nullptr */
             // nothing
             return rangeSectionFragment.Address;
@@ -85,20 +142,17 @@ public class ExecutionManagerTests
 
         public TargetPointer InsertCodeHeapListNode(TargetPointer next, TargetPointer startAddress, TargetPointer endAddress, TargetPointer mapBase, TargetPointer headerMap)
         {
-            MockMemorySpace.HeapFragment codeHeapListNode = _rangeSectionMapAllocator.Allocate (CodeHeapListNodeSize, "CodeHeapListNode");
+            var tyInfo = TypeInfoCache[DataType.CodeHeapListNode];
+            uint codeHeapListNodeSize = tyInfo.Size.Value;
+            MockMemorySpace.HeapFragment codeHeapListNode = _rangeSectionMapAllocator.Allocate (codeHeapListNodeSize, "CodeHeapListNode");
             Builder.AddHeapFragment(codeHeapListNode);
             int pointerSize = Builder.TargetTestHelpers.PointerSize;
-            Span<byte> chln = Builder.BorrowAddressRange(codeHeapListNode.Address, CodeHeapListNodeSize);
-            /* Next */
-            Builder.TargetTestHelpers.WritePointer(chln.Slice(0, pointerSize), next);
-            /* StartAddress */
-            Builder.TargetTestHelpers.WritePointer(chln.Slice(8, pointerSize), startAddress);
-            /* EndAddress */
-            Builder.TargetTestHelpers.WritePointer(chln.Slice(16, pointerSize), endAddress);
-            /* MapBase */
-            Builder.TargetTestHelpers.WritePointer(chln.Slice(24, pointerSize), mapBase);
-            /* HeaderMap */
-            Builder.TargetTestHelpers.WritePointer(chln.Slice(32, pointerSize), headerMap);
+            Span<byte> chln = Builder.BorrowAddressRange(codeHeapListNode.Address, (int)codeHeapListNodeSize);
+            Builder.TargetTestHelpers.WritePointer(chln.Slice(tyInfo.Fields[nameof(Data.CodeHeapListNode.Next)].Offset, pointerSize), next);
+            Builder.TargetTestHelpers.WritePointer(chln.Slice(tyInfo.Fields[nameof(Data.CodeHeapListNode.StartAddress)].Offset, pointerSize), startAddress);
+            Builder.TargetTestHelpers.WritePointer(chln.Slice(tyInfo.Fields[nameof(Data.CodeHeapListNode.EndAddress)].Offset, pointerSize), endAddress);
+            Builder.TargetTestHelpers.WritePointer(chln.Slice(tyInfo.Fields[nameof(Data.CodeHeapListNode.MapBase)].Offset, pointerSize), mapBase);
+            Builder.TargetTestHelpers.WritePointer(chln.Slice(tyInfo.Fields[nameof(Data.CodeHeapListNode.HeaderMap)].Offset, pointerSize), headerMap);
             return codeHeapListNode.Address;
         }
 
@@ -133,49 +187,10 @@ public class ExecutionManagerTests
 
     internal class ExecutionManagerTestTarget : TestPlaceholderTarget
     {
-        public ExecutionManagerTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate dataReader) : base(arch)
+        public ExecutionManagerTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate dataReader, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch)
         {
             SetDataReader(dataReader);
-            typeInfoCache = new Dictionary<DataType, TypeInfo>() {
-                [DataType.RangeSectionMap] = new TypeInfo() {
-                    Fields = new Dictionary<string, FieldInfo>() {
-                        [nameof(Data.RangeSectionMap.TopLevelData)] = new () {Offset = 0},
-                    },
-                },
-                [DataType.RangeSectionFragment] = new TypeInfo() {
-                    Fields = new Dictionary<string, FieldInfo>() {
-                        [nameof(Data.RangeSectionFragment.RangeBegin)] = new () {Offset = 0},
-                        [nameof(Data.RangeSectionFragment.RangeEndOpen)] = new () {Offset = 8},
-                        [nameof(Data.RangeSectionFragment.RangeSection)] = new () {Offset = 16},
-                        [nameof(Data.RangeSectionFragment.Next)] = new () {Offset = 24},
-                    },
-                },
-                [DataType.RangeSection] = new TypeInfo() {
-                    Fields = new Dictionary<string, FieldInfo>() {
-                        [nameof(Data.RangeSection.RangeBegin)] = new () {Offset = 0},
-                        [nameof(Data.RangeSection.RangeEndOpen)] = new () {Offset = 8},
-                        [nameof(Data.RangeSection.NextForDelete)] = new () {Offset = 16},
-                        [nameof(Data.RangeSection.JitManager)] = new () {Offset = 24},
-                        [nameof(Data.RangeSection.Flags)] = new () {Offset = 32},
-                        [nameof(Data.RangeSection.HeapList)] = new () {Offset = 40},
-                        [nameof(Data.RangeSection.R2RModule)] = new () {Offset = 48},
-                    },
-                },
-                [DataType.CodeHeapListNode] = new TypeInfo() {
-                    Fields = new Dictionary<string, FieldInfo>() {
-                        [nameof(Data.CodeHeapListNode.Next)] = new () {Offset = 0},
-                        [nameof(Data.CodeHeapListNode.StartAddress)] = new () {Offset = 8},
-                        [nameof(Data.CodeHeapListNode.EndAddress)] = new () {Offset = 16},
-                        [nameof(Data.CodeHeapListNode.MapBase)] = new () {Offset = 24},
-                        [nameof(Data.CodeHeapListNode.HeaderMap)] = new () {Offset = 32},
-                    },
-                },
-                [DataType.RealCodeHeader] = new TypeInfo() {
-                    Fields = new Dictionary<string, FieldInfo>() {
-                        [nameof(Data.RealCodeHeader.MethodDesc)] = new () {Offset = 0},
-                    },
-                },
-            };
+            SetTypeInfoCache(typeInfoCache);
             SetDataCache(new DefaultDataCache(this));
             IContractFactory<IExecutionManager> emfactory = new ExecutionManagerFactory();
             SetContracts(new TestRegistry() {
@@ -215,11 +230,10 @@ public class ExecutionManagerTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void LookupNull(MockTarget.Architecture arch)
     {
-        TargetTestHelpers targetTestHelpers = new (arch);
-        MockMemorySpace.Builder builder = new (targetTestHelpers);
-        RangeSectionMapTests.Builder rsmBuilder = new (ExecutionManagerCodeRangeMapAddress, builder);
-        builder.MarkCreated();
-        ExecutionManagerTestTarget target = new(arch, builder.GetReadContext().ReadFromTarget);
+        ExecutionManagerTestBuilder emBuilder = new (arch, rangeSectionMapRegion: (0x00dd_0000, 0x00de_0000));
+        emBuilder.MarkCreated();
+
+        ExecutionManagerTestTarget target = new(arch, emBuilder.Builder.GetReadContext().ReadFromTarget, emBuilder.TypeInfoCache);
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
         var eeInfo = em.GetEECodeInfoHandle(TargetCodePointer.Null);
@@ -230,11 +244,9 @@ public class ExecutionManagerTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void LookupNonNullMissing(MockTarget.Architecture arch)
     {
-        TargetTestHelpers targetTestHelpers = new (arch);
-        MockMemorySpace.Builder builder = new (targetTestHelpers);
-        RangeSectionMapTests.Builder rsmBuilder = new (ExecutionManagerCodeRangeMapAddress, builder);
-        builder.MarkCreated();
-        ExecutionManagerTestTarget target = new(arch, builder.GetReadContext().ReadFromTarget);
+        ExecutionManagerTestBuilder emBuilder = new (arch, rangeSectionMapRegion: (0x00dd_0000, 0x00de_0000));
+        emBuilder.MarkCreated();
+        ExecutionManagerTestTarget target = new(arch, emBuilder.Builder.GetReadContext().ReadFromTarget, emBuilder.TypeInfoCache);
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
         var eeInfo = em.GetEECodeInfoHandle(new TargetCodePointer(0x0a0a_0000));
@@ -256,7 +268,7 @@ public class ExecutionManagerTests
         TargetPointer methodCodeHeaderAddress = new (0x0033_4000);
         TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
 
-        ExecutionManagerTestBuilder emBuilder = new (arch, rangeSectionMapRegion: (0x00dd_0000, 0x0001_0000));
+        ExecutionManagerTestBuilder emBuilder = new (arch, rangeSectionMapRegion: (0x00dd_0000, 0x00de_0000));
 
         TargetPointer codeHeapListNodeAddress = emBuilder.InsertCodeHeapListNode(TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibbleMapStart);
         TargetPointer rangeSectionAddress = emBuilder.InsertRangeSection(codeRangeStart, codeRangeSize, jitManagerAddress: jitManagerAddress, codeHeapListNodeAddress: codeHeapListNodeAddress);
@@ -268,7 +280,7 @@ public class ExecutionManagerTests
 
         emBuilder.MarkCreated();
 
-        ExecutionManagerTestTarget target = new(arch, emBuilder.Builder.GetReadContext().ReadFromTarget);
+        ExecutionManagerTestTarget target = new(arch, emBuilder.Builder.GetReadContext().ReadFromTarget, emBuilder.TypeInfoCache);
 
         // test
 
