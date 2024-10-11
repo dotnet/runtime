@@ -5,6 +5,8 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <PackageDescription>Windows Event Log logger provider implementation for Microsoft.Extensions.Logging.</PackageDescription>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
   </PropertyGroup>
 
   <ItemGroup>

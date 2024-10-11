@@ -10,6 +10,8 @@ Commonly Used Types:
 Microsoft.Extensions.FileProviders.IDirectoryContents
 Microsoft.Extensions.FileProviders.IFileInfo
 Microsoft.Extensions.FileProviders.IFileProvider</PackageDescription>
+<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+<ServicingVersion>1</ServicingVersion>
   </PropertyGroup>
 
   <ItemGroup>
