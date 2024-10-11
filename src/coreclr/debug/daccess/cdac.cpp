@@ -86,10 +86,10 @@ CDAC::~CDAC()
         ::FreeLibrary(m_module);
 }
 
-void CDAC::GetSosInterface(IUnknown** sos)
+void CDAC::CreateSosInterface(IUnknown** sos)
 {
-    decltype(&cdac_reader_get_sos_interface) getSosInterface = reinterpret_cast<decltype(&cdac_reader_get_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_get_sos_interface"));
-    _ASSERTE(getSosInterface != nullptr);
-    int ret = getSosInterface(m_cdac_handle, m_legacyImpl, sos);
+    decltype(&cdac_reader_create_sos_interface) createSosInterface = reinterpret_cast<decltype(&cdac_reader_create_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_create_sos_interface"));
+    _ASSERTE(createSosInterface != nullptr);
+    int ret = createSosInterface(m_cdac_handle, m_legacyImpl, sos);
     _ASSERTE(ret == 0);
 }

@@ -49,7 +49,7 @@ public:
         return m_module != NULL && m_cdac_handle != 0;
     }
 
-    void GetSosInterface(IUnknown** sos);
+    void CreateSosInterface(IUnknown** sos);
 
 private:
     CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target, IUnknown* legacyImpl);

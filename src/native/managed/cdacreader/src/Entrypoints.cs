@@ -38,14 +38,14 @@ internal static class Entrypoints
     }
 
     /// <summary>
-    /// Get the SOS-DAC interface implementation.
+    /// Create the SOS-DAC interface implementation.
     /// </summary>
     /// <param name="handle">Handle crated via cdac initialization</param>
     /// <param name="legacyImplPtr">Optional. Pointer to legacy implementation of ISOSDacInterface*</param>
     /// <param name="obj"><c>IUnknown</c> pointer that can be queried for ISOSDacInterface*</param>
     /// <returns></returns>
-    [UnmanagedCallersOnly(EntryPoint = $"{CDAC}get_sos_interface")]
-    private static unsafe int GetSOSInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
+    [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_sos_interface")]
+    private static unsafe int CreateSosInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
     {
         ComWrappers cw = new StrategyBasedComWrappers();
         Target? target = GCHandle.FromIntPtr(handle).Target as Target;

@@ -7143,7 +7143,11 @@ CLRDataCreateInstance(REFIID iid,
                 if (cdac.IsValid())
                 {
                     // Get SOS interfaces from the cDAC if available.
-                    cdac.GetSosInterface(&cdacInterface);
+                    cdac.CreateSosInterface(&cdacInterface);
+                    _ASSERTE(cdacInterface != nullptr);
+
+                    // Lifetime is now managed by cDAC implementation of SOS interfaces
+                    pClrDataAccess->Release();
                 }
 
                 // Release the AddRef from the QI.
@@ -7159,10 +7163,11 @@ CLRDataCreateInstance(REFIID iid,
     else
     {
         hr = pClrDataAccess->QueryInterface(iid, iface);
+
+        // Lifetime is now managed by caller
+        pClrDataAccess->Release();
     }
 
-    // Lifetime is now managed by caller (either directly or via cDAC which holds on to the CLRDataAccess instance)
-    pClrDataAccess->Release();
     return hr;
 }
 
