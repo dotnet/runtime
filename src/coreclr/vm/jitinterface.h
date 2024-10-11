@@ -47,6 +47,8 @@ class CalledMethod;
 
 #include "genericdict.h"
 
+void FlushVirtualFunctionPointerCaches();
+
 inline FieldDesc* GetField(CORINFO_FIELD_HANDLE fieldHandle)
 {
     LIMITED_METHOD_CONTRACT;
@@ -251,9 +253,6 @@ extern "C" FCDECL3(void, JIT_Unbox_Nullable, void * destPtr, CORINFO_CLASS_HANDL
 extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
 #define WriteBarrier_Helper JIT_WriteBarrier_Callable
 
-extern "C" FCDECL1(void, JIT_InternalThrow, unsigned exceptNum);
-extern "C" FCDECL1(void*, JIT_InternalThrowFromHelper, unsigned exceptNum);
-
 #ifdef TARGET_AMD64
 
 
@@ -452,6 +451,11 @@ public:
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClassHelper(
         CORINFO_CLASS_HANDLE elemType
         );
+
+    CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClassHelper(
+        CORINFO_CLASS_HANDLE elemType
+        );
+
 
     CorInfoType getFieldTypeInternal (CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = NULL,CORINFO_CLASS_HANDLE owner = NULL);
 
@@ -1075,8 +1079,6 @@ FCDECL0(VOID, JIT_PollGC);
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 BOOL ObjIsInstanceOfCore(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 
-EXTERN_C TypeHandle::CastResult STDCALL ObjIsInstanceOfCached(Object *pObject, TypeHandle toTypeHnd);
-
 #ifdef HOST_64BIT
 class InlinedCallFrame;
 Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame);
@@ -1091,8 +1093,6 @@ struct VirtualFunctionPointerArgs
     CORINFO_CLASS_HANDLE classHnd;
     CORINFO_METHOD_HANDLE methodHnd;
 };
-
-FCDECL2(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Dynamic, Object * objectUNSAFE, VirtualFunctionPointerArgs * pArgs);
 
 typedef HCCALL1_PTR(TADDR, FnStaticBaseHelper, TADDR arg0);
 
@@ -1113,17 +1113,6 @@ struct GenericHandleArgs
     DWORD dictionaryIndexAndSlot;
 };
 
-FCDECL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodWithSlotAndModule, CORINFO_METHOD_HANDLE  methodHnd, GenericHandleArgs * pArgs);
-FCDECL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO_CLASS_HANDLE classHnd, GenericHandleArgs * pArgs);
-
-CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc   *pMD,
-                                               MethodTable  *pMT,
-                                               LPVOID        signature,
-                                               DWORD         dictionaryIndexAndSlot = -1,
-                                               Module *      pModule = NULL);
-
-void ClearJitGenericHandleCache();
-
 CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags);
 
 bool __stdcall TrackAllocationsEnabled();
@@ -1136,8 +1125,8 @@ extern thread_local int64_t t_cbILJittedForThread;
 extern thread_local int64_t t_cMethodsJittedForThread;
 extern thread_local int64_t t_c100nsTicksInJitForThread;
 
-FCDECL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread);
-FCDECL1(INT64, GetCompiledMethodCount, CLR_BOOL currentThread);
-FCDECL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread);
+FCDECL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread);
+FCDECL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread);
+FCDECL1(INT64, GetCompilationTimeInTicks, FC_BOOL_ARG currentThread);
 
 #endif // JITINTERFACE_H

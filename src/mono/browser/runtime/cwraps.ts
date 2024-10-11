@@ -65,9 +65,10 @@ const fn_signatures: SigLine[] = [
     [false, "mono_wasm_exit", "void", ["number"]],
     [true, "mono_wasm_getenv", "number", ["string"]],
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
-    // These two need to be lazy because they may be missing
+    // These three need to be lazy because they may be missing
     [() => !runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
     [() => !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_wasm_profiler_init_browser", "void", ["string"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableLogProfiler, "mono_wasm_profiler_init_log", "void", ["string"]],
     [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
     [false, "mono_wasm_invoke_jsexport", "void", ["number", "number"]],
@@ -165,6 +166,7 @@ export interface t_ThreadingCwraps {
 export interface t_ProfilerCwraps {
     mono_wasm_profiler_init_aot(desc: string): void;
     mono_wasm_profiler_init_browser(desc: string): void;
+    mono_wasm_profiler_init_log(desc: string): void;
 }
 
 export interface t_Cwraps {

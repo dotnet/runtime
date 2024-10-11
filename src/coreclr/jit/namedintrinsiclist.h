@@ -114,6 +114,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
 
     NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
 
@@ -250,6 +251,12 @@ enum NamedIntrinsic : unsigned short
     NI_PRIMITIVE_TrailingZeroCount,
 
     NI_PRIMITIVE_END,
+
+    //
+    // Array Intrinsics
+    //
+    NI_System_SZArrayHelper_GetEnumerator,
+    NI_System_Array_T_GetEnumerator,
 };
 
 #endif // _NAMEDINTRINSICLIST_H_

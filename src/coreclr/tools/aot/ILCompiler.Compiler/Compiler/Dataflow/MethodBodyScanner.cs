@@ -901,7 +901,7 @@ namespace ILCompiler.Dataflow
             ParameterProxy param = new(methodBody.OwningMethod, paramNum);
             var targetValue = GetMethodParameterValue(param);
             if (targetValue is MethodParameterValue targetParameterValue)
-                HandleStoreParameter(methodBody, offset, targetParameterValue, valueToStore.Value);
+                HandleStoreParameter(methodBody, offset, targetParameterValue, valueToStore.Value, null);
 
             // If the targetValue is MethodThisValue do nothing - it should never happen really, and if it does, there's nothing we can track there
         }
@@ -1007,7 +1007,7 @@ namespace ILCompiler.Dataflow
             StackSlot valueToStore = PopUnknown(currentStack, 1, methodBody, offset);
             StackSlot destination = PopUnknown(currentStack, 1, methodBody, offset);
 
-            StoreInReference(destination.Value, valueToStore.Value, methodBody, offset, locals, curBasicBlock, ref ipState);
+            StoreInReference(destination.Value, valueToStore.Value, methodBody, offset, locals, curBasicBlock, ref ipState, null);
         }
 
         /// <summary>
@@ -1018,7 +1018,7 @@ namespace ILCompiler.Dataflow
         /// <param name="method">The method body that contains the operation causing the store</param>
         /// <param name="offset">The instruction offset causing the store</param>
         /// <exception cref="LinkerFatalErrorException">Throws if <paramref name="target"/> is not a valid target for an indirect store.</exception>
-        protected void StoreInReference(MultiValue target, MultiValue source, MethodIL method, int offset, ValueBasicBlockPair?[] locals, int curBasicBlock, ref InterproceduralState ipState)
+        protected void StoreInReference(MultiValue target, MultiValue source, MethodIL method, int offset, ValueBasicBlockPair?[] locals, int curBasicBlock, ref InterproceduralState ipState, int? parameterIndex)
         {
             foreach (var value in target.AsEnumerable ())
             {
@@ -1029,18 +1029,18 @@ namespace ILCompiler.Dataflow
                         break;
                     case FieldReferenceValue fieldReference
                     when HandleGetField(method, offset, fieldReference.FieldDefinition).AsSingleValue() is FieldValue fieldValue:
-                        HandleStoreField(method, offset, fieldValue, source);
+                        HandleStoreField(method, offset, fieldValue, source, parameterIndex);
                         break;
                     case ParameterReferenceValue parameterReference
                     when GetMethodParameterValue(parameterReference.Parameter) is MethodParameterValue parameterValue:
-                        HandleStoreParameter(method, offset, parameterValue, source);
+                        HandleStoreParameter(method, offset, parameterValue, source, parameterIndex);
                         break;
                     case MethodReturnValue methodReturnValue:
                         // Ref returns don't have special ReferenceValue values, so assume if the target here is a MethodReturnValue then it must be a ref return value
                         HandleReturnValue(method, offset, methodReturnValue, source);
                         break;
                     case FieldValue fieldValue:
-                        HandleStoreField(method, offset, fieldValue, DereferenceValue(method, offset, source, locals, ref ipState));
+                        HandleStoreField(method, offset, fieldValue, DereferenceValue(method, offset, source, locals, ref ipState), parameterIndex);
                         break;
                     case IValueWithStaticType valueWithStaticType:
                         if (valueWithStaticType.StaticType is not null && FlowAnnotations.IsTypeInterestingForDataflow(valueWithStaticType.StaticType.Value.Type))
@@ -1108,11 +1108,11 @@ namespace ILCompiler.Dataflow
             currentStack.Push(new StackSlot(value));
         }
 
-        protected virtual void HandleStoreField(MethodIL method, int offset, FieldValue field, MultiValue valueToStore)
+        protected virtual void HandleStoreField(MethodIL method, int offset, FieldValue field, MultiValue valueToStore, int? parameterIndex)
         {
         }
 
-        protected virtual void HandleStoreParameter(MethodIL method, int offset, MethodParameterValue parameter, MultiValue valueToStore)
+        protected virtual void HandleStoreParameter(MethodIL method, int offset, MethodParameterValue parameter, MultiValue valueToStore, int? parameterIndex)
         {
         }
 
@@ -1149,7 +1149,7 @@ namespace ILCompiler.Dataflow
                 // Incomplete handling of ref fields -- if we're storing a reference to a value, pretend it's just the value
                 MultiValue valueToStore = DereferenceValue(methodBody, offset, valueToStoreSlot.Value, locals, ref interproceduralState);
 
-                HandleStoreField(methodBody, offset, fieldValue, valueToStore);
+                HandleStoreField(methodBody, offset, fieldValue, valueToStore, null);
             }
         }
 
@@ -1241,7 +1241,7 @@ namespace ILCompiler.Dataflow
                 if (parameter.GetReferenceKind() is not (ReferenceKind.Ref or ReferenceKind.Out))
                     continue;
                 var newByRefValue = _annotations.GetMethodParameterValue(parameter);
-                StoreInReference(methodArguments[(int)parameter.Index], newByRefValue, callingMethodBody, offset, locals, curBasicBlock, ref ipState);
+                StoreInReference(methodArguments[(int)parameter.Index], newByRefValue, callingMethodBody, offset, locals, curBasicBlock, ref ipState, parameter.Index.Index);
             }
         }
 

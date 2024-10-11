@@ -60,17 +60,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 test.RunStructFldScenario();
 
                 // Validates using inside ConditionalSelect with value falseValue
-                // Currently, using this operation in ConditionalSelect() gives incorrect result
-                // when falseReg == targetReg because this instruction uses Pg/Z to update the targetReg
-                // instead of Pg/M to merge it. As such, the value of falseReg is lost. Ideally, such
-                // instructions should be marked similar to RMW (a different flag name) to make sure that
-                // we do not assign falseReg/targetReg same. Then, we would do something like this:
-                //
-                // ldnf1sh target, pg/z, [x0]
-                // sel mask, target, target, falseReg
-                //
-                // This needs more careful thinking, so disabling it for now.
-                // test.ConditionalSelect_FalseOp();
+                test.ConditionalSelect_FalseOp();
 
                 // Validates using inside ConditionalSelect with zero falseValue
                 test.ConditionalSelect_ZeroOp();
@@ -109,7 +99,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
                 int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<{Op2BaseType}>();
                 int sizeOfinArray3 = inArray3.Length * Unsafe.SizeOf<{Op3BaseType}>();
-                int sizeOfinBounded = new Random().Next(Unsafe.SizeOf<{Op2BaseType}>(), Vector<{Op2BaseType}>.Count * Unsafe.SizeOf<{Op2BaseType}>() - 1);
+                int sizeOfinBounded = new Random().Next(Unsafe.SizeOf<{Op2BaseType}>(), Vector<{RetBaseType}>.Count * Unsafe.SizeOf<{Op2BaseType}>() - 1);
                 int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
 
                 if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray3 || (alignment * 2) < sizeOfoutArray)

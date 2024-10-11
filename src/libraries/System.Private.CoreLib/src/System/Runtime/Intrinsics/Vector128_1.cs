@@ -144,7 +144,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the bitwise-and of two vectors.</summary>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-and with <paramref name="left" />.</param>
-        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -159,7 +159,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the bitwise-or of two vectors.</summary>
         /// <param name="left">The vector to bitwise-or with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-or with <paramref name="left" />.</param>
-        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

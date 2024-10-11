@@ -204,7 +204,8 @@ namespace System.Text.Json.Schema
                     List<string>? required = null;
                     JsonSchema? additionalProperties = null;
 
-                    if (typeInfo.UnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
+                    JsonUnmappedMemberHandling effectiveUnmappedMemberHandling = typeInfo.UnmappedMemberHandling ?? typeInfo.Options.UnmappedMemberHandling;
+                    if (effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                     {
                         additionalProperties = JsonSchema.False;
                     }
@@ -239,6 +240,7 @@ namespace System.Text.Json.Schema
 
                         if (property.AssociatedParameter is { HasDefaultValue: true } parameterInfo)
                         {
+                            JsonSchema.EnsureMutable(ref propertySchema);
                             propertySchema.DefaultValue = JsonSerializer.SerializeToNode(parameterInfo.DefaultValue, property.JsonTypeInfo);
                             propertySchema.HasDefaultValue = true;
                         }

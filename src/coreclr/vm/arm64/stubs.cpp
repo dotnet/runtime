@@ -635,6 +635,10 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
     // Copy the context to regdisplay
     memcpy(pRD->pCurrentContext, &m_ctx, sizeof(T_CONTEXT));
 
+    // Clear the CONTEXT_XSTATE, since the REGDISPLAY contains just plain CONTEXT structure
+    // that cannot contain any extended state.
+    pRD->pCurrentContext->ContextFlags &= ~(CONTEXT_XSTATE & CONTEXT_AREA_MASK);
+
     pRD->ControlPC = ::GetIP(&m_ctx);
     pRD->SP = ::GetSP(&m_ctx);
 
@@ -1942,9 +1946,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
-        GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
-        GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
+    PCODE helperAddress = GetDictionaryLookupHelper(pLookup->helper);
 
     GenericHandleArgs * pArgs = (GenericHandleArgs *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(sizeof(GenericHandleArgs), DYNAMIC_HELPER_ALIGNMENT);
     ExecutableWriterHolder<GenericHandleArgs> argsWriterHolder(pArgs, sizeof(GenericHandleArgs));

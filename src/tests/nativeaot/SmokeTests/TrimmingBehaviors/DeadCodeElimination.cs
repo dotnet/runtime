@@ -18,6 +18,7 @@ class DeadCodeElimination
         TestAbstractNeverDerivedWithDevirtualizedCall.Run();
         TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
         TestUnusedDefaultInterfaceMethod.Run();
+        TestInlinedDeadBranchElimination.Run();
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeIs.Run();
@@ -249,6 +250,37 @@ class DeadCodeElimination
             s_instance.DoSomething();
 
             ThrowIfPresent(typeof(TestUnusedDefaultInterfaceMethod), nameof(NeverReferenced));
+        }
+    }
+
+    class TestInlinedDeadBranchElimination
+    {
+        static int GetIntConstant() => 42;
+        static int GetIntConstantWrapper() => GetIntConstant();
+
+        class NeverReferenced1 { }
+
+        enum MyEnum { One, Two }
+
+        static MyEnum GetEnumConstant() => MyEnum.Two;
+
+        class NeverReferenced2 { }
+
+        public static void Run()
+        {
+            if (GetIntConstantWrapper() == 1)
+            {
+                Activator.CreateInstance(typeof(NeverReferenced1));
+            }
+
+            ThrowIfPresent(typeof(TestInlinedDeadBranchElimination), nameof(NeverReferenced1));
+
+            if (GetEnumConstant() == MyEnum.One)
+            {
+                Activator.CreateInstance(typeof(NeverReferenced2));
+            }
+
+            ThrowIfPresent(typeof(TestInlinedDeadBranchElimination), nameof(NeverReferenced2));
         }
     }
 
@@ -497,12 +529,26 @@ class DeadCodeElimination
     {
         class NeverAllocated1 { }
         class NeverAllocated2 { }
+        class NeverAllocated3 { }
 
         class PossiblyAllocated1 { }
         class PossiblyAllocated2 { }
 
+        class MyAttribute : Attribute
+        {
+            public Type TheType;
+
+            public MyAttribute(Type t) => TheType = t;
+        }
+
+        [My(typeof(NeverAllocated3))]
+        class AttributeHolder { }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static Type GetNeverObject() => null;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetNeverAllocated3Type() => typeof(AttributeHolder).GetCustomAttribute<MyAttribute>().TheType;
 
         static volatile Type s_sink;
 
@@ -525,6 +571,15 @@ class DeadCodeElimination
             }
             if (Environment.GetEnvironmentVariable("SURETHING") != null)
                 s_sink = typeof(PossiblyAllocated1);
+
+            if (GetNeverAllocated3Type() == typeof(NeverAllocated3))
+            {
+                Console.WriteLine($"{nameof(NeverAllocated3)} check succeeded");
+            }
+            else
+            {
+                throw new Exception();
+            }
         }
     }
 

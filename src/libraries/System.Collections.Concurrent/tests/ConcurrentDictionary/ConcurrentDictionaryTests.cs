@@ -449,7 +449,7 @@ namespace System.Collections.Concurrent.Tests
         [Fact]
         public static void TryRemove_KeyValuePair_ArgumentValidation()
         {
-            AssertExtensions.Throws<ArgumentNullException>("item.Key", () => new ConcurrentDictionary<string, int>().TryRemove(new KeyValuePair<string, int>(null, 42)));
+            AssertExtensions.Throws<ArgumentNullException>("item", () => new ConcurrentDictionary<string, int>().TryRemove(new KeyValuePair<string, int>(null, 42)));
             new ConcurrentDictionary<int, int>().TryRemove(new KeyValuePair<int, int>(0, 0)); // no error when using default value type
             new ConcurrentDictionary<int?, int>().TryRemove(new KeyValuePair<int?, int>(0, 0)); // or nullable
         }
@@ -954,6 +954,25 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(dictionary.IsEmpty, "TestClear: FAILED.  IsEmpty returned false after Clear");
         }
 
+        [Theory]
+        [InlineData(3)]
+        [InlineData(1_162_687)]
+        public static void TestCapacity(int capacity)
+        {
+            int itemsCount = capacity + 100;
+            var dictionary = new ConcurrentDictionary<int, int>(1, capacity);
+            Assert.Equal(capacity, GetCapacity(dictionary));
+
+            for (int i = 0; i < itemsCount; i++)
+                dictionary.TryAdd(i, i);
+
+            Assert.Equal(itemsCount, dictionary.Count);
+            Assert.InRange(GetCapacity(dictionary), capacity + 1, int.MaxValue);
+
+            dictionary.Clear();
+            Assert.Equal(capacity, GetCapacity(dictionary));
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestTryUpdate()
         {
@@ -1231,6 +1250,20 @@ namespace System.Collections.Concurrent.Tests
         }
 
         #region Helper Classes and Methods
+
+        private static int GetCapacity(ConcurrentDictionary<int, int> dictionary)
+        {
+            var tables = typeof(ConcurrentDictionary<int, int>)
+                .GetField("_tables", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(dictionary);
+
+            var buckets = (ICollection)tables.GetType()
+                .GetField("_buckets", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(tables);
+
+            return buckets.Count;
+        }
+
         private sealed class CreateThrowsComparer : IEqualityComparer<string>, IAlternateEqualityComparer<ReadOnlySpan<char>, string>
         {
             public bool Equals(string? x, string? y) => EqualityComparer<string>.Default.Equals(x, y);

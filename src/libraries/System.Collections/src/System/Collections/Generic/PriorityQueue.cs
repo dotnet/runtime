@@ -532,16 +532,30 @@ namespace System.Collections.Generic
             if (index < newSize)
             {
                 // We're removing an element from the middle of the heap.
-                // Pop the last element in the collection and sift downward from the removed index.
+                // Pop the last element in the collection and sift from the removed index.
                 (TElement Element, TPriority Priority) lastNode = nodes[newSize];
 
                 if (_comparer == null)
                 {
-                    MoveDownDefaultComparer(lastNode, index);
+                    if (Comparer<TPriority>.Default.Compare(lastNode.Priority, priority) < 0)
+                    {
+                        MoveUpDefaultComparer(lastNode, index);
+                    }
+                    else
+                    {
+                        MoveDownDefaultComparer(lastNode, index);
+                    }
                 }
                 else
                 {
-                    MoveDownCustomComparer(lastNode, index);
+                    if (_comparer.Compare(lastNode.Priority, priority) < 0)
+                    {
+                        MoveUpCustomComparer(lastNode, index);
+                    }
+                    else
+                    {
+                        MoveDownCustomComparer(lastNode, index);
+                    }
                 }
             }
 

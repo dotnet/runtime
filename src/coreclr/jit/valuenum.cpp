@@ -1623,32 +1623,24 @@ ValueNumPair ValueNumStore::VNPWithExc(ValueNumPair vnp, ValueNumPair excSetVNP)
 
 bool ValueNumStore::IsKnownNonNull(ValueNum vn)
 {
-    if (vn == NoVN)
-    {
-        return false;
-    }
+    auto vnVisitor = [this](ValueNum vn) -> VNVisit {
+        if (vn != NoVN)
+        {
+            if (IsVNHandle(vn))
+            {
+                assert(CoercedConstantValue<size_t>(vn) != 0);
+                return VNVisit::Continue;
+            }
 
-    if (IsVNHandle(vn))
-    {
-        assert(CoercedConstantValue<size_t>(vn) != 0);
-        return true;
-    }
-
-    VNFuncApp funcAttr;
-    if (!GetVNFunc(vn, &funcAttr))
-    {
-        return false;
-    }
-
-    if ((s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0)
-    {
-        return true;
-    }
-
-    // TODO: we can recognize more non-null idioms here, e.g.
-    // ADD(IsKnownNonNull(op1), smallCns), etc.
-
-    return false;
+            VNFuncApp funcAttr;
+            if (GetVNFunc(vn, &funcAttr) && ((s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0))
+            {
+                return VNVisit::Continue;
+            }
+        }
+        return VNVisit::Abort;
+    };
+    return VNVisitReachingVNs(vn, vnVisitor) == VNVisit::Continue;
 }
 
 bool ValueNumStore::IsSharedStatic(ValueNum vn)
@@ -3030,6 +3022,26 @@ bool ValueNumStore::GetPhiDef(ValueNum vn, VNPhiDef* phiDef)
     }
 
     return false;
+}
+
+// ----------------------------------------------------------------------------------------
+// IsPhiDef - Check if a VN represents a phi definition.
+//
+// Arguments:
+//   vn - Value number to check
+//
+// Return Value:
+//   True if the VN is a phi def.
+//
+bool ValueNumStore::IsPhiDef(ValueNum vn) const
+{
+    if (vn == NoVN)
+    {
+        return false;
+    }
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    assert(ChunkOffset(vn) < c->m_numUsed);
+    return c->m_attribs == CEA_PhiDef;
 }
 
 // ----------------------------------------------------------------------------------------
@@ -5699,6 +5711,14 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 {
                     resultVN = ZeroVN;
                 }
+
+                // Convert to a signed comparison if both operands are never negative
+                if (IsVNNeverNegative(arg0VN) && IsVNNeverNegative(arg1VN))
+                {
+                    resultVN = VNForFunc(typ, VNFunc(GT_GT), arg0VN, arg1VN);
+                    break;
+                }
+
                 break;
             }
 
@@ -5725,6 +5745,14 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                     resultVN = VNOneForType(typ);
                     break;
                 }
+
+                // Convert to a signed comparison if both operands are never negative
+                if (IsVNNeverNegative(arg0VN) && IsVNNeverNegative(arg1VN))
+                {
+                    resultVN = VNForFunc(typ, VNFunc(GT_LE), arg0VN, arg1VN);
+                    break;
+                }
+
                 break;
             }
 
@@ -6561,14 +6589,22 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
         {
             switch (funcApp.m_func)
             {
+                case VNF_GT:
+                case VNF_GE:
+                case VNF_LT:
+                case VNF_LE:
+                case VNF_EQ:
+                case VNF_NE:
+                case VNF_UMOD:
+                case VNF_UDIV:
                 case VNF_GE_UN:
                 case VNF_GT_UN:
                 case VNF_LE_UN:
                 case VNF_LT_UN:
-                case VNF_COUNT:
                 case VNF_ADD_UN_OVF:
                 case VNF_SUB_UN_OVF:
                 case VNF_MUL_UN_OVF:
+                case VNF_MDArrLowerBound:
 #ifdef FEATURE_HW_INTRINSICS
 #ifdef TARGET_XARCH
                 case VNF_HWI_POPCNT_PopCount:
@@ -10299,7 +10335,9 @@ void ValueNumStore::vnDumpSimdType(Compiler* comp, VNFuncApp* simdType)
     int         simdSize    = ConstantValue<int>(simdType->m_args[0]);
     CorInfoType baseJitType = (CorInfoType)ConstantValue<int>(simdType->m_args[1]);
 
-    printf("%s(simd%d, %s)", VNFuncName(simdType->m_func), simdSize, varTypeName(JitType2PreciseVarType(baseJitType)));
+    printf("%s(simd%d, %s)", VNFuncName(simdType->m_func), simdSize,
+           baseJitType == CORINFO_TYPE_UNDEF ? varTypeName(TYP_UNDEF)
+                                             : varTypeName(JitType2PreciseVarType(baseJitType)));
 }
 #endif // FEATURE_SIMD
 
@@ -11007,7 +11045,13 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 
             ValueNum              newMemoryVN;
             FlowGraphNaturalLoop* loop = m_blockToLoop->GetLoop(blk);
-            if ((loop != nullptr) && (loop->GetHeader() == blk))
+            if (bbIsHandlerBeg(blk))
+            {
+                // We do not model memory SSA faithfully for handling (in particular, we do not model that
+                // the handler may see memory states from intermediate points in the enclosed blocks)
+                newMemoryVN = vnStore->VNForExpr(blk, TYP_HEAP);
+            }
+            else if ((loop != nullptr) && (loop->GetHeader() == blk))
             {
                 newMemoryVN = fgMemoryVNForLoopSideEffects(memoryKind, blk, loop);
             }
@@ -11141,6 +11185,7 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bo
 
     GenTreePhi*  phiNode = newSsaDef->AsLclVar()->Data()->AsPhi();
     ValueNumPair sameVNP;
+    VNSet        loopInvariantCache(getAllocator(CMK_ValueNumber));
 
     for (GenTreePhi::Use& use : phiNode->Uses())
     {
@@ -11161,16 +11206,34 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bo
 
         ValueNumPair phiArgVNP = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum())->m_vnPair;
 
-#ifdef DEBUG
-        if (verbose && isUpdate && (phiArgVNP != phiArg->gtVNPair))
+        if (isUpdate && (phiArgVNP != phiArg->gtVNPair))
         {
-            printf("Updating phi arg [%06u] VN from ", dspTreeID(phiArg));
-            vnpPrint(phiArg->gtVNPair, 0);
-            printf(" to ");
-            vnpPrint(phiArgVNP, 0);
-            printf("\n");
-        }
+            FlowGraphNaturalLoop* const blockLoop = m_loops->GetLoopByHeader(blk);
+            bool const canUseNewVN = optVNIsLoopInvariant(phiArgVNP.GetConservative(), blockLoop, &loopInvariantCache);
+
+            if (canUseNewVN)
+            {
+#ifdef DEBUG
+                if (verbose)
+                {
+                    printf("Updating phi arg [%06u] VN from ", dspTreeID(phiArg));
+                    vnpPrint(phiArg->gtVNPair, 0);
+                    printf(" to ");
+                    vnpPrint(phiArgVNP, 0);
+                    printf("\n");
+                }
 #endif
+            }
+            else
+            {
+                JITDUMP("Can't update phi arg [%06u] with " FMT_VN " -- varies in " FMT_LP "\n", dspTreeID(phiArg),
+                        phiArgVNP.GetConservative(), blockLoop->GetIndex());
+
+                // Code below uses phiArgVNP, reset to the old value
+                //
+                phiArgVNP = phiArg->gtVNPair;
+            }
+        }
 
         phiArg->gtVNPair = phiArgVNP;
 
@@ -11956,6 +12019,45 @@ bool Compiler::fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore,
             *byteOffset = vnStore->CoercedConstantValue<ssize_t>(treeVN) - fldSeq->GetOffset() + val;
             return true;
         }
+    }
+
+    return false;
+}
+
+//----------------------------------------------------------------------------------
+// GetImmutableDataFromAddress: Given a tree representing an address, try to obtain
+//    the actual content of the value stored at that address (of the given size).
+//    The value is expected to be immutable (invariant).
+//
+// Arguments:
+//    address - tree node representing the address
+//    size    - size of the value to read
+//    pValue  - [out] resulting value
+//
+// Return Value:
+//    true if the value was successfully obtained, false otherwise
+//
+bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, uint8_t* pValue)
+{
+    assert(vnStore != nullptr);
+
+    ssize_t   byteOffset = 0;
+    FieldSeq* fieldSeq   = nullptr;
+
+    // See if 'src' is a non-gc object handle.
+    CORINFO_OBJECT_HANDLE obj = NO_OBJECT_HANDLE;
+    if (GetObjectHandleAndOffset(address, &byteOffset, &obj) && ((size_t)byteOffset <= INT32_MAX))
+    {
+        assert(obj != NO_OBJECT_HANDLE);
+        return info.compCompHnd->isObjectImmutable(obj) &&
+               info.compCompHnd->getObjectContent(obj, pValue, size, (int)byteOffset);
+    }
+
+    // See if 'src' is some static read-only field (including RVA)
+    if (fgGetStaticFieldSeqAndAddress(vnStore, address, &byteOffset, &fieldSeq) && ((size_t)byteOffset <= INT32_MAX))
+    {
+        CORINFO_FIELD_HANDLE fld = fieldSeq->GetFieldHandle();
+        return (fld != nullptr) && info.compCompHnd->getStaticFieldContent(fld, pValue, size, (int)byteOffset);
     }
 
     return false;
@@ -12949,7 +13051,8 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 
     const size_t opCount = tree->GetOperandCount();
 
-    if ((opCount > 3) || (JitConfig.JitDisableSimdVN() & 2) == 2)
+    if ((opCount > 3) || ((JitConfig.JitDisableSimdVN() & 2) == 2) ||
+        HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
     {
         // TODO-CQ: allow intrinsics with > 3 operands to be properly VN'ed.
         normalPair = vnStore->VNPairForExpr(compCurBB, tree->TypeGet());
@@ -13926,7 +14029,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
-        case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
             vnf = VNF_RuntimeHandleMethod;
             break;
 
@@ -13935,7 +14037,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
-        case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
             vnf = VNF_RuntimeHandleClass;
             break;
 

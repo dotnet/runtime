@@ -98,6 +98,13 @@ namespace System.Reflection.Metadata.Tests.Metadata
         public void EscapedSquareBracketIsNotAllowedInTheName()
             => Assert.False(AssemblyNameInfo.TryParse("Esc\\[aped".AsSpan(), out _));
 
+        [Fact]
+        public void EmptyInputIsInvalid()
+        {
+            Assert.False(AssemblyNameInfo.TryParse("".AsSpan(), out _));
+            Assert.Throws<ArgumentException>(() => AssemblyNameInfo.Parse("".AsSpan()));
+        }
+
         static void Roundtrip(AssemblyName source)
         {
             AssemblyNameInfo parsed = AssemblyNameInfo.Parse(source.FullName.AsSpan());
