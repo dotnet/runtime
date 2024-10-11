@@ -18,7 +18,7 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 /// Use MockMemorySpace.CreateContext to create a mostly empty context for reading from the target.
 /// Use MockMemorySpace.ContextBuilder to create a context with additional MockMemorySpace.HeapFragment data.
 /// </remarks>
-internal unsafe static class MockMemorySpace
+internal unsafe static partial class MockMemorySpace
 {
     // These addresses are arbitrary and are used to store the contract descriptor components.
     // They should not overlap with any other heap fragment addresses.
@@ -40,7 +40,8 @@ internal unsafe static class MockMemorySpace
     internal class Builder
     {
         private bool _created = false;
-        private List<HeapFragment> _heapFragments = new();
+        private readonly List<HeapFragment> _heapFragments = new();
+        private readonly List<BumpAllocator> _allocators = new();
 
         private IReadOnlyCollection<string> _contracts;
         private IDictionary<DataType, Target.TypeInfo> _types;
@@ -261,6 +262,21 @@ internal unsafe static class MockMemorySpace
             ulong contractDescriptorAddress = CreateDescriptorFragments();
             ReadContext context = GetReadContext();
             return ContractDescriptorTarget.TryCreate(contractDescriptorAddress, context.ReadFromTarget, out target);
+        }
+
+        // Get an allocator for a range of addresses to simplify creating heap fragments
+        public BumpAllocator CreateAllocator(ulong start, ulong end)
+        {
+            if (_created)
+                throw new InvalidOperationException("Context already created");
+            BumpAllocator allocator = new BumpAllocator(start, end);
+            foreach (var a in _allocators)
+            {
+                if (allocator.Overlaps(a))
+                    throw new InvalidOperationException("Allocator overlaps with existing allocator");
+            }
+            _allocators.Add(allocator);
+            return allocator;
         }
     }
 
