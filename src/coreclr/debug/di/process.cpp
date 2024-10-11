@@ -376,7 +376,6 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
 {
     DWORD dwImageTimeStamp = 0;
     DWORD dwImageSize = 0;
-    bool isNGEN = false;
     StringCopyHolder filePath;
     IMDInternalImport * pMDII = NULL;
 
@@ -385,63 +384,13 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
     {
         _ASSERTE(filePath.IsSet());
 
-        // Since we track modules by their IL images, that presents a little bit of oddness here.  The correct
-        // thing to do is preferentially load the NI content.
-        // We don't discriminate between timestamps & sizes becuase CLRv4 deterministic NGEN guarantees that the
-        // IL image and NGEN image have the same timestamp and size.  Should that guarantee change, this code
-        // will be horribly broken.
-
-        // If we happen to have an NI file path, use it instead.
-        const WCHAR * pwszFilePath = pModule->GetNGenImagePath();
-        if (pwszFilePath)
-        {
-            // Force the issue, regardless of the older codepath's opinion.
-            isNGEN = true;
-        }
-        else
-        {
-            pwszFilePath = (WCHAR *)filePath;
-        }
+        const WCHAR * pwszFilePath = (WCHAR *)filePath;
 
         ALLOW_DATATARGET_MISSING_MEMORY(
             pMDII = LookupMetaDataFromDebuggerForSingleFile(pModule, pwszFilePath, dwImageTimeStamp, dwImageSize);
         );
 
-        // If it's an ngen'ed image and the debugger couldn't find it, we can use the metadata from
-        // the corresponding IL image if the debugger can locate it.
         filePath.Clear();
-        if ((pMDII == NULL) &&
-            (isNGEN) &&
-            (this->GetDAC()->GetILImageInfoFromNgenPEFile(vmPEAssembly, dwImageTimeStamp, dwImageSize, &filePath)))
-        {
-            _ASSERTE(filePath.IsSet());
-
-            WCHAR *mutableFilePath = (WCHAR *)filePath;
-
-            size_t pathLen = u16_strlen(mutableFilePath);
-
-            const WCHAR *nidll = W(".ni.dll");
-            const WCHAR *niexe = W(".ni.exe");
-            const size_t dllLen = u16_strlen(nidll);  // used for ni.exe as well
-
-            if (pathLen > dllLen && _wcsicmp(mutableFilePath+pathLen-dllLen, nidll) == 0)
-            {
-                wcscpy_s(mutableFilePath+pathLen-dllLen, dllLen, W(".dll"));
-            }
-            else if (pathLen > dllLen && _wcsicmp(mutableFilePath+pathLen-dllLen, niexe) == 0)
-            {
-                wcscpy_s(mutableFilePath+pathLen-dllLen, dllLen, W(".exe"));
-            }
-
-            ALLOW_DATATARGET_MISSING_MEMORY(
-                pMDII = LookupMetaDataFromDebuggerForSingleFile(pModule, mutableFilePath, dwImageTimeStamp, dwImageSize);
-            );
-
-            if (pMDII != NULL)
-            {
-                isILMetaDataForNGENImage = true;
-            }
-        }
     }
     return pMDII;
 }
@@ -11163,11 +11112,11 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     // 3. read the thread context, and from that read the pointer to the left-side context and the size of the context
     // 4. then we can perform the actual SetThreadContext operation
     // 5. lastly, we must resume the thread
-    // For the first step of obtaining the thread handle, 
+    // For the first step of obtaining the thread handle,
     // we have previously attempted to use ::OpenThread to get a handle to the thread.
     // However, there are situations where OpenThread can fail with an Access Denied error.
-    // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in 
-    // Windows causes the process to have higher privileges. 
+    // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in
+    // Windows causes the process to have higher privileges.
     // We are now using the following approach to access the thread handle, which is the same
     // approach used by CordbThread::RefreshHandle:
     // 1. Get the thread handle from the DAC
@@ -11210,8 +11159,8 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     DT_CONTEXT context = { 0 };
     context.ContextFlags = CONTEXT_FULL;
 
-    // we originally used GetDataTarget()->GetThreadContext, but 
-    // the implementation uses ShimLocalDataTarget::GetThreadContext which 
+    // we originally used GetDataTarget()->GetThreadContext, but
+    // the implementation uses ShimLocalDataTarget::GetThreadContext which
     // depends on OpenThread which might fail with an Access Denied error (see note above)
     BOOL success = ::GetThreadContext(hThread, (CONTEXT*)(&context));
     if (!success)
@@ -11224,7 +11173,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     TADDR lsContextAddr = (TADDR)context.Rcx;
     DWORD contextSize = (DWORD)context.Rdx;
 
-    // Read the expected Rip and Rsp from the thread context.  This is used to 
+    // Read the expected Rip and Rsp from the thread context.  This is used to
     // validate the context read from the left-side.
     TADDR expectedRip = (TADDR)context.R8;
     TADDR expectedRsp = (TADDR)context.R9;
