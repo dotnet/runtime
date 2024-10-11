@@ -227,6 +227,10 @@ public class ReliabilityFramework
             {
                 rf.HandleOom(e, "Running tests");
             }
+            catch (TimeoutException e)
+            {
+                throw e;
+            }
             catch (Exception e)
             {
                 Exception eTemp = e.InnerException;
@@ -831,6 +835,17 @@ public class ReliabilityFramework
                     Console.WriteLine(msg);
                     AddFailure("Test Hang", _curTestSet.Tests[i], -1);
                 }
+            }
+
+            if (_curTestSet.DebugBreakOnTestHang)
+            {
+                Console.WriteLine("Test hang.");
+                Debugger.Break();
+            }
+            else
+            {
+                Console.WriteLine("Time limit reached.");
+                throw new TimeoutException("Time limit reached.");
             }
         }
     }
