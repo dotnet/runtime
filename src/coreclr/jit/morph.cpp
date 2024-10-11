@@ -451,7 +451,8 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     // Because there is no IL instruction conv.r4.un, uint/ulong -> float
     // casts are always imported as CAST(float <- CAST(double <- uint/ulong)).
     // We can eliminate the redundant intermediate cast as an optimization.
-    else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && oper->OperIs(GT_CAST)
+    else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && oper->OperIs(GT_CAST) &&
+             !gtIsActiveCSE_Candidate(tree)
 #ifdef TARGET_ARM
              && !varTypeIsLong(oper->AsCast()->CastOp())
 #endif
@@ -2161,9 +2162,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             arg.AbiInfo.SetSplit(true);
             arg.AbiInfo.ByteOffset = 0;
             unsigned regNumIndex   = 0;
-            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
             {
-                const ABIPassingSegment& segment = abiInfo.Segment(i);
                 if (segment.IsPassedInRegister())
                 {
                     if (regNumIndex < MAX_ARG_REG_COUNT)
@@ -2186,10 +2186,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             m_hasRegArgs = true;
 
             unsigned regNumIndex = 0;
-            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
             {
-                const ABIPassingSegment& segment = abiInfo.Segment(i);
-
                 if (regNumIndex < MAX_ARG_REG_COUNT)
                 {
                     arg.AbiInfo.SetRegNum(regNumIndex, segment.GetRegister());
@@ -2975,9 +2973,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
         {
             bool fieldsMatch = true;
 
-            for (unsigned i = 0; i < arg->NewAbiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& seg : arg->NewAbiInfo.Segments())
             {
-                const ABIPassingSegment& seg = arg->NewAbiInfo.Segment(i);
                 if (seg.IsPassedInRegister())
                 {
                     unsigned fieldLclNum = lvaGetFieldLocal(varDsc, seg.Offset);
@@ -3118,9 +3115,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
         newArg = new (this, GT_FIELD_LIST) GenTreeFieldList();
 
-        for (unsigned i = 0; i < arg->NewAbiInfo.NumSegments; i++)
+        for (const ABIPassingSegment& seg : arg->NewAbiInfo.Segments())
         {
-            const ABIPassingSegment& seg = arg->NewAbiInfo.Segment(i);
             if (seg.IsPassedInRegister())
             {
                 var_types regType = seg.GetRegisterType();
@@ -7087,18 +7083,15 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.
     // This needs to be done after the arguments are morphed to ensure constant propagation has already taken place.
-    if (opts.OptimizationEnabled() && call->IsHelperCall() &&
-        (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ARRADDR_ST)))
+    if (opts.OptimizationEnabled() && call->IsHelperCall(this, CORINFO_HELP_ARRADDR_ST))
     {
         assert(call->gtArgs.CountArgs() == 3);
+        GenTree* arr   = call->gtArgs.GetArgByIndex(0)->GetNode();
+        GenTree* index = call->gtArgs.GetArgByIndex(1)->GetNode();
         GenTree* value = call->gtArgs.GetArgByIndex(2)->GetNode();
-        if (value->IsIntegralConst(0))
+
+        if (gtCanSkipCovariantStoreCheck(value, arr))
         {
-            assert(value->OperGet() == GT_CNS_INT);
-
-            GenTree* arr   = call->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree* index = call->gtArgs.GetArgByIndex(1)->GetNode();
-
             // Either or both of the array and index arguments may have been spilled to temps by `fgMorphArgs`. Copy
             // the spill trees as well if necessary.
             GenTree* argSetup = nullptr;
@@ -8481,17 +8474,21 @@ DONE_MORPHING_CHILDREN:
                 assert(op2 == tree->AsOp()->gtGetOp2());
             }
 
-            if (opts.OptimizationEnabled() && fgGlobalMorph)
+            if (opts.OptimizationEnabled() && fgGlobalMorph && tree->OperIs(GT_GT, GT_LT, GT_LE, GT_GE))
             {
+                // Normalize unsigned comparisons to signed if both operands a known to be never negative.
+                if (tree->IsUnsigned() && varTypeIsIntegral(op1) && op1->IsNeverNegative(this) &&
+                    op2->IsNeverNegative(this))
+                {
+                    tree->ClearUnsigned();
+                }
+
                 if (op2->IsIntegralConst() || op1->IsIntegralConst())
                 {
-                    if (tree->OperIs(GT_GT, GT_LT, GT_LE, GT_GE))
+                    tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
+                    if (tree->OperIs(GT_CNS_INT))
                     {
-                        tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
-                        if (tree->OperIs(GT_CNS_INT))
-                        {
-                            return tree;
-                        }
+                        return tree;
                     }
                 }
             }
@@ -11150,8 +11147,8 @@ GenTree* Compiler::fgMorphRetInd(GenTreeOp* ret)
         bool canFold = (indSize == lclVarSize) && (lclVarSize <= REGSIZE_BYTES);
 #endif
 
-        // TODO: support `genReturnBB != nullptr`, it requires #11413 to avoid `Incompatible types for
-        // gtNewTempStore`.
+        // If we have a shared return temp we cannot represent the store properly with these retyped values,
+        // so skip the optimization in that case.
         if (canFold && (genReturnBB == nullptr))
         {
             // Fold even if types do not match, lowering will handle it. This allows the local
@@ -11577,12 +11574,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
         // Try to fold it, maybe we get lucky,
         GenTree* morphedTree = gtFoldExpr(tree);
 
-        if (morphedTree != tree)
-        {
-            assert(!fgIsCommaThrow(morphedTree));
-            INDEBUG(morphedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-        }
-        else if (!morphedTree->OperIsHWIntrinsic())
+        if ((morphedTree != tree) || !morphedTree->OperIsHWIntrinsic())
         {
             INDEBUG(morphedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
         }

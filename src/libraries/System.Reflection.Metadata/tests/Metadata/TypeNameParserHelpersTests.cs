@@ -122,7 +122,9 @@ namespace System.Reflection.Metadata.Tests
         {
             List<int>? nestedNameLengths = null;
             ReadOnlySpan<char> span = input.AsSpan();
-            bool result = TypeNameParserHelpers.TryGetTypeNameInfo(ref span, ref nestedNameLengths, out int totalLength);
+            TypeNameParseOptions options = new();
+            int recursiveDepth = 0;
+            bool result = TypeNameParserHelpers.TryGetTypeNameInfo(options, ref span, ref nestedNameLengths, ref recursiveDepth, out int totalLength);
 
             Assert.Equal(expectedResult, result);
 
@@ -130,6 +132,7 @@ namespace System.Reflection.Metadata.Tests
             {
                 Assert.Equal(expectedNestedNameLengths, nestedNameLengths?.ToArray());
                 Assert.Equal(expectedTotalLength, totalLength);
+                Assert.Equal(expectedNestedNameLengths?.Length ?? 0, recursiveDepth);
             }
         }
 

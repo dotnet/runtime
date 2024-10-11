@@ -24,6 +24,7 @@ typedef enum
     GetAddrInfoErrorFlags_EAI_BADARG = 6,   // One or more input arguments were invalid.
     GetAddrInfoErrorFlags_EAI_NOMORE = 7,   // No more entries are present in the list.
     GetAddrInfoErrorFlags_EAI_MEMORY = 8,   // Out of memory.
+    GetAddrInfoErrorFlags_EAI_SYSTEM = 9,   // Other system error; errno is set to indicate the error.
 } GetAddrInfoErrorFlags;
 
 /**
@@ -402,6 +403,8 @@ PALEXPORT int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFa
 PALEXPORT int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* available);
 
 PALEXPORT int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available);
+
+PALEXPORT int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry);
 
 PALEXPORT int32_t SystemNative_CreateSocketEventPort(intptr_t* port);
 
