@@ -305,7 +305,7 @@ namespace System.Collections.Immutable.Tests
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {
             ImmutableStack<T> stack = ImmutableStack<T>.Empty;
-            foreach (T value in contents.Reverse())
+            foreach (T value in Enumerable.Reverse(contents))
             {
                 stack = stack.Push(value);
             }
