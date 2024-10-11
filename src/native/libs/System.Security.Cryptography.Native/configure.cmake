@@ -29,16 +29,6 @@ check_function_exists(
     HAVE_OPENSSL_SHA3_SQUEEZE
 )
 
-check_function_exists(
-    EVP_rc2_ecb
-    HAVE_OPENSSL_EVP_RC2_ECB
-)
-
-check_function_exists(
-    EVP_rc2_cbc
-    HAVE_OPENSSL_EVP_RC2_CBC
-)
-
 check_source_compiles(C "
 #include <openssl/engine.h>
 int main(void) { ENGINE_init(NULL); return 1; }"

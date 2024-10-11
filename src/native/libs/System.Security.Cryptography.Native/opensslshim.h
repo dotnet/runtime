@@ -23,6 +23,7 @@
 #include <openssl/md5.h>
 #include <openssl/objects.h>
 #include <openssl/ocsp.h>
+#include <openssl/opensslconf.h>
 #include <openssl/pem.h>
 #include <openssl/pkcs12.h>
 #include <openssl/pkcs7.h>
@@ -59,6 +60,14 @@
 #else
 #define HAVE_OPENSSL_SET_CIPHERSUITES 0
 #endif
+
+// Defined by opensslconf.h if OpenSSL was build with -no-rc2
+#ifndef OPENSSL_NO_RC2
+#define HAVE_OPENSSL_RC2 1
+#else
+#define HAVE_OPENSSL_RC2 0
+#endif
+
 
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
 
@@ -231,18 +240,12 @@ EVP_PKEY *ENGINE_load_public_key(ENGINE *e, const char *key_id,
 
 #endif
 
-#if !HAVE_OPENSSL_EVP_RC2_ECB
-#undef HAVE_OPENSSL_EVP_RC2_ECB
-#define HAVE_OPENSSL_EVP_RC2_ECB 1
+#if !HAVE_OPENSSL_RC2
+#undef HAVE_OPENSSL_RC2
+#define HAVE_OPENSSL_RC2 1
 const EVP_CIPHER* EVP_rc2_ecb(void);
-#endif
-
-#if !HAVE_OPENSSL_EVP_RC2_CBC
-#undef HAVE_OPENSSL_EVP_RC2_CBC
-#define HAVE_OPENSSL_EVP_RC2_CBC 1
 const EVP_CIPHER* EVP_rc2_cbc(void);
 #endif
-
 
 #define API_EXISTS(fn) (fn != NULL)
 

@@ -392,7 +392,7 @@ const EVP_CIPHER* CryptoNative_EvpDes3Cbc(void)
 const EVP_CIPHER* CryptoNative_EvpRC2Ecb(void)
 {
     // No error queue impact.
-#if HAVE_OPENSSL_EVP_RC2_ECB
+#if HAVE_OPENSSL_RC2
     if (API_EXISTS(EVP_rc2_ecb))
     {
         return EVP_rc2_ecb();
@@ -405,7 +405,7 @@ const EVP_CIPHER* CryptoNative_EvpRC2Ecb(void)
 const EVP_CIPHER* CryptoNative_EvpRC2Cbc(void)
 {
     // No error queue impact.
-#if HAVE_OPENSSL_EVP_RC2_CBC
+#if HAVE_OPENSSL_RC2
     if (API_EXISTS(EVP_rc2_cbc))
     {
         return EVP_rc2_cbc();
