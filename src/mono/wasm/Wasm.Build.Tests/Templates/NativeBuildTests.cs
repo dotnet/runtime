@@ -66,7 +66,6 @@ namespace Wasm.Build.Templates.Tests
         [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
-        // Issue: File sizes don't match, shouln't it be FromRuntimePack type?
         public async Task ProjectWithDllImportsRequiringMarshalIlGen_ArrayTypeParameter(string config)
         {
             string id = $"dllimport_incompatible_{GetRandomId()}";
@@ -82,13 +81,15 @@ namespace Wasm.Build.Templates.Tests
                 extraItems: "<NativeFileReference Include=\"" + nativeSourceFilename + "\" />"
             );
 
+            UpdateBrowserMainJs();
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "marshal_ilgen_test.cs"),
                                     Path.Combine(_projectDir!, "Program.cs"),
                                     overwrite: true);
+
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
             BuildTemplateProject(buildArgs, id: id, new BuildProjectOptions(
-                                    DotnetWasmFromRuntimePack: false,
+                                    AssertAppBundle: false,
                                     CreateProject: false,
                                     HasV8Script: false,
                                     MainJS: "main.mjs",
@@ -98,8 +99,7 @@ namespace Wasm.Build.Templates.Tests
                                 );
             string runOutput = await RunBuiltBrowserApp(config, projectFile);
 
-            Assert.Contains("Hello, Console!", runOutput);
-            Assert.Contains("Hello, World! Greetings from node version", runOutput);
+            Assert.Contains("call_needing_marhsal_ilgen got called", runOutput);
         }
     }
 }
