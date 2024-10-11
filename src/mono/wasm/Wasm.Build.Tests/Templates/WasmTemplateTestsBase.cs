@@ -177,15 +177,19 @@ public class WasmTemplateTestsBase : BuildTestBase
         File.WriteAllText(mainJsPath, mainJsContent);
     }
 
+    // ToDo: consolidate with BlazorRunTest
     protected async Task<string> RunBuiltBrowserApp(string config, string projectFile, string language = "en-US", string extraArgs = "")
-        => await RunBrowser($"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console {extraArgs}", language);
+        => await RunBrowser($"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console {extraArgs}", _projectDir!, language);
 
-    protected async Task<string> RunPublishedBrowserApp(string config, string publishFrameworkDir, string language = "en-US", string extraArgs = "")
-        => await RunBrowser($"serve --directory \"{publishFrameworkDir}\" {extraArgs}", language);
+    protected async Task<string> RunPublishedBrowserApp(string config, string language = "en-US", string extraArgs = "")
+        => await RunBrowser(
+            command: $"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
+            workingDirectory: Path.Combine(FindBinFrameworkDir(config, forPublish: true), ".."),
+            language: language);
 
-    private async Task<string> RunBrowser(string command, string language = "en-US")
+    private async Task<string> RunBrowser(string command, string workingDirectory, string language = "en-US")
     {
-        using var runCommand = new RunCommand(s_buildEnv, _testOutput).WithWorkingDirectory(_projectDir!);
+        using var runCommand = new RunCommand(s_buildEnv, _testOutput).WithWorkingDirectory(workingDirectory);
         await using var runner = new BrowserRunner(_testOutput);
         var page = await runner.RunAsync(runCommand, command, language: language);
         await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));

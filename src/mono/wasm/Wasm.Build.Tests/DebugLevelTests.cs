@@ -95,9 +95,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
         string projectFile = SetupBrowserProject($"DebugLevelTests_PublishWithDefaultLevel_{configuration}");
         BuildPublishProject(projectFile, configuration, isPublish: true);
 
-        string frameworkDir = FindBinFrameworkDir(configuration, forPublish: true);
-        string servingDir = Path.Combine(frameworkDir, "..");
-        string result = await RunPublishedBrowserApp(configuration, servingDir);
+        string result = await RunPublishedBrowserApp(configuration);
         AssertDebugLevel(result, 0);
     }
 
