@@ -55,6 +55,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign
             hashTypesPerArch.Add((objectFile.CpuType, objectFile.CpuSubType), hashTypes);
             cdBuildersPerArch.Add((objectFile.CpuType, objectFile.CpuSubType), cdBuilders);
 
+            // codesign uses a much larger buffer for the CMS blob than we do (around 18k), but we never need that with ad-hoc signing only
             long signatureSizeEstimate = 0x1000;
             for (int i = 0; i < hashTypes.Length; i++)
             {
@@ -117,8 +118,16 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign
             blobs.Add((CodeDirectorySpecialSlot.CmsWrapper, cmsWrapperBlob));
 
             // TODO: Hic sunt leones (all code below)
-            long size = blobs.Sum(b => b.Data != null ? b.Data.Length + 8 : 0);
 
+            /* The embedded signature is a superblob with the following layout:
+             *  - Magic (4 bytes)
+             *  - Total size of super blob (superblob header size + sum of all other blob sizes) (4 bytes)
+             *  - Number of blobs (4 bytes)
+             *  - Array of slot type and offset (8 bytes each - 4 bytes for slot, 4 bytes for offset)
+             *
+             * Following the super blob header is the data for each blob at the specified offsets
+             */
+            long size = blobs.Sum(b => b.Data != null ? b.Data.Length + 8 : 0);
             var embeddedSignatureBuffer = new byte[12 + (blobs.Count * 8)];
             BinaryPrimitives.WriteUInt32BigEndian(embeddedSignatureBuffer.AsSpan(0, 4), (uint)BlobMagic.EmbeddedSignature);
             BinaryPrimitives.WriteUInt32BigEndian(embeddedSignatureBuffer.AsSpan(4, 4), (uint)(12 + size));

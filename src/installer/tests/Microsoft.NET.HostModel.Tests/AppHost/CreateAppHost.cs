@@ -17,6 +17,8 @@ using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup;
 using Microsoft.DotNet.CoreSetup.Test;
 using Xunit;
+using Microsoft.NET.HostModel.MachO.CodeSign.Blobs;
+using System.Buffers.Binary;
 
 namespace Microsoft.NET.HostModel.AppHost.Tests
 {
@@ -443,38 +445,148 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         [PlatformSpecific(TestPlatforms.OSX)]
         public void SignedAppHostRuns()
         {
-            using (var testDirectory = TestArtifact.Create(nameof(SignedAppHostRuns)))
+            using var testDirectory = TestArtifact.Create(nameof(SignedAppHostRuns));
+            var testAppHostPath = Path.Combine(testDirectory.Location, Path.GetFileName(Binaries.AppHost.FilePath));
+            File.Copy(Binaries.SingleFileHost.FilePath, testAppHostPath);
+            long preRemovalSize = new FileInfo(testAppHostPath).Length;
+            if (Signer.TryRemoveCodesign(testAppHostPath))
             {
-                var testAppHostPath = Path.Combine(testDirectory.Location, Path.GetFileName(Binaries.AppHost.FilePath));
-                File.Copy(Binaries.SingleFileHost.FilePath, testAppHostPath);
-                long preRemovalSize = new FileInfo(testAppHostPath).Length;
-                if (Signer.TryRemoveCodesign(testAppHostPath))
-                {
-                    Assert.True(preRemovalSize > new FileInfo(testAppHostPath).Length);
-                }
-                else
-                {
-                    Assert.Equal(preRemovalSize, new FileInfo(testAppHostPath).Length);
-                }
-                Signer.AdHocSign(testAppHostPath);
-                Codesign.Run("-v", testAppHostPath).ExitCode.Should().Be(0);
+                Assert.True(preRemovalSize > new FileInfo(testAppHostPath).Length);
+            }
+            else
+            {
+                Assert.Equal(preRemovalSize, new FileInfo(testAppHostPath).Length);
+            }
+            Signer.AdHocSign(testAppHostPath);
+            Codesign.Run("-v", testAppHostPath).ExitCode.Should().Be(0);
 
-                File.SetUnixFileMode(testAppHostPath, UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
-                var executedCommand = Command.Create(testAppHostPath)
-                    .CaptureStdErr()
-                    .CaptureStdOut()
-                    .Execute();
-                // AppHost exit code should be 149 when the apphost runs properly but cannot find the appliation/runtime
-                executedCommand.ExitCode.Should().Be(149);
-                Signer.TryRemoveCodesign(testAppHostPath);
-                Signer.AdHocSign(testAppHostPath);
-                File.SetUnixFileMode(testAppHostPath, UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
-                executedCommand = Command.Create(testAppHostPath)
-                    .CaptureStdErr()
-                    .CaptureStdOut()
-                    .Execute();
-                // AppHost exit code should be 149 when the apphost runs properly but cannot find the appliation/runtime
-                executedCommand.ExitCode.Should().Be(149);
+            File.SetUnixFileMode(testAppHostPath, UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+            var executedCommand = Command.Create(testAppHostPath)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute();
+            // AppHost exit code should be 149 when the apphost runs properly but cannot find the appliation/runtime
+            executedCommand.ExitCode.Should().Be(149);
+            Signer.TryRemoveCodesign(testAppHostPath);
+            Signer.AdHocSign(testAppHostPath);
+            File.SetUnixFileMode(testAppHostPath, UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+            executedCommand = Command.Create(testAppHostPath)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute();
+            // AppHost exit code should be 149 when the apphost runs properly but cannot find the appliation/runtime
+            executedCommand.ExitCode.Should().Be(149);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void ManagedSignerMatchesCodesignOutput()
+        {
+            /*
+             * This test ensures that the output of the managed signer is nearly identical to the output of the `codesign` command.
+             * The outputs should be byte-for-byte identical, except for the padding after the code signature.
+             * This affects the size of the LinkEdit segment header, which then impacts the hash of the first page in the code signature (hash index 0).
+             * We'll check that the hashes are identical, except for the first page hash.
+             * Since these are hashes of the file contents, we can be confident the rest of the file is identical.
+             */
+            using var testDirectory = TestArtifact.Create(nameof(SignedAppHostRuns));
+            var managedSignedAppHostPath = Path.Combine(testDirectory.Location, Path.GetFileName(Binaries.AppHost.FilePath) + ".managedsigned");
+            var codesignedAppHostPath = Path.Combine(testDirectory.Location, Path.GetFileName(Binaries.AppHost.FilePath) + ".codesigned");
+            string appHostName = Path.GetFileName(Binaries.AppHost.FilePath);
+            File.Copy(Binaries.AppHost.FilePath, managedSignedAppHostPath);
+            File.Copy(Binaries.AppHost.FilePath, codesignedAppHostPath);
+            long preRemovalSize = new FileInfo(managedSignedAppHostPath).Length;
+            using (var managedFile = File.Open(managedSignedAppHostPath, FileMode.Open, FileAccess.ReadWrite))
+            {
+                Signer.TryRemoveCodesign(managedFile, out _);
+                long newSize = Signer.AdHocSign(managedFile, appHostName);
+                managedFile.SetLength(newSize);
+            }
+            Codesign.Run("--remove-signature", codesignedAppHostPath).ExitCode.Should().Be(0);
+            Codesign.Run("--sign - -i " + appHostName, codesignedAppHostPath).ExitCode.Should().Be(0);
+
+            Codesign.Run("-v", managedSignedAppHostPath).ExitCode.Should().Be(0);
+            Codesign.Run("-v", codesignedAppHostPath).ExitCode.Should().Be(0);
+
+            var managedObject = MachReader.Read(File.OpenRead(managedSignedAppHostPath)).FirstOrDefault();
+            var codesignObject = MachReader.Read(File.OpenRead(codesignedAppHostPath)).FirstOrDefault();
+            var zippedLoadCommands = managedObject.LoadCommands.Zip(codesignObject.LoadCommands);
+            foreach(var lc in zippedLoadCommands)
+            {
+                Assert.Equal(lc.First.GetType(), lc.Second.GetType());
+            }
+            var managedCodeSignature = managedObject.LoadCommands.OfType<MachCodeSignature>().Single();
+            var codesignCodeSignature = codesignObject.LoadCommands.OfType<MachCodeSignature>().Single();
+
+            Assert.True(codesignCodeSignature.FileOffset == managedCodeSignature.FileOffset);
+            byte[] managedCSData = new byte[managedCodeSignature.Data.Size];
+            byte[] codesignCSData = new byte[codesignCodeSignature.Data.Size];
+            {
+                var managedReader = managedCodeSignature.Data.GetReadStream();
+                managedReader.Position = 0;
+                managedReader.ReadExactly(managedCSData);
+                var codesignReader = codesignCodeSignature.Data.GetReadStream();
+                codesignReader.Position = 0;
+                codesignReader.ReadExactly(codesignCSData);
+            }
+
+            // Embedded signature header
+            BinaryPrimitives.ReadUInt32BigEndian(managedCSData.AsSpan(0, 4)).Should().Be((uint)BlobMagic.EmbeddedSignature);
+            BinaryPrimitives.ReadUInt32BigEndian(codesignCSData.AsSpan(0, 4)).Should().Be((uint)BlobMagic.EmbeddedSignature);
+            var signatureHeaderSize = BinaryPrimitives.ReadUInt32BigEndian(managedCSData.AsSpan(4, 4));
+            BinaryPrimitives.ReadUInt32BigEndian(codesignCSData.AsSpan(4, 4)).Should().Be(signatureHeaderSize);
+            var blobsCount = BinaryPrimitives.ReadUInt32BigEndian(managedCSData.AsSpan(8, 4));
+            BinaryPrimitives.ReadUInt32BigEndian(codesignCSData.AsSpan(8, 4)).Should().Be(blobsCount);
+
+            // Blob indices
+            int codeDirectoryOffset = 0;
+            for (int i = 0; i < blobsCount; i++)
+            {
+                var specialSlot = (CodeDirectorySpecialSlot)BinaryPrimitives.ReadUInt32BigEndian(managedCSData.AsSpan(12 + i * 4, 4));
+                BinaryPrimitives.ReadUInt32BigEndian(codesignCSData.AsSpan(12 + i * 4, 4)).Should().Be((uint)specialSlot);
+                var offset = BinaryPrimitives.ReadUInt32BigEndian(managedCSData.AsSpan(12 + i * 4 + 4, 4));
+                BinaryPrimitives.ReadUInt32BigEndian(codesignCSData.AsSpan(12 + i * 4 + 4, 4)).Should().Be(offset);
+                if (specialSlot == CodeDirectorySpecialSlot.CodeDirectory)
+                    codeDirectoryOffset = (int)offset;
+            }
+            Assert.NotEqual(0, codeDirectoryOffset);
+
+            // CodeDirectory blob
+            var managedCDHeader = CodeDirectoryBaselineHeader.Read(managedCSData.AsSpan(codeDirectoryOffset), out int bytesRead);
+            var codesignCDHeader = CodeDirectoryBaselineHeader.Read(codesignCSData.AsSpan(codeDirectoryOffset), out int _);
+            Assert.Equal(managedCDHeader.Magic, codesignCDHeader.Magic);
+            Assert.Equal(managedCDHeader.Magic, BlobMagic.CodeDirectory);
+            Assert.Equal(managedCDHeader.Size, codesignCDHeader.Size);
+            Assert.Equal(managedCDHeader.Version, codesignCDHeader.Version);
+            Assert.Equal(managedCDHeader.Flags, codesignCDHeader.Flags);
+            Assert.Equal(managedCDHeader.HashesOffset, codesignCDHeader.HashesOffset);
+            Assert.Equal(managedCDHeader.IdentifierOffset, codesignCDHeader.IdentifierOffset);
+            Assert.Equal(managedCDHeader.SpecialSlotCount, codesignCDHeader.SpecialSlotCount);
+            Assert.Equal(managedCDHeader.CodeSlotCount, codesignCDHeader.CodeSlotCount);
+            Assert.Equal(managedCDHeader.ExecutableLength, codesignCDHeader.ExecutableLength);
+            Assert.Equal(managedCDHeader.HashSize, codesignCDHeader.HashSize);
+            Assert.Equal(managedCDHeader.HashType, codesignCDHeader.HashType);
+            Assert.Equal(managedCDHeader.Platform, codesignCDHeader.Platform);
+            Assert.Equal(managedCDHeader.Log2PageSize, codesignCDHeader.Log2PageSize);
+            Assert.Equal(managedCDHeader.Reserved, codesignCDHeader.Reserved);
+            Assert.Equal(managedCDHeader._UnknownPadding, codesignCDHeader._UnknownPadding);
+
+            // CodeDirectory hashes
+            var managedCDBlob = managedCSData.AsSpan().Slice(codeDirectoryOffset, (int)managedCDHeader.Size);
+            var codesignCDBlob = codesignCSData.AsSpan().Slice(codeDirectoryOffset, (int)codesignCDHeader.Size);
+            for (int i = (int)(-managedCDHeader.SpecialSlotCount); i < 0; i++)
+            {
+                var managedHash = managedCDBlob.Slice((int)managedCDHeader.HashesOffset + i * managedCDHeader.HashSize, HashTypeExtensions.GetSize(managedCDHeader.HashType));
+                var codesignHash = managedCDBlob.Slice((int)codesignCDHeader.HashesOffset + i * codesignCDHeader.HashSize, HashTypeExtensions.GetSize(codesignCDHeader.HashType));
+                Assert.Equal(managedHash, codesignHash);
+            }
+
+            // Start at 1 because the first hash is will be different because of size headers
+            for (int i = 1; i < managedCDHeader.CodeSlotCount; i++)
+            {
+                var managedHash = managedCDBlob.Slice((int)managedCDHeader.HashesOffset + i * managedCDHeader.HashType.GetSize(), managedCDHeader.HashType.GetSize());
+                var codesignHash = codesignCDBlob.Slice((int)codesignCDHeader.HashesOffset + i * codesignCDHeader.HashType.GetSize(), codesignCDHeader.HashType.GetSize());
+                Assert.Equal(managedHash, codesignHash);
             }
         }
 
