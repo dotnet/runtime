@@ -121,7 +121,6 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Blobs
             if (version >= CodeDirectoryVersion.SupportsScatter)
             {
                 // TODO
-                ;
             }
 
             // Identifier

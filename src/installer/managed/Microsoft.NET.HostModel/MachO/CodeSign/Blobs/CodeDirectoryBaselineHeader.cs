@@ -21,6 +21,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Blobs
         public byte Platform;
         public byte Log2PageSize;
         public uint Reserved;
-        public uint ScatterOffset;
+        // I could not find documentation on why extra padding is present in the output of 'codesign', but it is
+        public uint _UnknownPadding;
     }
 }
