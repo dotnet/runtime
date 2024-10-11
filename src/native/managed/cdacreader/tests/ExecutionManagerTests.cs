@@ -6,8 +6,6 @@ using Xunit;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System.Collections.Generic;
 using System;
-using System.Drawing;
-using System.Reflection;
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public class ExecutionManagerTests
@@ -16,24 +14,52 @@ public class ExecutionManagerTests
 
     const int RealCodeHeaderSize = 0x08; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
 
+
+    internal struct AllocationRange
+    {
+        // elements of the range section map are allocated in this range
+        public ulong RangeSectionMapStart;
+        public ulong RangeSectionMapEnd;
+        // nibble maps for various range section fragments are allocated in this range
+        public ulong NibbleMapStart;
+        public ulong NibbleMapEnd;
+        // "RealCodeHeader" objects for jitted methods are allocated in this range
+        public ulong CodeHeaderStart;
+        public ulong CodeHeaderEnd;
+
+    }
+
+    private static AllocationRange s_DefaultAllocationRange = new AllocationRange {
+        RangeSectionMapStart = 0x00dd_0000,
+        RangeSectionMapEnd = 0x00de_0000,
+        NibbleMapStart = 0x00ee_0000,
+        NibbleMapEnd = 0x00ef_0000,
+        CodeHeaderStart = 0x0033_4000,
+        CodeHeaderEnd = 0x0033_5000,
+    };
+
     internal class ExecutionManagerTestBuilder
     {
         public MockMemorySpace.Builder Builder { get; }
         private readonly RangeSectionMapTests.Builder _rsmBuilder;
 
         private readonly MockMemorySpace.BumpAllocator _rangeSectionMapAllocator;
+        private readonly MockMemorySpace.BumpAllocator _nibbleMapAllocator;
+        private readonly MockMemorySpace.BumpAllocator _codeHeaderAllocator;
 
         public readonly Dictionary<DataType, Target.TypeInfo> TypeInfoCache = new();
 
-        public ExecutionManagerTestBuilder(MockTarget.Architecture arch,  (ulong start, ulong end) rangeSectionMapRegion) : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), rangeSectionMapRegion)
+        public ExecutionManagerTestBuilder(MockTarget.Architecture arch,  AllocationRange allocationRange) : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange)
         {}
 
 
-        public ExecutionManagerTestBuilder(MockMemorySpace.Builder builder, (ulong start, ulong end) rangeSectionMapRegion, Dictionary<DataType, Target.TypeInfo>? typeInfoCache = null)
+        public ExecutionManagerTestBuilder(MockMemorySpace.Builder builder, AllocationRange allocationRange, Dictionary<DataType, Target.TypeInfo>? typeInfoCache = null)
         {
             Builder = builder;
             _rsmBuilder = new RangeSectionMapTests.Builder(ExecutionManagerCodeRangeMapAddress, builder);
-            _rangeSectionMapAllocator = Builder.CreateAllocator(rangeSectionMapRegion.start, rangeSectionMapRegion.end);
+            _rangeSectionMapAllocator = Builder.CreateAllocator(allocationRange.RangeSectionMapStart, allocationRange.RangeSectionMapEnd);
+            _nibbleMapAllocator = Builder.CreateAllocator(allocationRange.NibbleMapStart, allocationRange.NibbleMapEnd);
+            _codeHeaderAllocator = Builder.CreateAllocator(allocationRange.CodeHeaderStart, allocationRange.CodeHeaderEnd);
             TypeInfoCache = typeInfoCache ?? CreateTypeInfoCache(Builder.TargetTestHelpers);
         }
 
@@ -96,9 +122,10 @@ public class ExecutionManagerTests
             };
         }
 
-        public NibbleMapTests.NibbleMapTestBuilder AddNibbleMap(ulong codeRangeStart, uint codeRangeSize, ulong nibbleMapStart)
+        public NibbleMapTests.NibbleMapTestBuilder AddNibbleMap(ulong codeRangeStart, uint codeRangeSize)
         {
-            NibbleMapTests.NibbleMapTestBuilder nibBuilder = new NibbleMapTests.NibbleMapTestBuilder(codeRangeStart, codeRangeSize, nibbleMapStart, Builder.TargetTestHelpers.Arch);
+
+            NibbleMapTests.NibbleMapTestBuilder nibBuilder = new NibbleMapTests.NibbleMapTestBuilder(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch);
             Builder.AddHeapFragment(nibBuilder.NibbleMapFragment);
             return nibBuilder;
         }
@@ -156,7 +183,7 @@ public class ExecutionManagerTests
             return codeHeapListNode.Address;
         }
 
-        public void AllocateMethod(TargetCodePointer codeStart, int codeSize, TargetPointer codeHeaderAddress, TargetPointer methodDescAddress)
+        public void AllocateMethod(TargetCodePointer codeStart, int codeSize, TargetPointer methodDescAddress)
         {
             int codeHeaderOffset = Builder.TargetTestHelpers.PointerSize;
 
@@ -168,17 +195,13 @@ public class ExecutionManagerTests
                 Name = "Method Header & Code"
             };
             Builder.AddHeapFragment(methodFragment);
-            Span<byte> mfPtr = Builder.BorrowAddressRange(methodFragmentStart, codeHeaderOffset);
-            Builder.TargetTestHelpers.WritePointer(mfPtr.Slice(0, Builder.TargetTestHelpers.PointerSize), codeHeaderAddress);
-            MockMemorySpace.HeapFragment codeHeaderFragment = new MockMemorySpace.HeapFragment
-            {
-                Address = codeHeaderAddress,
-                Data = new byte[RealCodeHeaderSize],
-                Name = "RealCodeHeader"
-            };
+            MockMemorySpace.HeapFragment codeHeaderFragment = _codeHeaderAllocator.Allocate(RealCodeHeaderSize, "RealCodeHeader");
             Builder.AddHeapFragment(codeHeaderFragment);
-            Span<byte> chf = Builder.BorrowAddressRange(codeHeaderAddress, RealCodeHeaderSize);
-            Builder.TargetTestHelpers.WritePointer(chf.Slice(0, Builder.TargetTestHelpers.PointerSize), methodDescAddress);
+            Span<byte> mfPtr = Builder.BorrowAddressRange(methodFragmentStart, codeHeaderOffset);
+            Builder.TargetTestHelpers.WritePointer(mfPtr.Slice(0, Builder.TargetTestHelpers.PointerSize), codeHeaderFragment.Address);
+            Span<byte> chf = Builder.BorrowAddressRange(codeHeaderFragment.Address, RealCodeHeaderSize);
+            var tyInfo = TypeInfoCache[DataType.RealCodeHeader];
+            Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.MethodDesc)].Offset, Builder.TargetTestHelpers.PointerSize), methodDescAddress);
         }
 
         public void MarkCreated() => Builder.MarkCreated();
@@ -187,8 +210,11 @@ public class ExecutionManagerTests
 
     internal class ExecutionManagerTestTarget : TestPlaceholderTarget
     {
+        private readonly ulong _executionManagerCodeRangeMapAddress;
+
         public ExecutionManagerTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate dataReader, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch)
         {
+            _executionManagerCodeRangeMapAddress = ExecutionManagerCodeRangeMapAddress;
             SetDataReader(dataReader);
             SetTypeInfoCache(typeInfoCache);
             SetDataCache(new DefaultDataCache(this));
@@ -203,7 +229,7 @@ public class ExecutionManagerTests
             switch (global)
             {
             case Constants.Globals.ExecutionManagerCodeRangeMapAddress:
-                return new TargetPointer(ExecutionManagerCodeRangeMapAddress);
+                return new TargetPointer(_executionManagerCodeRangeMapAddress);
             default:
                 return base.ReadGlobalPointer(global);
             }
@@ -230,7 +256,7 @@ public class ExecutionManagerTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void LookupNull(MockTarget.Architecture arch)
     {
-        ExecutionManagerTestBuilder emBuilder = new (arch, rangeSectionMapRegion: (0x00dd_0000, 0x00de_0000));
+        ExecutionManagerTestBuilder emBuilder = new (arch, s_DefaultAllocationRange);
         emBuilder.MarkCreated();
 
         ExecutionManagerTestTarget target = new(arch, emBuilder.Builder.GetReadContext().ReadFromTarget, emBuilder.TypeInfoCache);
@@ -244,7 +270,7 @@ public class ExecutionManagerTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void LookupNonNullMissing(MockTarget.Architecture arch)
     {
-        ExecutionManagerTestBuilder emBuilder = new (arch, rangeSectionMapRegion: (0x00dd_0000, 0x00de_0000));
+        ExecutionManagerTestBuilder emBuilder = new (arch, s_DefaultAllocationRange);
         emBuilder.MarkCreated();
         ExecutionManagerTestTarget target = new(arch, emBuilder.Builder.GetReadContext().ReadFromTarget, emBuilder.TypeInfoCache);
         var em = target.Contracts.ExecutionManager;
@@ -261,22 +287,22 @@ public class ExecutionManagerTests
         const uint codeRangeSize = 0xc000u; // arbitrary
         TargetCodePointer methodStart = new (0x0a0a_0040); // arbitrary, inside [codeRangeStart,codeRangeStart+codeRangeSize]
         int methodSize = 0x100; // arbitrary
-        ulong nibbleMapStart = 0x00ee_0000; // arbitrary
 
         TargetPointer jitManagerAddress = new (0x000b_ff00); // arbitrary
 
-        TargetPointer methodCodeHeaderAddress = new (0x0033_4000);
         TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
 
-        ExecutionManagerTestBuilder emBuilder = new (arch, rangeSectionMapRegion: (0x00dd_0000, 0x00de_0000));
+        ExecutionManagerTestBuilder emBuilder = new (arch, s_DefaultAllocationRange);
 
-        TargetPointer codeHeapListNodeAddress = emBuilder.InsertCodeHeapListNode(TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibbleMapStart);
+        NibbleMapTests.NibbleMapTestBuilder nibBuilder = emBuilder.AddNibbleMap(codeRangeStart, codeRangeSize);
+        nibBuilder.AllocateCodeChunk(methodStart, methodSize);
+
+        TargetPointer codeHeapListNodeAddress = emBuilder.InsertCodeHeapListNode(TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
         TargetPointer rangeSectionAddress = emBuilder.InsertRangeSection(codeRangeStart, codeRangeSize, jitManagerAddress: jitManagerAddress, codeHeapListNodeAddress: codeHeapListNodeAddress);
         TargetPointer rangeSectionFragmentAddress = emBuilder.InsertAddressRange(codeRangeStart, codeRangeSize, rangeSectionAddress);
 
-        emBuilder.AddNibbleMap(codeRangeStart, codeRangeSize, nibbleMapStart).AllocateCodeChunk(methodStart, methodSize);
 
-        emBuilder.AllocateMethod(methodStart, methodSize, methodCodeHeaderAddress, expectedMethodDescAddress);
+        emBuilder.AllocateMethod(methodStart, methodSize, expectedMethodDescAddress);
 
         emBuilder.MarkCreated();
 
