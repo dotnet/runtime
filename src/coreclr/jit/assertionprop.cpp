@@ -2707,7 +2707,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
         return nullptr;
     }
 
-    CallArg* varArg = leftArg;
+    CallArg* varArg = rightArg;
     uint8_t* buffer = new (this, CMK_AssertionProp) uint8_t[len];
     if (!GetImmutableDataFromAddress(leftArg->GetNode(), (int)len, buffer))
     {
@@ -2716,7 +2716,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
             JITDUMP("...src is not a constant - fallback to LowerCallMemmove.\n");
             return nullptr;
         }
-        varArg = rightArg;
+        varArg = leftArg;
     }
 
     GenTree*  varPtr   = fgInsertCommaFormTemp(&varArg->LateNodeRef());
