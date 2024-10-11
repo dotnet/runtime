@@ -59,7 +59,7 @@ extends:
             export STRESS_CLIENT_ARGS=$SSLSTRESS_CLIENT_ARGS
             export STRESS_SERVER_ARGS=$SSLSTRESS_SERVER_ARGS
             mkdir -p $DUMPS_SHARE
-            docker compose up --abort-on-container-exit --no-color
+            docker-compose up --abort-on-container-exit --no-color
           displayName: Run SslStress
 
         - publish: $(Build.ArtifactStagingDirectory)/dumps
