@@ -24,13 +24,16 @@ public class ExecutionManagerTests
         public MockMemorySpace.Builder Builder { get; }
         private readonly RangeSectionMapTests.Builder _rsmBuilder;
 
-        public ExecutionManagerTestBuilder(MockTarget.Architecture arch) : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)))
+        private readonly MockMemorySpace.BumpAllocator _rangeSectionMapAllocator;
+
+        public ExecutionManagerTestBuilder(MockTarget.Architecture arch,  (ulong start, ulong size) rangeSectionMapRegion) : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), rangeSectionMapRegion)
         {}
 
-        public ExecutionManagerTestBuilder(MockMemorySpace.Builder builder)
+        public ExecutionManagerTestBuilder(MockMemorySpace.Builder builder, (ulong start, ulong size) rangeSectionMapRegion)
         {
             Builder = builder;
             _rsmBuilder = new RangeSectionMapTests.Builder(ExecutionManagerCodeRangeMapAddress, builder);
+            _rangeSectionMapAllocator = Builder.CreateAllocator(rangeSectionMapRegion.start, rangeSectionMapRegion.size);
         }
 
         public NibbleMapTests.NibbleMapTestBuilder AddNibbleMap(ulong codeRangeStart, uint codeRangeSize, ulong nibbleMapStart)
@@ -40,17 +43,12 @@ public class ExecutionManagerTests
             return nibBuilder;
         }
 
-        public void InsertRangeSection(ulong codeRangeStart, uint codeRangeSize, TargetPointer jitManagerAddress, TargetPointer rangeSectionAddress, TargetPointer codeHeapListNodeAddress)
+        public TargetPointer InsertRangeSection(ulong codeRangeStart, uint codeRangeSize, TargetPointer jitManagerAddress, TargetPointer codeHeapListNodeAddress)
         {
-            MockMemorySpace.HeapFragment rangeSection = new MockMemorySpace.HeapFragment
-            {
-                Address = rangeSectionAddress,
-                Data = new byte[RangeSectionSize],
-                Name = "RangeSection"
-            };
+            MockMemorySpace.HeapFragment rangeSection = _rangeSectionMapAllocator.Allocate(RangeSectionSize, "RangeSection");
             Builder.AddHeapFragment(rangeSection);
             int pointerSize = Builder.TargetTestHelpers.PointerSize;
-            Span<byte> rs = Builder.BorrowAddressRange(rangeSectionAddress, RangeSectionSize);
+            Span<byte> rs = Builder.BorrowAddressRange(rangeSection.Address, RangeSectionSize);
             /* RangeBegin */
             Builder.TargetTestHelpers.WritePointer(rs.Slice(0, pointerSize), codeRangeStart);
             /* RangeEndOpen */
@@ -62,21 +60,18 @@ public class ExecutionManagerTests
             /* JitManager */
             Builder.TargetTestHelpers.WritePointer(rs.Slice(24, pointerSize), jitManagerAddress);
             // FIXME: other fields
+
+            return rangeSection.Address;
         }
 
-        public void InsertAddressRange(ulong codeRangeStart, uint codeRangeSize, TargetPointer rangeSectionFragmentAddress, TargetPointer rangeSectionAddress)
+        public TargetPointer InsertAddressRange(ulong codeRangeStart, uint codeRangeSize, TargetPointer rangeSectionAddress)
         {
+            MockMemorySpace.HeapFragment rangeSectionFragment = _rangeSectionMapAllocator.Allocate(RangeSectionFragmentSize, "RangeSectionFragment");
             // FIXME: this shouldn't really be called InsertAddressRange, but maybe InsertRangeSectionFragment?
-            _rsmBuilder.InsertAddressRange(codeRangeStart, codeRangeSize, rangeSectionFragmentAddress);
-            MockMemorySpace.HeapFragment rangeSectionFragment = new MockMemorySpace.HeapFragment
-            {
-                Address = rangeSectionFragmentAddress,
-                Data = new byte[RangeSectionFragmentSize],
-                Name = "RangeSectionFragment"
-            };
+            _rsmBuilder.InsertAddressRange(codeRangeStart, codeRangeSize, rangeSectionFragment.Address);
             Builder.AddHeapFragment(rangeSectionFragment);
             int pointerSize = Builder.TargetTestHelpers.PointerSize;
-            Span<byte> rsf = Builder.BorrowAddressRange(rangeSectionFragmentAddress, RangeSectionFragmentSize);
+            Span<byte> rsf = Builder.BorrowAddressRange(rangeSectionFragment.Address, RangeSectionFragmentSize);
             /* RangeStart */
             Builder.TargetTestHelpers.WritePointer(rsf.Slice(0, pointerSize), codeRangeStart);
             /* RangeEndOpen */
@@ -85,19 +80,15 @@ public class ExecutionManagerTests
             Builder.TargetTestHelpers.WritePointer(rsf.Slice(16, pointerSize), rangeSectionAddress);
             /* Next = nullptr */
             // nothing
+            return rangeSectionFragment.Address;
         }
 
-        public void InsertCodeHeapListNode(ulong codeHeapListNodeAddress, TargetPointer next, TargetPointer startAddress, TargetPointer endAddress, TargetPointer mapBase, TargetPointer headerMap)
+        public TargetPointer InsertCodeHeapListNode(TargetPointer next, TargetPointer startAddress, TargetPointer endAddress, TargetPointer mapBase, TargetPointer headerMap)
         {
-            MockMemorySpace.HeapFragment codeHeapListNode = new MockMemorySpace.HeapFragment
-            {
-                Address = codeHeapListNodeAddress,
-                Data = new byte[CodeHeapListNodeSize],
-                Name = "CodeHeapListNode"
-            };
+            MockMemorySpace.HeapFragment codeHeapListNode = _rangeSectionMapAllocator.Allocate (CodeHeapListNodeSize, "CodeHeapListNode");
             Builder.AddHeapFragment(codeHeapListNode);
             int pointerSize = Builder.TargetTestHelpers.PointerSize;
-            Span<byte> chln = Builder.BorrowAddressRange(codeHeapListNodeAddress, CodeHeapListNodeSize);
+            Span<byte> chln = Builder.BorrowAddressRange(codeHeapListNode.Address, CodeHeapListNodeSize);
             /* Next */
             Builder.TargetTestHelpers.WritePointer(chln.Slice(0, pointerSize), next);
             /* StartAddress */
@@ -108,6 +99,7 @@ public class ExecutionManagerTests
             Builder.TargetTestHelpers.WritePointer(chln.Slice(24, pointerSize), mapBase);
             /* HeaderMap */
             Builder.TargetTestHelpers.WritePointer(chln.Slice(32, pointerSize), headerMap);
+            return codeHeapListNode.Address;
         }
 
         public void AllocateMethod(TargetCodePointer codeStart, int codeSize, TargetPointer codeHeaderAddress, TargetPointer methodDescAddress)
@@ -264,15 +256,11 @@ public class ExecutionManagerTests
         TargetPointer methodCodeHeaderAddress = new (0x0033_4000);
         TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
 
-        TargetPointer rangeSectionAddress = new (0x00dd_1000);
-        TargetPointer rangeSectionFragmentAddress = new (0x00dd_2000);
-        TargetPointer codeHeapListNodeAddress = new (0x00dd_3000);
+        ExecutionManagerTestBuilder emBuilder = new (arch, rangeSectionMapRegion: (0x00dd_0000, 0x0001_0000));
 
-        ExecutionManagerTestBuilder emBuilder = new (arch);
-
-        emBuilder.InsertRangeSection(codeRangeStart, codeRangeSize, jitManagerAddress: jitManagerAddress, rangeSectionAddress: rangeSectionAddress, codeHeapListNodeAddress: codeHeapListNodeAddress);
-        emBuilder.InsertCodeHeapListNode(codeHeapListNodeAddress, TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibbleMapStart);
-        emBuilder.InsertAddressRange(codeRangeStart, codeRangeSize, rangeSectionFragmentAddress, rangeSectionAddress);
+        TargetPointer codeHeapListNodeAddress = emBuilder.InsertCodeHeapListNode(TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibbleMapStart);
+        TargetPointer rangeSectionAddress = emBuilder.InsertRangeSection(codeRangeStart, codeRangeSize, jitManagerAddress: jitManagerAddress, codeHeapListNodeAddress: codeHeapListNodeAddress);
+        TargetPointer rangeSectionFragmentAddress = emBuilder.InsertAddressRange(codeRangeStart, codeRangeSize, rangeSectionAddress);
 
         emBuilder.AddNibbleMap(codeRangeStart, codeRangeSize, nibbleMapStart).AllocateCodeChunk(methodStart, methodSize);
 
