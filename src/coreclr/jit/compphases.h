@@ -94,6 +94,7 @@ CompPhaseNameMacro(PHASE_OPTIMIZE_BRANCHES,          "Redundant branch opts",   
 CompPhaseNameMacro(PHASE_ASSERTION_PROP_MAIN,        "Assertion prop",                 false, -1, false)
 CompPhaseNameMacro(PHASE_IF_CONVERSION,              "If conversion",                  false, -1, false)
 CompPhaseNameMacro(PHASE_VN_BASED_DEAD_STORE_REMOVAL,"VN-based dead store removal",    false, -1, false)
+CompPhaseNameMacro(PHASE_EMPTY_FINALLY_2,            "Remove empty finally 2",         false, -1, false)
 CompPhaseNameMacro(PHASE_OPT_UPDATE_FLOW_GRAPH,      "Update flow graph opt pass",     false, -1, false)
 CompPhaseNameMacro(PHASE_STRESS_SPLIT_TREE,          "Stress gtSplitTree",             false, -1, false)
 CompPhaseNameMacro(PHASE_EXPAND_RTLOOKUPS,           "Expand runtime lookups",         false, -1, true)
