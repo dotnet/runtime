@@ -481,30 +481,6 @@ public:
     BOOL GetModulePath(VMPTR_Module vmModule,
                        IStringHolder *  pStrFilename) = 0;
 
-
-    //
-    // Get the full path and file name to the ngen image for the module (if any).
-    //
-    // Arguments:
-    //     vmModule - VM pointer to the module.
-    //     pStrFilename - required out parameter where the filename will be stored.
-    //
-    // Return Value:
-    //     TRUE on success, in which case the filename was stored into pStrFilename
-    //     FALSE the module has no filename (eg. for in-memory assemblies), in which
-    //     case an empty string was stored into pStrFilename.
-    //     Throws an exception if there was a problem reading the data with DAC, in which case
-    //     no string was stored into pStrFilename.
-    //
-    // Notes:
-    //     See code:#ModuleNames for an overview on module names.
-    //
-    virtual
-    BOOL GetModuleNGenPath(VMPTR_Module vmModule,
-                           IStringHolder *  pStrFilename) = 0;
-
-
-
     // Get the metadata for the target module
     //
     // Arguments:
@@ -2590,17 +2566,17 @@ public:
     //
     virtual
     HRESULT GetSharedReJitInfoData(VMPTR_SharedReJitInfo sharedReJitInfo, DacSharedReJitInfo* pData) = 0;
-    
+
     // Retrieves a bool indicating whether or not a method's optimizations have been disabled
     // defined in Debugger::IsMethodDeoptimized
-    // 
+    //
     //
     //
     // Arguments:
     //    vmModule                - The module for the method in question
     //    methodTk                - The method token for the method in question
     //    pOptimizationsDisabled  - [out] A bool indicating whether or not the optimizations on a function are disabled
-    //                              
+    //
     //
     // Returns:
     //    S_OK if no error
@@ -2608,7 +2584,7 @@ public:
     //
     virtual
     HRESULT AreOptimizationsDisabled(VMPTR_Module vmModule, mdMethodDef methodTk, OUT BOOL* pOptimizationsDisabled) = 0;
-    
+
     // Retrieves a bit field indicating which defines were in use when clr was built. This only includes
     // defines that are specified in the Debugger::_Target_Defines enumeration, which is a small subset of
     // all defines.

@@ -715,10 +715,6 @@ public:
     BOOL GetModulePath(VMPTR_Module vmModule,
                        IStringHolder *  pStrFilename);
 
-    // Get the full path and file name to the ngen image for the module (if any).
-    BOOL GetModuleNGenPath(VMPTR_Module vmModule,
-                           IStringHolder *  pStrFilename);
-
     // Implementation of IDacDbiInterface::GetModuleSimpleName
     void GetModuleSimpleName(VMPTR_Module vmModule, IStringHolder * pStrFilename);
 

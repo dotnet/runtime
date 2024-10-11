@@ -1425,28 +1425,7 @@ const WCHAR * CordbModule::GetModulePath()
 //    metadata out of the ngen image.
 const WCHAR * CordbModule::GetNGenImagePath()
 {
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        // Lazily initialize.  Module filenames cannot change, and so once
-        // we've retrieved this successfully, it's stored for good.
-        if (!m_strNGenImagePath.IsSet())
-        {
-            IDacDbiInterface * pDac = m_pProcess->GetDAC(); // throws
-            BOOL fNonEmpty = pDac->GetModuleNGenPath(m_vmModule, &m_strNGenImagePath); // throws
-            (void)fNonEmpty; //prevent "unused variable" error from GCC
-            _ASSERTE(m_strNGenImagePath.IsSet() && (m_strNGenImagePath.IsEmpty() == !fNonEmpty));
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (FAILED(hr) ||
-        m_strNGenImagePath == NULL ||
-        m_strNGenImagePath.IsEmpty())
-    {
-        return NULL;    // module has no ngen filename
-    }
-    return m_strNGenImagePath;
+    return NULL;
 }
 
 // Implementation of ICorDebugModule::EnableJITDebugging

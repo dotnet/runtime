@@ -4121,17 +4121,6 @@ NoFileName:
     return FALSE;
 }
 
-// Get the full path and file name to the ngen image for the module (if any).
-BOOL DacDbiInterfaceImpl::GetModuleNGenPath(VMPTR_Module vmModule,
-                                            IStringHolder *  pStrFilename)
-{
-    DD_ENTER_MAY_THROW;
-
-    // no ngen filename
-    IfFailThrow(pStrFilename->AssignCopy(W("")));
-    return FALSE;
-}
-
 // Implementation of IDacDbiInterface::GetModuleSimpleName
 void DacDbiInterfaceImpl::GetModuleSimpleName(VMPTR_Module vmModule, IStringHolder * pStrFilename)
 {

@@ -4410,10 +4410,6 @@ private:
     // Full path to module's image, if any.  Empty if none, NULL if not yet set.
     StringCopyHolder m_strModulePath;
 
-    // Full path to the ngen file. Empty if not ngenned, NULL if not yet set.
-    // This isn't exposed publicly, but we may use it internally for loading metadata.
-    StringCopyHolder m_strNGenImagePath;
-
     // "Global" class for this module. Global functions + vars exist in this class.
     RSSmartPtr<CordbClass> m_pClass;
 
