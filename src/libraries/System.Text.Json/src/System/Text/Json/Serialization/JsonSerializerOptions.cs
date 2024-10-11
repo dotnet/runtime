@@ -37,8 +37,6 @@ namespace System.Text.Json
         /// </remarks>
         public static JsonSerializerOptions Default
         {
-            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
             get
             {
                 return s_defaultOptions ?? GetOrCreateSingleton(ref s_defaultOptions, JsonSerializerDefaults.General);
@@ -57,8 +55,6 @@ namespace System.Text.Json
         /// </remarks>
         public static JsonSerializerOptions Web
         {
-            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
             get
             {
                 return s_webOptions ?? GetOrCreateSingleton(ref s_webOptions, JsonSerializerDefaults.Web);
@@ -899,8 +895,6 @@ namespace System.Text.Json
         ///
         /// This method is idempotent.
         /// </remarks>
-        [RequiresUnreferencedCode("Populating unconfigured TypeInfoResolver properties with the reflection resolver requires unreferenced code.")]
-        [RequiresDynamicCode("Populating unconfigured TypeInfoResolver properties with the reflection resolver requires runtime code generation.")]
         public void MakeReadOnly(bool populateMissingResolver)
         {
             if (populateMissingResolver)
@@ -921,8 +915,10 @@ namespace System.Text.Json
         /// <summary>
         /// Configures the instance for use by the JsonSerializer APIs, applying reflection-based fallback where applicable.
         /// </summary>
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access.",
+                Justification = "All unreferenced code access is guarded by JsonSerializer.IsReflectionEnabledByDefault.")]
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+                Justification = "All dynamic code access is guarded by JsonSerializer.IsReflectionEnabledByDefault.")]
         private void ConfigureForJsonSerializer()
         {
             if (JsonSerializer.IsReflectionEnabledByDefault)
@@ -1119,8 +1115,10 @@ namespace System.Text.Json
             }
         }
 
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access.",
+            Justification = "All unreferenced code access is guarded by JsonSerializer.IsReflectionEnabledByDefault.")]
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+            Justification = "All dynamic code access is guarded by JsonSerializer.IsReflectionEnabledByDefault.")]
         private static JsonSerializerOptions GetOrCreateSingleton(
             ref JsonSerializerOptions? location,
             JsonSerializerDefaults defaults)

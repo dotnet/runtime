@@ -45,8 +45,6 @@ namespace System.Text.Json.Nodes
         /// <param name="value">The value to create.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
-        [RequiresUnreferencedCode(CreateUnreferencedCodeMessage + " Use the overload that takes a JsonTypeInfo, or make sure all of the required types are preserved.")]
-        [RequiresDynamicCode(CreateDynamicCodeMessage)]
         public static JsonValue? Create<T>(T? value, JsonNodeOptions? options = null)
         {
             if (value is null)

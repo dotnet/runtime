@@ -28,8 +28,6 @@ namespace System.Text.Json
                 isEnabled: out bool value)
             ? value : true;
 
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         private static JsonTypeInfo GetTypeInfo(JsonSerializerOptions? options, Type inputType)
         {
             Debug.Assert(inputType != null);
@@ -45,8 +43,6 @@ namespace System.Text.Json
                 : options.GetTypeInfoForRootType(inputType);
         }
 
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         private static JsonTypeInfo<T> GetTypeInfo<T>(JsonSerializerOptions? options)
             => (JsonTypeInfo<T>)GetTypeInfo(options, typeof(T));
 

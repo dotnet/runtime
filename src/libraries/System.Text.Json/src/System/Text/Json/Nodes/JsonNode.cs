@@ -323,8 +323,6 @@ namespace System.Text.Json.Nodes
         /// </summary>
         /// <typeparam name="T">The type of value to be replaced.</typeparam>
         /// <param name="value">Value that replaces this node.</param>
-        [RequiresUnreferencedCode(JsonValue.CreateUnreferencedCodeMessage)]
-        [RequiresDynamicCode(JsonValue.CreateDynamicCodeMessage)]
         public void ReplaceWith<T>(T value)
         {
             JsonNode? node;
@@ -367,8 +365,6 @@ namespace System.Text.Json.Nodes
         /// to support arbitrary <see cref="JsonElement"/> and <see cref="JsonNode"/> values.
         /// TODO consider making public cf. https://github.com/dotnet/runtime/issues/70427
         /// </summary>
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal static JsonNode? ConvertFromValue<T>(T? value, JsonNodeOptions? options = null)
         {
             if (value is null)

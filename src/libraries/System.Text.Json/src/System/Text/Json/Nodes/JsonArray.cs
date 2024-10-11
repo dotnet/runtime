@@ -213,8 +213,6 @@ namespace System.Text.Json.Nodes
         /// <param name="value">
         ///   The object to be added to the end of the <see cref="JsonArray"/>.
         /// </param>
-        [RequiresUnreferencedCode(JsonValue.CreateUnreferencedCodeMessage)]
-        [RequiresDynamicCode(JsonValue.CreateDynamicCodeMessage)]
         public void Add<T>(T? value)
         {
             JsonNode? nodeToAdd = ConvertFromValue(value, Options);
