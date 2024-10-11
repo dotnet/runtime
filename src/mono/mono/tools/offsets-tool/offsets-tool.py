@@ -90,7 +90,13 @@ class OffsetsTool:
 		if "wasm" in args.abi:
 			if args.wasi_path != None:
 				require_sysroot (args)
-				self.sys_includes = [args.wasi_path + "/share/wasi-sysroot/include", args.wasi_path + "/lib/clang/18/include", args.mono_path + "/wasi/mono-include"]
+				clang_include_dirs = os.listdir(args.wasi_path + "/lib/clang/")
+				if len(clang_include_dirs) > 0:
+					clang_include = clang_include_dirs[0]
+				else:
+					print("No clang include directories found in wasi path.", file=sys.stderr)
+					sys.exit(1)
+				self.sys_includes = [args.wasi_path + "/share/wasi-sysroot/include", args.wasi_path + "/lib/clang/" + clang_include + "/include", args.mono_path + "/wasi/mono-include"]
 				self.target = Target ("TARGET_WASI", None, ["TARGET_WASM"] + WASI_DEFINES)
 				self.target_args += ["-target", args.abi]
 				self.target_args += ["--sysroot", args.sysroot]
