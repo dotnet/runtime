@@ -6,6 +6,8 @@
 
 Commonly Used Types:
 Microsoft.Extensions.DependencyModel.DependencyContext</PackageDescription>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
   </PropertyGroup>
 
   <ItemGroup>
