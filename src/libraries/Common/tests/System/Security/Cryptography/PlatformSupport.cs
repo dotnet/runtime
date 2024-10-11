@@ -89,7 +89,35 @@ namespace Test.Cryptography
         internal const TestPlatforms OpenSSL = TestPlatforms.AnyUnix & ~(AppleCrypto | TestPlatforms.Android | TestPlatforms.Browser);
 
         // Whether or not the current platform supports RC2
-        internal static readonly bool IsRC2Supported = !PlatformDetection.IsAndroid;
+        internal static bool IsRC2Supported
+        {
+            get
+            {
+                if (PlatformDetection.IsAndroid)
+                {
+                    return false;
+                }
+
+                if (PlatformDetection.IsLinux)
+                {
+                    try
+                    {
+                        using (RC2 rc2 = RC2.Create())
+                        using (rc2.CreateEncryptor())
+                        {
+                        }
+
+                        return true;
+                    }
+                    catch (PlatformNotSupportedException)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
 
 #if NET
         internal static readonly bool IsAndroidVersionAtLeast31 = OperatingSystem.IsAndroidVersionAtLeast(31);

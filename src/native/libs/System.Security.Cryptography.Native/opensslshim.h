@@ -231,6 +231,18 @@ EVP_PKEY *ENGINE_load_public_key(ENGINE *e, const char *key_id,
 
 #endif
 
+#if !HAVE_OPENSSL_EVP_RC2_ECB
+#undef HAVE_OPENSSL_EVP_RC2_ECB
+#define HAVE_OPENSSL_EVP_RC2_ECB 1
+const EVP_CIPHER* EVP_rc2_ecb(void);
+#endif
+
+#if !HAVE_OPENSSL_EVP_RC2_CBC
+#undef HAVE_OPENSSL_EVP_RC2_CBC
+#define HAVE_OPENSSL_EVP_RC2_CBC 1
+const EVP_CIPHER* EVP_rc2_cbc(void);
+#endif
+
 
 #define API_EXISTS(fn) (fn != NULL)
 
@@ -487,8 +499,8 @@ extern bool g_libSslUses32BitTime;
     FALLBACK_FUNCTION(EVP_PKEY_up_ref) \
     REQUIRED_FUNCTION(EVP_PKEY_verify) \
     REQUIRED_FUNCTION(EVP_PKEY_verify_init) \
-    REQUIRED_FUNCTION(EVP_rc2_cbc) \
-    REQUIRED_FUNCTION(EVP_rc2_ecb) \
+    LIGHTUP_FUNCTION(EVP_rc2_cbc) \
+    LIGHTUP_FUNCTION(EVP_rc2_ecb) \
     REQUIRED_FUNCTION(EVP_sha1) \
     REQUIRED_FUNCTION(EVP_sha256) \
     REQUIRED_FUNCTION(EVP_sha384) \
