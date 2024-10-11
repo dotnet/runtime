@@ -353,12 +353,12 @@ public static class Program
         }
         try
         {
-            (Func<Target> targetFactory, StressLogHeader.ModuleTable moduleTable, TargetPointer logs) = CreateTarget(accessor.SafeMemoryMappedViewHandle);
+            (Func<Target> targetFactory, StressLogHeader.ModuleTable moduleTable, int contractVersion, TargetPointer logs) = CreateTarget(accessor.SafeMemoryMappedViewHandle);
 
             Target globalTarget = targetFactory();
 
-            Registry registry = new(globalTarget);
-            IStressLog globalStressLogContract = registry.StressLog;
+            StressLogFactory factory = new();
+            IStressLog globalStressLogContract = factory.CreateContract(globalTarget, contractVersion);
 
             using TextWriter? outputFile = options.OutputFile is not null ? File.CreateText(options.OutputFile.FullName) : null;
 
@@ -374,7 +374,7 @@ public static class Program
             TimeTracker timeTracker = CreateTimeTracker(accessor.SafeMemoryMappedViewHandle, options);
 
             var analyzer = new StressLogAnalyzer(
-                () => new Registry(targetFactory()).StressLog,
+                () => factory.CreateContract(globalTarget, contractVersion),
                 stringFinder,
                 messageFilter,
                 options.ThreadFilter,
@@ -471,7 +471,7 @@ public static class Program
         return filter;
     }
 
-    private static unsafe (Func<Target> targetFactory, StressLogHeader.ModuleTable table, TargetPointer logs) CreateTarget(SafeMemoryMappedViewHandle handle)
+    private static unsafe (Func<Target> targetFactory, StressLogHeader.ModuleTable table, int contractVersion, TargetPointer logs) CreateTarget(SafeMemoryMappedViewHandle handle)
     {
         byte* buffer = null;
         handle.AcquirePointer(ref buffer);
@@ -484,10 +484,12 @@ public static class Program
             throw new InvalidOperationException("Invalid memory-mapped stress log.");
         }
 
-        return (CreateTarget, header->moduleTable, header->logs);
+        int contractVersion = (int)(header->version & 0xFFFF);
 
-        Target CreateTarget() => Target.Create(
-            GetDescriptor((int)(header->version & 0xFFFF)),
+        return (CreateTarget, header->moduleTable, contractVersion, header->logs);
+
+        ContractDescriptorTarget CreateTarget() => ContractDescriptorTarget.Create(
+            GetDescriptor(contractVersion),
             [TargetPointer.Null, new TargetPointer(header->memoryBase + (nuint)((byte*)&header->moduleTable - (byte*)header))],
             (address, buffer) => ReadFromMemoryMappedLog(address, buffer, header),
             true,

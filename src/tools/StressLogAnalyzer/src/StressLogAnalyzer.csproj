@@ -12,14 +12,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(RepoRoot)\src\native\managed\cdacreader\src\Constants.cs" Link="CDAC\Constants.cs" />
-    <Compile Include="$(RepoRoot)\src\native\managed\cdacreader\src\ContractDescriptorParser.cs" Link="CDAC\ContractDescriptorParser.cs" />
-    <Compile Include="$(RepoRoot)\src\native\managed\cdacreader\src\Contracts\*.cs" Link="CDAC\Contracts\%(FileName).cs" />
-    <Compile Include="$(RepoRoot)\src\native\managed\cdacreader\src\DataType.cs" Link="CDAC\DataType.cs" />
-    <Compile Include="$(RepoRoot)\src\native\managed\cdacreader\src\Data\*.cs" Link="CDAC\Data\%(FileName).cs" />
-    <Compile Include="$(RepoRoot)\src\native\managed\cdacreader\src\Root.cs" Link="CDAC\Root.cs" />
-    <Compile Include="$(RepoRoot)\src\native\managed\cdacreader\src\Target.cs" Link="CDAC\Target.cs" />
-    <Compile Include="$(RepoRoot)\src\native\managed\cdacreader\src\Helpers\*.cs" Link="CDAC\Helpers\%(FileName).cs" />
+    <InternalsVisibleTo Include="StressLogAnalyzer.Tests" />
+    <ProjectReference Include="$(RepoRoot)/src/native/managed/cdacreader/Microsoft.Diagnostics.DataContractReader/Microsoft.Diagnostics.DataContractReader.csproj" />
+    <ProjectReference Include="$(RepoRoot)/src/native/managed/cdacreader/Microsoft.Diagnostics.DataContractReader.Contracts/Microsoft.Diagnostics.DataContractReader.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

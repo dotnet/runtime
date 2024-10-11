@@ -10,7 +10,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace StressLogAnalyzer;
 
-public sealed class StressMessageFormatter
+internal sealed class StressMessageFormatter
 {
     private record struct PaddingFormat(int Width, char FormatChar, int Precision = 6);
 

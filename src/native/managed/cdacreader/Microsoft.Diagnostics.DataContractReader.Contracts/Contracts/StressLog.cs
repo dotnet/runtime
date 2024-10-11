@@ -35,10 +35,9 @@ public record struct StressMsgData(
     ulong Timestamp,
     IReadOnlyList<TargetPointer> Args);
 
-public interface IStressLog : IContract
+internal sealed class StressLogFactory : IContractFactory<IStressLog>
 {
-    static string IContract.Name { get; } = nameof(StressLog);
-    static IContract IContract.Create(Target target, int version)
+    public IStressLog CreateContract(Target target, int version)
     {
         return version switch
         {
@@ -48,7 +47,11 @@ public interface IStressLog : IContract
             _ => default(StressLog),
         };
     }
+}
 
+public interface IStressLog : IContract
+{
+    static string IContract.Name { get; } = nameof(StressLog);
     public virtual bool HasStressLog() => throw new NotImplementedException();
     public virtual StressLogData GetStressLogData() => throw new NotImplementedException();
     public virtual StressLogData GetStressLogData(TargetPointer stressLog) => throw new NotImplementedException();
