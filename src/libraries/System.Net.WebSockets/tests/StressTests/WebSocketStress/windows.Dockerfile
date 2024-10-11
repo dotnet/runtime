@@ -18,8 +18,6 @@ RUN dotnet build -c $env:CONFIGURATION `
     -p:MicrosoftNetCoreAppRefPackDir=C:/live-runtime-artifacts/microsoft.netcore.app.ref/ `
     -p:MicrosoftNetCoreAppRuntimePackDir=C:/live-runtime-artifacts/microsoft.netcore.app.runtime.win-x64/$env:CONFIGURATION/
 
-EXPOSE 5001
-
 ENV VERSION=$VERSION
 ENV CONFIGURATION=$CONFIGURATION
 ENV STRESS_ROLE=''
