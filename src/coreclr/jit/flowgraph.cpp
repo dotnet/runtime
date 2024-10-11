@@ -4583,12 +4583,34 @@ FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByIndex(unsigned index)
 //
 FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByHeader(BasicBlock* block)
 {
-    // TODO-TP: This can use binary search based on post order number.
-    for (FlowGraphNaturalLoop* loop : m_loops)
+    if (!m_dfsTree->Contains(block))
     {
-        if (loop->m_header == block)
+        return nullptr;
+    }
+
+    // Loops are stored in reverse post-order,
+    // so we can binary-search for the desired loop's header by its post-order number.
+    size_t min = 0;
+    size_t max = NumLoops();
+
+    while (min < max)
+    {
+        const size_t                mid    = min + ((max - min) / 2);
+        FlowGraphNaturalLoop* const loop   = m_loops[mid];
+        BasicBlock* const           header = loop->m_header;
+
+        if (header == block)
         {
             return loop;
+        }
+        else if (header->bbPostorderNum < block->bbPostorderNum)
+        {
+            max = mid;
+        }
+        else
+        {
+            assert(header->bbPostorderNum > block->bbPostorderNum);
+            min = mid + 1;
         }
     }
 
