@@ -7012,7 +7012,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
                 int64_t c2 = op2->AsIntConCommon()->IntegralValue();
 
                 int64_t result;
-                if (genTypeSize(node) == TARGET_POINTER_SIZE)
+                if (genTypeSize(node) == sizeof(int64_t))
                 {
                     result = c1 + c2;
                 }
