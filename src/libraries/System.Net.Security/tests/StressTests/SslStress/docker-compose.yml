@@ -1,9 +1,10 @@
-version: '3'
 services:
   client:
     build:
       context: ../../../../ # ~> src/libraries
       dockerfile: ./System.Net.Security/tests/StressTests/SslStress/${DOCKERFILE:-Dockerfile}
+    volumes:
+      - "${DUMPS_SHARE}:${DUMPS_SHARE_MOUNT_ROOT}"
     links:
       - server
     environment:
@@ -12,6 +13,8 @@ services:
     build:
       context: ../../../../ # ~> src/libraries
       dockerfile: ./System.Net.Security/tests/StressTests/SslStress/${DOCKERFILE:-Dockerfile}
+    volumes:
+      - "${DUMPS_SHARE}:${DUMPS_SHARE_MOUNT_ROOT}"
     ports:
       - "5001:5001"
     environment:
