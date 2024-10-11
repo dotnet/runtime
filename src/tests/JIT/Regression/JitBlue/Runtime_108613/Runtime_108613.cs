@@ -24,8 +24,8 @@ public class Runtime_108613
     {
         if (Vector512.IsHardwareAccelerated)
         {
-            TestClass t = new TestClass();
-            Assert.Equal(t.Method0(), 0);
+            Runtime_108613 t = new Runtime_108613();
+            Assert.Equal(0, t.Method0());
         }
     }
 }
