@@ -10126,6 +10126,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(oper == GT_NOT);
                     node->ResetHWIntrinsicId(maskIntrinsicId, this, cvtOp1->Op(1));
+                    node->gtFlags &= ~GTF_REVERSE_OPS;
                 }
 
                 node->gtType = TYP_MASK;
