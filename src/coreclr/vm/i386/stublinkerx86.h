@@ -204,16 +204,10 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitOffsetModRM(BYTE opcode, X86Reg altreg, X86Reg indexreg, int32_t ofs);
         VOID X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Reg baseReg, X86Reg indexReg, int32_t scale, int32_t ofs);
 
-        VOID X86EmitTailcallWithESPAdjust(CodeLabel *pTarget, INT32 imm32);
-        VOID X86EmitTailcallWithSinglePop(CodeLabel *pTarget, X86Reg reg);
-
         VOID X86EmitNearJump(CodeLabel *pTarget);
         VOID X86EmitCondJump(CodeLabel *pTarget, X86CondCode::cc condcode);
         VOID X86EmitCall(CodeLabel *target, int iArgBytes);
         VOID X86EmitReturn(WORD wArgBytes);
-#ifdef TARGET_AMD64
-        VOID X86EmitLeaRIP(CodeLabel *target, X86Reg reg);
-#endif
 
         VOID X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet);
 
@@ -221,18 +215,10 @@ class StubLinkerCPU : public StubLinker
 
         VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, int32_t ofs = 0);
         VOID X86EmitIndexRegStore(X86Reg dstreg, int32_t ofs, X86Reg srcreg);
-#if defined(TARGET_AMD64)
-        VOID X86EmitIndexRegStoreRSP(int32_t ofs, X86Reg srcreg);
-        VOID X86EmitIndexRegStoreR12(int32_t ofs, X86Reg srcreg);
-#endif // defined(TARGET_AMD64)
 
         VOID X86EmitIndexPush(X86Reg srcreg, int32_t ofs);
         VOID X86EmitBaseIndexPush(X86Reg baseReg, X86Reg indexReg, int32_t scale, int32_t ofs);
         VOID X86EmitIndexPop(X86Reg srcreg, int32_t ofs);
-        VOID X86EmitIndexLea(X86Reg dstreg, X86Reg srcreg, int32_t ofs);
-#if defined(TARGET_AMD64)
-        VOID X86EmitIndexLeaRSP(X86Reg dstreg, X86Reg srcreg, int32_t ofs);
-#endif // defined(TARGET_AMD64)
 
         VOID X86EmitSPIndexPush(int32_t ofs);
         VOID X86EmitSubEsp(INT32 imm32);
@@ -242,7 +228,6 @@ class StubLinkerCPU : public StubLinker
                               int32_t ofs
                     AMD64_ARG(X86OperandSize OperandSize = k64BitOp)
                               );
-        VOID X86EmitPushEBPframe();
 
         // Emits the most efficient form of the operation:
         //
@@ -307,14 +292,6 @@ class StubLinkerCPU : public StubLinker
 
         VOID X86EmitRegLoad(X86Reg reg, UINT_PTR imm);
 
-        VOID X86EmitRegSave(X86Reg altreg, int32_t ofs)
-        {
-            LIMITED_METHOD_CONTRACT;
-            X86EmitEspOffset(0x89, altreg, ofs);
-            // X86Reg values never are outside a byte.
-            UnwindSavedReg(static_cast<UCHAR>(altreg), ofs);
-        }
-
         VOID X86_64BitOperands ()
         {
             WRAPPER_NO_CONTRACT;
@@ -340,20 +317,8 @@ class StubLinkerCPU : public StubLinker
         // Emits code to adjust for a static delegate target.
         VOID EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
 
-
-#if defined(_DEBUG) && !defined(TARGET_UNIX)
-        //===========================================================================
-        // Emits code to log JITHelper access
-        void EmitJITHelperLoggingThunk(PCODE pJitHelper, LPVOID helperFuncCount);
-#endif
-
 #ifdef _DEBUG
         VOID X86EmitDebugTrashReg(X86Reg reg);
-#endif
-
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-        virtual VOID EmitUnwindInfoCheckWorker (CodeLabel *pCheckLabel);
-        virtual VOID EmitUnwindInfoCheckSubfunction();
 #endif
 
     private:
