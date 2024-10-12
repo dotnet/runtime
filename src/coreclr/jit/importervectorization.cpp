@@ -624,6 +624,11 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
     }
     else
     {
+        if (kind == StringComparisonKind::Equals)
+        {
+            return nullptr;
+        }
+
         assert(argsCount == 2);
         op1 = impStackTop(1).val;
         op2 = impStackTop(0).val;
@@ -774,6 +779,11 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
     }
     else
     {
+        if (kind == StringComparisonKind::Equals)
+        {
+            return nullptr;
+        }
+
         assert(argsCount == 2);
         op1 = impStackTop(1).val;
         op2 = impStackTop(0).val;
