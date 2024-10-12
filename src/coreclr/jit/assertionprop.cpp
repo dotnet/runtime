@@ -2751,10 +2751,10 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
             break;
         }
 
-        GenTree* xorNode = gtNewOperNode(GT_XOR, readType, varChunk, srcCns);
+        GenTree* xorNode = gtNewOperNode(GT_XOR, genActualType(readType), varChunk, srcCns);
 
         // Merge with the previous result.
-        result = result == nullptr ? xorNode : gtNewOperNode(GT_OR, readType, result, xorNode);
+        result = result == nullptr ? xorNode : gtNewOperNode(GT_OR, genActualType(readType), result, xorNode);
         lenRemaining -= genTypeSize(readType);
     }
 
