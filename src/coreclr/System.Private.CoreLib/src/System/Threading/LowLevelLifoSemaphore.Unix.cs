@@ -11,7 +11,7 @@ namespace System.Threading
     /// <summary>
     /// A LIFO semaphore implemented using the PAL's semaphore with uninterruptible waits.
     /// </summary>
-    internal sealed partial class LowLevelLifoSemaphore : LowLevelLifoSemaphoreBase, IDisposable
+    internal sealed partial class LowLevelLifoSemaphore : IDisposable
     {
         private Semaphore? _semaphore;
 
@@ -31,10 +31,10 @@ namespace System.Threading
             return waitResult == WaitHandle.WaitSuccess;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WaitHandle_CorWaitOnePrioritizedNative")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WaitHandle_WaitOnePrioritized")]
         private static partial int WaitNative(SafeWaitHandle handle, int timeoutMs);
 
-        protected override void ReleaseCore(int count)
+        private void ReleaseCore(int count)
         {
             Debug.Assert(_semaphore != null);
             Debug.Assert(count > 0);

@@ -28,6 +28,10 @@ namespace ILLink.Shared.TrimAnalysis
 					&& uniqueValue is GenericParameterValue genericParam
 					&& genericParam.GenericParameter.HasDefaultConstructorConstraint ()) {
 					// We allow a new() constraint on a generic parameter to satisfy DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
+				} else if (targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.PublicFields
+					&& uniqueValue is GenericParameterValue maybeEnumConstrainedGenericParam
+					&& maybeEnumConstrainedGenericParam.GenericParameter.HasEnumConstraint ()) {
+					// We allow a System.Enum constraint on a generic parameter to satisfy DynamicallyAccessedMemberTypes.PublicFields
 				} else if (uniqueValue is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers) {
 					if (uniqueValue is NullableValueWithDynamicallyAccessedMembers nullableValue) {
 						MarkTypeForDynamicallyAccessedMembers (nullableValue.NullableType, nullableValue.DynamicallyAccessedMemberTypes);
@@ -40,7 +44,7 @@ namespace ILLink.Shared.TrimAnalysis
 				} else if (uniqueValue is SystemTypeValue systemTypeValue) {
 					MarkTypeForDynamicallyAccessedMembers (systemTypeValue.RepresentedType, targetValue.DynamicallyAccessedMemberTypes);
 				} else if (uniqueValue is KnownStringValue knownStringValue) {
-					if (!TryResolveTypeNameAndMark (knownStringValue.Contents, true, out TypeProxy foundType)) {
+					if (!TryResolveTypeNameAndMark (knownStringValue.Contents, needsAssemblyName: true, out TypeProxy foundType)) {
 						// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
 					} else {
 						MarkTypeForDynamicallyAccessedMembers (foundType, targetValue.DynamicallyAccessedMemberTypes);

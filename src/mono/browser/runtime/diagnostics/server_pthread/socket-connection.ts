@@ -13,11 +13,11 @@ enum ListenerState {
 }
 
 class SocketGuts {
-    constructor(public readonly socket: CommonSocket) { }
-    close(): void {
+    constructor (public readonly socket: CommonSocket) { }
+    close (): void {
         this.socket.close();
     }
-    write(data: VoidPtr, size: number): void {
+    write (data: VoidPtr, size: number): void {
         const buf = new ArrayBuffer(size);
         const view = new Uint8Array(buf);
         // Can we avoid this copy?
@@ -33,12 +33,12 @@ class SocketGuts {
 export class EventPipeSocketConnection {
     private _state: ListenerState;
     readonly stream: SocketGuts;
-    constructor(socket: CommonSocket) {
+    constructor (socket: CommonSocket) {
         this._state = ListenerState.Sending;
         this.stream = new SocketGuts(socket);
     }
 
-    close(): void {
+    close (): void {
         mono_log_debug("EventPipe session stream closing websocket");
         switch (this._state) {
             case ListenerState.Error:
@@ -52,7 +52,7 @@ export class EventPipeSocketConnection {
         }
     }
 
-    write(ptr: VoidPtr, len: number): boolean {
+    write (ptr: VoidPtr, len: number): boolean {
         switch (this._state) {
             case ListenerState.Sending:
                 this.stream.write(ptr, len);
@@ -65,7 +65,7 @@ export class EventPipeSocketConnection {
         }
     }
 
-    private _onMessage(event: MessageEvent): void {
+    private _onMessage (event: MessageEvent): void {
         switch (this._state) {
             case ListenerState.Sending:
                 /* unexpected message */
@@ -85,7 +85,7 @@ export class EventPipeSocketConnection {
 
     }
 
-    private _onClose(/*event: CloseEvent*/) {
+    private _onClose (/*event: CloseEvent*/) {
         switch (this._state) {
             case ListenerState.Closed:
                 return; /* do nothing */
@@ -99,14 +99,14 @@ export class EventPipeSocketConnection {
         }
     }
 
-    private _onError(event: Event) {
-        mono_log_debug("EventPipe session stream websocket error", event);
+    private _onError (event: Event) {
+        mono_log_debug(() => `EventPipe session stream websocket error ${event}`);
         this._state = ListenerState.Error;
         this.stream.close();
         // TODO: notify runtime that connection had an error
     }
 
-    addListeners(): void {
+    addListeners (): void {
         const socket = this.stream.socket;
         socket.addEventListener("message", this._onMessage.bind(this));
         addEventListener("close", this._onClose.bind(this));
@@ -116,7 +116,7 @@ export class EventPipeSocketConnection {
 
 /// Take over a WebSocket that was used by the diagnostic server to receive the StartCollecting command and
 /// use it for sending the event pipe data back to the host.
-export function takeOverSocket(socket: CommonSocket): EventPipeSocketConnection {
+export function takeOverSocket (socket: CommonSocket): EventPipeSocketConnection {
     const connection = new EventPipeSocketConnection(socket);
     connection.addListeners();
     return connection;

@@ -46,11 +46,11 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
     public string CreateBlazorWasmTemplateProject(string id)
     {
         InitBlazorWasmProjectDir(id);
-        new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
-                .WithWorkingDirectory(_projectDir!)
-                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("new blazorwasm")
-                .EnsureSuccessful();
+        using DotNetCommand dotnetCommand = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
+        CommandResult result = dotnetCommand.WithWorkingDirectory(_projectDir!)
+            .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+            .ExecuteWithCapturedOutput("new blazorwasm")
+            .EnsureSuccessful();
 
         return Path.Combine(_projectDir!, $"{id}.csproj");
     }
@@ -195,18 +195,17 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         runOptions.ServerEnvironment?.ToList().ForEach(
             kv => s_buildEnv.EnvVars[kv.Key] = kv.Value);
 
-        using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(workingDirectory);
+        using RunCommand runCommand = new RunCommand(s_buildEnv, _testOutput);
+        ToolCommand cmd = runCommand.WithWorkingDirectory(workingDirectory);
 
         await using var runner = new BrowserRunner(_testOutput);
         var page = await runner.RunAsync(
-            runCommand,
+            cmd,
             runArgs,
-            onPageLoaded: runOptions.OnPageLoaded,
             onConsoleMessage: OnConsoleMessage,
             onServerMessage: runOptions.OnServerMessage,
             onError: OnErrorMessage,
-            modifyBrowserUrl: browserUrl => browserUrl + runOptions.BrowserPath + runOptions.QueryString);
+            modifyBrowserUrl: browserUrl => new Uri(new Uri(browserUrl), runOptions.BrowserPath + runOptions.QueryString).ToString());
 
         _testOutput.WriteLine("Waiting for page to load");
         await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new () { Timeout = 1 * 60 * 1000 });
@@ -218,6 +217,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
             Assert.Equal("Current count: 0", txt);
 
             await page.Locator("text=\"Click me\"").ClickAsync();
+            await Task.Delay(300);
             txt = await page.Locator("p[role='status']").InnerHTMLAsync();
             Assert.Equal("Current count: 1", txt);
         }

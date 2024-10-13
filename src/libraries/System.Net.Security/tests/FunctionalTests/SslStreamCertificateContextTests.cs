@@ -26,6 +26,7 @@ namespace System.Net.Security.Tests
                 out CertificateAuthority rootAuthority,
                 out CertificateAuthority[] intermediateAuthorities,
                 out X509Certificate2 serverCert,
+                testName: nameof(Create_OcspDoesNotReturnOrCacheInvalidStapleData),
                 intermediateAuthorityCount: 1,
                 subjectName: serverName,
                 keySize: 2048,

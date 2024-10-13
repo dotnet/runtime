@@ -507,6 +507,23 @@ done:;
 
     return success ? 0 : -1;
 #else
+    // ignore unused parameters
+    (void)filename;
+    (void)argv;
+    (void)envp;
+    (void)cwd;
+    (void)redirectStdin;
+    (void)redirectStdout;
+    (void)redirectStderr;
+    (void)setCredentials;
+    (void)userId;
+    (void)groupId;
+    (void)groups;
+    (void)groupsLength;
+    (void)childPid;
+    (void)stdinFd;
+    (void)stdoutFd;
+    (void)stderrFd;
     return -1;
 #endif
 }

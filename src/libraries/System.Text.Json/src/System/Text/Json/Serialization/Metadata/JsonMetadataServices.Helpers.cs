@@ -20,6 +20,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Plug in any converter configuration -- should be run last.
             converter.ConfigureJsonTypeInfo(typeInfo, options);
+            typeInfo.IsCustomized = false;
             return typeInfo;
         }
 
@@ -32,6 +33,8 @@ namespace System.Text.Json.Serialization.Metadata
             var typeInfo = new JsonTypeInfo<T>(converter, options);
             if (objectInfo.ObjectWithParameterizedConstructorCreator != null)
             {
+                // NB parameter metadata must be populated *before* property metadata
+                // so that properties can be linked to their associated parameters.
                 typeInfo.CreateObjectWithArgs = objectInfo.ObjectWithParameterizedConstructorCreator;
                 PopulateParameterInfoValues(typeInfo, objectInfo.ConstructorParameterMetadataInitializer);
             }
@@ -50,6 +53,7 @@ namespace System.Text.Json.Serialization.Metadata
                 typeInfo.PropertyMetadataSerializationNotSupported = true;
             }
 
+            typeInfo.ConstructorAttributeProviderFactory = objectInfo.ConstructorAttributeProviderFactory;
             typeInfo.SerializeHandler = objectInfo.SerializeHandler;
             typeInfo.NumberHandling = objectInfo.NumberHandling;
             typeInfo.PopulatePolymorphismMetadata();
@@ -57,6 +61,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Plug in any converter configuration -- should be run last.
             converter.ConfigureJsonTypeInfo(typeInfo, options);
+            typeInfo.IsCustomized = false;
             return typeInfo;
         }
 
@@ -94,6 +99,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Plug in any converter configuration -- should be run last.
             converter.ConfigureJsonTypeInfo(typeInfo, options);
+            typeInfo.IsCustomized = false;
             return typeInfo;
         }
 
@@ -115,9 +121,9 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.Object);
             Debug.Assert(!typeInfo.IsReadOnly);
 
-            if (paramFactory?.Invoke() is JsonParameterInfoValues[] array)
+            if (paramFactory?.Invoke() is JsonParameterInfoValues[] parameterInfoValues)
             {
-                typeInfo.ParameterInfoValues = array;
+                typeInfo.PopulateParameterInfoValues(parameterInfoValues);
             }
             else
             {
@@ -190,6 +196,7 @@ namespace System.Text.Json.Serialization.Metadata
             propertyInfo.IgnoreCondition = propertyInfoValues.IgnoreCondition;
             propertyInfo.JsonTypeInfo = propertyInfoValues.PropertyTypeInfo;
             propertyInfo.NumberHandling = propertyInfoValues.NumberHandling;
+            propertyInfo.AttributeProviderFactory = propertyInfoValues.AttributeProviderFactory;
 
             return propertyInfo;
         }

@@ -5,6 +5,7 @@
     <AssemblyName>ILCompiler.TypeSystem</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <NoWarn>$(NoWarn);CA1866</NoWarn>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Platforms>x64;x86</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -28,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(EnableDiaSymReaderUse)' == 'true'" Include="Microsoft.DiaSymReader" Version="$(MicrosoftDiaSymReaderVersion)" />
+    <PackageReference Include="Microsoft.DiaSymReader" Version="$(MicrosoftDiaSymReaderVersion)" Condition="'$(EnableDiaSymReaderUse)' == 'true'" />
   </ItemGroup>
 
   <ItemGroup>
@@ -176,6 +177,18 @@
     <Compile Include="..\..\Common\TypeSystem\Common\ThrowHelper.Common.cs">
       <Link>TypeSystem\Common\ThrowHelper.Common.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeWithRepeatedFields.cs">
+      <Link>TypeSystem\Common\TypeWithRepeatedFields.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeWithRepeatedFields.Sorting.cs">
+      <Link>TypeSystem\Common\TypeWithRepeatedFields.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeWithRepeatedFields.Diagnostic.cs">
+      <Link>TypeSystem\Common\TypeWithRepeatedFields.Diagnostic.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs">
+      <Link>TypeSystem\Common\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\UniversalCanonLayoutAlgorithm.cs">
       <Link>TypeSystem\Common\UniversalCanonLayoutAlgorithm.cs</Link>
     </Compile>
@@ -185,8 +198,8 @@
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.cs">
-      <Link>Utilities\TypeNameParser.cs</Link>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameHelpers.cs">
+      <Link>Utilities\TypeNameHelpers.cs</Link>
     </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs">
       <Link>Utilities\ValueStringBuilder.cs</Link>
@@ -235,6 +248,12 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\FieldLayoutAlgorithm.cs">
       <Link>TypeSystem\Common\FieldLayoutAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\ImpliedRepeatedFieldDesc.cs">
+      <Link>TypeSystem\Common\ImpliedRepeatedFieldDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\ImpliedRepeatedFieldDesc.Sorting.cs">
+      <Link>TypeSystem\Common\ImpliedRepeatedFieldDesc.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedMethod.cs">
       <Link>TypeSystem\Common\InstantiatedMethod.cs</Link>

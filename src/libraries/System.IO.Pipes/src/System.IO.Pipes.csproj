@@ -19,6 +19,7 @@
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeClientStream.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.cs" />
+    <Compile Include="System\IO\Pipes\PipeAccessRights.cs" />
     <Compile Include="System\IO\Pipes\PipeDirection.cs" />
     <Compile Include="System\IO\Pipes\PipeOptions.cs" />
     <Compile Include="System\IO\Pipes\PipeState.cs" />
@@ -116,7 +117,6 @@
     <Compile Include="System\IO\Pipes\NamedPipeClientStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Win32.cs" />
-    <Compile Include="System\IO\Pipes\PipeAccessRights.cs" />
     <Compile Include="System\IO\Pipes\PipeAccessRule.cs" />
     <Compile Include="System\IO\Pipes\PipeAuditRule.cs" />
     <Compile Include="System\IO\Pipes\PipesAclExtensions.cs" />

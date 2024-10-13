@@ -137,12 +137,6 @@ ICALL_EXPORT
 gint64 ves_icall_System_Threading_Interlocked_Decrement_Long(gint64 * location);
 
 ICALL_EXPORT
-guint8 ves_icall_System_Threading_Interlocked_Exchange_Byte(guint8 *location, guint8 value);
-
-ICALL_EXPORT
-gint16 ves_icall_System_Threading_Interlocked_Exchange_Short(gint16 *location, gint16 value);
-
-ICALL_EXPORT
 gint32 ves_icall_System_Threading_Interlocked_Exchange_Int(gint32 *location, gint32 value);
 
 ICALL_EXPORT
@@ -152,16 +146,7 @@ ICALL_EXPORT
 void ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject *volatile*location, MonoObject *volatile*value, MonoObject *volatile*res);
 
 ICALL_EXPORT
-guint8 ves_icall_System_Threading_Interlocked_CompareExchange_Byte(guint8 *location, guint8 value, guint8 comparand);
-
-ICALL_EXPORT
-gint16 ves_icall_System_Threading_Interlocked_CompareExchange_Short(gint16 *location, gint16 value, gint16 comparand);
-
-ICALL_EXPORT
 gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location, gint32 value, gint32 comparand);
-
-ICALL_EXPORT
-gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int_Success(gint32 *location, gint32 value, gint32 comparand, MonoBoolean *success);
 
 ICALL_EXPORT
 gint64 ves_icall_System_Threading_Interlocked_CompareExchange_Long(gint64 *location, gint64 value, gint64 comparand);

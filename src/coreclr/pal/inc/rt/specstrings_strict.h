@@ -630,7 +630,6 @@
 #define __callback               __allowed(on_function)
 #define __format_string          __allowed(on_parameter_or_return)
 #define __blocksOn(resource)     __allowed(on_function)
-#define __fallthrough            __allowed(as_statement)
 #define __range(lb,ub)           __allowed(on_return)
 #define __in_range(lb,ub)        _SAL_VERSION_CHECK(__in_range)
 #define __out_range(lb,ub)       _SAL_VERSION_CHECK(__out_range)
@@ -656,7 +655,6 @@
 /***************************************************************************
 * Expert Macros
 ***************************************************************************/
-#define __null                  __allowed(on_typedecl)
 #define __notnull               __allowed(on_typedecl)
 #define __maybenull             __allowed(on_typedecl)
 #define __exceptthat            __allowed(on_typedecl)

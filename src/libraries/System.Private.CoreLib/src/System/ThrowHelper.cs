@@ -54,6 +54,12 @@ namespace System
     internal static class ThrowHelper
     {
         [DoesNotReturn]
+        internal static void ThrowArithmeticException(string message)
+        {
+            throw new ArithmeticException(message);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowAccessViolationException()
         {
             throw new AccessViolationException();
@@ -63,18 +69,6 @@ namespace System
         internal static void ThrowArrayTypeMismatchException()
         {
             throw new ArrayTypeMismatchException();
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowArrayTypeMismatchException_CantAssignType()
-        {
-            throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowInvalidCastException_DownCastArrayElement()
-        {
-            throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
         }
 
         [DoesNotReturn]
@@ -774,8 +768,6 @@ namespace System
                 ThrowArgumentNullException(argName);
         }
 
-
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedSimdVectorBaseType<TVector, T>()
             where TVector : ISimdVector<TVector, T>
@@ -1058,6 +1050,8 @@ namespace System
                     return "divisor";
                 case ExceptionArgument.factor:
                     return "factor";
+                case ExceptionArgument.set:
+                    return "set";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1238,6 +1232,8 @@ namespace System
                     return SR.Format_ExpectedAsciiDigit;
                 case ExceptionResource.Argument_HasToBeArrayClass:
                     return SR.Argument_HasToBeArrayClass;
+                case ExceptionResource.InvalidOperation_IncompatibleComparer:
+                    return SR.InvalidOperation_IncompatibleComparer;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1348,6 +1344,7 @@ namespace System
         arrayType,
         divisor,
         factor,
+        set,
     }
 
     //
@@ -1434,5 +1431,6 @@ namespace System
         Format_UnclosedFormatItem,
         Format_ExpectedAsciiDigit,
         Argument_HasToBeArrayClass,
+        InvalidOperation_IncompatibleComparer,
     }
 }

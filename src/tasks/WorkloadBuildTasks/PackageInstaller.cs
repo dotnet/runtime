@@ -123,12 +123,12 @@ namespace Microsoft.Workload.Build.Tasks
             projectFileBuilder.Append(@"
 <Project Sdk=""Microsoft.NET.Sdk"">
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net$(NETCoreAppMaximumVersion)</TargetFramework>
     </PropertyGroup>
     <ItemGroup>");
 
             foreach (var reference in references)
-                projectFileBuilder.AppendLine($"<PackageReference Include=\"{reference.Name}\" Version=\"{reference.Version}\" />");
+                projectFileBuilder.AppendLine($"<PackageDownload Include=\"{reference.Name}\" Version=\"[{reference.Version}]\" />");
 
             projectFileBuilder.Append(@"
     </ItemGroup>

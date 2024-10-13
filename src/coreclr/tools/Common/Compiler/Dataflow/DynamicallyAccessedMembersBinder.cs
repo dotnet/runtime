@@ -121,6 +121,12 @@ namespace ILCompiler.Dataflow
                 foreach (var e in typeDefinition.GetEventsOnTypeHierarchy(filter: null, bindingFlags: BindingFlags.Public | declaredOnlyFlags))
                     yield return e;
             }
+
+            if (memberTypes.HasFlag(DynamicallyAccessedMemberTypes.Interfaces))
+            {
+                foreach (DefType iface in typeDefinition.GetAllInterfaceImplementations(declaredOnly))
+                    yield return iface;
+            }
         }
 
         public static IEnumerable<MethodDesc> GetConstructorsOnType(this TypeDesc type, Func<MethodDesc, bool> filter, BindingFlags? bindingFlags = null)
@@ -171,7 +177,7 @@ namespace ILCompiler.Dataflow
                 foreach (var method in type.GetMethods())
                 {
                     // Ignore constructors as those are not considered methods from a reflection's point of view
-                    if (method.IsConstructor)
+                    if (method.IsConstructor || method.IsStaticConstructor)
                         continue;
 
                     // Ignore private methods on a base type - those are completely ignored by reflection

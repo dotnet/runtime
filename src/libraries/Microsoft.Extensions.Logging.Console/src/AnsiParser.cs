@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Logging.Console
             ConsoleColor? foreground = null;
             ConsoleColor? background = null;
             var span = message.AsSpan();
-            const char EscapeChar = '\x1B';
+            const char EscapeChar = '\e';
             ConsoleColor? color = null;
             bool isBright = false;
             for (int i = 0; i < span.Length; i++)
@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Logging.Console
                 {
                     if (span[i + 3] == 'm')
                     {
-                        // Example: \x1B[1m
+                        // Example: \e[1m
                         if (IsDigit(span[i + 2]))
                         {
                             escapeCode = (int)(span[i + 2] - '0');
@@ -77,7 +77,7 @@ namespace Microsoft.Extensions.Logging.Console
                     }
                     else if (span.Length >= i + 5 && span[i + 4] == 'm')
                     {
-                        // Example: \x1B[40m
+                        // Example: \e[40m
                         if (IsDigit(span[i + 2]) && IsDigit(span[i + 3]))
                         {
                             escapeCode = (int)(span[i + 2] - '0') * 10 + (int)(span[i + 3] - '0');
@@ -127,28 +127,28 @@ namespace Microsoft.Extensions.Logging.Console
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsDigit(char c) => (uint)(c - '0') <= ('9' - '0');
 
-        internal const string DefaultForegroundColor = "\x1B[39m\x1B[22m"; // reset to default foreground color
-        internal const string DefaultBackgroundColor = "\x1B[49m"; // reset to the background color
+        internal const string DefaultForegroundColor = "\e[39m\e[22m"; // reset to default foreground color
+        internal const string DefaultBackgroundColor = "\e[49m"; // reset to the background color
 
         internal static string GetForegroundColorEscapeCode(ConsoleColor color)
         {
             return color switch
             {
-                ConsoleColor.Black => "\x1B[30m",
-                ConsoleColor.DarkRed => "\x1B[31m",
-                ConsoleColor.DarkGreen => "\x1B[32m",
-                ConsoleColor.DarkYellow => "\x1B[33m",
-                ConsoleColor.DarkBlue => "\x1B[34m",
-                ConsoleColor.DarkMagenta => "\x1B[35m",
-                ConsoleColor.DarkCyan => "\x1B[36m",
-                ConsoleColor.Gray => "\x1B[37m",
-                ConsoleColor.Red => "\x1B[1m\x1B[31m",
-                ConsoleColor.Green => "\x1B[1m\x1B[32m",
-                ConsoleColor.Yellow => "\x1B[1m\x1B[33m",
-                ConsoleColor.Blue => "\x1B[1m\x1B[34m",
-                ConsoleColor.Magenta => "\x1B[1m\x1B[35m",
-                ConsoleColor.Cyan => "\x1B[1m\x1B[36m",
-                ConsoleColor.White => "\x1B[1m\x1B[37m",
+                ConsoleColor.Black => "\e[30m",
+                ConsoleColor.DarkRed => "\e[31m",
+                ConsoleColor.DarkGreen => "\e[32m",
+                ConsoleColor.DarkYellow => "\e[33m",
+                ConsoleColor.DarkBlue => "\e[34m",
+                ConsoleColor.DarkMagenta => "\e[35m",
+                ConsoleColor.DarkCyan => "\e[36m",
+                ConsoleColor.Gray => "\e[37m",
+                ConsoleColor.Red => "\e[1m\e[31m",
+                ConsoleColor.Green => "\e[1m\e[32m",
+                ConsoleColor.Yellow => "\e[1m\e[33m",
+                ConsoleColor.Blue => "\e[1m\e[34m",
+                ConsoleColor.Magenta => "\e[1m\e[35m",
+                ConsoleColor.Cyan => "\e[1m\e[36m",
+                ConsoleColor.White => "\e[1m\e[37m",
                 _ => DefaultForegroundColor // default foreground color
             };
         }
@@ -157,14 +157,14 @@ namespace Microsoft.Extensions.Logging.Console
         {
             return color switch
             {
-                ConsoleColor.Black => "\x1B[40m",
-                ConsoleColor.DarkRed => "\x1B[41m",
-                ConsoleColor.DarkGreen => "\x1B[42m",
-                ConsoleColor.DarkYellow => "\x1B[43m",
-                ConsoleColor.DarkBlue => "\x1B[44m",
-                ConsoleColor.DarkMagenta => "\x1B[45m",
-                ConsoleColor.DarkCyan => "\x1B[46m",
-                ConsoleColor.Gray => "\x1B[47m",
+                ConsoleColor.Black => "\e[40m",
+                ConsoleColor.DarkRed => "\e[41m",
+                ConsoleColor.DarkGreen => "\e[42m",
+                ConsoleColor.DarkYellow => "\e[43m",
+                ConsoleColor.DarkBlue => "\e[44m",
+                ConsoleColor.DarkMagenta => "\e[45m",
+                ConsoleColor.DarkCyan => "\e[46m",
+                ConsoleColor.Gray => "\e[47m",
                 _ => DefaultBackgroundColor // Use default background color
             };
         }

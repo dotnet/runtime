@@ -148,7 +148,7 @@ namespace System.Speech.Synthesis
         /// </summary>
         private object _synthesizer;
 
-        private static ResourceLoader s_resourceLoader = new();
+        private static readonly ResourceLoader s_resourceLoader = new();
 
         #endregion
     }

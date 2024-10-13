@@ -11,10 +11,5 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             return new DirectoryInfoAssertions(dir);
         }
-
-        public static DirectoryInfo Sub(this DirectoryInfo dir, string name)
-        {
-            return new DirectoryInfo(Path.Combine(dir.FullName, name));
-        }
     }
 }

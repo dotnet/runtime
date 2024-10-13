@@ -44,7 +44,7 @@ Below are the entry-points that the Visual C++ team needs
 When `_CorExeMain()` is called, the following will occur:
 
 1) If a [`.runtimeconfig.json`](https://github.com/dotnet/cli/blob/master/Documentation/specs/runtime-configuration-file.md) file exists adjacent to the shim assembly (`<shim_name>.runtimeconfig.json`), that file will be used to describe CLR configuration details. The documentation for the `.runtimeconfig.json` format defines under what circumstances this file may be optional.
-2) Using the existing `hostfxr` library, attempt to discover the desired CLR and target [framework](https://docs.microsoft.com/en-us/dotnet/core/packages#frameworks).
+2) Using the existing `hostfxr` library, attempt to discover the desired CLR and target [framework](https://learn.microsoft.com/dotnet/core/packages#frameworks).
    * If a CLR is active with the process, the requested CLR version will be validated against that CLR. If version satisfiability fails, activation will fail.
    * If a CLR is **not** active with the process, an attempt will be made to create a satisfying CLR instance.
    * Failure to create an instance will result in activation failure.

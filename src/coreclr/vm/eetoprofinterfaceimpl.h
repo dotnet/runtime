@@ -480,6 +480,8 @@ public:
     {
         return m_pProfToEE;
     }
+
+    HRESULT EnumerateGCHeapObjectsCallback(ObjectCallback callback, void* callbackState);
 private:
 
     //
@@ -657,16 +659,16 @@ private:
         {
             LIMITED_METHOD_CONTRACT;
             FunctionIDAndClientID functionIDAndClientID;
-            functionIDAndClientID.functionID = NULL;
-            functionIDAndClientID.clientID   = NULL;
+            functionIDAndClientID.functionID = 0;
+            functionIDAndClientID.clientID   = 0;
             return functionIDAndClientID;
         }
 
         static bool IsNull(const FunctionIDAndClientID &functionIDAndClientID)
         {
             LIMITED_METHOD_CONTRACT;
-            _ASSERTE((functionIDAndClientID.functionID != NULL) || (functionIDAndClientID.clientID == NULL));
-            return functionIDAndClientID.functionID == NULL;
+            _ASSERTE((functionIDAndClientID.functionID != 0) || (functionIDAndClientID.clientID == 0));
+            return functionIDAndClientID.functionID == 0;
         }
     };
 

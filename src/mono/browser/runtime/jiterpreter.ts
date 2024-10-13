@@ -56,7 +56,7 @@ export const
     traceNullCheckOptimizations = false,
     // Print diagnostic information when generating backward branches
     // 1 = failures only, 2 = full detail
-    traceBackBranches = 0,
+    defaultTraceBackBranches = 0,
     // Enable generating conditional backward branches for ENDFINALLY opcodes if we saw some CALL_HANDLER
     //  opcodes previously, up to this many potential return addresses. If a trace contains more potential
     //  return addresses than this we will not emit code for the ENDFINALLY opcode
@@ -72,13 +72,14 @@ export const
     useFullNames = false,
     // Use the mono_debug_count() API (set the COUNT=n env var) to limit the number of traces to compile
     useDebugCount = false,
-    // Web browsers limit synchronous module compiles to 4KB
-    maxModuleSize = 4080;
+    // Subtracted from the maxModuleSize option value to make space for a typical header
+    moduleHeaderSizeMargin = 300;
 
 export const callTargetCounts: { [method: number]: number } = {};
 
 export let mostRecentTrace: InstrumentedTraceState | undefined;
 export let mostRecentOptions: JiterpreterOptions | undefined = undefined;
+export let traceTableIsFull = false;
 
 // You can disable an opcode for debugging purposes by adding it to this list,
 //  instead of aborting the trace it will insert a bailout instead. This means that you will
@@ -98,7 +99,7 @@ export class InstrumentedTraceState {
     operand1: number | undefined;
     operand2: number | undefined;
 
-    constructor(name: string) {
+    constructor (name: string) {
         this.name = name;
         this.eip = <any>0;
     }
@@ -114,13 +115,13 @@ export class TraceInfo {
     bailoutCount: number | undefined;
     isVerbose: boolean;
 
-    constructor(ip: MintOpcodePtr, index: number, isVerbose: number) {
+    constructor (ip: MintOpcodePtr, index: number, isVerbose: number) {
         this.ip = ip;
         this.index = index;
         this.isVerbose = !!isVerbose;
     }
 
-    get hitCount() {
+    get hitCount () {
         return cwraps.mono_jiterp_get_trace_hit_count(this.index);
     }
 }
@@ -225,7 +226,7 @@ const mathOps1d =
         "powf",
     ];
 
-function recordBailout(ip: number, traceIndex: number, reason: BailoutReason) {
+function recordBailout (ip: number, traceIndex: number, reason: BailoutReason) {
     cwraps.mono_jiterp_trace_bailout(reason);
     // Counting these is not meaningful and messes up the end of run statistics
     if (reason === BailoutReason.Return)
@@ -251,7 +252,7 @@ function recordBailout(ip: number, traceIndex: number, reason: BailoutReason) {
     return ip;
 }
 
-function getTraceImports() {
+function getTraceImports () {
     if (traceImports)
         return traceImports;
 
@@ -271,6 +272,7 @@ function getTraceImports() {
         ["ckovr_u4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_u4")],
         importDef("newobj_i", getRawCwrap("mono_jiterp_try_newobj_inlined")),
         importDef("newstr", getRawCwrap("mono_jiterp_try_newstr")),
+        importDef("newarr", getRawCwrap("mono_jiterp_try_newarr")),
         importDef("ld_del_ptr", getRawCwrap("mono_jiterp_ld_delegate_method_ptr")),
         importDef("ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")),
         importDef("conv", getRawCwrap("mono_jiterp_conv")),
@@ -283,9 +285,7 @@ function getTraceImports() {
         importDef("array_rank", getRawCwrap("mono_jiterp_get_array_rank")),
         ["a_elesize", "array_rank", getRawCwrap("mono_jiterp_get_array_element_size")],
         importDef("stfld_o", getRawCwrap("mono_jiterp_set_object_field")),
-        importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
-        importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
-        importDef("stelem_ref", getRawCwrap("mono_jiterp_stelem_ref")),
+        ["stelemr_tc", "stelemr", getRawCwrap("mono_jiterp_stelem_ref")],
         importDef("fma", getRawCwrap("fma")),
         importDef("fmaf", getRawCwrap("fmaf")),
     ];
@@ -313,7 +313,7 @@ function getTraceImports() {
     return traceImports;
 }
 
-function initialize_builder(builder: WasmBuilder) {
+function initialize_builder (builder: WasmBuilder) {
     // Function type for compiled traces
     builder.defineType(
         "trace",
@@ -462,6 +462,15 @@ function initialize_builder(builder: WasmBuilder) {
         "newstr",
         {
             "ppDestination": WasmValtype.i32,
+            "length": WasmValtype.i32,
+        },
+        WasmValtype.i32, true
+    );
+    builder.defineType(
+        "newarr",
+        {
+            "ppDestination": WasmValtype.i32,
+            "vtable": WasmValtype.i32,
             "length": WasmValtype.i32,
         },
         WasmValtype.i32, true
@@ -630,26 +639,7 @@ function initialize_builder(builder: WasmBuilder) {
         WasmValtype.void, true
     );
     builder.defineType(
-        "cmpxchg_i32",
-        {
-            "dest": WasmValtype.i32,
-            "newVal": WasmValtype.i32,
-            "expected": WasmValtype.i32,
-        },
-        WasmValtype.i32, true
-    );
-    builder.defineType(
-        "cmpxchg_i64",
-        {
-            "dest": WasmValtype.i32,
-            "newVal": WasmValtype.i32,
-            "expected": WasmValtype.i32,
-            "oldVal": WasmValtype.i32,
-        },
-        WasmValtype.void, true
-    );
-    builder.defineType(
-        "stelem_ref",
+        "stelemr",
         {
             "o": WasmValtype.i32,
             "aindex": WasmValtype.i32,
@@ -694,7 +684,7 @@ function initialize_builder(builder: WasmBuilder) {
     }
 }
 
-function assert_not_null(
+function assert_not_null (
     value: number, expectedValue: number, traceIndex: number, ip: MintOpcodePtr
 ) {
     if (value && (value === expectedValue))
@@ -704,7 +694,7 @@ function assert_not_null(
 }
 
 // returns function id
-function generate_wasm(
+function generate_wasm (
     frame: NativePointer, methodName: string, ip: MintOpcodePtr,
     startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr,
     traceIndex: number, methodFullName: string | undefined,
@@ -779,7 +769,6 @@ function generate_wasm(
             "math_rhs64": WasmValtype.i64,
             "temp_f32": WasmValtype.f32,
             "temp_f64": WasmValtype.f64,
-            "backbranched": WasmValtype.i32,
         };
         if (builder.options.enableSimd) {
             traceLocals["v128_zero"] = WasmValtype.v128;
@@ -850,7 +839,7 @@ function generate_wasm(
             mono_log_info(`${(<any>(builder.base)).toString(16)} ${methodFullName || traceName} generated ${buffer.length} byte(s) of wasm`);
         modifyCounter(JiterpCounter.BytesGenerated, buffer.length);
 
-        if (buffer.length >= maxModuleSize) {
+        if (buffer.length >= builder.options.maxModuleSize) {
             mono_log_warn(`Jiterpreter generated too much code (${buffer.length} bytes) for trace ${traceName}. Please report this issue.`);
             return 0;
         }
@@ -862,18 +851,6 @@ function generate_wasm(
         // Get the exported trace function
         const fn = traceInstance.exports[traceName];
 
-        // FIXME: Before threading can be supported, we will need to ensure that
-        //  once we assign a function pointer index to a given trace, the trace is
-        //  broadcast to all the JS workers and compiled + installed at the appropriate
-        //  index in every worker's function pointer table. This also means that we
-        //  would need to fill empty slots with a dummy function when growing the table
-        //  so that any erroneous ENTERs will skip the opcode instead of crashing due
-        //  to calling a null function pointer.
-        // Table grow operations will need to be synchronized between workers somehow,
-        //  probably by storing the table size in a volatile global or something so that
-        //  we know the range of indexes available to us and can ensure that threads
-        //  independently jitting traces will not stomp on each other and all threads
-        //  have a globally consistent view of which function pointer maps to each trace.
         rejected = false;
 
         let idx: number;
@@ -883,6 +860,11 @@ function generate_wasm(
             idx = presetFunctionPointer;
         } else {
             idx = addWasmFunctionPointer(JiterpreterTable.Trace, <any>fn);
+            if (idx === 0) {
+                // Failed to add function pointer because trace table is full. Disable future
+                //  trace generation to reduce CPU usage.
+                traceTableIsFull = true;
+            }
         }
         if (trace >= 2)
             mono_log_info(`${traceName} -> fn index ${idx}`);
@@ -897,7 +879,12 @@ function generate_wasm(
     } catch (exc: any) {
         threw = true;
         rejected = false;
-        mono_log_error(`${methodFullName || traceName} code generation failed: ${exc} ${exc.stack}`);
+        let desc = builder.containsSimd
+            ? " (simd)"
+            : "";
+        if (builder.containsAtomics)
+            desc += " (atomics)";
+        mono_log_error(`${methodFullName || traceName}${desc} code generation failed: ${exc} ${exc.stack}`);
         recordFailure();
         return 0;
     } finally {
@@ -930,7 +917,7 @@ function generate_wasm(
                 ;
             }
 
-            const buf = builder.getArrayView();
+            const buf = builder.getArrayView(false, true);
             for (let i = 0; i < buf.length; i++) {
                 const b = buf[i];
                 if (b < 0x10)
@@ -949,7 +936,7 @@ function generate_wasm(
     }
 }
 
-export function trace_current_ip(traceId: number, eip: MintOpcodePtr) {
+export function trace_current_ip (traceId: number, eip: MintOpcodePtr) {
     const tup = instrumentedTraces[traceId];
     if (!tup)
         throw new Error(`Unrecognized instrumented trace id ${traceId}`);
@@ -957,14 +944,14 @@ export function trace_current_ip(traceId: number, eip: MintOpcodePtr) {
     mostRecentTrace = tup;
 }
 
-export function trace_operands(a: number, b: number) {
+export function trace_operands (a: number, b: number) {
     if (!mostRecentTrace)
         throw new Error("No trace active");
     mostRecentTrace.operand1 = a >>> 0;
     mostRecentTrace.operand2 = b >>> 0;
 }
 
-export function record_abort(traceIndex: number, ip: MintOpcodePtr, traceName: string, reason: string | MintOpcode) {
+export function record_abort (traceIndex: number, ip: MintOpcodePtr, traceName: string, reason: string | MintOpcode) {
     if (typeof (reason) === "number") {
         cwraps.mono_jiterp_adjust_abort_count(reason, 1);
         reason = getOpcodeName(reason);
@@ -987,7 +974,7 @@ export function record_abort(traceIndex: number, ip: MintOpcodePtr, traceName: s
 const JITERPRETER_TRAINING = 0;
 const JITERPRETER_NOT_JITTED = 1;
 
-export function mono_interp_tier_prepare_jiterpreter(
+export function mono_interp_tier_prepare_jiterpreter (
     frame: NativePointer, method: MonoMethod, ip: MintOpcodePtr, index: number,
     startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr, isVerbose: number,
     presetFunctionPointer: number
@@ -996,10 +983,11 @@ export function mono_interp_tier_prepare_jiterpreter(
     if (!mostRecentOptions)
         mostRecentOptions = getOptions();
 
-    // FIXME: We shouldn't need this check
     if (!mostRecentOptions.enableTraces)
         return JITERPRETER_NOT_JITTED;
     else if (mostRecentOptions.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated))
+        return JITERPRETER_NOT_JITTED;
+    else if (traceTableIsFull)
         return JITERPRETER_NOT_JITTED;
 
     let info = traceInfo[index];
@@ -1032,7 +1020,7 @@ export function mono_interp_tier_prepare_jiterpreter(
         const threshold = (<any>ip - <any>startOfBody) / 2;
         let foundReachableBranchTarget = false;
         for (let i = 0; i < backwardBranchTable.length; i++) {
-            if (backwardBranchTable[i] > threshold) {
+            if (backwardBranchTable[i] >= threshold) {
                 foundReachableBranchTarget = true;
                 break;
             }
@@ -1062,7 +1050,7 @@ export function mono_interp_tier_prepare_jiterpreter(
 
 // NOTE: This will potentially be called once for every trace entry point
 //  in a given method, not just once per method
-export function mono_jiterp_free_method_data_js(
+export function mono_jiterp_free_method_data_js (
     method: MonoMethod, imethod: number, traceIndex: number
 ) {
     // TODO: Uninstall the trace function pointer from the function pointer table,
@@ -1074,7 +1062,7 @@ export function mono_jiterp_free_method_data_js(
     mono_jiterp_free_method_data_jit_call(method);
 }
 
-export function jiterpreter_dump_stats(concise?: boolean): void {
+export function jiterpreter_dump_stats (concise?: boolean): void {
     if (!runtimeHelpers.runtimeReady) {
         return;
     }
@@ -1095,7 +1083,9 @@ export function jiterpreter_dump_stats(concise?: boolean): void {
         traceCandidates = getCounter(JiterpCounter.TraceCandidates),
         bytesGenerated = getCounter(JiterpCounter.BytesGenerated),
         elapsedGenerationMs = getCounter(JiterpCounter.ElapsedGenerationMs),
-        elapsedCompilationMs = getCounter(JiterpCounter.ElapsedCompilationMs);
+        elapsedCompilationMs = getCounter(JiterpCounter.ElapsedCompilationMs),
+        switchTargetsOk = getCounter(JiterpCounter.SwitchTargetsOk),
+        switchTargetsFailed = getCounter(JiterpCounter.SwitchTargetsFailed);
 
     const backBranchHitRate = (backBranchesEmitted / (backBranchesEmitted + backBranchesNotEmitted)) * 100,
         tracesRejected = cwraps.mono_jiterp_get_rejected_trace_count(),
@@ -1106,8 +1096,8 @@ export function jiterpreter_dump_stats(concise?: boolean): void {
             mostRecentOptions.directJitCalls ? `direct jit calls: ${directJitCallsCompiled} (${(directJitCallsCompiled / jitCallsCompiled * 100).toFixed(1)}%)` : "direct jit calls: off"
         ) : "";
 
-    mono_log_info(`// jitted ${bytesGenerated} bytes; ${tracesCompiled} traces (${(tracesCompiled / traceCandidates * 100).toFixed(1)}%) (${tracesRejected} rejected); ${jitCallsCompiled} jit_calls; ${entryWrappersCompiled} interp_entries`);
-    mono_log_info(`// cknulls eliminated: ${nullChecksEliminatedText}, fused: ${nullChecksFusedText}; back-branches ${backBranchesEmittedText}; ${directJitCallsText}`);
+    mono_log_info(`// jitted ${bytesGenerated}b; ${tracesCompiled} traces (${(tracesCompiled / traceCandidates * 100).toFixed(1)}%) (${tracesRejected} rejected); ${jitCallsCompiled} jit_calls; ${entryWrappersCompiled} interp_entries`);
+    mono_log_info(`// cknulls pruned: ${nullChecksEliminatedText}, fused: ${nullChecksFusedText}; back-brs ${backBranchesEmittedText}; switch tgts ${switchTargetsOk}/${switchTargetsFailed + switchTargetsOk}; ${directJitCallsText}`);
     mono_log_info(`// time: ${elapsedGenerationMs | 0}ms generating, ${elapsedCompilationMs | 0}ms compiling wasm.`);
     if (concise)
         return;

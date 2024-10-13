@@ -13,7 +13,6 @@
 /*****************************************************************************/
 
 #include "daccess.h"
-#include "windef.h"     // For BYTE
 
 // Use the lower 2 bits of the offsets stored in the tables
 // to encode properties
@@ -26,7 +25,7 @@ const unsigned        OFFSET_MASK  = 0x3;  // mask to access the low 2 bits
 //
 const unsigned  byref_OFFSET_FLAG  = 0x1;  // the offset is an interior ptr
 const unsigned pinned_OFFSET_FLAG  = 0x2;  // the offset is a pinned ptr
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
+#if defined(TARGET_X86)
 // JIT32_ENCODER has additional restriction on x86 without funclets: 
 // - for untracked locals the flags allowed are "pinned" and "byref"
 // - for tracked locals the flags allowed are "this" and "byref"
@@ -37,7 +36,7 @@ const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 // The current GCInfo Version
 //-----------------------------------------------------------------------------
 
-#define GCINFO_VERSION 2
+#define GCINFO_VERSION 3
 
 //-----------------------------------------------------------------------------
 // GCInfoToken: A wrapper that contains the GcInfo data and version number.
@@ -56,11 +55,26 @@ const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 struct GCInfoToken
 {
     PTR_VOID Info;
-    UINT32 Version;
+    uint32_t Version;
 
-    static UINT32 ReadyToRunVersionToGcInfoVersion(UINT32 readyToRunMajorVersion)
+#ifdef FEATURE_NATIVEAOT
+    GCInfoToken(PTR_VOID info)
     {
-        // GcInfo version is current from  ReadyToRun version 2.0
+        Info = info;
+        Version = GCINFO_VERSION;
+    }
+#endif
+
+    static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion, uint32_t readyToRunMinorVersion)
+    {
+        // Once MINIMUM_READYTORUN_MAJOR_VERSION is bumped to 10+
+        // delete the following and just return GCINFO_VERSION
+        //
+        // R2R 9.0 and 9.1 use GCInfo v2
+        // R2R 9.2 uses GCInfo v3
+        if (readyToRunMajorVersion == 9 && readyToRunMinorVersion < 2)
+            return 2;
+
         return GCINFO_VERSION;
     }
 };

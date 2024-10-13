@@ -635,24 +635,44 @@ namespace System.Xml.Serialization
                     {
                         MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetEffectiveSetInfo(o.GetType(), memberName);
                         Debug.Assert(memberInfo != null, "memberInfo could not be retrieved");
-                        Type memberType;
-                        if (memberInfo is PropertyInfo propInfo)
+
+                        if (type.IsValueType || !RuntimeFeature.IsDynamicCodeSupported)
                         {
-                            memberType = propInfo.PropertyType;
-                        }
-                        else if (memberInfo is FieldInfo fieldInfo)
-                        {
-                            memberType = fieldInfo.FieldType;
+                            if (memberInfo is PropertyInfo propInfo)
+                            {
+                                result = new ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate(propInfo.SetValue);
+                            }
+                            else if (memberInfo is FieldInfo fieldInfo)
+                            {
+                                result = new ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate(fieldInfo.SetValue);
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException(SR.XmlInternalError);
+                            }
                         }
                         else
                         {
-                            throw new InvalidOperationException(SR.XmlInternalError);
+                            Type memberType;
+                            if (memberInfo is PropertyInfo propInfo)
+                            {
+                                memberType = propInfo.PropertyType;
+                            }
+                            else if (memberInfo is FieldInfo fieldInfo)
+                            {
+                                memberType = fieldInfo.FieldType;
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException(SR.XmlInternalError);
+                            }
+
+                            MethodInfo getSetMemberValueDelegateWithTypeGenericMi = typeof(ReflectionXmlSerializationReaderHelper).GetMethod("GetSetMemberValueDelegateWithType", BindingFlags.Static | BindingFlags.Public)!;
+                            MethodInfo getSetMemberValueDelegateWithTypeMi = getSetMemberValueDelegateWithTypeGenericMi.MakeGenericMethod(o.GetType(), memberType);
+                            var getSetMemberValueDelegateWithType = getSetMemberValueDelegateWithTypeMi.CreateDelegate<Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>>();
+                            result = getSetMemberValueDelegateWithType(memberInfo);
                         }
 
-                        MethodInfo getSetMemberValueDelegateWithTypeGenericMi = typeof(ReflectionXmlSerializationReaderHelper).GetMethod("GetSetMemberValueDelegateWithType", BindingFlags.Static | BindingFlags.Public)!;
-                        MethodInfo getSetMemberValueDelegateWithTypeMi = getSetMemberValueDelegateWithTypeGenericMi.MakeGenericMethod(o.GetType(), memberType);
-                        var getSetMemberValueDelegateWithType = (Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>)getSetMemberValueDelegateWithTypeMi.CreateDelegate(typeof(Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>));
-                        result = getSetMemberValueDelegateWithType(memberInfo);
                         delegateCacheForType[memberName] = result;
                     }
                 }
@@ -2097,46 +2117,31 @@ namespace System.Xml.Serialization
 
         public static SetMemberValueDelegate GetSetMemberValueDelegateWithType<TObj, TParam>(MemberInfo memberInfo)
         {
-            if (typeof(TObj).IsValueType)
+            Debug.Assert(!typeof(TObj).IsValueType);
+            Action<TObj, TParam>? setTypedDelegate = null;
+            if (memberInfo is PropertyInfo propInfo)
             {
-                if (memberInfo is PropertyInfo propInfo)
+                var setMethod = propInfo.GetSetMethod(true);
+                if (setMethod == null)
                 {
                     return propInfo.SetValue;
                 }
-                else if (memberInfo is FieldInfo fieldInfo)
-                {
-                    return fieldInfo.SetValue;
-                }
 
-                throw new InvalidOperationException(SR.XmlInternalError);
+                setTypedDelegate = setMethod.CreateDelegate<Action<TObj, TParam>>();
             }
-            else
+            else if (memberInfo is FieldInfo fieldInfo)
             {
-                Action<TObj, TParam>? setTypedDelegate = null;
-                if (memberInfo is PropertyInfo propInfo)
-                {
-                    var setMethod = propInfo.GetSetMethod(true);
-                    if (setMethod == null)
-                    {
-                        return propInfo.SetValue;
-                    }
-
-                    setTypedDelegate = (Action<TObj, TParam>)setMethod.CreateDelegate(typeof(Action<TObj, TParam>));
-                }
-                else if (memberInfo is FieldInfo fieldInfo)
-                {
-                    var objectParam = Expression.Parameter(typeof(TObj));
-                    var valueParam = Expression.Parameter(typeof(TParam));
-                    var fieldExpr = Expression.Field(objectParam, fieldInfo);
-                    var assignExpr = Expression.Assign(fieldExpr, valueParam);
-                    setTypedDelegate = Expression.Lambda<Action<TObj, TParam>>(assignExpr, objectParam, valueParam).Compile();
-                }
-
-                return delegate (object? o, object? p)
-                {
-                    setTypedDelegate!((TObj)o!, (TParam)p!);
-                };
+                var objectParam = Expression.Parameter(typeof(TObj));
+                var valueParam = Expression.Parameter(typeof(TParam));
+                var fieldExpr = Expression.Field(objectParam, fieldInfo);
+                var assignExpr = Expression.Assign(fieldExpr, valueParam);
+                setTypedDelegate = Expression.Lambda<Action<TObj, TParam>>(assignExpr, objectParam, valueParam).Compile();
             }
+
+            return delegate (object? o, object? p)
+            {
+                setTypedDelegate!((TObj)o!, (TParam)p!);
+            };
         }
     }
 }

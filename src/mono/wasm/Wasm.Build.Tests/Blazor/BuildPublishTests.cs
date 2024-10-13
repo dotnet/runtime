@@ -28,7 +28,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [InlineData("Release")]
     public async Task DefaultTemplate_WithoutWorkload(string config)
     {
-        string id = $"blz_no_workload_{config}_{GetRandomId()}_{s_unicodeChar}";
+        string id = $"blz_no_workload_{config}_{GetRandomId()}_{s_unicodeChars}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config));
@@ -42,19 +42,17 @@ public class BuildPublishTests : BlazorWasmTestBase
     public static TheoryData<string, bool> TestDataForDefaultTemplate_WithWorkload(bool isAot)
     {
         var data = new TheoryData<string, bool>();
-        data.Add("Debug", false);
-        data.Add("Release", false); // Release relinks by default
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497", TestPlatforms.Windows)]
-        if (!isAot || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (!isAot)
         {
-            data.Add("Debug", true); // for aot:true on Windows, it fails
+            // AOT does not support managed debugging, is disabled by design
+            data.Add("Debug", false);
+            data.Add("Debug", true);
         }
 
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497", TestPlatforms.Windows)]
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            data.Add("Release", true);
-        }
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/103625", TestPlatforms.Windows)]
+        // when running locally the path might be longer than 260 chars and these tests can fail with AOT
+        data.Add("Release", false); // Release relinks by default
+        data.Add("Release", true);
         return data;
     }
 
@@ -63,7 +61,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void DefaultTemplate_NoAOT_WithWorkload(string config, bool testUnicode)
     {
         string id = testUnicode ?
-            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChar}" :
+            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChars}" :
             $"blz_no_aot_{config}_{GetRandomId()}";
         CreateBlazorWasmTemplateProject(id);
 
@@ -84,7 +82,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void DefaultTemplate_AOT_WithWorkload(string config, bool testUnicode)
     {
         string id = testUnicode ?
-            $"blz_aot_{config}_{GetRandomId()}_{s_unicodeChar}" :
+            $"blz_aot_{config}_{GetRandomId()}_{s_unicodeChars}" :
             $"blz_aot_{config}_{GetRandomId()}";
         CreateBlazorWasmTemplateProject(id);
 
@@ -168,8 +166,8 @@ public class BuildPublishTests : BlazorWasmTestBase
         {
             foreach (string culture in cultures)
             {
-                string resourceAssemblyPath = Path.Combine(basePath, culture, $"{id}.resources{ProjectProviderBase.WasmAssemblyExtension}");
-                Assert.True(File.Exists(resourceAssemblyPath), $"Expects to have a resource assembly at {resourceAssemblyPath}");
+                string? resourceAssemblyPath = Directory.EnumerateFiles(Path.Combine(basePath, culture), $"*{ProjectProviderBase.WasmAssemblyExtension}").SingleOrDefault(f => Path.GetFileNameWithoutExtension(f).StartsWith($"{id}.resources"));
+                Assert.True(resourceAssemblyPath != null && File.Exists(resourceAssemblyPath), $"Expects to have a resource assembly at {resourceAssemblyPath}");
             }
         }
     }
@@ -196,5 +194,19 @@ public class BuildPublishTests : BlazorWasmTestBase
         string objBuildDir = Path.Combine(projectDirectory, "obj", config, BuildTestBase.DefaultTargetFrameworkForBlazor, "wasm", "for-publish");
 
         WasmTemplateTests.TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
+    }
+
+    [Theory]
+    [InlineData("Debug")]
+    public void BlazorWasm_CannotAOT_InDebug(string config)
+    {
+        string id = $"blazorwasm_{config}_aot_{GetRandomId()}";
+        CreateBlazorWasmTemplateProject(id);
+        AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
+                                    extraItems: null,
+                                    extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
+
+        (CommandResult res, _) = BlazorPublish(new BlazorBuildOptions(id, config, ExpectSuccess: false));
+        Assert.Contains("AOT is not supported in debug configuration", res.Output);
     }
 }

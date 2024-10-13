@@ -14,6 +14,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public class JSExportAsyncTest : JSInteropTestBase, IAsyncLifetime
     {
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        public void SyncJsImportJsExportThrows()
+        {
+            var ex = Assert.Throws<JSException>(()=>JavaScriptTestHelper.invoke1_Boolean(true, nameof(JavaScriptTestHelper.EchoBoolean)));
+            Assert.Contains("Cannot call synchronous C# method", ex.Message);
+        }
+
         [Theory]
         [MemberData(nameof(MarshalBooleanCases))]
         public async Task JsExportBooleanAsync(bool value)
@@ -30,7 +37,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             JavaScriptTestHelper.optimizedReached=0;
             JavaScriptTestHelper.invoke1O(value);
-            await JavaScriptTestHelper.Delay(0);
+            await JavaScriptTestHelper.Delay(50);
             Assert.Equal(value, JavaScriptTestHelper.optimizedReached);
         }
 
@@ -43,7 +50,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmBackgroundExecOrSingleThread))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
     public class JSExportTest : JSInteropTestBase, IAsyncLifetime
     {
         [Theory]
@@ -422,6 +429,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             T res;
             res = invoke(value, echoName);
             Assert.Equal<T>(value, res);
+        }
+
+        [Fact]
+        public async Task InternalsVisibleToDoesntBreak()
+        {
+            Assert.Equal(JavaScriptLibrary.JavaScriptInterop.ValidationMethod(5, 6), await JavaScriptTestHelper.callJavaScriptLibrary(5, 6));
+        }
+
+        [Fact]
+        public async void JSExportCompletedTaskReturnsResolvedPromise()
+        {
+            string result = await JavaScriptTestHelper.InvokeReturnCompletedTask();
+            Assert.Equal("resolved", result);
         }
     }
 }

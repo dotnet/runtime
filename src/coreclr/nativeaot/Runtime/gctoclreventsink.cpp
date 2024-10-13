@@ -11,17 +11,27 @@ void GCToCLREventSink::FireDynamicEvent(const char* eventName, void* payload, ui
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef FEATURE_NATIVEAOT
     const size_t EventNameMaxSize = 255;
 
     WCHAR wideEventName[EventNameMaxSize];
-    if (MultiByteToWideChar(CP_ACP, 0, eventName, -1, wideEventName, EventNameMaxSize) == 0)
+    int i = 0;
+    while (true)
     {
-        return;
+        if (i == (EventNameMaxSize - 1))
+        {
+            wideEventName[i] = L'\0';
+            assert(false);
+            break;
+        }
+        wideEventName[i] = (WCHAR)eventName[i];
+        if (eventName[i] == '\0')
+        {
+            break;
+        }
+        i++;
     }
 
     FireEtwGCDynamicEvent(wideEventName, payloadSize, (const BYTE*)payload, GetClrInstanceId());
-#endif // !FEATURE_NATIVEAOT
 }
 
 void GCToCLREventSink::FireGCStart_V2(uint32_t count, uint32_t depth, uint32_t reason, uint32_t type)
@@ -151,6 +161,7 @@ void GCToCLREventSink::FireGCGlobalHeapHistory_V4(uint64_t finalYoungestDesired,
 void GCToCLREventSink::FireGCAllocationTick_V1(uint32_t allocationAmount,
         uint32_t allocationKind)
 {
+    ASSERT(!"Superseded by FireGCAllocationTick_V4");
 }
 
 MethodTable* GetLastAllocEEType();
@@ -263,7 +274,7 @@ void GCToCLREventSink::FireBGC1stConEnd()
 
 void GCToCLREventSink::FireBGC1stSweepEnd(uint32_t genNumber)
 {
-    //FireEtwBGC1stSweepEnd(genNumber, GetClrInstanceId()); TODO
+    FireEtwBGC1stSweepEnd(genNumber, GetClrInstanceId());
 }
 
 void GCToCLREventSink::FireBGC2ndNonConBegin()

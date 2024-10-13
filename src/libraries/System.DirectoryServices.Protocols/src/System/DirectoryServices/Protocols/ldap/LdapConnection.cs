@@ -544,7 +544,7 @@ namespace System.DirectoryServices.Protocols
             {
                 // Build server control.
                 managedServerControls = BuildControlArray(request.Controls, true);
-                int structSize = Marshal.SizeOf(typeof(LdapControl));
+                int structSize = Marshal.SizeOf<LdapControl>();
 
                 if (managedServerControls != null)
                 {
@@ -629,7 +629,7 @@ namespace System.DirectoryServices.Protocols
 
                     berValuePtr = new BerVal
                     {
-                        bv_len = byteArray.Length,
+                        bv_len = new CLong(byteArray.Length),
                         bv_val = Marshal.AllocHGlobal(byteArray.Length)
                     };
                     Marshal.Copy(byteArray, 0, berValuePtr.bv_val, byteArray.Length);
@@ -658,7 +658,7 @@ namespace System.DirectoryServices.Protocols
                     addModCount = (modifications == null ? 1 : modifications.Length + 1);
                     modArray = Utility.AllocHGlobalIntPtrArray(addModCount);
                     void** pModArray = (void**)modArray;
-                    int modStructSize = Marshal.SizeOf(typeof(LdapMod));
+                    int modStructSize = Marshal.SizeOf<LdapMod>();
                     int i = 0;
                     for (i = 0; i < addModCount - 1; i++)
                     {
@@ -695,7 +695,7 @@ namespace System.DirectoryServices.Protocols
                     {
                         berValuePtr = new BerVal()
                         {
-                            bv_len = val.Length,
+                            bv_len = new CLong(val.Length),
                             bv_val = Marshal.AllocHGlobal(val.Length)
                         };
                         Marshal.Copy(val, 0, berValuePtr.bv_val, val.Length);
@@ -918,12 +918,12 @@ namespace System.DirectoryServices.Protocols
             var list = new ArrayList();
             if (CAs != IntPtr.Zero)
             {
-                SecPkgContext_IssuerListInfoEx trustedCAs = (SecPkgContext_IssuerListInfoEx)Marshal.PtrToStructure(CAs, typeof(SecPkgContext_IssuerListInfoEx));
+                SecPkgContext_IssuerListInfoEx trustedCAs = *(SecPkgContext_IssuerListInfoEx*)CAs;
                 int issuerNumber = trustedCAs.cIssuers;
                 for (int i = 0; i < issuerNumber; i++)
                 {
-                    IntPtr tempPtr = (IntPtr)((byte*)trustedCAs.aIssuers + Marshal.SizeOf(typeof(CRYPTOAPI_BLOB)) * (nint)i);
-                    CRYPTOAPI_BLOB info = (CRYPTOAPI_BLOB)Marshal.PtrToStructure(tempPtr, typeof(CRYPTOAPI_BLOB));
+                    IntPtr tempPtr = (IntPtr)((byte*)trustedCAs.aIssuers + sizeof(CRYPTOAPI_BLOB) * (nint)i);
+                    CRYPTOAPI_BLOB info = *(CRYPTOAPI_BLOB*)tempPtr;
                     int dataLength = info.cbData;
 
                     byte[] context = new byte[dataLength];
@@ -1077,7 +1077,7 @@ namespace System.DirectoryServices.Protocols
                 var cred = new SEC_WINNT_AUTH_IDENTITY_EX()
                 {
                     version = Interop.SEC_WINNT_AUTH_IDENTITY_VERSION,
-                    length = Marshal.SizeOf(typeof(SEC_WINNT_AUTH_IDENTITY_EX)),
+                    length = Marshal.SizeOf<SEC_WINNT_AUTH_IDENTITY_EX>(),
                     flags = Interop.SEC_WINNT_AUTH_IDENTITY_UNICODE
                 };
                 if (AuthType == AuthType.Kerberos)
@@ -1222,7 +1222,7 @@ namespace System.DirectoryServices.Protocols
                             // Get the control type.
                             ldctl_oid = LdapPal.StringToPtr(((DirectoryControl)controlList[i]).Type),
 
-                            // Get the control cricality.
+                            // Get the control criticality.
                             ldctl_iscritical = ((DirectoryControl)controlList[i]).IsCritical
                         };
 
@@ -1234,7 +1234,7 @@ namespace System.DirectoryServices.Protocols
                             // Treat the control value as null.
                             managedControls[i].ldctl_value = new BerVal
                             {
-                                bv_len = 0,
+                                bv_len = new CLong(0),
                                 bv_val = IntPtr.Zero
                             };
                         }
@@ -1242,10 +1242,10 @@ namespace System.DirectoryServices.Protocols
                         {
                             managedControls[i].ldctl_value = new BerVal
                             {
-                                bv_len = byteControlValue.Length,
+                                bv_len = new CLong(byteControlValue.Length),
                                 bv_val = Marshal.AllocHGlobal(sizeof(byte) * byteControlValue.Length)
                             };
-                            Marshal.Copy(byteControlValue, 0, managedControls[i].ldctl_value.bv_val, managedControls[i].ldctl_value.bv_len);
+                            Marshal.Copy(byteControlValue, 0, managedControls[i].ldctl_value.bv_val, (int)managedControls[i].ldctl_value.bv_len.Value);
                         }
                     }
                 }
@@ -1330,19 +1330,19 @@ namespace System.DirectoryServices.Protocols
 
                             berValues[j] = new BerVal()
                             {
-                                bv_len = byteArray.Length,
+                                bv_len = new CLong(byteArray.Length),
                                 bv_val = Marshal.AllocHGlobal(byteArray.Length)
                             };
 
                             // need to free the memory allocated on the heap when we are done
                             ptrToFree.Add(berValues[j].bv_val);
-                            Marshal.Copy(byteArray, 0, berValues[j].bv_val, berValues[j].bv_len);
+                            Marshal.Copy(byteArray, 0, berValues[j].bv_val, (int)berValues[j].bv_len.Value);
                         }
                     }
 
                     attributes[i].values = Utility.AllocHGlobalIntPtrArray(valuesCount + 1);
                     void** pAttributesValues = (void**)attributes[i].values;
-                    int structSize = Marshal.SizeOf(typeof(BerVal));
+                    int structSize = Marshal.SizeOf<BerVal>();
                     IntPtr controlPtr;
 
                     int m;
@@ -1485,10 +1485,10 @@ namespace System.DirectoryServices.Protocols
                                     {
                                         val = new BerVal();
                                         Marshal.PtrToStructure(requestValue, val);
-                                        if (val.bv_len != 0 && val.bv_val != IntPtr.Zero)
+                                        if (val.bv_len.Value != 0 && val.bv_val != IntPtr.Zero)
                                         {
-                                            requestValueArray = new byte[val.bv_len];
-                                            Marshal.Copy(val.bv_val, requestValueArray, 0, val.bv_len);
+                                            requestValueArray = new byte[val.bv_len.Value];
+                                            Marshal.Copy(val.bv_val, requestValueArray, 0, (int)val.bv_len.Value);
                                         }
                                     }
 
@@ -1806,10 +1806,10 @@ namespace System.DirectoryServices.Protocols
                         BerVal bervalue = new BerVal();
                         Marshal.PtrToStructure(tempPtr, bervalue);
                         byte[] byteArray;
-                        if (bervalue.bv_len > 0 && bervalue.bv_val != IntPtr.Zero)
+                        if (bervalue.bv_len.Value > 0 && bervalue.bv_val != IntPtr.Zero)
                         {
-                            byteArray = new byte[bervalue.bv_len];
-                            Marshal.Copy(bervalue.bv_val, byteArray, 0, bervalue.bv_len);
+                            byteArray = new byte[bervalue.bv_len.Value];
+                            Marshal.Copy(bervalue.bv_val, byteArray, 0, (int)bervalue.bv_len.Value);
                             attribute.Add(byteArray);
                         }
 
@@ -1944,8 +1944,8 @@ namespace System.DirectoryServices.Protocols
             Debug.Assert(control.ldctl_oid != IntPtr.Zero);
             string controlType = LdapPal.PtrToString(control.ldctl_oid);
 
-            byte[] bytes = new byte[control.ldctl_value.bv_len];
-            Marshal.Copy(control.ldctl_value.bv_val, bytes, 0, control.ldctl_value.bv_len);
+            byte[] bytes = new byte[control.ldctl_value.bv_len.Value];
+            Marshal.Copy(control.ldctl_value.bv_val, bytes, 0, (int)control.ldctl_value.bv_len.Value);
 
             bool criticality = control.ldctl_iscritical;
 

@@ -77,6 +77,7 @@ public:
     bool          JitFramed(void)                           const {LIMITED_METHOD_CONTRACT;  return fJitFramed; }
     bool          JitMinOpts(void)                          const {LIMITED_METHOD_CONTRACT;  return fJitMinOpts; }
     bool          JitEnableOptionalRelocs(void)             const {LIMITED_METHOD_CONTRACT;  return fJitEnableOptionalRelocs; }
+    bool          DisableOptimizedThreadStaticAccess(void)  const {LIMITED_METHOD_CONTRACT;  return fDisableOptimizedThreadStaticAccess; }
 
     // Tiered Compilation config
 #if defined(FEATURE_TIERED_COMPILATION)
@@ -309,12 +310,6 @@ public:
     unsigned int  GetDoubleArrayToLargeObjectHeapThreshold() const { LIMITED_METHOD_CONTRACT; return DoubleArrayToLargeObjectHeapThreshold; }
 #endif
 
-    inline bool ProbeForStackOverflow() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return fProbeForStackOverflow;
-    }
-
 #ifdef TEST_DATA_CONSISTENCY
     // get the value of fTestDataConsistency, which controls whether we test that we can correctly detect
     // held locks in DAC builds. This is determined by an environment variable.
@@ -394,6 +389,7 @@ public:
 #ifdef FEATURE_CONSERVATIVE_GC
     bool    GetGCConservative()             const {LIMITED_METHOD_CONTRACT; return iGCConservative;}
 #endif
+    bool    GetCheckDoubleReporting()       const {LIMITED_METHOD_CONTRACT; return fCheckDoubleReporting; }
 #ifdef HOST_64BIT
     bool    GetGCAllowVeryLargeObjects()    const {LIMITED_METHOD_CONTRACT; return iGCAllowVeryLargeObjects;}
 #endif
@@ -421,10 +417,6 @@ public:
 
     // Loader
     bool    ExcludeReadyToRun(LPCUTF8 assemblyName) const;
-
-    bool    NgenBindOptimizeNonGac()        const { LIMITED_METHOD_CONTRACT; return fNgenBindOptimizeNonGac; }
-
-    DWORD   DisableStackwalkCache()         const {LIMITED_METHOD_CONTRACT;  return dwDisableStackwalkCache; }
 
     bool    StressLog()                     const { LIMITED_METHOD_CONTRACT; return fStressLog; }
     bool    ForceEnc()                      const { LIMITED_METHOD_CONTRACT; return fForceEnc; }
@@ -469,6 +461,7 @@ private: //----------------------------------------------------------------
     bool fJitFramed;                   // Enable/Disable EBP based frames
     bool fJitMinOpts;                  // Enable MinOpts for all jitted methods
     bool fJitEnableOptionalRelocs;     // Allow optional relocs
+    bool fDisableOptimizedThreadStaticAccess; // Disable OptimizedThreadStatic access
 
     unsigned iJitOptimizeType; // 0=Blended,1=SmallCode,2=FastCode,              default is 0=Blended
 
@@ -580,6 +573,8 @@ private: //----------------------------------------------------------------
     bool iGCAllowVeryLargeObjects;
 #endif // HOST_64BIT
 
+    bool fCheckDoubleReporting;
+
     bool fGCBreakOnOOM;
 
 #ifdef _DEBUG
@@ -594,15 +589,9 @@ private: //----------------------------------------------------------------
     // Assemblies which cannot use Ready to Run images.
     AssemblyNamesList * pReadyToRunExcludeList;
 
-    bool fNgenBindOptimizeNonGac;
-
     bool fStressLog;
     bool fForceEnc;
     bool fDebugAssembliesModifiable;
-    bool fProbeForStackOverflow;
-
-    // Stackwalk optimization flag
-    DWORD dwDisableStackwalkCache;
 
 #ifdef _DEBUG
     // interop logging

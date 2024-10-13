@@ -1,0 +1,6 @@
+<linker>
+  <assembly fullname="System" />
+  <assembly fullname="System.Private.CoreLib" />
+  <assembly fullname="System.Configuration" />
+  <assembly fullname="System.Configuration.ConfigurationManager" />
+</linker>

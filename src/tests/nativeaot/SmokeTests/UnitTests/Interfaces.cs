@@ -42,6 +42,7 @@ public class Interfaces
         TestVariantInterfaceOptimizations.Run();
         TestSharedInterfaceMethods.Run();
         TestGenericAnalysis.Run();
+        TestRuntime108229Regression.Run();
         TestCovariantReturns.Run();
         TestDynamicInterfaceCastable.Run();
         TestStaticInterfaceMethodsAnalysis.Run();
@@ -705,6 +706,27 @@ public class Interfaces
         }
     }
 
+    class TestRuntime108229Regression
+    {
+        class Shapeshifter : IDynamicInterfaceCastable
+        {
+            public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType) => throw new NotImplementedException();
+            public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented) => true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool Is(object o) => o is IEnumerable<object>;
+
+        public static void Run()
+        {
+            object o = new Shapeshifter();
+
+            // Call multiple times in case we just flushed the cast cache (when we flush we don't store).
+            if (!Is(o) || !Is(o) || !Is(o))
+                throw new Exception();
+        }
+    }
+
     class TestCovariantReturns
     {
         interface IFoo
@@ -886,6 +908,16 @@ public class Interfaces
         [DynamicInterfaceCastableImplementation]
         interface IInterfaceIndirectCastableImpl : IInterfaceImpl { }
 
+        interface IInterfaceImpl<T> : IInterface
+        {
+            string IInterface.GetCookie() => typeof(T).Name;
+        }
+
+        [DynamicInterfaceCastableImplementation]
+        interface IInterfaceIndirectCastableImpl<T> : IInterfaceImpl<T> { }
+
+        class Atom { }
+
         public static void Run()
         {
             Console.WriteLine("Testing IDynamicInterfaceCastable...");
@@ -920,6 +952,18 @@ public class Interfaces
             {
                 IInterface o = (IInterface)new CastableClass<IInterface, IInterfaceCastableImpl<int>>();
                 if (o.GetCookie() != "Int32")
+                    throw new Exception();
+            }
+
+            {
+                IInterface o = (IInterface)new CastableClass<IInterface, IInterfaceCastableImpl<Atom>>();
+                if (o.GetCookie() != "Atom")
+                    throw new Exception();
+            }
+
+            {
+                IInterface o = (IInterface)new CastableClass<IInterface, IInterfaceIndirectCastableImpl<Atom>>();
+                if (o.GetCookie() != "Atom")
                     throw new Exception();
             }
         }
@@ -1583,11 +1627,13 @@ public class Interfaces
         [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType - Intentional")]
         public static void Run()
         {
-            var r = (string)typeof(Gen<>).MakeGenericType(typeof(Baz)).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            var r = (string)typeof(Gen<>).MakeGenericType(GetBaz()).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            static Type GetBaz() => typeof(Baz);
             if (r != "IBar")
                 throw new Exception(r);
 
-            r = (string)typeof(Gen<>).MakeGenericType(typeof(IBar)).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            r = (string)typeof(Gen<>).MakeGenericType(GetIBar()).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            static Type GetIBar() => typeof(IBar);
             if (r != "IBar")
                 throw new Exception(r);
         }
@@ -1620,15 +1666,18 @@ public class Interfaces
         [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType - Intentional")]
         public static void Run()
         {
-            Activator.CreateInstance(typeof(Baz<>).MakeGenericType(typeof(Atom1)));
+            Activator.CreateInstance(typeof(Baz<>).MakeGenericType(GetAtom1()));
 
-            var r = (string)typeof(Gen<>).MakeGenericType(typeof(Baz<>).MakeGenericType(typeof(Atom1))).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            var r = (string)typeof(Gen<>).MakeGenericType(typeof(Baz<>).MakeGenericType(GetAtom1())).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
             if (r != "IBar<Atom1>")
                 throw new Exception(r);
 
-            r = (string)typeof(Gen<>).MakeGenericType(typeof(IBar<>).MakeGenericType(typeof(Atom2))).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            r = (string)typeof(Gen<>).MakeGenericType(typeof(IBar<>).MakeGenericType(GetAtom2())).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
             if (r != "IBar<Atom2>")
                 throw new Exception(r);
+
+            static Type GetAtom1() => typeof(Atom1);
+            static Type GetAtom2() => typeof(Atom2);
         }
     }
 

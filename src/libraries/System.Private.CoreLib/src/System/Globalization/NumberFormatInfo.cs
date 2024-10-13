@@ -39,7 +39,7 @@ namespace System.Globalization
     /// </remarks>
     public sealed class NumberFormatInfo : IFormatProvider, ICloneable
     {
-        private static volatile NumberFormatInfo? s_invariantInfo;
+        private static NumberFormatInfo? s_invariantInfo;
         internal static readonly string[] s_asciiDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
         internal static readonly int[] s_intArrayWithElement3 = [3];
 
@@ -269,8 +269,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(_currencyDecimalSeparator) :
-                MemoryMarshal.Cast<byte, TChar>(_currencyDecimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_currencyDecimalSeparator));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_currencyDecimalSeparator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_currencyDecimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_currencyDecimalSeparator));
         }
 
         public bool IsReadOnly => _isReadOnly;
@@ -361,8 +361,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(_currencyGroupSeparator) :
-                MemoryMarshal.Cast<byte, TChar>(_currencyGroupSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_currencyGroupSeparator));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_currencyGroupSeparator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_currencyGroupSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_currencyGroupSeparator));
         }
 
         public string CurrencySymbol
@@ -383,8 +383,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(_currencySymbol) :
-                MemoryMarshal.Cast<byte, TChar>(_currencySymbolUtf8 ??= Encoding.UTF8.GetBytes(_currencySymbol));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_currencySymbol) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_currencySymbolUtf8 ??= Encoding.UTF8.GetBytes(_currencySymbol));
         }
 
         internal byte[]? CurrencySymbolUtf8 => _currencySymbolUtf8 ??= Encoding.UTF8.GetBytes(_currencySymbol);
@@ -429,8 +429,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(_nanSymbol) :
-                MemoryMarshal.Cast<byte, TChar>(_nanSymbolUtf8 ??= Encoding.UTF8.GetBytes(_nanSymbol));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_nanSymbol) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_nanSymbolUtf8 ??= Encoding.UTF8.GetBytes(_nanSymbol));
         }
 
         public int CurrencyNegativePattern
@@ -514,8 +514,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(_negativeInfinitySymbol) :
-                MemoryMarshal.Cast<byte, TChar>(_negativeInfinitySymbolUtf8 ??= Encoding.UTF8.GetBytes(_negativeInfinitySymbol));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_negativeInfinitySymbol) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_negativeInfinitySymbolUtf8 ??= Encoding.UTF8.GetBytes(_negativeInfinitySymbol));
         }
 
         public string NegativeSign
@@ -537,8 +537,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(_negativeSign) :
-                MemoryMarshal.Cast<byte, TChar>(_negativeSignUtf8 ??= Encoding.UTF8.GetBytes(_negativeSign));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_negativeSign) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_negativeSignUtf8 ??= Encoding.UTF8.GetBytes(_negativeSign));
         }
 
         public int NumberDecimalDigits
@@ -573,8 +573,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(_numberDecimalSeparator) :
-                MemoryMarshal.Cast<byte, TChar>(_numberDecimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_numberDecimalSeparator));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_numberDecimalSeparator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_numberDecimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_numberDecimalSeparator));
         }
 
         public string NumberGroupSeparator
@@ -594,8 +594,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(_numberGroupSeparator) :
-                MemoryMarshal.Cast<byte, TChar>(_numberGroupSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_numberGroupSeparator));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_numberGroupSeparator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_numberGroupSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_numberGroupSeparator));
         }
 
         public int CurrencyPositivePattern
@@ -631,8 +631,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(_positiveInfinitySymbol) :
-                MemoryMarshal.Cast<byte, TChar>(_positiveInfinitySymbolUtf8 ??= Encoding.UTF8.GetBytes(_positiveInfinitySymbol));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_positiveInfinitySymbol) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_positiveInfinitySymbolUtf8 ??= Encoding.UTF8.GetBytes(_positiveInfinitySymbol));
         }
 
         public string PositiveSign
@@ -654,8 +654,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(_positiveSign) :
-                MemoryMarshal.Cast<byte, TChar>(_positiveSignUtf8 ??= Encoding.UTF8.GetBytes(_positiveSign));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_positiveSign) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_positiveSignUtf8 ??= Encoding.UTF8.GetBytes(_positiveSign));
         }
 
         public int PercentDecimalDigits
@@ -690,8 +690,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(_percentDecimalSeparator) :
-                MemoryMarshal.Cast<byte, TChar>(_percentDecimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_percentDecimalSeparator));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_percentDecimalSeparator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_percentDecimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_percentDecimalSeparator));
         }
 
         public string PercentGroupSeparator
@@ -711,8 +711,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(_percentGroupSeparator) :
-                MemoryMarshal.Cast<byte, TChar>(_percentGroupSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_percentGroupSeparator));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_percentGroupSeparator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_percentGroupSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_percentGroupSeparator));
         }
 
         public string PercentSymbol
@@ -732,8 +732,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(_percentSymbol) :
-                MemoryMarshal.Cast<byte, TChar>(_percentSymbolUtf8 ??= Encoding.UTF8.GetBytes(_percentSymbol));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_percentSymbol) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_percentSymbolUtf8 ??= Encoding.UTF8.GetBytes(_percentSymbol));
         }
 
         public string PerMilleSymbol
@@ -754,8 +754,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(_perMilleSymbol) :
-                MemoryMarshal.Cast<byte, TChar>(_perMilleSymbolUtf8 ??= Encoding.UTF8.GetBytes(_perMilleSymbol));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_perMilleSymbol) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_perMilleSymbolUtf8 ??= Encoding.UTF8.GetBytes(_perMilleSymbol));
         }
 
         public string[] NativeDigits

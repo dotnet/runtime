@@ -17,7 +17,7 @@ export interface CommonSocket {
 
 type AssignableTo<T, Q> = Q extends T ? true : false;
 
-function static_assert<Cond extends boolean>(x: Cond): asserts x is Cond { /*empty*/ }
+function static_assert<Cond extends boolean> (x: Cond): asserts x is Cond { /*empty*/ }
 
 {
     static_assert<AssignableTo<CommonSocket, WebSocket>>(true);

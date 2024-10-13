@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("ReadyToRunInstructionSets_");
+            sb.Append("ReadyToRunInstructionSets_"u8);
             sb.Append(_instructionSetsSupport);
         }
 

@@ -223,7 +223,7 @@ namespace System.Linq
                 _second = second;
             }
 
-            public override Iterator<TSource> Clone() => new UnionIterator2<TSource>(_first, _second, _comparer);
+            private protected override Iterator<TSource> Clone() => new UnionIterator2<TSource>(_first, _second, _comparer);
 
             internal override IEnumerable<TSource>? GetEnumerable(int index)
             {
@@ -262,7 +262,7 @@ namespace System.Linq
                 _headIndex = headIndex;
             }
 
-            public override Iterator<TSource> Clone() => new UnionIteratorN<TSource>(_sources, _headIndex, _comparer);
+            private protected override Iterator<TSource> Clone() => new UnionIteratorN<TSource>(_sources, _headIndex, _comparer);
 
             internal override IEnumerable<TSource>? GetEnumerable(int index) => index > _headIndex ? null : _sources.GetNode(_headIndex - index).Item;
 

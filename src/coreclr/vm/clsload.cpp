@@ -836,27 +836,6 @@ void ClassLoader::EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
 #endif // DACCESS_COMPILE
 }
 
-/*static*/
-void ClassLoader::TryEnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifndef DACCESS_COMPILE // Nothing to do for the DAC case
-
-    EX_TRY
-    {
-        ClassLoader::EnsureLoaded(typeHnd, level);
-    }
-    EX_CATCH
-    {
-        // Some type may not load successfully. For eg. generic instantiations
-        // that do not satisfy the constraints of the type arguments.
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
-
-#endif // DACCESS_COMPILE
-}
-
 /* static */
 TypeHandle ClassLoader::LookupTypeKey(const TypeKey *pKey, EETypeHashTable *pTable)
 {
@@ -1615,12 +1594,6 @@ TypeHandle ClassLoader::LookupTypeDefOrRefInModule(ModuleBase *pModule, mdToken 
     RETURN(typeHandle);
 }
 
-DomainAssembly *ClassLoader::GetDomainAssembly()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetAssembly()->GetDomainAssembly();
-}
-
 #ifndef DACCESS_COMPILE
 
 //
@@ -1932,7 +1905,7 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
 #endif
             TRIGGERSGC();
 
-            if (pModule->IsReflection())
+            if (pModule->IsReflectionEmit())
             {
                 // Don't try to load types that are not in available table, when this
                 // is an in-memory module.  Raise the type-resolve event instead.
@@ -1958,17 +1931,17 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
                                                         className);
                         GCX_COOP();
                         ASSEMBLYREF asmRef = NULL;
-                        DomainAssembly *pDomainAssembly = NULL;
+                        Assembly* pAssembly = NULL;
                         GCPROTECT_BEGIN(asmRef);
 
-                        pDomainAssembly = pDomain->RaiseTypeResolveEventThrowing(
-                            pModule->GetAssembly()->GetDomainAssembly(),
+                        pAssembly = pDomain->RaiseTypeResolveEventThrowing(
+                            pModule->GetAssembly(),
                             pszFullName, &asmRef);
 
                         if (asmRef != NULL)
                         {
-                            _ASSERTE(pDomainAssembly != NULL);
-                            if (pDomainAssembly->GetAssembly()->GetLoaderAllocator()->IsCollectible())
+                            _ASSERTE(pAssembly != NULL);
+                            if (pAssembly->GetLoaderAllocator()->IsCollectible())
                             {
                                 if (!pModule->GetLoaderAllocator()->IsCollectible())
                                 {
@@ -1976,14 +1949,12 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
                                     COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
                                 }
 
-                                pModule->GetLoaderAllocator()->EnsureReference(pDomainAssembly->GetAssembly()->GetLoaderAllocator());
+                                pModule->GetLoaderAllocator()->EnsureReference(pAssembly->GetLoaderAllocator());
                             }
                         }
                         GCPROTECT_END();
-                        if (pDomainAssembly != NULL)
+                        if (pAssembly != NULL)
                         {
-                            Assembly *pAssembly = pDomainAssembly->GetAssembly();
-
                             NameHandle name(nameSpace, className);
                             name.SetTypeToken(pModule, typeDef);
                             name.SetTokenNotToLoad(tdAllAssemblies);
@@ -2151,7 +2122,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
                         nameHandle.SetTokenNotToLoad(tokenNotToLoad);
                         typeHnd = pFoundModule->GetClassLoader()->
                             LoadTypeHandleThrowIfFailed(&nameHandle, level,
-                                                        pFoundModule->IsFullModule() ? (static_cast<Module*>(pFoundModule)->IsReflection() ? NULL : static_cast<Module*>(pFoundModule)) : NULL);
+                                                        pFoundModule->IsFullModule() ? (static_cast<Module*>(pFoundModule)->IsReflectionEmit() ? NULL : static_cast<Module*>(pFoundModule)) : NULL);
                     }
                 }
 
@@ -2326,7 +2297,7 @@ ClassLoader::ResolveNameToTypeDefThrowing(
             &pFoundModule,
             &foundExportedType,
             NULL,
-            pSourceModule->IsReflection() ? NULL : pSourceModule,
+            pSourceModule->IsReflectionEmit() ? NULL : pSourceModule,
             loadFlag))
         {
             RETURN FALSE;
@@ -2703,7 +2674,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMem
         DWORD numArgs = pKey->GetNumArgs();
         BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(FnPtrTypeDesc)) + S_SIZE_T(sizeof(TypeHandle)) * S_SIZE_T(numArgs)));
 
-        typeHnd = TypeHandle(new(mem)  FnPtrTypeDesc(pKey->GetCallConv(), numArgs, pKey->GetRetAndArgTypes()));
+        typeHnd = TypeHandle(new(mem)  FnPtrTypeDesc(pKey->GetCallConv(), numArgs, pKey->GetRetAndArgTypes(), pLoaderModule));
     }
     else
     {
@@ -2783,6 +2754,16 @@ TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
     }
     CONTRACTL_END;
 
+#ifdef _DEBUG
+    if (!typeHnd.IsTypeDesc())
+    {
+        // The IsPublished flag is used by various asserts to assure that allocations of
+        // MethodTable associated memory which do not use the AllocMemTracker of the MethodTableBuilder
+        // aren't permitted until the MethodTable is in a state where the MethodTable object
+        // cannot be freed (except by freeing an entire LoaderAllocator)
+        typeHnd.AsMethodTable()->GetAuxiliaryDataForWrite()->SetIsPublished();
+    }
+#endif
 
     if (pTypeKey->IsConstructed())
     {
@@ -3065,7 +3046,7 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKeyNoLock(const TypeKey *pTypeKey,
 //
 class PendingTypeLoadHolder
 {
-    Thread * m_pThread;
+    static thread_local PendingTypeLoadHolder * t_pCurrent;
     PendingTypeLoadTable::Entry * m_pEntry;
     PendingTypeLoadHolder * m_pPrevious;
 
@@ -3074,26 +3055,25 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_pThread = GetThread();
         m_pEntry = pEntry;
 
-        m_pPrevious = m_pThread->GetPendingTypeLoad();
-        m_pThread->SetPendingTypeLoad(this);
+        m_pPrevious = t_pCurrent;
+        t_pCurrent = this;
     }
 
     ~PendingTypeLoadHolder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(m_pThread->GetPendingTypeLoad() == this);
-        m_pThread->SetPendingTypeLoad(m_pPrevious);
+        _ASSERTE(t_pCurrent == this);
+        t_pCurrent = m_pPrevious;
     }
 
     static bool CheckForDeadLockOnCurrentThread(PendingTypeLoadTable::Entry * pEntry)
     {
         LIMITED_METHOD_CONTRACT;
 
-        PendingTypeLoadHolder * pCurrent = GetThread()->GetPendingTypeLoad();
+        PendingTypeLoadHolder * pCurrent = t_pCurrent;
 
         while (pCurrent != NULL)
         {
@@ -3106,6 +3086,8 @@ public:
         return false;
     }
 };
+
+thread_local PendingTypeLoadHolder * PendingTypeLoadHolder::t_pCurrent = NULL;
 
 //---------------------------------------------------------------------------------------
 //

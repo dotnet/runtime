@@ -555,7 +555,7 @@ namespace System.DirectoryServices.Protocols
             {
                 // build server control
                 managedServerControls = LdapConnection.BuildControlArray(controls, true);
-                int structSize = Marshal.SizeOf(typeof(LdapControl));
+                int structSize = Marshal.SizeOf<LdapControl>();
                 if (managedServerControls != null)
                 {
                     serverControlArray = Utility.AllocHGlobalIntPtrArray(managedServerControls.Length + 1);
@@ -848,7 +848,7 @@ namespace System.DirectoryServices.Protocols
         {
             LdapReferralCallback value = new LdapReferralCallback()
             {
-                sizeofcallback = Marshal.SizeOf(typeof(LdapReferralCallback)),
+                sizeofcallback = Marshal.SizeOf<LdapReferralCallback>(),
                 query = tempCallback.QueryForConnection == null ? null : _queryDelegate,
                 notify = tempCallback.NotifyNewConnection == null ? null : _notifiyDelegate,
                 dereference = tempCallback.DereferenceConnection == null ? null : _dereferenceDelegate

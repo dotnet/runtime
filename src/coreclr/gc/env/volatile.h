@@ -161,16 +161,16 @@ T VolatileLoad(T const * pt)
     switch (sizeof(T))
     {
     case 1:
-        *(unsigned __int8* )pv = __ldar8 ((unsigned __int8   volatile*)pt);
+        *(uint8_t* )pv = __ldar8 ((uint8_t   volatile*)pt);
         break;
     case 2:
-        *(unsigned __int16*)pv = __ldar16((unsigned __int16  volatile*)pt);
+        *(uint16_t*)pv = __ldar16((uint16_t  volatile*)pt);
         break;
     case 4:
-        *(unsigned __int32*)pv = __ldar32((unsigned __int32  volatile*)pt);
+        *(uint32_t*)pv = __ldar32((uint32_t  volatile*)pt);
         break;
     case 8:
-        *(unsigned __int64*)pv = __ldar64((unsigned __int64  volatile*)pt);
+        *(uint64_t*)pv = __ldar64((uint64_t  volatile*)pt);
         break;
     default:
         val = *(T volatile const*)pt;
@@ -240,16 +240,16 @@ void VolatileStore(T* pt, T val)
     switch (sizeof(T))
     {
     case 1:
-        __stlr8 ((unsigned __int8  volatile*)pt, *(unsigned __int8* )pv);
+        __stlr8 ((uint8_t  volatile*)pt, *(uint8_t* )pv);
         break;
     case 2:
-        __stlr16((unsigned __int16 volatile*)pt, *(unsigned __int16*)pv);
+        __stlr16((uint16_t volatile*)pt, *(uint16_t*)pv);
         break;
     case 4:
-        __stlr32((unsigned __int32 volatile*)pt, *(unsigned __int32*)pv);
+        __stlr32((uint32_t volatile*)pt, *(uint32_t*)pv);
         break;
     case 8:
-        __stlr64((unsigned __int64 volatile*)pt, *(unsigned __int64*)pv);
+        __stlr64((uint64_t volatile*)pt, *(uint64_t*)pv);
         break;
     default:
         __dmb(_ARM64_BARRIER_ISH);

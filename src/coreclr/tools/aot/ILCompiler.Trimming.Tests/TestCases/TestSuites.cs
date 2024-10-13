@@ -74,6 +74,7 @@ namespace Mono.Linker.Tests.TestCases
 			case "ParametersUsedViaReflection":
 			case "UnsafeAccessor":
 			case "TypeUsedViaReflection":
+			case "RunClassConstructor":
 				Run (t);
 				break;
 			default:
@@ -101,6 +102,20 @@ namespace Mono.Linker.Tests.TestCases
 		public void SingleFile (string t)
 		{
 			Run (t);
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.Substitutions), MemberType = typeof (TestDatabase))]
+		public void Substitutions (string t)
+		{
+			switch (t) {
+			case "FeatureGuardSubstitutions":
+				Run (t);
+				break;
+			default:
+				// Skip the rest for now
+				break;
+			}
 		}
 
 		[Theory]

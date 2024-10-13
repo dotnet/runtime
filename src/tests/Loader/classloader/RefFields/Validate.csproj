@@ -4,6 +4,8 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <MonoAotIncompatible>true</MonoAotIncompatible>
+    <!-- Make sure that invalid operations are not optimized out by Roslyn -->
+    <Optimize>false</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Validate.cs" />

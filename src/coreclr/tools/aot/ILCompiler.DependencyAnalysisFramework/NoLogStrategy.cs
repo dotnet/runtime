@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysisFramework
     /// <typeparam name="DependencyContextType"></typeparam>
     public struct NoLogStrategy<DependencyContextType> : IDependencyAnalysisMarkStrategy<DependencyContextType>
     {
-        private static object s_singleton = new object();
+        private static readonly object s_singleton = new object();
 
         bool IDependencyAnalysisMarkStrategy<DependencyContextType>.MarkNode(
             DependencyNodeCore<DependencyContextType> node,

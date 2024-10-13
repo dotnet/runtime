@@ -135,18 +135,6 @@ typedef enum tagEFaultRepRetVal
 
 #include "pal.h"
 
-#ifndef PAL_STDCPP_COMPAT
-#ifdef __cplusplus
-#ifndef __PLACEMENT_NEW_INLINE
-#define __PLACEMENT_NEW_INLINE
-inline void *__cdecl operator new(size_t, void *_P)
-{
-    return (_P);
-}
-#endif // __PLACEMENT_NEW_INLINE
-#endif // __cplusplus
-#endif // !PAL_STDCPP_COMPAT
-
 #include <pal_assert.h>
 
 #define NTAPI       __cdecl
@@ -280,9 +268,7 @@ typedef union _ULARGE_INTEGER {
         DWORD HighPart;
 #endif
     }
-#ifndef PAL_STDCPP_COMPAT
     u
-#endif // PAL_STDCPP_COMPAT
      ;
     ULONGLONG QuadPart;
 } ULARGE_INTEGER, *PULARGE_INTEGER;
@@ -729,8 +715,6 @@ typename std::remove_reference<T>::type&& move( T&& t );
 #define __RPC__in_xcount(x)
 #define __RPC__inout
 #define __RPC__deref_out_ecount_full_opt(x)
-
-typedef DWORD OLE_COLOR;
 
 typedef HANDLE HWND;
 

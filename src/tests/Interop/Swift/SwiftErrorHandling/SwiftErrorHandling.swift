@@ -37,3 +37,11 @@ public func getMyErrorMessage(from error: Error, messageLength: inout Int32) -> 
 public func freeStringBuffer(buffer: UnsafeMutablePointer<unichar>) {
     buffer.deallocate()
 }
+
+public func nativeFunctionWithCallback(setError: Int32, _ callback: (Int32) -> Void) {
+    callback(setError)
+}
+
+public func nativeFunctionWithCallback(value: Int32, setError: Int32, _ callback: (Int32, Int32) -> Int32) -> Int32 {
+    return callback(value, setError)
+}

@@ -74,7 +74,7 @@ namespace Internal.TypeSystem.Ecma
                 return result;
             }
 
-            public ManagedBinaryEmitterForInternalUse(AssemblyName assemblyName,
+            public ManagedBinaryEmitterForInternalUse(AssemblyNameInfo assemblyName,
                                                       TypeSystemContext typeSystemContext,
                                                       AssemblyFlags assemblyFlags,
                                                       byte[] publicKeyArray,
@@ -166,9 +166,7 @@ namespace Internal.TypeSystem.Ecma
             private void ResetEmitter()
             {
                 _reader = null;
-                AssemblyName assemblyName = new AssemblyName();
-                assemblyName.Name = _assemblyName;
-                assemblyName.Version = _version;
+                AssemblyNameInfo assemblyName = new AssemblyNameInfo(name: _assemblyName, version: _version);
 
                 _currentBinaryEmitter = new ManagedBinaryEmitterForInternalUse(assemblyName, _module.Context, _assemblyFlags, _publicKeyArray, _hashAlgorithm, _moduleToIndex, _module);
                 foreach (var entry in _values)
@@ -298,7 +296,7 @@ namespace Internal.TypeSystem.Ecma
             _cache = new Cache(this, assemblyName, assemblyFlags, publicKeyArray, version, hashAlgorithm, moduleToIndex);
             TryGetHandle = _cache.CreateCacheFunc<TypeSystemEntity>(GetHandleForTypeSystemEntity);
             TryGetStringHandle = _cache.CreateCacheFunc<string>(GetUserStringHandle);
-            TryGetAssemblyRefHandle = _cache.CreateCacheFunc<AssemblyName>(GetAssemblyRefHandle);
+            TryGetAssemblyRefHandle = _cache.CreateCacheFunc<AssemblyNameInfo>(GetAssemblyRefHandle);
         }
 
         class DisableNewTokensException : Exception { }
@@ -320,12 +318,12 @@ namespace Internal.TypeSystem.Ecma
 
         private int GetAssemblyRefHandle(TypeSystemMetadataEmitter emitter, object name)
         {
-            return MetadataTokens.GetToken(emitter.GetAssemblyRef((AssemblyName)name));
+            return MetadataTokens.GetToken(emitter.GetAssemblyRef((AssemblyNameInfo)name));
         }
 
         public Func<TypeSystemEntity, int?> TryGetHandle { get; }
         public Func<string, int?> TryGetStringHandle { get; }
-        public Func<AssemblyName, int?> TryGetAssemblyRefHandle { get; }
+        public Func<AssemblyNameInfo, int?> TryGetAssemblyRefHandle { get; }
         public EntityHandle? TryGetEntityHandle(TypeSystemEntity tse)
         {
             var handle = TryGetHandle(tse);

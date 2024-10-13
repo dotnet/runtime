@@ -199,8 +199,8 @@ CrashInfo::GatherCrashInfo(DumpType dumpType)
     {
         return false;
     }
-    // Add the special (fake) memory region for the special diagnostics info
-    MemoryRegion special(PF_R, SpecialDiagInfoAddress, SpecialDiagInfoAddress + PAGE_SIZE);
+    // Add the special (fake) memory region for the special diagnostics info. Use constructor that doesn't assert PAGE_SIZE alignment.
+    MemoryRegion special(PF_R, SpecialDiagInfoAddress, SpecialDiagInfoAddress + SpecialDiagInfoSize, /* offset */ 0);
     m_memoryRegions.insert(special);
 #ifdef __APPLE__
     InitializeOtherMappings();
@@ -319,7 +319,14 @@ CrashInfo::InitializeDAC(DumpType dumpType)
     m_dacModule = dlopen(dacPath.c_str(), RTLD_LAZY);
     if (m_dacModule == nullptr)
     {
-        printf_error("InitializeDAC: dlopen(%s) FAILED %s\n", dacPath.c_str(), dlerror());
+        if (m_appModel == AppModelType::SingleFile)
+        {
+            printf_error("Only full dumps are supported by single file apps. Change the dump type to full (DOTNET_DbgMiniDumpType=4)\n");
+        }
+        else
+        {
+            printf_error("InitializeDAC: dlopen(%s) FAILED %s\n", dacPath.c_str(), dlerror());
+        }
         goto exit;
     }
     pfnDllMain = (PFN_DLLMAIN)dlsym(m_dacModule, "DllMain");
@@ -925,6 +932,17 @@ CrashInfo::SearchMemoryRegions(const std::set<MemoryRegion>& regions, const Memo
         }
     }
     return nullptr;
+}
+
+// Declare the prototype for the Itanium C++ ABI demangler API.
+// We may not have the Itanium C++ ABI header available even when we're building against this ABI
+// so we'll declare the prototype ourselves.
+// See Itanium C++ ABI, March 14, 2017 Revision, Chapter 3, Section 3.4
+namespace abi {
+  extern "C" char* __cxa_demangle (const char* mangled_name,
+				   char* buf,
+				   size_t* n,
+				   int* status);
 }
 
 //

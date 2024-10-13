@@ -58,10 +58,10 @@ namespace System.DirectoryServices
             /// Moves the pointer to the next value In the contained IEnumVariant, and
             /// stores the current value In currentValue.
             /// </devdoc>
-            private void Advance()
+            private unsafe void Advance()
             {
                 _currentValue = s_noMoreValues;
-                IntPtr addr = Marshal.AllocCoTaskMem(Marshal.SizeOf(typeof(Variant)));
+                IntPtr addr = Marshal.AllocCoTaskMem(sizeof(Variant));
                 try
                 {
                     int[] numRead = new int[] { 0 };

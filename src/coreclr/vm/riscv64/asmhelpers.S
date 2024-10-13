@@ -382,7 +382,7 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG  t4
 NESTED_END ThePreStub, _TEXT
 
-// ------------------------------------------------------------------\
+// ------------------------------------------------------------------
 
 // EXTERN_C int __fastcall HelperMethodFrameRestoreState(
 // INDEBUG_COMMA(HelperMethodFrame *pFrame)
@@ -477,19 +477,6 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
     EPILOG_BRANCH_REG  t4
 NESTED_END NDirectImportThunk, _TEXT
 
-// void SinglecastDelegateInvokeStub(Delegate *pThis)
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-    beq  a0, zero, LOCAL_LABEL(LNullThis)
-
-    ld  t4, (DelegateObject___methodPtr)(a0)
-    ld  a0, (DelegateObject___target)(a0)
-    jr  t4
-
-LOCAL_LABEL(LNullThis):
-    addi  a0, zero, CORINFO_NullReferenceException_ASM
-    tail JIT_InternalThrow
-LEAF_END SinglecastDelegateInvokeStub, _TEXT
-
 // ------------------------------------------------------------------
 // ThePreStubPatch()
 LEAF_ENTRY ThePreStubPatch, _TEXT
@@ -519,25 +506,6 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
     // and tailcall to the actual method
     EPILOG_BRANCH_REG t4
 NESTED_END TheUMEntryPrestub, _TEXT
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    addi  a2, a0, DomainLocalModule__m_pDataBlob
-    add  a2, a2, a1
-    lb  a2, 0(a2)
-    andi  t5, a2, 1
-    beq  t5, zero, LOCAL_LABEL(JIT_GetSharedGCStaticBase_SingleAppDomain_CallHelper)
-
-    ld  a0, DomainLocalModule__m_pGCStatics(a0)
-    ret
-
-LOCAL_LABEL(JIT_GetSharedGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call JIT_GetSharedGCStaticBase_Helper
-    call  JIT_GetSharedGCStaticBase_Helper
-LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
 
 // Make sure the `FaultingExceptionFrame_StackAlloc` is 16-byte aligned.
 #define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame + 0x8)
@@ -667,43 +635,28 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG  t4
 NESTED_END ResolveWorkerAsmStub, _TEXT
 
-// ------------------------------------------------------------------
-// void* JIT_GetSharedNonGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-    ret
-LEAF_END JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-    ld  a0, (DomainLocalModule__m_pGCStatics)(a0)
-    ret
-LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-
 #ifdef FEATURE_HIJACK
 // ------------------------------------------------------------------
 // Hijack function for functions which return a scalar type or a struct (value type)
 NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 0x90
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 0xa0
 
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   s1, s2, 16
     PROLOG_SAVE_REG_PAIR   s3, s4, 32
     PROLOG_SAVE_REG_PAIR   s5, s6, 48
     PROLOG_SAVE_REG_PAIR   s7, s8, 64
-    PROLOG_SAVE_REG_PAIR   s9, s10, 80 
-    PROLOG_SAVE_REG s11, 96
+    PROLOG_SAVE_REG_PAIR   s9, s10, 80
+    PROLOG_SAVE_REG_PAIR   s11, gp, 96
+    PROLOG_SAVE_REG        tp, 112
 
     // save any integral return value(s)
-    sd  a0, 104(sp)
-    sd  a1, 112(sp)
+    sd  a0, 120(sp)
+    sd  a1, 128(sp)
 
     // save any FP/HFA return value(s)
-    fsd  f0, 120(sp)
-    fsd  f1, 128(sp)
+    fsd  f0, 136(sp)
+    fsd  f1, 144(sp)
 
     addi  a0, sp, 0
     call  C_FUNC(OnHijackWorker)
@@ -711,20 +664,21 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // restore callee saved registers
 
     // restore any integral return value(s)
-    ld  a0, 104(sp)
-    ld  a1, 112(sp)
+    ld  a0, 120(sp)
+    ld  a1, 128(sp)
 
     // restore any FP/HFA return value(s)
-    fld  f0, 120(sp)
-    fld  f1, 128(sp)
+    fld  f0, 136(sp)
+    fld  f1, 144(sp)
 
     EPILOG_RESTORE_REG_PAIR   s1, s2, 16
     EPILOG_RESTORE_REG_PAIR   s3, s4, 32
     EPILOG_RESTORE_REG_PAIR   s5, s6, 48
     EPILOG_RESTORE_REG_PAIR   s7, s8, 64
     EPILOG_RESTORE_REG_PAIR   s9, s10, 80
-    EPILOG_RESTORE_REG  s11, 96 
-    EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x90
+    EPILOG_RESTORE_REG_PAIR   s11, gp, 96
+    EPILOG_RESTORE_REG        tp, 112
+    EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0xa0
     EPILOG_RETURN
 NESTED_END OnHijackTripThread, _TEXT
 
@@ -846,29 +800,39 @@ LEAF_END setFPReturn, _TEXT
 
 #endif // FEATURE_COMINTEROP
 
-//
-// JIT Static access helpers when coreclr host specifies single appdomain flag
-//
-
 // ------------------------------------------------------------------
-// void* JIT_GetSharedNonGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
+// void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
 
-LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
+LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
-    // dext a1, a1, 0, 32
-    addi  a2, a0, DomainLocalModule__m_pDataBlob
-
-    add a2, a2, a1
-    lb a2, 0(a2)
-    andi  t4, a2, 1
-    beq  t4, zero, LOCAL_LABEL(JIT_GetSharedNonGCStaticBase_SingleAppDomain_CallHelper)
-
+    ld a1, OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics(a0)
+    fence r,rw
+    bnez a1, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
+    mv  a0, a1
     ret
 
-LOCAL_LABEL(JIT_GetSharedNonGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call JIT_GetSharedNonGCStaticBase_Helper
-    tail  JIT_GetSharedNonGCStaticBase_Helper
-LEAF_END JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
+LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
+    // Tail call JIT_GetDynamicNonGCStaticBase_Portable
+    la a1, JIT_GetDynamicNonGCStaticBase_Portable
+    jr a1
+LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
+
+// ------------------------------------------------------------------
+// void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
+
+LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
+    // If class is not initialized, bail to C++ helper
+    ld a1, OFFSETOF__DynamicStaticsInfo__m_pGCStatics(a0)
+    fence r,rw
+    bnez a1, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
+    mv  a0, a1
+    ret
+
+LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
+    // Tail call JIT_GetDynamicGCStaticBase_Portable
+    la a1, JIT_GetDynamicGCStaticBase_Portable
+    jr a1
+LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
 #ifdef FEATURE_READYTORUN
 

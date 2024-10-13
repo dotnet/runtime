@@ -32,8 +32,8 @@ public class IcuShardingTests : BlazorWasmTestBase
                 id,
                 config,
                 WarnAsError: true,
-                GlobalizationMode: GlobalizationMode.PredefinedIcu,
-                PredefinedIcudt: fileName
+                GlobalizationMode: GlobalizationMode.Custom,
+                CustomIcuFile: fileName
             );
         AddItemsPropertiesToProject(
             projectFile,
@@ -65,8 +65,8 @@ public class IcuShardingTests : BlazorWasmTestBase
                     id,
                     config,
                     WarnAsError: false,
-                    GlobalizationMode: GlobalizationMode.PredefinedIcu,
-                    PredefinedIcudt: fileName
+                    GlobalizationMode: GlobalizationMode.Custom,
+                    CustomIcuFile: fileName
                 ));
         }
         catch (XunitException ex)
@@ -104,8 +104,8 @@ public class IcuShardingTests : BlazorWasmTestBase
                 id,
                 config,
                 WarnAsError: false,
-                GlobalizationMode: GlobalizationMode.PredefinedIcu,
-                PredefinedIcudt: IcuTestsBase.CustomIcuPath
+                GlobalizationMode: GlobalizationMode.Custom,
+                CustomIcuFile: IcuTestsBase.CustomIcuPath
             ));
         await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
     }

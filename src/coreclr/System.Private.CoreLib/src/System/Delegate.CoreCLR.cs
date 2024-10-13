@@ -57,7 +57,7 @@ namespace System
 
             if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
-            if (!(target is RuntimeType rtTarget))
+            if (target is not RuntimeType rtTarget)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
 
             // This API existed in v1/v1.1 and only expected to create open
@@ -81,7 +81,6 @@ namespace System
             return invoke.Invoke(this, BindingFlags.Default, null, args, null);
         }
 
-
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null || !InternalEqualTypes(this, obj))
@@ -103,9 +102,11 @@ namespace System
             {
                 if (d._methodPtrAux != IntPtr.Zero)
                     return false; // different delegate kind
+
                 // they are both closed over the first arg
                 if (_target != d._target)
                     return false;
+
                 // fall through method handle check
             }
             else
@@ -117,15 +118,15 @@ namespace System
                 /*
                 if (_methodPtr != d._methodPtr)
                     return false;
-                    */
+                */
 
                 if (_methodPtrAux == d._methodPtrAux)
                     return true;
+
                 // fall through method handle check
             }
 
             // method ptrs don't match, go down long path
-            //
             if (Cache.s_methodCache.TryGetValue(this, out object? thisCache) && thisCache is MethodInfo thisMethod &&
                 Cache.s_methodCache.TryGetValue(d, out object? otherCache) && otherCache is MethodInfo otherMethod)
                 return thisMethod.Equals(otherMethod);
@@ -164,6 +165,7 @@ namespace System
         {
             IRuntimeMethodInfo method = FindMethodHandle();
             RuntimeType? declaringType = RuntimeMethodHandle.GetDeclaringType(method);
+            
             // need a proper declaring type instance method on a generic type
             if (declaringType.IsGenericType)
             {
@@ -182,9 +184,9 @@ namespace System
                         // types at each step) until we find the declaring type. Since the declaring type
                         // we get from the method is probably shared and those in the hierarchy we're
                         // walking won't be we compare using the generic type definition forms instead.
-                        Type? currentType = _target!.GetType();
                         Type targetType = declaringType.GetGenericTypeDefinition();
-                        while (currentType != null)
+                        Type? currentType;
+                        for (currentType = _target!.GetType(); currentType != null; currentType = currentType.BaseType)
                         {
                             if (currentType.IsGenericType &&
                                 currentType.GetGenericTypeDefinition() == targetType)
@@ -192,18 +194,21 @@ namespace System
                                 declaringType = currentType as RuntimeType;
                                 break;
                             }
-                            currentType = currentType.BaseType;
                         }
 
                         // RCWs don't need to be "strongly-typed" in which case we don't find a base type
                         // that matches the declaring type of the method. This is fine because interop needs
                         // to work with exact methods anyway so declaringType is never shared at this point.
-                        Debug.Assert(currentType != null || _target.GetType().IsCOMObject, "The class hierarchy should declare the method");
+                        // The targetType may also be an interface with a Default interface method (DIM).
+                        Debug.Assert(
+                            currentType != null
+                            || _target.GetType().IsCOMObject
+                            || targetType.IsInterface, "The class hierarchy should declare the method or be a DIM");
                     }
                     else
                     {
                         // it's an open one, need to fetch the first arg of the instantiation
-                        MethodInfo invoke = GetType().GetMethod("Invoke")!;
+                        MethodInfo invoke = this.GetType().GetMethod("Invoke")!;
                         declaringType = (RuntimeType)invoke.GetParametersAsSpan()[0].ParameterType;
                     }
                 }
@@ -229,7 +234,7 @@ namespace System
             ArgumentNullException.ThrowIfNull(target);
             ArgumentNullException.ThrowIfNull(method);
 
-            if (!(type is RuntimeType rtType))
+            if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
             if (!rtType.IsDelegate())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
@@ -266,9 +271,9 @@ namespace System
 
             if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
-            if (!(type is RuntimeType rtType))
+            if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
-            if (!(target is RuntimeType rtTarget))
+            if (target is not RuntimeType rtTarget)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
 
             if (!rtType.IsDelegate())
@@ -299,10 +304,10 @@ namespace System
             ArgumentNullException.ThrowIfNull(type);
             ArgumentNullException.ThrowIfNull(method);
 
-            if (!(type is RuntimeType rtType))
+            if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
 
-            if (!(method is RuntimeMethodInfo rmi))
+            if (method is not RuntimeMethodInfo rmi)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(method));
 
             if (!rtType.IsDelegate())
@@ -334,10 +339,10 @@ namespace System
             ArgumentNullException.ThrowIfNull(type);
             ArgumentNullException.ThrowIfNull(method);
 
-            if (!(type is RuntimeType rtType))
+            if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
 
-            if (!(method is RuntimeMethodInfo rmi))
+            if (method is not RuntimeMethodInfo rmi)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(method));
 
             if (!rtType.IsDelegate())
@@ -372,7 +377,7 @@ namespace System
             if (method.IsNullHandle())
                 throw new ArgumentNullException(nameof(method));
 
-            if (!(type is RuntimeType rtType))
+            if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
 
             if (!rtType.IsDelegate())
@@ -479,14 +484,52 @@ namespace System
 
         // Used by the ctor. Do not call directly.
         // The name of this function will appear in managed stacktraces as delegate constructor.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void DelegateConstruct(object target, IntPtr slot);
+        private void DelegateConstruct(object target, IntPtr method)
+        {
+            // Via reflection you can pass in just about any value for the method.
+            // We can do some basic verification up front to prevent EE exceptions.
+            if (method == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(method));
+            }
+
+            Delegate _this = this;
+            Construct(ObjectHandleOnStack.Create(ref _this), ObjectHandleOnStack.Create(ref target), method);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_Construct")]
+        private static partial void Construct(ObjectHandleOnStack _this, ObjectHandleOnStack target, IntPtr method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern IntPtr GetMulticastInvoke();
+        private static extern unsafe void* GetMulticastInvoke(MethodTable* pMT);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMulticastInvokeSlow")]
+        private static unsafe partial void* GetMulticastInvokeSlow(MethodTable* pMT);
+
+        internal unsafe IntPtr GetMulticastInvoke()
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
+            void* ptr = GetMulticastInvoke(pMT);
+            if (ptr == null)
+            {
+                ptr = GetMulticastInvokeSlow(pMT);
+                Debug.Assert(ptr != null);
+                Debug.Assert(ptr == GetMulticastInvoke(pMT));
+            }
+            // No GC.KeepAlive() since the caller must keep instance alive to use returned pointer.
+            return (IntPtr)ptr;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern IntPtr GetInvokeMethod();
+        private static extern unsafe void* GetInvokeMethod(MethodTable* pMT);
+
+        internal unsafe IntPtr GetInvokeMethod()
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
+            void* ptr = GetInvokeMethod(pMT);
+            // No GC.KeepAlive() since the caller must keep instance alive to use returned pointer.
+            return (IntPtr)ptr;
+        }
 
         internal IRuntimeMethodInfo FindMethodHandle()
         {

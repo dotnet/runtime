@@ -45,7 +45,7 @@ namespace System.Net.Http.Headers
         public override string ToString() => _value switch
         {
             string value => value,
-            string[] values => string.Join(_header.Parser is HttpHeaderParser parser && parser.SupportsMultipleValues ? parser.Separator : HttpHeaderParser.DefaultSeparator, values),
+            string[] values => string.Join(_header.Separator, values),
             _ => string.Empty,
         };
 

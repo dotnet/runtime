@@ -32,17 +32,17 @@ export {
 export let pthread_self: PThreadSelf = null as any as PThreadSelf;
 
 class WorkerSelf implements PThreadSelf {
-    constructor(public info: PThreadInfo, public portToBrowser: MessagePort) {
+    constructor (public info: PThreadInfo, public portToBrowser: MessagePort) {
     }
 
-    postMessageToBrowser(message: MonoThreadMessage, transfer?: Transferable[]) {
+    postMessageToBrowser (message: MonoThreadMessage, transfer?: Transferable[]) {
         if (transfer) {
             this.portToBrowser.postMessage(message, transfer);
         } else {
             this.portToBrowser.postMessage(message);
         }
     }
-    addEventListenerFromBrowser(listener: (event: MessageEvent<MonoThreadMessage>) => void) {
+    addEventListenerFromBrowser (listener: (event: MessageEvent<MonoThreadMessage>) => void) {
         this.portToBrowser.addEventListener("message", listener);
     }
 }
@@ -56,7 +56,7 @@ class WorkerSelf implements PThreadSelf {
 export let currentWorkerThreadEvents: WorkerThreadEventTarget = undefined as any;
 
 // this is very very early in the worker startup
-export function initWorkerThreadEvents() {
+export function initWorkerThreadEvents () {
     // treeshake if threads are disabled
     currentWorkerThreadEvents = WasmEnableThreads ? new globalThis.EventTarget() : null as any as WorkerThreadEventTarget;
     Object.assign(monoThreadInfo, runtimeHelpers.monoThreadInfo);
@@ -64,11 +64,11 @@ export function initWorkerThreadEvents() {
 
 // this is the message handler for the worker that receives messages from the main thread
 // extend this with new cases as needed
-function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>): void {
-    mono_log_debug("got message from main on the dedicated channel", event.data);
+function monoDedicatedChannelMessageFromMainToWorker (event: MessageEvent<string>): void {
+    mono_log_debug(() => `got message from main on the dedicated channel ${event.data}`);
 }
 
-export function on_emscripten_thread_init(pthread_ptr: PThreadPtr) {
+export function on_emscripten_thread_init (pthread_ptr: PThreadPtr) {
     runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = pthread_ptr;
     forceThreadMemoryViewRefresh();
 }
@@ -76,7 +76,7 @@ export function on_emscripten_thread_init(pthread_ptr: PThreadPtr) {
 /// Called by emscripten when a pthread is setup to run on a worker.  Can be called multiple times
 /// for the same webworker, since emscripten can reuse workers.
 /// This is an implementation detail, that shouldn't be used directly.
-export function mono_wasm_pthread_on_pthread_created(): void {
+export function mono_wasm_pthread_on_pthread_created (): void {
     if (!WasmEnableThreads) return;
     try {
         forceThreadMemoryViewRefresh();
@@ -110,8 +110,7 @@ export function mono_wasm_pthread_on_pthread_created(): void {
             info: monoThreadInfo,
             port: mainPort,
         }, [mainPort]);
-    }
-    catch (err) {
+    } catch (err) {
         mono_log_error("mono_wasm_pthread_on_pthread_created () failed", err);
         loaderHelpers.mono_exit(1, err);
         throw err;
@@ -119,7 +118,7 @@ export function mono_wasm_pthread_on_pthread_created(): void {
 }
 
 /// Called in the worker thread (not main thread) from mono when a pthread becomes registered to the mono runtime.
-export function mono_wasm_pthread_on_pthread_registered(pthread_id: PThreadPtr): void {
+export function mono_wasm_pthread_on_pthread_registered (pthread_id: PThreadPtr): void {
     if (!WasmEnableThreads) return;
     try {
         mono_assert(monoThreadInfo !== null && monoThreadInfo.pthreadId == pthread_id, "expected monoThreadInfo to be set already when registering");
@@ -130,8 +129,7 @@ export function mono_wasm_pthread_on_pthread_registered(pthread_id: PThreadPtr):
             info: monoThreadInfo,
         });
         preRunWorker();
-    }
-    catch (err) {
+    } catch (err) {
         mono_log_error("mono_wasm_pthread_on_pthread_registered () failed", err);
         loaderHelpers.mono_exit(1, err);
         throw err;
@@ -139,7 +137,7 @@ export function mono_wasm_pthread_on_pthread_registered(pthread_id: PThreadPtr):
 }
 
 /// Called in the worker thread (not main thread) from mono when a pthread becomes attached to the mono runtime.
-export function mono_wasm_pthread_on_pthread_attached(pthread_id: PThreadPtr, thread_name: CharPtr, background_thread: number, threadpool_thread: number, external_eventloop: number, debugger_thread: number): void {
+export function mono_wasm_pthread_on_pthread_attached (pthread_id: PThreadPtr, thread_name: CharPtr, background_thread: number, threadpool_thread: number, external_eventloop: number, debugger_thread: number): void {
     if (!WasmEnableThreads) return;
     try {
         mono_assert(monoThreadInfo !== null && monoThreadInfo.pthreadId == pthread_id, "expected monoThreadInfo to be set already when attaching");
@@ -162,15 +160,14 @@ export function mono_wasm_pthread_on_pthread_attached(pthread_id: PThreadPtr, th
             monoCmd: WorkerToMainMessageType.monoAttached,
             info: monoThreadInfo,
         });
-    }
-    catch (err) {
+    } catch (err) {
         mono_log_error("mono_wasm_pthread_on_pthread_attached () failed", err);
         loaderHelpers.mono_exit(1, err);
         throw err;
     }
 }
 
-export function mono_wasm_pthread_set_name(name: CharPtr): void {
+export function mono_wasm_pthread_set_name (name: CharPtr): void {
     if (!WasmEnableThreads) return;
     if (!ENVIRONMENT_IS_PTHREAD) return;
     monoThreadInfo.threadName = utf8ToString(name);
@@ -182,7 +179,7 @@ export function mono_wasm_pthread_set_name(name: CharPtr): void {
 }
 
 /// Called in the worker thread (not main thread) from mono when a pthread becomes detached from the mono runtime.
-export function mono_wasm_pthread_on_pthread_unregistered(pthread_id: PThreadPtr): void {
+export function mono_wasm_pthread_on_pthread_unregistered (pthread_id: PThreadPtr): void {
     if (!WasmEnableThreads) return;
     try {
         mono_assert(pthread_id === monoThreadInfo.pthreadId, "expected pthread_id to match when un-registering");
@@ -195,15 +192,14 @@ export function mono_wasm_pthread_on_pthread_unregistered(pthread_id: PThreadPtr
             monoCmd: WorkerToMainMessageType.monoUnRegistered,
             info: monoThreadInfo,
         });
-    }
-    catch (err) {
+    } catch (err) {
         mono_log_error("mono_wasm_pthread_on_pthread_unregistered () failed", err);
         loaderHelpers.mono_exit(1, err);
         throw err;
     }
 }
 
-export function replaceEmscriptenTLSInit(modulePThread: PThreadLibrary): void {
+export function replaceEmscriptenTLSInit (modulePThread: PThreadLibrary): void {
     if (!WasmEnableThreads) return;
 
     const originalThreadInitTLS = modulePThread.threadInitTLS;
@@ -214,9 +210,9 @@ export function replaceEmscriptenTLSInit(modulePThread: PThreadLibrary): void {
     };
 }
 
-export function replaceEmscriptenPThreadInit(): void {
+export function replaceEmscriptenPThreadInit (): void {
     const original_emscripten_thread_init = Module["__emscripten_thread_init"];
-    function emscripten_thread_init_wrapper(pthread_ptr: PThreadPtr, isMainBrowserThread: number, isMainRuntimeThread: number, canBlock: number) {
+    function emscripten_thread_init_wrapper (pthread_ptr: PThreadPtr, isMainBrowserThread: number, isMainRuntimeThread: number, canBlock: number) {
         on_emscripten_thread_init(pthread_ptr);
         original_emscripten_thread_init(pthread_ptr, isMainBrowserThread, isMainRuntimeThread, canBlock);
         // re-install self

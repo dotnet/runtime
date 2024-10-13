@@ -45,7 +45,7 @@ void MulticoreJitCodeStorage::Init()
     CONTRACTL
     {
         THROWS;
-        MODE_ANY;   // called from BaseDomain::Init which is MODE_ANY
+        MODE_ANY;   // called from SystemDomain::Attach which is MODE_ANY
     }
     CONTRACTL_END;
 
@@ -444,7 +444,7 @@ bool MulticoreJitManager::IsSupportedModule(Module * pModule, bool fMethodJit)
     PEAssembly * pPEAssembly = pModule->GetPEAssembly();
 
     // dynamic module.
-    if (pPEAssembly->IsDynamic()) // Ignore dynamic modules
+    if (pPEAssembly->IsReflectionEmit()) // Ignore dynamic modules
     {
         return false;
     }
@@ -534,7 +534,7 @@ MulticoreJitCodeInfo::MulticoreJitCodeInfo(PCODE entryPoint, const MulticoreJitP
     WRAPPER_NO_CONTRACT;
 
     m_entryPointAndTierInfo = PCODEToPINSTR(entryPoint);
-    _ASSERTE(m_entryPointAndTierInfo != NULL);
+    _ASSERTE(m_entryPointAndTierInfo != (TADDR)NULL);
     _ASSERTE((m_entryPointAndTierInfo & (TADDR)TierInfo::Mask) == 0);
 
 #ifdef FEATURE_TIERED_COMPILATION
@@ -780,13 +780,13 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleInfoRecord(unsigned moduleTo, uns
                 assemblyName.SetASCII(mod.m_pRecord->GetAssemblyName(), mod.m_pRecord->AssemblyNameLen());
 
                 // Load the assembly.
-                DomainAssembly * pDomainAssembly = LoadAssembly(assemblyName);
+                Assembly * pAssembly = LoadAssembly(assemblyName);
 
-                if (pDomainAssembly)
+                if (pAssembly)
                 {
                     // If we successfully loaded the assembly, enumerate the modules in the assembly
                     // and update all modules status.
-                    moduleEnumerator.HandleAssembly(pDomainAssembly);
+                    moduleEnumerator.HandleAssembly(pAssembly);
 
                     if (mod.m_pModule == NULL)
                     {
@@ -819,7 +819,7 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleInfoRecord(unsigned moduleTo, uns
     return hr;
 }
 
-DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
+Assembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
 {
     STANDARD_VM_CONTRACT;
 
@@ -839,7 +839,7 @@ DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
     }
 
     // Bind and load the assembly.
-    return spec.LoadDomainAssembly(
+    return spec.LoadAssembly(
         FILE_LOADED,
         FALSE); // Don't throw on FileNotFound.
 }
@@ -966,7 +966,7 @@ void MulticoreJitProfilePlayer::CompileMethodInfoRecord(Module *pModule, MethodD
             }
         }
 
-        if (pMethod->GetNativeCode() == NULL && !GetAppDomain()->GetMulticoreJitManager().GetMulticoreJitCodeStorage().LookupMethodCode(pMethod))
+        if (pMethod->GetNativeCode() == (PCODE)NULL && !GetAppDomain()->GetMulticoreJitManager().GetMulticoreJitCodeStorage().LookupMethodCode(pMethod))
         {
             if (CompileMethodDesc(pModule, pMethod))
             {
@@ -1132,7 +1132,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     MulticoreJitTrace(("PlayProfile %d bytes in (%s)",
         nSize,
-        GetAppDomain()->GetFriendlyNameForLogging()));
+        GetAppDomain()->GetFriendlyName()));
 
     while ((SUCCEEDED(hr)) && (nSize > sizeof(unsigned)))
     {

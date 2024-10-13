@@ -28,8 +28,6 @@ struct EHEnum
 };
 
 class StackFrameIterator;
-EXTERN_C FC_BOOL_RET FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted);
-EXTERN_C FC_BOOL_RET FASTCALL RhpSfiNext(StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted);
 
 struct PInvokeTransitionFrame;
 typedef DPTR(PInvokeTransitionFrame) PTR_PInvokeTransitionFrame;
@@ -38,8 +36,6 @@ typedef DPTR(PAL_LIMITED_CONTEXT) PTR_PAL_LIMITED_CONTEXT;
 class StackFrameIterator
 {
     friend class AsmOffsets;
-    friend FC_BOOL_RET FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted);
-    friend FC_BOOL_RET FASTCALL RhpSfiNext(StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted);
 
 public:
     StackFrameIterator() {}
@@ -69,6 +65,10 @@ public:
     bool HasStackRangeToReportConservatively();
     void GetStackRangeToReportConservatively(PTR_OBJECTREF * ppLowerBound, PTR_OBJECTREF * ppUpperBound);
 
+    // Implementations of RhpSfiInit and RhpSfiNext called from managed code
+    bool             Init(PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault);
+    bool             Next(uint32_t* puExCollideClauseIdx, bool* pfUnwoundReversePInvoke);
+
 private:
     // The invoke of a funclet is a bit special and requires an assembly thunk, but we don't want to break the
     // stackwalk due to this.  So this routine will unwind through the assembly thunks used to invoke funclets.
@@ -86,6 +86,7 @@ private:
     void InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransitionFrame pFrame, uint32_t dwFlags); // GC stackwalk
     void InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CONTEXT pCtx, uint32_t dwFlags);  // EH and hijack stackwalk, and collided unwind
     void InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pCtx, uint32_t dwFlags);  // GC stackwalk of redirected thread
+    void EnsureInitializedToManagedFrame();
 
     void InternalInitForEH(Thread * pThreadToWalk, PAL_LIMITED_CONTEXT * pCtx, bool instructionFault); // EH stackwalk
     void InternalInitForStackTrace();  // Environment.StackTrace
@@ -148,8 +149,11 @@ private:
         // When encountering a reverse P/Invoke, unwind directly to the P/Invoke frame using the saved transition frame.
         SkipNativeFrames = 0x80,
 
+        // Set SP to an address that is valid for funclet resumption (x86 only)
+        UpdateResumeSp = 0x100,
+
         GcStackWalkFlags = (CollapseFunclets | RemapHardwareFaultsToSafePoint | SkipNativeFrames),
-        EHStackWalkFlags = ApplyReturnAddressAdjustment,
+        EHStackWalkFlags = (ApplyReturnAddressAdjustment | UpdateResumeSp),
         StackTraceStackWalkFlags = GcStackWalkFlags
     };
 
@@ -175,6 +179,17 @@ private:
         PTR_uintptr_t pX26;
         PTR_uintptr_t pX27;
         PTR_uintptr_t pX28;
+        PTR_uintptr_t pFP;
+#elif defined(TARGET_LOONGARCH64)
+        PTR_uintptr_t pR23;
+        PTR_uintptr_t pR24;
+        PTR_uintptr_t pR25;
+        PTR_uintptr_t pR26;
+        PTR_uintptr_t pR27;
+        PTR_uintptr_t pR28;
+        PTR_uintptr_t pR29;
+        PTR_uintptr_t pR30;
+        PTR_uintptr_t pR31;
         PTR_uintptr_t pFP;
 #elif defined(UNIX_AMD64_ABI)
         PTR_uintptr_t pRbp;

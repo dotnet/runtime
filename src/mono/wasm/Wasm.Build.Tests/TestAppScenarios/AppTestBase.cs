@@ -23,7 +23,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
     protected string Id { get; set; }
     protected string LogPath { get; set; }
 
-    protected void CopyTestAsset(string assetName, string generatedProjectNamePrefix = null)
+    protected void CopyTestAsset(string assetName, string generatedProjectNamePrefix = null, string? projectDirSuffix = null)
     {
         Id = $"{generatedProjectNamePrefix ?? assetName}_{GetRandomId()}";
         InitBlazorWasmProjectDir(Id);
@@ -31,27 +31,21 @@ public abstract class AppTestBase : BlazorWasmTestBase
         LogPath = Path.Combine(s_buildEnv.LogRootPath, Id);
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetName), Path.Combine(_projectDir!));
 
-        switch(assetName)
+        if (!string.IsNullOrEmpty(projectDirSuffix))
         {
-            case "WasmBasicTestApp":
-                // WasmBasicTestApp consists of App + Library projects
-                _projectDir = Path.Combine(_projectDir!, "App");
-                break;
-            case "BlazorHostedApp":
-                // BlazorHostedApp consists of BlazorHosted.Client and BlazorHosted.Server projects
-                _projectDir = Path.Combine(_projectDir!, "BlazorHosted.Server");
-                break;
+             _projectDir = Path.Combine(_projectDir, projectDirSuffix);
         }
     }
 
     protected void BlazorHostedBuild(
         string config,
         string assetName,
+        string projectDirSuffix,
         string clientDirRelativeToProjectDir = "",
         string? generatedProjectNamePrefix = null,
         RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
     {
-        CopyTestAsset(assetName, generatedProjectNamePrefix);
+        CopyTestAsset(assetName, generatedProjectNamePrefix, projectDirSuffix);
         string frameworkDir = FindBlazorHostedBinFrameworkDir(config,
             forPublish: false,
             clientDirRelativeToProjectDir: clientDirRelativeToProjectDir);
@@ -65,6 +59,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
         string? binFrameworkDir = null,
         RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
         bool assertAppBundle = true,
+        bool expectSuccess = true,
         params string[] extraArgs)
     {
         (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(
@@ -72,13 +67,29 @@ public abstract class AppTestBase : BlazorWasmTestBase
             Config: configuration,
             BinFrameworkDir: binFrameworkDir,
             RuntimeType: runtimeType,
-            AssertAppBundle: assertAppBundle), extraArgs);
-        result.EnsureSuccessful();
+            AssertAppBundle: assertAppBundle,
+            ExpectSuccess: expectSuccess), extraArgs);
+        if (expectSuccess)
+        {
+            result.EnsureSuccessful();
+        }
+        else
+        {
+            result.EnsureFailed();
+        }
     }
 
-    protected void PublishProject(string configuration, params string[] extraArgs)
+    protected void PublishProject(
+        string configuration,
+        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
+        bool assertAppBundle = true,
+        params string[] extraArgs)
     {
-        (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(Id, configuration), extraArgs);
+        (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(
+            Id: Id,
+            Config: configuration,
+            RuntimeType: runtimeType,
+            AssertAppBundle: assertAppBundle), extraArgs);
         result.EnsureSuccessful();
     }
 
@@ -99,23 +110,22 @@ public abstract class AppTestBase : BlazorWasmTestBase
             query.Add("test", options.TestScenario);
 
         var queryString = query.Any() ? "?" + string.Join("&", query.Select(kvp => $"{kvp.Key}={kvp.Value}")) : "";
-
         var tcs = new TaskCompletionSource<int>();
         List<string> testOutput = new();
         List<string> consoleOutput = new();
         List<string> serverOutput = new();
-        Regex exitRegex = new Regex("(WASM EXIT (?<exitCode>[0-9]+)$)|(Program terminated with exit\\((?<exitCode>[0-9]+)\\))");
+        Regex exitRegex = new Regex("WASM EXIT (?<exitCode>[0-9]+)$");
 
         BlazorRunOptions blazorRunOptions = new(
                 CheckCounter: false,
                 Config: options.Configuration,
                 ServerEnvironment: options.ServerEnvironment,
-                OnPageLoaded: options.OnPageLoaded,
                 OnConsoleMessage: OnConsoleMessage,
                 OnServerMessage: OnServerMessage,
                 BrowserPath: options.BrowserPath,
                 QueryString: queryString,
-                Host: host);
+                Host: host,
+                ExtraArgs: options.ExtraArgs);
 
         await BlazorRunTest(blazorRunOptions);
 
@@ -170,10 +180,10 @@ public abstract class AppTestBase : BlazorWasmTestBase
         string? TestScenario = null,
         Dictionary<string, string> BrowserQueryString = null,
         Dictionary<string, string> ServerEnvironment = null,
-        Action<IPage> OnPageLoaded = null,
         Action<IPage, IConsoleMessage> OnConsoleMessage = null,
         Action<string> OnServerMessage = null,
-        int? ExpectedExitCode = 0
+        int? ExpectedExitCode = 0,
+        string? ExtraArgs = null
     );
 
     protected record RunResult(

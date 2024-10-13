@@ -2,7 +2,7 @@
 
 `Microsoft.Extensions.DependencyInjection` is combined with a core DI abstraction under `Microsoft.Extensions.DependencyInjection.Abstractions` that allows for building different kinds of dependency injection containers to retrieve services from that have been registered with different lifetimes.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection.
+Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/dependency-injection.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)

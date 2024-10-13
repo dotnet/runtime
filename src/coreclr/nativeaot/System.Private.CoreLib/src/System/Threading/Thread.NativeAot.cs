@@ -31,7 +31,7 @@ namespace System.Threading
         private Exception? _startException;
 
         // Protects starting the thread and setting its priority
-        private Lock _lock = new Lock();
+        private Lock _lock = new Lock(useTrivialWaits: true);
 
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
         // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
@@ -198,8 +198,19 @@ namespace System.Threading
             get => _managedThreadId.Id;
         }
 
-        // TODO: Inform the debugger and the profiler
-        // private void ThreadNameChanged(string? value) {}
+        // TODO: Support non-current thread
+        private void ThreadNameChanged(string? value)
+        {
+            if (Thread.CurrentThread != this)
+            {
+                return;
+            }
+            if (value == null)
+            {
+                return;
+            }
+            RuntimeImports.RhSetCurrentThreadName(value);
+        }
 
         public ThreadPriority Priority
         {

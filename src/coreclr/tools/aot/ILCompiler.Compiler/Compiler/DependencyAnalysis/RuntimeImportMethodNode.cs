@@ -13,8 +13,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MethodDesc _method;
 
-        public RuntimeImportMethodNode(MethodDesc method)
-            : base(((EcmaMethod)method).GetRuntimeImportName())
+        public RuntimeImportMethodNode(MethodDesc method, NameMangler nameMangler)
+            : base(nameMangler.NodeMangler.ExternMethod(((EcmaMethod)method).GetRuntimeImportName(), method))
         {
             _method = method;
         }

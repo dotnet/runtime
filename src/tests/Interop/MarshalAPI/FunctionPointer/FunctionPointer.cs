@@ -28,8 +28,6 @@ public partial class FunctionPtr
     delegate void VoidDelegate();
 
     [Fact]
-
-    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/164", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void RunGetDelForFcnPtrTest()
     {
         Console.WriteLine($"Running {nameof(RunGetDelForFcnPtrTest)}...");
@@ -42,6 +40,10 @@ public partial class FunctionPtr
             VoidDelegate del = (VoidDelegate)Marshal.GetDelegateForFunctionPointer(fcnptr, typeof(VoidDelegate));
             Assert.Equal(md.Target, del.Target);
             Assert.Equal(md.Method, del.Method);
+
+            VoidDelegate del2 = (VoidDelegate)Marshal.GetDelegateForFunctionPointer(fcnptr, typeof(VoidDelegate));
+            Assert.Equal(del, del2);
+            Assert.Equal(del.GetHashCode(), del2.GetHashCode());
         }
 
         // Native FcnPtr -> Delegate
@@ -50,6 +52,10 @@ public partial class FunctionPtr
             VoidDelegate del = (VoidDelegate)Marshal.GetDelegateForFunctionPointer(fcnptr, typeof(VoidDelegate));
             Assert.Null(del.Target);
             Assert.Equal("Invoke", del.Method.Name);
+
+            VoidDelegate del2 = (VoidDelegate)Marshal.GetDelegateForFunctionPointer(fcnptr, typeof(VoidDelegate));;
+            Assert.Equal(del, del2);
+            Assert.Equal(del.GetHashCode(), del2.GetHashCode());
 
             // Round trip of a native function pointer is never legal for a non-concrete Delegate type
             Assert.Throws<ArgumentException>(() =>

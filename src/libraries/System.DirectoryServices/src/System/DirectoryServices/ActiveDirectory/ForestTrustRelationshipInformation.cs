@@ -114,8 +114,8 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 try
                 {
-                    IntPtr ptr = (IntPtr)0;
-                    fileTime = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(FileTime)));
+                    IntPtr ptr = 0;
+                    fileTime = Marshal.AllocHGlobal(Marshal.SizeOf<FileTime>());
                     Interop.Kernel32.GetSystemTimeAsFileTime(fileTime);
 
                     // set the time
@@ -134,7 +134,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         ptrList.Add(ptr);
                         Interop.NtDll.RtlInitUnicodeString(out record.TopLevelName, ptr);
 
-                        tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
+                        tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf<LSA_FOREST_TRUST_RECORD>());
                         ptrList.Add(tmpPtr);
                         Marshal.StructureToPtr(record, tmpPtr, false);
 
@@ -163,7 +163,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         ptr = Marshal.StringToHGlobalUni(_excludedNames[i]);
                         ptrList.Add(ptr);
                         Interop.NtDll.RtlInitUnicodeString(out record.TopLevelName, ptr);
-                        tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
+                        tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf<LSA_FOREST_TRUST_RECORD>());
                         ptrList.Add(tmpPtr);
                         Marshal.StructureToPtr(record, tmpPtr, false);
 
@@ -196,7 +196,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         ptrList.Add(record.DomainInfo.NetBIOSNameBuffer);
                         record.DomainInfo.NetBIOSNameLength = (short)(tmp.NetBiosName == null ? 0 : tmp.NetBiosName.Length * 2);
                         record.DomainInfo.NetBIOSNameMaximumLength = (short)(tmp.NetBiosName == null ? 0 : tmp.NetBiosName.Length * 2);
-                        tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
+                        tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf<LSA_FOREST_TRUST_RECORD>());
                         ptrList.Add(tmpPtr);
                         Marshal.StructureToPtr(record, tmpPtr, false);
 
@@ -222,7 +222,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             ptrList.Add(record.Data.Buffer);
                             Marshal.Copy((byte[])_binaryData[i]!, 0, record.Data.Buffer, record.Data.Length);
                         }
-                        tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
+                        tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf<LSA_FOREST_TRUST_RECORD>());
                         ptrList.Add(tmpPtr);
                         Marshal.StructureToPtr(record, tmpPtr, false);
 
@@ -235,7 +235,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     LSA_FOREST_TRUST_INFORMATION trustInformation = new LSA_FOREST_TRUST_INFORMATION();
                     trustInformation.RecordCount = count;
                     trustInformation.Entries = records;
-                    forestInfo = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_INFORMATION)));
+                    forestInfo = Marshal.AllocHGlobal(Marshal.SizeOf<LSA_FOREST_TRUST_INFORMATION>());
                     Marshal.StructureToPtr(trustInformation, forestInfo, false);
 
                     // get policy server name

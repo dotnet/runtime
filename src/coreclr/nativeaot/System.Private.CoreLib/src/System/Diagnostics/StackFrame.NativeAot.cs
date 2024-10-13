@@ -39,11 +39,24 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns the method the frame is executing
         /// </summary>
-        [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
+        [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed. Consider using " + nameof(DiagnosticMethodInfo) + "." + nameof(DiagnosticMethodInfo.Create) + " instead")]
         public virtual MethodBase? GetMethod()
         {
             TryInitializeMethodBase();
             return _method;
+        }
+
+        internal bool TryGetMethodStartAddress(out IntPtr startAddress)
+        {
+            if (_ipAddress == IntPtr.Zero || _ipAddress == Exception.EdiSeparator)
+            {
+                startAddress = IntPtr.Zero;
+                return false;
+            }
+
+            startAddress = _ipAddress - _nativeOffset;
+            Debug.Assert(RuntimeImports.RhFindMethodStartAddress(_ipAddress) == startAddress);
+            return true;
         }
 
         private bool TryInitializeMethodBase()

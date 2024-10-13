@@ -117,25 +117,26 @@ namespace System.CommandLine
             else if (instructionSet != null)
             {
                 List<string> instructionSetParams = new List<string>();
+                string[] instructionSetParamsInput = instructionSet.Split(',');
 
                 // Normalize instruction set format to include implied +.
-                string[] instructionSetParamsInput = instructionSet.Split(',');
                 for (int i = 0; i < instructionSetParamsInput.Length; i++)
                 {
-                    instructionSet = instructionSetParamsInput[i];
+                    instructionSet = instructionSetParamsInput[i].Trim();
 
                     if (string.IsNullOrEmpty(instructionSet))
                         throw new CommandLineException(string.Format(mustNotBeMessage, ""));
 
                     char firstChar = instructionSet[0];
+
                     if ((firstChar != '+') && (firstChar != '-'))
                     {
-                        instructionSet =  "+" + instructionSet;
+                        instructionSet = "+" + instructionSet;
                     }
+
                     instructionSetParams.Add(instructionSet);
                 }
 
-                Dictionary<string, bool> instructionSetSpecification = new Dictionary<string, bool>();
                 foreach (string instructionSetSpecifier in instructionSetParams)
                 {
                     instructionSet = instructionSetSpecifier.Substring(1);
@@ -223,6 +224,8 @@ namespace System.CommandLine
 
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi_vl");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1_v512");
                 }
             }
             else if (targetArchitecture == TargetArchitecture.ARM64)

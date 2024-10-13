@@ -99,7 +99,11 @@ If you have considered all the diagnostic artifacts and determined the failure i
       + Native crashes in libraries also require using the console log. This is needed as the crash corrupts the test results to be reported to Azure DevOps, so only the console logs are left.
     - Optionally you can add specifics as needed like leg, configuration parameters, available dump links.
 
-Once the issue is open, feel free to rerun the `Build Analysis` check and the issue should be recognized as known if all was filed correctly and you are ready to merge once all unrelated issues are marked as known. However, there are some known limitations to the system as previously described. Additionally, the system only looks at the error message the stacktrace fields of an Azure DevOps test result, and the console log in the helix queue. If rerunning the check doesn't pick up the known issue and you feel it should, feel free to tag  @dotnet/runtime-infrastructure to request infrastructure team for help.
+Once the issue is open, feel free to rerun the `Build Analysis` check and the issue should be recognized as known if all was filed correctly and you are ready to merge once all unrelated issues are marked as known. However, there are some known limitations to the system as previously described. Additionally, the system only looks at the error message the stacktrace fields of an Azure DevOps test result, and the console log in the helix queue.
+
+The `Build Analysis` requests are sent to a queue. In certain scenarios, this queue can have many items to process and it can take a while for the status to be updated. If you do not see the status getting updated, be patient and wait at least 10 minutes before investigating further.
+
+If rerunning the check doesn't pick up the known issue and you feel it should, feel free to tag  @dotnet/runtime-infrastructure to request infrastructure team for help.
 
 After you do this, if the failure is occurring frequently as per the data captured in the recently opened issue, please disable the failing test(s) with the corresponding tracking issue link in a follow-up Pull Request.
 
@@ -116,6 +120,8 @@ To unconditionally bypass the build analysis check (turn it green), you can add 
 ```
 /ba-g <reason>
 ```
+
+The `Build Analysis` requests are sent to a queue. In certain scenarios, this queue can have many items to process and it can take a while for the status to be updated. If you do not see the status getting updated, be patient and wait at least 10 minutes before investigating further.
 
 For more information, see https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/EscapeMechanismforBuildAnalysis.md
 

@@ -27,7 +27,7 @@ interface ParseClientCommandResultOk<C = ProtocolClientCommandBase> extends Pars
 
 export type ParseClientCommandResult<C = ProcessClientCommandBase> = ParseClientCommandResultOk<C> | ParseResultFail;
 
-export function parseBinaryProtocolCommand(cmd: BinaryProtocolCommand): ParseClientCommandResult<ProtocolClientCommandBase> {
+export function parseBinaryProtocolCommand (cmd: BinaryProtocolCommand): ParseClientCommandResult<ProtocolClientCommandBase> {
     switch (cmd.commandSet) {
         case CommandSetId.Reserved:
             throw new Error("unexpected reserved command_set command");
@@ -44,7 +44,7 @@ export function parseBinaryProtocolCommand(cmd: BinaryProtocolCommand): ParseCli
     }
 }
 
-function parseEventPipeCommand(cmd: BinaryProtocolCommand & { commandSet: CommandSetId.EventPipe }): ParseClientCommandResult<EventPipeClientCommandBase> {
+function parseEventPipeCommand (cmd: BinaryProtocolCommand & { commandSet: CommandSetId.EventPipe }): ParseClientCommandResult<EventPipeClientCommandBase> {
     switch (cmd.command) {
         case EventPipeCommandId.StopTracing:
             return parseEventPipeStopTracing(cmd);
@@ -58,7 +58,7 @@ function parseEventPipeCommand(cmd: BinaryProtocolCommand & { commandSet: Comman
     }
 }
 
-function parseEventPipeCollectTracing2(cmd: BinaryProtocolCommand & { commandSet: CommandSetId.EventPipe, command: EventPipeCommandId.CollectTracing2 }): ParseClientCommandResult<EventPipeCommandCollectTracing2> {
+function parseEventPipeCollectTracing2 (cmd: BinaryProtocolCommand & { commandSet: CommandSetId.EventPipe, command: EventPipeCommandId.CollectTracing2 }): ParseClientCommandResult<EventPipeCommandCollectTracing2> {
     const pos = { pos: 0 };
     const buf = cmd.payload;
     const circularBufferMB = Parser.tryParseUint32(buf, pos);
@@ -89,7 +89,7 @@ function parseEventPipeCollectTracing2(cmd: BinaryProtocolCommand & { commandSet
     return { success: true, result: command };
 }
 
-function parseEventPipeCollectTracingCommandProvider(buf: Uint8Array, pos: { pos: number }): ParseClientCommandResult<EventPipeCollectTracingCommandProvider> {
+function parseEventPipeCollectTracingCommandProvider (buf: Uint8Array, pos: { pos: number }): ParseClientCommandResult<EventPipeCollectTracingCommandProvider> {
     const keywords = Parser.tryParseUint64(buf, pos);
     if (keywords === undefined) {
         return { success: false, error: "failed to parse keywords in EventPipe CollectTracing provider" };
@@ -107,7 +107,7 @@ function parseEventPipeCollectTracingCommandProvider(buf: Uint8Array, pos: { pos
     return { success: true, result: provider };
 }
 
-function parseEventPipeStopTracing(cmd: BinaryProtocolCommand & { commandSet: CommandSetId.EventPipe, command: EventPipeCommandId.StopTracing }): ParseClientCommandResult<EventPipeCommandStopTracing> {
+function parseEventPipeStopTracing (cmd: BinaryProtocolCommand & { commandSet: CommandSetId.EventPipe, command: EventPipeCommandId.StopTracing }): ParseClientCommandResult<EventPipeCommandStopTracing> {
     const pos = { pos: 0 };
     const buf = cmd.payload;
     const sessionID = Parser.tryParseUint64(buf, pos);
@@ -122,7 +122,7 @@ function parseEventPipeStopTracing(cmd: BinaryProtocolCommand & { commandSet: Co
     return { success: true, result: command };
 }
 
-function parseProcessCommand(cmd: BinaryProtocolCommand & { commandSet: CommandSetId.Process }): ParseClientCommandResult<ProcessClientCommandBase> {
+function parseProcessCommand (cmd: BinaryProtocolCommand & { commandSet: CommandSetId.Process }): ParseClientCommandResult<ProcessClientCommandBase> {
     switch (cmd.command) {
         case ProcessCommandId.ProcessInfo:
             throw new Error("TODO");
@@ -138,7 +138,7 @@ function parseProcessCommand(cmd: BinaryProtocolCommand & { commandSet: CommandS
     }
 }
 
-function parseProcessResumeRuntime(cmd: BinaryProtocolCommand & { commandSet: CommandSetId.Process, command: ProcessCommandId.ResumeRuntime }): ParseClientCommandResult<ProcessCommandResumeRuntime> {
+function parseProcessResumeRuntime (cmd: BinaryProtocolCommand & { commandSet: CommandSetId.Process, command: ProcessCommandId.ResumeRuntime }): ParseClientCommandResult<ProcessCommandResumeRuntime> {
     const buf = cmd.payload;
     if (buf.byteLength !== 0) {
         return { success: false, error: "unexpected payload in Process ResumeRuntime command" };

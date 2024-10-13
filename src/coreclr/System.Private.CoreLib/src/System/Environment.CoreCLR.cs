@@ -80,12 +80,12 @@ namespace System
         [DoesNotReturn]
         private static void FailFast(ref StackCrawlMark mark, string? message, Exception? exception, string? errorMessage)
         {
-            FailFast(new StackCrawlMarkHandle(ref mark), new StringHandleOnStack(ref message), ObjectHandleOnStack.Create(ref exception), new StringHandleOnStack(ref errorMessage));
+            FailFast(new StackCrawlMarkHandle(ref mark), message, ObjectHandleOnStack.Create(ref exception), errorMessage);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_FailFast")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_FailFast", StringMarshalling = StringMarshalling.Utf16)]
         [DoesNotReturn]
-        private static partial void FailFast(StackCrawlMarkHandle mark, StringHandleOnStack message, ObjectHandleOnStack exception, StringHandleOnStack errorMessage);
+        private static partial void FailFast(StackCrawlMarkHandle mark, string? message, ObjectHandleOnStack exception, string? errorMessage);
 
         private static unsafe string[] InitializeCommandLineArgs(char* exePath, int argc, char** argv) // invoked from VM
         {

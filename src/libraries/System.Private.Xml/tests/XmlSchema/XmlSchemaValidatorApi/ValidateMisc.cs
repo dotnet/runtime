@@ -901,7 +901,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 // TempDirectory path must end with a DirectorySeratorChar, otherwise it will throw in the Xml validation.
                 settings.Schemas.Add("mainschema", XmlReader.Create(new StringReader(xsd), null, EnsureTrailingSlash(tempDirectory.Path)));
                 settings.ValidationType = ValidationType.Schema;
-                XmlReader reader = XmlReader.Create(new StringReader(xml), settings);
+                using XmlReader reader = XmlReader.Create(new StringReader(xml), settings);
                 XmlDocument doc = new XmlDocument();
 
                 doc.Load(reader);
@@ -926,7 +926,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 // TempDirectory path must end with a DirectorySeratorChar, otherwise it will throw in the Xml validation.
                 settings.Schemas.Add("mainschema", XmlReader.Create(new StringReader(xsd), null, EnsureTrailingSlash(tempDirectory.Path)));
                 settings.ValidationType = ValidationType.Schema;
-                XmlReader reader = XmlReader.Create(new StringReader(xml), settings);
+                using XmlReader reader = XmlReader.Create(new StringReader(xml), settings);
                 XmlDocument doc = new XmlDocument();
 
                 doc.Load(reader);

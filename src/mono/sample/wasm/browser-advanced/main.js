@@ -29,7 +29,7 @@ try {
         }
         return originalFetch(url, fetchArgs);
     };
-    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig, Module } = await dotnet
+    dotnet
         .withElementOnExit()
         // 'withModuleConfig' is internal lower level API 
         // here we show how emscripten could be further configured
@@ -64,12 +64,16 @@ try {
                 console.log('user code Module.onDotnetReady');
             },
             postRun: () => { console.log('user code Module.postRun'); },
+            out: (text) => { console.log("ADVANCED:" + text) },
         })
         .withResourceLoader((type, name, defaultUri, integrity, behavior) => {
             // loadBootResource could return string with unqualified name of resource. It assumes that we resolve it with document.baseURI
             return name;
-        })
-        .create();
+        });
+
+    await dotnet.download();
+
+    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig, Module } = await dotnet.create();
 
     // at this point both emscripten and monoVM are fully initialized.
     console.log('user code after dotnet.create');

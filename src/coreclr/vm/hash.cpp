@@ -780,7 +780,7 @@ UPTR HashMap::Gethash (UPTR key)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
 
-    return LookupValue(key,NULL);
+    return LookupValue(key,0);
 }
 
 

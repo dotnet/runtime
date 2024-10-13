@@ -67,7 +67,7 @@ endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
 if(CLR_CMAKE_TARGET_OSX)
   add_definitions(-DTARGET_OSX)
-  if(CLR_CMAKE_TARGET_ARCH_AMD64)
+  if(CLR_CMAKE_HOST_ARCH_AMD64)
     add_definitions(-DXSTATE_SUPPORTED)
   endif()
   set(PLATFORM_SOURCES
@@ -89,6 +89,11 @@ if(CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET
   # Currently the _xstate is not available on Alpine Linux
   add_definitions(-DXSTATE_SUPPORTED)
 endif(CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
+
+if(CLR_CMAKE_HOST_ARCH_ARM64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
+  # Currently the _xstate is not available on Alpine Linux
+  add_definitions(-DXSTATE_SUPPORTED)
+endif(CLR_CMAKE_HOST_ARCH_ARM64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
 
 if(CLR_CMAKE_TARGET_LINUX_MUSL)
   # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
@@ -129,9 +134,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND (CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CM
 endif()
 
 set(SOURCES
-  cruntime/malloc.cpp
-  cruntime/misc.cpp
-  cruntime/thread.cpp
   cruntime/wchar.cpp
   debug/debug.cpp
   exception/seh.cpp
@@ -147,8 +149,8 @@ set(SOURCES
   init/sxs.cpp
   loader/module.cpp
   locale/unicode.cpp
-  locale/unicodedata.cpp
   ${CLR_SRC_NATIVE_DIR}/minipal/utf8.c
+  ${CLR_SRC_NATIVE_DIR}/minipal/unicodedata.c
   map/common.cpp
   map/map.cpp
   map/virtual.cpp
@@ -188,8 +190,6 @@ set(SOURCES
   safecrt/wcsncat_s.cpp
   safecrt/wcsncpy_s.cpp
   safecrt/wmakepath_s.cpp
-  safecrt/xtoa_s.cpp
-  safecrt/xtow_s.cpp
   sharedmemory/sharedmemory.cpp
   shmemory/shmemory.cpp
   sync/cs.cpp

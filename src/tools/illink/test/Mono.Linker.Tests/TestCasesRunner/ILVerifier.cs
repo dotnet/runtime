@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.Loader;
 using ILVerify;
@@ -42,7 +43,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					SanityChecks = true,
 					IncludeMetadataTokensInErrorMessages = true
 				});
-			_verifier.SetSystemModuleName (new AssemblyName ("mscorlib"));
+			_verifier.SetSystemModuleName (new AssemblyNameInfo ("mscorlib"));
 
 			var allResults = _verifier.Verify (Resolve (assemblyName))
 				?? Enumerable.Empty<VerificationResult> ();
@@ -118,10 +119,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return null;
 		}
 
-		PEReader? ILVerify.IResolver.ResolveAssembly (AssemblyName assemblyName)
+		PEReader? ILVerify.IResolver.ResolveAssembly (AssemblyNameInfo assemblyName)
 			=> Resolve (assemblyName.Name ?? assemblyName.FullName);
 
-		PEReader? ILVerify.IResolver.ResolveModule (AssemblyName referencingModule, string fileName)
+		PEReader? ILVerify.IResolver.ResolveModule (AssemblyNameInfo referencingAssembly, string fileName)
 			=> Resolve (Path.GetFileNameWithoutExtension (fileName));
 
 		public static string GetErrorMessage (VerificationResult result)

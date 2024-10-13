@@ -48,11 +48,11 @@ namespace System.DirectoryServices.ActiveDirectory
             // get the count
             int count = failures.cNumEntries;
 
-            IntPtr addr = (IntPtr)0;
+            IntPtr addr = 0;
 
             for (int i = 0; i < count; i++)
             {
-                addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_KCC_DSA_FAILURE)));
+                addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf<DS_REPL_KCC_DSA_FAILURE>());
 
                 ReplicationFailure managedFailure = new ReplicationFailure(addr, _server, _nameTable);
 

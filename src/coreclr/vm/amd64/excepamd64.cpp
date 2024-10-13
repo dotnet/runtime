@@ -200,7 +200,7 @@ RtlVirtualUnwind_Worker (
     BOOL     InEpilogue = FALSE;
     BOOL     HasManagedBreakpoint = FALSE;
     BOOL     HasUnmanagedBreakpoint = FALSE;
-    UCHAR    TempOpcode = NULL;
+    UCHAR    TempOpcode = 0;
     PUCHAR   NextByte;
     ULONG    CurrentOffset;
     ULONG    FrameRegister;

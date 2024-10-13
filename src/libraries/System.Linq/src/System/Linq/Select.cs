@@ -104,7 +104,7 @@ namespace System.Linq
                 _selector = selector;
             }
 
-            public override Iterator<TResult> Clone() =>
+            private protected override Iterator<TResult> Clone() =>
                 new IEnumerableSelectIterator<TSource, TResult>(_source, _selector);
 
             public override void Dispose()
@@ -167,7 +167,7 @@ namespace System.Linq
 
             private int CountForDebugger => _source.Length;
 
-            public override Iterator<TResult> Clone() => new ArraySelectIterator<TSource, TResult>(_source, _selector);
+            private protected override Iterator<TResult> Clone() => new ArraySelectIterator<TSource, TResult>(_source, _selector);
 
             public override bool MoveNext()
             {
@@ -210,7 +210,7 @@ namespace System.Linq
 
             private int CountForDebugger => _source.Count;
 
-            public override Iterator<TResult> Clone() => new ListSelectIterator<TSource, TResult>(_source, _selector);
+            private protected override Iterator<TResult> Clone() => new ListSelectIterator<TSource, TResult>(_source, _selector);
 
             public override bool MoveNext()
             {
@@ -260,7 +260,7 @@ namespace System.Linq
 
             private int CountForDebugger => _source.Count;
 
-            public override Iterator<TResult> Clone() => new IListSelectIterator<TSource, TResult>(_source, _selector);
+            private protected override Iterator<TResult> Clone() => new IListSelectIterator<TSource, TResult>(_source, _selector);
 
             public override bool MoveNext()
             {

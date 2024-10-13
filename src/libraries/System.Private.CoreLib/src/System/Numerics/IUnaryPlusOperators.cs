@@ -5,7 +5,7 @@ namespace System.Numerics
 {
     /// <summary>Defines a mechanism for computing the unary plus of a value.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
-    /// <typeparam name="TResult">The type that contains the result of negating <typeparamref name="TSelf" />.</typeparam>
+    /// <typeparam name="TResult">The type that contains the result of converting <typeparamref name="TSelf" />.</typeparam>
     public interface IUnaryPlusOperators<TSelf, TResult>
         where TSelf : IUnaryPlusOperators<TSelf, TResult>?
     {

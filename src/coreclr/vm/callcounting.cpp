@@ -365,7 +365,7 @@ NOINLINE LoaderHeap *CallCountingManager::CallCountingStubAllocator::AllocateHea
 bool CallCountingManager::CallCountingStubAllocator::IsStub(TADDR entryPoint)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(entryPoint != NULL);
+    _ASSERTE(entryPoint != (TADDR)NULL);
 
     return !!m_heapRangeList.IsInRange(entryPoint);
 }
@@ -562,7 +562,7 @@ bool CallCountingManager::SetCodeEntryPoint(
     _ASSERTE(
         activeCodeVersion ==
         methodDesc->GetCodeVersionManager()->GetActiveILCodeVersion(methodDesc).GetActiveNativeCodeVersion(methodDesc));
-    _ASSERTE(codeEntryPoint != NULL);
+    _ASSERTE(codeEntryPoint != (PCODE)NULL);
     _ASSERTE(codeEntryPoint == activeCodeVersion.GetNativeCode());
     _ASSERTE(!wasMethodCalled || createTieringBackgroundWorkerRef != nullptr);
     _ASSERTE(createTieringBackgroundWorkerRef == nullptr || !*createTieringBackgroundWorkerRef);
@@ -664,7 +664,7 @@ bool CallCountingManager::SetCodeEntryPoint(
             // direct calls in codegen and they need to be promoted earlier than their callers.
             if (methodDesc->GetMethodTable() == g_pCastHelpers)
             {
-                callCountThreshold = max(1, (CallCount)(callCountThreshold / 2));
+                callCountThreshold = max<CallCount>(1, (CallCount)(callCountThreshold / 2));
             }
 
             NewHolder<CallCountingInfo> callCountingInfoHolder = new CallCountingInfo(activeCodeVersion, callCountThreshold);
@@ -758,7 +758,7 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    PCODE codeEntryPoint = NULL;
+    PCODE codeEntryPoint = 0;
 
     BEGIN_PRESERVE_LAST_ERROR;
 
@@ -925,7 +925,7 @@ void CallCountingManager::CompleteCallCounting()
                     if (!activeCodeVersion.IsNull())
                     {
                         PCODE activeNativeCode = activeCodeVersion.GetNativeCode();
-                        if (activeNativeCode != NULL)
+                        if (activeNativeCode != 0)
                         {
                             methodDesc->SetCodeEntryPoint(activeNativeCode);
                             break;
@@ -1253,7 +1253,7 @@ bool CallCountingManager::IsCallCountingStub(PCODE entryPoint)
     CONTRACTL_END;
 
     TADDR entryAddress = PCODEToPINSTR(entryPoint);
-    _ASSERTE(entryAddress != NULL);
+    _ASSERTE(entryAddress != (PCODE)NULL);
 
     CodeVersionManager::LockHolder codeVersioningLockHolder;
 

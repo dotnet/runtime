@@ -1490,8 +1490,7 @@ public:
                                                     BOOL               fManagedToNative,
                                                     OverrideProcArgs*  pargs,
                                                     UINT*              pResID,
-                                                    UINT               argidx,
-                                                    UINT               nativeStackOffset)
+                                                    UINT               argidx)
     {
         LIMITED_METHOD_CONTRACT;
         return HANDLEASNORMAL;
@@ -2207,8 +2206,7 @@ public:
                                                     BOOL               fManagedToNative,
                                                     OverrideProcArgs*  pargs,
                                                     UINT*              pResID,
-                                                    UINT               argidx,
-                                                    UINT               nativeStackOffset);
+                                                    UINT               argidx);
 
     static MarshalerOverrideStatus ReturnOverride(NDirectStubLinker* psl,
                                                   BOOL               fManagedToNative,
@@ -2248,8 +2246,7 @@ public:
                                                     BOOL               fManagedToNative,
                                                     OverrideProcArgs*  pargs,
                                                     UINT*              pResID,
-                                                    UINT               argidx,
-                                                    UINT               nativeStackOffset);
+                                                    UINT               argidx);
 
     static MarshalerOverrideStatus ReturnOverride(NDirectStubLinker *psl,
                                                   BOOL        fManagedToNative,
@@ -2292,8 +2289,7 @@ public:
                                                     BOOL               fManagedToNative,
                                                     OverrideProcArgs*  pargs,
                                                     UINT*              pResID,
-                                                    UINT               argidx,
-                                                    UINT               nativeStackOffset);
+                                                    UINT               argidx);
 
     static MarshalerOverrideStatus ReturnOverride(NDirectStubLinker *psl,
                                                   BOOL        fManagedToNative,
@@ -2537,7 +2533,7 @@ public:
     enum
     {
         c_fInOnly               = TRUE,
-        c_nativeSize            = sizeof(OLE_COLOR),
+        c_nativeSize            = sizeof(uint32_t),
     };
 
 protected:
@@ -2923,6 +2919,7 @@ protected:
     void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
 };
 
+#if defined(FEATURE_IJW)
 class ILBlittableValueClassWithCopyCtorMarshaler : public ILMarshaler
 {
 public:
@@ -2951,11 +2948,11 @@ public:
                                             BOOL               fManagedToNative,
                                             OverrideProcArgs*  pargs,
                                             UINT*              pResID,
-                                            UINT               argidx,
-                                            UINT               nativeStackOffset);
+                                            UINT               argidx);
 
 
 };
+#endif // defined(TARGET_WINDOWS)
 
 class ILArgIteratorMarshaler : public ILMarshaler
 {

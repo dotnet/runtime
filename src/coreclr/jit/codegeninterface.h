@@ -46,6 +46,21 @@ struct RegState
 
 CodeGenInterface* getCodeGenerator(Compiler* comp);
 
+class NodeInternalRegisters
+{
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, regMaskTP> NodeInternalRegistersTable;
+    NodeInternalRegistersTable                                         m_table;
+
+public:
+    NodeInternalRegisters(Compiler* comp);
+
+    void      Add(GenTree* tree, regMaskTP reg);
+    regNumber Extract(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
+    regNumber GetSingle(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
+    regMaskTP GetAll(GenTree* tree);
+    unsigned  Count(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
+};
+
 class CodeGenInterface
 {
     friend class emitter;
@@ -122,9 +137,10 @@ public:
 
     GCInfo gcInfo;
 
-    RegSet   regSet;
-    RegState intRegState;
-    RegState floatRegState;
+    RegSet                regSet;
+    RegState              intRegState;
+    RegState              floatRegState;
+    NodeInternalRegisters internalRegisters;
 
 protected:
     Compiler* compiler;
@@ -153,11 +169,6 @@ public:
     void genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree);
 
 protected:
-#ifdef DEBUG
-    VARSET_TP genTempOldLife;
-    bool      genTempLiveChg;
-#endif
-
     VARSET_TP genLastLiveSet;  // A one element map (genLastLiveSet-> genLastLiveMask)
     regMaskTP genLastLiveMask; // these two are used in genLiveMask
 
@@ -170,8 +181,8 @@ protected:
     TreeLifeUpdater<true>* treeLifeUpdater;
 
 public:
-    bool genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf);
-    bool genUseOptimizedWriteBarriers(GenTreeStoreInd* store);
+    bool            genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf);
+    bool            genUseOptimizedWriteBarriers(GenTreeStoreInd* store);
     CorInfoHelpFunc genWriteBarrierHelperForWriteBarrierForm(GCInfo::WriteBarrierForm wbf);
 
 #ifdef DEBUG
@@ -447,7 +458,8 @@ public:
     {
         siVarLocType vlType;
 
-        union {
+        union
+        {
             // VLT_REG/VLT_REG_FP -- Any pointer-sized enregistered value (TYP_INT, TYP_REF, etc)
             // eg. EAX
             // VLT_REG_BYREF -- the specified register contains the address of the variable
@@ -632,7 +644,9 @@ public:
             VariableLiveRange(CodeGenInterface::siVarLoc varLocation,
                               emitLocation               startEmitLocation,
                               emitLocation               endEmitLocation)
-                : m_StartEmitLocation(startEmitLocation), m_EndEmitLocation(endEmitLocation), m_VarLocation(varLocation)
+                : m_StartEmitLocation(startEmitLocation)
+                , m_EndEmitLocation(endEmitLocation)
+                , m_VarLocation(varLocation)
             {
             }
 
@@ -680,7 +694,8 @@ public:
 
         public:
             LiveRangeDumper(const LiveRangeList* liveRanges)
-                : m_startingLiveRange(liveRanges->end()), m_hasLiveRangesToDump(false){};
+                : m_startingLiveRange(liveRanges->end())
+                , m_hasLiveRangesToDump(false){};
 
             // Make the dumper point to the last "VariableLiveRange" opened or nullptr if all are closed
             void resetDumper(const LiveRangeList* list);
@@ -761,7 +776,7 @@ public:
 
         LiveRangeList* getLiveRangesForVarForBody(unsigned int varNum) const;
         LiveRangeList* getLiveRangesForVarForProlog(unsigned int varNum) const;
-        size_t getLiveRangesCount() const;
+        size_t         getLiveRangesCount() const;
 
         // For parameters locations on prolog
         void psiStartVariableLiveRange(CodeGenInterface::siVarLoc varLocation, unsigned int varNum);

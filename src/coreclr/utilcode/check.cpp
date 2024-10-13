@@ -63,7 +63,6 @@ SPECIALIZED_VIOLATION(GCViolation);
 SPECIALIZED_VIOLATION(ModeViolation);
 SPECIALIZED_VIOLATION(FaultViolation);
 SPECIALIZED_VIOLATION(FaultNotFatal);
-SPECIALIZED_VIOLATION(HostViolation);
 SPECIALIZED_VIOLATION(TakesLockViolation);
 SPECIALIZED_VIOLATION(LoadsTypeViolation);
 
@@ -172,7 +171,7 @@ void CHECK::Setup(LPCSTR message, LPCSTR condition, LPCSTR file, INT line)
             // Try to build a stack of condition failures
 
             StackSString context;
-            context.Printf("%s\n\t%s%s FAILED: %s\n\t\t%s, line: %d",
+            context.Printf("%s\n\t%s%s FAILED: %s\n\t\t%s:%d",
                            m_condition,
                            message && *message ? message : "",
                            message && *message ? ": " : "",

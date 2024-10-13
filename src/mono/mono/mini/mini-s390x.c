@@ -464,7 +464,7 @@ mono_arch_fregname (int reg)
 const char *
 mono_arch_xregname (int reg)
 {
-	if (reg < s390_VR_NREG)
+	if (reg >= 0 && reg < s390_VR_NREG)
 		return vrNames [reg];
 	else
 		return "unknown";
@@ -1580,7 +1580,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 						inst->inst_offset  = offset + (8 - size);
 				}
 			}
-			offset += MAX(size, 8);
+			offset += 8;
 		}
 		curinst++;
 	}
@@ -3400,13 +3400,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_AOTCONST: {
 			mono_add_patch_info (cfg, code - cfg->native_code,
-				(MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
+				(MonoJumpInfoType)(gsize)ins->inst_i1, ins->inst_p0);
 			S390_LOAD_TEMPLATE (code, ins->dreg);
 		}
 			break;
 		case OP_JUMP_TABLE: {
 			mono_add_patch_info (cfg, code - cfg->native_code,
-				(MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
+				(MonoJumpInfoType)(gsize)ins->inst_i1, ins->inst_p0);
 			S390_LOAD_TEMPLATE (code, ins->dreg);
 		}
 			break;
@@ -3471,7 +3471,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_srag (code, ins->dreg, ins->dreg, 0, 32);
 			break;
 		case OP_MOVE_I4_TO_F:
-			s390_slag (code, s390_r0, ins->sreg1, 0, 32);
+			s390_sllg (code, s390_r0, ins->sreg1, 0, 32);
 			s390_ldgr (code, ins->dreg, s390_r0);
 			break;
 		case OP_FCONV_TO_R4:
@@ -5436,12 +5436,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 #endif
 		default:
-			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
+			g_warning ("unknown opcode " M_PRI_INST " in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
 		}
 
 		if ((cfg->opt & MONO_OPT_BRANCH) && ((code - cfg->native_code - offset) > max_len)) {
-			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %ld)",
+			g_warning ("wrong maximal instruction length of instruction " M_PRI_INST " (expected %d, got %ld)",
 				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
 			g_assert_not_reached ();
 		}

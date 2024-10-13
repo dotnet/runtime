@@ -709,7 +709,7 @@ namespace System.ServiceProcess
 
         /// <summary>
         /// Gets the services (not including device-driver services) on the given machine name.
-        /// /// </summary>
+        /// </summary>
         /// <param name="machineName">Name of the machine</param>
         /// <returns></returns>
         public static ServiceController[] GetServices(string machineName)
@@ -934,7 +934,7 @@ namespace System.ServiceProcess
         /// <param name="stopDependentServices">
         /// <c>true</c> to stop all running dependent services together with the service; <c>false</c> to stop only the service.
         /// </param>
-#if NETCOREAPP
+#if NET
         public
 #else
         private

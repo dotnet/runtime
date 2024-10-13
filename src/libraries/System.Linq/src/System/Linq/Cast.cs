@@ -47,7 +47,7 @@ namespace System.Linq
             private readonly ICollection _source = source;
             private IEnumerator? _enumerator;
 
-            public override Iterator<TResult> Clone() => new CastICollectionIterator<TResult>(_source);
+            private protected override Iterator<TResult> Clone() => new CastICollectionIterator<TResult>(_source);
 
             public override bool MoveNext()
             {

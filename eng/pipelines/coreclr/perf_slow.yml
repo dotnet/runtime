@@ -1,8 +1,21 @@
+parameters:
+- name: runPrivateJobs
+  type: boolean
+  default: false
+- name: runScheduledJobs
+  type: boolean
+  default: false
+- name: perfBranch
+  displayName: Performance Repo Branch
+  type: string
+  default: 'main'
+
 trigger:
   batch: true
   branches:
     include:
     - main
+    - release/9.0
   paths:
     include:
     - '*'
@@ -34,26 +47,29 @@ extends:
     - stage: Build
       jobs:
 
-      - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
-
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(in(variables['Build.Reason'], 'Schedule'), parameters.runScheduledJobs)) }}:
         # build mono
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
-            jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+            jobTemplate: /eng/pipelines/common/global-build-job.yml
+            buildConfig: release
             runtimeFlavor: mono
-            buildConfig: release
-            platforms:
-            - linux_arm64
-
-        # build coreclr and libraries
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
-            buildConfig: release
             platforms:
             - linux_arm64
             jobParameters:
-              testGroup: perf
+              nameSuffix: mono
+              buildArgs: -s mono+clr.iltools+clr.hosts+libs+host+packs -c $(_BuildConfig)
+              isOfficialBuild: false
+              postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_mono
+                  displayName: Build Assets
 
         # run arm64 interpreter jobs for mono
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -68,18 +84,38 @@ extends:
               liveLibrariesBuildConfig: Release
               runtimeType: mono
               codeGenType: 'Interpreter'
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro_mono
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               timeoutInMinutes: 720
+              perfBranch: ${{ parameters.perfBranch }}
 
-      - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
+        # run arm64 jit jobs for mono
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+            buildConfig: release
+            runtimeFlavor: mono
+            platforms:
+            - linux_arm64
+            jobParameters:
+              testGroup: perf
+              liveLibrariesBuildConfig: Release
+              runtimeType: mono
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
+              runKind: micro_mono
+              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+              logicalmachine: 'perfampere'
+              timeoutInMinutes: 720
+              perfBranch: ${{ parameters.perfBranch }}
+
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(notin(variables['Build.Reason'], 'Schedule', 'Manual'), parameters.runPrivateJobs)) }}:
 
         # build coreclr and libraries
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
-            jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+            jobTemplate: /eng/pipelines/common/global-build-job.yml
             buildConfig: release
             platforms:
             - linux_x64
@@ -87,7 +123,19 @@ extends:
             - linux_arm64
             - windows_arm64
             jobParameters:
-              testGroup: perf
+              nameSuffix: coreclr
+              buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
+              isOfficialBuild: false
+              postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
+                  displayName: Build Assets
 
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
@@ -98,7 +146,7 @@ extends:
             platforms:
             - linux_arm64
             jobParameters:
-              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoEnableLLVM=true /p:BuildMonoAOTCrossCompiler=true /p:MonoLibClang="/usr/local/lib/libclang.so.16" /p:AotHostArchitecture=arm64 /p:AotHostOS=linux
+              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoEnableLLVM=true /p:BuildMonoAOTCrossCompiler=true /p:MonoLibClang="/usr/local/lib/libclang.so" /p:AotHostArchitecture=arm64 /p:AotHostOS=linux
               nameSuffix: AOT
               isOfficialBuild: false
               postBuildSteps:
@@ -125,11 +173,12 @@ extends:
               liveLibrariesBuildConfig: Release
               runtimeType: mono
               codeGenType: 'AOT'
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro_mono
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
+              perfBranch: ${{ parameters.perfBranch }}
 
       # run coreclr Linux arm64 ampere microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -142,11 +191,12 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
+              perfBranch: ${{ parameters.perfBranch }}
 
       #run coreclr Linux arm64 ampere no dynamic pgo microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -159,12 +209,13 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
-              pgoRunType: --nodynamicpgo
+              pgoRunType: nodynamicpgo
+              perfBranch: ${{ parameters.perfBranch }}
 
       #run coreclr Linux arm64 ampere no R2R microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -177,12 +228,13 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
-              r2rRunType: --nor2r
+              r2rRunType: nor2r
+              perfBranch: ${{ parameters.perfBranch }}
 
       # run coreclr Windows arm64 microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -195,10 +247,11 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfsurf'
+              perfBranch: ${{ parameters.perfBranch }}
 
       # run coreclr Windows arm64 ampere microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -211,11 +264,12 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
+              perfBranch: ${{ parameters.perfBranch }}
 
       # run coreclr Windows arm64 ampere no dynamic pgo microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -228,12 +282,13 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
-              pgoRunType: -NoDynamicPGO
+              pgoRunType: nodynamicpgo
               timeoutInMinutes: 780
+              perfBranch: ${{ parameters.perfBranch }}
 
       # run coreclr Windows arm64 ampere no R2R microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -246,12 +301,13 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
-              r2rRunType: -NoR2R
+              r2rRunType: nor2r
               timeoutInMinutes: 780
+              perfBranch: ${{ parameters.perfBranch }}
 
         # run coreclr cloudvm microbenchmarks perf job
         # this run is added temporarily for measuring AVX-512 performance
@@ -266,10 +322,11 @@ extends:
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
+              projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'cloudvm'
+              perfBranch: ${{ parameters.perfBranch }}
 
       # Uncomment once we fix https://github.com/dotnet/performance/issues/1950
       # # run coreclr linux crossgen perf job
@@ -283,10 +340,11 @@ extends:
       #     jobParameters:
       #       testGroup: perf
       #       liveLibrariesBuildConfig: Release
-      #       projectFile: crossgen_perf.proj
+      #       projectFile: $(Build.SourcesDirectory)/eng/testing/performance/crossgen_perf.proj
       #       runKind: crossgen_scenarios
       #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
       #       logicalmachine: 'perfa64'
+      #       perfBranch: ${{ parameters.perfBranch }}
 
       # # run coreclr windows crossgen perf job
       # - template: /eng/pipelines/common/platform-matrix.yml
@@ -299,7 +357,8 @@ extends:
       #     jobParameters:
       #       testGroup: perf
       #       liveLibrariesBuildConfig: Release
-      #       projectFile: crossgen_perf.proj
+      #       projectFile: $(Build.SourcesDirectory)/eng/testing/performance/crossgen_perf.proj
       #       runKind: crossgen_scenarios
       #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
       #       logicalmachine: 'perfsurf'
+      #       perfBranch: ${{ parameters.perfBranch }}

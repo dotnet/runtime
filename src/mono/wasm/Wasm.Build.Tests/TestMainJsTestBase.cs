@@ -55,7 +55,7 @@ public abstract class TestMainJsTestBase : BuildTestBase
                 Path.Combine(_projectDir, "test-main.js")
             );
 
-            File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<html><body><script type=""module"" src=""test-main.js""></script></body></html>");
+            File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<!DOCTYPE html><html><body><script type=""module"" src=""test-main.js""></script></body></html>");
         }
         else if (_projectDir is null)
         {
@@ -64,7 +64,9 @@ public abstract class TestMainJsTestBase : BuildTestBase
 
         if (options.ExtraBuildEnvironmentVariables is null)
             options = options with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
-        options.ExtraBuildEnvironmentVariables["ForceNet8Current"] = "false";
+
+        // TODO: reenable this when the SDK supports targetting net10.0
+        //options.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
         try
         {

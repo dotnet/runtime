@@ -23,7 +23,7 @@
     <TestEnvFileName Condition=" '$(TargetOS)' != 'windows' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
   </PropertyGroup>
-  
+
   <!-- The Helix correlation payload file -->
   <Target Name="_SetTestArchiveRuntimeFile"
           Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
@@ -87,17 +87,24 @@
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
       <_TestUsingWorkloadsValues Include="true;false" />
       <_TestUsingWebcilValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
+      <_TestUsingFingerprintingValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
 
       <!-- now make the cartesian product of true and false values for two categories -->
       <_TestUsingCrossProductValuesTemp Include="@(_TestUsingWorkloadsValues)">
         <Workloads>%(_TestUsingWorkloadsValues.Identity)</Workloads>
       </_TestUsingCrossProductValuesTemp>
-      <_TestUsingCrossProductValues Include="@(_TestUsingCrossProductValuesTemp)">
+      <_TestUsingCrossProductValuesTemp2 Include="@(_TestUsingCrossProductValuesTemp)">
         <Webcil>%(_TestUsingWebcilValues.Identity)</Webcil>
+      </_TestUsingCrossProductValuesTemp2>
+      <_TestUsingCrossProductValues Include="@(_TestUsingCrossProductValuesTemp2)">
+        <Fingerprinting>%(_TestUsingFingerprintingValues.Identity)</Fingerprinting>
       </_TestUsingCrossProductValues>
 
+      <!-- There no tests without fingerprinting and without workloads -->
+      <_TestUsingCrossProductValues Remove="@(_TestUsingCrossProductValues)" Condition="'%(_TestUsingCrossProductValues.Workloads)' == 'false' and '%(_TestUsingCrossProductValues.Fingerprinting)' == 'false'" />
+
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
-        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);TestUsingWebcil=%(_TestUsingCrossProductValues.Webcil)</AdditionalProperties>
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);TestUsingWebcil=%(_TestUsingCrossProductValues.Webcil);TestUsingFingerprinting=%(_TestUsingCrossProductValues.Fingerprinting)</AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BuildWasmAppsProjectsToBuild>
     </ItemGroup>
@@ -201,7 +208,8 @@
   </Target>
 
   <Target Name="PrepareSuperPmiCollectCorrelationPayload"
-          Condition="'$(SuperPmiCollect)' == 'true'">
+          Condition="'$(SuperPmiCollect)' == 'true'"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <!-- Copy Files needed for SuperPMI collection into a directory that will be added to the single, compressed file used as the correlation payload by Helix. -->
     <Message Importance="High" Text="Preparing SuperPMI collection payload directory" />
 
@@ -220,12 +228,16 @@
          (superpmi, mcs, superpmi-shim-collector, clrjit), but it's easier to just copy everything.
     -->
 
-    <Message Importance="High" Text="Copying Runtime binaries from $(ArtifactsDir)transport/coreclr to $(NetCoreAppCurrentTestHostPath)coreclr" />
+    <Message Importance="High" Text="Copying Runtime binaries from $(CoreCLRArtifactsPath) to $(TestArchiveRoot)\coreclr" />
     <MakeDir Directories="$(NetCoreAppCurrentTestHostPath)coreclr" />
     <ItemGroup>
-      <SuperPMICoreClrFiles Include="$(ArtifactsDir)transport\coreclr\**\*.*"/>
+      <SuperPMICoreClrFiles Include="$(CoreCLRArtifactsPath)\**\*.*"/>
     </ItemGroup>
-    <Copy SourceFiles="@(SuperPMICoreClrFiles)" DestinationFolder="$(NetCoreAppCurrentTestHostPath)coreclr\%(RecursiveDir)" />
+    <Copy SourceFiles="@(SuperPMICoreClrFiles)" DestinationFolder="$(TestArchiveRoot)coreclr\%(RecursiveDir)" />
+
+    <ZipDirectory SourceDirectory="$(TestArchiveRoot)coreclr"
+                  DestinationFile="$(TestArchiveRoot)coreclr.zip"
+                  Overwrite="true" />
   </Target>
 
   <Target Name="CompressRuntimeDirectory"

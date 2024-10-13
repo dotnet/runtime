@@ -397,7 +397,7 @@ void Interpreter::ResolveToken(CORINFO_RESOLVED_TOKEN* resTok, mdToken token, Co
     resTok->token = token;
     resTok->tokenType = tokenType;
 #if INTERP_ILCYCLE_PROFILE
-    unsigned __int64 startCycles;
+    uint64_t startCycles;
     bool b = CycleTimer::GetThreadCyclesS(&startCycles); assert(b);
 #endif // INTERP_ILCYCLE_PROFILE
     m_interpCeeInfo.resolveToken(resTok);
@@ -422,7 +422,7 @@ void Interpreter::ResolveToken(CORINFO_RESOLVED_TOKEN* resTok, mdToken token, Co
     }
 #endif
 #if INTERP_ILCYCLE_PROFILE
-    unsigned __int64 endCycles;
+    uint64_t endCycles;
     b = CycleTimer::GetThreadCyclesS(&endCycles); assert(b);
     m_exemptCycles += (endCycles - startCycles);
 #endif // INTERP_ILCYCLE_PROFILE

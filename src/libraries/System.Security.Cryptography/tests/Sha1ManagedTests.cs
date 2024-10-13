@@ -6,11 +6,13 @@ namespace System.Security.Cryptography.Tests
     /// <summary>
     /// Sha1Managed has a copy of the same implementation as SHA1
     /// </summary>
-    public class Sha1ManagedTests : Sha1Tests
+    public class Sha1ManagedTests : Sha1Tests<Sha1ManagedTests.Traits>
     {
-        protected override HashAlgorithm Create()
+        public sealed class Traits : IHashTrait
         {
-            return new SHA1Managed();
+            public static bool IsSupported => true;
+            public static int HashSizeInBytes => SHA1.HashSizeInBytes;
+            public static HashAlgorithm Create() => new SHA1Managed();
         }
     }
 }

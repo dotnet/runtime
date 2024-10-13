@@ -106,13 +106,13 @@ namespace System.Numerics.Tensors
             if (typeof(T) == typeof(float))
             {
                 ReadOnlySpan<float> roundPower10Single = [1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f];
-                roundPower10 = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<float, T>(ref MemoryMarshal.GetReference(roundPower10Single)), roundPower10Single.Length);
+                roundPower10 = Rename<float, T>(roundPower10Single);
             }
             else if (typeof(T) == typeof(double))
             {
                 Debug.Assert(typeof(T) == typeof(double));
                 ReadOnlySpan<double> roundPower10Double = [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15];
-                roundPower10 = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<double, T>(ref MemoryMarshal.GetReference(roundPower10Double)), roundPower10Double.Length);
+                roundPower10 = Rename<double, T>(roundPower10Double);
             }
             else
             {
@@ -171,28 +171,66 @@ namespace System.Numerics.Tensors
 
             public static T Invoke(T x) => T.Round(x);
 
+#if !NET9_0_OR_GREATER
             private const float SingleBoundary = 8388608.0f; // 2^23
             private const double DoubleBoundary = 4503599627370496.0; // 2^52
+#endif
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.Round(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector128.Round(x.AsSingle()).As<float, T>();
+                }
+#else
                 Vector128<T> boundary = Vector128.Create(typeof(T) == typeof(float) ? T.CreateTruncating(SingleBoundary) : T.CreateTruncating(DoubleBoundary));
                 Vector128<T> temp = CopySignOperator<T>.Invoke(boundary, x);
                 return Vector128.ConditionalSelect(Vector128.GreaterThan(Vector128.Abs(x), boundary), x, CopySignOperator<T>.Invoke((x + temp) - temp, x));
+#endif
             }
 
             public static Vector256<T> Invoke(Vector256<T> x)
             {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.Round(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector256.Round(x.AsSingle()).As<float, T>();
+                }
+#else
                 Vector256<T> boundary = Vector256.Create(typeof(T) == typeof(float) ? T.CreateTruncating(SingleBoundary) : T.CreateTruncating(DoubleBoundary));
                 Vector256<T> temp = CopySignOperator<T>.Invoke(boundary, x);
                 return Vector256.ConditionalSelect(Vector256.GreaterThan(Vector256.Abs(x), boundary), x, CopySignOperator<T>.Invoke((x + temp) - temp, x));
+#endif
             }
 
             public static Vector512<T> Invoke(Vector512<T> x)
             {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.Round(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector512.Round(x.AsSingle()).As<float, T>();
+                }
+#else
                 Vector512<T> boundary = Vector512.Create(typeof(T) == typeof(float) ? T.CreateTruncating(SingleBoundary) : T.CreateTruncating(DoubleBoundary));
                 Vector512<T> temp = CopySignOperator<T>.Invoke(boundary, x);
                 return Vector512.ConditionalSelect(Vector512.GreaterThan(Vector512.Abs(x), boundary), x, CopySignOperator<T>.Invoke((x + temp) - temp, x));
+#endif
             }
         }
 

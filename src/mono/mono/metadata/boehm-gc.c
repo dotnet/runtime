@@ -142,6 +142,7 @@ mono_gc_base_init (void)
 				}
 			}
 			g_free (env);
+			g_strfreev (opts);
 		}
 	}
 

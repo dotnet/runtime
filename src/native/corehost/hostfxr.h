@@ -355,12 +355,64 @@ struct hostfxr_dotnet_environment_info
 //
 // String encoding:
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
-//   Unix        - UTF-8  (pal::char_t is 1 byte char)
+//   Non-Windows - UTF-8  (pal::char_t is 1 byte char)
 //
 typedef int32_t(HOSTFXR_CALLTYPE* hostfxr_get_dotnet_environment_info_fn)(
     const char_t* dotnet_root,
     void* reserved,
     hostfxr_get_dotnet_environment_info_result_fn result,
     void* result_context);
+
+struct hostfxr_framework_result
+{
+    size_t size;
+    const char_t* name;
+    const char_t* requested_version;
+    const char_t* resolved_version;
+    const char_t* resolved_path;
+};
+
+struct hostfxr_resolve_frameworks_result
+{
+    size_t size;
+
+    size_t resolved_count;
+    const struct hostfxr_framework_result* resolved_frameworks;
+
+    size_t unresolved_count;
+    const struct hostfxr_framework_result* unresolved_frameworks;
+};
+
+typedef void (HOSTFXR_CALLTYPE* hostfxr_resolve_frameworks_result_fn)(
+    const hostfxr_resolve_frameworks_result* result,
+    void* result_context);
+
+//
+// Resolves frameworks for a runtime config
+//
+// Parameters:
+//    runtime_config_path
+//      Path to the .runtimeconfig.json file
+//    parameters
+//      Optional. Additional parameters for initialization.
+//      If null or dotnet_root is null, the root corresponding to the running hostfx is used.
+//    callback
+//      Optional. Result callback invoked with result of the resolution.
+//      Structs and their elements are valid for the duration of the call.
+//    result_context
+//      Optional. Additional context passed to the result callback.
+//
+// Return value:
+//   0 on success, otherwise failure.
+//
+// String encoding:
+//   Windows     - UTF-16 (pal::char_t is 2-byte wchar_t)
+//   Non-Windows - UTF-8  (pal::char_t is 1-byte char)
+//
+typedef int32_t(HOSTFXR_CALLTYPE* hostfxr_resolve_frameworks_for_runtime_config_fn)(
+    const char_t* runtime_config_path,
+    /*opt*/ const hostfxr_initialize_parameters* parameters,
+    /*opt*/ hostfxr_resolve_frameworks_result_fn callback,
+    /*opt*/ void* result_context);
 
 #endif //__HOSTFXR_H__

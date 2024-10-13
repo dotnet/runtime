@@ -5,10 +5,8 @@
 
 */
 
-#ifndef PAL_STDCPP_COMPAT
 #undef __in
 #undef __out
-#endif // !PAL_STDCPP_COMPAT
 
 #undef _At_
 #undef _Deref_out_
@@ -261,7 +259,6 @@
 #undef __encoded_array
 #undef __encoded_pointer
 #undef __exceptthat
-#undef __fallthrough
 #undef __field_bcount
 #undef __field_bcount_full
 #undef __field_bcount_full_opt
@@ -388,7 +385,6 @@
 #undef __notnull
 #undef __notreadonly
 #undef __notvalid
-#undef __null
 #undef __nullnullterminated
 #undef __nullterminated
 #undef __out_awcount
