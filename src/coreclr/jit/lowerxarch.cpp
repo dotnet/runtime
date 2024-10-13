@@ -10358,7 +10358,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 op1->ClearContained();
 
                                 // Drop GT_CAST if it doesn't change the op1's bits we're about to broadcast
-                                if (op1->OperIs(GT_CAST) && !op1->gtOverflow())
+                                if (op1->OperIs(GT_CAST) && !op1->gtOverflow() && comp->opts.Tier0OptimizationEnabled())
                                 {
                                     GenTreeCast* cast = op1->AsCast();
                                     if (!varTypeIsFloating(cast->CastToType()) &&
