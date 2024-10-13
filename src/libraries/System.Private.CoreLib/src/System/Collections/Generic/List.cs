@@ -461,7 +461,7 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="indexToInsert">Index of the first insertion.</param>
         /// <param name="insertionCount">How many elements will be inserted.</param>
-        private void GrowForInsertion(int indexToInsert, int insertionCount = 1)
+        internal void GrowForInsertion(int indexToInsert, int insertionCount = 1)
         {
             Debug.Assert(insertionCount > 0);
 
