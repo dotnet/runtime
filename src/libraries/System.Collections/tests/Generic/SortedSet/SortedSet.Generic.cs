@@ -77,11 +77,8 @@ namespace System.Collections.Tests
             Assert.True(set.SetEquals(data));
         }
 
-#if TARGET_64BIT
-        // Cover InternalIndexOf when Count > SuperSet.InternalIndexOfCountThreshold
-        // Since the algorithm has time complexity O(n^2) and n is quite large, only run it for 64-bit
         [Fact]
-        public void SortedSet_Generic_SetEquals_AboveInternalIndexOfCountThreshold()
+        public void SortedSet_Generic_SetEquals_CountAboveThresholdInGetInternalIndexOfBitHelperLength()
         {
             const int AboveInternalIndexOfCountThreshold = 255;
 
@@ -108,7 +105,6 @@ namespace System.Collections.Tests
             Assert.False(set.SetEquals(subSetData));
             Assert.False(set.SetEquals(differentSet));
         }
-#endif
 
         [Fact]
         public void SortedSet_Generic_GetViewBetween_MinMax_Exhaustive()

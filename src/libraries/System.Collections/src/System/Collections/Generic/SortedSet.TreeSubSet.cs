@@ -304,7 +304,7 @@ namespace System.Collections.Generic
                 return -1;
             }
 
-            internal override int MaxInternalIndexOfPlusOne()
+            internal override int GetInternalIndexOfBitHelperLength()
             {
                 return Count;
             }
