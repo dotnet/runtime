@@ -131,7 +131,7 @@ def build_argument_parser():
         collects information about all the runs."""
 
     framework_parser = subparsers.add_parser('crossgen_framework', description=framework_parser_description)
-    framework_parser.add_argument('--dotnet', dest='dotnet', required=True)
+    framework_parser.add_argument('--dotnet', dest='dotnet')
     framework_parser.add_argument('--crossgen', dest='crossgen_executable_filename', required=True)
     framework_parser.add_argument('--target_os', dest='target_os', required=True)
     framework_parser.add_argument('--target_arch', dest='target_arch', required=True)
