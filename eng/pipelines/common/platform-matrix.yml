@@ -298,6 +298,7 @@ jobs:
 
 # Runtime-dev-innerloop build
 
+# disabled against https://github.com/dotnet/runtime/issues/108821
 #- ${{ if containsValue(parameters.platforms, 'linux_x64_dev_innerloop') }}:
 #  - template: xplat-setup.yml
 #    parameters:
