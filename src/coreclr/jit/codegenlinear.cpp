@@ -487,23 +487,33 @@ void CodeGen::genCodeForBBlist()
 
         regSet.rsSpillChk();
 
-        /* Make sure we didn't bungle pointer register tracking */
+        // Make sure we didn't bungle pointer register tracking
 
         regMaskTP ptrRegs       = gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur;
         regMaskTP nonVarPtrRegs = ptrRegs & ~regSet.GetMaskVars();
 
-        // If return is a GC-type, clear it.  Note that if a common
-        // epilog is generated (genReturnBB) it has a void return
-        // even though we might return a ref.  We can't use the compRetType
-        // as the determiner because something we are tracking as a byref
-        // might be used as a return value of a int function (which is legal)
-        GenTree* blockLastNode = block->lastNode();
-        if ((blockLastNode != nullptr) && (blockLastNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET)) &&
-            (varTypeIsGC(compiler->info.compRetType) ||
-             (blockLastNode->AsOp()->GetReturnValue() != nullptr &&
-              varTypeIsGC(blockLastNode->AsOp()->GetReturnValue()->TypeGet()))))
+        // If this is a return block then we expect some live GC regs. Clear those.
+        if (compiler->compMethodReturnsRetBufAddr())
         {
             nonVarPtrRegs &= ~RBM_INTRET;
+        }
+        else
+        {
+            const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
+            const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
+
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                regNumber reg = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
+                nonVarPtrRegs &= ~genRegMask(reg);
+            }
+        }
+
+        // For a tailcall arbitrary argument registers may be live into the
+        // prolog. Skip validating those.
+        if (block->HasFlag(BBF_HAS_JMP))
+        {
+            nonVarPtrRegs &= ~fullIntArgRegMask(CorInfoCallConvExtension::Managed);
         }
 
         if (nonVarPtrRegs)
