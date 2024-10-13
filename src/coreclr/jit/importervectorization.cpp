@@ -133,8 +133,7 @@ GenTree* Compiler::impExpandHalfConstEquals(
             else
             {
                 // TODO-CQ: We should probably do the same for SIMD, e.g. 34 bytes -> SIMD32 and SIMD16
-                // while currently we do SIMD32 and SIMD32 (likely, hitting a terrible penalty
-                // due to the unaligned access). This involves a bit more complex upcasting logic.
+                // while currently we do SIMD32 and SIMD32. This involves a bit more complex upcasting logic.
             }
 
             // Overlap with the previously processed data

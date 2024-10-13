@@ -9489,6 +9489,8 @@ public:
         }
     }
 
+    // Same as roundDownMaxType, but with an additional parameter to be more conservative
+    // around available ISAs, e.g. if AVX2 is not supported while AVX is -> downgrade to SIMD16.
     var_types roundDownMaxType(unsigned size, bool conservative)
     {
         var_types result = roundDownMaxType(size);
