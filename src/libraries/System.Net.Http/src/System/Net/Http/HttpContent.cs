@@ -666,8 +666,7 @@ namespace System.Net.Http
                     return null;
                 }
 
-                // We can safely cast contentLength to (int) since we just checked that it is <= maxBufferSize.
-                return new LimitMemoryStream((int)maxBufferSize, (int)contentLength);
+                return new LimitMemoryStream((int)maxBufferSize, contentLength.Value);
             }
 
             // We couldn't determine the length of the buffer. Create a memory stream with an empty buffer.
@@ -866,10 +865,15 @@ namespace System.Net.Http
         {
             private readonly int _maxSize;
 
-            public LimitMemoryStream(int maxSize, int capacity)
-                : base(capacity)
+            public LimitMemoryStream(int maxSize, long capacity)
+                : base(0)
             {
-                Debug.Assert(capacity <= maxSize);
+                if (capacity > maxSize)
+                {
+                    throw CreateOverCapacityException(maxSize);
+                }
+
+                Capacity = (int)capacity;
                 _maxSize = maxSize;
             }
 
