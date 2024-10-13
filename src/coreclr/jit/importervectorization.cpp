@@ -162,7 +162,7 @@ GenTree* Compiler::impExpandHalfConstEquals(
             assert(cmpMode == Ordinal);
         }
 
-        GenTree* srcCns = gtNewGenericCon(readType, (byte*)cns + byteOffset);
+        GenTree* srcCns = gtNewGenericCon(readType, (uint8_t*)cns + byteOffset);
 
         // A small optimization: prefer X == Y over X ^ Y == 0 since
         // just one comparison is needed, and we can do it with a single load.
