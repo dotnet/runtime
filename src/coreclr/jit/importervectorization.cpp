@@ -119,17 +119,27 @@ GenTree* Compiler::impExpandHalfConstEquals(
     unsigned  byteLenRemaining = byteLen;
     while (byteLenRemaining > 0)
     {
+        // We have a remaining data to process and it's smaller than the
+        // previously processed data
         if (byteLenRemaining < genTypeSize(readType))
         {
-            // Special case: prefer TYP_INT over TYP_LONG for the last chunk
-            // if it's small enough (we'll have to zero-extend it)
-            if ((readType == TYP_LONG) && (byteLenRemaining <= 4))
+            if (varTypeIsIntegral(readType))
             {
-                readType = TYP_INT;
+                // Use a smaller GPR load for the remaining data, we're going to zero-extend it
+                // since the previous GPR load was larger. Hence, for e.g. 6 bytes we're going to do
+                // "(IND<INT> ^ cns1) | (UINT)(IND<USHORT> ^ cns2)"
+                readType = roundUpGPRType(byteLenRemaining);
+            }
+            else
+            {
+                // TODO-CQ: We should probably do the same for SIMD, e.g. 34 bytes -> SIMD32 and SIMD16
+                // while currently we do SIMD32 and SIMD32 (likely, hitting a terrible penalty
+                // due to the unaligned access). This involves a bit more complex upcasting logic.
             }
 
             // Overlap with the previously processed data
             byteLenRemaining = genTypeSize(readType);
+            assert(byteLenRemaining <= byteLen);
         }
 
         ssize_t byteOffset = ((ssize_t)byteLen - (ssize_t)byteLenRemaining);
@@ -171,7 +181,7 @@ GenTree* Compiler::impExpandHalfConstEquals(
         if ((genTypeSize(readType) == byteLen) && varTypeIsIntegral(readType))
         {
             // TODO-CQ: Figure out why it's a size regression for SIMD
-            return bitwiseOp(GT_EQ, TYP_INT, srcCns, loadedData);
+            return bitwiseOp(GT_EQ, TYP_INT, loadedData, srcCns);
         }
 
         // loadedData ^ srcCns
@@ -187,10 +197,8 @@ GenTree* Compiler::impExpandHalfConstEquals(
         {
             if (!result->TypeIs(readType))
             {
-                // Special case: we need to merge LONG check with INT check
-                assert(result->TypeIs(TYP_LONG));
-                assert(xorNode->TypeIs(TYP_INT));
-                xorNode = gtNewCastNode(TYP_LONG, xorNode, true, TYP_LONG);
+                assert(varTypeIsIntegral(result) && varTypeIsIntegral(readType));
+                xorNode = gtNewCastNode(result->TypeGet(), xorNode, true, result->TypeGet());
             }
 
             // Merge with the previous result via OR
