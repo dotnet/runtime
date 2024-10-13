@@ -95,6 +95,7 @@ GenTree* Compiler::impExpandHalfConstEquals(
 
     // A gtNewOperNode which can handle SIMD operands (used for bitwise operations):
     auto bitwiseOp = [&](genTreeOps oper, var_types type, GenTree* op1, GenTree* op2) -> GenTree* {
+#ifdef FEATURE_HW_INTRINSICS
         if (varTypeIsSIMD(type))
         {
             return gtNewSimdBinOpNode(oper, type, op1, op2, CORINFO_TYPE_NATIVEUINT, genTypeSize(type));
@@ -105,6 +106,7 @@ GenTree* Compiler::impExpandHalfConstEquals(
             assert(varTypeIsSIMD(op2));
             return gtNewSimdCmpOpAllNode(oper, type, op1, op2, CORINFO_TYPE_NATIVEUINT, genTypeSize(op1));
         }
+#endif
         return gtNewOperNode(oper, type, op1, op2);
     };
 
@@ -166,7 +168,7 @@ GenTree* Compiler::impExpandHalfConstEquals(
 
         // A small optimization: prefer X == Y over X ^ Y == 0 since
         // just one comparison is needed, and we can do it with a single load.
-        if ((genTypeSize(readType) == byteLen) && !varTypeIsSIMD(readType))
+        if ((genTypeSize(readType) == byteLen) && varTypeIsIntegral(readType))
         {
             // TODO-CQ: Figure out why it's a size regression for SIMD
             return bitwiseOp(GT_EQ, TYP_INT, srcCns, loadedData);
