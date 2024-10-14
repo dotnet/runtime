@@ -274,7 +274,7 @@ namespace Wasm.Build.Tests
                         });
 
             await RunBuiltBrowserApp(config, projectFile);
-            string frameworkDir = FindBinFrameworkDir(config, forPublish: false);
+            string frameworkDir = FindBinFrameworkDir(config, forPublish: true);
             string objBuildDir = Path.Combine(projectDirectory, "obj", config, BuildTestBase.DefaultTargetFramework, "wasm", "for-publish");
             TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
         }
