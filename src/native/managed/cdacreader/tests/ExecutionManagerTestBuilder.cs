@@ -11,7 +11,7 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 internal class ExecutionManagerTestBuilder
 {
-    private const ulong ExecutionManagerCodeRangeMapAddress = 0x000a_fff0;
+    public const ulong ExecutionManagerCodeRangeMapAddress = 0x000a_fff0;
 
     const int RealCodeHeaderSize = 0x08; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
 
@@ -133,7 +133,7 @@ internal class ExecutionManagerTestBuilder
     }
 
 
-    internal static NibbleMapTestBuilder BuildNibbleMap(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart, MockTarget.Architecture arch)
+    internal static NibbleMapTestBuilder CreateNibbleMap(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart, MockTarget.Architecture arch)
     {
         return new NibbleMapTestBuilder(mapBase, mapRangeSize, mapStart, arch);
     }
@@ -271,6 +271,10 @@ internal class ExecutionManagerTestBuilder
         }
     }
 
+    public static RangeSectionMapTestBuilder CreateRangeSection(MockTarget.Architecture arch)
+    {
+        return new RangeSectionMapTestBuilder(arch);
+    }
 
     internal MockMemorySpace.Builder Builder { get; }
     private readonly RangeSectionMapTestBuilder _rsmBuilder;
@@ -354,15 +358,15 @@ internal class ExecutionManagerTestBuilder
         };
     }
 
-    internal ExecutionManagerTestBuilder.NibbleMapTestBuilder AddNibbleMap(ulong codeRangeStart, uint codeRangeSize)
+    internal NibbleMapTestBuilder CreateNibbleMap(ulong codeRangeStart, uint codeRangeSize)
     {
 
-        ExecutionManagerTestBuilder.NibbleMapTestBuilder nibBuilder = new ExecutionManagerTestBuilder.NibbleMapTestBuilder(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch);
+        NibbleMapTestBuilder nibBuilder = new NibbleMapTestBuilder(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch);
         Builder.AddHeapFragment(nibBuilder.NibbleMapFragment);
         return nibBuilder;
     }
 
-    public TargetPointer InsertRangeSection(ulong codeRangeStart, uint codeRangeSize, TargetPointer jitManagerAddress, TargetPointer codeHeapListNodeAddress)
+    public TargetPointer AddRangeSection(ulong codeRangeStart, uint codeRangeSize, TargetPointer jitManagerAddress, TargetPointer codeHeapListNodeAddress)
     {
         var tyInfo = TypeInfoCache[DataType.RangeSection];
         uint rangeSectionSize = tyInfo.Size.Value;
@@ -381,7 +385,7 @@ internal class ExecutionManagerTestBuilder
         return rangeSection.Address;
     }
 
-    public TargetPointer InsertAddressRange(ulong codeRangeStart, uint codeRangeSize, TargetPointer rangeSectionAddress)
+    public TargetPointer AddRangeSectionFragment(ulong codeRangeStart, uint codeRangeSize, TargetPointer rangeSectionAddress)
     {
         var tyInfo = TypeInfoCache[DataType.RangeSectionFragment];
         uint rangeSectionFragmentSize = tyInfo.Size.Value;
@@ -399,7 +403,7 @@ internal class ExecutionManagerTestBuilder
         return rangeSectionFragment.Address;
     }
 
-    public TargetPointer InsertCodeHeapListNode(TargetPointer next, TargetPointer startAddress, TargetPointer endAddress, TargetPointer mapBase, TargetPointer headerMap)
+    public TargetPointer AddCodeHeapListNode(TargetPointer next, TargetPointer startAddress, TargetPointer endAddress, TargetPointer mapBase, TargetPointer headerMap)
     {
         var tyInfo = TypeInfoCache[DataType.CodeHeapListNode];
         uint codeHeapListNodeSize = tyInfo.Size.Value;
@@ -415,7 +419,7 @@ internal class ExecutionManagerTestBuilder
         return codeHeapListNode.Address;
     }
 
-    public void AllocateMethod(TargetCodePointer codeStart, int codeSize, TargetPointer methodDescAddress)
+    public void AddJittedMethod(TargetCodePointer codeStart, int codeSize, TargetPointer methodDescAddress)
     {
         int codeHeaderOffset = Builder.TargetTestHelpers.PointerSize;
 
