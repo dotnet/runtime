@@ -337,8 +337,8 @@ namespace System
             }
             if (current.Build < 0)
             {
-                // Unspecified component satisfies any required version
-                return true;
+                // Unspecified build component is to be treated as zero
+                return build == 0;
             }
             if (current.Build != build)
             {
@@ -347,8 +347,8 @@ namespace System
 
             if (current.Revision < 0)
             {
-                // Unspecified component satisfies any required version
-                return true;
+                // Unspecified build component is to be treated as zero
+                return revision == 0;
             }
 
             return current.Revision >= revision;
