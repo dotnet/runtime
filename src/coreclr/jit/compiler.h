@@ -44,6 +44,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "scev.h"
 #include "namedintrinsiclist.h"
 #include "structsegments.h"
+#include "barrierkinddef.h"
 #ifdef LATE_DISASM
 #include "disasm.h"
 #endif

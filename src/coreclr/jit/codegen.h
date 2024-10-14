@@ -1627,13 +1627,6 @@ public:
 
     void instGen_Return(unsigned stkArgSize);
 
-    enum BarrierKind
-    {
-        BARRIER_FULL,       // full barrier
-        BARRIER_LOAD_ONLY,  // load barier
-        BARRIER_STORE_ONLY, // store barier
-    };
-
     void instGen_MemoryBarrier(BarrierKind barrierKind = BARRIER_FULL);
 
     void instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags = INS_FLAGS_DONT_CARE);
