@@ -1174,10 +1174,6 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     if (IsCollectible())
         m_pLowFrequencyHeap = m_pHighFrequencyHeap;
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    m_pHighFrequencyHeap->m_fPermitStubsWithUnwindInfo = TRUE;
-#endif
-
     if (dwStaticsHeapReserveSize != 0)
     {
         m_pStaticsHeap = new (&m_StaticsHeapInstance) LoaderHeap(STATIC_FIELD_HEAP_RESERVE_SIZE,
@@ -1200,10 +1196,6 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
                                                        UnlockedLoaderHeap::HeapKind::Executable);
 
     initReservedMem += dwStubHeapReserveSize;
-
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    m_pStubHeap->m_fPermitStubsWithUnwindInfo = TRUE;
-#endif
 
     m_pPrecodeHeap = new (&m_PrecodeHeapInstance) CodeFragmentHeap(this, STUB_CODE_BLOCK_PRECODE);
 
@@ -1387,20 +1379,12 @@ void LoaderAllocator::Terminate()
 
     if (m_pHighFrequencyHeap != NULL)
     {
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-        UnregisterUnwindInfoInLoaderHeap(m_pHighFrequencyHeap);
-#endif
-
         m_pHighFrequencyHeap->~LoaderHeap();
         m_pHighFrequencyHeap = NULL;
     }
 
     if (m_pStubHeap != NULL)
     {
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-        UnregisterUnwindInfoInLoaderHeap(m_pStubHeap);
-#endif
-
         m_pStubHeap->~LoaderHeap();
         m_pStubHeap = NULL;
     }
@@ -1704,13 +1688,13 @@ BOOL AssemblyLoaderAllocator::CanUnload()
 DomainAssemblyIterator::DomainAssemblyIterator(DomainAssembly* pFirstAssembly)
 {
     pCurrentAssembly = pFirstAssembly;
-    pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetNextDomainAssemblyInSameALC() : NULL;
+    pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetAssembly()->GetNextAssemblyInSameALC() : NULL;
 }
 
 void DomainAssemblyIterator::operator++()
 {
     pCurrentAssembly = pNextAssembly;
-    pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetNextDomainAssemblyInSameALC() : NULL;
+    pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetAssembly()->GetNextAssemblyInSameALC() : NULL;
 }
 
 #ifndef DACCESS_COMPILE
