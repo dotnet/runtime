@@ -26,7 +26,6 @@ internal class ExecutionManagerTestBuilder
         // "RealCodeHeader" objects for jitted methods are allocated in this range
         public ulong CodeHeaderStart;
         public ulong CodeHeaderEnd;
-
     }
 
     public static readonly AllocationRange DefaultAllocationRange = new AllocationRange {
@@ -366,7 +365,21 @@ internal class ExecutionManagerTestBuilder
         return nibBuilder;
     }
 
-    public TargetPointer AddRangeSection(ulong codeRangeStart, uint codeRangeSize, TargetPointer jitManagerAddress, TargetPointer codeHeapListNodeAddress)
+    internal readonly struct JittedCodeRange
+    {
+        public  MockMemorySpace.BumpAllocator Allocator {get ; init;}
+        public ulong RangeStart => Allocator.RangeStart;
+        public ulong RangeEnd => Allocator.RangeEnd;
+        public ulong RangeSize => RangeEnd - RangeStart;
+    }
+
+    public JittedCodeRange AllocateJittedCodeRange(ulong codeRangeStart, uint codeRangeSize)
+    {
+        MockMemorySpace.BumpAllocator allocator = Builder.CreateAllocator(codeRangeStart, codeRangeStart + codeRangeSize);
+        return new JittedCodeRange { Allocator = allocator };
+    }
+
+    public TargetPointer AddRangeSection(JittedCodeRange jittedCodeRange, TargetPointer jitManagerAddress, TargetPointer codeHeapListNodeAddress)
     {
         var tyInfo = TypeInfoCache[DataType.RangeSection];
         uint rangeSectionSize = tyInfo.Size.Value;
@@ -374,8 +387,8 @@ internal class ExecutionManagerTestBuilder
         Builder.AddHeapFragment(rangeSection);
         int pointerSize = Builder.TargetTestHelpers.PointerSize;
         Span<byte> rs = Builder.BorrowAddressRange(rangeSection.Address, (int)rangeSectionSize);
-        Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.RangeBegin)].Offset, pointerSize), codeRangeStart);
-        Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.RangeEndOpen)].Offset, pointerSize), codeRangeStart + codeRangeSize);
+        Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.RangeBegin)].Offset, pointerSize), jittedCodeRange.RangeStart);
+        Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.RangeEndOpen)].Offset, pointerSize), jittedCodeRange.RangeEnd);
         // 0x02 = RangeSectionFlags.CodeHeap
         Builder.TargetTestHelpers.Write(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.Flags)].Offset, sizeof(uint)), (uint)0x02);
         Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.HeapList)].Offset, pointerSize), codeHeapListNodeAddress);
@@ -385,18 +398,18 @@ internal class ExecutionManagerTestBuilder
         return rangeSection.Address;
     }
 
-    public TargetPointer AddRangeSectionFragment(ulong codeRangeStart, uint codeRangeSize, TargetPointer rangeSectionAddress)
+    public TargetPointer AddRangeSectionFragment(JittedCodeRange jittedCodeRange, TargetPointer rangeSectionAddress)
     {
         var tyInfo = TypeInfoCache[DataType.RangeSectionFragment];
         uint rangeSectionFragmentSize = tyInfo.Size.Value;
         MockMemorySpace.HeapFragment rangeSectionFragment = _rangeSectionMapAllocator.Allocate(rangeSectionFragmentSize, "RangeSectionFragment");
         // FIXME: this shouldn't really be called InsertAddressRange, but maybe InsertRangeSectionFragment?
-        _rsmBuilder.InsertAddressRange(codeRangeStart, codeRangeSize, rangeSectionFragment.Address);
+        _rsmBuilder.InsertAddressRange(jittedCodeRange.RangeStart, (uint)jittedCodeRange.RangeSize, rangeSectionFragment.Address);
         Builder.AddHeapFragment(rangeSectionFragment);
         int pointerSize = Builder.TargetTestHelpers.PointerSize;
         Span<byte> rsf = Builder.BorrowAddressRange(rangeSectionFragment.Address, (int)rangeSectionFragmentSize);
-        Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeBegin)].Offset, pointerSize), codeRangeStart);
-        Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeEndOpen)].Offset, pointerSize), codeRangeStart + codeRangeSize);
+        Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeBegin)].Offset, pointerSize), jittedCodeRange.RangeStart);
+        Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeEndOpen)].Offset, pointerSize), jittedCodeRange.RangeEnd);
         Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeSection)].Offset, pointerSize), rangeSectionAddress);
         /* Next = nullptr */
         // nothing
@@ -419,25 +432,35 @@ internal class ExecutionManagerTestBuilder
         return codeHeapListNode.Address;
     }
 
-    public void AddJittedMethod(TargetCodePointer codeStart, int codeSize, TargetPointer methodDescAddress)
-    {
-        int codeHeaderOffset = Builder.TargetTestHelpers.PointerSize;
+    private uint CodeHeaderSize => (uint)Builder.TargetTestHelpers.PointerSize;
 
-        TargetPointer methodFragmentStart = codeStart.AsTargetPointer - (ulong)codeHeaderOffset;
-        MockMemorySpace.HeapFragment methodFragment = new MockMemorySpace.HeapFragment
-        {
-            Address = methodFragmentStart,
-            Data = new byte[codeSize + codeHeaderOffset],
-            Name = "Method Header & Code"
-        };
+    // offset from the start of the code
+    private uint CodeHeaderOffset => CodeHeaderSize;
+
+    private (MockMemorySpace.HeapFragment fragment, TargetCodePointer codeStart) AllocateJittedMethod(JittedCodeRange jittedCodeRange, int codeSize, string name = "Method Header & Code")
+    {
+        ulong size = (ulong)(codeSize + CodeHeaderOffset);
+        MockMemorySpace.HeapFragment methodFragment = jittedCodeRange.Allocator.Allocate(size, name);
         Builder.AddHeapFragment(methodFragment);
+        TargetCodePointer codeStart = methodFragment.Address + CodeHeaderOffset;
+        return (methodFragment, codeStart);
+    }
+
+    public TargetCodePointer AddJittedMethod(JittedCodeRange jittedCodeRange, int codeSize, TargetPointer methodDescAddress)
+    {
+        (MockMemorySpace.HeapFragment methodFragment, TargetCodePointer codeStart) = AllocateJittedMethod(jittedCodeRange, codeSize);
+
         MockMemorySpace.HeapFragment codeHeaderFragment = _codeHeaderAllocator.Allocate(RealCodeHeaderSize, "RealCodeHeader");
         Builder.AddHeapFragment(codeHeaderFragment);
-        Span<byte> mfPtr = Builder.BorrowAddressRange(methodFragmentStart, codeHeaderOffset);
+
+        Span<byte> mfPtr = Builder.BorrowAddressRange(methodFragment.Address, (int)CodeHeaderSize);
         Builder.TargetTestHelpers.WritePointer(mfPtr.Slice(0, Builder.TargetTestHelpers.PointerSize), codeHeaderFragment.Address);
+
         Span<byte> chf = Builder.BorrowAddressRange(codeHeaderFragment.Address, RealCodeHeaderSize);
         var tyInfo = TypeInfoCache[DataType.RealCodeHeader];
         Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.MethodDesc)].Offset, Builder.TargetTestHelpers.PointerSize), methodDescAddress);
+
+        return codeStart;
     }
 
     public void MarkCreated() => Builder.MarkCreated();
