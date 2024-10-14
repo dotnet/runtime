@@ -1537,7 +1537,11 @@ public:
     { 
         // only in-place single steps over call intructions are supported at this time
 #ifndef FEATURE_EMULATE_SINGLESTEP
-        return m_instrAttrib.m_fIsCall && m_fInPlaceSS;
+#ifndef FEATURE_EMULATE_SINGLESTEP
+        // only in-place single steps over call intructions are supported at this time
+        _ASSERTE(m_instrAttrib.m_fIsCall);
+        return m_fInPlaceSS;
+#else
 #else
 #error single step emulation not supported with out of process set thread context
 #endif

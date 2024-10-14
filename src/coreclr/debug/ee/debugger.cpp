@@ -5488,6 +5488,8 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
     if (retVal && fIsVEH)
     {
+        // This does not return. Out-of-proc debugger will update the thread context
+        // within this call.
         SendSetThreadContextNeeded(context, &debuggerSteppingInfo);
     }
 #endif
