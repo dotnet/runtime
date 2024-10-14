@@ -391,6 +391,11 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 {
     LclVarDsc* dsc = lvaGetDesc(lclNum);
 
+    if (!dsc->lvTracked)
+    {
+        return false;
+    }
+
     BasicBlockVisit result = loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
         if (!VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
         {
@@ -1282,6 +1287,11 @@ bool Compiler::optPrimaryIVHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop*
     if (varDsc->lvDoNotEnregister)
     {
         // This filters out locals that may be live into exceptional exits.
+        return true;
+    }
+
+    if (!varDsc->lvTracked)
+    {
         return true;
     }
 
@@ -2414,9 +2424,21 @@ PhaseStatus Compiler::optInductionVariables()
     bool changed = false;
 
     optReachableBitVecTraits = nullptr;
-    m_dfsTree                = fgComputeDfs();
-    m_domTree                = FlowGraphDominatorTree::Build(m_dfsTree);
-    m_loops                  = FlowGraphNaturalLoops::Find(m_dfsTree);
+
+    if (m_dfsTree == nullptr)
+    {
+        m_dfsTree = fgComputeDfs();
+    }
+
+    if (m_domTree == nullptr)
+    {
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+    }
+
+    if (m_loops == nullptr)
+    {
+        m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
+    }
 
     LoopLocalOccurrences loopLocals(m_loops);
 
