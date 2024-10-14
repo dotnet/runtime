@@ -187,7 +187,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ false)]
-        [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)] // fails
+        [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
         [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ true)]
         [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ false)]
         public async Task BuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
@@ -202,28 +202,25 @@ namespace Wasm.Build.Tests
 
             string extraPropertiesForDBP = string.Empty;
             string frameworkDir = FindBinFrameworkDir(config, forPublish: false);
+            
+            var buildOptions = _baseBuildProjectOptions with 
+            {
+                BinFrameworkDir = frameworkDir
+            };
             if (useArtifacts)
             {
                 extraPropertiesForDBP += "<UseArtifactsOutput>true</UseArtifactsOutput><ArtifactsPath>.</ArtifactsPath>";
-                var framworkDirParts = frameworkDir.Split(Path.DirectorySeparatorChar);
-                int pathPartsCount = framworkDirParts.Count();
-                for (int i = 0; i < pathPartsCount; i++)
+                buildOptions = buildOptions with
                 {
-                    if (framworkDirParts[i] == config)
-                    {
-                        // Issue: this should be BuildEnvironment.DefaultRuntimeIdentifier, not projectName
-                        framworkDirParts[i] = projectName;
-                        if (i != pathPartsCount - 1)
-                        {
-                            framworkDirParts[i + 1] = config.ToLower();
-                            break;
-                        }
-                    }
-                    
-                }
-                frameworkDir = Path.Combine(framworkDirParts);
-                if (string.IsNullOrEmpty(framworkDirParts[0]))
-                    frameworkDir = Path.Combine($"{Path.DirectorySeparatorChar}", frameworkDir);
+                    // browser app does not allow appending RID
+                    BinFrameworkDir = Path.Combine(
+                                            projectDirectory,
+                                            "bin",
+                                            id,
+                                            config.ToLower(),
+                                            "wwwroot",
+                                            "_framework")
+                };
             }
             if (appendRID)
             {
@@ -233,10 +230,6 @@ namespace Wasm.Build.Tests
             string propsPath = Path.Combine(projectDirectory, "Directory.Build.props");
             AddItemsPropertiesToProject(propsPath, extraPropertiesForDBP);
 
-            var buildOptions = _baseBuildProjectOptions with 
-            {
-                BinFrameworkDir = frameworkDir
-            };
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
             BuildTemplateProject(buildArgs, id: id, buildOptions);
