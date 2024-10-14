@@ -61,7 +61,7 @@ CONFIG_INTEGER(JitBreakOnMinOpts, W("JITBreakOnMinOpts"), 0) // Halt if jit swit
 CONFIG_INTEGER(JitCloneLoops, W("JitCloneLoops"), 1) // If 0, don't clone. Otherwise clone loops for optimizations.
 CONFIG_INTEGER(JitCloneLoopsWithGdvTests, W("JitCloneLoopsWithGdvTests"), 1)     // If 0, don't clone loops based on
                                                                                  // invariant type/method address tests
-RELEASE_CONFIG_INTEGER(JitCloneLoopsSizeLimit, W("JitCloneLoopsSizeLimit"), 400) // llimit cloning to loops with less
+RELEASE_CONFIG_INTEGER(JitCloneLoopsSizeLimit, W("JitCloneLoopsSizeLimit"), 400) // limit cloning to loops with less
                                                                                  // than this many tree nodes
 CONFIG_INTEGER(JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0) // In debug builds log places where loop cloning
                                                                        // optimizations are performed on the fast path.

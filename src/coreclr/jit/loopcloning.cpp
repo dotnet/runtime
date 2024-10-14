@@ -1800,7 +1800,7 @@ bool Compiler::optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* 
     //
     unsigned loopSize = 0;
 
-    // For now we use a very simplicstic model where each tree node
+    // For now we use a very simplistic model where each tree node
     // has the same code size.
     //
     // CostSz is not available until later.
