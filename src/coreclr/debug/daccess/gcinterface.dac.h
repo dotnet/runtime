@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #ifndef __DACCESS_GCINTERFACE_DAC_H__
 #define __DACCESS_GCINTERFACE_DAC_H__
 

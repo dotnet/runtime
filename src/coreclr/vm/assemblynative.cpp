@@ -41,7 +41,6 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
 
     BEGIN_QCALL;
 
-    DomainAssembly * pParentAssembly = NULL;
     Assembly * pRefAssembly = NULL;
     AssemblyBinder *pBinder = NULL;
 
