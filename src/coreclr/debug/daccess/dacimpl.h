@@ -131,16 +131,13 @@ struct DAC_MD_IMPORT
     DAC_MD_IMPORT* next;       // list link field
     TADDR peFile;              // a TADDR for a PEAssembly* or a ReflectionModule*
     IMDInternalImport* impl;   // Associated metadata interface
-    bool isAlternate;          // for NGEN images set to true if the metadata corresponds to the IL image
 
     DAC_MD_IMPORT(TADDR peFile_,
         IMDInternalImport* impl_,
-        bool isAlt_ = false,
         DAC_MD_IMPORT* next_ = NULL)
         : next(next_)
         , peFile(peFile_)
         , impl(impl_)
-        , isAlternate(isAlt_)
     {
         SUPPORTS_DAC_HOST_ONLY;
     }
@@ -179,10 +176,10 @@ public:
     }
 
     FORCEINLINE
-    DAC_MD_IMPORT* Add(TADDR peFile, IMDInternalImport* impl, bool isAlt)
+    DAC_MD_IMPORT* Add(TADDR peFile, IMDInternalImport* impl)
     {
         SUPPORTS_DAC;
-        DAC_MD_IMPORT* importList = new (nothrow) DAC_MD_IMPORT(peFile, impl, isAlt, m_head);
+        DAC_MD_IMPORT* importList = new (nothrow) DAC_MD_IMPORT(peFile, impl, m_head);
         if (!importList)
         {
             return NULL;
@@ -1356,8 +1353,7 @@ public:
     JITNotification* GetHostJitNotificationTable();
     GcNotification*  GetHostGcNotificationTable();
 
-    void* GetMetaDataFromHost(PEAssembly* pPEAssembly,
-                              bool* isAlternate);
+    void* GetMetaDataFromHost(PEAssembly* pPEAssembly);
 
     virtual
     interface IMDInternalImport* GetMDImport(const PEAssembly* pPEAssembly,

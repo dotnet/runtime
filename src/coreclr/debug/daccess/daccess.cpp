@@ -6474,34 +6474,14 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
 }
 
 void *
-ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
-                                   bool* isAlternate)
+ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly)
 {
     DWORD imageTimestamp, imageSize, dataSize;
     void* buffer = NULL;
     WCHAR uniPath[MAX_LONGPATH] = {0};
-    bool isAlt = false;
     DAC_INSTANCE* inst = NULL;
     HRESULT  hr = S_OK;
     DWORD ulRvaHint;
-    //
-    // We always ask for the IL image metadata,
-    // as we expect that to be more
-    // available than others.  The drawback is that
-    // there may be differences between the IL image
-    // metadata and native image metadata, so we
-    // have to mark such alternate metadata so that
-    // we can fail unsupported usage of it.
-    //
-
-    // Microsoft - above comment seems to be an unimplemented thing.
-    // The DAC_MD_IMPORT.isAlternate field gets ultimately set, but
-    // on the searching I did, I cannot find any usage of it
-    // other than in the ctor.  Should we be doing something, or should
-    // we remove this comment and the isAlternate field?
-    // It's possible that test will want us to track whether we have
-    // an IL image's metadata loaded against an NGEN'ed image
-    // so the field remains for now.
 
     if (!ClrDataAccess::GetMetaDataFileInfoFromPEFile(
             pPEAssembly,
@@ -6569,7 +6549,6 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
         goto ErrExit;
     }
 
-    *isAlternate = isAlt;
     m_instances.AddSuperseded(inst);
     return buffer;
 
@@ -6597,7 +6576,6 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
     COUNT_T     mdSize;
     IMDInternalImport* mdImport = NULL;
     PVOID       mdBaseHost = NULL;
-    bool        isAlternate = false;
 
     _ASSERTE((pPEAssembly == NULL && reflectionModule != NULL) || (pPEAssembly != NULL && reflectionModule == NULL));
     TADDR     peAssemblyAddr = (pPEAssembly != NULL) ? dac_cast<TADDR>(pPEAssembly) : dac_cast<TADDR>(reflectionModule);
@@ -6670,7 +6648,7 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
         // We couldn't read the metadata from memory.  Ask
         // the target for metadata as it may be able to
         // provide it from some alternate means.
-        mdBaseHost = GetMetaDataFromHost(const_cast<PEAssembly *>(pPEAssembly), &isAlternate);
+        mdBaseHost = GetMetaDataFromHost(const_cast<PEAssembly *>(pPEAssembly));
     }
 
     if (mdBaseHost == NULL)
@@ -6705,7 +6683,7 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
     // The m_mdImports list does get cleaned up by calls to ClrDataAccess::Flush,
     // i.e. every time the process changes state.
 
-    if (m_mdImports.Add(peAssemblyAddr, mdImport, isAlternate) == NULL)
+    if (m_mdImports.Add(peAssemblyAddr, mdImport) == NULL)
     {
         mdImport->Release();
         DacError(E_OUTOFMEMORY);
