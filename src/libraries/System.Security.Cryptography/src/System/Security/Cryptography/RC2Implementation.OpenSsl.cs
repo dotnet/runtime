@@ -41,11 +41,21 @@ namespace System.Security.Cryptography
             return new OpenSslCipherLite(algorithm, blockSize, paddingSize, key, iv, encrypting);
         }
 
-        private static IntPtr GetAlgorithm(CipherMode cipherMode) => cipherMode switch
+        private static IntPtr GetAlgorithm(CipherMode cipherMode)
+        {
+            IntPtr algorithm = cipherMode switch
             {
                 CipherMode.CBC => Interop.Crypto.EvpRC2Cbc(),
                 CipherMode.ECB => Interop.Crypto.EvpRC2Ecb(),
                 _ => throw new NotSupportedException(),
             };
+
+            if (algorithm == IntPtr.Zero)
+            {
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RC2)));
+            }
+
+            return algorithm;
+        }
     }
 }

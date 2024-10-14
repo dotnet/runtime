@@ -2832,9 +2832,6 @@ public:
     EHblkDsc* ehIsBlockHndLast(BasicBlock* block);
     bool ehIsBlockEHLast(BasicBlock* block);
 
-    template <typename GetTryLast, typename SetTryLast>
-    void ehUpdateTryLasts(GetTryLast getTryLast, SetTryLast setTryLast);
-
     bool ehBlockHasExnFlowDsc(BasicBlock* block);
 
     // Return the region index of the most nested EH region this block is in.
@@ -2938,6 +2935,8 @@ public:
     void fgSetTryEnd(EHblkDsc* handlerTab, BasicBlock* newTryLast);
 
     void fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast);
+
+    void fgFindEHRegionEnds();
 
     void fgSkipRmvdBlocks(EHblkDsc* handlerTab);
 
@@ -6287,6 +6286,9 @@ public:
     FlowGraphDfsTree* fgComputeDfs();
     void fgInvalidateDfsTree();
 
+    template <typename TFunc>
+    void fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphNaturalLoops* loops, TFunc func);
+
     void fgRemoveReturnBlock(BasicBlock* block);
 
     void fgConvertBBToThrowBB(BasicBlock* block);
@@ -6802,15 +6804,15 @@ public:
         // we jump to raise the exception.
         BasicBlock*     acdDstBlk;
 
-        // EH region key used to look up this dsc in the map
-        unsigned        acdData;
-
         // EH regions for this dsc
         unsigned short acdTryIndex;
         unsigned short acdHndIndex;
 
         // Which EH region forms the key?
         AcdKeyDesignator  acdKeyDsg;
+
+        // Update the key designator, after modifying the region indices
+        bool UpdateKeyDesignator(Compiler* compiler);
 
         SpecialCodeKind acdKind; // what kind of a special block is this?
         bool            acdUsed; // do we need to keep this helper block?
@@ -6820,7 +6822,10 @@ public:
         unsigned acdStkLvl;     // stack level in stack slots.
 #endif                          // !FEATURE_FIXED_OUT_ARGS
 
-        INDEBUG(unsigned acdNum);
+#ifdef DEBUG
+        unsigned acdNum;
+        void Dump();
+#endif;
     };
 
     unsigned acdCount = 0;
