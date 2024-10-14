@@ -299,6 +299,7 @@ namespace System.Numerics
 
         /// <summary>Constructs a vector from the given <see cref="ReadOnlySpan{Single}" />. The span must contain at least 2 elements.</summary>
         /// <param name="values">The span of elements to assign to the vector.</param>
+        /// <returns>A new <see cref="Vector2" /> whose elements have the specified values.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Create(ReadOnlySpan<float> values)
