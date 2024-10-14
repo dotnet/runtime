@@ -112,11 +112,11 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export SDK_DIR_NAME=$(_SdkPathForLocalTesting)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set SDK_DIR_NAME=$(_SdkPathForLocalTesting)" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WEBCIL=$(WasmEnableWebcil)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WEBCIL=$(WasmEnableWebcil)" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WASM_ENABLE_WEBCIL=$(WasmEnableWebcil)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WASM_ENABLE_WEBCIL=$(WasmEnableWebcil)" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_FINGERPRINTING=$(WasmFingerprintAssets)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_FINGERPRINTING=$(WasmFingerprintAssets)" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WASM_FINGERPRINT_ASSETS=$(WasmFingerprintAssets)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WASM_FINGERPRINT_ASSETS=$(WasmFingerprintAssets)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
