@@ -8840,7 +8840,7 @@ DONE_MORPHING_CHILDREN:
             break;
 
         case GT_COMMA:
-
+        {
             /* Special case: trees that don't produce a value */
             if (op2->OperIsStore() || (op2->OperGet() == GT_COMMA && op2->TypeGet() == TYP_VOID) || fgIsThrow(op2))
             {
@@ -8878,8 +8878,8 @@ DONE_MORPHING_CHILDREN:
                 DEBUG_DESTROY_NODE(op2);
                 return op1;
             }
-
             break;
+        }
 
         case GT_JTRUE:
 
