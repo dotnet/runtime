@@ -335,12 +335,8 @@ namespace System
             {
                 return current.Minor > minor;
             }
-            if (current.Build < 0)
-            {
-                // Unspecified build component is to be treated as zero
-                return build == 0;
-            }
-            if (current.Build != build)
+            // Unspecified build component is to be treated as zero
+            if (current.Build != build && !(current.Build == -1 && build <= 0))
             {
                 return current.Build > build;
             }
@@ -348,7 +344,7 @@ namespace System
             if (current.Revision < 0)
             {
                 // Unspecified build component is to be treated as zero
-                return revision == 0;
+                return revision <= 0;
             }
 
             return current.Revision >= revision;
