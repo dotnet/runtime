@@ -336,18 +336,18 @@ namespace System
                 return current.Minor > minor;
             }
             // Unspecified build component is to be treated as zero
-            if (current.Build != build && !(current.Build == -1 && build <= 0))
+            int currentBuild = current.Build == -1 ? 0 : current.Build;
+            build = build < 0 ? 0 : build;
+            if (currentBuild != build)
             {
-                return current.Build > build;
+                return currentBuild > build;
             }
 
-            if (current.Revision < 0)
-            {
-                // Unspecified build component is to be treated as zero
-                return revision <= 0;
-            }
+            // Unspecified revision component is to be treated as zero
+            int currentRevision = current.Revision == -1 ? 0 : current.Revision;
+            revision = revision < 0 ? 0 : revision;
 
-            return current.Revision >= revision;
+            return currentRevision >= revision;
         }
     }
 }
