@@ -32,6 +32,9 @@ internal unsafe static partial class MockMemorySpace
             _current = blockStart;
         }
 
+        public ulong RangeStart => _blockStart;
+        public ulong RangeEnd => _blockEnd;
+
         public bool TryAllocate(ulong size, string name, [NotNullWhen(true)] out HeapFragment? fragment)
         {
             // FIXME: alignment

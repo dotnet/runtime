@@ -97,7 +97,6 @@ public class ExecutionManagerTests
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
-        TargetCodePointer methodStart = new (0x0a0a_0040); // arbitrary, inside [codeRangeStart,codeRangeStart+codeRangeSize]
         int methodSize = 0x100; // arbitrary
 
         TargetPointer jitManagerAddress = new (0x000b_ff00); // arbitrary
@@ -105,16 +104,16 @@ public class ExecutionManagerTests
         TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
 
         ExecutionManagerTestBuilder emBuilder = new (arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+
+        TargetCodePointer methodStart = emBuilder.AddJittedMethod(jittedCode, methodSize, expectedMethodDescAddress);
 
         ExecutionManagerTestBuilder.NibbleMapTestBuilder nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
         nibBuilder.AllocateCodeChunk(methodStart, methodSize);
 
         TargetPointer codeHeapListNodeAddress = emBuilder.AddCodeHeapListNode(TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
-        TargetPointer rangeSectionAddress = emBuilder.AddRangeSection(codeRangeStart, codeRangeSize, jitManagerAddress: jitManagerAddress, codeHeapListNodeAddress: codeHeapListNodeAddress);
-        TargetPointer rangeSectionFragmentAddress = emBuilder.AddRangeSectionFragment(codeRangeStart, codeRangeSize, rangeSectionAddress);
-
-
-        emBuilder.AddJittedMethod(methodStart, methodSize, expectedMethodDescAddress);
+        TargetPointer rangeSectionAddress = emBuilder.AddRangeSection(jittedCode, jitManagerAddress: jitManagerAddress, codeHeapListNodeAddress: codeHeapListNodeAddress);
+        TargetPointer rangeSectionFragmentAddress = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
 
         emBuilder.MarkCreated();
 
