@@ -523,7 +523,8 @@ class CrossGenRunner:
 
     def _build_args_crossgen_il_file(self, il_filename, ni_filename, platform_assemblies_paths, target_os, target_arch):
         args = []
-        args.append(self.dotnet)
+        if self.dotnet:
+            args.append(self.dotnet)
         args.append(self.crossgen_executable_filename)
         args.append('-r')
         args.append('"' + platform_assemblies_paths + self.platform_directory_sep + '*.dll"' )
