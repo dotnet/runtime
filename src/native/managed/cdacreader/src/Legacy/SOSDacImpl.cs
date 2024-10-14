@@ -3,9 +3,6 @@
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
@@ -159,7 +156,9 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
                         Contracts.ModuleHandle module = _target.Contracts.Loader.GetModuleHandle(modulePtr);
                         string modulePath = _target.Contracts.Loader.GetPath(module);
                         ReadOnlySpan<char> moduleSpan = modulePath.AsSpan();
-                        int pathNameSpanIndex = moduleSpan.LastIndexOf(_target.DirectorySeparator);
+                        char directorySeparator = (char)_target.ReadGlobal<byte>(Constants.Globals.DirectorySeparator);
+
+                        int pathNameSpanIndex = moduleSpan.LastIndexOf(directorySeparator);
                         if (pathNameSpanIndex != -1)
                         {
                             moduleSpan = moduleSpan.Slice(pathNameSpanIndex + 1);
@@ -513,7 +512,31 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
     }
     public unsafe int GetOOMData(ulong oomAddr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetOOMStaticData(void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetPEFileBase(ulong addr, ulong* peBase) => HResults.E_NOTIMPL;
+
+    public unsafe int GetPEFileBase(ulong addr, ulong* peBase)
+    {
+        try
+        {
+            Contracts.ILoader contract = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(addr);
+            Contracts.ModuleFlags flags = contract.GetFlags(handle);
+
+            if (!flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit))
+            {
+                *peBase = contract.GetILBase(handle);
+            }
+            else
+            {
+                *peBase = 0;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
 
     public unsafe int GetPEFileName(ulong addr, uint count, char* fileName, uint* pNeeded)
     {

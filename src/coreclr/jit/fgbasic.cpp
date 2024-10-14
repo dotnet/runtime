@@ -632,7 +632,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
 // Note that the successor block's bbRefs is not changed, since it has the same number of
 // references as before, just from a different predecessor block.
 //
-// Also note this may cause sorting of the pred list.
+// Also note this may cause reordering of the pred list.
 //
 void Compiler::fgReplacePred(FlowEdge* edge, BasicBlock* const newPred)
 {
@@ -640,13 +640,18 @@ void Compiler::fgReplacePred(FlowEdge* edge, BasicBlock* const newPred)
     assert(newPred != nullptr);
     assert(edge->getSourceBlock() != newPred);
 
-    edge->setSourceBlock(newPred);
-
-    // We may now need to reorder the pred list.
+    // Remove the edge, modify it, then add it back
     //
-    BasicBlock* succBlock = edge->getDestinationBlock();
-    assert(succBlock != nullptr);
-    succBlock->ensurePredListOrder(this);
+    BasicBlock* const target  = edge->getDestinationBlock();
+    BasicBlock* const oldPred = edge->getSourceBlock();
+    FlowEdge**        listp   = fgGetPredInsertPoint(oldPred, target);
+    assert(*listp == edge);
+    *listp = edge->getNextPredEdge();
+    edge->setSourceBlock(newPred);
+    listp = fgGetPredInsertPoint(newPred, target);
+    edge->setNextPredEdge(*listp);
+    *listp = edge;
+    assert(target->checkPredListOrder());
 }
 
 /*****************************************************************************
@@ -4938,23 +4943,13 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
     // Set weight for newBlock
     //
-    if (curr->KindIs(BBJ_ALWAYS))
+    FlowEdge* const currNewEdge = fgGetPredForBlock(newBlock, curr);
+    newBlock->bbWeight          = currNewEdge->getLikelyWeight();
+    newBlock->CopyFlags(curr, BBF_PROF_WEIGHT);
+
+    if (newBlock->bbWeight == BB_ZERO_WEIGHT)
     {
-        newBlock->inheritWeight(curr);
-    }
-    else
-    {
-        if (curr->hasProfileWeight())
-        {
-            FlowEdge* const currNewEdge = fgGetPredForBlock(newBlock, curr);
-            newBlock->setBBProfileWeight(currNewEdge->getLikelyWeight());
-        }
-        else
-        {
-            // Todo: use likelihood even w/o profile?
-            //
-            newBlock->inheritWeightPercentage(curr, 50);
-        }
+        newBlock->bbSetRunRarely();
     }
 
     // The bbLiveIn and bbLiveOut are both equal to the bbLiveIn of 'succ'
@@ -5375,8 +5370,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 //   renumber the blocks, none of them actually change number, but we shrink the
 //   maximum assigned block number. This affects the block set epoch).
 //
-//   As a consequence of renumbering, block pred lists may need to be reordered.
-//
 bool Compiler::fgRenumberBlocks()
 {
     assert(fgPredsComputed);
@@ -5417,10 +5410,6 @@ bool Compiler::fgRenumberBlocks()
     //
     if (renumbered)
     {
-        for (BasicBlock* const block : Blocks())
-        {
-            block->ensurePredListOrder(this);
-        }
         JITDUMP("\n*************** After renumbering the basic blocks\n");
         JITDUMPEXEC(fgDispBasicBlocks());
         JITDUMPEXEC(fgDispHandlerTab());
@@ -6734,18 +6723,14 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
 // Returns:
 //    The new block
 //
-// Notes:
-//    newBlock will be in the try region specified by tryIndex, which may not necessarily
-//    be the same as oldTryLast->getTryIndex() if the latter is a child region.
-//    However, newBlock and oldTryLast will be in the same handler region.
-//
 BasicBlock* Compiler::fgNewBBatTryRegionEnd(BBKinds jumpKind, unsigned tryIndex)
 {
     EHblkDsc*         HBtab      = ehGetDsc(tryIndex);
+    BasicBlock* const oldTryBeg  = HBtab->ebdTryBeg;
     BasicBlock* const oldTryLast = HBtab->ebdTryLast;
     BasicBlock* const newBlock   = fgNewBBafter(jumpKind, oldTryLast, /* extendRegion */ false);
     newBlock->setTryIndex(tryIndex);
-    newBlock->copyHndIndex(oldTryLast);
+    newBlock->copyHndIndex(oldTryBeg);
 
     // Update this try region's (and all parent try regions') last block pointer
     //
@@ -6755,22 +6740,8 @@ BasicBlock* Compiler::fgNewBBatTryRegionEnd(BBKinds jumpKind, unsigned tryIndex)
         fgSetTryEnd(HBtab, newBlock);
     }
 
-    // If we inserted newBlock at the end of a handler region, repeat the above pass for handler regions
-    //
-    if (newBlock->hasHndIndex())
-    {
-        const unsigned hndIndex = newBlock->getHndIndex();
-        HBtab                   = ehGetDsc(hndIndex);
-        for (unsigned XTnum = hndIndex; (XTnum < compHndBBtabCount) && (HBtab->ebdHndLast == oldTryLast);
-             XTnum++, HBtab++)
-        {
-            assert((XTnum == hndIndex) || (XTnum == ehGetEnclosingHndIndex(XTnum - 1)));
-            fgSetHndEnd(HBtab, newBlock);
-        }
-    }
-
     assert(newBlock->getTryIndex() == tryIndex);
-    assert(BasicBlock::sameHndRegion(newBlock, oldTryLast));
+    assert(BasicBlock::sameHndRegion(newBlock, oldTryBeg));
     return newBlock;
 }
 

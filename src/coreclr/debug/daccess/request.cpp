@@ -2610,6 +2610,37 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
 
     SOSDacEnter();
 
+    if (m_cdacSos != NULL)
+    {
+        hr = m_cdacSos->GetPEFileBase(moduleAddr, base);
+        if (FAILED(hr))
+        {
+            hr = GetPEFileBaseImpl(moduleAddr, base);
+        }
+#ifdef _DEBUG
+        else
+        {
+            CLRDATA_ADDRESS baseLocal = 0;
+            HRESULT hrLocal = GetPEFileBaseImpl(moduleAddr, &baseLocal);
+
+            DacAssertsEnabledHolder assertsEnabled;
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(*base == baseLocal);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetPEFileBaseImpl(moduleAddr, base);
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetPEFileBaseImpl(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
+{
     PTR_Module pModule = PTR_Module(TO_TADDR(moduleAddr));
 
     // More fields later?
@@ -2622,8 +2653,7 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
         *base = (CLRDATA_ADDRESS)NULL;
     }
 
-    SOSDacLeave();
-    return hr;
+    return S_OK;
 }
 
 DWORD DACGetNumComponents(TADDR addr, ICorDebugDataTarget* target)
@@ -2855,11 +2885,11 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
                 // The assembly list is not valid in a closed appdomain.
                 AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
                     kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-                CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+                CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-                while (i.Next(pDomainAssembly.This()))
+                while (i.Next(pAssembly.This()))
                 {
-                    if (pDomainAssembly->GetAssembly()->IsLoaded())
+                    if (pAssembly->IsLoaded())
                     {
                         appdomainData->AssemblyCount++;
                     }
@@ -2971,14 +3001,13 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
         PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
         AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
 
         int n = 0;
         if (values)
         {
-            while (i.Next(pDomainAssembly.This()) && (n < count))
+            while (i.Next(pAssembly.This()) && (n < count))
             {
-                CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
                 if (pAssembly->IsLoaded())
                 {
                     // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
@@ -2988,8 +3017,8 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
         }
         else
         {
-            while (i.Next(pDomainAssembly.This()))
-                if (pDomainAssembly->GetAssembly()->IsLoaded())
+            while (i.Next(pAssembly.This()))
+                if (pAssembly->IsLoaded())
                     n++;
         }
 
