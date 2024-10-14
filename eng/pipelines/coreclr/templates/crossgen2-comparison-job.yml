@@ -122,6 +122,7 @@ jobs:
           WorkItemCommand:
             echo $(displayname_comparison_job) ;
             echo Targeting $(targetFlavor) ;
+            chmod +x     $HELIX_WORKITEM_PAYLOAD/crossgen2/crossgen2;
             mkdir -p     $HELIX_WORKITEM_PAYLOAD/log;
             export CORE_ROOT=$HELIX_WORKITEM_PAYLOAD;
             python3 -u $HELIX_CORRELATION_PAYLOAD/crossgen2_comparison.py crossgen_framework
