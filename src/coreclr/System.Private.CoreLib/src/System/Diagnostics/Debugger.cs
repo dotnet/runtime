@@ -58,13 +58,16 @@ namespace System.Diagnostics
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool LaunchInternal();
 
-        // Returns whether or not a debugger is attached to the process.
-        //
-        public static extern bool IsAttached
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
+        // Returns whether or not a managed debugger is attached to the process.
+        public static bool IsAttached => IsManagedDebuggerAttached();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_IsManagedDebuggerAttached")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool IsManagedDebuggerAttached();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_IsAnyDebuggerAttached")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool IsAnyDebuggerAttached();
 
         // Constants representing the importance level of messages to be logged.
         //
@@ -85,9 +88,11 @@ namespace System.Diagnostics
         private static partial void LogInternal(int level, string? category, string? message);
 
         // Checks to see if an attached debugger has logging enabled
-        //
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool IsLogging();
+        public static bool IsLogging() => IsLoggingHelper();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_IsLoggingHelper")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool IsLoggingHelper();
 
         // Posts a custom notification for the attached debugger.  If there is no
         // debugger attached, has no effect.  The debugger may or may not
