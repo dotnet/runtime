@@ -7002,7 +7002,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         {
             // Fold (x + c1) + c2
             while (op1->OperIs(GT_ADD) && op2->IsIntegralConst() && op1->gtGetOp2()->IsIntegralConst() &&
-                !node->gtOverflow() && !op1->gtOverflow())
+                   !node->gtOverflow() && !op1->gtOverflow())
             {
                 GenTreeIntConCommon* cns1 = op1->gtGetOp2()->AsIntConCommon();
                 GenTreeIntConCommon* cns2 = op2->AsIntConCommon();
