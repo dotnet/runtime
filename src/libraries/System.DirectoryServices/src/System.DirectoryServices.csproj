@@ -6,8 +6,8 @@
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <!-- If you enable GeneratePackageOnBuild for this package and bump ServicingVersion, make sure to also bump ServicingVersion in Microsoft.Windows.Compatibility.csproj once for the next release. -->
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <ServicingVersion>1</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>2</ServicingVersion>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
     <PackageDescription>Provides easy access to Active Directory Domain Services.
@@ -159,10 +159,10 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
   </ItemGroup>
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
     <PackageReference Include="System.IO.FileSystem.AccessControl" Version="$(SystemIOFileSystemAccessControlVersion)" />
     <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
   </ItemGroup>
@@ -186,6 +186,7 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Security.AccessControl" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
     <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Principal.Windows" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />

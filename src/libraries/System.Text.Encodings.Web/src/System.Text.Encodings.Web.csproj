@@ -8,6 +8,8 @@
     <NoWarn>$(NoWarn);CS3011;CS3019</NoWarn>
     <DefineConstants Condition="'$(TargetsBrowser)' == 'true'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Provides types for encoding and escaping strings for use in JavaScript, HyperText Markup Language (HTML), and uniform resource locators (URL).
 
 Commonly Used Types:
@@ -54,13 +56,14 @@ System.Text.Encodings.Web.JavaScriptEncoder</PackageDescription>
     <Compile Include="Polyfills\System.Numerics.BitOperations.netstandard20.cs" />
     <Compile Include="Polyfills\System.Text.Rune.netstandard20.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Memory" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))" />
     <Reference Include="System.Runtime.Intrinsics" />
     <Reference Include="System.Threading" />
   </ItemGroup>

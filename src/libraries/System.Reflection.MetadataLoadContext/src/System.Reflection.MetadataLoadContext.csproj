@@ -6,6 +6,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Provides read-only reflection on assemblies in an isolated context with support for assemblies that have different architectures and runtimes.
 
 Commonly Used Types:
@@ -151,20 +153,23 @@ System.Reflection.MetadataAssemblyResolver</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
+
+  <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="netstandard" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
     <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Immutable" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Reflection.Metadata" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
