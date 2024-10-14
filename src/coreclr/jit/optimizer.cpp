@@ -2429,7 +2429,14 @@ PhaseStatus Compiler::optOptimizeLayout()
 
     fgUpdateFlowGraph(/* doTailDuplication */ false);
     fgReorderBlocks(/* useProfile */ true);
-    fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
+
+    // The RPO-based layout does not introduce new blocks,
+    // so we don't need to run fgUpdateFlowGraph again.
+    //
+    if (!JitConfig.JitDoReversePostOrderLayout())
+    {
+        fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
+    }
 
     // fgReorderBlocks can cause IR changes even if it does not modify
     // the flow graph. It calls gtPrepareCost which can cause operand swapping.
