@@ -1231,22 +1231,6 @@ public:
 
     HRESULT Initialize(void);
 
-    HRESULT GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *threadData);
-    HRESULT GetThreadStoreDataImpl(struct DacpThreadStoreData *data);
-    HRESULT GetModuleDataImpl(CLRDATA_ADDRESS addr, struct DacpModuleData *moduleData);
-    HRESULT GetNestedExceptionDataImpl(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS *exceptionObject, CLRDATA_ADDRESS *nextNestedException);
-    HRESULT GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTableData *data);
-    HRESULT GetMethodTableForEEClassImpl (CLRDATA_ADDRESS eeClassReallyMT, CLRDATA_ADDRESS *value);
-    HRESULT GetMethodTableNameImpl(CLRDATA_ADDRESS mt, unsigned int count, _Inout_updates_z_(count) WCHAR *mtName, unsigned int *pNeeded);
-    HRESULT GetObjectDataImpl(CLRDATA_ADDRESS addr, struct DacpObjectData *objectData);
-    HRESULT GetObjectExceptionDataImpl(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data);
-    HRESULT GetObjectStringDataImpl(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR *stringData, unsigned int *pNeeded);
-    HRESULT GetPEFileBaseImpl(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base);
-    HRESULT GetPEFileNameImpl(CLRDATA_ADDRESS moduleAddr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded);
-    HRESULT GetUsefulGlobalsImpl(struct DacpUsefulGlobalsData *globalsData);
-    HRESULT GetMethodDescDataImpl(CLRDATA_ADDRESS methodDesc, CLRDATA_ADDRESS ip, struct DacpMethodDescData *data, ULONG cRevertedRejitVersions, DacpReJitData * rgRevertedRejitData, ULONG * pcNeededRevertedRejitData);
-    HRESULT GetMethodDescNameImpl(CLRDATA_ADDRESS methodDesc, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
-
     BOOL IsExceptionFromManagedCode(EXCEPTION_RECORD * pExceptionRecord);
 #ifndef TARGET_UNIX
     HRESULT GetWatsonBuckets(DWORD dwThreadId, GenericModeBlock * pGM);
@@ -1433,10 +1417,9 @@ public:
     ULONG32 m_instanceAge;
     bool m_debugMode;
 
+    // This currently exists on the DAC as a way of managing lifetime of loading/freeing the cdacreader
+    // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
     CDAC m_cdac;
-    NonVMComHolder<ISOSDacInterface> m_cdacSos;
-    NonVMComHolder<ISOSDacInterface2> m_cdacSos2;
-    NonVMComHolder<ISOSDacInterface9> m_cdacSos9;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
