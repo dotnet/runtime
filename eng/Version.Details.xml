@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="6.0.0-rtm.24315.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="6.0.0-rtm.24510.4">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>20d255e341e98186edf70b24aa52fdd81797cc51</Sha>
+      <Sha>c19fc3e62ccdc92489c82d7aad8d58eca86ce166</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="6.0.0-servicing.22205.1">
       <Uri>https://github.com/dotnet/msquic</Uri>
@@ -214,13 +214,13 @@
       <Uri>https://github.com/mono/linker</Uri>
       <Sha>c8499798a2a09639174e2f5c694d6652794cc73d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="6.0.0-prerelease.24224.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="6.0.0-prerelease.24467.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>d1dd9c2ce3fc0b9358d2cda64c52d052d1a612c1</Sha>
+      <Sha>c77d400d1c31f721ad585970c4ba8586e2f86b51</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="6.0.0-prerelease.24224.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="6.0.0-prerelease.24467.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>d1dd9c2ce3fc0b9358d2cda64c52d052d1a612c1</Sha>
+      <Sha>c77d400d1c31f721ad585970c4ba8586e2f86b51</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="6.0.0-beta.24413.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
