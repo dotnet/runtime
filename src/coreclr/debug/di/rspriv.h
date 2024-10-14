@@ -2967,11 +2967,10 @@ public:
     //-----------------------------------------------------------
     // IMetaDataLookup
     // -----------------------------------------------------------
-    IMDInternalImport * LookupMetaData(VMPTR_PEAssembly vmPEAssembly, bool &isILMetaDataForNGENImage);
+    IMDInternalImport * LookupMetaData(VMPTR_PEAssembly vmPEAssembly);
 
     // Helper functions for LookupMetaData implementation
     IMDInternalImport * LookupMetaDataFromDebugger(VMPTR_PEAssembly vmPEAssembly,
-                                                   bool &isILMetaDataForNGENImage,
                                                    CordbModule * pModule);
 
     IMDInternalImport * LookupMetaDataFromDebuggerForSingleFile(CordbModule * pModule,

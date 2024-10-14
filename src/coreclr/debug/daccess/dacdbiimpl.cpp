@@ -392,19 +392,13 @@ interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
 
     // Go to DBI to find the metadata.
     IMDInternalImport * pInternal = NULL;
-    bool isILMetaDataForNI = false;
     EX_TRY
     {
-        // If test needs it in the future, prop isILMetaDataForNI back up to
-        // ClrDataAccess.m_mdImports.Add() call.
-        // example in code:ClrDataAccess::GetMDImport
-        // CordbModule::GetMetaDataInterface also looks up MetaData and would need attention.
-
         // This is the new codepath that uses ICorDebugMetaDataLookup.
         // To get the old codepath that uses the v2 metadata lookup methods,
         // you'd have to load DAC only and then you'll get ClrDataAccess's implementation
         // of this function.
-        pInternal = pLookup->LookupMetaData(vmPEAssembly, isILMetaDataForNI);
+        pInternal = pLookup->LookupMetaData(vmPEAssembly);
     }
     EX_CATCH
     {

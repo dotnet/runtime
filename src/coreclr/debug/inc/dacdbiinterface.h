@@ -374,11 +374,7 @@ public:
     //    the image was pulled from.
     //    eg: "
     //
-    // 5) Ngen path: If the module was ngenned, this is the path on disk into the ngen cache that the image
-    //    was pulled from.
-    //    eg:
-    //
-    // 6) Fully Qualified Assembly Name: this is an abstract name, which the CLR (fusion / loader) will
+    // 5) Fully Qualified Assembly Name: this is an abstract name, which the CLR (fusion / loader) will
     //    resolve (to a filename for file-based modules). Managed apps may need to deal in terms of FQN,
     //    but the debugging services generally avoid them.
     //    eg: "Foo, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL".
@@ -2824,7 +2820,7 @@ public:
         //    - the reference count of the returned object is not adjusted.
         //
         virtual
-        IMDInternalImport * LookupMetaData(VMPTR_PEAssembly addressPEAssembly, bool &isILMetaDataForNGENImage) = 0;
+        IMDInternalImport * LookupMetaData(VMPTR_PEAssembly addressPEAssembly) = 0;
     };
 
 }; // end IDacDbiInterface

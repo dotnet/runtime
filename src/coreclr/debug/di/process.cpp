@@ -295,16 +295,13 @@ static inline DWORD CordbGetWaitTimeout()
 //----------------------------------------------------------------------------
 // Implementation of IDacDbiInterface::IMetaDataLookup.
 // lookup Internal Metadata Importer keyed by PEAssembly
-// isILMetaDataForNGENImage is true iff the IMDInternalImport returned represents a pointer to
-// metadata from an IL image when the module was an ngen'ed image.
-IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly, bool &isILMetaDataForNGENImage)
+IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
 {
     INTERNAL_DAC_CALLBACK(this);
 
     HASHFIND hashFindAppDomain;
     HASHFIND hashFindModule;
     IMDInternalImport * pMDII = NULL;
-    isILMetaDataForNGENImage = false;
 
     // Check to see if one of the cached modules has the metadata we need
     // If not we will do a more exhaustive search below
@@ -358,7 +355,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly, 
                     // debugger if it can find the metadata elsewhere.
                     // If this was live debugging, we should have just gotten the memory contents.
                     // Thus this code is for dump debugging, when you don't have the metadata in the dump.
-                    pMDII = LookupMetaDataFromDebugger(vmPEAssembly, isILMetaDataForNGENImage, pModule);
+                    pMDII = LookupMetaDataFromDebugger(vmPEAssembly, pModule);
                 }
                 return pMDII;
             }
@@ -371,7 +368,6 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly, 
 
 IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
     VMPTR_PEAssembly vmPEAssembly,
-    bool &isILMetaDataForNGENImage,
     CordbModule * pModule)
 {
     DWORD dwImageTimeStamp = 0;
@@ -395,16 +391,6 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
     return pMDII;
 }
 
-// We do not know if the image being sent to us is an IL image or ngen image.
-// CordbProcess::LookupMetaDataFromDebugger() has this knowledge when it looks up the file to hand off
-// to this function.
-// DacDbiInterfaceImpl::GetMDImport() has this knowledge in the isNGEN flag.
-// The CLR v2 code that windbg used made a distinction whether the metadata came from
-// the exact binary or not (i.e. were we getting metadata from the IL image and using
-// it against the ngen image?) but that information was never used and so not brought forward.
-// It would probably be more interesting generally to track whether the debugger gives us back
-// a file that bears some relationship to the file we asked for, which would catch the NI/IL case
-// as well.
 IMDInternalImport * CordbProcess::LookupMetaDataFromDebuggerForSingleFile(
     CordbModule * pModule,
     LPCWSTR pwszFilePath,

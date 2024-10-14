@@ -319,8 +319,6 @@ IMetaDataImport * CordbModule::GetMetaDataImporter()
     // from debugger, if we have one.
     if (m_pIMImport == NULL)
     {
-        bool isILMetaDataForNGENImage;  // Not currently used for anything.
-
         // The process's LookupMetaData will ping the debugger's ICorDebugMetaDataLocator iface.
         CordbProcess * pProcess = GetProcess();
         RSLockHolder processLockHolder(pProcess->GetProcessLock());
@@ -331,7 +329,7 @@ IMetaDataImport * CordbModule::GetMetaDataImporter()
         // Since we've already done everything possible from the Module anyhow, just call the
         // stuff that talks to the debugger.
         // Don't do anything with the ptr returned here, since it's really m_pInternalMetaDataImport.
-        pProcess->LookupMetaDataFromDebugger(m_vmPEFile, isILMetaDataForNGENImage, this);
+        pProcess->LookupMetaDataFromDebugger(m_vmPEFile, this);
     }
 
     // If we still can't get it, throw.
