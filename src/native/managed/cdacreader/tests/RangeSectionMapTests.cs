@@ -30,7 +30,7 @@ public class RangeSectionMapTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void TestLookupFail(MockTarget.Architecture arch)
     {
-        var builder = new ExecutionManagerTestBuilder.RangeSectionMapTestBuilder(arch);
+        var builder = ExecutionManagerTestBuilder.CreateRangeSection(arch);
         builder.MarkCreated();
         var target = new RSLATestTarget(arch, builder.GetReadContext());
 
@@ -45,7 +45,7 @@ public class RangeSectionMapTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void TestLookupOne(MockTarget.Architecture arch)
     {
-        var builder = new ExecutionManagerTestBuilder.RangeSectionMapTestBuilder(arch);
+        var builder = ExecutionManagerTestBuilder.CreateRangeSection(arch);
         var inputPC = new TargetCodePointer(0x007f_0000);
         var length = 0x1000u;
         var value = 0x0a0a_0a0au;

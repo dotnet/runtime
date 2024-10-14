@@ -10,15 +10,23 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public class ExecutionManagerTests
 {
-    private const ulong ExecutionManagerCodeRangeMapAddress = 0x000a_fff0;
 
     internal class ExecutionManagerTestTarget : TestPlaceholderTarget
     {
-        private readonly ulong _executionManagerCodeRangeMapAddress;
+        private readonly ulong _topRangeSectionMap;
 
-        public ExecutionManagerTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate dataReader, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch)
+        public static ExecutionManagerTestTarget FromBuilder (ExecutionManagerTestBuilder emBuilder)
         {
-            _executionManagerCodeRangeMapAddress = ExecutionManagerCodeRangeMapAddress;
+            var arch = emBuilder.Builder.TargetTestHelpers.Arch;
+            ReadFromTargetDelegate reader = emBuilder.Builder.GetReadContext().ReadFromTarget;
+            var topRangeSectionMap = ExecutionManagerTestBuilder.ExecutionManagerCodeRangeMapAddress;
+            var typeInfo = emBuilder.TypeInfoCache;
+            return new ExecutionManagerTestTarget(arch, reader, topRangeSectionMap, typeInfo);
+        }
+
+        public ExecutionManagerTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate dataReader, TargetPointer topRangeSectionMap, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch)
+        {
+            _topRangeSectionMap = topRangeSectionMap;
             SetDataReader(dataReader);
             SetTypeInfoCache(typeInfoCache);
             SetDataCache(new DefaultDataCache(this));
@@ -27,13 +35,12 @@ public class ExecutionManagerTests
                 ExecutionManagerContract = new (() => emfactory.CreateContract(this, 1)),
             });
         }
-
         public override TargetPointer ReadGlobalPointer(string global)
         {
             switch (global)
             {
             case Constants.Globals.ExecutionManagerCodeRangeMapAddress:
-                return new TargetPointer(_executionManagerCodeRangeMapAddress);
+                return new TargetPointer(_topRangeSectionMap);
             default:
                 return base.ReadGlobalPointer(global);
             }
@@ -62,8 +69,8 @@ public class ExecutionManagerTests
     {
         ExecutionManagerTestBuilder emBuilder = new (arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
         emBuilder.MarkCreated();
+        var target = ExecutionManagerTestTarget.FromBuilder (emBuilder);
 
-        ExecutionManagerTestTarget target = new(arch, emBuilder.Builder.GetReadContext().ReadFromTarget, emBuilder.TypeInfoCache);
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
         var eeInfo = em.GetEECodeInfoHandle(TargetCodePointer.Null);
@@ -76,7 +83,8 @@ public class ExecutionManagerTests
     {
         ExecutionManagerTestBuilder emBuilder = new (arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
         emBuilder.MarkCreated();
-        ExecutionManagerTestTarget target = new(arch, emBuilder.Builder.GetReadContext().ReadFromTarget, emBuilder.TypeInfoCache);
+        var target = ExecutionManagerTestTarget.FromBuilder (emBuilder);
+
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
         var eeInfo = em.GetEECodeInfoHandle(new TargetCodePointer(0x0a0a_0000));
@@ -98,19 +106,19 @@ public class ExecutionManagerTests
 
         ExecutionManagerTestBuilder emBuilder = new (arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
 
-        ExecutionManagerTestBuilder.NibbleMapTestBuilder nibBuilder = emBuilder.AddNibbleMap(codeRangeStart, codeRangeSize);
+        ExecutionManagerTestBuilder.NibbleMapTestBuilder nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
         nibBuilder.AllocateCodeChunk(methodStart, methodSize);
 
-        TargetPointer codeHeapListNodeAddress = emBuilder.InsertCodeHeapListNode(TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
-        TargetPointer rangeSectionAddress = emBuilder.InsertRangeSection(codeRangeStart, codeRangeSize, jitManagerAddress: jitManagerAddress, codeHeapListNodeAddress: codeHeapListNodeAddress);
-        TargetPointer rangeSectionFragmentAddress = emBuilder.InsertAddressRange(codeRangeStart, codeRangeSize, rangeSectionAddress);
+        TargetPointer codeHeapListNodeAddress = emBuilder.AddCodeHeapListNode(TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
+        TargetPointer rangeSectionAddress = emBuilder.AddRangeSection(codeRangeStart, codeRangeSize, jitManagerAddress: jitManagerAddress, codeHeapListNodeAddress: codeHeapListNodeAddress);
+        TargetPointer rangeSectionFragmentAddress = emBuilder.AddRangeSectionFragment(codeRangeStart, codeRangeSize, rangeSectionAddress);
 
 
-        emBuilder.AllocateMethod(methodStart, methodSize, expectedMethodDescAddress);
+        emBuilder.AddJittedMethod(methodStart, methodSize, expectedMethodDescAddress);
 
         emBuilder.MarkCreated();
 
-        ExecutionManagerTestTarget target = new(arch, emBuilder.Builder.GetReadContext().ReadFromTarget, emBuilder.TypeInfoCache);
+        var target = ExecutionManagerTestTarget.FromBuilder(emBuilder);
 
         // test
 
