@@ -151,7 +151,10 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeModule_GetTypes)
     DllImportEntry(RuntimeFieldHandle_GetValue)
     DllImportEntry(RuntimeFieldHandle_SetValue)
+    DllImportEntry(RuntimeFieldHandle_GetValueDirect)
+    DllImportEntry(RuntimeFieldHandle_SetValueDirect)
     DllImportEntry(RuntimeFieldHandle_GetRVAFieldInfo)
+    DllImportEntry(RuntimeFieldHandle_GetFieldDataReference)
     DllImportEntry(StackTrace_GetStackFramesInternal)
     DllImportEntry(StackFrame_GetMethodDescFromNativeIP)
     DllImportEntry(ModuleBuilder_GetStringConstant)
@@ -463,6 +466,7 @@ static const Entry s_QCall[] =
     DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)
     DllImportEntry(StubHelpers_ValidateObject)
     DllImportEntry(StubHelpers_ValidateByref)
+    DllImportEntry(StubHelpers_MulticastDebuggerTraceHelper)
 #ifdef PROFILING_SUPPORTED
     DllImportEntry(StubHelpers_ProfilerBeginTransitionCallback)
     DllImportEntry(StubHelpers_ProfilerEndTransitionCallback)
