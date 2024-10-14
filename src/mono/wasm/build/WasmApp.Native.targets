@@ -398,10 +398,11 @@
 
   <Target Name="_WasmWriteRspForCompilingBitcode">
     <ItemGroup>
-      <_BitcodeLDFlags Include="@(_EmccLDFlags)" />
-      <_BitcodeLDFlags Include="$(EmccExtraBitcodeLDFlags)" />
+      <_BitcodeCompileFlags Include="$(EmccLinkOptimizationFlag)" />
+      <_BitcodeCompileFlags Include="@(_EmccCommonFlags)" />
+      <_BitcodeCompileFlags Include="$(EmccExtraBitcodeLDFlags)" />
     </ItemGroup>
-    <WriteLinesToFile Lines="@(_BitcodeLDFlags)" File="$(_EmccCompileBitcodeRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile Lines="@(_BitcodeCompileFlags)" File="$(_EmccCompileBitcodeRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_EmccCompileBitcodeRsp)" />
     </ItemGroup>
