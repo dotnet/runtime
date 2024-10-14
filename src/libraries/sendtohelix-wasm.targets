@@ -12,8 +12,8 @@
   <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
     <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
-    <WorkItemPrefix Condition="'$(WasmEnableWebcil)' == 'false'">$(WorkItemPrefix)NoWebcil-</WorkItemPrefix>
-    <WorkItemPrefix Condition="'$(WasmFingerprintAssets)' == 'false'">$(WorkItemPrefix)NoFingerprint-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WasmEnableWebcil)' == 'false'">NoWebcil-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WasmFingerprintAssets)' == 'false'">NoFingerprint-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmEnableThreads)' != 'true'">$(WorkItemPrefix)ST-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmEnableThreads)' == 'true'">$(WorkItemPrefix)MT-</WorkItemPrefix>
   </PropertyGroup>
