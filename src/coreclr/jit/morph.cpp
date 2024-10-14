@@ -8129,15 +8129,16 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 }
             }
 
-            // Pattern-matching optimization:
-            //    (a % c) ==/!= 0
-            // for power-of-2 constant `c`
-            // =>
-            //    a & (c - 1) ==/!= 0
-            // For integer `a`, even if negative.
             if (opts.OptimizationEnabled() && !optValnumCSE_phase)
             {
                 assert(tree->OperIs(GT_EQ, GT_NE));
+
+                // Pattern-matching optimization:
+                //    (a % c) ==/!= 0
+                // for power-of-2 constant `c`
+                // =>
+                //    a & (c - 1) ==/!= 0
+                // For integer `a`, even if negative.
                 if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1) && op2->IsIntegralConst(0))
                 {
                     GenTree* op1op2 = op1->AsOp()->gtOp2;
@@ -8155,6 +8156,29 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
                             JITDUMP("\ninto:\n");
                             DISPTREE(tree);
+                        }
+                    }
+                }
+
+                // Optimization for:
+                //    a & c ==/!= c
+                // =>
+                //    ~a & c ==/!= 0
+                // where c is a constant other than 0 and power of 2
+                // The optimization could also take the form of a & ~c but the comparison would have to switch between EQ <=> NE
+                if (op1->OperIs(GT_AND) && op2->IsIntegralConst())
+                {
+                    int64_t cnsVal = op2->AsIntConCommon()->IntegralValue();
+
+                    if (!isPow2(cnsVal) && cnsVal != 0 && op2->TypeIs(op1->gtType))
+                    {
+                        GenTree* andOp1 = op1->AsOp()->gtOp1;
+                        GenTree* andOp2 = op1->AsOp()->gtOp2;
+
+                        if (andOp1->TypeIs(op1->gtType) && GenTree::Compare(op2, andOp2))
+                        {
+                            op1->AsOp()->gtOp1 = gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
+                            op2->BashToZeroConst(op2->gtType);
                         }
                     }
                 }
