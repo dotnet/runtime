@@ -7012,7 +7012,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
                     break;
                 }
 
-                if (cns1->TypeIs(TYP_REF) || (cns1->TypeGet() != cns2->TypeGet()))
+                if (varTypeIsGC(cns1) || (cns1->TypeGet() != cns2->TypeGet()))
                 {
                     break;
                 }
