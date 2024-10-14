@@ -1,4 +1,4 @@
-<!-- Whenever altering this or other SourceBuild* files, please include @dotnet/source-build-internal as a reviewer. -->
+<!-- When altering this file, include @dotnet/product-construction as a reviewer. -->
 
 <Project>
 
@@ -70,7 +70,7 @@
       <InnerBuildArgs Condition="'$(DotNetBuildMonoBundleLLVMOptimizer)' != ''">$(InnerBuildArgs) /p:MonoBundleLLVMOptimizer=$(DotNetBuildMonoBundleLLVMOptimizer)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PgoInstrument)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)pgoinstrument</InnerBuildArgs>
 
-      <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overriden above -->
+      <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overridden above -->
       <InnerBuildArgs Condition="'$(DotNetBuildRepo)' == 'true'">$(InnerBuildArgs) /p:DotNetBuildRepo=true</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildOrchestrator)' == 'true'">$(InnerBuildArgs) /p:DotNetBuildOrchestrator=true</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(OfficialBuildId)' != ''">$(InnerBuildArgs) /p:OfficialBuildId=$(OfficialBuildId)</InnerBuildArgs>

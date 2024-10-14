@@ -6998,20 +6998,60 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             return next;
         }
 
-        // Fold ADD(CNS1, CNS2). We mainly target a very specific pattern - byref ADD(frozen_handle, cns_offset)
-        // We could do this folding earlier, but that is not trivial as we'll have to introduce a way to restore
-        // the original object from a byref constant for optimizations.
-        if (comp->opts.OptimizationEnabled() && op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && !node->gtOverflow() &&
-            (op1->IsIconHandle(GTF_ICON_OBJ_HDL) || op2->IsIconHandle(GTF_ICON_OBJ_HDL)) &&
-            !op1->AsIntCon()->ImmedValNeedsReloc(comp) && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
+        if (comp->opts.OptimizationEnabled())
         {
-            assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+            // Fold (x + c1) + c2
+            while (op1->OperIs(GT_ADD) && op2->IsIntegralConst() && op1->gtGetOp2()->IsIntegralConst() &&
+                   !node->gtOverflow() && !op1->gtOverflow() && !op2->AsIntConCommon()->ImmedValNeedsReloc(comp) &&
+                   !op1->gtGetOp2()->AsIntConCommon()->ImmedValNeedsReloc(comp))
+            {
+                JITDUMP("Folding (x + c1) + c2. Before:\n");
+                DISPTREERANGE(BlockRange(), node);
 
-            // TODO-CQ: we should allow this for AOT too. For that we need to guarantee that the new constant
-            // will be lowered as the original handle with offset in a reloc.
-            BlockRange().Remove(op1);
-            BlockRange().Remove(op2);
-            node->BashToConst(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(), node->TypeGet());
+                int64_t c1 = op1->gtGetOp2()->AsIntConCommon()->IntegralValue();
+                int64_t c2 = op2->AsIntConCommon()->IntegralValue();
+
+                int64_t result;
+                if (genTypeSize(node) == sizeof(int64_t))
+                {
+                    result = c1 + c2;
+                }
+                else
+                {
+                    result = static_cast<int32_t>(c1) + static_cast<int32_t>(c2);
+                }
+
+                op2->AsIntConCommon()->SetIntegralValue(result);
+                node->gtOp1 = op1->gtGetOp1();
+
+                BlockRange().Remove(op1->gtGetOp2());
+                BlockRange().Remove(op1);
+
+                op1 = node->gtGetOp1();
+
+                // We will recompute containment/reg optionality below.
+                op1->ClearRegOptional();
+                op1->ClearContained();
+
+                JITDUMP("\nAfter:\n");
+                DISPTREERANGE(BlockRange(), node);
+            }
+
+            // Fold ADD(CNS1, CNS2). We mainly target a very specific pattern - byref ADD(frozen_handle, cns_offset)
+            // We could do this folding earlier, but that is not trivial as we'll have to introduce a way to restore
+            // the original object from a byref constant for optimizations.
+            if (op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && !node->gtOverflow() &&
+                (op1->IsIconHandle(GTF_ICON_OBJ_HDL) || op2->IsIconHandle(GTF_ICON_OBJ_HDL)) &&
+                !op1->AsIntCon()->ImmedValNeedsReloc(comp) && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
+            {
+                assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+
+                // TODO-CQ: we should allow this for AOT too. For that we need to guarantee that the new constant
+                // will be lowered as the original handle with offset in a reloc.
+                BlockRange().Remove(op1);
+                BlockRange().Remove(op2);
+                node->BashToConst(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(), node->TypeGet());
+            }
         }
 
 #ifdef TARGET_XARCH
