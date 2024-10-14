@@ -10645,9 +10645,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (isVolatile)
                     {
                         // Wrap with memory barriers: store-barrier + call + load-barrier
-                        impAppendTree(gtNewMemoryBarrier(false, true), CHECK_SPILL_ALL, impCurStmtDI);
+                        impAppendTree(gtNewMemoryBarrier(BARRIER_STORE_ONLY), CHECK_SPILL_ALL, impCurStmtDI);
                         impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
-                        op1 = gtNewMemoryBarrier(true, false);
+                        op1 = gtNewMemoryBarrier(BARRIER_LOAD_ONLY);
                     }
                     else
                     {

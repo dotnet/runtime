@@ -82,8 +82,8 @@ The effects of ordinary reads and writes can be reordered as long as that preser
      - IL store instructions with `volatile.` prefix when such prefix is supported
      - `System.Threading.Volatile.Write`
      - `System.Thread.VolatileWrite`
-     - `System.Threading.Volatile.WriteBarrier` (applies to all future writes)
-     - Releasing a lock (`System.Threading.Monitor.Exit` or leaving a synchronized method, applies to all future writes)
+     - `System.Threading.Volatile.WriteBarrier` (applies to all following writes)
+     - Releasing a lock (`System.Threading.Monitor.Exit` or leaving a synchronized method, applies to all following writes)
 
 * **volatile. initblk** has "release semantics" - the effects of `.volatile initblk` will not be observable earlier than the effects of preceeding reads and writes.
 

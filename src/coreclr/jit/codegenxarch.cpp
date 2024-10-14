@@ -11090,7 +11090,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     }
 #endif // DEBUG
 
-    // only fulls barrier need to be emitted on Xarch
+    // only full barrier needs to be emitted on Xarch
     if (barrierKind == BARRIER_FULL)
     {
         instGen(INS_lock);

@@ -4209,14 +4209,27 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
             case NI_System_Threading_Interlocked_MemoryBarrier:
+            {
+                assert(sig->numArgs == 0);
+                retNode = gtNewMemoryBarrier(BARRIER_FULL);
+                break;
+            }
+
             case NI_System_Threading_Volatile_ReadBarrier:
+            {
+                assert(sig->numArgs == 0);
+                // On XARCH `NI_System_Threading_Volatile_ReadBarrier` fences need not be emitted.
+                // However, we still need to capture the effect on reordering.
+                retNode = gtNewMemoryBarrier(BARRIER_LOAD_ONLY);
+                break;
+            }
+
             case NI_System_Threading_Volatile_WriteBarrier:
             {
                 assert(sig->numArgs == 0);
-                // On XARCH `NI_System_Threading_Volatile_ReadBarrier/WriteBarrier` fences need not be emitted.
+                // On XARCH `NI_System_Threading_Volatile_WriteBarrier` fences need not be emitted.
                 // However, we still need to capture the effect on reordering.
-                retNode = gtNewMemoryBarrier(ni == NI_System_Threading_Volatile_ReadBarrier,
-                                             ni == NI_System_Threading_Volatile_WriteBarrier);
+                retNode = gtNewMemoryBarrier(BARRIER_STORE_ONLY);
                 break;
             }
 
