@@ -80,6 +80,7 @@ internal class RFLogging
                 catch (IOException e)
                 {
                     //Disk may be full so simply stop logging
+                    throw new Exception("Fail to write message to log file: " + e.Message);
                 }
             }
 
