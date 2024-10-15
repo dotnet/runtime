@@ -273,10 +273,6 @@ public:
     bool SuppressLockViolationsOnReentryFromOS() const {LIMITED_METHOD_CONTRACT;  return fSuppressLockViolationsOnReentryFromOS; }
 #endif
 
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    bool IsStubLinkerUnwindInfoVerificationOn() const { LIMITED_METHOD_CONTRACT; return fStubLinkerUnwindInfoVerificationOn; }
-#endif
-
 #endif // _DEBUG
 
 #ifdef FEATURE_COMINTEROP
@@ -389,6 +385,7 @@ public:
 #ifdef FEATURE_CONSERVATIVE_GC
     bool    GetGCConservative()             const {LIMITED_METHOD_CONTRACT; return iGCConservative;}
 #endif
+    bool    GetCheckDoubleReporting()       const {LIMITED_METHOD_CONTRACT; return fCheckDoubleReporting; }
 #ifdef HOST_64BIT
     bool    GetGCAllowVeryLargeObjects()    const {LIMITED_METHOD_CONTRACT; return iGCAllowVeryLargeObjects;}
 #endif
@@ -537,9 +534,6 @@ private: //----------------------------------------------------------------
     bool fSuppressLockViolationsOnReentryFromOS;
 #endif
 
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    bool fStubLinkerUnwindInfoVerificationOn;
-#endif
 #endif // _DEBUG
 #ifdef ENABLE_STARTUP_DELAY
     int iStartupDelayMS; //Adds sleep to startup.
@@ -571,6 +565,8 @@ private: //----------------------------------------------------------------
 #ifdef HOST_64BIT
     bool iGCAllowVeryLargeObjects;
 #endif // HOST_64BIT
+
+    bool fCheckDoubleReporting;
 
     bool fGCBreakOnOOM;
 
