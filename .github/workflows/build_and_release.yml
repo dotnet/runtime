@@ -16,19 +16,27 @@ jobs:
       runtime-version: ${{ steps.set-env.outputs.runtime-version }}
       runtime-patch: ${{ steps.set-env.outputs.runtime-patch }}
     runs-on: ubuntu-latest
+    
     steps:
+      - name: Find version to checkout
+        id: find-ref
+        run: |
+          [ -n "${{github.event.inputs.tag}}" ] && TAG="/refs/tags/${{github.event.inputs.tag}}"
+          [ -z "$TAG"] && [ -n "${{github.ref}}" ] && TAG="${{github.ref}}"
+
+          echo ref-to-checkout=${TAG} >> $GITHUB_OUTPUT
+          
       - name: Check out runtime source code
         uses: actions/checkout@v4
         with:
-          ref: ${{github.rev}}          
+          ref: ${{steps.find-ref.outputs.ref-to-checkout}}          
       - name: Extract runtime version (from code) and patch (from github ref)
         id: set-env
         run: |
           RUNTIME_VERSION=$(sed -n 's#.*<ProductVersion>\(.*\)</ProductVersion>#\1#p' < eng/Versions.props)
-          [ -n "${{github.event.inputs.tag}}" ] && TAG="/refs/tags/${{github.event.inputs.tag}}"
-          [ -z "$TAG"] && [ -n "${{github.ref}}" ] && TAG="${{github.ref}}"
+          VERSION_CHECKOUT=${{steps.find-ref.outputs.ref-to-checkout}}
           regex="refs\/.*\/v(.*)-(.*)"
-          if [[ "$TAG" =~ $regex ]]
+          if [[ "$VERSION_CHECKOUT" =~ $regex ]]
           then
             RUNTIME_PATCH=${BASH_REMATCH[2]}
           else
