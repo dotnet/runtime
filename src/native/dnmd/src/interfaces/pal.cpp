@@ -2,18 +2,13 @@
 #include <cstring>
 #include <cassert>
 #include <functional>
+#include <limits>
 
 #if defined(BUILD_MACOS) || defined(BUILD_UNIX)
 #include <unicode/ustring.h>
 #endif
 
-#if defined(BUILD_WINDOWS)
-#include <bcrypt.h>
-#elif defined(BUILD_MACOS)
-#include <CommonCrypto/CommonDigest.h>
-#elif defined(BUILD_UNIX)
-#include <openssl/sha.h>
-#endif
+#include <minipal/sha1.h>
 
 #if defined(BUILD_WINDOWS)
 #include <windows.h>
@@ -147,73 +142,11 @@ int strcat_s(char* dest, rsize_t destsz, char const* src)
 }
 #endif // !defined(__STDC_LIB_EXT1__) && !defined(BUILD_WINDOWS)
 
-// SHA1 implementation
-#if defined(BUILD_WINDOWS)
-namespace
+bool pal::ComputeSha1Hash(span<uint8_t const> data, std::array<uint8_t, SHA1_HASH_SIZE>& hashDestination)
 {
-    struct BCRYPT_ALG_HANDLE_deleter final
-    {
-        void operator()(BCRYPT_ALG_HANDLE h) const noexcept
-        {
-            ::BCryptCloseAlgorithmProvider(h, 0);
-        }
-    };
-
-    using bcrypt_alg_handle = std::unique_ptr<void, BCRYPT_ALG_HANDLE_deleter>;
-
-    struct BCRYPT_HASH_HANDLE_deleter final
-    {
-        void operator()(BCRYPT_HASH_HANDLE h) const noexcept
-        {
-            ::BCryptDestroyHash(h);
-        }
-    };
-
-    using bcrypt_hash_handle = std::unique_ptr<void, BCRYPT_HASH_HANDLE_deleter>;
-}
-
-bool pal::ComputeSha1Hash(span<const uint8_t> data, std::array<uint8_t, SHA1_HASH_SIZE>& hashDestination)
-{
-    BCRYPT_ALG_HANDLE hAlg;
-    if (!BCRYPT_SUCCESS(::BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_SHA1_ALGORITHM, nullptr, 0)))
-    {
-        return false;
-    }
-    bcrypt_alg_handle algHandle { hAlg };
-
-    BCRYPT_HASH_HANDLE hHash;
-    if (!BCRYPT_SUCCESS(::BCryptCreateHash(hAlg, &hHash, nullptr, 0, nullptr, 0, 0)))
-    {
-        return false;
-    }
-    bcrypt_hash_handle hashHandle { hHash };
-    if (!BCRYPT_SUCCESS(::BCryptHashData(hHash, (PUCHAR)(uint8_t const*)data, (ULONG)data.size(), 0)))
-    {
-        return false;
-    }
-
-    return BCRYPT_SUCCESS(::BCryptFinishHash(hHash, hashDestination.data(), (ULONG)hashDestination.size(), 0));
-}
-#elif defined(BUILD_MACOS)
-#include <CommonCrypto/CommonDigest.h>
-
-bool pal::ComputeSha1Hash(span<const uint8_t> data, std::array<uint8_t, SHA1_HASH_SIZE>& hashDestination)
-{
-    static_assert(CC_SHA1_DIGEST_LENGTH == SHA1_HASH_SIZE, "SHA1 hash size mismatch");
-    CC_SHA1(data, data.size(), hashDestination.data());
+    minipal_sha1(data, data.size(), hashDestination.data(), SHA1_HASH_SIZE);
     return true;
 }
-
-#elif defined(BUILD_UNIX)
-#include <openssl/sha.h>
-bool pal::ComputeSha1Hash(span<const uint8_t> data, std::array<uint8_t, SHA1_HASH_SIZE>& hashDestination)
-{
-    static_assert(SHA_DIGEST_LENGTH == SHA1_HASH_SIZE, "SHA1 hash size mismatch");
-    SHA1(data, data.size(), hashDestination.data());
-    return true;
-}
-
-#endif // defined(BUILD_WINDOWS)
 
 // Read-write lock implementation
 // The implementation type matches the C++11 BasicLockable and the C++14 SharedLockable requirements (excluding the try_lock_shared method).

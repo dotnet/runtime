@@ -20,7 +20,7 @@
 #include "../binder/inc/applicationcontext.hpp"
 #include "../binder/inc/assemblybindercommon.hpp"
 
-#include "sha1.h"
+#include <minipal/sha1.h>
 
 
 #ifndef DACCESS_COMPILE
