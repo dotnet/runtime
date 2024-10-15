@@ -2881,14 +2881,9 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
             BasicBlock* const backedgeSource = backEdge->getSourceBlock();
             if (!bbInTryRegions(preheaderEHRegion, backedgeSource))
             {
-                if (backedgeSource->hasTryIndex())
-                {
-                    preheaderEHRegion = backedgeSource->getTryIndex();
-                }
-                else
-                {
-                    preheaderEHRegion = EHblkDsc::NO_ENCLOSING_INDEX;
-                }
+                // Preheader should be in the true enclosing region of the header.
+                //
+                preheaderEHRegion = ehTrueEnclosingTryIndexIL(preheaderEHRegion);
                 inSameRegionAsHeader = false;
                 break;
             }
