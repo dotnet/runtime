@@ -198,11 +198,21 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.DoesNotContain("+", version); // no git hash
 
 #if STABILIZE_PACKAGE_VERSION
-            // a stabilized version looks like 8.0.0
-            Assert.DoesNotContain("-", version);
-            Assert.True(Version.TryParse(version, out Version _));
+            // A stabilized version looks like 9.0.0
+            // In local builds, the version looks like 9.0.0-dev, and in PRs CI, the version looks like 9.0.0-ci.
+            // Both are acceptable.
+            if (!version.Contains("-dev") && !version.Contains("-ci"))
+            {
+                Assert.DoesNotContain("-", version);
+            }
+            else
+            {
+                version = version.Substring(0, version.IndexOf("-")); // remove -dev or -ci
+            }
+            Assert.True(Version.TryParse(version, out Version _), $"Version could not be parsed: {version}");
 #else
-            // a non-stabilized version looks like 8.0.0-preview.5.23280.8 or 8.0.0-dev
+            // a non-stabilized version looks like 9.0.0-preview.5.12345.1, 9.0.0-rc.1.12345.1 or 9.0.0-rtm.1.12345.1
+            // -dev always shows up in local buids, and -ci  always shows up in the CI of PRs.
             Assert.Contains("-", version);
             var versionNumber = version.Substring(0, version.IndexOf("-"));
             Assert.True(Version.TryParse(versionNumber, out Version _));
