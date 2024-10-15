@@ -44,7 +44,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "scev.h"
 #include "namedintrinsiclist.h"
 #include "structsegments.h"
-#include "barrierkinddef.h"
 #ifdef LATE_DISASM
 #include "disasm.h"
 #endif
@@ -203,6 +202,13 @@ struct VarScopeDsc
 #ifdef DEBUG
     VarName vsdName; // name of the var
 #endif
+};
+
+enum BarrierKind
+{
+	BARRIER_FULL,       // full barrier
+	BARRIER_LOAD_ONLY,  // load barrier
+	BARRIER_STORE_ONLY, // store barrier
 };
 
 // This class stores information associated with a LclVar SSA definition.
