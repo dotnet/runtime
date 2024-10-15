@@ -536,7 +536,7 @@ export async function start_runtime () {
         mono_log_warn(`Grow 0 result: ${memory.grow(0) * 65536}`);
         runtimeHelpers.updateMemoryViews();
         mono_log_warn(`Memory size buffer: ${memory.buffer.byteLength}`);
-        for(let i=0;i<100;i++){
+        for (let i = 0; i < 100; i++ ) {
             mono_log_warn(`malloc test 1m ${Module._malloc(1024 * 1024)}`);
         }
         mono_log_warn(`Grow 0 result: ${memory.grow(0) * 65536}`);
