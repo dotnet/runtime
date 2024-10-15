@@ -255,7 +255,7 @@ As mentioned earlier, **`HashCode` does not make any claims of collision resista
 $$
 \begin{align*}
 h &\coloneqq \left( \left( s + f(t) \cdot P_3 \right) \mathop{rol_{32}} 17 \right) \cdot P_4 & \pmod{2^{32}} \\
-h' &\coloneqq \left( \left( h + f(t') \cdot P_3 \right) \mathop{rol_{32}} 17 \right) \cdot P_4 & \pmod{2^{32}} 
+h' &\coloneqq \left( \left( h + f(t') \cdot P_3 \right) \mathop{rol_{32}} 17 \right) \cdot P_4 & \pmod{2^{32}}
 \end{align*}
 $$
 
