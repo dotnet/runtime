@@ -12,6 +12,15 @@
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <CommonPath>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', 'src'))</CommonPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.Tests" />
   </ItemGroup>
