@@ -734,7 +734,7 @@ bool StubManager::IsStubLoggingEnabled()
     // on the helper thread. (B/c it may deadlock. See SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE)
 
     // We avoid this by just not logging when native-debugging.
-    if (IsDebuggerPresent())
+    if (minipal_is_native_debugger_present())
     {
         return false;
     }
@@ -2244,4 +2244,3 @@ void TailCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #endif
 
 #endif // #ifdef DACCESS_COMPILE
-

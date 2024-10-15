@@ -36,7 +36,6 @@ nativeStringResourceTable_mscorrc
 #PAL_GetTransportPipeName
 #PAL_InitializeDLL
 #PAL_TerminateEx
-#PAL_IsDebuggerPresent
 #PAL_OpenProcessMemory
 #PAL_CloseProcessMemory
 #PAL_ReadProcessMemory
