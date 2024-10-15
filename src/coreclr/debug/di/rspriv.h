@@ -3009,11 +3009,10 @@ public:
     //-----------------------------------------------------------
     // IMetaDataLookup
     // -----------------------------------------------------------
-    IMDInternalImport * LookupMetaData(VMPTR_PEAssembly vmPEAssembly, bool &isILMetaDataForNGENImage);
+    IMDInternalImport * LookupMetaData(VMPTR_PEAssembly vmPEAssembly);
 
     // Helper functions for LookupMetaData implementation
     IMDInternalImport * LookupMetaDataFromDebugger(VMPTR_PEAssembly vmPEAssembly,
-                                                   bool &isILMetaDataForNGENImage,
                                                    CordbModule * pModule);
 
     IMDInternalImport * LookupMetaDataFromDebuggerForSingleFile(CordbModule * pModule,
@@ -4401,8 +4400,6 @@ public:
     // Get the module filename, or NULL if none.  Throws on error.
     const WCHAR * GetModulePath();
 
-    const WCHAR * GetNGenImagePath();
-
     const VMPTR_DomainAssembly GetRuntimeDomainAssembly ()
     {
         return m_vmDomainAssembly;
@@ -4460,10 +4457,6 @@ private:
 
     // Full path to module's image, if any.  Empty if none, NULL if not yet set.
     StringCopyHolder m_strModulePath;
-
-    // Full path to the ngen file. Empty if not ngenned, NULL if not yet set.
-    // This isn't exposed publicly, but we may use it internally for loading metadata.
-    StringCopyHolder m_strNGenImagePath;
 
     // "Global" class for this module. Global functions + vars exist in this class.
     RSSmartPtr<CordbClass> m_pClass;
