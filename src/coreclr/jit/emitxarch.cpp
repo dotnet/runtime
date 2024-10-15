@@ -6564,6 +6564,13 @@ void emitter::emitIns_R_I(instruction ins,
     }
 
     sz += emitGetAdjustedSize(id, insCodeMI(ins));
+#ifdef TARGET_AMD64
+    if (reg == REG_EAX && !instrIs3opImul(ins) && TakesApxExtendedEvexPrefix(id))
+    {
+        // ACC form is not promoted into EVEX space, need to emit with MI form.
+        sz += 1;
+    }
+#endif // TARGET_AMD64
 
     // Do we need a REX prefix for AMD64? We need one if we are using any extended register (REX.R), or if we have a
     // 64-bit sized operand (REX.W). Note that IMUL in our encoding is special, with a "built-in", implicit, target
@@ -16739,6 +16746,12 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
                 useSigned = false;
                 useACC    = true;
             }
+        }
+
+        if (TakesApxExtendedEvexPrefix(id))
+        {
+            // ACC form does not have support for promoted EVEX.
+            useACC = false;
         }
     }
     else
