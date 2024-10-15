@@ -4,8 +4,8 @@
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <!-- If you enable GeneratePackageOnBuild for this package and bump ServicingVersion, make sure to also bump ServicingVersion in Microsoft.Windows.Compatibility.csproj once for the next release. -->
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <ServicingVersion>0</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Provides support for managing access and audit control lists for Microsoft.Win32.RegistryKey.
 
 Commonly Used Types:
@@ -26,13 +26,14 @@ System.Security.AccessControl.RegistrySecurity</PackageDescription>
     <Compile Include="Microsoft\Win32\RegistryAclExtensions.cs" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Security.AccessControl" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

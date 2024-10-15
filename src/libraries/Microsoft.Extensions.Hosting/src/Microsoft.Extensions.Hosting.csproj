@@ -4,6 +4,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <PackageDescription>Hosting and startup infrastructures for applications.</PackageDescription>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <!-- Use targeting pack references instead of granular ones in the project file. -->
     <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <!-- ServicingVersion moved to ..\Directory.Build.props in order to share with test project. -->

@@ -6,8 +6,8 @@
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <!-- If you enable GeneratePackageOnBuild for this package and bump ServicingVersion, make sure to also bump ServicingVersion in Microsoft.Windows.Compatibility.csproj once for the next release. -->
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <ServicingVersion>1</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>2</ServicingVersion>
     <PackageDescription>Provides a collection of classes used to access an ODBC data source in the managed space
 
 Commonly Used Types:
@@ -149,7 +149,7 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
     <None Include="DatabaseSetupInstructions.md" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.CodePages\src\System.Text.Encoding.CodePages.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.CodePages\src\System.Text.Encoding.CodePages.csproj" Condition="!$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.Specialized" />
@@ -170,6 +170,7 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
     <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Principal" />
     <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Text.Encoding.CodePages" Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
