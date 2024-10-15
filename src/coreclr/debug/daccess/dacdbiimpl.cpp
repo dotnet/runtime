@@ -6518,10 +6518,11 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
                 j++;
             }
         }
-        if ((&g_global_alloc_context)->alloc_ptr != nullptr)
+        gc_alloc_context globalCtx = ((ee_alloc_context)g_global_alloc_context).m_GCAllocContext;
+        if (globalCtx.alloc_ptr != nullptr)
         {
-            mAllocInfo[j].Ptr = (CORDB_ADDRESS)(&g_global_alloc_context)->alloc_ptr;
-            mAllocInfo[j].Limit = (CORDB_ADDRESS)(&g_global_alloc_context)->alloc_limit;
+            mAllocInfo[j].Ptr = (CORDB_ADDRESS)globalCtx.alloc_ptr;
+            mAllocInfo[j].Limit = (CORDB_ADDRESS)globalCtx.alloc_limit;
         }
 
         mThreadCount = j;
