@@ -1161,7 +1161,7 @@ PTR_AsyncMethodData MethodDesc::GetAddrOfAsyncMethodData()
 
     _ASSERTE(HasAsyncMethodData());
 
-    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot |  mdcMethodImpl | mdcHasNativeCodeSlot)];
+    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdfClassification | mdfHasNonVtableSlot |  mdfMethodImpl | mdfHasNativeCodeSlot)];
 
     return dac_cast<PTR_AsyncMethodData>(dac_cast<TADDR>(this) + size);
 }

@@ -1840,13 +1840,13 @@ public:
 
     inline bool HasAsyncMethodData()
     {
-        return (m_wFlags & mdcHasAsyncMethodData) != 0;
+        return (m_wFlags & mdfHasAsyncMethodData) != 0;
     }
 
     inline void SetHasAsyncMethodData()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcHasAsyncMethodData;
+        m_wFlags |= mdfHasAsyncMethodData;
     }
 
 #ifdef FEATURE_METADATA_UPDATER
