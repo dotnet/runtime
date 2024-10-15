@@ -146,7 +146,7 @@ file abstract class StressLog_0_2(Target target) : IStressLog
     public IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog)
     {
         uint stressMsgHeaderSize = target.GetTypeInfo(DataType.StressMsgHeader).Size!.Value;
-        uint pointerSize = target.GetTypeInfo(DataType.pointer).Size!.Value;
+        uint pointerSize = (uint)target.PointerSize;
 
         Data.StressLogChunk currentChunkData = target.ProcessedData.GetOrAdd<Data.StressLogChunk>(threadLog.CurrentWriteChunk);
         TargetPointer currentReadChunk = threadLog.CurrentWriteChunk;
@@ -286,7 +286,7 @@ file sealed class StressLog_0(Target target) : StressLog_0_2(target)
     protected override StressMsgData GetStressMsgData(Data.StressMsg msg)
     {
         Data.StressLog stressLog = target.ProcessedData.GetOrAdd<Data.StressLog>(target.ReadGlobalPointer(Constants.Globals.StressLog));
-        uint pointerSize = target.GetTypeInfo(DataType.pointer).Size!.Value;
+        uint pointerSize = (uint)target.PointerSize;
         uint payload = target.Read<uint>(msg.Header);
         int numArgs = (int)((payload & 0x7) | ((payload >> 29) & 0x7));
         var args = new TargetPointer[numArgs];
@@ -307,7 +307,7 @@ file sealed class StressLog_1(Target target) : StressLog_0_2(target)
 {
     protected override StressMsgData GetStressMsgData(Data.StressMsg msg)
     {
-        uint pointerSize = target.GetTypeInfo(DataType.pointer).Size!.Value;
+        uint pointerSize = (uint)target.PointerSize;
         uint payload = target.Read<uint>(msg.Header);
         int numArgs = (int)((payload & 0x7) | ((payload >> 29) & 0x7));
         var args = new TargetPointer[numArgs];
@@ -348,7 +348,7 @@ file sealed class StressLog_2(Target target) : StressLog_0_2(target)
 {
     protected override StressMsgData GetStressMsgData(Data.StressMsg msg)
     {
-        uint pointerSize = target.GetTypeInfo(DataType.pointer).Size!.Value;
+        uint pointerSize = (uint)target.PointerSize;
 
         ulong payload1 = target.Read<ulong>(msg.Header);
         ulong payload2 = target.Read<ulong>((ulong)msg.Header + 8);

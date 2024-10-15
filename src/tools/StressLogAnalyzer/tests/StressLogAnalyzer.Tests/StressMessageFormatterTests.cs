@@ -314,24 +314,29 @@ public unsafe class StressMessageFormatterTests
 
     private static (Target target, StressMsgData Message) CreateFixture(string format, params StressMessageArgument[] args)
     {
-        // Add a dummy value at 0 to make the format string a non-null pointer and null terminate it.
-        List<byte> memorySpace = [0x42, .. Encoding.UTF8.GetBytes(format), 0];
+        Mock<Target> targetMock = new();
+        targetMock.SetupGet(t => t.PointerSize).Returns(8);
+
+        TargetPointer formatPointer = 0x1000;
+
+        targetMock.Setup(t => t.ReadUtf8String(formatPointer)).Returns(format);
+
         TargetPointer[] arguments = new TargetPointer[args.Length];
 
-        // Process the provided arguments for the message to insert them into the fake "memory space".
-        for (int i = 0; i < args.Length; i++)
+        ulong nextArgumentAddress = 0x2000;
+        // Process the provided arguments for the message to set up the target mock.
+        // The addresses for the string arguments are arbitrary. They just need to be different for each different string.
+        for (int i = 0; i < args.Length; i++, nextArgumentAddress += 0x100)
         {
             switch (args[i])
             {
                 case StressMessageArgument.Utf8String(string utf8String):
-                    arguments[i] = (ulong)memorySpace.Count;
-                    memorySpace.AddRange(Encoding.UTF8.GetBytes(utf8String));
-                    memorySpace.Add(0); // Null-terminate the string.
+                    targetMock.Setup(t => t.ReadUtf8String(nextArgumentAddress)).Returns(utf8String);
+                    arguments[i] = nextArgumentAddress;
                     break;
                 case StressMessageArgument.Utf16String(string utf16String):
-                    arguments[i] = (ulong)memorySpace.Count;
-                    memorySpace.AddRange(Encoding.Unicode.GetBytes(utf16String));
-                    memorySpace.AddRange([0, 0]); // Null-terminate the string.
+                    targetMock.Setup(t => t.ReadUtf16String(nextArgumentAddress)).Returns(utf16String);
+                    arguments[i] = nextArgumentAddress;
                     break;
                 case StressMessageArgument.SignedInteger(long signedInteger):
                     arguments[i] = (ulong)signedInteger;
@@ -345,26 +350,12 @@ public unsafe class StressMessageFormatterTests
             }
         }
 
-        Target target = Target.Create(
-            new ContractDescriptorParser.ContractDescriptor
-            {
-            },
-            Array.Empty<TargetPointer>(),
-            (address, buffer) => ReadFromCallback(address, buffer, memorySpace),
-            true,
-            8);
-
         StressMsgData message = new(
             Facility: 0,
-            FormatString: new TargetPointer(1),
+            FormatString: formatPointer,
             Timestamp: 0,
             Args: arguments);
 
-        return (target, message);
-
-        static unsafe int ReadFromCallback(ulong address, Span<byte> buffer, List<byte> memorySpace)
-        {
-            return CollectionsMarshal.AsSpan(memorySpace).Slice((int)address, buffer.Length).TryCopyTo(buffer) ? buffer.Length : -1;
-        }
+        return (targetMock.Object, message);
     }
 }

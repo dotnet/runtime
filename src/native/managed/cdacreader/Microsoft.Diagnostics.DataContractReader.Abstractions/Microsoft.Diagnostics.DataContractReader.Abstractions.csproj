@@ -16,6 +16,7 @@
     <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.Contracts" />
     <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader" />
     <InternalsVisibleTo Include="StressLogAnalyzer" />
+    <InternalsVisibleTo Include="StressLogAnalyzer.Tests" />
     <InternalsVisibleTo Include="cdacreader" Condition="'$(TargetsWindows)' == 'true'"/>
     <InternalsVisibleTo Include="libcdacreader" Condition="'$(TargetsWindows)' != 'true'"/>
   </ItemGroup>
