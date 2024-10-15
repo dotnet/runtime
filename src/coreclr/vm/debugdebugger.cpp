@@ -873,9 +873,9 @@ extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached()
 
 #ifdef DEBUGGING_SUPPORTED
     return CORDebuggerAttached();
-#endif
-
+#else
     return FALSE;
+#endif
 }
 #endif // !DACCESS_COMPILE
 
