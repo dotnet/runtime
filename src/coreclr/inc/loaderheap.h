@@ -279,13 +279,6 @@ public:
     }
 #endif
 
-#ifdef _DEBUG
-    // Stubs allocated from a LoaderHeap will have unwind info registered with NT.
-    // The info must be unregistered when the heap is destroyed.
-    BOOL                m_fPermitStubsWithUnwindInfo;
-    BOOL                m_fStubUnwindInfoUnregistered;
-#endif
-
 public:
     BOOL                m_fExplicitControl;  // Am I a LoaderHeap or an ExplicitControlLoaderHeap?
     void                (*m_codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
