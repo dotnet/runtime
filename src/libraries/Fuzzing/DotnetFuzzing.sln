@@ -9,11 +9,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitignore = .gitignore
 		..\..\..\eng\pipelines\libraries\fuzzing\deploy-to-onefuzz.yml = ..\..\..\eng\pipelines\libraries\fuzzing\deploy-to-onefuzz.yml
 		Directory.Build.props = Directory.Build.props
-		Directory.Build.targets = Directory.Build.targets
-		nuget.config = nuget.config
-		README.md = README.md
 		OneFuzz.md = OneFuzz.md
+		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Formats.Nrbf", "..\System.Formats.Nrbf\src\System.Formats.Nrbf.csproj", "{034899ED-D501-46A3-A8AB-710C28C5CAB9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,6 +25,10 @@ Global
 		{002673BF-11AE-4072-9CBE-FC312BF68613}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{002673BF-11AE-4072-9CBE-FC312BF68613}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{002673BF-11AE-4072-9CBE-FC312BF68613}.Release|Any CPU.Build.0 = Release|Any CPU
+		{034899ED-D501-46A3-A8AB-710C28C5CAB9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{034899ED-D501-46A3-A8AB-710C28C5CAB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{034899ED-D501-46A3-A8AB-710C28C5CAB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{034899ED-D501-46A3-A8AB-710C28C5CAB9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

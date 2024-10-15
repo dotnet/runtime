@@ -3405,7 +3405,6 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     // Allocate a new entry and prepend it to the list
     //
     add              = new (this, CMK_Unknown) AddCodeDsc;
-    add->acdNext     = fgAddCodeList;
     add->acdDstBlk   = nullptr;
     add->acdTryIndex = srcBlk->bbTryIndex;
     add->acdHndIndex = srcBlk->bbHndIndex;
@@ -3421,8 +3420,6 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     add->acdStkLvlInit = false;
 #endif // !FEATURE_FIXED_OUT_ARGS
     INDEBUG(add->acdNum = acdCount++);
-
-    fgAddCodeList = add;
 
     // Add to map
     //
@@ -3451,7 +3448,7 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 //
 PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 {
-    if (fgAddCodeList == nullptr)
+    if (fgAddCodeDscMap == nullptr)
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
@@ -3472,7 +3469,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
 
-    for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
+    for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(fgAddCodeDscMap))
     {
         // Create the target basic block in the region indicated by the acd info
         //
@@ -3675,7 +3672,14 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
 {
     if (!UsesFunclets())
     {
-        *dsg = AcdKeyDesignator::KD_TRY;
+        if (blk->hasTryIndex())
+        {
+            *dsg = AcdKeyDesignator::KD_TRY;
+        }
+        else
+        {
+            *dsg = AcdKeyDesignator::KD_NONE;
+        }
         return blk->bbTryIndex;
     }
 
@@ -3775,6 +3779,95 @@ Compiler::AddCodeDscKey::AddCodeDscKey(AddCodeDsc* add)
         }
     }
 }
+
+//------------------------------------------------------------------------
+// UpdateKeyDesignator: determine new key designator after modifying
+//   the region indices.
+//
+// Arguments:
+//   compiler - current compiler instance
+//
+// Returns:
+//   true if the key desinator changes
+//
+bool Compiler::AddCodeDsc::UpdateKeyDesignator(Compiler* compiler)
+{
+    // This ACD may now have a new enclosing region.
+    // Figure out the new parent key designator.
+    //
+    // For example, suppose there is a try that has an array
+    // bounds check and an empty finally, all within a
+    // finally. When we remove the try, the ACD for the bounds
+    // check changes from being enclosed in a try to being
+    // enclosed in a finally.
+    //
+    const bool inHnd = acdHndIndex > 0;
+    const bool inTry = acdTryIndex > 0;
+
+    AcdKeyDesignator newDsg = AcdKeyDesignator::KD_NONE;
+
+    if (!compiler->UsesFunclets())
+    {
+        // Non-funclet case
+        //
+        newDsg = inTry ? AcdKeyDesignator::KD_TRY : AcdKeyDesignator::KD_NONE;
+    }
+    else if (!inTry && !inHnd)
+    {
+        // Moved outside of all EH regions.
+        //
+        newDsg = AcdKeyDesignator::KD_NONE;
+    }
+    else if (inTry && (!inHnd || (acdTryIndex < acdHndIndex)))
+    {
+        // Moved into a parent try region.
+        //
+        newDsg = AcdKeyDesignator::KD_TRY;
+    }
+    else
+    {
+        // Moved into a parent handler region.
+        // Note this cannot be a filter region.
+        //
+        newDsg = AcdKeyDesignator::KD_HND;
+    }
+
+    bool result = (newDsg != acdKeyDsg);
+    acdKeyDsg   = newDsg;
+
+    return result;
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// Dump: dump info about an AddCodeDesc
+//
+void Compiler::AddCodeDsc::Dump()
+{
+    printf("ACD%u %s ", acdNum, sckName(acdKind));
+    switch (acdKeyDsg)
+    {
+        case AcdKeyDesignator::KD_NONE:
+            printf("in method region");
+            break;
+        case AcdKeyDesignator::KD_TRY:
+            printf("in try region of EH#%u", acdTryIndex - 1);
+            break;
+        case AcdKeyDesignator::KD_HND:
+            printf("in handler region of EH#%u", acdHndIndex - 1);
+            break;
+        case AcdKeyDesignator::KD_FLT:
+            printf("in filter region of EH#%u", acdHndIndex - 1);
+            break;
+        default:
+            printf("(unexpected region)");
+            break;
+    }
+
+    AddCodeDscKey key(this);
+    printf(" map key 0x%x\n", key.Data());
+}
+#endif
 
 //------------------------------------------------------------------------
 // fgSetTreeSeq: Sequence the tree, setting the "gtPrev" and "gtNext" links.
@@ -4490,12 +4583,34 @@ FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByIndex(unsigned index)
 //
 FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByHeader(BasicBlock* block)
 {
-    // TODO-TP: This can use binary search based on post order number.
-    for (FlowGraphNaturalLoop* loop : m_loops)
+    if (!m_dfsTree->Contains(block))
     {
-        if (loop->m_header == block)
+        return nullptr;
+    }
+
+    // Loops are stored in reverse post-order,
+    // so we can binary-search for the desired loop's header by its post-order number.
+    size_t min = 0;
+    size_t max = NumLoops();
+
+    while (min < max)
+    {
+        const size_t                mid    = min + ((max - min) / 2);
+        FlowGraphNaturalLoop* const loop   = m_loops[mid];
+        BasicBlock* const           header = loop->m_header;
+
+        if (header == block)
         {
             return loop;
+        }
+        else if (header->bbPostorderNum < block->bbPostorderNum)
+        {
+            max = mid;
+        }
+        else
+        {
+            assert(header->bbPostorderNum > block->bbPostorderNum);
+            min = mid + 1;
         }
     }
 
