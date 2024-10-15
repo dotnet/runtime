@@ -14,7 +14,7 @@ set(CLR_CMAKE_KEEP_NATIVE_SYMBOLS TRUE)
 add_executable_clr(corerun
   corerun.cpp
   dotenv.cpp
-  ${CLR_SRC_NATIVE_DIR}/minipal/is_native_debugger_present.c
+  ${CLR_SRC_NATIVE_DIR}/minipal/debugger.c
   native.rc
 )
 

@@ -36,7 +36,7 @@
 #include "yieldprocessornormalized.h"
 #include "RhConfig.h"
 #include <minipal/cpuid.h>
-#include <minipal/is_native_debugger_present.h>
+#include <minipal/debugger.h>
 
 FCIMPL0(void, RhDebugBreak)
 {

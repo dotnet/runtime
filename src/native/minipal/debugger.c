@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <minipal/is_native_debugger_present.h>
+#include <minipal/debugger.h>
 
 #include <fcntl.h>
 #include <string.h>

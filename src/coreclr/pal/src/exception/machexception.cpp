@@ -32,7 +32,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/map.hpp"
 #include "pal/environ.h"
 
-#include <minipal/is_native_debugger_present.h>
+#include <minipal/debugger.h>
 #include <minipal/utils.h>
 
 #include "machmessage.h"

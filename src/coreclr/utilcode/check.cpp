@@ -11,7 +11,7 @@
 #include <ex.h>
 #include <contract.h>
 
-#include <minipal/is_native_debugger_present.h>
+#include <minipal/debugger.h>
 
 #ifdef _DEBUG
 size_t CHECK::s_cLeakedBytes = 0;

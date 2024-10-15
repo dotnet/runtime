@@ -13,7 +13,7 @@ class MethodDesc;
 
 #include "shash.h"
 #include "corhost.h"
-#include <minipal/is_native_debugger_present.h>
+#include <minipal/debugger.h>
 
 #ifdef _DEBUG
 class TypeNamesList

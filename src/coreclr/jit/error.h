@@ -9,7 +9,7 @@
 #include <corjit.h>   // for CORJIT_INTERNALERROR
 #include <safemath.h> // For FitsIn, used by SafeCvt methods.
 
-#include <minipal/is_native_debugger_present.h>
+#include <minipal/debugger.h>
 
 #define FATAL_JIT_EXCEPTION 0x02345678
 class Compiler;

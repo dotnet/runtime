@@ -4,7 +4,7 @@
 
 #include <config.h>
 #include <mono/utils/mono-compiler.h>
-#include <minipal/is_native_debugger_present.h>
+#include <minipal/debugger.h>
 
 #ifndef DISABLE_JIT
 

@@ -49,7 +49,7 @@ namespace pal
 #ifdef TARGET_WINDOWS
 #define CDECL __cdecl
 #include <Windows.h>
-#include <minipal/is_native_debugger_present.h>
+#include <minipal/debugger.h>
 
 #define DLL_EXPORT __declspec(dllexport)
 #define MAIN __cdecl wmain

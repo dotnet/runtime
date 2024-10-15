@@ -7,7 +7,7 @@
 #include "PalRedhawk.h"
 #include "rhassert.h"
 
-#include <minipal/is_native_debugger_present.h>
+#include <minipal/debugger.h>
 
 #ifdef _DEBUG
 

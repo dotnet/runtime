@@ -9,7 +9,7 @@
 #include "logging.h"
 #include "spmiutil.h"
 
-#include <minipal/is_native_debugger_present.h>
+#include <minipal/debugger.h>
 
 static bool breakOnDebugBreakorAV = false;
 
