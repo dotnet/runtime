@@ -292,6 +292,48 @@ static inline DWORD CordbGetWaitTimeout()
     }
 }
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+void UnmanagedThreadTracker::Suspend()
+{
+    _ASSERTE(m_hThread != INVALID_HANDLE_VALUE);
+    if (m_hThread != INVALID_HANDLE_VALUE)
+    {
+        m_dwSuspendCount++;
+        ::SuspendThread(m_hThread);
+    }
+}
+
+void UnmanagedThreadTracker::Resume()
+{
+    _ASSERTE(m_dwSuspendCount > 0);
+    if (m_dwSuspendCount == 0)
+        return;
+    m_dwSuspendCount--;
+    _ASSERTE(m_hThread != INVALID_HANDLE_VALUE);
+    if (m_hThread != INVALID_HANDLE_VALUE)
+    {
+        ::ResumeThread(m_hThread);
+    }
+}
+
+void UnmanagedThreadTracker::Close()
+{
+    HANDLE hThread = m_hThread;
+    DWORD dwSuspendCount = m_dwSuspendCount;
+    m_hThread = INVALID_HANDLE_VALUE;
+    m_dwSuspendCount = 0;
+    if (hThread == INVALID_HANDLE_VALUE)
+    {
+        return;
+    }
+    for (DWORD i = 0; i < dwSuspendCount; i++)
+    {
+        ::ResumeThread(hThread);
+    }
+    ::CloseHandle(hThread);
+}
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
+
 //----------------------------------------------------------------------------
 // Implementation of IDacDbiInterface::IMetaDataLookup.
 // lookup Internal Metadata Importer keyed by PEAssembly
@@ -981,6 +1023,10 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_fAssertOnTargetInconsistency(false),
     m_runtimeOffsetsInitialized(false),
     m_writableMetadataUpdateMode(LegacyCompatPolicy)
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    ,
+    m_dwOutOfProcessStepping(0)
+#endif
 {
     _ASSERTE((m_id == 0) == (pShim == NULL));
 
@@ -1349,6 +1395,22 @@ void CordbProcess::Neuter()
     // Take the process lock.
     RSLockHolder lockHolder(GetProcessLock());
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    CUnmanagedThreadHashTableIterator beginIter = m_unmanagedThreadHashTable.Begin();
+    CUnmanagedThreadHashTableIterator endIter = m_unmanagedThreadHashTable.End();
+    for (CUnmanagedThreadHashTableIterator it = beginIter; it != endIter; ++it)
+    {
+        UnmanagedThreadTracker * pUnmanagedThread = *it;
+        _ASSERTE(pUnmanagedThread != NULL);
+        if (pUnmanagedThread != NULL)
+        {
+            pUnmanagedThread->Close();
+            delete pUnmanagedThread;
+        }
+    }
+    m_unmanagedThreadHashTable.RemoveAll();
+    m_dwOutOfProcessStepping = 0;
+#endif
 
     NeuterChildren();
 
@@ -11168,35 +11230,21 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     // However, there are situations where OpenThread can fail with an Access Denied error.
     // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in 
     // Windows causes the process to have higher privileges. 
-    // We are now using the following approach to access the thread handle, which is the same
-    // approach used by CordbThread::RefreshHandle:
-    // 1. Get the thread handle from the DAC
-    // 2. Duplicate the handle to the current process
+    // We are now caching the thread handle in the unmanaged thread hash table when the thread is created.
 
-    // lookup the CordbThread by thread ID, so that we can access the left-side thread handle
-    CordbThread * pThread = TryLookupOrCreateThreadByVolatileOSId(dwThreadId);
+    UnmanagedThreadTracker * curThread = m_unmanagedThreadHashTable.Lookup(dwThreadId);
 
-    IDacDbiInterface* pDAC = GetDAC();
-    if (pDAC == NULL)
+    if (curThread == NULL || curThread->GetThreadId() != dwThreadId)
     {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - DAC not initialized\n"));
-        ThrowHR(E_UNEXPECTED);
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Thread not found\n"));
+        ThrowHR(CORDBG_E_BAD_THREAD_STATE);
     }
 
-    HANDLE hOutOfProcThread = pDAC->GetThreadHandle(pThread->m_vmThreadToken);
-    if (hOutOfProcThread == NULL)
+    HANDLE hThread = curThread->GetThreadHandle();
+    if (hThread == INVALID_HANDLE_VALUE)
     {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Failed to get thread handle\n"));
-        ThrowHR(E_UNEXPECTED);
-    }
-
-    // Duplicate the thread handle to the current process
-    HandleHolder hThread;
-    BOOL fSuccess = DuplicateHandle(UnsafeGetProcessHandle(), hOutOfProcThread, ::GetCurrentProcess(), &hThread, 0, FALSE, DUPLICATE_SAME_ACCESS);
-    if (!fSuccess)
-    {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from DuplicateHandle\n"));
-        ThrowHR(HRESULT_FROM_GetLastError());
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Thread handle not found\n"));
+        ThrowHR(CORDBG_E_BAD_THREAD_STATE);
     }
 
     // Suspend the thread and so that we can read the thread context.
@@ -11224,10 +11272,8 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     TADDR lsContextAddr = (TADDR)context.Rcx;
     DWORD contextSize = (DWORD)context.Rdx;
 
-    // Read the expected Rip and Rsp from the thread context.  This is used to 
-    // validate the context read from the left-side.
-    TADDR expectedRip = (TADDR)context.R8;
-    TADDR expectedRsp = (TADDR)context.R9;
+    bool fIsInPlaceSingleStep = (bool)(context.R8&0x1);
+    PRD_TYPE opcode = (PRD_TYPE)context.R9;
 
     if (contextSize == 0 || contextSize > sizeof(CONTEXT) + 25000)
     {
@@ -11257,15 +11303,6 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual context size mismatch\n"));
 
         ThrowHR(ERROR_PARTIAL_COPY);
-    }
-
-    if (pContext->Rip != expectedRip || pContext->Rsp != expectedRsp)
-    {
-        _ASSERTE(!"ReadVirtual unexpectedly returned mismatched Rip and Rsp registers");
-
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual unexpectedly returned mismatched Rip and Rsp registers\n"));
-
-        ThrowHR(E_UNEXPECTED);
     }
 
     // TODO: Ideally we would use ICorDebugMutableDataTarget::SetThreadContext however this API currently only handles the legacy context.
@@ -11346,9 +11383,132 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from SetThreadContext\n"));
         ThrowHR(HRESULT_FROM_WIN32(lastError));
     }
+
+    if (fIsInPlaceSingleStep)
+    {
+        CORDB_ADDRESS_TYPE *patchSkipAddr = (CORDB_ADDRESS_TYPE*)pFrameContext->Rip;
+
+        HANDLE hProcess = UnsafeGetProcessHandle();
+        LPVOID baseAddress = (LPVOID)(patchSkipAddr);
+        DWORD oldProt;
+
+        if (!VirtualProtectEx(hProcess,
+                            baseAddress,
+                            CORDbg_BREAK_INSTRUCTION_SIZE,
+                            PAGE_EXECUTE_READWRITE, &oldProt))
+        {
+            // we may be seeing unwriteable directly mapped executable memory.
+            // let's try copy-on-write instead,
+            if (!VirtualProtectEx(hProcess,
+                baseAddress,
+                CORDbg_BREAK_INSTRUCTION_SIZE,
+                PAGE_EXECUTE_WRITECOPY, &oldProt))
+            {
+                _ASSERTE(!"VirtualProtect of code page failed");
+                ThrowHR(HRESULT_FROM_GetLastError());
+            }
+        }
+
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - address=0x%p opcode=0x%x\n", patchSkipAddr, opcode));
+        HRESULT hr = RemoveRemotePatch(this, (void*)patchSkipAddr, opcode);
+        IfFailThrow(hr);
+
+        if (!VirtualProtectEx(hProcess,
+                    baseAddress,
+                    CORDbg_BREAK_INSTRUCTION_SIZE,
+                    oldProt, &oldProt))
+        {
+            _ASSERTE(!"VirtualProtect of code page failed");
+            ThrowHR(HRESULT_FROM_GetLastError());
+        }
+
+        curThread->SetPatchSkipAddress(patchSkipAddr);
+
+        // suspend all other threads
+        m_dwOutOfProcessStepping++;
+        CUnmanagedThreadHashTableIterator beginIter = m_unmanagedThreadHashTable.Begin();
+        CUnmanagedThreadHashTableIterator endIter = m_unmanagedThreadHashTable.End();
+        for (CUnmanagedThreadHashTableIterator curIter = beginIter; curIter != endIter; ++curIter)
+        {
+            UnmanagedThreadTracker * pUnmanagedThread = *curIter;
+            _ASSERTE(pUnmanagedThread != NULL);
+            if (pUnmanagedThread == NULL || pUnmanagedThread->GetThreadId() == dwThreadId)
+            {
+                continue;
+            }
+            pUnmanagedThread->Suspend();
+        }
+    }
 #else
     #error Platform not supported
 #endif
+}
+
+bool CordbProcess::HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAddress)
+{
+    UnmanagedThreadTracker * curThread = m_unmanagedThreadHashTable.Lookup(dwThreadId);
+    _ASSERTE(curThread != NULL);
+    if (curThread != NULL && 
+        curThread->GetThreadId() == dwThreadId &&
+        curThread->IsInPlaceStepping())
+    {
+        // this is an in-place step, so place the breakpoint instruction back to the patch location
+
+        HANDLE hProcess = UnsafeGetProcessHandle();
+        LPVOID baseAddress = (LPVOID)(curThread->GetPatchSkipAddress());
+        DWORD oldProt;
+
+        if (!VirtualProtectEx(hProcess,
+                            baseAddress,
+                            CORDbg_BREAK_INSTRUCTION_SIZE,
+                            PAGE_EXECUTE_READWRITE, &oldProt))
+        {
+            // we may be seeing unwriteable directly mapped executable memory.
+            // let's try copy-on-write instead,
+            if (!VirtualProtectEx(hProcess,
+                baseAddress,
+                CORDbg_BREAK_INSTRUCTION_SIZE,
+                PAGE_EXECUTE_WRITECOPY, &oldProt))
+            {
+                _ASSERTE(!"VirtualProtect of code page failed");
+                ThrowHR(HRESULT_FROM_GetLastError());
+            }
+        }
+
+        HRESULT hr = ApplyRemotePatch(this, curThread->GetPatchSkipAddress());
+        IfFailThrow(hr);
+
+        if (!VirtualProtectEx(hProcess,
+            baseAddress,
+            CORDbg_BREAK_INSTRUCTION_SIZE,
+            oldProt, &oldProt))
+        {
+            _ASSERTE(!"VirtualProtect of code page failed");
+            ThrowHR(HRESULT_FROM_GetLastError());
+        }
+
+        curThread->ClearPatchSkipAddress();
+
+        m_dwOutOfProcessStepping--;
+
+        // resume all other threads
+        CUnmanagedThreadHashTableIterator beginIter = m_unmanagedThreadHashTable.Begin();
+        CUnmanagedThreadHashTableIterator endIter = m_unmanagedThreadHashTable.End();
+        for (CUnmanagedThreadHashTableIterator curIter = beginIter; curIter != endIter; ++curIter)
+        {
+            UnmanagedThreadTracker * pUnmanagedThread = *curIter;
+            _ASSERTE(pUnmanagedThread != NULL);
+            if (pUnmanagedThread == NULL || pUnmanagedThread->GetThreadId() == dwThreadId)
+            {
+                continue;
+            }
+            pUnmanagedThread->Resume();
+        }
+
+        return true;
+    }
+
+    return false;
 }
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
@@ -11605,6 +11765,16 @@ HRESULT CordbProcess::Filter(
 
             HandleSetThreadContextNeeded(dwThreadId);
             *pContinueStatus = DBG_CONTINUE;
+        }
+        else if (dwFirstChance && pRecord->ExceptionCode == STATUS_SINGLE_STEP && m_dwOutOfProcessStepping > 0)
+        {
+            // this may be an in-place step, and if so place the breakpoint instruction back to the patch location and resume the threads
+
+            if (HandleInPlaceSingleStep(dwThreadId, pRecord->ExceptionAddress))
+            {
+                // let the normal left side debugger stepper logic execute for this single step
+                *pContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
+            }
         }
 #endif
     }
@@ -15118,6 +15288,13 @@ HRESULT CordbProcess::IsReadyForDetach()
         return CORDBG_E_DETACH_FAILED_OUTSTANDING_STEPPERS;
     }
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    if (m_dwOutOfProcessStepping > 0)
+    {
+        return CORDBG_E_DETACH_FAILED_OUTSTANDING_STEPPERS;
+    }
+#endif
+
     //
     // If there are any outstanding breakpoints then fail the detach.
     //
@@ -15434,3 +15611,50 @@ void CordbProcess::HandleControlCTrapResult(HRESULT result)
     // Send the reply to the LS.
     SendIPCEvent(&eventControlCResult, sizeof(eventControlCResult));
 }
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+void CordbProcess::HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent)
+{
+    PUBLIC_API_ENTRY_FOR_SHIM(this);
+
+    const DWORD dwDesiredAccess = THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME;
+
+    switch (pEvent->dwDebugEventCode)
+    {
+        case CREATE_PROCESS_DEBUG_EVENT:
+            if (GetProcessId(pEvent->u.CreateProcessInfo.hProcess) == GetProcessId(UnsafeGetProcessHandle()))
+            {
+                HANDLE hThread = INVALID_HANDLE_VALUE;
+                ::DuplicateHandle(::GetCurrentProcess(), pEvent->u.CreateProcessInfo.hThread, ::GetCurrentProcess(), &hThread, dwDesiredAccess, false, 0);
+                m_unmanagedThreadHashTable.AddNoThrow(new UnmanagedThreadTracker(pEvent->dwThreadId, hThread));
+            }
+            break;
+        case CREATE_THREAD_DEBUG_EVENT:
+            {
+                HANDLE hThread = INVALID_HANDLE_VALUE;
+                ::DuplicateHandle(::GetCurrentProcess(), pEvent->u.CreateThread.hThread, ::GetCurrentProcess(), &hThread, dwDesiredAccess, false, 0);
+                UnmanagedThreadTracker * newItem = new UnmanagedThreadTracker(pEvent->dwThreadId, hThread);
+                m_unmanagedThreadHashTable.AddNoThrow(newItem);
+                if (newItem && m_dwOutOfProcessStepping > 0) // if the insert was successful and we have out-of-process stepping enabled
+                {
+                    for (DWORD i = 0; i < m_dwOutOfProcessStepping; i++)
+                    {
+                        newItem->Suspend();
+                    }
+                }
+            }
+            break;
+        case EXIT_THREAD_DEBUG_EVENT:
+            {
+                UnmanagedThreadTracker * pUnmanagedThread = m_unmanagedThreadHashTable.Lookup(pEvent->dwThreadId);
+                if (pUnmanagedThread != NULL)
+                {
+                    pUnmanagedThread->Close();
+                    m_unmanagedThreadHashTable.Remove(pEvent->dwThreadId);
+                    delete pUnmanagedThread;
+                }
+            }
+            break;
+    }
+}
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
