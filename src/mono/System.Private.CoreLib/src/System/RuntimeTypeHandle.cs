@@ -246,6 +246,9 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void GetBaseType(QCallTypeHandle type, ObjectHandleOnStack res);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern IntPtr GetMonoClass(QCallTypeHandle type);
+
         internal static int GetArrayRank(RuntimeType type)
         {
             return GetArrayRank(new QCallTypeHandle(ref type));
@@ -277,6 +280,11 @@ namespace System
             RuntimeType? res = null;
             GetBaseType(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref res));
             return res!;
+        }
+
+        internal static IntPtr GetMonoClass(RuntimeType type)
+        {
+            return GetMonoClass(new QCallTypeHandle(ref type));
         }
 
         internal static bool CanCastTo(RuntimeType type, RuntimeType target)

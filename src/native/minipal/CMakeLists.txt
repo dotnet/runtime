@@ -3,6 +3,7 @@ include(configure.cmake)
 set(SOURCES
     cpufeatures.c
     random.c
+    debugger.c
     time.c
     unicodedata.c
     utf8.c

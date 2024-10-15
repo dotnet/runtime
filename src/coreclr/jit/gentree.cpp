@@ -17653,11 +17653,6 @@ bool Compiler::gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInf
     return helper != CORINFO_HELP_UNDEF;
 }
 
-bool Compiler::gtIsActiveCSE_Candidate(GenTree* tree)
-{
-    return (optValnumCSE_phase && IS_CSE_INDEX(tree->gtCSEnum));
-}
-
 //------------------------------------------------------------------------
 // gtTreeContainsOper -- check if the tree contains any subtree with the specified oper.
 //
@@ -25602,7 +25597,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
         case TYP_SHORT:
         case TYP_USHORT:
         {
-            tmp = gtNewSimdHWIntrinsicNode(simdType, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, simdSize);
+            tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, simdSize);
             return gtNewSimdToScalarNode(type, tmp, simdBaseJitType, 8);
         }
 
@@ -25616,7 +25611,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
             }
             else
             {
-                tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 16);
+                tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 16);
             }
             return gtNewSimdToScalarNode(type, tmp, simdBaseJitType, 8);
         }
