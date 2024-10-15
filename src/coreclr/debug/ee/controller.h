@@ -1532,22 +1532,23 @@ public:
         BYTE* patchBypass = m_pSharedPatchBypassBuffer->PatchBypass;
         return (CORDB_ADDRESS_TYPE *)patchBypass;
     }
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+
+#endif // !FEATURE_EMULATE_SINGLESTEP
+
     BOOL IsInPlaceSingleStep() 
     { 
-        // only in-place single steps over call intructions are supported at this time
-#ifndef FEATURE_EMULATE_SINGLESTEP
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 #ifndef FEATURE_EMULATE_SINGLESTEP
         // only in-place single steps over call intructions are supported at this time
         _ASSERTE(m_instrAttrib.m_fIsCall);
         return m_fInPlaceSS;
 #else
+#error only non-emulated single-steps with OUT_OF_PROCESS_SETTHREADCONTEXT enabled are supported
+#endif
 #else
-#error single step emulation not supported with out of process set thread context
+        return false;
 #endif
     }
-#endif
-#endif // !FEATURE_EMULATE_SINGLESTEP
 };
 
 /* ------------------------------------------------------------------------- *

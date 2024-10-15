@@ -4482,11 +4482,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
     // The code below handles RIP-relative addressing on AMD64. The original implementation made the assumption that
     // we are only using RIP-relative addressing to access read-only data (see VSW 246145 for more information). This
     // has since been expanded to handle RIP-relative writes as well.
-    if (m_instrAttrib.m_dwOffsetToDisp != 0
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-        && !IsInPlaceSingleStep()
-#endif
-    )
+    if (m_instrAttrib.m_dwOffsetToDisp != 0 && !IsInPlaceSingleStep())
     {
         _ASSERTE(m_instrAttrib.m_cbInstr != 0);
 
@@ -4592,9 +4588,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
     patchBypassRX = NativeWalker::SetupOrSimulateInstructionForPatchSkip(context, m_pSharedPatchBypassBuffer, (const BYTE *)patch->address, patch->opcode);
 #endif //TARGET_ARM64
 
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     if (!IsInPlaceSingleStep())
-#endif
     {
         //set eip to point to buffer...
         SetIP(context, (PCODE)patchBypassRX);
@@ -4822,9 +4816,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
     {
         // Fixup return address on stack
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
         if (!IsInPlaceSingleStep())
-#endif
         {
             // Fixup return address on stack
             SIZE_T *sp = (SIZE_T *) GetSP(context);
@@ -4855,9 +4847,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
                 ((size_t)GetIP(context) >  (size_t)patchBypass &&
                  (size_t)GetIP(context) <= (size_t)(patchBypass + MAX_INSTRUCTION_LENGTH + 1)))
             {
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
                 if (!IsInPlaceSingleStep())
-#endif
                 {
                     LOG((LF_CORDB, LL_INFO10000, "Bypass instruction redirected because still in skip area.\n"
                         "\tm_fIsCall = %s, patchBypass = %p, m_address = %p\n",
@@ -4930,11 +4920,7 @@ bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
 #if defined(TARGET_AMD64)
     // Dev11 91932: for RIP-relative writes we need to copy the value that was written in our buffer to the actual address
     _ASSERTE(m_pSharedPatchBypassBuffer);
-    if (m_pSharedPatchBypassBuffer->RipTargetFixup
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-        && !IsInPlaceSingleStep()
-#endif
-    )
+    if (m_pSharedPatchBypassBuffer->RipTargetFixup && !IsInPlaceSingleStep())
     {
         _ASSERTE(m_pSharedPatchBypassBuffer->RipTargetFixupSize);
 
