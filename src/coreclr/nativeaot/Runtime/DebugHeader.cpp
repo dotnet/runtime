@@ -77,7 +77,12 @@ struct DotNetRuntimeDebugHeader
     // This counter can be incremented to indicate breaking changes
     // This field must be encoded little endian, regardless of the typical endianness of
     // the machine
-    const uint16_t MajorVersion = 4;
+    // Changes:
+    //  v1-v4 were never doc'ed but history is source control if you need it
+    //  v5 - Thread now has an m_eeAllocContext field and the previous m_rgbAllocContextBuffer
+    //       field is nested inside of it.
+    //          
+    const uint16_t MajorVersion = 5;
 
     // This counter can be incremented to indicate back-compatible changes
     // This field must be encoded little endian, regardless of the typical endianness of
