@@ -22,7 +22,9 @@
     <!-- SDK pins this to a lower version https://github.com/dotnet/sdk/issues/43325 -->
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
     <!-- The SDK distributes the live version of Json we can't reference that https://github.com/dotnet/runtime/issues/108262 -->
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" />
+    <!-- We suppress all audit warnings for this reference.  This package is non-shipping, the only consumer is the SDK which
+         will provide the correct version or depend on MSBuild to provide it -->
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" NoWarn="NU1901;NU1902;NU1903;NU1904" />
   </ItemGroup>
 
   <ItemGroup>

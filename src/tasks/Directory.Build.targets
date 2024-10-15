@@ -11,9 +11,9 @@
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net462'))">
-    <!-- These assemblies and their dependencies are made available by MSBuild on .NET Framework -->
+    <!-- These assemblies and their dependencies are made available by MSBuild on .NET Framework, we only reference for compilation -->
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" ExcludeAssets="Runtime" PrivateAssets="All" />
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" ExcludeAssets="Runtime" PrivateAssets="All" />
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" ExcludeAssets="Runtime" PrivateAssets="All"  NoWarn="NU1901;NU1902;NU1903;NU1904" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
