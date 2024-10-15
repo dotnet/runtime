@@ -17657,11 +17657,6 @@ bool Compiler::gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInf
     return helper != CORINFO_HELP_UNDEF;
 }
 
-bool Compiler::gtIsActiveCSE_Candidate(GenTree* tree)
-{
-    return (optValnumCSE_phase && IS_CSE_INDEX(tree->gtCSEnum));
-}
-
 //------------------------------------------------------------------------
 // gtTreeContainsOper -- check if the tree contains any subtree with the specified oper.
 //
