@@ -139,6 +139,11 @@ add_library(System.Native-Static
     ${NATIVE_SOURCES}
 )
 
+target_link_libraries(System.Native-Static
+    PRIVATE
+    minipal_objects
+)
+
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
 install (TARGETS System.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
