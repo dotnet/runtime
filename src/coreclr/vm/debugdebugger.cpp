@@ -855,56 +855,38 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
 
 extern "C" BOOL QCALLTYPE DebugDebugger_IsLoggingHelper()
 {
-    QCALL_CONTRACT;
-
-    BOOL result = FALSE;
-
-    BEGIN_QCALL;
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
 #ifdef DEBUGGING_SUPPORTED
     if (CORDebuggerAttached())
     {
-        result = g_pDebugInterface->IsLoggingEnabled();
+        return g_pDebugInterface->IsLoggingEnabled();
     }
 #endif // DEBUGGING_SUPPORTED
 
-    END_QCALL;
-
-    return result;
+    return FALSE;
 }
 
 extern "C" BOOL QCALLTYPE DebugDebugger_IsAnyDebuggerAttached()
 {
-    QCALL_CONTRACT;
-
-    BOOL result = FALSE;
-
-    BEGIN_QCALL;
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
 #ifdef DEBUGGING_SUPPORTED
-    result = CORDebuggerAttached() || minipal_is_native_debugger_present();
+    return CORDebuggerAttached() || minipal_is_native_debugger_present();
 #endif // DEBUGGING_SUPPORTED
 
-    END_QCALL;
-
-    return result;
+    return FALSE;
 }
 
 extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached()
 {
-    QCALL_CONTRACT;
-
-    BOOL result = FALSE;
-
-    BEGIN_QCALL;
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
 #ifdef DEBUGGING_SUPPORTED
-    result = CORDebuggerAttached();
+    return CORDebuggerAttached();
 #endif
 
-    END_QCALL;
-
-    return result;
+    return FALSE;
 }
 #endif // !DACCESS_COMPILE
 

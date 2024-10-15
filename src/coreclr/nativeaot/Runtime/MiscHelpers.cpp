@@ -397,6 +397,7 @@ EXTERN_C int32_t QCALLTYPE RhpGetCurrentThreadStackTrace(void* pOutputBuffer, ui
 
 EXTERN_C UInt32_BOOL QCALLTYPE DebugDebugger_IsAnyDebuggerAttached()
 {
+    // Explicitly not checking for a managed debugger; only checking for a native debugger.
     return minipal_is_native_debugger_present();
 }
 

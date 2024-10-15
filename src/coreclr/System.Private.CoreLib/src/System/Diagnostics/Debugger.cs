@@ -59,15 +59,17 @@ namespace System.Diagnostics
         private static partial bool LaunchInternal();
 
         // Returns whether or not a managed debugger is attached to the process.
-        public static bool IsAttached => IsManagedDebuggerAttached();
+        public static bool IsAttached => IsManagedDebuggerAttached() != 0;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_IsManagedDebuggerAttached")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool IsManagedDebuggerAttached();
+        [SuppressGCTransition]
+        private static partial int IsManagedDebuggerAttached();
+
+        internal static bool IsAnyDebuggerAttached() => IsAnyDebuggerAttachedInternal() != 0;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_IsAnyDebuggerAttached")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool IsAnyDebuggerAttached();
+        [SuppressGCTransition]
+        private static partial int IsAnyDebuggerAttachedInternal();
 
         // Constants representing the importance level of messages to be logged.
         //
@@ -88,11 +90,11 @@ namespace System.Diagnostics
         private static partial void LogInternal(int level, string? category, string? message);
 
         // Checks to see if an attached debugger has logging enabled
-        public static bool IsLogging() => IsLoggingHelper();
+        public static bool IsLogging() => IsLoggingInternal() != 0;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_IsLoggingHelper")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool IsLoggingHelper();
+        [SuppressGCTransition]
+        private static partial int IsLoggingInternal();
 
         // Posts a custom notification for the attached debugger.  If there is no
         // debugger attached, has no effect.  The debugger may or may not

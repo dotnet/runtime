@@ -77,8 +77,10 @@ namespace System.Diagnostics
             return false;
         }
 
+        internal static bool IsAnyDebuggerAttached() => IsAnyDebuggerAttachedInternal() != 0;
+
         [LibraryImport(RuntimeImports.RuntimeLibrary, EntryPoint = "DebugDebugger_IsAnyDebuggerAttached")]
-        private static partial int DebugDebugger_IsAnyDebuggerAttached();
-        internal static bool IsAnyDebuggerAttached() => DebugDebugger_IsAnyDebuggerAttached() != 0;
+        [SuppressGCTransition]
+        private static partial int IsAnyDebuggerAttachedInternal();
     }
 }
