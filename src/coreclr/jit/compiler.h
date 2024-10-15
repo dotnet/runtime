@@ -4001,7 +4001,7 @@ public:
 #endif
 
     // Variable representing async continuation argument passed.
-    unsigned lvaAsyncContinuationArg;
+    unsigned lvaAsyncContinuationArg = BAD_VAR_NUM;
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
 

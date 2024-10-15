@@ -608,8 +608,8 @@ int LinearScan::BuildNode(GenTree* tree)
             // selection phase that the argument is no longer busy. This is a
             // hack to make sure we do not overwrite the continuation between
             // the call and this node.
-            addRefsForPhysRegMask(RBM_ASYNC_CONTINUATION_RET, currentLoc, RefTypeKill, true);
-            BuildDef(tree, RBM_ASYNC_CONTINUATION_RET);
+            addKillForRegs(RBM_ASYNC_CONTINUATION_RET, currentLoc);
+            BuildDef(tree, RBM_ASYNC_CONTINUATION_RET.GetIntRegSet());
             break;
 
 #if defined(FEATURE_EH_WINDOWS_X86)

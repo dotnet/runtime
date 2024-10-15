@@ -7332,7 +7332,7 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
     {
         if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
         {
-            regNumber returnReg = retTypeDesc.GetABIReturnReg(i);
+            regNumber returnReg = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, returnReg);
         }
     }

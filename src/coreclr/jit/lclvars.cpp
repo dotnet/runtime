@@ -1510,7 +1510,7 @@ void Compiler::lvaInitAsyncContinuation(InitVarDscInfo* varDscInfo)
         // Passed in register
 
         varDsc->lvIsRegArg = 1;
-        varDsc->SetArgReg(genMapRegArgNumToRegNum(varDscInfo->regArgNum(TYP_INT), varDsc->TypeGet()));
+        varDsc->SetArgReg(genMapRegArgNumToRegNum(varDscInfo->regArgNum(TYP_INT), varDsc->TypeGet(), info.compCallConv));
 #if FEATURE_MULTIREG_ARGS
         varDsc->SetOtherArgReg(REG_NA);
 #endif

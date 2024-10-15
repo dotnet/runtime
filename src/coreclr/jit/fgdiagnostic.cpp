@@ -2726,7 +2726,7 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
-    if ((blockPred->bbFlags & BBF_ASYNC_RESUMPTION) != 0)
+    if (blockPred->HasFlag(BBF_ASYNC_RESUMPTION))
     {
         return true;
     }
