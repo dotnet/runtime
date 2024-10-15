@@ -1396,7 +1396,7 @@ void CordbProcess::Neuter()
     RSLockHolder lockHolder(GetProcessLock());
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    CUnmanagedThreadHashTableIterator beginIter = m_unmanagedThreadHashTable.End();
+    CUnmanagedThreadHashTableIterator beginIter = m_unmanagedThreadHashTable.Begin();
     CUnmanagedThreadHashTableIterator endIter = m_unmanagedThreadHashTable.End();
     for (CUnmanagedThreadHashTableIterator it = beginIter; it != endIter; ++it)
     {
@@ -11426,7 +11426,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 
         // suspend all other threads
         m_dwOutOfProcessStepping++;
-        CUnmanagedThreadHashTableIterator beginIter = m_unmanagedThreadHashTable.End();
+        CUnmanagedThreadHashTableIterator beginIter = m_unmanagedThreadHashTable.Begin();
         CUnmanagedThreadHashTableIterator endIter = m_unmanagedThreadHashTable.End();
         for (CUnmanagedThreadHashTableIterator curIter = beginIter; curIter != endIter; ++curIter)
         {
@@ -11492,7 +11492,7 @@ bool CordbProcess::HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAdd
         m_dwOutOfProcessStepping--;
 
         // resume all other threads
-        CUnmanagedThreadHashTableIterator beginIter = m_unmanagedThreadHashTable.End();
+        CUnmanagedThreadHashTableIterator beginIter = m_unmanagedThreadHashTable.Begin();
         CUnmanagedThreadHashTableIterator endIter = m_unmanagedThreadHashTable.End();
         for (CUnmanagedThreadHashTableIterator curIter = beginIter; curIter != endIter; ++curIter)
         {
