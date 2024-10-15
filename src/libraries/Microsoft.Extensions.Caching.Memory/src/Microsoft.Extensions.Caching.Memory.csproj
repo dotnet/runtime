@@ -5,7 +5,7 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <PackageDescription>In-memory cache implementation of Microsoft.Extensions.Caching.Memory.IMemoryCache.</PackageDescription>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <ServicingVersion>2</ServicingVersion>
+    <ServicingVersion>3</ServicingVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 

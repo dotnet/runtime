@@ -8,6 +8,8 @@
 
 Commonly Used Types:
 System.Net.Http.IHttpClientFactory</PackageDescription>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
   </PropertyGroup>
 
   <ItemGroup>
