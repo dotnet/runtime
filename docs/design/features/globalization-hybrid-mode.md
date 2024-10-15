@@ -398,6 +398,12 @@ Affected public APIs:
 - String.Compare,
 - String.Equals.
 
+Mapped to Apple Native API `compare:options:range:locale:`(https://developer.apple.com/documentation/foundation/nsstring/1414561-compare?language=objc)
+This implementation uses normalization techniques such as `precomposedStringWithCanonicalMapping`,
+which can result in behavior differences compared to other platforms.
+Specifically, the use of precomposed strings and additional locale-based string folding can affect the results of comparisons.
+Due to these differences, the exact result of string compariso on Apple platforms may differ.
+
 The number of `CompareOptions` and `NSStringCompareOptions` combinations are limited. Originally supported combinations can be found [here for CompareOptions](https://learn.microsoft.com/dotnet/api/system.globalization.compareoptions) and [here for NSStringCompareOptions](https://developer.apple.com/documentation/foundation/nsstringcompareoptions).
 
 - `IgnoreSymbols` is not supported because there is no equivalent in native api. Throws `PlatformNotSupportedException`.
