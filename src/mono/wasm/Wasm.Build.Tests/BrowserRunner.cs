@@ -186,20 +186,28 @@ internal class BrowserRunner : IAsyncDisposable
 
         page.Console += (_, msg) => 
         {
-            Match payloadMatch = s_payloadRegex.Match(msg.Text);
+            string message = msg.Text;
+            Match payloadMatch = s_payloadRegex.Match(message);
             if (payloadMatch.Success)
             {
-                string payload = payloadMatch.Groups["payload"].Value;
+                message = payloadMatch.Groups["payload"].Value;
+            }
+            if (message.StartsWith("TestOutput -> "))
+            {
                 lock (OutputLines)
                 {
-                    OutputLines.Add(payload);
+                    OutputLines.Add(message);
                 }
-
-                Match exitMatch = s_exitRegex.Match(payload);
-                if (exitMatch.Success)
+            }
+            Match exitMatch = s_exitRegex.Match(message);
+            if (exitMatch.Success)
+            {
+                lock (OutputLines)
                 {
-                    _exited.TrySetResult(int.Parse(exitMatch.Groups["exitCode"].Value));
+                    OutputLines.Add(message);
                 }
+                int exitCode = int.Parse(exitMatch.Groups["exitCode"].Value);
+                _exited.TrySetResult(exitCode);
             }
             if (onConsoleMessage is not null)
             {

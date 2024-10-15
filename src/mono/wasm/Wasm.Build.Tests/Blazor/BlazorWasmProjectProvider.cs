@@ -29,14 +29,4 @@ public class BlazorWasmProjectProvider : WasmSdkBasedProjectProvider
                 AssertIcuAssets: true,
                 AssertSymbolsFile: false // FIXME: not supported yet
             ));
-    
-    public override string FindBinFrameworkDir(string config, bool forPublish, string framework, string? projectDir = null)
-    {
-        EnsureProjectDirIsSet();
-        string basePath = Path.Combine(projectDir ?? ProjectDir!, "bin", config, framework);
-        if (forPublish)
-            basePath = FindSubDirIgnoringCase(basePath, "publish");
-
-        return Path.Combine(basePath, BundleDirName, "_framework");
-    }
 }

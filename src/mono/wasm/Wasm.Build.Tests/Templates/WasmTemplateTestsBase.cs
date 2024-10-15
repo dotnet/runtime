@@ -74,7 +74,8 @@ public class WasmTemplateTestsBase : BuildTestBase
     public (string projectDir, string buildOutput) BuildTemplateProject(
         BuildArgs buildArgs,
         string id,
-        BuildProjectOptions buildProjectOptions)
+        BuildProjectOptions buildProjectOptions,
+        params string[] extraArgs)
     {
         if (buildProjectOptions.ExtraBuildEnvironmentVariables is null)
             buildProjectOptions = buildProjectOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
@@ -82,7 +83,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         // TODO: reenable this when the SDK supports targetting net10.0
         //buildProjectOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
-        (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(id, buildArgs.Config, buildProjectOptions);
+        (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(id, buildArgs.Config, buildProjectOptions, extraArgs);
         if (buildProjectOptions.UseCache)
             _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir!, logFilePath, true, res.Output));
 
@@ -178,20 +179,28 @@ public class WasmTemplateTestsBase : BuildTestBase
     }
 
     // ToDo: consolidate with BlazorRunTest
-    protected async Task<string> RunBuiltBrowserApp(string config, string projectFile, string language = "en-US", string extraArgs = "")
-        => await RunBrowser($"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console {extraArgs}", _projectDir!, language);
+    protected async Task<string> RunBuiltBrowserApp(string config, string projectFile, string language = "en-US", string extraArgs = "", string testScenario = "")
+        => await RunBrowser(
+            $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console {extraArgs}",
+            _projectDir!,
+            language,
+            testScenario: testScenario);
 
-    protected async Task<string> RunPublishedBrowserApp(string config, string language = "en-US", string extraArgs = "")
+    protected async Task<string> RunPublishedBrowserApp(string config, string language = "en-US", string extraArgs = "", string testScenario = "")
         => await RunBrowser(
             command: $"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
             workingDirectory: Path.Combine(FindBinFrameworkDir(config, forPublish: true), ".."),
-            language: language);
+            language: language,
+            testScenario: testScenario);
 
-    private async Task<string> RunBrowser(string command, string workingDirectory, string language = "en-US")
+    private async Task<string> RunBrowser(string command, string workingDirectory, string language = "en-US", string testScenario = "")
     {
         using var runCommand = new RunCommand(s_buildEnv, _testOutput).WithWorkingDirectory(workingDirectory);
         await using var runner = new BrowserRunner(_testOutput);
-        var page = await runner.RunAsync(runCommand, command, language: language);
+        Func<string, string>? modifyBrowserUrl = string.IsNullOrEmpty(testScenario) ?
+            null :
+            browserUrl => new Uri(new Uri(browserUrl), $"?test={testScenario}").ToString();
+        var page = await runner.RunAsync(runCommand, command, language: language, modifyBrowserUrl: modifyBrowserUrl);
         await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
         Assert.Contains("WASM EXIT 42", string.Join(Environment.NewLine, runner.OutputLines));
         return string.Join("\n", runner.OutputLines);
