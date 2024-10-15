@@ -397,10 +397,14 @@
   </Target>
 
   <Target Name="_WasmWriteRspForCompilingBitcode">
+    <PropertyGroup>
+      <WasmBitcodeCompileOptimizationFlag Condition="'$(WasmBitcodeCompileOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</WasmBitcodeCompileOptimizationFlag>
+      <WasmBitcodeCompileOptimizationFlag Condition="'$(WasmBitcodeCompileOptimizationFlag)' == '' ">$(WasmCompileOptimizationFlag)</WasmBitcodeCompileOptimizationFlag>    <ItemGroup>
+    </PropertyGroup>
     <ItemGroup>
-      <_BitcodeCompileFlags Include="$(EmccLinkOptimizationFlag)" />
+      <_BitcodeCompileFlags Include="$(WasmBitcodeCompileOptimizationFlag)" />
       <_BitcodeCompileFlags Include="@(_EmccCommonFlags)" />
-      <_BitcodeCompileFlags Include="$(EmccExtraBitcodeLDFlags)" />
+      <_BitcodeCompileFlags Include="$(EmccExtraBitcodeCompilationFlags)" />
     </ItemGroup>
     <WriteLinesToFile Lines="@(_BitcodeCompileFlags)" File="$(_EmccCompileBitcodeRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
