@@ -6,7 +6,7 @@
 
 #include "stdafx.h"
 #include "strongnameinternal.h"
-#include "sha1.h"
+#include <minipal/sha1.h>
 
 // Common keys used by libraries we ship are included here.
 
@@ -317,9 +317,6 @@ HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] pu
     return S_OK;
 #endif
     HRESULT         hr = S_OK;
-
-    SHA1Hash        sha1;
-    BYTE            *pHash = NULL;
     DWORD           i;
     PublicKeyBlob   *pPublicKey = NULL;
     DWORD dwHashLenMinusTokenSize = 0;
@@ -338,8 +335,9 @@ HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] pu
     }
 
     // Compute a hash over the public key.
-    sha1.AddData(pbPublicKeyBlob, cbPublicKeyBlob);
-    pHash = sha1.GetHash();
+    BYTE hash[SHA1_HASH_SIZE];
+    minipal_sha1(pbPublicKeyBlob, cbPublicKeyBlob, hash, sizeof(hash));
+
     static_assert(SHA1_HASH_SIZE >= StrongNameToken::SIZEOF_TOKEN, "StrongNameToken::SIZEOF_TOKEN must be smaller or equal to the SHA1_HASH_SIZE");
     dwHashLenMinusTokenSize = SHA1_HASH_SIZE - StrongNameToken::SIZEOF_TOKEN;
 
@@ -347,7 +345,7 @@ HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] pu
     // low order bytes from a network byte order point of view). Reverse the
     // order of these bytes in the output buffer to get host byte order.
     for (i = 0; i < StrongNameToken::SIZEOF_TOKEN; i++)
-        pToken->m_token[StrongNameToken::SIZEOF_TOKEN - (i + 1)] = pHash[i + dwHashLenMinusTokenSize];
+        pToken->m_token[StrongNameToken::SIZEOF_TOKEN - (i + 1)] = hash[i + dwHashLenMinusTokenSize];
 
     return hr;
 }

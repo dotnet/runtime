@@ -86,7 +86,7 @@ DWORD GetCountBucketParamsForEvent(LPCWSTR wzEventName)
 #include "dwreport.h"
 #include <msodwwrap.h>
 #include "dbginterface.h"
-#include <sha1.h>
+#include <minipal/sha1.h>
 
 //------------------------------------------------------------------------------
 // Description
@@ -1068,11 +1068,11 @@ int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LP
     }
 
     // String didn't fit, so hash it.
-    SHA1Hash hash;
-    hash.AddData(reinterpret_cast<BYTE*>(const_cast<LPWSTR>(pSource)), (static_cast<int>(u16_strlen(pSource))) * sizeof(WCHAR));
+    BYTE hash[SHA1_HASH_SIZE];
+    minipal_sha1(reinterpret_cast<BYTE*>(const_cast<LPWSTR>(pSource)), (static_cast<int>(u16_strlen(pSource))) * sizeof(WCHAR), hash, sizeof(hash));
 
     // Encode in base32.  The hash is a fixed size; we'll accept up to maxLen characters of the encoding.
-    BytesToBase32 b32(hash.GetHash(), SHA1_HASH_SIZE);
+    BytesToBase32 b32(hash, SHA1_HASH_SIZE);
     targLen = b32.Convert(pTargetParam, targetMaxLength);
     pTargetParam[targLen] = W('\0');
 
