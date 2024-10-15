@@ -935,7 +935,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets or sets the value at the specified index.
         /// </summary>
-        /// <exception cref="IndexOutOfRangeException"><paramref name="index"/> is negative or not less than <see cref="Count"/> (getter).</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is negative or not less than <see cref="Count"/> (getter).</exception>
         /// <exception cref="NotSupportedException">In all cases from the setter.</exception>
         T IList<T>.this[int index]
         {
@@ -1065,7 +1065,7 @@ namespace System.Collections.Immutable
         /// </value>
         /// <param name="index">The index.</param>
         /// <returns>The value at the specified index.</returns>
-        /// <exception cref="IndexOutOfRangeException"><paramref name="index"/> is negative or not less than <see cref="Count"/> (getter).</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is negative or not less than <see cref="Count"/> (getter).</exception>
         /// <exception cref="NotSupportedException">In call cases from the setter.</exception>
         object? IList.this[int index]
         {
