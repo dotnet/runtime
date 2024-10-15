@@ -908,7 +908,7 @@ FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
 
     INT64 currentAllocated = 0;
     Thread *pThread = GetThread();
-    gc_alloc_context* ac = &t_runtime_thread_locals.alloc_context;
+    gc_alloc_context* ac = &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
     currentAllocated = ac->alloc_bytes + ac->alloc_bytes_uoh - (ac->alloc_limit - ac->alloc_ptr);
 
     return currentAllocated;
@@ -1858,6 +1858,13 @@ extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, 
     END_QCALL;
 
     return ret;
+}
+
+extern "C" INT32 QCALLTYPE TypeHandle_GetCorElementType(void* typeHnd)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    return (INT32)TypeHandle::FromPtr(typeHnd).GetSignatureCorElementType();
 }
 
 static bool HasOverriddenStreamMethod(MethodTable* streamMT, MethodTable* pMT, WORD slot)

@@ -298,8 +298,6 @@ namespace System.Threading
             }
         }
 
-        partial void ThreadNameChanged(string? value);
-
         public CultureInfo CurrentCulture
         {
             get
