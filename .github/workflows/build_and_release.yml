@@ -21,9 +21,10 @@ jobs:
       - name: Find version to checkout
         id: find-ref
         run: |
-          [ -n "${{github.event.inputs.tag}}" ] && TAG="/refs/tags/${{github.event.inputs.tag}}"
+          [ -n "${{github.event.inputs.tag}}" ] && TAG="${{github.event.inputs.tag}}"
           [ -z "$TAG"] && [ -n "${{github.ref}}" ] && TAG="${{github.ref}}"
 
+          echo TAG=$TAG
           echo ref-to-checkout=${TAG} >> $GITHUB_OUTPUT
           
       - name: Check out runtime source code
@@ -35,10 +36,10 @@ jobs:
         run: |
           RUNTIME_VERSION=$(sed -n 's#.*<ProductVersion>\(.*\)</ProductVersion>#\1#p' < eng/Versions.props)
           VERSION_CHECKOUT=${{steps.find-ref.outputs.ref-to-checkout}}
-          regex="refs\/.*\/v(.*)-(.*)"
+          regex="(refs\/.*\/)*v(.*)-(.*)"
           if [[ "$VERSION_CHECKOUT" =~ $regex ]]
           then
-            RUNTIME_PATCH=${BASH_REMATCH[2]}
+            RUNTIME_PATCH=${BASH_REMATCH[3]}
           else
             RUNTIME_PATCH=dev
           fi
