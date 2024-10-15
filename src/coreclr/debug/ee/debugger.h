@@ -1873,7 +1873,7 @@ extern "C" void __stdcall NotifyRightSideOfSyncCompleteFlare(void);
 extern "C" void __stdcall NotifySecondChanceReadyForDataFlare(void);
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, TADDR Rip, TADDR Rsp);
+extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, bool fIsInPlaceSingleStep, PRD_TYPE opcode);
 #else
 #error Platform not supported
 #endif
@@ -1888,6 +1888,7 @@ extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size
 struct ShouldAttachDebuggerParams;
 struct EnsureDebuggerAttachedParams;
 struct SendMDANotificationParams;
+class DebuggerSteppingInfo;
 
 // class Debugger:  This class implements DebugInterface to provide
 // the hooks to the Runtime directly.
@@ -3058,7 +3059,8 @@ private:
 private:
     BOOL m_fOutOfProcessSetContextEnabled;
 public:
-    void SendSetThreadContextNeeded(CONTEXT *context);
+    // Used by Debugger::FirstChanceNativeException to update the context from out of process
+    void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL);
     BOOL IsOutOfProcessSetContextEnabled();
 };
 
