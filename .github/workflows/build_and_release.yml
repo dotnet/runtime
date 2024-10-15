@@ -1,0 +1,129 @@
+name: Build and release runtime
+on: 
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      tag: 
+        type: string
+        description: Tagged version to build
+  push:
+    tags:        
+      - 'v*-*'
+  
+jobs:
+  env-variables:
+    outputs:
+      runtime-version: ${{ steps.set-env.outputs.runtime-version }}
+      runtime-patch: ${{ steps.set-env.outputs.runtime-patch }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out runtime source code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{github.rev}}          
+      - name: Extract runtime version (from code) and patch (from github ref)
+        id: set-env
+        run: |
+          RUNTIME_VERSION=$(sed -n 's#.*<ProductVersion>\(.*\)</ProductVersion>#\1#p' < eng/Versions.props)
+          [ -n "${{github.event.inputs.tag}}" ] && TAG="/refs/tags/${{github.event.inputs.tag}}"
+          [ -z "$TAG"] && [ -n "${{github.ref}}" ] && TAG="${{github.ref}}"
+          regex="refs\/.*\/v(.*)-(.*)"
+          if [[ "$TAG" =~ $regex ]]
+          then
+            RUNTIME_PATCH=${BASH_REMATCH[2]}
+          else
+            RUNTIME_PATCH=dev
+          fi
+          
+          echo RUNTIME_VERSION=${RUNTIME_VERSION}
+          echo RUNTIME_PATCH=${RUNTIME_PATCH}
+          
+          echo runtime-version=${RUNTIME_VERSION} >> $GITHUB_OUTPUT
+          echo runtime-patch=${RUNTIME_PATCH} >> $GITHUB_OUTPUT
+  build-linux:
+    runs-on: ubuntu-latest
+    needs: env-variables
+    env:
+      RUNTIME_VERSION: ${{needs.env-variables.outputs.runtime-version}}
+      RUNTIME_PATCH: ${{needs.env-variables.outputs.runtime-patch}}
+    container:
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
+    steps:
+      - name: Check out runtime source code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{github.rev}}
+      - name: Build for Linux
+        run: ./build.sh -c Release /p:VersionSuffix=${{env.RUNTIME_PATCH}} /p:StabilizePackageVersion=false /p:OfficialBuildId=20201010.1 /p:NativeOptimizationDataSupported=false
+      - name : Download dotnet install scripts
+        run: wget https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh
+      - name: Retrieve official ASP.Net Core runtime
+        run: |
+          chmod u+x ./dotnet-install.sh
+          mkdir -p artifacts/packages/Release/Shipping/aspnetcore-runtime
+          ./dotnet-install.sh --runtime aspnetcore --version ${{env.RUNTIME_VERSION}} --os linux --install-dir artifacts/packages/Release/Shipping/aspnetcore-runtime
+      - name: Extract generated runtime artifact, add crossgen, symbols, and AspNetCore runtime
+        run: |
+          FULL_VERSION=${{env.RUNTIME_VERSION}}-${{env.RUNTIME_PATCH}}
+          cd artifacts/packages/Release/Shipping
+          mkdir -p dotnet-runtime
+          cd dotnet-runtime
+          tar -xzvf ../dotnet-runtime-${FULL_VERSION}-linux-x64.tar.gz
+          cd shared/Microsoft.NETCore.App/${FULL_VERSION}
+          tar -xzvf ../../../../dotnet-crossgen2-${FULL_VERSION}-linux-x64.tar.gz
+          tar -xzvf ../../../../dotnet-nethost-symbols-linux-x64-${FULL_VERSION}.tar.gz
+          cd ../../../..
+          cp -R aspnetcore-runtime/shared/Microsoft.AspNetCore.App dotnet-runtime/shared/Microsoft.AspNetCore.App
+          mv dotnet-runtime/shared/Microsoft.AspNetCore.App/${{env.RUNTIME_VERSION}} dotnet-runtime/shared/Microsoft.AspNetCore.App/${FULL_VERSION}
+          sed -i "s/${{env.RUNTIME_VERSION}}/${FULL_VERSION}/g" dotnet-runtime/shared/Microsoft.AspNetCore.App/${FULL_VERSION}/Microsoft.AspNetCore.App.runtimeconfig.json
+          cd dotnet-runtime
+          tar -zcvf ../aspnetcore-runtime-${FULL_VERSION}-linux-x64.tar.gz .
+      - name: Upload runtime artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-runtime
+          path: artifacts/packages/Release/Shipping/aspnetcore-runtime-${{env.RUNTIME_VERSION}}-${{env.RUNTIME_PATCH}}-linux-x64.tar.gz
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Check out runtime source code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{github.rev}}
+      - name: Build CLR for Windows
+        run: .\build.cmd clr -c Release /p:OfficialBuildId=20201010.1
+      - name: Upload mscordaccore artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mscordaccore.dll
+          path: artifacts/bin/coreclr/Linux.x64.Release/x64/mscordaccore.dll
+  package-and-release:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    env:
+      RUNTIME_VERSION: ${{needs.env-variables.outputs.runtime-version}}
+      RUNTIME_PATCH: ${{needs.env-variables.outputs.runtime-patch}}
+    needs: 
+      - env-variables
+      - build-linux
+      - build-windows
+    steps:
+      - name: Download .Net runtime artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-runtime
+          path: .
+      - name: Download mscordaccore artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mscordaccore.dll
+          path: .
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: v${{env.RUNTIME_VERSION}}-${{env.RUNTIME_PATCH}}
+          body: Release of custom runtime v${{env.RUNTIME_VERSION}}-${{env.RUNTIME_PATCH}}
+          files: | 
+            aspnetcore-runtime-${{env.RUNTIME_VERSION}}-${{env.RUNTIME_PATCH}}-linux-x64.tar.gz
+            mscordaccore.dll
+          draft: true
