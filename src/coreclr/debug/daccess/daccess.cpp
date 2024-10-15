@@ -34,6 +34,8 @@ extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddre
 #define CAN_USE_CDAC
 #endif
 
+extern TADDR g_ClrModuleBase;
+
 #include "dwbucketmanager.hpp"
 #include "gcinterface.dac.h"
 
@@ -5499,37 +5501,21 @@ ClrDataAccess::Initialize(void)
     IfFailRet(GetDacGlobalValues());
     IfFailRet(DacGetHostVtPtrs());
 
-// TODO: [cdac] TryGetSymbol is only implemented for Linux, OSX, and Windows.
-#ifdef CAN_USE_CDAC
-    CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
-    if (enable.IsSet())
-    {
-        DWORD val;
-        if (enable.TryAsInteger(10, val) && val == 1)
-        {
-            uint64_t contractDescriptorAddr = 0;
-            if (TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
-            {
-                m_cdac = CDAC::Create(contractDescriptorAddr, m_pTarget);
-                if (m_cdac.IsValid())
-                {
-                    // Get SOS interfaces from the cDAC if available.
-                    IUnknown* unk = m_cdac.SosInterface();
-                    (void)unk->QueryInterface(__uuidof(ISOSDacInterface), (void**)&m_cdacSos);
-                    (void)unk->QueryInterface(__uuidof(ISOSDacInterface2), (void**)&m_cdacSos2);
-                    (void)unk->QueryInterface(__uuidof(ISOSDacInterface9), (void**)&m_cdacSos9);
-                }
-            }
-        }
-    }
-#endif
-
     //
     // DAC is now setup and ready to use
     //
 
     // Do some validation
     IfFailRet(VerifyDlls());
+
+    // To support EH SxS, utilcode requires the base address of the runtime as part of its initialization
+    // so that functions like "WasThrownByUs" work correctly since they use the CLR base address to check
+    // if an exception was raised by a given instance of the runtime or not.
+    //
+    // Thus, when DAC is initialized, initialize utilcode with the base address of the runtime loaded in the
+    // target process. This is similar to work done in CorDB::SetTargetCLR for mscordbi.
+
+    g_ClrModuleBase = m_globalBase; // Base address of the runtime in the target process
 
     return S_OK;
 }
@@ -5983,7 +5969,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
 {
     SUPPORTS_DAC;
     COUNT_T countNativeVarInfo;
-    NewHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
+    NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
     TADDR nativeCodeStartAddr;
     if (address != (TADDR)NULL)
     {
@@ -7135,9 +7121,53 @@ CLRDataCreateInstance(REFIID iid,
 #ifdef LOGGING
     InitializeLogging();
 #endif
-    hr = pClrDataAccess->QueryInterface(iid, iface);
 
-    pClrDataAccess->Release();
+    // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
+    NonVMComHolder<IUnknown> cdacInterface = nullptr;
+#ifdef CAN_USE_CDAC
+    CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
+    if (enable.IsSet())
+    {
+        DWORD val;
+        if (enable.TryAsInteger(10, val) && val == 1)
+        {
+            // TODO: [cdac] TryGetSymbol is only implemented for Linux, OSX, and Windows.
+            uint64_t contractDescriptorAddr = 0;
+            if (TryGetSymbol(pClrDataAccess->m_pTarget, pClrDataAccess->m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+            {
+                IUnknown* thisImpl;
+                HRESULT qiRes = pClrDataAccess->QueryInterface(IID_IUnknown, (void**)&thisImpl);
+                _ASSERTE(SUCCEEDED(qiRes));
+                CDAC& cdac = pClrDataAccess->m_cdac;
+                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pTarget, thisImpl);
+                if (cdac.IsValid())
+                {
+                    // Get SOS interfaces from the cDAC if available.
+                    cdac.CreateSosInterface(&cdacInterface);
+                    _ASSERTE(cdacInterface != nullptr);
+
+                    // Lifetime is now managed by cDAC implementation of SOS interfaces
+                    pClrDataAccess->Release();
+                }
+
+                // Release the AddRef from the QI.
+                pClrDataAccess->Release();
+            }
+        }
+    }
+#endif
+    if (cdacInterface != nullptr)
+    {
+        hr = cdacInterface->QueryInterface(iid, iface);
+    }
+    else
+    {
+        hr = pClrDataAccess->QueryInterface(iid, iface);
+
+        // Lifetime is now managed by caller
+        pClrDataAccess->Release();
+    }
+
     return hr;
 }
 

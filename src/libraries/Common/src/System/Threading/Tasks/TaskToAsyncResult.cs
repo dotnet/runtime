@@ -32,6 +32,8 @@ namespace System.Threading.Tasks
         public static IAsyncResult Begin(Task task, AsyncCallback? callback, object? state)
         {
 #if NET
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ArgumentNullException.ThrowIfNull(task);
 #else
             if (task is null)

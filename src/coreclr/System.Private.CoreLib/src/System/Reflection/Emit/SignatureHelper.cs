@@ -428,7 +428,7 @@ namespace System.Reflection.Emit
 
                 if (clsArgument is RuntimeType)
                 {
-                    type = RuntimeTypeHandle.GetCorElementType((RuntimeType)clsArgument);
+                    type = ((RuntimeType)clsArgument).GetCorElementType();
 
                     // GetCorElementType returns CorElementType.ELEMENT_TYPE_CLASS for both object and string
                     if (type == CorElementType.ELEMENT_TYPE_CLASS)

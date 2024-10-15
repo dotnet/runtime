@@ -2095,7 +2095,7 @@ public:
 
     void ClearUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsMul());
+        assert(OperIs(GT_ADD, GT_SUB, GT_CAST, GT_LE, GT_LT, GT_GT, GT_GE) || OperIsMul());
         gtFlags &= ~GTF_UNSIGNED;
     }
 
@@ -6666,6 +6666,20 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     }
 
     bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
+
+    void NormalizeJitBaseTypeToInt(NamedIntrinsic id, var_types simdBaseType)
+    {
+        assert(varTypeIsSmall(simdBaseType));
+
+        if (varTypeIsUnsigned(simdBaseType))
+        {
+            SetSimdBaseJitType(CORINFO_TYPE_UINT);
+        }
+        else
+        {
+            SetSimdBaseJitType(CORINFO_TYPE_UINT);
+        }
+    }
 
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);

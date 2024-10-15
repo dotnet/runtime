@@ -32,10 +32,10 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Adds services required for using options and enforces options validation check on start rather than in runtime.
+        /// Adds services required for using options and enforces options validation check on start rather than at run time.
         /// </summary>
         /// <remarks>
-        /// The <seealso cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
+        /// The <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
         /// </remarks>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
@@ -51,10 +51,10 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Adds services required for using options and enforces options validation check on start rather than in runtime.
+        /// Adds services required for using options and enforces options validation check on start rather than at run time.
         /// </summary>
         /// <remarks>
-        /// The <seealso cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
+        /// The <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
         /// </remarks>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <typeparam name="TValidateOptions">The <see cref="IValidateOptions{TOptions}"/> validator type.</typeparam>
@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
         /// <summary>
         /// Registers an action used to configure a particular type of options.
-        /// Note: These are run before all <seealso cref="PostConfigure{TOptions}(IServiceCollection, Action{TOptions})"/>.
+        /// Note: These are run before all <see cref="PostConfigure{TOptions}(IServiceCollection, Action{TOptions})"/>.
         /// </summary>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
@@ -85,7 +85,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         /// <summary>
         /// Registers an action used to configure a particular type of options.
-        /// Note: These are run before all <seealso cref="PostConfigure{TOptions}(IServiceCollection, Action{TOptions})"/>.
+        /// Note: These are run before all <see cref="PostConfigure{TOptions}(IServiceCollection, Action{TOptions})"/>.
         /// </summary>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
@@ -115,7 +115,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         /// <summary>
         /// Registers an action used to initialize a particular type of options.
-        /// Note: These are run after all <seealso cref="Configure{TOptions}(IServiceCollection, Action{TOptions})"/>.
+        /// Note: These are run after all <see cref="Configure{TOptions}(IServiceCollection, Action{TOptions})"/>.
         /// </summary>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         /// <summary>
         /// Registers an action used to configure a particular type of options.
-        /// Note: These are run after all <seealso cref="Configure{TOptions}(IServiceCollection, Action{TOptions})"/>.
+        /// Note: These are run after all <see cref="Configure{TOptions}(IServiceCollection, Action{TOptions})"/>.
         /// </summary>
         /// <typeparam name="TOptions">The options type to be configure.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
@@ -146,7 +146,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         /// <summary>
         /// Registers an action used to post configure all instances of a particular type of options.
-        /// Note: These are run after all <seealso cref="Configure{TOptions}(IServiceCollection, Action{TOptions})"/>.
+        /// Note: These are run after all <see cref="Configure{TOptions}(IServiceCollection, Action{TOptions})"/>.
         /// </summary>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>

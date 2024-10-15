@@ -74,6 +74,7 @@ namespace Mono.Linker.Tests.TestCases
 			case "ParametersUsedViaReflection":
 			case "UnsafeAccessor":
 			case "TypeUsedViaReflection":
+			case "RunClassConstructor":
 				Run (t);
 				break;
 			default:

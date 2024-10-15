@@ -81,6 +81,8 @@ namespace System.Net.Http.Functional.Tests
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
 
+                await PrepareEventCountersAsync(listener);
+
                 bool buffersResponse = false;
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 Uri expectedUri = null;
@@ -222,6 +224,8 @@ namespace System.Net.Http.Functional.Tests
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
 
+                await PrepareEventCountersAsync(listener);
+
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 Uri expectedUri = null;
                 await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
@@ -335,6 +339,8 @@ namespace System.Net.Http.Functional.Tests
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
 
+                await PrepareEventCountersAsync(listener);
+
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 Uri expectedUri = null;
                 await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
@@ -435,6 +441,8 @@ namespace System.Net.Http.Functional.Tests
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
+
+                await PrepareEventCountersAsync(listener);
 
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 Uri expectedUri = null;
@@ -540,7 +548,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        // The validation assumes that the connection id's are in range 0..(connectionCount-1)
+        // The validation assumes that the connection id's are in range 1..connectionCount
         protected static void ValidateConnectionEstablishedClosed(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, Uri uri, int connectionCount = 1)
         {
             EventWrittenEventArgs[] connectionsEstablished = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionEstablished").ToArray();
@@ -564,7 +572,7 @@ namespace System.Net.Http.Functional.Tests
                     ip.Equals(IPAddress.Loopback) ||
                     ip.Equals(IPAddress.IPv6Loopback));
             }
-            Assert.True(connectionIds.SetEquals(Enumerable.Range(0, connectionCount).Select(i => (long)i)), "ConnectionEstablished has logged an unexpected connectionId.");
+            Assert.True(connectionIds.SetEquals(Enumerable.Range(1, connectionCount).Select(i => (long)i)), "ConnectionEstablished has logged an unexpected connectionId.");
 
             EventWrittenEventArgs[] connectionsClosed = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionClosed").ToArray();
             Assert.Equal(connectionCount, connectionsClosed.Length);
@@ -580,7 +588,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Empty(connectionIds);
         }
 
-        private static void ValidateRequestResponseStartStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int? requestContentLength, int? responseContentLength, int count, long connectionId = 0)
+        private static void ValidateRequestResponseStartStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int? requestContentLength, int? responseContentLength, int count)
         {
             (EventWrittenEventArgs Event, Guid ActivityId)[] requestHeadersStarts = events.Where(e => e.Event.EventName == "RequestHeadersStart").ToArray();
             Assert.Equal(count, requestHeadersStarts.Length);
@@ -589,7 +597,8 @@ namespace System.Net.Http.Functional.Tests
                 EventWrittenEventArgs e = r.Event;
                 Assert.Equal(1, e.Payload.Count);
                 Assert.Equal("connectionId", e.PayloadNames.Single());
-                Assert.Equal(connectionId, (long)e.Payload[0]);
+                // 1 instead of 0 to account for the request we made in PrepareEventCountersAsync.
+                Assert.Equal(1, (long)e.Payload[0]);
             });
 
             (EventWrittenEventArgs Event, Guid ActivityId)[] requestHeadersStops = events.Where(e => e.Event.EventName == "RequestHeadersStop").ToArray();
@@ -652,6 +661,9 @@ namespace System.Net.Http.Functional.Tests
 
         private static void ValidateEventCounters(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int requestCount, bool shouldHaveFailures, int versionMajor, bool requestLeftQueue = false)
         {
+            // Account for the request we made in PrepareEventCountersAsync.
+            requestCount++;
+
             Dictionary<string, double[]> eventCounters = events
                 .Select(e => e.Event)
                 .Where(e => e.EventName == "EventCounters")
@@ -757,6 +769,8 @@ namespace System.Net.Http.Functional.Tests
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
+
+                await PrepareEventCountersAsync(listener);
 
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 Uri expectedUri = null;
@@ -871,6 +885,9 @@ namespace System.Net.Http.Functional.Tests
                 Version version = Version.Parse(useVersionString);
 
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+
+                await PrepareEventCountersAsync(listener);
+
                 listener.AddActivityTracking();
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 Uri expectedUri = null;
@@ -932,6 +949,9 @@ namespace System.Net.Http.Functional.Tests
 
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
+
+                await PrepareEventCountersAsync(listener);
+
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 Uri expectedUri = null;
 
@@ -986,6 +1006,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
+
+                await PrepareEventCountersAsync(listener);
+
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
 
                 await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
@@ -1040,6 +1063,30 @@ namespace System.Net.Http.Functional.Tests
                 return (string)dictionary["Name"] == "requests-started";
             }
         }
+
+        internal static async Task PrepareEventCountersAsync(TestEventListener listener)
+        {
+            // There is a race condition in EventSource where counters using IncrementingPollingCounter
+            // will drop increments that happened before the background timer thread first runs.
+            // See https://github.com/dotnet/runtime/issues/106268#issuecomment-2284626183.
+            // To workaround this issue, we ensure that the EventCounters timer is running before
+            // executing any of the interesting logic under test.
+
+            var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+
+            await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+            {
+                await LoopbackServer.CreateClientAndServerAsync(
+                    async uri =>
+                    {
+                        using var client = new HttpClient();
+                        await client.GetStringAsync(uri);
+                    },
+                    server => server.HandleRequestAsync());
+
+                await WaitForEventCountersAsync(events);
+            });
+        }
     }
 
     public sealed class TelemetryTest_Http11 : TelemetryTest
@@ -1056,6 +1103,8 @@ namespace System.Net.Http.Functional.Tests
 
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
+
+                await PrepareEventCountersAsync(listener);
 
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 Uri expectedUri = null;
@@ -1107,7 +1156,7 @@ namespace System.Net.Http.Functional.Tests
 
                 EventWrittenEventArgs[] requestHeadersStart = events.Select(e => e.Event).Where(e => e.EventName == "RequestHeadersStart").ToArray();
                 Assert.Equal(NumParallelRequests, requestHeadersStart.Length);
-                HashSet<long> connectionIds = new(Enumerable.Range(0, NumParallelRequests).Select(i => (long)i));
+                HashSet<long> connectionIds = new(Enumerable.Range(1, NumParallelRequests).Select(i => (long)i));
                 foreach (EventWrittenEventArgs e in requestHeadersStart)
                 {
                     long connectionId = (long)e.Payload.Single();
@@ -1125,7 +1174,6 @@ namespace System.Net.Http.Functional.Tests
         public TelemetryTest_Http20(ITestOutputHelper output) : base(output) { }
     }
 
-    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
     public sealed class TelemetryTest_Http30 : TelemetryTest
     {

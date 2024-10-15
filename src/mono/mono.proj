@@ -250,7 +250,7 @@ LLVM_ROOT = emsdk_path + '/bin'
 NODE_JS = emsdk_path + '/node/bin/node'
 BINARYEN_ROOT = emsdk_path
 
-FROZEN_CACHE = bool(os.getenv('FROZEN_CACHE', 'True'))
+FROZEN_CACHE = bool(os.getenv('EM_FROZEN_CACHE', 'True'))
 
 COMPILER_ENGINE = NODE_JS
 JS_ENGINES = [NODE_JS]
@@ -1184,6 +1184,9 @@ JS_ENGINES = [NODE_JS]
 
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.a">
         <Destination>$(RuntimeBinDir)libmono-profiler-aot.a</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-log.a">
+        <Destination>$(RuntimeBinDir)libmono-profiler-log.a</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-browser.a">
         <Destination>$(RuntimeBinDir)libmono-profiler-browser.a</Destination>

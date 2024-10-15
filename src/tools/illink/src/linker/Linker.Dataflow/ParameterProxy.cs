@@ -29,21 +29,23 @@ namespace ILLink.Shared.TypeSystemProxy
 				if (IsImplicitThis)
 					return Method.Method.DeclaringType;
 #pragma warning disable RS0030 // MethodReference.Parameters is banned -- this class provides wrappers to use
-				return Method.Method.Parameters[MetadataIndex].ParameterType;
-#pragma warning restore RS0030 // Do not used banned APIs
+				var method = Method.Method;
+				var genericInstance = method as IGenericInstance ?? method.DeclaringType as IGenericInstance;
+				return method.Parameters[MetadataIndex].ParameterType.InflateFrom (genericInstance);
+#pragma warning restore RS0030 // Do not use banned APIs
 			}
 		}
 
 #pragma warning disable RS0030 // MethodReference.Parameters is banned -- this class provides wrappers to use
 		public partial string GetDisplayName () => IsImplicitThis ? "this"
-			: !string.IsNullOrEmpty (Method.Method.Parameters[MetadataIndex].Name) ? Method.Method.Parameters[MetadataIndex].Name
+			: !string.IsNullOrEmpty (Method.Definition.Parameters[MetadataIndex].Name) ? Method.Definition.Parameters[MetadataIndex].Name
 			: $"#{Index}";
 #pragma warning restore RS0030 // Do not used banned APIs
 
 		public ICustomAttributeProvider GetCustomAttributeProvider ()
 		{
 			if (IsImplicitThis)
-				return Method.Method;
+				return Method.Definition;
 #pragma warning disable RS0030 // MethodReference.Parameters is banned -- this class provides wrappers to use
 			return Method.Method.Parameters[MetadataIndex];
 #pragma warning restore RS0030 // Do not used banned APIs

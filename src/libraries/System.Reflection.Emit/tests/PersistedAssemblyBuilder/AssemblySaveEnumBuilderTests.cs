@@ -37,7 +37,7 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { typeof(uint), (uint)1 };
 
             yield return new object[] { typeof(int), 0 };
-            yield return new object[] { typeof(int), 1 };
+            yield return new object[] { typeof(int), Test.Second };
 
             yield return new object[] { typeof(ulong), (ulong)0 };
             yield return new object[] { typeof(ulong), (ulong)1 };
@@ -100,7 +100,7 @@ namespace System.Reflection.Emit.Tests
                 PersistedAssemblyBuilder ab = new PersistedAssemblyBuilder(PopulateAssemblyName(), mlc.CoreAssembly);
                 ModuleBuilder mb = ab.DefineDynamicModule("My Module");
                 Type intType = mlc.CoreAssembly.GetType("System.Int32");
-                EnumBuilder enumBuilder = mb.DefineEnum("TestEnum", TypeAttributes.Public, typeof(int));
+                EnumBuilder enumBuilder = mb.DefineEnum("TestEnum", TypeAttributes.Public, intType);
                 FieldBuilder field = enumBuilder.DefineLiteral("Default", 0);
 
                 enumBuilder.CreateTypeInfo();
@@ -118,7 +118,7 @@ namespace System.Reflection.Emit.Tests
 
                 FieldInfo testField = createdEnum.GetField("Default");
                 Assert.Equal(createdEnum, testField.FieldType);
-                Assert.Equal(typeof(int), enumBuilder.GetEnumUnderlyingType());
+                Assert.Equal(intType, enumBuilder.GetEnumUnderlyingType());
                 Assert.Equal(FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal | FieldAttributes.HasDefault, testField.Attributes);
             }
         }
