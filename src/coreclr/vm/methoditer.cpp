@@ -63,7 +63,7 @@ BOOL LoadedMethodDescIterator::Next(
 
         if (m_mainMD == NULL)
         {
-            *pDomainAssemblyHolder = NULL;
+            *pAssemblyHolder = NULL;
             return FALSE;
         }
     }
