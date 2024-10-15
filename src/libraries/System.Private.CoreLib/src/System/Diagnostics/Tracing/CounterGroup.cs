@@ -14,6 +14,10 @@ namespace System.Diagnostics.Tracing
 #endif
     internal sealed class CounterGroup
     {
+        // This is the opt-in switch for a .NET 8 backport of https://github.com/dotnet/runtime/pull/105548
+        private static bool CounterCallbackOnTimerThread { get; } =
+            AppContext.TryGetSwitch("System.Diagnostics.Tracing.CounterCallbackOnTimerThread", out bool value) ? value : false;
+
         private readonly EventSource _eventSource;
         private readonly List<DiagnosticCounter> _counters;
         private static readonly object s_counterGroupLock = new object();
@@ -189,6 +193,16 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
             _pollingIntervalInMilliseconds = 0;
             s_counterGroupEnabledList?.Remove(this);
+
+            if (CounterCallbackOnTimerThread && s_needsResetIncrementingPollingCounters.Count > 0)
+            {
+                // if there are any pending callbacks for the timer thread, remove them now that the timer is being disabled
+                foreach (DiagnosticCounter diagnosticCounter in _counters)
+                {
+                    if (diagnosticCounter is IncrementingPollingCounter pollingCounter)
+                        s_needsResetIncrementingPollingCounters.Remove(pollingCounter);
+                }
+            }
         }
 
         private void ResetCounters()
@@ -203,7 +217,17 @@ namespace System.Diagnostics.Tracing
                     }
                     else if (counter is IncrementingPollingCounter ipCounter)
                     {
-                        ipCounter.UpdateMetric();
+                        if (CounterCallbackOnTimerThread)
+                        {
+                            // IncrementingPollingCounters will be reset on timer thread
+                            // We need this to avoid deadlocks caused by running IncrementingPollingCounter._totalValueProvider under EventListener.EventListenersLock
+                            // This is an opt-in fix for servicing because there is a small chance this could break apps (most likely tests).
+                            s_needsResetIncrementingPollingCounters.Add(ipCounter);
+                        }
+                        else
+                        {
+                            ipCounter.UpdateMetric();
+                        }
                     }
                     else if (counter is EventCounter eCounter)
                     {
@@ -265,6 +289,10 @@ namespace System.Diagnostics.Tracing
 
         private static List<CounterGroup>? s_counterGroupEnabledList;
 
+        // Stores a list of IncrementingPollingCounters that need to be reset on the timer thread. This field
+        // is only accessed when CallbackOnTimerThread is true.
+        private static List<IncrementingPollingCounter> s_needsResetIncrementingPollingCounters = [];
+
         private static void PollForValues()
         {
             AutoResetEvent? sleepEvent = null;
@@ -274,6 +302,7 @@ namespace System.Diagnostics.Tracing
             // calling into the callbacks can cause a re-entrancy into CounterGroup.Enable()
             // and result in a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
             var onTimers = new List<CounterGroup>();
+            List<IncrementingPollingCounter>? countersToReset = null;
             while (true)
             {
                 int sleepDurationInMilliseconds = int.MaxValue;
@@ -292,7 +321,24 @@ namespace System.Diagnostics.Tracing
                         millisecondsTillNextPoll = Math.Max(1, millisecondsTillNextPoll);
                         sleepDurationInMilliseconds = Math.Min(sleepDurationInMilliseconds, millisecondsTillNextPoll);
                     }
+
+                    if (CounterCallbackOnTimerThread && s_needsResetIncrementingPollingCounters.Count > 0)
+                    {
+                        countersToReset = s_needsResetIncrementingPollingCounters;
+                        s_needsResetIncrementingPollingCounters = [];
+                    }
                 }
+
+                if (countersToReset != null)
+                {
+                    foreach (IncrementingPollingCounter counter in countersToReset)
+                    {
+                        counter.UpdateMetric();
+                    }
+
+                    countersToReset = null;
+                }
+
                 foreach (CounterGroup onTimer in onTimers)
                 {
                     onTimer.OnTimer();
