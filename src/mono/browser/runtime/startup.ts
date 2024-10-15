@@ -503,10 +503,6 @@ async function instantiate_wasm_module (
         const memory = compiledInstance.exports.memory as WebAssembly.Memory;
         mono_log_warn(`Initial memory size buffer: ${memory.buffer.byteLength}`);
         mono_log_warn(`Initial memory size grow0: ${memory.grow(0) * 65536}`);
-        mono_log_warn("Grow 0x90000000 result: " + memory.grow(0x90000000 / 65536) * 65536);
-        mono_log_warn(`Grow 0 result: ${memory.grow(0) * 65536}`);
-        mono_log_warn(`Grow 0 result: ${memory.grow(0) * 65536}`);
-        mono_log_warn(`Memory size buffer: ${memory.buffer.byteLength}`);
         successCallback(compiledInstance, compiledModule);
 
         runtimeHelpers.afterInstantiateWasm.promise_control.resolve();
@@ -533,6 +529,18 @@ export async function start_runtime () {
     try {
         const mark = startMeasure();
         mono_log_debug("Initializing mono runtime");
+        const memory = runtimeHelpers.getMemory();
+        mono_log_warn(`Start memory size buffer: ${memory.buffer.byteLength}`);
+        mono_log_warn(`Start memory size grow0: ${memory.grow(0) * 65536}`);
+        mono_log_warn("Grow 0x90000000 result: " + memory.grow(0x90000000 / 65536) * 65536);
+        mono_log_warn(`Grow 0 result: ${memory.grow(0) * 65536}`);
+        runtimeHelpers.updateMemoryViews();
+        mono_log_warn(`Memory size buffer: ${memory.buffer.byteLength}`);
+        for(let i=0;i<100;i++){
+            mono_log_warn(`malloc test 1m ${Module._malloc(1024 * 1024)}`);
+        }
+        mono_log_warn(`Grow 0 result: ${memory.grow(0) * 65536}`);
+
         mono_log_warn(`malloc test4 ${Module._malloc(4)}`);
         mono_log_warn(`malloc test4k ${Module._malloc(4 * 1024)}`);
         mono_log_warn(`malloc test4m ${Module._malloc(4 * 1024 * 1024)}`);
