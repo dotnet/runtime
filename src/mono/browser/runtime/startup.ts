@@ -500,9 +500,14 @@ async function instantiate_wasm_module (
         replace_linker_placeholders(imports);
         const compiledModule = await loaderHelpers.wasmCompilePromise.promise;
         const compiledInstance = await WebAssembly.instantiate(compiledModule, imports);
+        const memory = compiledInstance.exports.memory as WebAssembly.Memory;
+        mono_log_warn(`Initial memory size buffer: ${memory.buffer.byteLength}`);
+        mono_log_warn(`Initial memory size grow0: ${memory.grow(0) * 65536}`);
+        mono_log_warn("Grow 0x90000000 result: " + memory.grow(0x90000000 / 65536) * 65536);
+        mono_log_warn(`Grow 0 result: ${memory.grow(0) * 65536}`);
+        mono_log_warn(`Grow 0 result: ${memory.grow(0) * 65536}`);
+        mono_log_warn(`Memory size buffer: ${memory.buffer.byteLength}`);
         successCallback(compiledInstance, compiledModule);
-
-        mono_log_debug("instantiate_wasm_module done");
 
         runtimeHelpers.afterInstantiateWasm.promise_control.resolve();
     } catch (err) {
@@ -528,6 +533,10 @@ export async function start_runtime () {
     try {
         const mark = startMeasure();
         mono_log_debug("Initializing mono runtime");
+        mono_log_warn(`malloc test4 ${Module._malloc(4)}`);
+        mono_log_warn(`malloc test4k ${Module._malloc(4 * 1024)}`);
+        mono_log_warn(`malloc test4m ${Module._malloc(4 * 1024 * 1024)}`);
+        mono_log_warn(`malloc test8 ${Module._malloc(8)}`);
         for (const k in runtimeHelpers.config.environmentVariables) {
             const v = runtimeHelpers.config.environmentVariables![k];
             if (typeof (v) === "string")

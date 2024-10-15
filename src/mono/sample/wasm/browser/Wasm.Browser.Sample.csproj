@@ -1,5 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\DefaultBrowserSample.targets" />
+  <PropertyGroup>
+    <!-- 
+    <EmccInitialHeapSize>4294901760</EmccInitialHeapSize>
+    <EmccExtraLDFlags> -s MAXIMUM_MEMORY=4294901760</EmccExtraLDFlags>
+    -->
+    <WasmBuildNative>true</WasmBuildNative>
+  </PropertyGroup>
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="main.js" />
   </ItemGroup>
