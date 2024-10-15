@@ -5650,10 +5650,13 @@ void DacDbiInterfaceImpl::LookupEnCVersions(Module*          pModule,
     DebuggerJitInfo * pDJI = NULL;
     EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
     {
-        pDMI = g_pDebugger->GetOrCreateMethodInfo(pModule, mdMethod);
-        if (pDMI != NULL)
+        if (g_pDebugger != NULL)
         {
-            pDJI = pDMI->FindJitInfo(pMD, CORDB_ADDRESS_TO_TADDR(pNativeStartAddress));
+            pDMI = g_pDebugger->GetOrCreateMethodInfo(pModule, mdMethod);
+            if (pDMI != NULL)
+            {
+                pDJI = pDMI->FindJitInfo(pMD, CORDB_ADDRESS_TO_TADDR(pNativeStartAddress));
+            }
         }
     }
     EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
@@ -7512,6 +7515,10 @@ HRESULT DacDbiInterfaceImpl::GetDefinesBitField(ULONG32 *pDefines)
     DD_ENTER_MAY_THROW;
     if (pDefines == NULL)
         return E_INVALIDARG;
+
+    if (g_pDebugger == NULL)
+        return CORDBG_E_NOTREADY;
+        
     *pDefines = g_pDebugger->m_defines;
     return S_OK;
 }
@@ -7521,6 +7528,10 @@ HRESULT DacDbiInterfaceImpl::GetMDStructuresVersion(ULONG32* pMDStructuresVersio
     DD_ENTER_MAY_THROW;
     if (pMDStructuresVersion == NULL)
         return E_INVALIDARG;
+
+    if (g_pDebugger == NULL)
+        return CORDBG_E_NOTREADY;
+
     *pMDStructuresVersion = g_pDebugger->m_mdDataStructureVersion;
     return S_OK;
 }
