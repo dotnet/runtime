@@ -4783,155 +4783,28 @@ void Compiler::fgMoveColdBlocks()
     }
 #endif // DEBUG
 
-    auto moveColdMainBlocks = [this]() {
-        // Find the last block in the main body that isn't part of an EH region
-        //
-        BasicBlock* lastMainBB;
-        for (lastMainBB = this->fgLastBBInMainFunction(); lastMainBB != nullptr; lastMainBB = lastMainBB->Prev())
-        {
-            if (!lastMainBB->hasTryIndex() && !lastMainBB->hasHndIndex())
-            {
-                break;
-            }
-        }
-
-        // Nothing to do if there are two or fewer non-EH blocks
-        //
-        if ((lastMainBB == nullptr) || lastMainBB->IsFirst() || lastMainBB->PrevIs(fgFirstBB))
-        {
-            return;
-        }
-
-        // Search the main method body for rarely-run blocks to move
-        //
-        BasicBlock* prev;
-        for (BasicBlock* block = lastMainBB->Prev(); block != fgFirstBB; block = prev)
-        {
-            prev = block->Prev();
-
-            // We only want to move cold blocks.
-            // Also, don't consider blocks in EH regions for now; only move blocks in the main method body.
-            // Finally, don't move block if it is the beginning of a call-finally pair,
-            // as we want to keep these pairs contiguous
-            // (if we encounter the end of a pair below, we'll move the whole pair).
-            //
-            if (!block->isBBWeightCold(this) || block->hasTryIndex() || block->hasHndIndex() ||
-                block->isBBCallFinallyPair())
-            {
-                continue;
-            }
-
-            this->fgUnlinkBlock(block);
-            this->fgInsertBBafter(lastMainBB, block);
-
-            // If block is the end of a call-finally pair, prev is the beginning of the pair.
-            // Move prev to before block to keep the pair contiguous.
-            //
-            if (block->KindIs(BBJ_CALLFINALLYRET))
-            {
-                BasicBlock* const callFinally = prev;
-                prev                          = prev->Prev();
-                assert(callFinally->KindIs(BBJ_CALLFINALLY));
-                assert(!callFinally->HasFlag(BBF_RETLESS_CALL));
-                this->fgUnlinkBlock(callFinally);
-                this->fgInsertBBafter(lastMainBB, callFinally);
-            }
-        }
-
-        // We have moved all cold main blocks before lastMainBB to after lastMainBB.
-        // If lastMainBB itself is cold, move it to the end of the method to restore its relative ordering.
-        //
-        if (lastMainBB->isBBWeightCold(this))
-        {
-            BasicBlock* const newLastMainBB = this->fgLastBBInMainFunction();
-            if (lastMainBB != newLastMainBB)
-            {
-                BasicBlock* const prev = lastMainBB->Prev();
-                this->fgUnlinkBlock(lastMainBB);
-                this->fgInsertBBafter(newLastMainBB, lastMainBB);
-
-                // Call-finally check
-                //
-                if (lastMainBB->KindIs(BBJ_CALLFINALLYRET))
-                {
-                    assert(prev->KindIs(BBJ_CALLFINALLY));
-                    assert(!prev->HasFlag(BBF_RETLESS_CALL));
-                    assert(prev != newLastMainBB);
-                    this->fgUnlinkBlock(prev);
-                    this->fgInsertBBafter(newLastMainBB, prev);
-                }
-            }
-        }
-    };
-
-    moveColdMainBlocks();
-
-    // No EH regions
+    // Search the main method body for rarely-run blocks to move
     //
-    if (compHndBBtabCount == 0)
-    {
-        return;
-    }
-
-    // We assume exception handlers are cold, so we won't bother moving blocks within them.
-    // We will move blocks only within try regions.
-    // First, determine where each try region ends, without considering nested regions.
-    // We will use these end blocks as insertion points.
-    //
-    BasicBlock** const tryRegionEnds = new (this, CMK_Generic) BasicBlock* [compHndBBtabCount] {};
-
-    for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
-    {
-        if (block->hasTryIndex())
-        {
-            tryRegionEnds[block->getTryIndex()] = block;
-        }
-    }
-
-    // Search all try regions in the main method body for cold blocks to move
-    //
-    BasicBlock* prev;
-    for (BasicBlock* block = fgLastBBInMainFunction(); block != fgFirstBB; block = prev)
+    BasicBlock* const lastMainBB = fgLastBBInMainFunction();
+    for (BasicBlock* block = lastMainBB->Prev(), *prev; block != fgFirstBB; block = prev)
     {
         prev = block->Prev();
 
-        // Only consider cold blocks in try regions.
-        // If we have such a block that is also part of an exception handler, don't bother moving it.
-        // Finally, don't move block if it is the beginning of a call-finally pair,
+        // We only want to move cold blocks.
+        // Also, don't move block if it is the beginning of a call-finally pair,
         // as we want to keep these pairs contiguous
         // (if we encounter the end of a pair below, we'll move the whole pair).
         //
-        if (!block->isBBWeightCold(this) || !block->hasTryIndex() || block->hasHndIndex() ||
-            block->isBBCallFinallyPair())
-        {
-            continue;
-        }
-
-        const unsigned  tryIndex = block->getTryIndex();
-        EHblkDsc* const HBtab    = ehGetDsc(tryIndex);
-
-        // Don't move the beginning of a try region.
-        // Also, if this try region's entry is cold, don't bother moving its blocks.
-        //
-        if ((HBtab->ebdTryBeg == block) || HBtab->ebdTryBeg->isBBWeightCold(this))
-        {
-            continue;
-        }
-
-        BasicBlock* const insertionPoint = tryRegionEnds[tryIndex];
-        assert(insertionPoint != nullptr);
-
-        // Don't move the end of this try region
-        //
-        if (block == insertionPoint)
+        if (!block->isBBWeightCold(this) || block->isBBCallFinallyPair())
         {
             continue;
         }
 
         fgUnlinkBlock(block);
-        fgInsertBBafter(insertionPoint, block);
+        fgInsertBBafter(lastMainBB, block);
 
-        // Keep call-finally pairs contiguous
+        // If block is the end of a call-finally pair, prev is the beginning of the pair.
+        // Move prev to before block to keep the pair contiguous.
         //
         if (block->KindIs(BBJ_CALLFINALLYRET))
         {
@@ -4940,56 +4813,166 @@ void Compiler::fgMoveColdBlocks()
             assert(callFinally->KindIs(BBJ_CALLFINALLY));
             assert(!callFinally->HasFlag(BBF_RETLESS_CALL));
             fgUnlinkBlock(callFinally);
-            fgInsertBBafter(insertionPoint, callFinally);
+            fgInsertBBafter(lastMainBB, callFinally);
         }
     }
 
-    // Find the new try region ends
+    // We have moved all cold main blocks before lastMainBB to after lastMainBB.
+    // If lastMainBB itself is cold, move it to the end of the method to restore its relative ordering.
     //
+    BasicBlock* lastHotBlock;
+    for (lastHotBlock = lastMainBB; (lastHotBlock != nullptr) && lastHotBlock->isBBWeightCold(this); lastHotBlock = lastHotBlock->Prev());
+    if (lastMainBB->isBBWeightCold(this))
+    {
+        BasicBlock* const newLastMainBB = fgLastBBInMainFunction();
+        if (lastMainBB != newLastMainBB)
+        {
+            BasicBlock* const prev = lastMainBB->Prev();
+            fgUnlinkBlock(lastMainBB);
+            fgInsertBBafter(newLastMainBB, lastMainBB);
+
+            // Call-finally check
+            //
+            if (lastMainBB->KindIs(BBJ_CALLFINALLYRET))
+            {
+                assert(prev->KindIs(BBJ_CALLFINALLY));
+                assert(!prev->HasFlag(BBF_RETLESS_CALL));
+                assert(prev != newLastMainBB);
+                fgUnlinkBlock(prev);
+                fgInsertBBafter(newLastMainBB, prev);
+            }
+        }
+    }
+
+    if ((compHndBBtabCount == 0) || (lastHotBlock == nullptr))
+    {
+        return;
+    }
+
+    unsigned unsetTryEnds = compHndBBtabCount;
+
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        HBtab->ebdTryLast = nullptr;
+    }
+
+    auto setTryEnd = [this, &unsetTryEnds](BasicBlock* block) {
+        for (unsigned tryIndex = block->getTryIndex(); tryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
+             tryIndex          = ehGetEnclosingTryIndex(tryIndex))
+        {
+            EHblkDsc* const HBtab = ehGetDsc(tryIndex);
+            if (HBtab->ebdTryLast == nullptr)
+            {
+                assert(unsetTryEnds != 0);
+                HBtab->ebdTryLast = block;
+                unsetTryEnds--;
+            }
+            else
+            {
+                break;
+            }
+        }
+    };
+
+    for (BasicBlock* block = lastHotBlock; (unsetTryEnds != 0) && (block != nullptr); block = block->Prev())
+    {
+        if (block->hasTryIndex())
+        {
+            setTryEnd(block);
+        }
+    }
+
+    struct TryRange {
+        BasicBlock* tryBeg;
+        BasicBlock* tryLast;
+    };
+    TryRange* const coldTryRanges = new (this, CMK_Generic) TryRange[compHndBBtabCount]{};
+
+    for (BasicBlock* block = lastHotBlock->Next(); block != fgFirstFuncletBB; block = block->Next())
+    {
+        assert(block->isBBWeightCold(this));
+        if (block->hasTryIndex())
+        {
+            TryRange& range = coldTryRanges[block->getTryIndex()];
+            range.tryLast = block;
+
+            if (range.tryBeg == nullptr)
+            {
+                range.tryBeg = block;
+            }
+        }
+    }
+
     for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
     {
-        BasicBlock* const tryEnd = tryRegionEnds[XTnum];
+        const TryRange& range = coldTryRanges[XTnum];
 
-        // This try region isn't in the main method body
-        //
-        if (tryEnd == nullptr)
+        if (range.tryBeg == nullptr)
         {
             continue;
         }
 
-        // If we moved cold blocks to the end of this try region,
-        // search for the new end block
-        //
-        BasicBlock* newTryEnd = tryEnd;
-        for (BasicBlock* const block : Blocks(tryEnd, fgLastBBInMainFunction()))
+        EHblkDsc* HBtab = ehGetDsc(XTnum);
+        BasicBlock* insertionPoint = HBtab->ebdTryLast;
+        HBtab->ebdTryLast = range.tryLast;
+
+        if (insertionPoint == nullptr)
         {
-            if (!BasicBlock::sameTryRegion(tryEnd, block))
+            assert(range.tryBeg == HBtab->ebdTryBeg);
+            const unsigned enclosingIndex = ehGetEnclosingTryIndex(XTnum);
+            if (enclosingIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+            {
+                insertionPoint = ehGetDsc(enclosingIndex)->ebdTryLast;
+            }
+        }
+        
+        if (insertionPoint == nullptr)
+        {
+            continue;
+        }
+
+        fgUnlinkRange(range.tryBeg, range.tryLast);
+        fgMoveBlocksAfter(range.tryBeg, range.tryLast, insertionPoint);
+
+        if (HBtab->ebdTryBeg == range.tryBeg)
+        {
+            BasicBlock* const tryBeg = HBtab->ebdTryBeg;
+            assert(!tryBeg->IsFirst());
+            BasicBlock* prev;
+            for (prev = tryBeg->Prev(); (prev != nullptr) && BasicBlock::sameTryRegion(prev, tryBeg); prev = prev->Prev());
+
+            if (prev != nullptr)
+            {
+                assert(!BasicBlock::sameTryRegion(prev, tryBeg));
+                if (!prev->NextIs(tryBeg))
+                {
+                    fgUnlinkBlock(tryBeg);
+                    fgInsertBBafter(prev, tryBeg);
+                }
+            }
+            else
+            {
+                assert(BasicBlock::sameTryRegion(fgFirstBB, tryBeg));
+                fgUnlinkBlock(tryBeg);
+                fgInsertBBbefore(fgFirstBB, tryBeg);
+            }
+        }
+
+        for (unsigned tryIndex = ehGetEnclosingTryIndex(XTnum); (tryIndex != EHblkDsc::NO_ENCLOSING_INDEX); tryIndex = ehGetEnclosingTryIndex(tryIndex))
+        {
+            HBtab = ehGetDsc(tryIndex);
+            if (HBtab->ebdTryLast == nullptr)
             {
                 break;
             }
 
-            newTryEnd = block;
-        }
-
-        // We moved cold blocks to the end of this try region, but the old end block is cold, too.
-        // Move the old end block to the end of the region to preserve its relative ordering.
-        //
-        if ((tryEnd != newTryEnd) && !tryEnd->hasHndIndex() && tryEnd->isBBWeightCold(this))
-        {
-            BasicBlock* const prev = tryEnd->Prev();
-            fgUnlinkBlock(tryEnd);
-            fgInsertBBafter(newTryEnd, tryEnd);
-
-            // Keep call-finally pairs contiguous
-            //
-            if (tryEnd->KindIs(BBJ_CALLFINALLYRET))
+            if (HBtab->ebdTryLast->NextIs(range.tryBeg))
             {
-                assert(prev->KindIs(BBJ_CALLFINALLY));
-                assert(!prev->HasFlag(BBF_RETLESS_CALL));
-                fgUnlinkBlock(prev);
-                fgInsertBBafter(newTryEnd, prev);
+                HBtab->ebdTryLast = range.tryLast;
             }
         }
+
+        fgDispBasicBlocks(verboseTrees);
     }
 }
 
