@@ -4683,7 +4683,7 @@ void Compiler::fgDoReversePostOrderLayout()
     FlowGraphNaturalLoops* const loops         = FlowGraphNaturalLoops::Find(dfsTree);
     BasicBlock** const           rpoSequence   = new (this, CMK_BasicBlock) BasicBlock*[dfsTree->GetPostOrderCount()];
     unsigned                     index         = dfsTree->GetPostOrderCount();
-    auto                         addToSequence = [this, rpoSequence, &index](BasicBlock* block) {
+    auto                         addToSequence = [rpoSequence, &index](BasicBlock* block) {
         assert(index != 0);
         rpoSequence[--index] = block;
     };
