@@ -1072,7 +1072,12 @@ class DebuggerController
     static bool DispatchNativeException(EXCEPTION_RECORD *exception,
                                         CONTEXT *context,
                                         DWORD code,
-                                        Thread *thread);
+                                        Thread *thread
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                                        ,
+                                        DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL
+#endif
+                                        );
 
     static bool DispatchUnwind(Thread *thread,
                                MethodDesc *fd, DebuggerJitInfo * pDJI, SIZE_T offset,
@@ -1114,13 +1119,23 @@ class DebuggerController
 
     static DebuggerPatchSkip *ActivatePatchSkip(Thread *thread,
                                                 const BYTE *eip,
-                                                BOOL fForEnC);
+                                                BOOL fForEnC
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                                                ,
+                                                DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL
+#endif
+                                                );
 
 
     static DPOSS_ACTION DispatchPatchOrSingleStep(Thread *thread,
                                           CONTEXT *context,
                                           CORDB_ADDRESS_TYPE *ip,
-                                          SCAN_TRIGGER which);
+                                          SCAN_TRIGGER which
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                                          ,
+                                          DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL
+#endif
+                                          );
 
 
     static int GetNumberOfPatches()
@@ -1450,6 +1465,23 @@ private:
 
 #if !defined(DACCESS_COMPILE)
 
+// this structure stores useful information about single-stepping over a call instruction
+// it is used to communicate the patch skip opcode and current state between the controller on left side and HandleSetThreadContextNeeded on the right side
+class DebuggerSteppingInfo
+{
+    bool fIsInPlaceSingleStep = false;
+    PRD_TYPE opcode = 0;
+
+public:
+    bool IsInPlaceSingleStep() { return fIsInPlaceSingleStep; }
+    PRD_TYPE GetOpcode() { return opcode; }
+    void EnableInPlaceSingleStepOverCall(PRD_TYPE opcode)
+    {
+        this->fIsInPlaceSingleStep = true;
+        this->opcode = opcode;
+    }
+};
+
 /* ------------------------------------------------------------------------- *
  * DebuggerPatchSkip routines
  * ------------------------------------------------------------------------- */
@@ -1485,6 +1517,9 @@ class DebuggerPatchSkip : public DebuggerController
     CORDB_ADDRESS_TYPE      *m_address;
     int                      m_iOrigDisp;        // the original displacement of a relative call or jump
     InstructionAttribute     m_instrAttrib;      // info about the instruction being skipped over
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    bool                     m_fInPlaceSS;       // is this an in-place single-step instruction?
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 #ifndef FEATURE_EMULATE_SINGLESTEP
     // this is shared among all the skippers and the controller. see the comments
     // right before the definition of SharedPatchBypassBuffer for lifetime info.
@@ -1497,7 +1532,23 @@ public:
         BYTE* patchBypass = m_pSharedPatchBypassBuffer->PatchBypass;
         return (CORDB_ADDRESS_TYPE *)patchBypass;
     }
+
 #endif // !FEATURE_EMULATE_SINGLESTEP
+
+    BOOL IsInPlaceSingleStep() 
+    { 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+#ifndef FEATURE_EMULATE_SINGLESTEP
+        // only in-place single steps over call intructions are supported at this time
+        _ASSERTE(m_instrAttrib.m_fIsCall);
+        return m_fInPlaceSS;
+#else
+#error only non-emulated single-steps with OUT_OF_PROCESS_SETTHREADCONTEXT enabled are supported
+#endif
+#else
+        return false;
+#endif
+    }
 };
 
 /* ------------------------------------------------------------------------- *
