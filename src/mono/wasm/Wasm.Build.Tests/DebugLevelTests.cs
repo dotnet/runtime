@@ -32,7 +32,8 @@ public class DebugLevelTests : AppTestBase
             MainJS: "main.js",
             HasV8Script: false,
             Publish: isPublish,
-            AssertAppBundle: false
+            AssertAppBundle: false,
+            UseCache: false
         );
 
     private string BuildPublishProject(string projectName, string config, bool isPublish = false, params string[] extraArgs)
