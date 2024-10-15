@@ -1548,15 +1548,7 @@ namespace System
                             throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName));
                         }
 
-                        MethodBase? invokeMethod;
-                        object? state = null;
-
-                        try
-                        {
-                            invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null, out state);
-                        }
-                        catch (MissingMethodException) { invokeMethod = null; }
-
+                        MethodBase? invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null, out object? state);
                         if (invokeMethod == null)
                         {
                             throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName));
