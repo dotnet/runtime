@@ -1453,6 +1453,13 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         return true;
     }
 
+    if (id->idIsEvexNfContextSet() && IsBMIInstruction(ins))
+    {
+        // Only a few BMI instructions shall be promoted to APX-EVEX due to NF feature.
+        // TODO-Ruihan: convert the check into forms like Has* as above.
+        return true;
+    }
+
 #if defined(DEBUG)
     if (emitComp->DoJitStressEvexEncoding())
     {
@@ -1648,8 +1655,11 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
     if (IsApxExtendedEvexInstruction(ins))
     {
-        //Handle EVEX prefix for NDD first.
-        code |= MAP4_IN_BYTE_EVEX_PREFIX;
+        if (!HasEvexEncoding(ins))
+        {
+            // Legacy-promoted insutrcions are not labeled with Encoding_EVEX.
+            code |= MAP4_IN_BYTE_EVEX_PREFIX;
+        }
 
         // TODO-XArch-apx:
         // verify if it is actually safe to reuse the Evex.nd with Evex.b on instrDesc.
@@ -2481,6 +2491,14 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
                 case 0x66:
                 {
                     // None of the existing BMI instructions should be EVEX encoded.
+                    // After APX, BMI instructions can be EVEX encoded with NF feature.
+                    if (IsBMIInstruction(ins))
+                    {
+                        // if BMI instructions reaches this part, then it should be APX-EVEX.
+                        // although the opcode of all the BMI instructions are defined with 0x66,
+                        // but it should not, skip this check.
+                        break;
+                    }
                     assert(!IsBMIInstruction(ins));
                     evexPrefix |= (0x01 << 8);
                     break;
@@ -2504,6 +2522,8 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
                     unreached();
                 }
             }
+
+
 
             // Now the byte in the 22 position must be an escape byte 0F
             leadingBytes = check;
@@ -16405,7 +16425,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
     code = insCodeRM(ins);
     code = AddX86PrefixIfNeeded(id, code, size);
 
-    if (IsApxExtendedEvexInstruction(ins))
+    if (IsApxExtendedEvexInstruction(ins) && !IsBMIInstruction(ins))
     {
         // TODO-XArch-apx:
         // For rm-like operand encoding instructions:

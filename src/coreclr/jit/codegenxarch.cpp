@@ -9362,51 +9362,58 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     // theEmitter->emitIns_R_R_R(INS_imul, EA_4BYTE, REG_R12, REG_R11, REG_ECX, INS_OPTS_EVEX_nd);
     // theEmitter->emitIns_R_R_S(INS_imul, EA_4BYTE, REG_R12, REG_R11, 0, 1, INS_OPTS_EVEX_nd);
 
-    theEmitter->emitIns_R_R(INS_add, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_R(INS_sub, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_R(INS_and, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_R(INS_or, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_R(INS_xor, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R(INS_inc, EA_4BYTE, REG_R12, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R(INS_dec, EA_4BYTE, REG_R12, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_R(INS_add, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_R(INS_sub, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_R(INS_and, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_R(INS_or, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_R(INS_xor, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R(INS_inc, EA_4BYTE, REG_R12, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R(INS_dec, EA_4BYTE, REG_R12, INS_OPTS_EVEX_nf);
 
-    theEmitter->emitIns_R_I(INS_add, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_I(INS_sub, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_I(INS_and, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_I(INS_or,  EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_I(INS_xor, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_I(INS_add, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_I(INS_sub, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_I(INS_and, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_I(INS_or,  EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_I(INS_xor, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
 
-    theEmitter->emitIns_R_S(INS_add, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_S(INS_sub, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_S(INS_and, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_S(INS_or,  EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_S(INS_xor, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_S(INS_add, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_S(INS_sub, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_S(INS_and, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_S(INS_or,  EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_S(INS_xor, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
 
-    theEmitter->emitIns_R(INS_neg, EA_2BYTE, REG_R11, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R(INS_shl, EA_2BYTE, REG_R11, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R(INS_shl_1, EA_2BYTE, REG_R11, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_I(INS_shl_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_I(INS_shl_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R(INS_neg, EA_2BYTE, REG_R11, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R(INS_shl, EA_2BYTE, REG_R11, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R(INS_shl_1, EA_2BYTE, REG_R11, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_I(INS_shl_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_I(INS_shl_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
 
-    theEmitter->emitIns_R_R(INS_imul, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_S(INS_imul, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_R(INS_imul, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_S(INS_imul, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
 
-    theEmitter->emitIns_R_I(INS_imul_15, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_I(INS_imul_15, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
 
-    theEmitter->emitIns_R(INS_imulEAX, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R(INS_mulEAX, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R(INS_div, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R(INS_idiv, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R(INS_imulEAX, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R(INS_mulEAX, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R(INS_div, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R(INS_idiv, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
 
-    theEmitter->emitIns_R_R(INS_tzcnt_evex,  EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_R(INS_lzcnt_evex,  EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_R(INS_popcnt_evex, EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_R(INS_tzcnt_evex,  EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_R(INS_lzcnt_evex,  EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_R(INS_popcnt_evex, EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
     
-    theEmitter->emitIns_R_S(INS_tzcnt_evex,  EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_S(INS_lzcnt_evex,  EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_S(INS_popcnt_evex, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_S(INS_tzcnt_evex,  EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_S(INS_lzcnt_evex,  EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_S(INS_popcnt_evex, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
 
-    theEmitter->emitIns_R_R_R(INS_add, EA_2BYTE, REG_R12, REG_R13, REG_R11, (insOpts)(INS_OPTS_EVEX_nf | INS_OPTS_EVEX_nd));
+    // theEmitter->emitIns_R_R_R(INS_add, EA_2BYTE, REG_R12, REG_R13, REG_R11, (insOpts)(INS_OPTS_EVEX_nf | INS_OPTS_EVEX_nd));
+
+    theEmitter->emitIns_R_R_R(INS_andn,  EA_8BYTE, REG_R11, REG_R13, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R_R(INS_bextr, EA_8BYTE, REG_R11, REG_R13, REG_R11, INS_OPTS_EVEX_nf);
+    
+    theEmitter->emitIns_R_R(INS_blsi,    EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_blsmsk,  EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_blsr,    EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
 }
 
 #endif // defined(DEBUG) && defined(TARGET_AMD64)
