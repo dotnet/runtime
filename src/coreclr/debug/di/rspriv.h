@@ -50,6 +50,8 @@ struct MachineInfo;
 
 #include "eventchannel.h"
 
+#include <shash.h>
+
 #undef ASSERT
 #define CRASH(x)  _ASSERTE(!(x))
 #define ASSERT(x) _ASSERTE(x)
@@ -2883,6 +2885,10 @@ public:
 #ifdef FEATURE_INTEROP_DEBUGGING
     virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread) = 0;
 #endif
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    virtual void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent) = 0;
+#endif
 };
 
 
@@ -2920,6 +2926,42 @@ public:
     CordbProcess *  m_pThis;
     VMPTR_AppDomain m_vmAppDomainDeleted;
 };
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+class UnmanagedThreadTracker
+{
+    DWORD m_dwThreadId = (DWORD)-1;
+    HANDLE m_hThread = INVALID_HANDLE_VALUE;
+    CORDB_ADDRESS_TYPE *m_pPatchSkipAddress = NULL;
+    DWORD m_dwSuspendCount = 0;
+
+public:
+    UnmanagedThreadTracker(DWORD wThreadId, HANDLE hThread) : m_dwThreadId(wThreadId), m_hThread(hThread) {}
+
+    DWORD GetThreadId() const { return m_dwThreadId; }
+    HANDLE GetThreadHandle() const { return m_hThread; }
+    bool IsInPlaceStepping() const { return m_pPatchSkipAddress != NULL; }
+    void SetPatchSkipAddress(CORDB_ADDRESS_TYPE *pPatchSkipAddress) { m_pPatchSkipAddress = pPatchSkipAddress; }
+    CORDB_ADDRESS_TYPE *GetPatchSkipAddress() const { return m_pPatchSkipAddress; }
+    void ClearPatchSkipAddress() { m_pPatchSkipAddress = NULL; }
+    void Suspend();
+    void Resume();
+    void Close();
+};
+
+class EMPTY_BASES_DECL CUnmanagedThreadSHashTraits : public DefaultSHashTraits<UnmanagedThreadTracker*>
+{
+    public:
+        typedef DWORD key_t;
+
+        static key_t GetKey(const element_t &e) { return e->GetThreadId(); }
+        static BOOL Equals(const key_t &e, const key_t &f) { return e == f; }
+        static count_t Hash(const key_t &e) { return (count_t)(e ^ (e >> 16) * 0x45D9F43); }
+};
+
+typedef SHash<CUnmanagedThreadSHashTraits> CUnmanagedThreadHashTableImpl;
+typedef SHash<CUnmanagedThreadSHashTraits>::Iterator CUnmanagedThreadHashTableIterator;
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 class CordbProcess :
     public CordbBase,
@@ -3286,6 +3328,7 @@ public:
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     void HandleSetThreadContextNeeded(DWORD dwThreadId);
+    bool HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAddress);
 #endif
 
     //
@@ -4125,6 +4168,14 @@ private:
     WriteableMetadataUpdateMode m_writableMetadataUpdateMode;
 
     COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject);
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    CUnmanagedThreadHashTableImpl m_unmanagedThreadHashTable;
+    DWORD m_dwOutOfProcessStepping;
+public:
+    void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
+
 };
 
 // Some IMDArocess APIs are supported as interop-only.
