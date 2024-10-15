@@ -21,6 +21,7 @@
 #include "array.h"
 #include "ecall.h"
 #include "virtualcallstub.h"
+#include "stubhelpers.h"
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
@@ -3401,6 +3402,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     pEMFrame->Pop(CURRENT_THREAD);          // Pop the ExternalMethodFrame from the frame stack
 
     END_PRESERVE_LAST_ERROR;
+    if (g_externalMethodFixupTraceActiveCount > 0)
+    {
+        StubHelpers_ExternalMethodFixupHelper(pCode);
+    }  
 
     return pCode;
 }

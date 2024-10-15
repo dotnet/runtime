@@ -750,6 +750,19 @@ extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::Object
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE StubHelpers_ExternalMethodFixupHelper(PCODE address)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    g_pDebugger->ExternalMethodFixupNextStep(address);
+
+    END_QCALL;
+}
+
 FCIMPL0(void*, StubHelpers::NextCallReturnAddress)
 {
     FCALL_CONTRACT;

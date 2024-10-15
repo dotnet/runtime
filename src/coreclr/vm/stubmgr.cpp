@@ -28,6 +28,7 @@ const char *GetTType( TraceType tt)
         case TRACE_OTHER:                     return "TRACE_OTHER";
         case TRACE_UNJITTED_METHOD:           return "TRACE_UNJITTED_METHOD";
         case TRACE_MULTICAST_DELEGATE_HELPER: return "TRACE_MULTICAST_DELEGATE_HELPER";
+        case TRACE_EXTERNAL_METHOD_FIXUP:     return "TRACE_EXTERNAL_METHOD_FIXUP";
     }
     return "TRACE_REALLY_WACKED";
 }
@@ -121,6 +122,10 @@ const CHAR * TraceDestination::DbgToString(SString & buffer)
 
             case TRACE_MULTICAST_DELEGATE_HELPER:
                 pValue = "TRACE_MULTICAST_DELEGATE_HELPER";
+                break;
+
+            case TRACE_EXTERNAL_METHOD_FIXUP:
+                pValue = "TRACE_EXTERNAL_METHOD_FIXUP";
                 break;
 
             case TRACE_OTHER:
@@ -1563,13 +1568,11 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 #ifdef DACCESS_COMPILE
         DacNotImpl();
 #else
-#if defined(TARGET_ARM64) && defined(__APPLE__)
-        // On ARM64 Mac, we cannot put a breakpoint inside of ExternalMethodFixupPatchLabel
-        LOG((LF_CORDB, LL_INFO10000, "RSM::DoTraceStub: Skipping on arm64-macOS\n"));
-        return FALSE;
-#else
-        trace->InitForManagerPush(GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel), this);
-#endif //defined(TARGET_ARM64) && defined(__APPLE__)
+        //Mikelle think this might be where I need to enable the ExternalMethodFixupPatchLabel
+        LOG((LF_CORDB, LL_INFO10000, "RangeSectionStubManager::DoTraceStub, sending you to your next location EMFPL, MGR_PUSH\n"));
+        //This is called right before the patch is placed into the runtime)
+        trace->InitForExternalMethodFixup();
+        //trace->InitForManagerPush(GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel), this);
 #endif
         return TRUE;
 
@@ -1593,13 +1596,14 @@ BOOL RangeSectionStubManager::TraceManager(Thread *thread,
         MODE_ANY;
     }
     CONTRACTL_END;
-
+    LOG((LF_CORDB, LL_INFO100000, "RSSM::TM %p, retAddr is %p\n", (LPVOID)GetIP(pContext), (LPVOID)(*pRetAddr)));
     _ASSERTE(GetIP(pContext) == GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel));
 
     *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
 
     PCODE target = StubManagerHelpers::GetTailCallTarget(pContext);
     trace->InitForStub(target);
+    LOG((LF_CORDB, LL_INFO100000, "RSSM::TM:: target:0x%p\n", target));
     return TRUE;
 }
 #endif
