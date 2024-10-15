@@ -206,9 +206,9 @@ struct VarScopeDsc
 
 enum BarrierKind
 {
-	BARRIER_FULL,       // full barrier
-	BARRIER_LOAD_ONLY,  // load barrier
-	BARRIER_STORE_ONLY, // store barrier
+    BARRIER_FULL,       // full barrier
+    BARRIER_LOAD_ONLY,  // load barrier
+    BARRIER_STORE_ONLY, // store barrier
 };
 
 // This class stores information associated with a LclVar SSA definition.

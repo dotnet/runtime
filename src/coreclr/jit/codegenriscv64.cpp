@@ -4491,7 +4491,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_MEMORYBARRIER:
         {
-            CodeGen::BarrierKind barrierKind =
+            BarrierKind barrierKind =
                 treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD
                     ? BARRIER_LOAD_ONLY
                     : (treeNode->gtFlags & GTF_MEMORYBARRIER_STORE ? BARRIER_STORE_ONLY : BARRIER_FULL);
