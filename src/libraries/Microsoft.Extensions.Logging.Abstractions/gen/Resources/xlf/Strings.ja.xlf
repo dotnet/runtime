@@ -32,16 +32,6 @@
         <target state="translated">Logging method パラメーター名は「 _ 」で始まることはできません</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterOutMessage">
-        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="translated">引数 '{0}' はサポートされていない out パラメーター修飾子を使用しています</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterOutTitle">
-        <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="translated">引数はサポートされていない out パラメーター修飾子を使用しています</target>
-        <note />
-      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">ログ メソッドは本文を含めることができません</target>
@@ -67,24 +57,9 @@
         <target state="translated">ログ メソッドは静的である必要があります</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
-        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="translated">ログ ソース ジェネレーターは、C# {0} では使用できません。言語バージョン {1} 以降を使用してください。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
-        <source>C# language version not supported by the source generator.</source>
-        <target state="translated">ソース ジェネレーターでサポートされていない C# 言語バージョン。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Logging method '{0}' contains malformed format strings</source>
-        <target state="translated">ログ メソッド '{0}' に、形式の正しくない文字列が含まれています</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MalformedFormatStringsTitle">
-        <source>Logging method contains malformed format strings</source>
-        <target state="translated">ログ メソッドに形式の正しくない文字列が含まれています</target>
+        <source>Can't have malformed format strings (like dangling {, etc)</source>
+        <target state="new">Can't have malformed format strings (like dangling {, etc)</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -170,16 +145,6 @@
       <trans-unit id="ShouldntReuseEventIdsTitle">
         <source>Multiple logging methods cannot use the same event id within a class</source>
         <target state="translated">複数のログ記録方法では、クラス内で同じイベント ID を使用できません</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ShouldntReuseEventNamesMessage">
-        <source>Multiple logging methods are using event name {0} in class {1}</source>
-        <target state="translated">複数のログ記録方法でクラス {1} 内のイベント名 {0} を使用しています</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ShouldntReuseEventNamesTitle">
-        <source>Multiple logging methods should not use the same event name within a class</source>
-        <target state="translated">複数のログ記録方法では、クラス内で同じイベント名を使用しないようにする必要があります</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">

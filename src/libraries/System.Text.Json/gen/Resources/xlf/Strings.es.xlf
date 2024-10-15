@@ -22,34 +22,14 @@
         <target state="translated">Tipo de propiedad de extensión de datos no válido.</target>
         <note />
       </trans-unit>
-      <trans-unit id="DerivedJsonConverterAttributesNotSupportedMessageFormat">
-        <source>The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</source>
-        <target state="translated">El generador de origen no admite el atributo personalizado '{0}' derivado de JsonConverterAttribute.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="DerivedJsonConverterAttributesNotSupportedTitle">
-        <source>Attributes deriving from JsonConverterAttribute are not supported by the source generator.</source>
-        <target state="translated">El generador de origen no admite los atributos derivados de JsonConverterAttribute.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
-        <source>There are multiple types named '{0}'. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
-        <target state="translated">Hay varios tipos denominados "{0}". El origen se generó para el primero detectado. Use "JsonSerializableAttribute.TypeInfoPropertyName" para resolver esta colisión.</target>
+        <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
+        <target state="new">There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameTitle">
         <source>Duplicate type name.</source>
         <target state="translated">Nombre de tipo duplicado.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FastPathPolymorphismNotSupportedMessageFormat">
-        <source>Type '{0}' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
-        <target state="translated">El tipo \"{0}\" está anotado con \"JsonDerivedTypeAttribute\", que no se admite en \"JsonSourceGenerationMode.Serialization\".</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FastPathPolymorphismNotSupportedTitle">
-        <source>'JsonDerivedTypeAttribute' is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
-        <target state="translated">\"JsonDerivedTypeAttribute\" no se admite en \"JsonSourceGenerationMode.Serialization\".</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
@@ -70,56 +50,6 @@
       <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
         <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
         <target state="translated">Actualmente no se admite la deserialización de propiedades de solo inicialización en el modo de generación de origen.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonConstructorInaccessibleMessageFormat">
-        <source>The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</source>
-        <target state="translated">El constructor del tipo '{0}' se ha anotado con JsonConstructorAttribute, pero el generador de origen no puede acceder a él.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonConstructorInaccessibleTitle">
-        <source>Constructor annotated with JsonConstructorAttribute is inaccessible.</source>
-        <target state="translated">No se puede acceder al constructor anotado con JsonConstructorAttribute.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
-        <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
-        <target state="translated">El tipo “JsonConverterAttribute” “{0}” especificado en el miembro “{1}” no es un tipo de convertidor o no contiene un constructor sin parámetros accesible.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
-        <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
-        <target state="translated">“JsonConverterAttribute.Type” contiene un argumento no válido o inaccesible.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonSerializableAttributeOnNonContextTypeMessageFormat">
-        <source>The type '{0}' has been annotated with JsonSerializableAttribute but does not derive from JsonSerializerContext. No source code will be generated.</source>
-        <target state="translated">El tipo "{0}" se ha anotado con JsonSerializableAttribute, pero no se deriva de JsonSerializerContext. No se generará ningún código fuente.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonSerializableAttributeOnNonContextTypeTitle">
-        <source>Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext.</source>
-        <target state="translated">Los tipos anotados con JsonSerializableAttribute deben ser clases derivadas de JsonSerializerContext.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
-        <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
-        <target state="translated">El miembro '{0}' se ha anotado con 'JsonStringEnumConverter', que no se admite en AOT nativo. Considere la posibilidad de usar el elemento genérico "JsonStringEnumConverter&lt;TEnum&gt;" en su lugar.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonStringEnumConverterNotSupportedTitle">
-        <source>The non-generic 'JsonStringEnumConverter' requires dynamic code.</source>
-        <target state="translated">El elemento 'JsonStringEnumConverter' no genérico requiere código dinámico.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
-        <source>The System.Text.Json source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="translated">El generador de origen System.Text.Json no está disponible en C# {0}. Use la versión de idioma {1} o superior.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonUnsupportedLanguageVersionTitle">
-        <source>C# language version not supported by the source generator.</source>
-        <target state="translated">La versión del idioma C# no es compatible con el generador de origen.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">
