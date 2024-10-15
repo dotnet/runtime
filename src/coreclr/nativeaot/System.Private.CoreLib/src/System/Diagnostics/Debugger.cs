@@ -15,7 +15,7 @@ namespace System.Diagnostics
         {
 #if TARGET_WINDOWS
             // IsAttached is always true when IsDebuggerPresent is true, so no need to check for it
-            if (Debugger.IsAnyDebuggerAttached())
+            if (Debugger.IsNativeDebuggerAttached())
                 Debug.DebugBreak();
 #else
             // UNIXTODO: Implement Debugger.Break
@@ -77,10 +77,9 @@ namespace System.Diagnostics
             return false;
         }
 
-        internal static bool IsAnyDebuggerAttached() => IsAnyDebuggerAttachedInternal() != 0;
+        internal static bool IsNativeDebuggerAttached() => IsNativeDebuggerAttachedInternal() != 0;
 
-        [LibraryImport(RuntimeImports.RuntimeLibrary, EntryPoint = "DebugDebugger_IsAnyDebuggerAttached")]
-        [SuppressGCTransition]
-        private static partial int IsAnyDebuggerAttachedInternal();
+        [LibraryImport(RuntimeImports.RuntimeLibrary, EntryPoint = "DebugDebugger_IsNativeDebuggerAttached")]
+        private static partial int IsNativeDebuggerAttachedInternal();
     }
 }

@@ -90,7 +90,6 @@ static const Entry s_QCall[] =
     DllImportEntry(DebugDebugger_CustomNotification)
     DllImportEntry(DebugDebugger_IsLoggingHelper)
     DllImportEntry(DebugDebugger_IsManagedDebuggerAttached)
-    DllImportEntry(DebugDebugger_IsAnyDebuggerAttached)
     DllImportEntry(Delegate_BindToMethodName)
     DllImportEntry(Delegate_BindToMethodInfo)
     DllImportEntry(Delegate_InitializeVirtualCallStub)

@@ -867,17 +867,6 @@ extern "C" BOOL QCALLTYPE DebugDebugger_IsLoggingHelper()
     return FALSE;
 }
 
-extern "C" BOOL QCALLTYPE DebugDebugger_IsAnyDebuggerAttached()
-{
-    QCALL_CONTRACT_NO_GC_TRANSITION;
-
-#ifdef DEBUGGING_SUPPORTED
-    return CORDebuggerAttached() || minipal_is_native_debugger_present();
-#endif // DEBUGGING_SUPPORTED
-
-    return FALSE;
-}
-
 extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached()
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;

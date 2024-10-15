@@ -18,7 +18,6 @@ extern "C" BOOL QCALLTYPE DebugDebugger_Launch();
 extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage);
 extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data);
 extern "C" BOOL QCALLTYPE DebugDebugger_IsLoggingHelper();
-extern "C" BOOL QCALLTYPE DebugDebugger_IsAnyDebuggerAttached();
 extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached();
 
 class StackFrameHelper : public Object

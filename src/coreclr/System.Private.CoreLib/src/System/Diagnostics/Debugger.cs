@@ -65,12 +65,6 @@ namespace System.Diagnostics
         [SuppressGCTransition]
         private static partial int IsManagedDebuggerAttached();
 
-        internal static bool IsAnyDebuggerAttached() => IsAnyDebuggerAttachedInternal() != 0;
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_IsAnyDebuggerAttached")]
-        [SuppressGCTransition]
-        private static partial int IsAnyDebuggerAttachedInternal();
-
         // Constants representing the importance level of messages to be logged.
         //
         // An attached debugger can enable or disable which messages will
