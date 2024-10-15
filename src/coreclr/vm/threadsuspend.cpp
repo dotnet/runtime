@@ -1001,6 +1001,7 @@ BOOL Thread::ReadyForAsyncException()
         else
         {
              CONTEXT ctx;
+             ctx.ContextFlags = CONTEXT_CONTROL;
              SetIP(&ctx, 0);
              SetSP(&ctx, 0);
              FillRegDisplay(&rd, &ctx);
