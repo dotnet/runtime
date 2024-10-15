@@ -152,7 +152,7 @@ Inserting into or modifying the dictionary necessarily involves a lookup operati
 
 Insertion and modification are typically performed in batches, so it's worthwhile to consider how these methods behave when called in a loop. Assuming a well distributed hash code computation where lookup is $O(l)$, the total cost to fully populate the dictionary is $O(n \cdot l_\mathit{avg})$, which allows dictionaries to be efficiently rehydrated from wire data. (There is some bookkeeping overhead should the backing arrays need resizing, but adding to these arrays is still amortized $O(1)$, so it can be excluded from analysis.)
 
-If instead the hash code computation is _not_ well distributed, then each lookup could take an amount of time proportional to the total amount of data already in the dictionary. Since each insertion involves $O(n \cdot l_\mathit{avg})$ complexity, and since there are $n$ such insertions, the total complexity is $O(n^2 \cdot l_\mathit{avg})$. In the worst case, if $l_\mathit{avg} \to 1$, then $n \approx n \cdot l_\mathit{avg}$, and the total complexity is $O((n \cdot l_\mathit{avg})^2)$. In this scenario, the time necessary to populate the dictionary increases _quadratically_ as the length of the incoming payload increases.
+If instead the hash code computation is _not_ well distributed, then each lookup could take an amount of time proportional to the total amount of data already in the dictionary. Since each insertion involves $O(n \cdot l_\mathit{avg})$ complexity, and since there are $n$ such insertions, the total worst-case complexity is $O(n^2 \cdot l_\mathit{avg})$. The time necessary to populate the dictionary increases _quadratically_ as the length of the incoming payload increases.
 
 > **Note**
 >
@@ -215,7 +215,7 @@ Deserializers are advised not to pass a _capacity_ argument, instead allowing th
 
 ### Adversary-provided `TKey` or `TValue`
 
-Since the `Dictionary<TKey, TValue>` type is generic, tThe adversary may attempt to trick the serializer into creating a dictionary which contains a privileged (or hostile!) `TKey` or `TValue` argument. For example, they may try to trick the serializer into creating a `Dictionary<string, Process>` and use that as a springboard to gain process launch capabilities.
+Since the `Dictionary<TKey, TValue>` type is generic, the adversary may attempt to trick the serializer into creating a dictionary which contains a privileged (or hostile!) `TKey` or `TValue` argument. For example, they may try to trick the serializer into creating a `Dictionary<string, Process>` and use that as a springboard to gain process launch capabilities.
 
 Attack vectors where the adversary can specify type information within the payload are well known throughout the .NET ecosystem (and other ecosystems like Java). The serializer is responsible for defending against these attacks; they are out of scope for this document.
 
@@ -235,7 +235,7 @@ Consider an adversary who presents this JSON payload to a login handler:
 
 The login handler might be backed by two different components - a membership database service and an auth token minting service - perhaps created by different teams. Both services see the exact same JSON payload, since only a single request has been sent to the server. The JSON payload is ambiguous in the sense that the _username_ field occurs multiple times.
 
-If the membership database service disambiguiates this via a "last field wins" rule, then the dictionary they deserialize will read: _"username" := "evil"_, _"password" := "evil-password"_. This lookup will succeed, and the service will return OK. Control now passes to the token minting service, which if it follows a "first field wins" disambiguator, will deserialize the same payload and read: _"username" := "admin"_, _"password" := "evil-password"_. The token minting service discards the password (it doesn't care about it), happily mints an auth cookie for the "admin" user, and returns it to the client.
+If the membership database service disambiguates this via a "last field wins" rule, then the dictionary they deserialize will read: _"username" := "evil"_, _"password" := "evil-password"_. This lookup will succeed, and the service will return OK. Control now passes to the token minting service, which if it follows a "first field wins" policy, will deserialize the same payload and read: _"username" := "admin"_, _"password" := "evil-password"_. The token minting service discards the password (it doesn't care about it), happily mints an auth cookie for the "admin" user, and returns it to the client.
 
 For serializers which special-case dictionaries, the most reliable way to prevent this attack is to avoid ambiguities in the first place. Instead of having a policy like "last field wins" or "first field wins" or "concatenate all occurrences of a given field", consider simply failing the deserialization operation by default. That would prevent the deserializer from being leveraged in a desynced deserialization attack.
 
@@ -271,7 +271,7 @@ int GetHashCodeForString(string value)
 }
 ```
 
-This works great if every possible input string is equally likely; that is, if the domain of inputs is itself uniformly distributed. But this is not reflective of the real world. Strings have technical structure: illegal UTF-16 sequences are not present unless the application has a bug. Strings have linguistic structure: English sentences often begin with articles like "the" or possessives like "my", and [individual letters aren't uniformly distributed across words](https://en.wikipedia.org/wiki/Letter_frequency). Other written languages exhibit similar characteristics. Strings represening HTTP headers often use the `"X-"` prefix. And so on.
+This works great if every possible input string is equally likely; that is, if the domain of inputs is itself uniformly distributed. But this is not reflective of the real world. Strings have technical structure: illegal UTF-16 sequences are not present unless the application has a bug. Strings have linguistic structure: English sentences often begin with articles like "the" or possessives like "my", and [individual letters aren't uniformly distributed across words](https://en.wikipedia.org/wiki/Letter_frequency). Other written languages exhibit similar characteristics. Strings representing HTTP headers often use the `"X-"` prefix. And so on.
 
 Here is another example, computing a 32-bit hash code for a fixed-length 64-bit input:
 

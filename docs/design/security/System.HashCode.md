@@ -51,7 +51,7 @@ Through this, `HashCode` makes an explicit security claim that the round and mix
 
 Once all data has been ingested, the `ToHashCode` method returns a 32-bit hash code. The hash code computation uses a seeded function, where the seed is chosen randomly at app start. The computation is stable for any set of inputs for the lifetime of the process, but the hash code has no meaning outside the current process. It is not intended that these hash codes be transmitted outside the current process or otherwise persisted.
 
-The most common use of these hash codes is for bucket-based keyed collections to choose a bucket index where this entry will be stored. For non-adversarial inputs, these hash codes are high quality and will result in a generally uniform selection of bucket. For adversarial inputs, these hash codes could be low quality and could attempt to exploit inefficiencies in the data structure's layout, significantly affecting the collection's performance. This is the crux of a hash flooding attack.
+The most common use of these hash codes is for bucket-based keyed collections to choose a bucket index where this entry will be stored. For non-adversarial inputs, these hash codes are sufficient and will result in a generally uniform selection of bucket. For adversarial inputs, these hash codes might be insufficient, and the adversary could attempt to exploit inefficiencies in the data structure's layout, significantly affecting the collection's performance. This is the crux of a hash flooding attack.
 
 `HashCode` explicitly disclaims that a hash code generated from adversarial input is fit for consumption by the caller.
 
@@ -352,7 +352,7 @@ The issue with all of these - including HMACSHA256 - stems from the _API design 
 
 If there is a need to add these types into a dictionary safely, there are several options available. [The `Dictionary<TKey, TValue>` security design doc](System.Collections.Generic.Dictionary.md) covers this in more detail, including contemplating changes to the dictionary data structures to improve resiliency.
 
-Assuming there is not an appetite for changing the internal layout of dictionary instances, and assuming the ecosystem as a whole would benefit from being able to compute collision-resistant digests over a wide collection of types, one might consider addressing this through a series of new interfaces.
+Assuming there is not an appetite for changing the internal layout of dictionary instances, and assuming the broader ecosystem would benefit from being able to compute collision-resistant digests over a wide collection of types, one might consider addressing this through a series of new interfaces.
 
 ```cs
 interface IHashable
