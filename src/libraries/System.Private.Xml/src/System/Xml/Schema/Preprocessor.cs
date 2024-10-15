@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.IO;
-using System.Threading;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Runtime.Versioning;
+using System.Diagnostics;
+using System.IO;
 using System.Reflection;
+using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Xml.Schema
 {

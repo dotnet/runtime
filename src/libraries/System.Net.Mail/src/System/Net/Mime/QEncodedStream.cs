@@ -179,7 +179,7 @@ namespace System.Net.Mime
             }
         }
 
-        public int EncodeBytes(byte[] buffer, int offset, int count) =>_encoder.EncodeBytes(buffer, offset, count, true, true);
+        public int EncodeBytes(byte[] buffer, int offset, int count) => _encoder.EncodeBytes(buffer, offset, count, true, true);
 
         public int EncodeString(string value, Encoding encoding) => _encoder.EncodeString(value, encoding);
 

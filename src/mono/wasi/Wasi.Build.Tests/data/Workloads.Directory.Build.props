@@ -1,6 +1,2 @@
 <Project>
-  <PropertyGroup>
-    <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
-    <PublishTrimmed>true</PublishTrimmed>
-  </PropertyGroup>
 </Project>

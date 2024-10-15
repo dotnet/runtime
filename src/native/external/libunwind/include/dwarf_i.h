@@ -43,8 +43,8 @@ typedef union __attribute__ ((packed))
 dwarf_misaligned_value_t;
 
 static inline int
-dwarf_reads8 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
-              int8_t *val, void *arg)
+dwarf_reads8 (unw_addr_space_t as UNUSED, unw_accessors_t *a UNUSED, unw_word_t *addr,
+              int8_t *val, void *arg UNUSED)
 {
   dwarf_misaligned_value_t *mvp = (void *) (uintptr_t) *addr;
 
@@ -54,8 +54,8 @@ dwarf_reads8 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 }
 
 static inline int
-dwarf_reads16 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
-               int16_t *val, void *arg)
+dwarf_reads16 (unw_addr_space_t as UNUSED, unw_accessors_t *a UNUSED, unw_word_t *addr,
+               int16_t *val, void *arg UNUSED)
 {
   dwarf_misaligned_value_t *mvp = (void *) (uintptr_t) *addr;
 
@@ -65,8 +65,8 @@ dwarf_reads16 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 }
 
 static inline int
-dwarf_reads32 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
-               int32_t *val, void *arg)
+dwarf_reads32 (unw_addr_space_t as UNUSED, unw_accessors_t *a UNUSED, unw_word_t *addr,
+               int32_t *val, void *arg UNUSED)
 {
   dwarf_misaligned_value_t *mvp = (void *) (uintptr_t) *addr;
 
@@ -76,8 +76,8 @@ dwarf_reads32 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 }
 
 static inline int
-dwarf_reads64 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
-               int64_t *val, void *arg)
+dwarf_reads64 (unw_addr_space_t as UNUSED, unw_accessors_t *a UNUSED, unw_word_t *addr,
+               int64_t *val, void *arg UNUSED)
 {
   dwarf_misaligned_value_t *mvp = (void *) (uintptr_t) *addr;
 
@@ -87,8 +87,8 @@ dwarf_reads64 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 }
 
 static inline int
-dwarf_readu8 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
-              uint8_t *val, void *arg)
+dwarf_readu8 (unw_addr_space_t as UNUSED, unw_accessors_t *a UNUSED, unw_word_t *addr,
+              uint8_t *val, void *arg UNUSED)
 {
   dwarf_misaligned_value_t *mvp = (void *) (uintptr_t) *addr;
 
@@ -98,8 +98,8 @@ dwarf_readu8 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 }
 
 static inline int
-dwarf_readu16 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
-               uint16_t *val, void *arg)
+dwarf_readu16 (unw_addr_space_t as UNUSED, unw_accessors_t *a UNUSED, unw_word_t *addr,
+               uint16_t *val, void *arg UNUSED)
 {
   dwarf_misaligned_value_t *mvp = (void *) (uintptr_t) *addr;
 
@@ -109,8 +109,8 @@ dwarf_readu16 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 }
 
 static inline int
-dwarf_readu32 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
-               uint32_t *val, void *arg)
+dwarf_readu32 (unw_addr_space_t as UNUSED, unw_accessors_t *a UNUSED, unw_word_t *addr,
+               uint32_t *val, void *arg UNUSED)
 {
   dwarf_misaligned_value_t *mvp = (void *) (uintptr_t) *addr;
 
@@ -120,8 +120,8 @@ dwarf_readu32 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 }
 
 static inline int
-dwarf_readu64 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
-               uint64_t *val, void *arg)
+dwarf_readu64 (unw_addr_space_t as UNUSED, unw_accessors_t *a UNUSED, unw_word_t *addr,
+               uint64_t *val, void *arg UNUSED)
 {
   dwarf_misaligned_value_t *mvp = (void *) (uintptr_t) *addr;
 
@@ -280,7 +280,7 @@ dwarf_readw (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
       ret = dwarf_readu64 (as, a, addr, &u64, arg);
       if (ret < 0)
         return ret;
-      *val = u64;
+      *val = (unw_word_t) u64;
       return ret;
 
     default:
@@ -398,7 +398,7 @@ dwarf_read_encoded_pointer_inlined (unw_addr_space_t as, unw_accessors_t *a,
     case DW_EH_PE_udata8:
       if ((ret = dwarf_readu64 (as, a, addr, &uval64, arg)) < 0)
         return ret;
-      val = uval64;
+      val = (unw_word_t) uval64;
       break;
 
     case DW_EH_PE_sleb128:
@@ -421,7 +421,7 @@ dwarf_read_encoded_pointer_inlined (unw_addr_space_t as, unw_accessors_t *a,
     case DW_EH_PE_sdata8:
       if ((ret = dwarf_reads64 (as, a, addr, &sval64, arg)) < 0)
         return ret;
-      val = sval64;
+      val = (unw_word_t) sval64;
       break;
 
     default:

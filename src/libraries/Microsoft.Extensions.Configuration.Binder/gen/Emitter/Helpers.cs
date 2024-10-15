@@ -71,15 +71,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string element = nameof(element);
                 public const string enumValue = nameof(enumValue);
                 public const string exception = nameof(exception);
-                public const string getPath = nameof(getPath);
                 public const string key = nameof(key);
                 public const string name = nameof(name);
                 public const string instance = nameof(instance);
                 public const string optionsBuilder = nameof(optionsBuilder);
                 public const string originalCount = nameof(originalCount);
+                public const string path = nameof(path);
                 public const string section = nameof(section);
                 public const string sectionKey = nameof(sectionKey);
                 public const string services = nameof(services);
+                public const string sp = nameof(sp);
                 public const string temp = nameof(temp);
                 public const string type = nameof(type);
                 public const string typedObj = nameof(typedObj);
@@ -120,6 +121,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string IOptionsChangeTokenSource = nameof(IOptionsChangeTokenSource);
                 public const string IServiceCollection = nameof(IServiceCollection);
                 public const string Length = nameof(Length);
+                public const string Name = nameof(Name);
                 public const string NumberStyles = nameof(NumberStyles);
                 public const string Parse = nameof(Parse);
                 public const string Path = nameof(Path);
@@ -156,9 +158,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitInterceptsLocationAnnotations(IEnumerable<InvocationLocationInfo> infoList)
             {
-                foreach (InvocationLocationInfo info in infoList)
+                if (ConfigurationBindingGenerator.InterceptorVersion == 0)
                 {
-                    _writer.WriteLine($@"[{Identifier.InterceptsLocation}(@""{info.FilePath}"", {info.LineNumber}, {info.CharacterNumber})]");
+                    foreach (InvocationLocationInfo info in infoList)
+                    {
+                        _writer.WriteLine($@"[{Identifier.InterceptsLocation}(@""{info.FilePath}"", {info.LineNumber}, {info.CharacterNumber})]");
+                    }
+                }
+                else
+                {
+                    foreach (InvocationLocationInfo info in infoList)
+                    {
+                        _writer.WriteLine($@"[{Identifier.InterceptsLocation}({info.InterceptableLocationVersion}, ""{info.InterceptableLocationData}"")] // {info.InterceptableLocationGetDisplayLocation()}");
+                    }
                 }
             }
 
@@ -259,7 +271,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private string GetIncrementalIdentifier(string prefix) => $"{prefix}{_valueSuffixIndex++}";
 
-            private static string GetInitalizeMethodDisplayString(ObjectSpec type) =>
+            private static string GetInitializeMethodDisplayString(ObjectSpec type) =>
                 $"{nameof(MethodsToGen_CoreBindingHelper.Initialize)}{type.IdentifierCompatibleSubstring}";
         }
     }

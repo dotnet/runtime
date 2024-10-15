@@ -17,11 +17,11 @@ namespace ILLink.Shared.TrimAnalysis
 		public MethodParameterValue (ParameterProxy parameter)
 			: this (parameter, FlowAnnotations.GetMethodParameterAnnotation (parameter)) { }
 
-		public MethodParameterValue (ParameterProxy parameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, bool overrideIsThis = false)
+		public MethodParameterValue (ParameterProxy parameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
 			Parameter = parameter;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-			_overrideIsThis = overrideIsThis;
+			StaticType = parameter.ParameterType;
 		}
 
 		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }

@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Internal.TypeSystem
@@ -472,10 +472,10 @@ namespace Internal.TypeSystem
                 if (!this.IsEnum)
                     return this;
 
-                foreach (var field in this.GetFields())
+                foreach (var fieldInfo in this.GetFields())
                 {
-                    if (!field.IsStatic)
-                        return field.FieldType;
+                    if (!fieldInfo.IsStatic)
+                        return fieldInfo.FieldType;
                 }
 
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, this);

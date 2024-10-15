@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <!-- Needed for CMakeProjectReference -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-  </PropertyGroup>
   <ItemGroup>
     <CMakeProjectReference Include="DefaultInterfaces/CMakeLists.txt" />
     <ProjectReference Include="../NETServer/NETServer.DefaultInterfaces.ilproj" />

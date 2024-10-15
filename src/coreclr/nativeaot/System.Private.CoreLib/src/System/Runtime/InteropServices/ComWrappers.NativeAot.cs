@@ -1,13 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading;
+
+using Internal.Runtime;
 
 namespace System.Runtime.InteropServices
 {
@@ -39,10 +41,10 @@ namespace System.Runtime.InteropServices
         private static readonly Guid IID_IWeakReferenceSource = new Guid(0x00000038, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
 
         private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_rcwTable = new ConditionalWeakTable<object, NativeObjectWrapper>();
-        private static readonly List<GCHandle> s_referenceTrackerNativeObjectWrapperCache = new List<GCHandle>();
+        private static readonly GCHandleSet s_referenceTrackerNativeObjectWrapperCache = new GCHandleSet();
 
         private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _ccwTable = new ConditionalWeakTable<object, ManagedObjectWrapperHolder>();
-        private readonly Lock _lock = new Lock();
+        private readonly Lock _lock = new Lock(useTrivialWaits: true);
         private readonly Dictionary<IntPtr, GCHandle> _rcwCache = new Dictionary<IntPtr, GCHandle>();
 
         internal static bool TryGetComInstanceForIID(object obj, Guid iid, out IntPtr unknown, out long wrapperId)
@@ -56,7 +58,7 @@ namespace System.Runtime.InteropServices
             }
 
             wrapperId = wrapper._comWrappers.id;
-            return Marshal.QueryInterface(wrapper._externalComObject, in iid, out unknown) == HResults.S_OK;
+            return Marshal.QueryInterface(wrapper._externalComObject, iid, out unknown) == HResults.S_OK;
         }
 
         public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
@@ -68,7 +70,7 @@ namespace System.Runtime.InteropServices
                 return false;
             }
 
-            return Marshal.QueryInterface(wrapper._externalComObject, in IID_IUnknown, out unknown) == HResults.S_OK;
+            return Marshal.QueryInterface(wrapper._externalComObject, IID_IUnknown, out unknown) == HResults.S_OK;
         }
 
         public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
@@ -129,13 +131,13 @@ namespace System.Runtime.InteropServices
             /// <remarks>
             /// This is useful in scenarios when the caller has no need to rely on an IUnknown instance
             /// that is used when running managed code is not possible (i.e. during a GC). In traditional
-            /// COM scenarios this is common, but scenarios involving <see href="https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/nn-windows-ui-xaml-hosting-referencetracker-ireferencetrackertarget">Reference Tracker hosting</see>
+            /// COM scenarios this is common, but scenarios involving <see href="https://learn.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/nn-windows-ui-xaml-hosting-referencetracker-ireferencetrackertarget">Reference Tracker hosting</see>
             /// calling of the IUnknown API during a GC is possible.
             /// </remarks>
             CallerDefinedIUnknown = 1,
 
             /// <summary>
-            /// Flag used to indicate the COM interface should implement <see href="https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/nn-windows-ui-xaml-hosting-referencetracker-ireferencetrackertarget">IReferenceTrackerTarget</see>.
+            /// Flag used to indicate the COM interface should implement <see href="https://learn.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/nn-windows-ui-xaml-hosting-referencetracker-ireferencetrackertarget">IReferenceTrackerTarget</see>.
             /// When this flag is passed, the resulting COM interface will have an internal implementation of IUnknown
             /// and as such none should be supplied by the caller.
             /// </summary>
@@ -417,20 +419,18 @@ namespace System.Runtime.InteropServices
             static ManagedObjectWrapperHolder()
             {
                 delegate* unmanaged<IntPtr, bool> callback = &IsRootedCallback;
-                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, EETypePtr.EETypePtrOf<ManagedObjectWrapperHolder>()))
+                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, MethodTable.Of<ManagedObjectWrapperHolder>()))
                 {
                     throw new OutOfMemoryException();
                 }
             }
 
             [UnmanagedCallersOnly]
-            static bool IsRootedCallback(IntPtr pObj)
+            private static bool IsRootedCallback(IntPtr pObj)
             {
                 // We are paused in the GC, so this is safe.
-#pragma warning disable CS8500 // Takes a pointer to a managed type
                 ManagedObjectWrapperHolder* holder = (ManagedObjectWrapperHolder*)&pObj;
                 return holder->_wrapper->IsRooted;
-#pragma warning restore CS8500
             }
 
             private readonly ManagedObjectWrapper* _wrapper;
@@ -512,7 +512,7 @@ namespace System.Runtime.InteropServices
             public static NativeObjectWrapper Create(IntPtr externalComObject, IntPtr inner, ComWrappers comWrappers, object comProxy, CreateObjectFlags flags)
             {
                 if (flags.HasFlag(CreateObjectFlags.TrackerObject) &&
-                    Marshal.QueryInterface(externalComObject, in IID_IReferenceTracker, out IntPtr trackerObject) == HResults.S_OK)
+                    Marshal.QueryInterface(externalComObject, IID_IReferenceTracker, out IntPtr trackerObject) == HResults.S_OK)
                 {
                     return new ReferenceTrackerNativeObjectWrapper(externalComObject, inner, comWrappers, comProxy, flags, trackerObject);
                 }
@@ -854,7 +854,7 @@ namespace System.Runtime.InteropServices
             {
                 // It is possible the user has defined their own IUnknown impl so
                 // we fallback to the tagged interface approach to be sure.
-                if (0 != Marshal.QueryInterface(comObject, in IID_TaggedImpl, out nint implMaybe))
+                if (0 != Marshal.QueryInterface(comObject, IID_TaggedImpl, out nint implMaybe))
                 {
                     return null;
                 }
@@ -888,7 +888,7 @@ namespace System.Runtime.InteropServices
             bool refTrackerInnerScenario = flags.HasFlag(CreateObjectFlags.TrackerObject)
                 && flags.HasFlag(CreateObjectFlags.Aggregation);
             if (refTrackerInnerScenario &&
-                Marshal.QueryInterface(externalComObject, in IID_IReferenceTracker, out IntPtr referenceTrackerPtr) == HResults.S_OK)
+                Marshal.QueryInterface(externalComObject, IID_IReferenceTracker, out IntPtr referenceTrackerPtr) == HResults.S_OK)
             {
                 // We are checking the supplied external value
                 // for IReferenceTracker since in .NET 5 API usage scenarios
@@ -900,11 +900,11 @@ namespace System.Runtime.InteropServices
                 // be the true identity.
                 using ComHolder referenceTracker = new ComHolder(referenceTrackerPtr);
                 checkForIdentity = referenceTrackerPtr;
-                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(checkForIdentity, in IID_IUnknown, out identity));
+                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(checkForIdentity, IID_IUnknown, out identity));
             }
             else
             {
-                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(externalComObject, in IID_IUnknown, out identity));
+                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(externalComObject, IID_IUnknown, out identity));
             }
 
             // Set the inner if scenario dictates an update.
@@ -951,7 +951,7 @@ namespace System.Runtime.InteropServices
 
             if (!flags.HasFlag(CreateObjectFlags.UniqueInstance))
             {
-                using (LockHolder.Hold(_lock))
+                using (_lock.EnterScope())
                 {
                     if (_rcwCache.TryGetValue(identity, out GCHandle handle))
                     {
@@ -984,10 +984,7 @@ namespace System.Runtime.InteropServices
                             throw new NotSupportedException();
                         }
                         _rcwCache.Add(identity, wrapper._proxyHandle);
-                        if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
-                        {
-                            s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
-                        }
+                        AddWrapperToReferenceTrackerHandleCache(wrapper);
                         return true;
                     }
                 }
@@ -1040,14 +1037,11 @@ namespace System.Runtime.InteropServices
                     wrapper.Release();
                     throw new NotSupportedException();
                 }
-                if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
-                {
-                    s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
-                }
+                AddWrapperToReferenceTrackerHandleCache(wrapper);
                 return true;
             }
 
-            using (LockHolder.Hold(_lock))
+            using (_lock.EnterScope())
             {
                 object? cachedWrapper = null;
                 if (_rcwCache.TryGetValue(identity, out var existingHandle))
@@ -1079,10 +1073,7 @@ namespace System.Runtime.InteropServices
                         throw new NotSupportedException();
                     }
                     _rcwCache.Add(identity, wrapper._proxyHandle);
-                    if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
-                    {
-                        s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
-                    }
+                    AddWrapperToReferenceTrackerHandleCache(wrapper);
                 }
             }
 
@@ -1090,9 +1081,17 @@ namespace System.Runtime.InteropServices
         }
 #pragma warning restore IDE0060
 
+        private static void AddWrapperToReferenceTrackerHandleCache(NativeObjectWrapper wrapper)
+        {
+            if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
+            {
+                s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
+            }
+        }
+
         private void RemoveRCWFromCache(IntPtr comPointer, GCHandle expectedValue)
         {
-            using (LockHolder.Hold(_lock))
+            using (_lock.EnterScope())
             {
                 // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
                 // in the time between the GC cleared the contents of the GC handle but before the
@@ -1220,17 +1219,30 @@ namespace System.Runtime.InteropServices
             IntPtr contextToken = GetContextToken();
 
             List<object> objects = new List<object>();
-            foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
-            {
-                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
-                if (nativeObjectWrapper != null &&
-                    nativeObjectWrapper._contextToken == contextToken)
-                {
-                    objects.Add(nativeObjectWrapper._proxyHandle.Target);
 
-                    // Separate the wrapper from the tracker runtime prior to
-                    // passing them.
-                    nativeObjectWrapper.DisconnectTracker();
+            // Here we aren't part of a GC callback, so other threads can still be running
+            // who are adding and removing from the collection. This means we can possibly race
+            // with a handle being removed and freed and we can end up accessing a freed handle.
+            // To avoid this, we take a lock on modifications to the collection while we gather
+            // the objects.
+            using (s_referenceTrackerNativeObjectWrapperCache.ModificationLock.EnterScope())
+            {
+                foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
+                {
+                    ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                    if (nativeObjectWrapper != null &&
+                        nativeObjectWrapper._contextToken == contextToken)
+                    {
+                        object? target = nativeObjectWrapper._proxyHandle.Target;
+                        if (target != null)
+                        {
+                            objects.Add(target);
+                        }
+
+                        // Separate the wrapper from the tracker runtime prior to
+                        // passing them.
+                        nativeObjectWrapper.DisconnectTracker();
+                    }
                 }
             }
 
@@ -1463,7 +1475,7 @@ namespace System.Runtime.InteropServices
                 return HResults.E_INVALIDARG;
             }
 
-            if (Marshal.QueryInterface(punk, in IID_IUnknown, out IntPtr ppv) != HResults.S_OK)
+            if (Marshal.QueryInterface(punk, IID_IUnknown, out IntPtr ppv) != HResults.S_OK)
             {
                 return HResults.COR_E_INVALIDCAST;
             }
@@ -1472,7 +1484,7 @@ namespace System.Runtime.InteropServices
             {
                 using ComHolder identity = new ComHolder(ppv);
                 using ComHolder trackerTarget = new ComHolder(GetOrCreateTrackerTarget(identity.Ptr));
-                return Marshal.QueryInterface(trackerTarget.Ptr, in IID_IReferenceTrackerTarget, out *ppNewReference);
+                return Marshal.QueryInterface(trackerTarget.Ptr, IID_IReferenceTrackerTarget, out *ppNewReference);
             }
             catch (Exception e)
             {
@@ -1594,7 +1606,7 @@ namespace System.Runtime.InteropServices
                 targetPtr != IntPtr.Zero)
             {
                 using ComHolder target = new ComHolder(targetPtr);
-                if (Marshal.QueryInterface(target.Ptr, in IID_IUnknown, out IntPtr targetIdentityPtr) == HResults.S_OK)
+                if (Marshal.QueryInterface(target.Ptr, IID_IUnknown, out IntPtr targetIdentityPtr) == HResults.S_OK)
                 {
                     using ComHolder targetIdentity = new ComHolder(targetIdentityPtr);
                     return GetOrCreateObjectFromWrapper(wrapperId, targetIdentity.Ptr);
@@ -1628,6 +1640,214 @@ namespace System.Runtime.InteropServices
             }
 
             return IntPtr.Zero;
+        }
+    }
+
+    // This is a GCHandle HashSet implementation based on LowLevelDictionary.
+    // It uses no locking for readers. While for writers (add / remove),
+    // it handles the locking itself.
+    // This implementation specifically makes sure that any readers of this
+    // collection during GC aren't impacted by other threads being
+    // frozen while in the middle of an write. It makes no guarantees on
+    // whether you will observe the element being added / removed, but does
+    // make sure the collection is in a good state and doesn't run into issues
+    // while iterating.
+    internal sealed class GCHandleSet : IEnumerable<GCHandle>
+    {
+        private const int DefaultSize = 7;
+
+        private Entry?[] _buckets = new Entry[DefaultSize];
+        private int _numEntries;
+        private readonly Lock _lock = new Lock(useTrivialWaits: true);
+
+        public Lock ModificationLock => _lock;
+
+        public void Add(GCHandle handle)
+        {
+            using (_lock.EnterScope())
+            {
+                int bucket = GetBucket(handle, _buckets.Length);
+                Entry? prev = null;
+                Entry? entry = _buckets[bucket];
+                while (entry != null)
+                {
+                    // Handle already exists, nothing to add.
+                    if (handle.Equals(entry.m_value))
+                    {
+                        return;
+                    }
+
+                    prev = entry;
+                    entry = entry.m_next;
+                }
+
+                Entry newEntry = new Entry()
+                {
+                    m_value = handle
+                };
+
+                if (prev == null)
+                {
+                    _buckets[bucket] = newEntry;
+                }
+                else
+                {
+                    prev.m_next = newEntry;
+                }
+
+                // _numEntries is only maintained for the purposes of deciding whether to
+                // expand the bucket and is not used during iteration to handle the
+                // scenario where element is in bucket but _numEntries hasn't been incremented
+                // yet.
+                _numEntries++;
+                if (_numEntries > (_buckets.Length * 2))
+                {
+                    ExpandBuckets();
+                }
+            }
+        }
+
+        private void ExpandBuckets()
+        {
+            int newNumBuckets = _buckets.Length * 2 + 1;
+            Entry?[] newBuckets = new Entry[newNumBuckets];
+            for (int i = 0; i < _buckets.Length; i++)
+            {
+                Entry? entry = _buckets[i];
+                while (entry != null)
+                {
+                    Entry? nextEntry = entry.m_next;
+
+                    int bucket = GetBucket(entry.m_value, newNumBuckets);
+
+                    // We are allocating new entries for the bucket to ensure that
+                    // if there is an enumeration already in progress, we don't
+                    // modify what it observes by changing next in existing instances.
+                    Entry newEntry = new Entry()
+                    {
+                        m_value = entry.m_value,
+                        m_next = newBuckets[bucket],
+                    };
+                    newBuckets[bucket] = newEntry;
+
+                    entry = nextEntry;
+                }
+            }
+            _buckets = newBuckets;
+        }
+
+        public void Remove(GCHandle handle)
+        {
+            using (_lock.EnterScope())
+            {
+                int bucket = GetBucket(handle, _buckets.Length);
+                Entry? prev = null;
+                Entry? entry = _buckets[bucket];
+                while (entry != null)
+                {
+                    if (handle.Equals(entry.m_value))
+                    {
+                        if (prev == null)
+                        {
+                            _buckets[bucket] = entry.m_next;
+                        }
+                        else
+                        {
+                            prev.m_next = entry.m_next;
+                        }
+                        _numEntries--;
+                        return;
+                    }
+
+                    prev = entry;
+                    entry = entry.m_next;
+                }
+            }
+        }
+
+        private static int GetBucket(GCHandle handle, int numBuckets)
+        {
+            int h = handle.GetHashCode();
+            return (int)((uint)h % (uint)numBuckets);
+        }
+
+        public Enumerator GetEnumerator() => new Enumerator(this);
+
+        IEnumerator<GCHandle> IEnumerable<GCHandle>.GetEnumerator() => GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<GCHandle>)this).GetEnumerator();
+
+        private sealed class Entry
+        {
+            public GCHandle m_value;
+            public Entry? m_next;
+        }
+
+        public struct Enumerator : IEnumerator<GCHandle>
+        {
+            private readonly Entry?[] _buckets;
+            private int _currentIdx;
+            private Entry? _currentEntry;
+
+            public Enumerator(GCHandleSet set)
+            {
+                // We hold onto the buckets of the set rather than the set itself
+                // so that if it is ever expanded, we are not impacted by that during
+                // enumeration.
+                _buckets = set._buckets;
+                Reset();
+            }
+
+            public GCHandle Current
+            {
+                get
+                {
+                    if (_currentEntry == null)
+                    {
+                        throw new InvalidOperationException("InvalidOperation_EnumOpCantHappen");
+                    }
+
+                    return _currentEntry.m_value;
+                }
+            }
+
+            object IEnumerator.Current => Current;
+
+            public void Dispose()
+            {
+            }
+
+            public bool MoveNext()
+            {
+                if (_currentEntry != null)
+                {
+                    _currentEntry = _currentEntry.m_next;
+                }
+
+                if (_currentEntry == null)
+                {
+                    // Certain buckets might be empty, so loop until we find
+                    // one with an entry.
+                    while (++_currentIdx != _buckets.Length)
+                    {
+                        _currentEntry = _buckets[_currentIdx];
+                        if (_currentEntry != null)
+                        {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
+                return true;
+            }
+
+            public void Reset()
+            {
+                _currentIdx = -1;
+                _currentEntry = null;
+            }
         }
     }
 }

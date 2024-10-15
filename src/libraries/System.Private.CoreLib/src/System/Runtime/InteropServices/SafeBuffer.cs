@@ -194,7 +194,7 @@ namespace System.Runtime.InteropServices
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                Buffer.Memmove(ref Unsafe.As<T, byte>(ref value), ref *ptr, sizeofT);
+                SpanHelpers.Memmove(ref Unsafe.As<T, byte>(ref value), ref *ptr, sizeofT);
             }
             finally
             {
@@ -281,7 +281,7 @@ namespace System.Runtime.InteropServices
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                Buffer.Memmove(ref *ptr, ref Unsafe.As<T, byte>(ref value), sizeofT);
+                SpanHelpers.Memmove(ref *ptr, ref Unsafe.As<T, byte>(ref value), sizeofT);
             }
             finally
             {
@@ -405,9 +405,7 @@ namespace System.Runtime.InteropServices
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 throw new ArgumentException(SR.Argument_NeedStructWithNoRefs);
 
-#pragma warning disable 8500 // sizeof of managed types
             return (uint)sizeof(T);
-#pragma warning restore 8500
         }
     }
 }

@@ -1,0 +1,163 @@
+diff -ruw blazor/Pages/Home.razor blazor/Pages/Home.razor
+--- a/blazor/Pages/Home.razor	2024-01-23 14:30:05
++++ b/blazor/Pages/Home.razor	2024-02-12 17:59:24
+@@ -1,7 +1,15 @@
+ ﻿@page "/"
++@inject IJSRuntime JSRuntime
+ 
+ <PageTitle>Home</PageTitle>
+ 
+ <h1>Hello, world!</h1>
+ 
+ Welcome to your new app.
++
++@code {
++    protected override void OnAfterRender(bool firstRender)
++    {
++        BenchmarkEvent.Send(JSRuntime, "Rendered Index.razor");
++    }
++}
+diff -urw blazor/Program.cs blazor/Program.cs
+--- a/blazor/Program.cs	2024-01-22 16:01:30
++++ b/blazor/Program.cs	2023-09-28 13:12:14
+@@ -1,11 +1,16 @@
++﻿#pragma warning disable IDE0073
++
+ using Microsoft.AspNetCore.Components.Web;
+ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+ using blazor;
+ 
++BrowserBench.FrameApp.ReachedManaged();
++
+ var builder = WebAssemblyHostBuilder.CreateDefault(args);
+ builder.RootComponents.Add<App>("#app");
+ builder.RootComponents.Add<HeadOutlet>("head::after");
+ 
++
+ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+ 
+-await builder.Build().RunAsync();
++await builder.Build().RunAsync().ConfigureAwait(true);
+diff -urw blazor/blazor.csproj blazor/blazor.csproj
+--- a/blazor/blazor.csproj	2024-01-22 16:01:30
++++ b/blazor/blazor.csproj	2024-01-23 12:04:59
+@@ -4,6 +4,8 @@
+     <TargetFramework>net9.0</TargetFramework>
+     <Nullable>enable</Nullable>
+     <ImplicitUsings>enable</ImplicitUsings>
++    <StaticWebAssetBasePath>blazor-template/</StaticWebAssetBasePath>
++    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+   </PropertyGroup>
+ 
+   <ItemGroup>
+diff -urw blazor/wwwroot/index.html blazor/wwwroot/index.html
+--- a/blazor/wwwroot/index.html	2024-01-22 16:01:30
++++ b/blazor/wwwroot/index.html	2024-01-23 12:10:00
+@@ -5,7 +5,7 @@
+     <meta charset="utf-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+     <title>blazor</title>
+-    <base href="/" />
++    <base href="./" />
+     <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+     <link rel="stylesheet" href="css/app.css" />
+     <link rel="icon" type="image/png" href="favicon.png" />
+@@ -23,10 +23,11 @@
+ 
+     <div id="blazor-error-ui">
+         An unhandled error has occurred.
+-        <a href="." class="reload">Reload</a>
++        <a href="" class="reload">Reload</a>
+         <span class="dismiss">🗙</span>
+     </div>
+-    <script src="_framework/blazor.webassembly.js"></script>
++    <script src="./_framework/blazor.webassembly.js"></script>
++    <script type="module" src="./frame.js"></script>
+ </body>
+ 
+ </html>
+diff -ruNw blazor/AppStart.cs blazor/AppStart.cs
+--- a/blazor/AppStart.cs	1970-01-01 01:00:00
++++ b/blazor/AppStart.cs	2024-01-23 12:36:02
+@@ -0,0 +1,18 @@
++using System.Runtime.InteropServices.JavaScript;
++
++#pragma warning disable CA1416
++
++namespace BrowserBench
++{
++        public partial class FrameApp
++        {
++            [JSImport("globalThis.frameApp.ReachedCallback")]
++            public static partial Task ReachedCallback();
++
++            [JSExport]
++            public static void ReachedManaged()
++            {
++                ReachedCallback();
++            }
++        }
++}
+diff -ruNw blazor/wwwroot/frame.js blazor/wwwroot/frame.js
+--- a/blazor/wwwroot/frame.js	1970-01-01 01:00:00
++++ b/blazor/wwwroot/frame.js	2024-01-23 12:33:54
+@@ -0,0 +1,37 @@
++// Licensed to the .NET Foundation under one or more agreements.
++// The .NET Foundation licenses this file to you under the MIT license.
++
++"use strict";
++
++class FrameApp {
++    reachedCallback() {
++        if (window.parent != window) {
++            window.parent.resolveAppStartEvent("reached");
++        }
++    }
++}
++
++let mute = false;
++try {
++    globalThis.frameApp = new FrameApp();
++    globalThis.frameApp.ReachedCallback = globalThis.frameApp.reachedCallback.bind(globalThis.frameApp);
++    if (window.parent != window) {
++        window.addEventListener("pageshow", event => { window.parent.resolveAppStartEvent("pageshow"); })
++    }
++
++    // receive blazor benchmark event and forward it to resolveAppStartEvent
++    window.receiveBenchmarkEvent = function (name) {
++        if (window !== window.parent) {
++            window.parent.resolveAppStartEvent("blazor: " + name);
++        }
++    };
++
++    window.muteErrors = () => {
++        mute = true;
++    }
++}
++catch (err) {
++    if (!mute) {
++        console.error(`WASM ERROR ${err}`);
++    }
++}
+diff -ruNw blazor/BenchmarkEvent.cs blazor/BenchmarkEvent.cs
+--- a/blazor/BenchmarkEvent.cs	1970-01-01 01:00:00
++++ b/blazor/BenchmarkEvent.cs	2024-01-23 13:03:36
+@@ -0,0 +1,18 @@
++// Licensed to the .NET Foundation under one or more agreements.
++// The .NET Foundation licenses this file to you under the MIT license.
++
++using Microsoft.JSInterop;
++
++namespace blazor;
++
++public static class BenchmarkEvent
++{
++    public static void Send(IJSRuntime jsRuntime, string name)
++    {
++        // jsRuntime will be null if we're in an environment without any
++        // JS runtime, e.g., the console runner
++        ((IJSInProcessRuntime)jsRuntime)?.Invoke<object>(
++            "receiveBenchmarkEvent",
++            name);
++    }
++}

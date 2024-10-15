@@ -415,7 +415,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsKeyGeneration))]
-        [OuterLoop("DSA key generation is very slow")]
+        [OuterLoop("DSA key generation is very slow", ~TestPlatforms.Browser)]
         public static void FromToXml()
         {
             using (DSA dsa = DSAFactory.Create())

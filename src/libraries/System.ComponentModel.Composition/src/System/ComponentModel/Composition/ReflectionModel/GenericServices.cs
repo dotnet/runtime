@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
@@ -178,7 +178,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             if ((attributes & GenericParameterAttributes.DefaultConstructorConstraint) != 0)
             {
                 // value types always have default constructors
-                if (!type.IsValueType && (type.GetConstructor(Type.EmptyTypes) == null))
+                if (!type.IsValueType && ((type.GetConstructor(Type.EmptyTypes) == null) || type.IsAbstract))
                 {
                     return false;
                 }

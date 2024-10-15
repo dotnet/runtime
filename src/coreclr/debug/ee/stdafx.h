@@ -12,6 +12,8 @@
 #include <stdint.h>
 #include <wchar.h>
 #include <stdio.h>
+#include <algorithm>
+#include <cmath>
 
 #include <windows.h>
 
@@ -34,4 +36,3 @@
 #include "frameinfo.h"
 #include <corerror.h>
 #include "../inc/common.h"
-

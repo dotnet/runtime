@@ -1,0 +1,225 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in src\tests\JIT\HardwareIntrinsics\Arm\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+using System;
+using System.Numerics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using Xunit;
+
+namespace JIT.HardwareIntrinsics.Arm
+{
+    public static partial class Program
+    {
+        [Fact]
+        public static void {TestName}()
+        {
+            var test = new {TestName}Test();
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works
+                test.RunBasicScenario();
+                test.RunBasicScenario_Invalid();
+                test.RunBasicScenario_FalseMask();
+                test.RunBasicScenario_GenValid();
+                test.RunBasicScenario_GenInvalid();
+
+                // Validates calling via reflection works
+                test.RunReflectionScenario();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public static class SvePrefetchTypeGenerator{TestName}
+    {
+        static Random m_rand = new Random();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static SvePrefetchType GetValid()
+        {
+            return (SvePrefetchType)m_rand.Next(0, 15);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static SvePrefetchType GetInvalid()
+        {
+            return (SvePrefetchType)m_rand.Next(16, 100);
+        }
+    }
+
+    public sealed unsafe class {TestName}Test
+    {
+        private struct DataTable
+        {
+            private byte[] inArray;
+            private byte[] outArray1;
+            private byte[] outArray2;
+
+            private GCHandle inHandle;
+            private GCHandle outHandle1;
+            private GCHandle outHandle2;
+
+            private ulong alignment;
+
+            public DataTable({Op1BaseType}[] outArray1, {Op1BaseType}[] outArray2, {Op1BaseType}[] inArray, int alignment)
+            {
+                int sizeOfInArray = inArray.Length * Unsafe.SizeOf<{Op1BaseType}>();
+                int sizeOfOutArray1 = outArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
+                int sizeOfOutArray2 = outArray2.Length * Unsafe.SizeOf<{Op1BaseType}>();
+                if ((alignment != 64 && alignment != 8) || (alignment * 2) < sizeOfInArray || (alignment * 2) < sizeOfOutArray1 || (alignment * 2) < sizeOfOutArray2)
+                {
+                    throw new ArgumentException("Invalid value of alignment");
+                }
+
+                this.inArray = new byte[alignment * 2 * 2];
+                this.outArray1 = new byte[alignment * 2];
+                this.outArray2 = new byte[alignment * 2];
+
+                this.inHandle = GCHandle.Alloc(this.inArray, GCHandleType.Pinned);
+                this.outHandle1 = GCHandle.Alloc(this.outArray1, GCHandleType.Pinned);
+                this.outHandle2 = GCHandle.Alloc(this.outArray2, GCHandleType.Pinned);
+
+                this.alignment = (ulong)alignment;
+
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArrayPtr), ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), (uint)sizeOfInArray);
+            }
+
+            public void* inArrayPtr => Align((byte*)(inHandle.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* outArray1Ptr => Align((byte*)(outHandle1.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* outArray2Ptr => Align((byte*)(outHandle2.AddrOfPinnedObject().ToPointer()), alignment);
+
+
+            public void Dispose()
+            {
+                inHandle.Free();
+                outHandle1.Free();
+                outHandle2.Free();
+            }
+
+            private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
+            {
+                return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
+            }
+        }
+
+        private static readonly int LargestVectorSize = {LargestVectorSize};
+
+        private static readonly int OpElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
+        private static readonly int DestElementCount = OpElementCount * 2;
+
+        private static {Op1BaseType}[] _data = new {Op1BaseType}[DestElementCount];
+
+        private {Op1VectorType}<{Op1BaseType}> _fld1;
+        private {Op1VectorType}<{Op1BaseType}> _fld2;
+
+        private DataTable _dataTable;
+
+        public {TestName}Test()
+        {
+            Succeeded = true;
+            for (var i = 0; i < DestElementCount; i++) { _data[i] = {NextValueOp2}; }
+            _dataTable = new DataTable(new {Op1BaseType}[OpElementCount], new {Op1BaseType}[OpElementCount], _data, LargestVectorSize);
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
+
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), {ValidPrefetch});
+        }
+
+        public void RunBasicScenario_Invalid()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Invalid));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
+
+            try
+            {
+                {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), {InvalidPrefetch});
+                Succeeded = false;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+            }
+        }
+
+        public void RunBasicScenario_FalseMask()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_FalseMask));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateFalseMask{Op1BaseType}();
+
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), {ValidPrefetch});
+        }
+
+        public void RunBasicScenario_GenValid()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_GenValid));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
+
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchTypeGenerator{TestName}.GetValid());
+        }
+
+        public void RunBasicScenario_GenInvalid()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_GenInvalid));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
+
+            try
+            {
+                {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchTypeGenerator{TestName}.GetInvalid());
+                Succeeded = false;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+            }
+        }
+
+        public void RunReflectionScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
+
+            typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof(Vector<{Op1BaseType}>), typeof(void*), typeof(SvePrefetchType) })
+                .Invoke(null, new object[] {
+                loadMask,
+                Pointer.Box(_dataTable.inArrayPtr, typeof({Op1BaseType}*)),
+                {ValidPrefetch}
+                });
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+        }
+    }
+}

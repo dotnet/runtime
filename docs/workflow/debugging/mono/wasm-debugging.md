@@ -86,7 +86,7 @@ There is another random number generator in `upstream/emscripten/src/determinist
 which needs the same treatment.
 
 Running `make patch-deterministic` in `src/mono/wasm` will patch the
-emscripten installation in `src/mono/wasm/emsdk` with these changes.
+emscripten installation in `src/mono/browser/emsdk` with these changes.
 
 # Debugging signature mismatch errors
 
@@ -180,8 +180,8 @@ $func166 @ dotnet.wasm:0xba0a
 $func2810 @ dotnet.wasm:0xabacf
 $func1615 @ dotnet.wasm:0x6f8eb
 $func1619 @ dotnet.wasm:0x6ff58
-$mono_wasm_invoke_method @ dotnet.wasm:0x96c9
-Module._mono_wasm_invoke_method @ dotnet.6.0.1.hopd7ipo8x.js:1
+$mono_wasm_invoke_jsexport @ dotnet.wasm:0x96c9
+Module.mono_wasm_invoke_jsexport @ dotnet.6.0.1.hopd7ipo8x.js:1
 managed__Microsoft_AspNetCore_Components_WebAssembly__Microsoft_AspNetCore_Components_WebAssembly_Services_DefaultWebAssemblyJSRuntime_BeginInvokeDotNet @ managed__Microsoft_AspNetCore_Components_WebAssembly__Microsoft_AspNetCore_Components_WebAssembly_Services_DefaultWebAssemblyJSRuntime_BeginInvokeDotNet:19
 beginInvokeDotNetFromJS @ blazor.webassembly.js:1
 b @ blazor.webassembly.js:1
@@ -244,8 +244,8 @@ $mono_jit_runtime_invoke @ dotnet.wasm:0x1dec32
 $do_runtime_invoke @ dotnet.wasm:0x95fca
 $mono_runtime_try_invoke @ dotnet.wasm:0x966fe
 $mono_runtime_invoke @ dotnet.wasm:0x98982
-$mono_wasm_invoke_method @ dotnet.wasm:0x227de2
-Module._mono_wasm_invoke_method @ dotnet..y6ggkhlo8e.js:9927
+$mono_wasm_invoke_jsexport @ dotnet.wasm:0x227de2
+Module.mono_wasm_invoke_jsexport @ dotnet..y6ggkhlo8e.js:9927
 managed__Microsoft_AspNetCore_Components_WebAssembly__Microsoft_AspNetCore_Components_WebAssembly_Services_DefaultWebAssemblyJSRuntime_BeginInvokeDotNet @ managed__Microsoft_AspNetCore_Components_WebAssembly__Microsoft_AspNetCore_Components_WebAssembly_Services_DefaultWebAssemblyJSRuntime_BeginInvokeDotNet:19
 beginInvokeDotNetFromJS @ blazor.webassembly.js:1
 b @ blazor.webassembly.js:1

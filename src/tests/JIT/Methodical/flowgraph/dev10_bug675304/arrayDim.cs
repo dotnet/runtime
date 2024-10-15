@@ -12,6 +12,7 @@ using Xunit;
 public class Test_arrayDim
 {
     [Fact]
+    [OuterLoop]
     public static void TestEntryPoint()
     {
         int[] iAr1 = null;

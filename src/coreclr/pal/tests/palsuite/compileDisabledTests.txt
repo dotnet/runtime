@@ -12,8 +12,6 @@ composite/threading/threadsuspension_switchthread/paltest_threading_threadsuspen
 composite/wfmo/paltest_composite_wfmo
 c_runtime/iswprint/test1/paltest_iswprint_test1
 c_runtime/vprintf/test1/paltest_vprintf_test1
-c_runtime/_gcvt/test1/paltest_gcvt_test1
-c_runtime/_gcvt/test2/paltest_gcvt_test2
 debug_api/DebugBreak/test1/paltest_debugbreak_test1
 debug_api/WriteProcessMemory/test1/paltest_writeprocessmemory_test1
 debug_api/WriteProcessMemory/test3/paltest_writeprocessmemory_test3

@@ -25,26 +25,25 @@
 extern "C" {
 #endif
 
-// Returns the full path to the executable for the current process, resolving symbolic links.
-// The caller is responsible for releasing the buffer. Returns null on error.
+/**
+ * Get the full path to the executable for the current process.
+ * Resolves symbolic links. The caller is responsible for releasing the buffer.
+ *
+ * @return A pointer to a null-terminated string containing the executable path, 
+ *         or NULL if an error occurs.
+ */
 static inline char* minipal_getexepath(void)
 {
 #if defined(__APPLE__)
-    uint32_t path_length = 0;
-    if (_NSGetExecutablePath(NULL, &path_length) != -1)
+    uint32_t len = PATH_MAX;
+    char pathBuf[PATH_MAX];
+    if (_NSGetExecutablePath(pathBuf, &len) != 0)
     {
         errno = EINVAL;
         return NULL;
     }
 
-    char path_buf[path_length];
-    if (_NSGetExecutablePath(path_buf, &path_length) != 0)
-    {
-        errno = EINVAL;
-        return NULL;
-    }
-
-    return realpath(path_buf, NULL);
+    return realpath(pathBuf, NULL);
 #elif defined(__FreeBSD__)
     static const int name[] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
     char path[PATH_MAX];

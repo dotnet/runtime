@@ -16,7 +16,7 @@ public class ConfigSrcTests : TestMainJsTestBase
 
     // NOTE: port number determinizes dynamically, so could not generate absolute URI
     [Theory]
-    [BuildAndRun(host: RunHost.V8 | RunHost.NodeJS)]
+    [BuildAndRun(host: RunHost.V8)]
     public void ConfigSrcAbsolutePath(BuildArgs buildArgs, RunHost host, string id)
     {
         buildArgs = buildArgs with { ProjectName = $"configsrcabsolute_{buildArgs.Config}_{buildArgs.AOT}" };
@@ -32,6 +32,6 @@ public class ConfigSrcTests : TestMainJsTestBase
         string bundleDir = Path.Combine(binDir, "AppBundle");
         string configSrc = Path.GetFullPath(Path.Combine(bundleDir, "_framework", "blazor.boot.json"));
 
-        RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, extraXHarnessMonoArgs: $"--config-src={configSrc}");
+        RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, extraXHarnessMonoArgs: $"--config-src=\"{configSrc}\"");
     }
 }

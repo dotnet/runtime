@@ -2,21 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 using System;
+using Xunit;
 
-class RuntimeHelpersTests
+public class RuntimeHelpersTests
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
-        try
-        {
-            ExecuteCodeWithGuaranteedCleanupTest.Run();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return 101;
-        }
-
-        return 100;
+        ExecuteCodeWithGuaranteedCleanupTest.Run();
     }
 }

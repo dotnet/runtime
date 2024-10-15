@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using ILLink.Shared;
 using Mono.Linker.Tests.Extensions;
 
 namespace Mono.Linker.Tests.TestCasesRunner
@@ -147,6 +148,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddSubstitutions (string file)
 		{
+			Options.SubstitutionFiles.Add (file);
 		}
 
 		public virtual void AddLinkAttributes (string file)
@@ -160,6 +162,36 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 			else if (flag == "--singlewarn") {
 				Options.SingleWarn = true;
+			}
+			else if (flag.StartsWith("--warnaserror"))
+			{
+				if (flag == "--warnaserror" || flag == "--warnaserror+")
+				{
+					if (values.Length == 0)
+						Options.TreatWarningsAsErrors = true;
+					else
+					{
+						foreach (int warning in ProcessWarningCodes(values))
+							Options.WarningsAsErrors[warning] = true;
+					}
+
+				}
+				else if (flag == "--warnaserror-")
+				{
+					if (values.Length == 0)
+						Options.TreatWarningsAsErrors = false;
+					else
+					{
+						foreach (int warning in ProcessWarningCodes(values))
+							Options.WarningsAsErrors[warning] = false;
+					}
+				}
+			}
+			else if (flag == "--notrimwarn") {
+				Options.SuppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
+			}
+			else if (flag == "--noaotwarn") {
+				Options.SuppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
 			}
 		}
 
@@ -192,7 +224,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			IgnoreLinkAttributes (options.IgnoreLinkAttributes);
 
-#if !NETCOREAPP
+#if !NET
 			if (!string.IsNullOrEmpty (options.Il8n))
 				AddIl8n (options.Il8n);
 #endif
@@ -258,6 +290,23 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			if (empty) {
 				throw new Exception ("No files matching " + pattern);
+			}
+		}
+
+		private static readonly char[] s_separator = new char[] { ',', ';', ' ' };
+
+		private static IEnumerable<int> ProcessWarningCodes(IEnumerable<string> warningCodes)
+		{
+			foreach (string value in warningCodes)
+			{
+				string[] values = value.Split(s_separator, StringSplitOptions.RemoveEmptyEntries);
+				foreach (string id in values)
+				{
+					if (!id.StartsWith("IL", StringComparison.Ordinal) || !ushort.TryParse(id.AsSpan(2), out ushort code))
+						continue;
+
+					yield return code;
+				}
 			}
 		}
 

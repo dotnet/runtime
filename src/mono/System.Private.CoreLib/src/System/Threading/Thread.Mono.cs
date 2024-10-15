@@ -227,7 +227,7 @@ namespace System.Threading
 
         private void StartCore()
         {
-             StartInternal(this, _startHelper?._maxStackSize ?? 0);
+            StartInternal(this, _startHelper?._maxStackSize ?? 0);
         }
 
         [DynamicDependency(nameof(StartCallback))]
@@ -235,7 +235,7 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void StartInternal(Thread runtimeThread, int stackSize);
 
-        partial void ThreadNameChanged(string? value)
+        private void ThreadNameChanged(string? value)
         {
             // TODO: Should only raise the events
             SetName(this, value);
@@ -248,17 +248,17 @@ namespace System.Threading
 
         private static bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
-             if (state != ApartmentState.Unknown)
-             {
+            if (state != ApartmentState.Unknown)
+            {
                 if (throwOnError)
                 {
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
                 }
 
                 return false;
-             }
+            }
 
-             return true;
+            return true;
         }
 
         private ThreadState ValidateThreadState()

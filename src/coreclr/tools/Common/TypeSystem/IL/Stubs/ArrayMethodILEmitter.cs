@@ -81,7 +81,9 @@ namespace Internal.IL.Stubs
 
             int pointerSize = context.Target.PointerSize;
 
-            int argStartOffset = _method.Kind == ArrayMethodKind.AddressWithHiddenArg ? 2 : 1;
+            bool isX86 = context.Target.Architecture == TargetArchitecture.X86;
+            int argStartOffset = !isX86 && _method.Kind == ArrayMethodKind.AddressWithHiddenArg ? 2 : 1;
+            int hiddenArg = !isX86 ? 1 : 1 + _rank;
 
             var rangeExceptionLabel = _emitter.NewCodeLabel();
             ILCodeLabel typeMismatchExceptionLabel = null;
@@ -112,7 +114,7 @@ namespace Internal.IL.Stubs
                     // As per ECMA-335 III.2.3, the prefix suppresses the type check.
                     // if (hiddenArg == IntPtr.Zero)
                     //     goto TypeCheckPassed;
-                    codeStream.EmitLdArg(1);
+                    codeStream.EmitLdArg(hiddenArg);
                     codeStream.Emit(ILOpcode.brfalse, typeCheckPassedLabel);
 
                     // MethodTable* actualElementType = this.m_pEEType->RelatedParameterType; // ArrayElementType
@@ -122,7 +124,7 @@ namespace Internal.IL.Stubs
                         _emitter.NewToken(eetypeType.GetKnownMethod("get_RelatedParameterType", null)));
 
                     // MethodTable* expectedElementType = hiddenArg->RelatedParameterType; // ArrayElementType
-                    codeStream.EmitLdArg(1);
+                    codeStream.EmitLdArg(hiddenArg);
                     codeStream.Emit(ILOpcode.call,
                         _emitter.NewToken(eetypeType.GetKnownMethod("get_RelatedParameterType", null)));
 

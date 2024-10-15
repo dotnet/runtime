@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <WorkloadBuildTasksAssemblyPath>$(MSBuildThisFileDirectory)..\tasks\$(TargetFramework)\WorkloadBuildTasks.dll</WorkloadBuildTasksAssemblyPath>
+  </PropertyGroup>
+
+  <UsingTask TaskName="Microsoft.Workload.Build.Tasks.InstallWorkloadFromArtifacts"
+             AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
+
+  <Import Project="WorkloadTesting.Core.targets" Condition="'$(TestUsingWorkloads)' == 'true'" />
+</Project>

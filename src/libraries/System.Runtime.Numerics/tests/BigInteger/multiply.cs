@@ -34,22 +34,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public static void RunMultiply_TwoLargeBigIntegers_Threshold()
-        {
-            // Again, with lower threshold
-            BigIntTools.Utils.RunWithFakeThreshold("SquareThreshold", 8, () =>
-                BigIntTools.Utils.RunWithFakeThreshold("MultiplyThreshold", 8, RunMultiply_TwoLargeBigIntegers)
-            );
-
-            // Again, with lower threshold
-            BigIntTools.Utils.RunWithFakeThreshold("SquareThreshold", 8, () =>
-                BigIntTools.Utils.RunWithFakeThreshold("MultiplyThreshold", 8, () =>
-                    BigIntTools.Utils.RunWithFakeThreshold("StackAllocThreshold", 8, RunMultiply_TwoLargeBigIntegers)
-                )
-            );
-        }
-
-        [Fact]
         public static void RunMultiply_TwoSmallBigIntegers()
         {
             Random random = new Random(s_seed);
@@ -205,6 +189,28 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void RunMultiplyKaratsubaBoundary()
+        {
+            Random random = new Random(s_seed);
+            byte[] tempByteArray1 = new byte[0];
+            byte[] tempByteArray2 = new byte[0];
+
+            // Multiply Method - One Large BigInteger
+            for (int i = 0; i < s_samples; i++)
+            {
+                for (int d1 = -2; d1 <= 2; d1++)
+                {
+                    tempByteArray1 = GetRandomByteArray(random, BigIntegerCalculator.MultiplyKaratsubaThreshold + d1);
+                    for (int d2 = -4; d2 <= 4; d2++)
+                    {
+                        tempByteArray2 = GetRandomByteArray(random, (BigIntegerCalculator.MultiplyKaratsubaThreshold + 1) * 2 + d2);
+                        VerifyMultiplyString(Print(tempByteArray1) + Print(tempByteArray2) + "bMultiply");
+                    }
+                }
+            }
+        }
+
+        [Fact]
         public static void RunMultiply_OnePositiveOneNegative()
         {
             Random random = new Random(s_seed);
@@ -269,6 +275,26 @@ namespace System.Numerics.Tests
         private static string Print(byte[] bytes)
         {
             return MyBigIntImp.Print(bytes);
+        }
+    }
+
+    [Collection(nameof(DisableParallelization))]
+    public class multiplyTestThreshold
+    {
+        [Fact]
+        public static void RunMultiply_TwoLargeBigIntegers()
+        {
+            // Again, with lower threshold
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.SquareThreshold, 8, () =>
+                BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 8, multiplyTest.RunMultiply_TwoLargeBigIntegers)
+            );
+
+            // Again, with lower threshold
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.SquareThreshold, 8, () =>
+                BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 8, () =>
+                    BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.StackAllocThreshold, 8, multiplyTest.RunMultiply_TwoLargeBigIntegers)
+                )
+            );
         }
     }
 }

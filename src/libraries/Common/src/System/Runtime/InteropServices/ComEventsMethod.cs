@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading;
 using System.Reflection;
+using System.Threading;
 
 namespace System.Runtime.InteropServices
 {
@@ -63,7 +63,7 @@ namespace System.Runtime.InteropServices
                     }
                 }
 
-                return Delegate.DynamicInvoke(WrapArgs ? new object[] { args } : args);
+                return Delegate.DynamicInvoke(WrapArgs ? [args] : args);
             }
 
             private void PreProcessSignature()

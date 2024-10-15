@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using MS.Internal.Xml.Cache;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using MS.Internal.Xml.Cache;
 
 namespace System.Xml.XPath
 {
@@ -414,7 +414,7 @@ namespace System.Xml.XPath
         /// </summary>
         internal void AddIdElement(string id, XPathNode[] pageElem, int idxElem)
         {
-             _idValueMap ??= new Dictionary<string, XPathNodeRef>();
+            _idValueMap ??= new Dictionary<string, XPathNodeRef>();
 
             if (!_idValueMap.ContainsKey(id))
                 _idValueMap.Add(id, new XPathNodeRef(pageElem, idxElem));

@@ -144,8 +144,9 @@ namespace System.Threading
     **
         ** Exceptions: ArgumentNullException if object is null.
     ========================================================================*/
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool ObjWait(int millisecondsTimeout, object obj);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Monitor_Wait")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool Wait(ObjectHandleOnStack obj, int millisecondsTimeout);
 
         [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout)
@@ -153,7 +154,7 @@ namespace System.Threading
             ArgumentNullException.ThrowIfNull(obj);
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
-            return ObjWait(millisecondsTimeout, obj);
+            return Wait(ObjectHandleOnStack.Create(ref obj), millisecondsTimeout);
         }
 
         /*========================================================================
@@ -161,34 +162,34 @@ namespace System.Threading
         * Exceptions: SynchronizationLockException if this method is not called inside
         * a synchronized block of code.
         ========================================================================*/
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void ObjPulse(object obj);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Monitor_Pulse")]
+        private static partial void Pulse(ObjectHandleOnStack obj);
 
         public static void Pulse(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            ObjPulse(obj);
+            Pulse(ObjectHandleOnStack.Create(ref obj));
         }
         /*========================================================================
         ** Sends a notification to all waiting objects.
         ========================================================================*/
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void ObjPulseAll(object obj);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Monitor_PulseAll")]
+        private static partial void PulseAll(ObjectHandleOnStack obj);
 
         public static void PulseAll(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            ObjPulseAll(obj);
+            PulseAll(ObjectHandleOnStack.Create(ref obj));
         }
 
         /// <summary>
         /// Gets the number of times there was contention upon trying to take a <see cref="Monitor"/>'s lock so far.
         /// </summary>
-        public static long LockContentionCount => GetLockContentionCount();
+        public static long LockContentionCount => GetLockContentionCount() + Lock.ContentionCount;
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectNative_GetMonitorLockContentionCount")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Monitor_GetLockContentionCount")]
         private static partial long GetLockContentionCount();
     }
 }

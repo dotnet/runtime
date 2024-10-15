@@ -28,13 +28,13 @@ namespace System
         // and its ExceptionInfo reference set to null.
         //
         public ArithmeticException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_ArithmeticException)
         {
             HResult = HResults.COR_E_ARITHMETIC;
         }
 
         public ArithmeticException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_ArithmeticException, innerException)
         {
             HResult = HResults.COR_E_ARITHMETIC;
         }

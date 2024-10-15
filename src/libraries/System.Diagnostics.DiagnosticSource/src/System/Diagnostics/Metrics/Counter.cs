@@ -59,7 +59,7 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         /// <param name="delta">The increment measurement.</param>
         /// <param name="tags">A span of key-value pair tags associated with the measurement.</param>
-        public void Add(T delta, ReadOnlySpan<KeyValuePair<string, object?>> tags) => RecordMeasurement(delta, tags);
+        public void Add(T delta, params ReadOnlySpan<KeyValuePair<string, object?>> tags) => RecordMeasurement(delta, tags);
 
         /// <summary>
         /// Record the increment value of the measurement.

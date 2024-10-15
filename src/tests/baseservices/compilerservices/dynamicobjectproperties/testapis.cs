@@ -3,6 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
+using Xunit;
 
 public class Driver<K, V>
     where K : class
@@ -438,7 +439,8 @@ public class NegativeTestCases
 
 public class TestAPIs
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Random r = new Random();
 

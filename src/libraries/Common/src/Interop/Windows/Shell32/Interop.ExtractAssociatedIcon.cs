@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 
@@ -13,7 +13,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Shell32, EntryPoint = "ExtractAssociatedIconW")]
         internal static unsafe partial IntPtr ExtractAssociatedIcon(
-#if NET7_0_OR_GREATER
+#if NET
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef hInst, char* iconPath, ref int index);

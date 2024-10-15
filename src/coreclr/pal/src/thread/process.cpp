@@ -44,6 +44,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #endif  // HAVE_POLL
 
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -84,6 +85,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 
 #ifdef __APPLE__
 #include <libproc.h>
+#include <pwd.h>
 #include <sys/sysctl.h>
 #include <sys/posix_sem.h>
 #include <mach/task.h>
@@ -732,7 +734,7 @@ CorUnix::InternalCreateProcess(
             }
         }
         EnvironmentEntries++;
-        EnvironmentArray = (char **)InternalMalloc(EnvironmentEntries * sizeof(char *));
+        EnvironmentArray = (char **)malloc(EnvironmentEntries * sizeof(char *));
 
         EnvironmentEntries = 0;
         // Convert the environment block to array of strings
@@ -1271,7 +1273,7 @@ RaiseFailFastException(
     ENTRY("RaiseFailFastException");
 
     TerminateCurrentProcessNoExit(TRUE);
-    PROCAbort();
+    for (;;) PROCAbort();
 
     LOGEXIT("RaiseFailFastException");
     PERF_EXIT(RaiseFailFastException);
@@ -1627,7 +1629,7 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
     // since the start of the Unix epoch).
     struct kinfo_proc info = {};
     size_t size = sizeof(info);
-    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, processId };
+    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)processId };
     int ret = ::sysctl(mib, sizeof(mib)/sizeof(*mib), &info, &size, nullptr, 0);
 
     if (ret == 0)
@@ -2026,7 +2028,7 @@ Function:
 char*
 PROCFormatInt(ULONG32 value)
 {
-    char* buffer = (char*)InternalMalloc(128);
+    char* buffer = (char*)malloc(128);
     if (buffer != nullptr)
     {
         if (sprintf_s(buffer, 128, "%d", value) == -1)
@@ -2048,7 +2050,7 @@ Function:
 char*
 PROCFormatInt64(ULONG64 value)
 {
-    char* buffer = (char*)InternalMalloc(128);
+    char* buffer = (char*)malloc(128);
     if (buffer != nullptr)
     {
         if (sprintf_s(buffer, 128, "%lld", value) == -1)
@@ -2087,7 +2089,7 @@ PROCBuildCreateDumpCommandLine(
     }
     const char* DumpGeneratorName = "createdump";
     int programLen = strlen(g_szCoreCLRPath) + strlen(DumpGeneratorName) + 1;
-    char* program = *pprogram = (char*)InternalMalloc(programLen);
+    char* program = *pprogram = (char*)malloc(programLen);
     if (program == nullptr)
     {
         return FALSE;
@@ -2255,7 +2257,7 @@ PROCCreateCrashDump(
         if (g_createdumpCallback != nullptr)
         {
             // Remove the signal handlers inherited from the runtime process
-            SEHCleanupSignals();
+            SEHCleanupSignals(true /* isChildProcess */);
 
             // Call the statically linked createdump code
             g_createdumpCallback(argv.size(), argv.data());
@@ -2541,7 +2543,9 @@ Parameters:
 
   Does not return
 --*/
+#if !defined(HOST_ARM)
 PAL_NORETURN
+#endif
 VOID
 PROCAbort(int signal, siginfo_t* siginfo)
 {
@@ -2552,7 +2556,7 @@ PROCAbort(int signal, siginfo_t* siginfo)
 
     // Restore all signals; the SIGABORT handler to prevent recursion and
     // the others to prevent multiple core dumps from being generated.
-    SEHCleanupSignals();
+    SEHCleanupSignals(false /* isChildProcess */);
 
     // Abort the process after waiting for the core dump to complete
     abort();
@@ -2821,11 +2825,17 @@ CorUnix::InitializeProcessCommandLine(
     if (lpwstrFullPath)
     {
         LPWSTR lpwstr = PAL_wcsrchr(lpwstrFullPath, '/');
+        if (!lpwstr)
+        {
+            ERROR("Invalid full path\n");
+            palError = ERROR_INTERNAL_ERROR;
+            goto exit;
+        }    
         lpwstr[0] = '\0';
         size_t n = PAL_wcslen(lpwstrFullPath) + 1;
 
         size_t iLen = n;
-        initial_dir = reinterpret_cast<LPWSTR>(InternalMalloc(iLen*sizeof(WCHAR)));
+        initial_dir = reinterpret_cast<LPWSTR>(malloc(iLen*sizeof(WCHAR)));
         if (NULL == initial_dir)
         {
             ERROR("malloc() failed! (initial_dir) \n");
@@ -3358,6 +3368,11 @@ PROCGetProcessStatus(
                 *pdwExitCode = WEXITSTATUS(status);
                 TRACE("Exit code was %d\n", *pdwExitCode);
             }
+            else if ( WIFSIGNALED( status ) )
+            {
+                *pdwExitCode = 128 + WTERMSIG(status);
+                TRACE("Exit code was signal %d = exit code %d\n", WTERMSIG(status), *pdwExitCode);
+            }
             else
             {
                 WARN("process terminated without exiting; can't get exit "
@@ -3752,7 +3767,7 @@ buildArgv(
     pThread = InternalGetCurrentThread();
     /* make sure to allocate enough space, up for the worst case scenario */
     int iLength = (iWlen + lpAppPath.GetCount() + 2);
-    lpAsciiCmdLine = (char *) InternalMalloc(iLength);
+    lpAsciiCmdLine = (char *) malloc(iLength);
 
     if (lpAsciiCmdLine == NULL)
     {
@@ -3932,7 +3947,7 @@ buildArgv(
 
     /* allocate lppargv according to the number of arguments
        in the command line */
-    lppArgv = (char **) InternalMalloc((((*pnArg)+1) * sizeof(char *)));
+    lppArgv = (char **) malloc((((*pnArg)+1) * sizeof(char *)));
 
     if (lppArgv == NULL)
     {

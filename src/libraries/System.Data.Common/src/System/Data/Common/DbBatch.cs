@@ -65,7 +65,7 @@ namespace System.Data.Common
 
         protected abstract DbBatchCommand CreateDbBatchCommand();
 
-        public virtual void Dispose() {}
+        public virtual void Dispose() { }
 
         public virtual ValueTask DisposeAsync()
         {

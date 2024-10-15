@@ -46,14 +46,7 @@ typedef struct
  *
  * Returns 0 on success; otherwise, returns -1 and sets errno.
  */
-PALEXPORT int32_t SystemNative_GetWindowSize(WinSize* windowsSize);
-
-/**
- * Sets the windows size of the terminal
- *
- * Returns 0 on success; otherwise, returns -1 and sets errno.
- */
-PALEXPORT int32_t SystemNative_SetWindowSize(WinSize* windowsSize);
+PALEXPORT int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowsSize);
 
 /**
  * Gets whether the specified file descriptor is for a terminal.
@@ -76,7 +69,7 @@ PALEXPORT int32_t SystemNative_InitializeTerminalAndSignalHandling(void);
  *
  * Returns 1 on success; otherwise returns 0 and sets errno.
  */
-PALEXPORT void SystemNative_SetKeypadXmit(const char* terminfoString);
+PALEXPORT void SystemNative_SetKeypadXmit(intptr_t fd, const char* terminfoString);
 
 /**
  * Gets the special control character codes for the requested control characters.

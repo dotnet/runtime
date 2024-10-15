@@ -22,13 +22,13 @@ namespace System.Runtime.InteropServices
         }
 
         public SafeArrayRankMismatchException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_SafeArrayRankMismatchException)
         {
             HResult = HResults.COR_E_SAFEARRAYRANKMISMATCH;
         }
 
         public SafeArrayRankMismatchException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_SafeArrayRankMismatchException, inner)
         {
             HResult = HResults.COR_E_SAFEARRAYRANKMISMATCH;
         }

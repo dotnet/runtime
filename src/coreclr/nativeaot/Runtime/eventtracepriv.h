@@ -114,18 +114,9 @@ public:
     // Below are the remainder of each struct in the bulk type event (i.e., the
     // variable-sized data). The var-sized fields are copied into the event individually
     // (not directly), so they don't need to have the same layout as in the ETW manifest
-
-    // This is really a denorm of the size already stored in rgTypeParameters, but we
-    // need a persistent place to stash this away so EventDataDescCreate & EventWrite
-    // have a reliable place to copy it from.  This is filled in at the last minute,
-    // when sending the event.
     ULONG cTypeParameters;
 
-    // If > 1 type parameter, this is an array of their MethodTable*'s
-    NewArrayHolder<ULONGLONG> rgTypeParameters;
-
-    // If exactly one type parameter, this is its MethodTable*.  (If != 1 type parameter,
-    // this is 0.)
+    // We expect only one type parameter. See the explanation at BulkTypeEventLogger::LogSingleType on generic parameters for additional details.
     ULONGLONG ullSingleTypeParameter;
 };
 
@@ -137,6 +128,9 @@ public:
 class BulkTypeEventLogger
 {
 private:
+
+    // The maximum event size, and the size of the buffer that we allocate to hold the event contents.
+    static const size_t kSizeOfEventBuffer = 65536;
 
     // Estimate of how many bytes we can squeeze in the event data for the value struct
     // array.  (Intentionally overestimate the size of the non-array parts to keep it safe.)
@@ -178,14 +172,25 @@ private:
     // List of types we've batched.
     BulkTypeValue m_rgBulkTypeValues[kMaxCountTypeValues];
 
+    BYTE *m_pBulkTypeEventBuffer;
+
     int LogSingleType(MethodTable * pEEType);
 
 public:
     BulkTypeEventLogger() :
         m_nBulkTypeValueCount(0),
         m_nBulkTypeValueByteCount(0)
+        , m_pBulkTypeEventBuffer(NULL)
     {
         LIMITED_METHOD_CONTRACT;
+
+        m_pBulkTypeEventBuffer = new (nothrow) BYTE[kSizeOfEventBuffer];
+    }
+
+    ~BulkTypeEventLogger()
+    {
+        delete[] m_pBulkTypeEventBuffer;
+        m_pBulkTypeEventBuffer = NULL;
     }
 
     void LogTypeAndParameters(ULONGLONG thAsAddr);

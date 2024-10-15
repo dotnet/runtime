@@ -40,7 +40,7 @@
 
   <Target Name="PrepareForBuildHelixWorkItems_Mobile">
 
-    <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">
+    <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
       <AppleTestTarget Condition="'$(TargetOS)' == 'iossimulator'">ios-simulator-64</AppleTestTarget>
       <AppleTestTarget Condition="'$(TargetOS)' == 'tvossimulator'">tvos-simulator</AppleTestTarget>
       <AppleTestTarget Condition="'$(TargetOS)' == 'ios'">ios-device</AppleTestTarget>
@@ -53,7 +53,7 @@
       <iOSLikeLibraryBuilderTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'common'))</iOSLikeLibraryBuilderTargetsDir>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildiOSApps' and '$(TestUsingWorkloads)' != 'true'">$(TargetOS)-</WorkItemPrefix>
 
-      <CMakeUrl>https://netcorenativeassets.blob.core.windows.net/resource-packages/external/macos/cmake/cmake-3.16.4-Darwin-x86_64.tar.gz</CMakeUrl>
+      <CMakeUrl>https://netcorenativeassets.blob.core.windows.net/resource-packages/external/macos/cmake/cmake-3.28.0-macos-universal.tar.gz</CMakeUrl>
 
       <_XHarnessAppleCustomCommand Condition="'$(NeedsiOSSDK)' == 'true'">
         source build-apple-app.sh
@@ -64,6 +64,7 @@
     <ItemGroup Condition="'$(NeedsiOSSDK)' == 'true'">
       <HelixCorrelationPayload Include="cmake" Uri="$(CMakeUrl)"                 Destination="build/cmake" />
       <HelixCorrelationPayload Include="$(AppleAppBuilderDir)"                   Destination="build/AppleAppBuilder" />
+      <HelixCorrelationPayload Include="$(LibraryBuilderDir)"                    Destination="build/LibraryBuilder" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Condition="'$(RuntimeFlavor)' == 'mono'"
                                                                                  Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())" />
@@ -80,7 +81,7 @@
                                                                                  Destination="build/BuildIntegration" />
       <HelixCorrelationPayload Include="$(CoreCLRAotSdkDir)"                     Condition="'$(RuntimeFlavor)' == 'coreclr'"
                                                                                  Destination="build/aotsdk" />
-      <HelixCorrelationPayload Include="$(ToolsILLinkDir)"                       Destination="build/microsoft.net.illink.tasks" />
+      <HelixCorrelationPayload Include="$(ToolsILLinkDir)"                       Destination="build" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
@@ -93,7 +94,7 @@
       </XHarnessAppBundleToTest>
 
       <!-- To save on overall size, we compress each app after building. -->
-      <XHarnessAppBundleToTest 
+      <XHarnessAppBundleToTest
         Include="$([System.IO.Directory]::GetFiles('$(TestArchiveTestsRoot)$(OSPlatformConfig)', '*.zip', System.IO.SearchOption.TopDirectoryOnly))"
         Exclude="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)', 'xharness-app-payload*', System.IO.SearchOption.AllDirectories))">
         <TestTarget>$(AppleTestTarget)</TestTarget>
@@ -115,8 +116,8 @@
       </XHarnessAppBundleToTest>
 
       <!-- To save on overall size, we compress each app after building. -->
-      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly/$(OSPlatformConfig)') and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'ios'" 
-        Include="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)runonly/$(OSPlatformConfig)', '*.zip', System.IO.SearchOption.TopDirectoryOnly))" 
+      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly/$(OSPlatformConfig)') and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'ios'"
+        Include="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)runonly/$(OSPlatformConfig)', '*.zip', System.IO.SearchOption.TopDirectoryOnly))"
         Exclude="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)runonly', 'xharness-app-payload*', System.IO.SearchOption.AllDirectories))">
         <!-- The sample app doesn't need test runner -->
         <IncludesTestRunner>false</IncludesTestRunner>
@@ -141,7 +142,6 @@
   </Target>
 
   <Target Name="AfterBuildHelixWorkItems_Mobile" AfterTargets="BuildHelixWorkItems">
-    <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Done building Helix work items. Work item count: @(XHarnessAppBundleToTest->Count())" />
 
     <PropertyGroup>
       <_TestPath Condition="'%(XHarnessAppBundleToTest.CustomCommands)' != ''">$([System.IO.Path]::GetDirectoryName('%(XHarnessAppBundleToTest.Identity)'))</_TestPath>

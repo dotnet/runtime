@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -38,5 +39,7 @@ namespace System.Text.Json.Serialization.Converters
             JsonElement jElement = JsonElement.ParseValue(ref reader);
             return new JsonArray(jElement, options);
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Array };
     }
 }

@@ -1,16 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Runtime.CompilerServices
 {
@@ -50,14 +47,113 @@ namespace System.Runtime.CompilerServices
     public static partial class RuntimeHelpers
     {
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
+        public static unsafe void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
+        {
+            if (array is null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void* GetSpanDataFrom(
+            if (fldHandle.IsNullHandle())
+                throw new ArgumentException(SR.Argument_InvalidHandle);
+
+            IRuntimeFieldInfo fldInfo = fldHandle.GetRuntimeFieldInfo();
+
+            if (!RuntimeFieldHandle.GetRVAFieldInfo(fldInfo.Value, out void* address, out uint size))
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
+
+            // Note that we do not check that the field is actually in the PE file that is initializing
+            // the array. Basically, the data being published can be accessed by anyone with the proper
+            // permissions (C# marks these as assembly visibility, and thus are protected from outside
+            // snooping)
+
+            MethodTable* pMT = GetMethodTable(array);
+            TypeHandle elementTH = pMT->GetArrayElementTypeHandle();
+
+            if (elementTH.IsTypeDesc || !elementTH.AsMethodTable()->IsPrimitive) // Enum is included
+                throw new ArgumentException(SR.Argument_BadArrayForInitializeArray);
+
+            nuint totalSize = pMT->ComponentSize * array.NativeLength;
+
+            // make certain you don't go off the end of the rva static
+            if (totalSize > size)
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
+
+            ref byte src = ref *(byte*)address; // Ref is extending the lifetime of the static field.
+            GC.KeepAlive(fldInfo);
+
+            ref byte dst = ref MemoryMarshal.GetArrayDataReference(array);
+
+            Debug.Assert(!elementTH.AsMethodTable()->ContainsGCPointers);
+
+            if (BitConverter.IsLittleEndian)
+            {
+                SpanHelpers.Memmove(ref dst, ref src, totalSize);
+            }
+            else
+            {
+                switch (pMT->ComponentSize)
+                {
+                    case sizeof(byte):
+                        SpanHelpers.Memmove(ref dst, ref src, totalSize);
+                        break;
+                    case sizeof(ushort):
+                        BinaryPrimitives.ReverseEndianness(
+                            new ReadOnlySpan<ushort>(ref Unsafe.As<byte, ushort>(ref src), array.Length),
+                            new Span<ushort>(ref Unsafe.As<byte, ushort>(ref dst), array.Length));
+                        break;
+                    case sizeof(uint):
+                        BinaryPrimitives.ReverseEndianness(
+                            new ReadOnlySpan<uint>(ref Unsafe.As<byte, uint>(ref src), array.Length),
+                            new Span<uint>(ref Unsafe.As<byte, uint>(ref dst), array.Length));
+                        break;
+                    case sizeof(ulong):
+                        BinaryPrimitives.ReverseEndianness(
+                            new ReadOnlySpan<ulong>(ref Unsafe.As<byte, ulong>(ref src), array.Length),
+                            new Span<ulong>(ref Unsafe.As<byte, ulong>(ref dst), array.Length));
+                        break;
+                    default:
+                        Debug.Fail("Incorrect primitive type size!");
+                        break;
+                }
+            }
+        }
+
+        private static unsafe ref byte GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,
-            out int count);
+            out int count)
+        {
+            if (fldHandle.IsNullHandle())
+                throw new ArgumentException(SR.Argument_InvalidHandle);
+
+            IRuntimeFieldInfo fldInfo = fldHandle.GetRuntimeFieldInfo();
+
+            if (!RuntimeFieldHandle.GetRVAFieldInfo(fldInfo.Value, out void* data, out uint totalSize))
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
+
+            TypeHandle th = targetTypeHandle.GetNativeTypeHandle();
+            Debug.Assert(!th.IsTypeDesc); // TypeDesc can't be used as generic parameter
+            MethodTable* targetMT = th.AsMethodTable();
+
+            if (!targetMT->IsPrimitive) // Enum is included
+                throw new ArgumentException(SR.Argument_BadArrayForInitializeArray);
+
+            uint targetTypeSize = targetMT->GetNumInstanceFieldBytes();
+            Debug.Assert(uint.IsPow2(targetTypeSize));
+
+            if (((nuint)data & (targetTypeSize - 1)) != 0)
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
+
+            if (!BitConverter.IsLittleEndian)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            count = (int)(totalSize / targetTypeSize);
+            ref byte dataRef = ref *(byte*)data; // Ref is extending the lifetime of the static field.
+            GC.KeepAlive(fldInfo);
+
+            return ref dataRef;
+        }
 
         // GetObjectValue is intended to allow value classes to be manipulated as 'Object'
         // but have aliasing behavior of a value class.  The intent is that you would use
@@ -72,9 +168,23 @@ namespace System.Runtime.CompilerServices
         // cloned when you pass them around, and are always passed by value.
         // Of course, reference types are not cloned.
         //
-        [MethodImpl(MethodImplOptions.InternalCall)]
         [return: NotNullIfNotNull(nameof(obj))]
-        public static extern object? GetObjectValue(object? obj);
+        public static unsafe object? GetObjectValue(object? obj)
+        {
+            if (obj == null)
+                return null;
+
+            MethodTable* pMT = GetMethodTable(obj);
+
+            if (!pMT->IsValueType || pMT->IsPrimitive)
+                return obj;
+
+            // Technically we could return boxed DateTimes and Decimals without
+            // copying them here, but VB realized that this would be a breaking change
+            // for their customers.  So copy them.
+
+            return obj.MemberwiseClone();
+        }
 
         // RunClassConstructor causes the class constructor for the given type to be triggered
         // in the current domain.  After this call returns, the class constructor is guaranteed to
@@ -90,8 +200,7 @@ namespace System.Runtime.CompilerServices
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
-            RuntimeType rt = type.GetRuntimeType();
-            if (rt is null)
+            RuntimeType rt = type.GetRuntimeType() ??
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(type));
 
             RunClassConstructor(new QCallTypeHandle(ref rt));
@@ -110,8 +219,7 @@ namespace System.Runtime.CompilerServices
 
         public static void RunModuleConstructor(ModuleHandle module)
         {
-            RuntimeModule rm = module.GetRuntimeModule();
-            if (rm is null)
+            RuntimeModule rm = module.GetRuntimeModule() ??
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(module));
 
             RunModuleConstructor(new QCallModule(ref rm));
@@ -127,8 +235,7 @@ namespace System.Runtime.CompilerServices
 
         public static unsafe void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[]? instantiation)
         {
-            IRuntimeMethodInfo methodInfo = method.GetMethodInfo();
-            if (methodInfo == null)
+            IRuntimeMethodInfo methodInfo = method.GetMethodInfo() ??
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(method));
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
@@ -143,25 +250,75 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void PrepareDelegate(Delegate d);
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareDelegate")]
+        private static partial void PrepareDelegate(ObjectHandleOnStack d);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetHashCode(object? o);
+        public static void PrepareDelegate(Delegate d)
+        {
+            if (d is null)
+            {
+                return;
+            }
+
+            PrepareDelegate(ObjectHandleOnStack.Create(ref d));
+        }
 
         /// <summary>
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
         /// returned.
         /// </summary>
-        /// <remarks>
-        /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
-        /// code to the object if it does not already have one.
-        /// </remarks>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int TryGetHashCode(object o);
+        internal static extern int TryGetHashCode(object? o);
+
+        [LibraryImport(QCall, EntryPoint = "ObjectNative_GetHashCodeSlow")]
+        private static partial int GetHashCodeSlow(ObjectHandleOnStack o);
+
+        public static int GetHashCode(object? o)
+        {
+            int hashCode = TryGetHashCode(o);
+            if (hashCode == 0)
+            {
+                return GetHashCodeWorker(o);
+            }
+            return hashCode;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static int GetHashCodeWorker(object? o)
+            {
+                if (o is null)
+                {
+                    return 0;
+                }
+                return GetHashCodeSlow(ObjectHandleOnStack.Create(ref o));
+            }
+        }
+
+        public static new unsafe bool Equals(object? o1, object? o2)
+        {
+            // Compare by ref for normal classes, by value for value types.
+
+            if (ReferenceEquals(o1, o2))
+                return true;
+
+            if (o1 is null || o2 is null)
+                return false;
+
+            MethodTable* pMT = GetMethodTable(o1);
+
+            // If it's not a value class, don't compare by value
+            if (!pMT->IsValueType)
+                return false;
+
+            // Make sure they are the same type.
+            if (pMT != GetMethodTable(o2))
+                return false;
+
+            // Compare the contents
+            return ContentEquals(o1, o2);
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern new bool Equals(object? o1, object? o2);
+        private static extern unsafe bool ContentEquals(object o1, object o2);
 
         [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
@@ -187,13 +344,18 @@ namespace System.Runtime.CompilerServices
 
         // This method ensures that there is sufficient stack to execute the average Framework function.
         // If there is not enough stack, then it throws System.InsufficientExecutionStackException.
-        // Note: this method is not part of the CER support, and is not to be confused with ProbeForSufficientStack.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void EnsureSufficientExecutionStack();
+        // Note: this method is not to be confused with ProbeForSufficientStack.
+        public static void EnsureSufficientExecutionStack()
+        {
+            if (!TryEnsureSufficientExecutionStack())
+            {
+                throw new InsufficientExecutionStackException();
+            }
+        }
 
         // This method ensures that there is sufficient stack to execute the average Framework function.
         // If there is not enough stack, then it return false.
-        // Note: this method is not part of the CER support, and is not to be confused with ProbeForSufficientStack.
+        // Note: this method is not to be confused with ProbeForSufficientStack.
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool TryEnsureSufficientExecutionStack();
 
@@ -212,25 +374,11 @@ namespace System.Runtime.CompilerServices
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }
 
-            object? obj = null;
-            GetUninitializedObject(new QCallTypeHandle(ref rt), ObjectHandleOnStack.Create(ref obj));
-            return obj!;
+            return rt.GetUninitializedObject();
         }
 
-        [LibraryImport(QCall, EntryPoint = "ReflectionSerialization_GetUninitializedObject")]
-        private static partial void GetUninitializedObject(QCallTypeHandle type, ObjectHandleOnStack retObject);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object AllocateUninitializedClone(object obj);
-
-        /// <returns>true if given type is reference type or value type that contains references</returns>
-        [Intrinsic]
-        public static bool IsReferenceOrContainsReferences<T>()
-        {
-            // The body of this function will be replaced by the EE with unsafe code!!!
-            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
-            throw new InvalidOperationException();
-        }
+        [LibraryImport(QCall, EntryPoint = "ObjectNative_AllocateUninitializedClone")]
+        internal static partial void AllocateUninitializedClone(ObjectHandleOnStack objHandle);
 
         /// <returns>true if given type is bitwise equatable (memcmp can be used for equality checking)</returns>
         /// <remarks>
@@ -259,6 +407,11 @@ namespace System.Runtime.CompilerServices
             // See getILIntrinsicImplementation for how this happens.
             return x.CompareTo(y);
         }
+
+        // The body of this function will be created by the EE for the specific type.
+        // See getILIntrinsicImplementation for how this happens.
+        [Intrinsic]
+        internal static extern unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged;
 
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
@@ -322,6 +475,9 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object? Box(MethodTable* methodTable, ref byte data);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe void Unbox_Nullable(ref byte destination, MethodTable* toTypeHnd, object? obj);
+
         // Given an object reference, returns its MethodTable*.
         //
         // WARNING: The caller has to ensure that MethodTable* does not get unloaded. The most robust way
@@ -333,16 +489,8 @@ namespace System.Runtime.CompilerServices
         //
         // GC.KeepAlive(o);
         //
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Intrinsic]
-        internal static unsafe MethodTable* GetMethodTable(object obj)
-        {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
-
-            return (MethodTable *)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
-        }
-
+        internal static unsafe MethodTable* GetMethodTable(object obj) => GetMethodTable(obj);
 
         [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -369,7 +517,17 @@ namespace System.Runtime.CompilerServices
         private static partial IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc);
+        private static extern IntPtr AllocTailCallArgBufferWorker(int size, IntPtr gcDesc);
+
+        private static IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc)
+        {
+            IntPtr buffer = AllocTailCallArgBufferWorker(size, gcDesc);
+            if (buffer == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+            return buffer;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
@@ -656,6 +814,49 @@ namespace System.Runtime.CompilerServices
                     return continuation;
             }
         }
+
+        /// <summary>
+        /// Create a boxed object of the specified type from the data located at the target reference.
+        /// </summary>
+        /// <param name="target">The target data</param>
+        /// <param name="type">The type of box to create.</param>
+        /// <returns>A boxed object containing the specified data.</returns>
+        /// <exception cref="ArgumentNullException">The specified type handle is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">The specified type cannot have a boxed instance of itself created.</exception>
+        /// <exception cref="NotSupportedException">The passed in type is a by-ref-like type.</exception>
+        public static unsafe object? Box(ref byte target, RuntimeTypeHandle type)
+        {
+            if (type.IsNullHandle())
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
+
+            return type.GetRuntimeType().Box(ref target);
+        }
+
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_SizeOf")]
+        [SuppressGCTransition]
+        private static partial int SizeOf(QCallTypeHandle handle);
+
+        /// <summary>
+        /// Get the size of an object of the given type.
+        /// </summary>
+        /// <param name="type">The type to get the size of.</param>
+        /// <returns>The size of instances of the type.</returns>
+        /// <exception cref="ArgumentException">The passed-in type is not a valid type to get the size of.</exception>
+        /// <remarks>
+        /// This API returns the same value as <see cref="Unsafe.SizeOf{T}"/> for the type that <paramref name="type"/> represents.
+        /// </remarks>
+        public static unsafe int SizeOf(RuntimeTypeHandle type)
+        {
+            if (type.IsNullHandle())
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
+
+            int result = SizeOf(new QCallTypeHandle(ref type));
+
+            if (result <= 0)
+                throw new ArgumentException(SR.Arg_TypeNotSupported);
+
+            return result;
+        }
     }
 
     // Helper class to assist with unsafe pinning of arbitrary objects.
@@ -707,8 +908,7 @@ namespace System.Runtime.CompilerServices
         public uint BaseSize;
 
         // See additional native members in methodtable.h, not needed here yet.
-        // 0x8: m_wFlags2 (additional flags)
-        // 0xA: m_wToken (class token if it fits in 16 bits)
+        // 0x8: m_dwFlags2 (additional flags and token in upper 24 bits)
         // 0xC: m_wNumVirtuals
 
         /// <summary>
@@ -727,8 +927,14 @@ namespace System.Runtime.CompilerServices
         public MethodTable* ParentMethodTable;
 
         // Additional conditional fields (see methodtable.h).
-        // m_pLoaderModule
-        // m_pWriteableData
+        // m_pModule
+
+        /// <summary>
+        /// A pointer to auxiliary data that is cold for method table.
+        /// </summary>
+        [FieldOffset(AuxiliaryDataOffset)]
+        public MethodTableAuxiliaryData* AuxiliaryData;
+
         // union {
         //   m_pEEClass (pointer to the EE class)
         //   m_pCanonMT (pointer to the canonical method table)
@@ -743,7 +949,7 @@ namespace System.Runtime.CompilerServices
         public void* ElementType;
 
         /// <summary>
-        /// This interface map is a union with a multipurpose slot, so should be checked before use.
+        /// This interface map used to list out the set of interfaces. Only meaningful if InterfaceCount is non-zero.
         /// </summary>
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
@@ -758,18 +964,23 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_IsByRefLike = 0x00001000;
 
         // WFLAGS_HIGH_ENUM
-        private const uint enum_flag_ContainsPointers = 0x01000000;
+        private const uint enum_flag_ContainsGCPointers = 0x01000000;
+        private const uint enum_flag_ContainsGenericVariables = 0x20000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
+        private const uint enum_flag_HasFinalizer = 0x00100000;
         private const uint enum_flag_Category_Mask = 0x000F0000;
         private const uint enum_flag_Category_ValueType = 0x00040000;
         private const uint enum_flag_Category_Nullable = 0x00050000;
+        private const uint enum_flag_Category_PrimitiveValueType = 0x00060000; // sub-category of ValueType, Enum or primitive value type
+        private const uint enum_flag_Category_TruePrimitive = 0x00070000; // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.)
+        private const uint enum_flag_Category_Array = 0x00080000;
+        private const uint enum_flag_Category_Array_Mask = 0x000C0000;
         private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
         private const uint enum_flag_Category_Interface = 0x000C0000;
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
-                                                             | 0x00400000 // enum_flag_ICastable;
                                                              | 0x10000000 // enum_flag_IDynamicInterfaceCastable;
                                                              | 0x00040000; // enum_flag_Category_ValueType
 
@@ -788,6 +999,12 @@ namespace System.Runtime.CompilerServices
         private const int ParentMethodTableOffset = 0x10 + DebugClassNamePtr;
 
 #if TARGET_64BIT
+        private const int AuxiliaryDataOffset = 0x20 + DebugClassNamePtr;
+#else
+        private const int AuxiliaryDataOffset = 0x18 + DebugClassNamePtr;
+#endif
+
+#if TARGET_64BIT
         private const int ElementTypeOffset = 0x30 + DebugClassNamePtr;
 #else
         private const int ElementTypeOffset = 0x20 + DebugClassNamePtr;
@@ -801,11 +1018,13 @@ namespace System.Runtime.CompilerServices
 
         public bool HasComponentSize => (Flags & enum_flag_HasComponentSize) != 0;
 
-        public bool ContainsGCPointers => (Flags & enum_flag_ContainsPointers) != 0;
+        public bool ContainsGCPointers => (Flags & enum_flag_ContainsGCPointers) != 0;
 
         public bool NonTrivialInterfaceCast => (Flags & enum_flag_NonTrivialInterfaceCast) != 0;
 
         public bool HasTypeEquivalence => (Flags & enum_flag_HasTypeEquivalence) != 0;
+
+        public bool HasFinalizer => (Flags & enum_flag_HasFinalizer) != 0;
 
         internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2) => mt1 == mt2;
 
@@ -842,6 +1061,13 @@ namespace System.Runtime.CompilerServices
 
         public bool IsByRefLike => (Flags & (enum_flag_HasComponentSize | enum_flag_IsByRefLike)) == enum_flag_IsByRefLike;
 
+        // Warning! UNLIKE the similarly named Reflection api, this method also returns "true" for Enums.
+        public bool IsPrimitive => (Flags & enum_flag_Category_Mask) is enum_flag_Category_PrimitiveValueType or enum_flag_Category_TruePrimitive;
+
+        public bool IsTruePrimitive => (Flags & enum_flag_Category_Mask) is enum_flag_Category_TruePrimitive;
+
+        public bool IsArray => (Flags & enum_flag_Category_Array_Mask) == enum_flag_Category_Array;
+
         public bool HasInstantiation => (Flags & enum_flag_HasComponentSize) == 0 && (Flags & enum_flag_GenericsMask) != enum_flag_GenericsMask_NonGeneric;
 
         public bool IsGenericTypeDefinition => (Flags & (enum_flag_HasComponentSize | enum_flag_GenericsMask)) == enum_flag_GenericsMask_TypicalInst;
@@ -854,6 +1080,8 @@ namespace System.Runtime.CompilerServices
                 return genericsFlags == enum_flag_GenericsMask_GenericInst || genericsFlags == enum_flag_GenericsMask_SharedInst;
             }
         }
+
+        public bool ContainsGenericVariables => (Flags & enum_flag_ContainsGenericVariables) != 0;
 
         /// <summary>
         /// Gets a <see cref="TypeHandle"/> for the element type of the current type.
@@ -869,12 +1097,74 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern uint GetNumInstanceFieldBytes();
+
+        /// <summary>
+        /// Get the <see cref="CorElementType"/> representing primitive-like type. Enums are represented by underlying type.
+        /// </summary>
+        /// <remarks>This method should only be called when <see cref="IsPrimitive"/> returns <see langword="true"/>.</remarks>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern CorElementType GetPrimitiveCorElementType();
+    }
+
+    // Subset of src\vm\methodtable.h
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct MethodTableAuxiliaryData
+    {
+        private uint Flags;
+        private void* LoaderModule;
+        private nint ExposedClassObjectRaw;
+
+        private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
+        private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
+
+        private const uint enum_flag_HasCheckedStreamOverride   = 0x0400;
+        private const uint enum_flag_StreamOverriddenRead       = 0x0800;
+        private const uint enum_flag_StreamOverriddenWrite      = 0x1000;
+
+        public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
+
+        public bool CanCompareBitsOrUseFastGetHashCode
+        {
+            get
+            {
+                Debug.Assert(HasCheckedCanCompareBitsOrUseFastGetHashCode);
+                return (Flags & enum_flag_CanCompareBitsOrUseFastGetHashCode) != 0;
+            }
+        }
+
+        public bool HasCheckedStreamOverride => (Flags & enum_flag_HasCheckedStreamOverride) != 0;
+
+        public bool IsStreamOverriddenRead
+        {
+            get
+            {
+                Debug.Assert(HasCheckedStreamOverride);
+                return (Flags & enum_flag_StreamOverriddenRead) != 0;
+            }
+        }
+
+        public bool IsStreamOverriddenWrite
+        {
+            get
+            {
+                Debug.Assert(HasCheckedStreamOverride);
+                return (Flags & enum_flag_StreamOverriddenWrite) != 0;
+            }
+        }
+
+        public RuntimeType? ExposedClassObject
+        {
+            get
+            {
+                return *(RuntimeType*)Unsafe.AsPointer(ref ExposedClassObjectRaw);
+            }
+        }
     }
 
     /// <summary>
     /// A type handle, which can wrap either a pointer to a <c>TypeDesc</c> or to a <see cref="MethodTable"/>.
     /// </summary>
-    internal unsafe struct TypeHandle
+    internal readonly unsafe partial struct TypeHandle
     {
         // Subset of src\vm\typehandle.h
 
@@ -921,6 +1211,35 @@ namespace System.Runtime.CompilerServices
         {
             return new TypeHandle((void*)RuntimeTypeHandle.ToIntPtr(typeof(T).TypeHandle));
         }
+
+        public static bool AreSameType(TypeHandle left, TypeHandle right) => left.m_asTAddr == right.m_asTAddr;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool CanCastTo(TypeHandle destTH)
+        {
+            if (m_asTAddr == destTH.m_asTAddr)
+                return true;
+
+            if (!IsTypeDesc && destTH.IsTypeDesc)
+                return false;
+
+            CastResult result = CastCache.TryGet(CastHelpers.s_table!, (nuint)m_asTAddr, (nuint)destTH.m_asTAddr);
+
+            if (result != CastResult.MaybeCast)
+                return result == CastResult.CanCast;
+
+            return CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr);
+        }
+
+        public int GetCorElementType() => GetCorElementType(m_asTAddr);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo_NoCacheLookup")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
+
+        [SuppressGCTransition]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_GetCorElementType")]
+        private static partial int GetCorElementType(void* typeHnd);
     }
 
     // Helper structs used for tail calls via helper.

@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading;
 using System.Runtime;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
@@ -16,6 +16,8 @@ namespace System.Runtime.CompilerServices
     public struct StaticClassConstructionContext
     {
         // Pointer to the code for the static class constructor method. Set to 0 once the cctor has run.
+        // Volatile to insert memory barriers to order any writes executed as part of static class
+        // constructor with respect to this flag.
         public volatile IntPtr cctorMethodAddress;
     }
 }

@@ -8,6 +8,7 @@ using static DisabledRuntimeMarshallingNative;
 
 namespace DisabledRuntimeMarshalling.PInvokeAssemblyMarshallingEnabled;
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class PInvokes
 {
     public static bool IsWindowsX86Process => OperatingSystem.IsWindows() && RuntimeInformation.ProcessArchitecture == Architecture.X86;
@@ -23,7 +24,7 @@ public class PInvokes
         Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBool(new StructWithShortAndBool(s, b), s, b));
     }
 
-    [Fact]
+    [ConditionalFact(nameof(IsNotWindowsX86Process))]
     [SkipOnMono("Mono doesn't support marshalling a .NET Char to a C char (only a char16_t).")]
     public static void StructWithDefaultNonBlittableFields_Char()
     {
@@ -44,7 +45,7 @@ public class PInvokes
         Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBool(new StructWithShortAndBoolWithMarshalAs(s, b), s, b));
     }
 
-    [Fact]
+    [ConditionalFact(nameof(IsNotWindowsX86Process))]
     [SkipOnMono("Mono doesn't support marshalling a .NET Char to a C char (only a char16_t).")]
     public static void StructWithDefaultNonBlittableFields_Char_MarshalAsInfo()
     {

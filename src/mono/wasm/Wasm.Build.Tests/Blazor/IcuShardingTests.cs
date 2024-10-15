@@ -21,7 +21,7 @@ public class IcuShardingTests : BlazorWasmTestBase
 
     [Theory]
     [InlineData("Debug", "icudt.dat")]
-    [InlineData("Release", "icudt.dat")]    
+    [InlineData("Release", "icudt.dat")]
     [InlineData("Debug", "icudt_CJK.dat")]
     [InlineData("Release", "icudt_CJK.dat")]
     public async Task CustomIcuFileFromRuntimePack(string config, string fileName)
@@ -32,12 +32,12 @@ public class IcuShardingTests : BlazorWasmTestBase
                 id,
                 config,
                 WarnAsError: true,
-                GlobalizationMode: GlobalizationMode.PredefinedIcu,
-                PredefinedIcudt: fileName
+                GlobalizationMode: GlobalizationMode.Custom,
+                CustomIcuFile: fileName
             );
         AddItemsPropertiesToProject(
             projectFile,
-            extraProperties: 
+            extraProperties:
                 $"<BlazorIcuDataFileName>{fileName}</BlazorIcuDataFileName>");
 
         (CommandResult res, string logPath) = BlazorBuild(buildOptions);
@@ -55,7 +55,7 @@ public class IcuShardingTests : BlazorWasmTestBase
         string projectFile = CreateBlazorWasmTemplateProject(id);
         AddItemsPropertiesToProject(
             projectFile,
-            extraProperties: 
+            extraProperties:
                 $"<BlazorIcuDataFileName>{fileName}</BlazorIcuDataFileName>");
 
         try
@@ -65,8 +65,8 @@ public class IcuShardingTests : BlazorWasmTestBase
                     id,
                     config,
                     WarnAsError: false,
-                    GlobalizationMode: GlobalizationMode.PredefinedIcu,
-                    PredefinedIcudt: fileName
+                    GlobalizationMode: GlobalizationMode.Custom,
+                    CustomIcuFile: fileName
                 ));
         }
         catch (XunitException ex)
@@ -96,7 +96,7 @@ public class IcuShardingTests : BlazorWasmTestBase
         string projectFile = CreateBlazorWasmTemplateProject(id);
         AddItemsPropertiesToProject(
             projectFile,
-            extraProperties: 
+            extraProperties:
                 $"<BlazorIcuDataFileName>{IcuTestsBase.CustomIcuPath}</BlazorIcuDataFileName>");
 
         (CommandResult res, string logPath) = BlazorBuild(
@@ -104,8 +104,8 @@ public class IcuShardingTests : BlazorWasmTestBase
                 id,
                 config,
                 WarnAsError: false,
-                GlobalizationMode: GlobalizationMode.PredefinedIcu,
-                PredefinedIcudt: IcuTestsBase.CustomIcuPath
+                GlobalizationMode: GlobalizationMode.Custom,
+                CustomIcuFile: IcuTestsBase.CustomIcuPath
             ));
         await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
     }

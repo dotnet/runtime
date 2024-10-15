@@ -62,7 +62,7 @@ namespace System.Runtime.Serialization
                         nodes[i]!.WriteTo(xmlWriter);
         }
 
-        internal static string AddDefaultSchemaMethodName = "AddDefaultSchema";
+        internal const string AddDefaultSchemaMethodName = "AddDefaultSchema";
         public static void AddDefaultSchema(XmlSchemaSet schemas, XmlQualifiedName typeQName)
         {
             ArgumentNullException.ThrowIfNull(schemas);

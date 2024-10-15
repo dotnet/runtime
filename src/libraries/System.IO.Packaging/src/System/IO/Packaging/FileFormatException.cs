@@ -30,7 +30,7 @@ namespace System.IO
         /// </summary>
         /// <param name="message">The message that describes the error.</param>
         public FileFormatException(string? message)
-            : base(message)
+            : base(message ?? SR.FileFormatException)
         { }
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace System.IO
         /// <param name="message">The error message that explains the reason for the exception.</param>
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
         public FileFormatException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.FileFormatException, innerException)
         { }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace System.IO
         /// <param name="sourceUri">The Uri of a file that caused this error.</param>
         /// <param name="message">The message that describes the error.</param>
         public FileFormatException(Uri? sourceUri, string? message)
-            : base(message)
+            : base(message ?? SR.FileFormatException)
         {
             _sourceUri = sourceUri;
         }
@@ -108,7 +108,7 @@ namespace System.IO
         /// <param name="message">The message that describes the error.</param>
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
         public FileFormatException(Uri? sourceUri, string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.FileFormatException, innerException)
         {
             _sourceUri = sourceUri;
         }

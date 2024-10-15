@@ -14,6 +14,7 @@ public class FakeInjectedCode
     static int ParseArgument(String argument) { return int.Parse(argument);}
 }
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class Program
 {
     public static class NativeMethods
@@ -57,6 +58,7 @@ public class Program
     }
 
     [Fact]
+    [SkipOnMono("The legacy CoreCLR activation API is not supported on Mono.")]
     public static int TestEntryPoint()
     {
         int result = 100;

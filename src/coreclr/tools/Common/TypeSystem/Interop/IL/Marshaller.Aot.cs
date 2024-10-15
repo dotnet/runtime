@@ -1170,7 +1170,7 @@ namespace Internal.TypeSystem.Interop
             var customMarshallerType = Context.SystemModule.GetKnownType("System.Runtime.InteropServices", "ICustomMarshaler");
             var getInstanceMethod = marshallerType.GetMethod(
                 "GetInstance",
-                new MethodSignature(MethodSignatureFlags.Static, 0, customMarshallerType, new[] { Context.GetWellKnownType(WellKnownType.String) }));
+                new MethodSignature(MethodSignatureFlags.Static, 0, customMarshallerType, [ Context.GetWellKnownType(WellKnownType.String) ]));
             if (ManagedType.IsValueType || ManagedType.IsPointer || ManagedType.IsFunctionPointer)
             {
                 ThrowHelper.ThrowMarshalDirectiveException();
@@ -1210,7 +1210,7 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             var manageToNativeMethod = customMarshallerType.GetKnownMethod(
                 "MarshalManagedToNative",
-                new MethodSignature(MethodSignatureFlags.None, 0, Context.GetWellKnownType(WellKnownType.IntPtr), new[] { Context.GetWellKnownType(WellKnownType.Object) }));
+                new MethodSignature(MethodSignatureFlags.None, 0, Context.GetWellKnownType(WellKnownType.IntPtr), [ Context.GetWellKnownType(WellKnownType.Object) ]));
 
             codeStream.EmitLdLoc(lMarshaller);
             LoadManagedValue(codeStream);
@@ -1239,7 +1239,7 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             var marshalNativeToManagedMethod = customMarshallerType.GetKnownMethod(
                 "MarshalNativeToManaged",
-                new MethodSignature(MethodSignatureFlags.None, 0, Context.GetWellKnownType(WellKnownType.Object), new[] { Context.GetWellKnownType(WellKnownType.IntPtr) }));
+                new MethodSignature(MethodSignatureFlags.None, 0, Context.GetWellKnownType(WellKnownType.Object), [ Context.GetWellKnownType(WellKnownType.IntPtr) ]));
 
             codeStream.EmitLdLoc(lMarshaller);
             LoadNativeValue(codeStream);
@@ -1257,7 +1257,7 @@ namespace Internal.TypeSystem.Interop
             // Call CleanUpManagedData on cleanup code stream.
             var cleanupManagedDataMethod = customMarshallerType.GetKnownMethod(
                 "CleanUpManagedData",
-                new MethodSignature(MethodSignatureFlags.None, 0, Context.GetWellKnownType(WellKnownType.Void), new[] { Context.GetWellKnownType(WellKnownType.Object) }));
+                new MethodSignature(MethodSignatureFlags.None, 0, Context.GetWellKnownType(WellKnownType.Void), [ Context.GetWellKnownType(WellKnownType.Object) ]));
 
             codeStream.EmitLdLoc(lMarshaller);
             LoadManagedValue(codeStream);
@@ -1274,7 +1274,7 @@ namespace Internal.TypeSystem.Interop
             // Call CleanUpNativeData on cleanup code stream.
             var cleanupNativeDataMethod = customMarshallerType.GetKnownMethod(
                 "CleanUpNativeData",
-                new MethodSignature(MethodSignatureFlags.None, 0, Context.GetWellKnownType(WellKnownType.Void), new[] { Context.GetWellKnownType(WellKnownType.IntPtr) }));
+                new MethodSignature(MethodSignatureFlags.None, 0, Context.GetWellKnownType(WellKnownType.Void), [ Context.GetWellKnownType(WellKnownType.IntPtr) ]));
 
             codeStream.EmitLdLoc(lMarshaller);
             LoadNativeValue(codeStream);

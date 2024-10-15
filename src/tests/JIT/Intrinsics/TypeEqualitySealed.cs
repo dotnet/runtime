@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Make sure optimization works correctly under GT_JTRUE and GT_RETURN nodes
 // Also, if it respects/preserves side-effects and doesn't optimize away
@@ -89,7 +90,8 @@ public static class Program
 {
     private static int returnCode = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var tests = new SealedClass1();
         AssertEquals("Ok", tests.TestTernary1());

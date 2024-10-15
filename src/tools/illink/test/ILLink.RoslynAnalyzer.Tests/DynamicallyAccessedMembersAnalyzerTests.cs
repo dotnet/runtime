@@ -1309,7 +1309,9 @@ namespace System
 
 			return VerifyDynamicallyAccessedMembersAnalyzer (Source, consoleApplication: false,
 				// (12,34): error CS0103: The name 'type' does not exist in the current context
-				DiagnosticResult.CompilerError ("CS0103").WithSpan (12, 34, 12, 38).WithArguments ("type"));
+				DiagnosticResult.CompilerError ("CS0103").WithSpan (12, 34, 12, 38).WithArguments ("type"),
+				// (12,34): warning IL2063: Value returned from method 'C.GetTypeWithAll()' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
+				VerifyCS.Diagnostic (DiagnosticId.MethodReturnValueCannotBeStaticallyDetermined).WithSpan(12, 34, 12, 38).WithArguments("C.GetTypeWithAll()"));
 		}
 
 		[Fact]
@@ -1333,7 +1335,9 @@ namespace System
 
 			return VerifyDynamicallyAccessedMembersAnalyzer (Source, consoleApplication: false,
 				// (8,22): error CS0103: The name 'type' does not exist in the current context
-				DiagnosticResult.CompilerError ("CS0103").WithSpan (8, 22, 8, 26).WithArguments ("type"));
+				DiagnosticResult.CompilerError ("CS0103").WithSpan (8, 22, 8, 26).WithArguments ("type"),
+				// (8,3): warning IL2064: Value assigned to C.fieldRequiresAll can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
+				VerifyCS.Diagnostic(DiagnosticId.FieldValueCannotBeStaticallyDetermined).WithSpan(8, 3, 8, 26).WithArguments("C.fieldRequiresAll"));
 		}
 
 		[Fact]
@@ -1385,10 +1389,28 @@ namespace System
 		}
 
 		[Fact]
+		public Task AssignmentTargetHasNestedInvalidOperation ()
+		{
+			// The assignment target is an IBinaryOperation whose right-hand side is an IInvalidOperation.
+			var Source = $$"""
+				int a, b = 0;
+				a + = 3;
+			""";
+
+			return VerifyDynamicallyAccessedMembersAnalyzer (Source, consoleApplication: true,
+				// (2,6): error CS1525: Invalid expression term '='
+				DiagnosticResult.CompilerError("CS1525").WithSpan(2, 6, 2, 7).WithArguments("="),
+				// (2,2): error CS0165: Use of unassigned local variable 'a'
+				DiagnosticResult.CompilerError("CS0165").WithSpan(2, 2, 2, 3).WithArguments("a"),
+				// (1,9): warning CS0219: The variable 'b' is assigned but its value is never used
+				DiagnosticResult.CompilerWarning("CS0219").WithSpan(1, 9, 1, 10).WithArguments("b")
+			);
+		}
+
+		[Fact]
 		public Task CRefGenericParameterAnalysis ()
 		{
 			var Source = """
-			using System;
 			using System.Diagnostics.CodeAnalysis;
 
 			class C<TOuter>
@@ -1398,16 +1420,16 @@ namespace System
 				/// <see cref="CRequires{TOuter}.IsIt"/>
 				/// </remarks>
 				/// </summary>
-				static CRequires<TOuter> Value => throw new Exception();
+				static CRequires<TOuter> Value => new CRequires<TOuter> ();
 			}
 
 			class CRequires<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TInner> { public static bool IsIt => false; }
 			""";
 
-			// The actual usage (return value) should warn, about missing annotation, but the cref should not.
+			// The actual usage (ctor call) should warn, about missing annotation, but the cref should not.
 			return VerifyDynamicallyAccessedMembersAnalyzer (Source, consoleApplication: false,
-				// (11,9): warning IL2091: 'TInner' generic argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in 'CRequires<TInner>'. The generic parameter 'TOuter' of 'C<TOuter>' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
-				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter).WithSpan (11, 36, 11, 57).WithSpan (4, 9, 4, 15).WithArguments ("TInner", "CRequires<TInner>", "TOuter", "C<TOuter>", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+				// (10,36): warning IL2091: 'TInner' generic argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in 'CRequires<TInner>'. The generic parameter 'TOuter' of 'C<TOuter>' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter).WithSpan (10, 36, 10, 60).WithSpan (3, 9, 3, 15).WithArguments ("TInner", "CRequires<TInner>", "TOuter", "C<TOuter>", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 
 		[Fact]

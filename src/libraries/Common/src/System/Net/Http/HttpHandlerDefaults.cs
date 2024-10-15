@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading;
+using System.Security.Principal;
 
 namespace System.Net.Http
 {
@@ -23,6 +24,7 @@ namespace System.Net.Http
         public const bool DefaultUseProxy = true;
         public const bool DefaultUseDefaultCredentials = false;
         public const bool DefaultCheckCertificateRevocationList = false;
+        public const TokenImpersonationLevel DefaultImpersonationLevel = TokenImpersonationLevel.None;
         public static readonly TimeSpan DefaultPooledConnectionLifetime = Timeout.InfiniteTimeSpan;
         public static readonly TimeSpan DefaultPooledConnectionIdleTimeout = TimeSpan.FromMinutes(1);
         public static readonly TimeSpan DefaultExpect100ContinueTimeout = TimeSpan.FromSeconds(1);

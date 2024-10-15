@@ -48,10 +48,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                 Assert.Equal(ResourceHelper.GetExceptionMessage("net_webstatus_ConnectFailure"), ex.Message);
 
-                if (PlatformDetection.IsNetCore) // bug fix in netcoreapp: https://github.com/dotnet/corefx/pull/35960
-                {
-                    Assert.Equal(WebSocketError.Faulted, ex.WebSocketErrorCode);
-                }
+                Assert.Equal(WebSocketError.Faulted, ex.WebSocketErrorCode);
                 Assert.Equal(WebSocketState.Closed, cws.State);
             }
         }

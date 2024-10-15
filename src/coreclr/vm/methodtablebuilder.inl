@@ -136,38 +136,6 @@ MethodTableBuilder::DeclaredMethodIterator::GetMDMethod() const
     return m_declaredMethods[m_idx];
 }
 
-//*******************************************************************************
-inline class MethodDesc *
-MethodTableBuilder::DeclaredMethodIterator::GetIntroducingMethodDesc()
-{
-    STANDARD_VM_CONTRACT;
-
-    bmtMDMethod *pCurrentMD = GetMDMethod();
-    DWORD dwSlot = pCurrentMD->GetSlotIndex();
-    MethodDesc *pIntroducingMD  = NULL;
-
-    bmtRTType *pParentType = pCurrentMD->GetOwningType()->GetParentType();
-    bmtRTType *pPrevParentType = NULL;
-
-    // Find this method in the parent.
-    // If it does exist in the parent, it would be at the same vtable slot.
-    while (pParentType != NULL &&
-           dwSlot < pParentType->GetMethodTable()->GetNumVirtuals())
-    {
-        pPrevParentType = pParentType;
-        pParentType = pParentType->GetParentType();
-    }
-
-    if (pPrevParentType != NULL)
-    {
-        pIntroducingMD =
-            pPrevParentType->GetMethodTable()->GetMethodDescForSlot(dwSlot);
-    }
-
-    return pIntroducingMD;
-}
-
-
 //***************************************************************************************
 inline MethodTableBuilder::bmtMDMethod *
 MethodTableBuilder::DeclaredMethodIterator::operator->()

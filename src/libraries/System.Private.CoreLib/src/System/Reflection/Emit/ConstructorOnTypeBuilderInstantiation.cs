@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Reflection.Emit
@@ -9,9 +8,9 @@ namespace System.Reflection.Emit
     internal sealed partial class ConstructorOnTypeBuilderInstantiation : ConstructorInfo
     {
         #region Private Static Members
-        internal static ConstructorInfo GetConstructor(ConstructorInfo Constructor, TypeBuilderInstantiation type)
+        internal static ConstructorInfo GetConstructor(ConstructorInfo constructor, TypeBuilderInstantiation type)
         {
-            return new ConstructorOnTypeBuilderInstantiation(Constructor, type);
+            return new ConstructorOnTypeBuilderInstantiation(constructor, type);
         }
         #endregion
 
@@ -23,8 +22,6 @@ namespace System.Reflection.Emit
         #region Constructor
         internal ConstructorOnTypeBuilderInstantiation(ConstructorInfo constructor, TypeBuilderInstantiation type)
         {
-            Debug.Assert(constructor is ConstructorBuilder || constructor is RuntimeConstructorInfo);
-
             _ctor = constructor;
             _type = type;
         }
@@ -45,23 +42,7 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(bool inherit) { return _ctor.GetCustomAttributes(inherit); }
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) { return _ctor.GetCustomAttributes(attributeType, inherit); }
         public override bool IsDefined(Type attributeType, bool inherit) { return _ctor.IsDefined(attributeType, inherit); }
-        public override int MetadataToken
-        {
-            get
-            {
-                ConstructorBuilder? cb = _ctor as ConstructorBuilder;
-
-                if (cb != null)
-                {
-                    return cb.MetadataToken;
-                }
-                else
-                {
-                    Debug.Assert(_ctor is RuntimeConstructorInfo);
-                    return _ctor.MetadataToken;
-                }
-            }
-        }
+        public override int MetadataToken => _ctor.MetadataToken;
         public override Module Module => _ctor.Module;
         #endregion
 
@@ -77,7 +58,7 @@ namespace System.Reflection.Emit
         public override CallingConventions CallingConvention => _ctor.CallingConvention;
         public override Type[] GetGenericArguments() { return _ctor.GetGenericArguments(); }
         public override bool IsGenericMethodDefinition => false;
-        public override bool ContainsGenericParameters => false;
+        public override bool ContainsGenericParameters => _type.ContainsGenericParameters;
 
         public override bool IsGenericMethod => false;
         #endregion

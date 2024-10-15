@@ -110,7 +110,7 @@ namespace Wasm.Build.Tests
                                     // affect the non-wasm library project
                                     File.Move(Path.Combine(rootDir, "Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));
                                     File.Move(Path.Combine(rootDir, "Directory.Build.targets"), Path.Combine(_projectDir, "Directory.Build.targets"));
-                                    if (BuildEnvironment.UseWBTOverridePackTargets)
+                                    if (UseWBTOverridePackTargets)
                                         File.Move(Path.Combine(rootDir, "WasmOverridePacks.targets"), Path.Combine(_projectDir, "WasmOverridePacks.targets"));
 
                                     CreateProgramForCultureTest(_projectDir, "LibraryWithResources.resx.words", "LibraryWithResources.Class1");
@@ -168,6 +168,7 @@ namespace Wasm.Build.Tests
             @$"<Project Sdk=""Microsoft.NET.Sdk"">
               <PropertyGroup>
                 <TargetFramework>{DefaultTargetFramework}</TargetFramework>
+                <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
                 <WasmMainJSPath>test-main.js</WasmMainJSPath>

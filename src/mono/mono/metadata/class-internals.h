@@ -26,7 +26,6 @@
 
 extern gboolean mono_print_vtable;
 extern gboolean mono_align_small_structs;
-extern gint32 mono_simd_register_size;
 
 typedef struct _MonoMethodWrapper MonoMethodWrapper;
 typedef struct _MonoMethodInflated MonoMethodInflated;
@@ -97,6 +96,7 @@ struct _MonoMethodWrapper {
 	MonoMethodHeader *header;
 	MonoMemoryManager *mem_manager;
 	void *method_data;
+	unsigned int inflate_wrapper_data : 1; /* method_data[MONO_MB_ILGEN_INFLATE_WRAPPER_INFO_IDX] is an MonoMethodBuilderInflateWrapperData array */
 };
 
 struct _MonoDynamicMethod {
@@ -331,13 +331,6 @@ int mono_class_interface_match (const uint8_t *bitmap, int id);
 #define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= m_class_get_max_interface_id (k)) && mono_class_interface_match (m_class_get_interface_bitmap (k), (uiid)))
 
 #define MONO_VTABLE_AVAILABLE_GC_BITS 4
-
-#ifdef DISABLE_COM
-#define mono_class_is_com_object(klass) (FALSE)
-#else
-#define mono_class_is_com_object(klass) (m_class_is_com_object (klass))
-#endif
-
 
 MONO_API int mono_class_interface_offset (MonoClass *klass, MonoClass *itf);
 MONO_COMPONENT_API int mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match);
@@ -595,7 +588,9 @@ typedef struct {
 	// have both of them to be non-NULL.
 	const char *name;
 	gconstpointer func;
+	// use CAS to write
 	gconstpointer wrapper;
+	// use CAS to write
 	gconstpointer trampoline;
 	MonoMethodSignature *sig;
 	const char *c_symbol;
@@ -980,16 +975,6 @@ mono_class_try_get_##shortname##_class (void)	\
 
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (safehandle)
 
-#ifndef DISABLE_COM
-
-GENERATE_GET_CLASS_WITH_CACHE_DECL (interop_proxy)
-GENERATE_GET_CLASS_WITH_CACHE_DECL (idispatch)
-GENERATE_GET_CLASS_WITH_CACHE_DECL (iunknown)
-GENERATE_GET_CLASS_WITH_CACHE_DECL (com_object)
-GENERATE_GET_CLASS_WITH_CACHE_DECL (variant)
-
-#endif
-
 MonoClass* mono_class_get_appdomain_class (void);
 
 GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)
@@ -1372,9 +1357,6 @@ void
 mono_class_set_declsec_flags (MonoClass *klass, guint32 value);
 
 void
-mono_class_set_is_com_object (MonoClass *klass);
-
-void
 mono_class_set_weak_bitmap (MonoClass *klass, int nbits, gsize *bits);
 
 gsize*
@@ -1450,7 +1432,7 @@ mono_class_get_object_finalize_slot (void);
 MonoMethod *
 mono_class_get_default_finalize_method (void);
 
-const char *
+MONO_COMPONENT_API const char *
 mono_field_get_rva (MonoClassField *field, int swizzle);
 
 MONO_COMPONENT_API void
@@ -1482,6 +1464,14 @@ mono_class_has_default_constructor (MonoClass *klass, gboolean public_only);
 
 gboolean
 mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method);
+
+typedef struct _MonoVarianceSearchTableEntry {
+    MonoClass *klass;
+    int offset;
+} MonoVarianceSearchTableEntry;
+
+MonoVarianceSearchTableEntry *
+mono_class_get_variance_search_table (MonoClass *klass, int *table_size);
 
 // There are many ways to do on-demand initialization.
 //   Some allow multiple concurrent initializations. Some do not.

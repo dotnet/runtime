@@ -251,6 +251,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Only windows cares about the key usage attribute in the PKCS12
+        public static void ECDHPrivateKey_PfxKeyIsEcdsaConstrained()
+        {
+            // [SuppressMessage("Microsoft.Security", "CSCAN0220.DefaultPasswordContexts", Justification="Legacy Test Data")]
+            using (X509Certificate2 cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test"))
+            {
+                    Assert.Null(cert.GetECDiffieHellmanPrivateKey());
+                    Assert.NotNull(cert.GetECDiffieHellmanPublicKey());
+                    Assert.NotNull(cert.GetECDsaPrivateKey());
+            }
+        }
+
+        [Fact]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void DsaPrivateKeyProperty()
         {
@@ -296,6 +309,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory, MemberData(nameof(BrainpoolCurvesPfx))]
         public static void ReadECDsaPrivateKey_BrainpoolP160r1_Pfx(byte[] pfxData)
         {
+            static bool IsKnownGoodPlatform() => PlatformDetection.IsWindows10OrLater || PlatformDetection.IsUbuntu;
+
             try
             {
                 using (var cert = new X509Certificate2(pfxData, TestData.PfxDataPassword))
@@ -311,11 +326,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     }
                 }
             }
-            catch (CryptographicException)
+            catch (CryptographicException) when (!IsKnownGoodPlatform())
             {
-                // Windows 7, Windows 8, CentOS, macOS can fail. Verify known good platforms don't fail.
-                Assert.False(PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10, "Is Windows 10");
-                Assert.False(PlatformDetection.IsUbuntu, "Is Ubuntu");
+                // Windows 7, Windows 8, CentOS, macOS can fail. If the platform is a known good, let the exception
+                // through since it should not fail.
             }
         }
 
@@ -468,34 +482,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory]
-        [MemberData(memberName: nameof(PfxIterationCountTests.GetCertsWith_IterationCountNotExceedingDefaultLimit_AndNullOrEmptyPassword_MemberData), MemberType = typeof(PfxIterationCountTests))]
-        public static void TestIterationCounter(string name, bool usesPbes2, byte[] blob, int iterationCount, bool usesRC2)
+        [Fact]
+        public static void VerifyNamesWithDuplicateAttributes()
         {
-            _ = iterationCount;
+            // This is the same as the Windows Attributes test for X509CertificateLoaderPkcs12Tests,
+            // but using the legacy X509Certificate2 ctor, to test the settings for that set of
+            // loader limits with respect to duplicates.
 
-            MethodInfo method = typeof(X509Certificate).GetMethod("GetIterationCount", BindingFlags.Static | BindingFlags.NonPublic);
-            GetIterationCountDelegate target = method.CreateDelegate<GetIterationCountDelegate>();
+            X509Certificate2 cert = new X509Certificate2(TestData.DuplicateAttributesPfx, TestData.PlaceholderPw);
 
-            if (usesPbes2 && !Pkcs12PBES2Supported)
+            using (cert)
             {
-                throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
-            }
+                Assert.Equal("Certificate 1", cert.GetNameInfo(X509NameType.SimpleName, false));
+                Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
 
-            if (usesRC2 && !PlatformSupport.IsRC2Supported)
-            {
-                throw new SkipTestException(name + " uses RC2, which is not supported on this platform.");
-            }
+                if (OperatingSystem.IsWindows())
+                {
+                    Assert.Equal("Microsoft Enhanced RSA and AES Cryptographic Provider", cert.FriendlyName);
 
-            try
-            {
-                long count = (long)target(blob, out int bytesConsumed);
-                Assert.Equal(iterationCount, count);
-                Assert.Equal(blob.Length, bytesConsumed); // we currently don't have any cert with trailing data.
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"There's an error on certificate {name}, see inner exception for details", e);
+                    using (RSA key = cert.GetRSAPrivateKey())
+                    using (CngKey cngKey = Assert.IsType<RSACng>(key).Key)
+                    {
+                        Assert.Equal("Microsoft Enhanced RSA and AES Cryptographic Provider", cngKey.Provider.Provider);
+                        Assert.True(cngKey.IsMachineKey, "cngKey.IsMachineKey");
+
+                        // If keyname000 gets taken, we'll get a random key name on import.  What's important is that we
+                        // don't pick the second entry: keyname001.
+                        Assert.NotEqual("keyname001", cngKey.KeyName);
+                    }
+                }
             }
         }
 

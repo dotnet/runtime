@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Text;
-using System.Xml.Schema;
-using System.Diagnostics;
-using System.Globalization;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
+using System.Xml.Schema;
 
 namespace System.Xml
 {
@@ -260,7 +260,7 @@ namespace System.Xml
         private long _charactersFromEntities;
 
         // All entities that are currently being processed
-        private Dictionary<IDtdEntityInfo, IDtdEntityInfo>? _currentEntities;
+        private HashSet<IDtdEntityInfo>? _currentEntities;
 
         // DOM helpers
         private bool _disableUndeclaredEntityCheck;
@@ -8062,7 +8062,7 @@ namespace System.Xml
             // check entity recursion
             if (_currentEntities != null)
             {
-                if (_currentEntities.ContainsKey(entity))
+                if (_currentEntities.Contains(entity))
                 {
                     Throw(entity.IsParameterEntity ? SR.Xml_RecursiveParEntity : SR.Xml_RecursiveGenEntity, entity.Name,
                         _parsingStatesStack![_parsingStatesStackTop].LineNo, _parsingStatesStack[_parsingStatesStackTop].LinePos);
@@ -8076,9 +8076,9 @@ namespace System.Xml
             // register entity for recursion checkes
             if (entity != null)
             {
-                _currentEntities ??= new Dictionary<IDtdEntityInfo, IDtdEntityInfo>();
+                _currentEntities ??= new HashSet<IDtdEntityInfo>();
 
-                _currentEntities.Add(entity, entity);
+                _currentEntities.Add(entity);
             }
         }
 

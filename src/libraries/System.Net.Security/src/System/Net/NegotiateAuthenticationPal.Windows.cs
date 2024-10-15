@@ -7,11 +7,11 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Security.Principal;
 using System.Security.Authentication.ExtendedProtection;
-using System.Net.Security;
+using System.Security.Principal;
 
 namespace System.Net
 {
@@ -566,7 +566,7 @@ namespace System.Net
                     bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPIAuth, _securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES, ref sizes);
                     Debug.Assert(success);
 
-                    Span<byte> signatureBuffer = signature.GetSpan(sizes.cbSecurityTrailer);
+                    Span<byte> signatureBuffer = signature.GetSpan(sizes.cbMaxSignature);
 
                     fixed (byte* messagePtr = message)
                     fixed (byte* signaturePtr = signatureBuffer)
@@ -577,7 +577,7 @@ namespace System.Net
                         Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[1];
                         tokenBuffer->BufferType = SecurityBufferType.SECBUFFER_TOKEN;
                         tokenBuffer->pvBuffer = (IntPtr)signaturePtr;
-                        tokenBuffer->cbBuffer = sizes.cbSecurityTrailer;
+                        tokenBuffer->cbBuffer = sizes.cbMaxSignature;
                         dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
                         dataBuffer->pvBuffer = (IntPtr)messagePtr;
                         dataBuffer->cbBuffer = message.Length;
@@ -587,8 +587,7 @@ namespace System.Net
                             pBuffers = unmanagedBuffer
                         };
 
-                        uint qop = IsEncrypted ? 0 : Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT;
-                        int errorCode = Interop.SspiCli.MakeSignature(ref _securityContext._handle, qop, ref sdcInOut, 0);
+                        int errorCode = Interop.SspiCli.MakeSignature(ref _securityContext._handle, 0, ref sdcInOut, 0);
 
                         if (errorCode != 0)
                         {
@@ -597,7 +596,7 @@ namespace System.Net
                             throw new Win32Exception(errorCode);
                         }
 
-                        signature.Advance(signatureBuffer.Length);
+                        signature.Advance(tokenBuffer->cbBuffer);
                     }
                 }
                 finally
@@ -720,7 +719,12 @@ namespace System.Net
                     inputBuffers.SetNextBuffer(new InputSecurityBuffer(channelBinding));
                 }
 
-                var outSecurityBuffer = new SecurityBuffer(resultBlob, SecurityBufferType.SECBUFFER_TOKEN);
+                ProtocolToken token = default;
+                if (resultBlob != null)
+                {
+                    token.Payload = resultBlob;
+                    token.Size = resultBlob.Length;
+                }
 
                 contextFlags = Interop.SspiCli.ContextFlags.Zero;
                 // There is only one SafeDeleteContext type on Windows which is SafeDeleteSslContext so this cast is safe.
@@ -732,13 +736,13 @@ namespace System.Net
                     spn,
                     requestedContextFlags,
                     Interop.SspiCli.Endianness.SECURITY_NETWORK_DREP,
-                    inputBuffers,
-                    ref outSecurityBuffer,
+                    ref inputBuffers,
+                    ref token,
                     ref contextFlags);
                 securityContext = sslContext;
-                Debug.Assert(outSecurityBuffer.offset == 0);
-                resultBlob = outSecurityBuffer.token;
-                resultBlobLength = outSecurityBuffer.size;
+                resultBlob = token.Payload;
+                resultBlobLength = token.Size;
+
                 return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(winStatus);
             }
 
@@ -778,7 +782,12 @@ namespace System.Net
                     inputBuffers.SetNextBuffer(new InputSecurityBuffer(channelBinding));
                 }
 
-                var outSecurityBuffer = new SecurityBuffer(resultBlob, SecurityBufferType.SECBUFFER_TOKEN);
+                ProtocolToken token = default;
+                if (resultBlob != null)
+                {
+                    token.Payload = resultBlob;
+                    token.Size = resultBlob.Length;
+                }
 
                 contextFlags = Interop.SspiCli.ContextFlags.Zero;
                 // There is only one SafeDeleteContext type on Windows which is SafeDeleteSslContext so this cast is safe.
@@ -789,8 +798,8 @@ namespace System.Net
                     ref sslContext,
                     requestedContextFlags,
                     Interop.SspiCli.Endianness.SECURITY_NETWORK_DREP,
-                    inputBuffers,
-                    ref outSecurityBuffer,
+                    ref inputBuffers,
+                    ref token,
                     ref contextFlags);
 
                 // SSPI Workaround
@@ -801,9 +810,9 @@ namespace System.Net
                     winStatus = Interop.SECURITY_STATUS.InvalidToken;
                 }
 
-                Debug.Assert(outSecurityBuffer.offset == 0);
-                resultBlob = outSecurityBuffer.token;
-                resultBlobLength = outSecurityBuffer.size;
+                resultBlob = token.Payload;
+                resultBlobLength = token.Size;
+
                 securityContext = sslContext;
                 return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(winStatus);
             }

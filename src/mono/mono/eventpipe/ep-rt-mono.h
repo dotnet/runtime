@@ -1884,6 +1884,16 @@ ep_rt_write_event_contention_stop (
 	uint16_t clr_instance_id,
 	double duration_ns);
 
+bool
+ep_rt_write_event_wait_handle_wait_start (
+	uint8_t wait_source,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_wait_handle_wait_stop (
+	uint16_t clr_instance_id);
+
 /*
 * EventPipe provider callbacks.
 */
@@ -1978,12 +1988,13 @@ struct _EventPipeMonoThreadData {
 	bool prevent_profiler_event_recursion;
 };
 
+extern gboolean _ep_rt_mono_runtime_initialized;
+
 static
 inline
 bool
 ep_rt_mono_is_runtime_initialized (void)
 {
-	extern gboolean _ep_rt_mono_runtime_initialized;
 	return !!_ep_rt_mono_runtime_initialized;
 }
 

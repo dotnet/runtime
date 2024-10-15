@@ -28,15 +28,15 @@ jobs:
         value: $[
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_runtimetests.containsChange'], true))
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_runtimetests.containsChange'], true))
           ]
     jobParameters:
       testGroup: innerloop
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       nameSuffix: AllSubsets_Mono_RuntimeTests
       runtimeVariant: monointerpreter
-      buildArgs: -s mono+libs -c $(_BuildConfig) /p:InstallV8ForTests=false ${{ parameters.extraBuildArgs }}
+      buildArgs: -s mono+libs -c $(_BuildConfig) /p:MonoEnableAssertMessages=true /p:InstallV8ForTests=false ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 180
       condition: >-
         or(

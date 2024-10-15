@@ -340,6 +340,11 @@ ep_rt_aot_get_last_error (void)
     return PalGetLastError();
 }
 
+void ep_rt_aot_set_server_name (void)
+{
+    PalSetCurrentThreadName(".NET EventPipe");
+}
+
 bool
 ep_rt_aot_thread_create (
     void *thread_func,
@@ -361,7 +366,7 @@ ep_rt_aot_thread_create (
 
     case EP_THREAD_TYPE_SERVER:
         // Match CoreCLR and hardcode a null thread context in this case.
-        return PalStartEventPipeHelperThread(reinterpret_cast<BackgroundCallback>(thread_func), NULL);
+        return PalStartEventPipeHelperThread(reinterpret_cast<BackgroundCallback>(thread_func), nullptr);
 
     case EP_THREAD_TYPE_SESSION:
     case EP_THREAD_TYPE_SAMPLING:
@@ -399,7 +404,6 @@ ep_rt_thread_id_t
 ep_rt_aot_current_thread_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
 #ifdef TARGET_UNIX
     return static_cast<ep_rt_thread_id_t>(PalGetCurrentOSThreadId());
 #else
@@ -833,7 +837,7 @@ ep_rt_thread_handle_t ep_rt_aot_setup_thread (void)
 
 ep_rt_thread_id_t ep_rt_aot_thread_get_id (ep_rt_thread_handle_t thread_handle)
 {
-    return thread_handle->GetPalThreadIdForLogging();
+    return (ep_rt_thread_id_t)thread_handle->GetPalThreadIdForLogging();
 }
 
 #ifdef EP_CHECKED_BUILD

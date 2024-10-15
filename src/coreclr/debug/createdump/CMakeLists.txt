@@ -56,8 +56,6 @@ else(CLR_CMAKE_HOST_WIN32)
       endif(CLR_CMAKE_HOST_OSX)
     endif (CORECLR_SET_RPATH)
 
-    add_definitions(-DPAL_STDCPP_COMPAT)
-
     # This is so we can include "version.c"
     include_directories(${CMAKE_BINARY_DIR})
 
@@ -101,7 +99,7 @@ endif(CLR_CMAKE_HOST_OSX)
         createdump_static
         corguids
         dbgutil
-        dl
+        ${CMAKE_DL_LIBS}
     )
 
 endif(CLR_CMAKE_HOST_WIN32)

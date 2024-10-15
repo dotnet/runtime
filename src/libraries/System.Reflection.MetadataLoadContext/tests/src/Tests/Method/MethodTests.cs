@@ -30,7 +30,15 @@ namespace System.Reflection.Tests
             Assert.False(m.IsConstructedGenericMethod());
             Assert.False(m.IsGenericMethod);
             Assert.Equal(MethodAttributes.Public | MethodAttributes.HideBySig, m.Attributes);
-            Assert.Equal(MethodImplAttributes.IL, m.MethodImplementationFlags);
+            if (m.MethodImplementationFlags.HasFlag(MethodImplAttributes.NoInlining))
+            {
+                // when the assembly was processed with ILStrip, the NoInlining flag is set
+                Assert.Equal(MethodImplAttributes.IL | MethodImplAttributes.NoInlining, m.MethodImplementationFlags);
+            }
+            else
+            {
+                Assert.Equal(MethodImplAttributes.IL, m.MethodImplementationFlags);
+            }
             Assert.Equal(CallingConventions.Standard | CallingConventions.HasThis, m.CallingConvention);
 
             Type theT = t.GetGenericArguments()[0];

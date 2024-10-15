@@ -81,7 +81,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// The format of the entries when writing entries to the archive using the <see cref="WriteEntry(string, string?)"/> method.
         /// </summary>
-        public TarEntryFormat Format { get; private set; }
+        public TarEntryFormat Format { get; }
 
         /// <summary>
         /// Disposes the current <see cref="TarWriter"/> instance, and closes the archive stream if the <c>leaveOpen</c> argument was set to <see langword="false"/> in the constructor.

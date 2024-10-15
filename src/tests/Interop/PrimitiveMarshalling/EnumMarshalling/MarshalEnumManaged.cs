@@ -38,6 +38,7 @@ namespace EnumRoundtrip
         #endregion
         [System.Security.SecuritySafeCritical]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
         public static int TestEntryPoint()
         {
             bool result = true;
@@ -63,7 +64,7 @@ namespace EnumRoundtrip
                 TestFramework.LogError("04", "Main : Returned value of enum doesn't match with the value passed in to pinvoke call");
                 return 101;
             }
-            
+
             return 100;
         }
     }

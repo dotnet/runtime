@@ -45,7 +45,7 @@ if (CLR_CMAKE_HOST_WIN32)
 
   # 4365 - signed/unsigned mismatch
   # 4679 - Could not import member. This is an issue with IJW and static abstract methods in interfaces.
-  add_compile_options(/wd4365 /wd4679 /wd5271)
+  add_compile_options(/wd4365 /wd4679)
 
   # IJW
   add_compile_options(/clr:netcore)
@@ -63,10 +63,6 @@ if (CLR_CMAKE_HOST_WIN32)
   get_directory_property(dirCompileOptions COMPILE_OPTIONS)
   remove_ijw_incompatible_options("${dirCompileOptions}" dirCompileOptions)
   set_directory_properties(PROPERTIES COMPILE_OPTIONS "${dirCompileOptions}")
-
-  # IJW tests needs to load DLLs from somewhere other than System32
-  string(REPLACE "/DEPENDENTLOADFLAG:0x800" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-  string(REPLACE "/DEPENDENTLOADFLAG:0x800" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
 
   set(CLR_SDK_REF_PACK_OUTPUT "")
   set(CLR_SDK_REF_PACK_DISCOVERY_ERROR "")
@@ -96,6 +92,12 @@ if (CLR_CMAKE_HOST_WIN32)
   string(REGEX REPLACE ".*refPackPath=(.*)" "\\1" CLR_SDK_REF_PACK ${CLR_SDK_REF_PACK_OUTPUT})
 
   add_compile_options(/AI${CLR_SDK_REF_PACK})
+
+  file(GLOB CLR_SDK_REF_PACK_LIBS "${CLR_SDK_REF_PACK}/*.dll")
+
+  foreach(lib ${CLR_SDK_REF_PACK_LIBS})
+    add_compile_options(/FU${lib})
+  endforeach()
 
   list(APPEND LINK_LIBRARIES_ADDITIONAL ijwhost)
 

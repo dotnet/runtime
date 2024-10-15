@@ -72,6 +72,8 @@ static char* NormalizeNumericPattern(const UChar* srcPattern, int isNegative)
             case UCHAR_CLOSEPAREN:
                 minusAdded = true;
                 break;
+            default:
+                break;
         }
     }
 
@@ -145,6 +147,9 @@ static char* NormalizeNumericPattern(const UChar* srcPattern, int isNegative)
             case UCHAR_PERCENT:
                 destPattern[index++] = '%';
                 break;
+
+            default:
+                break;
         }
     }
 
@@ -165,7 +170,7 @@ static int GetNumericPattern(const UNumberFormat* pNumberFormat,
                              int isNegative)
 {
     const int INVALID_FORMAT = -1;
-    const int MAX_DOTNET_NUMERIC_PATTERN_LENGTH = 6; // example: "(C n)" plus terminator
+    const size_t MAX_DOTNET_NUMERIC_PATTERN_LENGTH = 6; // example: "(C n)" plus terminator
 
     UErrorCode ignore = U_ZERO_ERROR;
     int32_t icuPatternLength = unum_toPattern(pNumberFormat, false, NULL, 0, &ignore) + 1;

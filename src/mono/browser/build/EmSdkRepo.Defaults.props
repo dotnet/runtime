@@ -1,0 +1,39 @@
+<Project>
+  <!-- If $(Emscripten*ToolsPath) etc propeties are *not* set (by the workload pack),
+  then try to construct the same properties based on $(EMSDK_PATH) -->
+
+  <PropertyGroup>
+    <EmscriptenSdkToolsPath>$([MSBuild]::EnsureTrailingSlash($(EMSDK_PATH)))</EmscriptenSdkToolsPath>
+    <EmscriptenUpstreamBinPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'bin'))</EmscriptenUpstreamBinPath>
+    <EmscriptenUpstreamEmscriptenPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'emscripten'))</EmscriptenUpstreamEmscriptenPath>
+
+    <!-- gets the path like emsdk/python/3.7.4-2_64bit -->
+    <EmscriptenNodeToolsPath Condition="'$(EmscriptenNodeToolsPath)' == ''">$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'node', 'bin'))</EmscriptenNodeToolsPath>
+
+    <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
+  </PropertyGroup>
+
+  <!-- Emscripten uses system python on Linux and macos, so we don't need $(EmscriptenPythonToolsPath) -->
+  <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('OSX'))">
+    <EmscriptenPythonToolsPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)python))</EmscriptenPythonToolsPath>
+
+    <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonToolsPath)' == '' or !Exists('$(EmscriptenPythonToolsPath)'))">%24(EmscriptenPythonToolsPath)=$(EmscriptenPythonToolsPath) </_EMSDKMissingPaths>
+  </PropertyGroup>
+
+  <!-- Paths to be added to environment variable `PATH` -->
+  <ItemGroup>
+    <EmscriptenPrependPATH Include="$(EmscriptenSdkToolsPath)" />
+    <EmscriptenPrependPATH Include="$(EmscriptenUpstreamBinPath)" />
+    <EmscriptenPrependPATH Include="$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'emscripten'))" />
+
+    <EmscriptenPrependPATH Include="$(EmscriptenNodeToolsPath)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(EmscriptenPythonToolsPath)' != ''">
+    <EmscriptenPrependPATH Include="$(EmscriptenPythonToolsPath)"    Condition="$([MSBuild]::IsOSPlatform('windows'))" />
+    <EmscriptenPrependPATH Include="$(EmscriptenPythonToolsPath)bin" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
+
+    <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)\bin%3B$([MSBuild]::Escape($(PYTHONPATH)))" Condition="$([MSBuild]::IsOSPlatform('windows'))" />
+    <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath):$([MSBuild]::Escape($(PYTHONPATH)))"       Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
+  </ItemGroup>
+</Project>

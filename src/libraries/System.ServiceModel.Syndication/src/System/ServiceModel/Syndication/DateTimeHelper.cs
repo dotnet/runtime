@@ -58,7 +58,7 @@ namespace System.ServiceModel.Syndication
                     ++i;
                 }
 
-#if NETCOREAPP
+#if NET
                 dateTimeString = string.Concat(dateTimeString.AsSpan(0, 19), dateTimeString.AsSpan(i));
 #else
                 dateTimeString = dateTimeString.Substring(0, 19) + dateTimeString.Substring(i);

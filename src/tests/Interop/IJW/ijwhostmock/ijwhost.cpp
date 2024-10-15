@@ -12,10 +12,10 @@ std::set<HINSTANCE> g_modulesQueried = {};
 #endif
 
 // Entry-point that coreclr looks for.
-extern "C" DLL_EXPORT INT32 STDMETHODCALLTYPE GetTokenForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry)
+extern "C" DLL_EXPORT int32_t STDMETHODCALLTYPE GetTokenForVTableEntry(HINSTANCE hInst, uint8_t **ppVTEntry)
 {
     g_modulesQueried.emplace(hInst);
-    return (INT32)(UINT_PTR)*ppVTEntry;
+    return (int32_t)(UINT_PTR)*ppVTEntry;
 }
 
 extern "C" DLL_EXPORT BOOL __cdecl WasModuleVTableQueried(HINSTANCE hInst)

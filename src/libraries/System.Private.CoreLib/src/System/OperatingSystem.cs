@@ -242,7 +242,7 @@ namespace System
             false;
 #endif
 
-        internal static bool IsOSXLike() =>
+        internal static bool IsApplePlatform() =>
 #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             true;
 #else

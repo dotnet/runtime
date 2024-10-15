@@ -335,8 +335,20 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             CodeSnippets codeSnippets = new(new GeneratedComInterfaceAttributeProvider());
             yield return new object[] { ID(), codeSnippets.DerivedComInterfaceType };
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeWithShadowingMethod };
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeShadowsNonComMethod };
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeShadowsComAndNonComMethod };
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeTwoLevelShadows};
             yield return new object[] { ID(), codeSnippets.DerivedWithParametersDeclaredInOtherNamespace };
             yield return new object[] { ID(), codeSnippets.ComInterfaceParameters };
+        }
+
+        public static IEnumerable<object[]> ManagedToUnmanagedComInterfaceSnippetsToCompile()
+        {
+            CodeSnippets codeSnippets = new(GeneratorKind.ComInterfaceGeneratorComObjectWrapper);
+
+            // MarshalAs
+            yield return new[] { ID(), codeSnippets.MarshalAsParameterAndModifiers("object", System.Runtime.InteropServices.UnmanagedType.Struct) };
         }
 
         [Theory]
@@ -346,6 +358,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         [MemberData(nameof(UnmanagedToManagedCodeSnippetsToCompile), GeneratorKind.ComInterfaceGeneratorManagedObjectWrapper)]
         [MemberData(nameof(CustomCollectionsManagedToUnmanaged), GeneratorKind.ComInterfaceGeneratorComObjectWrapper)]
         [MemberData(nameof(ComInterfaceSnippetsToCompile))]
+        [MemberData(nameof(ManagedToUnmanagedComInterfaceSnippetsToCompile))]
         public async Task ValidateComInterfaceSnippets(string id, string source)
         {
             _ = id;

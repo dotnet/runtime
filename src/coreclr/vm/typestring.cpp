@@ -1078,7 +1078,7 @@ void TypeString::AppendTypeDebug(SString& ss, TypeHandle t)
 #endif
 }
 
-void TypeString::AppendTypeKeyDebug(SString& ss, TypeKey *pTypeKey)
+void TypeString::AppendTypeKeyDebug(SString& ss, const TypeKey *pTypeKey)
 {
     CONTRACTL
     {
@@ -1110,7 +1110,7 @@ void TypeString::AppendTypeKeyDebug(SString& ss, TypeKey *pTypeKey)
 #endif // _DEBUG
 
 
-void TypeString::AppendTypeKey(TypeNameBuilder& tnb, TypeKey *pTypeKey, DWORD format)
+void TypeString::AppendTypeKey(TypeNameBuilder& tnb, const TypeKey *pTypeKey, DWORD format)
 {
     CONTRACT_VOID
     {
@@ -1194,7 +1194,7 @@ void TypeString::AppendTypeKey(TypeNameBuilder& tnb, TypeKey *pTypeKey, DWORD fo
     RETURN;
 }
 
-void TypeString::AppendTypeKey(SString& ss, TypeKey *pTypeKey, DWORD format)
+void TypeString::AppendTypeKey(SString& ss, const TypeKey *pTypeKey, DWORD format)
 {
     CONTRACT_VOID
     {

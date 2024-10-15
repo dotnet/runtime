@@ -287,7 +287,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             // Add more...
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(LikeObj_TestData))]
         public void LikeObj(object left, object right, object expectedBinaryCompare, object expectedTextCompare)
         {
@@ -323,7 +323,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { null, "*" };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(ObjTst_TestData))]
         public void ObjTst(object x, object y, bool textCompare, object expected)
         {

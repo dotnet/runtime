@@ -85,16 +85,14 @@ namespace ComWrappersTests
 
             protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flag)
             {
-                var iTrackerObjectIid = typeof(ITrackerObject).GUID;
                 IntPtr iTrackerComObject;
-                int hr = Marshal.QueryInterface(externalComObject, in iTrackerObjectIid, out iTrackerComObject);
+                int hr = Marshal.QueryInterface(externalComObject, typeof(ITrackerObject).GUID, out iTrackerComObject);
                 if (hr == 0)
                 {
                     return new ITrackerObjectWrapper(iTrackerComObject);
                 }
-                var iTestIid = typeof(ITest).GUID;
                 IntPtr iTest;
-                hr = Marshal.QueryInterface(externalComObject, in iTestIid, out iTest);
+                hr = Marshal.QueryInterface(externalComObject, typeof(ITest).GUID, out iTest);
                 if (hr == 0)
                 {
                     return new ITestObjectWrapper(iTest);
@@ -324,9 +322,8 @@ namespace ComWrappersTests
                 IntPtr nativeInstance = wrappers.GetOrCreateComInterfaceForObject(testInstance, CreateComInterfaceFlags.None);
                 Assert.NotEqual(IntPtr.Zero, nativeInstance);
 
-                var iid = typeof(ITest).GUID;
                 nint itestPtr;
-                Assert.Equal(0, Marshal.QueryInterface(nativeInstance, in iid, out itestPtr));
+                Assert.Equal(0, Marshal.QueryInterface(nativeInstance, typeof(ITest).GUID, out itestPtr));
 
                 var inst = (ComWrappers.ComInterfaceDispatch*)itestPtr;
                 var vtbl = (ITestVtbl*)(inst->Vtable);
@@ -380,9 +377,8 @@ namespace ComWrappersTests
                 IntPtr nativeInstance = wrappers.GetOrCreateComInterfaceForObject(Test.Resurrected, CreateComInterfaceFlags.None);
                 Assert.NotEqual(IntPtr.Zero, nativeInstance);
 
-                var iid = typeof(ITest).GUID;
                 nint itestPtr;
-                Assert.Equal(0, Marshal.QueryInterface(nativeInstance, in iid, out itestPtr));
+                Assert.Equal(0, Marshal.QueryInterface(nativeInstance, typeof(ITest).GUID, out itestPtr));
 
                 var inst = (ComWrappers.ComInterfaceDispatch*)itestPtr;
                 var vtbl = (ITestVtbl*)(inst->Vtable);
@@ -419,12 +415,12 @@ namespace ComWrappersTests
             IntPtr result;
             var anyGuid = new Guid("1E42439C-DCB5-4701-ACBD-87FE92E785DE");
             testObj.ICustomQueryInterface_GetInterfaceIID = anyGuid;
-            int hr = Marshal.QueryInterface(comWrapper, in anyGuid, out result);
+            int hr = Marshal.QueryInterface(comWrapper, anyGuid, out result);
             Assert.Equal(0, hr);
             Assert.Equal(testObj.ICustomQueryInterface_GetInterfaceResult, result);
 
             var anyGuid2 = new Guid("7996D0F9-C8DD-4544-B708-0F75C6FF076F");
-            hr = Marshal.QueryInterface(comWrapper, in anyGuid2, out result);
+            hr = Marshal.QueryInterface(comWrapper, anyGuid2, out result);
             const int E_NOINTERFACE = unchecked((int)0x80004002);
             Assert.Equal(E_NOINTERFACE, hr);
             Assert.Equal(IntPtr.Zero, result);
@@ -513,7 +509,7 @@ namespace ComWrappersTests
 
             // Create a wrapper for the unmanaged instance
             IntPtr unmanagedObj = MockReferenceTrackerRuntime.CreateTrackerObject();
-            Assert.Equal(0, Marshal.QueryInterface(unmanagedObj, in IUnknownVtbl.IID_IUnknown, out IntPtr unmanagedObjIUnknown));
+            Assert.Equal(0, Marshal.QueryInterface(unmanagedObj, IUnknownVtbl.IID_IUnknown, out IntPtr unmanagedObjIUnknown));
             var unmanagedWrapper = cw.GetOrCreateObjectForComInstance(unmanagedObj, CreateObjectFlags.None);
 
             // Also allocate a unique instance to validate looking from an uncached instance
@@ -601,9 +597,8 @@ namespace ComWrappersTests
             IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
 
             // Manually create a wrapper
-            var iid = typeof(ITrackerObject).GUID;
             IntPtr iTestComObject;
-            int hr = Marshal.QueryInterface(trackerObjRaw, in iid, out iTestComObject);
+            int hr = Marshal.QueryInterface(trackerObjRaw, typeof(ITrackerObject).GUID, out iTestComObject);
             Assert.Equal(0, hr);
             var nativeWrapper = new ITrackerObjectWrapper(iTestComObject);
 
@@ -666,9 +661,8 @@ namespace ComWrappersTests
             static WeakReference<ITrackerObjectWrapper> CreateAndRegisterWrapper(ComWrappers cw, IntPtr trackerObjRaw)
             {
                 // Manually create a wrapper
-                var iid = typeof(ITrackerObject).GUID;
                 IntPtr iTestComObject;
-                int hr = Marshal.QueryInterface(trackerObjRaw, in iid, out iTestComObject);
+                int hr = Marshal.QueryInterface(trackerObjRaw, typeof(ITrackerObject).GUID, out iTestComObject);
                 Assert.Equal(0, hr);
                 var nativeWrapper = new ITrackerObjectWrapper(iTestComObject);
 
@@ -884,9 +878,8 @@ namespace ComWrappersTests
             // the wrapper lifetime has been extended. However, the QueryInterface may fail
             // if the associated managed object was collected. The failure here is an important
             // part of the contract for a Reference Tracker runtime.
-            var iid = typeof(ITest).GUID;
             IntPtr iTestComObject;
-            int hr = Marshal.QueryInterface(refTrackerTarget, in iid, out iTestComObject);
+            int hr = Marshal.QueryInterface(refTrackerTarget, typeof(ITest).GUID, out iTestComObject);
 
             const int COR_E_ACCESSING_CCW = unchecked((int)0x80131544);
             Assert.Equal(COR_E_ACCESSING_CCW, hr);

@@ -33,7 +33,7 @@ public class V8HostRunner : IHostRunner
         }
     }
 
-    private string GetXharnessArgs(string jsRelativePath) => $"--js-file={jsRelativePath} --engine=V8 -v trace --engine-arg=--experimental-wasm-simd --engine-arg=--module {BinaryPathArg}";
+    private string GetXharnessArgs(string jsRelativePath) => $"--js-file={jsRelativePath} --engine=V8 -v trace --engine-arg=--module {BinaryPathArg}";
 
     public string GetTestCommand() => "wasm test";
     public string GetXharnessArgsWindowsOS(XHarnessArgsOptions options) => GetXharnessArgs(options.jsRelativePath);

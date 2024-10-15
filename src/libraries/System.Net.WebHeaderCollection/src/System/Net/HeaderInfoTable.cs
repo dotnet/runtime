@@ -84,7 +84,7 @@ namespace System.Net
         private static Hashtable CreateHeaderHashtable()
         {
             const int Items = 52;
-            var headers = new Hashtable(Items * 2, CaseInsensitiveAscii.StaticInstance)
+            var headers = new Hashtable(Items * 2, StringComparer.OrdinalIgnoreCase)
             {
                 { HttpKnownHeaderNames.Age,                new HeaderInfo(HttpKnownHeaderNames.Age,                false,  false,  false,  s_singleParser) },
                 { HttpKnownHeaderNames.Allow,              new HeaderInfo(HttpKnownHeaderNames.Allow,              false,  false,  true,   s_multiParser) },

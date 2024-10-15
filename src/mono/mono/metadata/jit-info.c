@@ -62,6 +62,7 @@ static mono_mutex_t jit_info_mutex;
 
 #define JIT_INFO_TABLE_HAZARD_INDEX		0
 #define JIT_INFO_HAZARD_INDEX			1
+#define FOREACH_TABLE_HAZARD_INDEX		2
 
 static inline void
 jit_info_lock (void)
@@ -343,10 +344,15 @@ mono_jit_info_table_foreach_internal (MonoJitInfoFunc func, gpointer user_data)
 	MonoJitInfo *ji;
 	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
 
-	table = (MonoJitInfoTable *)mono_get_hazardous_pointer ((gpointer volatile*)&jit_info_table, hp, JIT_INFO_TABLE_HAZARD_INDEX);
+	/*
+	 * The callback could end up calling code which use the same hazard table indexes as JIT_INFO_TABLE_HAZARD_INDEX, so use
+	 * a different one as a workaround.
+	 */
+	table = (MonoJitInfoTable *)mono_get_hazardous_pointer ((gpointer volatile*)&jit_info_table, hp, FOREACH_TABLE_HAZARD_INDEX);
 	if (table) {
 		for (int chunk_index = 0; chunk_index < table->num_chunks; ++chunk_index) {
 			MonoJitInfoTableChunk *chunk = table->chunks [chunk_index];
+			g_assert (chunk);
 			for (int jit_info_index = 0; jit_info_index < chunk->num_elements; ++jit_info_index) {
 
 				ji = (MonoJitInfo *)mono_get_hazardous_pointer ((gpointer volatile*)&chunk->data [jit_info_index], hp, JIT_INFO_HAZARD_INDEX);
@@ -360,7 +366,7 @@ mono_jit_info_table_foreach_internal (MonoJitInfoFunc func, gpointer user_data)
 	}
 
 	if (hp)
-		mono_hazard_pointer_clear (hp, JIT_INFO_TABLE_HAZARD_INDEX);
+		mono_hazard_pointer_clear (hp, FOREACH_TABLE_HAZARD_INDEX);
 }
 
 static G_GNUC_UNUSED void
@@ -860,6 +866,8 @@ mono_jit_info_init (MonoJitInfo *ji, MonoMethod *method, guint8 *code, int code_
 		ji->has_thunk_info = 1;
 	if (flags & JIT_INFO_HAS_UNWIND_INFO)
 		ji->has_unwind_info = 1;
+	if (flags & JIT_INFO_NO_MRGCTX)
+		ji->no_mrgctx = 1;
 }
 
 /**

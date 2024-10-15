@@ -84,8 +84,9 @@ static int
 elf_w (CD_get_proc_name) (struct UCD_info *ui, unw_addr_space_t as, unw_word_t ip,
                           char *buf, size_t buf_len, unw_word_t *offp)
 {
-  unsigned long segbase, mapoff;
+  unsigned long segbase;
   int ret;
+
   /* We're about to map an elf image.
      The call will unmap memory it doesn't own, so just null it out and avoid
      that. */
@@ -104,6 +105,26 @@ elf_w (CD_get_proc_name) (struct UCD_info *ui, unw_addr_space_t as, unw_word_t i
   /* Adjust IP to be relative to start of the .text section of the ELF file */
   ip = ip - cphdr->p_vaddr + _get_text_offset (ui->edi.ei.image);
   ret = elf_w (get_proc_name_in_image) (as, &ui->edi.ei, segbase, ip, buf, buf_len, offp);
+  if (ret == -UNW_ENOINFO)
+    {
+      /* maybe symtab is stripped, try debuglink */
+      ucd_file_t *ucd_file = ucd_file_table_at(&ui->ucd_file_table, cphdr->p_backing_file_index);
+      if (ucd_file)
+        {
+          struct elf_image ei = {NULL, 0};
+          ret = elf_w (load_debuginfo) (ucd_file->filename, &ei, 1);
+          if (ret == 0)
+            {
+              ret = elf_w (get_proc_name_in_image) (as, &ei, segbase, ip, buf, buf_len, offp);
+              mi_munmap(ei.image, ei.size);
+              ei.image = NULL;
+            }
+          else
+            {
+              ret = -UNW_ENOINFO;
+            }
+        }
+    }
   return ret;
 }
 

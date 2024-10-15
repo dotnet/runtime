@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Reflection;
 
 using Internal.Reflection.Augments;
 
@@ -18,7 +18,7 @@ using Internal.Reflection.Augments;
 
 namespace Internal.Reflection.Extensions.NonPortable
 {
-    public static class CustomAttributeInheritanceRules
+    internal static class CustomAttributeInheritanceRules
     {
         //==============================================================================================================================
         // Api helpers: Computes the effective set of custom attributes for various Reflection elements and returns them

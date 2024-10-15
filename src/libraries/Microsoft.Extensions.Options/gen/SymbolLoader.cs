@@ -19,6 +19,7 @@ namespace Microsoft.Extensions.Options.Generators
         internal const string IValidatableObjectType = "System.ComponentModel.DataAnnotations.IValidatableObject";
         internal const string IValidateOptionsType = "Microsoft.Extensions.Options.IValidateOptions`1";
         internal const string TypeOfType = "System.Type";
+        internal const string TimeSpanType = "System.TimeSpan";
         internal const string ValidateObjectMembersAttribute = "Microsoft.Extensions.Options.ValidateObjectMembersAttribute";
         internal const string ValidateEnumeratedItemsAttribute = "Microsoft.Extensions.Options.ValidateEnumeratedItemsAttribute";
         internal const string GenericIEnumerableType = "System.Collections.Generic.IEnumerable`1";
@@ -42,6 +43,7 @@ namespace Microsoft.Extensions.Options.Generators
             var validateOptionsSymbol = GetSymbol(IValidateOptionsType);
             var genericIEnumerableSymbol = GetSymbol(GenericIEnumerableType);
             var typeSymbol = GetSymbol(TypeOfType);
+            var timeSpanSymbol = GetSymbol(TimeSpanType);
             var validateObjectMembersAttribute = GetSymbol(ValidateObjectMembersAttribute);
             var validateEnumeratedItemsAttribute = GetSymbol(ValidateEnumeratedItemsAttribute);
             var unconditionalSuppressMessageAttributeSymbol = GetSymbol(UnconditionalSuppressMessageAttributeType);
@@ -70,6 +72,7 @@ namespace Microsoft.Extensions.Options.Generators
                 validateOptionsSymbol == null ||
                 genericIEnumerableSymbol == null ||
                 typeSymbol == null ||
+                timeSpanSymbol == null ||
                 validateObjectMembersAttribute == null ||
                 validateEnumeratedItemsAttribute == null)
             {
@@ -93,6 +96,7 @@ namespace Microsoft.Extensions.Options.Generators
                 ivalidatableObjectSymbol,
                 genericIEnumerableSymbol,
                 typeSymbol,
+                timeSpanSymbol,
                 validateObjectMembersAttribute,
                 validateEnumeratedItemsAttribute);
 

@@ -15,6 +15,7 @@
 
 #include "mono/sgen/sgen-gc.h"
 #include "mono/utils/lock-free-alloc.h"
+#include "mono/utils/options.h"
 #include "mono/sgen/sgen-memory-governor.h"
 #include "mono/sgen/sgen-client.h"
 
@@ -273,7 +274,7 @@ sgen_report_internal_mem_usage (void)
 void
 sgen_init_internal_allocator (void)
 {
-	int i, size;
+	int i;
 
 	for (i = 0; i < INTERNAL_MEM_MAX; ++i)
 		fixed_type_allocator_indexes [i] = -1;
@@ -284,7 +285,10 @@ sgen_init_internal_allocator (void)
 		mono_lock_free_allocator_init_allocator (&allocators [i], &size_classes [i], MONO_MEM_ACCOUNT_SGEN_INTERNAL);
 	}
 
-	for (size = mono_pagesize (); size <= LOCK_FREE_ALLOC_SB_MAX_SIZE; size <<= 1) {
+	// FIXME: This whole algorithm is broken on WASM due to its 64KB page size.
+	// Previously SB_MAX_SIZE was < mono_pagesize, so none of this ran.
+#ifndef HOST_WASM
+	for (int size = mono_pagesize (); size <= LOCK_FREE_ALLOC_SB_MAX_SIZE; size <<= 1) {
 		int max_size = (LOCK_FREE_ALLOC_SB_USABLE_SIZE (size) / 2) & ~(SIZEOF_VOID_P - 1);
 		/*
 		 * we assert that allocator_sizes contains the biggest possible object size
@@ -297,6 +301,7 @@ sgen_init_internal_allocator (void)
 		if (size < LOCK_FREE_ALLOC_SB_MAX_SIZE)
 			g_assert (block_size (max_size + 1) == size << 1);
 	}
+#endif
 }
 
 #endif

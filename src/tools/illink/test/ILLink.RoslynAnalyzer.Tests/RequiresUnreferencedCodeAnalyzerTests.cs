@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
 using VerifyCS = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
-	ILLink.RoslynAnalyzer.RequiresUnreferencedCodeAnalyzer,
+	ILLink.RoslynAnalyzer.DynamicallyAccessedMembersAnalyzer,
 	ILLink.CodeFix.RequiresUnreferencedCodeCodeFixProvider>;
 
 namespace ILLink.RoslynAnalyzer.Tests
@@ -39,8 +39,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			var test = new VerifyCS.Test {
 				TestCode = source,
-				FixedCode = fixedSource,
-				ReferenceAssemblies = TestCaseUtils.NetCoreAppReferencessemblies
+				FixedCode = fixedSource
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
 			test.TestState.AnalyzerConfigFiles.Add (
@@ -373,80 +372,43 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 		}
 
 		[Fact]
-		public Task InvocationOnDynamicType ()
+		public Task FixInClass ()
 		{
-			var source = $$"""
-			using System;
-			class C
-			{
-				static void M0 ()
-				{
-					dynamic dynamicField = "Some string";
-					Console.WriteLine (dynamicField);
-				}
-
-				static void M1 ()
-				{
-					MethodWithDynamicArgDoNothing (0);
-					MethodWithDynamicArgDoNothing ("Some string");
-					MethodWithDynamicArg(-1);
-				}
-
-				static void MethodWithDynamicArgDoNothing (dynamic arg)
-				{
-				}
-
-				static void MethodWithDynamicArg (dynamic arg)
-				{
-					arg.MethodWithDynamicArg (arg);
-				}
-			}
-			""";
-
-			return VerifyRequiresUnreferencedCodeAnalyzer (source,
-				// (8,3): warning IL2026: Invoking members on dynamic types is not trimming safe. Types or members might have been removed by the trimmer.
-				VerifyCS.Diagnostic (dynamicInvocationDiagnosticDescriptor).WithSpan (7, 3, 7, 35),
-				// (24,3): warning IL2026: Invoking members on dynamic types is not trimming safe. Types or members might have been removed by the trimmer.
-				VerifyCS.Diagnostic (dynamicInvocationDiagnosticDescriptor).WithSpan (23, 3, 23, 33));
-		}
-
-		[Fact]
-		public Task DynamicInRequiresUnreferencedCodeClass ()
-		{
-			var source = $$"""
-			using System.Diagnostics.CodeAnalysis;
-
-			[RequiresUnreferencedCode("message")]
-			class ClassWithRequires
-			{
-				public static void MethodWithDynamicArg (dynamic arg)
-				{
-					arg.DynamicInvocation ();
-				}
-			}
-			""";
-
-			return VerifyRequiresUnreferencedCodeAnalyzer (source);
-		}
-
-		[Fact]
-		public Task InvocationOnDynamicTypeInMethodWithRUCDoesNotWarnTwoTimes ()
-		{
-			var source = $$"""
+			var src = $$"""
 			using System;
 			using System.Diagnostics.CodeAnalysis;
-			class C
+
+			public class C
 			{
-				[RequiresUnreferencedCode ("We should only see the warning related to this annotation, and none about the dynamic type.")]
-				static void M0 ()
-				{
-					dynamic dynamicField = "Some string";
-					Console.WriteLine (dynamicField);
-				}
+				[RequiresUnreferencedCodeAttribute("message")]
+				static int M1() => 0;
+
+				static int Field = M1();
 			}
 			""";
 
-			return VerifyRequiresUnreferencedCodeAnalyzer (source);
+			var fix = $$"""
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			[RequiresUnreferencedCode()]
+			public class C
+			{
+				[RequiresUnreferencedCodeAttribute("message")]
+				static int M1() => 0;
+
+				static int Field = M1();
+			}
+			""";
+			return VerifyRequiresUnreferencedCodeCodeFix (src, fix,
+				baselineExpected: new[] {
+					// /0/Test0.cs(9,21): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
+					VerifyCS.Diagnostic(DiagnosticId.RequiresUnreferencedCode).WithSpan(9, 21, 9, 25).WithArguments("C.M1()", " message.", "")
+				},
+				fixedExpected: new[] {
+					// /0/Test0.cs(4,2): error CS7036: There is no argument given that corresponds to the required parameter 'message' of 'RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)'
+					DiagnosticResult.CompilerError("CS7036").WithSpan(4, 2, 4, 28).WithArguments("message", "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.RequiresUnreferencedCodeAttribute(string)"),
+					});
 		}
 
 		[Fact]
@@ -471,7 +433,9 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 			}
 			""";
 
-			return VerifyRequiresUnreferencedCodeAnalyzer (source);
+			return VerifyRequiresUnreferencedCodeAnalyzer (source,
+				// (8,3): warning IL2060: Call to 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.
+				VerifyCS.Diagnostic (DiagnosticId.MakeGenericMethod).WithSpan (8, 3, 8, 44).WithArguments ("System.Reflection.MethodInfo.MakeGenericMethod(params Type[])"));
 		}
 
 		[Fact]

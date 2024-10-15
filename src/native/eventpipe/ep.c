@@ -15,6 +15,17 @@
 #include "ep-session.h"
 #include "ep-sample-profiler.h"
 
+//! This is CoreCLR specific keywords for native ETW events (ending up in event pipe).
+//! The keywords below seems to correspond to:
+//!  GCKeyword                          (0x00000001)
+//!  LoaderKeyword                      (0x00000008)
+//!  JitKeyword                         (0x00000010)
+//!  NgenKeyword                        (0x00000020)
+//!  unused_keyword                     (0x00000100)
+//!  JittedMethodILToNativeMapKeyword   (0x00020000)
+//!  ThreadTransferKeyword              (0x80000000)
+uint64_t ep_default_rundown_keyword = 0x80020139;
+
 static bool _ep_can_start_threads = false;
 
 static dn_vector_t *_ep_deferred_enable_session_ids = NULL;
@@ -214,7 +225,8 @@ ep_provider_callback_data_alloc (
 	int64_t keywords,
 	EventPipeEventLevel provider_level,
 	bool enabled,
-	EventPipeSessionID session_id)
+	EventPipeSessionID session_id,
+	EventPipeProvider *provider)
 {
 	EventPipeProviderCallbackData *instance = ep_rt_object_alloc (EventPipeProviderCallbackData);
 	ep_raise_error_if_nok (instance != NULL);
@@ -227,7 +239,8 @@ ep_provider_callback_data_alloc (
 		keywords,
 		provider_level,
 		enabled,
-		session_id) != NULL);
+		session_id,
+		provider) != NULL);
 
 ep_on_exit:
 	return instance;
@@ -287,7 +300,8 @@ ep_provider_callback_data_init (
 	int64_t keywords,
 	EventPipeEventLevel provider_level,
 	bool enabled,
-	EventPipeSessionID session_id)
+	EventPipeSessionID session_id,
+	EventPipeProvider *provider)
 {
 	EP_ASSERT (provider_callback_data != NULL);
 
@@ -298,6 +312,7 @@ ep_provider_callback_data_init (
 	provider_callback_data->provider_level = provider_level;
 	provider_callback_data->enabled = enabled;
 	provider_callback_data->session_id = session_id;
+	provider_callback_data->provider = provider;
 
 	return provider_callback_data;
 }
@@ -494,7 +509,7 @@ enable (
 		options->stream,
 		options->session_type,
 		options->format,
-		options->rundown_requested,
+		options->rundown_keyword,
 		options->stackwalk_requested,
 		options->circular_buffer_size_in_mb,
 		options->providers,
@@ -589,7 +604,7 @@ disable_holding_lock (
 		ep_session_disable (session); // WriteAllBuffersToFile, and remove providers.
 
 		// Do rundown before fully stopping the session unless rundown wasn't requested
-		if (ep_session_get_rundown_requested (session) && _ep_can_start_threads) {
+		if ((ep_session_get_rundown_keyword (session) != 0) && _ep_can_start_threads) {
 			ep_session_enable_rundown (session); // Set Rundown provider.
 			EventPipeThread *const thread = ep_thread_get_or_create ();
 			if (thread != NULL) {
@@ -629,7 +644,9 @@ disable_holding_lock (
 		ep_session_free (session);
 
 		// Providers can't be deleted during tracing because they may be needed when serializing the file.
-		config_delete_deferred_providers(ep_config_get ());
+		// Allow delete deferred providers to accumulate to mitigate potential use-after-free should
+		// another EventPipe session hold a reference to a provider set for deferred deletion.
+		// config_delete_deferred_providers(ep_config_get ());
 	}
 
 	ep_requires_lock_held ();
@@ -908,7 +925,7 @@ enable_default_session_via_env_variables (void)
 			ep_config,
 			ep_rt_config_value_get_output_streaming () ? EP_SESSION_TYPE_FILESTREAM : EP_SESSION_TYPE_FILE,
 			EP_SERIALIZATION_FORMAT_NETTRACE_V4,
-			true,
+			ep_default_rundown_keyword,
 			NULL,
 			NULL,
 			NULL);
@@ -959,7 +976,7 @@ ep_enable (
 	uint32_t providers_len,
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
-	bool rundown_requested,
+	uint64_t rundown_keyword,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data)
@@ -975,7 +992,7 @@ ep_enable (
 		providers_len,
 		session_type,
 		format,
-		rundown_requested,
+		rundown_keyword,
 		true, // stackwalk_requested
 		stream,
 		sync_callback,
@@ -995,7 +1012,7 @@ ep_enable_2 (
 	const ep_char8_t *providers_config,
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
-	bool rundown_requested,
+	uint64_t rundown_keyword,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data)
@@ -1073,7 +1090,7 @@ ep_enable_2 (
 		providers_len,
 		session_type,
 		format,
-		rundown_requested,
+		rundown_keyword,
 		stream,
 		sync_callback,
 		callback_additional_data);
@@ -1105,7 +1122,7 @@ ep_session_options_init (
 	uint32_t providers_len,
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
-	bool rundown_requested,
+	uint64_t rundown_keyword,
 	bool stackwalk_requested,
 	IpcStream* stream,
 	EventPipeSessionSynchronousCallback sync_callback,
@@ -1119,7 +1136,7 @@ ep_session_options_init (
 	options->providers_len = providers_len;
 	options->session_type = session_type;
 	options->format = format;
-	options->rundown_requested = rundown_requested;
+	options->rundown_keyword = rundown_keyword;
 	options->stackwalk_requested = stackwalk_requested;
 	options->stream = stream;
 	options->sync_callback = sync_callback;
@@ -1302,14 +1319,33 @@ ep_delete_provider (EventPipeProvider *provider)
 	// Take the lock to make sure that we don't have a race
 	// between disabling tracing and deleting a provider
 	// where we hold a provider after tracing has been disabled.
+	bool wait_for_provider_callbacks_completion = false;
 	EP_LOCK_ENTER (section1)
-		if (enabled ()) {
-			// Save the provider until the end of the tracing session.
-			ep_provider_set_delete_deferred (provider, true);
-		} else {
-			config_delete_provider (ep_config_get (), provider);
-		}
+		// Save the provider until the end of the tracing session.
+		ep_provider_set_delete_deferred (provider, true);
+
+		// The callback func must be set to null,
+		// otherwise callbacks might never stop coming.
+		EP_ASSERT (provider->callback_func == NULL);
+
+		// Calling ep_delete_provider within a Callback will result in a deadlock
+		// as deleting the provider with an active tracing session will block
+		// until all of the provider's callbacks are completed.
+		if (provider->callbacks_pending > 0)
+			wait_for_provider_callbacks_completion = true;
 	EP_LOCK_EXIT (section1)
+
+	// Block provider deletion until all pending callbacks are completed.
+	// Helps prevent the EventPipeEventProvider Unregister logic from
+	// freeing freeing the provider's weak reference gchandle before
+	// callbacks using that handle have completed.
+	if (wait_for_provider_callbacks_completion)
+		ep_rt_wait_event_wait (&provider->callbacks_complete_event, EP_INFINITE_WAIT, false);
+
+	EP_LOCK_ENTER (section2)
+		if (!enabled ())
+			config_delete_provider (ep_config_get (), provider);
+	EP_LOCK_EXIT (section2)
 
 ep_on_exit:
 	ep_requires_lock_not_held ();
@@ -1498,21 +1534,6 @@ ep_shutdown (void)
 
 	dn_vector_free (_ep_deferred_disable_session_ids);
 	_ep_deferred_disable_session_ids = NULL;
-
-	ep_thread_fini ();
-
-	// dotnet/coreclr: issue 24850: EventPipe shutdown race conditions
-	// Deallocating providers/events here might cause AV if a WriteEvent
-	// was to occur. Thus, we are not doing this cleanup.
-
-	/*EP_LOCK_ENTER (section1)
-		ep_sample_profiler_shutdown ();
-	EP_LOCK_EXIT (section1)*/
-
-	// // Remove EventPipeEventSource first since it tries to use the data structures that we remove below.
-	// // We need to do this after disabling sessions since those try to write to EventPipeEventSource.
-	// ep_event_source_fini (ep_event_source_get ());
-	// ep_config_shutdown (ep_config_get ());
 
 ep_on_exit:
 	ep_requires_lock_not_held ();

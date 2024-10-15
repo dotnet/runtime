@@ -1,0 +1,4 @@
+<Project>
+    <Import Project=".\native-library.targets" Condition="'$(IsSourceProject)' == 'true' and '$(Language)' == 'C#'" />
+    <Import Project="..\..\..\Directory.Build.targets" />
+</Project>

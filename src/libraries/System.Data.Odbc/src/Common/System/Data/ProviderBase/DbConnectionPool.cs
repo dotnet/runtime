@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Concurrent;
 
 namespace System.Data.ProviderBase
 {
@@ -28,9 +28,9 @@ namespace System.Data.ProviderBase
                 Owner = owner;
                 Completion = completion;
             }
-            public long DueTime { get; private set; }
-            public DbConnection Owner { get; private set; }
-            public TaskCompletionSource<DbConnectionInternal> Completion { get; private set; }
+            public long DueTime { get; }
+            public DbConnection Owner { get; }
+            public TaskCompletionSource<DbConnectionInternal> Completion { get; }
         }
 
 

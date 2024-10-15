@@ -716,6 +716,8 @@ struct _SgenMajorCollector {
 	gboolean (*ptr_is_from_pinned_alloc) (char *ptr);
 	void (*report_pinned_memory_usage) (void);
 	size_t (*get_num_major_sections) (void);
+	size_t (*get_min_live_major_sections) (void);
+	size_t (*get_max_last_major_survived_sections) (void);
 	size_t (*get_num_empty_blocks) (void);
 	size_t (*get_bytes_survived_last_sweep) (void);
 	gboolean (*handle_gc_param) (const char *opt);

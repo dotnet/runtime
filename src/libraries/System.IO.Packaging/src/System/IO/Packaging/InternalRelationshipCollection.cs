@@ -16,9 +16,9 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Xml;                           // for XmlReader/Writer
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Xml;                           // for XmlReader/Writer
 
 namespace System.IO.Packaging
 {
@@ -320,7 +320,7 @@ namespace System.IO.Packaging
             {
                 try
                 {
-#if NET6_0_OR_GREATER
+#if NET
                     relationshipTargetMode = Enum.Parse<TargetMode>(targetModeAttributeValue, ignoreCase: false);
 #else
                     relationshipTargetMode = (TargetMode)(Enum.Parse(typeof(TargetMode), targetModeAttributeValue, ignoreCase: false));

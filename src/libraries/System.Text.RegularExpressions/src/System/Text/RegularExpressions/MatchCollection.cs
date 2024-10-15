@@ -168,7 +168,7 @@ namespace System.Text.RegularExpressions
             throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
 
         bool IList.Contains(object? value) =>
-            value is Match && ((ICollection<Match>)this).Contains((Match)value);
+            value is Match match && ((ICollection<Match>)this).Contains(match);
 
         int IList.IndexOf(object? value) =>
             value is Match other ? ((IList<Match>)this).IndexOf(other) : -1;

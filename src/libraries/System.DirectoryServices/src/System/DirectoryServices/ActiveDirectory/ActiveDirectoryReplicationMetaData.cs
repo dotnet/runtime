@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Runtime.InteropServices;
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -64,14 +64,14 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (advanced)
                 {
-                    addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_ATTR_META_DATA_2)));
+                    addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf<DS_REPL_ATTR_META_DATA_2>());
 
                     AttributeMetadata managedMetaData = new AttributeMetadata(addr, true, _server, _nameTable);
                     Add(managedMetaData.Name, managedMetaData);
                 }
                 else
                 {
-                    addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_ATTR_META_DATA)));
+                    addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf<DS_REPL_ATTR_META_DATA>());
 
                     AttributeMetadata managedMetaData = new AttributeMetadata(addr, false, _server, _nameTable);
                     Add(managedMetaData.Name, managedMetaData);

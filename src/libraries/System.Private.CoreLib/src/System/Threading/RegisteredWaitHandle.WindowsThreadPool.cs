@@ -1,13 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
@@ -16,7 +16,7 @@ namespace System.Threading
     //
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
-        private readonly object? _lock;
+        private readonly Lock? _lock;
         private bool _unregistering;
 
         // Handle to this object to keep it alive
@@ -30,7 +30,7 @@ namespace System.Threading
         {
             Debug.Assert(ThreadPool.UseWindowsThreadPool);
 
-            _lock = new object();
+            _lock = new Lock();
 
             waitHandle.DangerousAddRef();
             _waitHandle = waitHandle;
@@ -119,7 +119,7 @@ namespace System.Threading
         private bool UnregisterWindowsThreadPool(WaitHandle waitObject)
         {
             // Hold the lock during the synchronous part of Unregister (as in CoreCLR)
-            lock(_lock!)
+            lock (_lock!)
             {
                 if (!_unregistering)
                 {
@@ -194,7 +194,7 @@ namespace System.Threading
             // If this object gets resurrected and another thread calls Unregister, that creates a race condition.
             // Do not block the finalizer thread. If another thread is running Unregister, it will clean up for us.
             // The _lock may be null in case of OOM in the constructor.
-            if ((_lock != null) && Monitor.TryEnter(_lock))
+            if ((_lock != null) && _lock.TryEnter())
             {
                 try
                 {
@@ -218,7 +218,7 @@ namespace System.Threading
                 }
                 finally
                 {
-                    Monitor.Exit(_lock);
+                    _lock.Exit();
                 }
             }
         }

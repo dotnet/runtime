@@ -21,6 +21,11 @@
 
 // All ICU headers need to be included here so that all function prototypes are
 // available before the function pointers are declared below.
+#if defined(APPLE_HYBRID_GLOBALIZATION)
+#include <unicode/uchar.h>
+#include <unicode/uidna.h>
+#include <unicode/utypes.h>
+#else
 #include <unicode/ucurr.h>
 #include <unicode/ucal.h>
 #include <unicode/uchar.h>
@@ -41,6 +46,7 @@
 #include <unicode/urename.h>
 #include <unicode/ustring.h>
 
+#endif
 #endif
 
 #elif defined(TARGET_WINDOWS)
@@ -346,7 +352,7 @@ const char* GlobalizationNative_GetICUDataPathFallback(void);
 #endif
 
 #endif // !defined(STATIC_ICU)
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(APPLE_HYBRID_GLOBALIZATION)
 /**
  * Append a code point to a string, overwriting 1 or 2 code units.
  * The offset points to the current end of the string contents

@@ -136,7 +136,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
 
         protected bool IsCompletedSuccessfully(Task t)
         {
-#if NETCOREAPP2_0_OR_GREATER
+#if NET
             return t.IsCompletedSuccessfully;
 #else
             return t.IsCompleted && !t.IsCanceled && !t.IsFaulted;

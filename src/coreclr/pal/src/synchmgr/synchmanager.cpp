@@ -28,6 +28,7 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC); // some headers have code with asserts, so do t
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <sched.h>
 #include <signal.h>
@@ -1707,9 +1708,7 @@ namespace CorUnix
             reinterpret_cast<CPalSynchronizationManager*>(pArg);
         CPalThread * pthrWorker = InternalGetCurrentThread();
 
-        InternalSetThreadDescription(pthrWorker,
-                                     PAL_GetCurrentThread(),
-                                     W(".NET SynchManager"));
+        SetThreadDescription(PAL_GetCurrentThread(), W(".NET SynchManager"));
 
         while (!fWorkerIsDone)
         {
@@ -4493,6 +4492,12 @@ namespace CorUnix
                     *pdwExitCode = WEXITSTATUS(iStatus);
                     *pfIsActualExitCode = true;
                     TRACE("Exit code was %d\n", *pdwExitCode);
+                }
+                else if (WIFSIGNALED(iStatus))
+                {
+                    *pdwExitCode = 128 + WTERMSIG(iStatus);
+                    *pfIsActualExitCode = true;
+                    TRACE("Exited by signal %d = exit code %d\n", WTERMSIG(iStatus), *pdwExitCode);
                 }
                 else
                 {

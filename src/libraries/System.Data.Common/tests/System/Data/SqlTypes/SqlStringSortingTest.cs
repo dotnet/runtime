@@ -37,7 +37,9 @@ namespace System.Data.SqlTypes.Tests
 
         private static readonly UnicodeEncoding s_unicodeEncoding = new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: true);
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        // On Apple platforms, the string comparison implementation relies on native Apple functions which uses normalization techniques, which can result in behavior differences compared to other platforms.
+        // Specifically, the use of precomposed strings and additional locale-based string folding can affect the results of comparisons with certain options like `IgnoreKanaType`.
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         [InlineData("ja-JP", 0x0411)] // Japanese - Japan
         [InlineData("ar-SA", 0x0401)] // Arabic - Saudi Arabia
         [InlineData("de-DE", 0x0407)] // German - Germany

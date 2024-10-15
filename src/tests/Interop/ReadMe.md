@@ -14,7 +14,7 @@ A common pattern for testing is using xUnit's `Assert` utilities. These utilitie
 
 ### Managed
 
-Managed tests should be designed to use the [SDK style project](https://docs.microsoft.com/en-us/dotnet/core/tools/csproj) system provided by [`dotnet-cli`](https://github.com/dotnet/cli).
+Managed tests should be designed to use the [SDK style project](https://learn.microsoft.com/dotnet/core/tools/csproj) system provided by [`dotnet-cli`](https://github.com/dotnet/cli).
 
 ### Native
 
@@ -34,7 +34,7 @@ Interop testing is divided into several areas.
 
 ### P/Invoke
 
-The P/Invoke bucket represents tests that involve a [Platform Invoke](https://docs.microsoft.com/en-us/dotnet/standard/native-interop) scenario.
+The P/Invoke bucket represents tests that involve a [Platform Invoke](https://learn.microsoft.com/dotnet/standard/native-interop) scenario.
 
 Testing P/Invoke has two aspects:
 

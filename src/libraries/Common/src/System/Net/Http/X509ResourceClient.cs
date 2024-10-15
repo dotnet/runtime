@@ -12,6 +12,9 @@ namespace System.Net.Http
 {
     internal static partial class X509ResourceClient
     {
+        private const long DefaultAiaDownloadLimit = 100 * 1024 * 1024;
+        private static long AiaDownloadLimit { get; } = GetValue("System.Security.Cryptography.AiaDownloadLimit", DefaultAiaDownloadLimit);
+
         private static readonly Func<string, CancellationToken, bool, Task<byte[]?>>? s_downloadBytes = CreateDownloadBytesFunc();
 
         static partial void ReportNoClient();
@@ -111,6 +114,7 @@ namespace System.Net.Http
                 ConstructorInfo? httpRequestMessageCtor = httpRequestMessageType.GetConstructor(Type.EmptyTypes);
                 MethodInfo? sendMethod = httpClientType.GetMethod("Send", new Type[] { httpRequestMessageType, typeof(CancellationToken) });
                 MethodInfo? sendAsyncMethod = httpClientType.GetMethod("SendAsync", new Type[] { httpRequestMessageType, typeof(CancellationToken) });
+                PropertyInfo? maxResponseContentBufferSizeProp = httpClientType.GetProperty("MaxResponseContentBufferSize");
                 PropertyInfo? responseContentProp = httpResponseMessageType.GetProperty("Content");
                 PropertyInfo? responseStatusCodeProp = httpResponseMessageType.GetProperty("StatusCode");
                 PropertyInfo? responseHeadersProp = httpResponseMessageType.GetProperty("Headers");
@@ -121,7 +125,7 @@ namespace System.Net.Http
                 if (socketsHttpHandlerCtor == null || pooledConnectionIdleTimeoutProp == null ||
                     allowAutoRedirectProp == null || httpClientCtor == null ||
                     requestUriProp == null || httpRequestMessageCtor == null ||
-                    sendMethod == null || sendAsyncMethod == null ||
+                    sendMethod == null || sendAsyncMethod == null || maxResponseContentBufferSizeProp == null ||
                     responseContentProp == null || responseStatusCodeProp == null ||
                     responseHeadersProp == null || responseHeadersLocationProp == null ||
                     readAsStreamMethod == null || taskOfHttpResponseMessageResultProp == null)
@@ -145,6 +149,7 @@ namespace System.Net.Http
                 pooledConnectionIdleTimeoutProp.SetValue(socketsHttpHandler, TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds));
                 allowAutoRedirectProp.SetValue(socketsHttpHandler, false);
                 object? httpClient = httpClientCtor.Invoke(new object?[] { socketsHttpHandler });
+                maxResponseContentBufferSizeProp.SetValue(httpClient, AiaDownloadLimit);
 
                 return async (string uriString, CancellationToken cancellationToken, bool async) =>
                 {
@@ -301,6 +306,23 @@ namespace System.Net.Http
         private static bool IsAllowedScheme(string scheme)
         {
             return string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static long GetValue(string name, long defaultValue)
+        {
+            object? data = AppContext.GetData(name);
+            if (data is null)
+            {
+                return defaultValue;
+            }
+            try
+            {
+                return Convert.ToInt64(data);
+            }
+            catch
+            {
+                return defaultValue;
+            }
         }
     }
 }

@@ -79,12 +79,12 @@ namespace <xsl:value-of select="@namespace" />
         }
 #endif
 </xsl:if>
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
 
-        internal void Encode(AsnWriter writer, Asn1Tag tag)
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
 <xsl:apply-templates mode="Encode" />
@@ -179,7 +179,7 @@ namespace <xsl:value-of select="@namespace" />
         }
 #endif
 
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             bool wroteValue = false;
 <xsl:apply-templates mode="EncodeChoice" />

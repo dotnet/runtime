@@ -10,13 +10,6 @@
 #include <runtime_version.h>
 #include <minipal/utils.h>
 
-#if defined(_WIN32)
-#define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=798306")
-#elif defined(TARGET_OSX)
-#define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=2063366")
-#else
-#define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=2063370")
-#endif
 #define DOTNET_CORE_DOWNLOAD_URL _X("https://aka.ms/dotnet/download")
 #define DOTNET_CORE_APPLAUNCH_URL _X("https://aka.ms/dotnet-core-applaunch")
 
@@ -54,9 +47,6 @@
 
 #define HOST_VERSION _QUOTE(RuntimeProductVersion)
 
-bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
-bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case);
-
 namespace utils
 {
     template<size_t L>
@@ -87,7 +77,7 @@ pal::string_t strip_file_ext(const pal::string_t& path);
 pal::string_t get_filename(const pal::string_t& path);
 pal::string_t get_filename_without_ext(const pal::string_t& path);
 void append_path(pal::string_t* path1, const pal::char_t* path2);
-bool library_exists_in_dir(const pal::string_t& lib_dir, const pal::string_t& lib_name, pal::string_t* p_lib_path);
+bool file_exists_in_dir(const pal::string_t& dir, const pal::char_t* file_name, pal::string_t* out_file_path);
 bool coreclr_exists_in_dir(const pal::string_t& candidate);
 void remove_trailing_dir_separator(pal::string_t* dir);
 void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl);

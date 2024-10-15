@@ -23,9 +23,10 @@ unsafe partial class GenericsNative
     public static extern Span<bool> AddSpanBs(in Span<bool> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestSpanB()
+    [Fact]
+    public static void TestSpanB()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetSpanB(true));
 

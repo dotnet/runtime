@@ -52,34 +52,58 @@ BOOL FinalizerThread::HaveExtraWorkForFinalizer()
     return GetFinalizerThread()->HaveExtraWorkForFinalizer();
 }
 
-void CallFinalizer(Object* obj)
+OBJECTREF FinalizerThread::GetNextFinalizableObject()
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
+Again:
+    if (fQuitFinalizer)
+        return NULL;
+
+    OBJECTREF obj = ObjectToOBJECTREF(GCHeapUtilities::GetGCHeap()->GetNextFinalizable());
+    if (obj == NULL)
+        return NULL;
+
     MethodTable     *pMT = obj->GetMethodTable();
-    STRESS_LOG2(LF_GC, LL_INFO1000, "Finalizing object %p MT %pT\n", obj, pMT);
-    LOG((LF_GC, LL_INFO1000, "Finalizing " LOG_OBJECT_CLASS(obj)));
+    STRESS_LOG2(LF_GC, LL_INFO1000, "Finalizing object %p MT %pT\n", OBJECTREFToObject(obj), pMT);
+    LOG((LF_GC, LL_INFO1000, "Finalizing " LOG_OBJECT_CLASS(OBJECTREFToObject(obj))));
 
-    _ASSERTE(GetThread()->PreemptiveGCDisabled());
-
-    if (!((obj->GetHeader()->GetBits()) & BIT_SBLK_FINALIZER_RUN))
-    {
-        _ASSERTE(pMT->HasFinalizer());
-
-#ifdef FEATURE_EVENT_TRACE
-        ETW::GCLog::SendFinalizeObjectEvent(pMT, obj);
-#endif // FEATURE_EVENT_TRACE
-
-        MethodTable::CallFinalizer(obj);
-    }
-    else
+    if ((obj->GetHeader()->GetBits()) & BIT_SBLK_FINALIZER_RUN)
     {
         //reset the bit so the object can be put on the list
         //with RegisterForFinalization
         obj->GetHeader()->ClrBit (BIT_SBLK_FINALIZER_RUN);
+        goto Again;
     }
+
+    _ASSERTE(pMT->HasFinalizer());
+
+#ifdef FEATURE_EVENT_TRACE
+    ETW::GCLog::SendFinalizeObjectEvent(pMT, OBJECTREFToObject(obj));
+#endif // FEATURE_EVENT_TRACE
+
+    // Check for precise init class constructors that have failed, if any have failed, then we didn't run the
+    // constructor for the object, and running the finalizer for the object would violate the CLI spec by running
+    // instance code without having successfully run the precise-init class constructor.
+    if (pMT->HasPreciseInitCctors())
+    {
+        MethodTable *pMTCur = pMT;
+        do
+        {
+            if ((!pMTCur->GetClass()->IsBeforeFieldInit()) && pMTCur->IsInitError())
+            {
+                // Precise init Type Initializer for type failed... do not run finalizer
+                goto Again;
+            }
+
+            pMTCur = pMTCur->GetParentMethodTable();
+        }
+        while (pMTCur != NULL);
+    }
+
+    return obj;
 }
 
 void FinalizerThread::FinalizeAllObjects()
@@ -90,28 +114,13 @@ void FinalizerThread::FinalizeAllObjects()
 
     FireEtwGCFinalizersBegin_V1(GetClrInstanceId());
 
-    unsigned int fcount = 0;
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__GC__RUN_FINALIZERS);
+    DECLARE_ARGHOLDER_ARRAY(args, 0);
 
-    Object* fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
+    uint32_t count;
+    CALL_MANAGED_METHOD(count, uint32_t, args);
 
-    Thread *pThread = GetThread();
-
-    // Finalize everyone
-    while (fobj && !fQuitFinalizer)
-    {
-        fcount++;
-
-        CallFinalizer(fobj);
-
-        // thread abort could be injected by the debugger,
-        // but should not be allowed to "leak" out of expression evaluation
-        _ASSERTE(!GetFinalizerThread()->IsAbortRequested());
-
-        pThread->InternalReset();
-
-        fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
-    }
-    FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
+    FireEtwGCFinalizersEnd_V1(count, GetClrInstanceId());
 }
 
 void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
@@ -253,7 +262,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         // Setting the event here, instead of at the bottom of the loop, could
         // cause us to skip draining the Q, if the request is made as soon as
         // the app starts running.
-        SignalFinalizationDone(TRUE);
+        SignalFinalizationDone();
 #endif //0
 
         WaitForFinalizerEvent (hEventFinalizer);
@@ -345,13 +354,15 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         }
         LOG((LF_GC, LL_INFO100, "***** Calling Finalizers\n"));
 
+        int observedFullGcCount =
+            GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
         FinalizeAllObjects();
 
         // Anyone waiting to drain the Q can now wake up.  Note that there is a
         // race in that another thread starting a drain, as we leave a drain, may
-        // consider itself satisfied by the drain that just completed.  This is
-        // acceptable.
-        SignalFinalizationDone(TRUE);
+        // consider itself satisfied by the drain that just completed.
+        // Thus we include the Full GC count that we have certaily observed.
+        SignalFinalizationDone(observedFullGcCount);
     }
 
     if (s_InitializedFinalizerThreadForPlatform)
@@ -365,18 +376,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
     ASSERT(args == 0);
     ASSERT(hEventFinalizer->IsValid());
 
-    // TODO: The following line should be removed after contract violation is fixed.
-    // See bug 27409
-    SCAN_IGNORE_THROW;
-    SCAN_IGNORE_TRIGGER;
-
     LOG((LF_GC, LL_INFO10, "Finalizer thread starting...\n"));
-
-#if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(FEATURE_COMINTEROP)
-    // Make sure the finalizer thread is set to MTA to avoid hitting
-    // DevDiv Bugs 180773 - [Stress Failure] AV at CoreCLR!SafeQueryInterfaceHelper
-    GetFinalizerThread()->SetApartment(Thread::AS_InMTA);
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT && !FEATURE_COMINTEROP
 
     s_FinalizerThreadOK = GetFinalizerThread()->HasStarted();
 
@@ -479,19 +479,18 @@ void FinalizerThread::FinalizerThreadCreate()
     }
 }
 
-void FinalizerThread::SignalFinalizationDone(BOOL fFinalizer)
+static int g_fullGcCountSeenByFinalization;
+
+void FinalizerThread::SignalFinalizationDone(int observedFullGcCount)
 {
     WRAPPER_NO_CONTRACT;
 
-    if (fFinalizer)
-    {
-        InterlockedAnd((LONG*)&g_FinalizerWaiterStatus, ~FWS_WaitInterrupt);
-    }
+    g_fullGcCountSeenByFinalization = observedFullGcCount;
     hEventFinalizerDone->Set();
 }
 
 // Wait for the finalizer thread to complete one pass.
-void FinalizerThread::FinalizerThreadWait(DWORD timeout)
+void FinalizerThread::FinalizerThreadWait()
 {
     ASSERT(hEventFinalizerDone->IsValid());
     ASSERT(hEventFinalizer->IsValid());
@@ -500,6 +499,15 @@ void FinalizerThread::FinalizerThreadWait(DWORD timeout)
     // Can't call this from within a finalized method.
     if (!IsCurrentThreadFinalizer())
     {
+        // We may see a completion of finalization cycle that might not see objects that became
+        // F-reachable in recent GCs. In such case we want to wait for a completion of another cycle.
+        // However, since an object cannot be prevented from promoting, one can only rely on Full GCs
+        // to collect unreferenced objects deterministically. Thus we only care about Full GCs here.
+        int desiredFullGcCount =
+            GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
+
+        GCX_PREEMP();
+
 #ifdef FEATURE_COMINTEROP
         // To help combat finalizer thread starvation, we check to see if there are any wrappers
         // scheduled to be cleaned up for our context.  If so, we'll do them here to avoid making
@@ -508,46 +516,33 @@ void FinalizerThread::FinalizerThreadWait(DWORD timeout)
             g_pRCWCleanupList->CleanupWrappersInCurrentCtxThread();
 #endif // FEATURE_COMINTEROP
 
-        GCX_PREEMP();
+    tryAgain:
+        hEventFinalizerDone->Reset();
+        EnableFinalization();
 
-        ULONGLONG startTime = CLRGetTickCount64();
-        ULONGLONG endTime;
-        if (timeout == INFINITE)
+        // Under GC stress the finalizer queue may never go empty as frequent
+        // GCs will keep filling up the queue with items.
+        // We will disable GC stress to make sure the current thread is not permanently blocked on that.
+        GCStressPolicy::InhibitHolder iholder;
+
+        //----------------------------------------------------
+        // Do appropriate wait and pump messages if necessary
+        //----------------------------------------------------
+
+        DWORD status;
+        status = hEventFinalizerDone->Wait(INFINITE,TRUE);
+
+        // we use unsigned math here as the collection counts, which are size_t internally,
+        // can in theory overflow an int and wrap around.
+        // unsigned math would have more defined/portable behavior in such case
+        if ((int)((unsigned int)desiredFullGcCount - (unsigned int)g_fullGcCountSeenByFinalization) > 0)
         {
-            endTime = MAXULONGLONG;
-        }
-        else
-        {
-            endTime = timeout + startTime;
+            // There were some Full GCs happening before we started waiting and possibly not seen by the
+            // last finalization cycle. This is rare, but we need to be sure we have seen those,
+            // so we try one more time.
+            goto tryAgain;
         }
 
-        while (TRUE)
-        {
-            hEventFinalizerDone->Reset();
-            EnableFinalization();
-
-            //----------------------------------------------------
-            // Do appropriate wait and pump messages if necessary
-            //----------------------------------------------------
-
-            DWORD status = hEventFinalizerDone->Wait(timeout,TRUE);
-            if (status != WAIT_TIMEOUT && !(g_FinalizerWaiterStatus & FWS_WaitInterrupt))
-            {
-                return;
-            }
-            // recalculate timeout
-            if (timeout != INFINITE)
-            {
-                ULONGLONG curTime = CLRGetTickCount64();
-                if (curTime >= endTime)
-                {
-                    return;
-                }
-                else
-                {
-                    timeout = (DWORD)(endTime - curTime);
-                }
-            }
-        }
+        _ASSERTE(status == WAIT_OBJECT_0);
     }
 }

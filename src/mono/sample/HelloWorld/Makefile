@@ -3,22 +3,29 @@ DOTNET:=$(TOP)dotnet.sh
 DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary
 
 MONO_CONFIG?=Debug
-MONO_ARCH?=$(shell . $(TOP)eng/native/init-os-and-arch.sh && echo $${arch})
-TARGET_OS?=$(shell . $(TOP)eng/native/init-os-and-arch.sh && echo $${os})
+MONO_ARCH?=$(shell . $(TOP)eng/common/native/init-os-and-arch.sh && echo $${arch})
+TARGET_OS?=$(shell . $(TOP)eng/common/native/init-os-and-arch.sh && echo $${os})
 AOT?=false
+FULL_AOT?=false
+TRIM?=false
 USE_LLVM?=false
 StripILCode?=false
 TrimmingEligibleMethodsOutputDirectory?= #<path-to-a-writable-directory>
 
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
 
-MONO_ENV_OPTIONS ?=
+MONO_ENV_OPTIONS ?= 
+ifeq ($(FULL_AOT),true)
+MONO_ENV_OPTIONS += --full-aot
+endif
 
 publish:
 	$(DOTNET) publish \
 	-c $(MONO_CONFIG) \
 	-r $(TARGET_OS)-$(MONO_ARCH) \
-	/p:RunAOTCompilation=$(AOT) \
+	/p:SampleUseAOT=$(AOT) \
+        /p:SampleUseFullAOT=$(FULL_AOT) \
+	/p:SampleTrim=$(TRIM) \
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:StripILCode=$(StripILCode) \
 	/p:TrimmingEligibleMethodsOutputDirectory=$(TrimmingEligibleMethodsOutputDirectory) \

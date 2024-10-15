@@ -30,20 +30,6 @@
 #ifndef DACCESS_COMPILE
 
 
-//*******************************************************************************
-EEClass::EEClass(DWORD cbFixedEEClassFields)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Cache size of fixed fields (this instance also contains a set of packed fields whose final size isn't
-    // determined until the end of class loading). We store the size into a spare byte made available by
-    // compiler field alignment, so we need to ensure we never allocate a flavor of EEClass more than 255
-    // bytes long.
-    _ASSERTE(cbFixedEEClassFields <= 0xff);
-    m_cbFixedEEClassFields = (BYTE)cbFixedEEClassFields;
-
-    // All other members are initialized to zero
-}
 
 //*******************************************************************************
 void *EEClass::operator new(
@@ -59,12 +45,7 @@ void *EEClass::operator new(
     }
     CONTRACTL_END;
 
-    // EEClass (or sub-type) is always followed immediately by an EEClassPackedFields structure. This is
-    // maximally sized at runtime but in the ngen scenario will be optimized into a smaller structure (which
-    // is why it must go after all the fixed sized fields).
-    S_SIZE_T safeSize = S_SIZE_T(size) + S_SIZE_T(sizeof(EEClassPackedFields));
-
-    void *p = pamTracker->Track(pHeap->AllocMem(safeSize));
+    void *p = pamTracker->Track(pHeap->AllocMem(S_SIZE_T(size)));
 
     // No need to memset since this memory came from VirtualAlloc'ed memory
     // memset (p, 0, size);
@@ -143,30 +124,23 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     if (IsDelegate())
     {
         DelegateEEClass* pDelegateEEClass = (DelegateEEClass*)this;
-
-        if (pDelegateEEClass->m_pStaticCallStub)
+        for (Stub* pThunk : {pDelegateEEClass->m_pStaticCallStub, pDelegateEEClass->m_pInstRetBuffCallStub})
         {
-            // Collect data to remove stub entry from StubManager if
-            // stub is deleted.
-            BYTE* entry = (BYTE*)pDelegateEEClass->m_pStaticCallStub->GetEntryPoint();
-            UINT length = pDelegateEEClass->m_pStaticCallStub->GetNumCodeBytes();
+            if (pThunk == nullptr)
+                continue;
 
-            ExecutableWriterHolder<Stub> stubWriterHolder(pDelegateEEClass->m_pStaticCallStub, sizeof(Stub));
-            BOOL fStubDeleted = stubWriterHolder.GetRW()->DecRef();
-            if (fStubDeleted)
+            _ASSERTE(pThunk->IsShuffleThunk());
+
+            if (pThunk->HasExternalEntryPoint()) // IL thunk
             {
-                StubLinkStubManager::g_pManager->RemoveStubRange(entry, length);
+                pThunk->DecRef();
+            }
+            else
+            {
+                ExecutableWriterHolder<Stub> stubWriterHolder(pThunk, sizeof(Stub));
+                stubWriterHolder.GetRW()->DecRef();
             }
         }
-        if (pDelegateEEClass->m_pInstRetBuffCallStub)
-        {
-            ExecutableWriterHolder<Stub> stubWriterHolder(pDelegateEEClass->m_pInstRetBuffCallStub, sizeof(Stub));
-            stubWriterHolder.GetRW()->DecRef();
-        }
-        // While m_pMultiCastInvokeStub is also a member,
-        // it is owned by the m_pMulticastStubCache, not by the class
-        // - it is shared across classes. So we don't decrement
-        // its ref count here
     }
 
 #ifdef FEATURE_COMINTEROP
@@ -209,7 +183,7 @@ EEClass::CreateMinimalClass(LoaderHeap *pHeap, AllocMemTracker *pamTracker)
     }
     CONTRACTL_END;
 
-    return new (pHeap, pamTracker) EEClass(sizeof(EEClass));
+    return new (pHeap, pamTracker) EEClass();
 }
 
 
@@ -478,10 +452,10 @@ HRESULT EEClass::AddField(MethodTable* pMT, mdFieldDef fieldDef, FieldDesc** ppN
         AppDomain::AssemblyIterator appIt = pDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
 
         bool isStaticField = !!pNewFD->IsStatic();
-        CollectibleAssemblyHolder<DomainAssembly*> pDomainAssembly;
-        while (appIt.Next(pDomainAssembly.This()) && SUCCEEDED(hr))
+        CollectibleAssemblyHolder<Assembly*> pAssembly;
+        while (appIt.Next(pAssembly.This()) && SUCCEEDED(hr))
         {
-            Module* pMod = pDomainAssembly->GetModule();
+            Module* pMod = pAssembly->GetModule();
             LOG((LF_ENC, LL_INFO100, "EEClass::AddField Checking: %s mod:%p\n", pMod->GetDebugName(), pMod));
 
             EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
@@ -674,10 +648,10 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
         PTR_AppDomain pDomain = AppDomain::GetCurrentDomain();
         AppDomain::AssemblyIterator appIt = pDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
 
-        CollectibleAssemblyHolder<DomainAssembly*> pDomainAssembly;
-        while (appIt.Next(pDomainAssembly.This()) && SUCCEEDED(hr))
+        CollectibleAssemblyHolder<Assembly*> pAssembly;
+        while (appIt.Next(pAssembly.This()) && SUCCEEDED(hr))
         {
-            Module* pMod = pDomainAssembly->GetModule();
+            Module* pMod = pAssembly->GetModule();
             LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Checking: %s mod:%p\n", pMod->GetDebugName(), pMod));
 
             EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
@@ -823,7 +797,7 @@ HRESULT EEClass::AddMethodDesc(
                                 COMMA_INDEBUG(NULL)
                                 );
 
-        pNewMD->SetTemporaryEntryPoint(pAllocator, &dummyAmTracker);
+        pNewMD->SetTemporaryEntryPoint(&dummyAmTracker);
 
         // [TODO] if an exception is thrown, asserts will fire in EX_CATCH_HRESULT()
         // during an EnC operation due to the debugger thread not being able to
@@ -1429,7 +1403,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
             {
                 // The real check is that the MethodDesc's must not match, but a simple VTable check will
                 // work most of the time, and is far faster than the GetMethodDescForSlot method.
-                _ASSERTE(pMT->GetMethodDescForSlot(i) == pParentMT->GetMethodDescForSlot(i));
+                _ASSERTE(pMT->GetMethodDescForSlot_NoThrow(i) == pParentMT->GetMethodDescForSlot_NoThrow(i));
                 continue;
             }
             MethodDesc* pMD = pMT->GetMethodDescForSlot(i);
@@ -1539,7 +1513,7 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
 
     if (pMT->GetClass()->HasVTableMethodImpl())
     {
-        MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, FALSE));
+        MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, MethodDataComputeOptions::CacheOnly));
 
         for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
         {
@@ -1547,7 +1521,7 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
             {
                 // The real check is that the MethodDesc's must not match, but a simple VTable check will
                 // work most of the time, and is far faster than the GetMethodDescForSlot method.
-                _ASSERTE(pMT->GetMethodDescForSlot(i) == pParentMT->GetMethodDescForSlot(i));
+                _ASSERTE(pMT->GetMethodDescForSlot_NoThrow(i) == pParentMT->GetMethodDescForSlot_NoThrow(i));
                 continue;
             }
 
@@ -1597,9 +1571,10 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
                     // This is a vtable slot that needs to be updated to the new overriding method because of the
                     // presence of the attribute.
                     pMT->SetSlot(j, pMT->GetSlot(i));
-                    _ASSERT(pMT->GetMethodDescForSlot(j) == pMD);
+                    _ASSERT(pMT->GetMethodDescForSlot_NoThrow(j) == pMD);
 
-                    hMTData->UpdateImplMethodDesc(pMD, j);
+                    if (!hMTData.IsNull())
+                        hMTData->UpdateImplMethodDesc(pMD, j);
                 }
             }
         }
@@ -1611,7 +1586,7 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
 //
 // Debugger notification
 //
-BOOL TypeHandle::NotifyDebuggerLoad(AppDomain *pDomain, BOOL attaching) const
+BOOL TypeHandle::NotifyDebuggerLoad(BOOL attaching) const
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1626,21 +1601,21 @@ BOOL TypeHandle::NotifyDebuggerLoad(AppDomain *pDomain, BOOL attaching) const
     }
 
     return g_pDebugInterface->LoadClass(
-        *this, GetCl(), GetModule(), pDomain);
+        *this, GetCl(), GetModule());
 }
 
 //*******************************************************************************
-void TypeHandle::NotifyDebuggerUnload(AppDomain *pDomain) const
+void TypeHandle::NotifyDebuggerUnload() const
 {
     LIMITED_METHOD_CONTRACT;
 
     if (!GetModule()->IsVisibleToDebugger())
         return;
 
-    if (!pDomain->IsDebuggerAttached())
+    if (!AppDomain::GetCurrentDomain()->IsDebuggerAttached())
         return;
 
-    g_pDebugInterface->UnloadClass(GetCl(), GetModule(), pDomain);
+    g_pDebugInterface->UnloadClass(GetCl(), GetModule());
 }
 
 //*******************************************************************************
@@ -2268,8 +2243,7 @@ CorNativeLinkType MethodTable::GetCharSet()
 // Helper routines for the macros defined at the top of this class.
 // You probably should not use these functions directly.
 //
-template<typename RedirectFunctor>
-SString &MethodTable::_GetFullyQualifiedNameForClassNestedAwareInternal(SString &ssBuf)
+SString &MethodTable::_GetFullyQualifiedNameForClassNestedAware(SString &ssBuf)
 {
     CONTRACTL {
         THROWS;
@@ -2296,10 +2270,8 @@ SString &MethodTable::_GetFullyQualifiedNameForClassNestedAwareInternal(SString 
     DWORD dwAttr;
     IfFailThrow(pImport->GetTypeDefProps(GetCl(), &dwAttr, NULL));
 
-    RedirectFunctor redirectFunctor;
     if (IsTdNested(dwAttr))
     {
-        StackSString ssFullyQualifiedName;
         StackSString ssPath;
 
         // Build the nesting chain.
@@ -2313,37 +2285,21 @@ SString &MethodTable::_GetFullyQualifiedNameForClassNestedAwareInternal(SString 
                 &szEnclNameSpace));
 
             ns::MakePath(ssPath,
-                StackSString(SString::Utf8, redirectFunctor(szEnclNameSpace)),
+                StackSString(SString::Utf8, szEnclNameSpace),
                 StackSString(SString::Utf8, szEnclName));
-            ns::MakeNestedTypeName(ssFullyQualifiedName, ssPath, ssName);
 
-            ssName = ssFullyQualifiedName;
+            ssPath.Append('+');
+            ssPath.Append(ssName);
+
+            ssName = ssPath;
         }
     }
 
     ns::MakePath(
         ssBuf,
-        StackSString(SString::Utf8, redirectFunctor(pszNamespace)), ssName);
+        StackSString(SString::Utf8, pszNamespace), ssName);
 
     return ssBuf;
-}
-
-class PassThrough
-{
-public :
-    LPCUTF8 operator() (LPCUTF8 szEnclNamespace)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return szEnclNamespace;
-    }
-};
-
-SString &MethodTable::_GetFullyQualifiedNameForClassNestedAware(SString &ssBuf)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return _GetFullyQualifiedNameForClassNestedAwareInternal<PassThrough>(ssBuf);
 }
 
 //*******************************************************************************
@@ -2711,7 +2667,7 @@ MethodTable::DebugDumpGCDesc(
             LOG((LF_ALWAYS, LL_ALWAYS, "GC description for '%s':\n\n", pszClassName));
         }
 
-        if (ContainsPointers())
+        if (ContainsGCPointers())
         {
             CGCDescSeries *pSeries;
             CGCDescSeries *pHighest;
@@ -3285,11 +3241,6 @@ EEClass::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, MethodTable * pMT)
     DAC_ENUM_DTHIS();
     EMEM_OUT(("MEM: %p EEClass\n", dac_cast<TADDR>(this)));
 
-    // The DAC_ENUM_DTHIS above won't have reported the packed fields tacked on the end of this instance (they
-    // aren't part of the static class definition because the fields are variably sized and thus have to come
-    // right at the end of the structure, even for sub-types such as LayoutEEClass or DelegateEEClass).
-    DacEnumMemoryRegion(dac_cast<TADDR>(GetPackedFields()), sizeof(EEClassPackedFields));
-
     if (HasOptionalFields())
         DacEnumMemoryRegion(dac_cast<TADDR>(GetOptionalFields()), sizeof(EEClassOptionalFields));
 
@@ -3321,46 +3272,3 @@ EEClass::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, MethodTable * pMT)
 }
 
 #endif // DACCESS_COMPILE
-
-// Get pointer to the packed fields structure attached to this instance.
-PTR_EEClassPackedFields EEClass::GetPackedFields()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return dac_cast<PTR_EEClassPackedFields>(PTR_HOST_TO_TADDR(this) + m_cbFixedEEClassFields);
-}
-
-// Get the value of the given field. Works regardless of whether the field is currently in its packed or
-// unpacked state.
-DWORD EEClass::GetPackableField(EEClassFieldId eField)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return m_fFieldsArePacked ?
-        GetPackedFields()->GetPackedField(eField) :
-        GetPackedFields()->GetUnpackedField(eField);
-}
-
-// Set the value of the given field. The field *must* be in the unpacked state for this to be legal (in
-// practice all packable fields must be initialized during class construction and from then on remain
-// immutable).
-void EEClass::SetPackableField(EEClassFieldId eField, DWORD dwValue)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!m_fFieldsArePacked);
-    GetPackedFields()->SetUnpackedField(eField, dwValue);
-}

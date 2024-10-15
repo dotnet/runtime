@@ -15,14 +15,13 @@ namespace Wasm.Build.Tests.Blazor;
 
 public class WorkloadRequiredTests : BlazorWasmTestBase
 {
-    /* Keep in sync with settings in wasm.proj, and WasmApp.Native.targets .
+    /* Keep in sync with settings in browser.proj, and WasmApp.Native.targets .
      * The `triggerValue` here is opposite of the default used when building the runtime pack
-     * (see wasm.proj), and thus requiring a native build
+     * (see browser.proj), and thus requiring a native build
      */
     public static (string propertyName, bool triggerValue)[] PropertiesWithTriggerValues = new[]
     {
         ("RunAOTCompilation", true),
-        ("WasmEnableLegacyJsInterop", false),
         ("WasmEnableSIMD", false),
         ("WasmEnableExceptionHandling", false),
         ("InvariantTimezone", true),
@@ -84,7 +83,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         if (invariant)
             AddItemsPropertiesToProject(projectFile, extraProperties: "<InvariantGlobalization>true</InvariantGlobalization>");
 
-        string counterPath = Path.Combine(Path.GetDirectoryName(projectFile)!, "Components", "Pages", "Counter.razor");
+        string counterPath = Path.Combine(Path.GetDirectoryName(projectFile)!, "Pages", "Counter.razor");
         string allText = File.ReadAllText(counterPath);
         string ccText = "currentCount++;";
         if (allText.IndexOf(ccText) < 0)
@@ -121,7 +120,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         {
             Config = config,
             Host = publish ? BlazorRunHost.WebServer : BlazorRunHost.DotnetRun,
-            OnConsoleMessage = msg =>
+            OnConsoleMessage = (_, msg) =>
             {
                 sbOutput.AppendLine(msg.Text);
             }
@@ -145,7 +144,8 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
             Assert.DoesNotContain("Could not create es-ES culture", output);
             Assert.DoesNotContain("invalid culture", output);
             Assert.DoesNotContain("CurrentCulture.NativeName: Invariant Language (Invariant Country)", output);
-            Assert.Contains("es-ES: Is-LCID-InvariantCulture: False, NativeName: es (ES)", output);
+            Assert.Contains("es-ES: Is-LCID-InvariantCulture: False", output);
+            Assert.Contains("NativeName: espa\u00F1ol (Espa\u00F1a)", output);
 
             // ignoring the last line of the output which prints the current culture
         }

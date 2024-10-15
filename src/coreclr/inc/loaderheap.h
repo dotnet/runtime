@@ -158,7 +158,7 @@ struct LoaderHeapEvent;
 inline UINT32 GetStubCodePageSize()
 {
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
-    return max(16*1024, GetOsPageSize());
+    return max(16*1024u, GetOsPageSize());
 #elif defined(TARGET_ARM)
     return 4096; // ARM is special as the 32bit instruction set does not easily permit a 16KB offset
 #else
@@ -277,13 +277,6 @@ public:
         WRAPPER_NO_CONTRACT;
         return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion();
     }
-#endif
-
-#ifdef _DEBUG
-    // Stubs allocated from a LoaderHeap will have unwind info registered with NT.
-    // The info must be unregistered when the heap is destroyed.
-    BOOL                m_fPermitStubsWithUnwindInfo;
-    BOOL                m_fStubUnwindInfoUnregistered;
 #endif
 
 public:

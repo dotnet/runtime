@@ -119,9 +119,10 @@ namespace System.Diagnostics
         public static System.Diagnostics.TraceListenerCollection Listeners { get { throw null; } }
         public static bool UseGlobalLock { get { throw null; } set { } }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
-        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message) { }
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("condition")] string? message = null) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message, string? detailMessage) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]

@@ -108,9 +108,14 @@ public class BootJsonData
     public object diagnosticTracing { get; set; }
 
     /// <summary>
-    /// Gets or sets pthread pool size.
+    /// Gets or sets pthread pool initial size.
     /// </summary>
-    public int? pthreadPoolSize { get; set; }
+    public int? pthreadPoolInitialSize { get; set; }
+
+    /// <summary>
+    /// Gets or sets pthread pool unused size.
+    /// </summary>
+    public int? pthreadPoolUnusedSize { get; set; }
 }
 
 public class ResourcesData
@@ -119,6 +124,9 @@ public class ResourcesData
     /// Gets a hash of all resources
     /// </summary>
     public string hash { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, string> fingerprinting { get; set; }
 
     /// <summary>
     /// .NET Wasm runtime resources (dotnet.wasm, dotnet.js) etc.
@@ -131,6 +139,9 @@ public class ResourcesData
 
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary jsModuleWorker { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleGlobalization { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary jsModuleNative { get; set; }
@@ -148,9 +159,20 @@ public class ResourcesData
     public ResourceHashesByNameDictionary icu { get; set; }
 
     /// <summary>
+    /// "assembly" (.dll) resources needed to start MonoVM
+    /// </summary>
+    public ResourceHashesByNameDictionary coreAssembly { get; set; } = new ResourceHashesByNameDictionary();
+
+    /// <summary>
     /// "assembly" (.dll) resources
     /// </summary>
     public ResourceHashesByNameDictionary assembly { get; set; } = new ResourceHashesByNameDictionary();
+
+    /// <summary>
+    /// "debug" (.pdb) resources needed to start MonoVM
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary corePdb { get; set; }
 
     /// <summary>
     /// "debug" (.pdb) resources
@@ -195,6 +217,9 @@ public class ResourcesData
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, AdditionalAsset> runtimeAssets { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, ResourceHashesByNameDictionary> coreVfs { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, ResourceHashesByNameDictionary> vfs { get; set; }

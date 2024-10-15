@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+
 using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.General.NativeFormat
@@ -10,7 +11,7 @@ namespace System.Reflection.Runtime.General.NativeFormat
     {
         public static bool GetDefaultValueFromConstantIfAny(MetadataReader reader, Handle constantHandle, Type declaredType, bool raw, out object? defaultValue)
         {
-            if (!(constantHandle.IsNull(reader)))
+            if (!constantHandle.IsNil)
             {
                 defaultValue = constantHandle.ParseConstantValue(reader);
                 if ((!raw) && declaredType.IsEnum && defaultValue != null)

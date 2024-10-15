@@ -52,7 +52,11 @@ app-builder:
 	$(DOTNET) build $(TOP)/src/tasks/WasmAppBuilder
 
 build-tasks:
-	$(DOTNET) build $(TOP)/src/tasks/WasmBuildTasks $(MSBUILD_ARGS)
+	$(DOTNET) build $(TOP)/src/tasks/tasks.proj /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
+
+build-packages:
+	rm -f $(TOP)/artifacts/packages/$(CONFIG)/Shipping/*.nupkg
+	WASI_SDK_PATH=$(WASI_SDK_PATH) $(TOP)/build.sh mono.packages+mono.manifests+packs.product -os wasi -c $(CONFIG) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
 
 clean:
 	$(RM) -rf $(BUILDS_OBJ_DIR)
@@ -115,6 +119,3 @@ build-dbg-testsuite:
 	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS)
 build-app-host:
 	$(DOTNET) build $(TOP)/src/mono/wasm/host $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
-
-patch-deterministic:
-	cd emsdk/upstream/emscripten/ && patch -p1 < ../../../runtime/deterministic.diff

@@ -144,12 +144,13 @@ FILE* jitstdout()
 }
 
 // Like printf/logf, but only outputs to jitstdout -- skips call back into EE.
-void jitprintf(const char* fmt, ...)
+int jitprintf(const char* fmt, ...)
 {
     va_list vl;
     va_start(vl, fmt);
-    vfprintf(jitstdout(), fmt, vl);
+    int status = vfprintf(jitstdout(), fmt, vl);
     va_end(vl);
+    return status;
 }
 
 void jitShutdown(bool processIsTerminating)
@@ -210,7 +211,9 @@ void SetJitTls(void* value)
 
 #if defined(DEBUG)
 
-JitTls::JitTls(ICorJitInfo* jitInfo) : m_compiler(nullptr), m_logEnv(jitInfo)
+JitTls::JitTls(ICorJitInfo* jitInfo)
+    : m_compiler(nullptr)
+    , m_logEnv(jitInfo)
 {
     m_next = reinterpret_cast<JitTls*>(GetJitTls());
     SetJitTls(this);
@@ -319,7 +322,7 @@ bool TargetOS::OSSettingConfigured = false;
 bool TargetOS::IsWindows = false;
 bool TargetOS::IsUnix    = false;
 #endif
-bool TargetOS::IsMacOS = false;
+bool TargetOS::IsApplePlatform = false;
 #endif
 
 /*****************************************************************************
@@ -329,10 +332,10 @@ bool TargetOS::IsMacOS = false;
 void CILJit::setTargetOS(CORINFO_OS os)
 {
 #ifdef TARGET_OS_RUNTIMEDETERMINED
-    TargetOS::IsMacOS = os == CORINFO_MACOS;
+    TargetOS::IsApplePlatform = os == CORINFO_APPLE;
 #ifndef TARGET_UNIX_OS_RUNTIMEDETERMINED // This define is only set if ONLY the different unix variants are
                                          // runtimedetermined
-    TargetOS::IsUnix    = (os == CORINFO_UNIX) || (os == CORINFO_MACOS);
+    TargetOS::IsUnix    = (os == CORINFO_UNIX) || (os == CORINFO_APPLE);
     TargetOS::IsWindows = os == CORINFO_WINNT;
 #endif
     TargetOS::OSSettingConfigured = true;
@@ -344,11 +347,11 @@ void CILJit::setTargetOS(CORINFO_OS os)
 //   including padding after the actual value.
 //
 // Arguments:
-//   list - the arg list handle pointing to the argument
-//   sig  - the signature for the arg's method
+//   corInfoType - EE type of the argument
+//   typeHnd     - if the type is a value class, its class handle
 //
 // Return value:
-//   the number of stack slots in stack arguments for the call.
+//   the size in bytes when the type is passed on the stack for the call.
 //
 // Notes:
 //   - On most platforms arguments are passed with TARGET_POINTER_SIZE alignment,
@@ -356,21 +359,19 @@ void CILJit::setTargetOS(CORINFO_OS os)
 //   It is different for arm64 apple that packs some types without alignment and padding.
 //   If the argument is passed by reference then the method returns REF size.
 //
-unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig)
+unsigned Compiler::eeGetArgSize(CorInfoType corInfoType, CORINFO_CLASS_HANDLE typeHnd)
 {
+    var_types argType = JITtype2varType(corInfoType);
+
 #if defined(TARGET_AMD64)
 
     // Everything fits into a single 'slot' size
     // to accommodate irregular sized structs, they are passed byref
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef UNIX_AMD64_ABI
-    CORINFO_CLASS_HANDLE argClass;
-    CorInfoType          argTypeJit = strip(info.compCompHnd->getArgType(sig, list, &argClass));
-    var_types            argType    = JITtype2varType(argTypeJit);
     if (varTypeIsStruct(argType))
     {
-        unsigned structSize = info.compCompHnd->getClassSize(argClass);
+        unsigned structSize = info.compCompHnd->getClassSize(typeHnd);
         return roundUp(structSize, TARGET_POINTER_SIZE);
     }
 #endif // UNIX_AMD64_ABI
@@ -378,26 +379,22 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
 
 #else // !TARGET_AMD64
 
-    CORINFO_CLASS_HANDLE argClass;
-    CorInfoType          argTypeJit = strip(info.compCompHnd->getArgType(sig, list, &argClass));
-    var_types            argType    = JITtype2varType(argTypeJit);
-    unsigned             argSize;
+    unsigned argSize;
 
     var_types hfaType = TYP_UNDEF;
     bool      isHfa   = false;
 
     if (varTypeIsStruct(argType))
     {
-        hfaType             = GetHfaType(argClass);
+        hfaType             = GetHfaType(typeHnd);
         isHfa               = (hfaType != TYP_UNDEF);
-        unsigned structSize = info.compCompHnd->getClassSize(argClass);
+        unsigned structSize = info.compCompHnd->getClassSize(typeHnd);
 
         // make certain the EE passes us back the right thing for refanys
-        assert(argTypeJit != CORINFO_TYPE_REFANY || structSize == 2 * TARGET_POINTER_SIZE);
+        assert(corInfoType != CORINFO_TYPE_REFANY || structSize == 2 * TARGET_POINTER_SIZE);
 
         // For each target that supports passing struct args in multiple registers
         // apply the target specific rules for them here:
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if FEATURE_MULTIREG_ARGS
 #if defined(TARGET_ARM64)
@@ -467,7 +464,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
 //
 // Notes:
 //   Usually values passed on the stack are aligned to stack slot (i.e. pointer size), except for
-//   on macOS ARM ABI that allows packing multiple args into a single stack slot.
+//   on Apple ARM ABI that allows packing multiple args into a single stack slot.
 //
 //   The arg size alignment can be different from the normal alignment. One
 //   example is on arm32 where a struct containing a double and float can
@@ -478,7 +475,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
 // static
 unsigned Compiler::eeGetArgSizeAlignment(var_types type, bool isFloatHfa)
 {
-    if (compMacOsArm64Abi())
+    if (compAppleArm64Abi())
     {
         if (isFloatHfa)
         {
@@ -1132,9 +1129,10 @@ void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSection
 
 #endif // DEBUG
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-    // For arm64/LoongArch64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
+    // For arm64/LoongArch64/RISCV64, we want to allocate JIT data always adjacent to code similar to what native
+    // compiler does.
     // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
     // For LoongArch64 using `pcaddi + ld` to access such data.
 
@@ -1148,7 +1146,7 @@ void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSection
     args->hotCodeSize                 = roDataOffset + args->roDataSize;
     args->roDataSize                  = 0;
 
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     info.compCompHnd->allocMem(args);
 
@@ -1165,7 +1163,7 @@ void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSection
 
 #endif // DEBUG
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     // Fix up data section pointers.
     assert(args->roDataBlock == nullptr);
@@ -1173,7 +1171,7 @@ void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSection
     args->roDataBlock   = ((BYTE*)args->hotCodeBlock) + roDataOffset;
     args->roDataBlockRW = ((BYTE*)args->hotCodeBlockRW) + roDataOffset;
 
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 }
 
 void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
@@ -1409,7 +1407,9 @@ bool Compiler::eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param)
 unsigned Compiler::eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd)
 {
     unsigned classSize = UINT_MAX;
-    eeRunFunctorWithSPMIErrorTrap([&]() { classSize = info.compCompHnd->getClassSize(clsHnd); });
+    eeRunFunctorWithSPMIErrorTrap([&]() {
+        classSize = info.compCompHnd->getClassSize(clsHnd);
+    });
 
     return classSize;
 }

@@ -6,10 +6,10 @@ using System.Security.Permissions;
 
 namespace System.Web
 {
-#if NETCOREAPP
+#if NET
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
-    public sealed class AspNetHostingPermission :  CodeAccessPermission, IUnrestrictedPermission
+    public sealed class AspNetHostingPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public AspNetHostingPermission(PermissionState state) { }
         public AspNetHostingPermission(AspNetHostingPermissionLevel level) { }

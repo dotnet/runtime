@@ -25,8 +25,6 @@ Revision History:
 #include "pal/module.h"
 #include "pal/misc.h"
 
-#include "pal/printfcpp.hpp"
-
 #include "errorstrings.h"
 
 #include <stdarg.h>
@@ -63,7 +61,7 @@ static LPWSTR FMTMSG_GetMessageString( DWORD dwErrCode )
         allocChars = MAX_ERROR_STRING_LENGTH + 1;
     }
 
-    LPWSTR lpRetVal = (LPWSTR)PAL_malloc(allocChars * sizeof(WCHAR));
+    LPWSTR lpRetVal = (LPWSTR)malloc(allocChars * sizeof(WCHAR));
 
     if (lpRetVal)
     {
@@ -142,7 +140,7 @@ static INT FMTMSG__watoi( LPWSTR str )
         UINT NumOfBytes = 0; \
         nSize *= 2; \
         NumOfBytes = nSize * sizeof( WCHAR ); \
-        lpTemp = static_cast<WCHAR *>( PAL_malloc( NumOfBytes ) ); \
+        lpTemp = static_cast<WCHAR *>( malloc( NumOfBytes ) ); \
         TRACE( "Growing the buffer.\n" );\
         \
         if ( !lpTemp ) \
@@ -329,7 +327,7 @@ FormatMessageW(
     }
 
     lpWorkingString = static_cast<WCHAR *>(
-        PAL_malloc( nSize * sizeof( WCHAR ) ) );
+        malloc( nSize * sizeof( WCHAR ) ) );
     if ( !lpWorkingString )
     {
         ERROR( "Unable to allocate memory for the working string.\n" );

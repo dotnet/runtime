@@ -159,44 +159,5 @@ void EEContract::DoChecks(UINT testmask, _In_z_ const char *szFunction, _In_z_ c
         default:
             UNREACHABLE();
     }
-
-    // Host Triggers check
-    switch (testmask & HOST_Mask)
-    {
-        case HOST_Calls:
-            {
-                if (!m_pClrDebugState->IsHostCaller())
-                {
-                    if (!( (HostViolation|BadDebugState) & m_pClrDebugState->ViolationMask()))
-                    {
-                        // Avoid infinite recursion by temporarily allowing HOST_CALLS
-                        // violations so that we don't get contract asserts in anything
-                        // called downstream of CONTRACT_ASSERT. If we unwind out of
-                        // here, our dtor will reset our state to what it was on entry.
-                        CONTRACT_VIOLATION(HostViolation);
-                        CONTRACT_ASSERT("HOST_CALLS  encountered in a HOST_NOCALLS scope",
-                                        Contract::HOST_NoCalls,
-                                        Contract::HOST_Mask,
-                                        m_contractStackRecord.m_szFunction,
-                                        m_contractStackRecord.m_szFile,
-                                        m_contractStackRecord.m_lineNum
-                                        );
-                    }
-                }
-            }
-            break;
-
-        case HOST_NoCalls:
-           //  m_pClrDebugState->ViolationMaskReset( HostViolation );
-            m_pClrDebugState->ResetHostCaller();
-            break;
-
-        case HOST_Disabled:
-            // Nothing
-            break;
-
-        default:
-            UNREACHABLE();
-    }
 }
 #endif // ENABLE_CONTRACTS

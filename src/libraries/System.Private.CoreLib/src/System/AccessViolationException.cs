@@ -21,13 +21,13 @@ namespace System
         }
 
         public AccessViolationException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_AccessViolationException)
         {
             HResult = HResults.E_POINTER;
         }
 
         public AccessViolationException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_AccessViolationException, innerException)
         {
             HResult = HResults.E_POINTER;
         }

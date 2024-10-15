@@ -32,6 +32,7 @@ extern "C" {
 
 #include <sys/types.h>
 #include <inttypes.h>
+#include <stdint.h>
 #include <ucontext.h>
 
 #ifndef UNW_EMPTY_STRUCT
@@ -52,6 +53,8 @@ extern "C" {
 
 typedef uint32_t unw_word_t;
 typedef int32_t unw_sword_t;
+
+#define UNW_WORD_MAX UINT32_MAX
 
 typedef union {
   struct { uint8_t b[4]; } val32;

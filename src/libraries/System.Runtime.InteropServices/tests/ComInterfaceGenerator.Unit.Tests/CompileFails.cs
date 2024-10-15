@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using Xunit;
@@ -37,6 +38,13 @@ namespace ComInterfaceGenerator.Unit.Tests
                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InstanceEventDeclaredInInterface)
                    .WithLocation(1)
                    .WithArguments("Event", "INativeAPI"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeMismatchInWrappers, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidOptionsOnInterface)
+                   .WithLocation(0)
+                   .WithArguments("IComInterface2", SR.BaseInterfaceMustGenerateAtLeastSameWrappers),
             } };
         }
 
@@ -560,76 +568,6 @@ namespace ComInterfaceGenerator.Unit.Tests
         }
 
         [Fact]
-        public async Task VerifyComInterfaceInheritingFromComInterfaceInOtherAssemblyReportsDiagnostic()
-        {
-            string additionalSource = $$"""
-                using System.Runtime.InteropServices;
-                using System.Runtime.InteropServices.Marshalling;
-
-                [GeneratedComInterface]
-                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
-                public partial interface I
-                {
-                    void Method();
-                }
-                """;
-
-            string source = $$"""
-                using System.Runtime.InteropServices;
-                using System.Runtime.InteropServices.Marshalling;
-
-                [GeneratedComInterface]
-                [Guid("0DB41042-0255-4CDD-B73A-9C5D5F31303D")]
-                partial interface {|#0:J|} : I
-                {
-                    void MethodA();
-                }
-                """;
-
-            var test = new VerifyComInterfaceGenerator.Test(referenceAncillaryInterop: false)
-            {
-                TestState =
-                {
-                    Sources =
-                    {
-                        ("Source.cs", source)
-                    },
-                    AdditionalProjects =
-                    {
-                        ["Other"] =
-                        {
-                            Sources =
-                            {
-                                ("Other.cs", additionalSource)
-                            },
-                        },
-                    },
-                    AdditionalProjectReferences =
-                    {
-                        "Other"
-                    }
-                },
-                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
-            };
-            test.TestState.AdditionalProjects["Other"].AdditionalReferences.AddRange(test.TestState.AdditionalReferences);
-
-            test.ExpectedDiagnostics.Add(
-                VerifyComInterfaceGenerator
-                    .Diagnostic(GeneratorDiagnostics.BaseInterfaceIsNotGenerated)
-                    .WithLocation(0)
-                    .WithArguments("J", "I"));
-
-            // The Roslyn SDK doesn't apply the compilation options from CreateCompilationOptions to AdditionalProjects-based projects.
-            test.SolutionTransforms.Add((sln, _) =>
-            {
-                var additionalProject = sln.Projects.First(proj => proj.Name == "Other");
-                return additionalProject.WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true)).Solution;
-            });
-
-            await test.RunAsync();
-        }
-
-        [Fact]
         public async Task VerifyDiagnosticIsOnAttributedSyntax()
         {
             string source = $$"""
@@ -906,6 +844,25 @@ namespace ComInterfaceGenerator.Unit.Tests
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
             };
             test.ExpectedDiagnostics.AddRange(diagnostics);
+            test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task ByRefInVariant_ReportsNotRecommendedDiagnostic()
+        {
+            CodeSnippets codeSnippets = new CodeSnippets(GeneratorKind.ComInterfaceGeneratorManagedObjectWrapper);
+
+            var test = new VerifyComInterfaceGenerator.Test(referenceAncillaryInterop: false)
+            {
+                TestCode = codeSnippets.MarshalAsParameterAndModifiers("object", System.Runtime.InteropServices.UnmanagedType.Struct),
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
+            };
+            test.ExpectedDiagnostics.Add(
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.GeneratedComInterfaceUsageDoesNotFollowBestPractices)
+                    .WithLocation(2)
+                    .WithArguments(SR.InVariantShouldBeRef));
             test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
             await test.RunAsync();
         }

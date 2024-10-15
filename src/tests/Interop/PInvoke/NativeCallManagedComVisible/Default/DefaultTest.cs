@@ -348,6 +348,9 @@ public sealed class ClassVisibleTrueServerNoGuid : IInterfaceVisibleTrue
     private int privateVal;
 }
 
+[ConditionalClass(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
+[PlatformSpecific(TestPlatforms.Windows)]
+[SkipOnMono("Requires COM support")]
 public class ComVisibleServer
 {
     /// <summary>
@@ -701,7 +704,8 @@ public class ComVisibleServer
     /// Test case set for ComVisible. The assembly is set as [assembly: ComVisible(false)]
     /// </summary>
     /// <returns></returns>
-    private static void RunComVisibleTests()
+    [Fact]
+    public static void RunComVisibleTests()
     {
         int fooSuccessVal = 0;
         //
@@ -999,18 +1003,8 @@ public class ComVisibleServer
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void RunTestsInALC()
     {
-        try
-        {
-            RunComVisibleTests();
-
-            return 100;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine($"Test Failure: {e}");
-            return 101;
-        }
+        TestLibrary.Utilities.ExecuteAndUnload(typeof(ComVisibleServer).Assembly.Location, nameof(ComVisibleServer), nameof(RunComVisibleTests));
     }
 }

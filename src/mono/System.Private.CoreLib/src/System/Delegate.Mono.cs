@@ -556,7 +556,7 @@ namespace System
             return delegate_data;
         }
 
-        private static bool InternalEqualTypes(object source, object value)
+        internal static bool InternalEqualTypes(object source, object value)
         {
             return source.GetType() == value.GetType();
         }

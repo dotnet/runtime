@@ -19,7 +19,7 @@
 
 inline SBuffer::SBuffer(PreallocFlag flag, void *buffer, COUNT_T size)
   : m_size(0),
-    m_allocation(NULL),
+    m_allocation(0),
     m_flags(0),
     m_buffer(NULL)
 {

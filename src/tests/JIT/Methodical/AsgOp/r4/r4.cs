@@ -186,6 +186,7 @@ public class test
 
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         float x;

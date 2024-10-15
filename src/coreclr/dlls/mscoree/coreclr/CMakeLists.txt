@@ -19,13 +19,13 @@ if (CLR_CMAKE_HOST_WIN32)
 
     # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
-    add_link_options("/INCREMENTAL:NO")
+    add_linker_flag("/INCREMENTAL:NO")
 
     # Delay load libraries required for WinRT as that is not supported on all platforms
-    add_link_options("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
+    add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
 
     # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
-    add_link_options("/DELAYLOAD:version.dll")
+    add_linker_flag("/DELAYLOAD:version.dll")
 
     # No library groups for Win32
     set(START_LIBRARY_GROUP)
@@ -35,10 +35,10 @@ else(CLR_CMAKE_HOST_WIN32)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/coreclr.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 
-    if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
+    if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS OR CLR_CMAKE_HOST_HAIKU)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
-        add_link_options("-Wl,-Bsymbolic")
+        add_linker_flag("-Wl,-Bsymbolic")
 
         # The following linked options can be inserted into the linker libraries list to
         # ensure proper resolving of circular references between a subset of the libraries.
@@ -48,7 +48,7 @@ else(CLR_CMAKE_HOST_WIN32)
         # These options are used to force every object to be included even if it's unused.
         set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
         set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
-    endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
+    endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
     if(CLR_CMAKE_TARGET_OSX)
         # These options are used to force every object to be included even if it's unused.
@@ -109,7 +109,14 @@ set(CORECLR_LIBRARIES
     interop
     coreclrminipal
     gc_pal
+    cdac_contract_descriptor
 )
+
+if(CLR_CMAKE_TARGET_ARCH_AMD64)
+    list(APPEND CORECLR_LIBRARIES
+        gc_vxsort
+    )
+endif(CLR_CMAKE_TARGET_ARCH_AMD64)
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND CORECLR_LIBRARIES
@@ -147,6 +154,10 @@ elseif(CLR_CMAKE_TARGET_SUNOS)
     list(APPEND CORECLR_LIBRARIES
         socket
     )
+elseif(CLR_CMAKE_TARGET_HAIKU)
+    list(APPEND CORECLR_LIBRARIES
+        network
+    )
 endif(CLR_CMAKE_TARGET_LINUX)
 
 if(FEATURE_PERFTRACING)
@@ -162,6 +173,14 @@ if(FEATURE_EVENT_TRACE)
         )
     endif(CLR_CMAKE_HOST_UNIX)
 endif(FEATURE_EVENT_TRACE)
+
+if(FEATURE_PERFTRACING)
+    if(CLR_CMAKE_TARGET_LINUX)
+        list(APPEND CORECLR_LIBRARIES
+            usereventsprovider
+        )
+    endif(CLR_CMAKE_TARGET_LINUX)
+endif(FEATURE_PERFTRACING)
 
 if(FEATURE_MERGE_JIT_AND_ENGINE)
     set(CLRJIT_STATIC clrjit_static)

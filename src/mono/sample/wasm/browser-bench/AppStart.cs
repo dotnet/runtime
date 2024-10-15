@@ -28,11 +28,9 @@ namespace Sample
                 new BlazorReachManaged(),
                 new BlazorFirstUI(),
                 new BlazorReachManagedCold(),
-                new BlazorReachManagedSnapshot(),
                 new BrowserPageShow(),
                 new BrowserReachManaged(),
                 new BrowserReachManagedCold(),
-                new BrowserReachManagedSnapshot(),
             };
         }
 
@@ -129,19 +127,6 @@ namespace Sample
             }
         }
 
-        class BlazorReachManagedSnapshot : BlazorAppStartMeasurement
-        {
-            public override string Name => "Blazor Reach managed snapshot";
-            public override int InitialSamples => 3;
-            public override bool HasRunStepAsync => true;
-            protected override string FramePage => "start.html?memorySnapshot=true";
-
-            public override async Task RunStepAsync()
-            {
-                await MainApp.FrameReachedManaged(null, urlBase);
-            }
-        }
-
         class BlazorFirstUI : BlazorAppStartMeasurement
         {
             public override string Name => "Blazor First UI";
@@ -213,19 +198,6 @@ namespace Sample
             public override string Name => "Browser Reach managed";
             public override int InitialSamples => 3;
             public override bool HasRunStepAsync => true;
-
-            public override async Task RunStepAsync()
-            {
-                await MainApp.FrameReachedManaged(null, urlBase);
-            }
-        }
-
-        class BrowserReachManagedSnapshot : BrowserAppStartMeasurement
-        {
-            public override string Name => "Browser Reach managed snapshot";
-            public override int InitialSamples => 3;
-            public override bool HasRunStepAsync => true;
-            protected override string FramePage => "start.html?memorySnapshot=true";
 
             public override async Task RunStepAsync()
             {

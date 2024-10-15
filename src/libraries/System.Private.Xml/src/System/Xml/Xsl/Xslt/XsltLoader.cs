@@ -7,15 +7,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Text;
-using System.IO;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
 using ContextInfo = System.Xml.Xsl.Xslt.XsltInput.ContextInfo;
 using F = System.Xml.Xsl.Xslt.AstFactory;
-using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
 using QName = System.Xml.Xsl.Xslt.XsltInput.DelayedQName;
+using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
 using XsltAttribute = System.Xml.Xsl.Xslt.XsltInput.XsltAttribute;
 
 namespace System.Xml.Xsl.Xslt
@@ -30,13 +30,13 @@ namespace System.Xml.Xsl.Xslt
         private Stylesheet? _curStylesheet;   // Current stylesheet
         private Template? _curTemplate;       // Current template
 
-        internal static QilName nullMode = F.QName(string.Empty);
+        internal static readonly QilName nullMode = F.QName(string.Empty);
 
         // Flags which control attribute versioning
-        public static int V1Opt = 1;
-        public static int V1Req = 2;
-        public static int V2Opt = 4;
-        public static int V2Req = 8;
+        public const int V1Opt = 1;
+        public const int V1Req = 2;
+        public const int V2Opt = 4;
+        public const int V2Req = 8;
 
         public void Load(Compiler compiler, object stylesheet, XmlResolver? xmlResolver, XmlResolver? origResolver)
         {

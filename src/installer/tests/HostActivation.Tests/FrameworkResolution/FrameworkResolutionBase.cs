@@ -11,8 +11,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 {
     public abstract partial class FrameworkResolutionBase
     {
-        protected const string MicrosoftNETCoreApp = "Microsoft.NETCore.App";
-
         public static class ResolvedFramework
         {
             public const string NotFound = "[not found]";
@@ -23,7 +21,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             DotNetCli dotnet,
             TestApp app,
             TestSettings settings,
-            Action<CommandResult> resultAction = null,
             bool? multiLevelLookup = false)
         {
             using (DotNetCliExtensions.DotNetCliCustomizer dotnetCustomizer = settings.DotnetCustomizer == null ? null : dotnet.Customize())
@@ -52,8 +49,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .MultilevelLookup(multiLevelLookup)
                     .Environment(settings.Environment)
                     .Execute();
-
-                resultAction?.Invoke(result);
 
                 return result;
             }
@@ -87,30 +82,22 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         public class SharedTestStateBase : IDisposable
         {
-            private readonly string _builtDotnet;
-            private readonly RepoDirectoriesProvider _repoDirectories;
-            private readonly string _baseDir;
             private readonly TestArtifact _baseDirArtifact;
 
             public SharedTestStateBase()
             {
-                _builtDotnet = Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish");
-                _repoDirectories = new RepoDirectoriesProvider();
-
-                string baseDir = Path.Combine(TestArtifact.TestArtifactsPath, "frameworkResolution");
-                _baseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
-                _baseDirArtifact = new TestArtifact(_baseDir);
+                _baseDirArtifact = TestArtifact.Create("frameworkResolution");
             }
 
             public DotNetBuilder DotNet(string name)
             {
-                return new DotNetBuilder(_baseDir, _builtDotnet, name);
+                return new DotNetBuilder(_baseDirArtifact.Location, TestContext.BuiltDotNet.BinPath, name);
             }
 
             public TestApp CreateFrameworkReferenceApp()
             {
                 // Prepare the app mock - we're not going to run anything really, so we just need the basic files
-                string testAppDir = Path.Combine(_baseDir, "FrameworkReferenceApp");
+                string testAppDir = Path.Combine(_baseDirArtifact.Location, "FrameworkReferenceApp");
                 Directory.CreateDirectory(testAppDir);
 
                 // ./FrameworkReferenceApp.dll
@@ -124,7 +111,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
             public TestApp CreateSelfContainedAppWithMockHostPolicy()
             {
-                string testAppDir = Path.Combine(_baseDir, "SelfContainedApp");
+                string testAppDir = Path.Combine(_baseDirArtifact.Location, "SelfContainedApp");
                 TestApp testApp = new TestApp(testAppDir);
                 testApp.PopulateSelfContained(TestApp.MockedComponent.HostPolicy);
 

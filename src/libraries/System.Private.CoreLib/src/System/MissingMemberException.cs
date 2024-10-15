@@ -18,13 +18,13 @@ namespace System
         }
 
         public MissingMemberException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_MissingMemberException)
         {
             HResult = HResults.COR_E_MISSINGMEMBER;
         }
 
         public MissingMemberException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_MissingMemberException, inner)
         {
             HResult = HResults.COR_E_MISSINGMEMBER;
         }

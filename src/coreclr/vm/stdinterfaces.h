@@ -183,4 +183,7 @@ IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid);
 // Helpers to get the ITypeInfo* for a type.
 HRESULT GetITypeInfoForEEClass(MethodTable *pMT, ITypeInfo **ppTI, bool bClassInfo = false);
 
+// Gets the MethodTable for the associated IRecordInfo.
+MethodTable* GetMethodTableForRecordInfo(IRecordInfo* recInfo);
+
 #endif

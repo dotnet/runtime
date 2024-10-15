@@ -456,14 +456,19 @@ namespace Mono.Linker.Steps
 				//    This can happen for a couple of reasons, but it indicates the method isn't in the final assembly.
 				//    Resolve also may return a removed value if method.Overrides[i] is a MethodDefinition. In this case, Resolve short circuits and returns `this`.
 				// OR
-				// ov.DeclaringType is null
+				//  ov.DeclaringType is null
 				//    ov.DeclaringType may be null if Resolve short circuited and returned a removed method. In this case, we want to remove the override.
 				// OR
-				// ov is in a `link` scope and is unmarked
+				//  ov is in a `link` scope and is unmarked
 				//    ShouldRemove returns true if the method is unmarked, but we also We need to make sure the override is in a link scope.
 				//    Only things in a link scope are marked, so ShouldRemove is only valid for items in a `link` scope.
+				// OR
+				//  ov is an interface method and the interface is not implemented by the type
 #pragma warning disable RS0030 // Cecil's Resolve is banned - it's necessary when the metadata graph isn't stable
-				if (method.Overrides[i].Resolve () is not MethodDefinition ov || ov.DeclaringType is null || (IsLinkScope (ov.DeclaringType.Scope) && ShouldRemove (ov)))
+				if (method.Overrides[i].Resolve () is not MethodDefinition ov
+					|| ov.DeclaringType is null
+					|| (IsLinkScope (ov.DeclaringType.Scope) && ShouldRemove (ov))
+					|| (ov.DeclaringType.IsInterface && !MarkStep.IsInterfaceImplementationMarkedRecursively (method.DeclaringType, ov.DeclaringType, Context)))
 					method.Overrides.RemoveAt (i);
 				else
 					i++;

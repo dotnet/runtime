@@ -213,7 +213,7 @@ namespace GenerateRegexCasingTable
                 {
                     // Add a mapping that we will later use to match a character to the position of the values list
                     _mapAndValueMapping.Add(i, valuesSize);
-                    foreach(char value in _values[i])
+                    foreach (char value in _values[i])
                     {
                         Debug.Assert(value < 0xFFFF);
                         values.Add(value);

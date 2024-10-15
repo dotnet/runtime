@@ -314,7 +314,7 @@ namespace System.Buffers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
         private static Vector128<byte> RightShift1(Vector128<byte> left, Vector128<byte> right)
         {
             // Given input vectors like
@@ -323,24 +323,14 @@ namespace System.Buffers
             // We want to shift the last element of left (15) to be the first element of the result
             // result: [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
 
-            if (Ssse3.IsSupported)
-            {
-                return Ssse3.AlignRight(right, left, 15);
-            }
-            else
-            {
-                // We create a temporary 'leftShifted' vector where the 1st element is the 16th element of the input.
-                // We then use TBX to shuffle all the elements one place to the left.
-                // 0xFF is used for the first element to replace it with the one from 'leftShifted'.
-
-                Vector128<byte> leftShifted = Vector128.Shuffle(left, Vector128.Create(15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).AsByte());
-                return AdvSimd.Arm64.VectorTableLookupExtension(leftShifted, right, Vector128.Create(0xFF, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14));
-            }
+            return Ssse3.IsSupported
+                ? Ssse3.AlignRight(right, left, 15)
+                : AdvSimd.ExtractVector128(left, right, 15);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
         private static Vector128<byte> RightShift2(Vector128<byte> left, Vector128<byte> right)
         {
             // Given input vectors like
@@ -349,19 +339,9 @@ namespace System.Buffers
             // We want to shift the last two elements of left (14, 15) to be the first elements of the result
             // result: [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
 
-            if (Ssse3.IsSupported)
-            {
-                return Ssse3.AlignRight(right, left, 14);
-            }
-            else
-            {
-                // We create a temporary 'leftShifted' vector where the 1st and 2nd element are the 15th and 16th element of the input.
-                // We then use TBX to shuffle all the elements two places to the left.
-                // 0xFF is used for the first two elements to replace them with the ones from 'leftShifted'.
-
-                Vector128<byte> leftShifted = Vector128.Shuffle(left, Vector128.Create(14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).AsByte());
-                return AdvSimd.Arm64.VectorTableLookupExtension(leftShifted, right, Vector128.Create(0xFF, 0xFF, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13));
-            }
+            return Ssse3.IsSupported
+                ? Ssse3.AlignRight(right, left, 14)
+                : AdvSimd.ExtractVector128(left, right, 14);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

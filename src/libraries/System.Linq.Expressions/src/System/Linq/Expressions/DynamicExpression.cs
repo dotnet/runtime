@@ -240,6 +240,7 @@ namespace System.Linq.Expressions
         /// The <see cref="DelegateType">DelegateType</see> property of the result will be inferred
         /// from the types of the arguments and the specified return type.
         /// </remarks>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         public static new DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, params Expression[] arguments)
         {
             return ExpressionExtension.Dynamic(binder, returnType, arguments);
@@ -261,6 +262,7 @@ namespace System.Linq.Expressions
         /// The <see cref="DelegateType">DelegateType</see> property of the result will be inferred
         /// from the types of the arguments and the specified return type.
         /// </remarks>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         public static new DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, IEnumerable<Expression> arguments)
         {
             return ExpressionExtension.Dynamic(binder, returnType, arguments);
@@ -282,6 +284,7 @@ namespace System.Linq.Expressions
         /// The <see cref="DelegateType">DelegateType</see> property of the result will be inferred
         /// from the types of the arguments and the specified return type.
         /// </remarks>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         public static new DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0)
         {
             return ExpressionExtension.Dynamic(binder, returnType, arg0);
@@ -304,6 +307,7 @@ namespace System.Linq.Expressions
         /// The <see cref="DelegateType">DelegateType</see> property of the result will be inferred
         /// from the types of the arguments and the specified return type.
         /// </remarks>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         public static new DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1)
         {
             return ExpressionExtension.Dynamic(binder, returnType, arg0, arg1);
@@ -327,6 +331,7 @@ namespace System.Linq.Expressions
         /// The <see cref="DelegateType">DelegateType</see> property of the result will be inferred
         /// from the types of the arguments and the specified return type.
         /// </remarks>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         public static new DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2)
         {
             return ExpressionExtension.Dynamic(binder, returnType, arg0, arg1, arg2);
@@ -351,6 +356,7 @@ namespace System.Linq.Expressions
         /// The <see cref="DelegateType">DelegateType</see> property of the result will be inferred
         /// from the types of the arguments and the specified return type.
         /// </remarks>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         public static new DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
         {
             return ExpressionExtension.Dynamic(binder, returnType, arg0, arg1, arg2, arg3);
@@ -369,6 +375,7 @@ namespace System.Linq.Expressions
         /// <see cref="Binder">Binder</see>, and
         /// <see cref="Arguments">Arguments</see> set to the specified values.
         /// </returns>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         public static new DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression>? arguments)
         {
             return ExpressionExtension.MakeDynamic(delegateType, binder, arguments);
@@ -1026,6 +1033,7 @@ namespace System.Linq.Expressions
         /// The <see cref="DynamicExpression.DelegateType">DelegateType</see> property of the
         /// result will be inferred from the types of the arguments and the specified return type.
         /// </remarks>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, params Expression[] arguments)
         {
             return Dynamic(binder, returnType, (IEnumerable<Expression>)arguments);
@@ -1047,6 +1055,7 @@ namespace System.Linq.Expressions
         /// The <see cref="DynamicExpression.DelegateType">DelegateType</see> property of the
         /// result will be inferred from the types of the arguments and the specified return type.
         /// </remarks>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0)
         {
             ArgumentNullException.ThrowIfNull(binder);
@@ -1082,6 +1091,7 @@ namespace System.Linq.Expressions
         /// The <see cref="DynamicExpression.DelegateType">DelegateType</see> property of the
         /// result will be inferred from the types of the arguments and the specified return type.
         /// </remarks>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1)
         {
             ArgumentNullException.ThrowIfNull(binder);
@@ -1122,6 +1132,7 @@ namespace System.Linq.Expressions
         /// The <see cref="DynamicExpression.DelegateType">DelegateType</see> property of the
         /// result will be inferred from the types of the arguments and the specified return type.
         /// </remarks>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2)
         {
             ArgumentNullException.ThrowIfNull(binder);
@@ -1167,6 +1178,7 @@ namespace System.Linq.Expressions
         /// The <see cref="DynamicExpression.DelegateType">DelegateType</see> property of the
         /// result will be inferred from the types of the arguments and the specified return type.
         /// </remarks>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
         {
             ArgumentNullException.ThrowIfNull(binder);
@@ -1213,6 +1225,7 @@ namespace System.Linq.Expressions
         /// The <see cref="DynamicExpression.DelegateType">DelegateType</see> property of the
         /// result will be inferred from the types of the arguments and the specified return type.
         /// </remarks>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, IEnumerable<Expression> arguments)
         {
             ArgumentNullException.ThrowIfNull(arguments);
@@ -1223,6 +1236,7 @@ namespace System.Linq.Expressions
             return MakeDynamic(binder, returnType, args);
         }
 
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         private static DynamicExpression MakeDynamic(CallSiteBinder binder, Type returnType, ReadOnlyCollection<Expression> arguments)
         {
             ArgumentNullException.ThrowIfNull(binder);

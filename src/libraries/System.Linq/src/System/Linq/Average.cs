@@ -10,6 +10,11 @@ namespace System.Linq
     {
         public static double Average(this IEnumerable<int> source)
         {
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
             if (source.TryGetSpan(out ReadOnlySpan<int> span))
             {
                 // Int32 is special-cased separately from the rest of the types as it can be vectorized:
@@ -79,6 +84,11 @@ namespace System.Linq
             where TAccumulator : struct, INumber<TAccumulator>
             where TResult : struct, INumber<TResult>
         {
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
             if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
                 if (span.IsEmpty)

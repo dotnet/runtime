@@ -33,13 +33,13 @@ namespace System
         // and its ExceptionInfo reference set to null.
         //
         public MemberAccessException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_AccessException)
         {
             HResult = HResults.COR_E_MEMBERACCESS;
         }
 
         public MemberAccessException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_AccessException, inner)
         {
             HResult = HResults.COR_E_MEMBERACCESS;
         }

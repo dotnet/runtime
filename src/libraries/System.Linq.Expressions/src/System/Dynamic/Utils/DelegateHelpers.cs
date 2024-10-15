@@ -13,7 +13,7 @@ namespace System.Dynamic.Utils
 {
     internal static class DelegateHelpers
     {
-        // This can be flipped to false using feature switches at publishing time
+        [FeatureSwitchDefinition("System.Linq.Expressions.CanEmitObjectArrayDelegate")]
         internal static bool CanEmitObjectArrayDelegate => true;
 
         // Separate class so that the it can be trimmed away and doesn't get conflated
@@ -81,12 +81,12 @@ namespace System.Dynamic.Utils
 
         public static void ActionThunk1<T1>(Func<object?[], object?> handler, T1 t1)
         {
-            handler(new object?[]{t1});
+            handler(new object?[] { t1 });
         }
 
         public static void ActionThunk2<T1, T2>(Func<object?[], object?> handler, T1 t1, T2 t2)
         {
-            handler(new object?[]{t1, t2});
+            handler(new object?[] { t1, t2 });
         }
 
         public static TReturn FuncThunk<TReturn>(Func<object?[], object> handler)
@@ -96,12 +96,12 @@ namespace System.Dynamic.Utils
 
         public static TReturn FuncThunk1<T1, TReturn>(Func<object?[], object> handler, T1 t1)
         {
-            return (TReturn)handler(new object?[]{t1});
+            return (TReturn)handler(new object?[] { t1 });
         }
 
         public static TReturn FuncThunk2<T1, T2, TReturn>(Func<object?[], object> handler, T1 t1, T2 t2)
         {
-            return (TReturn)handler(new object?[]{t1, t2});
+            return (TReturn)handler(new object?[] { t1, t2 });
         }
 
         private static MethodInfo GetEmptyObjectArrayMethod() => ((Func<object[]>)Array.Empty<object>).GetMethodInfo();
@@ -142,7 +142,7 @@ namespace System.Dynamic.Utils
                 foreach (ParameterInfo parameter in parameters)
                 {
                     Type parameterType = parameter.ParameterType;
-                    if  (parameterType.IsByRefLike || parameterType.IsByRef || parameterType.IsPointer)
+                    if (parameterType.IsByRefLike || parameterType.IsByRef || parameterType.IsPointer)
                     {
                         return null; // Don't use C# thunks for types that cannot be generic arguments
                     }

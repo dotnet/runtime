@@ -28,10 +28,8 @@
   <Target Name="IncludeProjectReferenceCompilerGeneratedSecondaryOutputInPackage"
           DependsOnTargets="BuildOnlySettings;ResolveReferences">
     <ItemGroup>
-
-      <!-- Exclude private assemblies and Microsoft.Bcl.* which are pure type forwards on .NETCoreApp. -->
-      <ProjectReferenceCopyLocalPathNonPrivate Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('IsPrivateAssembly', 'false'))"
-                                               Condition="!$([System.String]::new('%(Filename)').StartsWith('Microsoft.Bcl.'))" />
+      <!-- Exclude private assemblies -->
+      <ProjectReferenceCopyLocalPathNonPrivate Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('IsPrivateAssembly', 'false'))" />
 
       <ReferenceAssemblyFile Include="@(ProjectReferenceCopyLocalPathNonPrivate->WithMetadataValue('Extension', '.dll')->Metadata('ReferenceAssembly'))" />
       <CompilerGeneratedXmlDocFile Include="@(ProjectReferenceCopyLocalPathNonPrivate->WithMetadataValue('UseCompilerGeneratedDocXmlFile', 'true')->WithMetadataValue('Extension', '.xml'))" />
@@ -42,13 +40,16 @@
 
     <ItemGroup>
       <PartialFacadeCompilerGeneratedXmlDocFile Include="@(CompilerGeneratedXmlDocFile->WithMetadataValue('IsPartialFacadeAssembly', 'true'))" />
+
       <PlatformNotSupportedCompilerGeneratedXmlDocFile Include="@(CompilerGeneratedXmlDocFile->WithMetadataValue('IsPlatformNotSupportedAssembly', 'true'))" />
+      <!-- Allow libraries to temporarily suppress the PNSE error. -->
+      <PlatformNotSupportedCompilerGeneratedXmlDocFile Remove="@(PlatformNotSupportedCompilerGeneratedXmlDocFile->WithMetadataValue('SuppressPlatformNotSupportedAssemblyDocXmlError', 'true'))" />
     </ItemGroup>
 
-    <Error Text="Compiler generated XML documentation files are missing data because partial facade assemblies aren't yet supported by the repo infrastructure. Consider removing the partial facade feature or setting the 'GenerateDocumentationFile' property to false in the project file. Assemblies: @(PartialFacadeCompilerGeneratedXmlDocFile->Metadata('Filename'), ', ')."
+    <Error Text="Compiler generated XML documentation files are missing data because partial facade assemblies aren't supported by the repo infrastructure. Consider removing the partial facade feature. Assemblies: @(PartialFacadeCompilerGeneratedXmlDocFile->Metadata('Filename'), ', ')."
            Condition="'@(PartialFacadeCompilerGeneratedXmlDocFile)' != ''" />
 
-    <Error Text="Compiler generated XML documentation files are missing data because PNSE (platform not supported exception) assemblies aren't yet supported by the repo infrastructure. Consider removing the PNSE feature or setting the 'GenerateDocumentationFile' property to false in the project file. Assemblies: @(PlatformNotSupportedCompilerGeneratedXmlDocFile->Metadata('Filename'), ', ')."
+    <Error Text="Compiler generated XML documentation files are missing data because PNSE (platform not supported exception) assemblies aren't supported by the repo infrastructure. Consider removing the PNSE feature. Assemblies: @(PlatformNotSupportedCompilerGeneratedXmlDocFile->Metadata('Filename'), ', ')."
            Condition="'@(PlatformNotSupportedCompilerGeneratedXmlDocFile)' != ''" />
   </Target>
 

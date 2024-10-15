@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using System.Xml;
 using ILCompiler;
 using ILCompiler.Dataflow;
 using ILLink.Shared.TrimAnalysis;
@@ -84,15 +86,34 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				options.SingleWarn,
 				singleWarnEnabledModules: Enumerable.Empty<string> (),
 				singleWarnDisabledModules: Enumerable.Empty<string> (),
-				suppressedCategories: Enumerable.Empty<string> ());
+				suppressedCategories: options.SuppressedWarningCategories,
+				treatWarningsAsErrors: options.TreatWarningsAsErrors,
+				warningsAsErrors: options.WarningsAsErrors);
 
 			foreach (var descriptor in options.Descriptors) {
 				if (!File.Exists (descriptor))
 					throw new FileNotFoundException ($"'{descriptor}' doesn't exist");
 				compilationRoots.Add (new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode (descriptor));
 			}
-			
-			ilProvider = new FeatureSwitchManager (ilProvider, logger, options.FeatureSwitches, default);
+
+			var featureSwitches = options.FeatureSwitches;
+			BodyAndFieldSubstitutions substitutions = default;
+			IReadOnlyDictionary<ModuleDesc, IReadOnlySet<string>>? resourceBlocks = default;
+			foreach (string substitutionFilePath in options.SubstitutionFiles)
+			{
+				using FileStream fs = File.OpenRead(substitutionFilePath);
+				substitutions.AppendFrom(BodySubstitutionsParser.GetSubstitutions(
+					logger, typeSystemContext, XmlReader.Create(fs), substitutionFilePath, featureSwitches));
+
+				fs.Seek(0, SeekOrigin.Begin);
+
+				resourceBlocks = ManifestResourceBlockingPolicy.UnionBlockings(resourceBlocks,
+					ManifestResourceBlockingPolicy.SubstitutionsReader.GetSubstitutions(
+						logger, typeSystemContext, XmlReader.Create(fs), substitutionFilePath, featureSwitches));
+			}
+
+			SubstitutionProvider substitutionProvider = new SubstitutionProvider(logger, featureSwitches, substitutions);
+			ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider, new DevirtualizationManager());
 
 			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider, logger);
 
@@ -170,7 +191,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// Build a list of assemblies that have an initializer that needs to run before
 			// any user code runs.
 			foreach (string initAssemblyName in options.InitAssemblies) {
-				ModuleDesc assembly = context.ResolveAssembly (new AssemblyName (initAssemblyName), throwIfNotFound: true);
+				ModuleDesc assembly = context.ResolveAssembly (new AssemblyNameInfo (initAssemblyName), throwIfNotFound: true);
 				assembliesWithInitalizers.Add (assembly);
 			}
 

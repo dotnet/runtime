@@ -61,7 +61,7 @@ Thus the first step in instrumenting code with `DiagnosticSource` is to create a
 `DiagnosticListener`. For example:
 
 ```C#
-    private static DiagnosticSource httpLogger = new DiagnosticListener("System.Net.Http");
+    private static readonly DiagnosticSource httpLogger = new DiagnosticListener("System.Net.Http");
 ```
 Notice that httpLogger is typed as a `DiagnosticSource`. This is because this code
 only cares about writing events and thus only cares about the  `DiagnosticSource` methods that
@@ -104,7 +104,7 @@ Already some of the architectural elements are being exposed, namely:
 Perhaps confusingly you make a `DiagnosticSource` by creating a `DiagnosticListener`:
 
 ```C#
-    static DiagnosticSource mySource = new DiagnosticListener("System.Net.Http");
+    static readonly DiagnosticSource mySource = new DiagnosticListener("System.Net.Http");
 ```
 
 Basically a `DiagnosticListener` is a named place where a source sends its information (events).
@@ -180,7 +180,7 @@ Thus the event names only need to be unique within a component.
   reflection must be used to fetch fields).   This is both easier to program and more efficient.
   Thus in scenarios where there is likely high-volume filtering to be done by the logging listener, having
   this type available to do the cast is valuable.   Note that this type needs to be made public (since
-  the listener needs to see it), and should be under the namespace System.Diagnostics.DiagnosticSource.PayloadTypes.
+  the listener needs to see it).
   Note that if there is doubt about the value DO NOT create an explicit type, as you CAN convert from
   an anonymous type to a explicit type compatibly in the future, but once you expose the payload type
   you must keep it forever.   The payload type should simply have C#  'TYPE NAME {get; set; }' properties
@@ -248,7 +248,7 @@ A typical use of the `AllListeners` static property looks like this:
 
 ```C#
     // We are using AllListeners to turn an Action<DiagnosticListener> into an IObserver<DiagnosticListener>
-    static IDisposable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
+    static readonly IDisposable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
     {
         // We get a callback of every Diagnostics Listener that is active in the system (past present or future)
         if (listener.Name == "System.Net.Http")
@@ -290,7 +290,7 @@ call `Subscribe()` on it as well. Thus we can fill out the previous example a bi
 
 ```C#
     static IDisposable networkSubscription = null;
-    static IDisposable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
+    static readonly IDisposable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
     {
         if (listener.Name == "System.Net.Http")
         {
@@ -404,6 +404,21 @@ Thus we could replace the `listener.Subscribe()` call in the previous example wi
 
 This very efficiently subscribes to only the 'RequestStart' events. All other events will cause the `DiagnosticSource.IsEnabled()`
 method to return `false`, and thus be efficiently filtered out.
+
+NOTE: Filtering is only designed as a performance optimization. It is possible for a listener to receive events even when they
+do not satisfy the filter. This could occur because some other listener has subscribed to the event or because the source
+of the event didn't check IsEnabled() prior to sending it. If you want to be certain that a given event satisfies the filter
+you will need to check it inside the callback. For example:
+
+```C#
+Action<KeyValuePair<string, object>> callback = (KeyValuePair<string, object> evnt) =>
+        {
+            if(predicate(evnt.Key)) // only print out events that satisfy our filter
+            {
+                Console.WriteLine("From Listener {0} Received Event {1} with payload {2}", networkListener.Name, evnt.Key, evnt.Value.ToString());
+            }
+        };
+```
 
 ##### Context-based Filtering
 Some scenarios require advanced filtering based on extended context.

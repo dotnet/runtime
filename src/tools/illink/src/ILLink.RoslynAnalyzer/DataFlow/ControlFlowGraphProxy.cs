@@ -5,13 +5,15 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared.DataFlow;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 
-using Predecessor = ILLink.Shared.DataFlow.IControlFlowGraph<
+using ControlFlowBranch = ILLink.Shared.DataFlow.IControlFlowGraph<
 	ILLink.RoslynAnalyzer.DataFlow.BlockProxy,
 	ILLink.RoslynAnalyzer.DataFlow.RegionProxy
->.Predecessor;
+>.ControlFlowBranch;
 
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
@@ -21,12 +23,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	// any kind of value equality for different block instances. In practice
 	// this should be fine as long as we consistently use block instances from
 	// a single ControlFlowGraph.
-	public readonly record struct BlockProxy (BasicBlock Block)
+	public readonly record struct BlockProxy (BasicBlock Block) : IBlock<BlockProxy>
 	{
 		public override string ToString ()
 		{
 			return base.ToString () + $"[{Block.Ordinal}]";
 		}
+
+		public ConditionKind ConditionKind => (ConditionKind) Block.ConditionKind;
 	}
 
 	public readonly record struct RegionProxy (ControlFlowRegion Region) : IRegion<RegionProxy>
@@ -51,23 +55,56 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public BlockProxy Entry => new BlockProxy (ControlFlowGraph.EntryBlock ());
 
+		public static ControlFlowBranch CreateProxyBranch (Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch branch)
+		{
+			var finallyRegions = ImmutableArray.CreateBuilder<RegionProxy> ();
+			foreach (var region in branch.FinallyRegions) {
+				Debug.Assert (region != null);
+				if (region == null)
+					continue;
+				finallyRegions.Add (new RegionProxy (region));
+			}
+
+			// Translate from the Roslyn CFG condition kind to our model.
+			// Roslyn blocks have at most two successors, a fall-through and a conditional successor.
+			// The ConditionKind stored on the block indicates the condition under which the conditional successor (if there is one) is taken.
+
+			// In our model, blocks may have any number of successors. The ConditionKind stored on the branch indicates the condition under
+			// which that branch (not necessarily corresponding to Roslyn's conditional successor) is taken.
+
+			// So if this branch represents Roslyn's conditional successor, we simply translate the WhenTrue/WhenFalse condition.
+			// But if this is the fall-through branch, this branch is taken in the opposite condition to the conditional successor so we invert it.
+			var conditionKind = branch.Source.ConditionKind switch {
+				ControlFlowConditionKind.None => ConditionKind.Unconditional,
+				ControlFlowConditionKind.WhenFalse => branch.IsConditionalSuccessor ? ConditionKind.WhenFalse : ConditionKind.WhenTrue,
+				ControlFlowConditionKind.WhenTrue => branch.IsConditionalSuccessor ? ConditionKind.WhenTrue : ConditionKind.WhenFalse,
+				_ => throw new InvalidOperationException ()
+			};
+
+			// Destination might be null in a 'throw' branch.
+			return new ControlFlowBranch (
+				new BlockProxy (branch.Source),
+				branch.Destination == null ? null : new BlockProxy (branch.Destination),
+				finallyRegions.ToImmutable (),
+				conditionKind);
+		}
+
 		// This is implemented by getting predecessors of the underlying Roslyn BasicBlock.
 		// This is fine as long as the blocks come from the correct control-flow graph.
-		public IEnumerable<Predecessor> GetPredecessors (BlockProxy block)
+		public IEnumerable<ControlFlowBranch> GetPredecessors (BlockProxy block)
 		{
 			foreach (var predecessor in block.Block.Predecessors) {
-				if (predecessor.FinallyRegions.IsEmpty) {
-					yield return new Predecessor (new BlockProxy (predecessor.Source), ImmutableArray<RegionProxy>.Empty);
-					continue;
-				}
-				var finallyRegions = ImmutableArray.CreateBuilder<RegionProxy> ();
-				foreach (var region in predecessor.FinallyRegions) {
-					if (region == null)
-						throw new InvalidOperationException ();
-					finallyRegions.Add (new RegionProxy (region));
-				}
-				yield return new Predecessor (new BlockProxy (predecessor.Source), finallyRegions.ToImmutable ());
+				if (CreateProxyBranch (predecessor) is ControlFlowBranch branch)
+					yield return branch;
 			}
+		}
+
+		public IEnumerable<ControlFlowBranch> GetSuccessors (BlockProxy block)
+		{
+			if (block.Block.ConditionalSuccessor is Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch conditionalSuccessor)
+				yield return CreateProxyBranch (conditionalSuccessor);
+			if (block.Block.FallThroughSuccessor is Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch fallThroughSuccessor)
+				yield return CreateProxyBranch (fallThroughSuccessor);
 		}
 
 		public bool TryGetEnclosingTryOrCatchOrFilter (BlockProxy block, out RegionProxy tryOrCatchOrFilterRegion)

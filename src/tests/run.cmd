@@ -18,8 +18,6 @@ for %%i in ("%__RepoRootDir%") do set "__RepoRootDir=%%~fi"
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__RootBinDir=%__RepoRootDir%\artifacts"
-set "__LogsDir=%__RootBinDir%\log"
-set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set __ToolsDir=%__ProjectDir%\..\Tools
 set "DotNetCli=%__RepoRootDir%\dotnet.cmd"
 
@@ -30,6 +28,7 @@ set __LongGCTests=
 set __GCSimulatorTests=
 set __IlasmRoundTrip=
 set __PrintLastResultsOnly=
+set LogsDirArg=
 set RunInUnloadableContext=
 set TieringTest=
 
@@ -60,6 +59,7 @@ if /i "%1" == "jitminopts"                              (set DOTNET_JITMinOpts=1
 if /i "%1" == "jitforcerelocs"                          (set DOTNET_ForceRelocs=1&shift&goto Arg_Loop)
 
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
+if /i "%1" == "logsdir"                                 (set LogsDirArg=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=1&shift&goto Arg_Loop)
 REM This test feature is currently intentionally undocumented
 if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=1&set CrossgenLargeVersionBubble=1&shift&goto Arg_Loop)
@@ -108,6 +108,10 @@ if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinB
 REM Set up arguments to call run.py
 
 set __RuntestPyArgs=-arch %__BuildArch% -build_type %__BuildType%
+
+if defined LogsDirArg (
+    set __RuntestPyArgs=%__RuntestPyArgs% -logs_dir %LogsDirArg%
+)
 
 if defined DoLink (
     set __RuntestPyArgs=%__RuntestPyArgs% --il_link
@@ -226,6 +230,7 @@ echo printlastresultsonly      - Print the last test results without running tes
 echo runincontext              - Run each tests in an unloadable AssemblyLoadContext
 echo timeout ^<n^>               - Sets the per-test timeout in milliseconds ^(default is 10 minutes = 10 * 60 * 1000 = 600000^).
 echo                             Note: some options override this ^(gcstresslevel, longgc, gcsimulator^).
+echo logsdir ^<dir^>             - Specify the logs directory ^(default: artifacts/log^)
 echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
 echo ^<CORE_ROOT^>               - Path to the runtime to test ^(if specified^).
 echo.

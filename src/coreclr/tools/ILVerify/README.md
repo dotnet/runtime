@@ -17,7 +17,7 @@ dotnet tool install --global dotnet-ilverify
 Example of use:
 
 ```
-C:\test>dotnet ilverify hello.dll -r "c:\Program Files\dotnet\shared\Microsoft.NETCore.App\2.1.12\*.dll"
+C:\test>ilverify hello.dll -r "c:\Program Files\dotnet\shared\Microsoft.NETCore.App\2.1.12\*.dll"
 All Classes and Methods in C:\test\hello.dll Verified.
 ```
 

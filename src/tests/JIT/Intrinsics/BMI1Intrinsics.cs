@@ -1,13 +1,15 @@
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace BMI1Intrinsics
 {
-    internal class Program
+    public class Program
     {
         private static int _errorCode = 100;
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // bmi1 expression are folded to hwintrinsics that return identical results
 

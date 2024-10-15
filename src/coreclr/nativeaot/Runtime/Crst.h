@@ -20,9 +20,9 @@ enum CrstType
     CrstRestrictedCallouts,
     CrstGcStressControl,
     CrstThreadStore,
-    CrstYieldProcessorNormalized,
     CrstEventPipe,
     CrstEventPipeConfig,
+    CrstGcEvent,
 };
 
 enum CrstFlags

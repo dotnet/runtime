@@ -140,7 +140,7 @@ namespace System.Net
             {
                 tokenString = Quoted ?
                     _tokenStream.Substring(_start, _tokenLength) :
-                    _tokenStream.SubstringTrim(_start, _tokenLength);
+                    _tokenStream.AsSpan(_start, _tokenLength).Trim().ToString();
             }
             return tokenString;
         }
@@ -553,9 +553,9 @@ namespace System.Net
                 if (s_isQuotedDomainField == null)
                 {
                     // TODO https://github.com/dotnet/runtime/issues/19348:
-                    FieldInfo? field = typeof(Cookie).GetField("IsQuotedDomain", BindingFlags.Instance | BindingFlags.NonPublic);
-                    Debug.Assert(field != null, "We need to use an internal field named IsQuotedDomain that is declared on Cookie.");
-                    s_isQuotedDomainField = field;
+                    FieldInfo? fieldInfo = typeof(Cookie).GetField("IsQuotedDomain", BindingFlags.Instance | BindingFlags.NonPublic);
+                    Debug.Assert(fieldInfo != null, "We need to use an internal field named IsQuotedDomain that is declared on Cookie.");
+                    s_isQuotedDomainField = fieldInfo;
                 }
 
                 return s_isQuotedDomainField;
@@ -570,9 +570,9 @@ namespace System.Net
                 if (s_isQuotedVersionField == null)
                 {
                     // TODO https://github.com/dotnet/runtime/issues/19348:
-                    FieldInfo? field = typeof(Cookie).GetField("IsQuotedVersion", BindingFlags.Instance | BindingFlags.NonPublic);
-                    Debug.Assert(field != null, "We need to use an internal field named IsQuotedVersion that is declared on Cookie.");
-                    s_isQuotedVersionField = field;
+                    FieldInfo? fieldInfo = typeof(Cookie).GetField("IsQuotedVersion", BindingFlags.Instance | BindingFlags.NonPublic);
+                    Debug.Assert(fieldInfo != null, "We need to use an internal field named IsQuotedVersion that is declared on Cookie.");
+                    s_isQuotedVersionField = fieldInfo;
                 }
 
                 return s_isQuotedVersionField;
@@ -665,7 +665,7 @@ namespace System.Net
                                         expiresSet = true;
                                         if (int.TryParse(CheckQuoted(_tokenizer.Value), out int parsed))
                                         {
-                                            cookie!.Expires = DateTime.Now.AddSeconds(parsed);
+                                            cookie!.Expires = DateTime.UtcNow.AddSeconds(parsed);
                                         }
                                         else
                                         {

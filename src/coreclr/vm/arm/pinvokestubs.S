@@ -79,9 +79,13 @@
 
         PROLOG_PUSH  "{r4, lr}"
 
+#if defined(__clang__)
         ldr     r1, =s_gsCookie-(1f+4)
 1:
         add     r1, pc
+#else
+        ldr     r1, =s_gsCookie
+#endif
         ldr     r1, [r1]
         str     r1, [r0]
         add     r4, r0, SIZEOF__GSCookie
@@ -89,9 +93,13 @@
         // r4 = pFrame
 
         // set first slot to the value of InlinedCallFrame::`vftable' (checked by runtime code)
+#if defined(__clang__)
         ldr     r1, =_ZTV16InlinedCallFrame+8-(2f+4)
 2:
         add     r1, pc
+#else
+        ldr     r1, =_ZTV16InlinedCallFrame+8
+#endif
         str     r1, [r4]
 
         mov     r1, 0
@@ -141,9 +149,13 @@
         str     r2, [r1, #Thread_m_fPreemptiveGCDisabled]
 
         // Check return trap
+#if defined(__clang__)
         ldr     r2, =g_TrapReturningThreads-(1f+4)
 1:
         add     r2, pc
+#else
+        ldr     r2, =g_TrapReturningThreads
+#endif
         ldr     r2, [r2]
         cbnz    r2, LOCAL_LABEL(RarePath)
 

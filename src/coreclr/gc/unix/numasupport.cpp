@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <string.h>
+#include <limits.h>
 #include <sys/syscall.h>
 #include <minipal/utils.h>
 
@@ -32,9 +33,12 @@ static int GetNodeNum(const char* path, bool firstOnly)
             if (strncmp(entry->d_name, "node", STRING_LENGTH("node")))
                 continue;
 
-            int nodeNum = strtoul(entry->d_name + STRING_LENGTH("node"), NULL, 0);
-            if (result < nodeNum)
-                result = nodeNum;
+            unsigned long nodeNum = strtoul(entry->d_name + STRING_LENGTH("node"), NULL, 0);
+            if (nodeNum > INT_MAX)
+                nodeNum = INT_MAX;
+
+            if (result < (int)nodeNum)
+                result = (int)nodeNum;
 
             if (firstOnly)
                 break;

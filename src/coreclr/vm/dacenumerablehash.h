@@ -176,7 +176,7 @@ private:
 
     static bool AcceptableEndSentinel(PTR_VolatileEntry entry, TADDR expectedEndSentinel)
     {
-        _ASSERTE(expectedEndSentinel != NULL);
+        _ASSERTE(expectedEndSentinel != (TADDR)NULL);
         _ASSERTE(entry != NULL);
 
         TADDR endSentinelEntry = dac_cast<TADDR>(entry);
@@ -272,6 +272,8 @@ protected:
     // where we are.
     DPTR(VALUE) BaseFindFirstEntryByHash(DacEnumerableHashValue iHash, LookupContext *pContext);
     DPTR(VALUE) BaseFindNextEntryByHash(LookupContext *pContext);
+
+    static DacEnumerableHashValue BaseValuePtrToHash(DPTR(VALUE) pValue);
 
     PTR_Module GetModule()
     {

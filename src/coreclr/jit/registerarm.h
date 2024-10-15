@@ -32,7 +32,7 @@ REGDEF(LR,     14, 0x4000, "lr"   )
 REGDEF(PC,     15, 0x8000, "pc"   )
 
 #define FPBASE 16
-#define VFPMASK(x) (((__int64)1) << (x+FPBASE))
+#define VFPMASK(x) (((int64_t)1) << (x+FPBASE))
 
 REGDEF(F0,    0+FPBASE, VFPMASK(0),  "f0")
 REGDEF(F1,    1+FPBASE, VFPMASK(1),  "f1")

@@ -108,7 +108,7 @@ inline void Thread::ClearThreadCurrNotification()
     }
     CONTRACTL_END;
 
-    m_hCurrNotification = NULL;
+    m_hCurrNotification = (OBJECTHANDLE)NULL;
 }
 
 

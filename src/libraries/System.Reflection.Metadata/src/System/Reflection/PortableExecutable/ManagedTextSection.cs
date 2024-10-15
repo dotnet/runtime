@@ -137,12 +137,12 @@ namespace System.Reflection.PortableExecutable
 
         public int CalculateOffsetToMappedFieldDataStream()
         {
-             int result = CalculateOffsetToMappedFieldDataStreamUnaligned();
-             if (MappedFieldDataSize != 0)
-             {
-                 result = BitArithmetic.Align(result, MappedFieldDataAlignment);
-             }
-             return result;
+            int result = CalculateOffsetToMappedFieldDataStreamUnaligned();
+            if (MappedFieldDataSize != 0)
+            {
+                result = BitArithmetic.Align(result, MappedFieldDataAlignment);
+            }
+            return result;
         }
 
         internal int ComputeOffsetToDebugDirectory()

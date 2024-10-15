@@ -179,141 +179,106 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void EmptyIListSource()
+        public void EmptySourcePredicate()
         {
             int?[] source = { };
 
-            Assert.Null(source.LastOrDefault(x => true));
-            Assert.Null(source.LastOrDefault(x => false));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Null(source.LastOrDefault(x => true));
+                Assert.Null(source.LastOrDefault(x => false));
+            });
         }
 
         [Fact]
-        public void OneElementIListTruePredicate()
+        public void OneElementTruePredicate()
         {
             int[] source = { 4 };
             Func<int, bool> predicate = IsEven;
             int expected = 4;
 
-            Assert.Equal(expected, source.LastOrDefault(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.LastOrDefault(predicate));
+            });
         }
 
         [Fact]
-        public void OneElementIListTruePredicateDefault()
+        public void OneElementTruePredicateDefault()
         {
             int[] source = { 4 };
             Func<int, bool> predicate = IsEven;
             int expected = 4;
 
-            Assert.Equal(expected, source.LastOrDefault(predicate, 5));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.LastOrDefault(predicate, 5));
+            });
         }
 
         [Fact]
-        public void ManyElementsIListPredicateFalseForAll()
+        public void ManyElementsPredicateFalseForAll()
         {
             int[] source = { 9, 5, 1, 3, 17, 21 };
             Func<int, bool> predicate = IsEven;
             int expected = default(int);
 
-            Assert.Equal(expected, source.LastOrDefault(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.LastOrDefault(predicate));
+            });
         }
 
         [Fact]
-        public void ManyElementsIListPredicateFalseForAllDefault()
+        public void ManyElementsPredicateFalseForAllDefault()
         {
             int[] source = { 9, 5, 1, 3, 17, 21 };
             Func<int, bool> predicate = IsEven;
             int expected = 5;
 
-            Assert.Equal(expected, source.LastOrDefault(predicate, 5));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.LastOrDefault(predicate, 5));
+            });
         }
 
         [Fact]
-        public void IListPredicateTrueOnlyForLast()
+        public void PredicateTrueOnlyForLast()
         {
             int[] source = { 9, 5, 1, 3, 17, 21, 50 };
             Func<int, bool> predicate = IsEven;
             int expected = 50;
 
-            Assert.Equal(expected, source.LastOrDefault(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.LastOrDefault(predicate));
+            });
         }
 
         [Fact]
-        public void IListPredicateTrueForSome()
+        public void PredicateTrueForSome()
         {
             int[] source = { 3, 7, 10, 7, 9, 2, 11, 18, 13, 9 };
             Func<int, bool> predicate = IsEven;
             int expected = 18;
 
-            Assert.Equal(expected, source.LastOrDefault(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.LastOrDefault(predicate));
+            });
         }
 
         [Fact]
-        public void IListPredicateTrueForSomeRunOnce()
+        public void PredicateTrueForSomeRunOnce()
         {
             int[] source = { 3, 7, 10, 7, 9, 2, 11, 18, 13, 9 };
             Func<int, bool> predicate = IsEven;
             int expected = 18;
 
-            Assert.Equal(expected, source.RunOnce().LastOrDefault(predicate));
-        }
-
-        [Fact]
-        public void EmptyNotIListSource()
-        {
-            IEnumerable<int?> source = Enumerable.Repeat((int?)4, 0);
-
-            Assert.Null(source.LastOrDefault(x => true));
-            Assert.Null(source.LastOrDefault(x => false));
-        }
-
-        [Fact]
-        public void OneElementNotIListTruePredicate()
-        {
-            IEnumerable<int> source = ForceNotCollection(new[] { 4 });
-            Func<int, bool> predicate = IsEven;
-            int expected = 4;
-
-            Assert.Equal(expected, source.LastOrDefault(predicate));
-        }
-
-        [Fact]
-        public void ManyElementsNotIListPredicateFalseForAll()
-        {
-            IEnumerable<int> source = ForceNotCollection(new int[] { 9, 5, 1, 3, 17, 21 });
-            Func<int, bool> predicate = IsEven;
-            int expected = default(int);
-
-            Assert.Equal(expected, source.LastOrDefault(predicate));
-        }
-
-        [Fact]
-        public void NotIListPredicateTrueOnlyForLast()
-        {
-            IEnumerable<int> source = ForceNotCollection(new int[] { 9, 5, 1, 3, 17, 21, 50 });
-            Func<int, bool> predicate = IsEven;
-            int expected = 50;
-
-            Assert.Equal(expected, source.LastOrDefault(predicate));
-        }
-
-        [Fact]
-        public void NotIListPredicateTrueForSome()
-        {
-            IEnumerable<int> source = ForceNotCollection(new int[] { 3, 7, 10, 7, 9, 2, 11, 18, 13, 9 });
-            Func<int, bool> predicate = IsEven;
-            int expected = 18;
-
-            Assert.Equal(expected, source.LastOrDefault(predicate));
-        }
-
-        [Fact]
-        public void NotIListPredicateTrueForSomeRunOnce()
-        {
-            IEnumerable<int> source = ForceNotCollection(new int[] { 3, 7, 10, 7, 9, 2, 11, 18, 13, 9 });
-            Func<int, bool> predicate = IsEven;
-            int expected = 18;
-
-            Assert.Equal(expected, source.RunOnce().LastOrDefault(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.RunOnce().LastOrDefault(predicate));
+            });
         }
 
         [Fact]

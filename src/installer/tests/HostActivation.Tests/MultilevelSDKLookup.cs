@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.Cli.Build;
-using Microsoft.DotNet.Cli.Build.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
+
+using Microsoft.DotNet.Cli.Build;
+using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.TestUtils;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
     public class MultilevelSDKLookup : IDisposable
     {
-        private readonly RepoDirectoriesProvider RepoDirectories;
         private readonly DotNetCli DotNet;
 
         private readonly string _currentWorkingDir;
@@ -33,10 +33,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         public MultilevelSDKLookup()
         {
-            // The dotnetMultilevelSDKLookup dir will contain some folders and files that will be
-            // necessary to perform the tests
-            string baseMultilevelDir = Path.Combine(TestArtifact.TestArtifactsPath, "dotnetMultilevelSDKLookup");
-            _multilevelDir = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(baseMultilevelDir));
+            _multilevelDir = TestArtifact.Create(nameof(MultilevelSDKLookup));
 
             // The tested locations will be the cwd, exe dir, and registered directory. cwd is no longer supported.
             //     All dirs will be placed inside the multilevel folder
@@ -44,11 +41,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             _exeDir = Path.Combine(_multilevelDir.Location, "exe");
             _regDir = Path.Combine(_multilevelDir.Location, "reg");
 
-            DotNet = new DotNetBuilder(_multilevelDir.Location, Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"), "exe")
+            DotNet = new DotNetBuilder(_multilevelDir.Location, TestContext.BuiltDotNet.BinPath, "exe")
                 .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("9999.0.0")
                 .Build();
-
-            RepoDirectories = new RepoDirectoriesProvider(builtDotnet: DotNet.BinPath);
 
             // SdkBaseDirs contain all available version folders
             _cwdSdkBaseDir = Path.Combine(_currentWorkingDir, "sdk");
@@ -80,8 +75,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Multi-level lookup is disabled for 7.0+, so the resolved SDK should never be from the registered directory.
 
             // Set specified SDK version = 9999.3.4-global-dummy
-            string globalJsonPath = SetGlobalJsonVersion("SingleDigit-global.json");
             string requestedVersion = "9999.3.4-global-dummy";
+            string globalJsonPath = GlobalJson.CreateWithVersion(_currentWorkingDir, requestedVersion);
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Cwd: empty
@@ -181,8 +176,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Multi-level lookup is disabled for 7.0+, so the resolved SDK should never be from the registered directory.
 
             // Set specified SDK version = 9999.3.304-global-dummy
-            string globalJsonPath = SetGlobalJsonVersion("TwoPart-global.json");
             string requestedVersion = "9999.3.304-global-dummy";
+            string globalJsonPath = GlobalJson.CreateWithVersion(_currentWorkingDir, requestedVersion);
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Cwd: empty
@@ -282,7 +277,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void SdkMultilevelLookup_Precedential_Order()
         {
-            WriteEmptyGlobalJson();
+            GlobalJson.CreateEmpty(_currentWorkingDir);
 
             // Add SDK versions
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.0.4");
@@ -324,11 +319,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // different registry key, inside the HKEY_CURRENT_USER hive which is writable without admin.
             // Note that the test creates a unique key (based on PID) for every run, to avoid collisions between parallel running tests.
 
-            WriteEmptyGlobalJson();
+            GlobalJson.CreateEmpty(_currentWorkingDir);
 
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(DotNet.GreatestVersionHostFxrFilePath))
             {
-                registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] { (RepoDirectories.BuildArchitecture, _regDir) });
+                registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] { (TestContext.BuildArchitecture, _regDir) });
 
                 // Add SDK versions
                 AddAvailableSdkVersions(_regSdkBaseDir, "9999.0.4");
@@ -353,7 +348,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void SdkMultilevelLookup_Must_Pick_The_Highest_Semantic_Version()
         {
-            WriteEmptyGlobalJson();
+            GlobalJson.CreateEmpty(_currentWorkingDir);
 
             // Add SDK versions
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.0.0", "9999.0.3-dummy");
@@ -494,8 +489,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 return;
 
             // Set specified SDK version = 9999.3.4-global-dummy - such SDK doesn't exist
-            string globalJsonPath = SetGlobalJsonVersion("SingleDigit-global.json");
             string requestedVersion = "9999.3.4-global-dummy";
+            string globalJsonPath = GlobalJson.CreateWithVersion(_currentWorkingDir, requestedVersion);
 
             // When we fail to resolve SDK version, we print out all available SDKs
             var expectedList = AddSdkVersionsAndGetExpectedList();
@@ -547,9 +542,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         // The dotnet.runtimeconfig.json created uses a dummy framework version (9999.0.0)
         private void AddAvailableSdkVersions(string sdkBaseDir, params string[] availableVersions)
         {
-            string dummyRuntimeConfig = Path.Combine(RepoDirectories.TestAssetsFolder, "TestUtils",
-                "SDKLookup", "dotnet.runtimeconfig.json");
-
             foreach (string version in availableVersions)
             {
                 string newSdkDir = Path.Combine(sdkBaseDir, version);
@@ -559,27 +551,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 File.WriteAllText(Path.Combine(newSdkDir, "dotnet.dll"), string.Empty);
 
                 // ./dotnet.runtimeconfig.json
-                string runtimeConfig = Path.Combine(newSdkDir, "dotnet.runtimeconfig.json");
-                File.Copy(dummyRuntimeConfig, runtimeConfig, true);
+                RuntimeConfig.FromFile(Path.Combine(newSdkDir, "dotnet.runtimeconfig.json"))
+                    .WithFramework(Constants.MicrosoftNETCoreApp, "9999.0.0")
+                    .Save();
             }
         }
-
-        // Put a global.json file in the cwd in order to specify a CLI
-        private string SetGlobalJsonVersion(string globalJsonFileName)
-        {
-            string destFile = Path.Combine(_currentWorkingDir, "global.json");
-            string srcFile = Path.Combine(RepoDirectories.TestAssetsFolder, "TestUtils",
-                "SDKLookup", globalJsonFileName);
-
-            File.Copy(srcFile, destFile, true);
-            return destFile;
-        }
-
-        private void WriteGlobalJson(string contents)
-        {
-            File.WriteAllText(Path.Combine(_currentWorkingDir, "global.json"), contents);
-        }
-
-        private void WriteEmptyGlobalJson() => WriteGlobalJson("{}");
     }
 }

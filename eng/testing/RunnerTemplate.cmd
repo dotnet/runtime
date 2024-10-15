@@ -67,6 +67,11 @@ echo DOTNET_EnableExtraSuperPmiQueries=%DOTNET_EnableExtraSuperPmiQueries%
 echo DOTNET_JitPath=%DOTNET_JitPath%
 :skip_spmi_enable_collection
 
+echo ========================= Begin custom configuration settings ==============================
+[[SetCommandsEcho]]
+[[SetCommands]]
+echo ========================== End custom configuration settings ===============================
+
 :: ========================= BEGIN Test Execution =============================
 echo ----- start %DATE% %TIME% ===============  To repro directly: =====================================================
 echo pushd %EXECUTION_DIR%
@@ -92,6 +97,41 @@ if %_exit_code%==1 (
     )
   )
 )
+
+if "%HELIX_CORRELATION_PAYLOAD%"=="" (
+  GOTO SKIP_XUNITLOGCHECKER
+)
+if NOT "%__IsXUnitLogCheckerSupported%"=="1" (
+  echo XUnitLogChecker not supported for this test case. Skipping.
+  GOTO SKIP_XUNITLOGCHECKER
+)
+
+echo ----- start ===============  XUnitLogChecker Output =====================================================
+
+set DOTNET_EXE=%RUNTIME_PATH%\dotnet.exe
+set XUNITLOGCHECKER_EXE=%HELIX_CORRELATION_PAYLOAD%\XUnitLogChecker.exe
+set XUNITLOGCHECKER_COMMAND=%XUNITLOGCHECKER_EXE% --dumps-path %HELIX_DUMP_FOLDER%
+set XUNITLOGCHECKER_EXIT_CODE=1
+
+if NOT EXIST %XUNITLOGCHECKER_EXE% (
+  echo XUnitLogChecker does not exist in the expected location: %XUNITLOGCHECKER_EXE%
+  GOTO XUNITLOGCHECKER_END
+)
+
+echo %XUNITLOGCHECKER_COMMAND%
+%XUNITLOGCHECKER_COMMAND%
+set XUNITLOGCHECKER_EXIT_CODE=%ERRORLEVEL%
+
+:XUNITLOGCHECKER_END
+
+if %XUNITLOGCHECKER_EXIT_CODE% NEQ 0 (
+  set _exit_code=%XUNITLOGCHECKER_EXIT_CODE%
+)
+
+echo ----- end ===============  XUnitLogChecker Output - exit code %XUNITLOGCHECKER_EXIT_CODE% ===============
+
+:SKIP_XUNITLOGCHECKER
+
 exit /b %_exit_code%
 :: ========================= END Test Execution =================================
 

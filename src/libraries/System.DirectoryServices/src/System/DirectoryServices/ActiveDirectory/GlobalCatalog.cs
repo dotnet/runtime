@@ -388,7 +388,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 DomainControllerInfo tempDomainControllerInfo;
                 int error = Locator.DsGetDcNameWrapper(null, DirectoryContext.GetLoggedOnDomain(), null, (long)PrivateLocatorFlags.DirectoryServicesRequired, out tempDomainControllerInfo);
 
-                if (error == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                if (error == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                 {
                     // throw not found exception
                     throw new ActiveDirectoryObjectNotFoundException(SR.ContextNotAssociatedWithDomain, typeof(GlobalCatalog), null);
@@ -405,12 +405,12 @@ namespace System.DirectoryServices.ActiveDirectory
             // call DsGetDcName
             errorCode = Locator.DsGetDcNameWrapper(null, forestName, siteName, (long)flag | (long)(PrivateLocatorFlags.GCRequired | PrivateLocatorFlags.DirectoryServicesRequired), out domainControllerInfo);
 
-            if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+            if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
             {
                 throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFoundInForest, forestName), typeof(GlobalCatalog), null);
             }
             // this can only occur when flag is being explicitly passed (since the flags that we pass internally are valid)
-            if (errorCode == NativeMethods.ERROR_INVALID_FLAGS)
+            if (errorCode == Interop.Errors.ERROR_INVALID_FLAGS)
             {
                 throw new ArgumentException(SR.InvalidFlags, nameof(flag));
             }
