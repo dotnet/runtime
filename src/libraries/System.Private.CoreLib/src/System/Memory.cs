@@ -263,7 +263,7 @@ namespace System
         /// <summary>
         /// Returns a span from the memory.
         /// </summary>
-        public unsafe Span<T> Span
+        public Span<T> Span
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
@@ -343,7 +343,7 @@ namespace System
                     }
 #endif
 
-                    refToReturn = ref Unsafe.Add(ref refToReturn, (IntPtr)(void*)desiredStartIndex);
+                    refToReturn = ref Unsafe.Add(ref refToReturn, (nint)desiredStartIndex);
                     lengthOfUnderlyingSpan = desiredLength;
                 }
 
