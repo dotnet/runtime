@@ -18,7 +18,7 @@ namespace System
         {
             private CompatPrng _prng; // mutable struct; do not make this readonly
 
-            public SeededRandomImpl(int seed) =>
+            public CompatSeedImpl(int seed) =>
                 _prng.EnsureInitialized(seed);
 
             public override double Sample() => _prng.Sample();
@@ -104,7 +104,7 @@ namespace System
         /// Provides an implementation used for compatibility with cases where a derived type may
         /// reasonably expect its overrides to be called.
         /// </summary>
-        private sealed class OverrideAwareRandomImpl : ImplBase
+        private sealed class CompatDerivedImpl : ImplBase
         {
             /// <summary>Reference to the <see cref="Random"/> containing this implementation instance.</summary>
             /// <remarks>Used to ensure that any calls to other virtual members are performed using the Random-derived instance, if one exists.</remarks>
@@ -114,9 +114,9 @@ namespace System
             /// <summary>Lazily-initialized algorithm backing this instance.</summary>
             private CompatPrng _prng; // mutable struct; do not make this readonly
 
-            public OverrideAwareRandomImpl(Random parent) : this(parent, Shared.Next()) { }
+            public CompatDerivedImpl(Random parent) : this(parent, Shared.Next()) { }
 
-            public OverrideAwareRandomImpl(Random parent, int seed)
+            public CompatDerivedImpl(Random parent, int seed)
             {
                 _parent = parent;
                 _seed = seed;
