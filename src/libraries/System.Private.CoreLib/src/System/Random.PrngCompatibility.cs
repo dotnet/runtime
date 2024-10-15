@@ -14,7 +14,7 @@ namespace System
         /// Provides an implementation used for compatibility with cases where a seed is specified
         /// and thus the sequence produced historically could have been relied upon.
         /// </summary>
-        private sealed class SeededRandomImpl : ImplBase
+        private sealed class CompatSeedImpl : ImplBase
         {
             private CompatPrng _prng; // mutable struct; do not make this readonly
 
