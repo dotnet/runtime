@@ -14576,7 +14576,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
 
         // Result is placed in GCData[0] if it has GC references (potentially boxing it).
         bool isOrContainsGCPointers = false;
-        if (CorTypeInfo::IsObjRef(resultTypeHnd.GetInternalCorElementType()) || (resultTypeHnd.IsValueType() && resultTypeHnd.AsMethodTable()->ContainsPointers()))
+        if (CorTypeInfo::IsObjRef(resultTypeHnd.GetInternalCorElementType()) || (resultTypeHnd.IsValueType() && resultTypeHnd.AsMethodTable()->ContainsGCPointers()))
         {
             // Load 'gcdata' of next continuation
             pCode->EmitLDFLD(FIELD__CONTINUATION__GCDATA);
