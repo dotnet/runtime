@@ -28,7 +28,8 @@ allowed_defines = { "TARGET_X86" : 1,
                     "TARGET_RISCV" : 1,
                     "TARGET_RISCV32" : 1,
                     "TARGET_RISCV64" : 1,
-                    "TARGET_WASM" : 1
+                    "TARGET_WASM" : 1,
+                    "TARGET_LOONGARCH64" : 1
                     }
                     
 class OpDef:
