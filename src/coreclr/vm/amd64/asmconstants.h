@@ -631,13 +631,13 @@ template<size_t N>
 class FindCompileTimeConstant
 {
 private:
-    FindCompileTimeConstant();
+	FindCompileTimeConstant();
 };
 
 void BogusFunction()
 {
-    // Sample usage to generate the error
-    FindCompileTimeConstant<offsetof(Thread, m_pDomain)> bogus_variable;
-    FindCompileTimeConstant<offsetof(Thread, m_ExceptionState)> bogus_variable2;
+	// Sample usage to generate the error
+	FindCompileTimeConstant<offsetof(Thread, m_pDomain)> bogus_variable;
+	FindCompileTimeConstant<offsetof(Thread, m_ExceptionState)> bogus_variable2;
 }
 #endif // defined(__cplusplus) && defined(USE_COMPILE_TIME_CONSTANT_FINDER)

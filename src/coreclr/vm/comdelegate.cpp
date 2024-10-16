@@ -1823,10 +1823,15 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     // If you modify this logic, please update DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateType,
     // DacDbiInterfaceImpl::GetDelegateFunctionData, and DacDbiInterfaceImpl::GetDelegateTargetObject.
 
-    MethodDesc *pMethodHandle = NULL;
-
     DELEGATEREF thisDel = (DELEGATEREF) orDelegate;
     DELEGATEREF innerDel = NULL;
+
+    MethodDesc *pMethodHandle = thisDel->GetMethodDesc();
+
+    if (pMethodHandle != NULL)
+    {
+        return pMethodHandle;
+    }
 
     INT_PTR count = thisDel->GetInvocationCount();
     if (count != 0)
@@ -1895,6 +1900,9 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     }
 
     _ASSERTE(pMethodHandle);
+
+    thisDel->SetMethodDesc(pMethodHandle);
+
     return pMethodHandle;
 }
 

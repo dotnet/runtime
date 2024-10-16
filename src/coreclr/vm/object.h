@@ -1877,7 +1877,7 @@ public:
 
     MethodDesc* GetMethodDesc() { LIMITED_METHOD_CONTRACT; return _methodDesc; }
     void SetMethodDesc(MethodDesc* methodPtrAux) { LIMITED_METHOD_CONTRACT; _methodDesc = methodPtrAux; }
-    static int GetOffsetOfMethoddDesc() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodDesc); }
+    static int GetOffsetOfMethodDesc() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodDesc); }
 
     PCODE GetMethodPtr() { LIMITED_METHOD_CONTRACT; return _methodPtr; }
     void SetMethodPtr(PCODE methodPtr) { LIMITED_METHOD_CONTRACT; _methodPtr = methodPtr; }
