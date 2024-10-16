@@ -567,13 +567,13 @@ namespace LibraryImportGenerator.IntegrationTests
                 ushort start = 65;
 
                 NativeExportsNE.Arrays.FillChars(testArray, testArray.Length, start);
-                Assert.Equal(Enumerable.Range(start, testArray.Length), testArray.Select(c => (int)c));
+                Assert.Equal(Enumerable.Range((int)start, testArray.Length), testArray.Select(c => (int)c));
 
                 // Any items not populated by the invoke target should be initialized to default
                 testArray = new char[10];
                 int lengthToFill = testArray.Length / 2;
                 NativeExportsNE.Arrays.FillChars(testArray, lengthToFill, start);
-                Assert.Equal(Enumerable.Range(start, lengthToFill), testArray[..lengthToFill].Select(c => (int)c));
+                Assert.Equal(Enumerable.Range((int)start, lengthToFill), testArray[..lengthToFill].Select(c => (int)c));
                 Assert.All(testArray[lengthToFill..], c => Assert.Equal(0, c));
             }
         }
@@ -600,13 +600,13 @@ namespace LibraryImportGenerator.IntegrationTests
                 ushort start = 65;
 
                 testArray.FillChars(testArray.Length, start);
-                Assert.Equal(Enumerable.Range(start, testArray.Length), testArray.Select(c => (int)c));
+                Assert.Equal(Enumerable.Range((int)start, testArray.Length), testArray.Select(c => (int)c));
 
                 // Any items not populated by the invoke target should be initialized to default
                 testArray = new char[10];
                 int lengthToFill = testArray.Length / 2;
                 testArray.FillChars(lengthToFill, start);
-                Assert.Equal(Enumerable.Range(start, lengthToFill), testArray[..lengthToFill].Select(c => (int)c));
+                Assert.Equal(Enumerable.Range((int)start, lengthToFill), testArray[..lengthToFill].Select(c => (int)c));
                 Assert.All(testArray[lengthToFill..], c => Assert.Equal(0, c));
             }
         }
