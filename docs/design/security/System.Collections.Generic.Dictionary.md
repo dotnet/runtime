@@ -251,6 +251,20 @@ While `Dictionary<TKey, TValue>` cannot contain null keys, it _can_ contain null
 
 Consumers should consult the serializer documentation to determine whether the serializer enforces NRT annotations. If not, consumers should author code resilient to null values where they might appear in dictionaries and hash sets.
 
+## Defenses for known-good comparers
+
+Appendix B of this document details that certain instantiations of `Dictionary<string, ...>` and `HashSet<string>` are safe against adversarial keys. These protections were initially offered as part of [CVE-2011-3414](https://learn.microsoft.com/security-updates/SecurityBulletins/2011/ms11-100), and they remain in effect regardless of whether global string hash code randomization is enabled (as in .NET Core 1.0+) or disabled (the default for .NET Framework).
+
+To improve performance, `Dictionary<string, ...>` and `HashSet<string>` instances in .NET Framework and .NET will optimize for non-malicious input and will utilize a non-randomizing hash code calculation routine where possible. To avoid an unbounded $O(n^2)$ work factor, the dictionary internally keeps track of the number of collisions it has observed for any given hash bucket. Once that count reaches a critical threshold (currently 100), the dictionary instance will rehash _all_ existing keys with a collision-resistant hash code routine using a randomly generated seed unique to the dictionary instance.
+
+The per-instance seed is a defense-in-depth mitigation against any side channel which may inadvertently disclose a global / shared seed. There remains a possibility that the dictionary instance itself might have a side channel which discloses the per-instance seed; however, this is unlikely to be a problem in practice since most dictionary instances have an anticipated lifetime of no more than a single web request.
+
+> **Note**
+>
+> This per-instance seed randomization only applies when the dictionary is constructed with a null _comparer_, `EqualityComparer<string>.Default`, `StringComparer.Ordinal`, or `StringComparer.OrdinalIgnoreCase`. Other inbox `StringComparer` instances (see Appendix B) will still enjoy hash code randomization when used within a dictionary instance, but the implementation may resort to a global seed instead of a per-instance seed. This may be a future opportunity for improvement, but it should not present a significant risk to real-world applications since such comparers are used relatively infrequently.
+
+It might be beneficial for other inbox types like `long` and `Guid` - or even for user-defined types - to participate in this hash code randomization once the necessary collision threshold has been reached. Exposing such functionality may have simplified the response to [CVE-2024-43483](https://github.com/dotnet/announcements/issues/327), [CVE-2014-4072](https://learn.microsoft.com/security-updates/securitybulletins/2014/ms14-053), and [GHSA-7q36-4xx7-xcxf](https://github.com/advisories/GHSA-7q36-4xx7-xcxf), among others. See the "Future improvements and considerations" section of [the `System.HashCode` security design doc](System.HashCode.md) for more information.
+
 ## Appendices
 
 ### Appendix A - Notes on `GetHashCode` hash flooding
@@ -334,18 +348,6 @@ The list below is the full list of collection types which have built-in protecti
 > **Reminder**
 >
 > Only `Dictionary<...>` and `HashSet<...>` are in scope for this security design document. Even though the list above shows that other keyed collection types have built-in protections against hash flooding attacks, no other part of this document should be assumed to apply to types other than `Dictionary<...>` or `HashSet<...>`.
-
-These protections were initially offered as part of [CVE-2011-3414](https://learn.microsoft.com/security-updates/SecurityBulletins/2011/ms11-100), and they remain in effect regardless of whether global string hash code randomization is enabled (as in .NET Core 1.0+) or disabled (the default for .NET Framework).
-
-To improve performance, `Dictionary<string, ...>` and `HashSet<string>` instances in .NET Framework and .NET will optimize for non-malicious input and will utilize a non-randomizing hash code calculation routine where possible. To avoid an unbounded $O(n^2)$ work factor, the dictionary internally keeps track of the number of collisions it has observed for any given hash bucket. Once that count reaches a critical threshold (currently 100), the dictionary instance will rehash _all_ existing keys with a collision-resistant hash code routine using a randomly generated seed unique to the dictionary instance.
-
-The per-instance seed is a defense-in-depth mitigation against any side channel which may inadvertently disclose a global / shared seed. There remains a possibility that the dictionary instance itself might have a side channel which discloses the per-instance seed; however, this is unlikely to be a problem in practice since most dictionary instances have an anticipated lifetime of no more than a single web request.
-
-> **Note**
->
-> This per-instance seed randomization only applies when the dictionary is constructed with a null _comparer_, `EqualityComparer<string>.Default`, `StringComparer.Ordinal`, or `StringComparer.OrdinalIgnoreCase`. Other inbox `StringComparer` instances will still enjoy hash code randomization when used within a dictionary instance, but the implementation may resort to a global seed instead of a per-instance seed. This may be a future opportunity for improvement, but it should not present a significant risk to real-world applications since such comparers are used relatively infrequently.
-
-It might be beneficial for other inbox types like `long` and `Guid` - or even for user-defined types - to participate in this hash code randomization once the necessary collision threshold has been reached. Exposing such functionality may have simplified the response to [CVE-2024-43483](https://github.com/dotnet/announcements/issues/327), [CVE-2014-4072](https://learn.microsoft.com/security-updates/securitybulletins/2014/ms14-053), and [GHSA-7q36-4xx7-xcxf](https://github.com/advisories/GHSA-7q36-4xx7-xcxf), among others. See the "Future improvements and considerations" section of [the `System.HashCode` security design doc](System.HashCode.md) for more information.
 
 ### Appendix C - Demonstration of a hash flood attack
 
