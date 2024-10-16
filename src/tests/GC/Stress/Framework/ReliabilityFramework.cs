@@ -839,12 +839,14 @@ public class ReliabilityFramework
 
             if (_curTestSet.DebugBreakOnTestHang)
             {
-                Console.WriteLine("Test hang.");
+                string msg = "Test hang because of timeout"
+                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
                 Debugger.Break();
             }
             else
             {
-                Console.WriteLine("Time limit reached.");
+                string msg = "Throw exception because of timeout"
+                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
                 throw new TimeoutException("Time limit reached.");
             }
         }
