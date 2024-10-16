@@ -489,8 +489,6 @@ struct tagVARIANT
 
 typedef VARIANT VARIANTARG, *LPVARIANTARG;
 
-STDAPI_(void) VariantInit(VARIANT * pvarg);
-
 #define V_VT(X)         ((X)->n1.n2.vt)
 #define V_UNION(X, Y)   ((X)->n1.n2.n3.Y)
 #define V_RECORDINFO(X) ((X)->n1.n2.n3.brecVal.pRecInfo)
