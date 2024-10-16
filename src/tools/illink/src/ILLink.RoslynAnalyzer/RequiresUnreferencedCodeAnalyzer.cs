@@ -55,6 +55,8 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override DiagnosticDescriptor RequiresDiagnosticRule => s_requiresUnreferencedCodeRule;
 
+		private protected override DiagnosticId RequiresDiagnosticId => DiagnosticId.RequiresUnreferencedCode;
+
 		private protected override DiagnosticDescriptor RequiresAttributeMismatch => s_requiresUnreferencedCodeAttributeMismatch;
 
 		private protected override DiagnosticDescriptor RequiresOnStaticCtor => s_requiresUnreferencedCodeOnStaticCtor;
@@ -78,12 +80,10 @@ namespace ILLink.RoslynAnalyzer
 		}
 
 		protected override bool CreateSpecialIncompatibleMembersDiagnostic (
-			IOperation operation,
 			ImmutableArray<ISymbol> specialIncompatibleMembers,
 			ISymbol member,
-			out Diagnostic? incompatibleMembersDiagnostic)
+			in DiagnosticContext diagnosticContext)
 		{
-			incompatibleMembersDiagnostic = null;
 			// Some RUC-annotated APIs are intrinsically handled by the trimmer
 			if (member is IMethodSymbol method && Intrinsics.GetIntrinsicIdForMethod (new MethodProxy (method)) != IntrinsicId.None) {
 				return true;

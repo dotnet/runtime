@@ -86,7 +86,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				options.SingleWarn,
 				singleWarnEnabledModules: Enumerable.Empty<string> (),
 				singleWarnDisabledModules: Enumerable.Empty<string> (),
-				suppressedCategories: Enumerable.Empty<string> (),
+				suppressedCategories: options.SuppressedWarningCategories,
 				treatWarningsAsErrors: options.TreatWarningsAsErrors,
 				warningsAsErrors: options.WarningsAsErrors);
 

@@ -83,7 +83,7 @@ namespace System
                 if (_count == 0)
                     return Array.Empty<T>();
                 if (_count == 1)
-                    return new T[1] { _item };
+                    return [_item];
 
                 Array.Resize(ref _items, _count);
                 _capacity = _count;
@@ -301,7 +301,7 @@ namespace System
                                 break; // end of list; stop iteration and fall through to slower path
                             }
 
-                            if (candidate is RtFieldInfo candidateRtFI && candidateRtFI.GetFieldHandle() == field.Value)
+                            if (candidate is RtFieldInfo candidateRtFI && candidateRtFI.GetFieldDesc() == field.Value)
                             {
                                 return candidateRtFI; // match!
                             }
@@ -2730,9 +2730,7 @@ namespace System
 
             ArgumentNullException.ThrowIfNull(interfaceType);
 
-            RuntimeType? ifaceRtType = interfaceType as RuntimeType;
-
-            if (ifaceRtType == null)
+            RuntimeType ifaceRtType = interfaceType as RuntimeType ??
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(interfaceType));
 
             RuntimeTypeHandle ifaceRtTypeHandle = ifaceRtType.TypeHandle;
@@ -3308,11 +3306,18 @@ namespace System
             return false;
         }
 
+        public override unsafe bool IsInstanceOfType([NotNullWhen(true)] object? o)
+        {
+            bool ret = CastHelpers.IsInstanceOfAny(GetUnderlyingNativeHandle().ToPointer(), o) is not null;
+            GC.KeepAlive(this);
+            return ret;
+        }
+
 #if FEATURE_TYPEEQUIVALENCE
         // Reflexive, symmetric, transitive.
         public override bool IsEquivalentTo([NotNullWhen(true)] Type? other)
         {
-            if (!(other is RuntimeType otherRtType))
+            if (other is not RuntimeType otherRtType)
             {
                 return false;
             }
@@ -3365,18 +3370,48 @@ namespace System
 
         #region Attributes
 
-        public override Guid GUID
+        public override unsafe Guid GUID
         {
             get
             {
-                Guid result = default;
-                GetGUID(ref result);
+                TypeHandle th = GetNativeTypeHandle();
+                if (th.IsTypeDesc || th.AsMethodTable()->IsArray)
+                {
+                    return Guid.Empty;
+                }
+
+                Guid result;
+#if FEATURE_COMINTEROP
+                // The fully qualified name is needed since the RuntimeType has a TypeHandle property.
+                if (System.Runtime.CompilerServices.TypeHandle.AreSameType(th, System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<__ComObject>()))
+                {
+                    GetComObjectGuidWorker(this, &result);
+                }
+                else
+#endif // FEATURE_COMINTEROP
+                {
+                    GetGuid(th.AsMethodTable(), &result);
+                }
+                GC.KeepAlive(this); // Ensure TypeHandle remains alive.
                 return result;
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void GetGUID(ref Guid result);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetGuid")]
+        private static unsafe partial void GetGuid(MethodTable* pMT, Guid* result);
+
+#if FEATURE_COMINTEROP
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe void GetComObjectGuidWorker(RuntimeType type, Guid* result)
+        {
+            Debug.Assert(type.IsGenericCOMObjectImpl());
+            Debug.Assert(result is not null);
+            GetComObjectGuid(ObjectHandleOnStack.Create(ref type), result);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetComObjectGuid")]
+        private static unsafe partial void GetComObjectGuid(ObjectHandleOnStack type, Guid* result);
+#endif // FEATURE_COMINTEROP
 
         protected override unsafe bool IsValueTypeImpl()
         {
@@ -3569,7 +3604,7 @@ namespace System
                 }
                 catch (TypeLoadException e)
                 {
-                    ValidateGenericArguments(this, new[] { rt }, e);
+                    ValidateGenericArguments(this, [rt], e);
                     throw;
                 }
             }
@@ -3580,10 +3615,7 @@ namespace System
             bool foundNonRuntimeType = false;
             for (int i = 0; i < instantiation.Length; i++)
             {
-                Type instantiationElem = instantiation[i];
-                if (instantiationElem == null)
-                    throw new ArgumentNullException();
-
+                Type instantiationElem = instantiation[i] ?? throw new ArgumentNullException();
                 RuntimeType? rtInstantiationElem = instantiationElem as RuntimeType;
 
                 if (rtInstantiationElem == null)
@@ -3659,6 +3691,13 @@ namespace System
             }
         }
 
+        internal CorElementType GetCorElementType()
+        {
+            CorElementType ret = (CorElementType)GetNativeTypeHandle().GetCorElementType();
+            GC.KeepAlive(this);
+            return ret;
+        }
+
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeType>(other);
 
         public override Type MakePointerType() => new RuntimeTypeHandle(this).MakePointer();
@@ -3681,14 +3720,43 @@ namespace System
 
         #region Invoke Member
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType);
+        private static bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType)
+        {
+            Debug.Assert(targetType.IsPointer || targetType.IsEnum || targetType.IsPrimitive || targetType.IsFunctionPointer);
+
+            if (targetType.IsPointer || targetType.IsFunctionPointer)
+            {
+                // The object must be an IntPtr or a System.Reflection.Pointer
+                if (valueType == typeof(IntPtr))
+                {
+                    // It's an IntPtr, it's good.
+                    return true;
+                }
+
+                // void* assigns to any pointer
+                if (targetType == typeof(void*))
+                {
+                    return true;
+                }
+
+                // otherwise the type of the pointer must match.
+                return valueType.IsAssignableTo(targetType);
+            }
+            else
+            {
+                // The type is an enum or a primitive. To have any chance of assignment
+                // the object type must be an enum or primitive as well.
+                // So get the internal cor element and that must be the same or widen.
+                CorElementType valueCorElement = valueType.GetUnderlyingCorElementType();
+                CorElementType targetCorElement = targetType.GetUnderlyingCorElementType();
+                return valueCorElement.IsPrimitiveType() && RuntimeHelpers.CanPrimitiveWiden(valueCorElement, targetCorElement);
+            }
+        }
 
         private CheckValueStatus TryChangeTypeSpecial(ref object value)
         {
             Pointer? pointer = value as Pointer;
             RuntimeType srcType = pointer != null ? pointer.GetPointerType() : (RuntimeType)value.GetType();
-
             if (!CanValueSpecialCast(srcType, this))
             {
                 return CheckValueStatus.ArgumentException;
@@ -3700,8 +3768,8 @@ namespace System
             }
             else
             {
-                CorElementType srcElementType = GetUnderlyingType(srcType);
-                CorElementType dstElementType = GetUnderlyingType(this);
+                CorElementType srcElementType = srcType.GetUnderlyingCorElementType();
+                CorElementType dstElementType = GetUnderlyingCorElementType();
                 if (dstElementType != srcElementType)
                 {
                     value = InvokeUtils.ConvertOrWiden(srcType, value, this, dstElementType);
@@ -3986,22 +4054,58 @@ namespace System
 
         internal void InvalidateCachedNestedType() => Cache.InvalidateCachedNestedType();
 
-        internal bool IsGenericCOMObjectImpl() => RuntimeTypeHandle.IsComObject(this, true);
+#if FEATURE_COMINTEROP
+        protected override bool IsCOMObjectImpl() => RuntimeTypeHandle.CanCastTo(this, (RuntimeType)typeof(__ComObject));
+
+        // We need to check the type handle values - not the instances - to determine if the runtime type is a generic ComObject.
+        internal bool IsGenericCOMObjectImpl() => TypeHandle.Value == typeof(__ComObject).TypeHandle.Value;
+#else
+        protected override bool IsCOMObjectImpl() => false;
+
+#pragma warning disable CA1822 // Mark members as static
+        internal bool IsGenericCOMObjectImpl() => false;
+#pragma warning restore CA1822
+#endif
 
         #endregion
 
-        #region Legacy internal static
-
 #if FEATURE_COMINTEROP
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern object InvokeDispMethod(
-            string name, BindingFlags invokeAttr, object target, object?[]? args,
-            bool[]? byrefModifiers, int culture, string[]? namedParameters);
-#endif // FEATURE_COMINTEROP
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_InvokeDispMethod")]
+        private static partial void InvokeDispMethod(
+            ObjectHandleOnStack type,
+            ObjectHandleOnStack name,
+            BindingFlags invokeAttr,
+            ObjectHandleOnStack target,
+            ObjectHandleOnStack args,
+            ObjectHandleOnStack byrefModifiers,
+            int lcid,
+            ObjectHandleOnStack namedParameters,
+            ObjectHandleOnStack result);
 
-        #endregion
+        private object InvokeDispMethod(
+            string name,
+            BindingFlags invokeAttr,
+            object target,
+            object?[]? args,
+            bool[]? byrefModifiers,
+            int culture,
+            string[]? namedParameters)
+        {
+            RuntimeType _this = this;
+            object? result = null;
+            InvokeDispMethod(
+                ObjectHandleOnStack.Create(ref _this),
+                ObjectHandleOnStack.Create(ref name),
+                invokeAttr,
+                ObjectHandleOnStack.Create(ref target),
+                ObjectHandleOnStack.Create(ref args),
+                ObjectHandleOnStack.Create(ref byrefModifiers),
+                culture,
+                ObjectHandleOnStack.Create(ref namedParameters),
+                ObjectHandleOnStack.Create(ref result));
+            return result!;
+        }
 
-#if FEATURE_COMINTEROP
         [RequiresUnreferencedCode("The member might be removed")]
         private object? ForwardCallToInvokeMember(
             string memberName,
@@ -4036,7 +4140,7 @@ namespace System
                     paramMod[i] = aArgsIsByRef[i];
                 }
 
-                aParamMod = new ParameterModifier[] { paramMod };
+                aParamMod = [paramMod];
                 if (aArgsWrapperTypes != null)
                 {
                     WrapArgsForInvokeCall(aArgs, aArgsWrapperTypes);
@@ -4124,11 +4228,11 @@ namespace System
                     ConstructorInfo wrapperCons;
                     if (isString)
                     {
-                        wrapperCons = wrapperType.GetConstructor(new Type[] { typeof(string) })!;
+                        wrapperCons = wrapperType.GetConstructor([typeof(string)])!;
                     }
                     else
                     {
-                        wrapperCons = wrapperType.GetConstructor(new Type[] { typeof(object) })!;
+                        wrapperCons = wrapperType.GetConstructor([typeof(object)])!;
                     }
 
                     // Wrap each of the elements of the array.
@@ -4136,11 +4240,11 @@ namespace System
                     {
                         if (isString)
                         {
-                            newArray[currElem] = wrapperCons.Invoke(new object?[] { (string?)oldArray.GetValue(currElem) });
+                            newArray[currElem] = wrapperCons.Invoke([(string?)oldArray.GetValue(currElem)]);
                         }
                         else
                         {
-                            newArray[currElem] = wrapperCons.Invoke(new object?[] { oldArray.GetValue(currElem) });
+                            newArray[currElem] = wrapperCons.Invoke([oldArray.GetValue(currElem)]);
                         }
                     }
 
@@ -4327,7 +4431,7 @@ namespace System.Reflection
         private static int GetHashCodeHelper(K key)
         {
             // For strings we don't want the key to differ across domains as CerHashtable might be shared.
-            if (!(key is string sKey))
+            if (key is not string sKey)
             {
                 return key.GetHashCode();
             }

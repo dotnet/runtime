@@ -67,7 +67,7 @@ endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
 if(CLR_CMAKE_TARGET_OSX)
   add_definitions(-DTARGET_OSX)
-  if(CLR_CMAKE_TARGET_ARCH_AMD64)
+  if(CLR_CMAKE_HOST_ARCH_AMD64)
     add_definitions(-DXSTATE_SUPPORTED)
   endif()
   set(PLATFORM_SOURCES
@@ -251,6 +251,9 @@ endif(CLR_CMAKE_TARGET_OSX)
 if(CLR_CMAKE_TARGET_LINUX)
   add_library(tracepointprovider OBJECT misc/tracepointprovider.cpp)
 endif(CLR_CMAKE_TARGET_LINUX)
+
+add_library(minipal_debugger STATIC ${CLR_SRC_NATIVE_DIR}/minipal/debugger.c)
+target_link_libraries(coreclrpal PRIVATE minipal_debugger)
 
 if(CLR_CMAKE_TARGET_OSX)
   find_library(COREFOUNDATION CoreFoundation)

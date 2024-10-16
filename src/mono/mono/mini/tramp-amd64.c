@@ -1179,7 +1179,7 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 
 	/* save all return floating registers in the CallContext */
 	for (i = 0; i < FLOAT_RETURN_REGS; i++)
-		amd64_sse_movsd_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double), i);
+		amd64_sse_movsd_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (CallContext, fregs) + float_return_regs [i] * sizeof (double), float_return_regs [i]);
 
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 	/* set context registers to CallContext and load context registers from the stack */	

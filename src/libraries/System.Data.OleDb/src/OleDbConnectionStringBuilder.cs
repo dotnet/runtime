@@ -115,7 +115,7 @@ namespace System.Data.OleDb
                                 PersistSecurityInfo = ConvertToBoolean(value);
                                 break;
                             default:
-                                Debug.Assert(false, "unexpected keyword");
+                                Debug.Fail("unexpected keyword");
                                 throw ADP.KeywordNotSupported(keyword);
                         }
                     }
@@ -310,7 +310,7 @@ namespace System.Data.OleDb
                 case Keywords.Provider:
                     return Provider;
                 default:
-                    Debug.Assert(false, "unexpected keyword");
+                    Debug.Fail("unexpected keyword");
                     throw ADP.KeywordNotSupported(s_validKeywords[(int)index]);
             }
         }
@@ -354,7 +354,7 @@ namespace System.Data.OleDb
                     RestartProvider();
                     break;
                 default:
-                    Debug.Assert(false, "unexpected keyword");
+                    Debug.Fail("unexpected keyword");
                     throw ADP.KeywordNotSupported(s_validKeywords[(int)index]);
             }
         }

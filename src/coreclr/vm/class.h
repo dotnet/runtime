@@ -1798,6 +1798,16 @@ protected:
     }
 #endif // !DACCESS_COMPILE
 
+    friend struct ::cdac_data<EEClass>;
+};
+
+template<> struct cdac_data<EEClass>
+{
+    static constexpr size_t InternalCorElementType = offsetof(EEClass, m_NormType);
+    static constexpr size_t MethodTable = offsetof(EEClass, m_pMethodTable);
+    static constexpr size_t NumMethods = offsetof(EEClass, m_NumMethods);
+    static constexpr size_t CorTypeAttr = offsetof(EEClass, m_dwAttrClass);
+    static constexpr size_t NumNonVirtualSlots = offsetof(EEClass, m_NumNonVirtualSlots);
 };
 
 // --------------------------------------------------------------------------------------------
@@ -1885,11 +1895,9 @@ public:
     PTR_Stub                         m_pStaticCallStub;
     PTR_Stub                         m_pInstRetBuffCallStub;
     PTR_MethodDesc                   m_pInvokeMethod;
-    PTR_Stub                         m_pMultiCastInvokeStub;
-    PTR_Stub                         m_pWrapperDelegateInvokeStub;
+    PCODE                            m_pMultiCastInvokeStub;
+    PCODE                            m_pWrapperDelegateInvokeStub;
     UMThunkMarshInfo*                m_pUMThunkMarshInfo;
-    PTR_MethodDesc                   m_pBeginInvokeMethod;
-    PTR_MethodDesc                   m_pEndInvokeMethod;
     Volatile<PCODE>                  m_pMarshalStub;
 
 #ifdef FEATURE_COMINTEROP
@@ -1899,16 +1907,6 @@ public:
     PTR_MethodDesc GetInvokeMethod()
     {
         return m_pInvokeMethod;
-    }
-
-    PTR_MethodDesc GetBeginInvokeMethod()
-    {
-        return m_pBeginInvokeMethod;
-    }
-
-    PTR_MethodDesc GetEndInvokeMethod()
-    {
-        return m_pEndInvokeMethod;
     }
 
 #ifndef DACCESS_COMPILE
@@ -1943,7 +1941,6 @@ private:
 
     DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
     unsigned char   m_rank;
-    CorElementType  m_ElementType;// Cache of element type in m_ElementTypeHnd
 
 public:
     DWORD GetRank() {
@@ -1959,23 +1956,12 @@ public:
         m_rank = (unsigned char)Rank;
     }
 
-    CorElementType GetArrayElementType() {
-        LIMITED_METHOD_CONTRACT;
-        return m_ElementType;
-    }
-    void SetArrayElementType(CorElementType ElementType) {
-        LIMITED_METHOD_CONTRACT;
-        m_ElementType = ElementType;
-    }
-
-
     // Allocate a new MethodDesc for the methods we add to this class
     void InitArrayMethodDesc(
         ArrayMethodDesc* pNewMD,
         PCCOR_SIGNATURE pShortSig,
         DWORD   cShortSig,
         DWORD   dwVtableSlot,
-        LoaderAllocator *pLoaderAllocator,
         AllocMemTracker *pamTracker);
 
     // Generate a short sig for an array accessor
@@ -1988,7 +1974,12 @@ public:
                                       BOOL fForStubAsIL
     );
 
+    friend struct ::cdac_data<ArrayClass>;
+};
 
+template<> struct cdac_data<ArrayClass>
+{
+    static constexpr size_t Rank = offsetof(ArrayClass, m_rank);
 };
 
 inline EEClassLayoutInfo *EEClass::GetLayoutInfo()
@@ -2055,17 +2046,6 @@ inline PCODE GetPreStubEntryPoint()
 {
     return GetEEFuncEntryPoint(ThePreStub);
 }
-
-#if defined(HAS_COMPACT_ENTRYPOINTS) && defined(TARGET_ARM)
-
-EXTERN_C void STDCALL ThePreStubCompactARM();
-
-inline PCODE GetPreStubCompactARMEntryPoint()
-{
-    return GetEEFuncEntryPoint(ThePreStubCompactARM);
-}
-
-#endif // defined(HAS_COMPACT_ENTRYPOINTS) && defined(TARGET_ARM)
 
 PCODE TheUMThunkPreStub();
 

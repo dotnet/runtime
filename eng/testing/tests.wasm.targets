@@ -38,8 +38,6 @@
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <!-- suppress warnings as these are tests, and not expected to be trim-safe -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-    <!-- This warning code isn't yet included in SuppressTrimAnalysisWarnings -->
-    <NoWarn>$(NoWarn);IL2118</NoWarn>
     <!-- IL2121: Unnecessary UnconditionalSuppressMessage attribute -->
     <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>

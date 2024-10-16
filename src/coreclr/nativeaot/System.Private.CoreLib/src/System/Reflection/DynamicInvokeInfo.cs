@@ -365,9 +365,7 @@ namespace System.Reflection
             else if (argCount == 1)
             {
                 ByReference br = ByReference.Create(ref parameters[0]);
-#pragma warning disable CS8500
                 void* pByrefStorage = &br;
-#pragma warning restore CS8500
 
                 // Since no copy of args is required, pass 'parameters' for both arguments.
                 CheckArguments(parameters, pByrefStorage, parameters);
@@ -410,9 +408,7 @@ namespace System.Reflection
             IntPtr* pStorage = stackalloc IntPtr[2 * argCount];
             NativeMemory.Clear(pStorage, (nuint)(2 * argCount) * (nuint)sizeof(IntPtr));
 
-#pragma warning disable 8500
             void* pByRefStorage = (ByReference*)(pStorage + argCount);
-#pragma warning restore 8500
 
             GCFrameRegistration regArgStorage = new((void**)pStorage, (uint)argCount, areByRefs: false);
             GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
@@ -461,9 +457,7 @@ namespace System.Reflection
             IntPtr* pStorage = stackalloc IntPtr[2 * argCount];
             NativeMemory.Clear(pStorage, (nuint)(2 * argCount) * (nuint)sizeof(IntPtr));
 
-#pragma warning disable 8500
             void* pByRefStorage = (ByReference*)(pStorage + argCount);
-#pragma warning restore 8500
 
             GCFrameRegistration regArgStorage = new((void**)pStorage, (uint)argCount, areByRefs: false);
             GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
@@ -501,9 +495,7 @@ namespace System.Reflection
             StackAllocatedArguments argStorage = default;
             Span<object?> copyOfParameters = ((Span<object?>)argStorage._args).Slice(0, _argumentCount);
             StackAllocatedByRefs byrefStorage = default;
-#pragma warning disable CS8500
             void* pByRefStorage = (ByReference*)&byrefStorage;
-#pragma warning restore CS8500
 
             CheckArguments(copyOfParameters, pByRefStorage, parameters, binderBundle);
 
@@ -535,9 +527,7 @@ namespace System.Reflection
             StackAllocatedArguments argStorage = default;
             Span<object?> copyOfParameters = ((Span<object?>)argStorage._args).Slice(0, _argumentCount);
             StackAllocatedByRefs byrefStorage = default;
-#pragma warning disable CS8500
             void* pByRefStorage = (ByReference*)&byrefStorage;
-#pragma warning restore CS8500
 
             CheckArguments(copyOfParameters, pByRefStorage, parameters);
 
@@ -562,9 +552,7 @@ namespace System.Reflection
             Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
 
             StackAllocatedByRefs byrefStorage = default;
-#pragma warning disable CS8500
             void* pByRefStorage = (ByReference*)&byrefStorage;
-#pragma warning restore CS8500
 
             // Since no copy of args is required, pass 'parameters' for both arguments.
             CheckArguments(parameters, pByRefStorage, parameters);
@@ -686,10 +674,10 @@ namespace System.Reflection
 
                 copyOfParameters[i] = arg!;
 
-#pragma warning disable 8500, 9094
+#pragma warning disable 9094
                 ((ByReference*)byrefParameters)[i] = new ByReference(ref (argumentInfo.Transform & Transform.Reference) != 0 ?
                     ref Unsafe.As<object?, byte>(ref copyOfParameters[i]) : ref arg.GetRawData());
-#pragma warning restore 8500, 9094
+#pragma warning restore 9094
             }
         }
 
@@ -763,10 +751,10 @@ namespace System.Reflection
 
                 copyOfParameters[i] = arg;
 
-#pragma warning disable 8500, 9094
+#pragma warning disable 9094
                 ((ByReference*)byrefParameters)[i] = new ByReference(ref (argumentInfo.Transform & Transform.Reference) != 0 ?
                     ref Unsafe.As<object?, byte>(ref copyOfParameters[i]) : ref arg.GetRawData());
-#pragma warning restore 8500, 9094
+#pragma warning restore 9094
             }
         }
 

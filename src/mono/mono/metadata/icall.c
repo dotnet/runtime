@@ -199,12 +199,7 @@ ves_icall_System_Array_GetValueImpl (MonoObjectHandleOnStack array_handle, MonoO
 	MonoClass * const array_class = mono_object_class (array);
 	MonoClass * const element_class = m_class_get_element_class (array_class);
 
-	if (m_class_is_native_pointer (element_class)) {
-		mono_error_set_not_supported (error, NULL);
-		return;
-	}
-
-	if (m_class_is_valuetype (element_class)) {
+	if (m_class_is_valuetype (element_class) || mono_class_is_pointer (element_class)) {
 		gsize element_size = mono_array_element_size (array_class);
 		gpointer element_address = mono_array_addr_with_size_fast (array, element_size, (gsize)pos);
 		MonoObject *res = mono_value_box_checked (element_class, element_address, error);
@@ -873,12 +868,15 @@ ves_icall_System_Array_FastCopy (MonoObjectHandleOnStack source_handle, int sour
 		 	m_class_is_valuetype (src_class) || m_class_is_valuetype (src_class))
 			return FALSE;
 
-		/* It's only safe to copy between arrays if we can ensure the source will always have a subtype of the destination. We bail otherwise. */
-		if (!mono_class_is_subclass_of_internal (src_class, dest_class, FALSE))
-			return FALSE;
-
-		if (m_class_is_native_pointer (src_class) || m_class_is_native_pointer (dest_class))
-			return FALSE;
+		if (mono_class_is_pointer (dest_class) || mono_class_is_pointer (src_class)) {
+			/* if we're copying between at least one array of pointers, only allow it if both dest_class is assignable from src_class (checked above, and src_class is assignable from dest_class).  This should only be true if both src_class and dest_class have a common cast_class. (for example: int*[] and uint*[] are ok, but void*[] and int*[] are not)). */
+			if (!mono_class_is_assignable_from_internal (dest_class, src_class))
+				return FALSE;
+		} else {
+			/* It's only safe to copy between arrays if we can ensure the source will always have a subtype of the destination. We bail otherwise. */
+			if (!mono_class_is_subclass_of_internal (src_class, dest_class, FALSE))
+				return FALSE;
+		}
 	}
 
 	if (m_class_is_valuetype (dest_class)) {
@@ -2286,6 +2284,33 @@ typed_reference_to_object (MonoTypedRef *tref, MonoError *error)
 	HANDLE_FUNCTION_RETURN_REF (MonoObject, result);
 }
 
+gpointer
+ves_icall_System_RuntimeFieldHandle_GetFieldDataReference (MonoObjectHandle target, MonoClassField *field, MonoError *error)
+{
+	g_assert (field);
+	g_assert (!MONO_HANDLE_IS_NULL(target));
+
+	/* if relative, offset is from the start of target. Otherwise offset is actually an address */
+	gboolean relative = TRUE;
+	intptr_t offset = 0;
+	if (G_LIKELY (!m_field_is_from_update (field))) {
+		offset = m_field_get_offset (field);
+	} else {
+		/* This field was added by a metadata-update to an exsiting type.
+			* Since it's store outside the object, offset is an absolute address
+			*/
+		relative = FALSE;
+		uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (field));
+		offset = (intptr_t) mono_metadata_update_added_field_ldflda (MONO_HANDLE_RAW (target), field->type, token, error);
+		mono_error_assert_ok (error);
+	}
+
+	if (G_LIKELY (relative))
+		return (guint8*)MONO_HANDLE_RAW (target) + offset;
+	else
+		return (guint8*)offset;
+}
+
 MonoObjectHandle
 ves_icall_System_RuntimeFieldHandle_GetValueDirect (MonoReflectionFieldHandle field_h, MonoReflectionTypeHandle field_type_h, MonoTypedRef *obj, MonoReflectionTypeHandle context_type_h, MonoError *error)
 {
@@ -2995,6 +3020,13 @@ ves_icall_RuntimeTypeHandle_GetModule (MonoQCallTypeHandle type_handle, MonoObje
 	return_if_nok (error);
 
 	HANDLE_ON_STACK_SET (res, MONO_HANDLE_RAW (module));
+}
+
+gpointer
+ves_icall_RuntimeTypeHandle_GetMonoClass (MonoQCallTypeHandle type_handle, MonoError *error)
+{
+	MonoType *t = type_handle.type;
+	return mono_class_from_mono_type_internal (t);
 }
 
 void
@@ -6397,55 +6429,6 @@ MonoObjectHandle
 ves_icall_System_TypedReference_ToObject (MonoTypedRef* tref, MonoError *error)
 {
 	return typed_reference_to_object (tref, error);
-}
-
-void
-ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, MonoObjectHandle target, MonoArrayHandle fields, MonoReflectionTypeHandle last_field, MonoError *error)
-{
-	MonoType *ftype = NULL;
-
-	memset (res, 0, sizeof (MonoTypedRef));
-
-	g_assert (mono_array_handle_length (fields) > 0);
-
-	(void)mono_handle_class (target);
-
-	/* if relative, offset is from the start of target. Otherwise offset is actually an address */
-	gboolean relative = TRUE;
-	intptr_t offset = 0;
-	for (guint i = 0; i < mono_array_handle_length (fields); ++i) {
-		MonoClassField *f;
-		MONO_HANDLE_ARRAY_GETVAL (f, fields, MonoClassField*, i);
-
-		g_assert (f);
-
-		if (i == 0) {
-			if (G_LIKELY (!m_field_is_from_update (f)))
-				offset = m_field_get_offset (f);
-			else {
-				/* The first field was added by a metadata-update to an exsiting type.
-				 * Since it's store outside the object, offset is an absolute address
-				 */
-				relative = FALSE;
-				uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (f));
-				offset = (intptr_t) mono_metadata_update_added_field_ldflda (MONO_HANDLE_RAW (target), f->type, token, error);
-				mono_error_assert_ok (error);
-			}
-		} else {
-			/* metadata-update: the first field might be added, the rest are inside structs */
-			g_assert (!m_field_is_from_update (f));
-			offset += m_field_get_offset (f) - sizeof (MonoObject);
-		}
-		(void)mono_class_from_mono_type_internal (f->type);
-		ftype = f->type;
-	}
-
-	res->type = ftype;
-	res->klass = mono_class_from_mono_type_internal (ftype);
-	if (G_LIKELY (relative))
-		res->value = (guint8*)MONO_HANDLE_RAW (target) + offset;
-	else
-		res->value = (guint8*)offset;
 }
 
 void

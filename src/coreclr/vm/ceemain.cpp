@@ -173,7 +173,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
-#include "mngstdinterfaces.h"
 #include "interoplibinterface.h"
 #endif // FEATURE_COMINTEROP
 
@@ -396,6 +395,17 @@ BOOL g_singleVersionHosting;
 typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
 PINITIALIZECONTEXT2 g_pfnInitializeContext2 = NULL;
 
+#ifdef TARGET_ARM64
+typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
+PGETENABLEDXSTATEFEATURES g_pfnGetEnabledXStateFeatures = NULL;
+
+typedef BOOL(WINAPI* PGETXSTATEFEATURESMASK)(PCONTEXT Context, PDWORD64 FeatureMask);
+PGETXSTATEFEATURESMASK g_pfnGetXStateFeaturesMask = NULL;
+
+typedef BOOL(WINAPI* PSETXSTATEFEATURESMASK)(PCONTEXT Context, DWORD64 FeatureMask);
+PSETXSTATEFEATURESMASK g_pfnSetXStateFeaturesMask = NULL;
+#endif // TARGET_ARM64
+
 static BOOLEAN WINAPI RtlDllShutdownInProgressFallback()
 {
     return g_fProcessDetach;
@@ -411,6 +421,12 @@ void InitializeOptionalWindowsAPIPointers()
 {
     HMODULE hm = GetModuleHandleW(_T("kernel32.dll"));
     g_pfnInitializeContext2 = (PINITIALIZECONTEXT2)GetProcAddress(hm, "InitializeContext2");
+
+#ifdef TARGET_ARM64
+    g_pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hm, "GetEnabledXStateFeatures");
+    g_pfnGetXStateFeaturesMask = (PGETXSTATEFEATURESMASK)GetProcAddress(hm, "GetXStateFeaturesMask");
+    g_pfnSetXStateFeaturesMask = (PSETXSTATEFEATURESMASK)GetProcAddress(hm, "SetXStateFeaturesMask");
+#endif // TARGET_ARM64
 
     hm = GetModuleHandleW(_T("ntdll.dll"));
     PRTLDLLSHUTDOWNINPROGRESS pfn = (PRTLDLLSHUTDOWNINPROGRESS)GetProcAddress(hm, "RtlDllShutdownInProgress");
@@ -795,7 +811,6 @@ void EEStartupHelper()
 
         CoreLibBinder::Startup();
 
-        Stub::Init();
         StubLinkerCPU::Init();
         StubPrecode::StaticInitialize();
         FixupPrecode::StaticInitialize();
@@ -812,11 +827,9 @@ void EEStartupHelper()
 
         VirtualCallStubManager::InitStatic();
 
-
         // Setup the domains. Threads are started in a default domain.
 
         // Static initialization
-        BaseDomain::Attach();
         SystemDomain::Attach();
 
         // Start up the EE initializing all the global variables
@@ -827,7 +840,6 @@ void EEStartupHelper()
         ExecutionManager::Init();
 
         JitHost::Init();
-
 
 #ifndef TARGET_UNIX
         if (!RegisterOutOfProcessWatsonCallbacks())
@@ -929,7 +941,6 @@ void EEStartupHelper()
 #ifdef HAVE_GCCOVER
         MethodDesc::Init();
 #endif
-
 
         Assembly::Initialize();
 
@@ -1263,7 +1274,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         Interpreter::PrintPostMortemData();
 #endif // FEATURE_INTERPRETER
         VirtualCallStubManager::LogFinalStats();
-        WriteJitHelperCountToSTRESSLOG();
 
 #ifdef PROFILING_SUPPORTED
         // If profiling is enabled, then notify of shutdown first so that the

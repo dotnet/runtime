@@ -111,7 +111,7 @@ namespace System.Globalization
         /// Returns the tick count corresponding to the given year, month, and day.
         /// Will check the if the parameters are valid.
         /// </summary>
-        private static long DateToTicks(int year, int month, int day)
+        internal static long DateToTicks(int year, int month, int day)
         {
             return GetAbsoluteDate(year, month, day) * TimeSpan.TicksPerDay;
         }
@@ -232,7 +232,7 @@ namespace System.Globalization
 
         public override int GetEra(DateTime time) => ADEra;
 
-        public override int[] Eras => new int[] { ADEra };
+        public override int[] Eras => [ADEra];
 
         /// <summary>
         /// Returns the month part of the specified DateTime.

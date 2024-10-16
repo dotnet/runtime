@@ -77,6 +77,7 @@ export type MonoConfigInternal = MonoConfig & {
     assets?: AssetEntryInternal[],
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
+    logProfilerOptions?: LogProfilerOptions, // dictionary-style Object. If omitted, log profiler will not be initialized.
     browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
@@ -274,6 +275,11 @@ export type AOTProfilerOptions = {
 export type BrowserProfilerOptions = {
 }
 
+export type LogProfilerOptions = {
+    takeHeapshot?: string,
+    configuration?: string //  log profiler options string"
+}
+
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
 export type DotnetModuleInternal = EmscriptenModule & DotnetModuleConfig & EmscriptenModuleInternal;
@@ -290,6 +296,7 @@ export type EmscriptenBuildOptions = {
     wasmEnableEH: boolean,
     enableAotProfiler: boolean,
     enableBrowserProfiler: boolean,
+    enableLogProfiler: boolean,
     runAOTCompilation: boolean,
     wasmEnableThreads: boolean,
     gitHash: string,
@@ -449,7 +456,7 @@ export declare interface EmscriptenModuleInternal {
     FS: any;
     wasmModule: WebAssembly.Instance | null;
     ready: Promise<unknown>;
-    asm: any;
+    wasmExports: any;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
@@ -507,7 +514,7 @@ export type RuntimeModuleExportsInternal = {
 }
 
 export type NativeModuleExportsInternal = {
-    default: (unificator: Function) => EmscriptenModuleInternal
+    default: (unificator: Function) => Promise<EmscriptenModuleInternal>
 }
 
 export type HybridGlobalizationModuleExportsInternal = {

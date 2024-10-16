@@ -113,6 +113,8 @@ namespace Mono.Linker
 
 		public void Write (MethodDebugInformation info) => _symbolWriter.Write (info);
 
+		public void Write (ICustomDebugInformationProvider provider) => _symbolWriter.Write (provider);
+
 		public void Write () => _symbolWriter.Write ();
 
 		public void Dispose () => _symbolWriter.Dispose ();

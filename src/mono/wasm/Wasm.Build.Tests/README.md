@@ -14,7 +14,7 @@ being generated.
 
 - Running:
 
-Linux/macOS: `$ make -C src/mono/wasm run-build-tests`
+Linux/macOS: `$ make -C src/mono/(browser|wasi) run-build-tests`
 Windows: `.\dotnet.cmd build .\src\mono\wasm\Wasm.Build.Tests\Wasm.Build.Tests.csproj -c Release -t:Test -p:TargetOS=browser -p:TargetArchitecture=wasm`
 
 - Specific tests can be run via `XUnitClassName`, and `XUnitMethodName`

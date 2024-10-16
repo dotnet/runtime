@@ -33,6 +33,21 @@ namespace System
             /// </summary>
             public static readonly SearchValues<char> NewLineChars =
                 SearchValues.Create(NewLineCharsExceptLineFeed + "\n");
+
+            /// <summary>A <see cref="SearchValues{Char}"/> for all of the Unicode whitespace characters</summary>
+            public static readonly SearchValues<char> WhiteSpaceChars =
+                SearchValues.Create("\t\n\v\f\r\u0020\u0085\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000");
+
+#if DEBUG
+            static SearchValuesStorage()
+            {
+                SearchValues<char> sv = WhiteSpaceChars;
+                for (int i = 0; i <= char.MaxValue; i++)
+                {
+                    Debug.Assert(char.IsWhiteSpace((char)i) == sv.Contains((char)i));
+                }
+            }
+#endif
         }
 
         internal const int StackallocIntBufferSizeLimit = 128;
@@ -1178,28 +1193,15 @@ namespace System
             return ReplaceCore(oldValue, newValue, culture?.CompareInfo, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
-        public string Replace(string oldValue, string? newValue, StringComparison comparisonType)
-        {
-            switch (comparisonType)
+        public string Replace(string oldValue, string? newValue, StringComparison comparisonType) =>
+            comparisonType switch
             {
-                case StringComparison.CurrentCulture:
-                case StringComparison.CurrentCultureIgnoreCase:
-                    return ReplaceCore(oldValue, newValue, CultureInfo.CurrentCulture.CompareInfo, GetCaseCompareOfComparisonCulture(comparisonType));
-
-                case StringComparison.InvariantCulture:
-                case StringComparison.InvariantCultureIgnoreCase:
-                    return ReplaceCore(oldValue, newValue, CompareInfo.Invariant, GetCaseCompareOfComparisonCulture(comparisonType));
-
-                case StringComparison.Ordinal:
-                    return Replace(oldValue, newValue);
-
-                case StringComparison.OrdinalIgnoreCase:
-                    return ReplaceCore(oldValue, newValue, CompareInfo.Invariant, CompareOptions.OrdinalIgnoreCase);
-
-                default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
-            }
-        }
+                StringComparison.CurrentCulture or StringComparison.CurrentCultureIgnoreCase => ReplaceCore(oldValue, newValue, CultureInfo.CurrentCulture.CompareInfo, GetCaseCompareOfComparisonCulture(comparisonType)),
+                StringComparison.InvariantCulture or StringComparison.InvariantCultureIgnoreCase => ReplaceCore(oldValue, newValue, CompareInfo.Invariant, GetCaseCompareOfComparisonCulture(comparisonType)),
+                StringComparison.Ordinal => Replace(oldValue, newValue),
+                StringComparison.OrdinalIgnoreCase => ReplaceCore(oldValue, newValue, CompareInfo.Invariant, CompareOptions.OrdinalIgnoreCase),
+                _ => throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType)),
+            };
 
         private string ReplaceCore(string oldValue, string? newValue, CompareInfo? ci, CompareOptions options)
         {
@@ -1826,7 +1828,7 @@ namespace System
 
                 if ((options & StringSplitOptions.RemoveEmptyEntries) == 0 || candidate.Length != 0)
                 {
-                    return new string[] { candidate };
+                    return [candidate];
                 }
             }
 

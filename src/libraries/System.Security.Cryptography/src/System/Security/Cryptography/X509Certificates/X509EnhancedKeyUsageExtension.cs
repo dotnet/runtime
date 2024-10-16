@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
+
 namespace System.Security.Cryptography.X509Certificates
 {
     public sealed class X509EnhancedKeyUsageExtension : X509Extension
@@ -28,7 +30,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 if (!_decoded)
                 {
-                    X509Pal.Instance.DecodeX509EnhancedKeyUsageExtension(RawData, out _enhancedKeyUsages);
+                    DecodeX509EnhancedKeyUsageExtension(RawData, out _enhancedKeyUsages);
                     _decoded = true;
                 }
 
@@ -53,7 +55,52 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(enhancedKeyUsages);
 
-            return X509Pal.Instance.EncodeX509EnhancedKeyUsageExtension(enhancedKeyUsages);
+            // https://tools.ietf.org/html/rfc5280#section-4.2.1.12
+            //
+            // extKeyUsage EXTENSION ::= {
+            //     SYNTAX SEQUENCE SIZE(1..MAX) OF KeyPurposeId
+            //     IDENTIFIED BY id-ce-extKeyUsage
+            // }
+            //
+            // KeyPurposeId ::= OBJECT IDENTIFIER
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            using (writer.PushSequence())
+            {
+                foreach (Oid usage in enhancedKeyUsages)
+                {
+                    writer.WriteObjectIdentifierForCrypto(usage.Value!);
+                }
+            }
+
+            return writer.Encode();
+        }
+
+        private static void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
+        {
+            // https://tools.ietf.org/html/rfc5924#section-4.1
+            //
+            // ExtKeyUsageSyntax ::= SEQUENCE SIZE (1..MAX) OF KeyPurposeId
+            //
+            // KeyPurposeId ::= OBJECT IDENTIFIER
+
+            try
+            {
+                AsnReader reader = new AsnReader(encoded, AsnEncodingRules.BER);
+                AsnReader sequenceReader = reader.ReadSequence();
+                reader.ThrowIfNotEmpty();
+                usages = new OidCollection();
+
+                while (sequenceReader.HasData)
+                {
+                    usages.Add(new Oid(sequenceReader.ReadObjectIdentifier(), null));
+                }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         private OidCollection? _enhancedKeyUsages;

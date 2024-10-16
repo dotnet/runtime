@@ -3,12 +3,12 @@
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
 }
-.assembly 'library'
+.assembly 'EscapedTypeNames'
 {
   .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
-.module library.dll
+.module EscapedTypeNames.dll
 
 // =============== CLASS MEMBERS DECLARATION ===================
 

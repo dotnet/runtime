@@ -319,7 +319,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     context.S8 = unwoundstate->captureCalleeSavedRegisters[8] = baseState->captureCalleeSavedRegisters[8];
     context.Fp = unwoundstate->captureCalleeSavedRegisters[9] = baseState->captureCalleeSavedRegisters[9];
     context.Tp = unwoundstate->captureCalleeSavedRegisters[10] = baseState->captureCalleeSavedRegisters[10];
-    context.Ra = NULL; // Filled by the unwinder
+    context.Ra = 0; // Filled by the unwinder
 
     context.Sp = baseState->captureSp;
     context.Pc = baseState->captureIp;
@@ -340,7 +340,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     nonVolContextPtrs.S8 = &unwoundstate->captureCalleeSavedRegisters[8];
     nonVolContextPtrs.Fp = &unwoundstate->captureCalleeSavedRegisters[9];
     nonVolContextPtrs.Tp = &unwoundstate->captureCalleeSavedRegisters[10];
-    nonVolContextPtrs.Ra = NULL; // Filled by the unwinder
+    nonVolContextPtrs.Ra = 0; // Filled by the unwinder
 
 #endif // DACCESS_COMPILE
 
@@ -472,7 +472,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         // This allocation throws on OOM.
         MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
 
-        InsureInit(false, pUnwoundState);
+        InsureInit(pUnwoundState);
 
         pRD->pCurrentContext->Pc = pRD->ControlPC = pUnwoundState->_pc;
         pRD->pCurrentContext->Sp = pRD->SP        = pUnwoundState->_sp;
@@ -487,7 +487,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         pRD->pCurrentContext->S8 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[8]);
         pRD->pCurrentContext->Fp = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[9]);
         pRD->pCurrentContext->Tp = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[10]);
-        pRD->pCurrentContext->Ra = NULL; // Unwind again to get Caller's PC
+        pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
 
         pRD->pCurrentContextPointers->S0 = pUnwoundState->ptrCalleeSavedRegisters[0];
         pRD->pCurrentContextPointers->S1 = pUnwoundState->ptrCalleeSavedRegisters[1];
@@ -525,7 +525,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->S8 = m_MachState.ptrCalleeSavedRegisters[8] ? *m_MachState.ptrCalleeSavedRegisters[8] : m_MachState.captureCalleeSavedRegisters[8];
     pRD->pCurrentContext->Fp = m_MachState.ptrCalleeSavedRegisters[9] ? *m_MachState.ptrCalleeSavedRegisters[9] : m_MachState.captureCalleeSavedRegisters[9];
     pRD->pCurrentContext->Tp = m_MachState.ptrCalleeSavedRegisters[10] ? *m_MachState.ptrCalleeSavedRegisters[10] : m_MachState.captureCalleeSavedRegisters[10];
-    pRD->pCurrentContext->Ra = NULL; // Unwind again to get Caller's PC
+    pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
 #else // TARGET_UNIX
     pRD->pCurrentContext->S0 = *m_MachState.ptrCalleeSavedRegisters[0];
     pRD->pCurrentContext->S1 = *m_MachState.ptrCalleeSavedRegisters[1];
@@ -538,7 +538,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->S8 = *m_MachState.ptrCalleeSavedRegisters[8];
     pRD->pCurrentContext->Fp = *m_MachState.ptrCalleeSavedRegisters[9];
     pRD->pCurrentContext->Tp = *m_MachState.ptrCalleeSavedRegisters[10];
-    pRD->pCurrentContext->Ra = NULL; // Unwind again to get Caller's PC
+    pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
 #endif
 
 #if !defined(DACCESS_COMPILE)
@@ -817,6 +817,8 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     // stack must be multiple of 16. So if s is not multiple of 16 then there must be padding of 8 bytes
     s = s + s%16;
     pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + s ;
+
+    pRD->pCurrentContext->A0 = m_Args->A0;
 
     pRD->pCurrentContext->S0 = m_Args->S0;
     pRD->pCurrentContext->S1 = m_Args->S1;
@@ -1223,18 +1225,6 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, IntReg Rt, IntReg Rn, int o
     EmitLoadStoreRegImm(flags, (int)Rt, Rn, offset, FALSE, log2Size);
 }
 
-void StubLinkerCPU::EmitFloatLoadStoreRegImm(DWORD flags, FloatReg Ft, IntReg Rn, int offset)
-{
-    BOOL isLoad    = flags & 1;
-    if (isLoad) {
-        // fld.d(Ft, Rn, offset);
-        Emit32(emitIns_O_R_R_I(0xae, (int)Ft & 0x1f, Rn, offset));
-    } else {
-        // fst.d(Ft, Rn, offset);
-        Emit32(emitIns_O_R_R_I(0xaf, (int)Ft & 0x1f, Rn, offset));
-    }
-}
-
 void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Rn, int offset, BOOL isVec, int log2Size)
 {
     _ASSERTE((log2Size & ~0x3ULL) == 0);
@@ -1261,20 +1251,6 @@ void StubLinkerCPU::EmitMovReg(IntReg Rd, IntReg Rm)
 {
     // ori(Rd, Rm, 0);
     Emit32(0x03800000 | (Rm.reg << 5) | Rd.reg);
-}
-
-void StubLinkerCPU::EmitMovFloatReg(FloatReg Fd, FloatReg Fs)
-{
-    // fmov.d fd, fs
-    Emit32(0x01149800 | Fd.reg | (Fs.reg << 5));
-}
-
-void StubLinkerCPU::EmitSubImm(IntReg Rd, IntReg Rn, unsigned int value)
-{
-    _ASSERTE(value <= 2047);
-    int tmp_value = -(int)value;
-    // addi.d(Rd, Rn, -value);
-    Emit32(0x02c00000 | (Rn.reg << 5) | Rd.reg | ((tmp_value & 0xfff)<<10));
 }
 
 void StubLinkerCPU::EmitAddImm(IntReg Rd, IntReg Rn, unsigned int value)
@@ -1465,6 +1441,8 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
 
 void StubLinkerCPU::EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect)
 {
+    STANDARD_VM_CONTRACT;
+
     BranchInstructionFormat::VariationCodes variationCode = BranchInstructionFormat::VariationCodes::BIF_VAR_JUMP;
     if (!fTailCall)
         variationCode = static_cast<BranchInstructionFormat::VariationCodes>(variationCode | BranchInstructionFormat::VariationCodes::BIF_VAR_CALL);
@@ -1477,10 +1455,14 @@ void StubLinkerCPU::EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndir
 
 void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 {
+    STANDARD_VM_CONTRACT;
+
+    PCODE multiCallableAddr = pMD->TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT);
+
     // Use direct call if possible.
-    if (pMD->HasStableEntryPoint())
+    if (multiCallableAddr != (PCODE)NULL)
     {
-        EmitCallLabel(NewExternalCodeLabel((LPVOID)pMD->GetStableEntryPoint()), fTailCall, FALSE);
+        EmitCallLabel(NewExternalCodeLabel((LPVOID)multiCallableAddr), fTailCall, FALSE);
     }
     else
     {
@@ -1764,9 +1746,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
-        GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
-        GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
+    PCODE helperAddress = GetDictionaryLookupHelper(pLookup->helper);
 
     GenericHandleArgs * pArgs = (GenericHandleArgs *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(sizeof(GenericHandleArgs), DYNAMIC_HELPER_ALIGNMENT);
     ExecutableWriterHolder<GenericHandleArgs> argsWriterHolder(pArgs, sizeof(GenericHandleArgs));

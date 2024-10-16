@@ -174,7 +174,7 @@ BOOL Exception::IsTerminal()
         GC_NOTRIGGER;
         NOTHROW;
 
-        // CLRException::GetHR() can eventually call BaseDomain::CreateHandle(),
+        // CLRException::GetHR() can eventually call AppDomain::CreateHandle(),
         // which can indirectly cause a lock if we get a miss in the handle table
         // cache (TableCacheMissOnAlloc).  Since CLRException::GetHR() is virtual,
         // SCAN won't find this for you (though 40 minutes of one of the sql stress

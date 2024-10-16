@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
-//
 // ---------------------------------------------------------------------------
 // EEPolicy.cpp
 // ---------------------------------------------------------------------------
-
 
 #include "common.h"
 #include "eepolicy.h"
@@ -265,7 +262,7 @@ public:
         if (m_largestCommonStartLength != 0)
         {
             SmallStackSString repeatStr;
-            repeatStr.AppendPrintf("Repeat %d times:\n", m_largestCommonStartRepeat);
+            repeatStr.AppendPrintf("Repeated %d times:\n", m_largestCommonStartRepeat);
 
             PrintToStdErrW(repeatStr.GetUnicode());
             PrintToStdErrA("--------------------------------\n");
@@ -432,7 +429,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
         // Fire an ETW FailFast event
         FireEtwFailFast(pszMessage,
                         (const PVOID)address,
-                        ((pExceptionInfo && pExceptionInfo->ExceptionRecord) ? pExceptionInfo->ExceptionRecord->ExceptionCode : 0),
+                        pExceptionInfo->ExceptionRecord ? pExceptionInfo->ExceptionRecord->ExceptionCode : 0,
                         exitCode,
                         GetClrInstanceId());
     }
@@ -477,7 +474,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
             else
             {
                 WCHAR addressString[MaxIntegerDecHexString + 1];
-                FormatInteger(addressString, ARRAY_SIZE(addressString), "%p", pExceptionInfo ? (SIZE_T)pExceptionInfo->ExceptionRecord->ExceptionAddress : (SIZE_T)address);
+                FormatInteger(addressString, ARRAY_SIZE(addressString), "%p", (SIZE_T)pExceptionInfo->ExceptionRecord->ExceptionAddress);
 
                 // We should always have the reference to the runtime's instance
                 _ASSERTE(GetClrModuleBase() != NULL);
@@ -519,7 +516,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
     // termination.
     //
     // This behavior can still be overridden if the right config value is set.
-    if (IsDebuggerPresent())
+    if (minipal_is_native_debugger_present())
     {
         bool fBreak = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgOOBinFEEE) != 0);
 
@@ -610,6 +607,8 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
     WRAPPER_NO_CONTRACT;
 
+    _ASSERTE(pExceptionInfo != NULL);
+
     // Disable GC stress triggering GC at this point, we don't want the GC to start running
     // on this thread when we have only a very limited space left on the stack
     GCStressPolicy::InhibitHolder iholder;
@@ -620,7 +619,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 #if defined(FEATURE_EH_FUNCLETS)
     *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
 #endif // FEATURE_EH_FUNCLETS
-    if (pExceptionInfo && pExceptionInfo->ContextRecord)
+    if (pExceptionInfo->ContextRecord)
     {
         GCX_COOP();
         CONTEXT *pExceptionContext = pExceptionInfo->ContextRecord;
@@ -689,8 +688,8 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     {
         // Fire an ETW FailFast event
         FireEtwFailFast(W("StackOverflowException"),
-                       (const PVOID)((pExceptionInfo && pExceptionInfo->ContextRecord) ? GetIP(pExceptionInfo->ContextRecord) : 0),
-                       ((pExceptionInfo && pExceptionInfo->ExceptionRecord) ? pExceptionInfo->ExceptionRecord->ExceptionCode : 0),
+                       (const PVOID)(pExceptionInfo->ContextRecord ? GetIP(pExceptionInfo->ContextRecord) : 0),
+                       pExceptionInfo->ExceptionRecord ? pExceptionInfo->ExceptionRecord->ExceptionCode : 0,
                        COR_E_STACKOVERFLOW,
                        GetClrInstanceId());
     }
@@ -728,8 +727,6 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 #ifndef TARGET_UNIX
         if (IsWatsonEnabled() && (g_pDebugInterface != NULL))
         {
-            _ASSERTE(pExceptionInfo != NULL);
-
             ResetWatsonBucketsParams param;
             param.m_pThread = pThread;
             param.pExceptionRecord = pExceptionInfo->ExceptionRecord;

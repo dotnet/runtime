@@ -33,6 +33,7 @@ Abstract:
 #include "threadinfo.hpp"
 #include "synchobjects.hpp"
 #include <errno.h>
+#include <minipal/thread.h>
 
 namespace CorUnix
 {
@@ -89,13 +90,6 @@ namespace CorUnix
         LPSECURITY_ATTRIBUTES lpThreadAttributes,
         CPalThread **ppDummyThread,
         HANDLE *phThread
-        );
-
-    PAL_ERROR
-    InternalSetThreadDescription(
-        CPalThread *,
-        HANDLE,
-        PCWSTR
         );
 
     PAL_ERROR
@@ -190,14 +184,6 @@ namespace CorUnix
                 CPalThread *,
                 HANDLE,
                 int
-                );
-
-        friend
-            PAL_ERROR
-            InternalSetThreadDescription(
-                CPalThread *,
-                HANDLE,
-                PCWSTR
                 );
 
         friend
@@ -723,50 +709,9 @@ TLSCleanup(
 extern PAL_ActivationFunction g_activationFunction;
 extern PAL_SafeActivationCheckFunction g_safeActivationCheckFunction;
 
-/*++
-Macro:
-  THREADSilentGetCurrentThreadId
-
-Abstract:
-  Same as GetCurrentThreadId, but it doesn't output any traces.
-  It is useful for tracing functions to display the thread ID
-  without generating any new traces.
-
-  TODO: how does the perf of pthread_self compare to
-  InternalGetCurrentThread when we find the thread in the
-  cache?
-
-  If the perf of pthread_self is comparable to that of the stack
-  bounds based lookaside system, why aren't we using it in the
-  cache?
-
-  In order to match the thread ids that debuggers use at least for
-  linux we need to use gettid().
-
---*/
-#if defined(__linux__)
-#define PlatformGetCurrentThreadId() (SIZE_T)syscall(SYS_gettid)
-#elif defined(__APPLE__)
-inline SIZE_T PlatformGetCurrentThreadId() {
-    uint64_t tid;
-    pthread_threadid_np(pthread_self(), &tid);
-    return (SIZE_T)tid;
-}
-#elif defined(__FreeBSD__)
-#include <pthread_np.h>
-#define PlatformGetCurrentThreadId() (SIZE_T)pthread_getthreadid_np()
-#elif defined(__NetBSD__)
-#include <lwp.h>
-#define PlatformGetCurrentThreadId() (SIZE_T)_lwp_self()
-#else
-#define PlatformGetCurrentThreadId() (SIZE_T)pthread_self()
-#endif
-
-inline SIZE_T THREADSilentGetCurrentThreadId() {
-    static __thread SIZE_T tid;
-    if (!tid)
-        tid = PlatformGetCurrentThreadId();
-    return tid;
+inline SIZE_T THREADSilentGetCurrentThreadId()
+{
+    return minipal_get_current_thread_id();
 }
 
 #endif // _PAL_THREAD_HPP_

@@ -200,7 +200,6 @@ class PromotionLiveness
     unsigned*                                               m_structLclToTrackedIndex = nullptr;
     unsigned                                                m_numVars                 = 0;
     BasicBlockLiveness*                                     m_bbInfo                  = nullptr;
-    bool                                                    m_hasPossibleBackEdge     = false;
     BitVec                                                  m_liveIn;
     BitVec                                                  m_ehLiveVars;
     JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BitVec> m_aggDeaths;
@@ -219,14 +218,15 @@ public:
     StructDeaths GetDeathsForStructLocal(GenTreeLclVarCommon* use);
 
 private:
-    void MarkUseDef(GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet);
-    void MarkIndex(unsigned index, bool isUse, bool isDef, BitVec& useSet, BitVec& defSet);
-    void ComputeUseDefSets();
-    void InterBlockLiveness();
-    bool PerBlockLiveness(BasicBlock* block);
-    void AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars);
-    void FillInLiveness();
-    void FillInLiveness(BitVec& life, BitVec volatileVars, GenTreeLclVarCommon* lcl);
+    void     MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet);
+    unsigned GetSizeOfStructLocal(Statement* stmt, GenTreeLclVarCommon* lcl);
+    void     MarkIndex(unsigned index, bool isUse, bool isDef, BitVec& useSet, BitVec& defSet);
+    void     ComputeUseDefSets();
+    void     InterBlockLiveness();
+    bool     PerBlockLiveness(BasicBlock* block);
+    void     AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars);
+    void     FillInLiveness();
+    void     FillInLiveness(BitVec& life, BitVec volatileVars, Statement* stmt, GenTreeLclVarCommon* lcl);
 #ifdef DEBUG
     void DumpVarSet(BitVec set, BitVec allVars);
 #endif
@@ -287,12 +287,14 @@ private:
     void ClearNeedsReadBack(Replacement& rep);
 
     template <typename Func>
-    void VisitOverlappingReplacements(unsigned lcl, unsigned offs, unsigned size, Func func);
+    bool VisitOverlappingReplacements(unsigned lcl, unsigned offs, unsigned size, Func func);
 
     void      InsertPreStatementReadBacks();
     void      InsertPreStatementWriteBacks();
     GenTree** InsertMidTreeReadBacks(GenTree** use);
 
+    bool ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVarCommon* callArg);
+    bool CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall* call, CallArg* callArg, GenTreeLclVarCommon* lcl);
     void ReadBackAfterCall(GenTreeCall* call, GenTree* user);
     bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
     void ReplaceLocal(GenTree** use, GenTree* user);
