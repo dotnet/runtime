@@ -1270,7 +1270,7 @@ void Compiler::fgRebuildEHRegions()
         HBtab->ebdHndLast = nullptr;
     }
 
-    // Walk the main method body, and move try blocks to reestablish contiguity.
+    // Walk the main method body, and move try blocks to re-establish contiguity.
     for (BasicBlock *block = fgFirstBB, *next; block != fgFirstFuncletBB; block = next)
     {
         next            = block->Next();
@@ -1302,43 +1302,6 @@ void Compiler::fgRebuildEHRegions()
                 {
                     HBtab->ebdTryLast = block;
                 }
-            }
-        }
-    }
-
-    // Cold try regions may have been moved out of their parent regions.
-    // Find these instances, and move them to the ends of their parent regions.
-    for (EHblkDsc* const HBtab : EHClauses(this))
-    {
-        // We can safely ignore try regions that aren't cold, are in handler regions, or aren't nested.
-        const unsigned enclosingTryIndex = HBtab->ebdEnclosingTryIndex;
-        if (!HBtab->ebdTryBeg->isBBWeightCold(this) || HBtab->ebdTryBeg->hasHndIndex() ||
-            (enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX))
-        {
-            continue;
-        }
-
-        // If the child region is already contained by its parent, we don't need to move the child region.
-        EHblkDsc*         enclosingTab   = ehGetDsc(enclosingTryIndex);
-        BasicBlock* const insertionPoint = enclosingTab->ebdTryLast;
-        if (HBtab->ebdTryLast == insertionPoint)
-        {
-            continue;
-        }
-
-        // Move the child to the end of its parent.
-        fgUnlinkRange(HBtab->ebdTryBeg, HBtab->ebdTryLast);
-        fgMoveBlocksAfter(HBtab->ebdTryBeg, HBtab->ebdTryLast, insertionPoint);
-        enclosingTab->ebdTryLast = HBtab->ebdTryLast;
-
-        // Update each parent try region's end pointer.
-        for (unsigned XTnum = ehGetEnclosingTryIndex(enclosingTryIndex); XTnum != EHblkDsc::NO_ENCLOSING_INDEX;
-             XTnum          = ehGetEnclosingTryIndex(XTnum))
-        {
-            enclosingTab = ehGetDsc(XTnum);
-            if (enclosingTab->ebdTryLast == insertionPoint)
-            {
-                enclosingTab->ebdTryLast = HBtab->ebdTryLast;
             }
         }
     }
