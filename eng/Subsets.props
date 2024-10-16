@@ -462,17 +462,17 @@
 
   <!-- Host sets -->
   <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
-    <CorehostProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" SignPhase="Binaries" />
+    <CorehostProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" />
     <ProjectToBuild Include="@(CorehostProjectToBuild)" AdditionalProperties="$(TargetCxxLibraryProperties)" Pack="true" Category="host" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+host.tools+'))">
-    <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" SignPhase="Binaries" />
+    <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" />
     <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Pack="true" Category="host" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+host.pkg+')) and '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
-    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" SignPhase="MsiFiles" />
+    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" />
     <ProjectToBuild Include="@(PkgprojProjectToBuild)" Pack="true" Category="host" />
   </ItemGroup>
 
