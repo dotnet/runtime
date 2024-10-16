@@ -1101,7 +1101,7 @@ void CordbModule::CopyRemoteMetaData(
 
     // Allocate space for the local copy of the metadata
     // No need to zero out the memory since we'll fill it all here.
-    LPVOID pRawBuffer = CoTaskMemAlloc(buffer.cbSize);
+    LPVOID pRawBuffer = minipal_co_task_mem_alloc(buffer.cbSize);
     if (pRawBuffer == NULL)
     {
         ThrowOutOfMemory();

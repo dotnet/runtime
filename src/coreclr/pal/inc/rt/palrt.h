@@ -274,10 +274,6 @@ typedef union _ULARGE_INTEGER {
 } ULARGE_INTEGER, *PULARGE_INTEGER;
 
 /******************* OLE, BSTR, VARIANT *************************/
-
-STDAPI_VIS(DLLEXPORT, LPVOID) CoTaskMemAlloc(SIZE_T cb);
-STDAPI_VIS(DLLEXPORT, void) CoTaskMemFree(LPVOID pv);
-
 typedef SHORT VARIANT_BOOL;
 #define VARIANT_TRUE ((VARIANT_BOOL)-1)
 #define VARIANT_FALSE ((VARIANT_BOOL)0)
