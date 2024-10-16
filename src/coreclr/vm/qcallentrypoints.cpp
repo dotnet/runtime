@@ -168,6 +168,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ModuleBuilder_GetMemberRefFromSignature)
     DllImportEntry(ModuleBuilder_GetArrayMethodToken)
     DllImportEntry(ModuleBuilder_SetFieldRVAContent)
+    DllImportEntry(ModuleHandle_GetMDStreamVersion)
     DllImportEntry(ModuleHandle_GetModuleType)
     DllImportEntry(ModuleHandle_GetToken)
     DllImportEntry(ModuleHandle_ResolveType)

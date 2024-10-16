@@ -1453,7 +1453,6 @@ namespace System
         internal static int GetToken(RuntimeModule module)
             => GetToken(new QCallModule(ref module));
 
-        #region Internal FCalls
         private static void ValidateModulePointer(RuntimeModule module)
         {
             // Make sure we have a valid Module to resolve against.
@@ -1651,11 +1650,14 @@ namespace System
             machine = (ImageFileMachine)lMachine;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetMDStreamVersion(RuntimeModule module);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleHandle_GetMDStreamVersion")]
+        [SuppressGCTransition]
+        private static partial int GetMDStreamVersion(QCallModule module);
+
+        internal static int GetMDStreamVersion(RuntimeModule module)
+            => GetMDStreamVersion(new QCallModule(ref module));
 
         public int MDStreamVersion => GetMDStreamVersion(GetRuntimeModule());
-        #endregion
     }
 
     internal sealed unsafe class Signature

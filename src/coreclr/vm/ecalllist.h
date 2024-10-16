@@ -186,10 +186,6 @@ FCFuncStart(gCOMFieldHandleNewFuncs)
     FCFuncElement("GetStaticFieldAddress", RuntimeFieldHandle::GetStaticFieldAddress)
 FCFuncEnd()
 
-FCFuncStart(gCOMModuleHandleFuncs)
-    FCFuncElement("GetMDStreamVersion", ModuleHandle::GetMDStreamVersion)
-FCFuncEnd()
-
 FCFuncStart(gRuntimeAssemblyFuncs)
     FCFuncElement("GetIsDynamic", AssemblyNative::GetIsDynamic)
     FCFuncElement("GetManifestModule", AssemblyHandle::GetManifestModule)
@@ -423,7 +419,6 @@ FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
-FCClassElement("ModuleHandle", "System", gCOMModuleHandleFuncs)
 FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
