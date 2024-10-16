@@ -89,9 +89,8 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
     // The RS randomly allocates a session ID which is sent to the LS in the SessionRequest message. In the
     // case of network errors during session formation this allows the LS to tell SessionRequest re-sends from
     // a new request from a different RS.
-    HRESULT hr = CoCreateGuid(&m_sSessionID);
-    if (FAILED(hr))
-        return hr;
+    if (!minipal_guid_v4_create(&m_sSessionID))
+        return E_FAIL;
 #endif // RIGHT_SIDE_COMPILE
 
 

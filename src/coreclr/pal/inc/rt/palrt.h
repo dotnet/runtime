@@ -1093,9 +1093,6 @@ EXTERN_C HRESULT PALAPI PAL_CoCreateInstance(REFCLSID   rclsid,
 // instead of spreading around of if'def FEATURE_PALs for PAL_CoCreateInstance.
 #define CoCreateInstance(rclsid, pUnkOuter, dwClsContext, riid, ppv) PAL_CoCreateInstance(rclsid, riid, ppv)
 
-STDAPI
-CoCreateGuid(OUT GUID * pguid);
-
 /************** Byte swapping & unaligned access ******************/
 
 #include <pal_endian.h>
