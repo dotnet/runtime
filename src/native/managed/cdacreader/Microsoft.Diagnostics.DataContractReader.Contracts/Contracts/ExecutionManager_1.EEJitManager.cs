@@ -33,6 +33,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             }
             Debug.Assert(start.Value <= jittedCodeAddress.Value);
             TargetNUInt relativeOffset = new TargetNUInt(jittedCodeAddress.Value - start.Value);
+            // See EEJitManager::GetCodeHeaderFromStartAddress in vm/codeman.h
             int codeHeaderOffset = Target.PointerSize;
             TargetPointer codeHeaderIndirect = new TargetPointer(start - (ulong)codeHeaderOffset);
             if (RangeSection.IsStubCodeBlock(Target, codeHeaderIndirect))

@@ -8,6 +8,37 @@ using System.Diagnostics.CodeAnalysis;
 namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 
+/// <summary>
+/// Algorithm for lookups in a multi-level map that covers a large address space
+/// </summary>
+/// <remarks><![CDATA[
+/// The range section map logically partitions the entire 32-bit or 64-bit addressable space into chunks.
+/// The map is implemented with multiple levels, where the bits of an address are used as indices into an array of
+/// pointers.  The upper levels of the map point to the next level down. At the lowest level of the map, the pointers
+/// point to the first range section fragment containing addresses in the chunk.
+///
+/// On 32-bit targets a 2 level map is used
+///
+/// | 31-24 | 23-16 | 15-0 |
+/// |:----:|:----:|:----:|
+/// | L2 | L1 | chunk |
+///
+/// That is, level 2 in the map has 256 entries pointing to level 1 maps (or null if there's nothing allocated), each
+/// level 1 map has 256 entries covering a 64 KiB chunk and pointing to a linked list of range section fragments that
+/// fall within that 64 KiB chunk.
+///
+/// On 64-bit targets, we take advantage of the fact that most architectures don't support a full 64-bit addressable
+/// space: arm64 supports 52 bits of addressable memory and x86-64 supports 57 bits.  The runtime ignores the top
+/// bits 63-57 and uses 5 levels of mapping
+///
+/// | 63-57 | 56-49 | 48-41 | 40-33 | 32-25 | 24-17 | 16-0 |
+/// |:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:----:|
+/// | unused | L5 | L4 | L3 | L2 | L1 | chunk |
+///
+/// That is, level 5 has 256 entires pointing to level 4 maps (or nothing if there's no code allocated in that
+/// address range), level 4 entires point to level 3 maps and so on.  Each level 1 map has 256 entries covering
+/// a 128 KiB chunk and pointing to a linked list of range section fragments that fall within that 128 KiB chunk.
+/// ]]></remarks>
 internal readonly struct RangeSectionMap
 {
     private int MapLevels { get; }
