@@ -425,6 +425,9 @@ void ThreadLocalBlock::AllocateThreadStaticBoxes(MethodTable * pMT)
             // We save this pinning handle in a list attached to the ThreadLocalBlock. When
             // the thread dies, we release all the pinning handles in the list.
 
+            // Activate any dependent modules if necessary
+            pFieldMT->EnsureInstanceActive();
+
             OBJECTHANDLE handle;
             OBJECTREF obj = MethodTable::AllocateStaticBox(pFieldMT, pMT->HasFixedAddressVTStatics(), &handle);
 
