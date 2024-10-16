@@ -10565,20 +10565,6 @@ MethodTableBuilder::SetupMethodTable2(
 
     if (GetParentMethodTable() != NULL)
     {
-        if (GetParentMethodTable()->HasModuleDependencies())
-        {
-            pMT->SetHasModuleDependencies();
-        }
-        else
-        {
-            Module * pModule = GetModule();
-            Module * pParentModule = GetParentMethodTable()->GetModule();
-            if (pModule != pParentModule)
-            {
-                pMT->SetHasModuleDependencies();
-            }
-        }
-
         if (GetParentMethodTable()->HasPreciseInitCctors() || !pClass->IsBeforeFieldInit())
         {
             pMT->SetHasPreciseInitCctors();

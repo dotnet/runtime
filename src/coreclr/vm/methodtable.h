@@ -1388,18 +1388,6 @@ public:
     Instantiation GetClassOrArrayInstantiation();
     Instantiation GetArrayInstantiation();
 
-    // Does this method table require that additional modules be loaded?
-    inline BOOL HasModuleDependencies()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return GetFlag(enum_flag_HasModuleDependencies);
-    }
-
-    inline void SetHasModuleDependencies()
-    {
-        SetFlag(enum_flag_HasModuleDependencies);
-    }
-
     inline BOOL IsIntrinsicType()
     {
         LIMITED_METHOD_DAC_CONTRACT;;
@@ -3756,7 +3744,7 @@ private:
         enum_flag_HasDispatchMapSlot        = 0x0004,
 
         enum_flag_wflags2_unused_2          = 0x0008,
-        enum_flag_HasModuleDependencies     = 0x0010,
+        //unused                            = 0x0010,
         enum_flag_IsIntrinsicType           = 0x0020,
         enum_flag_HasCctor                  = 0x0040,
         enum_flag_HasVirtualStaticMethods   = 0x0080,
