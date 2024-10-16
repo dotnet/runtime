@@ -603,22 +603,19 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void AddHttpClient_AddTypedClient_WithoutConstructorParameter_ThrowsError()
+        public void AddHttpClient_TypedClient_NoHttpClientCtor_ThrowsSpecificException()
         {
             // Arrange
             var serviceCollection = new ServiceCollection();
-            serviceCollection.AddHttpClient<TestTypedClientMissingConstructorParameter>();
+            serviceCollection.AddHttpClient<TypedClientNoHttpClientCtor>();
 
             var services = serviceCollection.BuildServiceProvider();
 
             // Act
-            var ex = Assert.Throws<InvalidOperationException>(() => services.GetRequiredService<TestTypedClientMissingConstructorParameter>());
-
+            var ex = Assert.Throws<InvalidOperationException>(() => services.GetRequiredService<TypedClientNoHttpClientCtor>());
             Assert.Equal(
-                "A suitable constructor for type 'TestTypedClientMissingConstructorParameter' could not be located. " +
-                "A suitable constructor must have an HttpClient parameter. " +
-                "Ensure also that the type is concrete and all parameters of the constructor are registered as services.",
-                ex.Message);
+                SR.Format(SR.TypedClient_NoHttpClientCtor, typeof(TypedClientNoHttpClientCtor).Name)
+                , ex.Message);
         }
 
         [Fact]
@@ -1591,6 +1588,18 @@ namespace Microsoft.Extensions.DependencyInjection
             public HttpClient HttpClient { get; }
 
             public TransientService Service { get; }
+        }
+
+        // Simple typed client but the HttpClient parameter is missing
+        private class TypedClientNoHttpClientCtor
+        {
+            // This is an error case - do not use Typed clients like this!
+            public TypedClientNoHttpClientCtor(IHttpClientFactory httpClientFactory)
+            {
+                HttpClientFactory = httpClientFactory;
+            }
+
+            public IHttpClientFactory HttpClientFactory { get; }
         }
     }
 }

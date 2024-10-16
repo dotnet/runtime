@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Http
                 }
                 catch (InvalidOperationException iox)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.TypedHttpClient_CtorNotLocated, typeof(TClient).Name), iox);
+                    throw new InvalidOperationException(SR.Format(SR.TypedClient_NoHttpClientCtor, typeof(TClient).Name), iox);
                 }
             };
 
