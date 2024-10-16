@@ -73,6 +73,5 @@ extern "C" void QCALLTYPE StubHelpers_ValidateObject(QCall::ObjectHandleOnStack 
 extern "C" void QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pMD);
 
 extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::ObjectHandleOnStack element, INT32 count);
-extern "C" void QCALLTYPE StubHelpers_ExternalMethodFixupHelper(PCODE addr);
 
 #endif  // __STUBHELPERS_h__

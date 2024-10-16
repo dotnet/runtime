@@ -22,6 +22,7 @@
 #include "ecall.h"
 #include "virtualcallstub.h"
 #include "stubhelpers.h"
+#include "../debug/ee/debugger.h"
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
@@ -3404,8 +3405,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     END_PRESERVE_LAST_ERROR;
     if (g_externalMethodFixupTraceActiveCount > 0)
     {
-        StubHelpers_ExternalMethodFixupHelper(pCode);
-    }  
+        g_pDebugger->ExternalMethodFixupNextStep(pCode);
+    }
 
     return pCode;
 }

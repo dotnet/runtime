@@ -1568,11 +1568,7 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 #ifdef DACCESS_COMPILE
         DacNotImpl();
 #else
-        //Mikelle think this might be where I need to enable the ExternalMethodFixupPatchLabel
-        LOG((LF_CORDB, LL_INFO10000, "RangeSectionStubManager::DoTraceStub, sending you to your next location EMFPL, MGR_PUSH\n"));
-        //This is called right before the patch is placed into the runtime)
         trace->InitForExternalMethodFixup();
-        //trace->InitForManagerPush(GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel), this);
 #endif
         return TRUE;
 

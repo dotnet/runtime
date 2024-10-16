@@ -2399,7 +2399,7 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
     case TRACE_MULTICAST_DELEGATE_HELPER:
         EnableMultiCastDelegate();
         return true;
-    
+
     case TRACE_EXTERNAL_METHOD_FIXUP:
         EnableExternalMethodFixup();
         return true;

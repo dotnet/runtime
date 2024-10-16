@@ -1592,15 +1592,6 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MulticastDebuggerTraceHelper")]
         private static partial void MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack obj, int count);
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static void ExternalMethodFixupHelper(IntPtr addr)
-        {
-            ExternalMethodFixupHelperQCall(addr);
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ExternalMethodFixupHelper")]
-        private static partial void ExternalMethodFixupHelperQCall(IntPtr addr);
-
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr NextCallReturnAddress();
