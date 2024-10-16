@@ -4,7 +4,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(PALRT_SOURCES
     comem.cpp
     guid.cpp
-    memorystream.cpp
     variant.cpp
 )
 

@@ -556,8 +556,6 @@ STDAPI_(HRESULT) VariantClear(VARIANT * pvarg);
 
 #define V_ISBYREF(X)     (V_VT(X)&VT_BYREF)
 
-STDAPI CreateStreamOnHGlobal(PVOID hGlobal, BOOL fDeleteOnRelease, interface IStream** ppstm);
-
 #define STGM_DIRECT             0x00000000L
 
 #define STGM_READ               0x00000000L
