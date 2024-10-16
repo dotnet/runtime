@@ -67,7 +67,7 @@ namespace System.Text
                     }
 
                     string? displayName = null;
-                    if (!SR.UsingResourceKeys())
+                    if (!SR.UsingResourceKeys)
                     {
                         displayName = EncodingNLS.GetLocalizedEncodingNameResource(codePageIndex.CodePage);
                     }
