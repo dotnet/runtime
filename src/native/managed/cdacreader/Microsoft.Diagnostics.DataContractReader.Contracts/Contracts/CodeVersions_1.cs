@@ -20,7 +20,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         // ExecutionManager::GetNativeCodeVersion(PCODE ip))
         // and EECodeInfo::GetNativeCodeVersion
         Contracts.IExecutionManager executionManager = _target.Contracts.ExecutionManager;
-        EECodeInfoHandle? info = executionManager.GetEECodeInfoHandle(ip);
+        CodeBlockHandle? info = executionManager.GetCodeBlockHandle(ip);
         if (!info.HasValue)
         {
             return NativeCodeVersionHandle.Invalid;

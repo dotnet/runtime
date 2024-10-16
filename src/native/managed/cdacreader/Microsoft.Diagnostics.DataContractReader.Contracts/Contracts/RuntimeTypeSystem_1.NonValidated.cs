@@ -435,7 +435,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             {
                 TargetCodePointer jitCodeAddr = GetCodePointer(methodDescPointer, umd);
                 Contracts.IExecutionManager executionManager = _target.Contracts.ExecutionManager;
-                EECodeInfoHandle? codeInfo = executionManager.GetEECodeInfoHandle(jitCodeAddr);
+                CodeBlockHandle? codeInfo = executionManager.GetCodeBlockHandle(jitCodeAddr);
                 if (!codeInfo.HasValue)
                 {
                     return false;
