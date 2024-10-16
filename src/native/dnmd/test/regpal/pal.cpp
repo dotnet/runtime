@@ -1,4 +1,4 @@
-#define DNCP_DEFINE_GUID
+#define MINIPAL_COM_DEFINE_GUID
 #include "pal.hpp"
 
 #include <nethost.h>

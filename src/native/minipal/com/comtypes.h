@@ -22,7 +22,7 @@
 
 // Perform platform check
 #ifdef _MSC_VER
-    #define DNCP_WINDOWS
+    #define MINIPAL_COM_WINDOWS
 #endif
 
 // Typedefs typically provided by Windows' headers
@@ -53,7 +53,7 @@
     typedef int32_t SCODE;
     typedef int32_t DATE;
 
-#ifdef DNCP_WINDOWS
+#ifdef MINIPAL_COM_WINDOWS
     typedef wchar_t WCHAR;
 #elif defined(__cplusplus)
     typedef char16_t WCHAR;
@@ -97,7 +97,7 @@
 
     typedef union {
         struct {
-#ifdef DNCP_BIG_ENDIAN
+#ifdef MINIPAL_COM_BIG_ENDIAN
             LONG HighPart;
             DWORD LowPart;
 #else
@@ -110,7 +110,7 @@
 
     typedef union {
         struct {
-#ifdef DNCP_BIG_ENDIAN
+#ifdef MINIPAL_COM_BIG_ENDIAN
             DWORD HighPart;
             DWORD LowPart;
 #else
@@ -139,15 +139,15 @@
         using CLSID = GUID;
         using REFCLSID = CLSID const&;
 
-        // The DNCP_DEFINE_GUID should only be set in a compilation unit
+        // The MINIPAL_COM_DEFINE_GUID should only be set in a compilation unit
         // to avoid duplicate symbol problems during linking.
-        #if defined(DNCP_DEFINE_GUID)
+        #if defined(MINIPAL_COM_DEFINE_GUID)
             #define EXTERN_GUID(itf,l1,s1,s2,c1,c2,c3,c4,c5,c6,c7,c8) \
                 EXTERN_C constexpr IID itf = {l1,s1,s2,{c1,c2,c3,c4,c5,c6,c7,c8}}
         #else
             #define EXTERN_GUID(itf,l1,s1,s2,c1,c2,c3,c4,c5,c6,c7,c8) \
                 EXTERN_C const IID itf
-        #endif // !DNCP_DEFINE_GUID
+        #endif // !MINIPAL_COM_DEFINE_GUID
 
         // sal
         #define _In_
@@ -430,6 +430,6 @@
 
         #define V_DECIMALREF(X)  V_UNION(X, pdecVal)
     #endif // __cplusplus
-#endif // DNCP_INTERFACES
+#endif // MINIPAL_COM_WINHDRS
 
 #endif // MINIPAL_COM_COMTYPES_H

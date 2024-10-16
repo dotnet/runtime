@@ -5,6 +5,7 @@
 #include <limits>
 #include <minipal/utf8.h>
 #include <minipal/sha1.h>
+#include <minipal/strings.h>
 
 #if defined(BUILD_WINDOWS)
 #include <windows.h>
@@ -20,7 +21,7 @@ HRESULT pal::ConvertUtf16ToUtf8(
     _Out_opt_ uint32_t* writtenOrNeeded)
 {
     assert(str != nullptr);
-    size_t length = PAL_wcslen(str) + 1;
+    size_t length = minipal_u16_strlen((CHAR16_T*)str) + 1;
 
     size_t requiredBufferLength = minipal_get_length_utf16_to_utf8((CHAR16_T*)str, length, 0);
 

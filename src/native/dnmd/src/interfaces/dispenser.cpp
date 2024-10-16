@@ -12,6 +12,7 @@
 #include "metadataimportro.hpp"
 #include "metadataemit.hpp"
 #include "threadsafe.hpp"
+#include <minipal/guid.h>
 
 #include <cstring>
 
@@ -32,7 +33,7 @@ namespace
             }
             minipal::com_ptr<ControllingIUnknown> threadSafeUnknown;
             threadSafeUnknown.Attach(new ControllingIUnknown());
-            
+
             // Define an IDNMDOwner* tear-off here so the thread-safe object can be identified as a DNMD object.
             (void)threadSafeUnknown->CreateAndAddTearOff<DelegatingDNMDOwner>(handle_view);
             (void)threadSafeUnknown->CreateAndAddTearOff<ThreadSafeImportEmit<MetadataImportRO, MetadataEmit>>(std::move(unknown), import, emit);
@@ -74,20 +75,19 @@ namespace
             mdhandle_ptr md_ptr { md_create_new_handle() };
             if (md_ptr == nullptr)
                 return E_OUTOFMEMORY;
-            
+
             // Initialize the MVID of the new image.
             mdcursor_t moduleCursor;
             if (!md_token_to_cursor(md_ptr.get(), TokenFromRid(1, mdtModule), &moduleCursor))
                 return E_FAIL;
-            
+
             mdguid_t mvid;
-            HRESULT hr = PAL_CoCreateGuid(reinterpret_cast<GUID*>(&mvid));
-            if (FAILED(hr))
-                return hr;
-            
+            if (!minipal_guid_v4_create(reinterpret_cast<minipal_guid_t*>(&mvid)))
+                return E_FAIL;
+
             if (1 != md_set_column_value_as_guid(moduleCursor, mdtModule_Mvid, 1, &mvid))
                 return E_OUTOFMEMORY;
-            
+
             minipal::com_ptr<ControllingIUnknown> obj;
             obj.Attach(new (std::nothrow) ControllingIUnknown());
             if (obj == nullptr)
@@ -164,7 +164,7 @@ namespace
                     (void)obj->CreateAndAddTearOff<MetadataImportRO>(std::move(handle_view));
                     return obj->QueryInterface(riid, (void**)ppIUnk);
                 }
-                
+
                 // If we're read-write, go through our helper to create an object that respects all of the options
                 // (as the various options affect writing operations only).
                 return CreateExposedObject(std::move(obj), owner)->QueryInterface(riid, (void**)ppIUnk);

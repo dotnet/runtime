@@ -5,6 +5,8 @@
 #define MINIPAL_COM_H
 
 #include "comtypes.h"
+#include "../memory.h"
+#include "../guid.h"
 
 #ifdef __cplusplus
     extern "C"
@@ -12,41 +14,27 @@
 #endif // __cplusplus
 
 //
-// Memory allocators
-//
-LPVOID PAL_CoTaskMemAlloc(SIZE_T);
-void PAL_CoTaskMemFree(LPVOID);
-
-//
 // Strings
 //
 
 // This macro is used to standardize wide character string literals used in .NET.
-#ifdef DNCP_WINDOWS
+#ifdef MINIPAL_COM_WINDOWS
     #define W(str)  L ## str
 #else
     #define W(str)  u ## str
 #endif
 
-size_t PAL_wcslen(WCHAR const*);
-int PAL_wcscmp(WCHAR const*, WCHAR const*);
-WCHAR* PAL_wcsstr(WCHAR const*, WCHAR const*);
-
 //
 // GUIDs
 //
-
-HRESULT PAL_CoCreateGuid(GUID*);
-BOOL PAL_IsEqualGUID(GUID const*, GUID const*);
-
-int32_t PAL_StringFromGUID2(GUID const*, LPOLESTR, int32_t);
-HRESULT PAL_IIDFromString(LPCOLESTR, IID*);
 
 #ifdef __cplusplus
     #ifdef MINIPAL_COM_WINHDRS
     inline bool operator==(REFGUID a, REFGUID b)
     {
-        return FALSE != PAL_IsEqualGUID(&a, &b);
+        minipal_guid_t const& ga = reinterpret_cast<minipal_guid_t const&>(a);
+        minipal_guid_t const& gb = reinterpret_cast<minipal_guid_t const&>(b);
+        return ga == gb;
     }
 
     inline bool operator!=(REFGUID a, REFGUID b)
@@ -128,7 +116,10 @@ HRESULT PAL_IIDFromString(LPCOLESTR, IID*);
         // Smart pointer for CoTaskMem*
         struct cotaskmem_deleter
         {
-            void operator()(LPVOID p) { PAL_CoTaskMemFree(p); }
+            void operator()(LPVOID p)
+            {
+                minipal_co_task_mem_free(p);
+            }
         };
         template<typename T>
         using cotaskmem_ptr = std::unique_ptr<T, cotaskmem_deleter>;
