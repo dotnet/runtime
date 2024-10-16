@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using static System.Linq.Utilities;
 
 namespace System.Linq
@@ -25,7 +26,7 @@ namespace System.Linq
 
             if (source is Iterator<TSource> iterator)
             {
-                return iterator.Select(selector);
+                return SelectImplementation(selector, iterator);
             }
 
             if (source is IList<TSource> ilist)
@@ -49,6 +50,26 @@ namespace System.Linq
             }
 
             return new IEnumerableSelectIterator<TSource, TResult>(source, selector);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static IEnumerable<TResult> SelectImplementation<TSource, TResult>(Func<TSource, TResult> selector, Iterator<TSource> iterator)
+        {
+            // In Native AOT, GVMs with Value types are not trim friendly.
+            // If the option is enabled, we don't call the GVM for value types. We don't do the
+            // same for reference types because reference types are trim friendly with GVMs
+            // and it is preferable to call the GVM as it allows the select implementation to be
+            // specialized.
+            if (IteratorOptions.ValueTypeTrimFriendlySelect && typeof(TResult).IsValueType)
+            {
+#if OPTIMIZE_FOR_SIZE
+                return new IEnumerableSelectIterator<TSource, TResult>(iterator, selector);
+#else
+                return new IteratorSelectIterator<TSource, TResult>(iterator, selector);
+#endif
+            }
+
+            return iterator.Select(selector);
         }
 
         public static IEnumerable<TResult> Select<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, int, TResult> selector)

@@ -64,6 +64,7 @@
     <Compile Include="System\Linq\Index.cs" />
     <Compile Include="System\Linq\Intersect.cs" />
     <Compile Include="System\Linq\Iterator.cs" />
+    <Compile Include="System\Linq\IteratorOptions.cs" />
     <Compile Include="System\Linq\Join.cs" />
     <Compile Include="System\Linq\Last.cs" />
     <Compile Include="System\Linq\Lookup.cs" />
