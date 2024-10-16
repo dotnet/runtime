@@ -7,22 +7,22 @@ managed method corresponding to that address.
 ## APIs of contract
 
 ```csharp
-struct EECodeInfoHandle
+struct CodeBlockHandle
 {
     public readonly TargetPointer Address;
     // no public constructor
-    internal EECodeInfoHandle(TargetPointer address) => Address = address;
+    internal CodeBlockHandle(TargetPointer address) => Address = address;
 }
 ```
 
 ```csharp
     // Collect execution engine info for a code block that includes the given instruction pointer.
     // Return a handle for the information, or null if an owning code block cannot be found.
-    EECodeInfoHandle? GetEECodeInfoHandle(TargetCodePointer ip);
+    CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip);
     // Get the method descriptor corresponding to the given code block
-    TargetPointer GetMethodDesc(EECodeInfoHandle codeInfoHandle);
+    TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle);
     // Get the instruction pointer address of the start of the code block
-    TargetCodePointer GetStartAddress(EECodeInfoHandle codeInfoHandle);
+    TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle);
 ```
 
 ## Version 1
@@ -53,10 +53,10 @@ Contracts used:
 | Contract Name |
 | --- |
 
-The bulk of the work is donee by the `GetEECodeInfoHandle` API that maps a code pointer to information about the containing jitted method.
+The bulk of the work is done by the `GetCodeBlockHandle` API that maps a code pointer to information about the containing jitted method.
 
 ```csharp
-    private EECodeInfo? GetEECodeInfo(TargetCodePointer jittedCodeAddress)
+    private CodeBlock? GetCodeBlock(TargetCodePointer jittedCodeAddress)
     {
         RangeSection range = RangeSection.Find(_topRangeSectionMap, jittedCodeAddress);
         if (range.Data == null)
@@ -64,7 +64,7 @@ The bulk of the work is donee by the `GetEECodeInfoHandle` API that maps a code 
             return null;
         }
         JitManager jitManager = GetJitManager(range.Data);
-        if (jitManager.GetMethodInfo(range, jittedCodeAddress, out EECodeInfo? info))
+        if (jitManager.GetMethodInfo(range, jittedCodeAddress, out CodeBlock? info))
         {
             return info;
         }
@@ -73,21 +73,20 @@ The bulk of the work is donee by the `GetEECodeInfoHandle` API that maps a code 
             return null;
         }
     }
-    EECodeInfoHandle? IExecutionManager.GetEECodeInfoHandle(TargetCodePointer ip)
+    CodeBlockHandle? IExecutionManager.GetCodeBlockHandle(TargetCodePointer ip)
     {
         TargetPointer key = ip.AsTargetPointer;
         if (/*cache*/.ContainsKey(key))
         {
-            return new EECodeInfoHandle(key);
+            return new CodeBlockHandle(key);
         }
-        EECodeInfo? info = GetEECodeInfo(ip);
+        CodeBlock? info = GetCodeBlock(ip);
         if (info == null || !info.Valid)
         {
             return null;
         }
         /*cache*/.TryAdd(key, info);
-        return new EECodeInfoHandle(key);
-        return new EECodeInfoHandle(key);
+        return new CodeBlockHandle(key);
     }
 ```
 
@@ -98,7 +97,7 @@ There are two `JitManager`s: the "EE JitManager" for jitted code and "R2R JitMan
 The EE JitManager `GetMethodInfo` implements the nibble map lookup, summarized below, followed by returning the `RealCodeHeader` data:
 
 ```csharp
-    bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out EECodeInfo? info)
+    bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
     {
         TargetPointer start = FindMethodCode(rangeSection, jittedCodeAddress); // nibble map lookup
         if (start == TargetPointer.Null)
@@ -114,15 +113,15 @@ The EE JitManager `GetMethodInfo` implements the nibble map lookup, summarized b
         }
         TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
         Data.RealCodeHeader realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
-        info = new EECodeInfo(jittedCodeAddress, codeHeaderOffset, relativeOffset, realCodeHeader, rangeSection.Data!.JitManager);
+        info = new CodeBlock(jittedCodeAddress, codeHeaderOffset, relativeOffset, realCodeHeader, rangeSection.Data!.JitManager);
         return true;
     }
 ```
 
-The `EECodeInfo` encapsulates the `RealCodeHeader` data from the target runtime together with the start of the jitted method
+The `CodeBlock` encapsulates the `RealCodeHeader` data from the target runtime together with the start of the jitted method
 
 ```csharp
-class EECodeInfo
+class CodeBlock
 {
     private readonly int _codeHeaderOffset;
 
@@ -133,7 +132,7 @@ class EECodeInfo
     private Data.RealCodeHeader _codeHeaderData;
     public TargetPointer JitManagerAddress { get; }
     public TargetNUInt RelativeOffset { get; }
-    public EECodeInfo(TargetCodePointer startAddress, int codeHeaderOffset, TargetNUInt relativeOffset, Data.RealCodeHeader codeHeaderData, TargetPointer jitManagerAddress)
+    public CodeBlock(TargetCodePointer startAddress, int codeHeaderOffset, TargetNUInt relativeOffset, Data.RealCodeHeader codeHeaderData, TargetPointer jitManagerAddress)
     {
         _codeHeaderOffset = codeHeaderOffset;
         StartAddress = startAddress;
@@ -147,18 +146,18 @@ class EECodeInfo
 }
 ```
 
-The remaining contract APIs extract fields of the `EECodeInfo`:
+The remaining contract APIs extract fields of the `CodeBlock`:
 
 ```csharp
-    TargetPointer IExecutionManager.GetMethodDesc(EECodeInfoHandle codeInfoHandle)
+    TargetPointer IExecutionManager.GetMethodDesc(CodeBlockHandle codeInfoHandle)
     {
-        /* find EECodeInfo info for codeInfoHandle.Address*/
+        /* find EECodeBlock info for codeInfoHandle.Address*/
         return info.MethodDescAddress;
     }
 
-    TargetCodePointer IExecutionManager.GetStartAddress(EECodeInfoHandle codeInfoHandle)
+    TargetCodePointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle)
     {
-        /* find EECodeInfo info for codeInfoHandle.Address*/
+        /* find EECodeBlock info for codeInfoHandle.Address*/
         return info.StartAddress;
     }
 ```
@@ -174,16 +173,16 @@ On 32-bit targets a 2 level map is used
 |:----:|:----:|:----:|
 | L2 | L1 | chunk |
 
-That is, level 2 in the map has 256 entries pointing to level 1 maps (or null if there's nothing allocated), each level 1 map has 256 entries pointing covering a 64 KiB chunk and pointing to a linked list of range section fragments that fall within that 64 KiB chunk.
+That is, level 2 in the map has 256 entries pointing to level 1 maps (or null if there's nothing allocated), each level 1 map has 256 entries covering a 64 KiB chunk and pointing to a linked list of range section fragments that fall within that 64 KiB chunk.
 
-On 64-bit targets, we take advantage of the fact that the most architectures don't support a full 64-bit addressable space: arm64 supports 52 bits of addressable memory and x86-64 supports 57 bits.  The runtime ignores the top bits 63-57 and uses 5 levels of mapping
+On 64-bit targets, we take advantage of the fact that most architectures don't support a full 64-bit addressable space: arm64 supports 52 bits of addressable memory and x86-64 supports 57 bits.  The runtime ignores the top bits 63-57 and uses 5 levels of mapping
 
 | 63-57 | 56-49 | 48-41 | 40-33 | 32-25 | 24-17 | 16-0 |
 |:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:----:|
 | unused | L5 | L4 | L3 | L2 | L1 | chunk |
 
 That is, level 5 has 256 entires pointing to level 4 maps (or nothing if there's no
-code allocated in that address range), level 4 entires point to level 3 maps and so on.  Each level 1 map has 256 entries cover a 128 KiB chunk and pointing to a linked list of range section fragments that fall within that 128 KiB chunk.
+code allocated in that address range), level 4 entires point to level 3 maps and so on.  Each level 1 map has 256 entries covering a 128 KiB chunk and pointing to a linked list of range section fragments that fall within that 128 KiB chunk.
 
 ### NibbleMap
 
