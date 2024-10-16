@@ -68,14 +68,14 @@ internal readonly struct RangeSectionMap
 
     internal Cursor GetTopCursor(TargetPointer topMap, TargetCodePointer jittedCodeAddress)
     {
-        int index = EffectiveBitsForLevel(jittedCodeAddress, MapLevels);
+        int index = GetIndexForLevel(jittedCodeAddress, MapLevels);
         return new Cursor(topMap, MapLevels, index);
     }
 
     internal Cursor GetNextCursor(Target target, Cursor cursor, TargetCodePointer jittedCodeAddress)
     {
         int nextLevel = cursor.Level - 1;
-        int nextIndex = EffectiveBitsForLevel(jittedCodeAddress, nextLevel);
+        int nextIndex = GetIndexForLevel(jittedCodeAddress, nextLevel);
         TargetPointer nextMap = cursor.LoadValue(target).Address;
         return new Cursor(nextMap, nextLevel, nextIndex);
     }
@@ -102,7 +102,7 @@ internal readonly struct RangeSectionMap
     }
 
     // note: level is 1-indexed
-    internal int EffectiveBitsForLevel(TargetCodePointer address, int level)
+    internal int GetIndexForLevel(TargetCodePointer address, int level)
     {
         ulong addressAsInt = address.Value;
         ulong addressBitsUsedInMap = addressAsInt >> (MaxSetBit + 1 - (MapLevels * BitsPerLevel));
