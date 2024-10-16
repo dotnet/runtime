@@ -11,8 +11,8 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
 {
     internal readonly Target _target;
 
-    // maps EECodeInfoHandle.Address (which is the CodeHeaderAddress) to the EECodeInfo
-    private readonly Dictionary<TargetPointer, EECodeInfo> _codeInfos = new();
+    // maps CodeBlockHandle.Address (which is the CodeHeaderAddress) to the CodeBlock
+    private readonly Dictionary<TargetPointer, CodeBlock> _codeInfos = new();
     private readonly Data.RangeSectionMap _topRangeSectionMap;
     private readonly ExecutionManagerHelpers.RangeSectionMap _rangeSectionMapLookup;
     private readonly EEJitManager _eeJitManager;
@@ -30,7 +30,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
 
     // Note, because of RelativeOffset, this code info is per code pointer, not per method
     // TODO: rethink whether this makes sense. We don't need to copy the runtime's notion of EECodeInfo verbatim
-    private class EECodeInfo
+    private class CodeBlock
     {
         private readonly int _codeHeaderOffset;
 
@@ -41,7 +41,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
         private Data.RealCodeHeader _codeHeaderData;
         public TargetPointer JitManagerAddress { get; }
         public TargetNUInt RelativeOffset { get; }
-        public EECodeInfo(TargetCodePointer startAddress, int codeHeaderOffset, TargetNUInt relativeOffset, Data.RealCodeHeader codeHeaderData, TargetPointer jitManagerAddress)
+        public CodeBlock(TargetCodePointer startAddress, int codeHeaderOffset, TargetNUInt relativeOffset, Data.RealCodeHeader codeHeaderData, TargetPointer jitManagerAddress)
         {
             _codeHeaderOffset = codeHeaderOffset;
             StartAddress = startAddress;
@@ -69,7 +69,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             Target = target;
         }
 
-        public abstract bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out EECodeInfo? info);
+        public abstract bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info);
 
     }
 
@@ -78,7 +78,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
         public ReadyToRunJitManager(Target target) : base(target)
         {
         }
-        public override bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out EECodeInfo? info)
+        public override bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
         {
             throw new NotImplementedException(); // TODO(cdac): ReadyToRunJitManager::JitCodeToMethodInfo
         }
@@ -147,7 +147,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
         }
     }
 
-    private EECodeInfo? GetEECodeInfo(TargetCodePointer jittedCodeAddress)
+    private CodeBlock? GetCodeBlock(TargetCodePointer jittedCodeAddress)
     {
         RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, jittedCodeAddress);
         if (range.Data == null)
@@ -155,7 +155,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             return null;
         }
         JitManager jitManager = GetJitManager(range.Data);
-        if (jitManager.GetMethodInfo(range, jittedCodeAddress, out EECodeInfo? info))
+        if (jitManager.GetMethodInfo(range, jittedCodeAddress, out CodeBlock? info))
         {
             return info;
         }
@@ -164,34 +164,34 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             return null;
         }
     }
-    EECodeInfoHandle? IExecutionManager.GetEECodeInfoHandle(TargetCodePointer ip)
+    CodeBlockHandle? IExecutionManager.GetCodeBlockHandle(TargetCodePointer ip)
     {
         TargetPointer key = ip.AsTargetPointer; // FIXME: thumb bit. It's harmless (we potentialy have 2 cache entries per IP), but we should fix it
         if (_codeInfos.ContainsKey(key))
         {
-            return new EECodeInfoHandle(key);
+            return new CodeBlockHandle(key);
         }
-        EECodeInfo? info = GetEECodeInfo(ip);
+        CodeBlock? info = GetCodeBlock(ip);
         if (info == null || !info.Valid)
         {
             return null;
         }
         _codeInfos.TryAdd(key, info);
-        return new EECodeInfoHandle(key);
+        return new CodeBlockHandle(key);
     }
 
-    TargetPointer IExecutionManager.GetMethodDesc(EECodeInfoHandle codeInfoHandle)
+    TargetPointer IExecutionManager.GetMethodDesc(CodeBlockHandle codeInfoHandle)
     {
-        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out EECodeInfo? info))
+        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
         {
             throw new InvalidOperationException("EECodeInfo not found");
         }
         return info.MethodDescAddress;
     }
 
-    TargetCodePointer IExecutionManager.GetStartAddress(EECodeInfoHandle codeInfoHandle)
+    TargetCodePointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle)
     {
-        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out EECodeInfo? info))
+        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
         {
             throw new InvalidOperationException("EECodeInfo not found");
         }

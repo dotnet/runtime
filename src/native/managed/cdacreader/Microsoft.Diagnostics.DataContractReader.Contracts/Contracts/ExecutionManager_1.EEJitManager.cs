@@ -18,7 +18,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             _nibbleMap = nibbleMap;
         }
 
-        public override bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out EECodeInfo? info)
+        public override bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
         {
             info = null;
             // EEJitManager::JitCodeToMethodInfo
@@ -41,7 +41,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             }
             TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
             Data.RealCodeHeader realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
-            info = new EECodeInfo(jittedCodeAddress, codeHeaderOffset, relativeOffset, realCodeHeader, rangeSection.Data!.JitManager);
+            info = new CodeBlock(jittedCodeAddress, codeHeaderOffset, relativeOffset, realCodeHeader, rangeSection.Data!.JitManager);
             return true;
         }
 

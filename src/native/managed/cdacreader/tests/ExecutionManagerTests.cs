@@ -73,7 +73,7 @@ public class ExecutionManagerTests
 
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
-        var eeInfo = em.GetEECodeInfoHandle(TargetCodePointer.Null);
+        var eeInfo = em.GetCodeBlockHandle(TargetCodePointer.Null);
         Assert.Null(eeInfo);
     }
 
@@ -87,7 +87,7 @@ public class ExecutionManagerTests
 
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
-        var eeInfo = em.GetEECodeInfoHandle(new TargetCodePointer(0x0a0a_0000));
+        var eeInfo = em.GetCodeBlockHandle(new TargetCodePointer(0x0a0a_0000));
         Assert.Null(eeInfo);
     }
 
@@ -123,7 +123,7 @@ public class ExecutionManagerTests
 
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
-        var eeInfo = em.GetEECodeInfoHandle(methodStart);
+        var eeInfo = em.GetCodeBlockHandle(methodStart);
         Assert.NotNull(eeInfo);
         TargetPointer actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
         Assert.Equal(expectedMethodDescAddress, actualMethodDesc);

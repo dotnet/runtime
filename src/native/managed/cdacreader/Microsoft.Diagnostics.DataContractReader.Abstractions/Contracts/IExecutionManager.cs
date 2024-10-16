@@ -5,18 +5,18 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal struct EECodeInfoHandle
+internal struct CodeBlockHandle
 {
     public readonly TargetPointer Address;
-    internal EECodeInfoHandle(TargetPointer address) => Address = address;
+    internal CodeBlockHandle(TargetPointer address) => Address = address;
 }
 
 internal interface IExecutionManager : IContract
 {
     static string IContract.Name { get; } = nameof(ExecutionManager);
-    EECodeInfoHandle? GetEECodeInfoHandle(TargetCodePointer ip) => throw new NotImplementedException();
-    TargetPointer GetMethodDesc(EECodeInfoHandle codeInfoHandle) => throw new NotImplementedException();
-    TargetCodePointer GetStartAddress(EECodeInfoHandle codeInfoHandle) => throw new NotImplementedException();
+    CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip) => throw new NotImplementedException();
+    TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
 
 }
 
