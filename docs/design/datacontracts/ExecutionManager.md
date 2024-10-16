@@ -40,7 +40,7 @@ Suppose there is code starting at address 304 (0x130)
 
 * Then the map index will be 304 / 32 = 9 and the byte offset will be 304 % 32 = 16
 * Because addresses are 4-byte aligned, the nibble value will be 1 + 16 / 4 = 5  (we reserve 0 to mean no method).
-* So the map unit containing index 9 will contain the value 0x5 << 24 (the map index 9 means we want the second nibble in the second map unit, and we number the nibbles starting from the most significant) , or 
+* So the map unit containing index 9 will contain the value 0x5 << 24 (the map index 9 means we want the second nibble in the second map unit, and we number the nibbles starting from the most significant) , or
 0x05000000
 
 
