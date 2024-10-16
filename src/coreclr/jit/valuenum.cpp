@@ -10889,7 +10889,7 @@ PhaseStatus Compiler::fgValueNumber()
     // before itself whenever possible.
     //
     BitVecTraits traits = m_dfsTree->PostOrderTraits();
-    BitVec     visitedBlocks(BitVecOps::MakeEmpty(&traits));
+    BitVec       visitedBlocks(BitVecOps::MakeEmpty(&traits));
     BasicBlock** postOrder      = m_dfsTree->GetPostOrder();
     unsigned     postOrderCount = m_dfsTree->GetPostOrderCount();
     for (unsigned i = postOrderCount; i != 0; i--)
