@@ -1315,7 +1315,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 //    true if the switch has been lowered to a bit test
 //
 // Notes:
-//    If the jump table contains less than 32 (64 on 64 bit targets) entries and there
+//    If the jump table contains less than 32 (64 on 64-bit targets) entries and there
 //    are at most 2 distinct jump targets then the jump table can be converted to a word
 //    of bits where a 0 bit corresponds to one jump target and a 1 bit corresponds to the
 //    other jump target. Instead of the indirect jump a BT-JCC sequence is used to jump
@@ -1398,17 +1398,6 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
     BasicBlock* bbCase0 = case0Edge->getDestinationBlock();
     BasicBlock* bbCase1 = case1Edge->getDestinationBlock();
 
-    //
-    // One of the case blocks has to follow the switch block. This requirement could be avoided
-    // by adding a BBJ_ALWAYS block after the switch block but doing that sometimes negatively
-    // impacts register allocation.
-    //
-
-    if (!bbSwitch->NextIs(bbCase0) && !bbSwitch->NextIs(bbCase1))
-    {
-        return false;
-    }
-
     JITDUMP("Lowering switch " FMT_BB " to bit test\n", bbSwitch->bbNum);
 
 #if defined(TARGET_64BIT) && defined(TARGET_XARCH)
@@ -1428,10 +1417,9 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
 #endif
 
     //
-    // Rewire the blocks as needed and figure out the condition to use for JCC.
+    // Rewire the blocks as needed.
     //
 
-    GenCondition bbSwitchCondition;
     comp->fgRemoveAllRefPreds(bbCase1, bbSwitch);
     comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
 
@@ -1457,20 +1445,7 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
         case1Edge->setLikelihood(0.5);
     }
 
-    if (bbSwitch->NextIs(bbCase0))
-    {
-        // GenCondition::C generates JC so we jump to bbCase1 when the bit is set
-        bbSwitchCondition = GenCondition::C;
-        bbSwitch->SetCond(case1Edge, case0Edge);
-    }
-    else
-    {
-        assert(bbSwitch->NextIs(bbCase1));
-
-        // GenCondition::NC generates JNC so we jump to bbCase0 when the bit is not set
-        bbSwitchCondition = GenCondition::NC;
-        bbSwitch->SetCond(case0Edge, case1Edge);
-    }
+    bbSwitch->SetCond(case1Edge, case0Edge);
 
     var_types bitTableType = (bitCount <= (genTypeSize(TYP_INT) * 8)) ? TYP_INT : TYP_LONG;
     GenTree*  bitTableIcon = comp->gtNewIconNode(bitTable, bitTableType);
@@ -1481,13 +1456,13 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
     //
     GenTree* bitTest = comp->gtNewOperNode(GT_BT, TYP_VOID, bitTableIcon, switchValue);
     bitTest->gtFlags |= GTF_SET_FLAGS;
-    GenTreeCC* jcc = comp->gtNewCC(GT_JCC, TYP_VOID, bbSwitchCondition);
+    GenTreeCC* jcc = comp->gtNewCC(GT_JCC, TYP_VOID, GenCondition::C);
     LIR::AsRange(bbSwitch).InsertAfter(switchValue, bitTableIcon, bitTest, jcc);
 #else  // TARGET_XARCH
     //
     // Fallback to AND(RSZ(bitTable, switchValue), 1)
     //
-    GenTree* tstCns = comp->gtNewIconNode(bbSwitch->NextIs(bbCase0) ? 1 : 0, bitTableType);
+    GenTree* tstCns = comp->gtNewIconNode(1, bitTableType);
     GenTree* shift  = comp->gtNewOperNode(GT_RSZ, bitTableType, bitTableIcon, switchValue);
     GenTree* one    = comp->gtNewIconNode(1, bitTableType);
     GenTree* andOp  = comp->gtNewOperNode(GT_AND, bitTableType, shift, one);
