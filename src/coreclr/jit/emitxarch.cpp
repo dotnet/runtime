@@ -18903,9 +18903,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             assert(IsVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
-            if (IsApxExtendedEvexInstruction(ins))
+            if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
             {
-                assert(id->idIsEvexNdContextSet());
+                // EVEX.vvvv has different semantic for APX-EVEX NDD instructions.
                 code = insCodeRM(ins);
                 code = AddX86PrefixIfNeeded(id, code, size);
                 code = insEncodeReg3456(id, id->idReg1(), size, code);
