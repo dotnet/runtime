@@ -1417,10 +1417,36 @@ namespace System
 
         public static bool operator !=(ModuleHandle left, ModuleHandle right) => !left.Equals(right);
 
-        #region Internal FCalls
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IRuntimeMethodInfo GetDynamicMethod(Reflection.Emit.DynamicMethod method, RuntimeModule module, string name, byte[] sig, Resolver resolver);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleHandle_GetDynamicMethod", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial void GetDynamicMethod(
+            QCallModule module,
+            string name,
+            byte* sig,
+            int sigLen,
+            ObjectHandleOnStack resolver,
+            ObjectHandleOnStack result);
 
+        internal static IRuntimeMethodInfo GetDynamicMethod(Reflection.Emit.DynamicMethod method, RuntimeModule module, string name, byte[] sig, Resolver resolver)
+        {
+            if (module is null)
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            IRuntimeMethodInfo? methodInfo = null;
+            fixed (byte* pSig = sig)
+            GetDynamicMethod(
+                new QCallModule(ref module),
+                name,
+                pSig,
+                sig.Length,
+                ObjectHandleOnStack.Create(ref resolver),
+                ObjectHandleOnStack.Create(ref methodInfo));
+            GC.KeepAlive(method);
+            return methodInfo!;
+        }
+
+        #region Internal FCalls
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RuntimeModule module);
 

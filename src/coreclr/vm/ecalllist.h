@@ -188,7 +188,6 @@ FCFuncEnd()
 
 FCFuncStart(gCOMModuleHandleFuncs)
     FCFuncElement("GetToken", ModuleHandle::GetToken)
-    FCFuncElement("GetDynamicMethod", ModuleHandle::GetDynamicMethod)
     FCFuncElement("GetMDStreamVersion", ModuleHandle::GetMDStreamVersion)
 FCFuncEnd()
 

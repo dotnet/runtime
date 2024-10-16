@@ -2753,85 +2753,45 @@ extern "C" void QCALLTYPE ModuleHandle_ResolveField(QCall::ModuleHandle pModule,
     return;
 }
 
-extern "C" void QCALLTYPE ModuleHandle_GetAssembly(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retAssembly)
+extern "C" void QCALLTYPE ModuleHandle_GetDynamicMethod(QCall::ModuleHandle pModule, const char* name, byte* sig, INT32 sigLen, QCall::ObjectHandleOnStack resolver, QCall::ObjectHandleOnStack result)
 {
-    QCALL_CONTRACT;
-
-    Assembly *pAssembly = NULL;
-
-    BEGIN_QCALL;
-    pAssembly = pModule->GetAssembly();
-
-    GCX_COOP();
-    retAssembly.Set(pAssembly->GetExposedObject());
-    END_QCALL;
-
-    return;
-}
-
-FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObject *pMethodUNSAFE, ReflectModuleBaseObject *pModuleUNSAFE, StringObject *name, U1Array *sig,  Object *resolver) {
-    CONTRACTL {
-        FCALL_CHECK;
+    CONTRACTL
+    {
+        QCALL_CHECK;
         PRECONDITION(CheckPointer(name));
         PRECONDITION(CheckPointer(sig));
     }
     CONTRACTL_END;
 
-    DynamicMethodDesc *pNewMD = NULL;
+    BEGIN_QCALL;
 
-    struct
-    {
-        STRINGREF nameRef;
-        OBJECTREF resolverRef;
-        OBJECTREF methodRef;
-        REFLECTMETHODREF retMethod;
-        REFLECTMODULEBASEREF refModule;
-    } gc;
-    gc.nameRef = (STRINGREF)name;
-    gc.resolverRef = (OBJECTREF)resolver;
-    gc.methodRef = ObjectToOBJECTREF(pMethodUNSAFE);
-    gc.retMethod = NULL;
-    gc.refModule = (REFLECTMODULEBASEREF)ObjectToOBJECTREF(pModuleUNSAFE);
+    // Make a copy of the name
+    INT32 nameLen = (INT32)strlen(name) + 1;
+    NewArrayHolder<char> pName(new char[nameLen]);
+    memcpy(pName, name, nameLen * sizeof(char));
 
-    if (gc.refModule == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    Module *pModule = gc.refModule->GetModule();
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    U1ARRAYREF dataArray = (U1ARRAYREF)sig;
-    DWORD sigSize = dataArray->GetNumComponents();
-    NewArrayHolder<BYTE> pSig(new BYTE[sigSize]);
-    memcpy(pSig, dataArray->GetDataPtr(), sigSize);
-
-    DWORD length = gc.nameRef->GetStringLength();
-    NewArrayHolder<char> pName(new char[(length + 1) * 2]);
-    pName[0] = '\0';
-    length = WideCharToMultiByte(CP_UTF8, 0, gc.nameRef->GetBuffer(), length, pName, (length + 1) * 2 - sizeof(char), NULL, NULL);
-    if (length)
-        pName[length / sizeof(char)] = '\0';
+    // Make a copy of the signature
+    NewArrayHolder<BYTE> pSig(new BYTE[sigLen]);
+    memcpy(pSig, sig, sigLen);
 
     DynamicMethodTable *pMTForDynamicMethods = pModule->GetDynamicMethodTable();
-    pNewMD = pMTForDynamicMethods->GetDynamicMethod(pSig, sigSize, pName);
+    DynamicMethodDesc* pNewMD = pMTForDynamicMethods->GetDynamicMethod(pSig, sigLen, pName);
     _ASSERTE(pNewMD != NULL);
     // pNewMD now owns pSig and pName.
     pSig.SuppressRelease();
     pName.SuppressRelease();
 
-    // create a handle to hold the resolver objectref
-    OBJECTHANDLE resolverHandle = AppDomain::GetCurrentDomain()->CreateLongWeakHandle(gc.resolverRef);
-    pNewMD->GetLCGMethodResolver()->SetManagedResolver(resolverHandle);
-    gc.retMethod = pNewMD->GetStubMethodInfo();
-    gc.retMethod->SetKeepAlive(gc.resolverRef);
+    {
+        GCX_COOP();
+        // create a handle to hold the resolver objectref
+        OBJECTHANDLE resolverHandle = AppDomain::GetCurrentDomain()->CreateLongWeakHandle(resolver.Get());
+        pNewMD->GetLCGMethodResolver()->SetManagedResolver(resolverHandle);
+        result.Set(pNewMD->GetStubMethodInfo());
+    }
 
     LoaderAllocator *pLoaderAllocator = pModule->GetLoaderAllocator();
-
     if (pLoaderAllocator->IsCollectible())
         pLoaderAllocator->AddReference();
 
-    HELPER_METHOD_FRAME_END();
-
-    return (ReflectMethodObject*)OBJECTREFToObject(gc.retMethod);
+    END_QCALL;
 }
-FCIMPLEND
