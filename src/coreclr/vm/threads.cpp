@@ -961,32 +961,6 @@ DWORD GetRuntimeId()
 #endif
 }
 
-//---------------------------------------------------------------------------
-// Creates new Thread for reverse p-invoke calls.
-//---------------------------------------------------------------------------
-Thread* WINAPI CreateThreadBlockThrow()
-{
-
-    WRAPPER_NO_CONTRACT;
-
-    // This is a workaround to disable our check for throwing exception in SetupThread.
-    // We want to throw an exception for reverse p-invoke, and our assertion may fire if
-    // a unmanaged caller does not setup an exception handler.
-    CONTRACT_VIOLATION(ThrowsViolation); // WON'T FIX - This enables catastrophic failure exception in reverse P/Invoke - the only way we can communicate an error to legacy code.
-
-    HRESULT hr = S_OK;
-    Thread* pThread = SetupThreadNoThrow(&hr);
-    if (pThread == NULL)
-    {
-        // Creating Thread failed, and we need to throw an exception to report status.
-        // It is misleading to use our COM+ exception code, since this is not a managed exception.
-        ULONG_PTR arg = hr;
-        RaiseException(EXCEPTION_EXX, 0, 1, &arg);
-    }
-
-    return pThread;
-}
-
 #ifdef _DEBUG
 DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 #endif
@@ -2187,19 +2161,11 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
 // object.  We also place a reference count on it when we construct it, and we lose
 // that count when the thread finishes doing useful work (OnThreadTerminate).
 //
-// One way OnThreadTerminate() is called is when the thread finishes doing useful
-// work.  This case always happens on the correct thread.
-//
-// The other way OnThreadTerminate()  is called is during product shutdown.  We do
-// a "best effort" to eliminate all threads except the Main thread before shutdown
-// happens.  But there may be some background threads or external threads still
-// running.
+// OnThreadTerminate() is called is when the thread finishes doing useful
+// work.
 //
 // When the final reference count disappears, we destruct.  Until then, the thread
 // remains in the ThreadStore, but is marked as "Dead".
-//<TODO>
-// @TODO cwb: for a typical shutdown, only background threads are still around.
-// Should we interrupt them?  What about the non-typical shutdown?</TODO>
 
 int Thread::IncExternalCount()
 {
@@ -2755,11 +2721,12 @@ void Thread::CooperativeCleanup()
 
     if (GCHeapUtilities::IsGCHeapInitialized())
     {
+        gc_alloc_context* gc_alloc_context = &t_runtime_thread_locals.alloc_context.m_GCAllocContext; 
         // If the GC heap is initialized, we need to fix the alloc context for this detaching thread.
         // GetTotalAllocatedBytes reads dead_threads_non_alloc_bytes, but will suspend EE, being in COOP mode we cannot race with that
         // however, there could be other threads terminating and doing the same Add.
-        InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, t_runtime_thread_locals.alloc_context.alloc_limit - t_runtime_thread_locals.alloc_context.alloc_ptr);
-        GCHeapUtilities::GetGCHeap()->FixAllocContext(&t_runtime_thread_locals.alloc_context, NULL, NULL);
+        InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, gc_alloc_context->alloc_limit - gc_alloc_context->alloc_ptr);
+        GCHeapUtilities::GetGCHeap()->FixAllocContext(gc_alloc_context, NULL, NULL);
         t_runtime_thread_locals.alloc_context.init(); // re-initialize the context.
 
         // Clear out the alloc context pointer for this thread. When TLS is gone, this pointer will point into freed memory.
@@ -4684,10 +4651,10 @@ Thread::ApartmentState Thread::GetApartment()
         return as;
     }
 
-    return GetApartmentRare(as);
+    return GetApartmentFromOS();
 }
 
-Thread::ApartmentState Thread::GetApartmentRare(Thread::ApartmentState as)
+Thread::ApartmentState Thread::GetApartmentFromOS()
 {
     CONTRACTL
     {
@@ -4702,54 +4669,25 @@ Thread::ApartmentState Thread::GetApartmentRare(Thread::ApartmentState as)
         THDTYPE type;
         HRESULT hr = S_OK;
 
-        if (as == AS_Unknown)
+        hr = GetCurrentThreadTypeNT5(&type);
+        if (hr == S_OK)
         {
-            hr = GetCurrentThreadTypeNT5(&type);
-            if (hr == S_OK)
-            {
-                as = (type == THDTYPE_PROCESSMESSAGES) ? AS_InSTA : AS_InMTA;
+            ApartmentState as = (type == THDTYPE_PROCESSMESSAGES) ? AS_InSTA : AS_InMTA;
 
-                // If we get back THDTYPE_PROCESSMESSAGES, we are guaranteed to
-                // be an STA thread. If not, we are an MTA thread, however
-                // we can't know if the thread has been explicitly set to MTA
-                // (via a call to CoInitializeEx) or if it has been implicitly
-                // made MTA (if it hasn't been CoInitializeEx'd but CoInitialize
-                // has already been called on some other thread in the process.
-                if (as == AS_InSTA)
-                    SetThreadState(TS_InSTA);
-            }
+            // If we get back THDTYPE_PROCESSMESSAGES, we are guaranteed to
+            // be an STA thread. If not, we are an MTA thread, however
+            // we can't know if the thread has been explicitly set to MTA
+            // (via a call to CoInitializeEx) or if it has been implicitly
+            // made MTA (if it hasn't been CoInitializeEx'd but CoInitialize
+            // has already been called on some other thread in the process.
+            if (as == AS_InSTA)
+                SetThreadState(TS_InSTA);
+
+            return as;
         }
     }
 
-    return as;
-}
-
-// Retrieve the explicit apartment state of the current thread. There are three possible
-// states: thread hosts an STA, thread is part of the MTA or thread state is
-// undecided. The last state may indicate that the apartment has not been set at
-// all (nobody has called CoInitializeEx), the EE does not know the
-// current state (EE has not called CoInitializeEx), or the thread is implicitly in
-// the MTA.
-Thread::ApartmentState Thread::GetExplicitApartment()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!((m_State & TS_InSTA) && (m_State & TS_InMTA)));
-
-    // Initialize m_State by calling GetApartment.
-    GetApartment();
-
-    ApartmentState as = (m_State & TS_InSTA) ? AS_InSTA :
-                        (m_State & TS_InMTA) ? AS_InMTA :
-                        AS_Unknown;
-
-    return as;
+    return AS_Unknown;
 }
 
 Thread::ApartmentState Thread::GetFinalApartment()
@@ -4799,6 +4737,9 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     }
     CONTRACTL_END;
 
+    // This method can be called on current thread only
+    _ASSERTE(m_OSThreadId == ::GetCurrentThreadId());
+
     // Reset any bits that request for CoInitialize
     ResetRequiresCoInitialize();
 
@@ -4819,14 +4760,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
             // If we haven't CoInitialized the thread, then we don't have anything to do.
             if (m_State & TS_CoInitialized)
             {
-                // We should never be attempting to CoUninitialize another thread than
-                // the currently running thread.
-#ifdef TARGET_UNIX
-                _ASSERTE(m_OSThreadId == ::PAL_GetCurrentOSThreadId());
-#else
-                _ASSERTE(m_OSThreadId == ::GetCurrentThreadId());
-#endif
-
                 // CoUninitialize the thread and reset the STA/MTA/CoInitialized state bits.
                 ::CoUninitialize();
 
@@ -4867,22 +4800,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     if (m_State & TS_InMTA)
     {
         return AS_InMTA;
-    }
-
-    // If the thread isn't even started yet, we mark the state bits without
-    // calling CoInitializeEx (since we're obviously not in the correct thread
-    // context yet). We'll retry this call when the thread is started.
-    // Don't use the TS_Unstarted state bit to check for this, it's cleared far
-    // too late in the day for us. Instead check whether we're in the correct
-    // thread context.
-#ifdef TARGET_UNIX
-    if (m_OSThreadId != ::PAL_GetCurrentOSThreadId())
-#else
-    if (m_OSThreadId != ::GetCurrentThreadId())
-#endif
-    {
-        SetThreadState((state == AS_InSTA) ? TS_InSTA : TS_InMTA);
-        return state;
     }
 
     HRESULT hr;
@@ -4991,6 +4908,25 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     EnsureComStarted(FALSE);
 
     return GetApartment();
+}
+
+Thread::ApartmentState Thread::GetApartmentOfUnstartedThread()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(IsUnstarted());
+    ThreadState maskedTs = (ThreadState)(((DWORD)m_State) & (TS_InSTA|TS_InMTA));
+    return (maskedTs != 0) ? TS_TO_AS(maskedTs) : AS_Unknown;
+}
+
+void Thread::SetApartmentOfUnstartedThread(Thread::ApartmentState state)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(IsUnstarted());
+    _ASSERTE(GetApartmentOfUnstartedThread() == AS_Unknown);
+    if (state != AS_Unknown)
+    {
+        SetThreadState((state == AS_InSTA) ? TS_InSTA : TS_InMTA);
+    }
 }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
@@ -6232,9 +6168,9 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
             return FALSE;
         }
 
-        // Compute the limit used by EnsureSufficientExecutionStack and cache it on the thread. This minimum stack size should
+        // Compute the limit used by TryEnsureSufficientExecutionStack and cache it on the thread. This minimum stack size should
         // be sufficient to allow a typical non-recursive call chain to execute, including potential exception handling and
-        // garbage collection. Used for probing for available stack space through RuntimeImports.EnsureSufficientExecutionStack,
+        // garbage collection. Used for probing for available stack space through RuntimeImports.TryEnsureSufficientExecutionStack,
         // among other things.
 #ifdef HOST_64BIT
         const UINT_PTR MinExecutionStackSize = 128 * 1024;

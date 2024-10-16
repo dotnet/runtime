@@ -2030,7 +2030,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     transform = true;
 
-                    op1 = opIntrin->Op(1);
+                    op2 = opIntrin->Op(1);
                     BlockRange().Remove(opIntrin);
 
                     std::swap(op1, op2);
@@ -3901,7 +3901,7 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                         std::swap(node->Op(1), node->Op(2));
 
                         // Make sure we also fixup the control byte
-                        control = TernaryLogicInfo::GetTernaryControlByte(info, C, A, B);
+                        control = TernaryLogicInfo::GetTernaryControlByte(info, B, C, A);
                         op4->AsIntCon()->SetIconValue(control);
 
                         useFlags = TernaryLogicUseFlags::BC;

@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (section.Value is string value)
+                if (section.Value is string value && !string.IsNullOrEmpty(value))
                 {
                     instance.Add(ParseInt(value, section.Path));
                 }
@@ -125,7 +125,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            if (configuration["MyInt"] is string value2)
+            if (configuration["MyInt"] is string value2 && !string.IsNullOrEmpty(value2))
             {
                 instance.MyInt = ParseInt(value2, configuration.GetSection("MyInt").Path);
             }
