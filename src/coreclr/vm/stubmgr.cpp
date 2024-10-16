@@ -1592,14 +1592,13 @@ BOOL RangeSectionStubManager::TraceManager(Thread *thread,
         MODE_ANY;
     }
     CONTRACTL_END;
-    LOG((LF_CORDB, LL_INFO100000, "RSSM::TM %p, retAddr is %p\n", (LPVOID)GetIP(pContext), (LPVOID)(*pRetAddr)));
+
     _ASSERTE(GetIP(pContext) == GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel));
 
     *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
 
     PCODE target = StubManagerHelpers::GetTailCallTarget(pContext);
     trace->InitForStub(target);
-    LOG((LF_CORDB, LL_INFO100000, "RSSM::TM:: target:0x%p\n", target));
     return TRUE;
 }
 #endif

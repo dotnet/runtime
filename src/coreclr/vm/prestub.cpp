@@ -21,7 +21,6 @@
 #include "array.h"
 #include "ecall.h"
 #include "virtualcallstub.h"
-#include "stubhelpers.h"
 #include "../debug/ee/debugger.h"
 
 #ifdef FEATURE_INTERPRETER
