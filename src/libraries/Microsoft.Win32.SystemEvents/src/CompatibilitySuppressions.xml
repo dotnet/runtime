@@ -7,4 +7,16 @@
     <Left>lib/netstandard2.0/Microsoft.Win32.SystemEvents.dll</Left>
     <Right>lib/net462/Microsoft.Win32.SystemEvents.dll</Right>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>E:Microsoft.Win32.SystemEvents.EventsThreadShutdown:[T:System.ObsoleteAttribute]</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>E:Microsoft.Win32.SystemEvents.EventsThreadShutdown:[T:System.ObsoleteAttribute]</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>E:Microsoft.Win32.SystemEvents.EventsThreadShutdown:[T:System.ObsoleteAttribute]</Target>
+  </Suppression>
 </Suppressions>
