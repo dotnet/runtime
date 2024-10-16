@@ -5964,9 +5964,9 @@ bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
 
     Compiler*       comp   = m_dfsTree->GetCompiler();
     BasicBlockVisit result = VisitLoopBlocks([=](BasicBlock* block) {
-        if (comp->bbIsTryBeg(block))
+        if (!BasicBlock::sameEHRegion(block, GetHeader()))
         {
-            INDEBUG(*reason = "Loop has a `try` begin");
+            INDEBUG(*reason = "Loop not entirely within one EH region");
             return BasicBlockVisit::Abort;
         }
 
