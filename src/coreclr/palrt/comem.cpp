@@ -9,13 +9,14 @@
 // ===========================================================================
 
 #include "common.h"
+#include <minipal/memory.h>
 
 STDAPI_(LPVOID) CoTaskMemAlloc(SIZE_T cb)
 {
-    return malloc(cb);
+    return minipal_co_task_mem_alloc(cb);
 }
 
 STDAPI_(void) CoTaskMemFree(LPVOID pv)
 {
-    free(pv);
+    minipal_co_task_mem_free(pv);
 }

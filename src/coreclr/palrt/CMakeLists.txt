@@ -11,5 +11,4 @@ add_library_clr(palrt
     ${PALRT_SOURCES}
 )
 
-# Install the static PAL library for VS
-install_clr(TARGETS palrt DESTINATIONS lib)
+target_link_libraries(palrt PUBLIC minipal)
