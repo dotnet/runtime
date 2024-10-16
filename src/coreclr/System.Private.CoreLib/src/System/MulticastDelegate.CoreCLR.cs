@@ -595,6 +595,7 @@ namespace System
             this._target = target;
             this._methodPtr = methodPtr;
             this._invocationList = GCHandle.InternalGet(gchandle);
+            Debug.Assert(InvocationListLogicallyNull());
         }
 
         [DebuggerNonUserCode]
@@ -605,6 +606,7 @@ namespace System
             this._methodPtr = shuffleThunk;
             this._methodPtrAux = methodPtr;
             this._invocationList = GCHandle.InternalGet(gchandle);
+            Debug.Assert(InvocationListLogicallyNull());
         }
 
         [DebuggerNonUserCode]
@@ -614,6 +616,7 @@ namespace System
             this._target = this;
             this._methodPtr = shuffleThunk;
             this._invocationList = GCHandle.InternalGet(gchandle);
+            Debug.Assert(InvocationListLogicallyNull());
             this.InitializeVirtualCallStub(methodPtr);
         }
 #pragma warning restore IDE0060
