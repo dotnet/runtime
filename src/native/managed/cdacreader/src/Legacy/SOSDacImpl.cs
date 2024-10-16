@@ -184,12 +184,15 @@ internal sealed unsafe partial class SOSDacImpl
             // elements we return
             return HResults.E_INVALIDARG;
         }
-        if (cRevertedRejitVersions != 0)
-        {
-            return HResults.E_NOTIMPL; // TODO[cdac]: rejit
-        }
+        int hr = HResults.E_NOTIMPL;
+
+
         try
         {
+            if (cRevertedRejitVersions != 0)
+            {
+                throw new NotImplementedException(); // TODO[cdac]: rejit
+            }
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(methodDesc);
             Contracts.ICodeVersions nativeCodeContract = _target.Contracts.CodeVersions;
@@ -261,27 +264,80 @@ internal sealed unsafe partial class SOSDacImpl
                 TargetPointer gcCoverAddr = nativeCodeContract.GetGCCoverageInfo(requestedNativeCodeVersion);
                 if (gcCoverAddr != TargetPointer.Null)
                 {
-                    return HResults.E_NOTIMPL; // TODO[cdac]: gc stress code copy
+                    throw new NotImplementedException(); // TODO[cdac]: gc stress code copy
                 }
             }
 #endif
 
             if (data->bIsDynamic != 0)
             {
-                return HResults.E_NOTIMPL; // TODO[cdac]: get the dynamic method managed object
+                throw new NotImplementedException(); // TODO[cdac]: get the dynamic method managed object
             }
 
             // TODO[cdac]: compare with legacy
-            return HResults.S_OK;
+            //return HResults.S_OK;
+            hr = HResults.S_OK;
         }
         catch (global::System.Exception ex)
         {
-            return ex.HResult;
+            hr = ex.HResult;
         }
 
-        return _legacyImpl is not null
-            ? _legacyImpl.GetMethodDescData(methodDesc, ip, data, cRevertedRejitVersions, rgRevertedRejitData, pcNeededRevertedRejitData)
-            : HResults.E_NOTIMPL;
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            if (hr == HResults.S_OK) {
+                DacpMethodDescData dataLocal = default;
+                DacpReJitData[]? rgRevertedRejitDataLocal = null;
+                if (rgRevertedRejitData != null)
+                {
+                    rgRevertedRejitDataLocal = new DacpReJitData[cRevertedRejitVersions];
+                }
+                uint cNeededRevertedRejitDataLocal = 0;
+                uint *pcNeededRevertedRejitDataLocal = null;
+                if (pcNeededRevertedRejitData != null)
+                {
+                    pcNeededRevertedRejitDataLocal = &cNeededRevertedRejitDataLocal;
+                }
+                int hrLocal;
+                fixed (DacpReJitData* rgRevertedRejitDataLocalPtr = rgRevertedRejitDataLocal)
+                {
+                    hrLocal = _legacyImpl.GetMethodDescData(methodDesc, ip, &dataLocal, cRevertedRejitVersions, rgRevertedRejitDataLocalPtr, pcNeededRevertedRejitDataLocal);
+                }
+                Debug.Assert(hrLocal == hr);
+                Debug.Assert(data->bHasNativeCode == dataLocal.bHasNativeCode);
+                Debug.Assert(data->bIsDynamic == dataLocal.bIsDynamic);
+                Debug.Assert(data->wSlotNumber == dataLocal.wSlotNumber);
+                Debug.Assert(data->NativeCodeAddr == dataLocal.NativeCodeAddr);
+                Debug.Assert(data->AddressOfNativeCodeSlot == dataLocal.AddressOfNativeCodeSlot);
+                Debug.Assert(data->MethodDescPtr == dataLocal.MethodDescPtr);
+                Debug.Assert(data->MethodTablePtr == dataLocal.MethodTablePtr);
+                Debug.Assert(data->ModulePtr == dataLocal.ModulePtr);
+                Debug.Assert(data->MDToken == dataLocal.MDToken);
+                Debug.Assert(data->GCInfo == dataLocal.GCInfo);
+                Debug.Assert(data->GCStressCodeCopy == dataLocal.GCStressCodeCopy);
+                Debug.Assert(data->managedDynamicMethodObject == dataLocal.managedDynamicMethodObject);
+                Debug.Assert(data->requestedIP == dataLocal.requestedIP);
+                // TODO[cdac]: cdacreader always returns 0 currently
+                Debug.Assert(data->cJittedRejitVersions == 0 || data->cJittedRejitVersions == dataLocal.cJittedRejitVersions);
+                // TODO[cdac]: compare rejitDataCurrent and rejitDataRequested, too
+                if (rgRevertedRejitData != null && rgRevertedRejitDataLocal != null)
+                {
+                    Debug.Assert (cNeededRevertedRejitDataLocal == *pcNeededRevertedRejitData);
+                    for (ulong i = 0; i < cNeededRevertedRejitDataLocal; i++)
+                    {
+                        Debug.Assert(rgRevertedRejitData[i].rejitID == rgRevertedRejitDataLocal[i].rejitID);
+                        Debug.Assert(rgRevertedRejitData[i].NativeCodeAddr == rgRevertedRejitDataLocal[i].NativeCodeAddr);
+                        Debug.Assert(rgRevertedRejitData[i].flags == rgRevertedRejitDataLocal[i].flags);
+                    }
+                }
+            } else {
+                // TODO[cdac]: stop delegating to the legacy DAC
+                hr = _legacyImpl.GetMethodDescData(methodDesc, ip, data, cRevertedRejitVersions, rgRevertedRejitData, pcNeededRevertedRejitData);
+            }
+        }
+#endif
+        return hr;
     }
 
     int ISOSDacInterface.GetMethodDescFromToken(ulong moduleAddr, uint token, ulong* methodDesc)
