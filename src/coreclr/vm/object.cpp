@@ -1426,25 +1426,6 @@ void __fastcall ZeroMemoryInGCHeap(void* mem, size_t size)
         *memBytes++ = 0;
 }
 
-void DelegateObject::SetMethodBase(OBJECTREF newMethodBase)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    GCPROTECT_BEGIN(newMethodBase);
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__DELEGATE__SET_CACHED_METHOD);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(this);
-    args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(newMethodBase);
-    CALL_MANAGED_METHOD_NORET(args);
-    GCPROTECT_END();
-}
-
 void StackTraceArray::Append(StackTraceElement const * elem)
 {
     CONTRACTL

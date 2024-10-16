@@ -1875,13 +1875,17 @@ public:
     void SetTarget(OBJECTREF target) { WRAPPER_NO_CONTRACT; SetObjectReference(&_target, target); }
     static int GetOffsetOfTarget() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _target); }
 
-    PCODE GetMethodPtrAux() { LIMITED_METHOD_CONTRACT; return _methodPtrAux; }
-    void SetMethodPtrAux(PCODE methodPtrAux) { LIMITED_METHOD_CONTRACT; _methodPtrAux = methodPtrAux; }
-    static int GetOffsetOfMethodPtrAux() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodPtrAux); }
+    MethodDesc* GetMethodDesc() { LIMITED_METHOD_CONTRACT; return _methodDesc; }
+    void SetMethodDesc(MethodDesc* methodPtrAux) { LIMITED_METHOD_CONTRACT; _methodDesc = methodPtrAux; }
+    static int GetOffsetOfMethoddDesc() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodDesc); }
 
     PCODE GetMethodPtr() { LIMITED_METHOD_CONTRACT; return _methodPtr; }
     void SetMethodPtr(PCODE methodPtr) { LIMITED_METHOD_CONTRACT; _methodPtr = methodPtr; }
     static int GetOffsetOfMethodPtr() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodPtr); }
+
+    PCODE GetMethodPtrAux() { LIMITED_METHOD_CONTRACT; return _methodPtrAux; }
+    void SetMethodPtrAux(PCODE methodPtrAux) { LIMITED_METHOD_CONTRACT; _methodPtrAux = methodPtrAux; }
+    static int GetOffsetOfMethodPtrAux() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodPtrAux); }
 
     OBJECTREF GetInvocationList() { LIMITED_METHOD_CONTRACT; return _invocationList; }
     void SetInvocationList(OBJECTREF invocationList) { WRAPPER_NO_CONTRACT; SetObjectReference(&_invocationList, invocationList); }
@@ -1891,24 +1895,24 @@ public:
     void SetInvocationCount(INT_PTR invocationCount) { LIMITED_METHOD_CONTRACT; _invocationCount = invocationCount; }
     static int GetOffsetOfInvocationCount() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _invocationCount); }
 
-    void SetMethodBase(OBJECTREF newMethodBase);
-
     // README:
     // If you modify the order of these fields, make sure to update the definition in
     // BCL for this object.
 private:
     // System.Delegate
     OBJECTREF   _target;
-    PCODE       _methodPtrAux;
+    MethodDesc* _methodDesc;
     PCODE       _methodPtr;
+    PCODE       _methodPtrAux;
     // System.MulticastDelegate
     OBJECTREF   _invocationList;
     INT_PTR     _invocationCount;
 };
 
 #define OFFSETOF__DelegateObject__target          OBJECT_SIZE /* m_pMethTab */
-#define OFFSETOF__DelegateObject__methodPtrAux    (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
-#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__methodPtrAux + TARGET_POINTER_SIZE /* _methodPtrAux */)
+#define OFFSETOF__DelegateObject__methodDesc      (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
+#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__methodDesc + TARGET_POINTER_SIZE /* _methodDesc */)
+#define OFFSETOF__DelegateObject__methodPtrAux    (OFFSETOF__DelegateObject__methodPtr + TARGET_POINTER_SIZE /* _methodPtr */)
 
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF<DelegateObject> DELEGATEREF;

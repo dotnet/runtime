@@ -494,17 +494,7 @@ namespace System
             return base.GetTarget();
         }
 
-        protected override MethodInfo GetMethodImpl()
-        {
-            if (Cache.s_methodCache.TryGetValue(this, out object? cachedValue) && cachedValue is MethodInfo methodInfo)
-            {
-                return methodInfo;
-            }
-
-            return GetMulticastMethodImplUncached();
-        }
-
-        internal MethodInfo GetMulticastMethodImplUncached()
+        protected override MethodInfo GetMethodImplUncached()
         {
             if (_invocationCount != 0 && _invocationList != null)
             {
@@ -525,7 +515,7 @@ namespace System
             {
                 // we handle unmanaged function pointers here because the generic ones (used for WinRT) would otherwise
                 // be treated as open delegates by the base implementation, resulting in failure to get the MethodInfo
-                IRuntimeMethodInfo method = FindMethodHandle();
+                IRuntimeMethodInfo method = CreateMethodInfo(MethodDesc);
                 RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(method);
 
                 // need a proper declaring type instance method on a generic type
@@ -542,7 +532,7 @@ namespace System
             }
 
             // Otherwise, must be an inner delegate of a wrapper delegate of an open virtual method. In that case, call base implementation
-            return GetMethodImplUncached();
+            return base.GetMethodImplUncached();
         }
 
         // this should help inlining

@@ -1090,6 +1090,8 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
 
     pTargetMethod->EnsureActive();
 
+    refRealDelegate->SetMethodDesc(pTargetMethod);
+
     if (fIsOpenDelegate)
     {
         _ASSERTE(pRefFirstArg == NULL || *pRefFirstArg == NULL);
@@ -1190,7 +1192,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     LoaderAllocator *pLoaderAllocator = pTargetMethod->GetLoaderAllocator();
 
     if (pLoaderAllocator->IsCollectible())
-        refRealDelegate->SetMethodBase(pLoaderAllocator->GetExposedObject());
+        refRealDelegate->SetInvocationList(pLoaderAllocator->GetExposedObject());
 
     GCPROTECT_END();
 }
@@ -1402,6 +1404,8 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
 
         // Wire up the unmanaged call stub to the delegate.
         delObj->SetTarget(delObj);              // We are the "this" object
+
+        delObj->SetMethodDesc(pMD);
 
         // For X86, we save the entry point in the delegate's method pointer and the UM Callsite in the aux pointer.
         delObj->SetMethodPtr(pMarshalStub);
@@ -1624,8 +1628,10 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
     if (COMDelegate::NeedsWrapperDelegate(pMeth))
         refThis = COMDelegate::CreateWrapperDelegate(refThis, pMeth);
 
+    refThis->SetMethodDesc(pMethOrig);
+
     if (pMeth->GetLoaderAllocator()->IsCollectible())
-        refThis->SetMethodBase(pMeth->GetLoaderAllocator()->GetExposedObject());
+        refThis->SetInvocationList(pMeth->GetLoaderAllocator()->GetExposedObject());
 
     // Open delegates.
     if (invokeArgCount == methodArgCount)
@@ -2037,6 +2043,8 @@ DELEGATEREF COMDelegate::CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc*
 
     // save the secure invoke stub.  GetWrapperInvoke() can trigger GC.
     PCODE tmp = GetWrapperInvoke(pMD);
+
+    gc.refWrapperDel->SetMethodDesc(pMD);
     gc.refWrapperDel->SetMethodPtr(tmp);
     // save the delegate MethodDesc for the frame
     gc.refWrapperDel->SetInvocationCount((INT_PTR)pMD);
@@ -2051,7 +2059,7 @@ DELEGATEREF COMDelegate::CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc*
 }
 
 // This method will get the MethodInfo for a delegate
-extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack retMethodInfo)
+extern "C" void QCALLTYPE Delegate_CreateMethodInfo(MethodDesc* methodDesc, QCall::ObjectHandleOnStack retMethodInfo)
 {
     QCALL_CONTRACT;
 
@@ -2059,26 +2067,24 @@ extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d
 
     GCX_COOP();
 
-    MethodDesc* pMD = COMDelegate::GetMethodDesc(d.Get());
+    MethodDesc* pMD = methodDesc;
     pMD = MethodDesc::FindOrCreateAssociatedMethodDescForReflection(pMD, TypeHandle(pMD->GetMethodTable()), pMD->GetMethodInstantiation());
     retMethodInfo.Set(pMD->GetStubMethodInfo());
 
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE Delegate_InternalEqualMethodHandles(QCall::ObjectHandleOnStack left, QCall::ObjectHandleOnStack right)
+extern "C" MethodDesc* QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnStack instance)
 {
     QCALL_CONTRACT;
 
-    BOOL fRet = FALSE;
+    MethodDesc* fRet = nullptr;
 
     BEGIN_QCALL;
 
     GCX_COOP();
 
-    MethodDesc* pMDLeft = COMDelegate::GetMethodDesc(left.Get());
-    MethodDesc* pMDRight = COMDelegate::GetMethodDesc(right.Get());
-    fRet = pMDLeft == pMDRight;
+    fRet = COMDelegate::GetMethodDesc(instance.Get());
 
     END_QCALL;
 
