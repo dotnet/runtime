@@ -6196,7 +6196,6 @@ void CodeGen::genCall(GenTreeCall* call)
             switch (helperNum)
             {
                 case CORINFO_HELP_MON_ENTER:
-                case CORINFO_HELP_MON_ENTER_STATIC:
                     noway_assert(compiler->syncStartEmitCookie == nullptr);
                     compiler->syncStartEmitCookie =
                         GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
@@ -6204,7 +6203,6 @@ void CodeGen::genCall(GenTreeCall* call)
                     noway_assert(compiler->syncStartEmitCookie != nullptr);
                     break;
                 case CORINFO_HELP_MON_EXIT:
-                case CORINFO_HELP_MON_EXIT_STATIC:
                     noway_assert(compiler->syncEndEmitCookie == nullptr);
                     compiler->syncEndEmitCookie =
                         GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
@@ -6559,9 +6557,8 @@ void CodeGen::genJmpPlaceVarArgs()
     for (unsigned varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
-        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+        for (const ABIPassingSegment& segment : abiInfo.Segments())
         {
-            const ABIPassingSegment& segment = abiInfo.Segment(i);
             if (segment.IsPassedOnStack())
             {
                 continue;
@@ -8240,12 +8237,15 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             unsigned pushSize = genTypeSize(genActualType(fieldType));
             assert((pushSize % 4) == 0);
             adjustment -= pushSize;
+
+            // If there is padding before this argument, zero it out.
+            assert((adjustment % TARGET_POINTER_SIZE) == 0);
             while (adjustment != 0)
             {
-                inst_IV(INS_push, 0);
-                currentOffset -= pushSize;
-                AddStackLevel(pushSize);
-                adjustment -= pushSize;
+                inst_IV(INS_push, 0); // Push TARGET_POINTER_SIZE bytes of zeros.
+                currentOffset -= TARGET_POINTER_SIZE;
+                AddStackLevel(TARGET_POINTER_SIZE);
+                adjustment -= TARGET_POINTER_SIZE;
             }
 
             m_pushStkArg = true;

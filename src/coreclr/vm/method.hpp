@@ -1907,7 +1907,7 @@ public:
     static void Init();
 #endif
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<MethodDesc>;
 };
 
 template<> struct cdac_data<MethodDesc>
@@ -2349,7 +2349,7 @@ private:
 
     // Followed by array of method descs...
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<MethodDescChunk>;
 };
 
 template<>
@@ -2436,7 +2436,7 @@ public:
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<StoredSigMethodDesc>;
 };
 
 template<>
@@ -2512,6 +2512,7 @@ public:
         StubTailCallCallTarget,
 
         StubVirtualStaticMethodDispatch,
+        StubDelegateShuffleThunk,
 
         StubDelegateInvokeMethod,
 
@@ -2682,6 +2683,12 @@ public:
         return GetILStubType() == DynamicMethodDesc::StubUnboxingIL;
     }
 #endif
+    bool IsDelegateShuffleThunk() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        return GetILStubType() == DynamicMethodDesc::StubDelegateShuffleThunk;
+    }
 
     // Whether the stub takes a context argument that is an interop MethodDesc.
     bool HasMDContextArg() const
@@ -2694,7 +2701,7 @@ public:
     // following implementations defined in DynamicMethod.cpp
     //
     void Destroy();
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<DynamicMethodDesc>;
 };
 
 template<>
@@ -3453,7 +3460,7 @@ private:
                                                              MethodDesc* pSharedMDescForStub,
                                                              Instantiation methodInst,
                                                              BOOL getSharedNotStub);
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<InstantiatedMethodDesc>;
 };
 
 template<> struct cdac_data<InstantiatedMethodDesc>
