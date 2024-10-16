@@ -1293,6 +1293,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
 
     LoaderAllocator *pLoaderAllocator = pTargetMethod->GetLoaderAllocator();
 
+    _ASSERTE(refRealDelegate->GetInvocationList() == NULL);
     if (pLoaderAllocator->IsCollectible())
         refRealDelegate->SetInvocationList(pLoaderAllocator->GetExposedObject());
 
@@ -1731,6 +1732,7 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
 
     refThis->SetMethodDesc(pMethOrig);
 
+    _ASSERTE(refThis->GetInvocationList() == NULL);
     if (pMeth->GetLoaderAllocator()->IsCollectible())
         refThis->SetInvocationList(pMeth->GetLoaderAllocator()->GetExposedObject());
 
