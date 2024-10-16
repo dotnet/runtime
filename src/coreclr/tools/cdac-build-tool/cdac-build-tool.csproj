@@ -19,14 +19,4 @@
   <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <BaselineManifestResourcePrefix>Microsoft.DotNet.Diagnostics.DataContract.Baseline:</BaselineManifestResourcePrefix>
-  </PropertyGroup>
-  <ItemGroup>
-      <EmbeddedResource Include="Resources/contract-descriptor.c.in" />
-      <!-- embed baseline specs with manifest resource names like Microsoft.DotNet.Diagnostics.DataContract.Baseline:net9.0/osx-arm64.jsonc -->
-      <!-- TODO: [cdac] - make sure we use / not \ on windows, too. -->
-      <EmbeddedResource Include="$(RepoRoot)docs\design\datacontracts\data\**\*.jsonc" LogicalName="$(BaselineManifestResourcePrefix)%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
 </Project>

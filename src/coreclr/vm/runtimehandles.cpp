@@ -161,43 +161,6 @@ NOINLINE static ReflectClassBaseObject* GetRuntimeTypeHelper(LPVOID __me, TypeHa
 
 #define RETURN_CLASS_OBJECT(typeHandle, keepAlive) FC_INNER_RETURN(ReflectClassBaseObject*, GetRuntimeTypeHelper(__me, typeHandle, keepAlive))
 
-NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pModule, OBJECTREF keepAlive)
-{
-    FC_INNER_PROLOG_NO_ME_SETUP();
-    if (pModule == NULL)
-        return NULL;
-
-    OBJECTREF refModule = pModule->GetExposedObjectIfExists();
-    if (refModule != NULL)
-        return (ReflectModuleBaseObject*)OBJECTREFToObject(refModule);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, keepAlive);
-    refModule = pModule->GetExposedObject();
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-    return (ReflectModuleBaseObject*)OBJECTREFToObject(refModule);
-}
-
-NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, Assembly *pAssembly, OBJECTREF keepAlive)
-{
-    FC_INNER_PROLOG_NO_ME_SETUP();
-    if (pAssembly == NULL)
-        return NULL;
-
-    OBJECTREF refAssembly = (pAssembly != NULL) ? pAssembly->GetExposedObjectIfExists() : NULL;
-
-    if(refAssembly != NULL)
-        return (AssemblyBaseObject*)OBJECTREFToObject(refAssembly);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, keepAlive);
-    refAssembly = pAssembly->GetExposedObject();
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-    return (AssemblyBaseObject*)OBJECTREFToObject(refAssembly);
-}
-
 FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetRuntimeType, EnregisteredTypeHandle th)
 {
     FCALL_CONTRACT;
@@ -283,37 +246,34 @@ FCIMPL1(void, RuntimeTypeHandle::GetNextIntroducedMethod, MethodDesc ** ppMethod
 FCIMPLEND
 #include <optdefault.h>
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetCorElementType, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssemblyIfExists, ReflectClassBaseObject *pTypeUNSAFE)
+{
+    FCALL_CONTRACT;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
     if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    return refType->GetType().GetSignatureCorElementType();
-}
-FCIMPLEND
-
-FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssembly, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+        return NULL;
 
     Assembly* pAssembly = refType->GetType().GetAssembly();
-
-    FC_RETURN_ASSEMBLY_OBJECT(pAssembly, refType);
+    OBJECTREF refAssembly = pAssembly->GetExposedObjectIfExists();
+    return (AssemblyBaseObject*)OBJECTREFToObject(refAssembly);
 }
 FCIMPLEND
+
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetAssemblySlow(QCall::ObjectHandleOnStack type, QCall::ObjectHandleOnStack assembly)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    GCX_COOP();
+
+    if (type.Get() == NULL)
+        COMPlusThrow(kArgumentNullException, W("Arg_InvalidHandle"));
+
+    Assembly* pAssembly = ((REFLECTCLASSBASEREF)type.Get())->GetType().GetAssembly();
+    assembly.Set(pAssembly->GetExposedObject());
+    END_QCALL;
+}
 
 FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::AcquiresContextFromThis, FieldDesc* pField)
 {
@@ -351,24 +311,34 @@ FCIMPL1(Object*, RuntimeFieldHandle::GetLoaderAllocator, FieldDesc* pField)
 }
 FCIMPLEND
 
-FCIMPL1(ReflectModuleBaseObject*, RuntimeTypeHandle::GetModule, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    Module *result;
+FCIMPL1(ReflectModuleBaseObject*, RuntimeTypeHandle::GetModuleIfExists, ReflectClassBaseObject *pTypeUNSAFE)
+{
+    FCALL_CONTRACT;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
     if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+        return NULL;
 
-    result = refType->GetType().GetModule();
-
-    FC_RETURN_MODULE_OBJECT(result, refType);
+    Module* pModule = refType->GetType().GetModule();
+    OBJECTREF refModule = pModule->GetExposedObjectIfExists();
+    return (ReflectModuleBaseObject*)OBJECTREFToObject(refModule);
 }
 FCIMPLEND
+
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetModuleSlow(QCall::ObjectHandleOnStack type, QCall::ObjectHandleOnStack module)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    GCX_COOP();
+
+    if (type.Get() == NULL)
+        COMPlusThrow(kArgumentNullException, W("Arg_InvalidHandle"));
+
+    Module* pModule = ((REFLECTCLASSBASEREF)type.Get())->GetType().GetModule();
+    module.Set(pModule->GetExposedObject());
+    END_QCALL;
+}
 
 FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetBaseType, ReflectClassBaseObject *pTypeUNSAFE) {
     CONTRACTL {
@@ -870,45 +840,23 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsVisible(QCall::TypeHandle pTypeHan
     return fIsExternallyVisible;
 }
 
-FCIMPL1(LPCUTF8, RuntimeTypeHandle::GetUtf8Name, ReflectClassBaseObject* pTypeUNSAFE) {
-    CONTRACTL {
+FCIMPL1(LPCUTF8, RuntimeTypeHandle::GetUtf8Name, MethodTable* pMT)
+{
+    CONTRACTL
+    {
         FCALL_CHECK;
+        PRECONDITION(pMT != NULL);
     }
     CONTRACTL_END;
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+    INT32 tkTypeDef = (INT32)pMT->GetCl();
+    _ASSERTE(!IsNilToken(tkTypeDef));
 
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+    LPCUTF8 name;
+    if (FAILED(pMT->GetMDImport()->GetNameOfTypeDef(tkTypeDef, &name, NULL)))
+        name = NULL;
 
-    TypeHandle typeHandle = refType->GetType();
-    INT32 tkTypeDef = mdTypeDefNil;
-    LPCUTF8 szName = NULL;
-
-    if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    if (typeHandle.IsTypeDesc() || typeHandle.IsArray())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    MethodTable* pMT= typeHandle.AsMethodTable();
-
-    if (pMT == NULL)
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    tkTypeDef = (INT32)pMT->GetCl();
-
-    if (IsNilToken(tkTypeDef))
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    if (FAILED(pMT->GetMDImport()->GetNameOfTypeDef(tkTypeDef, &szName, NULL)))
-    {
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-    }
-
-    _ASSERTE(CheckPointer(szName, NULL_OK));
-
-    return szName;
+    return name;
 }
 FCIMPLEND
 
@@ -1552,41 +1500,16 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc * pMet
     return isCollectible;
 }
 
-FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc *pMethod) {
-    CONTRACTL {
+FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
+{
+    CONTRACTL
+    {
         FCALL_CHECK;
+        PRECONDITION(pMethod != NULL);
     }
     CONTRACTL_END;
 
-    LPCUTF8 szName = NULL;
-
-    if (!pMethod)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    szName = pMethod->GetName();
-
-    _ASSERTE(CheckPointer(szName, NULL_OK));
-
-    return szName;
-}
-FCIMPLEND
-
-FCIMPL1(StringObject*, RuntimeMethodHandle::GetName, MethodDesc *pMethod) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    if (!pMethod)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    STRINGREF refName = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-    refName = StringObject::NewString(pMethod->GetName());
-    HELPER_METHOD_FRAME_END();
-
-    return (StringObject*)OBJECTREFToObject(refName);
+    return pMethod->GetName();
 }
 FCIMPLEND
 
@@ -2565,42 +2488,20 @@ FCIMPLEND
 //*********************************************************************************************
 //*********************************************************************************************
 
-FCIMPL1(StringObject*, RuntimeFieldHandle::GetName, ReflectFieldObject *pFieldUNSAFE) {
-    CONTRACTL {
+FCIMPL1(LPCUTF8, RuntimeFieldHandle::GetUtf8Name, FieldDesc *pField)
+{
+    CONTRACTL
+    {
         FCALL_CHECK;
+        PRECONDITION(pField != NULL);
     }
     CONTRACTL_END;
 
-    REFLECTFIELDREF refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
-    if (!refField)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+    LPCUTF8 name;
+    if (FAILED(pField->GetName_NoThrow(&name)))
+        name = NULL;
 
-    FieldDesc *pField = refField->GetField();
-
-    STRINGREF refString = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refField);
-    {
-        refString = StringObject::NewString(pField->GetName());
-    }
-    HELPER_METHOD_FRAME_END();
-    return (StringObject*)OBJECTREFToObject(refString);
-}
-FCIMPLEND
-
-FCIMPL1(LPCUTF8, RuntimeFieldHandle::GetUtf8Name, FieldDesc *pField) {
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pField));
-    }
-    CONTRACTL_END;
-
-    LPCUTF8    szFieldName;
-
-    if (FAILED(pField->GetName_NoThrow(&szFieldName)))
-    {
-        FCThrow(kBadImageFormatException);
-    }
-    return szFieldName;
+    return name;
 }
 FCIMPLEND
 
@@ -2631,17 +2532,14 @@ FCIMPL1(ReflectClassBaseObject*, RuntimeFieldHandle::GetApproxDeclaringType, Fie
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeFieldHandle::GetToken, ReflectFieldObject *pFieldUNSAFE) {
-    CONTRACTL {
+FCIMPL1(INT32, RuntimeFieldHandle::GetToken, FieldDesc* pField)
+{
+    CONTRACTL
+    {
         FCALL_CHECK;
+        PRECONDITION(pField != NULL);
     }
     CONTRACTL_END;
-
-    REFLECTFIELDREF refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
-    if (!refField)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    FieldDesc *pField = refField->GetField();
 
     INT32 tkFieldDef = (INT32)pField->GetMemberDef();
     _ASSERTE(!IsNilToken(tkFieldDef) || tkFieldDef == mdFieldDefNil);
@@ -2679,17 +2577,17 @@ FCIMPL2(FieldDesc*, RuntimeFieldHandle::GetStaticFieldForGenericType, FieldDesc 
 }
 FCIMPLEND
 
-FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBaseObject* pAssemblyUNSAFE) {
+FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBaseObject* pAssemblyUNSAFE)
+{
     FCALL_CONTRACT;
 
     ASSEMBLYREF refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
-
     if (refAssembly == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+        return NULL;
 
-    Assembly* currentAssembly = refAssembly->GetAssembly();
-
-    FC_RETURN_MODULE_OBJECT(currentAssembly->GetModule(), refAssembly);
+    Module* pModule = refAssembly->GetAssembly()->GetModule();
+    OBJECTREF refModule = pModule->GetExposedObjectIfExists();
+    return (ReflectModuleBaseObject*)OBJECTREFToObject(refModule);
 }
 FCIMPLEND
 
@@ -2716,6 +2614,20 @@ FCIMPL1(INT32, AssemblyHandle::GetToken, AssemblyBaseObject* pAssemblyUNSAFE) {
 }
 FCIMPLEND
 
+extern "C" void QCALLTYPE AssemblyHandle_GetManifestModuleSlow(QCall::ObjectHandleOnStack assembly, QCall::ObjectHandleOnStack module)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    GCX_COOP();
+
+    if (assembly.Get() == NULL)
+        COMPlusThrow(kArgumentNullException, W("Arg_InvalidHandle"));
+
+    Module* pModule = ((ASSEMBLYREF)assembly.Get())->GetAssembly()->GetModule();
+    module.Set(pModule->GetExposedObject());
+    END_QCALL;
+}
 
 extern "C" void QCALLTYPE ModuleHandle_GetPEKind(QCall::ModuleHandle pModule, DWORD* pdwPEKind, DWORD* pdwMachine)
 {

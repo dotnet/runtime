@@ -727,7 +727,7 @@ namespace System
             return rawIndex;
         }
 
-        private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
+        internal unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
         {
             // Checked by the caller
             Debug.Assert(indices.Length == Rank);
@@ -897,6 +897,7 @@ namespace System
         // Prevent the C# compiler from generating a public default constructor
         private Array() { }
 
+        [Intrinsic]
         public new IEnumerator<T> GetEnumerator()
         {
             T[] @this = Unsafe.As<T[]>(this);
