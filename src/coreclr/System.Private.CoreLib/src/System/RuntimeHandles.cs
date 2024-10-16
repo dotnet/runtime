@@ -1446,10 +1446,14 @@ namespace System
             return methodInfo!;
         }
 
-        #region Internal FCalls
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetToken(RuntimeModule module);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleHandle_GetToken")]
+        [SuppressGCTransition]
+        private static partial int GetToken(QCallModule module);
 
+        internal static int GetToken(RuntimeModule module)
+            => GetToken(new QCallModule(ref module));
+
+        #region Internal FCalls
         private static void ValidateModulePointer(RuntimeModule module)
         {
             // Make sure we have a valid Module to resolve against.

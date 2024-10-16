@@ -187,7 +187,6 @@ FCFuncStart(gCOMFieldHandleNewFuncs)
 FCFuncEnd()
 
 FCFuncStart(gCOMModuleHandleFuncs)
-    FCFuncElement("GetToken", ModuleHandle::GetToken)
     FCFuncElement("GetMDStreamVersion", ModuleHandle::GetMDStreamVersion)
 FCFuncEnd()
 

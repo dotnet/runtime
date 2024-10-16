@@ -169,6 +169,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ModuleBuilder_GetArrayMethodToken)
     DllImportEntry(ModuleBuilder_SetFieldRVAContent)
     DllImportEntry(ModuleHandle_GetModuleType)
+    DllImportEntry(ModuleHandle_GetToken)
     DllImportEntry(ModuleHandle_ResolveType)
     DllImportEntry(ModuleHandle_ResolveMethod)
     DllImportEntry(ModuleHandle_ResolveField)

@@ -311,11 +311,12 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_GetFieldDataReference(FieldDesc* pF
 class ModuleHandle
 {
 public:
-    static FCDECL1(INT32, GetToken, ReflectModuleBaseObject *pModuleUNSAFE);
     static FCDECL1(INT32, GetMDStreamVersion, ReflectModuleBaseObject * pModuleUNSAFE);
 };
 
 extern "C" void QCALLTYPE ModuleHandle_GetModuleType(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retType);
+
+extern "C" INT32 QCALLTYPE ModuleHandle_GetToken(QCall::ModuleHandle pModule);
 
 extern "C" void QCALLTYPE ModuleHandle_ResolveType(QCall::ModuleHandle pModule, INT32 tkType, TypeHandle *typeArgs, INT32 typeArgsCount, TypeHandle *methodArgs, INT32 methodArgsCount, QCall::ObjectHandleOnStack retType);
 

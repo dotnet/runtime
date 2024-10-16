@@ -2677,21 +2677,12 @@ extern "C" void QCALLTYPE ModuleHandle_GetModuleType(QCall::ModuleHandle pModule
     return;
 }
 
-FCIMPL1(INT32, ModuleHandle::GetToken, ReflectModuleBaseObject * pModuleUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+extern "C" INT32 QCALLTYPE ModuleHandle_GetToken(QCall::ModuleHandle pModule)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    REFLECTMODULEBASEREF refModule = (REFLECTMODULEBASEREF)ObjectToOBJECTREF(pModuleUNSAFE);
-
-    if (refModule == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    Module *pModule = refModule->GetModule();
     return pModule->GetMDImport()->GetModuleFromScope();
 }
-FCIMPLEND
 
 extern "C" void QCALLTYPE ModuleHandle_ResolveType(QCall::ModuleHandle pModule, INT32 tkType, TypeHandle *typeArgs, INT32 typeArgsCount, TypeHandle *methodArgs, INT32 methodArgsCount, QCall::ObjectHandleOnStack retType)
 {
