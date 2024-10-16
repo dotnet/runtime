@@ -141,8 +141,6 @@ set(utils_common_sources
     mono-tls.h
     mono-tls-inline.h
     mono-tls.c
-    mono-utils-debug.c
-    mono-utils-debug.h
     mono-memory-model.h
     atomic.h
     atomic.c
@@ -179,6 +177,7 @@ set(utils_common_sources
     wasm-module-reader.c
     mono-bitutils.h
     mono-bitutils.c
+    ${CLR_SRC_NATIVE_DIR}/minipal/debugger.c
   )
 
 if(MONO_CROSS_COMPILE)

@@ -18,20 +18,20 @@ Useful links:
 
 ### Prerequisites
 
-Build the runtime if you haven't already:
+Build the runtime with the desired configuration if you haven't already:
 ```cmd
 ./build.cmd clr+libs -rc release
 ```
 
-and install the SharpFuzz command line tool:
+> [!TIP]
+> The `-rc release` configuration here builds runime in `Release` and libraries in `Debug` mode.
+> Automated fuzzing runs use a `Checked` runtime + `Debug` libraries configuration by default.
+> You can use any configuration locally, but `Checked` is recommended when testing changes in `System.Private.CoreLib`.
+
+Install the SharpFuzz command line tool:
 ```cmd
 dotnet tool install --global SharpFuzz.CommandLine
 ```
-
-> [!TIP]
-> The project uses a `Release` runtime + `Debug` libraries configuration by default.
-> Automated fuzzing runs use a `Checked` runtime + `Debug` libraries configuration by default.
-> You can use any configuration locally, but `Checked` is recommended when testing changes in `System.Private.CoreLib`.
 
 ### Fuzzing locally
 
@@ -43,14 +43,14 @@ cd src/libraries/Fuzzing/DotnetFuzzing
 dotnet build
 ```
 
-Now you can run `run.bat`, which will create separate directories for each fuzzing target, instrument the relevant assemblies, and generate a helper script for running them locally.
+Run `run.bat`, which will create separate directories for each fuzzing target, instrument the relevant assemblies, and generate a helper script for running them locally.
 When iterating on changes, remember to rebuild the project again: `dotnet build; .\run.bat`.
 
 ```cmd
 run.bat
 ```
 
-You can now start fuzzing by running the `local-run.bat` script in the folder of the fuzzer you are interested in.
+Start fuzzing by running the `local-run.bat` script in the folder of the fuzzer you are interested in.
 ```cmd
 deployment/HttpHeadersFuzzer/local-run.bat
 ```

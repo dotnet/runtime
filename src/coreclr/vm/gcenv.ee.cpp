@@ -445,7 +445,7 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
         return nullptr;
     }
 
-    return &t_runtime_thread_locals.alloc_context;
+    return &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
 }
 
 void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)
@@ -462,16 +462,29 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
         Thread * pThread = NULL;
         while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
         {
-            gc_alloc_context* palloc_context = pThread->GetAllocContext();
+            ee_alloc_context* palloc_context = pThread->GetEEAllocContext();
             if (palloc_context != nullptr)
             {
-                fn(palloc_context, param);
+                gc_alloc_context* ac = &palloc_context->m_GCAllocContext;
+                fn(ac, param);
+                // The GC may zero the alloc_ptr and alloc_limit fields of AC during enumeration and we need to keep
+                // m_CombinedLimit up-to-date. Note that the GC has multiple threads running this enumeration concurrently
+                // with no synchronization. If you need to change this code think carefully about how that concurrency
+                // may affect the results.
+                if (ac->alloc_limit == 0 && palloc_context->m_CombinedLimit != 0)
+                {
+                    palloc_context->m_CombinedLimit = 0;
+                }
             }
         }
     }
     else
     {
-        fn(&g_global_alloc_context, param);
+        fn(&g_global_alloc_context.m_GCAllocContext, param);
+        if (g_global_alloc_context.m_GCAllocContext.alloc_limit == 0 && g_global_alloc_context.m_CombinedLimit != 0)
+        {
+            g_global_alloc_context.m_CombinedLimit = 0;
+        }
     }
 }
 

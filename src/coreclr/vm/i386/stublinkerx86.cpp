@@ -33,18 +33,7 @@
 #include "stublink.inl"
 
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-#include <psapi.h>
-#endif
-
-
 #ifndef DACCESS_COMPILE
-
-#if defined(TARGET_AMD64)
-#if defined(_DEBUG)
-extern "C" VOID __cdecl DebugCheckStubUnwindInfo();
-#endif // _DEBUG
-#endif // TARGET_AMD64
 
 
 #ifdef TARGET_AMD64
@@ -850,7 +839,7 @@ VOID StubLinkerCPU::X86EmitMovRegSP(X86Reg destReg)
     X86EmitMovRegReg(destReg, kESP);
 }
 
-
+#ifdef TARGET_X86
 //---------------------------------------------------------------
 // Emits:
 //    PUSH <reg32>
@@ -859,31 +848,9 @@ VOID StubLinkerCPU::X86EmitPushReg(X86Reg reg)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    X86Reg origReg = reg;
-#endif
-
-#ifdef TARGET_AMD64
-    if (reg >= kR8)
-    {
-        Emit8(REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT | REX_OPCODE_REG_EXT);
-        reg = X86RegFromAMD64Reg(reg);
-    }
-#endif
     Emit8(static_cast<UINT8>(0x50 + reg));
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    if (IsPreservedReg(origReg))
-    {
-        UnwindPushedReg(origReg);
-    }
-    else
-#endif
-    {
-        Push(sizeof(void*));
-    }
+    Push(sizeof(void*));
 }
-
 
 //---------------------------------------------------------------
 // Emits:
@@ -892,14 +859,6 @@ VOID StubLinkerCPU::X86EmitPushReg(X86Reg reg)
 VOID StubLinkerCPU::X86EmitPopReg(X86Reg reg)
 {
     STANDARD_VM_CONTRACT;
-
-#ifdef TARGET_AMD64
-    if (reg >= kR8)
-    {
-        Emit8(REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT | REX_OPCODE_REG_EXT);
-        reg = X86RegFromAMD64Reg(reg);
-    }
-#endif // TARGET_AMD64
 
     Emit8(static_cast<UINT8>(0x58 + reg));
     Pop(sizeof(void*));
@@ -953,13 +912,9 @@ VOID StubLinkerCPU::X86EmitPushImmPtr(LPVOID value BIT64_ARG(X86Reg tmpReg /*=kR
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef TARGET_AMD64
-    X86EmitRegLoad(tmpReg, (UINT_PTR) value);
-    X86EmitPushReg(tmpReg);
-#else
     X86EmitPushImm32((UINT_PTR) value);
-#endif
 }
+#endif // TARGET_X86
 
 //---------------------------------------------------------------
 // Emits:
@@ -1101,56 +1056,6 @@ VOID StubLinkerCPU:: X86EmitCmpRegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32
 
 //---------------------------------------------------------------
 // Emits:
-#if defined(TARGET_AMD64)
-//  mov     rax, <target>
-//  add     rsp, imm32
-//  jmp     rax
-#else
-//  add     rsp, imm32
-//  jmp     <target>
-#endif
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitTailcallWithESPAdjust(CodeLabel *pTarget, INT32 imm32)
-{
-    STANDARD_VM_CONTRACT;
-
-#if defined(TARGET_AMD64)
-    EmitLabelRef(pTarget, reinterpret_cast<X64NearJumpSetup&>(gX64NearJumpSetup), 0);
-    X86EmitAddEsp(imm32);
-    EmitLabelRef(pTarget, reinterpret_cast<X64NearJumpExecute&>(gX64NearJumpExecute), 0);
-#else
-    X86EmitAddEsp(imm32);
-    X86EmitNearJump(pTarget);
-#endif
-}
-
-//---------------------------------------------------------------
-// Emits:
-#if defined(TARGET_AMD64)
-//  mov     rax, <target>
-//  pop     reg
-//  jmp     rax
-#else
-//  pop     reg
-//  jmp     <target>
-#endif
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitTailcallWithSinglePop(CodeLabel *pTarget, X86Reg reg)
-{
-    STANDARD_VM_CONTRACT;
-
-#if defined(TARGET_AMD64)
-    EmitLabelRef(pTarget, reinterpret_cast<X64NearJumpSetup&>(gX64NearJumpSetup), 0);
-    X86EmitPopReg(reg);
-    EmitLabelRef(pTarget, reinterpret_cast<X64NearJumpExecute&>(gX64NearJumpExecute), 0);
-#else
-    X86EmitPopReg(reg);
-    X86EmitNearJump(pTarget);
-#endif
-}
-
-//---------------------------------------------------------------
-// Emits:
 //    JMP <ofs8>   or
 //    JMP <ofs32}
 //---------------------------------------------------------------
@@ -1216,24 +1121,12 @@ VOID StubLinkerCPU::X86EmitReturn(WORD wArgBytes)
         Emit16(wArgBytes);
     }
 
+#ifdef TARGET_X86
     Pop(wArgBytes);
+#endif
 }
 
-#ifdef TARGET_AMD64
-//---------------------------------------------------------------
-// Emits:
-//    JMP <ofs8>   or
-//    JMP <ofs32}
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitLeaRIP(CodeLabel *target, X86Reg reg)
-{
-    STANDARD_VM_CONTRACT;
-    EmitLabelRef(target, reinterpret_cast<X64LeaRIP&>(gX64LeaRIP), reg);
-}
-#endif // TARGET_AMD64
-
-
-
+#ifdef TARGET_X86
 VOID StubLinkerCPU::X86EmitPushRegs(unsigned regSet)
 {
     STANDARD_VM_CONTRACT;
@@ -1254,6 +1147,7 @@ VOID StubLinkerCPU::X86EmitPopRegs(unsigned regSet)
         if (regSet & (1U<<r))
             X86EmitPopReg(r);
 }
+#endif // TARGET_X86
 
 
 //---------------------------------------------------------------
@@ -1289,38 +1183,7 @@ VOID StubLinkerCPU::X86EmitIndexRegStore(X86Reg dstreg,
         X86EmitOp(0x89, srcreg, (X86Reg)kESP_Unsafe,  ofs);
 }
 
-#if defined(TARGET_AMD64)
-//---------------------------------------------------------------
-// Emits:
-//    mov [RSP + <ofs>],<srcreg>
-//
-// It marks the instruction has 64bit so that the processor
-// performs a 8byte data move to a RSP based stack location.
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitIndexRegStoreRSP(int32_t ofs,
-                                         X86Reg srcreg)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitOp(0x89, srcreg, (X86Reg)kESP_Unsafe,  ofs, (X86Reg)0, 0, k64BitOp);
-}
-
-//---------------------------------------------------------------
-// Emits:
-//    mov [R12 + <ofs>],<srcreg>
-//
-// It marks the instruction has 64bit so that the processor
-// performs a 8byte data move to a R12 based stack location.
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitIndexRegStoreR12(int32_t ofs,
-                                         X86Reg srcreg)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitOp(0x89, srcreg, (X86Reg)kR12,  ofs, (X86Reg)0, 0, k64BitOp);
-}
-#endif // defined(TARGET_AMD64)
-
+#ifdef TARGET_X86
 //---------------------------------------------------------------
 // Emits:
 //    push dword ptr [<srcreg> + <ofs>]
@@ -1399,32 +1262,6 @@ VOID StubLinkerCPU::X86EmitIndexPop(X86Reg srcreg, int32_t ofs)
 
     Pop(sizeof(void*));
 }
-
-//---------------------------------------------------------------
-// Emits:
-//    lea <dstreg>, [<srcreg> + <ofs>
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitIndexLea(X86Reg dstreg, X86Reg srcreg, int32_t ofs)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION((int) dstreg < NumX86Regs);
-        PRECONDITION((int) srcreg < NumX86Regs);
-    }
-    CONTRACTL_END;
-
-    X86EmitOffsetModRM(0x8d, dstreg, srcreg, ofs);
-}
-
-#if defined(TARGET_AMD64)
-VOID StubLinkerCPU::X86EmitIndexLeaRSP(X86Reg dstreg, X86Reg srcreg, int32_t ofs)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitOp(0x8d, dstreg, (X86Reg)kESP_Unsafe,  ofs, (X86Reg)0, 0, k64BitOp);
-}
-#endif // defined(TARGET_AMD64)
 
 //---------------------------------------------------------------
 // Emits:
@@ -1534,6 +1371,7 @@ VOID StubLinkerCPU::X86EmitAddEsp(INT32 imm32)
     }
     Pop(imm32);
 }
+#endif // TARGET_X86
 
 VOID StubLinkerCPU::X86EmitAddReg(X86Reg reg, INT32 imm32)
 {
@@ -2244,18 +2082,6 @@ VOID StubLinkerCPU::X86EmitEspOffset(BYTE opcode,
 
 }
 
-//---------------------------------------------------------------
-
-VOID StubLinkerCPU::X86EmitPushEBPframe()
-{
-    STANDARD_VM_CONTRACT;
-
-    //  push ebp
-    X86EmitPushReg(kEBP);
-    // mov ebp,esp
-    X86EmitMovRegSP(kEBP);
-}
-
 #ifdef _DEBUG
 //---------------------------------------------------------------
 // Emits:
@@ -2312,47 +2138,7 @@ static const X86Reg c_argRegs[] = {
 };
 #endif
 
-
-
-#if defined(_DEBUG) && !defined(TARGET_UNIX)
-void StubLinkerCPU::EmitJITHelperLoggingThunk(PCODE pJitHelper, LPVOID helperFuncCount)
-{
-    STANDARD_VM_CONTRACT;
-
-    VMHELPCOUNTDEF* pHelperFuncCount = (VMHELPCOUNTDEF*)helperFuncCount;
-/*
-        push        rcx
-        mov         rcx, &(pHelperFuncCount->count)
-   lock inc        [rcx]
-        pop         rcx
-#ifdef TARGET_AMD64
-        mov         rax, <pJitHelper>
-        jmp         rax
-#else
-        jmp         <pJitHelper>
-#endif
-*/
-
-    // push     rcx
-    // mov      rcx, &(pHelperFuncCount->count)
-    X86EmitPushReg(kECX);
-    X86EmitRegLoad(kECX, (UINT_PTR)(&(pHelperFuncCount->count)));
-
-    // lock inc [rcx]
-    BYTE lock_inc_RCX[] = { 0xf0, 0xff, 0x01 };
-    EmitBytes(lock_inc_RCX, sizeof(lock_inc_RCX));
-
-#if defined(TARGET_AMD64)
-    // mov      rax, <pJitHelper>
-    // pop      rcx
-    // jmp      rax
-#else
-    // pop      rcx
-    // jmp      <pJitHelper>
-#endif
-    X86EmitTailcallWithSinglePop(NewExternalCodeLabel(pJitHelper), kECX);
-}
-#endif // _DEBUG && !TARGET_UNIX
+#ifdef TARGET_X86
 
 VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet)
 {
@@ -2391,13 +2177,9 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedR
 
 #else // TARGET_UNIX
 
-#ifdef TARGET_AMD64
-    BYTE code[] = { 0x65,0x48,0x8b,0x04,0x25 };    // mov dstreg, qword ptr gs:[IMM32]
-    static const int regByteIndex = 3;
-#elif defined(TARGET_X86)
     BYTE code[] = { 0x64,0x8b,0x05 };              // mov dstreg, dword ptr fs:[IMM32]
     static const int regByteIndex = 2;
-#endif
+
     code[regByteIndex] |= (dstreg << 3);
 
     EmitBytes(code, sizeof(code));
@@ -2415,7 +2197,7 @@ namespace
 {
     gc_alloc_context* STDCALL GetAllocContextHelper()
     {
-        return &t_runtime_thread_locals.alloc_context;
+        return &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
     }
 }
 #endif
@@ -2457,13 +2239,9 @@ VOID StubLinkerCPU::X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigne
 
 #else // TARGET_UNIX
 
-#ifdef TARGET_AMD64
-    BYTE code[] = { 0x65,0x48,0x8b,0x04,0x25 };    // mov dstreg, qword ptr gs:[IMM32]
-    static const int regByteIndex = 3;
-#elif defined(TARGET_X86)
     BYTE code[] = { 0x64,0x8b,0x05 };              // mov dstreg, dword ptr fs:[IMM32]
     static const int regByteIndex = 2;
-#endif
+
     code[regByteIndex] |= (dstreg << 3);
 
     EmitBytes(code, sizeof(code));
@@ -2477,7 +2255,6 @@ VOID StubLinkerCPU::X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigne
 #endif // TARGET_UNIX
 }
 
-#ifdef TARGET_X86
 // This method unboxes the THIS pointer and then calls pRealMD
 // If it's shared code for a method in a generic value class, then also extract the vtable pointer
 // and pass it as an extra argument.  Thus this stub generator really covers both
@@ -2684,165 +2461,6 @@ VOID StubLinkerCPU::EmitInstantiatingMethodStub(MethodDesc* pMD, void* extra)
     EmitTailJumpToMethod(pMD);
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE) && !defined(FEATURE_INSTANTIATINGSTUB_AS_IL) && defined(TARGET_X86)
-
-
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-
-typedef BOOL GetModuleInformationProc(
-  HANDLE hProcess,
-  HMODULE hModule,
-  LPMODULEINFO lpmodinfo,
-  DWORD cb
-);
-
-GetModuleInformationProc *g_pfnGetModuleInformation = NULL;
-
-extern "C" VOID __cdecl DebugCheckStubUnwindInfoWorker (CONTEXT *pStubContext)
-{
-    LOG((LF_STUBS, LL_INFO1000000, "checking stub unwind info:\n"));
-
-    //
-    // Make a copy of the CONTEXT.  RtlVirtualUnwind will modify this copy.
-    // DebugCheckStubUnwindInfo will need to restore registers from the
-    // original CONTEXT.
-    //
-    CONTEXT ctx = *pStubContext;
-    ctx.ContextFlags = (CONTEXT_CONTROL | CONTEXT_INTEGER);
-
-    //
-    // Find the upper bound of the stack and address range of KERNEL32.  This
-    // is where we expect the unwind to stop.
-    //
-    void *pvStackTop = GetThread()->GetCachedStackBase();
-
-    if (!g_pfnGetModuleInformation)
-    {
-        HMODULE hmodPSAPI = GetModuleHandle(W("PSAPI.DLL"));
-
-        if (!hmodPSAPI)
-        {
-            hmodPSAPI = WszLoadLibrary(W("PSAPI.DLL"));
-            if (!hmodPSAPI)
-            {
-                _ASSERTE(!"unable to load PSAPI.DLL");
-                goto ErrExit;
-            }
-        }
-
-        g_pfnGetModuleInformation = (GetModuleInformationProc*)GetProcAddress(hmodPSAPI, "GetModuleInformation");
-        if (!g_pfnGetModuleInformation)
-        {
-            _ASSERTE(!"can't find PSAPI!GetModuleInformation");
-            goto ErrExit;
-        }
-
-        // Intentionally leak hmodPSAPI.  We don't want to
-        // LoadLibrary/FreeLibrary every time, this is slow + produces lots of
-        // debugger spew.  This is just debugging code after all...
-    }
-
-    HMODULE hmodKERNEL32 = GetModuleHandle(W("KERNEL32"));
-    _ASSERTE(hmodKERNEL32);
-
-    MODULEINFO modinfoKERNEL32;
-    if (!g_pfnGetModuleInformation(GetCurrentProcess(), hmodKERNEL32, &modinfoKERNEL32, sizeof(modinfoKERNEL32)))
-    {
-        _ASSERTE(!"unable to get bounds of KERNEL32");
-        goto ErrExit;
-    }
-
-    //
-    // Unwind until IP is 0, sp is at the stack top, and callee IP is in kernel32.
-    //
-
-    for (;;)
-    {
-        ULONG64 ControlPc = (ULONG64)GetIP(&ctx);
-
-        LOG((LF_STUBS, LL_INFO1000000, "pc %p, sp %p\n", ControlPc, GetSP(&ctx)));
-
-        ULONG64 ImageBase;
-        T_RUNTIME_FUNCTION *pFunctionEntry = RtlLookupFunctionEntry(
-                ControlPc,
-                &ImageBase,
-                NULL);
-        if (pFunctionEntry)
-        {
-            PVOID HandlerData;
-            ULONG64 EstablisherFrame;
-
-            RtlVirtualUnwind(
-                    0,
-                    ImageBase,
-                    ControlPc,
-                    pFunctionEntry,
-                    &ctx,
-                    &HandlerData,
-                    &EstablisherFrame,
-                    NULL);
-
-            ULONG64 NewControlPc = (ULONG64)GetIP(&ctx);
-
-            LOG((LF_STUBS, LL_INFO1000000, "function %p, image %p, new pc %p, new sp %p\n", pFunctionEntry, ImageBase, NewControlPc, GetSP(&ctx)));
-
-            if (!NewControlPc)
-            {
-                if (dac_cast<PTR_BYTE>(GetSP(&ctx)) < (BYTE*)pvStackTop - 0x100)
-                {
-                    _ASSERTE(!"SP did not end up at top of stack");
-                    goto ErrExit;
-                }
-
-                if (!(   ControlPc > (ULONG64)modinfoKERNEL32.lpBaseOfDll
-                      && ControlPc < (ULONG64)modinfoKERNEL32.lpBaseOfDll + modinfoKERNEL32.SizeOfImage))
-                {
-                    _ASSERTE(!"PC did not end up in KERNEL32");
-                    goto ErrExit;
-                }
-
-                break;
-            }
-        }
-        else
-        {
-            // Nested functions that do not use any stack space or nonvolatile
-            // registers are not required to have unwind info (ex.
-            // USER32!ZwUserCreateWindowEx).
-            ctx.Rip = *(ULONG64*)(ctx.Rsp);
-            ctx.Rsp += sizeof(ULONG64);
-        }
-    }
-ErrExit:
-    return;
-}
-
-//virtual
-VOID StubLinkerCPU::EmitUnwindInfoCheckWorker (CodeLabel *pCheckLabel)
-{
-    STANDARD_VM_CONTRACT;
-    X86EmitCall(pCheckLabel, 0);
-}
-
-//virtual
-VOID StubLinkerCPU::EmitUnwindInfoCheckSubfunction()
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef TARGET_AMD64
-    // X86EmitCall will generate "mov rax, target/jmp rax", so we have to save
-    // rax on the stack.  DO NOT use X86EmitPushReg.  That will induce infinite
-    // recursion, since the push may require more unwind info.  This "push rax"
-    // will be accounted for by DebugCheckStubUnwindInfo's unwind info
-    // (considered part of its locals), so there doesn't have to be unwind
-    // info for it.
-    Emit8(0x50);
-#endif
-
-    X86EmitNearJump(NewExternalCodeLabel(DebugCheckStubUnwindInfo));
-}
-
-#endif // defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-
 
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 {

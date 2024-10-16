@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Diagnostics
 {
@@ -13,7 +15,7 @@ namespace System.Diagnostics
         {
 #if TARGET_WINDOWS
             // IsAttached is always true when IsDebuggerPresent is true, so no need to check for it
-            if (Interop.Kernel32.IsDebuggerPresent())
+            if (Debugger.IsNativeDebuggerAttached())
                 Debug.DebugBreak();
 #else
             // UNIXTODO: Implement Debugger.Break
@@ -74,5 +76,10 @@ namespace System.Diagnostics
             }
             return false;
         }
+
+        internal static bool IsNativeDebuggerAttached() => IsNativeDebuggerAttachedInternal() != 0;
+
+        [LibraryImport(RuntimeImports.RuntimeLibrary, EntryPoint = "DebugDebugger_IsNativeDebuggerAttached")]
+        private static partial int IsNativeDebuggerAttachedInternal();
     }
 }

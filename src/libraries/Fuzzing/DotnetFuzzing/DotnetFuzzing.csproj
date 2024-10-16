@@ -9,9 +9,7 @@
     <AppHostSourcePath>$(ArtifactsDir)\bin\win-x64.Debug\corehost\apphost.exe</AppHostSourcePath>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn);CS1591;IL3000;SYSLIB1054;CA1512;SYSLIB5005;</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>

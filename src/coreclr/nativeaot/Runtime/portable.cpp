@@ -64,8 +64,9 @@ FCIMPL1(Object *, RhpNewFast, MethodTable* pEEType)
     size_t size = pEEType->GetBaseSize();
 
     uint8_t* alloc_ptr = acontext->alloc_ptr;
-    ASSERT(alloc_ptr <= acontext->alloc_limit);
-    if ((size_t)(acontext->alloc_limit - alloc_ptr) >= size)
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= size)
     {
         acontext->alloc_ptr = alloc_ptr + size;
         Object* pObject = (Object *)alloc_ptr;
@@ -112,8 +113,9 @@ FCIMPL2(Array *, RhpNewArray, MethodTable * pArrayEEType, int numElements)
     size = ALIGN_UP(size, sizeof(uintptr_t));
 
     uint8_t* alloc_ptr = acontext->alloc_ptr;
-    ASSERT(alloc_ptr <= acontext->alloc_limit);
-    if ((size_t)(acontext->alloc_limit - alloc_ptr) >= size)
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= size)
     {
         acontext->alloc_ptr = alloc_ptr + size;
         Array* pObject = (Array*)alloc_ptr;
@@ -165,8 +167,9 @@ FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pEEType)
         paddedSize += 12;
     }
 
-    ASSERT(alloc_ptr <= acontext->alloc_limit);
-    if ((size_t)(acontext->alloc_limit - alloc_ptr) >= paddedSize)
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= paddedSize)
     {
         acontext->alloc_ptr = alloc_ptr + paddedSize;
         if (requiresPadding)
@@ -199,8 +202,9 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
         paddedSize += 12;
     }
 
-    ASSERT(alloc_ptr <= acontext->alloc_limit);
-    if ((size_t)(acontext->alloc_limit - alloc_ptr) >= paddedSize)
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= paddedSize)
     {
         acontext->alloc_ptr = alloc_ptr + paddedSize;
         if (requiresPadding)
@@ -248,8 +252,9 @@ FCIMPL2(Array*, RhpNewArrayAlign8, MethodTable* pArrayEEType, int numElements)
         paddedSize += 12;
     }
 
-    ASSERT(alloc_ptr <= acontext->alloc_limit);
-    if ((size_t)(acontext->alloc_limit - alloc_ptr) >= paddedSize)
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= paddedSize)
     {
         acontext->alloc_ptr = alloc_ptr + paddedSize;
         if (requiresAlignObject)

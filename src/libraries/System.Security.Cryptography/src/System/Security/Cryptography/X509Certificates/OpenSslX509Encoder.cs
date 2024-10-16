@@ -9,7 +9,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    internal sealed class OpenSslX509Encoder : ManagedX509ExtensionProcessor, IX509Pal
+    internal sealed class OpenSslX509Encoder : IX509Pal
     {
         public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
         {
@@ -150,23 +150,6 @@ namespace System.Security.Cryptography.X509Certificates
             // Unsupported format.
             // Windows throws new CryptographicException(CRYPT_E_NO_MATCH)
             throw new CryptographicException();
-        }
-
-        public override void DecodeX509BasicConstraints2Extension(
-            byte[] encoded,
-            out bool certificateAuthority,
-            out bool hasPathLengthConstraint,
-            out int pathLengthConstraint)
-        {
-            if (!Interop.Crypto.DecodeX509BasicConstraints2Extension(
-                encoded,
-                encoded.Length,
-                out certificateAuthority,
-                out hasPathLengthConstraint,
-                out pathLengthConstraint))
-            {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
         }
 
         private static RSAOpenSsl BuildRsaPublicKey(byte[] encodedData)

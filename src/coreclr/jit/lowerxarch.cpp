@@ -2030,7 +2030,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     transform = true;
 
-                    op1 = opIntrin->Op(1);
+                    op2 = opIntrin->Op(1);
                     BlockRange().Remove(opIntrin);
 
                     std::swap(op1, op2);

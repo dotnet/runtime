@@ -1583,8 +1583,14 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetStubContext();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void MulticastDebuggerTraceHelper(object o, int count);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void MulticastDebuggerTraceHelper(object o, int count)
+        {
+            MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack.Create(ref o), count);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MulticastDebuggerTraceHelper")]
+        private static partial void MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack obj, int count);
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]

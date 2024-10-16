@@ -218,8 +218,8 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
 
         if (flags & (ALIGN8 | SIZE_IN_EAX | ALIGN8OBJ))
         {
-            // MOV EBX, [edx]gc_alloc_context.alloc_ptr
-            psl->X86EmitOffsetModRM(0x8B, kEBX, kEDX, offsetof(gc_alloc_context, alloc_ptr));
+            // MOV EBX, [edx]alloc_context.m_GCAllocContext.alloc_ptr
+            psl->X86EmitOffsetModRM(0x8B, kEBX, kEDX, ee_alloc_context::getAllocPtrFieldOffset());
             // add EAX, EBX
             psl->Emit16(0xC303);
             if (flags & ALIGN8)
@@ -227,20 +227,20 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
         }
         else
         {
-            // add             eax, [edx]gc_alloc_context.alloc_ptr
-            psl->X86EmitOffsetModRM(0x03, kEAX, kEDX, offsetof(gc_alloc_context, alloc_ptr));
+            // add             eax, [edx]alloc_context.m_GCAllocContext.alloc_ptr
+            psl->X86EmitOffsetModRM(0x03, kEAX, kEDX, ee_alloc_context::getAllocPtrFieldOffset());
         }
 
-        // cmp             eax, [edx]gc_alloc_context.alloc_limit
-        psl->X86EmitOffsetModRM(0x3b, kEAX, kEDX, offsetof(gc_alloc_context, alloc_limit));
+        // cmp             eax, [edx]alloc_context.m_CombinedLimit
+        psl->X86EmitOffsetModRM(0x3b, kEAX, kEDX, ee_alloc_context::getCombinedLimitFieldOffset());
 
         // ja              noAlloc
         psl->X86EmitCondJump(noAlloc, X86CondCode::kJA);
 
         // Fill in the allocation and get out.
 
-        // mov             [edx]gc_alloc_context.alloc_ptr, eax
-        psl->X86EmitIndexRegStore(kEDX, offsetof(gc_alloc_context, alloc_ptr), kEAX);
+        // mov             [edx]alloc_context.m_GCAllocContext.alloc_ptr, eax
+        psl->X86EmitIndexRegStore(kEDX, ee_alloc_context::getAllocPtrFieldOffset(), kEAX);
 
         if (flags & (ALIGN8 | SIZE_IN_EAX | ALIGN8OBJ))
         {
@@ -282,9 +282,9 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
             psl->X86EmitIndexRegLoad(kEDX, kECX, offsetof(MethodTable, m_BaseSize));
         }
 
-        // mov             eax, dword ptr [g_global_alloc_context]
+        // mov             eax, dword ptr [g_global_alloc_context.m_GCAllocContext.alloc_ptr]
         psl->Emit8(0xA1);
-        psl->Emit32((int)(size_t)&g_global_alloc_context);
+        psl->Emit32((int)(size_t)&g_global_alloc_context + ee_alloc_context::getAllocPtrFieldOffset());
 
         // Try the allocation.
         // add             edx, eax
@@ -293,17 +293,17 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
         if (flags & (ALIGN8 | ALIGN8OBJ))
             EmitAlignmentRoundup(psl, kEAX, kEDX, flags);      // bump up EDX size by 12 if EAX unaligned (so that we are aligned)
 
-        // cmp             edx, dword ptr [g_global_alloc_context+4]
+        // cmp             edx, dword ptr [g_global_alloc_context.m_CombinedLimit]
         psl->Emit16(0x153b);
-        psl->Emit32((int)(size_t)&g_global_alloc_context + 4);
+        psl->Emit32((int)(size_t)&g_global_alloc_context + ee_alloc_context::getCombinedLimitFieldOffset());
 
         // ja              noAlloc
         psl->X86EmitCondJump(noAlloc, X86CondCode::kJA);
 
         // Fill in the allocation and get out.
-        // mov             dword ptr [g_global_alloc_context], edx
+        // mov             dword ptr [g_global_alloc_context.m_GCAllocContext.alloc_ptr], edx
         psl->Emit16(0x1589);
-        psl->Emit32((int)(size_t)&g_global_alloc_context);
+        psl->Emit32((int)(size_t)&g_global_alloc_context + ee_alloc_context::getAllocPtrFieldOffset());
 
         if (flags & (ALIGN8 | ALIGN8OBJ))
             EmitDummyObject(psl, kEAX, flags);

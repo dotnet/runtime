@@ -441,7 +441,7 @@ struct RuntimeThreadLocals
 {
     // on MP systems, each thread has its own allocation chunk so we can avoid
     // lock prefixes and expensive MP cache snooping stuff
-    gc_alloc_context alloc_context;
+    ee_alloc_context alloc_context;
 };
 
 #ifdef _MSC_VER
@@ -953,7 +953,25 @@ public:
 public:
     inline void InitRuntimeThreadLocals() { LIMITED_METHOD_CONTRACT; m_pRuntimeThreadLocals = PTR_RuntimeThreadLocals(&t_runtime_thread_locals); }
 
-    inline PTR_gc_alloc_context GetAllocContext() { LIMITED_METHOD_CONTRACT; return PTR_gc_alloc_context(&m_pRuntimeThreadLocals->alloc_context); }
+    inline ee_alloc_context* GetEEAllocContext()
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (m_pRuntimeThreadLocals == nullptr)
+        {
+            return nullptr;
+        }
+        return &m_pRuntimeThreadLocals->alloc_context;
+    }
+
+    inline gc_alloc_context* GetAllocContext()
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (m_pRuntimeThreadLocals == nullptr)
+        {
+            return nullptr;
+        }
+        return &m_pRuntimeThreadLocals->alloc_context.m_GCAllocContext;
+    }
 
     // This is the type handle of the first object in the alloc context at the time
     // we fire the AllocationTick event. It's only for tooling purpose.

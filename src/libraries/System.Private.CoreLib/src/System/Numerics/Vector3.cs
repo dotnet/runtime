@@ -334,6 +334,7 @@ namespace System.Numerics
 
         /// <summary>Constructs a vector from the given <see cref="ReadOnlySpan{Single}" />. The span must contain at least 3 elements.</summary>
         /// <param name="values">The span of elements to assign to the vector.</param>
+        /// <returns>A new <see cref="Vector3" /> whose elements have the specified values.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Create(ReadOnlySpan<float> values)

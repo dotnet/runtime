@@ -1229,42 +1229,21 @@ public:
 // Throws an exception from an FCall. See rexcep.h for a list of valid
 // exception codes.
 //==============================================================================================
-#define FCThrow(reKind) FCThrowEx(reKind, 0, 0, 0, 0)
-
-//==============================================================================================
-// This version lets you attach a message with inserts (similar to
-// COMPlusThrow()).
-//==============================================================================================
-#define FCThrowEx(reKind, resID, arg1, arg2, arg3)              \
+#define FCThrow(reKind)                                         \
     {                                                           \
         while (NULL ==                                          \
-            __FCThrow(__me, reKind, resID, arg1, arg2, arg3)) {}; \
+            __FCThrow(__me, reKind, 0, 0, 0, 0)) {};            \
         return 0;                                               \
     }
 
 // Use FCThrowRes to throw an exception with a localized error message from the
 // ResourceManager in managed code.
-#define FCThrowRes(reKind, resourceName) FCThrowArgumentEx(reKind, NULL, resourceName)
-
-#define FCThrowArgumentEx(reKind, argName, resourceName)        \
-    {                                                           \
+#define FCThrowRes(reKind, resourceName)                                \
+    {                                                                   \
         while (NULL ==                                                  \
-            __FCThrowArgument(__me, reKind, argName, resourceName)) {}; \
-        return 0;                                               \
+            __FCThrowArgument(__me, reKind, NULL, resourceName)) {};    \
+        return 0;                                                       \
     }
-
-// Use FCThrowRes to throw an exception with a localized error message from the
-// ResourceManager in managed code.
-#define FCThrowResVoid(reKind, resourceName) FCThrowArgumentVoidEx(reKind, NULL, resourceName)
-
-#define FCThrowArgumentVoidEx(reKind, argName, resourceName)    \
-    {                                                           \
-        while (NULL ==                                                  \
-            __FCThrowArgument(__me, reKind, argName, resourceName)) {};  \
-        return;                                                 \
-    }
-
-
 
 // The managed calling convention expects returned small types (e.g. bool) to be
 // widened to 32-bit on return. The C/C++ calling convention does not guarantee returned

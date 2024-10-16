@@ -298,6 +298,20 @@ internal sealed unsafe class ContractDescriptorTarget : Target
         }
     }
 
+    public override TargetCodePointer ReadCodePointer(ulong address)
+    {
+        TypeInfo codePointerTypeInfo = GetTypeInfo(DataType.CodePointer);
+        if (codePointerTypeInfo.Size is sizeof(uint))
+        {
+            return new TargetCodePointer(Read<uint>(address));
+        }
+        else if (codePointerTypeInfo.Size is sizeof(ulong))
+        {
+            return new TargetCodePointer(Read<ulong>(address));
+        }
+        throw new InvalidOperationException($"Failed to read code pointer at 0x{address:x8} because CodePointer size is not 4 or 8");
+    }
+
     public void ReadPointers(ulong address, Span<TargetPointer> buffer)
     {
         // TODO(cdac) - This could do a single read, and then swizzle in place if it is useful for performance

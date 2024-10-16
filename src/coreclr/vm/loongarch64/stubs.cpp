@@ -1225,18 +1225,6 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, IntReg Rt, IntReg Rn, int o
     EmitLoadStoreRegImm(flags, (int)Rt, Rn, offset, FALSE, log2Size);
 }
 
-void StubLinkerCPU::EmitFloatLoadStoreRegImm(DWORD flags, FloatReg Ft, IntReg Rn, int offset)
-{
-    BOOL isLoad    = flags & 1;
-    if (isLoad) {
-        // fld.d(Ft, Rn, offset);
-        Emit32(emitIns_O_R_R_I(0xae, (int)Ft & 0x1f, Rn, offset));
-    } else {
-        // fst.d(Ft, Rn, offset);
-        Emit32(emitIns_O_R_R_I(0xaf, (int)Ft & 0x1f, Rn, offset));
-    }
-}
-
 void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Rn, int offset, BOOL isVec, int log2Size)
 {
     _ASSERTE((log2Size & ~0x3ULL) == 0);
@@ -1263,20 +1251,6 @@ void StubLinkerCPU::EmitMovReg(IntReg Rd, IntReg Rm)
 {
     // ori(Rd, Rm, 0);
     Emit32(0x03800000 | (Rm.reg << 5) | Rd.reg);
-}
-
-void StubLinkerCPU::EmitMovFloatReg(FloatReg Fd, FloatReg Fs)
-{
-    // fmov.d fd, fs
-    Emit32(0x01149800 | Fd.reg | (Fs.reg << 5));
-}
-
-void StubLinkerCPU::EmitSubImm(IntReg Rd, IntReg Rn, unsigned int value)
-{
-    _ASSERTE(value <= 2047);
-    int tmp_value = -(int)value;
-    // addi.d(Rd, Rn, -value);
-    Emit32(0x02c00000 | (Rn.reg << 5) | Rd.reg | ((tmp_value & 0xfff)<<10));
 }
 
 void StubLinkerCPU::EmitAddImm(IntReg Rd, IntReg Rn, unsigned int value)

@@ -823,7 +823,6 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
-            - WasmTestOnV8
             - WasmTestOnChrome
             - WasmTestOnFirefox
 
@@ -850,7 +849,6 @@ extends:
           scenarios:
             - WasmTestOnChrome
             - WasmTestOnFirefox
-            #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
 
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -869,8 +867,6 @@ extends:
           platforms:
             - browser_wasm
             - browser_wasm_win
-            - wasi_wasm
-            - wasi_wasm_win
           nameSuffix: _Smoke_AOT
           runAOT: true
           shouldRunSmokeOnly: true

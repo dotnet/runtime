@@ -2226,9 +2226,9 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                     BADCODE("Duplicate SwiftSelf parameter");
                 }
 
-                if (argIndex != 0)
+                if (argIndex != (sig->numArgs - 1))
                 {
-                    BADCODE("SwiftSelf<T> must be the first argument in the signature");
+                    BADCODE("SwiftSelf<T> must be the last argument in the signature");
                 }
 
                 selfType                = info.compCompHnd->getTypeInstantiationArgument(argClass, 0);
@@ -8244,7 +8244,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, pContextHandle);
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, objClass, pContextHandle);
         return;
     }
 

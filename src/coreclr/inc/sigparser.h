@@ -116,7 +116,7 @@ class SigParser
         void
         GetSignature(
             PCCOR_SIGNATURE * pSig,
-            uint32_t           * pcbSigSize)
+            uint32_t           * pcbSigSize) const
         {
             *pSig = m_ptr;
             *pcbSigSize = m_dwLen;

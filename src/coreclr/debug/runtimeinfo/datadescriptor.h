@@ -134,8 +134,13 @@ CDAC_TYPE_END(ThreadStore)
 
 CDAC_TYPE_BEGIN(RuntimeThreadLocals)
 CDAC_TYPE_INDETERMINATE(RuntimeThreadLocals)
-CDAC_TYPE_FIELD(RuntimeThreadLocals, AllocContext, AllocContext, offsetof(RuntimeThreadLocals, alloc_context))
+CDAC_TYPE_FIELD(RuntimeThreadLocals, /*EEAllocContext*/, AllocContext, offsetof(RuntimeThreadLocals, alloc_context))
 CDAC_TYPE_END(RuntimeThreadLocals)
+
+CDAC_TYPE_BEGIN(EEAllocContext)
+CDAC_TYPE_INDETERMINATE(EEAllocContext)
+CDAC_TYPE_FIELD(EEAllocContext, /*GCAllocContext*/, GCAllocationContext, offsetof(ee_alloc_context, m_GCAllocContext))
+CDAC_TYPE_END(EEAllocContext)
 
 CDAC_TYPE_BEGIN(GCAllocContext)
 CDAC_TYPE_INDETERMINATE(GCAllocContext)

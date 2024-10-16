@@ -191,10 +191,6 @@ HRESULT EEConfig::Init()
     m_fInteropValidatePinnedObjects = false;
     m_fInteropLogArguments = false;
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    fStubLinkerUnwindInfoVerificationOn = FALSE;
-#endif
-
 #if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
     fSuppressLockViolationsOnReentryFromOS = false;
 #endif
@@ -633,10 +629,6 @@ HRESULT EEConfig::sync()
 
 #if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
     fSuppressLockViolationsOnReentryFromOS = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuppressLockViolationsOnReentryFromOS) != 0);
-#endif
-
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    fStubLinkerUnwindInfoVerificationOn = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_StubLinkerUnwindInfoVerificationOn) != 0);
 #endif
 
 #if defined(_DEBUG) && defined(TARGET_AMD64)
