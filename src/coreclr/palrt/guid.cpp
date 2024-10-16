@@ -10,6 +10,7 @@
 // ===========================================================================
 
 #define INITGUID
+#include <minipal/random.h>
 #include <guiddef.h>
 
 // These are GUIDs and IIDs that would normally be provided by the system via uuid.lib,
@@ -28,7 +29,10 @@ DEFINE_GUID(IID_IStream, 0x0000000c, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x0
 STDAPI
 CoCreateGuid(OUT GUID * pguid)
 {
-    PAL_Random(pguid, sizeof(GUID));
+    if (!minipal_get_cryptographically_secure_random_bytes(pguid, sizeof(GUID)))
+    {
+        return E_FAIL;
+    }
 
     static const USHORT VersionMask = 0xF000;
     static const USHORT RandomGuidVersion = 0x4000;

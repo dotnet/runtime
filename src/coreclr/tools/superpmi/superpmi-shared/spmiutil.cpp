@@ -10,6 +10,7 @@
 #include "spmiutil.h"
 
 #include <minipal/debugger.h>
+#include <minipal/random.h>
 
 static bool breakOnDebugBreakorAV = false;
 
@@ -235,13 +236,8 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
 
     // Append a random string to improve uniqueness.
     //
-    unsigned randomNumber = 0;
-
-#ifdef TARGET_UNIX
-    PAL_Random(&randomNumber, sizeof(randomNumber));
-#else  // !TARGET_UNIX
-    rand_s(&randomNumber);
-#endif // !TARGET_UNIX
+    unsigned int randomNumber = 0;
+    minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&randomNumber, sizeof(randomNumber));
 
     WCHAR randomString[randomStringLength + 1];
     FormatInteger(randomString, randomStringLength + 1, "%08X", randomNumber);
