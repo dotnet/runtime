@@ -12981,9 +12981,10 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 {
                     inlineInfo = call->GetSingleInlineCandidateInfo();
                 }
-                if ((inlineInfo != nullptr) && (inlineInfo->exactContextHnd != nullptr))
+
+                if ((inlineInfo != nullptr) && (inlineInfo->exactContextHandle != nullptr))
                 {
-                    printf(" (exactContextHnd=0x%p)", dspPtr(inlineInfo->exactContextHnd));
+                    printf(" (exactContextHandle=0x%p)", dspPtr(inlineInfo->exactContextHandle));
                 }
             }
 
@@ -17652,11 +17653,6 @@ bool Compiler::gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInf
     return helper != CORINFO_HELP_UNDEF;
 }
 
-bool Compiler::gtIsActiveCSE_Candidate(GenTree* tree)
-{
-    return (optValnumCSE_phase && IS_CSE_INDEX(tree->gtCSEnum));
-}
-
 //------------------------------------------------------------------------
 // gtTreeContainsOper -- check if the tree contains any subtree with the specified oper.
 //
@@ -19048,7 +19044,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 // of the inlinee.
                 if (eeIsSharedInst(objClass))
                 {
-                    CORINFO_CONTEXT_HANDLE context = inlInfo->exactContextHnd;
+                    CORINFO_CONTEXT_HANDLE context = inlInfo->exactContextHandle;
 
                     if (context != nullptr)
                     {
@@ -25601,7 +25597,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
         case TYP_SHORT:
         case TYP_USHORT:
         {
-            tmp = gtNewSimdHWIntrinsicNode(simdType, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, simdSize);
+            tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, simdSize);
             return gtNewSimdToScalarNode(type, tmp, simdBaseJitType, 8);
         }
 
@@ -25615,7 +25611,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
             }
             else
             {
-                tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 16);
+                tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 16);
             }
             return gtNewSimdToScalarNode(type, tmp, simdBaseJitType, 8);
         }

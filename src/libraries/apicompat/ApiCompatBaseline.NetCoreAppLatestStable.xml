@@ -3,6 +3,24 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.String.Trim(System.ReadOnlySpan{System.Char})</Target>
+    <Left>net9.0/mscorlib.dll</Left>
+    <Right>net10.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.String.TrimEnd(System.ReadOnlySpan{System.Char})</Target>
+    <Left>net9.0/mscorlib.dll</Left>
+    <Right>net10.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.String.TrimStart(System.ReadOnlySpan{System.Char})</Target>
+    <Left>net9.0/mscorlib.dll</Left>
+    <Right>net10.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Collections.Generic.CollectionExtensions.GetAlternateLookup``2(System.Collections.Generic.HashSet{``0})</Target>
     <Left>net9.0/netstandard.dll</Left>
     <Right>net10.0/netstandard.dll</Right>
@@ -27,6 +45,24 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.String.Trim(System.ReadOnlySpan{System.Char})</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.String.TrimEnd(System.ReadOnlySpan{System.Char})</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.String.TrimStart(System.ReadOnlySpan{System.Char})</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Collections.Generic.CollectionExtensions.GetAlternateLookup``2(System.Collections.Generic.HashSet{``0})</Target>
     <Left>net9.0/System.Collections.dll</Left>
     <Right>net10.0/System.Collections.dll</Right>
@@ -48,6 +84,24 @@
     <Target>M:System.Collections.Generic.CollectionExtensions.TryGetAlternateLookup``3(System.Collections.Generic.Dictionary{``0,``1},System.Collections.Generic.Dictionary{``0,``1}.AlternateLookup{``2}@)</Target>
     <Left>net9.0/System.Collections.dll</Left>
     <Right>net10.0/System.Collections.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.String.Trim(System.ReadOnlySpan{System.Char})</Target>
+    <Left>net9.0/System.Runtime.dll</Left>
+    <Right>net10.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.String.TrimEnd(System.ReadOnlySpan{System.Char})</Target>
+    <Left>net9.0/System.Runtime.dll</Left>
+    <Right>net10.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.String.TrimStart(System.ReadOnlySpan{System.Char})</Target>
+    <Left>net9.0/System.Runtime.dll</Left>
+    <Right>net10.0/System.Runtime.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>

@@ -100,3 +100,14 @@ public func swiftFunc3(a0: F3) -> Int {
     hasher.combine(a0.element);
     return hasher.finalize()
 }
+
+@frozen public struct F4 {
+    public var elements: (UInt32, UInt32)
+}
+
+public func swiftFunc4(a0: F4) -> Int {
+    var hasher = HasherFNV1a()
+    hasher.combine(a0.elements.0);
+    hasher.combine(a0.elements.1);
+    return hasher.finalize()
+}
