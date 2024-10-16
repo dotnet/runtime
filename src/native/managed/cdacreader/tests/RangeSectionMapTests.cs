@@ -87,7 +87,7 @@ public class RangeSectionMapTests
                 ulong workingBits = payload << effectiveRange;
                 address = upperBits | workingBits | irrelevantLowBits;
                 int expected = i;
-                int actual = rsla.EffectiveBitsForLevel(new TargetCodePointer(address), level);
+                int actual = rsla.GetIndexForLevel(new TargetCodePointer(address), level);
                 Assert.Equal(expected, actual);
             }
         }
