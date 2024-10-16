@@ -494,7 +494,7 @@ namespace System
             return base.GetTarget();
         }
 
-        protected override MethodInfo GetMethodImplUncached()
+        internal override MethodInfo GetMethodImplUncached()
         {
             if (_invocationCount != 0 && _invocationList != null)
             {
@@ -594,7 +594,7 @@ namespace System
         {
             this._target = target;
             this._methodPtr = methodPtr;
-            this.SetCachedMethod(GCHandle.InternalGet(gchandle));
+            this._invocationList = GCHandle.InternalGet(gchandle);
         }
 
         [DebuggerNonUserCode]
@@ -604,7 +604,7 @@ namespace System
             this._target = this;
             this._methodPtr = shuffleThunk;
             this._methodPtrAux = methodPtr;
-            this.SetCachedMethod(GCHandle.InternalGet(gchandle));
+            this._invocationList = GCHandle.InternalGet(gchandle);
         }
 
         [DebuggerNonUserCode]
@@ -613,7 +613,7 @@ namespace System
         {
             this._target = this;
             this._methodPtr = shuffleThunk;
-            this.SetCachedMethod(GCHandle.InternalGet(gchandle));
+            this._invocationList = GCHandle.InternalGet(gchandle);
             this.InitializeVirtualCallStub(methodPtr);
         }
 #pragma warning restore IDE0060

@@ -160,12 +160,12 @@ namespace System
                 return GetType().GetHashCode();
         }
 
-        protected MethodInfo GetMethodImpl()
+        protected virtual MethodInfo GetMethodImpl()
         {
             return Cache.s_methodCache.TryGetValue(this, out MethodInfo? cachedValue) ? cachedValue : GetMethodImplUncached();
         }
 
-        protected virtual MethodInfo GetMethodImplUncached()
+        internal virtual MethodInfo GetMethodImplUncached()
         {
             IRuntimeMethodInfo method = CreateMethodInfo(MethodDesc);
             RuntimeType? declaringType = RuntimeMethodHandle.GetDeclaringType(method);
@@ -222,7 +222,7 @@ namespace System
             return methodInfo;
         }
 
-        protected void SetCachedMethod(MethodInfo methodInfo)
+        internal void SetCachedMethod(MethodInfo methodInfo)
         {
             Debug.Assert(methodInfo is not null);
             Cache.s_methodCache.AddOrUpdate(this, methodInfo);
@@ -552,7 +552,6 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMethodDesc")]
-        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial IntPtr GetMethodDesc(ObjectHandleOnStack instance);
 
         internal static IntPtr AdjustTarget(object target, IntPtr methodPtr)
