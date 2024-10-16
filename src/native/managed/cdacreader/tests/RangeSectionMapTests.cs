@@ -63,9 +63,9 @@ public class RangeSectionMapTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void TestEffectiveBitsForLevel(MockTarget.Architecture arch)
+    public void TestGetIndexForLevel(MockTarget.Architecture arch)
     {
-        // Exhaustively test EffectiveBitsForLevel for all possible values of the byte for each level
+        // Exhaustively test GetIndexForLevel for all possible values of the byte for each level
         var target = new RSLATestTarget(arch, new MockMemorySpace.ReadContext());
         var rsla = RangeSectionMap.Create(target);
         int numLevels = arch.Is64Bit ? 5 : 2;

@@ -36,10 +36,6 @@ internal class ExecutionManagerTestBuilder
         CodeHeaderStart = 0x0033_4000,
         CodeHeaderEnd = 0x0033_5000,
     };
-
-
-
-
     internal class NibbleMapTestBuilder
     {
         // This is the base address of the memory range that the map covers.
