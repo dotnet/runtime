@@ -352,7 +352,7 @@ namespace System
         public MethodInfo? GetMethod(string name, int genericParameterCount, Type[] types, ParameterModifier[]? modifiers) => GetMethod(name, genericParameterCount, DefaultLookup, null, types, modifiers);
 
         /// <summary>
-        /// Searches for the specified method whose parameters match the specified generic parameter count and argument types, using the specified binding constraints
+        /// Searches for the specified method whose parameters match the specified generic parameter count and argument types, using the specified binding constraints.
         /// </summary>
         /// <param name="name">The string containing the name of the method to get.</param>
         /// <param name="genericParameterCount">The number of generic type parameters of the method.</param>

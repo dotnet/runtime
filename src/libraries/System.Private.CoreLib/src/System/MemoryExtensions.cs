@@ -2093,7 +2093,7 @@ namespace System
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
-        /// /// <returns>The first index of any of the specified values, or -1 if none are found.</returns>
+        /// <returns>The first index of any of the specified values, or -1 if none are found.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfAny<T>(this ReadOnlySpan<T> span, SearchValues<T> values) where T : IEquatable<T>?
         {
@@ -2598,7 +2598,7 @@ namespace System
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to compare.</param>
-        /// <typeparam name="T">The type of elements in the span.</typeparam>f
+        /// <typeparam name="T">The type of elements in the span.</typeparam>
         /// <returns><see langword="true" /> if <paramref name="value" /> matches the beginning of <paramref name="span" />; otherwise, <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool StartsWith<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>? =>
@@ -2610,7 +2610,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to compare.</param>
         /// <typeparam name="T">The type of the elements in the span.</typeparam>
-        /// <returns><see langword="true" /> if <paramref name="value" /> matches the end of <paramref name="span" />; otherwise, <see langword="false" /></returns>
+        /// <returns><see langword="true" /> if <paramref name="value" /> matches the end of <paramref name="span" />; otherwise, <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool EndsWith<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>? =>
             span.Length != 0 && (span[^1]?.Equals(value) ?? (object?)value is null);
@@ -4292,7 +4292,7 @@ namespace System
         /// <summary>
         /// Enables enumerating each split within a <see cref="ReadOnlySpan{T}"/> that has been divided using one or more separators.
         /// </summary>
-        /// <typeparam name="T">The type of items in the <see cref="SpanSplitEnumerator"/>.</typeparam>
+        /// <typeparam name="T">The type of items in the <see cref="SpanSplitEnumerator{T}"/>.</typeparam>
         public ref struct SpanSplitEnumerator<T> where T : IEquatable<T>
         {
             /// <summary>The input span being split.</summary>

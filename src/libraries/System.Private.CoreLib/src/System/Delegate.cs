@@ -86,7 +86,7 @@ namespace System
         /// </summary>
         /// <typeparam name="TDelegate">Delegate type being enumerated.</typeparam>
         /// <param name="d">The delegate being enumerated.</param>
-        /// <returns>A <see cref="InvocationListEnumerator" /> that follows the IEnumerable pattern and
+        /// <returns>A <see cref="InvocationListEnumerator{TDelegate}" /> that follows the IEnumerable pattern and
         /// thus can be used in a C# 'foreach' statement to retrieve the invocation targets of this delegate without allocations.
         /// The method returns an empty enumerator for <see langword="null" /> delegate.</returns>
         /// <remarks>
@@ -137,7 +137,7 @@ namespace System
             }
 
             /// <summary>
-            /// Implement IEnumerable.GetEnumerator() to return 'this' as the IEnumerator
+            /// Implement IEnumerable.GetEnumerator() to return 'this' as the IEnumerator.
             /// </summary>
             /// <returns>An IEnumerator instance that can be used to iterate through the invocation targets of the delegate.</returns>
             [EditorBrowsable(EditorBrowsableState.Never)] // Only here to make foreach work
