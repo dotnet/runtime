@@ -3348,7 +3348,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 
             if (compHndBBtabCount != 0)
             {
-                fgFindEHRegionEnds();
+                fgRebuildEHRegions();
             }
 
             // Renumber blocks to facilitate LSRA's order of block visitation
@@ -4769,6 +4769,9 @@ void Compiler::fgDoReversePostOrderLayout()
 //
 // Notes:
 //    Exception handlers are assumed to be cold, so we won't move blocks within them.
+//    On platforms that don't use funclets, we should use Compiler::fgRelocateEHRegions to move cold handlers.
+//    Note that Compiler::fgMoveColdBlocks will break up EH regions to facilitate intermediate transformations.
+//    To reestablish contiguity of EH regions, callers need to follow this with Compiler::fgRebuildEHRegions.
 //
 void Compiler::fgMoveColdBlocks()
 {
@@ -4783,10 +4786,38 @@ void Compiler::fgMoveColdBlocks()
     }
 #endif // DEBUG
 
+    auto moveBlock = [this](BasicBlock* block, BasicBlock* insertionPoint) {
+        assert(block != insertionPoint);
+        // Don't move handler blocks.
+        // Also, leave try entries behind as a breadcrumb for where to reinsert try blocks.
+        if (!bbIsTryBeg(block) && !block->hasHndIndex())
+        {
+            if (block->isBBCallFinallyPair())
+            {
+                BasicBlock* const callFinallyRet = block->Next();
+                if (callFinallyRet != insertionPoint)
+                {
+                    fgUnlinkRange(block, callFinallyRet);
+                    fgMoveBlocksAfter(block, callFinallyRet, insertionPoint);
+                }
+            }
+            else
+            {
+                fgUnlinkBlock(block);
+                fgInsertBBafter(insertionPoint, block);
+            }
+        }
+    };
+
+    BasicBlock* const lastMainBB = fgLastBBInMainFunction();
+    if (lastMainBB->IsFirst())
+    {
+        return;
+    }
+
     // Search the main method body for rarely-run blocks to move
     //
-    BasicBlock* const lastMainBB = fgLastBBInMainFunction();
-    for (BasicBlock* block = lastMainBB->Prev(), *prev; block != fgFirstBB; block = prev)
+    for (BasicBlock *block = lastMainBB->Prev(), *prev; !block->IsFirst(); block = prev)
     {
         prev = block->Prev();
 
@@ -4795,184 +4826,24 @@ void Compiler::fgMoveColdBlocks()
         // as we want to keep these pairs contiguous
         // (if we encounter the end of a pair below, we'll move the whole pair).
         //
-        if (!block->isBBWeightCold(this) || block->isBBCallFinallyPair())
+        if (!block->isBBWeightCold(this) || block->isBBCallFinallyPairTail())
         {
             continue;
         }
 
-        fgUnlinkBlock(block);
-        fgInsertBBafter(lastMainBB, block);
-
-        // If block is the end of a call-finally pair, prev is the beginning of the pair.
-        // Move prev to before block to keep the pair contiguous.
-        //
-        if (block->KindIs(BBJ_CALLFINALLYRET))
-        {
-            BasicBlock* const callFinally = prev;
-            prev                          = prev->Prev();
-            assert(callFinally->KindIs(BBJ_CALLFINALLY));
-            assert(!callFinally->HasFlag(BBF_RETLESS_CALL));
-            fgUnlinkBlock(callFinally);
-            fgInsertBBafter(lastMainBB, callFinally);
-        }
+        moveBlock(block, lastMainBB);
     }
 
     // We have moved all cold main blocks before lastMainBB to after lastMainBB.
     // If lastMainBB itself is cold, move it to the end of the method to restore its relative ordering.
     //
-    BasicBlock* lastHotBlock;
-    for (lastHotBlock = lastMainBB; (lastHotBlock != nullptr) && lastHotBlock->isBBWeightCold(this); lastHotBlock = lastHotBlock->Prev());
-    if (lastMainBB->isBBWeightCold(this))
+    if (lastMainBB->isBBWeightCold(this) && !lastMainBB->isBBCallFinallyPairTail())
     {
         BasicBlock* const newLastMainBB = fgLastBBInMainFunction();
         if (lastMainBB != newLastMainBB)
         {
-            BasicBlock* const prev = lastMainBB->Prev();
-            fgUnlinkBlock(lastMainBB);
-            fgInsertBBafter(newLastMainBB, lastMainBB);
-
-            // Call-finally check
-            //
-            if (lastMainBB->KindIs(BBJ_CALLFINALLYRET))
-            {
-                assert(prev->KindIs(BBJ_CALLFINALLY));
-                assert(!prev->HasFlag(BBF_RETLESS_CALL));
-                assert(prev != newLastMainBB);
-                fgUnlinkBlock(prev);
-                fgInsertBBafter(newLastMainBB, prev);
-            }
+            moveBlock(lastMainBB, newLastMainBB);
         }
-    }
-
-    if ((compHndBBtabCount == 0) || (lastHotBlock == nullptr))
-    {
-        return;
-    }
-
-    unsigned unsetTryEnds = compHndBBtabCount;
-
-    for (EHblkDsc* const HBtab : EHClauses(this))
-    {
-        HBtab->ebdTryLast = nullptr;
-    }
-
-    auto setTryEnd = [this, &unsetTryEnds](BasicBlock* block) {
-        for (unsigned tryIndex = block->getTryIndex(); tryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
-             tryIndex          = ehGetEnclosingTryIndex(tryIndex))
-        {
-            EHblkDsc* const HBtab = ehGetDsc(tryIndex);
-            if (HBtab->ebdTryLast == nullptr)
-            {
-                assert(unsetTryEnds != 0);
-                HBtab->ebdTryLast = block;
-                unsetTryEnds--;
-            }
-            else
-            {
-                break;
-            }
-        }
-    };
-
-    for (BasicBlock* block = lastHotBlock; (unsetTryEnds != 0) && (block != nullptr); block = block->Prev())
-    {
-        if (block->hasTryIndex())
-        {
-            setTryEnd(block);
-        }
-    }
-
-    struct TryRange {
-        BasicBlock* tryBeg;
-        BasicBlock* tryLast;
-    };
-    TryRange* const coldTryRanges = new (this, CMK_Generic) TryRange[compHndBBtabCount]{};
-
-    for (BasicBlock* block = lastHotBlock->Next(); block != fgFirstFuncletBB; block = block->Next())
-    {
-        assert(block->isBBWeightCold(this));
-        if (block->hasTryIndex())
-        {
-            TryRange& range = coldTryRanges[block->getTryIndex()];
-            range.tryLast = block;
-
-            if (range.tryBeg == nullptr)
-            {
-                range.tryBeg = block;
-            }
-        }
-    }
-
-    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
-    {
-        const TryRange& range = coldTryRanges[XTnum];
-
-        if (range.tryBeg == nullptr)
-        {
-            continue;
-        }
-
-        EHblkDsc* HBtab = ehGetDsc(XTnum);
-        BasicBlock* insertionPoint = HBtab->ebdTryLast;
-        HBtab->ebdTryLast = range.tryLast;
-
-        if (insertionPoint == nullptr)
-        {
-            assert(range.tryBeg == HBtab->ebdTryBeg);
-            const unsigned enclosingIndex = ehGetEnclosingTryIndex(XTnum);
-            if (enclosingIndex != EHblkDsc::NO_ENCLOSING_INDEX)
-            {
-                insertionPoint = ehGetDsc(enclosingIndex)->ebdTryLast;
-            }
-        }
-        
-        if (insertionPoint == nullptr)
-        {
-            continue;
-        }
-
-        fgUnlinkRange(range.tryBeg, range.tryLast);
-        fgMoveBlocksAfter(range.tryBeg, range.tryLast, insertionPoint);
-
-        if (HBtab->ebdTryBeg == range.tryBeg)
-        {
-            BasicBlock* const tryBeg = HBtab->ebdTryBeg;
-            assert(!tryBeg->IsFirst());
-            BasicBlock* prev;
-            for (prev = tryBeg->Prev(); (prev != nullptr) && BasicBlock::sameTryRegion(prev, tryBeg); prev = prev->Prev());
-
-            if (prev != nullptr)
-            {
-                assert(!BasicBlock::sameTryRegion(prev, tryBeg));
-                if (!prev->NextIs(tryBeg))
-                {
-                    fgUnlinkBlock(tryBeg);
-                    fgInsertBBafter(prev, tryBeg);
-                }
-            }
-            else
-            {
-                assert(BasicBlock::sameTryRegion(fgFirstBB, tryBeg));
-                fgUnlinkBlock(tryBeg);
-                fgInsertBBbefore(fgFirstBB, tryBeg);
-            }
-        }
-
-        for (unsigned tryIndex = ehGetEnclosingTryIndex(XTnum); (tryIndex != EHblkDsc::NO_ENCLOSING_INDEX); tryIndex = ehGetEnclosingTryIndex(tryIndex))
-        {
-            HBtab = ehGetDsc(tryIndex);
-            if (HBtab->ebdTryLast == nullptr)
-            {
-                break;
-            }
-
-            if (HBtab->ebdTryLast->NextIs(range.tryBeg))
-            {
-                HBtab->ebdTryLast = range.tryLast;
-            }
-        }
-
-        fgDispBasicBlocks(verboseTrees);
     }
 }
 

@@ -1254,21 +1254,98 @@ void Compiler::fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast)
 }
 
 //-------------------------------------------------------------
-// fgFindEHRegionEnds: Walk the block list, and set each try/handler region's end block.
+// fgRebuildEHRegions: After reordering blocks, make EH regions contiguous
+// while maintaining relative block order, and update each region's end pointer.
 //
-void Compiler::fgFindEHRegionEnds()
+void Compiler::fgRebuildEHRegions()
 {
     assert(compHndBBtabCount != 0);
     unsigned unsetTryEnds = compHndBBtabCount;
     unsigned unsetHndEnds = compHndBBtabCount;
 
-    // Null out each clause's end pointers.
-    // A non-null end pointer indicates we already updated the clause.
+    // Null out try/handler end pointers to signify the given clause hasn't been visited yet.
     for (EHblkDsc* const HBtab : EHClauses(this))
     {
         HBtab->ebdTryLast = nullptr;
         HBtab->ebdHndLast = nullptr;
     }
+
+    // Walk the main method body, and move try blocks to reestablish contiguity.
+    for (BasicBlock *block = fgFirstBB, *next; block != fgFirstFuncletBB; block = next)
+    {
+        next            = block->Next();
+        EHblkDsc* HBtab = ehGetBlockTryDsc(block);
+        if (HBtab != nullptr)
+        {
+            // Move this block up to the previous block in the same try region.
+            BasicBlock* const insertionPoint = HBtab->ebdTryLast;
+            if ((insertionPoint != nullptr) && !insertionPoint->NextIs(block))
+            {
+                assert(block != HBtab->ebdTryLast);
+                fgUnlinkBlock(block);
+                fgInsertBBafter(HBtab->ebdTryLast, block);
+            }
+
+            // Update this try region's (and all parent try regions') end pointer with the last block visited
+            for (unsigned XTnum = block->getTryIndex(); XTnum != EHblkDsc::NO_ENCLOSING_INDEX;
+                 XTnum          = ehGetEnclosingTryIndex(XTnum))
+            {
+                HBtab = ehGetDsc(XTnum);
+                if (HBtab->ebdTryLast == nullptr)
+                {
+                    assert(HBtab->ebdTryBeg == block);
+                    assert(unsetTryEnds != 0);
+                    unsetTryEnds--;
+                    HBtab->ebdTryLast = block;
+                }
+                else if (HBtab->ebdTryLast->NextIs(block))
+                {
+                    HBtab->ebdTryLast = block;
+                }
+            }
+        }
+    }
+
+    // Cold try regions may have been moved out of their parent regions.
+    // Find these instances, and move them to the ends of their parent regions.
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        // We can safely ignore try regions that aren't cold, are in handler regions, or aren't nested.
+        const unsigned enclosingTryIndex = HBtab->ebdEnclosingTryIndex;
+        if (!HBtab->ebdTryBeg->isBBWeightCold(this) || HBtab->ebdTryBeg->hasHndIndex() ||
+            (enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX))
+        {
+            continue;
+        }
+
+        // If the child region is already contained by its parent, we don't need to move the child region.
+        EHblkDsc*         enclosingTab   = ehGetDsc(enclosingTryIndex);
+        BasicBlock* const insertionPoint = enclosingTab->ebdTryLast;
+        if (HBtab->ebdTryLast == insertionPoint)
+        {
+            continue;
+        }
+
+        // Move the child to the end of its parent.
+        fgUnlinkRange(HBtab->ebdTryBeg, HBtab->ebdTryLast);
+        fgMoveBlocksAfter(HBtab->ebdTryBeg, HBtab->ebdTryLast, insertionPoint);
+        enclosingTab->ebdTryLast = HBtab->ebdTryLast;
+
+        // Update each parent try region's end pointer.
+        for (unsigned XTnum = ehGetEnclosingTryIndex(enclosingTryIndex); XTnum != EHblkDsc::NO_ENCLOSING_INDEX;
+             XTnum          = ehGetEnclosingTryIndex(XTnum))
+        {
+            enclosingTab = ehGetDsc(XTnum);
+            if (enclosingTab->ebdTryLast == insertionPoint)
+            {
+                enclosingTab->ebdTryLast = HBtab->ebdTryLast;
+            }
+        }
+    }
+
+    // The above logic rebuilt the try regions in the main method body.
+    // Now, resolve the regions in the funclet section, if there is one.
+    assert((unsetTryEnds == 0) || (fgFirstFuncletBB != nullptr));
 
     // Updates the try region's (and all of its parent regions') end block to 'block,'
     // if the try region's end block hasn't been updated yet.
@@ -1310,19 +1387,7 @@ void Compiler::fgFindEHRegionEnds()
         }
     };
 
-    // Iterate backwards through the main method body, and update each try region's end block
-    for (BasicBlock* block = fgLastBBInMainFunction(); (unsetTryEnds != 0) && (block != nullptr); block = block->Prev())
-    {
-        if (block->hasTryIndex())
-        {
-            setTryEnd(block);
-        }
-    }
-
-    // If we don't have a funclet section, then all of the try regions should have been updated above
-    assert((unsetTryEnds == 0) || (fgFirstFuncletBB != nullptr));
-
-    // If we do have a funclet section, update the ends of any try regions nested in funclets
+    // If we have a funclet section, update the ends of any try regions nested in funclets
     for (BasicBlock* block = fgLastBB; (unsetTryEnds != 0) && (block != fgLastBBInMainFunction());
          block             = block->Prev())
     {
@@ -1340,6 +1405,9 @@ void Compiler::fgFindEHRegionEnds()
             setHndEnd(block);
         }
     }
+
+    assert(unsetTryEnds == 0);
+    assert(unsetHndEnds == 0);
 }
 
 /*****************************************************************************
