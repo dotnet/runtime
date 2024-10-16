@@ -628,7 +628,7 @@ namespace System.Runtime.CompilerServices
         public MethodTable* MethodTable => GetMethodDescChunk()->MethodTable;
     }
 
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct MethodDescChunk
     {
         public MethodTable* MethodTable;
