@@ -17,7 +17,7 @@
 
       $(DownloadDirectory)IntermediateArtifacts\windows_x64\Shipping\a.nupkg
   -->
-  <ItemGroup Condition="'$(DotNetBuildOrchestrator)' != 'true'">
+  <ItemGroup Condition="'$(DotNetBuildRepo)' != 'true'">
     <DownloadedArtifactFile Include="$(DownloadDirectory)**" />
     <DownloadedSymbolNupkgFile Include="$(DownloadDirectory)**\*.symbols.nupkg" />
     <DownloadedWixPdbFile Include="$(DownloadDirectory)**\*.wixpdb" />
@@ -178,7 +178,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="ValidateDownloadedAssets" Condition="'$(DotNetBuildOrchestrator)' != 'true'">
+  <Target Name="ValidateDownloadedAssets" Condition="'$(DotNetBuildRepo)' != 'true'">
     <Error Text="DownloadDirectory is not set." Condition="'$(DownloadDirectory)' == ''" />
     <Error Condition="'@(SymbolNupkgToPublishFile)' == ''" Text="No symbol packages found." />
 
