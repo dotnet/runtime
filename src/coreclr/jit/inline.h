@@ -647,7 +647,7 @@ struct InlArgInfo
     GenTree* argBashTmpNode;              // tmp node created, if it may be replaced with actual arg
     unsigned argTmpNum;                   // the argument tmp number
     unsigned argIsUsed               : 1; // is this arg used at all?
-    unsigned argIsInvariant          : 1; // the argument is a constant or a local variable address
+    unsigned argIsInvariant          : 1; // the argument is a constant, a local variable address or a static readonly field
     unsigned argIsLclVar             : 1; // the argument is a local variable
     unsigned argIsThis               : 1; // the argument is the 'this' pointer
     unsigned argHasSideEff           : 1; // the argument has side effects
@@ -659,6 +659,7 @@ struct InlArgInfo
     unsigned argIsByRefToStructLocal : 1; // Is this arg an address of a struct local or a normed struct local or a
                                           // field in them?
     unsigned argIsExact : 1;              // Is this arg of an exact class?
+    unsigned argIsConstant : 1;           // the argument is a constant or a local variable address
 };
 
 // InlLclVarInfo describes inline candidate argument and local variable properties.
