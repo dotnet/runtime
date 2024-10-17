@@ -7,7 +7,7 @@ using Microsoft.Extensions.FileProviders;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Extension methods for <see cref="FileConfigurationProvider"/>.
+    /// Provides extension methods for <see cref="FileConfigurationProvider"/>.
     /// </summary>
     public static class FileConfigurationExtensions
     {

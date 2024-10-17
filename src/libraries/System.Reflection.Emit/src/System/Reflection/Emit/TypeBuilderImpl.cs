@@ -326,7 +326,7 @@ namespace System.Reflection.Emit
             {
                 if (im.Exists(pair => pair.ifaceMethod.Equals(methodInfoDeclaration)))
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_MethodOverriden, methodInfoBody.Name, FullName), nameof(methodInfoDeclaration));
+                    throw new ArgumentException(SR.Format(SR.Argument_MethodOverridden, methodInfoBody.Name, FullName), nameof(methodInfoDeclaration));
                 }
 
                 im.Add((methodInfoDeclaration, methodInfoBody));

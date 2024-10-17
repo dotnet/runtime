@@ -30,7 +30,7 @@
         ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
         ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         x2, x2, x12
-        ldr         x13, [x1, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         x13, [x1, #OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         cmp         x2, x13
         bhi         RhpNewFast_RarePath
 
@@ -118,7 +118,7 @@ NewOutOfMemory
         ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
         ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         x2, x2, x12
-        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         x12, [x3, #OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         cmp         x2, x12
         bhi         RhpNewArrayRare
 
@@ -179,7 +179,7 @@ StringSizeOverflow
         ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
         ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         x2, x2, x12
-        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         x12, [x3, #OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         cmp         x2, x12
         bhi         RhpNewArrayRare
 

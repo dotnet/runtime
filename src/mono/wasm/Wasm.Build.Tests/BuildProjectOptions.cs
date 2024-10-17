@@ -13,7 +13,7 @@ public record BuildProjectOptions
     Action?             InitProject               = null,
     bool?               DotnetWasmFromRuntimePack = null,
     GlobalizationMode   GlobalizationMode         = GlobalizationMode.Sharded,
-    string?             PredefinedIcudt           = null,
+    string?             CustomIcuFile             = null,
     bool                UseCache                  = true,
     bool                ExpectSuccess             = true,
     bool                AssertAppBundle           = true,
