@@ -27,4 +27,6 @@ target_link_libraries(minipal PRIVATE minipal_objects)
 
 add_library(minipal_sanitizer_support OBJECT
     sansupport.c)
-set_target_properties(minipal_sanitizer_support PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
+# Exclude this target from the default build as we may not have sanitzer headers available
+# in a non-sanitized build.
+set_target_properties(minipal_sanitizer_support PROPERTIES EXCLUDE_FROM_ALL ON)
