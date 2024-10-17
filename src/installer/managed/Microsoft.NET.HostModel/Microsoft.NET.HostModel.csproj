@@ -23,6 +23,7 @@
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
     <!-- The SDK distributes the live version of Json we can't reference that https://github.com/dotnet/runtime/issues/108262 -->
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,5 +36,12 @@
     <Compile Include="$(CoreClrProjectRoot)tools\Common\System\Collections\Generic\ArrayBuilder.cs" Link="Common\ArrayBuilder.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- <ProjectReference
+      Include="..\Microsoft.NET.HostModel.MachO.BinaryFormat.Generator\Microsoft.NET.HostModel.MachO.BinaryFormat.Generator.csproj"
+      PrivateAssets="all"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false" /> -->
+  </ItemGroup>
 
 </Project>
