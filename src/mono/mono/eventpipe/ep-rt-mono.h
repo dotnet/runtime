@@ -18,7 +18,6 @@
 #include <mono/utils/mono-coop-mutex.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-time.h>
-#include <mono/utils/mono-rand.h>
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/w32api.h>
 #include <mono/metadata/assembly.h>
