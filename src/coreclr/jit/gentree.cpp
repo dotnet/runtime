@@ -20981,6 +20981,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
 #if defined(TARGET_XARCH)
         case GT_RSZ:
+        case GT_LSH:
         {
             // We don't have actual instructions for shifting bytes, so we'll emulate them
             // by shifting 32-bit values and masking off the bits that should be zeroed.
@@ -20996,7 +20997,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             if (op2->IsCnsIntOrI())
             {
                 ssize_t shiftCount = op2->AsIntCon()->gtIconVal;
-                ssize_t mask       = 255 >> shiftCount;
+                ssize_t mask       = op == GT_RSZ ? (255 >> shiftCount) : ((255 << shiftCount) & 0xFF);
 
                 maskAmountOp = gtNewIconNode(mask, type);
             }
@@ -21005,7 +21006,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 assert(op2->OperIsHWIntrinsic(NI_Vector128_CreateScalar));
 
                 GenTree* nonConstantByteShiftCountOp = fgMakeMultiUse(&op2->AsHWIntrinsic()->Op(1));
-                maskAmountOp = gtNewOperNode(GT_RSZ, TYP_INT, gtNewIconNode(255), nonConstantByteShiftCountOp);
+                maskAmountOp = gtNewOperNode(op, TYP_INT, gtNewIconNode(255), nonConstantByteShiftCountOp);
             }
 
             GenTree* shiftOp = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, CORINFO_TYPE_INT, simdSize);

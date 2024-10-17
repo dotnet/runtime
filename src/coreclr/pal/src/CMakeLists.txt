@@ -252,6 +252,9 @@ if(CLR_CMAKE_TARGET_LINUX)
   add_library(tracepointprovider OBJECT misc/tracepointprovider.cpp)
 endif(CLR_CMAKE_TARGET_LINUX)
 
+add_library(minipal_debugger STATIC ${CLR_SRC_NATIVE_DIR}/minipal/debugger.c)
+target_link_libraries(coreclrpal PRIVATE minipal_debugger)
+
 if(CLR_CMAKE_TARGET_OSX)
   find_library(COREFOUNDATION CoreFoundation)
   find_library(CORESERVICES CoreServices)

@@ -151,7 +151,7 @@ int32_t AppleCryptoNative_X509GetRawData(SecCertificateRef cert, CFDataRef* ppDa
     }
 
     *ppDataOut = SecCertificateCopyData(cert);
-    *pOSStatus = *ppDataOut == NULL ? errSecParam : noErr;
+    *pOSStatus = *ppDataOut == NULL ? errSecParam : (OSStatus)noErr;
     return (*pOSStatus == noErr);
 }
 

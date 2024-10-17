@@ -14,9 +14,8 @@ public class TestMainJsProjectProvider : ProjectProviderBase
 {
     public TestMainJsProjectProvider(ITestOutputHelper _testOutput, string? _projectDir = null)
             : base(_testOutput, _projectDir)
-    {
-        BundleDirName = "AppBundle";
-    }
+    { }
+    protected override string BundleDirName { get { return "AppBundle"; } }
 
     // no fingerprinting
     protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptionsBase assertOptions)
@@ -112,9 +111,9 @@ public class TestMainJsProjectProvider : ProjectProviderBase
         AssertBundle(assertOptions);
     }
 
-    public override string FindBinFrameworkDir(string config, bool forPublish, string framework, string? bundleDirName = null, string? projectDir = null)
+    public override string FindBinFrameworkDir(string config, bool forPublish, string framework, string? projectDir = null)
     {
         EnsureProjectDirIsSet();
-        return Path.Combine(projectDir ?? ProjectDir!, "bin", config, framework, "browser-wasm", bundleDirName ?? this.BundleDirName, "_framework");
+        return Path.Combine(projectDir ?? ProjectDir!, "bin", config, framework, "browser-wasm", BundleDirName, "_framework");
     }
 }
