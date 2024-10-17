@@ -204,6 +204,13 @@ struct VarScopeDsc
 #endif
 };
 
+enum BarrierKind
+{
+    BARRIER_FULL,       // full barrier
+    BARRIER_LOAD_ONLY,  // load barrier
+    BARRIER_STORE_ONLY, // store barrier
+};
+
 // This class stores information associated with a LclVar SSA definition.
 class LclSsaVarDsc
 {
@@ -3455,7 +3462,7 @@ public:
 #endif
 #endif // FEATURE_HW_INTRINSICS
 
-    GenTree* gtNewMemoryBarrier(bool loadOnly = false);
+    GenTree* gtNewMemoryBarrier(BarrierKind barrierKind);
 
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
