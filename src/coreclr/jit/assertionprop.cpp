@@ -3102,18 +3102,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
 
         // Were able to optimize.
         conValTree->gtVNPair = vnPair;
-        GenTree* sideEffList = optExtractSideEffListFromConst(tree);
-        if (sideEffList != nullptr)
-        {
-            // Replace as COMMA(side_effects, const value tree);
-            assert((sideEffList->gtFlags & GTF_SIDE_EFFECT) != 0);
-            return gtNewOperNode(GT_COMMA, conValTree->TypeGet(), sideEffList, conValTree);
-        }
-        else
-        {
-            // No side effects, replace as const value tree.
-            return conValTree;
-        }
+        return gtWrapWithSideEffects(conValTree, tree);
     }
     else
     {
