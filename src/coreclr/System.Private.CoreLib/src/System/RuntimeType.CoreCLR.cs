@@ -3914,7 +3914,16 @@ namespace System
                     Array.Resize(ref cons, consCount);
                 }
 
-                MethodBase? invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null, out object? state);
+                MethodBase? invokeMethod;
+                try
+                {
+                    invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null, out object? state);
+                }
+                catch (MissingMethodException mme) // Should we catch all exceptions?
+                {
+                    throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName), mme);
+                }
+
                 if (invokeMethod is null)
                 {
                     throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName));
