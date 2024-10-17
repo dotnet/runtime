@@ -1028,6 +1028,8 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
 
 VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc = NULL);
+bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);
+bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum);
 
 void *GenFastGetSharedStaticBase(bool bCheckCCtor);
 
