@@ -411,6 +411,7 @@ public:
     virtual HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef) = 0;
     virtual HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult) = 0;
     virtual void MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count) = 0;
+    virtual void ExternalMethodFixupNextStep(PCODE address) = 0;
 #endif //DACCESS_COMPILE
 };
 
