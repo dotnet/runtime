@@ -71,9 +71,6 @@ target_link_libraries(
     "-L/usr/lib/swift"
     "-lswiftCore"
     "-lswiftFoundation"
-    "libbrotlienc.a"
-    "libbrotlidec.a"
-    "libbrotlicommon.a"
     %NativeLibrariesToLink%
     %APP_LINK_LIBRARIES%
 )
