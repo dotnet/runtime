@@ -25698,7 +25698,7 @@ void gc_heap::calculate_new_heap_count ()
 
                     dprintf (6666, ("we want to grow but DATAS is limiting, trigger a gen2 right away"));
 #ifdef BACKGROUND_GC
-                    if (background_running_p())
+                    if (is_bgc_in_progress())
                     {
                         trigger_initial_gen2_p = false;
                     }
@@ -37858,7 +37858,14 @@ void gc_heap::allow_fgc()
 
 BOOL gc_heap::is_bgc_in_progress()
 {
-    return (background_running_p() || (current_bgc_state == bgc_initialized));
+#ifdef MULTIPLE_HEAPS
+    // All heaps are changed to/from the bgc_initialized state during the VM suspension at the start of BGC,
+    // so checking any heap will work.
+    gc_heap* hp = g_heaps[0];
+#else
+    gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+    return (background_running_p() || (hp->current_bgc_state == bgc_initialized));
 }
 
 void gc_heap::clear_commit_flag()
