@@ -250,7 +250,7 @@ private:
     };
 
     // cDAC accesses fields via ILCodeVersioningState.m_activeVersion
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ILCodeVersioningState>;
 };
 
 class NativeCodeVersionNode
@@ -319,7 +319,7 @@ private:
     };
     DWORD m_flags;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<NativeCodeVersionNode>;
 };
 
 template<>
@@ -486,7 +486,7 @@ private:
     NativeCodeVersionId m_nextId;
     PTR_NativeCodeVersionNode m_pFirstVersionNode;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<MethodDescVersioningState>;
 };
 
 template<>
@@ -527,7 +527,7 @@ private:
     PTR_Module m_pModule;
     mdMethodDef m_methodDef;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ILCodeVersioningState>;
 };
 
 template<>
