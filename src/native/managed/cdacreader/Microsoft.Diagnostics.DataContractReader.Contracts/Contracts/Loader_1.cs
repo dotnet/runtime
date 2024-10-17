@@ -73,7 +73,7 @@ internal readonly struct Loader_1 : ILoader
 
     TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
     {
-        uint rid = Constants.EcmaMetadata.GetRowId(token);
+        uint rid = EcmaMetadataUtils.GetRowId(token);
         ArgumentOutOfRangeException.ThrowIfZero(rid);
         flags = new TargetNUInt(0);
         if (table == TargetPointer.Null)
