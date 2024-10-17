@@ -3,7 +3,7 @@
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
     <GenerateRestoreUseStaticGraphEvaluationBinlog>true</GenerateRestoreUseStaticGraphEvaluationBinlog>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(RestoreToolsetOnly)' != 'true'">
     <ProjectToBuild Include="$(RepoRoot)Build.proj" />
   </ItemGroup>
 </Project>
