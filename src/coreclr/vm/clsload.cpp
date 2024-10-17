@@ -2891,7 +2891,7 @@ void ClassLoader::Notify(TypeHandle typeHnd)
         if (CORDebuggerAttached())
         {
             LOG((LF_CORDB, LL_EVERYTHING, "NotifyDebuggerLoad clsload 2239 class %s\n", pMT->GetDebugClassName()));
-            typeHnd.NotifyDebuggerLoad(NULL, FALSE);
+            typeHnd.NotifyDebuggerLoad(FALSE);
         }
 #endif // DEBUGGING_SUPPORTED
     }

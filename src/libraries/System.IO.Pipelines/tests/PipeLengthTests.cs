@@ -221,24 +221,6 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task ExaminedLessThanBeforeThrows()
-        {
-            _pipe.Writer.WriteEmpty(10);
-            await _pipe.Writer.FlushAsync();
-
-            ReadResult result = await _pipe.Reader.ReadAsync();
-            _pipe.Reader.AdvanceTo(result.Buffer.Start, result.Buffer.End);
-
-            Assert.Equal(0, _pipe.Length);
-
-            _pipe.Writer.WriteEmpty(10);
-            await _pipe.Writer.FlushAsync();
-
-            result = await _pipe.Reader.ReadAsync();
-            Assert.Throws<InvalidOperationException>(() => _pipe.Reader.AdvanceTo(result.Buffer.Start, result.Buffer.Start));
-        }
-
-        [Fact]
         public async Task ConsumedGreaterThanExaminedThrows()
         {
             _pipe.Writer.WriteEmpty(10);
@@ -284,10 +266,10 @@ namespace System.IO.Pipelines.Tests
             Memory<byte> buffer = new byte[26];
             Pipe pipe = new(new PipeOptions(minimumSegmentSize: 1));
 
-            var mem = pipe.Writer.GetMemory(14)[..14];
-            buffer[..14].CopyTo(mem);
+            var mem = pipe.Writer.GetMemory(14).Slice(0, 14);
+            buffer.Slice(0, 14).CopyTo(mem);
             pipe.Writer.Advance(14);
-            await pipe.Writer.WriteAsync(buffer[14..]);
+            await pipe.Writer.WriteAsync(buffer.Slice(14));
             ReadResult res = await pipe.Reader.ReadAsync();
             Assert.Equal(res.Buffer.Length, buffer.Length);
         }

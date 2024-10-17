@@ -51,7 +51,7 @@ class ThreadExceptionState
     // ExceptionTracker or the ExInfo as appropriate for the platform
     friend class ProfToEEInterfaceImpl;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<Thread>;
 
 #ifdef FEATURE_EH_FUNCLETS
     friend class ExceptionTracker;

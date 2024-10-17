@@ -3797,8 +3797,8 @@ void MethodTable::CheckRunClassInitThrowing()
     // To find GC hole easier...
     TRIGGERSGC();
 
-    // Don't initialize shared generic instantiations (e.g. MyClass<__Canon>)
-    if (IsSharedByGenericInstantiations())
+    // Don't initialize shared generic instantiations (e.g. MyClass<__Canon>), or an already initialized MethodTable
+    if (IsClassInited() || IsSharedByGenericInstantiations())
         return;
 
     _ASSERTE(!ContainsGenericVariables());
@@ -3903,7 +3903,11 @@ void MethodTable::EnsureTlsIndexAllocated()
     CONTRACTL_END;
 
     PTR_MethodTableAuxiliaryData pAuxiliaryData = GetAuxiliaryDataForWrite();
-    if (!pAuxiliaryData->IsTlsIndexAllocated() && GetNumThreadStaticFields() > 0)
+
+    if (pAuxiliaryData->IsTlsIndexAllocated())
+        return;
+
+    if (GetNumThreadStaticFields() > 0)
     {
         ThreadStaticsInfo *pThreadStaticsInfo = MethodTableAuxiliaryData::GetThreadStaticsInfo(GetAuxiliaryDataForWrite());
         // Allocate space for normal statics if we might have them
@@ -6009,7 +6013,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     GuidInfo *pInfo = GetClass()->GetGuidInfo();
 
     // First check to see if we have already cached the guid for this type.
-    // We currently only cache guids on interfaces and WinRT delegates.
+    // We currently only cache guids on interfaces.
     // In classic mode, though, ensure we don't retrieve the GuidInfo for redirected interfaces
     if ((IsInterface()) && pInfo != NULL
         && (!bClassic))

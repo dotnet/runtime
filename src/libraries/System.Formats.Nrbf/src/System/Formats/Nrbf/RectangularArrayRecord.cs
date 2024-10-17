@@ -8,6 +8,7 @@ using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Formats.Nrbf.Utils;
+using System.Diagnostics;
 
 namespace System.Formats.Nrbf;
 
@@ -55,10 +56,12 @@ internal sealed class RectangularArrayRecord : ArrayRecord
 
 #if !NET8_0_OR_GREATER
         int[] indices = new int[_lengths.Length];
+        nuint numElementsWritten = 0; // only for debugging; not used in release builds
 
         foreach (object value in _values)
         {
             result.SetValue(GetActualValue(value), indices);
+            numElementsWritten++;
 
             int dimension = indices.Length - 1;
             while (dimension >= 0)
@@ -77,6 +80,9 @@ internal sealed class RectangularArrayRecord : ArrayRecord
                 break;
             }
         }
+
+        Debug.Assert(numElementsWritten == (uint)_values.Count, "We should have traversed the entirety of the source values collection.");
+        Debug.Assert(numElementsWritten == (ulong)result.LongLength, "We should have traversed the entirety of the destination array.");
 
         return result;
 #else
@@ -118,6 +124,8 @@ internal sealed class RectangularArrayRecord : ArrayRecord
                 targetElement = (T)GetActualValue(value)!;
                 flattenedIndex++;
             }
+
+            Debug.Assert(flattenedIndex == (ulong)array.LongLength, "We should have traversed the entirety of the array.");
         }
 #endif
     }
@@ -158,7 +166,7 @@ internal sealed class RectangularArrayRecord : ArrayRecord
                 PrimitiveType.Boolean => sizeof(bool),
                 PrimitiveType.Byte => sizeof(byte),
                 PrimitiveType.SByte => sizeof(sbyte),
-                PrimitiveType.Char => sizeof(byte), // it's UTF8
+                PrimitiveType.Char => sizeof(byte), // it's UTF8 (see comment below)
                 PrimitiveType.Int16 => sizeof(short),
                 PrimitiveType.UInt16 => sizeof(ushort),
                 PrimitiveType.Int32 => sizeof(int),
@@ -175,7 +183,21 @@ internal sealed class RectangularArrayRecord : ArrayRecord
 
             if (sizeOfSingleValue > 0)
             {
-                long size = arrayInfo.TotalElementsCount * sizeOfSingleValue;
+                // NRBF encodes rectangular char[,,,...] by converting each standalone UTF-16 code point into
+                // its UTF-8 encoding. This means that surrogate code points (including adjacent surrogate
+                // pairs) occurring within a char[,,,...] cannot be encoded by NRBF. BinaryReader will detect
+                // that they're ill-formed and reject them on read.
+                //
+                // Per the comment in ArraySinglePrimitiveRecord.DecodePrimitiveTypes, we'll assume best-case
+                // encoding where 1 UTF-16 char encodes as a single UTF-8 byte, even though this might lead
+                // to encountering an EOF if we realize later that we actually need to read more bytes in
+                // order to fully populate the char[,,,...] array. Any such allocation is still linearly
+                // proportional to the length of the incoming payload, so it's not a DoS vector.
+                // The multiplication below is guaranteed not to overflow because FlattenedLength is bounded
+                // to <= Array.MaxLength (see BinaryArrayRecord.Decode) and sizeOfSingleValue is at most 8.
+                Debug.Assert(arrayInfo.FlattenedLength >= 0 && arrayInfo.FlattenedLength <= long.MaxValue / sizeOfSingleValue);
+
+                long size = arrayInfo.FlattenedLength * sizeOfSingleValue;
                 bool? isDataAvailable = reader.IsDataAvailable(size);
                 if (isDataAvailable.HasValue)
                 {

@@ -4,7 +4,7 @@
 namespace Microsoft.Extensions.Caching.Memory
 {
     /// <summary>
-    /// Specify the reasons why an entry was evicted from the cache.
+    /// Specifies the reasons why an entry was evicted from the cache.
     /// </summary>
     public enum EvictionReason
     {

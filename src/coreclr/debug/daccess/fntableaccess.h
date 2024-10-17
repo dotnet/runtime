@@ -11,13 +11,6 @@
 #define _FN_TABLE_ACCESS_H
 
 
-#if !defined(TARGET_X86)
-
-#ifndef TARGET_UNIX
-#define DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
-#endif // !TARGET_UNIX
-#endif
-
 struct FakeEEJitManager
 {
     LPVOID      __VFN_table;
@@ -71,40 +64,6 @@ typedef struct _FakeHpCodeHdr
 
 #define FAKE_STUB_CODE_BLOCK_LAST 0xF
 
-#ifdef DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
-
-struct FakeStubUnwindInfoHeaderSuffix
-{
-    UCHAR nUnwindInfoSize;
-};
-
-// Variable-sized struct that precedes a Stub when the stub requires unwind
-// information.  Followed by a StubUnwindInfoHeaderSuffix.
-struct FakeStubUnwindInfoHeader
-{
-    FakeStubUnwindInfoHeader *pNext;
-    T_RUNTIME_FUNCTION FunctionEntry;
-    UNWIND_INFO UnwindInfo;  // variable length
-};
-
-// List of stub address ranges, in increasing address order.
-struct FakeStubUnwindInfoHeapSegment
-{
-    PBYTE pbBaseAddress;
-    SIZE_T cbSegment;
-    FakeStubUnwindInfoHeader *pUnwindHeaderList;
-    FakeStubUnwindInfoHeapSegment *pNext;
-};
-
-#endif // DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
-
-
-enum FakeEEDynamicFunctionTableType
-{
-    FAKEDYNFNTABLE_JIT = 0,
-    FAKEDYNFNTABLE_STUB = 1,
-};
-
 
 #ifdef CHECK_DUPLICATED_STRUCT_LAYOUTS
 
@@ -130,28 +89,8 @@ class CheckDuplicatedStructLayouts
     CHECK_OFFSET(RealCodeHeader,    unwindInfos);
 #endif  // !TARGET_X86
 
-#ifdef DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
-    CHECK_OFFSET(StubUnwindInfoHeader, pNext);
-
-    CHECK_OFFSET(StubUnwindInfoHeapSegment, pbBaseAddress);
-    CHECK_OFFSET(StubUnwindInfoHeapSegment, cbSegment);
-    CHECK_OFFSET(StubUnwindInfoHeapSegment, pUnwindHeaderList);
-    CHECK_OFFSET(StubUnwindInfoHeapSegment, pNext);
-
-#endif // DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
-
 #undef CHECK_OFFSET
 };
-
-#ifdef DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
-
-static_assert_no_msg(   FAKEDYNFNTABLE_JIT
-         ==     DYNFNTABLE_JIT);
-
-static_assert_no_msg(   FAKEDYNFNTABLE_STUB
-         ==     DYNFNTABLE_STUB);
-
-#endif // DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
 
 #else // CHECK_DUPLICATED_STRUCT_LAYOUTS
 

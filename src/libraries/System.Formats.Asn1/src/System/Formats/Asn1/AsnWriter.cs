@@ -52,7 +52,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Create a new <see cref="AsnWriter"/> with a given set of encoding rules and an initial capacity.
+        ///   Initializes a new instance of <see cref="AsnWriter" /> with a given set of encoding rules and an initial capacity.
         /// </summary>
         /// <param name="ruleSet">The encoding constraints for the writer.</param>
         /// <param name="initialCapacity">The minimum capacity with which to initialize the underlying buffer.</param>
@@ -828,6 +828,14 @@ namespace System.Formats.Asn1
             public static bool operator !=(StackFrame left, StackFrame right) => !left.Equals(right);
         }
 
+        /// <summary>
+        ///   Represents a pushed ASN.1 scope.
+        /// </summary>
+        /// <remarks>
+        ///   Instances of this type are expected to be created from a <c>Push</c> member on <see cref="AsnWriter"/>,
+        ///   not instantiated directly.
+        ///   Calling <see cref="Dispose" /> will call the corresponding <c>Pop</c> associated with the <c>Push</c>.
+        /// </remarks>
         public readonly struct Scope : IDisposable
         {
             private readonly AsnWriter _writer;
@@ -843,6 +851,12 @@ namespace System.Formats.Asn1
                 _depth = _writer._nestingStack.Count;
             }
 
+            /// <summary>
+            ///   Pops the ASN.1 scope.
+            /// </summary>
+            /// <exception cref="InvalidOperationException">
+            ///   A scope was pushed within this scope, but has yet to be popped.
+            /// </exception>
             public void Dispose()
             {
                 Debug.Assert(_writer == null || _writer._nestingStack != null);

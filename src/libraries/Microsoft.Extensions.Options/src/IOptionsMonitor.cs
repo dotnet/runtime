@@ -7,13 +7,13 @@ using System.Diagnostics.CodeAnalysis;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Used for notifications when <typeparamref name="TOptions"/> instances change.
+    /// Monitors changes on a <typeparamref name="TOptions"/> instance.
     /// </summary>
     /// <typeparam name="TOptions">The options type.</typeparam>
     public interface IOptionsMonitor<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] out TOptions>
     {
         /// <summary>
-        /// Returns the current <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
+        /// Gets the current <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
         /// </summary>
         TOptions CurrentValue { get; }
 

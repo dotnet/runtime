@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.X509Certificates
             return new AppleX509Pal();
         }
 
-        private sealed partial class AppleX509Pal : ManagedX509ExtensionProcessor, IX509Pal
+        private sealed partial class AppleX509Pal : IX509Pal
         {
             public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters,
                 ICertificatePal? certificatePal)

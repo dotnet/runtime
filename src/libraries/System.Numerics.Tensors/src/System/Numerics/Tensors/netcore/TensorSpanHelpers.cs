@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System.Numerics.Tensors
@@ -193,7 +190,8 @@ namespace System.Numerics.Tensors
 
         public static void ValidateStrides(ReadOnlySpan<nint> strides, ReadOnlySpan<nint> lengths)
         {
-            Debug.Assert(strides.Length == lengths.Length);
+            if (strides.Length != lengths.Length)
+                ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
 
             if (strides.Length == 0)
                 return;

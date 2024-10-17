@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: JITinterface.CPP
-//
-
 // ===========================================================================
 
 #include "common.h"
@@ -8558,10 +8557,12 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
     // Initialize OUT fields
     info->devirtualizedMethod = NULL;
-    info->requiresInstMethodTableArg = false;
     info->exactContext = NULL;
+    info->detail = CORINFO_DEVIRTUALIZATION_UNKNOWN;
     memset(&info->resolvedTokenDevirtualizedMethod, 0, sizeof(info->resolvedTokenDevirtualizedMethod));
     memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
+    info->requiresInstMethodTableArg = false;
+    info->wasArrayInterfaceDevirt = false;
 
     MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
@@ -8609,7 +8610,27 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         //
         // We must ensure that pObjMT actually implements the
         // interface corresponding to pBaseMD.
-        if (!pObjMT->CanCastToInterface(pBaseMT))
+        //
+        if (pObjMT->IsArray())
+        {
+            // If we're in a shared context we'll devirt to a shared
+            // generic method and won't be able to inline, so just bail.
+            //
+            if (pBaseMT->IsSharedByGenericInstantiations())
+            {
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
+
+            // Ensure we can cast the array to the interface type
+            //
+            if (!TypeHandle(pObjMT).CanCastTo(TypeHandle(pBaseMT)))
+            {
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
+                return false;
+            }
+        }
+        else if (!pObjMT->CanCastToInterface(pBaseMT))
         {
             info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
             return false;
@@ -8719,8 +8740,12 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     // We may fail to get an exact context if the method is a default
     // interface method. If so, we'll use the method's class.
     //
+    // For array -> interface devirt, the devirtualized methods
+    // will be defined by SZArrayHelper.
+    //
     MethodTable* pApproxMT = pDevirtMD->GetMethodTable();
     MethodTable* pExactMT = pApproxMT;
+    bool isArray = false;
 
     if (pApproxMT->IsInterface())
     {
@@ -8728,6 +8753,10 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // with default methods.
         _ASSERTE(!pDevirtMD->HasClassInstantiation());
 
+    }
+    else if (pBaseMT->IsInterface() && pObjMT->IsArray())
+    {
+        isArray = true;
     }
     else
     {
@@ -8737,8 +8766,20 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     // Success! Pass back the results.
     //
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
-    info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
-    info->requiresInstMethodTableArg = false;
+
+    if (isArray)
+    {
+        info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
+        info->requiresInstMethodTableArg = pDevirtMD->RequiresInstMethodTableArg();
+        info->wasArrayInterfaceDevirt = true;
+    }
+    else
+    {
+        info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
+        info->requiresInstMethodTableArg = false;
+        info->wasArrayInterfaceDevirt = false;
+    }
+
     info->detail = CORINFO_DEVIRTUALIZATION_SUCCESS;
 
     return true;
@@ -8948,6 +8989,44 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     // Default case
     TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__OBJECT_EQUALITYCOMPARER)).Instantiate(inst);
 
+    return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
+}
+
+/*********************************************************************/
+CORINFO_CLASS_HANDLE CEEInfo::getSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE elemType)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    result = getSZArrayHelperEnumeratorClassHelper(elemType);
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+CORINFO_CLASS_HANDLE CEEInfo::getSZArrayHelperEnumeratorClassHelper(CORINFO_CLASS_HANDLE elemType)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    // Mirrors the logic in BCL's SZArrayHelper::GetEnumerator
+    TypeHandle elemTypeHnd(elemType);
+
+    // We need to find the appropriate instantiation.
+    Instantiation inst(&elemTypeHnd, 1);
+
+    TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__SZGENERICARRAYENUMERATOR)).Instantiate(inst);
     return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
 }
 
@@ -9459,7 +9538,17 @@ CorInfoTypeWithMod CEEInfo::getArgType (
         FALLTHROUGH;
 
     case ELEMENT_TYPE_BYREF:
-        IfFailThrow(ptr.GetElemType(NULL));
+        // PeekElemTypeClosed above normalized ELEMENT_TYPE_INTERNAL back to the underlying type handle's signature representation.
+        // This normalization can also occur for generic instantiatations, but we don't support pointer or byref types
+        // as generic arguments.
+        // All of the element types that can be normalized above can't have custom modifiers embedded in this location,
+        // so we don't need to check for them here.
+        CorElementType nonNormalizedType;
+        IfFailThrow(ptr.GetElemType(&nonNormalizedType));
+        if (type != nonNormalizedType)
+        {
+            break;
+        }
         if (ptr.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
             ptr.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD))
         {
@@ -13971,7 +14060,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                         methodNameImplCompiler.GetUTF8());
 
                     _ASSERTE_MSG(false, fatalErrorString.GetUTF8());
-                    _ASSERTE(!IsDebuggerPresent() && "Stop on assert here instead of fatal error for ease of live debugging");
+                    _ASSERTE(!minipal_is_native_debugger_present() && "Stop on assert here instead of fatal error for ease of live debugging");
 
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
                     return FALSE;
@@ -14118,7 +14207,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                         );
 
                     _ASSERTE_MSG(false, fatalErrorString.GetUTF8());
-                    _ASSERTE(!IsDebuggerPresent() && "Stop on assert here instead of fatal error for ease of live debugging");
+                    _ASSERTE(!minipal_is_native_debugger_present() && "Stop on assert here instead of fatal error for ease of live debugging");
 
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
                     return FALSE;

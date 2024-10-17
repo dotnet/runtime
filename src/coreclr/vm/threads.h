@@ -294,10 +294,6 @@ const CLONE_QUEUE_USER_APC_FLAGS SpecialUserModeApcWithContextFlags =
 //      void    DetachThread()          - the underlying logical thread is going
 //                                        away but we don't want to destroy it yet.
 //
-// Public functions for ASM code generators
-//
-//      Thread* __stdcall CreateThreadBlockThrow() - creates new Thread on reverse p-invoke
-//
 // Public functions for one-time init/cleanup
 //
 //      void InitThreadManager()      - onetime init
@@ -336,8 +332,6 @@ Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags = SUTF_Default);
 void    DestroyThread(Thread *th);
 
 DWORD GetRuntimeId();
-
-EXTERN_C Thread* WINAPI CreateThreadBlockThrow();
 
 #define CREATETHREAD_IF_NULL_FAILFAST(__thread, __msg)                  \
 {                                                                       \
@@ -447,7 +441,7 @@ struct RuntimeThreadLocals
 {
     // on MP systems, each thread has its own allocation chunk so we can avoid
     // lock prefixes and expensive MP cache snooping stuff
-    gc_alloc_context alloc_context;
+    ee_alloc_context alloc_context;
 };
 
 #ifdef _MSC_VER
@@ -959,7 +953,25 @@ public:
 public:
     inline void InitRuntimeThreadLocals() { LIMITED_METHOD_CONTRACT; m_pRuntimeThreadLocals = PTR_RuntimeThreadLocals(&t_runtime_thread_locals); }
 
-    inline PTR_gc_alloc_context GetAllocContext() { LIMITED_METHOD_CONTRACT; return PTR_gc_alloc_context(&m_pRuntimeThreadLocals->alloc_context); }
+    inline ee_alloc_context* GetEEAllocContext()
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (m_pRuntimeThreadLocals == nullptr)
+        {
+            return nullptr;
+        }
+        return &m_pRuntimeThreadLocals->alloc_context;
+    }
+
+    inline gc_alloc_context* GetAllocContext()
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (m_pRuntimeThreadLocals == nullptr)
+        {
+            return nullptr;
+        }
+        return &m_pRuntimeThreadLocals->alloc_context.m_GCAllocContext;
+    }
 
     // This is the type handle of the first object in the alloc context at the time
     // we fire the AllocationTick event. It's only for tooling purpose.
@@ -2158,8 +2170,7 @@ public:
     enum ApartmentState { AS_InSTA, AS_InMTA, AS_Unknown };
 
     ApartmentState GetApartment();
-    ApartmentState GetApartmentRare(Thread::ApartmentState as);
-    ApartmentState GetExplicitApartment();
+    ApartmentState GetApartmentFromOS();
 
     // Sets the apartment state if it has not already been set and
     // returns the state.
@@ -2170,6 +2181,10 @@ public:
     // call CoInitializeEx on this thread first (note that calls to SetApartment made
     // before the thread has started are guaranteed to succeed).
     ApartmentState SetApartment(ApartmentState state);
+
+    // Get/set apartment of a thread that was not started yet
+    ApartmentState GetApartmentOfUnstartedThread();
+    void SetApartmentOfUnstartedThread(ApartmentState state);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
     // Either perform WaitForSingleObject or MsgWaitForSingleObject as appropriate.
@@ -2420,7 +2435,7 @@ public:
     // These access the stack base and limit values for this thread. (They are cached during InitThread.) The
     // "stack base" is the "upper bound", i.e., where the stack starts growing from. (Main's call frame is at the
     // upper bound.) The "stack limit" is the "lower bound", i.e., how far the stack can grow down to.
-    // The "stack sufficient execution limit" is used by EnsureSufficientExecutionStack() to limit how much stack
+    // The "stack sufficient execution limit" is used by TryEnsureSufficientExecutionStack() to limit how much stack
     // should remain to execute the average Framework method.
     PTR_VOID GetCachedStackBase() {LIMITED_METHOD_DAC_CONTRACT;  return m_CacheStackBase; }
     PTR_VOID GetCachedStackLimit() {LIMITED_METHOD_DAC_CONTRACT;  return m_CacheStackLimit;}
@@ -3968,7 +3983,7 @@ private:
 private:
     bool m_hasPendingActivation;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<Thread>;
 };
 
 template<>
@@ -4250,7 +4265,7 @@ public:
     bool ShouldTriggerGCForDeadThreads();
     void TriggerGCForDeadThreadsIfNecessary();
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ThreadStore>;
 };
 
 template<>

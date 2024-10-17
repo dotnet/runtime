@@ -1741,9 +1741,8 @@ void Compiler::lvaClassifyParameterABI()
                 }
             }
 
-            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
             {
-                const ABIPassingSegment& segment = abiInfo.Segment(i);
                 if (segment.IsPassedInRegister())
                 {
                     argRegs |= segment.GetRegisterMask();
@@ -5959,9 +5958,8 @@ bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned l
 {
     const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
 
-    for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+    for (const ABIPassingSegment& segment : abiInfo.Segments())
     {
-        const ABIPassingSegment& segment = abiInfo.Segment(i);
         if (!segment.IsPassedOnStack())
         {
 #if defined(WINDOWS_AMD64_ABI)

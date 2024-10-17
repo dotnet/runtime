@@ -2,6 +2,7 @@ include(configure.cmake)
 
 set(SOURCES
     cpufeatures.c
+    debugger.c
     guid.c
     memory.c
     random.c
@@ -13,13 +14,15 @@ set(SOURCES
 )
 
 # Provide an object library for scenarios where we ship static libraries
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CLR_SRC_NATIVE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(minipal_objects OBJECT ${SOURCES})
-set_target_properties(minipal_objects PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
 
+# Add a copy of the minipal object library with interprocedural optimization disabled
+# for NativeAOT scenarios, where we ship static libraries that need to be able to be run with
+# a variety of toolchain versions, not only the exact one we built with.
 add_library(minipal_objects_no_lto OBJECT ${SOURCES})
-set_target_properties(minipal_objects_no_lto PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF CLR_CONTROL_FLOW_GUARD ON)
+set_target_properties(minipal_objects_no_lto PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
 # Provide a static library for our shared library and executable scenarios
 # for easier usability.
@@ -28,7 +31,8 @@ target_link_libraries(minipal PRIVATE minipal_objects)
 
 add_library(minipal_sanitizer_support OBJECT
     sansupport.c)
-set_target_properties(minipal_sanitizer_support PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
-
+# Exclude this target from the default build as we may not have sanitzer headers available
+# in a non-sanitized build.
+set_target_properties(minipal_sanitizer_support PROPERTIES EXCLUDE_FROM_ALL ON)
 
 add_subdirectory(com)

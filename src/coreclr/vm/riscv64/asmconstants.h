@@ -69,15 +69,6 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrD
 #define FpStruct__BothFloat           0b10
 ASMCONSTANTS_C_ASSERT(FpStruct__BothFloat == (int)FpStruct::BothFloat)
 
-#define                  CORINFO_NullReferenceException_ASM 0
-ASMCONSTANTS_C_ASSERT(   CORINFO_NullReferenceException_ASM
-                      == CORINFO_NullReferenceException);
-
-
-#define                  CORINFO_IndexOutOfRangeException_ASM 3
-ASMCONSTANTS_C_ASSERT(   CORINFO_IndexOutOfRangeException_ASM
-                      == CORINFO_IndexOutOfRangeException);
-
 
 // Offset of the array containing the address of captured registers in MachState
 #define MachState__captureCalleeSavedRegisters 0x0
@@ -101,12 +92,6 @@ ASMCONSTANTS_C_ASSERT(LazyMachState_captureIp == offsetof(LazyMachState, capture
 
 #define VASigCookie__pNDirectILStub 0x8
 ASMCONSTANTS_C_ASSERT(VASigCookie__pNDirectILStub == offsetof(VASigCookie, pNDirectILStub))
-
-#define DelegateObject___methodPtr      0x18
-ASMCONSTANTS_C_ASSERT(DelegateObject___methodPtr == offsetof(DelegateObject, _methodPtr));
-
-#define DelegateObject___target         0x08
-ASMCONSTANTS_C_ASSERT(DelegateObject___target == offsetof(DelegateObject, _target));
 
 #define SIZEOF__GSCookie 0x8
 ASMCONSTANTS_C_ASSERT(SIZEOF__GSCookie == sizeof(GSCookie));

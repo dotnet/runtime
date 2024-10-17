@@ -48,12 +48,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyParameterBytes")]
         private static partial int GetX509PublicKeyParameterBytes(SafeX509Handle x509, byte[]? buf, int cBuf);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509EkuFieldCount")]
-        internal static partial int GetX509EkuFieldCount(SafeEkuExtensionHandle eku);
-
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509EkuField")]
-        internal static partial IntPtr GetX509EkuField(SafeEkuExtensionHandle eku, int loc);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameInfo")]
         internal static partial SafeBioHandle GetX509NameInfo(SafeX509Handle x509, int nameType, [MarshalAs(UnmanagedType.Bool)] bool forIssuer);
 

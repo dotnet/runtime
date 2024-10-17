@@ -28,7 +28,7 @@ namespace System.Collections.Immutable
         /// </remarks>
         [DebuggerDisplay("Count = {Count}")]
         [DebuggerTypeProxy(typeof(ImmutableSortedSetBuilderDebuggerProxy<>))]
-        public sealed class Builder : ISortKeyCollection<T>, IReadOnlyCollection<T>, ISet<T>, ICollection
+        public sealed class Builder : IReadOnlyCollection<T>, ISet<T>, ICollection
         {
             /// <summary>
             /// The root of the binary tree that stores the collection.  Contents are typically not entirely frozen.

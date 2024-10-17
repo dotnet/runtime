@@ -15,7 +15,7 @@
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define EE_INTERFACE_MAJOR_VERSION 2
+#define EE_INTERFACE_MAJOR_VERSION 3
 
 struct ScanContext;
 struct gc_alloc_context;
@@ -29,14 +29,6 @@ typedef void enum_alloc_context_func(gc_alloc_context*, void*);
 
 // Callback passed to CreateBackgroundThread.
 typedef uint32_t (__stdcall *GCBackgroundThreadFunction)(void* param);
-
-// Struct often used as a parameter to callbacks.
-typedef struct
-{
-    promote_func*  f;
-    ScanContext*   sc;
-    CrawlFrame *   cf;
-} GCCONTEXT;
 
 // SUSPEND_REASON is the reason why the GC wishes to suspend the EE,
 // used as an argument to IGCToCLR::SuspendEE.

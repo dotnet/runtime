@@ -32,38 +32,8 @@
 #include "class.h"
 #include "stublink.inl"
 
-#ifdef FEATURE_COMINTEROP
-#include "comtoclrcall.h"
-#include "runtimecallablewrapper.h"
-#include "comcache.h"
-#include "olevariant.h"
-#endif // FEATURE_COMINTEROP
-
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-#include <psapi.h>
-#endif
-
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_COMINTEROP
-extern "C" HRESULT __cdecl StubRareDisableHR(Thread *pThread);
-#endif // FEATURE_COMINTEROP
-extern "C" VOID __cdecl StubRareDisableTHROW(Thread *pThread, Frame *pFrame);
-
-#if defined(TARGET_AMD64)
-#if defined(_DEBUG)
-extern "C" VOID __cdecl DebugCheckStubUnwindInfo();
-#endif // _DEBUG
-#endif // TARGET_AMD64
-
-#ifdef FEATURE_COMINTEROP
-// Use a type alias as MSVC has issues parsing the pointer, the calling convention, and the declspec
-// in the same signature.
-// Disable ASAN here as this method uses inline assembly and touches registers that ASAN uses.
-using ThreadPointer = Thread*;
-ThreadPointer DISABLE_ASAN __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame);
-#endif
-
 
 
 #ifdef TARGET_AMD64
@@ -869,7 +839,7 @@ VOID StubLinkerCPU::X86EmitMovRegSP(X86Reg destReg)
     X86EmitMovRegReg(destReg, kESP);
 }
 
-
+#ifdef TARGET_X86
 //---------------------------------------------------------------
 // Emits:
 //    PUSH <reg32>
@@ -878,31 +848,9 @@ VOID StubLinkerCPU::X86EmitPushReg(X86Reg reg)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    X86Reg origReg = reg;
-#endif
-
-#ifdef TARGET_AMD64
-    if (reg >= kR8)
-    {
-        Emit8(REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT | REX_OPCODE_REG_EXT);
-        reg = X86RegFromAMD64Reg(reg);
-    }
-#endif
     Emit8(static_cast<UINT8>(0x50 + reg));
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    if (IsPreservedReg(origReg))
-    {
-        UnwindPushedReg(origReg);
-    }
-    else
-#endif
-    {
-        Push(sizeof(void*));
-    }
+    Push(sizeof(void*));
 }
-
 
 //---------------------------------------------------------------
 // Emits:
@@ -911,14 +859,6 @@ VOID StubLinkerCPU::X86EmitPushReg(X86Reg reg)
 VOID StubLinkerCPU::X86EmitPopReg(X86Reg reg)
 {
     STANDARD_VM_CONTRACT;
-
-#ifdef TARGET_AMD64
-    if (reg >= kR8)
-    {
-        Emit8(REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT | REX_OPCODE_REG_EXT);
-        reg = X86RegFromAMD64Reg(reg);
-    }
-#endif // TARGET_AMD64
 
     Emit8(static_cast<UINT8>(0x58 + reg));
     Pop(sizeof(void*));
@@ -972,13 +912,9 @@ VOID StubLinkerCPU::X86EmitPushImmPtr(LPVOID value BIT64_ARG(X86Reg tmpReg /*=kR
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef TARGET_AMD64
-    X86EmitRegLoad(tmpReg, (UINT_PTR) value);
-    X86EmitPushReg(tmpReg);
-#else
     X86EmitPushImm32((UINT_PTR) value);
-#endif
 }
+#endif // TARGET_X86
 
 //---------------------------------------------------------------
 // Emits:
@@ -1120,56 +1056,6 @@ VOID StubLinkerCPU:: X86EmitCmpRegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32
 
 //---------------------------------------------------------------
 // Emits:
-#if defined(TARGET_AMD64)
-//  mov     rax, <target>
-//  add     rsp, imm32
-//  jmp     rax
-#else
-//  add     rsp, imm32
-//  jmp     <target>
-#endif
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitTailcallWithESPAdjust(CodeLabel *pTarget, INT32 imm32)
-{
-    STANDARD_VM_CONTRACT;
-
-#if defined(TARGET_AMD64)
-    EmitLabelRef(pTarget, reinterpret_cast<X64NearJumpSetup&>(gX64NearJumpSetup), 0);
-    X86EmitAddEsp(imm32);
-    EmitLabelRef(pTarget, reinterpret_cast<X64NearJumpExecute&>(gX64NearJumpExecute), 0);
-#else
-    X86EmitAddEsp(imm32);
-    X86EmitNearJump(pTarget);
-#endif
-}
-
-//---------------------------------------------------------------
-// Emits:
-#if defined(TARGET_AMD64)
-//  mov     rax, <target>
-//  pop     reg
-//  jmp     rax
-#else
-//  pop     reg
-//  jmp     <target>
-#endif
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitTailcallWithSinglePop(CodeLabel *pTarget, X86Reg reg)
-{
-    STANDARD_VM_CONTRACT;
-
-#if defined(TARGET_AMD64)
-    EmitLabelRef(pTarget, reinterpret_cast<X64NearJumpSetup&>(gX64NearJumpSetup), 0);
-    X86EmitPopReg(reg);
-    EmitLabelRef(pTarget, reinterpret_cast<X64NearJumpExecute&>(gX64NearJumpExecute), 0);
-#else
-    X86EmitPopReg(reg);
-    X86EmitNearJump(pTarget);
-#endif
-}
-
-//---------------------------------------------------------------
-// Emits:
 //    JMP <ofs8>   or
 //    JMP <ofs32}
 //---------------------------------------------------------------
@@ -1235,24 +1121,12 @@ VOID StubLinkerCPU::X86EmitReturn(WORD wArgBytes)
         Emit16(wArgBytes);
     }
 
+#ifdef TARGET_X86
     Pop(wArgBytes);
+#endif
 }
 
-#ifdef TARGET_AMD64
-//---------------------------------------------------------------
-// Emits:
-//    JMP <ofs8>   or
-//    JMP <ofs32}
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitLeaRIP(CodeLabel *target, X86Reg reg)
-{
-    STANDARD_VM_CONTRACT;
-    EmitLabelRef(target, reinterpret_cast<X64LeaRIP&>(gX64LeaRIP), reg);
-}
-#endif // TARGET_AMD64
-
-
-
+#ifdef TARGET_X86
 VOID StubLinkerCPU::X86EmitPushRegs(unsigned regSet)
 {
     STANDARD_VM_CONTRACT;
@@ -1273,6 +1147,7 @@ VOID StubLinkerCPU::X86EmitPopRegs(unsigned regSet)
         if (regSet & (1U<<r))
             X86EmitPopReg(r);
 }
+#endif // TARGET_X86
 
 
 //---------------------------------------------------------------
@@ -1308,38 +1183,7 @@ VOID StubLinkerCPU::X86EmitIndexRegStore(X86Reg dstreg,
         X86EmitOp(0x89, srcreg, (X86Reg)kESP_Unsafe,  ofs);
 }
 
-#if defined(TARGET_AMD64)
-//---------------------------------------------------------------
-// Emits:
-//    mov [RSP + <ofs>],<srcreg>
-//
-// It marks the instruction has 64bit so that the processor
-// performs a 8byte data move to a RSP based stack location.
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitIndexRegStoreRSP(int32_t ofs,
-                                         X86Reg srcreg)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitOp(0x89, srcreg, (X86Reg)kESP_Unsafe,  ofs, (X86Reg)0, 0, k64BitOp);
-}
-
-//---------------------------------------------------------------
-// Emits:
-//    mov [R12 + <ofs>],<srcreg>
-//
-// It marks the instruction has 64bit so that the processor
-// performs a 8byte data move to a R12 based stack location.
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitIndexRegStoreR12(int32_t ofs,
-                                         X86Reg srcreg)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitOp(0x89, srcreg, (X86Reg)kR12,  ofs, (X86Reg)0, 0, k64BitOp);
-}
-#endif // defined(TARGET_AMD64)
-
+#ifdef TARGET_X86
 //---------------------------------------------------------------
 // Emits:
 //    push dword ptr [<srcreg> + <ofs>]
@@ -1418,32 +1262,6 @@ VOID StubLinkerCPU::X86EmitIndexPop(X86Reg srcreg, int32_t ofs)
 
     Pop(sizeof(void*));
 }
-
-//---------------------------------------------------------------
-// Emits:
-//    lea <dstreg>, [<srcreg> + <ofs>
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitIndexLea(X86Reg dstreg, X86Reg srcreg, int32_t ofs)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION((int) dstreg < NumX86Regs);
-        PRECONDITION((int) srcreg < NumX86Regs);
-    }
-    CONTRACTL_END;
-
-    X86EmitOffsetModRM(0x8d, dstreg, srcreg, ofs);
-}
-
-#if defined(TARGET_AMD64)
-VOID StubLinkerCPU::X86EmitIndexLeaRSP(X86Reg dstreg, X86Reg srcreg, int32_t ofs)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitOp(0x8d, dstreg, (X86Reg)kESP_Unsafe,  ofs, (X86Reg)0, 0, k64BitOp);
-}
-#endif // defined(TARGET_AMD64)
 
 //---------------------------------------------------------------
 // Emits:
@@ -1553,6 +1371,7 @@ VOID StubLinkerCPU::X86EmitAddEsp(INT32 imm32)
     }
     Pop(imm32);
 }
+#endif // TARGET_X86
 
 VOID StubLinkerCPU::X86EmitAddReg(X86Reg reg, INT32 imm32)
 {
@@ -2263,18 +2082,6 @@ VOID StubLinkerCPU::X86EmitEspOffset(BYTE opcode,
 
 }
 
-//---------------------------------------------------------------
-
-VOID StubLinkerCPU::X86EmitPushEBPframe()
-{
-    STANDARD_VM_CONTRACT;
-
-    //  push ebp
-    X86EmitPushReg(kEBP);
-    // mov ebp,esp
-    X86EmitMovRegSP(kEBP);
-}
-
 #ifdef _DEBUG
 //---------------------------------------------------------------
 // Emits:
@@ -2331,47 +2138,7 @@ static const X86Reg c_argRegs[] = {
 };
 #endif
 
-
-
-#if defined(_DEBUG) && !defined(TARGET_UNIX)
-void StubLinkerCPU::EmitJITHelperLoggingThunk(PCODE pJitHelper, LPVOID helperFuncCount)
-{
-    STANDARD_VM_CONTRACT;
-
-    VMHELPCOUNTDEF* pHelperFuncCount = (VMHELPCOUNTDEF*)helperFuncCount;
-/*
-        push        rcx
-        mov         rcx, &(pHelperFuncCount->count)
-   lock inc        [rcx]
-        pop         rcx
-#ifdef TARGET_AMD64
-        mov         rax, <pJitHelper>
-        jmp         rax
-#else
-        jmp         <pJitHelper>
-#endif
-*/
-
-    // push     rcx
-    // mov      rcx, &(pHelperFuncCount->count)
-    X86EmitPushReg(kECX);
-    X86EmitRegLoad(kECX, (UINT_PTR)(&(pHelperFuncCount->count)));
-
-    // lock inc [rcx]
-    BYTE lock_inc_RCX[] = { 0xf0, 0xff, 0x01 };
-    EmitBytes(lock_inc_RCX, sizeof(lock_inc_RCX));
-
-#if defined(TARGET_AMD64)
-    // mov      rax, <pJitHelper>
-    // pop      rcx
-    // jmp      rax
-#else
-    // pop      rcx
-    // jmp      <pJitHelper>
-#endif
-    X86EmitTailcallWithSinglePop(NewExternalCodeLabel(pJitHelper), kECX);
-}
-#endif // _DEBUG && !TARGET_UNIX
+#ifdef TARGET_X86
 
 VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet)
 {
@@ -2410,13 +2177,9 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedR
 
 #else // TARGET_UNIX
 
-#ifdef TARGET_AMD64
-    BYTE code[] = { 0x65,0x48,0x8b,0x04,0x25 };    // mov dstreg, qword ptr gs:[IMM32]
-    static const int regByteIndex = 3;
-#elif defined(TARGET_X86)
     BYTE code[] = { 0x64,0x8b,0x05 };              // mov dstreg, dword ptr fs:[IMM32]
     static const int regByteIndex = 2;
-#endif
+
     code[regByteIndex] |= (dstreg << 3);
 
     EmitBytes(code, sizeof(code));
@@ -2434,7 +2197,7 @@ namespace
 {
     gc_alloc_context* STDCALL GetAllocContextHelper()
     {
-        return &t_runtime_thread_locals.alloc_context;
+        return &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
     }
 }
 #endif
@@ -2476,13 +2239,9 @@ VOID StubLinkerCPU::X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigne
 
 #else // TARGET_UNIX
 
-#ifdef TARGET_AMD64
-    BYTE code[] = { 0x65,0x48,0x8b,0x04,0x25 };    // mov dstreg, qword ptr gs:[IMM32]
-    static const int regByteIndex = 3;
-#elif defined(TARGET_X86)
     BYTE code[] = { 0x64,0x8b,0x05 };              // mov dstreg, dword ptr fs:[IMM32]
     static const int regByteIndex = 2;
-#endif
+
     code[regByteIndex] |= (dstreg << 3);
 
     EmitBytes(code, sizeof(code));
@@ -2496,390 +2255,6 @@ VOID StubLinkerCPU::X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigne
 #endif // TARGET_UNIX
 }
 
-#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
-
-#if defined(PROFILING_SUPPORTED)
-VOID StubLinkerCPU::EmitProfilerComCallProlog(TADDR pFrameVptr, X86Reg regFrame)
-{
-    STANDARD_VM_CONTRACT;
-
-    // Load the methoddesc into ECX (Frame->m_pvDatum->m_pMD)
-    X86EmitIndexRegLoad(kECX, regFrame, ComMethodFrame::GetOffsetOfDatum());
-    X86EmitIndexRegLoad(kECX, kECX, ComCallMethodDesc::GetOffsetOfMethodDesc());
-
-    // Push arguments and notify profiler
-    X86EmitPushImm32(COR_PRF_TRANSITION_CALL);      // Reason
-    X86EmitPushReg(kECX);                           // MethodDesc*
-    X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerUnmanagedToManagedTransitionMD), 2*sizeof(void*));
-}
-
-
-VOID StubLinkerCPU::EmitProfilerComCallEpilog(TADDR pFrameVptr, X86Reg regFrame)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(pFrameVptr == ComMethodFrame::GetMethodFrameVPtr());
-    }
-    CONTRACTL_END;
-
-    // Load the methoddesc into ECX (Frame->m_pvDatum->m_pMD)
-    X86EmitIndexRegLoad(kECX, regFrame, ComMethodFrame::GetOffsetOfDatum());
-    X86EmitIndexRegLoad(kECX, kECX, ComCallMethodDesc::GetOffsetOfMethodDesc());
-
-    // Push arguments and notify profiler
-    X86EmitPushImm32(COR_PRF_TRANSITION_RETURN);    // Reason
-    X86EmitPushReg(kECX);                           // MethodDesc*
-    X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerManagedToUnmanagedTransitionMD), 2*sizeof(void*));
-}
-#endif // PROFILING_SUPPORTED
-
-//========================================================================
-//  Prolog for entering managed code from COM
-//  pushes the appropriate frame ptr
-//  sets up a thread and returns a label that needs to be emitted by the caller
-//  At the end:
-//  ESI will hold the pointer to the ComMethodFrame or UMThkCallFrame
-//  EBX will hold the result of GetThread()
-//  EDI will hold the previous Frame ptr
-
-void StubLinkerCPU::EmitComMethodStubProlog(TADDR pFrameVptr,
-                                            CodeLabel** rgRareLabels,
-                                            CodeLabel** rgRejoinLabels,
-                                            BOOL bShouldProfile)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-        PRECONDITION(rgRareLabels != NULL);
-        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL);
-        PRECONDITION(rgRejoinLabels != NULL);
-        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL);
-    }
-    CONTRACTL_END;
-
-    // push ebp     ;; save callee-saved register
-    // push ebx     ;; save callee-saved register
-    // push esi     ;; save callee-saved register
-    // push edi     ;; save callee-saved register
-    X86EmitPushEBPframe();
-
-    X86EmitPushReg(kEBX);
-    X86EmitPushReg(kESI);
-    X86EmitPushReg(kEDI);
-
-    // push eax ; datum
-    X86EmitPushReg(kEAX);
-
-    // push edx ;leave room for m_next (edx is an arbitrary choice)
-    X86EmitPushReg(kEDX);
-
-    // push IMM32 ; push Frame vptr
-    X86EmitPushImmPtr((LPVOID) pFrameVptr);
-
-    X86EmitPushImmPtr((LPVOID)GetProcessGSCookie());
-
-    // lea esi, [esp+4] ;; set ESI -> new frame
-    X86EmitEspOffset(0x8d, kESI, 4);    // lea ESI, [ESP+4]
-
-    // Emit Setup thread
-    EmitSetup(rgRareLabels[0]);  // rareLabel for rare setup
-    EmitLabel(rgRejoinLabels[0]); // rejoin label for rare setup
-
-#ifdef PROFILING_SUPPORTED
-    // If profiling is active, emit code to notify profiler of transition
-    // Must do this before preemptive GC is disabled, so no problem if the
-    // profiler blocks.
-    if (CORProfilerTrackTransitions() && bShouldProfile)
-    {
-        EmitProfilerComCallProlog(pFrameVptr, /*Frame*/ kESI);
-    }
-#endif // PROFILING_SUPPORTED
-
-    //-----------------------------------------------------------------------
-    // Generate the inline part of disabling preemptive GC.  It is critical
-    // that this part happen before we link in the frame.  That's because
-    // we won't be able to unlink the frame from preemptive mode.  And during
-    // shutdown, we cannot switch to cooperative mode under some circumstances
-    //-----------------------------------------------------------------------
-    EmitDisable(rgRareLabels[1], /*fCallIn=*/TRUE, kEBX); // rare disable gc
-    EmitLabel(rgRejoinLabels[1]);                         // rejoin for rare disable gc
-
-    // If we take an SO after installing the new frame but before getting the exception
-    // handlers in place, we will have a corrupt frame stack.  So probe-by-touch first for
-    // sufficient stack space to erect the handler.  Because we know we will be touching
-    // that stack right away when install the handler, this probe-by-touch will not incur
-    // unnecessary cache misses.   And this allows us to do the probe with one instruction.
-
-    // Note that for Win64, the personality routine will handle unlinking the frame, so
-    // we don't need to probe in the Win64 stubs.  The exception is ComToCLRWorker
-    // where we don't setup a personality routine.  However, we push the frame inside
-    // that function and it is probe-protected with an entry point probe first, so we are
-    // OK there too.
-
-    // We push two registers to setup the EH handler and none to setup the frame
-    // so probe for double that to give ourselves a small margin for error.
-    // mov eax, [esp+n] ;; probe for sufficient stack to setup EH
-    X86EmitEspOffset(0x8B, kEAX, -0x20);
-     // mov edi,[ebx + Thread.GetFrame()]  ;; get previous frame
-    X86EmitIndexRegLoad(kEDI, kEBX, Thread::GetOffsetOfCurrentFrame());
-
-    // mov [esi + Frame.m_next], edi
-    X86EmitIndexRegStore(kESI, Frame::GetOffsetOfNextLink(), kEDI);
-
-    // mov [ebx + Thread.GetFrame()], esi
-    X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kESI);
-
-#if _DEBUG
-    if (Frame::ShouldLogTransitions())
-    {
-        // call LogTransition
-        X86EmitPushReg(kESI);
-        X86EmitCall(NewExternalCodeLabel((LPVOID) Frame::LogTransition), sizeof(void*));
-    }
-#endif
-}
-
-//========================================================================
-//  Epilog for stubs that enter managed code from COM
-//
-//  At this point of the stub, the state should be as follows:
-//  ESI holds the ComMethodFrame or UMThkCallFrame ptr
-//  EBX holds the result of GetThread()
-//  EDI holds the previous Frame ptr
-//
-void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
-                                            CodeLabel** rgRareLabels,
-                                            CodeLabel** rgRejoinLabels,
-                                            BOOL bShouldProfile)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-        PRECONDITION(rgRareLabels != NULL);
-        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL);
-        PRECONDITION(rgRejoinLabels != NULL);
-        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL);
-        PRECONDITION(4 == sizeof( ((Thread*)0)->m_State ));
-        PRECONDITION(4 == sizeof( ((Thread*)0)->m_fPreemptiveGCDisabled ));
-    }
-    CONTRACTL_END;
-
-    EmitCheckGSCookie(kESI, UnmanagedToManagedFrame::GetOffsetOfGSCookie());
-
-    // mov [ebx + Thread.GetFrame()], edi  ;; restore previous frame
-    X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kEDI);
-
-    // move byte ptr [ebx + Thread.m_fPreemptiveGCDisabled],0
-    X86EmitOffsetModRM(0xc6, (X86Reg)0, kEBX, Thread::GetOffsetOfGCFlag());
-    Emit8(0);
-
-    // add esp, popstack
-    X86EmitAddEsp(sizeof(GSCookie) + UnmanagedToManagedFrame::GetOffsetOfCalleeSavedRegisters());
-
-    // pop edi        ; restore callee-saved registers
-    // pop esi
-    // pop ebx
-    // pop ebp
-    X86EmitPopReg(kEDI);
-    X86EmitPopReg(kESI);
-    X86EmitPopReg(kEBX);
-    X86EmitPopReg(kEBP);
-
-    //    jmp eax //reexecute!
-    X86EmitR2ROp(0xff, (X86Reg)4, kEAX);
-
-    // ret
-    // This will never be executed. It is just to help out stack-walking logic
-    // which disassembles the epilog to unwind the stack. A "ret" instruction
-    // indicates that no more code needs to be disassembled, if the stack-walker
-    // keeps on going past the previous "jmp eax".
-    X86EmitReturn(0);
-
-    //-----------------------------------------------------------------------
-    // The out-of-line portion of disabling preemptive GC - rarely executed
-    //-----------------------------------------------------------------------
-    EmitLabel(rgRareLabels[1]);  // label for rare disable gc
-    EmitRareDisable(rgRejoinLabels[1]); // emit rare disable gc
-
-    //-----------------------------------------------------------------------
-    // The out-of-line portion of setup thread - rarely executed
-    //-----------------------------------------------------------------------
-    EmitLabel(rgRareLabels[0]);  // label for rare setup thread
-    EmitRareSetup(rgRejoinLabels[0], /*fThrow*/ TRUE); // emit rare setup thread
-}
-
-//---------------------------------------------------------------
-// Emit code to store the setup current Thread structure in eax.
-// TRASHES  eax,ecx&edx.
-// RESULTS  ebx = current Thread
-//---------------------------------------------------------------
-VOID StubLinkerCPU::EmitSetup(CodeLabel *pForwardRef)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitCurrentThreadFetch(kEBX, 0);
-
-    // cmp ebx, 0
-    static const BYTE b[] = { 0x83, 0xFB, 0x0};
-
-    EmitBytes(b, sizeof(b));
-
-    // jz RarePath
-    X86EmitCondJump(pForwardRef, X86CondCode::kJZ);
-
-#ifdef _DEBUG
-    X86EmitDebugTrashReg(kECX);
-    X86EmitDebugTrashReg(kEDX);
-#endif
-}
-
-VOID StubLinkerCPU::EmitRareSetup(CodeLabel *pRejoinPoint, BOOL fThrow)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (!fThrow)
-    {
-        X86EmitPushReg(kESI);
-        X86EmitCall(NewExternalCodeLabel((LPVOID) CreateThreadBlockReturnHr), sizeof(void*));
-    }
-    else
-    {
-        X86EmitCall(NewExternalCodeLabel((LPVOID) CreateThreadBlockThrow), 0);
-    }
-
-    // mov ebx,eax
-    Emit16(0xc389);
-    X86EmitNearJump(pRejoinPoint);
-}
-
-//========================================================================
-//  Epilog for stubs that enter managed code from COM
-//
-//  On entry, ESI points to the Frame
-//  ESP points to below FramedMethodFrame::m_vc5Frame
-//  EBX hold GetThread()
-//  EDI holds the previous Frame
-
-void StubLinkerCPU::EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
-                                                  CodeLabel** rgRareLabels,
-                                                  CodeLabel** rgRejoinLabels,
-                                                  unsigned offsetRetThunk,
-                                                  BOOL bShouldProfile)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-        PRECONDITION(rgRareLabels != NULL);
-        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL);
-        PRECONDITION(rgRejoinLabels != NULL);
-        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL);
-        PRECONDITION(4 == sizeof( ((Thread*)0)->m_State ));
-        PRECONDITION(4 == sizeof( ((Thread*)0)->m_fPreemptiveGCDisabled ));
-    }
-    CONTRACTL_END;
-
-    CodeLabel *NoEntryLabel;
-    NoEntryLabel = NewCodeLabel();
-
-    EmitCheckGSCookie(kESI, UnmanagedToManagedFrame::GetOffsetOfGSCookie());
-
-    // mov [ebx + Thread.GetFrame()], edi  ;; restore previous frame
-    X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kEDI);
-
-    //-----------------------------------------------------------------------
-    // Generate enabling preemptive GC
-    //-----------------------------------------------------------------------
-    EmitLabel(NoEntryLabel);    // need to enable preemp mode even when we fail the disable as rare disable will return in coop mode
-
-    // move byte ptr [ebx + Thread.m_fPreemptiveGCDisabled],0
-    X86EmitOffsetModRM(0xc6, (X86Reg)0, kEBX, Thread::GetOffsetOfGCFlag());
-    Emit8(0);
-
-#ifdef PROFILING_SUPPORTED
-    // If profiling is active, emit code to notify profiler of transition
-    if (CORProfilerTrackTransitions() && bShouldProfile)
-    {
-        // Save return value
-        X86EmitPushReg(kEAX);
-        X86EmitPushReg(kEDX);
-
-        EmitProfilerComCallEpilog(pFrameVptr, kESI);
-
-        // Restore return value
-        X86EmitPopReg(kEDX);
-        X86EmitPopReg(kEAX);
-    }
-#endif // PROFILING_SUPPORTED
-
-    X86EmitAddEsp(sizeof(GSCookie) + UnmanagedToManagedFrame::GetOffsetOfDatum());
-
-    // pop ecx
-    X86EmitPopReg(kECX); // pop the MethodDesc*
-
-    // pop edi        ; restore callee-saved registers
-    // pop esi
-    // pop ebx
-    // pop ebp
-    X86EmitPopReg(kEDI);
-    X86EmitPopReg(kESI);
-    X86EmitPopReg(kEBX);
-    X86EmitPopReg(kEBP);
-
-    // add ecx, offsetRetThunk
-    X86EmitAddReg(kECX, offsetRetThunk);
-
-    // jmp ecx
-    // This will jump to the "ret cbStackArgs" instruction in COMMETHOD_PREPAD.
-    static const BYTE bjmpecx[] = { 0xff, 0xe1 };
-    EmitBytes(bjmpecx, sizeof(bjmpecx));
-
-    // ret
-    // This will never be executed. It is just to help out stack-walking logic
-    // which disassembles the epilog to unwind the stack. A "ret" instruction
-    // indicates that no more code needs to be disassembled, if the stack-walker
-    // keeps on going past the previous "jmp ecx".
-    X86EmitReturn(0);
-
-    //-----------------------------------------------------------------------
-    // The out-of-line portion of disabling preemptive GC - rarely executed
-    //-----------------------------------------------------------------------
-    EmitLabel(rgRareLabels[1]);  // label for rare disable gc
-    EmitRareDisableHRESULT(rgRejoinLabels[1], NoEntryLabel);
-
-    //-----------------------------------------------------------------------
-    // The out-of-line portion of setup thread - rarely executed
-    //-----------------------------------------------------------------------
-    EmitLabel(rgRareLabels[0]);  // label for rare setup thread
-    EmitRareSetup(rgRejoinLabels[0],/*fThrow*/ FALSE); // emit rare setup thread
-}
-
-#endif // defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
-
-
-#if !defined(FEATURE_STUBS_AS_IL) && defined(TARGET_X86)
-VOID StubLinkerCPU::EmitCheckGSCookie(X86Reg frameReg, int gsCookieOffset)
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef _DEBUG
-    // cmp dword ptr[frameReg-gsCookieOffset], gsCookie
-    X86EmitCmpRegIndexImm32(frameReg, gsCookieOffset, GetProcessGSCookie());
-
-    CodeLabel * pLabel = NewCodeLabel();
-    X86EmitCondJump(pLabel, X86CondCode::kJE);
-
-    X86EmitCall(NewExternalCodeLabel((LPVOID) JIT_FailFast), 0);
-
-    EmitLabel(pLabel);
-#endif
-}
-#endif // !defined(FEATURE_STUBS_AS_IL) && defined(TARGET_X86)
-
-#ifdef TARGET_X86
 // This method unboxes the THIS pointer and then calls pRealMD
 // If it's shared code for a method in a generic value class, then also extract the vtable pointer
 // and pass it as an extra argument.  Thus this stub generator really covers both
@@ -3086,271 +2461,6 @@ VOID StubLinkerCPU::EmitInstantiatingMethodStub(MethodDesc* pMD, void* extra)
     EmitTailJumpToMethod(pMD);
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE) && !defined(FEATURE_INSTANTIATINGSTUB_AS_IL) && defined(TARGET_X86)
-
-
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-
-typedef BOOL GetModuleInformationProc(
-  HANDLE hProcess,
-  HMODULE hModule,
-  LPMODULEINFO lpmodinfo,
-  DWORD cb
-);
-
-GetModuleInformationProc *g_pfnGetModuleInformation = NULL;
-
-extern "C" VOID __cdecl DebugCheckStubUnwindInfoWorker (CONTEXT *pStubContext)
-{
-    LOG((LF_STUBS, LL_INFO1000000, "checking stub unwind info:\n"));
-
-    //
-    // Make a copy of the CONTEXT.  RtlVirtualUnwind will modify this copy.
-    // DebugCheckStubUnwindInfo will need to restore registers from the
-    // original CONTEXT.
-    //
-    CONTEXT ctx = *pStubContext;
-    ctx.ContextFlags = (CONTEXT_CONTROL | CONTEXT_INTEGER);
-
-    //
-    // Find the upper bound of the stack and address range of KERNEL32.  This
-    // is where we expect the unwind to stop.
-    //
-    void *pvStackTop = GetThread()->GetCachedStackBase();
-
-    if (!g_pfnGetModuleInformation)
-    {
-        HMODULE hmodPSAPI = GetModuleHandle(W("PSAPI.DLL"));
-
-        if (!hmodPSAPI)
-        {
-            hmodPSAPI = WszLoadLibrary(W("PSAPI.DLL"));
-            if (!hmodPSAPI)
-            {
-                _ASSERTE(!"unable to load PSAPI.DLL");
-                goto ErrExit;
-            }
-        }
-
-        g_pfnGetModuleInformation = (GetModuleInformationProc*)GetProcAddress(hmodPSAPI, "GetModuleInformation");
-        if (!g_pfnGetModuleInformation)
-        {
-            _ASSERTE(!"can't find PSAPI!GetModuleInformation");
-            goto ErrExit;
-        }
-
-        // Intentionally leak hmodPSAPI.  We don't want to
-        // LoadLibrary/FreeLibrary every time, this is slow + produces lots of
-        // debugger spew.  This is just debugging code after all...
-    }
-
-    HMODULE hmodKERNEL32 = GetModuleHandle(W("KERNEL32"));
-    _ASSERTE(hmodKERNEL32);
-
-    MODULEINFO modinfoKERNEL32;
-    if (!g_pfnGetModuleInformation(GetCurrentProcess(), hmodKERNEL32, &modinfoKERNEL32, sizeof(modinfoKERNEL32)))
-    {
-        _ASSERTE(!"unable to get bounds of KERNEL32");
-        goto ErrExit;
-    }
-
-    //
-    // Unwind until IP is 0, sp is at the stack top, and callee IP is in kernel32.
-    //
-
-    for (;;)
-    {
-        ULONG64 ControlPc = (ULONG64)GetIP(&ctx);
-
-        LOG((LF_STUBS, LL_INFO1000000, "pc %p, sp %p\n", ControlPc, GetSP(&ctx)));
-
-        ULONG64 ImageBase;
-        T_RUNTIME_FUNCTION *pFunctionEntry = RtlLookupFunctionEntry(
-                ControlPc,
-                &ImageBase,
-                NULL);
-        if (pFunctionEntry)
-        {
-            PVOID HandlerData;
-            ULONG64 EstablisherFrame;
-
-            RtlVirtualUnwind(
-                    0,
-                    ImageBase,
-                    ControlPc,
-                    pFunctionEntry,
-                    &ctx,
-                    &HandlerData,
-                    &EstablisherFrame,
-                    NULL);
-
-            ULONG64 NewControlPc = (ULONG64)GetIP(&ctx);
-
-            LOG((LF_STUBS, LL_INFO1000000, "function %p, image %p, new pc %p, new sp %p\n", pFunctionEntry, ImageBase, NewControlPc, GetSP(&ctx)));
-
-            if (!NewControlPc)
-            {
-                if (dac_cast<PTR_BYTE>(GetSP(&ctx)) < (BYTE*)pvStackTop - 0x100)
-                {
-                    _ASSERTE(!"SP did not end up at top of stack");
-                    goto ErrExit;
-                }
-
-                if (!(   ControlPc > (ULONG64)modinfoKERNEL32.lpBaseOfDll
-                      && ControlPc < (ULONG64)modinfoKERNEL32.lpBaseOfDll + modinfoKERNEL32.SizeOfImage))
-                {
-                    _ASSERTE(!"PC did not end up in KERNEL32");
-                    goto ErrExit;
-                }
-
-                break;
-            }
-        }
-        else
-        {
-            // Nested functions that do not use any stack space or nonvolatile
-            // registers are not required to have unwind info (ex.
-            // USER32!ZwUserCreateWindowEx).
-            ctx.Rip = *(ULONG64*)(ctx.Rsp);
-            ctx.Rsp += sizeof(ULONG64);
-        }
-    }
-ErrExit:
-    return;
-}
-
-//virtual
-VOID StubLinkerCPU::EmitUnwindInfoCheckWorker (CodeLabel *pCheckLabel)
-{
-    STANDARD_VM_CONTRACT;
-    X86EmitCall(pCheckLabel, 0);
-}
-
-//virtual
-VOID StubLinkerCPU::EmitUnwindInfoCheckSubfunction()
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef TARGET_AMD64
-    // X86EmitCall will generate "mov rax, target/jmp rax", so we have to save
-    // rax on the stack.  DO NOT use X86EmitPushReg.  That will induce infinite
-    // recursion, since the push may require more unwind info.  This "push rax"
-    // will be accounted for by DebugCheckStubUnwindInfo's unwind info
-    // (considered part of its locals), so there doesn't have to be unwind
-    // info for it.
-    Emit8(0x50);
-#endif
-
-    X86EmitNearJump(NewExternalCodeLabel(DebugCheckStubUnwindInfo));
-}
-
-#endif // defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-
-
-#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
-
-//-----------------------------------------------------------------------
-// Generates the inline portion of the code to disable preemptive GC. Hopefully,
-// the inline code is all that will execute most of the time. If this code
-// path is entered at certain times, however, it will need to jump out to
-// a separate out-of-line path which is more expensive. The "pForwardRef"
-// label indicates the start of the out-of-line path.
-//
-// Assumptions:
-//      ebx = Thread
-// Preserves
-//      all registers except ecx.
-//
-//-----------------------------------------------------------------------
-VOID StubLinkerCPU::EmitDisable(CodeLabel *pForwardRef, BOOL fCallIn, X86Reg ThreadReg)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-        PRECONDITION(4 == sizeof( ((Thread*)0)->m_fPreemptiveGCDisabled ));
-        PRECONDITION(4 == sizeof(g_TrapReturningThreads));
-    }
-    CONTRACTL_END;
-
-    // move byte ptr [ebx + Thread.m_fPreemptiveGCDisabled],1
-    X86EmitOffsetModRM(0xc6, (X86Reg)0, ThreadReg, Thread::GetOffsetOfGCFlag());
-    Emit8(1);
-
-    // cmp dword ptr g_TrapReturningThreads, 0
-    Emit16(0x3d83);
-    EmitPtr((void *)&g_TrapReturningThreads);
-    Emit8(0);
-
-    // jnz RarePath
-    X86EmitCondJump(pForwardRef, X86CondCode::kJNZ);
-
-#ifdef _DEBUG
-    if (ThreadReg != kECX)
-        X86EmitDebugTrashReg(kECX);
-#endif
-
-}
-
-
-//-----------------------------------------------------------------------
-// Generates the out-of-line portion of the code to disable preemptive GC.
-// After the work is done, the code jumps back to the "pRejoinPoint"
-// which should be emitted right after the inline part is generated.  However,
-// if we cannot execute managed code at this time, an exception is thrown
-// which cannot be caught by managed code.
-//
-// Assumptions:
-//      ebx = Thread
-// Preserves
-//      all registers except ecx, eax.
-//
-//-----------------------------------------------------------------------
-VOID StubLinkerCPU::EmitRareDisable(CodeLabel *pRejoinPoint)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitCall(NewExternalCodeLabel((LPVOID) StubRareDisableTHROW), 0);
-
-#ifdef _DEBUG
-    X86EmitDebugTrashReg(kECX);
-#endif
-    X86EmitNearJump(pRejoinPoint);
-}
-
-//-----------------------------------------------------------------------
-// Generates the out-of-line portion of the code to disable preemptive GC.
-// After the work is done, the code normally jumps back to the "pRejoinPoint"
-// which should be emitted right after the inline part is generated.  However,
-// if we cannot execute managed code at this time, an HRESULT is returned
-// via the ExitPoint.
-//
-// Assumptions:
-//      ebx = Thread
-// Preserves
-//      all registers except ecx, eax.
-//
-//-----------------------------------------------------------------------
-VOID StubLinkerCPU::EmitRareDisableHRESULT(CodeLabel *pRejoinPoint, CodeLabel *pExitPoint)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitCall(NewExternalCodeLabel((LPVOID) StubRareDisableHR), 0);
-
-#ifdef _DEBUG
-    X86EmitDebugTrashReg(kECX);
-#endif
-
-    // test eax, eax  ;; test the result of StubRareDisableHR
-    Emit16(0xc085);
-
-    // JZ pRejoinPoint
-    X86EmitCondJump(pRejoinPoint, X86CondCode::kJZ);
-
-    X86EmitNearJump(pExitPoint);
-}
-
-#endif // defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
-
 
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 {
@@ -3589,124 +2699,6 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
 #endif // TARGET_AMD64
 }
-
-
-#if !defined(FEATURE_STUBS_AS_IL)
-
-#ifdef TARGET_X86
-//===========================================================================
-// Emits code for MulticastDelegate.Invoke()
-VOID StubLinkerCPU::EmitDelegateInvoke()
-{
-    STANDARD_VM_CONTRACT;
-
-    CodeLabel *pNullLabel = NewCodeLabel();
-
-    // test THISREG, THISREG
-    X86EmitR2ROp(0x85, THIS_kREG, THIS_kREG);
-
-    // jz null
-    X86EmitCondJump(pNullLabel, X86CondCode::kJZ);
-
-    // mov SCRATCHREG, [THISREG + Delegate.FP]  ; Save target stub in register
-    X86EmitIndexRegLoad(SCRATCH_REGISTER_X86REG, THIS_kREG, DelegateObject::GetOffsetOfMethodPtr());
-
-    // mov THISREG, [THISREG + Delegate.OR]  ; replace "this" pointer
-    X86EmitIndexRegLoad(THIS_kREG, THIS_kREG, DelegateObject::GetOffsetOfTarget());
-
-    // jmp SCRATCHREG
-    Emit16(0xe0ff | (SCRATCH_REGISTER_X86REG<<8));
-
-    // Do a null throw
-    EmitLabel(pNullLabel);
-
-    // mov ECX, CORINFO_NullReferenceException
-    Emit8(0xb8+kECX);
-    Emit32(CORINFO_NullReferenceException);
-
-    X86EmitCall(NewExternalCodeLabel(GetEEFuncEntryPoint(JIT_InternalThrowFromHelper)), 0);
-
-    X86EmitReturn(0);
-}
-#endif // TARGET_X86
-
-#endif // !FEATURE_STUBS_AS_IL
-
-#if !defined(FEATURE_STUBS_AS_IL)
-//===========================================================================
-// Emits code to break into debugger
-VOID StubLinkerCPU::EmitDebugBreak()
-{
-    STANDARD_VM_CONTRACT;
-
-    // int3
-    Emit8(0xCC);
-}
-
-#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning (disable : 4740) // There is inline asm code in this function, which disables
-                                 // global optimizations.
-#pragma warning (disable : 4731)
-#endif  // _MSC_VER
-ThreadPointer __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
-{
-
-    WRAPPER_NO_CONTRACT;
-
-    HRESULT hr = S_OK;
-
-    // This means that a thread is FIRST coming in from outside the EE.
-    Thread* pThread = SetupThreadNoThrow(&hr);
-
-    if (pThread == NULL) {
-        // Unwind stack, and return hr
-        // NOTE: assumes __stdcall
-        // Note that this code does not handle the rare COM signatures that do not return HRESULT
-        // compute the callee pop stack bytes
-        UINT numArgStackBytes = pFrame->GetNumCallerStackBytes();
-        unsigned frameSize = sizeof(Frame) + sizeof(LPVOID);
-        LPBYTE iEsp = ((LPBYTE)pFrame) + ComMethodFrame::GetOffsetOfCalleeSavedRegisters();
-
-        // Let ASAN that we aren't going to return so it can do some cleanup
-        __asan_handle_no_return();
-
-        __asm
-        {
-            mov eax, hr
-            mov edx, numArgStackBytes
-            //*****************************************
-            // reset the stack pointer
-            // none of the locals above can be used in the asm below
-            // if we wack the stack pointer
-            mov esp, iEsp
-            // pop callee saved registers
-            pop edi
-            pop esi
-            pop ebx
-            pop ebp
-            pop ecx         ; //return address
-            // pop the callee cleanup stack args
-            add esp, edx    ;// callee cleanup of args
-            jmp ecx;        // jump to the address to continue execution
-
-            // We will never get here. This "ret" is just so that code-disassembling
-            // profilers know to stop disassembling any further
-            ret
-        }
-    }
-
-    return pThread;
-}
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-
-#endif // FEATURE_COMINTEROP && TARGET_X86
-
-#endif // !FEATURE_STUBS_AS_IL
 
 #endif // !DACCESS_COMPILE
 

@@ -621,7 +621,7 @@ namespace System.Security.Cryptography.Cose
         }
 
         /// <summary>
-        /// When overriden in a derived class, attempts to encode this message into the specified buffer.
+        /// When overridden in a derived class, attempts to encode this message into the specified buffer.
         /// </summary>
         /// <param name="destination">The buffer in which to write the encoded value.</param>
         /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination"/>. This parameter is treated as uninitialized.</param>
@@ -632,7 +632,7 @@ namespace System.Security.Cryptography.Cose
         public abstract bool TryEncode(Span<byte> destination, out int bytesWritten);
 
         /// <summary>
-        /// When overriden in a derived class, calculates the number of bytes produced by encoding this <see cref="CoseMessage"/>.
+        /// When overridden in a derived class, calculates the number of bytes produced by encoding this <see cref="CoseMessage"/>.
         /// </summary>
         /// <returns>The number of bytes produced by encoding this message.</returns>
         public abstract int GetEncodedLength();

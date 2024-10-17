@@ -1111,6 +1111,31 @@ class TestSpan
         }
     }
 
+    class ArrayAlloc
+    {
+        public static byte FirstByte;
+        public static byte LastByte;
+        public static char FirstChar;
+        public static char LastChar;
+
+        static ArrayAlloc()
+        {
+            byte[] a1 = new byte[8];
+            Span<byte> s1 = a1;
+            s1.Slice(0, 1)[0] = 42;
+            s1.Slice(s1.Length - 1, 1)[0] = 100;
+            FirstByte = a1[0];
+            LastByte = a1[7];
+
+            char[] a2 = new char[8];
+            Span<char> s2 = a2;
+            s2.Slice(0, 1)[0] = 'H';
+            s2.Slice(s2.Length - 1, 1)[0] = '!';
+            FirstChar = a2[0];
+            LastChar = a2[7];
+        }
+    }
+
     public static void Run()
     {
         Assert.IsPreinitialized(typeof(StackAlloc));
@@ -1118,6 +1143,12 @@ class TestSpan
         Assert.AreEqual(100, StackAlloc.LastByte);
         Assert.AreEqual('H', StackAlloc.FirstChar);
         Assert.AreEqual('!', StackAlloc.LastChar);
+
+        Assert.IsPreinitialized(typeof(ArrayAlloc));
+        Assert.AreEqual(42, ArrayAlloc.FirstByte);
+        Assert.AreEqual(100, ArrayAlloc.LastByte);
+        Assert.AreEqual('H', ArrayAlloc.FirstChar);
+        Assert.AreEqual('!', ArrayAlloc.LastChar);
     }
 }
 

@@ -9,6 +9,7 @@ using System.Runtime.Serialization;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema.Tests;
 using System.Text.Json.Serialization;
+using System.Xml.Linq;
 
 namespace System.Text.Json.SourceGeneration.Tests
 {
@@ -88,6 +89,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(PocoWithRecursiveMembers))]
         [JsonSerializable(typeof(PocoWithRecursiveCollectionElement))]
         [JsonSerializable(typeof(PocoWithRecursiveDictionaryValue))]
+        [JsonSerializable(typeof(PocoWithNonRecursiveDuplicateOccurrences))]
         [JsonSerializable(typeof(PocoWithDescription))]
         [JsonSerializable(typeof(PocoWithCustomConverter))]
         [JsonSerializable(typeof(PocoWithCustomPropertyConverter))]
@@ -107,6 +109,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(PocoCombiningPolymorphicTypeAndDerivedTypes))]
         [JsonSerializable(typeof(ClassWithComponentModelAttributes))]
         [JsonSerializable(typeof(ClassWithJsonPointerEscapablePropertyNames))]
+        [JsonSerializable(typeof(ClassWithOptionalObjectParameter))]
         // Collection types
         [JsonSerializable(typeof(int[]))]
         [JsonSerializable(typeof(List<bool>))]
@@ -124,6 +127,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Dictionary<string, object>))]
         [JsonSerializable(typeof(Hashtable))]
         [JsonSerializable(typeof(StructDictionary<string, int>))]
+        [JsonSerializable(typeof(XElement))]
         public partial class TestTypesContext : JsonSerializerContext;
     }
 }

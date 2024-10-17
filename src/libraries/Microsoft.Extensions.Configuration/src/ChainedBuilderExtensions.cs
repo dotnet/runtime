@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Extension methods for adding <see cref="IConfiguration"/> to an <see cref="IConfigurationBuilder"/>.
+    /// Provides extension methods for adding <see cref="IConfiguration"/> to an <see cref="IConfigurationBuilder"/>.
     /// </summary>
     public static class ChainedBuilderExtensions
     {

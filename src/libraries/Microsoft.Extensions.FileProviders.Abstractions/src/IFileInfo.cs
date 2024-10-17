@@ -12,39 +12,40 @@ namespace Microsoft.Extensions.FileProviders
     public interface IFileInfo
     {
         /// <summary>
-        /// True if resource exists in the underlying storage system.
+        /// Gets a value that indicates if the resource exists in the underlying storage system.
         /// </summary>
         bool Exists { get; }
 
         /// <summary>
-        /// The length of the file in bytes, or -1 for a directory or non-existing files.
+        /// Gets the length of the file in bytes, or -1 for a directory or nonexistent file.
         /// </summary>
         long Length { get; }
 
         /// <summary>
-        /// The path to the file, including the file name. Return null if the file is not directly accessible.
+        /// Gets the path to the file, including the file name. Returns <see langword="null"/> if the file is not directly accessible.
         /// </summary>
         string? PhysicalPath { get; }
 
         /// <summary>
-        /// The name of the file or directory, not including any path.
+        /// Gets the name of the file or directory, not including any path.
         /// </summary>
         string Name { get; }
 
         /// <summary>
-        /// When the file was last modified
+        /// Gets the time when the file was last modified.
         /// </summary>
         DateTimeOffset LastModified { get; }
 
         /// <summary>
-        /// True for the case TryGetDirectoryContents has enumerated a sub-directory
+        /// Gets a value that indicates whether <c>TryGetDirectoryContents</c> has enumerated a subdirectory.
         /// </summary>
         bool IsDirectory { get; }
 
         /// <summary>
-        /// Return file contents as readonly stream. Caller should dispose stream when complete.
+        /// Returns file contents as a read-only stream.
         /// </summary>
-        /// <returns>The file stream</returns>
+        /// <returns>The file stream.</returns>
+        /// <remarks>The caller should dispose the stream when complete.</remarks>
         Stream CreateReadStream();
     }
 }

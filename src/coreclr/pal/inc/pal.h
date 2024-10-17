@@ -170,13 +170,6 @@ extern bool g_arm64_atomics_present;
 
 /******************* PAL-Specific Entrypoints *****************************/
 
-#define IsDebuggerPresent PAL_IsDebuggerPresent
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_IsDebuggerPresent();
-
 #define DLL_PROCESS_ATTACH 1
 #define DLL_THREAD_ATTACH  2
 #define DLL_THREAD_DETACH  3
@@ -365,13 +358,6 @@ VOID
 PALAPI
 PAL_UnregisterModule(
     IN HINSTANCE hInstance);
-
-PALIMPORT
-VOID
-PALAPI
-PAL_Random(
-    IN OUT LPVOID lpBuffer,
-    IN DWORD dwLength);
 
 PALIMPORT
 BOOL

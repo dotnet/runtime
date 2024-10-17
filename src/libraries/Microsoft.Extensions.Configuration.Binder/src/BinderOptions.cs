@@ -4,22 +4,25 @@
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Options class used by the <see cref="ConfigurationBinder"/>.
+    /// Specifies options used by the <see cref="ConfigurationBinder"/>.
     /// </summary>
     public class BinderOptions
     {
         /// <summary>
-        /// When false (the default), the binder will only attempt to set public properties.
-        /// If true, the binder will attempt to set all non read-only properties.
+        /// Gets or sets a value that indicates whether the binder attempts to set all properties or only public properties.
         /// </summary>
+        /// <value>
+        /// <see langword="true" /> if the binder attempts to set all non-read-only properties; <see langword="false" /> if only public properties are set.
+        /// </value>
         public bool BindNonPublicProperties { get; set; }
 
         /// <summary>
-        /// When false (the default), no exceptions are thrown when trying to convert a value or when a configuration
-        /// key is found for which the provided model object does not have an appropriate property which matches the key's name.
-        /// When true, an <see cref="System.InvalidOperationException"/> is thrown with a description
-        /// of the error.
+        /// Gets or sets a value that indicates whether exceptions are thrown when converting a value or when a configuration
+        /// key is found for which the provided model object doesn't have an appropriate property that matches the key's name.
         /// </summary>
+        /// <value>
+        /// <see langword="true" /> if an <see cref="System.InvalidOperationException"/> is thrown with a description; <see langword="false" /> if no exceptions are thrown. The default is <see langword="false" />.
+        /// </value>
         public bool ErrorOnUnknownConfiguration { get; set; }
     }
 }

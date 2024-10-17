@@ -3,11 +3,11 @@ services:
   client:
     build:
       context: ../../../../ # ~> src/libraries
-      dockerfile: ./System.Net.Security/tests/StressTests/SslStress//${DOCKERFILE:-Dockerfile}
+      dockerfile: ./System.Net.Security/tests/StressTests/SslStress/${DOCKERFILE:-Dockerfile}
     links:
       - server
     environment:
-      - SSLSTRESS_ARGS=--mode client --server-endpoint server:5001 ${SSLSTRESS_CLIENT_ARGS}
+      - STRESS_ARGS=--mode client --server-endpoint server:5001 ${STRESS_CLIENT_ARGS}
   server:
     build:
       context: ../../../../ # ~> src/libraries
@@ -15,4 +15,4 @@ services:
     ports:
       - "5001:5001"
     environment:
-      - SSLSTRESS_ARGS=--mode server --server-endpoint 0.0.0.0:5001 ${SSLSTRESS_SERVER_ARGS}
+      - STRESS_ARGS=--mode server --server-endpoint 0.0.0.0:5001 ${STRESS_SERVER_ARGS}

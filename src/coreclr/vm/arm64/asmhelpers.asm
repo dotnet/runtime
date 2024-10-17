@@ -9,7 +9,6 @@
     IMPORT PreStubWorker
     IMPORT NDirectImportWorker
     IMPORT VSD_ResolveWorker
-    IMPORT JIT_InternalThrow
     IMPORT ComPreStubWorker
     IMPORT COMToCLRWorker
     IMPORT CallDescrWorkerUnwindFrameChainHandler
@@ -317,22 +316,6 @@ EphemeralCheckEnabled
 
     LEAF_END JIT_UpdateWriteBarrierState
 
-; void SinglecastDelegateInvokeStub(Delegate *pThis)
-    LEAF_ENTRY SinglecastDelegateInvokeStub
-        cmp     x0, #0
-        beq     LNullThis
-
-        ldr     x16, [x0, #DelegateObject___methodPtr]
-        ldr     x0, [x0, #DelegateObject___target]
-
-        br      x16
-
-LNullThis
-        mov     x0, #CORINFO_NullReferenceException_ASM
-        b       JIT_InternalThrow
-
-    LEAF_END
-
 #ifdef FEATURE_COMINTEROP
 
 ; ------------------------------------------------------------------
@@ -540,7 +523,7 @@ GenericComCallStub_FirstStackAdjust     SETA GenericComCallStub_FirstStackAdjust
     SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0
 
     str x12, [sp, #(GenericComCallStub_FrameOffset + UnmanagedToManagedFrame__m_pvDatum)]
-    add x1, sp, #GenericComCallStub_FrameOffset
+    add x0, sp, #GenericComCallStub_FrameOffset
     bl COMToCLRWorker
 
     ; pop the stack
@@ -1029,7 +1012,8 @@ Fail
 
     LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain
     ; If class is not initialized, bail to C++ helper
-    ldr x1, [x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics]
+    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
+    ldar x1, [x1]
     tbnz x1, #0, CallHelper1
     mov x0, x1
     ret lr
@@ -1043,7 +1027,8 @@ CallHelper1
 
     LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain
     ; If class is not initialized, bail to C++ helper
-    ldr x1, [x0, #OFFSETOF__DynamicStaticsInfo__m_pGCStatics]
+    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pGCStatics
+    ldar x1, [x1]
     tbnz x1, #0, CallHelper2
     mov x0, x1
     ret lr

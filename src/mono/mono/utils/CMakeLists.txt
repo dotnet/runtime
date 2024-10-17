@@ -141,8 +141,6 @@ set(utils_common_sources
     mono-tls.h
     mono-tls-inline.h
     mono-tls.c
-    mono-utils-debug.c
-    mono-utils-debug.h
     mono-memory-model.h
     atomic.h
     atomic.c

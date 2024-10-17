@@ -93,7 +93,7 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Arg_TypedReference_Null);
 
             // Passing TypedReference by reference is easier to make correct in native code
-            return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
+            return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, obj, (RuntimeType?)DeclaringType);
         }
 
         [DebuggerStepThrough]
@@ -109,12 +109,12 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Arg_TypedReference_Null);
 
             // Passing TypedReference by reference is easier to make correct in native code
-            RuntimeFieldHandle.SetValueDirect(this, (RuntimeType)FieldType, &obj, value, (RuntimeType?)DeclaringType);
+            RuntimeFieldHandle.SetValueDirect(this, (RuntimeType)FieldType, obj, value, (RuntimeType?)DeclaringType);
         }
 
         public override RuntimeFieldHandle FieldHandle => new RuntimeFieldHandle(this);
 
-        internal IntPtr GetFieldHandle()
+        internal IntPtr GetFieldDesc()
         {
             return m_fieldHandle;
         }

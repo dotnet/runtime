@@ -110,7 +110,7 @@ internal readonly struct MemberTypeInfo
     {
         // This library tries to minimize the number of concepts the users need to learn to use it.
         // Since SZArrays are most common, it provides an SZArrayRecord<T> abstraction.
-        // Every other array (jagged, multi-dimensional etc) is represented using SZArrayRecord.
+        // Every other array (jagged, multi-dimensional etc) is represented using ArrayRecord.
         // The goal of this method is to determine whether given array can be represented as SZArrayRecord<ClassRecord>.
 
         (BinaryType binaryType, object? additionalInfo) = Infos[0];

@@ -16,6 +16,7 @@ namespace System.Reflection.Metadata
         internal const int ByRef = -3;
         private const char EscapeCharacter = '\\';
 #if NET8_0_OR_GREATER
+        // Keep this in sync with GetFullTypeNameLength/NeedsEscaping
         private static readonly SearchValues<char> s_endOfFullTypeNameDelimitersSearchValues = SearchValues.Create("[]&*,+\\");
 #endif
 
@@ -30,7 +31,7 @@ namespace System.Reflection.Metadata
             foreach (TypeName genericArg in genericArgs)
             {
                 result.Append('[');
-                result.Append(genericArg.AssemblyQualifiedName);
+                result.Append(genericArg.AssemblyQualifiedName); // see recursion comments in TypeName.FullName
                 result.Append(']');
                 result.Append(',');
             }
@@ -97,11 +98,16 @@ namespace System.Reflection.Metadata
                 return offset;
             }
 
+            // Keep this in sync with s_endOfFullTypeNameDelimitersSearchValues
             static bool NeedsEscaping(char c) => c is '[' or ']' or '&' or '*' or ',' or '+' or EscapeCharacter;
         }
 
         internal static ReadOnlySpan<char> GetName(ReadOnlySpan<char> fullName)
         {
+            // The two-value form of MemoryExtensions.LastIndexOfAny does not suffer
+            // from the behavior mentioned in the comment at the top of GetFullTypeNameLength.
+            // It always takes O(m * i) worst-case time and is safe to use here.
+
             int offset = fullName.LastIndexOfAny('.', '+');
 
             if (offset > 0 && fullName[offset - 1] == EscapeCharacter) // this should be very rare (IL Emit & pure IL)
@@ -181,6 +187,13 @@ namespace System.Reflection.Metadata
             else
             {
                 Debug.Assert(rankOrModifier >= 2);
+
+                // O(rank) work, so we have to assume the rank is trusted. We don't put a hard cap on this,
+                // but within the TypeName parser, we do require the input string to contain the correct number
+                // of commas. This forces the input string to have at least O(rank) length, so there's no
+                // alg. complexity attack possible here. Callers can of course pass any arbitrary value to
+                // TypeName.MakeArrayTypeName, but per first sentence in this comment, we have to assume any
+                // such arbitrary value which is programmatically fed in originates from a trustworthy source.
 
                 builder.Append('[');
                 builder.Append(',', rankOrModifier - 1);
@@ -310,6 +323,9 @@ namespace System.Reflection.Metadata
                     else if (TryStripFirstCharAndTrailingSpaces(ref input, ','))
                     {
                         // [,,, ...]
+                        // The runtime restricts arrays to rank 32, but we don't enforce that here.
+                        // Instead, the max rank is controlled by the total number of commas present
+                        // in the array decorator.
                         checked { rank++; }
                         goto ReadNextArrayToken;
                     }

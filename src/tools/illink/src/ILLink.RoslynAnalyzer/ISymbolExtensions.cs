@@ -103,15 +103,15 @@ namespace ILLink.RoslynAnalyzer
 		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesOnAssociatedSymbol (this IMethodSymbol methodSymbol) =>
 			methodSymbol.AssociatedSymbol is ISymbol associatedSymbol ? GetDynamicallyAccessedMemberTypes (associatedSymbol) : DynamicallyAccessedMemberTypes.None;
 
-		internal static bool TryGetOverriddenMember (this ISymbol? symbol, [NotNullWhen (returnValue: true)] out ISymbol? overridenMember)
+		internal static bool TryGetOverriddenMember (this ISymbol? symbol, [NotNullWhen (returnValue: true)] out ISymbol? overriddenMember)
 		{
-			overridenMember = symbol switch {
+			overriddenMember = symbol switch {
 				IMethodSymbol method => method.OverriddenMethod,
 				IPropertySymbol property => property.OverriddenProperty,
 				IEventSymbol @event => @event.OverriddenEvent,
 				_ => null,
 			};
-			return overridenMember != null;
+			return overriddenMember != null;
 		}
 
 		public static SymbolDisplayFormat ILLinkTypeDisplayFormat { get; } =

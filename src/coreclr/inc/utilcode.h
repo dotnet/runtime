@@ -225,8 +225,10 @@ typedef LPSTR   LPUTF8;
     } \
     LPSTR ptrname = (LPSTR)__CQuickBytes##ptrname.Ptr()
 
+// ptrname will be deleted when it goes out of scope.
 #define MAKE_UTF8PTR_FROMWIDE(ptrname, widestr) CQuickBytes _##ptrname; _##ptrname.ConvertUnicode_Utf8(widestr); LPSTR ptrname = (LPSTR) _##ptrname.Ptr();
 
+// ptrname will be deleted when it goes out of scope.
 #define MAKE_UTF8PTR_FROMWIDE_NOTHROW(ptrname, widestr) \
     CQuickBytes __qb##ptrname; \
     int __l##ptrname = (int)u16_strlen(widestr); \
@@ -3098,9 +3100,9 @@ class RangeList
         return this->AddRangeWorker(start, end, id);
     }
 
-    void RemoveRanges(void *id, const BYTE *start = NULL, const BYTE *end = NULL)
+    void RemoveRanges(void *id)
     {
-        return this->RemoveRangesWorker(id, start, end);
+        return this->RemoveRangesWorker(id);
     }
 
     BOOL IsInRange(TADDR address, TADDR *pID = NULL)
@@ -3114,16 +3116,14 @@ class RangeList
 
     // You can overload these two for synchronization (as LockedRangeList does)
     virtual BOOL AddRangeWorker(const BYTE *start, const BYTE *end, void *id);
-    // If both "start" and "end" are NULL, then this method deletes all ranges with
-    // the given id (i.e. the original behaviour).  Otherwise, it ignores the given
-    // id and deletes all ranges falling in the region [start, end).
-    virtual void RemoveRangesWorker(void *id, const BYTE *start = NULL, const BYTE *end = NULL);
+    // Deletes all ranges with the given id
+    virtual void RemoveRangesWorker(void *id);
 #else
     virtual BOOL AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
     {
         return TRUE;
     }
-    virtual void RemoveRangesWorker(void *id, const BYTE *start = NULL, const BYTE *end = NULL) { }
+    virtual void RemoveRangesWorker(void *id) { }
 #endif // !DACCESS_COMPILE
 
     virtual BOOL IsInRangeWorker(TADDR address, TADDR *pID = NULL);

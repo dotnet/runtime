@@ -64,41 +64,44 @@ PhaseStatus StackLevelSetter::DoPhase()
     //
     bool madeChanges = false;
 
-    if (comp->opts.OptimizationEnabled())
+    if (comp->fgHasAddCodeDscMap())
     {
-        comp->compUsesThrowHelper = false;
-        for (Compiler::AddCodeDsc* add = comp->fgGetAdditionalCodeDescriptors(); add != nullptr; add = add->acdNext)
+        if (comp->opts.OptimizationEnabled())
         {
-            if (add->acdUsed)
+            comp->compUsesThrowHelper = false;
+            for (Compiler::AddCodeDsc* const add : Compiler::AddCodeDscMap::ValueIteration(comp->fgGetAddCodeDscMap()))
             {
-                // Create the helper call
-                //
-                comp->fgCreateThrowHelperBlockCode(add);
-                comp->compUsesThrowHelper = true;
-            }
-            else
-            {
-                // Remove the helper call block
-                //
-                BasicBlock* const block = add->acdDstBlk;
-                assert(block->isEmpty());
-                JITDUMP("Throw help block " FMT_BB " is unused\n", block->bbNum);
-                block->RemoveFlags(BBF_DONT_REMOVE);
-                comp->fgRemoveBlock(block, /* unreachable */ true);
-            }
+                if (add->acdUsed)
+                {
+                    // Create the helper call
+                    //
+                    comp->fgCreateThrowHelperBlockCode(add);
+                    comp->compUsesThrowHelper = true;
+                }
+                else
+                {
+                    // Remove the helper call block
+                    //
+                    BasicBlock* const block = add->acdDstBlk;
+                    assert(block->isEmpty());
+                    JITDUMP("Throw help block " FMT_BB " is unused\n", block->bbNum);
+                    block->RemoveFlags(BBF_DONT_REMOVE);
+                    comp->fgRemoveBlock(block, /* unreachable */ true);
+                }
 
-            madeChanges = true;
+                madeChanges = true;
+            }
         }
-    }
-    else
-    {
-        // Assume all helpers used. Fill in all helper block code.
-        //
-        for (Compiler::AddCodeDsc* add = comp->fgGetAdditionalCodeDescriptors(); add != nullptr; add = add->acdNext)
+        else
         {
-            add->acdUsed = true;
-            comp->fgCreateThrowHelperBlockCode(add);
-            madeChanges = true;
+            // Assume all helpers used. Fill in all helper block code.
+            //
+            for (Compiler::AddCodeDsc* const add : Compiler::AddCodeDscMap::ValueIteration(comp->fgGetAddCodeDscMap()))
+            {
+                add->acdUsed = true;
+                comp->fgCreateThrowHelperBlockCode(add);
+                madeChanges = true;
+            }
         }
     }
 
@@ -268,7 +271,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 //
 void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* block)
 {
-    Compiler::AddCodeDsc* add = comp->fgFindExcptnTarget(kind, comp->bbThrowIndex(block));
+    Compiler::AddCodeDsc* add = comp->fgFindExcptnTarget(kind, block);
     assert(add != nullptr);
 
     // We expect we'll actually need this helper.

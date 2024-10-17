@@ -3,6 +3,7 @@
 
 #include "guid.h"
 #include "random.h"
+#include <string.h>
 #ifdef HOST_WINDOWS
 #include <Windows.h>
 #endif

@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Configuration.Memory
 {
     /// <summary>
-    /// In-memory implementation of <see cref="IConfigurationProvider"/>
+    /// Provides configuration key-value pairs that are obtained from memory.
     /// </summary>
     public class MemoryConfigurationProvider : ConfigurationProvider, IEnumerable<KeyValuePair<string, string?>>
     {
@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Configuration.Memory
         }
 
         /// <summary>
-        /// Add a new key and value pair.
+        /// Adds a new key-value pair.
         /// </summary>
         /// <param name="key">The configuration key.</param>
         /// <param name="value">The configuration value.</param>

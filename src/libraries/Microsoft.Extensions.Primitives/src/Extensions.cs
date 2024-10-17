@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Primitives
     public static class Extensions
     {
         /// <summary>
-        /// Add the given <see cref="StringSegment"/> to the <see cref="StringBuilder"/>.
+        /// Adds the given <see cref="StringSegment"/> to the <see cref="StringBuilder"/>.
         /// </summary>
         /// <param name="builder">The <see cref="StringBuilder"/> to add to.</param>
         /// <param name="segment">The <see cref="StringSegment"/> to add.</param>

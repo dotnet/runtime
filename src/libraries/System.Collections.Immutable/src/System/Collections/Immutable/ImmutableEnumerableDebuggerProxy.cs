@@ -54,7 +54,7 @@ namespace System.Collections.Immutable
     /// This class should only be used with immutable enumerables, since it
     /// caches the enumerable into an array for display in the debugger.
     /// </remarks>
-    internal class ImmutableEnumerableDebuggerProxy<T>
+    internal sealed class ImmutableEnumerableDebuggerProxy<T>
     {
         /// <summary>
         /// The enumerable to show to the debugger.

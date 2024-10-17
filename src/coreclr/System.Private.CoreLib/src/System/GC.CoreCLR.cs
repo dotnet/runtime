@@ -155,12 +155,16 @@ namespace System
             _RemoveMemoryPressure((ulong)bytesAllocated);
         }
 
-
         // Returns the generation that obj is currently in.
         //
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetGeneration(object obj);
+        public static int GetGeneration(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+            return GetGenerationInternal(obj);
+        }
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern int GetGenerationInternal(object obj);
 
         // Forces a collection of all generations from 0 through Generation.
         //

@@ -19,7 +19,7 @@ void minipal_co_task_mem_free(void* pv)
 // CoTaskMemAlloc always aligns on an 8-byte boundary.
 #define ALIGN 8
 
-static void* minipal_co_task_mem_alloc(size_t cb)
+void* minipal_co_task_mem_alloc(size_t cb)
 {
     // Ensure malloc always allocates.
     if (cb == 0)

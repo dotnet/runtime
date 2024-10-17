@@ -124,7 +124,7 @@ namespace Wasm.Build.Tests
                                     File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
                                     File.WriteAllText(Path.Combine(_projectDir!, "runtimeconfig.template.json"), runtimeConfigTemplateJson);
                                 },
-                                DotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release")));
+                                DotnetWasmFromRuntimePack: IsDotnetWasmFromRuntimePack(buildArgs)));
 
             RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
                                 test: output => Assert.Contains("test_runtimeconfig_json: 25", output), host: host, id: id);
@@ -153,7 +153,7 @@ namespace Wasm.Build.Tests
                                 {
                                     File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
                                 },
-                                DotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release")));
+                                DotnetWasmFromRuntimePack: IsDotnetWasmFromRuntimePack(buildArgs)));
 
             RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
                                 test: output => Assert.Contains("System.Threading.ThreadPool.MaxThreads: 20", output), host: host, id: id);
@@ -185,7 +185,7 @@ namespace Wasm.Build.Tests
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
 
             if (dotnetWasmFromRuntimePack == null)
-                dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
+                dotnetWasmFromRuntimePack = IsDotnetWasmFromRuntimePack(buildArgs);
 
             BuildProject(buildArgs,
                             id: id,

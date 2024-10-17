@@ -5,6 +5,18 @@
     <ArchiveName Condition="'$(PgoInstrument)' != ''">$(ArchiveName)-pgo</ArchiveName>
   </PropertyGroup>
 
+  <!-- Libraries might be built with a different Configuration,, 
+       make sure we honor that when building ProjectReferences. -->
+  <Target Name="UpdateLibrariesProjectReferenceConfiguration" AfterTargets="IncludeTransitiveProjectReferences">
+    <FindUnderPath Files="@(ProjectReference)" Path="$(LibrariesProjectRoot)">
+      <Output TaskParameter="InPath" ItemName="LibrariesProjectReference" />
+    </FindUnderPath>
+    <ItemGroup>
+      <ProjectReference Remove="@(LibrariesProjectReference)" />
+      <ProjectReference Include="@(LibrariesProjectReference)" SetConfiguration="Configuration=$(LibrariesConfiguration)"/>
+    </ItemGroup>
+  </Target>
+
   <!--
     Import stubs for compatibility with packaging tools, if not building a pkgproj. Ordinarily,
     listing this before the ../Directory.Build.targets import would be sufficient, but the packaging
