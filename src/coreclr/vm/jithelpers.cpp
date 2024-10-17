@@ -4718,6 +4718,25 @@ bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)
     return (METHOD__NIL != hlpDynamicToBinderMap[ftnNum]);
 }
 
+bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(ftnNum < CORINFO_HELP_COUNT);
+
+    if (
+#define DYNAMICJITHELPER(code,fn,binderId)
+#define JITHELPER(code,fn,binderId)
+#define DYNAMICJITHELPER_NOINDIRECT(code,fn,binderId) (code == ftnNum) ||
+#include "jithelpers.h"
+        false)
+    {
+        return false;
+    }
+    
+    return true;
+}
+
 /*********************************************************************/
 // Initialize the part of the JIT helpers that require much of the
 // EE infrastructure to be in place.
