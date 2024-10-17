@@ -79,8 +79,8 @@ internal class RFLogging
                 }
                 catch (IOException e)
                 {
-                    ReliabilityFramework.MyDebugBreak(String.Format("LogWorker IOException:{0}", e.ToString()));
                     //Disk may be full so simply stop logging
+                    throw new Exception("Fail to write message to log file: " + e.Message);
                 }
             }
 
@@ -120,7 +120,6 @@ internal class RFLogging
                 }
                 catch (IOException e)
                 {
-                    ReliabilityFramework.MyDebugBreak(String.Format("LogWorker IOException:{0}", e.ToString()));
                 }
             }
         }
