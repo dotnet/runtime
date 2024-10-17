@@ -740,20 +740,6 @@ ep_rt_process_shutdown (void)
 
 static
 inline
-void
-ep_rt_create_activity_id (
-	uint8_t *activity_id,
-	uint32_t activity_id_len)
-{
-	STATIC_CONTRACT_NOTHROW;
-	EP_ASSERT (activity_id != NULL);
-	EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
-
-	minipal_guid_v4_create (reinterpret_cast<minipal_guid_t *>(activity_id));
-}
-
-static
-inline
 bool
 ep_rt_is_running (void)
 {

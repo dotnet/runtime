@@ -13,7 +13,6 @@
 #include <mono/metadata/profiler.h>
 #include <mono/mini/mini-runtime.h>
 #include <minipal/getexepath.h>
-#include <minipal/random.h>
 #include <runtime_version.h>
 #include <clretwallmain.h>
 
@@ -58,14 +57,6 @@ EVENTPIPE_TRACE_CONTEXT MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_DOTNET_Co
 
 void
 ep_rt_mono_thread_exited (void);
-
-bool
-ep_rt_mono_rand_try_get_bytes (
-	uint8_t *buffer,
-	size_t buffer_size)
-{
-	return minipal_get_cryptographically_secure_random_bytes(buffer, buffer_size);
-}
 
 char *
 ep_rt_mono_get_managed_cmd_line (void)
