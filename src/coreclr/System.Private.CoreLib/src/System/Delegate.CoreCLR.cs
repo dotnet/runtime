@@ -144,7 +144,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            int hashCode = _methodDesc.GetHashCode();
+            int hashCode = MethodDesc.GetHashCode();
             if (_methodPtrAux == IntPtr.Zero && _target != null)
             {
                 hashCode += RuntimeHelpers.GetHashCode(_target) * 33;
