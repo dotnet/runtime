@@ -937,6 +937,7 @@ LEAF_END setFPReturn, _TEXT
 LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
     ld.d $a1, $a0, OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
+    dbar 0
     bnez $a1, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
     ori  $a0, $a1, 0
     jirl $r0, $ra, 0
@@ -954,6 +955,7 @@ LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
     ld.d $a1, $a0, OFFSETOF__DynamicStaticsInfo__m_pGCStatics
+    dbar 0
     bnez $a1, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
     ori  $a0, $a1, 0
     jirl $r0, $ra, 0
@@ -1098,7 +1100,7 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 LEAF_ENTRY GetThreadStaticsVariableOffset, _TEXT
         PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16
-        la.tls.ie   $a0, t_ThreadStatics
+        la.tls.desc   $a0, t_ThreadStatics
         EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 16
         EPILOG_RETURN
 LEAF_END GetThreadStaticsVariableOffset, _TEXT

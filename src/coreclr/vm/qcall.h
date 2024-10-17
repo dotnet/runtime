@@ -129,8 +129,8 @@
     MODE_PREEMPTIVE;            \
 
 #define QCALL_CHECK_NO_GC_TRANSITION    \
-    THROWS;                             \
-    GC_TRIGGERS;                        \
+    NOTHROW;                            \
+    GC_NOTRIGGER;                       \
     MODE_COOPERATIVE;                   \
 
 #define QCALL_CONTRACT CONTRACTL { QCALL_CHECK; } CONTRACTL_END;
@@ -232,30 +232,33 @@ public:
     };
 
     //
-    // ObjectHandleOnStack type is used for managed objects
+    // ByteRefOnStack type is used for returning on stack byref to byte.
     //
-    struct RefHandleOnStack
+    struct ByteRefOnStack final
     {
-        void ** m_ppRefHandle;
-
-        void* Get()
+        struct ByteRef
         {
-            LIMITED_METHOD_CONTRACT;
-            return *m_ppRefHandle;
-        }
+            BYTE* m_pByte;
+        };
+
+        ByteRef* m_pByteRef;
 
 #ifndef DACCESS_COMPILE
-        //
-        // Helpers for returning common managed types from QCall
-        //
-        void Set(void* value)
+        void Set(BYTE* data)
         {
-            LIMITED_METHOD_CONTRACT;
+            CONTRACTL
+            {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_COOPERATIVE;
+                PRECONDITION(m_pByteRef != NULL);
+            }
+            CONTRACTL_END;
 
             // The space for the return value has to be on the stack
-            _ASSERTE(Thread::IsAddressInCurrentStack(m_ppRefHandle));
+            _ASSERTE(Thread::IsAddressInCurrentStack(m_pByteRef));
 
-            *m_ppRefHandle = value;
+            m_pByteRef->m_pByte = data;
         }
 #endif // !DACCESS_COMPILE
     };

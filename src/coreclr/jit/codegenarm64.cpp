@@ -3704,8 +3704,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     if (cpObjNode->IsVolatile())
     {
-        // issue a full memory barrier before a volatile CpObj operation
-        instGen_MemoryBarrier();
+        // issue a store barrier before a volatile CpObj operation
+        instGen_MemoryBarrier(BARRIER_STORE_ONLY);
     }
 
     emitter* emit = GetEmitter();
@@ -5754,6 +5754,10 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
         return;
     }
 #endif // DEBUG
+
+    // We cannot emit BARRIER_STORE_ONLY better than BARRIER_FULL on arm64 today
+    if (barrierKind == BARRIER_STORE_ONLY)
+        barrierKind = BARRIER_FULL;
 
     // Avoid emitting redundant memory barriers on arm64 if they belong to the same IG
     // and there were no memory accesses in-between them

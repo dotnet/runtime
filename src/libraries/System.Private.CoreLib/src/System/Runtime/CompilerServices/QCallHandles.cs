@@ -34,24 +34,30 @@ namespace System.Runtime.CompilerServices
         }
     }
 
-    internal ref struct RefHandle<T>
+    internal ref struct ByteRef
     {
-        public ref T Reference;
+        private ref byte _ref;
+        internal ref byte Get()
+        {
+            return ref _ref;
+        }
     }
 
-    // Wrapper for address of a object variable on stack
-    internal unsafe ref struct RefHandleOnStack
+    // Wrapper for address of a byref to byte variable on stack
+    internal unsafe ref struct ByteRefOnStack
     {
-        private void* _ptr;
-
-        private RefHandleOnStack(void* pObject)
+        private readonly void* _pByteRef;
+        private ByteRefOnStack(void* pByteRef)
         {
-            _ptr = pObject;
+            _pByteRef = pByteRef;
         }
 
-        internal static RefHandleOnStack Create<T>(ref RefHandle<T> o)
+        internal static ByteRefOnStack Create(ref ByteRef byteRef)
         {
-            return new RefHandleOnStack(Unsafe.AsPointer(ref o));
+            // This is valid because the ByteRef is ByRefLike (stack allocated)
+            // and the ByteRefOnStack is expected to have a shorter lifetime
+            // than the ByteRef instance.
+            return new ByteRefOnStack(Unsafe.AsPointer(ref byteRef));
         }
     }
 
