@@ -5183,8 +5183,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         {
             // adrp + add with relocations will be emitted
             GetEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, callTarget,
-                                    (ssize_t)pAddr DEBUGARG((size_t)compiler->eeFindHelper(helper))
-                                        DEBUGARG(GTF_ICON_METHOD_HDL));
+                                       (ssize_t)pAddr DEBUGARG((size_t)compiler->eeFindHelper(helper))
+                                           DEBUGARG(GTF_ICON_METHOD_HDL));
         }
         else
         {
