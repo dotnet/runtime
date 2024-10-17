@@ -15,12 +15,9 @@
 
   <!-- When doing post build sign, pull in the arcade sign.props file, which will
        create some initial sign groups and then pulls in the repo's custom Signing.props overrides.
-       Before importing the signing props. Set PrepareArtifactst=true. Depending on context (SDK project vs. not),
+       Before importing the signing props. Depending on context (SDK project vs. not),
        the initial imports of livebuilds.targets and Configuration.props are already imported and thus cannot
        be imported again. Without those imports, the globbing of files to sign will not work properly. -->
-  <PropertyGroup>
-    <PrepareArtifacts>true</PrepareArtifacts>
-  </PropertyGroup>
   <Import Project="../tools/Sign.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
   <Import Project="$(RepositoryEngineeringDir)Publishing.props" Condition="Exists('$(RepositoryEngineeringDir)Publishing.props')" />
@@ -68,18 +65,13 @@
     </ItemsToPush>
   </ItemDefinitionGroup>
 
-  <!--
-    Run Arcade's signing project directly. The 'eng/Signing.props' extensibility props file checks
-    if '$(<StageName>)' == 'true' and points Arcade to the correct files.
-  -->
   <Target Name="SignArtifacts"
           Condition="'$(PostBuildSign)' != 'true'" >
     <MSBuild
       Projects="$(ArcadeSdkSignProject)"
       Targets="Sign"
       Properties="
-        DownloadDirectory=$(DownloadDirectory);
-        PrepareArtifacts=$(PrepareArtifacts)" />
+        DownloadDirectory=$(DownloadDirectory)" />
   </Target>
 
   <!--

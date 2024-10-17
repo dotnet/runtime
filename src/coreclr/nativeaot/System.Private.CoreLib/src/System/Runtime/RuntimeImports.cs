@@ -24,7 +24,7 @@ namespace System.Runtime
     //            optional library, those methods can be moved to a different file/namespace/dll
     internal static partial class RuntimeImports
     {
-        private const string RuntimeLibrary = "*";
+        internal const string RuntimeLibrary = "*";
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCrashInfoBuffer")]
@@ -425,7 +425,7 @@ namespace System.Runtime
         // Yield the cpu to another thread ready to process, if one is available.
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhYield")]
         private static partial int _RhYield();
-        internal static bool RhYield() { return (_RhYield() != 0); }
+        internal static bool RhYield() => _RhYield() != 0;
 
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhFlushProcessWriteBuffers")]
         internal static partial void RhFlushProcessWriteBuffers();
