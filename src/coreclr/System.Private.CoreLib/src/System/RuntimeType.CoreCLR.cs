@@ -3919,7 +3919,7 @@ namespace System
 
                 try
                 {
-                    invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null);
+                    invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null, out state);
                 }
                 catch (MissingMethodException mme) // Should we catch all exceptions?
                 {
