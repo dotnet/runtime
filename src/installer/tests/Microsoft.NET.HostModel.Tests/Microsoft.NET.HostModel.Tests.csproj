@@ -13,4 +13,7 @@
     <ProjectReference Include="..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="MachObjectSigning\Data\*" />
+  </ItemGroup>
 </Project>
