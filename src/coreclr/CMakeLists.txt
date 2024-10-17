@@ -250,10 +250,6 @@ if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_H
   add_subdirectory(utilcode)
   add_subdirectory(inc)
 
-  if(CLR_CMAKE_HOST_UNIX)
-      add_subdirectory(palrt)
-  endif(CLR_CMAKE_HOST_UNIX)
-
   add_subdirectory(ilasm)
   add_subdirectory(ildasm)
   add_subdirectory(gcinfo)
