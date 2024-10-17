@@ -144,20 +144,12 @@ namespace System
 
         public override int GetHashCode()
         {
-            //
-            // this is not right in the face of a method being jitted in one delegate and not in another
-            // in that case the delegate is the same and Equals will return true but GetHashCode returns a
-            // different hashcode which is not true.
-            /*
-            if (_methodPtrAux == IntPtr.Zero)
-                return unchecked((int)((long)this._methodPtr));
-            else
-                return unchecked((int)((long)this._methodPtrAux));
-            */
-            if (_methodPtrAux == IntPtr.Zero)
-                return (_target != null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + GetType().GetHashCode();
-            else
-                return GetType().GetHashCode();
+            int hashCode = _methodDesc.GetHashCode();
+            if (_methodPtrAux == IntPtr.Zero && _target != null)
+            {
+                hashCode += RuntimeHelpers.GetHashCode(_target) * 33;
+            }
+            return hashCode;
         }
 
         protected virtual MethodInfo GetMethodImpl()
