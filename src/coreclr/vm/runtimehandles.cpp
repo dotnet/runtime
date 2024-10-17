@@ -2750,7 +2750,7 @@ extern "C" void QCALLTYPE ModuleHandle_GetDynamicMethod(QCall::ModuleHandle pMod
     BEGIN_QCALL;
 
     // Make a copy of the name
-    INT32 nameLen = (INT32)strlen(name) + 1;
+    size_t nameLen = strlen(name) + 1;
     NewArrayHolder<char> pName(new char[nameLen]);
     memcpy(pName, name, nameLen * sizeof(char));
 

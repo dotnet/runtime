@@ -1421,28 +1421,21 @@ namespace System
         private static partial void GetDynamicMethod(
             QCallModule module,
             string name,
-            byte* sig,
+            byte[] sig,
             int sigLen,
             ObjectHandleOnStack resolver,
             ObjectHandleOnStack result);
 
-        internal static IRuntimeMethodInfo GetDynamicMethod(Reflection.Emit.DynamicMethod method, RuntimeModule module, string name, byte[] sig, Resolver resolver)
+        internal static IRuntimeMethodInfo GetDynamicMethod(RuntimeModule module, string name, byte[] sig, Resolver resolver)
         {
-            if (module is null)
-            {
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
-            }
-
             IRuntimeMethodInfo? methodInfo = null;
-            fixed (byte* pSig = sig)
             GetDynamicMethod(
                 new QCallModule(ref module),
                 name,
-                pSig,
+                sig,
                 sig.Length,
                 ObjectHandleOnStack.Create(ref resolver),
                 ObjectHandleOnStack.Create(ref methodInfo));
-            GC.KeepAlive(method);
             return methodInfo!;
         }
 
