@@ -614,8 +614,8 @@ namespace Microsoft.Extensions.DependencyInjection
             // Act
             var ex = Assert.Throws<InvalidOperationException>(() => services.GetRequiredService<TypedClientNoHttpClientCtor>());
             Assert.Equal(
-                SR.Format(SR.TypedClient_NoHttpClientCtor, typeof(TypedClientNoHttpClientCtor).Name)
-                , ex.Message);
+                SR.Format(SR.TypedClient_NoHttpClientCtor, typeof(TypedClientNoHttpClientCtor).Name),
+                ex.Message);
         }
 
         [Fact]
