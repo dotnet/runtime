@@ -217,8 +217,18 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void PrepareDelegate(Delegate d);
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareDelegate")]
+        private static partial void PrepareDelegate(ObjectHandleOnStack d);
+
+        public static void PrepareDelegate(Delegate d)
+        {
+            if (d is null)
+            {
+                return;
+            }
+
+            PrepareDelegate(ObjectHandleOnStack.Create(ref d));
+        }
 
         /// <summary>
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
@@ -689,6 +699,8 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_Category_Nullable = 0x00050000;
         private const uint enum_flag_Category_PrimitiveValueType = 0x00060000; // sub-category of ValueType, Enum or primitive value type
         private const uint enum_flag_Category_TruePrimitive = 0x00070000; // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.)
+        private const uint enum_flag_Category_Array = 0x00080000;
+        private const uint enum_flag_Category_Array_Mask = 0x000C0000;
         private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
         private const uint enum_flag_Category_Interface = 0x000C0000;
         // Types that require non-trivial interface cast have this bit set in the category
@@ -778,6 +790,8 @@ namespace System.Runtime.CompilerServices
         public bool IsPrimitive => (Flags & enum_flag_Category_Mask) is enum_flag_Category_PrimitiveValueType or enum_flag_Category_TruePrimitive;
 
         public bool IsTruePrimitive => (Flags & enum_flag_Category_Mask) is enum_flag_Category_TruePrimitive;
+
+        public bool IsArray => (Flags & enum_flag_Category_Array_Mask) == enum_flag_Category_Array;
 
         public bool HasInstantiation => (Flags & enum_flag_HasComponentSize) == 0 && (Flags & enum_flag_GenericsMask) != enum_flag_GenericsMask_NonGeneric;
 
@@ -942,9 +956,15 @@ namespace System.Runtime.CompilerServices
             return CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr);
         }
 
+        public int GetCorElementType() => GetCorElementType(m_asTAddr);
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo_NoCacheLookup")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
+
+        [SuppressGCTransition]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_GetCorElementType")]
+        private static partial int GetCorElementType(void* typeHnd);
     }
 
     // Helper structs used for tail calls via helper.
