@@ -213,6 +213,8 @@ namespace System.Text.Json.Serialization.Tests
                 options2.AddContext<JsonContext>();
                 Assert.Throws<NotSupportedException>(() => converter.Write(writer, value, options2));
                 Assert.Equal(0, writer.BytesCommitted + writer.BytesPending);
+            }, new RemoteInvokeOptions() {
+                TimeOut = RemoteExecutor.FailWaitTimeoutMilliseconds * PlatformDetection.SlowRuntimeTimeoutModifier
             }).Dispose();
         }
 
