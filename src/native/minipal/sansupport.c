@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "utils.h"
+#include <sanitizer/asan_interface.h>
 
 // Use a typedef here as __declspec + pointer return type causes a parse error in MSVC
 typedef const char* charptr_t;
 
-charptr_t SANITIZER_CALLBACK_CALLCONV __asan_default_options(void);
 
 charptr_t SANITIZER_CALLBACK_CALLCONV __asan_default_options(void) {
     // symbolize=1 to get symbolized stack traces
@@ -18,6 +18,5 @@ charptr_t SANITIZER_CALLBACK_CALLCONV __asan_default_options(void) {
   return "symbolize=1 use_sigaltstack=0 detect_leaks=0 handle_segv=0 allocator_may_return_null=1";
 }
 
-void SANITIZER_CALLBACK_CALLCONV __asan_on_error(void);
 void SANITIZER_CALLBACK_CALLCONV __asan_on_error(void) {
 }
