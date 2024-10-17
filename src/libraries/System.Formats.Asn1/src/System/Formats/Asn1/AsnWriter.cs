@@ -757,7 +757,7 @@ namespace System.Formats.Asn1
             ///   Pops the ASN.1 scope.
             /// </summary>
             /// <exception cref="InvalidOperationException">
-            ///   The scope has already been popped.
+            ///   A scope was pushed within this scope, but has yet to be popped.
             /// </exception>
             public void Dispose()
             {
