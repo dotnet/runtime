@@ -28,7 +28,7 @@ NESTED_ENTRY RhpNewFast, _TEXT, NoHandler
 
         mov         rsi, [rax + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
         add         rdx, rsi
-        cmp         rdx, [rax + OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         rdx, [rax + OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         ja          LOCAL_LABEL(RhpNewFast_RarePath)
 
         // set the new alloc pointer
@@ -143,7 +143,7 @@ NESTED_ENTRY RhNewString, _TEXT, NoHandler
         // rcx == Thread*
         // rdx == string size
         // r12 == element count
-        cmp         rax, [rcx + OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         rax, [rcx + OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         ja          LOCAL_LABEL(RhNewString_RarePath)
 
         mov         [rcx + OFFSETOF__Thread__m_alloc_context__alloc_ptr], rax
@@ -226,7 +226,7 @@ NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
         // rcx == Thread*
         // rdx == array size
         // r12 == element count
-        cmp         rax, [rcx + OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         rax, [rcx + OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         ja          LOCAL_LABEL(RhpNewArray_RarePath)
 
         mov         [rcx + OFFSETOF__Thread__m_alloc_context__alloc_ptr], rax

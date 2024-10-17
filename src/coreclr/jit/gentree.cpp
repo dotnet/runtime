@@ -8630,18 +8630,22 @@ GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeF
 // gtNewMemoryBarrier: Create a memory barrier node
 //
 // Arguments:
-//    loadOnly - relaxes the full memory barrier to be load-only
+//    barrierKind - the kind of barrer we are creating
 //
 // Return Value:
 //    The created GT_MEMORYBARRIER node.
 //
-GenTree* Compiler::gtNewMemoryBarrier(bool loadOnly)
+GenTree* Compiler::gtNewMemoryBarrier(BarrierKind barrierKind)
 {
     GenTree* tree = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
     tree->gtFlags |= GTF_GLOB_REF | GTF_ASG;
-    if (loadOnly)
+    if (barrierKind == BARRIER_LOAD_ONLY)
     {
         tree->gtFlags |= GTF_MEMORYBARRIER_LOAD;
+    }
+    else if (barrierKind == BARRIER_STORE_ONLY)
+    {
+        tree->gtFlags |= GTF_MEMORYBARRIER_STORE;
     }
     return tree;
 }
@@ -20981,6 +20985,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
 #if defined(TARGET_XARCH)
         case GT_RSZ:
+        case GT_LSH:
         {
             // We don't have actual instructions for shifting bytes, so we'll emulate them
             // by shifting 32-bit values and masking off the bits that should be zeroed.
@@ -20996,7 +21001,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             if (op2->IsCnsIntOrI())
             {
                 ssize_t shiftCount = op2->AsIntCon()->gtIconVal;
-                ssize_t mask       = 255 >> shiftCount;
+                ssize_t mask       = op == GT_RSZ ? (255 >> shiftCount) : ((255 << shiftCount) & 0xFF);
 
                 maskAmountOp = gtNewIconNode(mask, type);
             }
@@ -21005,7 +21010,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 assert(op2->OperIsHWIntrinsic(NI_Vector128_CreateScalar));
 
                 GenTree* nonConstantByteShiftCountOp = fgMakeMultiUse(&op2->AsHWIntrinsic()->Op(1));
-                maskAmountOp = gtNewOperNode(GT_RSZ, TYP_INT, gtNewIconNode(255), nonConstantByteShiftCountOp);
+                maskAmountOp = gtNewOperNode(op, TYP_INT, gtNewIconNode(255), nonConstantByteShiftCountOp);
             }
 
             GenTree* shiftOp = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, CORINFO_TYPE_INT, simdSize);

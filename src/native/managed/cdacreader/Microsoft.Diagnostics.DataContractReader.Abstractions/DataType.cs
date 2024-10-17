@@ -24,6 +24,7 @@ public enum DataType
     Thread,
     ThreadStore,
     GCAllocContext,
+    EEAllocContext,
     Exception,
     ExceptionInfo,
     RuntimeThreadLocals,
@@ -64,5 +65,4 @@ public enum DataType
     ILCodeVersioningState,
     NativeCodeVersionNode,
     ProfControlBlock,
-
 }

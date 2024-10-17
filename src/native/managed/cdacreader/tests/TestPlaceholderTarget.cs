@@ -204,9 +204,9 @@ internal class TestPlaceholderTarget : Target
         internal Lazy<Contracts.IThread>? ThreadContract { get; set; }
         internal Lazy<Contracts.IRuntimeTypeSystem>? RuntimeTypeSystemContract { get; set; }
         internal Lazy<Contracts.IDacStreams>? DacStreamsContract { get; set; }
+        internal Lazy<Contracts.IExecutionManager> ExecutionManagerContract { get; set; }
         internal Lazy<Contracts.ICodeVersions>? CodeVersionsContract { get; set; }
         internal Lazy<Contracts.IPrecodeStubs>? PrecodeStubsContract { get; set; }
-        internal Lazy<Contracts.IExecutionManager> ExecutionManagerContract { get; set; }
         internal Lazy<Contracts.IReJIT>? ReJITContract { get; set; }
 
         public override Contracts.IException Exception => ExceptionContract.Value ?? throw new NotImplementedException();
@@ -216,9 +216,9 @@ internal class TestPlaceholderTarget : Target
         public override Contracts.IThread Thread => ThreadContract.Value ?? throw new NotImplementedException();
         public override Contracts.IRuntimeTypeSystem RuntimeTypeSystem => RuntimeTypeSystemContract.Value ?? throw new NotImplementedException();
         public override Contracts.IDacStreams DacStreams => DacStreamsContract.Value ?? throw new NotImplementedException();
+        public override Contracts.IExecutionManager ExecutionManager => ExecutionManagerContract.Value ?? throw new NotImplementedException();
         public override Contracts.ICodeVersions CodeVersions => CodeVersionsContract.Value ?? throw new NotImplementedException();
         public override Contracts.IPrecodeStubs PrecodeStubs => PrecodeStubsContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IExecutionManager ExecutionManager => ExecutionManagerContract.Value ?? throw new NotImplementedException();
         public override Contracts.IReJIT ReJIT => ReJITContract.Value ?? throw new NotImplementedException();
     }
 
