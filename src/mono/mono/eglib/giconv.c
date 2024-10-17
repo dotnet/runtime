@@ -29,6 +29,7 @@
 #include "../utils/mono-errno.h"
 
 #include <minipal/utf8.h>
+#include <minipal/strings.h>
 
 #ifdef _MSC_VER
 #define FORCE_INLINE(RET_TYPE) __forceinline RET_TYPE

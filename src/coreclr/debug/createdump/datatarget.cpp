@@ -102,7 +102,7 @@ DumpDataTarget::GetImageBase(
     *baseAddress = 0;
 
     char tempModuleName[MAX_PATH];
-    size_t cch = u16_strlen(moduleName) + 1;
+    size_t cch = minipal_u16_strlen((CHAR16_T*)moduleName) + 1;
     int length = minipal_convert_utf16_to_utf8((CHAR16_T*)moduleName, cch, tempModuleName, sizeof(tempModuleName), 0);
     if (length > 0)
     {
