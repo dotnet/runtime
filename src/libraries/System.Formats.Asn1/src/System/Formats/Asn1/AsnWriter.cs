@@ -52,7 +52,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Create a new <see cref="AsnWriter"/> with a given set of encoding rules and an initial capacity.
+        ///   Initializes a new instance of <see cref="AsnWriter" /> with a given set of encoding rules and an initial capacity.
         /// </summary>
         /// <param name="ruleSet">The encoding constraints for the writer.</param>
         /// <param name="initialCapacity">The minimum capacity with which to initialize the underlying buffer.</param>
