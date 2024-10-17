@@ -127,6 +127,7 @@ include (${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
 
 add_subdirectory(${CLR_SRC_NATIVE_DIR}/containers containers)
 add_subdirectory(${CLR_SRC_NATIVE_DIR}/eventpipe eventpipe)
+add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal shared_minipal)
 
 if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(debug/debug-pal)
