@@ -2111,8 +2111,7 @@ function updateOptions () {
         if (value !== INT32_MIN) {
             mono_log_info(`Updated option ${optionNames[k]} to ${value}`);
             (<any>optionTable)[k] = value;
-        }
-        else
+        } else
             mono_log_info(`Failed to retrieve value of option ${optionNames[k]}`);
     }
 }
