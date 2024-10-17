@@ -268,9 +268,9 @@ namespace Microsoft.Interop.JavaScript
                                     IdentifierName("Initialize")),
                                 Declare(SpanOf(jsMarshalerArgument), Constants.ArgumentsBuffer,
                                     StackAllocArrayCreationExpression(
-                                        ArrayType(jsMarshalerArgument))
-                                        .WithRankSpecifiers(SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
-                                            OmittedArraySizeExpression()))))
+                                        ArrayType(jsMarshalerArgument)
+                                            .WithRankSpecifiers(SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
+                                                OmittedArraySizeExpression())))))
                                         .WithInitializer(
                                             InitializerExpression(
                                                 SyntaxKind.ArrayInitializerExpression,
