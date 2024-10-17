@@ -251,6 +251,18 @@ internal unsafe class TargetTestHelpers
         }
     }
 
+    internal TargetPointer ReadPointer(ReadOnlySpan<byte> src)
+    {
+        if (Arch.Is64Bit)
+        {
+            return Arch.IsLittleEndian ? BinaryPrimitives.ReadUInt64LittleEndian(src) : BinaryPrimitives.ReadUInt64BigEndian(src);
+        }
+        else
+        {
+            return Arch.IsLittleEndian ? BinaryPrimitives.ReadUInt32LittleEndian(src) : BinaryPrimitives.ReadUInt32BigEndian(src);
+        }
+    }
+
     internal int SizeOfPrimitive(DataType type)
     {
         return type switch
@@ -276,5 +288,63 @@ internal unsafe class TargetTestHelpers
     }
 
     #endregion Mock memory initialization
+
+    private int AlignUp(int offset, int align)
+    {
+        return (offset + align - 1) & ~(align - 1);
+    }
+
+    public enum FieldLayout
+    {
+        CIsh, /* align each field to its size */
+        Packed, /* pack fields contiguously */
+    }
+
+    public readonly struct LayoutResult
+    {
+        public Dictionary<string, Target.FieldInfo> Fields { get; init; }
+        /* offset between elements of this type in an array */
+        public uint Stride { get; init; }
+        /* maximum alignment of any field */
+        public readonly uint MaxAlign { get; init; }
+    }
+
+    public LayoutResult LayoutFields((string Name, DataType Type)[] fields)
+        => LayoutFields(FieldLayout.CIsh, fields);
+
+    // Implements a simple layout algorithm that aligns fields to their size
+    // and aligns the structure to the largest field size.
+    public LayoutResult  LayoutFields(FieldLayout style, (string Name, DataType Type)[] fields)
+    {
+        Dictionary<string,Target.FieldInfo> fieldInfos = new ();
+        int maxAlign = 1;
+        int offset = 0;
+        for (int i = 0; i < fields.Length; i++)
+        {
+            var (name, type) = fields[i];
+            int size = SizeOfPrimitive(type);
+            int align = size;
+            if (align > maxAlign)
+            {
+                maxAlign = align;
+            }
+            offset = style switch
+            {
+                FieldLayout.CIsh => AlignUp(offset, align),
+                FieldLayout.Packed => offset,
+                _ => throw new InvalidOperationException("Unknown layout style"),
+            };
+            fieldInfos[name] = new Target.FieldInfo {
+                Offset = offset,
+            };
+            offset += size;
+        }
+        int stride = style switch {
+            FieldLayout.CIsh => AlignUp(offset, maxAlign),
+            FieldLayout.Packed => offset,
+            _ => throw new InvalidOperationException("Unknown layout style"),
+        };
+        return new LayoutResult() { Fields = fieldInfos, Stride = (uint)stride, MaxAlign = (uint)maxAlign};
+    }
 
 }

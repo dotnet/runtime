@@ -39,4 +39,8 @@ internal abstract class ContractRegistry
     /// Gets an instance of the DacStreams contract for the target.
     /// </summary>
     public abstract IDacStreams DacStreams { get; }
+    /// <summary>
+    /// Gets an instance of the ExecutionManager contract for the target.
+    /// </summary>
+    public abstract IExecutionManager ExecutionManager { get; }
 }

@@ -51,4 +51,10 @@ public enum DataType
     InstantiatedMethodDesc,
     DynamicMethodDesc,
     StoredSigMethodDesc,
+    RangeSectionMap,
+    RangeSectionFragment,
+    RangeSection,
+    RealCodeHeader,
+    CodeHeapListNode,
+
 }
