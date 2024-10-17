@@ -580,6 +580,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual CipherAlgorithmType CipherAlgorithm
         {
             get
@@ -589,6 +590,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual int CipherStrength
         {
             get
@@ -598,6 +600,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual HashAlgorithmType HashAlgorithm
         {
             get
@@ -607,6 +610,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual int HashStrength
         {
             get
@@ -616,6 +620,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual ExchangeAlgorithmType KeyExchangeAlgorithm
         {
             get
@@ -625,6 +630,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual int KeyExchangeStrength
         {
             get
