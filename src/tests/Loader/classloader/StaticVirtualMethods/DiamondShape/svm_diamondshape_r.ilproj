@@ -2,6 +2,7 @@
   <PropertyGroup>
     <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <SynthesizeIlasmAssemblyName>false</SynthesizeIlasmAssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="svm_diamondshape.il" />

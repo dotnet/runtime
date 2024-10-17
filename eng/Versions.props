@@ -108,7 +108,7 @@
     <MicrosoftNETCoreAppRuntimewinx64Version>10.0.0-alpha.1.24504.10</MicrosoftNETCoreAppRuntimewinx64Version>
     <MicrosoftExtensionsDependencyModelVersion>6.0.0</MicrosoftExtensionsDependencyModelVersion>
     <!-- ILAsm dependencies -->
-    <MicrosoftNETCoreILAsmVersion>10.0.0-alpha.1.24504.10</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNETCoreILAsmVersion>10.0.0-alpha.1.24517.1</MicrosoftNETCoreILAsmVersion>
     <!-- Libraries dependencies -->
     <MicrosoftBclAsyncInterfacesVersion>6.0.0</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftBclHashCodeVersion>1.1.1</MicrosoftBclHashCodeVersion>
