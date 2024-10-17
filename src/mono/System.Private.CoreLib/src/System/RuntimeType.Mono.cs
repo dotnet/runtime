@@ -1548,7 +1548,18 @@ namespace System
                             throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName));
                         }
 
-                        MethodBase? invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null, out object? state);
+                        MethodBase? invokeMethod;
+                        object? state;
+
+                        try
+                        {
+                            invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null, out state);
+                        }
+                        catch (MissingMethodException mme) // Should we catch all exceptions?
+                        {
+                            throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName), mme);
+                        }
+
                         if (invokeMethod == null)
                         {
                             throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName));
