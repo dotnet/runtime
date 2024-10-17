@@ -50,7 +50,7 @@ public static class Program
 
             string publishDirectory = Path.GetDirectoryName(typeof(Program).Assembly.Location) ?? Environment.CurrentDirectory;
 
-            await PrepareOneFuzzDeploymentAsync(fuzzers, publishDirectory, args[1]);
+            await PrepareOneFuzzDeploymentAsync(fuzzers, publishDirectory, args[1]).ConfigureAwait(false);
             return;
         }
 
@@ -108,7 +108,7 @@ public static class Program
         await DownloadArtifactAsync(
             Path.Combine(publishDirectory, "libfuzzer-dotnet.exe"),
             "https://github.com/Metalnem/libfuzzer-dotnet/releases/download/v2023.06.26.1359/libfuzzer-dotnet-windows.exe",
-            "cbc1f510caaec01b17b5e89fc780f426710acee7429151634bbf4d0c57583458");
+            "cbc1f510caaec01b17b5e89fc780f426710acee7429151634bbf4d0c57583458").ConfigureAwait(false);
 
         foreach (IFuzzer fuzzer in fuzzers)
         {
@@ -263,7 +263,7 @@ public static class Program
             Console.WriteLine($"Downloading {Path.GetFileName(path)}");
 
             using var client = new HttpClient();
-            byte[] bytes = await client.GetByteArrayAsync(url);
+            byte[] bytes = await client.GetByteArrayAsync(url).ConfigureAwait(false);
 
             if (!Convert.ToHexString(SHA256.HashData(bytes)).Equals(hash, StringComparison.OrdinalIgnoreCase))
             {

@@ -4,8 +4,8 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-#define PROBE_FRAME_SIZE 0xD0  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, ra, m_pThread, m_Flags) +
-                               // 10 * 8 for callee saved registers +
+#define PROBE_FRAME_SIZE 0xC8  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, ra, m_pThread, m_Flags) +
+                               // 9 * 8 for callee saved registers +
                                // 1 * 8  for caller SP +
                                // 2 * 8  for int returns +
                                // 1 * 8  for alignment padding +
@@ -34,28 +34,28 @@
     PROLOG_SAVE_REG_PAIR   25, 26, 0x30
     PROLOG_SAVE_REG_PAIR   27, 28, 0x40
     PROLOG_SAVE_REG_PAIR   29, 30, 0x50
-    PROLOG_SAVE_REG_PAIR   31,  2, 0x60
+    PROLOG_SAVE_REG        31,     0x60
 
-    // Slot at $sp+0x70 is reserved for caller sp
+    // Slot at $sp+0x68 is reserved for caller sp
 
     // Save the integer return registers
-    st.d  $a0, $sp, 0x78
-    st.d  $a1, $sp, 0x80
+    st.d  $a0, $sp, 0x70
+    st.d  $a1, $sp, 0x78
 
-    // Slot at $sp+0x88 is alignment padding
+    // Slot at $sp+0x80 is alignment padding
 
     // Save the FP return registers
-    fst.d  $f0, $sp, 0x90
-    fst.d  $f1, $sp, 0x98
-    fst.d  $f2, $sp, 0xA0
-    fst.d  $f3, $sp, 0xA8
+    fst.d  $f0, $sp, 0x88
+    fst.d  $f1, $sp, 0x90
+    fst.d  $f2, $sp, 0x98
+    fst.d  $f3, $sp, 0xA0
 
     // Perform the rest of the PInvokeTransitionFrame initialization.
     st.d  \threadReg, $sp, OFFSETOF__PInvokeTransitionFrame__m_pThread   // Thread * (unused by stackwalker)
     st.d  \BITMASK, $sp, OFFSETOF__PInvokeTransitionFrame__m_pThread + 8 // save the register bitmask passed in by caller
 
     addi.d  \trashReg, $sp,  PROBE_FRAME_SIZE                            // recover value of caller's SP
-    st.d  \trashReg, $sp, 0x70                                           // save caller's SP
+    st.d  \trashReg, $sp, 0x68                                           // save caller's SP
 
     // link the frame into the Thread
     ori  \trashReg, $sp, 0
@@ -70,21 +70,21 @@
 .macro POP_PROBE_FRAME
 
     // Restore the integer return registers
-    ld.d  $a0, $sp, 0x78
-    ld.d  $a1, $sp, 0x80
+    ld.d  $a0, $sp, 0x70
+    ld.d  $a1, $sp, 0x78
 
     // Restore the FP return registers
-    fld.d  $f0, $sp, 0x90
-    fld.d  $f1, $sp, 0x98
-    fld.d  $f2, $sp, 0xA0
-    fld.d  $f3, $sp, 0xA8
+    fld.d  $f0, $sp, 0x88
+    fld.d  $f1, $sp, 0x90
+    fld.d  $f2, $sp, 0x98
+    fld.d  $f3, $sp, 0xA0
 
     // Restore callee saved registers
     EPILOG_RESTORE_REG_PAIR 23, 24, 0x20
     EPILOG_RESTORE_REG_PAIR 25, 26, 0x30
     EPILOG_RESTORE_REG_PAIR 27, 28, 0x40
     EPILOG_RESTORE_REG_PAIR 29, 30, 0x50
-    EPILOG_RESTORE_REG_PAIR 31,  2, 0x60
+    EPILOG_RESTORE_REG      31,     0x60
 
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, PROBE_FRAME_SIZE
 .endm
@@ -134,7 +134,7 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     FixupHijackedCallstack
 
     PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $a3
-    andi  $t8, $a3, TrapThreadsFlags_TrapThreads_Bit
+    bstrpick.d  $t8, $a3, TrapThreadsFlags_TrapThreads_Bit, TrapThreadsFlags_TrapThreads_Bit
     bne  $t8, $zero, LOCAL_LABEL(WaitForGC)
     jirl  $r0, $ra, 0
 
@@ -154,7 +154,7 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
     bl  C_FUNC(RhpWaitForGC2)
 
     ld.d  $a2,$sp, OFFSETOF__PInvokeTransitionFrame__m_Flags
-    andi  $t8, $a2, PTFF_THREAD_ABORT_BIT
+    bstrpick.d  $t8, $a2, PTFF_THREAD_ABORT_BIT, PTFF_THREAD_ABORT_BIT
     bne  $t8, $zero, LOCAL_LABEL(ThrowThreadAbort)
 
     .cfi_remember_state
