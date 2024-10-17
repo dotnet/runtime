@@ -17224,7 +17224,7 @@ GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
         // properly for this particular case. For now, caller is responsible for avoiding such cases.
 
         GenTree* comma  = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, tree);
-        comma->gtVNPair = tree->gtVNPair;
+        comma->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, vnStore->VNPExceptionSet(sideEffectsSource->gtVNPair));
         return comma;
     }
     return tree;
