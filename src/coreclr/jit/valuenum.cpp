@@ -10912,9 +10912,9 @@ PhaseStatus Compiler::fgValueNumber()
 // fgValueNumberBlocks: Run value numbering for a block or blocks in a loop
 //
 // Arguments:
-//   block -- block to value number (may already have been numbered)
-//   visitedBlocks -- blocks that have already had VNs assigned
-//   traits        -- pointer to BitVecTraits describing visitedBlocks
+//   block - block to value number (may already have been numbered)
+//   visitedBlocks - blocks that have already had VNs assigned
+//   traits - pointer to BitVecTraits describing visitedBlocks
 //
 // Notes:
 //
