@@ -6273,7 +6273,7 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
     }
 
     // Prepare the tree for replacement so any side effects can be extracted.
-    GenTree* sideEffList;
+    GenTree* sideEffList = nullptr;
     gtExtractSideEffList(relop, &sideEffList, GTF_SIDE_EFFECT, true);
 
     // Transform the relop's operands to be both zeroes.
