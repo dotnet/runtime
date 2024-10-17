@@ -383,7 +383,7 @@
       <Sha>1f220e48e5bc666e992b24f118a17e01ca316819</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.sdk" Version="10.0.100-alpha.1.24480.5">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.sdk" Version="10.0.100-alpha.1.24510.13">
       <Uri>https://github.com/dotnet/sdk</Uri>
       <Sha>9de571282093d76401a3f457a8e9f4427e088778</Sha>
       <SourceBuild RepoName="sdk" ManagedOnly="true" />
