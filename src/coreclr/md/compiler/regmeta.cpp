@@ -247,7 +247,7 @@ RegMeta::CreateNewMD()
     ModuleRec *pModule;
     GUID       mvid;
     IfFailGo(m_pStgdb->m_MiniMd.AddModuleRecord(&pModule, &iRecord));
-    IfFailGo(minipal_guid_v4_create(reinterpret_cast<minipal_guid_t*>(&mvid)) ? S_OK : E_FAIL);
+    IfFailGo(minipal_guid_v4_create(&mvid) ? S_OK : E_FAIL);
     IfFailGo(m_pStgdb->m_MiniMd.PutGuid(TBL_Module, ModuleRec::COL_Mvid, pModule, mvid));
 
     // Add the dummy module typedef which we are using to parent global items.

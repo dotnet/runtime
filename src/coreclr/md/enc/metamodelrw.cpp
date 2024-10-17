@@ -1197,7 +1197,7 @@ CMiniMdRW::SetOption(
         PutCol(TBL_Module, ModuleRec::COL_EncBaseId, pMod, uVal);
 */
         // Allocate a new GUID for EncId.
-    IfFailGo(minipal_guid_v4_create(reinterpret_cast<minipal_guid_t*>(&encid)) ? S_OK : E_FAIL);
+    IfFailGo(minipal_guid_v4_create(&encid) ? S_OK : E_FAIL);
         IfFailGo(PutGuid(TBL_Module, ModuleRec::COL_EncId, pMod, encid));
 #else //!FEATURE_METADATA_EMIT
         IfFailGo(E_INVALIDARG);

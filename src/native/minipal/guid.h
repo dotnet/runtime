@@ -38,6 +38,13 @@ inline bool operator!=(minipal_guid_t const& a, minipal_guid_t const& b)
 {
     return !(a == b);
 }
+
+template<typename T>
+bool minipal_guid_v4_create(T* guid)
+{
+    static_assert(sizeof(T) == sizeof(minipal_guid_t), "minipal_guid_t size mismatch");
+    return minipal_guid_v4_create(reinterpret_cast<minipal_guid_t*>(guid));
+}
 #endif
 
 #endif // MINIPAL_GUID_H
