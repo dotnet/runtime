@@ -304,11 +304,7 @@ g_utf16_to_utf8_impl (const gunichar2 *str, glong len, glong *items_read, glong 
 		flags |= MINIPAL_TREAT_AS_LITTLE_ENDIAN;
 #endif
 	if (len < 0) {
-		len = 0;
-		while (str[len])
-			len++;
-
-		len++;
+		len = minipal_u16_strlen (str) + 1;
 	}
 
 	glong ret = (glong)minipal_get_length_utf16_to_utf8 (str, len, flags);
@@ -349,11 +345,7 @@ g_utf16_to_utf8_custom_alloc (const gunichar2 *str, glong len, glong *items_read
 	errno = 0;
 
 	if (len < 0) {
-		len = 0;
-		while (str[len])
-			len++;
-
-		len++;
+		len = minipal_u16_strlen (str) + 1;
 	}
 
 	glong ret = (glong)minipal_get_length_utf16_to_utf8 (str, len, 0);
@@ -391,9 +383,7 @@ g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *item
 	g_return_val_if_fail (str != NULL, NULL);
 
 	if (len < 0) {
-		len = 0;
-		while (str[len])
-			len++;
+		len = minipal_u16_strlen (str);
 	}
 
 	inptr = (char *) str;

@@ -202,7 +202,7 @@ WideCharToMultiByte(
     if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
         if (cchWideChar < 0)
-            cchWideChar = PAL_wcslen(lpWideCharStr) + 1;
+            cchWideChar = minipal_u16_strlen((CHAR16_T*)lpWideCharStr) + 1;
 
         if (!lpMultiByteStr || cbMultiByte == 0)
             retval = minipal_get_length_utf16_to_utf8((CHAR16_T*)lpWideCharStr, cchWideChar, dwFlags);
