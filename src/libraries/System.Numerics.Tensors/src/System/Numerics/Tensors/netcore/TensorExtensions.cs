@@ -2658,7 +2658,7 @@ namespace System.Numerics.Tensors
 
                 if (dimensions.IsEmpty)
                 {
-                    lengths = tensor._lengths.Reverse().ToArray();
+                    lengths = ((IEnumerable<nint>)tensor._lengths).Reverse().ToArray();
                     permutation = Enumerable.Range(0, tensor.Rank).Reverse().ToArray();
                 }
                 else

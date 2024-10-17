@@ -34,9 +34,14 @@ namespace System.Runtime.CompilerServices
         }
     }
 
-    internal ref struct ByteRef
+    internal unsafe ref struct ByteRef
     {
         private ref byte _ref;
+        private ByteRef(ref byte byteRef)
+        {
+            _ref = ref byteRef;
+        }
+
         internal ref byte Get()
         {
             return ref _ref;

@@ -1165,7 +1165,9 @@ namespace System.Net.Http.Headers
                 else
                 {
                     Debug.Assert(length > 1, "The header should have been removed when it became empty");
+#pragma warning disable 8619 // Nullability of reference types ...  does not match
                     values = multiValue = new string[length];
+#pragma warning restore 8619
                 }
 
                 int currentIndex = 0;
@@ -1205,8 +1207,10 @@ namespace System.Net.Http.Headers
                 }
 
                 int currentIndex = 0;
+#pragma warning disable 8620 // Argument of type 'string[]' cannot be used for parameter 'values'
                 ReadStoreValues<object?>(values, info.ParsedAndInvalidValues, descriptor.Parser, ref currentIndex);
                 ReadStoreValues<string?>(values, info.RawValue, null, ref currentIndex);
+#pragma warning restore 8620
                 Debug.Assert(currentIndex == length);
 
                 return length;
