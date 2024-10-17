@@ -190,7 +190,7 @@ try {
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
-            exit(0);
+            exit(42);
             break;
         case "InterpPgoTest":
             setModuleImports('main.js', {
