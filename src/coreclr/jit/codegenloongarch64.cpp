@@ -85,7 +85,9 @@ bool CodeGen::genInstrWithConstant(instruction ins,
         case INS_fst_d:
 
         case INS_ld_b:
+        case INS_ld_bu:
         case INS_ld_h:
+        case INS_ld_hu:
         case INS_ld_w:
         case INS_fld_s:
         case INS_ld_d:
@@ -4432,8 +4434,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_MEMORYBARRIER:
         {
-            CodeGen::BarrierKind barrierKind =
-                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY : BARRIER_FULL;
+            BarrierKind barrierKind =
+                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD
+                    ? BARRIER_LOAD_ONLY
+                    : (treeNode->gtFlags & GTF_MEMORYBARRIER_STORE ? BARRIER_STORE_ONLY : BARRIER_FULL);
 
             instGen_MemoryBarrier(barrierKind);
             break;

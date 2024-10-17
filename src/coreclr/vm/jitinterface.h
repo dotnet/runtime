@@ -145,18 +145,6 @@ EXTERN_C FCDECL1(void, JIT_MonExit_Portable, Object *obj);
 EXTERN_C FCDECL_MONHELPER(JIT_MonExitWorker, Object *obj);
 EXTERN_C FCDECL_MONHELPER(JIT_MonExitWorker_Portable, Object *obj);
 
-#ifndef JIT_MonEnterStatic
-#define JIT_MonEnterStatic JIT_MonEnterStatic_Portable
-#endif
-EXTERN_C FCDECL_MONHELPER(JIT_MonEnterStatic, AwareLock *lock);
-EXTERN_C FCDECL_MONHELPER(JIT_MonEnterStatic_Portable, AwareLock *lock);
-
-#ifndef JIT_MonExitStatic
-#define JIT_MonExitStatic JIT_MonExitStatic_Portable
-#endif
-EXTERN_C FCDECL_MONHELPER(JIT_MonExitStatic, AwareLock *lock);
-EXTERN_C FCDECL_MONHELPER(JIT_MonExitStatic_Portable, AwareLock *lock);
-
 #ifndef JIT_GetGCStaticBase
 #define JIT_GetGCStaticBase JIT_GetGCStaticBase_Portable
 #endif
@@ -1020,23 +1008,6 @@ GARY_DECL(VMHELPDEF, hlpFuncTable, CORINFO_HELP_COUNT);
 
 extern "C" const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT];
 
-#endif
-
-#if defined(_DEBUG) && (defined(TARGET_AMD64) || defined(TARGET_X86)) && !defined(TARGET_UNIX)
-typedef struct {
-    void*       pfnRealHelper;
-    const char* helperName;
-    LONG        count;
-    LONG        helperSize;
-} VMHELPCOUNTDEF;
-
-extern "C" VMHELPCOUNTDEF hlpFuncCountTable[CORINFO_HELP_COUNT+1];
-
-void InitJitHelperLogging();
-void WriteJitHelperCountToSTRESSLOG();
-#else
-inline void InitJitHelperLogging() { }
-inline void WriteJitHelperCountToSTRESSLOG() { }
 #endif
 
 // enum for dynamically assigned helper calls
