@@ -1,14 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// EEConfig.H
-//
 
+// EEConfig.H
 //
 // Fetched configuration data from the registry (should we Jit, run GC checks ...)
 //
-//
-
-
 
 #ifndef EECONFIG_H
 #define EECONFIG_H
@@ -17,6 +13,7 @@ class MethodDesc;
 
 #include "shash.h"
 #include "corhost.h"
+#include <minipal/debugger.h>
 
 #ifdef _DEBUG
 class TypeNamesList
@@ -716,7 +713,7 @@ public:
             _ASSERTE(str);                                              \
         }                                                               \
         else if (!(str)) {                                              \
-            if (IsDebuggerPresent()) DebugBreak();                      \
+            if (minipal_is_native_debugger_present()) DebugBreak();                      \
         }                                                               \
     } while(0)
 

@@ -14,11 +14,11 @@ namespace System
         /// Provides an implementation used for compatibility with cases where a seed is specified
         /// and thus the sequence produced historically could have been relied upon.
         /// </summary>
-        private sealed class Net5CompatSeedImpl : ImplBase
+        private sealed class CompatSeedImpl : ImplBase
         {
             private CompatPrng _prng; // mutable struct; do not make this readonly
 
-            public Net5CompatSeedImpl(int seed) =>
+            public CompatSeedImpl(int seed) =>
                 _prng.EnsureInitialized(seed);
 
             public override double Sample() => _prng.Sample();
@@ -104,7 +104,7 @@ namespace System
         /// Provides an implementation used for compatibility with cases where a derived type may
         /// reasonably expect its overrides to be called.
         /// </summary>
-        private sealed class Net5CompatDerivedImpl : ImplBase
+        private sealed class CompatDerivedImpl : ImplBase
         {
             /// <summary>Reference to the <see cref="Random"/> containing this implementation instance.</summary>
             /// <remarks>Used to ensure that any calls to other virtual members are performed using the Random-derived instance, if one exists.</remarks>
@@ -114,9 +114,9 @@ namespace System
             /// <summary>Lazily-initialized algorithm backing this instance.</summary>
             private CompatPrng _prng; // mutable struct; do not make this readonly
 
-            public Net5CompatDerivedImpl(Random parent) : this(parent, Shared.Next()) { }
+            public CompatDerivedImpl(Random parent) : this(parent, Shared.Next()) { }
 
-            public Net5CompatDerivedImpl(Random parent, int seed)
+            public CompatDerivedImpl(Random parent, int seed)
             {
                 _parent = parent;
                 _seed = seed;

@@ -5635,7 +5635,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 void FirstChanceExceptionNotification()
 {
 #ifndef TARGET_UNIX
-    if (IsDebuggerPresent())
+    if (minipal_is_native_debugger_present())
     {
         PAL_TRY(VOID *, unused, NULL)
         {

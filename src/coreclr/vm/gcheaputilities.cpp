@@ -41,7 +41,7 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-GVAL_IMPL_INIT(gc_alloc_context, g_global_alloc_context, {});
+GVAL_IMPL_INIT(ee_alloc_context, g_global_alloc_context, {});
 
 enum GC_LOAD_STATUS {
     GC_LOAD_STATUS_BEFORE_START,
