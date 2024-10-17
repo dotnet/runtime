@@ -5024,17 +5024,15 @@ void Compiler::fgSearchImprovedLayout()
     // Block reordering shouldn't change the method's entry point,
     // so if a block has an ordinal of zero and it's not 'fgFirstBB',
     // the block wasn't visited below, so it's not in the range of hot blocks.
-    unsigned* const ordinals       = new (this, CMK_Generic) unsigned[fgBBNumMax + 1]{};
-    unsigned        numHotBlocks   = 0;
-    BasicBlock*     finalBlock     = fgLastBBInMainFunction();
-    BasicBlock*     firstColdBlock = nullptr;
+    unsigned* const ordinals     = new (this, CMK_Generic) unsigned[fgBBNumMax + 1]{};
+    unsigned        numHotBlocks = 0;
+    BasicBlock*     finalBlock   = fgLastBBInMainFunction();
 
     for (BasicBlock* const block : Blocks(fgFirstBB, finalBlock))
     {
         if (block->isBBWeightCold(this))
         {
-            firstColdBlock = block;
-            finalBlock     = block->Prev();
+            finalBlock = block->Prev();
             break;
         }
 
@@ -5209,11 +5207,8 @@ void Compiler::fgSearchImprovedLayout()
             cost        = srcNextCost + dstPrevCost;
             improvement = candidateEdge->getLikelyWeight() + getCost(blockOrder[lastHotIndex], blockOrder[srcPos + 1]);
 
-            if (firstColdBlock != nullptr)
-            {
-                cost += getCost(blockOrder[lastHotIndex], firstColdBlock);
-                improvement += getCost(blockOrder[dstPos - 1], firstColdBlock);
-            }
+            // Don't include branches to the cold section (S4) in the cost/improvement calculation.
+            // If the section is truly cold, branches into it should have negligible cost.
         }
         else
         {
