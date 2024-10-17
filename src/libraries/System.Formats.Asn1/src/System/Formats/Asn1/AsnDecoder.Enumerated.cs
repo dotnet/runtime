@@ -64,7 +64,7 @@ namespace System.Formats.Asn1
         ///   the specified encoding rules, converting it to the
         ///   non-[<see cref="FlagsAttribute"/>] enum specified by <typeparamref name="TEnum"/>.
         /// </summary>
-        /// <typeparam name="TEnum">Destination enum type.</typeparam>
+        /// <typeparam name="TEnum">The destination enum type.</typeparam>
         /// <param name="source">The buffer containing encoded data.</param>
         /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
         /// <param name="bytesConsumed">
@@ -307,7 +307,7 @@ namespace System.Formats.Asn1
         ///   Reads the next value as an Enumerated with a specified tag, converting it to the
         ///   non-[<see cref="FlagsAttribute"/>] enum specified by <typeparamref name="TEnum"/>.
         /// </summary>
-        /// <typeparam name="TEnum">Destination enum type.</typeparam>
+        /// <typeparam name="TEnum">The destination enum type.</typeparam>
         /// <param name="expectedTag">
         ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 10).
         /// </param>
