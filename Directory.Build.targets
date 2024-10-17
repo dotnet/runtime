@@ -143,12 +143,12 @@
   <Target Name="FilterTransitiveProjectReferences"
           AfterTargets="IncludeTransitiveProjectReferences"
           Condition="'$(DisableTransitiveProjectReferences)' != 'true' and
-                     '@(DefaultReferenceExclusion)' != ''">
+                     ('@(DefaultReferenceExclusion)' != '' or '@(ProjectReferenceExclusion)' != '')">
     <ItemGroup>
       <_transitiveProjectReferenceWithProjectName Include="@(ProjectReference->Metadata('NuGetPackageId'))"
                                                   OriginalIdentity="%(Identity)" />
       <_transitiveIncludedProjectReferenceWithProjectName Include="@(_transitiveProjectReferenceWithProjectName)"
-                                                          Exclude="@(DefaultReferenceExclusion)" />
+                                                          Exclude="@(DefaultReferenceExclusion);@(ProjectReferenceExclusion)" />
       <_transitiveExcludedProjectReferenceWithProjectName Include="@(_transitiveProjectReferenceWithProjectName)"
                                                           Exclude="@(_transitiveIncludedProjectReferenceWithProjectName)" />
       <ProjectReference Remove="@(_transitiveExcludedProjectReferenceWithProjectName->Metadata('OriginalIdentity'))" />

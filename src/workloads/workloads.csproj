@@ -43,21 +43,21 @@
       <_ComponentResources Include="microsoft-net-runtime-mono-tooling" Title=".NET 9.0 Shared Mobile Build Tools"
                           Description="Shared build tasks for mobile platform development."/>
       <_ComponentResources Include="wasm-tools" Title=".NET 9.0 WebAssembly Build Tools"
-                          Description="Build tools for WebAssembly ahead-of-time (AoT) compilation and native linking."/>
+                          Description="Build tools for net9.0 WebAssembly ahead-of-time (AoT) compilation and native linking."/>
       <_ComponentResources Include="wasm-experimental" Title=".NET 9.0 WebAssembly Experimental Tools"
-                          Description=".NET 8.0 WebAssembly experimental tooling"/>
+                          Description=".NET 9.0 WebAssembly experimental tooling"/>
       <_ComponentResources Include="wasi-experimental" Title=".NET 9.0 Wasi Experimental"
                           Description=".NET 9.0 Experimental SDK and tooling for WASI"/>
       <_ComponentResources Include="microsoft-net-runtime-android" Title=".NET 9.0 Android Build Tools"
-                          Description="Build tools for Android compilation and native linking."/>
+                          Description="Build tools for net9.0 Android compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-android-aot" Title=".NET 9.0 Android Build Tools (AoT)"
-                          Description="Build tools for Android ahead-of-time (AoT) compilation and native linking."/>
+                          Description="Build tools for net9.0 Android ahead-of-time (AoT) compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-ios" Title=".NET 9.0 iOS Build Tools"
-                          Description="Build tools for iOS compilation and native linking."/>
+                          Description="Build tools for net9.0 iOS compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-tvos" Title=".NET 9.0 tvOS Build Tools"
-                          Description="Build tools for tvOS compilation and native linking."/>
+                          Description="Build tools for net9.0 tvOS compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-maccatalyst" Title=".NET 9.0 Mac Catalyst Build Tools"
-                          Description="Build tools for Mac Catalyst compilation and native linking."/>
+                          Description="Build tools for net9.0 Mac Catalyst compilation and native linking."/>
       <_ComponentResources Include="runtimes-ios" Title=".NET 9.0 iOS Runtimes"
                           Description=".NET 9.0 runtime components for iOS execution."/>
       <_ComponentResources Include="runtimes-tvos" Title=".NET 9.0 tvOS Build Tools"
@@ -70,21 +70,21 @@
       <_ComponentResources Include="microsoft-net-runtime-mono-tooling-net8" Title=".NET 8.0 Shared Mobile Build Tools"
                           Description="Shared build tasks for mobile platform development."/>
       <_ComponentResources Include="wasm-tools-net8" Title=".NET 8.0 WebAssembly Build Tools"
-                          Description="Build tools for WebAssembly ahead-of-time (AoT) compilation and native linking."/>
+                          Description="Build tools for net8.0 WebAssembly ahead-of-time (AoT) compilation and native linking."/>
       <_ComponentResources Include="wasm-experimental-net8" Title=".NET 8.0 WebAssembly Experimental Tools"
                           Description=".NET 8.0 WebAssembly experimental tooling"/>
       <_ComponentResources Include="wasi-experimental-net8" Title=".NET 8.0 Wasi Experimental"
                           Description=".NET 8.0 Experimental SDK and tooling for WASI"/>
       <_ComponentResources Include="microsoft-net-runtime-android-net8" Title=".NET 8.0 Android Build Tools"
-                          Description="Build tools for Android compilation and native linking."/>
+                          Description="Build tools for net8.0 Android compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-android-aot-net8" Title=".NET 8.0 Android Build Tools (AoT)"
-                          Description="Build tools for Android ahead-of-time (AoT) compilation and native linking."/>
+                          Description="Build tools for net8.0 Android ahead-of-time (AoT) compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-ios-net8" Title=".NET 8.0 iOS Build Tools"
-                          Description="Build tools for iOS compilation and native linking."/>
+                          Description="Build tools for net8.0 iOS compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-tvos-net8" Title=".NET 8.0 tvOS Build Tools"
-                          Description="Build tools for tvOS compilation and native linking."/>
+                          Description="Build tools for net8.0 tvOS compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-maccatalyst-net8" Title=".NET 8.0 Mac Catalyst Build Tools"
-                          Description="Build tools for Mac Catalyst compilation and native linking."/>
+                          Description="Build tools for net8.0 Mac Catalyst compilation and native linking."/>
       <_ComponentResources Include="runtimes-ios-net8" Title=".NET 8.0 iOS Runtimes"
                           Description=".NET 8.0 runtime components for iOS execution."/>
       <_ComponentResources Include="runtimes-tvos-net8" Title=".NET 8.0 tvOS Build Tools"
@@ -97,11 +97,11 @@
       <_ComponentResources Include="microsoft-net-runtime-mono-tooling-net7" Title=".NET 7.0 Shared Mobile Build Tools"
                           Description="Shared build tasks for mobile platform development."/>
       <_ComponentResources Include="wasm-tools-net7" Title=".NET 7.0 WebAssembly Build Tools"
-                          Description="Build tools for net6.0 WebAssembly ahead-of-time (AoT) compilation and native linking."/>
+                          Description="Build tools for net7.0 WebAssembly ahead-of-time (AoT) compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-android-net7" Title=".NET 7.0 Android Build Tools"
-                          Description="Build tools for net6.0 Android compilation and native linking."/>
+                          Description="Build tools for net7.0 Android compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-android-aot-net7" Title=".NET 7.0 Android Build Tools (AoT)"
-                          Description="Build tools for net6.0 Android ahead-of-time (AoT) compilation and native linking."/>
+                          Description="Build tools for net7.0 Android ahead-of-time (AoT) compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-ios-net7" Title=".NET 7.0 iOS Build Tools"
                           Description="Build tools for net7.0 iOS compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-tvos-net7" Title=".NET 7.0 tvOS Build Tools"

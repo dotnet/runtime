@@ -1,5 +1,10 @@
 <Project>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <!-- Update and drop package assets from Json, we'll use the framework version -->
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" PrivateAssets="All" ExcludeAssets="All" />
+  </ItemGroup>
+
   <Target Name="SetupTestContextVariables"
           Condition="'$(IsTestProject)' == 'true'"
           DependsOnTargets="

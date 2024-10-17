@@ -36,13 +36,12 @@
     <Compile Include="System\Security\Cryptography\Cose\SigStructureContext.cs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Cbor\src\System.Formats.Cbor.csproj" />
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+      <Compile Include="$(CoreLibSharedDir)System\Marvin.cs" Link="CoreLib\System\Marvin.cs" />
   </ItemGroup>
 
-  <!-- For System.HashCode -->
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)" />
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Cbor\src\System.Formats.Cbor.csproj" />
   </ItemGroup>
 
 </Project>
