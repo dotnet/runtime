@@ -70,6 +70,8 @@ internal sealed unsafe partial class MsQuicApi
     internal static bool Tls13ClientMayBeDisabled { get; }
 
 #pragma warning disable CA1810 // Initialize all static fields in 'MsQuicApi' when those fields are declared and remove the explicit static constructor
+    [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+        Justification = "The code handles the Assembly.Location being null/empty by falling back to AppContext.BaseDirectory")]
     static MsQuicApi()
     {
         bool loaded = false;
