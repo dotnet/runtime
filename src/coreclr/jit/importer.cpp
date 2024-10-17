@@ -7187,7 +7187,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assertImp(op1->TypeIs(TYP_REF));
 
                 // Check for null pointer - in the inliner case we simply abort.
-                if (compIsForInlining() && op1->IsCnsIntOrI())
+                if (compIsForInlining() && op1->IsIntegralConst(0))
                 {
                     compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_NULL_FOR_LDELEM);
                     return;
@@ -10644,10 +10644,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (isVolatile)
                     {
-                        // Wrap with memory barriers: full-barrier + call + load-barrier
-                        impAppendTree(gtNewMemoryBarrier(), CHECK_SPILL_ALL, impCurStmtDI);
+                        // Wrap with memory barriers: store-barrier + call + load-barrier
+                        impAppendTree(gtNewMemoryBarrier(BARRIER_STORE_ONLY), CHECK_SPILL_ALL, impCurStmtDI);
                         impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
-                        op1 = gtNewMemoryBarrier(true);
+                        op1 = gtNewMemoryBarrier(BARRIER_LOAD_ONLY);
                     }
                     else
                     {

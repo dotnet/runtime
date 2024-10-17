@@ -204,6 +204,13 @@ struct VarScopeDsc
 #endif
 };
 
+enum BarrierKind
+{
+    BARRIER_FULL,       // full barrier
+    BARRIER_LOAD_ONLY,  // load barrier
+    BARRIER_STORE_ONLY, // store barrier
+};
+
 // This class stores information associated with a LclVar SSA definition.
 class LclSsaVarDsc
 {
@@ -3455,7 +3462,7 @@ public:
 #endif
 #endif // FEATURE_HW_INTRINSICS
 
-    GenTree* gtNewMemoryBarrier(bool loadOnly = false);
+    GenTree* gtNewMemoryBarrier(BarrierKind barrierKind);
 
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
@@ -6931,7 +6938,6 @@ private:
     TypeProducerKind gtGetTypeProducerKind(GenTree* tree);
     bool gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call);
     bool gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInfoHelpFunc* pHelper = nullptr);
-    bool gtIsActiveCSE_Candidate(GenTree* tree);
 
     bool gtTreeContainsOper(GenTree* tree, genTreeOps op);
     ExceptionSetFlags gtCollectExceptions(GenTree* tree);
@@ -7078,6 +7084,7 @@ public:
     bool optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit);
 
     PhaseStatus optCloneLoops();
+    bool optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     bool optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR);
@@ -7685,7 +7692,7 @@ public:
                                          BasicBlock*             exiting,
                                          LoopLocalOccurrences*   loopLocals);
     bool optCanAndShouldChangeExitTest(GenTree* cond, bool dump);
-    bool optPrimaryIVHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
+    bool optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
 
     bool optWidenIVs(ScalarEvolutionContext& scevContext, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
     bool optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
@@ -8034,7 +8041,6 @@ public:
     GenTree*     optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
     GenTree*     optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call);
-    GenTree*     optExtractSideEffListFromConst(GenTree* tree);
 
     AssertionIndex GetAssertionCount()
     {
