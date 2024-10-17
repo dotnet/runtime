@@ -192,6 +192,16 @@ namespace System.Globalization
                 Next: ;
                 }
 
+                // Before we return -1, check if the remaining source contains any special or non-Ascii characters.
+                ReadOnlySpan<char> remainingSource = fromBeginning
+                    ? source.Slice(endIndex)
+                    : source.Slice(0, startIndex);
+
+                if (remainingSource.ContainsAnyExcept(s_nonSpecialAsciiChars))
+                {
+                    goto InteropCall;
+                }
+
                 return -1;
 
             InteropCall:
