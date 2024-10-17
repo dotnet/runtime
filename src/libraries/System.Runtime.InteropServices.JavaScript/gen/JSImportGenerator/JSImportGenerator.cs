@@ -270,7 +270,7 @@ namespace Microsoft.Interop.JavaScript
                                     StackAllocArrayCreationExpression(
                                         ArrayType(jsMarshalerArgument))
                                         .WithRankSpecifiers(SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
-                                            LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(parameters.Parameters.Length + 2))))))
+                                            OmittedArraySizeExpression()))))
                                         .WithInitializer(
                                             InitializerExpression(
                                                 SyntaxKind.ArrayInitializerExpression,
