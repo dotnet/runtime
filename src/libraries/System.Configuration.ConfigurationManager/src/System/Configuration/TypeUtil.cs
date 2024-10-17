@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Configuration.Internal;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Configuration
@@ -37,7 +38,17 @@ namespace System.Configuration
         /// <summary>
         /// Find type references that used to be found without assembly names
         /// </summary>
-        private static Type GetImplicitType(string typeString)
+        [UnconditionalSuppressMessage("TrimAnalysis", "IL2073",
+            Justification = "The annotations require fully-qualified type names, which will always return null. " +
+                "The annotation mismatch from the other return statements are unreachable in correctly annotated trimmed apps.")]
+        [UnconditionalSuppressMessage("TrimAnalysis", "IL2026",
+            Justification = "The call to Assembly.GetType is unreachable in correctly annotated trimmed apps.")]
+        [UnconditionalSuppressMessage("TrimAnalysis", "IL2057",
+            Justification = "The call to Type.GetType with typeString and assembly is unreachable in correctly annotated trimmed apps.")]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+        private static Type GetImplicitType(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            string typeString)
         {
             // Since the config APIs were originally implemented in System.dll,
             // references to types without assembly names could be resolved if
@@ -83,7 +94,11 @@ namespace System.Configuration
         // Get the type specified by typeString. If it fails, try to retrieve it
         // as a type from System.dll. If that fails,  return null or throw the original
         // exception as indicated by throwOnError.
-        internal static Type GetType(string typeString, bool throwOnError)
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+        internal static Type GetType(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            string typeString,
+            bool throwOnError)
         {
             Type type;
 
@@ -106,7 +121,12 @@ namespace System.Configuration
         // Ask the host to get the type specified by typeString. If it fails, try to retrieve it
         // as a type from System.dll. If that fails, return null or throw the original
         // exception as indicated by throwOnError.
-        internal static Type GetType(IInternalConfigHost host, string typeString, bool throwOnError)
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+        internal static Type GetType(
+            IInternalConfigHost host,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            string typeString,
+            bool throwOnError)
         {
             Type type;
             try
@@ -125,19 +145,27 @@ namespace System.Configuration
             return type ?? GetImplicitType(typeString);
         }
 
-        internal static T CreateInstance<T>(string typeString)
+        internal static T CreateInstance<T>(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            string typeString)
         {
             Type type = GetType(typeString, true);
             VerifyAssignableType(typeof(T), type, true);
             return (T)Activator.CreateInstance(type, true);
         }
 
-        internal static object CreateInstance(Type type)
+        internal static object CreateInstance(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type)
         {
             return Activator.CreateInstance(type, true);
         }
 
-        internal static ConstructorInfo GetConstructor(Type type, Type baseType, bool throwOnError)
+        internal static ConstructorInfo GetConstructor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type,
+            Type baseType,
+            bool throwOnError)
         {
             type = VerifyAssignableType(baseType, type, throwOnError);
             if (type == null)
@@ -153,7 +181,12 @@ namespace System.Configuration
             return ctor;
         }
 
-        internal static Type VerifyAssignableType(Type baseType, Type type, bool throwOnError)
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+        internal static Type VerifyAssignableType(
+            Type baseType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type,
+            bool throwOnError)
         {
             if (baseType.IsAssignableFrom(type))
                 return type;

@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -20,6 +21,7 @@ namespace System.Configuration
     //      Reset(ConfigurationElement parentSection, object context)
     //      DeserializeSection(object context, XmlNode xmlNode)
     //      SerializeSection(ConfigurationElement parentSection, object context, string name)
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     public abstract class ConfigurationElement
     {
         private const string LockAttributesKey = "lockAttributes";
@@ -226,7 +228,9 @@ namespace System.Configuration
 
         public Configuration CurrentConfiguration => _configRecord?.CurrentConfiguration;
 
-        internal static ConfigurationElement CreateElement(Type type)
+        internal static ConfigurationElement CreateElement(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type)
         {
             ConfigurationElement element = (ConfigurationElement)TypeUtil.CreateInstance(type);
             element.CallInit();
@@ -706,7 +710,10 @@ namespace System.Configuration
             return hHashCode;
         }
 
-        private static bool PropertiesFromType(Type type, out ConfigurationPropertyCollection result)
+        private static bool PropertiesFromType(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+            Type type,
+            out ConfigurationPropertyCollection result)
         {
             ConfigurationPropertyCollection properties = (ConfigurationPropertyCollection)s_propertyBags[type];
             bool firstTimeInit = false;
@@ -727,7 +734,9 @@ namespace System.Configuration
             return firstTimeInit;
         }
 
-        private static ConfigurationPropertyCollection CreatePropertyBagFromType(Type type)
+        private static ConfigurationPropertyCollection CreatePropertyBagFromType(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+            Type type)
         {
             Debug.Assert(type != null, "type != null");
 

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Security;
 
@@ -199,12 +200,19 @@ namespace System.Configuration.Internal
             return Host.EncryptSection(clearTextXml, protectionProvider, protectedConfigSection);
         }
 
-        public virtual Type GetConfigType(string typeName, bool throwOnError)
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+        public virtual Type GetConfigType(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            string typeName,
+            bool throwOnError)
         {
             return Host.GetConfigType(typeName, throwOnError);
         }
 
-        public virtual string GetConfigTypeName(Type t)
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+        public virtual string GetConfigTypeName(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type t)
         {
             return Host.GetConfigTypeName(t);
         }

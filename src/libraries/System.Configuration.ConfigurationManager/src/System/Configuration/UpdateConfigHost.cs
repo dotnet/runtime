@@ -4,12 +4,14 @@
 using System.Collections.Specialized;
 using System.Configuration.Internal;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace System.Configuration
 {
     // Configuration host that intercepts calls to filename functions
     // to support SaveAs to an alternate file stream.
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     internal sealed class UpdateConfigHost : DelegatingConfigHost
     {
         private HybridDictionary _streams; // oldStreamname -> StreamUpdate

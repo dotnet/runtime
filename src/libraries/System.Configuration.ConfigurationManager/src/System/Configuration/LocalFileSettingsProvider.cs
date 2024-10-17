@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Xml;
@@ -13,6 +14,7 @@ namespace System.Configuration
     /// <summary>
     /// This is a provider used to store configuration settings locally for client applications.
     /// </summary>
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     public class LocalFileSettingsProvider : SettingsProvider, IApplicationSettingsProvider
     {
         private string _appName = string.Empty;

@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Security;
 
 namespace System.Configuration.Internal
 {
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     internal sealed class InternalConfigHost : IInternalConfigHost
     {
         private const FileAttributes InvalidAttributesForWrite = FileAttributes.ReadOnly | FileAttributes.Hidden;
@@ -172,12 +174,19 @@ namespace System.Configuration.Internal
             return ProtectedConfigurationSection.EncryptSection(clearTextXml, protectionProvider);
         }
 
-        Type IInternalConfigHost.GetConfigType(string typeName, bool throwOnError)
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+        Type IInternalConfigHost.GetConfigType(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            string typeName,
+            bool throwOnError)
         {
             return Type.GetType(typeName, throwOnError);
         }
 
-        string IInternalConfigHost.GetConfigTypeName(Type t)
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+        string IInternalConfigHost.GetConfigTypeName(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type t)
         {
             return t.AssemblyQualifiedName;
         }

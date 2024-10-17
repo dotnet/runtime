@@ -1,15 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Configuration.Internal
 {
     // The runtime config system
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     internal sealed class ConfigSystem : IConfigSystem
     {
         private ImplicitMachineConfigHost _configHost;
         private IInternalConfigRoot _configRoot;
 
-        void IConfigSystem.Init(Type typeConfigHost, params object[] hostInitParams)
+        void IConfigSystem.Init(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type typeConfigHost,
+            params object[] hostInitParams)
         {
             _configRoot = new InternalConfigRoot();
 

@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Configuration.Internal;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Xml;
 
@@ -24,6 +25,7 @@ namespace System.Configuration
         private const string ApplicationSettingsGroupPrefix = ApplicationSettingsGroupName + "/";
         private const string UserSettingsGroupPrefix = UserSettingsGroupName + "/";
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private static Configuration GetUserConfig(bool isRoaming)
         {
             ConfigurationUserLevel userLevel = isRoaming ? ConfigurationUserLevel.PerUserRoaming :
@@ -32,6 +34,7 @@ namespace System.Configuration
             return ClientSettingsConfigurationHost.OpenExeConfiguration(userLevel);
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private static ClientSettingsSection GetConfigSection(Configuration config, string sectionName, bool declare)
         {
             string fullSectionName = UserSettingsGroupPrefix + sectionName;
@@ -54,6 +57,7 @@ namespace System.Configuration
 
         // Declares the section handler of a given section in its section group, if a declaration isn't already
         // present.
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private static void DeclareSection(Configuration config, string sectionName)
         {
             ConfigurationSectionGroup settingsGroup = config.GetSectionGroup(UserSettingsGroupName);
@@ -82,6 +86,7 @@ namespace System.Configuration
             }
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal static IDictionary ReadSettings(string sectionName, bool isUserScoped)
         {
             Hashtable settings = new Hashtable();
@@ -106,6 +111,7 @@ namespace System.Configuration
             return settings;
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal static IDictionary ReadSettingsFromFile(string configFileName, string sectionName, bool isUserScoped)
         {
             Hashtable settings = new Hashtable();
@@ -146,11 +152,13 @@ namespace System.Configuration
             return settings;
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal static ConnectionStringSettingsCollection ReadConnectionStrings()
         {
             return PrivilegedConfigurationManager.ConnectionStrings;
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal static void RevertToParent(string sectionName, bool isRoaming)
         {
             if (!ConfigurationManagerInternalFactory.Instance.SupportsUserConfig)
@@ -169,6 +177,7 @@ namespace System.Configuration
             }
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal static void WriteSettings(string sectionName, bool isRoaming, IDictionary newSettings)
         {
             if (!ConfigurationManagerInternalFactory.Instance.SupportsUserConfig)
@@ -218,6 +227,7 @@ namespace System.Configuration
         /// A private configuration host that we use to write settings to config. We need this so we
         /// can enforce a quota on the size of stuff written out.
         /// </summary>
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private sealed class ClientSettingsConfigurationHost : DelegatingConfigHost
         {
             private const string ClientConfigurationHostTypeName = "System.Configuration.ClientConfigurationHost, " + TypeUtil.ConfigurationManagerAssemblyName;
