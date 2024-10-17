@@ -100,7 +100,7 @@ internal sealed class StressMessageFormatter
     {
         try
         {
-            builder.Append(_target.ReadUtf8String(ptr));
+            builder.Append(_target.ReadUtf8String(ptr).PadLeft(paddingFormat.Width, paddingFormat.FormatChar));
         }
         catch (InvalidOperationException)
         {
@@ -112,7 +112,7 @@ internal sealed class StressMessageFormatter
     {
         try
         {
-            builder.Append(_target.ReadUtf16String(ptr));
+            builder.Append(_target.ReadUtf16String(ptr).PadLeft(paddingFormat.Width, paddingFormat.FormatChar));
         }
         catch (InvalidOperationException)
         {

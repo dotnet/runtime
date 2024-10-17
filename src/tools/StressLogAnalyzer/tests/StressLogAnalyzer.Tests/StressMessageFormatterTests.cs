@@ -221,6 +221,15 @@ public unsafe class StressMessageFormatterTests
     }
 
     [Fact]
+    public void StringSpecifierWithPadding()
+    {
+        var (target, message) = CreateFixture("The answer is '%20s'", new StressMessageArgument.Utf8String("Hello, World!"));
+
+        StressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
+        Assert.Equal("The answer is '       Hello, World!'", formatter.GetFormattedMessage(message));
+    }
+
+    [Fact]
     public void MethodTableSpecifier()
     {
         ulong value = 0x123;
