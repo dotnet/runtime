@@ -267,14 +267,20 @@ namespace Microsoft.Interop.JavaScript
                                     IdentifierName(Constants.ArgumentReturn),
                                     IdentifierName("Initialize")),
                                 Declare(SpanOf(jsMarshalerArgument), Constants.ArgumentsBuffer,
-                                    CollectionExpression(
-                                        SeparatedList(
-                                            (IEnumerable<CollectionElementSyntax>)[
-                                                ExpressionElement(IdentifierName(Constants.ArgumentException)),
-                                                ExpressionElement(IdentifierName(Constants.ArgumentReturn)),
-                                                ..parameters.Parameters
-                                                    .Select(p => ExpressionElement(IdentifierName(p.Identifier)))
-                                            ]))),
+                                    StackAllocArrayCreationExpression(
+                                        ArrayType(jsMarshalerArgument))
+                                        .WithRankSpecifiers(SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
+                                            LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(parameters.Parameters.Length + 2))))))
+                                        .WithInitializer(
+                                            InitializerExpression(
+                                                SyntaxKind.ArrayInitializerExpression,
+                                                SeparatedList(
+                                                    (IEnumerable<ExpressionSyntax>)[
+                                                        IdentifierName(Constants.ArgumentException),
+                                                        IdentifierName(Constants.ArgumentReturn),
+                                                        ..parameters.Parameters
+                                                            .Select(p => IdentifierName(p.Identifier))
+                                                    ])))),
                                 MethodInvocationStatement(
                                     IdentifierName(Constants.JSFunctionSignatureGlobal),
                                     IdentifierName("InvokeJS"),
