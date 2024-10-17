@@ -608,8 +608,9 @@ class Module : public ModuleBase
     VPTR_VTABLE_CLASS(Module, ModuleBase)
 
 private:
-    PTR_CUTF8               m_pSimpleName; // Cached simple name for better performance and easier diagnostics
-    const WCHAR*            m_path;        // Cached path for easier diagnostics
+    PTR_CUTF8               m_pSimpleName;  // Cached simple name for better performance and easier diagnostics
+    const WCHAR*            m_path;         // Cached path for easier diagnostics
+    const WCHAR*            m_fileName;     // Cached file name for easier diagnostics
 
     PTR_PEAssembly          m_pPEAssembly;
     PTR_VOID                m_baseAddress; // Cached base address for easier diagnostics
