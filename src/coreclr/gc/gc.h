@@ -344,8 +344,11 @@ inline bool IsServerHeap()
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
 
-// #define TRACE_GC
 // #define SIMPLE_DPRINTF
+
+#if defined(SIMPLE_DPRINTF) || (defined(_DEBUG) && defined(HOST_64BIT))
+#define TRACE_GC
+#endif // _DEBUG
 
 #ifdef TRACE_GC
 #define MIN_CUSTOM_LOG_LEVEL 7
@@ -375,10 +378,40 @@ HRESULT initialize_log_file();
 void flush_gc_log (bool);
 void GCLog (const char *fmt, ... );
 #define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
+#define SIMPLE_DPRINTF_ARG(x) , x
+
 #else //SIMPLE_DPRINTF
+
 #ifdef HOST_64BIT
-#define dprintf(l,x) STRESS_LOG_VA(l,x);
+
+// This connects dprintf to the stress log mechanism.  There are some mismatches
+// between the two sides:
+// - dprintf(1) loosely corresponds to LL_INFO10 (4).
+// - dprintf has feature areas defined at 7 and higher.  Stress log uses a separate
+//   LogFacility for this.  There are more dprintf areas than available LogFacility
+//   bits.
+// - dprintf has some very low-level instrumentation where we don't want the dynamic
+//   "is logging on" check in normal builds.
+// - StressLogAnalyzer can filter GC events by type, but it requires the LogFacility
+//   to be set to (dprintfLevel<<16)|LF_GC.  This conflicts with other LogFacility
+//   values.
+//
+// The following line works for normal builds (where STRESS_LOG is defined and
+// SIMPLE_DPRINTF is not).  All dprintfs sites are checked for compilation errors,
+// yet all but those with level 1 can be statically optimized away.  In the future
+// after more auditing, this could be expanded to more levels.
+//
+// Note that zero is passed because STRESS_LOG_VA/LogMsg will add LF_GC.
+#define dprintf(l,x) if (l == 1) {STRESS_LOG_VA(0,x);}
+
+// For private builds where LogFacility conflicts are ok (or more likely, non-GC
+// logging is disabled, more events can be allowed and the dprintf level can be
+// passed through.  Note that these in examples, 'l' ("ell", not "one") is passed
+// rather than '0'.
+//#define dprintf(l,x) STRESS_LOG_VA(l,x);
 //#define dprintf(l,x) {if ((l <= 2) || (l == 6666)) {STRESS_LOG_VA(l,x);}}
+
+#define SIMPLE_DPRINTF_ARG(x)
 #else //HOST_64BIT
 #error Logging dprintf to stress log on 32 bits platforms is not supported.
 #endif //HOST_64BIT
