@@ -2101,13 +2101,17 @@ export function getOptions () {
     }
     return optionTable;
 }
-const INT32_MIN = -2147483647;
+
+const INT32_MIN = -2147483648;
+
 function updateOptions () {
     optionTable = <any>{};
     for (const k in optionNames) {
         const value = cwraps.mono_jiterp_get_option_as_int(optionNames[k]);
-        if (value !== INT32_MIN)
+        if (value !== INT32_MIN) {
+            mono_log_info(`Updated option ${optionNames[k]} to ${value}`);
             (<any>optionTable)[k] = value;
+        }
         else
             mono_log_info(`Failed to retrieve value of option ${optionNames[k]}`);
     }
@@ -2147,6 +2151,7 @@ export function jiterpreter_allocate_tables () {
     // A partial solution would be to merge the tables based on argument count instead of exact type,
     //  then create special placeholder functions that examine the rmethod to determine which kind
     //  of method is being called.
+    mono_log_info(`tableSize ${options.tableSize}`);
     const traceTableSize = options.tableSize,
         jitCallTableSize = runtimeHelpers.emscriptenBuildOptions.runAOTCompilation ? options.tableSize : 1,
         interpEntryTableSize = runtimeHelpers.emscriptenBuildOptions.runAOTCompilation ? options.aotTableSize : 1,
@@ -2155,6 +2160,7 @@ export function jiterpreter_allocate_tables () {
         wasmTable = getWasmFunctionTable();
     let base = wasmTable.length;
     const beforeGrow = performance.now();
+    mono_log_info(`totalSize ${totalSize}`);
     wasmTable.grow(totalSize);
     const afterGrow = performance.now();
     if (options.enableStats)
