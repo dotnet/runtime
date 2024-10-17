@@ -230,7 +230,6 @@ typedef struct _IMAGE_FILE_HEADER {
 #define IMAGE_FILE_MACHINE_AM33              0x01d3
 #define IMAGE_FILE_MACHINE_POWERPC           0x01F0  // IBM PowerPC Little-Endian
 #define IMAGE_FILE_MACHINE_POWERPCFP         0x01f1
-#define IMAGE_FILE_MACHINE_IA64              0x0200  // Intel 64
 #define IMAGE_FILE_MACHINE_MIPS16            0x0266  // MIPS
 #define IMAGE_FILE_MACHINE_ALPHA64           0x0284  // ALPHA64
 #define IMAGE_FILE_MACHINE_MIPSFPU           0x0366  // MIPS
