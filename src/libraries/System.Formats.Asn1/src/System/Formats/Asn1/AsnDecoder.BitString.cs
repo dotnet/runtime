@@ -147,7 +147,7 @@ namespace System.Formats.Asn1
         ///   <paramref name="destination"/> overlaps <paramref name="source"/>.
         /// </exception>
         /// <remarks>
-        ///   The least significant bits in the last byte which are reported as "unused" by the
+        ///   The least significant bits in the last byte that are reported as "unused" by the
         ///   <paramref name="unusedBitCount"/> value will be copied into <paramref name="destination"/>
         ///   as unset bits, irrespective of their value in the encoded representation.
         /// </remarks>
@@ -265,7 +265,7 @@ namespace System.Formats.Asn1
         ///   the method.
         /// </exception>
         /// <remarks>
-        ///   The least significant bits in the last byte which are reported as "unused" by the
+        ///   The least significant bits in the last byte that are reported as "unused" by the
         ///   <paramref name="unusedBitCount"/> value will be copied into the return value
         ///   as unset bits, irrespective of their value in the encoded representation.
         /// </remarks>

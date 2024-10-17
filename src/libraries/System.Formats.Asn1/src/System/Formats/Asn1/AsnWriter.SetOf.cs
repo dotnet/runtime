@@ -21,7 +21,7 @@ namespace System.Formats.Asn1
         ///   the method.
         /// </exception>
         /// <remarks>
-        ///   In <see cref="AsnEncodingRules.CER"/> and <see cref="AsnEncodingRules.DER"/> modes
+        ///   In <see cref="AsnEncodingRules.CER"/> and <see cref="AsnEncodingRules.DER"/> modes,
         ///   the writer will sort the Set-Of elements when the tag is closed.
         /// </remarks>
         /// <seealso cref="PopSetOf"/>
@@ -48,7 +48,7 @@ namespace System.Formats.Asn1
         ///   the writer is not currently positioned within a Set-Of with the specified tag.
         /// </exception>
         /// <remarks>
-        ///   In <see cref="AsnEncodingRules.CER"/> and <see cref="AsnEncodingRules.DER"/> modes
+        ///   In <see cref="AsnEncodingRules.CER"/> and <see cref="AsnEncodingRules.DER"/> modes,
         ///   the writer will sort the Set-Of elements when the tag is closed.
         /// </remarks>
         /// <seealso cref="PushSetOf"/>

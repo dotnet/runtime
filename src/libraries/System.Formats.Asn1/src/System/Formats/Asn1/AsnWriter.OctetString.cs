@@ -48,9 +48,9 @@ namespace System.Formats.Asn1
         ///   the writer is not currently positioned within an Octet String with the specified tag.
         /// </exception>
         /// <remarks>
-        ///   In <see cref="AsnEncodingRules.BER"/> and <see cref="AsnEncodingRules.DER"/> modes
+        ///   In <see cref="AsnEncodingRules.BER"/> and <see cref="AsnEncodingRules.DER"/> modes,
         ///   the encoded contents will remain in a single primitive Octet String.
-        ///   In <see cref="AsnEncodingRules.CER"/> mode the contents will be broken up into
+        ///   In <see cref="AsnEncodingRules.CER"/> mode, the contents will be broken up into
         ///   multiple segments, when required.
         /// </remarks>
         public void PopOctetString(Asn1Tag? tag = default)

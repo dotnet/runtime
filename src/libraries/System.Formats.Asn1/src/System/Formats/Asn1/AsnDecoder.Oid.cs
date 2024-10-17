@@ -25,7 +25,7 @@ namespace System.Formats.Asn1
         ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 6).
         /// </param>
         /// <returns>
-        ///   The decoded object identifier in a dotted-decimal notation.
+        ///   The decoded object identifier in the dotted-decimal notation.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="ruleSet"/> is not defined.
@@ -345,7 +345,7 @@ namespace System.Formats.Asn1
         /// <param name="expectedTag">
         ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 6).
         /// </param>
-        /// <returns>The object identifier value in a dotted decimal format string.</returns>
+        /// <returns>The decoded object identifier in the dotted-decimal notation.</returns>
         /// <exception cref="AsnContentException">
         ///   The next value does not have the correct tag.
         ///

@@ -15,7 +15,7 @@ namespace System.Formats.Asn1
         ///   the specified encoding rules, converting it to the
         ///   [<see cref="FlagsAttribute"/>] enum specified by <typeparamref name="TFlagsEnum"/>.
         /// </summary>
-        /// <typeparam name="TFlagsEnum">Destination enum type.</typeparam>
+        /// <typeparam name="TFlagsEnum">The destination enum type.</typeparam>
         /// <param name="source">The buffer containing encoded data.</param>
         /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
         /// <param name="bytesConsumed">
@@ -99,7 +99,7 @@ namespace System.Formats.Asn1
         ///
         ///   While the example here uses the KeyUsage NamedBitList from
         ///   <a href="https://tools.ietf.org/html/rfc3280#section-4.2.1.3">RFC 3280 (4.2.1.3)</a>,
-        ///   the example enum uses values thar are different from
+        ///   the example enum uses values that are different from
         ///   System.Security.Cryptography.X509Certificates.X509KeyUsageFlags.
         /// </remarks>
         public static TFlagsEnum ReadNamedBitListValue<TFlagsEnum>(
@@ -405,7 +405,7 @@ namespace System.Formats.Asn1
         ///   Reads the next value as a NamedBitList with a specified tag, converting it to the
         ///   [<see cref="FlagsAttribute"/>] enum specified by <typeparamref name="TFlagsEnum"/>.
         /// </summary>
-        /// <typeparam name="TFlagsEnum">Destination enum type.</typeparam>
+        /// <typeparam name="TFlagsEnum">The destination enum type.</typeparam>
         /// <param name="expectedTag">The tag to check for before reading.</param>
         /// <returns>
         ///   The NamedBitList value converted to a <typeparamref name="TFlagsEnum"/>.
@@ -478,7 +478,7 @@ namespace System.Formats.Asn1
         ///
         ///   While the example here uses the KeyUsage NamedBitList from
         ///   <a href="https://tools.ietf.org/html/rfc3280#section-4.2.1.3">RFC 3280 (4.2.1.3)</a>,
-        ///   the example enum uses values thar are different from
+        ///   the example enum uses values that are different from
         ///   System.Security.Cryptography.X509Certificates.X509KeyUsageFlags.
         /// </remarks>
         public TFlagsEnum ReadNamedBitListValue<TFlagsEnum>(Asn1Tag? expectedTag = null) where TFlagsEnum : Enum

@@ -50,7 +50,7 @@ namespace System.Formats.Asn1
         /// <remarks>
         ///   The nested content is not evaluated by this method, except for minimal processing to
         ///   determine the location of an end-of-contents marker.
-        ///   Therefore, the contents may contain data which is not valid under the current encoding rules.
+        ///   Therefore, the contents might contain data that's not valid under the current encoding rules.
         /// </remarks>
         public static void ReadSequence(
             ReadOnlySpan<byte> source,
@@ -127,8 +127,8 @@ namespace System.Formats.Asn1
         ///   the method.
         /// </exception>
         /// <remarks>
-        ///   The nested content is not evaluated by this method, and may contain data
-        ///   which is not valid under the current encoding rules.
+        ///   The nested content is not evaluated by this method, and might contain data
+        ///   that's not valid under the current encoding rules.
         /// </remarks>
         public AsnReader ReadSequence(Asn1Tag? expectedTag = null)
         {
