@@ -3714,9 +3714,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 						break;
 					} else if (param_klass == swift_error || param_klass == swift_error_ptr) {
 						swift_error_args++;
-					} else if (param_gklass && (param_gklass->container_class == swift_self_t) && i > 0) {
+					} else if (param_gklass && (param_gklass->container_class == swift_self_t) && (i != method->signature->param_count - 1)) {
 						swift_error_args = swift_self_args = 0;
-						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "SwiftSelf<T> must be the first argument in the signature.");
+						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "SwiftSelf<T> must be the last argument in the signature.");
 						break;
 					} else if (param_gklass && (param_gklass->container_class == swift_self_t) && m_type_is_byref (method->signature->params [i])) {
 						swift_error_args = swift_self_args = 0;
@@ -6798,11 +6798,15 @@ static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoTy
 
 static void record_inlinearray_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset) 
 {
+	int align;
+	int type_offset = MONO_ABI_SIZEOF (MonoObject);
+
 	// Get the first field and record its physical lowering N times
-	MonoClassField* field = mono_class_get_fields_internal (klass, NULL);
+	gpointer iter = NULL;
+	MonoClassField* field = mono_class_get_fields_internal (klass, &iter);
 	MonoType* fieldType = field->type;
 	for (int i = 0; i < m_class_inlinearray_value(klass); ++i) {
-		record_struct_field_physical_lowering(lowered_bytes, fieldType, offset + m_field_get_offset(field) + i * mono_type_size(fieldType, NULL));
+		record_struct_field_physical_lowering(lowered_bytes, fieldType, offset + m_field_get_offset(field) + i * mono_type_size(fieldType, &align) - type_offset);
 	}
 }
 
