@@ -3915,9 +3915,11 @@ namespace System
                 }
 
                 MethodBase? invokeMethod;
+                object? state;
+
                 try
                 {
-                    invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null, out object? state);
+                    invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null);
                 }
                 catch (MissingMethodException mme) // Should we catch all exceptions?
                 {
