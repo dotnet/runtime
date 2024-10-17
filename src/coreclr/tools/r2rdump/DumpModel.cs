@@ -45,10 +45,10 @@ namespace R2RDump
         /// <param name="assemblyReferenceHandle">Handle representing the assembly reference</param>
         /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
         /// <returns></returns>
-        public IAssemblyMetadata FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
+        public IAssemblyMetadata FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile, List<string> probedPaths = null)
         {
             string simpleName = metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name);
-            return FindAssembly(simpleName, parentFile);
+            return FindAssembly(simpleName, parentFile, probedPaths);
         }
 
         /// <summary>
@@ -58,7 +58,7 @@ namespace R2RDump
         /// <param name="simpleName">Simple name of the assembly to look up</param>
         /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
         /// <returns></returns>
-        public IAssemblyMetadata FindAssembly(string simpleName, string parentFile)
+        public IAssemblyMetadata FindAssembly(string simpleName, string parentFile, List<string> probedPaths = null)
         {
             foreach (string refAsm in Reference)
             {
@@ -78,6 +78,7 @@ namespace R2RDump
                     try
                     {
                         string probeFile = Path.Combine(refPath, simpleName + extension);
+                        probedPaths?.Add(probeFile);
                         if (File.Exists(probeFile))
                         {
                             return Open(probeFile);
