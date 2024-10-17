@@ -9,11 +9,17 @@ namespace System.Collections.Frozen
 {
     internal sealed partial class LengthBucketsFrozenSet
     {
-        private protected override int FindItemIndex<TAlternate>(TAlternate alternate)
-        {
-            Debug.Assert(typeof(TAlternate) == typeof(ReadOnlySpan<char>));
-            ReadOnlySpan<char> item = Unsafe.As<TAlternate, ReadOnlySpan<char>>(ref alternate);
+        private static AlternateLookupDelegate<ReadOnlySpan<char>> s_alternateLookup = (set, key)
+            => ((LengthBucketsFrozenSet)set).FindItemIndexAlternate(key);
 
+        private protected override AlternateLookupDelegate<TAlternateKey> GetAlternateLookupDelegate<TAlternateKey>()
+        {
+            Debug.Assert(typeof(TAlternateKey) == typeof(ReadOnlySpan<char>));
+            return (AlternateLookupDelegate<TAlternateKey>)(object)s_alternateLookup;
+        }
+
+        private int FindItemIndexAlternate(ReadOnlySpan<char> item)
+        {
             IAlternateEqualityComparer<ReadOnlySpan<char>, string> comparer = GetAlternateEqualityComparer<ReadOnlySpan<char>>();
 
             // If the length doesn't have an associated bucket, the key isn't in the dictionary.
