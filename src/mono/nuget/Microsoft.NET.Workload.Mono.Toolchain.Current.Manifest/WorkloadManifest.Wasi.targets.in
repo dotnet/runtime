@@ -11,6 +11,6 @@
   </PropertyGroup>
 
   <Target Name="FailBuild" BeforeTargets="ProcessFrameworkReferences;Restore;Build;Publish" Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'">
-    <Error Text="The 'wasi-experimental' workload is not supported in .NET 9. Please downgrade to .NET 9 Preview 6 SDK or use .NET 10 SDK" />
+    <Error Text="The 'wasi-experimental' workload is not supported in .NET 9." />
   </Target>
 </Project>
