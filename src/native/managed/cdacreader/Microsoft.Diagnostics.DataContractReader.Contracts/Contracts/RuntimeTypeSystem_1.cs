@@ -157,8 +157,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         private static uint ComputeToken(Target target, Data.MethodDesc desc, Data.MethodDescChunk chunk)
         {
             int tokenRemainderBitCount = target.ReadGlobal<byte>(Constants.Globals.MethodDescTokenRemainderBitCount);
-            int tokenRangeBitCount = Constants.EcmaMetadata.RowIdBitCount - tokenRemainderBitCount;
-            uint allRidBitsSet = Constants.EcmaMetadata.RIDMask;
+            int tokenRangeBitCount = EcmaMetadataUtils.RowIdBitCount - tokenRemainderBitCount;
+            uint allRidBitsSet = EcmaMetadataUtils.RIDMask;
             uint tokenRemainderMask = allRidBitsSet >> tokenRangeBitCount;
             uint tokenRangeMask = allRidBitsSet >> tokenRemainderBitCount;
 
