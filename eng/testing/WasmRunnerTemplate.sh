@@ -37,7 +37,7 @@ fi
 
 if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 	if [[ -z "$MAIN_JS" ]]; then
-		MAIN_JS="--js-file=test-main.js"
+		MAIN_JS="--js-file=test-main.mjs"
 	fi
 
 	if [[ -z "$JS_ENGINE_ARGS" ]]; then
