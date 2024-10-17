@@ -2101,12 +2101,12 @@ export function getOptions () {
     }
     return optionTable;
 }
-
+const INT32_MIN = -2147483647;
 function updateOptions () {
     optionTable = <any>{};
     for (const k in optionNames) {
         const value = cwraps.mono_jiterp_get_option_as_int(optionNames[k]);
-        if (value > -2147483647)
+        if (value !== INT32_MIN)
             (<any>optionTable)[k] = value;
         else
             mono_log_info(`Failed to retrieve value of option ${optionNames[k]}`);
