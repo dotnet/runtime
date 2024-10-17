@@ -226,8 +226,13 @@ HRESULT HCORENUMImpl::ReadOneToken(mdToken& rToken, uint32_t& count) noexcept
 
     if (_type == HCORENUMType::Table)
     {
-        if (!md_cursor_to_token(currData->Table.Current, &rToken))
+        mdcursor_t current;
+        if (!md_resolve_indirect_cursor(currData->Table.Current, &current))
+            return CLDB_E_FILE_CORRUPT;
+
+        if (!md_cursor_to_token(current, &rToken))
             return S_FALSE;
+
         (void)md_cursor_next(&currData->Table.Current);
     }
     else

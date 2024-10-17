@@ -85,7 +85,7 @@ namespace
             if (!minipal_guid_v4_create(reinterpret_cast<minipal_guid_t*>(&mvid)))
                 return E_FAIL;
 
-            if (1 != md_set_column_value_as_guid(moduleCursor, mdtModule_Mvid, 1, &mvid))
+            if (!md_set_column_value_as_guid(moduleCursor, mdtModule_Mvid, mvid))
                 return E_OUTOFMEMORY;
 
             minipal::com_ptr<ControllingIUnknown> obj;

@@ -35,7 +35,7 @@ namespace
     struct signature_element_part_tag
     {
     };
-    
+
     struct raw_byte_tag final : signature_element_part_tag
     {
     };
@@ -120,7 +120,7 @@ namespace
             case ELEMENT_TYPE_PINNED:
                 signature = WalkSignatureElement(signature, callback);
                 break;
-            
+
             case ELEMENT_TYPE_VAR:
             case ELEMENT_TYPE_MVAR:
             {
@@ -203,11 +203,11 @@ namespace
     }
 }
 
-malloc_span<std::uint8_t> GetMethodDefSigFromMethodRefSig(span<uint8_t> methodRefSig)
+void GetMethodDefSigFromMethodRefSig(span<uint8_t> methodRefSig, inline_span<uint8_t>& methodDefSig)
 {
     assert(methodRefSig.size() > 0);
     // We don't need to do anything with the various elements of the signature,
-    // we just need to know how many parameters are before the sentinel.    
+    // we just need to know how many parameters are before the sentinel.
     span<uint8_t> signature = methodRefSig;
     uint8_t const callingConvention = signature[0];
     signature = slice(signature, 1);
@@ -217,9 +217,9 @@ malloc_span<std::uint8_t> GetMethodDefSigFromMethodRefSig(span<uint8_t> methodRe
     // parameter list.
     if ((callingConvention & IMAGE_CEE_CS_CALLCONV_MASK) != IMAGE_CEE_CS_CALLCONV_VARARG)
     {
-        malloc_span<uint8_t> methodDefSig{ (uint8_t*)std::malloc(methodRefSig.size()), methodRefSig.size() };
-        std::memcpy(methodDefSig, methodRefSig, methodRefSig.size());
-        return methodDefSig;
+        methodDefSig.resize(methodRefSig.size());
+        std::copy(methodRefSig.begin(), methodRefSig.end(), methodDefSig.begin());
+        return;
     }
 
     uint32_t genericParameterCount = 0;
@@ -249,7 +249,7 @@ malloc_span<std::uint8_t> GetMethodDefSigFromMethodRefSig(span<uint8_t> methodRe
 
         signature = WalkSignatureElement(signature, [](std::intmax_t, signature_element_part_tag) { });
     }
-    
+
     // Now that we know the number of parameters, we can copy the MethodDefSig portion of the signature
     // and update the parameter count.
     // We need to account for the fact that the parameter count may be encoded with less bytes
@@ -259,29 +259,29 @@ malloc_span<std::uint8_t> GetMethodDefSigFromMethodRefSig(span<uint8_t> methodRe
     ULONG originalParamCountCompressedSize = CorSigCompressData(originalParameterCount, buffer);
     ULONG newParamCountCompressedSize = CorSigCompressData(i, buffer);
     span<uint8_t> compressedNewParamCount = { buffer, newParamCountCompressedSize };
-    
+
     // The MethodDefSig length will be the length of the original signature up to the ELEMENT_TYPE_SENTINEL value,
     // minus the difference in the compressed size of the original parameter count and the new parameter count, if any.
     size_t methodDefSigBufferLength = methodRefSig.size() - signature.size() - originalParamCountCompressedSize + newParamCountCompressedSize;
-    malloc_span<uint8_t> methodDefSigBuffer{ (uint8_t*)std::malloc(methodDefSigBufferLength), methodDefSigBufferLength };
-    
+    methodDefSig.resize(methodDefSigBufferLength);
+
     // Copy over the signature into the new buffer.
     // In case the parameter count was encoded with less bytes, we need to account for that
     // and copy the signature piece by piece.
     size_t offset = 0;
-    methodDefSigBuffer[offset++] = callingConvention;
+    methodDefSig[offset++] = callingConvention;
     if ((callingConvention & IMAGE_CEE_CS_CALLCONV_GENERIC) == IMAGE_CEE_CS_CALLCONV_GENERIC)
     {
-        offset += CorSigCompressData(genericParameterCount, methodDefSigBuffer + offset);
+        offset += CorSigCompressData(genericParameterCount, methodDefSig + offset);
     }
-    std::memcpy(methodDefSigBuffer + offset, compressedNewParamCount, newParamCountCompressedSize);
+    std::memcpy(methodDefSig + offset, compressedNewParamCount, newParamCountCompressedSize);
     offset += newParamCountCompressedSize;
 
     // Now that we've re-written the parameter count, we can copy the rest of the signature directly from the MethodRefSig
     assert(returnTypeAndParameters.size() >= methodDefSigBufferLength - offset);
-    std::memcpy(methodDefSigBuffer + offset, returnTypeAndParameters, methodDefSigBufferLength - offset);
+    std::memcpy(methodDefSig + offset, returnTypeAndParameters, methodDefSigBufferLength - offset);
 
-    return methodDefSigBuffer;
+    return;
 }
 
 // Define a function object that enables us to combine multiple lambdas into a single overload set.
@@ -298,7 +298,7 @@ namespace
 
         // Define a perfectly-forwarding operator() that will call the function object with the given arguments.
         template <typename... Args>
-        auto operator()(Args&&... args) const 
+        auto operator()(Args&&... args) const
         -> decltype(std::declval<T>()(std::forward<Args>(args)...))
         {
             return _t(std::forward<Args>(args)...);
@@ -312,7 +312,7 @@ namespace
     {
         using Overload<T>::operator();
         using Overload<Ts...>::operator();
-        
+
         Overload(T&& t, Ts&&... ts)
             :Overload<T>(std::forward<T>(t)),
              Overload<Ts...>(std::forward<Ts>(ts)...)
@@ -335,7 +335,7 @@ HRESULT ImportSignatureIntoModule(
     mdhandle_t destinationModule,
     span<const uint8_t> signature,
     std::function<void(mdcursor_t)> onRowAdded,
-    malloc_span<uint8_t>& importedSignature)
+    inline_span<uint8_t>& importedSignature)
 {
     HRESULT hr;
     // We are going to copy over the signature and replace the tokens from the source module in the signature
@@ -371,7 +371,7 @@ HRESULT ImportSignatureIntoModule(
                 destinationModule,
                 onRowAdded,
                 &token);
-            
+
             // We can safely continue walking the signature even if we failed to import the token.
             // We'll return the failure code when we're done.
             if (FAILED(localHR))
@@ -434,14 +434,17 @@ HRESULT ImportSignatureIntoModule(
             return hr;
     }
 
-    uint8_t* buffer = (uint8_t*)std::malloc(importedSignatureBuffer.size());
-    if (buffer == nullptr)
+    try
+    {
+        importedSignature.resize(importedSignature.size());
+    }
+    catch (std::bad_alloc const&)
     {
         return E_OUTOFMEMORY;
     }
 
-    std::memcpy(buffer, importedSignatureBuffer.data(), importedSignatureBuffer.size());
-    importedSignature = { buffer, importedSignatureBuffer.size() };
+    std::copy(importedSignatureBuffer.begin(), importedSignatureBuffer.end(), importedSignature.begin());
+
     return S_OK;
 }
 
@@ -453,7 +456,7 @@ HRESULT ImportTypeSpecBlob(
     mdhandle_t destinationModule,
     span<const uint8_t> typeSpecBlob,
     std::function<void(mdcursor_t)> onRowAdded,
-    malloc_span<uint8_t>& importedTypeSpecBlob)
+    inline_span<uint8_t>& importedTypeSpecBlob)
 {
     std::vector<uint8_t> importedTypeSpecBlobBuffer;
     // Our imported blob will likely be a very similar size to the original blob.
@@ -489,7 +492,7 @@ HRESULT ImportTypeSpecBlob(
                 destinationModule,
                 onRowAdded,
                 &token);
-            
+
             // We can safely continue walking the signature even if we failed to import the token.
             // We'll return the failure code when we're done.
             if (FAILED(localHR))
@@ -513,13 +516,15 @@ HRESULT ImportTypeSpecBlob(
         return E_INVALIDARG;
     }
 
-    uint8_t* buffer = (uint8_t*)std::malloc(importedTypeSpecBlobBuffer.size());
-    if (buffer == nullptr)
+    try
+    {
+        importedTypeSpecBlob.resize(importedTypeSpecBlobBuffer.size());
+    }
+    catch (std::bad_alloc const&)
     {
         return E_OUTOFMEMORY;
     }
 
-    std::memcpy(buffer, importedTypeSpecBlobBuffer.data(), importedTypeSpecBlobBuffer.size());
-    importedTypeSpecBlob = { buffer, importedTypeSpecBlobBuffer.size() };
+    std::copy(importedTypeSpecBlobBuffer.begin(), importedTypeSpecBlobBuffer.end(), importedTypeSpecBlob.begin());
     return S_OK;
 }

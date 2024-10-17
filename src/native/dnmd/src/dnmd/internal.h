@@ -20,6 +20,18 @@ typedef size_t rsize_t;
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))
 
+#ifndef NDEBUG
+#define ASSERT_ASSUME(x) assert(x)
+#elif defined(_MSC_VER)
+#define ASSERT_ASSUME(x) __assume(x)
+#elif defined(__clang__)
+#define ASSERT_ASSUME(x) __builtin_assume(x)
+#elif defined(__GNUC__)
+#define ASSERT_ASSUME(x) do { if (!(x)) __builtin_unreachable(); } while (0)
+#else
+#define ASSERT_ASSUME(x) (void)(x)
+#endif
+
 // Mutable data
 typedef struct mddata__
 {
@@ -349,29 +361,39 @@ static col_index_t index_to_col(uint8_t idx, mdtable_id_t table_id)
 // Copy data from a cursor to one row to a cursor to another row.
 bool copy_cursor(mdcursor_t dest, mdcursor_t src);
 
-// Raw table data access
-
+// Single column access
 typedef struct access_cxt__
+{
+    mdtable_t* table;
+    mdtcol_t col_details;
+    uint8_t const* data;
+    uint8_t* writable_data;
+} access_cxt_t;
+
+bool create_access_context(mdcursor_t* cursor, col_index_t col_idx, bool make_writable, access_cxt_t* rcxt);
+bool write_column_data(access_cxt_t* acxt, uint32_t data);
+bool read_column_data(access_cxt_t* acxt, uint32_t* data);
+
+// Raw bulk table access
+typedef struct bulk_access_cxt__
 {
     mdtable_t* table;
     mdtcol_t col_details;
     uint8_t const* start;
     uint8_t const* data;
-    uint8_t* writable_data;
     uint8_t const* end;
     size_t data_len;
     uint32_t data_len_col;
     uint32_t next_row_stride;
-} access_cxt_t;
+} bulk_access_cxt_t;
 
-bool create_access_context(mdcursor_t* cursor, col_index_t col_idx, uint32_t row_count, bool make_writable, access_cxt_t* acxt);
-bool read_column_data(access_cxt_t* acxt, uint32_t* data);
-bool write_column_data(access_cxt_t* acxt, uint32_t data);
-bool next_row(access_cxt_t* acxt);
+bool create_bulk_access_context(mdcursor_t* cursor, col_index_t col_idx, uint32_t row_count, bulk_access_cxt_t* acxt);
+bool read_column_data_and_advance(bulk_access_cxt_t* acxt, uint32_t* data);
+bool next_row(bulk_access_cxt_t* acxt);
 
 // Internal functions used to read/write columns with minimal validation.
-int32_t get_column_value_as_heap_offset(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint32_t* offset);
-int32_t set_column_value_as_heap_offset(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint32_t* offset);
+bool get_column_value_as_heap_offset(mdcursor_t c, col_index_t col_idx, uint32_t* offset);
+bool set_column_value_as_heap_offset(mdcursor_t c, col_index_t col_idx, uint32_t offset);
 
 //
 // Manipulation of bits

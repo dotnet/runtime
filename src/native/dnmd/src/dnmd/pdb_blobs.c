@@ -93,7 +93,7 @@ static uint32_t get_num_sequence_points(mdcursor_t method_debug_information, uin
         return UINT32_MAX;
 
     mdcursor_t document;
-    if (1 != md_get_column_value_as_cursor(method_debug_information, mdtMethodDebugInformation_Document, 1, &document))
+    if (!md_get_column_value_as_cursor(method_debug_information, mdtMethodDebugInformation_Document, &document))
         return UINT32_MAX;
 
     if (CursorNull(&document) && !decompress_u32(&blob, &blob_len, &ignored)) // header InitialDocument
@@ -175,7 +175,7 @@ md_blob_parse_result_t md_parse_sequence_points(
         return mdbpr_InvalidBlob;
 
     mdcursor_t document;
-    if (1 != md_get_column_value_as_cursor(method_debug_information, mdtMethodDebugInformation_Document, 1, &document))
+    if (!md_get_column_value_as_cursor(method_debug_information, mdtMethodDebugInformation_Document, &document))
         return mdbpr_InvalidBlob;
 
     // Create a "null" cursor to default-initialize the document field.

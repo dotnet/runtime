@@ -69,7 +69,7 @@ static bool initialize_token_map(mdtable_t* map, enc_token_map_t* token_map)
     for (uint32_t i = 0; i < map->row_count; (void)md_cursor_next(&map_cur), ++i)
     {
         mdToken tk;
-        if (1 != md_get_column_value_as_constant(map_cur, mdtENCMap_Token, 1, &tk))
+        if (!md_get_column_value_as_constant(map_cur, mdtENCMap_Token, &tk))
             return false;
 
         mdtable_id_t table_id = ExtractTokenType(RemoveRecordBit(tk));
@@ -122,7 +122,7 @@ static bool resolve_token(enc_token_map_t* token_map, mdToken referenced_token, 
     for (uint32_t i = 0; i < token_map->map_cur_by_table[type].count; md_cursor_next(&map_record), i++)
     {
         mdToken mappedToken;
-        if (1 != md_get_column_value_as_constant(map_record, mdtENCMap_Token, 1, &mappedToken))
+        if (!md_get_column_value_as_constant(map_record, mdtENCMap_Token, &mappedToken))
             return false;
 
         assert((mdtable_id_t)ExtractTokenType(RemoveRecordBit(mappedToken)) == type);
@@ -165,8 +165,8 @@ static bool process_log(mdcxt_t* cxt, mdcxt_t* delta)
     {
         mdToken tk;
         uint32_t op;
-        if (1 != md_get_column_value_as_constant(log_cur, mdtENCLog_Token, 1, &tk)
-            || 1 != md_get_column_value_as_constant(log_cur, mdtENCLog_Op, 1, &op))
+        if (!md_get_column_value_as_constant(log_cur, mdtENCLog_Token, &tk)
+            || !md_get_column_value_as_constant(log_cur, mdtENCLog_Op, &op))
         {
             return false;
         }
@@ -343,11 +343,11 @@ bool merge_in_delta(mdcxt_t* cxt, mdcxt_t* delta)
     mdcursor_t delta_module = create_cursor(&delta->tables[mdtid_Module], 1);
 
     mdguid_t base_mvid;
-    if (1 != md_get_column_value_as_guid(base_module, mdtModule_Mvid, 1, &base_mvid))
+    if (!md_get_column_value_as_guid(base_module, mdtModule_Mvid, &base_mvid))
         return false;
 
     mdguid_t delta_mvid;
-    if (1 != md_get_column_value_as_guid(delta_module, mdtModule_Mvid, 1, &delta_mvid))
+    if (!md_get_column_value_as_guid(delta_module, mdtModule_Mvid, &delta_mvid))
         return false;
 
     // MVIDs must match between base and delta images.
@@ -358,8 +358,8 @@ bool merge_in_delta(mdcxt_t* cxt, mdcxt_t* delta)
     // This ensures that we are applying deltas in order.
     mdguid_t enc_id;
     mdguid_t delta_enc_base_id;
-    if (1 != md_get_column_value_as_guid(base_module, mdtModule_EncId, 1, &enc_id)
-        || 1 != md_get_column_value_as_guid(delta_module, mdtModule_EncBaseId, 1, &delta_enc_base_id)
+    if (!md_get_column_value_as_guid(base_module, mdtModule_EncId, &enc_id)
+        || !md_get_column_value_as_guid(delta_module, mdtModule_EncBaseId, &delta_enc_base_id)
         || memcmp(&enc_id, &delta_enc_base_id, sizeof(mdguid_t)) != 0)
     {
         return false;
@@ -382,9 +382,9 @@ bool merge_in_delta(mdcxt_t* cxt, mdcxt_t* delta)
     // We don't want to manipulate the heap sizes, so we'll pull the heap offset directly from the delta and use that
     // in the base image.
     uint32_t new_enc_base_id_offset;
-    if (1 != get_column_value_as_heap_offset(delta_module, mdtModule_EncId, 1, &new_enc_base_id_offset))
+    if (!get_column_value_as_heap_offset(delta_module, mdtModule_EncId, &new_enc_base_id_offset))
         return false;
-    if (1 != set_column_value_as_heap_offset(base_module, mdtModule_EncId, 1, &new_enc_base_id_offset))
+    if (!set_column_value_as_heap_offset(base_module, mdtModule_EncId, new_enc_base_id_offset))
         return false;
 
     return true;

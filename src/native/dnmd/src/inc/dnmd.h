@@ -441,20 +441,23 @@ typedef enum
 } col_index_t;
 
 // Query row's column values
-// The returned number represents the number of valid cursor(s) for indexing.
-int32_t md_get_column_value_as_token(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdToken* tk);
-int32_t md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdcursor_t* cursor);
+bool md_get_column_value_as_token(mdcursor_t c, col_index_t col_idx, mdToken* tk);
+bool md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, mdcursor_t* cursor);
 // Resolve the column to a cursor and a range based on the run/list pattern in tables.
 // The run continues to the smaller of:
 //   * the last row of the target table
 //   * the next run in the target table, found by inspecting the column value of the next row in the current table.
 // See md_find_token_of_range_element() for mapping elements in the other direction.
 bool md_get_column_value_as_range(mdcursor_t c, col_index_t col_idx, mdcursor_t* cursor, uint32_t* count);
-int32_t md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint32_t* constant);
-int32_t md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t out_length, char const** str);
-int32_t md_get_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mduserstring_t* strings);
-int32_t md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t out_length, uint8_t const** blob, uint32_t* blob_len);
-int32_t md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdguid_t* guid);
+bool md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t* constant);
+bool md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, char const** str);
+bool md_get_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, mduserstring_t* strings);
+bool md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint8_t const** blob, uint32_t* blob_len);
+bool md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, mdguid_t* guid);
+
+// Read a table or coded index column from multiple rows and return the values as an array of tokens.
+// The number of rows read is returned by the function. A '-1' return value indicates an error.
+int32_t md_get_many_rows_column_value_as_token(mdcursor_t c, col_index_t col_idx, uint32_t out_length, mdToken* tokens);
 
 // Return the raw column values for the row. Unlike the md_get_column_value_as_* APIs, the returned values
 // are in their raw form.
@@ -497,13 +500,13 @@ bool md_resolve_indirect_cursor(mdcursor_t c, mdcursor_t* target);
 
 // Set row's column values
 // The returned number represents the number of rows updated.
-int32_t md_set_column_value_as_token(mdcursor_t c, col_index_t col, uint32_t in_length, mdToken const* tk);
-int32_t md_set_column_value_as_cursor(mdcursor_t c, col_index_t col, uint32_t in_length, mdcursor_t const* cursor);
-int32_t md_set_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint32_t const* constant);
-int32_t md_set_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t in_length, char const* const* str);
-int32_t md_set_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint8_t const* const* blob, uint32_t const* blob_len);
-int32_t md_set_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t in_length, mdguid_t const* guid);
-int32_t md_set_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, uint32_t in_length, char16_t const* const* userstring);
+bool md_set_column_value_as_token(mdcursor_t c, col_index_t col, mdToken tk);
+bool md_set_column_value_as_cursor(mdcursor_t c, col_index_t col, mdcursor_t cursor);
+bool md_set_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t constant);
+bool md_set_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, char const* str);
+bool md_set_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint8_t const* blob, uint32_t blob_len);
+bool md_set_column_value_as_guid(mdcursor_t c, col_index_t col_idx, mdguid_t guid);
+bool md_set_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, char16_t const* userstring);
 
 // Create a new row logically before the row specified by the cursor.
 // If the given row is in a table that is a target of a list column, this function will return false.
