@@ -58,7 +58,15 @@ namespace ILCompiler
 
             var libraryInitializers = new LibraryInitializers(context, assembliesWithInitializers);
 
-            return libraryInitializers.LibraryInitializerMethods;
+            IReadOnlyCollection<MethodDesc> result = libraryInitializers.LibraryInitializerMethods;
+
+            if (Get(_command.InstrumentReachability))
+            {
+                List<MethodDesc> instrumentedResult = new List<MethodDesc>(result);
+                instrumentedResult.Add(ReachabilityInstrumentationProvider.CreateInitializerMethod(context));
+                result = instrumentedResult;
+            }
+            return result;
         }
 
         public int Run()
@@ -377,11 +385,16 @@ namespace ILCompiler
                         logger, typeSystemContext, XmlReader.Create(fs), substitutionFilePath, featureSwitches));
             }
 
+            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
+
+            if (Get(_command.UseReachability) is string reachabilityInstrumentationFileName)
+            {
+                ilProvider = new ReachabilityInstrumentationFilter(reachabilityInstrumentationFileName, ilProvider);
+            }
+
             SubstitutionProvider substitutionProvider = new SubstitutionProvider(logger, featureSwitches, substitutions);
             ILProvider unsubstitutedILProvider = ilProvider;
             ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider, new DevirtualizationManager());
-
-            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(unsubstitutedILProvider, logger);
 
             var stackTracePolicy = Get(_command.EmitStackTraceData) ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
@@ -546,6 +559,14 @@ namespace ILCompiler
                 {
                     builder.UseInlinedThreadStatics(scanResults.GetInlinedThreadStatics());
                 }
+            }
+
+            if (Get(_command.InstrumentReachability))
+            {
+                ReachabilityInstrumentationProvider reachabilityProvider = new ReachabilityInstrumentationProvider(ilProvider);
+                ilProvider = reachabilityProvider;
+                builder.UseILProvider(ilProvider);
+                compilationRoots.Add(reachabilityProvider);
             }
 
             string ilDump = Get(_command.IlDump);
