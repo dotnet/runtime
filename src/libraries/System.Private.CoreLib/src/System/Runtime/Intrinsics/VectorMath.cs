@@ -1588,6 +1588,74 @@ namespace System.Runtime.Intrinsics
             return TVector.Min(x, y);
         }
 
+        public static TVector AddSaturate<TVector, T>(TVector left, TVector right)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+        {
+            TVector sum = left + right;
+
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return sum;
+            }
+
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
+            {
+                // Equivalent to sum < left ? T.MaxValue : sum
+                return TVector.LessThan(sum, left) | sum;
+            }
+
+            Debug.Assert((typeof(T) == typeof(sbyte))
+                      || (typeof(T) == typeof(short))
+                      || (typeof(T) == typeof(int))
+                      || (typeof(T) == typeof(long))
+                      || (typeof(T) == typeof(nint)));
+
+            // Condition is equivalent to: (sign(left) != sign(sum)) && (sign(left) == sign(right))
+            // Overflow result is equivalent to: left < 0 ? T.MinValue : T.MaxValue
+            return TVector.ConditionalSelect(
+                TVector.IsNegative(TVector.AndNot(left ^ sum, left ^ right)),
+                (TVector.AllBitsSet >>> 1) ^ TVector.IsNegative(left),
+                sum);
+        }
+
+        public static TVector SubtractSaturate<TVector, T>(TVector left, TVector right)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+        {
+            TVector diff = left - right;
+
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return diff;
+            }
+
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
+            {
+                // Equivalent to diff <= left ? diff : 0
+                return TVector.LessThanOrEqual(diff, left) & diff;
+            }
+
+            Debug.Assert((typeof(T) == typeof(sbyte))
+                      || (typeof(T) == typeof(short))
+                      || (typeof(T) == typeof(int))
+                      || (typeof(T) == typeof(long))
+                      || (typeof(T) == typeof(nint)));
+
+            // Condition is equivalent to: (sign(left) != sign(diff)) && (sign(left) != sign(right))
+            // Overflow result is equivalent to: left < 0 ? T.MinValue : T.MaxValue
+            return TVector.ConditionalSelect(
+                TVector.IsNegative((left ^ diff) & (left ^ right)),
+                (TVector.AllBitsSet >>> 1) ^ TVector.IsNegative(left),
+                diff);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TVector RadiansToDegrees<TVector, T>(TVector radians)
             where TVector : unmanaged, ISimdVector<TVector, T>
