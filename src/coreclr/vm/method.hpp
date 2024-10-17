@@ -1666,20 +1666,6 @@ private:
     //================================================================
     // The actual data stored in a MethodDesc follows.
 
-#ifdef _DEBUG
-public:
-    // These are set only for MethodDescs but every time we want to use the debugger
-    // to examine these fields, the code has the thing stored in a MethodDesc*.
-    // So...
-    LPCUTF8         m_pszDebugMethodName;
-    LPCUTF8         m_pszDebugClassName;
-    LPCUTF8         m_pszDebugMethodSignature;
-    PTR_MethodTable m_pDebugMethodTable;
-
-    PTR_GCCoverageInfo m_GcCover;
-
-#endif // _DEBUG
-
 protected:
     enum {
         // There are flags available for use here (currently 4 flags bits are available); however, new bits are hard to come by, so any new flags bits should
@@ -1709,6 +1695,20 @@ protected:
     WORD m_wSlotNumber; // The slot number of this MethodDesc in the vtable array.
     WORD m_wFlags; // See MethodDescFlags
     PTR_MethodDescCodeData m_codeData;
+
+#ifdef _DEBUG
+public:
+    // These are set only for MethodDescs but every time we want to use the debugger
+    // to examine these fields, the code has the thing stored in a MethodDesc*.
+    // So...
+    LPCUTF8         m_pszDebugMethodName;
+    LPCUTF8         m_pszDebugClassName;
+    LPCUTF8         m_pszDebugMethodSignature;
+    PTR_MethodTable m_pDebugMethodTable;
+
+    PTR_GCCoverageInfo m_GcCover;
+
+#endif // _DEBUG
 
 public:
 #ifdef DACCESS_COMPILE

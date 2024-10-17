@@ -533,77 +533,17 @@ HCIMPL1(void*, JIT_GetStaticFieldAddr, FieldDesc* pFD)
 HCIMPLEND
 #include <optdefault.h>
 
-// Slow helper to tailcall from the fast one
-NOINLINE HCIMPL1(void, JIT_InitClass_Framed, MethodTable* pMT)
+// Helper for the managed InitClass implementations
+extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT)
 {
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    // We don't want to be calling JIT_InitClass at all for perf reasons
-    // on the Global Class <Module> as the Class loading logic ensures that we
-    // already have initialized the Global Class <Module>
-    CONSISTENCY_CHECK(!pMT->IsGlobalClass());
-
-    _ASSERTE(pMT->IsFullyLoaded());
-    pMT->CheckRunClassInitThrowing();
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-
-/*************************************************************/
-#include <optsmallperfcritical.h>
-HCIMPL1(void, JIT_InitClass, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHnd(typeHnd_);
-    MethodTable *pMT = typeHnd.AsMethodTable();
-
-    if (pMT->IsClassInited())
-        return;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    HCCALL1(JIT_InitClass_Framed, pMT);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*************************************************************/
-HCIMPL2(void, JIT_InitInstantiatedClass, CORINFO_CLASS_HANDLE typeHnd_, CORINFO_METHOD_HANDLE methHnd_)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(methHnd_ != NULL);
-    } CONTRACTL_END;
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-
-    MethodTable * pMT = (MethodTable*) typeHnd_;
-    MethodDesc *  pMD = (MethodDesc*)  methHnd_;
-
-    MethodTable * pTemplateMT = pMD->GetMethodTable();
-    if (pTemplateMT->IsSharedByGenericInstantiations())
-    {
-        pMT = ClassLoader::LoadGenericInstantiationThrowing(pTemplateMT->GetModule(),
-                                                            pTemplateMT->GetCl(),
-                                                            pMD->GetExactClassInstantiation(pMT)).AsMethodTable();
-    }
-    else
-    {
-        pMT = pTemplateMT;
-    }
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
 
     _ASSERTE(pMT->IsFullyLoaded());
     pMT->EnsureInstanceActive();
     pMT->CheckRunClassInitThrowing();
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-HCIMPLEND
-
 
 //========================================================================
 //
