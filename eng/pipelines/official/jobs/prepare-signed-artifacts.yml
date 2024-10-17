@@ -43,7 +43,8 @@ jobs:
     
     steps:
     - script: >-
-        build.cmd -sign -publish -ci -configuration Release
+        build.cmd -restore -sign -publish -ci -configuration Release
+        /p:RestoreToolsetOnly=true
         /p:PublishRidAgnosticPackagesFromPlatform=${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
         /p:DownloadDirectory=$(Build.SourcesDirectory)\artifacts\PackageDownload\
         /p:OfficialBuildId=$(Build.BuildNumber)
