@@ -56,7 +56,7 @@ namespace System.Formats.Asn1
         ///   The nested content is not evaluated by this method, except for minimal processing to
         ///   determine the location of an end-of-contents marker or verification of the content
         ///   sort order.
-        ///   Therefore, the contents may contain data which is not valid under the current encoding rules.
+        ///   Therefore, the contents might contain data that's not valid under the current encoding rules.
         /// </remarks>
         public static void ReadSetOf(
             ReadOnlySpan<byte> source,
@@ -162,7 +162,7 @@ namespace System.Formats.Asn1
         /// </exception>
         /// <remarks>
         ///   The nested content is not evaluated by this method (aside from sort order, when
-        ///   required), and may contain data which is not valid under the current encoding rules.
+        ///   required) and might contain data that's not valid under the current encoding rules.
         /// </remarks>
         public AsnReader ReadSetOf(Asn1Tag? expectedTag = null)
         {
@@ -205,7 +205,7 @@ namespace System.Formats.Asn1
         /// </exception>
         /// <remarks>
         ///   The nested content is not evaluated by this method (aside from sort order, when
-        ///   required), and may contain data which is not valid under the current encoding rules.
+        ///   required) and might contain data that's not valid under the current encoding rules.
         /// </remarks>
         public AsnReader ReadSetOf(bool skipSortOrderValidation, Asn1Tag? expectedTag = null)
         {
