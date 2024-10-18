@@ -392,7 +392,6 @@ CDAC_TYPE_END(CodeHeapListNode)
 
 CDAC_TYPE_BEGIN(ILCodeVersioningState)
 CDAC_TYPE_INDETERMINATE(ILCodeVersioningState)
-CDAC_TYPE_FIELD(ILCodeVersioningState, /*pointer*/, Node, cdac_data<ILCodeVersioningState>::Node)
 CDAC_TYPE_FIELD(ILCodeVersioningState, /*uint32*/, ActiveVersionKind, cdac_data<ILCodeVersioningState>::ActiveVersionKind)
 CDAC_TYPE_FIELD(ILCodeVersioningState, /*pointer*/, ActiveVersionNode, cdac_data<ILCodeVersioningState>::ActiveVersionNode)
 CDAC_TYPE_FIELD(ILCodeVersioningState, /*pointer*/, ActiveVersionModule, cdac_data<ILCodeVersioningState>::ActiveVersionModule)

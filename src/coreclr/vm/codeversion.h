@@ -533,7 +533,6 @@ private:
 template<>
 struct cdac_data<ILCodeVersioningState>
 {
-    static constexpr size_t Node = offsetof(ILCodeVersioningState, m_pFirstVersionNode);
     static constexpr size_t ActiveVersionKind = offsetof(ILCodeVersioningState, m_activeVersion.m_storageKind);
     static constexpr size_t ActiveVersionNode = offsetof(ILCodeVersioningState, m_activeVersion.m_pVersionNode);
     static constexpr size_t ActiveVersionModule = offsetof(ILCodeVersioningState, m_activeVersion.m_synthetic.m_pModule);
