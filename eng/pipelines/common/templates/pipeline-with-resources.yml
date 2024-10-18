@@ -22,7 +22,7 @@ extends:
           ROOTFS_DIR: /crossrootfs/arm
 
       linux_armv6:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-cross-armv6-raspbian-10
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-armv6-respbian-10-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/armv6
 
