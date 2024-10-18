@@ -287,13 +287,21 @@ namespace DebuggerTests
         {
             try
             {
-                return await insp.WaitFor(what);
+                var timeout = Task.Delay(10000);
+                var waitForTask = insp.WaitFor(what);
+                var completedTask = await Task.WhenAny(waitForTask, timeout);
+                if (completedTask == timeout)
+                {
+                    throw new TimeoutException($"Debugger inspector waiting for {what} timed out after 10 seconds");
+                }
+                return await completedTask;
             }
             catch
             {
                 throw new Exception($"Debugger inspector waiting for {what} failed");
             }
         }
+
         public async Task WaitForConsoleMessage(string message)
         {
             object llock = new();
