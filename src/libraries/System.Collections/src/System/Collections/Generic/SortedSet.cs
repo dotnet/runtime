@@ -64,6 +64,8 @@ namespace System.Collections.Generic
 
         internal const int StackAllocThreshold = 100;
 
+        internal const int BitHelperThreshold = 8191; // See GetInternalIndexOfBitHelperLength on how this relates to count and max tree height
+
         #endregion
 
         #region Constructors
@@ -714,11 +716,13 @@ namespace System.Collections.Generic
         /// <returns>The item's zero-based index in this set, or -1 if it isn't found.</returns>
         /// <remarks>
         /// <para>
-        /// This implementation is based off of http://en.wikipedia.org/wiki/Binary_Tree#Methods_for_storing_binary_trees.
+        /// This implementation is based off of http://en.wikipedia.org/wiki/Binary_Tree#Methods_for_storing_binary_trees
+        /// if Count is not greater than InternalIndexOfCountThreshold, otherwise it returns the index according to the order of the set's elements.
         /// </para>
         /// <para>
         /// This method is used with the <see cref="BitHelper"/> class. Note that this implementation is
         /// completely different from <see cref="TreeSubSet"/>'s, and that the two should not be mixed.
+        /// If this method is overridden, <see cref="GetInternalIndexOfBitHelperLength"/> needs to be changed accordingly as well.
         /// </para>
         /// </remarks>
         internal virtual int InternalIndexOf(T item)
@@ -738,6 +742,39 @@ namespace System.Collections.Generic
             }
 
             return -1;
+        }
+
+        /// <summary>
+        /// Number of bits required to flag if elements are found in CheckUniqueAndUnfoundElements (i.e. max value of InternalIndexOf plus one).
+        /// If the required number of bits is too large or InternalIndexOf won't be used for some other reason, minus one is returned,
+        /// in which case we simply use a HashSet to store the found elements' nodes in.
+        /// </summary>
+        /// <returns>Max value of InternalIndexOf plus one or minus one</returns>
+        internal virtual int GetInternalIndexOfBitHelperLength()
+        {
+            // Some values for element count, the trees respective max height and count a perfect tree of that height:
+            //
+            // | Count      | MaxHeight | Perfect tree count
+            // |      1 - 2 |         2 |                  3
+            // |      3 - 6 |         4 |                 15
+            // |     7 - 14 |         6 |                 63
+            // |    15 - 30 |         8 |                255
+            // |    31 - 62 |        10 |               1023
+            // |   63 - 126 |        12 |               4095
+            // |  127 - 254 |        14 |              16383
+            // |  255 - 510 |        16 |              65535
+            // | 511 - 1022 |        18 |             262143
+
+            if (Count > 255)
+            {
+                return -1;
+            }
+
+            // The maximum height of a red-black tree is 2*lg(n+1).
+            // See page 264 of "Introduction to algorithms" by Thomas H. Cormen
+            int maximumHeight = 2 * Log2(Count + 1);
+            // Maximum count (of a perfect tree of height H) is M = 2^0 + 2^1 + ... + 2^(H-1) = 2^H - 1
+            return (1 << maximumHeight) - 1;
         }
 
         internal Node? FindRange(T? from, T? to) => FindRange(from, to, lowerBoundActive: true, upperBoundActive: true);
@@ -1385,43 +1422,73 @@ namespace System.Collections.Generic
                 return result;
             }
 
-            int originalLastIndex = Count;
-            int intArrayLength = BitHelper.ToIntArrayLength(originalLastIndex);
-
-            Span<int> span = stackalloc int[StackAllocThreshold];
-            BitHelper bitHelper = intArrayLength <= StackAllocThreshold ?
-                new BitHelper(span.Slice(0, intArrayLength), clear: true) :
-                new BitHelper(new int[intArrayLength], clear: false);
-
             // count of items in other not found in this
-            int UnfoundCount = 0;
+            int unfoundCount = 0;
             // count of unique items in other found in this
             int uniqueFoundCount = 0;
 
-            foreach (T item in other)
+            int bitHelperLength = GetInternalIndexOfBitHelperLength();
+
+            if (bitHelperLength == -1)
             {
-                int index = InternalIndexOf(item);
-                if (index >= 0)
+                HashSet<Node> foundNodes = new HashSet<Node>();
+
+                foreach(T item in other)
                 {
-                    if (!bitHelper.IsMarked(index))
+                    Node? node = FindNode(item);
+                    if (node != null)
                     {
-                        // item hasn't been seen yet
-                        bitHelper.MarkBit(index);
-                        uniqueFoundCount++;
+                        if (foundNodes.Add(node))
+                        {
+                            // item hasn't been seen yet
+                            uniqueFoundCount++;
+                        }
+                    }
+                    else
+                    {
+                        unfoundCount++;
+                        if (returnIfUnfound)
+                        {
+                            break;
+                        }
                     }
                 }
-                else
+            }
+            else
+            {
+                int intArrayLength = BitHelper.ToIntArrayLength(bitHelperLength);
+
+                Span<int> span = stackalloc int[StackAllocThreshold];
+                BitHelper bitHelper = intArrayLength <= StackAllocThreshold ?
+                    new BitHelper(span.Slice(0, intArrayLength), clear: true) :
+                    new BitHelper(new int[intArrayLength], clear: false);
+
+                foreach (T item in other)
                 {
-                    UnfoundCount++;
-                    if (returnIfUnfound)
+                    int index = InternalIndexOf(item);
+                    if (index >= 0)
                     {
-                        break;
+                        Debug.Assert(index < bitHelperLength);
+                        if (!bitHelper.IsMarked(index))
+                        {
+                            // item hasn't been seen yet
+                            bitHelper.MarkBit(index);
+                            uniqueFoundCount++;
+                        }
+                    }
+                    else
+                    {
+                        unfoundCount++;
+                        if (returnIfUnfound)
+                        {
+                            break;
+                        }
                     }
                 }
             }
 
             result.UniqueCount = uniqueFoundCount;
-            result.UnfoundCount = UnfoundCount;
+            result.UnfoundCount = unfoundCount;
             return result;
         }
 
