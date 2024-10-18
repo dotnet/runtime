@@ -44,9 +44,9 @@ FORCEINLINE void InlinedMemmoveGCRefsHelper(void *dest, const void *src, size_t 
     }
 
 #ifdef TARGET_ARM64
-    // dest and src at least 8b aligned, it should be fine to allow native compilers
-    // to unroll it with SIMD and still maintain atomicity guarantees (SIMD loads/stores
-    // only need 8b alignment for that).
+    // dest and src are at least 8b aligned, hence, it's fine to allow native compilers
+    // to unroll/vectorize it since SIMD loads/store on ARM64 only need 8b alignment 
+    // to guarantee 8b atomicity.
     auto dptr = (SIZE_T*)dest;
     auto sptr = (SIZE_T*)src;
 #else
