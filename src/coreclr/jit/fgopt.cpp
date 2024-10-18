@@ -4660,7 +4660,8 @@ void Compiler::fgMoveHotJumps()
 }
 
 //-----------------------------------------------------------------------------
-// fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO traversal.
+// fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO traversal,
+// taking care to keep loop bodies compact.
 //
 void Compiler::fgDoReversePostOrderLayout()
 {
@@ -4675,9 +4676,19 @@ void Compiler::fgDoReversePostOrderLayout()
     }
 #endif // DEBUG
 
-    // Compute DFS of all blocks in the method, using profile data to determine the order successors are visited in
+    // Compute DFS of all blocks in the method, using profile data to determine the order successors are visited in.
+    // Then, identify any loops in the DFS tree so we can keep their bodies compact.
     //
-    FlowGraphDfsTree* const dfsTree = fgComputeDfs</* useProfile */ true>();
+    FlowGraphDfsTree* const      dfsTree       = fgComputeDfs</* useProfile */ true>();
+    FlowGraphNaturalLoops* const loops         = FlowGraphNaturalLoops::Find(dfsTree);
+    BasicBlock** const           rpoSequence   = new (this, CMK_BasicBlock) BasicBlock*[dfsTree->GetPostOrderCount()];
+    unsigned                     index         = dfsTree->GetPostOrderCount();
+    auto                         addToSequence = [rpoSequence, &index](BasicBlock* block) {
+        assert(index != 0);
+        rpoSequence[--index] = block;
+    };
+
+    fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
 
     // Fast path: We don't have any EH regions, so just reorder the blocks
     //
@@ -4685,10 +4696,14 @@ void Compiler::fgDoReversePostOrderLayout()
     {
         for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
         {
-            BasicBlock* const block       = dfsTree->GetPostOrder(i);
-            BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
-            fgUnlinkBlock(blockToMove);
-            fgInsertBBafter(block, blockToMove);
+            BasicBlock* const block       = rpoSequence[i];
+            BasicBlock* const blockToMove = rpoSequence[i - 1];
+
+            if (!block->NextIs(blockToMove))
+            {
+                fgUnlinkBlock(blockToMove);
+                fgInsertBBafter(block, blockToMove);
+            }
         }
 
         fgMoveHotJumps</* hasEH */ false>();
@@ -4733,8 +4748,8 @@ void Compiler::fgDoReversePostOrderLayout()
     //
     for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
     {
-        BasicBlock* const block       = dfsTree->GetPostOrder(i);
-        BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
+        BasicBlock* const block       = rpoSequence[i];
+        BasicBlock* const blockToMove = rpoSequence[i - 1];
 
         // Only reorder blocks within the same EH region -- we don't want to make them non-contiguous
         //
@@ -4747,8 +4762,11 @@ void Compiler::fgDoReversePostOrderLayout()
                 continue;
             }
 
-            fgUnlinkBlock(blockToMove);
-            fgInsertBBafter(block, blockToMove);
+            if (!block->NextIs(blockToMove))
+            {
+                fgUnlinkBlock(blockToMove);
+                fgInsertBBafter(block, blockToMove);
+            }
         }
     }
 
