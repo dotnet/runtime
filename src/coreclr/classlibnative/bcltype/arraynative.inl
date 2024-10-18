@@ -13,7 +13,7 @@
 
 #include "gchelpers.inl"
 
-FORCEINLINE void InlinedMemmoveGCRefsHelper(void *dest, const void *src, size_t len)
+FORCEINLINE void InlinedMemmoveGCRefsHelper(void *dest, const void *src, size_t bytesLen)
 {
     CONTRACTL
     {
@@ -26,34 +26,33 @@ FORCEINLINE void InlinedMemmoveGCRefsHelper(void *dest, const void *src, size_t 
     _ASSERTE(dest != nullptr);
     _ASSERTE(src != nullptr);
     _ASSERTE(dest != src);
-    _ASSERTE(len != 0);
+    _ASSERTE(bytesLen != 0);
 
     // Make sure everything is pointer aligned
-    _ASSERTE(IS_ALIGNED(dest, sizeof(SIZE_T)));
-    _ASSERTE(IS_ALIGNED(src, sizeof(SIZE_T)));
-    _ASSERTE(IS_ALIGNED(len, sizeof(SIZE_T)));
+    _ASSERTE(IS_ALIGNED(dest, sizeof(size_t)));
+    _ASSERTE(IS_ALIGNED(src, sizeof(size_t)));
+    _ASSERTE(IS_ALIGNED(bytesLen, sizeof(size_t)));
 
     _ASSERTE(CheckPointer(dest));
     _ASSERTE(CheckPointer(src));
 
-    const bool notInHeap = ((BYTE*)dest < g_lowest_address || (BYTE*)dest >= g_highest_address);
-
+    const bool notInHeap = ((uint8_t*)dest < g_lowest_address) | ((uint8_t*)dest >= g_highest_address);
     if (!notInHeap)
     {
         GCHeapMemoryBarrier();
     }
 
-    auto dptr = (volatile SIZE_T*)dest;
-    auto sptr = (volatile SIZE_T*)src;
-    SIZE_T num = len / sizeof(SIZE_T);
-    for (size_t i = 0; i < num; i++)
+    auto dptr = static_cast<volatile size_t*>(dest);
+    auto sptr = static_cast<const volatile size_t*>(src);
+
+    for (size_t i = 0; i < bytesLen; i += sizeof(size_t))
     {
         dptr[i] = sptr[i];
     }
 
     if (!notInHeap)
     {
-        InlinedSetCardsAfterBulkCopyHelper((Object**)dest, len);
+        InlinedSetCardsAfterBulkCopyHelper((Object**)dest, bytesLen);
     }
 }
 
