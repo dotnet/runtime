@@ -124,7 +124,7 @@ namespace System.Tests
             Assert.Contains("System.Object", mme.Message);
             Assert.NotNull(mme.InnerException);
             Assert.IsType<MissingMethodException>(mme.InnerException);
-            Assert.StrictEqual("Hello, World!!", mme.InnerException.Message);
+            Assert.Equal("Hello, World!!", mme.InnerException.Message);
 
             // Any other exceptions will not be caught.
             Assert.Throws<Exception>(() => Activator.CreateInstance(
