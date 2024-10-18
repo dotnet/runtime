@@ -430,6 +430,12 @@ namespace System.Threading
             get;
         }
 
+        /// <summary>
+        /// Get the ThreadStaticBase used for this threads TLS data
+        /// </summary>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe void* GetThreadStaticsBase();
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetFinalizerThread()
         {

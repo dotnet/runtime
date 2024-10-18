@@ -15,7 +15,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void InitClassSlow(MethodTable* mt)
+        internal static void InitClassSlow(MethodTable* mt)
         {
             InitClassHelper(mt);
         }
