@@ -2943,7 +2943,7 @@ public:
 
     void fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast);
 
-    void fgFindEHRegionEnds();
+    void fgRebuildEHRegions();
 
     void fgSkipRmvdBlocks(EHblkDsc* handlerTab);
 
