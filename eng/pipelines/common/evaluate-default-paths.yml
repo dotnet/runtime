@@ -287,7 +287,7 @@ jobs:
       - src/mono/tests/*
       - src/mono/tools/*
       - src/mono/wasi/*
-      - src/mono/wasm/debugger/*
+      - src/mono/browser/debugger/*
       - src/mono/wasm/host/*
       - src/mono/wasm/templates/*
       - src/mono/wasm/testassets/*
