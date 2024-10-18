@@ -2,8 +2,12 @@ include(configure.cmake)
 
 set(SOURCES
     cpufeatures.c
-    random.c
     debugger.c
+    guid.c
+    memory.c
+    random.c
+    sha1.c
+    strings.c
     time.c
     unicodedata.c
     utf8.c
@@ -30,3 +34,5 @@ add_library(minipal_sanitizer_support OBJECT
 # Exclude this target from the default build as we may not have sanitzer headers available
 # in a non-sanitized build.
 set_target_properties(minipal_sanitizer_support PROPERTIES EXCLUDE_FROM_ALL ON)
+
+add_subdirectory(com)

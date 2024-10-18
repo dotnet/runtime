@@ -17,6 +17,7 @@
 #include "typestring.h"
 #include "clrversion.h"
 #include "hostinformation.h"
+#include <minipal/guid.h>
 
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE
@@ -748,7 +749,7 @@ ep_rt_create_activity_id (
 	EP_ASSERT (activity_id != NULL);
 	EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
-	CoCreateGuid (reinterpret_cast<GUID *>(activity_id));
+	minipal_guid_v4_create (reinterpret_cast<minipal_guid_t *>(activity_id));
 }
 
 static
