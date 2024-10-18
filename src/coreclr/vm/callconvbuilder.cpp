@@ -358,25 +358,49 @@ HRESULT CallConv::TryGetUnmanagedCallingConventionFromModOpt(
     _ASSERTE(pWalk <= pSig + cSig);
 
     CallConvBuilder& callConvBuilder = *builder;
-    while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD)))
+    while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD) || (*pWalk == ELEMENT_TYPE_CMOD_INTERNAL)))
     {
-        BOOL fIsOptional = (*pWalk == ELEMENT_TYPE_CMOD_OPT);
-
-        pWalk++;
-        if (pWalk + CorSigUncompressedDataSize(pWalk) > pSig + cSig)
-        {
-            *errorResID = BFA_BAD_SIGNATURE;
-            return COR_E_BADIMAGEFORMAT; // Bad formatting
-        }
-
+        CORINFO_MODULE_HANDLE tokenLookupModule = pModule;
         mdToken tk;
-        pWalk += CorSigUncompressToken(pWalk, &tk);
-
-        if (!fIsOptional)
-            continue;
-
         LPCSTR typeNamespace;
         LPCSTR typeName;
+        if (*pWalk == ELEMENT_TYPE_CMOD_INTERNAL)
+        {
+            // Skip internal modifiers
+            pWalk++;
+            if (pWalk + 1 + sizeof(void*) > pSig + cSig)
+            {
+                *errorResID = BFA_BAD_SIGNATURE;
+                return COR_E_BADIMAGEFORMAT; // Bad formatting
+            }
+
+            BOOL required = *pWalk++ != 0;
+            void* pType;
+            pWalk += CorSigUncompressPointer(pWalk, &pType);
+            TypeHandle type = TypeHandle::FromPtr(pType);
+            
+            if (!required)
+                continue;
+            
+            tokenLookupModule = GetScopeHandle(type.GetModule());
+            tk = type.GetCl();
+        }
+        else
+        {
+            BOOL fIsOptional = (*pWalk == ELEMENT_TYPE_CMOD_OPT);
+
+            pWalk++;
+            if (pWalk + CorSigUncompressedDataSize(pWalk) > pSig + cSig)
+            {
+                *errorResID = BFA_BAD_SIGNATURE;
+                return COR_E_BADIMAGEFORMAT; // Bad formatting
+            }
+
+            pWalk += CorSigUncompressToken(pWalk, &tk);
+
+            if (!fIsOptional)
+                continue;
+        }
 
         // Check for CallConv types specified in modopt
         if (FAILED(GetNameOfTypeRefOrDef(pModule, tk, &typeNamespace, &typeName)))

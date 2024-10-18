@@ -175,8 +175,12 @@ mono_arch_opcode_supported (int opcode)
 	switch (opcode) {
 	case OP_ATOMIC_ADD_I4:
 	case OP_ATOMIC_ADD_I8:
+	case OP_ATOMIC_EXCHANGE_U1:
+	case OP_ATOMIC_EXCHANGE_U2:
 	case OP_ATOMIC_EXCHANGE_I4:
 	case OP_ATOMIC_EXCHANGE_I8:
+	case OP_ATOMIC_CAS_U1:
+	case OP_ATOMIC_CAS_U2:
 	case OP_ATOMIC_CAS_I4:
 	case OP_ATOMIC_CAS_I8:
 	case OP_ATOMIC_LOAD_I1:
@@ -573,7 +577,6 @@ mono_init_native_crash_info (void)
 void
 mono_runtime_setup_stat_profiler (void)
 {
-	g_error ("mono_runtime_setup_stat_profiler");
 }
 
 gboolean

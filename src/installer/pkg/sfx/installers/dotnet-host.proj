@@ -85,6 +85,8 @@
       <LinuxPackageDependency Include="libc6;libgcc1;libstdc++6" />
     </ItemGroup>
     <ItemGroup>
+      <DebSymlink Include="/usr/bin/dotnet" LinkTarget="../share/dotnet/dotnet" />
+      <DebControlProperty Include="Conflicts" Value="dotnet, dotnet-nightly" />
       <DebJsonProperty Include="symlinks" Object="{ &quot;dotnet&quot;: &quot;/usr/bin/dotnet&quot; }" />
       <RpmJsonProperty Include="directories" Object="[ &quot;/usr/share/dotnet&quot;, &quot;/usr/share/doc/dotnet-host&quot; ]" />
       <PackageConflictsProperty Include="package_conflicts" Object="[ &quot;dotnet&quot;, &quot;dotnet-nightly&quot; ]" />

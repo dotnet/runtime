@@ -1626,8 +1626,6 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
             case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
-            case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
-            case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
             case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                 // logging helpers are not technically pure but can be optimized away
                 isPure        = true;
@@ -1804,10 +1802,6 @@ void HelperCallProperties::init()
                 alwaysThrow = true;
                 break;
 
-            // These helper calls may throw an exception
-            case CORINFO_HELP_MON_EXIT_STATIC:
-                break;
-
             // This is a debugging aid; it simply returns a constant address.
             case CORINFO_HELP_LOOP_CLONE_CHOICE_ADDR:
                 isPure  = true;
@@ -1820,11 +1814,9 @@ void HelperCallProperties::init()
                 isNoGC = true;
                 FALLTHROUGH;
             case CORINFO_HELP_DBG_IS_JUST_MY_CODE:
-            case CORINFO_HELP_BBT_FCN_ENTER:
             case CORINFO_HELP_POLL_GC:
             case CORINFO_HELP_MON_ENTER:
             case CORINFO_HELP_MON_EXIT:
-            case CORINFO_HELP_MON_ENTER_STATIC:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
             case CORINFO_HELP_GETFIELDADDR:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:

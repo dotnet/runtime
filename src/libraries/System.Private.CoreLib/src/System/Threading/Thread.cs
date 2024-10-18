@@ -149,15 +149,21 @@ namespace System.Threading
         }
 
 #if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_MANAGED_THREADS
+        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => true;
         internal static bool IsInternalThreadStartSupported => true;
 #elif FEATURE_WASM_PERFTRACING
+        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => false;
         internal static bool IsInternalThreadStartSupported => true;
 #else
+        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => false;
         internal static bool IsInternalThreadStartSupported => false;
 #endif
@@ -197,6 +203,9 @@ namespace System.Threading
 
         private void Start(object? parameter, bool captureContext, bool internalThread = false)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             ThrowIfNoThreadStart(internalThread);
 
             StartHelper? startHelper = _startHelper;
@@ -288,8 +297,6 @@ namespace System.Threading
                 startHelper._culture = value;
             }
         }
-
-        partial void ThreadNameChanged(string? value);
 
         public CultureInfo CurrentCulture
         {
@@ -394,7 +401,7 @@ namespace System.Threading
 
         internal void SetThreadPoolWorkerThreadName()
         {
-            Debug.Assert(this == CurrentThread);
+            Debug.Assert(ThreadState.HasFlag(ThreadState.Unstarted) || this == CurrentThread);
             Debug.Assert(IsThreadPoolThread);
 
             lock (this)

@@ -127,21 +127,6 @@ static BOOL INIT_SharedFilesPath(void);
 extern void PROCDumpThreadList(void);
 #endif
 
-#if defined(__APPLE__)
-static bool RunningNatively()
-{
-    int ret = 0;
-    size_t sz = sizeof(ret);
-    if (sysctlbyname("sysctl.proc_native", &ret, &sz, nullptr, 0) != 0)
-    {
-        // if the sysctl failed, we'll assume this OS does not support
-        // binary translation - so we must be running natively.
-        return true;
-    }
-    return ret != 0;
-}
-#endif // __APPLE__
-
 /*++
 Function:
   PAL_Initialize
@@ -327,14 +312,6 @@ Initialize(
 
     /*Firstly initiate a lastError */
     SetLastError(ERROR_GEN_FAILURE);
-
-#ifdef __APPLE__
-    if (!RunningNatively())
-    {
-        SetLastError(ERROR_BAD_FORMAT);
-        goto exit;
-    }
-#endif // __APPLE__
 
     CriticalSectionSubSysInitialize();
 
@@ -629,6 +606,17 @@ Initialize(
             goto CLEANUP10;
         }
 
+        if (flags & PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
+        {
+            // Initialize before first thread is created for faster load on Linux
+            if (!InitializeFlushProcessWriteBuffers())
+            {
+                ERROR("Unable to initialize flush process write buffers\n");
+                palError = ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
+                goto CLEANUP10;
+            }
+        }
+
         if (flags & PAL_INITIALIZE_SYNC_THREAD)
         {
             //
@@ -730,9 +718,6 @@ done:
         ASSERT("returning failure, but last error not set\n");
     }
 
-#ifdef __APPLE__
-exit :
-#endif // __APPLE__
     LOGEXIT("PAL_Initialize returns int %d\n", retval);
     return retval;
 }
@@ -787,114 +772,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
         return ERROR_PALINIT_PROCABORT_INITIALIZE;
     }
 
-    if (!InitializeFlushProcessWriteBuffers())
-    {
-        return ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
-    }
-
     return ERROR_SUCCESS;
-}
-
-/*++
-Function:
-PAL_IsDebuggerPresent
-
-Abstract:
-This function should be used to determine if a debugger is attached to the process.
---*/
-PALIMPORT
-BOOL
-PALAPI
-PAL_IsDebuggerPresent()
-{
-#if defined(__linux__)
-    BOOL debugger_present = FALSE;
-    char buf[2048];
-
-    int status_fd = open("/proc/self/status", O_RDONLY);
-    if (status_fd == -1)
-    {
-        return FALSE;
-    }
-    ssize_t num_read = read(status_fd, buf, sizeof(buf) - 1);
-
-    if (num_read > 0)
-    {
-        static const char TracerPid[] = "TracerPid:";
-        char *tracer_pid;
-
-        buf[num_read] = '\0';
-        tracer_pid = strstr(buf, TracerPid);
-        if (tracer_pid)
-        {
-            debugger_present = !!atoi(tracer_pid + sizeof(TracerPid) - 1);
-        }
-    }
-
-    close(status_fd);
-
-    return debugger_present;
-#elif defined(__APPLE__) || defined(__FreeBSD__)
-    struct kinfo_proc info = {};
-    size_t size = sizeof(info);
-    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid() };
-    int ret = sysctl(mib, sizeof(mib)/sizeof(*mib), &info, &size, nullptr, 0);
-
-    if (ret == 0)
-#if defined(__APPLE__)
-        return ((info.kp_proc.p_flag & P_TRACED) != 0);
-#else // __FreeBSD__
-        return ((info.ki_flag & P_TRACED) != 0);
-#endif
-
-    return FALSE;
-#elif defined(__NetBSD__)
-    int traced;
-    kvm_t *kd;
-    int cnt;
-
-    struct kinfo_proc *info;
-
-    kd = kvm_open(nullptr, nullptr, nullptr, KVM_NO_FILES, "kvm_open");
-    if (kd == nullptr)
-        return FALSE;
-
-    info = kvm_getprocs(kd, KERN_PROC_PID, getpid(), &cnt);
-    if (info == nullptr || cnt < 1)
-    {
-        kvm_close(kd);
-        return FALSE;
-    }
-
-    traced = info->kp_proc.p_slflag & PSL_TRACED;
-    kvm_close(kd);
-
-    if (traced != 0)
-        return TRUE;
-    else
-        return FALSE;
-#elif defined(__sun)
-    int readResult;
-    char statusFilename[64];
-    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/status", getpid());
-    int fd = open(statusFilename, O_RDONLY);
-    if (fd == -1)
-    {
-        return FALSE;
-    }
-
-    pstatus_t status;
-    do
-    {
-        readResult = read(fd, &status, sizeof(status));
-    }
-    while ((readResult == -1) && (errno == EINTR));
-
-    close(fd);
-    return status.pr_flttrace.word[0] != 0;
-#else
-    return FALSE;
-#endif
 }
 
 /*++
