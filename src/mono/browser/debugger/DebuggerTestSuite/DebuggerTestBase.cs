@@ -294,7 +294,7 @@ namespace DebuggerTests
                 {
                     throw new TimeoutException($"Debugger inspector waiting for {what} timed out after 10 seconds");
                 }
-                return await completedTask;
+                return await waitForTask;
             }
             catch
             {
