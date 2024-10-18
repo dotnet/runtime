@@ -43,9 +43,9 @@ FORCEINLINE void InlinedMemmoveGCRefsHelper(void *dest, const void *src, size_t 
         GCHeapMemoryBarrier();
     }
 
-    SIZE_T* dptr = (SIZE_T*)dest;
-    SIZE_T* sptr = (SIZE_T*)src;
-    SIZE_T  num  = len / sizeof(SIZE_T);
+    auto dptr = (volatile SIZE_T*)dest;
+    auto sptr = (volatile SIZE_T*)src;
+    SIZE_T num  = len / sizeof(SIZE_T);
     for (size_t i = 0; i < num; i++)
     {
         dptr[i] = sptr[i];
