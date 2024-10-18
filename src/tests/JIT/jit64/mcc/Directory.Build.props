@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <!-- FIXME: some of the mcc tests fail on windows checked unless we do this -->
+    <SynthesizeIlasmAssemblyName>false</SynthesizeIlasmAssemblyName>
+  </PropertyGroup>
+</Project>

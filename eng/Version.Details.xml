@@ -286,13 +286,13 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>0372b5080a4aec8d73d6861ad4b993d9d0fe3a11</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.ILAsm" Version="10.0.0-alpha.1.24504.10">
+    <Dependency Name="Microsoft.NETCore.ILAsm" Version="10.0.0-alpha.1.24517.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>0372b5080a4aec8d73d6861ad4b993d9d0fe3a11</Sha>
+      <Sha>2830cf5d4b6c7853c6f187b8646ee7cfda7a9ae7</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.IL" Version="10.0.0-alpha.1.24504.10">
+    <Dependency Name="Microsoft.NET.Sdk.IL" Version="10.0.0-alpha.1.24517.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>0372b5080a4aec8d73d6861ad4b993d9d0fe3a11</Sha>
+      <Sha>2830cf5d4b6c7853c6f187b8646ee7cfda7a9ae7</Sha>
     </Dependency>
     <Dependency Name="System.Text.Json" Version="10.0.0-alpha.1.24504.10">
       <Uri>https://github.com/dotnet/runtime</Uri>
