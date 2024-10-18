@@ -969,7 +969,10 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(true)]
         public static void Options_RespectRequiredConstructorParameters_FeatureSwitch(bool? state)
         {
-            var options = new RemoteInvokeOptions();
+            var options = new RemoteInvokeOptions
+            {
+                TimeOut = RemoteExecutor.FailWaitTimeoutMilliseconds * PlatformDetection.SlowRuntimeTimeoutModifier
+            };
             if (state.HasValue)
             {
                 options.RuntimeConfigurationOptions["System.Text.Json.Serialization.RespectRequiredConstructorParametersDefault"] = state.Value;
