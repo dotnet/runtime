@@ -17,6 +17,7 @@ internal class Program
 #if !MULTIMODULE_BUILD
         TestHardwareIntrinsics.Run();
         TestLdstr.Run();
+        TestStringManip.Run();
         TestException.Run();
         TestThreadStaticNotInitialized.Run();
         TestUntouchedThreadStaticInitialized.Run();
@@ -119,6 +120,27 @@ class TestLdstr
         Assert.IsPreinitialized(typeof(TestLdstr));
         Assert.AreSame(nameof(TestLdstr), s_mine);
         Assert.True(s_literalsEqual);
+    }
+}
+
+class TestStringManip
+{
+    static string testString;
+
+    static TestStringManip()
+    {
+        string test = "";
+        for (int i = 0; i < 3; i++)
+        {
+            test += "A";
+        }
+        testString = test;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestStringManip));
+        Assert.AreSame("AAA", testString);
     }
 }
 
