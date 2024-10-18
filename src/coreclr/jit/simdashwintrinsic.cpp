@@ -917,6 +917,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdCeilNode(retType, op1, simdBaseJitType, simdSize);
                 }
 
+                case NI_VectorT_Create:
+                {
+                    return gtNewSimdCreateBroadcastNode(simdType, op1, simdBaseJitType, simdSize);
+                }
+
                 case NI_VectorT_Floor:
                 {
                     return gtNewSimdFloorNode(retType, op1, simdBaseJitType, simdSize);
@@ -1245,15 +1250,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT_op_BitwiseOr:
                 {
                     return gtNewSimdBinOpNode(GT_OR, retType, op1, op2, simdBaseJitType, simdSize);
-                }
-
-                case NI_VectorT_Create:
-                {
-                    assert(retType == TYP_VOID);
-
-                    copyBlkDst = op1;
-                    copyBlkSrc = gtNewSimdCreateBroadcastNode(simdType, op2, simdBaseJitType, simdSize);
-                    break;
                 }
 
                 case NI_VectorT_CreateSequence:
