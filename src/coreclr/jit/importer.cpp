@@ -2515,7 +2515,7 @@ GenTree* Compiler::impGetGenericTypeDefinition(GenTree* type)
     return nullptr;
 }
 
-typeInfo Compiler::verMakeTypeInfoForLocal(unsigned lclNum)
+typeInfo Compiler::makeTypeInfoForLocal(unsigned lclNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
@@ -2527,7 +2527,7 @@ typeInfo Compiler::verMakeTypeInfoForLocal(unsigned lclNum)
     return typeInfo(varDsc->TypeGet());
 }
 
-typeInfo Compiler::verMakeTypeInfo(CorInfoType ciType, CORINFO_CLASS_HANDLE clsHnd)
+typeInfo Compiler::makeTypeInfo(CorInfoType ciType, CORINFO_CLASS_HANDLE clsHnd)
 {
     if (ciType == CORINFO_TYPE_CLASS)
     {
@@ -2537,31 +2537,10 @@ typeInfo Compiler::verMakeTypeInfo(CorInfoType ciType, CORINFO_CLASS_HANDLE clsH
     return typeInfo(JITtype2varType(ciType));
 }
 
-typeInfo Compiler::verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd)
+typeInfo Compiler::makeTypeInfo(CORINFO_CLASS_HANDLE clsHnd)
 {
     assert(clsHnd != NO_CLASS_HANDLE);
-    return verMakeTypeInfo(info.compCompHnd->asCorInfoType(clsHnd), clsHnd);
-}
-
-typeInfo Compiler::verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args)
-{
-    CORINFO_CLASS_HANDLE classHandle;
-    CorInfoType          ciType = strip(info.compCompHnd->getArgType(sig, args, &classHandle));
-
-    var_types type = JITtype2varType(ciType);
-    if (varTypeIsGC(type))
-    {
-        // For efficiency, getArgType only returns something in classHandle for
-        // value types.  For other types that have addition type info, you
-        // have to call back explicitly
-        classHandle = info.compCompHnd->getArgClass(sig, args);
-        if (!classHandle)
-        {
-            NO_WAY("Could not figure out Class specified in argument or local signature");
-        }
-    }
-
-    return verMakeTypeInfo(ciType, classHandle);
+    return makeTypeInfo(info.compCompHnd->asCorInfoType(clsHnd), clsHnd);
 }
 
 /*****************************************************************************
@@ -2569,9 +2548,9 @@ typeInfo Compiler::verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_L
  *  Check if a TailCall is legal.
  */
 
-bool Compiler::verCheckTailCallConstraint(OPCODE                  opcode,
-                                          CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                          CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken)
+bool Compiler::checkTailCallConstraint(OPCODE                  opcode,
+                                       CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                       CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken)
 {
     DWORD            mflags;
     CORINFO_SIG_INFO sig;
@@ -7078,7 +7057,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 ldelemClsHnd = resolvedToken.hClass;
                 lclTyp       = TypeHandleToVarType(ldelemClsHnd);
-                tiRetVal     = verMakeTypeInfo(ldelemClsHnd);
+                tiRetVal     = makeTypeInfo(ldelemClsHnd);
                 goto ARR_LD;
 
             case CEE_LDELEM_I1:
@@ -9003,8 +8982,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         // Do a more detailed evaluation of legality
                         const bool passedConstraintCheck =
-                            verCheckTailCallConstraint(opcode, &resolvedToken,
-                                                       constraintCall ? &constrainedResolvedToken : nullptr);
+                            checkTailCallConstraint(opcode, &resolvedToken,
+                                                    constraintCall ? &constrainedResolvedToken : nullptr);
 
                         // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have
                         // patchpoints.
@@ -9200,7 +9179,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 else
                 {
-                    tiRetVal = verMakeTypeInfo(fieldInfo.fieldType, clsHnd);
+                    tiRetVal = makeTypeInfo(fieldInfo.fieldType, clsHnd);
                 }
 
                 impHandleAccessAllowed(fieldInfo.accessAllowed, &fieldInfo.accessCalloutHelper);
@@ -9653,7 +9632,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                tiRetVal = verMakeTypeInfo(resolvedToken.hClass);
+                tiRetVal = makeTypeInfo(resolvedToken.hClass);
 
                 accessAllowedResult =
                     info.compCompHnd->canAccessClass(&resolvedToken, info.compMethodHnd, &calloutHelper);
@@ -10054,7 +10033,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #endif
                 op1->AsCall()->gtRetClsHnd = tokenType;
 
-                tiRetVal = verMakeTypeInfo(tokenType);
+                tiRetVal = makeTypeInfo(tokenType);
                 impPushOnStack(op1, tiRetVal);
             }
             break;
@@ -10275,7 +10254,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     // If non register passable struct we have it materialized in the RetBuf.
                     assert(op1->TypeIs(TYP_STRUCT));
-                    tiRetVal = verMakeTypeInfo(resolvedToken.hClass);
+                    tiRetVal = makeTypeInfo(resolvedToken.hClass);
                 }
 
                 impPushOnStack(op1, tiRetVal);
@@ -10679,7 +10658,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impAppendTree(storeData, CHECK_SPILL_ALL, impCurStmtDI);
                 impAppendTree(storeType, CHECK_SPILL_ALL, impCurStmtDI);
 
-                impPushOnStack(gtNewLclVarNode(refAnyLcl, TYP_STRUCT), verMakeTypeInfo(impGetRefAnyClass()));
+                impPushOnStack(gtNewLclVarNode(refAnyLcl, TYP_STRUCT), makeTypeInfo(impGetRefAnyClass()));
                 break;
             }
 
@@ -10694,7 +10673,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             OBJ:
                 ClassLayout* layout;
                 lclTyp   = TypeHandleToVarType(resolvedToken.hClass, &layout);
-                tiRetVal = verMakeTypeInfo(resolvedToken.hClass);
+                tiRetVal = makeTypeInfo(resolvedToken.hClass);
 
                 op1 = impPopStack().val;
                 assertImp((genActualType(op1) == TYP_I_IMPL) || op1->TypeIs(TYP_BYREF));
@@ -10799,7 +10778,7 @@ GenTreeLclVar* Compiler::impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET o
 // lclNum is an index into lvaTable *NOT* the arg/lcl index in the IL
 void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset)
 {
-    impPushOnStack(impCreateLocalNode(lclNum DEBUGARG(offset)), verMakeTypeInfoForLocal(lclNum));
+    impPushOnStack(impCreateLocalNode(lclNum DEBUGARG(offset)), makeTypeInfoForLocal(lclNum));
 }
 
 // Load an argument on the operand stack
@@ -11505,7 +11484,7 @@ void Compiler::impImportBlock(BasicBlock* block)
 #endif
 
     /* Set the current stack state to the merged result */
-    verResetCurrentState(block, &stackState);
+    resetCurrentState(block, &stackState);
 
     if (block->hasTryIndex())
     {
@@ -11845,7 +11824,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
     // We use NULL to indicate the 'common' state to avoid memory allocation
     if ((block->bbEntryState == nullptr) && !block->HasFlag(BBF_IMPORTED) && (impGetPendingBlockMember(block) == 0))
     {
-        verInitBBEntryState(block, &stackState);
+        initBBEntryState(block, &stackState);
         assert(block->bbStkDepth == 0);
         block->bbStkDepth = static_cast<unsigned short>(stackState.esStackDepth);
         assert(addToPending);
@@ -12117,7 +12096,7 @@ void Compiler::ReimportSpillClique::Visit(SpillCliqueDir predOrSucc, BasicBlock*
         m_pComp->impReimportMarkBlock(blk);
 
         // Set the current stack state to that of the blk->bbEntryState
-        m_pComp->verResetCurrentState(blk, &m_pComp->stackState);
+        m_pComp->resetCurrentState(blk, &m_pComp->stackState);
 
         m_pComp->impImportBlockPending(blk);
     }
@@ -12205,7 +12184,7 @@ void Compiler::impReimportSpillClique(BasicBlock* block)
 
 // Set the pre-state of "block" (which should not have a pre-state allocated) to
 // a copy of "srcState", cloning tree pointers as required.
-void Compiler::verInitBBEntryState(BasicBlock* block, EntryState* srcState)
+void Compiler::initBBEntryState(BasicBlock* block, EntryState* srcState)
 {
     if (srcState->esStackDepth == 0)
     {
@@ -12236,7 +12215,7 @@ void Compiler::verInitBBEntryState(BasicBlock* block, EntryState* srcState)
 /*
  * Resets the current state to the state at the start of the basic block
  */
-void Compiler::verResetCurrentState(BasicBlock* block, EntryState* destState)
+void Compiler::resetCurrentState(BasicBlock* block, EntryState* destState)
 {
     if (block->bbEntryState == nullptr)
     {
@@ -12254,14 +12233,14 @@ void Compiler::verResetCurrentState(BasicBlock* block, EntryState* destState)
     }
 }
 
-void Compiler::verInitCurrentState()
+void Compiler::initCurrentState()
 {
     // initialize stack info
     stackState.esStackDepth = 0;
     assert(stackState.esStack != nullptr);
 
     // copy current state to entry state of first BB
-    verInitBBEntryState(fgFirstBB, &stackState);
+    initBBEntryState(fgFirstBB, &stackState);
 }
 
 Compiler* Compiler::impInlineRoot()
@@ -12345,7 +12324,7 @@ void Compiler::impImport()
     }
 
     // initialize the entry state at start of method
-    verInitCurrentState();
+    initCurrentState();
 
     // Initialize stuff related to figuring "spill cliques" (see spec comment for impGetSpillTmpBase).
     if (this == inlineRoot) // These are only used on the root of the inlining tree.
