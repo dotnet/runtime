@@ -657,7 +657,7 @@ FCIMPL0(void*, ThreadNative::GetThreadLocalStaticBase)
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::RefHandleOnStack refHandle, MethodTable* pMT, bool gcStatic)
+extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, bool gcStatic)
 {
     QCALL_CONTRACT;
 
@@ -678,7 +678,7 @@ extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::RefHandleOnStack 
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::RefHandleOnStack refHandle, uint32_t staticBlockIndex, bool gcStatic)
+extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::ByteRefOnStack refHandle, uint32_t staticBlockIndex, bool gcStatic)
 {
     QCALL_CONTRACT;
 

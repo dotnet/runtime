@@ -11,10 +11,10 @@ namespace System.Runtime.CompilerServices
     internal static unsafe partial class StaticsHelpers
     {
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void GetThreadStaticsByIndex(RefHandleOnStack result, int index, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
+        private static partial void GetThreadStaticsByIndex(ByteRefOnStack result, int index, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
 
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void GetThreadStaticsByMethodTable(RefHandleOnStack result, MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool nonGC);
+        private static partial void GetThreadStaticsByMethodTable(ByteRefOnStack result, MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -57,7 +57,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         private static ref byte GetGCStaticBase(MethodTable* mt)
         {
-            ref byte gcStaticBase = ref mt->AuxiliaryData->DynamicStaticsInfo._pNonGCStatics;
+            ref byte gcStaticBase = ref mt->AuxiliaryData->DynamicStaticsInfo._pGCStatics;
 
             if ((((nuint)Unsafe.AsPointer(ref gcStaticBase)) & DynamicStaticsInfo.ISCLASSINITED) != 0)
                 return ref GetGCStaticBaseSlow(mt);
@@ -68,7 +68,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         private static ref byte GetDynamicGCStaticBase(DynamicStaticsInfo *dynamicStaticsInfo)
         {
-            ref byte gcStaticBase = ref dynamicStaticsInfo->_pNonGCStatics;
+            ref byte gcStaticBase = ref dynamicStaticsInfo->_pGCStatics;
 
             if ((((nuint)Unsafe.AsPointer(ref gcStaticBase)) & DynamicStaticsInfo.ISCLASSINITED) != 0)
                 return ref GetGCStaticBaseSlow(dynamicStaticsInfo->_methodTable);
@@ -122,39 +122,46 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsIndexAllocated(int index)
+        {
+            return index != -1;
+        }
+
+        [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static ref byte GetNonGCThreadStaticsByIndexSlow(int index)
         {
-            RefHandle<byte> result = default;
-            GetThreadStaticsByIndex(RefHandleOnStack.Create(ref result), index, false);
-            return ref result.Reference;
+            ByteRef result = default;
+            GetThreadStaticsByIndex(ByteRefOnStack.Create(ref result), index, false);
+            return ref result.Get();
         }
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static ref byte GetGCThreadStaticsByIndexSlow(int index)
         {
-            RefHandle<byte> result = default;
-            GetThreadStaticsByIndex(RefHandleOnStack.Create(ref result), index, true);
-            return ref result.Reference;
+            ByteRef result = default;
+            GetThreadStaticsByIndex(ByteRefOnStack.Create(ref result), index, true);
+            return ref result.Get();
         }
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static ref byte GetNonGCThreadStaticBaseSlow(MethodTable* mt)
         {
-            RefHandle<byte> result = default;
-            GetThreadStaticsByMethodTable(RefHandleOnStack.Create(ref result), mt, false);
-            return ref result.Reference;
+            ByteRef result = default;
+            GetThreadStaticsByMethodTable(ByteRefOnStack.Create(ref result), mt, false);
+            return ref result.Get();
         }
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static ref byte GetGCThreadStaticBaseSlow(MethodTable* mt)
         {
-            RefHandle<byte> result = default;
-            GetThreadStaticsByMethodTable(RefHandleOnStack.Create(ref result), mt, false);
-            return ref result.Reference;
+            ByteRef result = default;
+            GetThreadStaticsByMethodTable(ByteRefOnStack.Create(ref result), mt, true);
+            return ref result.Get();
         }
 
         [DebuggerHidden]
@@ -204,7 +211,7 @@ namespace System.Runtime.CompilerServices
         private static ref byte GetNonGCThreadStaticBase(MethodTable* mt)
         {
             int index = mt->AuxiliaryData->ThreadStaticsInfo.NonGCTlsIndex;
-            if (index != 0)
+            if (IsIndexAllocated(index))
                 return ref GetThreadLocalStaticBaseByIndex(index, false);
             else
                 return ref GetNonGCThreadStaticBaseSlow(mt);
@@ -213,8 +220,8 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         private static ref byte GetGCThreadStaticBase(MethodTable* mt)
         {
-            int index = mt->AuxiliaryData->ThreadStaticsInfo.NonGCTlsIndex;
-            if (index != 0)
+            int index = mt->AuxiliaryData->ThreadStaticsInfo.GCTlsIndex;
+            if (IsIndexAllocated(index))
                 return ref GetThreadLocalStaticBaseByIndex(index, true);
             else
                 return ref GetGCThreadStaticBaseSlow(mt);
@@ -224,7 +231,7 @@ namespace System.Runtime.CompilerServices
         private static ref byte GetDynamicNonGCThreadStaticBase(ThreadStaticsInfo *threadStaticsInfo)
         {
             int index = threadStaticsInfo->NonGCTlsIndex;
-            if (index != 0)
+            if (IsIndexAllocated(index))
                 return ref GetThreadLocalStaticBaseByIndex(index, false);
             else
                 return ref GetNonGCThreadStaticBaseSlow(threadStaticsInfo->_genericStatics._dynamicStatics._methodTable);
@@ -234,7 +241,7 @@ namespace System.Runtime.CompilerServices
         private static ref byte GetDynamicGCThreadStaticBase(ThreadStaticsInfo *threadStaticsInfo)
         {
             int index = threadStaticsInfo->GCTlsIndex;
-            if (index != 0)
+            if (IsIndexAllocated(index))
                 return ref GetThreadLocalStaticBaseByIndex(index, true);
             else
                 return ref GetGCThreadStaticBaseSlow(threadStaticsInfo->_genericStatics._dynamicStatics._methodTable);
