@@ -177,7 +177,6 @@ set(utils_common_sources
     wasm-module-reader.c
     mono-bitutils.h
     mono-bitutils.c
-    ${CLR_SRC_NATIVE_DIR}/minipal/debugger.c
   )
 
 if(MONO_CROSS_COMPILE)
