@@ -532,7 +532,8 @@ namespace System.Text
             {
                 // Unrecognized fallback mechanism - count bytes manually.
 
-                charCount = (int)Ascii.GetIndexOfFirstNonAsciiByte(pBytes, (uint)bytesLength);
+                // TODO: Migrate to byref
+                charCount = (int)Ascii.GetIndexOfFirstNonAsciiByte(ref Unsafe.AsRef<byte>(pBytes), (uint)bytesLength);
             }
 
             bytesConsumed = charCount;
