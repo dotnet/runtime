@@ -43,4 +43,8 @@ internal abstract class ContractRegistry
     /// Gets an instance of the ExecutionManager contract for the target.
     /// </summary>
     public abstract IExecutionManager ExecutionManager { get; }
+    /// <summary>
+    /// Gets an instance of the PrecodeStubs contract for the target.
+    /// </summary>
+    public abstract IPrecodeStubs PrecodeStubs { get; }
 }
