@@ -476,7 +476,28 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetMethodTableTransparencyData(ulong mt, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetMethodTableTransparencyData(mt, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetModule(ulong addr, /*IXCLRDataModule*/ void** mod)
-        => _legacyImpl is not null ? _legacyImpl.GetModule(addr, mod) : HResults.E_NOTIMPL;
+    {
+        ComWrappers cw = new StrategyBasedComWrappers();
+
+        IXCLRDataModule? legacyModule = null;
+        if (_legacyImpl is not null)
+        {
+            nint legacyModulePointer;
+            int hr = _legacyImpl.GetModule(addr, (void**)&legacyModulePointer);
+            if (hr < 0)
+                return hr;
+
+            legacyModule = cw.GetOrCreateObjectForComInstance(legacyModulePointer, CreateObjectFlags.None) as IXCLRDataModule;
+
+            // Lifetime is now managed via the QI-ed IXCLRDataModule
+            Marshal.Release(legacyModulePointer);
+        }
+
+        ClrDataModule module = new(_target, legacyModule);
+        nint ptr = cw.GetOrCreateComInterfaceForObject(module, CreateComInterfaceFlags.None);
+        *mod = (void*)ptr;
+        return HResults.S_OK;
+    }
 
     int ISOSDacInterface.GetModuleData(ulong moduleAddr, DacpModuleData* data)
     {
