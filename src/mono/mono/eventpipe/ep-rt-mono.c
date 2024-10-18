@@ -10,7 +10,6 @@
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-threads.h>
-#include <mono/utils/mono-rand.h>
 #include <mono/metadata/profiler.h>
 #include <mono/mini/mini-runtime.h>
 #include <minipal/getexepath.h>
@@ -28,9 +27,6 @@ gboolean _ep_rt_mono_runtime_initialized;
 // EventPipe TLS key.
 MonoNativeTlsKey _ep_rt_mono_thread_holder_tls_id;
 static MonoNativeTlsKey _thread_data_tls_id;
-
-// Random byte provider.
-static gpointer _rand_provider;
 
 // EventPipe global config lock.
 ep_rt_spin_lock_handle_t _ep_rt_mono_config_lock = {0};
@@ -61,17 +57,6 @@ EVENTPIPE_TRACE_CONTEXT MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_DOTNET_Co
 
 void
 ep_rt_mono_thread_exited (void);
-
-bool
-ep_rt_mono_rand_try_get_bytes (
-	uint8_t *buffer,
-	size_t buffer_size)
-{
-	EP_ASSERT (_rand_provider != NULL);
-
-	ERROR_DECL (error);
-	return mono_rand_try_get_bytes (&_rand_provider, (guchar *)buffer, (gssize)buffer_size, error);
-}
 
 char *
 ep_rt_mono_get_managed_cmd_line (void)
@@ -816,8 +801,6 @@ ep_rt_mono_init (void)
 	mono_native_tls_alloc (&_thread_data_tls_id, NULL);
 
 	mono_100ns_ticks ();
-	mono_rand_open ();
-	_rand_provider = mono_rand_init (NULL, 0);
 
 	ep_rt_mono_runtime_provider_init ();
 	ep_rt_mono_profiler_provider_init ();
