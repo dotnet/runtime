@@ -6,8 +6,8 @@
 #pragma hdrstop
 #endif
 
-// For now the max possible size is Vector512<ushort>.Count * 2
-#define MaxPossibleUnrollSize 64
+// Overestimated threshold to avoid memory allocations,
+#define MaxPossibleUnrollSize 128
 
 //------------------------------------------------------------------------
 // importer_vectorization.cpp
@@ -484,7 +484,7 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;
         }
-        if (cnsLength > (int)genTypeSize(roundDownMaxType(MaxPossibleUnrollSize * 2)))
+        if (cnsLength > (int)getUnrollThreshold(MemcmpU16))
         {
             // Not more than two loads (of max width)
             JITDUMP("UTF16 data is too long to unroll - bail out.\n");
@@ -642,7 +642,7 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;
         }
-        if (cnsLength > (int)genTypeSize(roundDownMaxType(MaxPossibleUnrollSize * 2)))
+        if (cnsLength > (int)getUnrollThreshold(MemcmpU16))
         {
             // Not more than two loads (of max width)
             JITDUMP("UTF16 data is too long to unroll - bail out.\n");
