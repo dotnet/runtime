@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Numerics;
 
 namespace System.Net
 {
@@ -88,7 +87,7 @@ namespace System.Net
             return new string(stackSpace.Slice(0, pos));
         }
 
-        private static bool IsLoopback(ReadOnlySpan<ushort> numbers)
+        private static unsafe bool IsLoopback(ReadOnlySpan<ushort> numbers)
         {
             //
             // is the address loopback? Loopback is defined as one of:

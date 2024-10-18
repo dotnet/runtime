@@ -135,7 +135,7 @@ namespace System.Net
             int i;
             for (i = start; i < end; ++i)
             {
-                int currentCh = int.CreateTruncating(name[i]);
+                ushort currentCh = IPv4AddressHelper.ToUShort(name[i]);
 
                 if (HexConverter.IsHexChar(currentCh))
                 {
@@ -196,7 +196,7 @@ namespace System.Net
                                 i += 4;
                                 for (; i < end; i++)
                                 {
-                                    int ch = int.CreateTruncating(name[i]);
+                                    ushort ch = IPv4AddressHelper.ToUShort(name[i]);
 
                                     if (!HexConverter.IsHexChar(ch))
                                     {
@@ -209,7 +209,7 @@ namespace System.Net
                                 i += 2;
                                 for (; i < end; i++)
                                 {
-                                    if (uint.CreateTruncating(name[i] - TChar.CreateTruncating('0')) >= IPv6AddressHelper.Decimal)
+                                    if ((uint)(IPv4AddressHelper.ToUShort(name[i]) - '0') >= IPv6AddressHelper.Decimal)
                                     {
                                         return false;
                                     }
@@ -315,7 +315,7 @@ namespace System.Net
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
             ushort number = 0;
-            int currentCh;
+            ushort currentCh;
             int index = 0;
             int compressorIndex = -1;
             bool numberIsValid = true;
@@ -325,7 +325,7 @@ namespace System.Net
             // Skip the start '[' character, if present. Stop parsing at the end IPv6 address terminator (']').
             for (int i = (address[0] == TChar.CreateTruncating('[') ? 1 : 0); i < address.Length && address[i] != TChar.CreateTruncating(']');)
             {
-                currentCh = int.CreateTruncating(address[i]);
+                currentCh = IPv4AddressHelper.ToUShort(address[i]);
 
                 switch (currentCh)
                 {
@@ -419,11 +419,10 @@ namespace System.Net
                         break;
 
                     default:
-                        TChar ch = address[i++];
-                        int castCharacter = int.CreateTruncating(ch);
-                        int characterValue = HexConverter.FromChar(castCharacter);
+                        int characterValue = HexConverter.FromChar(currentCh);
 
                         number = (ushort)(number * IPv6AddressHelper.Hex + characterValue);
+                        i++;
                         break;
                 }
             }

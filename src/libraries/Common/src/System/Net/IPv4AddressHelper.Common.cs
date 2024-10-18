@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace System.Net
 {
@@ -18,6 +19,17 @@ namespace System.Net
 
         private const int NumberOfLabels = 4;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ushort ToUShort<TChar>(TChar value)
+            where TChar : unmanaged, IBinaryInteger<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            return typeof(TChar) == typeof(char)
+                        ? (char)(object)value
+                        : (byte)(object)value;
+        }
+
         // Only called from the IPv6Helper, only parse the canonical format
         internal static int ParseHostNumber<TChar>(ReadOnlySpan<TChar> str, int start, int end)
             where TChar : unmanaged, IBinaryInteger<TChar>
@@ -29,9 +41,9 @@ namespace System.Net
             for (int i = 0; i < numbers.Length; ++i)
             {
                 int b = 0;
-                int ch;
+                ushort ch;
 
-                for (; (start < end) && (ch = int.CreateTruncating(str[start])) != '.' && ch != ':'; ++start)
+                for (; (start < end) && (ch = ToUShort(str[start])) != '.' && ch != ':'; ++start)
                 {
                     b = (b * 10) + ch - '0';
                 }
@@ -118,24 +130,23 @@ namespace System.Net
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
             int dots = 0;
-            int number = 0;
+            long number = 0;
             bool haveNumber = false;
             bool firstCharIsZero = false;
 
             while (start < end)
             {
-                TChar ch = name[start];
+                ushort ch = ToUShort(name[start]);
 
                 if (allowIPv6)
                 {
                     // For an IPv4 address nested inside an IPv6 address, the terminator is either the IPv6 address terminator (']'), prefix ('/') or ScopeId ('%')
-                    if (ch == TChar.CreateTruncating(']') || ch == TChar.CreateTruncating('/') || ch == TChar.CreateTruncating('%'))
+                    if (ch == ']' || ch == '/' || ch == '%')
                     {
                         break;
                     }
                 }
-                else if (ch == TChar.CreateTruncating('/') || ch == TChar.CreateTruncating('\\')
-                    || (notImplicitFile && (ch == TChar.CreateTruncating(':') || ch == TChar.CreateTruncating('?') || ch == TChar.CreateTruncating('#'))))
+                else if (ch == '/' || ch == '\\' || (notImplicitFile && (ch == ':' || ch == '?' || ch == '#')))
                 {
                     // For a normal IPv4 address, the terminator is the prefix ('/' or its counterpart, '\'). If notImplicitFile is set, the terminator
                     // is one of the characters which signify the start of the rest of the URI - the port number (':'), query string ('?') or fragment ('#')
@@ -144,7 +155,7 @@ namespace System.Net
                 }
 
                 // An explicit cast to an unsigned integer forces character values preceding '0' to underflow, eliminating one comparison below.
-                uint parsedCharacter = uint.CreateTruncating(ch - TChar.CreateTruncating('0'));
+                ushort parsedCharacter = (ushort)(ch - '0');
 
                 if (parsedCharacter < IPv4AddressHelper.Decimal)
                 {
@@ -161,13 +172,13 @@ namespace System.Net
                     }
 
                     haveNumber = true;
-                    number = number * IPv4AddressHelper.Decimal + (int)parsedCharacter;
+                    number = number * IPv4AddressHelper.Decimal + parsedCharacter;
                     if (number > byte.MaxValue)
                     {
                         return false;
                     }
                 }
-                else if (ch == TChar.CreateTruncating('.'))
+                else if (ch == '.')
                 {
                     // If the current character is not an integer, it may be the IPv4 component separator ('.')
 
@@ -205,7 +216,8 @@ namespace System.Net
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
             int numberBase = IPv4AddressHelper.Decimal;
-            uint* parts = stackalloc uint[4];
+            ushort ch;
+            long* parts = stackalloc long[4];
             long currentValue = 0;
             bool atLeastOneChar = false;
 
@@ -215,7 +227,7 @@ namespace System.Net
 
             for (; current < end; current++)
             {
-                TChar ch = name[current];
+                ch = ToUShort(name[current]);
                 currentValue = 0;
 
                 // Figure out what base this section is in, default to base 10.
@@ -223,15 +235,15 @@ namespace System.Net
                 // If the number starts with 0x, it should be interpreted in base 16 / hex
                 numberBase = IPv4AddressHelper.Decimal;
 
-                if (ch == TChar.CreateTruncating('0'))
+                if (ch == '0')
                 {
                     current++;
                     atLeastOneChar = true;
                     if (current < end)
                     {
-                        ch = name[current];
+                        ch = ToUShort(name[current]);
 
-                        if (ch == TChar.CreateTruncating('x') || ch == TChar.CreateTruncating('X'))
+                        if (ch == 'x' || ch == 'X')
                         {
                             numberBase = IPv4AddressHelper.Hex;
 
@@ -248,27 +260,10 @@ namespace System.Net
                 // Parse this section
                 for (; current < end; current++)
                 {
-                    ch = name[current];
-                    int digitValue;
-                    int characterValue = int.CreateTruncating(ch);
+                    ch = ToUShort(name[current]);
+                    int digitValue = HexConverter.FromChar(ch);
 
-                    if ((numberBase == IPv4AddressHelper.Decimal || numberBase == IPv4AddressHelper.Hex) && '0' <= characterValue && characterValue <= '9')
-                    {
-                        digitValue = characterValue - '0';
-                    }
-                    else if (numberBase == IPv4AddressHelper.Octal && '0' <= characterValue && characterValue <= '7')
-                    {
-                        digitValue = characterValue - '0';
-                    }
-                    else if (numberBase == IPv4AddressHelper.Hex && 'a' <= characterValue && characterValue <= 'f')
-                    {
-                        digitValue = characterValue + 10 - 'a';
-                    }
-                    else if (numberBase == IPv4AddressHelper.Hex && 'A' <= characterValue && characterValue <= 'F')
-                    {
-                        digitValue = characterValue + 10 - 'A';
-                    }
-                    else
+                    if (digitValue >= numberBase)
                     {
                         break; // Invalid/terminator
                     }
@@ -282,7 +277,7 @@ namespace System.Net
                     atLeastOneChar = true;
                 }
 
-                if (current < end && ch == TChar.CreateTruncating('.'))
+                if (current < end && ch == '.')
                 {
                     if (dotCount >= 3 // Max of 3 dots and 4 segments
                         || !atLeastOneChar // No empty segments: 1...1
@@ -291,7 +286,7 @@ namespace System.Net
                     {
                         return Invalid;
                     }
-                    parts[dotCount] = (uint)currentValue;
+                    parts[dotCount] = currentValue;
                     dotCount++;
                     atLeastOneChar = false;
                     continue;
@@ -309,8 +304,7 @@ namespace System.Net
             {
                 // end of string, allowed
             }
-            else if (name[current] == TChar.CreateTruncating('/') || name[current] == TChar.CreateTruncating('\\')
-                    || (notImplicitFile && (name[current] == TChar.CreateTruncating(':') || name[current] == TChar.CreateTruncating('?') || name[current] == TChar.CreateTruncating('#'))))
+            else if ((ch = ToUShort(name[current])) == '/' || ch == '\\' || (notImplicitFile && (ch == ':' || ch == '?' || ch == '#')))
             {
                 // For a normal IPv4 address, the terminator is the prefix ('/' or its counterpart, '\'). If notImplicitFile is set, the terminator
                 // is one of the characters which signify the start of the rest of the URI - the port number (':'), query string ('?') or fragment ('#')
@@ -323,37 +317,35 @@ namespace System.Net
                 return Invalid;
             }
 
-            parts[dotCount] = (uint)currentValue;
-
             // Parsed, reassemble and check for overflows in the last part. Previous parts have already been checked in the loop
             switch (dotCount)
             {
                 case 0: // 0xFFFFFFFF
-                    return parts[0];
+                    return currentValue;
                 case 1: // 0xFF.0xFFFFFF
                     Debug.Assert(parts[0] <= 0xFF);
-                    if (parts[1] > 0xffffff)
+                    if (currentValue > 0xffffff)
                     {
                         return Invalid;
                     }
-                    return (parts[0] << 24) | parts[1];
+                    return (parts[0] << 24) | currentValue;
                 case 2: // 0xFF.0xFF.0xFFFF
                     Debug.Assert(parts[0] <= 0xFF);
                     Debug.Assert(parts[1] <= 0xFF);
-                    if (parts[2] > 0xffff)
+                    if (currentValue > 0xffff)
                     {
                         return Invalid;
                     }
-                    return (parts[0] << 24) | (parts[1] << 16) | parts[2];
+                    return (parts[0] << 24) | (parts[1] << 16) | currentValue;
                 case 3: // 0xFF.0xFF.0xFF.0xFF
                     Debug.Assert(parts[0] <= 0xFF);
                     Debug.Assert(parts[1] <= 0xFF);
                     Debug.Assert(parts[2] <= 0xFF);
-                    if (parts[3] > 0xff)
+                    if (currentValue > 0xff)
                     {
                         return Invalid;
                     }
-                    return (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3];
+                    return (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | currentValue;
                 default:
                     return Invalid;
             }

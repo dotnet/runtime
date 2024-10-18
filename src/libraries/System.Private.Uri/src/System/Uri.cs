@@ -2520,7 +2520,7 @@ namespace System
                     break;
 
                 case Flags.IPv4HostType:
-                    host = IPv4AddressHelper.ParseCanonicalName(str.AsSpan(idx), ref loopback);
+                    host = IPv4AddressHelper.ParseCanonicalName(str, idx, end, ref loopback);
                     break;
 
                 case Flags.UncHostType:
