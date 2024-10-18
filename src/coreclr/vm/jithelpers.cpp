@@ -4441,7 +4441,7 @@ VMHELPDEF hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_COUNT] =
 static const BinderMethodID hlpDynamicToBinderMap[DYNAMIC_CORINFO_HELP_COUNT] =
 {
 #define JITHELPER(code, pfnHelper, binderId)
-#define DYNAMICJITHELPER(code, pfnHelper, binderId) (BinderMethodID)binderId,
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) (pfnHelper != NULL) ? (BinderMethodID)METHOD__NIL : (BinderMethodID)binderId, // If pre-compiled code is provided for a jit helper, prefer that over the IL implementation
 #include "jithelpers.h"
 };
 
@@ -4502,6 +4502,34 @@ VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** metho
     }
 
     return hlpDynamicFuncTable[ftnNum];
+}
+
+bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(ftnNum < DYNAMIC_CORINFO_HELP_COUNT);
+
+    return (METHOD__NIL != hlpDynamicToBinderMap[ftnNum]);
+}
+
+bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(ftnNum < CORINFO_HELP_COUNT);
+
+    if (
+#define DYNAMICJITHELPER(code,fn,binderId)
+#define JITHELPER(code,fn,binderId)
+#define DYNAMICJITHELPER_NOINDIRECT(code,fn,binderId) (code == ftnNum) ||
+#include "jithelpers.h"
+        false)
+    {
+        return false;
+    }
+    
+    return true;
 }
 
 /*********************************************************************/
