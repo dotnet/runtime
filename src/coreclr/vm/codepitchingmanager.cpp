@@ -36,7 +36,6 @@
 
 #if defined(FEATURE_JIT_PITCHING)
 
-#include "nibblemapmacros.h"
 #include "threadsuspend.h"
 
 static PtrHashMap* s_pPitchingCandidateMethods = nullptr;
