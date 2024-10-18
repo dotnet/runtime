@@ -153,7 +153,26 @@ namespace JSImportGenerator.Unit.Tests
                                         __arg_exception.Initialize();
                                         global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __arg_return = default;
                                         __arg_return.Initialize();
-                                        global::System.Span<global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument> __arguments_buffer = [__arg_exception, __arg_return, __a1_native, __a2_native, __a3_native, __a4_native, __a5_native, __a6_native, __a7_native, __a8_native, __a9_native, __a10_native, __a11_native, __a12_native, __a13_native, __a14_native, __a15_native];
+                                        global::System.Span<global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument> __arguments_buffer = stackalloc global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument[]
+                                        {
+                                            __arg_exception,
+                                            __arg_return,
+                                            __a1_native,
+                                            __a2_native,
+                                            __a3_native,
+                                            __a4_native,
+                                            __a5_native,
+                                            __a6_native,
+                                            __a7_native,
+                                            __a8_native,
+                                            __a9_native,
+                                            __a10_native,
+                                            __a11_native,
+                                            __a12_native,
+                                            __a13_native,
+                                            __a14_native,
+                                            __a15_native
+                                        };
                                         global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding.InvokeJS(__signature_Annotated_564258462, __arguments_buffer);
                                         return __arguments_buffer[1];
                                     }
@@ -260,7 +279,7 @@ namespace JSImportGenerator.Unit.Tests
                                     }
                                 }
                             }
-                            
+
                             """.ReplaceLineEndings("\r\n"), Encoding.UTF8)),
                     }
                 },
