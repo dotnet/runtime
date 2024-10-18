@@ -11567,8 +11567,8 @@ emit_extra_methods (MonoAotCompile *acfg)
 static void
 generate_aotid (guint8* aotid)
 {
-	bool success = minipal_get_cryptographically_secure_random_bytes (aotid, 16);
-	g_assert (success);
+	int status = minipal_get_cryptographically_secure_random_bytes (aotid, 16);
+	g_assert (status == 0);
 }
 
 static void
