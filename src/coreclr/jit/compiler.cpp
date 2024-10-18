@@ -5259,7 +5259,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
                 if (compHndBBtabCount != 0)
                 {
-                    fgFindEHRegionEnds();
+                    fgRebuildEHRegions();
                 }
 
                 return PhaseStatus::MODIFIED_EVERYTHING;
