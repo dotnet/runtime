@@ -4822,9 +4822,9 @@ void Compiler::fgMoveColdBlocks()
         prev = block->Prev();
 
         // We only want to move cold blocks.
-        // Also, don't move block if it is the beginning of a call-finally pair,
+        // Also, don't move block if it is the end of a call-finally pair,
         // as we want to keep these pairs contiguous
-        // (if we encounter the end of a pair below, we'll move the whole pair).
+        // (if we encounter the beginning of a pair, we'll move the whole pair).
         //
         if (!block->isBBWeightCold(this) || block->isBBCallFinallyPairTail())
         {
