@@ -4966,7 +4966,7 @@ private:
     void impImportBlockPending(BasicBlock* block);
 
     // Similar to impImportBlockPending, but assumes that block has already been imported once and is being
-    // reimported for some reason.  It specifically does *not* look at verCurrentState to set the EntryState
+    // reimported for some reason.  It specifically does *not* look at stackState to set the EntryState
     // for the block, but instead, just re-uses the block's existing EntryState.
     void impReimportBlockPending(BasicBlock* block);
 
@@ -11246,7 +11246,7 @@ public:
     */
 
 public:
-    EntryState verCurrentState;
+    EntryState stackState;
 
     void verInitBBEntryState(BasicBlock* block, EntryState* currentState);
 

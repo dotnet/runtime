@@ -28,14 +28,14 @@ void Compiler::impPushOnStack(GenTree* tree, typeInfo ti)
 {
     /* Check for overflow. If inlining, we may be using a bigger stack */
 
-    if ((verCurrentState.esStackDepth >= info.compMaxStack) &&
-        (verCurrentState.esStackDepth >= impStkSize || !compCurBB->HasFlag(BBF_IMPORTED)))
+    if ((stackState.esStackDepth >= info.compMaxStack) &&
+        (stackState.esStackDepth >= impStkSize || !compCurBB->HasFlag(BBF_IMPORTED)))
     {
         BADCODE("stack overflow");
     }
 
-    verCurrentState.esStack[verCurrentState.esStackDepth].seTypeInfo = ti;
-    verCurrentState.esStack[verCurrentState.esStackDepth++].val      = tree;
+    stackState.esStack[stackState.esStackDepth].seTypeInfo = ti;
+    stackState.esStack[stackState.esStackDepth++].val      = tree;
 
     if (tree->gtType == TYP_LONG)
     {
@@ -120,12 +120,12 @@ void Compiler::impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolv
 //
 StackEntry Compiler::impPopStack()
 {
-    if (verCurrentState.esStackDepth == 0)
+    if (stackState.esStackDepth == 0)
     {
         BADCODE("stack underflow");
     }
 
-    return verCurrentState.esStack[--verCurrentState.esStackDepth];
+    return stackState.esStack[--stackState.esStackDepth];
 }
 
 //------------------------------------------------------------------------
@@ -136,12 +136,12 @@ StackEntry Compiler::impPopStack()
 //
 void Compiler::impPopStack(unsigned n)
 {
-    if (verCurrentState.esStackDepth < n)
+    if (stackState.esStackDepth < n)
     {
         BADCODE("stack underflow");
     }
 
-    verCurrentState.esStackDepth -= n;
+    stackState.esStackDepth -= n;
 }
 
 /*****************************************************************************
@@ -151,17 +151,17 @@ void Compiler::impPopStack(unsigned n)
 
 StackEntry& Compiler::impStackTop(unsigned n)
 {
-    if (verCurrentState.esStackDepth <= n)
+    if (stackState.esStackDepth <= n)
     {
         BADCODE("stack underflow");
     }
 
-    return verCurrentState.esStack[verCurrentState.esStackDepth - n - 1];
+    return stackState.esStack[stackState.esStackDepth - n - 1];
 }
 
 unsigned Compiler::impStackHeight()
 {
-    return verCurrentState.esStackDepth;
+    return stackState.esStackDepth;
 }
 
 /*****************************************************************************
@@ -196,12 +196,12 @@ static bool impValidSpilledStackEntry(GenTree* tree)
 
 void Compiler::impSaveStackState(SavedStack* savePtr, bool copy)
 {
-    savePtr->ssDepth = verCurrentState.esStackDepth;
+    savePtr->ssDepth = stackState.esStackDepth;
 
-    if (verCurrentState.esStackDepth)
+    if (stackState.esStackDepth)
     {
-        savePtr->ssTrees = new (this, CMK_ImpStack) StackEntry[verCurrentState.esStackDepth];
-        size_t saveSize  = verCurrentState.esStackDepth * sizeof(*savePtr->ssTrees);
+        savePtr->ssTrees = new (this, CMK_ImpStack) StackEntry[stackState.esStackDepth];
+        size_t saveSize  = stackState.esStackDepth * sizeof(*savePtr->ssTrees);
 
         if (copy)
         {
@@ -209,10 +209,10 @@ void Compiler::impSaveStackState(SavedStack* savePtr, bool copy)
 
             /* Make a fresh copy of all the stack entries */
 
-            for (unsigned level = 0; level < verCurrentState.esStackDepth; level++, table++)
+            for (unsigned level = 0; level < stackState.esStackDepth; level++, table++)
             {
-                table->seTypeInfo = verCurrentState.esStack[level].seTypeInfo;
-                GenTree* tree     = verCurrentState.esStack[level].val;
+                table->seTypeInfo = stackState.esStack[level].seTypeInfo;
+                GenTree* tree     = stackState.esStack[level].val;
 
                 assert(impValidSpilledStackEntry(tree));
 
@@ -236,19 +236,18 @@ void Compiler::impSaveStackState(SavedStack* savePtr, bool copy)
         }
         else
         {
-            memcpy(savePtr->ssTrees, verCurrentState.esStack, saveSize);
+            memcpy(savePtr->ssTrees, stackState.esStack, saveSize);
         }
     }
 }
 
 void Compiler::impRestoreStackState(SavedStack* savePtr)
 {
-    verCurrentState.esStackDepth = savePtr->ssDepth;
+    stackState.esStackDepth = savePtr->ssDepth;
 
-    if (verCurrentState.esStackDepth)
+    if (stackState.esStackDepth)
     {
-        memcpy(verCurrentState.esStack, savePtr->ssTrees,
-               verCurrentState.esStackDepth * sizeof(*verCurrentState.esStack));
+        memcpy(stackState.esStack, savePtr->ssTrees, stackState.esStackDepth * sizeof(*stackState.esStack));
     }
 }
 
@@ -322,10 +321,10 @@ void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
 
     if (chkLevel == CHECK_SPILL_ALL)
     {
-        chkLevel = verCurrentState.esStackDepth;
+        chkLevel = stackState.esStackDepth;
     }
 
-    if (verCurrentState.esStackDepth == 0 || chkLevel == 0 || chkLevel == CHECK_SPILL_NONE)
+    if (stackState.esStackDepth == 0 || chkLevel == 0 || chkLevel == CHECK_SPILL_NONE)
     {
         return;
     }
@@ -338,7 +337,7 @@ void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
     {
         for (unsigned level = 0; level < chkLevel; level++)
         {
-            assert((verCurrentState.esStack[level].val->gtFlags & GTF_GLOB_EFFECT) == 0);
+            assert((stackState.esStack[level].val->gtFlags & GTF_GLOB_EFFECT) == 0);
         }
     }
 
@@ -351,7 +350,7 @@ void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
             unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
             for (unsigned level = 0; level < chkLevel; level++)
             {
-                GenTree* stkTree = verCurrentState.esStack[level].val;
+                GenTree* stkTree = stackState.esStack[level].val;
                 assert(!gtHasRef(stkTree, lclNum) || impIsInvariant(stkTree));
                 assert(!lvaTable[lclNum].IsAddressExposed() || ((stkTree->gtFlags & GTF_SIDE_EFFECT) == 0));
             }
@@ -361,7 +360,7 @@ void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
         {
             for (unsigned level = 0; level < chkLevel; level++)
             {
-                assert((verCurrentState.esStack[level].val->gtFlags & GTF_GLOB_REF) == 0);
+                assert((stackState.esStack[level].val->gtFlags & GTF_GLOB_REF) == 0);
             }
         }
     }
@@ -387,12 +386,12 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
 {
     if (chkLevel == CHECK_SPILL_ALL)
     {
-        chkLevel = verCurrentState.esStackDepth;
+        chkLevel = stackState.esStackDepth;
     }
 
     if ((chkLevel != 0) && (chkLevel != CHECK_SPILL_NONE))
     {
-        assert(chkLevel <= verCurrentState.esStackDepth);
+        assert(chkLevel <= stackState.esStackDepth);
 
         // If the statement being appended has any side-effects, check the stack to see if anything
         // needs to be spilled to preserve correct ordering.
@@ -1723,7 +1722,7 @@ bool Compiler::impSpillStackEntry(unsigned level,
     guard.Init(&impNestedStackSpill, bAssertOnRecursion);
 #endif
 
-    GenTree* tree = verCurrentState.esStack[level].val;
+    GenTree* tree = stackState.esStack[level].val;
 
     /* Allocate a temp if we haven't been asked to use a particular one */
 
@@ -1752,7 +1751,7 @@ bool Compiler::impSpillStackEntry(unsigned level,
         // If temp is newly introduced and a ref type, grab what type info we can.
         if (lvaTable[tnum].lvType == TYP_REF)
         {
-            CORINFO_CLASS_HANDLE stkHnd = verCurrentState.esStack[level].seTypeInfo.GetClassHandleForObjRef();
+            CORINFO_CLASS_HANDLE stkHnd = stackState.esStack[level].seTypeInfo.GetClassHandleForObjRef();
             lvaSetClass(tnum, tree, stkHnd);
         }
 
@@ -1777,9 +1776,9 @@ bool Compiler::impSpillStackEntry(unsigned level,
     }
 
     // The tree type may be modified by impStoreToTemp, so use the type of the lclVar.
-    var_types type                     = genActualType(lvaTable[tnum].TypeGet());
-    GenTree*  temp                     = gtNewLclvNode(tnum, type);
-    verCurrentState.esStack[level].val = temp;
+    var_types type                = genActualType(lvaTable[tnum].TypeGet());
+    GenTree*  temp                = gtNewLclvNode(tnum, type);
+    stackState.esStack[level].val = temp;
 
     return true;
 }
@@ -1793,9 +1792,9 @@ void Compiler::impSpillStackEnsure(bool spillLeaves)
 {
     assert(!spillLeaves || opts.compDbgCode);
 
-    for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
+    for (unsigned level = 0; level < stackState.esStackDepth; level++)
     {
-        GenTree* tree = verCurrentState.esStack[level].val;
+        GenTree* tree = stackState.esStack[level].val;
 
         if (!spillLeaves && tree->OperIsLeaf())
         {
@@ -1826,7 +1825,7 @@ void Compiler::impSpillStackEnsure(bool spillLeaves)
 void Compiler::impEvalSideEffects()
 {
     impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("impEvalSideEffects"));
-    verCurrentState.esStackDepth = 0;
+    stackState.esStackDepth = 0;
 }
 
 /*****************************************************************************
@@ -1838,10 +1837,10 @@ void Compiler::impEvalSideEffects()
 
 void Compiler::impSpillSideEffect(bool spillGlobEffects, unsigned i DEBUGARG(const char* reason))
 {
-    assert(i <= verCurrentState.esStackDepth);
+    assert(i <= stackState.esStackDepth);
 
     GenTreeFlags spillFlags = spillGlobEffects ? GTF_GLOB_EFFECT : GTF_SIDE_EFFECT;
-    GenTree*     tree       = verCurrentState.esStack[i].val;
+    GenTree*     tree       = stackState.esStack[i].val;
 
     if ((tree->gtFlags & spillFlags) != 0 ||
         (spillGlobEffects &&           // Only consider the following when  spillGlobEffects == true
@@ -1871,10 +1870,10 @@ void Compiler::impSpillSideEffects(bool spillGlobEffects, unsigned chkLevel DEBU
 
     if (chkLevel == CHECK_SPILL_ALL)
     {
-        chkLevel = verCurrentState.esStackDepth;
+        chkLevel = stackState.esStackDepth;
     }
 
-    assert(chkLevel <= verCurrentState.esStackDepth);
+    assert(chkLevel <= stackState.esStackDepth);
 
     for (unsigned i = 0; i < chkLevel; i++)
     {
@@ -1897,9 +1896,9 @@ void Compiler::impSpillSpecialSideEff()
         return;
     }
 
-    for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
+    for (unsigned level = 0; level < stackState.esStackDepth; level++)
     {
-        GenTree* tree = verCurrentState.esStack[level].val;
+        GenTree* tree = stackState.esStack[level].val;
         // Make sure if we have an exception object in the sub tree we spill ourselves.
         if (gtHasCatchArg(tree))
         {
@@ -1923,14 +1922,14 @@ void Compiler::impSpillLclRefs(unsigned lclNum, unsigned chkLevel)
 
     if (chkLevel == CHECK_SPILL_ALL)
     {
-        chkLevel = verCurrentState.esStackDepth;
+        chkLevel = stackState.esStackDepth;
     }
 
-    assert(chkLevel <= verCurrentState.esStackDepth);
+    assert(chkLevel <= stackState.esStackDepth);
 
     for (unsigned level = 0; level < chkLevel; level++)
     {
-        GenTree* tree = verCurrentState.esStack[level].val;
+        GenTree* tree = stackState.esStack[level].val;
 
         /* If the tree may throw an exception, and the block has a handler,
            then we need to spill stores to the local if the local is on entry
@@ -2111,7 +2110,7 @@ DebugInfo Compiler::impCreateDIWithCurrentStackInfo(IL_OFFSET offs, bool isCall)
 {
     assert(offs != BAD_IL_OFFSET);
 
-    bool isStackEmpty = verCurrentState.esStackDepth <= 0;
+    bool isStackEmpty = stackState.esStackDepth <= 0;
     return DebugInfo(compInlineContext, ILLocation(offs, isStackEmpty, isCall));
 }
 
@@ -2225,7 +2224,7 @@ unsigned Compiler::impInitBlockLineInfo()
 
     IL_OFFSET blockOffs = compCurBB->bbCodeOffs;
 
-    if ((verCurrentState.esStackDepth == 0) && (info.compStmtOffsetsImplicit & ICorDebugInfo::STACK_EMPTY_BOUNDARIES))
+    if ((stackState.esStackDepth == 0) && (info.compStmtOffsetsImplicit & ICorDebugInfo::STACK_EMPTY_BOUNDARIES))
     {
         impCurStmtOffsSet(blockOffs);
     }
@@ -2711,7 +2710,7 @@ bool Compiler::verCheckTailCallConstraint(OPCODE                  opcode,
     }
 
     // For tailcall, stack must be empty.
-    if (verCurrentState.esStackDepth != popCount)
+    if (stackState.esStackDepth != popCount)
     {
         return false;
     }
@@ -4529,7 +4528,7 @@ void Compiler::impImportLeaveEHRegions(BasicBlock* block)
     // LEAVE clears the stack, spill side effects, and set stack to 0
 
     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("impImportLeave"));
-    verCurrentState.esStackDepth = 0;
+    stackState.esStackDepth = 0;
 
     assert(block->KindIs(BBJ_LEAVE));
     assert(fgBBs == (BasicBlock**)0xCDCD || fgLookupBB(jmpAddr) != NULL); // should be a BB boundary
@@ -4822,7 +4821,7 @@ void Compiler::impImportLeave(BasicBlock* block)
     // LEAVE clears the stack, spill side effects, and set stack to 0
 
     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("impImportLeave"));
-    verCurrentState.esStackDepth = 0;
+    stackState.esStackDepth = 0;
 
     assert(block->KindIs(BBJ_LEAVE));
     assert(fgBBs == (BasicBlock**)0xCDCD || fgLookupBB(jmpAddr) != nullptr); // should be a BB boundary
@@ -5892,7 +5891,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
             _snprintf_s(assertImpBuf, cchAssertImpBuf, cchAssertImpBuf - 1,                                            \
                         "%s : Possibly bad IL with CEE_%s at offset %04Xh (op1=%s op2=%s stkDepth=%d)", #cond,         \
                         impCurOpcName, impCurOpcOffs, op1 ? varTypeName(op1->TypeGet()) : "NULL",                      \
-                        op2 ? varTypeName(op2->TypeGet()) : "NULL", verCurrentState.esStackDepth);                     \
+                        op2 ? varTypeName(op2->TypeGet()) : "NULL", stackState.esStackDepth);                          \
             assertAbort(assertImpBuf, __FILE__, __LINE__);                                                             \
         }                                                                                                              \
     } while (0)
@@ -6006,7 +6005,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Patchpoints at backedge sources, if possible, otherwise targets.
                         //
                         addPatchpoint           = block->HasFlag(BBF_BACKWARD_JUMP_SOURCE);
-                        mustUseTargetPatchpoint = (verCurrentState.esStackDepth != 0) || block->hasHndIndex();
+                        mustUseTargetPatchpoint = (stackState.esStackDepth != 0) || block->hasHndIndex();
                         break;
                     }
 
@@ -6019,7 +6018,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // We should not have allowed OSR if there were backedges in handlers.
                         //
                         assert(!block->hasHndIndex());
-                        addPatchpoint = block->HasFlag(BBF_BACKWARD_JUMP_TARGET) && (verCurrentState.esStackDepth == 0);
+                        addPatchpoint = block->HasFlag(BBF_BACKWARD_JUMP_TARGET) && (stackState.esStackDepth == 0);
                         break;
                     }
 
@@ -6035,13 +6034,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             // We don't know backedge count, so just use ref count.
                             //
-                            addPatchpoint = (block->bbRefs > 1) && (verCurrentState.esStackDepth == 0);
+                            addPatchpoint = (block->bbRefs > 1) && (stackState.esStackDepth == 0);
                         }
 
                         if (!addPatchpoint && block->HasFlag(BBF_BACKWARD_JUMP_SOURCE))
                         {
                             addPatchpoint           = true;
-                            mustUseTargetPatchpoint = (verCurrentState.esStackDepth != 0) || block->hasHndIndex();
+                            mustUseTargetPatchpoint = (stackState.esStackDepth != 0) || block->hasHndIndex();
 
                             // Also force target patchpoint if target block has multiple (backedge) preds.
                             //
@@ -6131,7 +6130,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         const bool tryOffsetOSR = offsetOSR >= 0;
         const bool tryRandomOSR = randomOSR > 0;
 
-        if (compCanHavePatchpoints() && (tryOffsetOSR || tryRandomOSR) && (verCurrentState.esStackDepth == 0) &&
+        if (compCanHavePatchpoints() && (tryOffsetOSR || tryRandomOSR) && (stackState.esStackDepth == 0) &&
             !block->hasHndIndex() && !block->HasFlag(BBF_PATCHPOINT))
         {
             // Block start can have a patchpoint. See if we should add one.
@@ -6186,7 +6185,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     // Note unlike OSR, it's ok to forgo these.
     //
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation() > 0) &&
-        compCanHavePatchpoints() && !compTailPrefixSeen && (verCurrentState.esStackDepth == 0) &&
+        compCanHavePatchpoints() && !compTailPrefixSeen && (stackState.esStackDepth == 0) &&
         !block->HasFlag(BBF_PATCHPOINT) && !block->hasHndIndex())
     {
         // Is this block a good place for partial compilation?
@@ -6298,7 +6297,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         /* We need to restrict the max tree depth as many of the Compiler
            functions are recursive. We do this by spilling the stack */
 
-        if (verCurrentState.esStackDepth)
+        if (stackState.esStackDepth)
         {
             /* Has it been a while since we last saw a non-empty stack (which
                guarantees that the tree depth isnt accumulating. */
@@ -6332,7 +6331,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 assert(nxtStmtOffs == info.compStmtOffsets[nxtStmtIndex]);
 
-                if (verCurrentState.esStackDepth != 0 && opts.compDbgCode)
+                if (stackState.esStackDepth != 0 && opts.compDbgCode)
                 {
                     /* We need to provide accurate IP-mapping at this point.
                        So spill anything on the stack so that it will form
@@ -6388,7 +6387,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
             }
             else if ((info.compStmtOffsetsImplicit & ICorDebugInfo::STACK_EMPTY_BOUNDARIES) &&
-                     (verCurrentState.esStackDepth == 0))
+                     (stackState.esStackDepth == 0))
             {
                 /* At stack-empty locations, we have already added the tree to
                    the stmt list with the last offset. We just need to update
@@ -6445,7 +6444,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #ifdef DEBUG
         impCurOpcOffs = (IL_OFFSET)(codeAddr - info.compCode - 1);
-        JITDUMP("\n    [%2u] %3u (0x%03x) ", verCurrentState.esStackDepth, impCurOpcOffs, impCurOpcOffs);
+        JITDUMP("\n    [%2u] %3u (0x%03x) ", stackState.esStackDepth, impCurOpcOffs, impCurOpcOffs);
 #endif
 
     DECODE_OPCODE:
@@ -6904,7 +6903,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     return;
                 }
 
-                if (verCurrentState.esStackDepth > 0)
+                if (stackState.esStackDepth > 0)
                 {
                     impEvalSideEffects();
                 }
@@ -6914,7 +6913,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     BADCODE("endfinally outside finally");
                 }
 
-                assert(verCurrentState.esStackDepth == 0);
+                assert(stackState.esStackDepth == 0);
 
                 op1 = gtNewOperNode(GT_RETFILT, TYP_VOID, nullptr);
                 goto APPEND;
@@ -6954,7 +6953,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* Mark catch handler as successor */
 
                 op1 = gtNewOperNode(GT_RETFILT, op1->TypeGet(), op1);
-                if (verCurrentState.esStackDepth != 0)
+                if (stackState.esStackDepth != 0)
                 {
                     BADCODE("stack must be 1 on end of filter");
                 }
@@ -6988,7 +6987,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     BADCODE("Jmp not allowed in reverse P/Invoke");
                 }
 
-                if (verCurrentState.esStackDepth != 0)
+                if (stackState.esStackDepth != 0)
                 {
                     BADCODE("Stack must be empty after CEE_JMPs");
                 }
@@ -9774,7 +9773,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val;
                 assertImp(genActualTypeIsIntOrI(op2->gtType));
 
-                if (verCurrentState.esStackDepth != 0)
+                if (stackState.esStackDepth != 0)
                 {
                     BADCODE("Localloc can only be used when the stack is empty");
                 }
@@ -10302,7 +10301,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (!eeIsValueClass(resolvedToken.hClass))
                 {
                     JITDUMP("\n Importing BOX(refClass) as NOP\n");
-                    verCurrentState.esStack[verCurrentState.esStackDepth - 1].seTypeInfo = tiRetVal;
+                    stackState.esStack[stackState.esStackDepth - 1].seTypeInfo = tiRetVal;
                     break;
                 }
 
@@ -10454,12 +10453,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Fall through to clear out the eval stack.
 
             EVAL_APPEND:
-                if (verCurrentState.esStackDepth > 0)
+                if (stackState.esStackDepth > 0)
                 {
                     impEvalSideEffects();
                 }
 
-                assert(verCurrentState.esStackDepth == 0);
+                assert(stackState.esStackDepth == 0);
 
                 goto APPEND;
 
@@ -10985,7 +10984,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         }
         else
         {
-            if (verCurrentState.esStackDepth != 0)
+            if (stackState.esStackDepth != 0)
             {
                 assert(compIsForInlining());
                 JITDUMP("CALLSITE_COMPILATION_ERROR: inlinee's stack is not empty.");
@@ -11237,7 +11236,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
     // We must have imported a tailcall and jumped to RET
     if (isTailCall)
     {
-        assert(verCurrentState.esStackDepth == 0 && impOpcodeIsCallOpcode(opcode));
+        assert(stackState.esStackDepth == 0 && impOpcodeIsCallOpcode(opcode));
 
         opcode = CEE_RET; // To prevent trying to spill if CALL_SITE_BOUNDARIES
 
@@ -11282,7 +11281,7 @@ void Compiler::impPoisonImplicitByrefsBeforeReturn()
 
         if (!spilled)
         {
-            for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
+            for (unsigned level = 0; level < stackState.esStackDepth; level++)
             {
                 impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(true) DEBUGARG("Stress poisoning byrefs before return"));
             }
@@ -11396,7 +11395,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block)
             //   either empty or one that contains just
             //   the Exception Object that we are dealing with
             //
-            verCurrentState.esStackDepth = 0;
+            stackState.esStackDepth = 0;
 
             if (handlerGetsXcptnObj(hndBegBB->bbCatchTyp))
             {
@@ -11436,7 +11435,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block)
 
             if (!filterBB->HasFlag(BBF_IMPORTED) && (impGetPendingBlockMember(filterBB) == 0))
             {
-                verCurrentState.esStackDepth = 0;
+                stackState.esStackDepth = 0;
 
                 // push catch arg the stack, spill to a temp if necessary
                 // Note: can update HBtab->ebdFilter!
@@ -11506,7 +11505,7 @@ void Compiler::impImportBlock(BasicBlock* block)
 #endif
 
     /* Set the current stack state to the merged result */
-    verResetCurrentState(block, &verCurrentState);
+    verResetCurrentState(block, &stackState);
 
     if (block->hasTryIndex())
     {
@@ -11533,7 +11532,7 @@ SPILLSTACK:
 
     /* If the stack is non-empty, we might have to spill its contents */
 
-    if (verCurrentState.esStackDepth != 0)
+    if (stackState.esStackDepth != 0)
     {
         impBoxTemp = BAD_VAR_NUM; // if a box temp is used in a block that leaves something
                                   // on the stack, its lifetime is hard to determine, simply
@@ -11630,9 +11629,9 @@ SPILLSTACK:
         // Spill all stack entries into temps
 
         JITDUMP("\nSpilling stack entries into temps\n");
-        for (unsigned level = 0, tempNum = baseTmp; level < verCurrentState.esStackDepth; level++, tempNum++)
+        for (unsigned level = 0, tempNum = baseTmp; level < stackState.esStackDepth; level++, tempNum++)
         {
-            GenTree* tree = verCurrentState.esStack[level].val;
+            GenTree* tree = stackState.esStack[level].val;
 
             // VC generates code where it pushes a byref from one branch, and an int (ldc.i4 0) from
             // the other. This should merge to a byref in unverifiable code.
@@ -11659,7 +11658,7 @@ SPILLSTACK:
             {
                 // Spill clique has decided this should be "native int", but this block only pushes an "int".
                 // Insert a sign-extension to "native int" so we match the clique.
-                verCurrentState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
+                stackState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
             }
 
             // Consider the case where one branch left a 'byref' on the stack and the other leaves
@@ -11681,7 +11680,7 @@ SPILLSTACK:
             {
                 // Spill clique has decided this should be "byref", but this block only pushes an "int".
                 // Insert a sign-extension to "native int" so we match the clique size.
-                verCurrentState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
+                stackState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
             }
 
 #endif // TARGET_64BIT
@@ -11697,7 +11696,7 @@ SPILLSTACK:
             {
                 // Spill clique has decided this should be "double", but this block only pushes a "float".
                 // Insert a cast to "double" so we match the clique.
-                verCurrentState.esStack[level].val = gtNewCastNode(TYP_DOUBLE, tree, false, TYP_DOUBLE);
+                stackState.esStack[level].val = gtNewCastNode(TYP_DOUBLE, tree, false, TYP_DOUBLE);
             }
 
             /* If addStmt has a reference to tempNum (can only happen if we
@@ -11846,16 +11845,16 @@ void Compiler::impImportBlockPending(BasicBlock* block)
     // We use NULL to indicate the 'common' state to avoid memory allocation
     if ((block->bbEntryState == nullptr) && !block->HasFlag(BBF_IMPORTED) && (impGetPendingBlockMember(block) == 0))
     {
-        verInitBBEntryState(block, &verCurrentState);
+        verInitBBEntryState(block, &stackState);
         assert(block->bbStkDepth == 0);
-        block->bbStkDepth = static_cast<unsigned short>(verCurrentState.esStackDepth);
+        block->bbStkDepth = static_cast<unsigned short>(stackState.esStackDepth);
         assert(addToPending);
         assert(impGetPendingBlockMember(block) == 0);
     }
     else
     {
         // The stack should have the same height on entry to the block from all its predecessors.
-        if (block->bbStkDepth != verCurrentState.esStackDepth)
+        if (block->bbStkDepth != stackState.esStackDepth)
         {
 #ifdef DEBUG
             char buffer[400];
@@ -11863,7 +11862,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
                       "Block at offset %4.4x to %4.4x in %0.200s entered with different stack depths.\n"
                       "Previous depth was %d, current depth is %d",
                       block->bbCodeOffs, block->bbCodeOffsEnd, info.compFullName, block->bbStkDepth,
-                      verCurrentState.esStackDepth);
+                      stackState.esStackDepth);
             buffer[400 - 1] = 0;
             NO_WAY(buffer);
 #else
@@ -11907,11 +11906,11 @@ void Compiler::impImportBlockPending(BasicBlock* block)
     }
 
     dsc->pdBB                 = block;
-    dsc->pdSavedStack.ssDepth = verCurrentState.esStackDepth;
+    dsc->pdSavedStack.ssDepth = stackState.esStackDepth;
 
     // Save the stack trees for later
 
-    if (verCurrentState.esStackDepth)
+    if (stackState.esStackDepth)
     {
         impSaveStackState(&dsc->pdSavedStack, false);
     }
@@ -12107,7 +12106,7 @@ void Compiler::ReimportSpillClique::Visit(SpillCliqueDir predOrSucc, BasicBlock*
         return;
     }
 
-    // For successors we have a valid verCurrentState, so just mark them for reimport
+    // For successors we have a valid stackState, so just mark them for reimport
     // the 'normal' way
     // Unlike predecessors, we *DO* need to reimport the current block because the
     // initial import had the wrong entry state types.
@@ -12118,7 +12117,7 @@ void Compiler::ReimportSpillClique::Visit(SpillCliqueDir predOrSucc, BasicBlock*
         m_pComp->impReimportMarkBlock(blk);
 
         // Set the current stack state to that of the blk->bbEntryState
-        m_pComp->verResetCurrentState(blk, &m_pComp->verCurrentState);
+        m_pComp->verResetCurrentState(blk, &m_pComp->stackState);
 
         m_pComp->impImportBlockPending(blk);
     }
@@ -12172,7 +12171,7 @@ unsigned Compiler::impGetSpillTmpBase(BasicBlock* block)
 
     // Otherwise, choose one, and propagate to all members of the spill clique.
     // Grab enough temps for the whole stack.
-    unsigned          baseTmp = lvaGrabTemps(verCurrentState.esStackDepth DEBUGARG("IL Stack Entries"));
+    unsigned          baseTmp = lvaGrabTemps(stackState.esStackDepth DEBUGARG("IL Stack Entries"));
     SetSpillTempsBase callback(baseTmp);
 
     // We do *NOT* need to reset the SpillClique*Members because a block can only be the predecessor
@@ -12258,11 +12257,11 @@ void Compiler::verResetCurrentState(BasicBlock* block, EntryState* destState)
 void Compiler::verInitCurrentState()
 {
     // initialize stack info
-    verCurrentState.esStackDepth = 0;
-    assert(verCurrentState.esStack != nullptr);
+    stackState.esStackDepth = 0;
+    assert(stackState.esStack != nullptr);
 
     // copy current state to entry state of first BB
-    verInitBBEntryState(fgFirstBB, &verCurrentState);
+    verInitBBEntryState(fgFirstBB, &stackState);
 }
 
 Compiler* Compiler::impInlineRoot()
@@ -12330,7 +12329,7 @@ void Compiler::impImport()
     if (this == inlineRoot)
     {
         // Allocate the stack contents
-        verCurrentState.esStack = new (this, CMK_ImpStack) StackEntry[impStkSize];
+        stackState.esStack = new (this, CMK_ImpStack) StackEntry[impStkSize];
     }
     else
     {
@@ -12338,11 +12337,11 @@ void Compiler::impImport()
         // (after ensuring that it is large enough).
         if (inlineRoot->impStkSize < impStkSize)
         {
-            inlineRoot->impStkSize              = impStkSize;
-            inlineRoot->verCurrentState.esStack = new (this, CMK_ImpStack) StackEntry[impStkSize];
+            inlineRoot->impStkSize         = impStkSize;
+            inlineRoot->stackState.esStack = new (this, CMK_ImpStack) StackEntry[impStkSize];
         }
 
-        verCurrentState.esStack = inlineRoot->verCurrentState.esStack;
+        stackState.esStack = inlineRoot->stackState.esStack;
     }
 
     // initialize the entry state at start of method
@@ -12419,8 +12418,8 @@ void Compiler::impImport()
 
         /* Restore the stack state */
 
-        verCurrentState.esStackDepth = dsc->pdSavedStack.ssDepth;
-        if (verCurrentState.esStackDepth)
+        stackState.esStackDepth = dsc->pdSavedStack.ssDepth;
+        if (stackState.esStackDepth)
         {
             impRestoreStackState(&dsc->pdSavedStack);
         }
@@ -13820,9 +13819,9 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    ad
         }
     }
 
-    for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
+    for (unsigned level = 0; level < stackState.esStackDepth; level++)
     {
-        GenTreeFlags stackTreeFlags = verCurrentState.esStack[level].val->gtFlags;
+        GenTreeFlags stackTreeFlags = stackState.esStack[level].val->gtFlags;
         if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(stackTreeFlags))
         {
             return false;
