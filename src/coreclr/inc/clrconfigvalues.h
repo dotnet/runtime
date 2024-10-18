@@ -296,6 +296,10 @@ CONFIG_DWORD_INFO(INTERNAL_GCUseGlobalAllocationContext, W("GCUseGlobalAllocatio
 ///
 /// JIT
 ///
+
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_UseOptimizedNibbleMap, W("UseOptimizedNibbleMap"), 1, "Uses the experimental optimized nibble map")
+// DOTNET_UseOptimizedNibbleMap=1
+
 CONFIG_DWORD_INFO(INTERNAL_JitBreakEmit, W("JitBreakEmit"), (DWORD)-1, "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitDebuggable, W("JitDebuggable"), 0, "If set, suppress JIT optimizations that make debugging code difficult")
 #if !defined(DEBUG) && !defined(_DEBUG)
