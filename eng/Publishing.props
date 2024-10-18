@@ -110,7 +110,7 @@
         @(NupkgToPublishFile->Replace('\NonShipping\', '\NonShipping\symbols\')->Replace('.nupkg', '.symbols.nupkg'));
         @(NupkgToPublishFile->Replace('\Shipping\', '\Shipping\symbols\')->Replace('.nupkg', '.symbols.nupkg'))" />
 
-    <SymbolNupkgToPublishFile Include="@(PotentialSymbolNupkgToPublishFile->Distinct())" Condition="Exists('%(Identity)')" />
+    <SymbolNupkgToPublishFile Include="@(PotentialSymbolNupkgToPublishFile->Distinct()->Exists())" />
 
     <!-- Packages -->
     <Artifact Include="@(NupkgToPublishFile)"
