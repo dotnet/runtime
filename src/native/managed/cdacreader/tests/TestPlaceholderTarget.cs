@@ -63,7 +63,7 @@ internal class TestPlaceholderTarget : Target
 
     public override TargetPointer ReadGlobalPointer(string global) => throw new NotImplementedException();
     public override TargetPointer ReadPointer(ulong address) => DefaultReadPointer(address);
-    public override TargetCodePointer ReadCodePointer(ulong address) => throw new NotImplementedException();
+    public override TargetCodePointer ReadCodePointer(ulong address) => DefaultReadCodePointer(address);
     public override void ReadBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
     public override string ReadUtf8String(ulong address) => throw new NotImplementedException();
     public override string ReadUtf16String(ulong address) => throw new NotImplementedException();
@@ -175,6 +175,11 @@ internal class TestPlaceholderTarget : Target
             throw new InvalidOperationException($"Failed to read nuint at 0x{address:x8}.");
 
         return new TargetNUInt(value);
+    }
+
+    protected TargetCodePointer DefaultReadCodePointer(ulong address)
+    {
+        return new TargetCodePointer(DefaultReadPointer(address));
     }
 #endregion subclass reader helpers
 

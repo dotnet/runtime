@@ -47,7 +47,7 @@ internal interface ILoader : IContract
     public virtual TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
     public virtual ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
 
-    public virtual TargetPointer GetModuleLookupMapElement(TargetPointer table, uint rid, out TargetNUInt flags) => throw new NotImplementedException();
+    public virtual TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
     public virtual bool IsCollectibleLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
 }
 
