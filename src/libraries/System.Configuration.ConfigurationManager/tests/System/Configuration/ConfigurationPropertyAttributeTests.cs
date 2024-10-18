@@ -82,6 +82,7 @@ namespace System.ConfigurationTests
 </configuration>";
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "ListenerElement uses HashTable not StringDictionary")]
         public void CustomAttributeIsPresent()
         {
             using (var temp = new TempConfig(AttributeConfiguration))
