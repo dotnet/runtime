@@ -32,11 +32,10 @@ namespace System
 
         internal IntPtr MethodDesc
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (_methodDesc == 0)
-                    _methodDesc = GetMethodDesc();
-                return _methodDesc;
+                return _methodDesc != 0 ? _methodDesc : GetMethodDesc();
             }
         }
 
@@ -537,10 +536,13 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_CreateMethodInfo")]
         private static partial void CreateMethodInfo(IntPtr methodDesc, ObjectHandleOnStack retMethodInfo);
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private IntPtr GetMethodDesc()
         {
             Delegate d = this;
-            return GetMethodDesc(ObjectHandleOnStack.Create(ref d));
+            IntPtr desc = GetMethodDesc(ObjectHandleOnStack.Create(ref d));
+            _methodDesc = desc;
+            return desc;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMethodDesc")]
