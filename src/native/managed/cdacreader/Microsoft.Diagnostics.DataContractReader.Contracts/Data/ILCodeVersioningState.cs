@@ -19,7 +19,7 @@ internal sealed class ILCodeVersioningState : IData<ILCodeVersioningState>
         ActiveVersionMethodDef = target.Read<uint>(address + (ulong)type.Fields[nameof(ActiveVersionMethodDef)].Offset);
     }
 
-    public TargetPointer Node { get; init; }
+    public TargetPointer Node { get; init; } // FIXME: rename to something like FirstVersionNode
     public uint ActiveVersionKind { get; set; }
     public TargetPointer ActiveVersionNode { get; set; }
     public TargetPointer ActiveVersionModule { get; set; }
