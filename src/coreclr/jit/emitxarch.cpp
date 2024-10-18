@@ -1560,10 +1560,6 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
     }
 #endif // DEBUG
 
-    // TODO-XArch-apx:
-    // extend the checks below when we have memeory operands,
-    // now we only take care of R_R_R form, so once we have the 3rd operands
-    // we confirm it needs NDD form.
     if (id->idIsEvexNdContextSet())
     {
         return true;
@@ -3150,7 +3146,7 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
     else if (IsRex2EncodableInstruction(ins) || IsApxNDDEncodableInstruction(ins))
     {
         unsigned prefixAdjustedSize = 0;
-        if (TakesRex2Prefix(id))
+        if(TakesApxExtendedEvexPrefix(id))
         {
             prefixAdjustedSize = 2;
             // If the opcode will be prefixed by REX2, then all the map-1-legacy instructions can remove the escape
@@ -3160,10 +3156,10 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
                 prefixAdjustedSize -= 1;
             }
         }
-        else if(TakesApxExtendedEvexPrefix(id))
+        else if (TakesRex2Prefix(id))
         {
-            prefixAdjustedSize = 4;
-            // If the opcode will be prefixed by EVEX, then all the map-1-legacy instructions can remove the escape prefix
+            prefixAdjustedSize = 2;
+            // If the opcode will be prefixed by REX2, then all the map-1-legacy instructions can remove the escape prefix
             if(IsLegacyMap1(code))
             {
                 prefixAdjustedSize -= 1;
