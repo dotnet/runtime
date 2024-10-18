@@ -6,14 +6,20 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Text;
 
 using FluentAssertions;
+using Microsoft.NET.HostModel.MachO.CodeSign;
+using Microsoft.NET.HostModel.MachO;
+using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup;
 using Microsoft.DotNet.CoreSetup.Test;
 using Xunit;
+using System.Buffers.Binary;
+using System.IO.MemoryMappedFiles;
+using Microsoft.NET.HostModel.MachO.CodeSign.Tests;
 
 namespace Microsoft.NET.HostModel.AppHost.Tests
 {
@@ -255,17 +261,15 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData("")]
         [InlineData("dir with spaces")]
-        public void CodeSignAppHostOnMacOS(string subdir)
+        public void CodeSignMachOAppHost(string subdir)
         {
             using (TestArtifact artifact = CreateTestDirectory())
             {
                 string testDirectory = Path.Combine(artifact.Location, subdir);
                 Directory.CreateDirectory(testDirectory);
-                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
-                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
+                string sourceAppHostMock = PrepareMockMachAppHostFile(testDirectory);
                 string destinationFilePath = Path.Combine(testDirectory, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
                 HostWriter.CreateAppHost(
@@ -275,6 +279,14 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                    windowsGraphicalUserInterface: false,
                    enableMacOSCodeSign: true);
 
+                // Validate that there is a signature present in the apphost Mach file
+                SigningTests.IsSigned(destinationFilePath).Should().BeTrue();
+
+                // Verify with codesign as well
+                if (!Codesign.IsAvailable)
+                {
+                    return;
+                }
                 const string codesign = @"/usr/bin/codesign";
                 var psi = new ProcessStartInfo()
                 {
@@ -296,12 +308,11 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
         public void DoesNotCodeSignAppHostByDefault()
         {
             using (TestArtifact artifact = CreateTestDirectory())
             {
-                string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location);
+                string sourceAppHostMock = PrepareMockMachAppHostFile(artifact.Location);
                 File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
                 string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
@@ -311,52 +322,33 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                    appBinaryFilePath,
                    windowsGraphicalUserInterface: false);
 
-                const string codesign = @"/usr/bin/codesign";
-                var psi = new ProcessStartInfo()
+                if (!Codesign.IsAvailable)
                 {
-                    Arguments = $"-d {destinationFilePath}",
-                    FileName = codesign,
-                    RedirectStandardError = true,
-                };
-
-                using (var p = Process.Start(psi))
-                {
-                    p.Start();
-                    p.StandardError.ReadToEnd()
-                        .Should().Contain($"{Path.GetFullPath(destinationFilePath)}: code object is not signed at all");
-                    p.WaitForExit();
+                    return;
                 }
+
+                var (exitCode, stdErr) = Codesign.Run("-d", destinationFilePath);
+                stdErr.Should().Contain($"{Path.GetFullPath(destinationFilePath)}: code object is not signed at all");
             }
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
         public void CodeSigningFailuresThrow()
         {
             using (TestArtifact artifact = CreateTestDirectory())
             {
                 string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location);
-                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
+                // File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
                 string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
-                HostWriter.CreateAppHost(
-                   sourceAppHostMock,
-                   destinationFilePath,
-                   appBinaryFilePath,
-                   windowsGraphicalUserInterface: false,
-                   enableMacOSCodeSign: true);
-
-                // Run CreateAppHost again to sign the apphost a second time,
-                // causing codesign to fail.
-                var exception = Assert.Throws<AppHostSigningException>(() =>
+                // The apphost is not a Mach file, so an exception should be thrown.
+                var exception = Assert.Throws<InvalidDataException>(() =>
                     HostWriter.CreateAppHost(
                     sourceAppHostMock,
                     destinationFilePath,
                     appBinaryFilePath,
                     windowsGraphicalUserInterface: false,
                     enableMacOSCodeSign: true));
-                Assert.Contains($"{destinationFilePath}: is already signed", exception.Message);
-                Assert.True(exception.ExitCode == 1, $"AppHostSigningException.ExitCode - expected: 1, actual: '{exception.ExitCode}'");
             }
         }
 
@@ -445,6 +437,44 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             {
                 app.CreateAppHost();
             }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void SignedAppHostRuns()
+        {
+            using var testDirectory = TestArtifact.Create(nameof(SignedAppHostRuns));
+            var testAppHostPath = Path.Combine(testDirectory.Location, Path.GetFileName(Binaries.AppHost.FilePath));
+            File.Copy(Binaries.SingleFileHost.FilePath, testAppHostPath);
+            long preRemovalSize = new FileInfo(testAppHostPath).Length;
+            string signedHostPath = testAppHostPath + ".signed";
+
+            SigningTests.AdHocSignFile(testAppHostPath, signedHostPath, Binaries.AppHost.FileName);
+
+            File.SetUnixFileMode(testAppHostPath, UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+            var executedCommand = Command.Create(testAppHostPath)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute();
+            // AppHost exit code should be 149 when the apphost runs properly but cannot find the appliation/runtime
+            executedCommand.ExitCode.Should().Be(149);
+        }
+
+        private static readonly byte[] s_placeholderData = AppBinaryPathPlaceholderSearchValue.Concat(DotNetSearchPlaceholderValue).ToArray();
+        public static string PrepareMockMachAppHostFile(string directory)
+        {
+            string fileName = "MockAppHost.mach.o";
+            string outputFilePath = Path.Combine(directory, fileName);
+            using (var aOutStream = typeof(MachO.CodeSign.Tests.SigningTests).Assembly.GetManifestResourceStream("Microsoft.NET.HostModel.Tests.MachObjectSigning.Data.a.out"))
+            using (var managedSignFile = File.OpenWrite(outputFilePath))
+            {
+                aOutStream!.CopyTo(managedSignFile);
+                // Add the placeholder - it just needs to exist somewhere in the image
+                // We'll put it at 4096 bytes into the file - this should be in the middle of the __TEXT segment
+                managedSignFile.Position = 4096;
+                managedSignFile.Write(s_placeholderData);
+            }
+            return outputFilePath;
         }
 
         private string PrepareAppHostMockFile(string directory, Action<byte[]> customize = null)
