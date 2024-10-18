@@ -2818,7 +2818,7 @@ private:
 
     PER_HEAP_ISOLATED_METHOD int get_num_heaps();
 
-    PER_HEAP_METHOD BOOL decide_on_promotion_surv (size_t threshold);
+    PER_HEAP_ISOLATED_METHOD BOOL decide_on_promotion_surv (size_t threshold);
 
     PER_HEAP_METHOD void mark_phase (int condemned_gen_number);
 
