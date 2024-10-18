@@ -537,6 +537,73 @@ DeleteJitHeapCache
 
 
 #if !defined(DACCESS_COMPILE)
+//
+//  MethodSectionIterator class is used to iterate hot (or) cold method section in an ngen image.
+//  Also used to iterate over jitted methods in the code heap
+//
+EEJitManager::MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
+                                             const void *codeTable, SIZE_T codeTableSize)
+{
+    //For DAC builds,we'll read the table one DWORD at a time.  Note that m_code IS
+    //NOT a host pointer.
+    m_codeTableStart = PTR_DWORD(TADDR(codeTable));
+    m_codeTable = m_codeTableStart;
+    _ASSERTE((codeTableSize % sizeof(DWORD)) == 0);
+    m_codeTableEnd = m_codeTableStart + (codeTableSize / sizeof(DWORD));
+    m_code = (BYTE *) code;
+    m_current = NULL;
+
+
+    if (m_codeTable < m_codeTableEnd)
+    {
+        m_dword = *m_codeTable++;
+        m_index = 0;
+        while(m_codeTable < m_codeTableEnd && IsPointer(m_dword))
+        {
+            m_dword = *m_codeTable++;
+        }
+    }
+    else
+    {
+        m_index = NIBBLES_PER_DWORD;
+    }
+}
+
+BOOL EEJitManager::MethodSectionIterator::Next()
+{
+    while (m_codeTable < m_codeTableEnd || m_index < (int)NIBBLES_PER_DWORD)
+    {
+        while (m_index++ < (int)NIBBLES_PER_DWORD)
+        {
+            int nibble = (m_dword & HIGHEST_NIBBLE_MASK)>>HIGHEST_NIBBLE_BIT;
+            m_dword <<= NIBBLE_SIZE;
+
+            if (nibble != 0)
+            {
+                // We have found a method start
+                m_current = m_code + ((nibble-1) << LOG2_CODE_ALIGN);
+                m_code += BYTES_PER_BUCKET;
+                return TRUE;
+            }
+
+            m_code += BYTES_PER_BUCKET;
+        }
+
+        if (m_codeTable < m_codeTableEnd)
+        {
+            m_dword = *m_codeTable++;
+            m_index = 0;
+            while(m_codeTable < m_codeTableEnd && IsPointer(m_dword))
+            {
+                m_dword = *m_codeTable++;
+                m_code += BYTES_PER_DWORD;
+            }
+        }
+    }
+    return FALSE;
+}
+
+
 EEJitManager::CodeHeapIterator::CodeHeapIterator(LoaderAllocator *pLoaderAllocatorFilter)
     : m_lockHolder(&(ExecutionManager::GetEEJitManager()->m_CodeHeapCritSec)), m_Iterator(NULL, 0, NULL, 0)
 {
@@ -3158,7 +3225,7 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
         ExecutableWriterHolder<CodeHeader> codeHdrWriterHolder(pCodeHdr, sizeof(CodeHeader));
         codeHdrWriterHolder.GetRW()->SetStubCodeBlockKind(STUB_CODE_BLOCK_JUMPSTUB);
 
-        NibbleMapSetUnlocked(pCodeHeap, mem, TRUE);
+        NibbleMapSetUnlocked(pCodeHeap, mem, sizeof(CodeHeader) + blockSize + (CODE_SIZE_ALIGN - 1));
 
         blockWriterHolder.AssignExecutableWriterHolder((JumpStubBlockHeader *)mem, sizeof(JumpStubBlockHeader));
 
@@ -3210,7 +3277,7 @@ void * EEJitManager::allocCodeFragmentBlock(size_t blockSize, unsigned alignment
         ExecutableWriterHolder<CodeHeader> codeHdrWriterHolder(pCodeHdr, sizeof(CodeHeader));
         codeHdrWriterHolder.GetRW()->SetStubCodeBlockKind(kind);
 
-        NibbleMapSetUnlocked(pCodeHeap, mem, TRUE);
+        NibbleMapSetUnlocked(pCodeHeap, mem, sizeof(CodeHeader) + blockSize + (alignment - 1));
 
         // Record the jump stub reservation
         pCodeHeap->reserveForJumpStubs += requestInfo.getReserveForJumpStubs();
@@ -3357,7 +3424,7 @@ void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t 
         if (pHp == NULL)
             return;
 
-        NibbleMapSetUnlocked(pHp, (TADDR)(pCHdr + 1), FALSE);
+        NibbleMapDeleteUnlocked(pHp, (TADDR)(pCHdr + 1));
     }
 
     // Backout the GCInfo
@@ -3519,7 +3586,7 @@ void EEJitManager::FreeCodeMemory(HostCodeHeap *pCodeHeap, void * codeStart)
     // so pCodeHeap can only be a HostCodeHeap.
 
     // clean up the NibbleMap
-    NibbleMapSetUnlocked(pCodeHeap->m_pHeapList, (TADDR)codeStart, FALSE);
+    NibbleMapDeleteUnlocked(pCodeHeap->m_pHeapList, (TADDR)codeStart);
 
     // The caller of this method doesn't call HostCodeHeap->FreeMemForCode
     // directly because the operation should be protected by m_CodeHeapCritSec.
@@ -3917,6 +3984,334 @@ StubCodeBlockKind EEJitManager::GetStubCodeBlockKind(RangeSection * pRangeSectio
     return pCHdr->IsStubCodeBlock() ? pCHdr->GetStubCodeBlockKind() : STUB_CODE_BLOCK_MANAGED;
 }
 
+namespace {
+    struct LinearLookupNibbleMap
+    {
+        static void SetUnlocked(HeapList * pHp, TADDR pCode, BOOL bSet)
+        {
+            CONTRACTL {
+                NOTHROW;
+                GC_NOTRIGGER;
+            } CONTRACTL_END;
+
+            _ASSERTE(pCode >= pHp->mapBase);
+
+            size_t delta = pCode - pHp->mapBase;
+
+            size_t pos  = ADDR2POS(delta);
+            DWORD value = bSet?ADDR2OFFS(delta):0;
+
+            DWORD index = (DWORD) (pos >> LOG2_NIBBLES_PER_DWORD);
+            DWORD mask  = ~((DWORD) HIGHEST_NIBBLE_MASK >> ((pos & NIBBLES_PER_DWORD_MASK) << LOG2_NIBBLE_SIZE));
+
+            value = value << POS2SHIFTCOUNT(pos);
+
+            PTR_DWORD pMap = pHp->pHdrMap;
+
+            // assert that we don't overwrite an existing offset
+            // (it's a reset or it is empty)
+            _ASSERTE(!value || !((*(pMap+index))& ~mask));
+
+            // It is important for this update to be atomic. Synchronization would be required with FindMethodCode otherwise.
+            *(pMap+index) = ((*(pMap+index))&mask)|value;
+        }
+
+        static TADDR FindMethodCode(RangeSection * pRangeSection, PCODE currentPC)
+        {
+                LIMITED_METHOD_DAC_CONTRACT;
+
+            _ASSERTE(pRangeSection != NULL);
+            _ASSERTE(pRangeSection->_flags & RangeSection::RANGE_SECTION_CODEHEAP);
+
+            HeapList *pHp = pRangeSection->_pHeapList;
+
+            if ((currentPC < pHp->startAddress) ||
+                (currentPC > pHp->endAddress))
+            {
+                return 0;
+            }
+
+            TADDR base = pHp->mapBase;
+            TADDR delta = currentPC - base;
+            PTR_DWORD pMap = pHp->pHdrMap;
+            PTR_DWORD pMapStart = pMap;
+
+            DWORD tmp;
+
+            size_t startPos = ADDR2POS(delta);  // align to 32byte buckets
+                                                // ( == index into the array of nibbles)
+            DWORD  offset   = ADDR2OFFS(delta); // this is the offset inside the bucket + 1
+
+            _ASSERTE(offset == (offset & NIBBLE_MASK));
+
+            pMap += (startPos >> LOG2_NIBBLES_PER_DWORD); // points to the proper DWORD of the map
+
+            // get DWORD and shift down our nibble
+
+            PREFIX_ASSUME(pMap != NULL);
+            tmp = VolatileLoadWithoutBarrier<DWORD>(pMap) >> POS2SHIFTCOUNT(startPos);
+
+            if ((tmp & NIBBLE_MASK) && ((tmp & NIBBLE_MASK) <= offset) )
+            {
+                return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
+            }
+
+            // Is there a header in the remainder of the DWORD ?
+            // go to an earlier nibble
+            tmp = tmp >> NIBBLE_SIZE;
+
+            // if that is initialized at all find it and return that pointer
+            if (tmp)
+            {
+                startPos--;
+                while (!(tmp & NIBBLE_MASK))
+                {
+                    tmp = tmp >> NIBBLE_SIZE;
+                    startPos--;
+                }
+                return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
+            }
+
+            // We skipped the remainder of the DWORD,
+            // so we must set startPos to the highest position of
+            // previous DWORD, unless we are already on the first DWORD
+
+            if (startPos < NIBBLES_PER_DWORD)
+                return 0;
+
+            startPos = ((startPos >> LOG2_NIBBLES_PER_DWORD) << LOG2_NIBBLES_PER_DWORD) - 1;
+
+            // Skip "headerless" DWORDS
+
+            while (pMapStart < pMap && 0 == (tmp = VolatileLoadWithoutBarrier<DWORD>(--pMap)))
+            {
+                startPos -= NIBBLES_PER_DWORD;
+            }
+
+            // This helps to catch degenerate error cases. This relies on the fact that
+            // startPos cannot ever be bigger than MAX_UINT
+            if (((INT_PTR)startPos) < 0)
+                return 0;
+
+            // Find the nibble with the header in the DWORD
+
+            while (startPos && !(tmp & NIBBLE_MASK))
+            {
+                tmp = tmp >> NIBBLE_SIZE;
+                startPos--;
+            }
+
+            if (startPos == 0 && tmp == 0)
+                return 0;
+
+            return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
+        }
+    };
+
+    struct ConstantLookupNibbleMap
+    {
+        public:
+
+        // Write Algo:
+        //     1. Write nibble as in previous algorithm
+        //     2. If function completely covers following DWORDs, insert relative pointers
+        static void SetUnlocked(HeapList *pHp, TADDR pCode, size_t codeSize){
+            CONTRACTL {
+                NOTHROW;
+                GC_NOTRIGGER;
+            } CONTRACTL_END;
+
+            _ASSERTE(pCode >= pHp->mapBase);
+
+            // TODO: Is this check correct?
+            _ASSERTE(pCode + codeSize <= pHp->mapBase + pHp->maxCodeHeapSize);
+
+            size_t delta = pCode - pHp->mapBase;
+
+            size_t dwordIndex = GetDwordIndex(delta);
+            size_t nibbleIndex = GetNibbleIndex(delta);
+            DWORD value = ADDR2OFFS(delta);
+
+            DWORD mask  = POS2MASK(nibbleIndex);
+
+            value = value << Pos2ShiftCount(nibbleIndex);
+
+            PTR_DWORD pMap = pHp->pHdrMap;
+
+            // assert that we don't overwrite an existing offset
+            // the nibble is empty and the DWORD is not a pointer
+            _ASSERTE(!((*(pMap+dwordIndex)) & ~mask) && !IsPointer(*(pMap+dwordIndex)));
+
+            // It is important for this update to be atomic. Synchronization would be required with FindMethodCode otherwise.
+            *(pMap+dwordIndex) = ((*(pMap+dwordIndex)) & mask) | value;
+
+            size_t firstByteAfterMethod = delta + codeSize;
+            size_t nextDwordIndex = dwordIndex + 1;
+            while ((nextDwordIndex + 1) * BYTES_PER_DWORD <= firstByteAfterMethod)
+            {
+                // All of these DWORDs should be empty
+                _ASSERTE(!(*(pMap+nextDwordIndex)));
+                *(pMap+nextDwordIndex) = EncodePointer(delta);
+                nextDwordIndex++;
+            }
+        }
+
+        static void DeleteUnlocked(HeapList *pHp, TADDR pCode)
+        {
+            CONTRACTL {
+                NOTHROW;
+                GC_NOTRIGGER;
+            } CONTRACTL_END;
+
+            _ASSERTE(pCode >= pHp->mapBase);
+
+            size_t delta = pCode - pHp->mapBase;
+
+            size_t dwordIndex = GetDwordIndex(delta);
+            size_t nibbleIndex = GetNibbleIndex(delta);
+
+            DWORD mask  = POS2MASK(nibbleIndex);
+
+            PTR_DWORD pMap = pHp->pHdrMap;
+
+            // assert that the nibble is not empty and the DWORD is not a pointer
+            _ASSERTE(((*(pMap+dwordIndex)) & ~mask) && !IsPointer(*(pMap+dwordIndex)));
+
+            // delete the relevant nibble
+            // It is important for this update to be atomic. Synchronization would be required with FindMethodCode otherwise.
+            *(pMap+dwordIndex) = ((*(pMap+dwordIndex)) & mask);
+
+            // the last DWORD of the nibble map is reserved to be empty for bounds checking
+            while (IsPointer(*(pMap+dwordIndex+1))){
+                // The next DWORD is a pointer, so we can delete it
+                *(pMap+dwordIndex+1) = 0;
+                dwordIndex++;
+            }
+        }
+
+        // Read Algo:
+        //     1. Look up DWORD representing given PC
+        //     2. If DWORD is a Pointer, then we are done. Otherwise,
+        //     3. If nibble corresponding to PC is initialized, if the value the nibble represents precedes the PC return that value, otherwise
+        //     4. Find the next preceding initialized nibble in the DWORD. If found, return the value the nibble represents. Otherwise,
+        //     5. Execute steps 1, 2 then 4 on the proceeding DWORD. If this is also uninitialized, then we are not in a function and can return a nullptr.
+        static TADDR FindMethodCode(RangeSection * pRangeSection, PCODE currentPC)
+        {
+            LIMITED_METHOD_DAC_CONTRACT;
+
+            _ASSERTE(pRangeSection != NULL);
+            _ASSERTE(pRangeSection->_flags & RangeSection::RANGE_SECTION_CODEHEAP);
+
+            HeapList *pHp = pRangeSection->_pHeapList;
+
+            if ((currentPC < pHp->startAddress) ||
+                (currentPC > pHp->endAddress))
+            {
+                return 0;
+            }
+
+            TADDR base = pHp->mapBase;
+            TADDR delta = currentPC - base;
+
+            size_t dwordIndex = GetDwordIndex(delta);
+            size_t nibbleIndex = GetNibbleIndex(delta);
+
+            PTR_DWORD pMap = pHp->pHdrMap;
+
+            DWORD dword;
+            DWORD nibble;
+
+            size_t startPos = ADDR2POS(delta);  // align to 32byte buckets
+                                                // ( == index into the array of nibbles)
+            DWORD  offset   = ADDR2OFFS(delta); // this is the offset inside the bucket + 1
+            _ASSERTE(offset == (offset & NIBBLE_MASK));
+
+            // #1 look up DWORD represnting current PC
+            PREFIX_ASSUME(pMap != NULL);
+            dword = VolatileLoadWithoutBarrier<DWORD>(pMap + dwordIndex);
+
+            // #2 if DWORD is a pointer, then we can return
+            if (IsPointer(dword))
+            {
+                return base + DecodePointer(dword);
+            }
+
+            // #3 if DWORD is nibbles and corresponding nibble is intialized and points to an equal or earlier address, return the corresponding address
+            nibble = GetNibble(dword, nibbleIndex);
+            if ((nibble) && (nibble <= offset) )
+            {
+                return base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
+            }
+
+            // #4 find preceeding nibble and return if found
+            // TODO: re-implement using ctz intrinsic
+            for(; nibbleIndex-- > 0;)
+            {
+                nibble = GetNibble(dword, nibbleIndex);
+                if (nibble)
+                {
+                    return base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
+                }
+            }
+
+            // #5.1 read previous DWORD. If no such DWORD return 0.
+            if (dwordIndex == 0)
+            {
+                return 0;
+            }
+            dwordIndex--;
+            nibbleIndex = NIBBLES_PER_DWORD;
+
+            PREFIX_ASSUME(pMap != NULL);
+            dword = VolatileLoadWithoutBarrier<DWORD>(pMap + dwordIndex);
+
+            // #5.2 if DWORD is a pointer, then we can return
+            if (IsPointer(dword))
+            {
+                return base + DecodePointer(dword);
+            }
+
+            // #5.4 find preceeding nibble and return if found
+            for(; nibbleIndex-- > 0;)
+            {
+                nibble = GetNibble(dword, nibbleIndex);
+                if (nibble)
+                {
+                    return base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
+                }
+            }
+
+            while (dwordIndex != 0)
+            {
+                dwordIndex--;
+                nibbleIndex = NIBBLES_PER_DWORD;
+
+                PREFIX_ASSUME(pMap != NULL);
+                dword = VolatileLoadWithoutBarrier<DWORD>(pMap + dwordIndex);
+
+                // #5.2 if DWORD is a pointer, then we can return
+                if (IsPointer(dword))
+                {
+                    return base + DecodePointer(dword);
+                }
+
+                // #5.4 find preceeding nibble and return if found
+                for(; nibbleIndex-- > 0;)
+                {
+                    nibble = GetNibble(dword, nibbleIndex);
+                    if (nibble)
+                    {
+                        return base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
+                    }
+                }
+            }
+
+            // If none of the above was found, return 0
+            return 0;
+        }
+    };
+} // end anonymous namespace
+
 TADDR EEJitManager::FindMethodCode(PCODE currentPC)
 {
     CONTRACTL {
@@ -3936,96 +4331,25 @@ TADDR EEJitManager::FindMethodCode(PCODE currentPC)
 
 TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC)
 {
-    LIMITED_METHOD_DAC_CONTRACT;
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
 
-    _ASSERTE(pRangeSection != NULL);
-    _ASSERTE(pRangeSection->_flags & RangeSection::RANGE_SECTION_CODEHEAP);
-
-    HeapList *pHp = pRangeSection->_pHeapList;
-
-    if ((currentPC < pHp->startAddress) ||
-        (currentPC > pHp->endAddress))
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseOptimizedNibbleMap))
     {
-        return 0;
+        return ConstantLookupNibbleMap::FindMethodCode(pRangeSection, currentPC);
     }
-
-    TADDR base = pHp->mapBase;
-    TADDR delta = currentPC - base;
-    PTR_DWORD pMap = pHp->pHdrMap;
-    PTR_DWORD pMapStart = pMap;
-
-    DWORD tmp;
-
-    size_t startPos = ADDR2POS(delta);  // align to 32byte buckets
-                                        // ( == index into the array of nibbles)
-    DWORD  offset   = ADDR2OFFS(delta); // this is the offset inside the bucket + 1
-
-    _ASSERTE(offset == (offset & NIBBLE_MASK));
-
-    pMap += (startPos >> LOG2_NIBBLES_PER_DWORD); // points to the proper DWORD of the map
-
-    // get DWORD and shift down our nibble
-
-    PREFIX_ASSUME(pMap != NULL);
-    tmp = VolatileLoadWithoutBarrier<DWORD>(pMap) >> POS2SHIFTCOUNT(startPos);
-
-    if ((tmp & NIBBLE_MASK) && ((tmp & NIBBLE_MASK) <= offset) )
+    else
     {
-        return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
+        return LinearLookupNibbleMap::FindMethodCode(pRangeSection, currentPC);
     }
-
-    // Is there a header in the remainder of the DWORD ?
-    tmp = tmp >> NIBBLE_SIZE;
-
-    if (tmp)
-    {
-        startPos--;
-        while (!(tmp & NIBBLE_MASK))
-        {
-            tmp = tmp >> NIBBLE_SIZE;
-            startPos--;
-        }
-        return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
-    }
-
-    // We skipped the remainder of the DWORD,
-    // so we must set startPos to the highest position of
-    // previous DWORD, unless we are already on the first DWORD
-
-    if (startPos < NIBBLES_PER_DWORD)
-        return 0;
-
-    startPos = ((startPos >> LOG2_NIBBLES_PER_DWORD) << LOG2_NIBBLES_PER_DWORD) - 1;
-
-    // Skip "headerless" DWORDS
-
-    while (pMapStart < pMap && 0 == (tmp = VolatileLoadWithoutBarrier<DWORD>(--pMap)))
-    {
-        startPos -= NIBBLES_PER_DWORD;
-    }
-
-    // This helps to catch degenerate error cases. This relies on the fact that
-    // startPos cannot ever be bigger than MAX_UINT
-    if (((INT_PTR)startPos) < 0)
-        return 0;
-
-    // Find the nibble with the header in the DWORD
-
-    while (startPos && !(tmp & NIBBLE_MASK))
-    {
-        tmp = tmp >> NIBBLE_SIZE;
-        startPos--;
-    }
-
-    if (startPos == 0 && tmp == 0)
-        return 0;
-
-    return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
 }
 
 #if !defined(DACCESS_COMPILE)
 
-void EEJitManager::NibbleMapSet(HeapList * pHp, TADDR pCode, BOOL bSet)
+void EEJitManager::NibbleMapSet(HeapList * pHp, TADDR pCode, size_t codeSize)
 {
     CONTRACTL {
         NOTHROW;
@@ -4033,10 +4357,42 @@ void EEJitManager::NibbleMapSet(HeapList * pHp, TADDR pCode, BOOL bSet)
     } CONTRACTL_END;
 
     CrstHolder ch(&m_CodeHeapCritSec);
-    NibbleMapSetUnlocked(pHp, pCode, bSet);
+    NibbleMapSetUnlocked(pHp, pCode, codeSize);
 }
 
-void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, BOOL bSet)
+void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t codeSize)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    // Currently all callers to this method ensure EEJitManager::m_CodeHeapCritSec
+    // is held.
+    _ASSERTE(m_CodeHeapCritSec.OwnedByCurrentThread());
+    
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseOptimizedNibbleMap))
+    {
+        ConstantLookupNibbleMap::SetUnlocked(pHp, pCode, codeSize);
+    }
+    else
+    {
+        LinearLookupNibbleMap::SetUnlocked(pHp, pCode, true);
+    }
+}
+
+void EEJitManager::NibbleMapDelete(HeapList* pHp, TADDR pCode)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    CrstHolder ch(&m_CodeHeapCritSec);
+    NibbleMapDeleteUnlocked(pHp, pCode);
+}
+
+void EEJitManager::NibbleMapDeleteUnlocked(HeapList* pHp, TADDR pCode)
 {
     CONTRACTL {
         NOTHROW;
@@ -4047,27 +4403,16 @@ void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, BOOL bSet)
     // is held.
     _ASSERTE(m_CodeHeapCritSec.OwnedByCurrentThread());
 
-    _ASSERTE(pCode >= pHp->mapBase);
-
-    size_t delta = pCode - pHp->mapBase;
-
-    size_t pos  = ADDR2POS(delta);
-    DWORD value = bSet?ADDR2OFFS(delta):0;
-
-    DWORD index = (DWORD) (pos >> LOG2_NIBBLES_PER_DWORD);
-    DWORD mask  = ~((DWORD) HIGHEST_NIBBLE_MASK >> ((pos & NIBBLES_PER_DWORD_MASK) << LOG2_NIBBLE_SIZE));
-
-    value = value << POS2SHIFTCOUNT(pos);
-
-    PTR_DWORD pMap = pHp->pHdrMap;
-
-    // assert that we don't overwrite an existing offset
-    // (it's a reset or it is empty)
-    _ASSERTE(!value || !((*(pMap+index))& ~mask));
-
-    // It is important for this update to be atomic. Synchronization would be required with FindMethodCode otherwise.
-    *(pMap+index) = ((*(pMap+index))&mask)|value;
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseOptimizedNibbleMap))
+    {
+        ConstantLookupNibbleMap::DeleteUnlocked(pHp, pCode);
+    }
+    else
+    {
+        LinearLookupNibbleMap::SetUnlocked(pHp, pCode, false);
+    }
 }
+
 #endif // !DACCESS_COMPILE
 
 #if defined(FEATURE_EH_FUNCLETS)
