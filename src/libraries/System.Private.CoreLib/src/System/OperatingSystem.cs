@@ -344,7 +344,7 @@ namespace System
             }
 
             // Unspecified revision component is to be treated as zero
-            int currentRevision = current.Revision == -1 ? 0 : current.Revision;
+            int currentRevision = current.Revision < 0 ? 0 : current.Revision;
             revision = revision < 0 ? 0 : revision;
 
             return currentRevision >= revision;
