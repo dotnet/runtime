@@ -283,7 +283,6 @@ public class CodeVersionsTests
                 (nameof(Data.ILCodeVersioningState.ActiveVersionModule), DataType.pointer),
                 (nameof(Data.ILCodeVersioningState.ActiveVersionKind), DataType.uint32),
                 (nameof(Data.ILCodeVersioningState.ActiveVersionNode), DataType.pointer),
-                (nameof(Data.ILCodeVersioningState.Node), DataType.pointer),
             ]);
             typeInfoCache[DataType.ILCodeVersioningState] = new Target.TypeInfo() {
                     Fields = layout.Fields,
@@ -319,13 +318,12 @@ public class CodeVersionsTests
             Builder.TargetTestHelpers.WritePointer(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.NativeCode)].Offset, Builder.TargetTestHelpers.PointerSize), nativeCode);
         }
 
-        public TargetPointer AddILCodeVersioningState(TargetPointer firstVersionNode, uint activeVersionKind, TargetPointer activeVersionNode, TargetPointer activeVersionModule, uint activeVersionMethodDef)
+        public TargetPointer AddILCodeVersioningState(uint activeVersionKind, TargetPointer activeVersionNode, TargetPointer activeVersionModule, uint activeVersionMethodDef)
         {
             Target.TypeInfo info = TypeInfoCache[DataType.ILCodeVersioningState];
             MockMemorySpace.HeapFragment fragment = _codeVersionsAllocator.Allocate((ulong)TypeInfoCache[DataType.ILCodeVersioningState].Size, "ILCodeVersioningState");
             Builder.AddHeapFragment(fragment);
             Span<byte> ilcvs = Builder.BorrowAddressRange(fragment.Address, fragment.Data.Length);
-            Builder.TargetTestHelpers.WritePointer(ilcvs.Slice(info.Fields[nameof(Data.ILCodeVersioningState.Node)].Offset, Builder.TargetTestHelpers.PointerSize), firstVersionNode);
             Builder.TargetTestHelpers.WritePointer(ilcvs.Slice(info.Fields[nameof(Data.ILCodeVersioningState.ActiveVersionModule)].Offset, Builder.TargetTestHelpers.PointerSize), activeVersionModule);
             Builder.TargetTestHelpers.WritePointer(ilcvs.Slice(info.Fields[nameof(Data.ILCodeVersioningState.ActiveVersionNode)].Offset, Builder.TargetTestHelpers.PointerSize), activeVersionNode);
             Builder.TargetTestHelpers.Write(ilcvs.Slice(info.Fields[nameof(Data.ILCodeVersioningState.ActiveVersionMethodDef)].Offset, sizeof(uint)), activeVersionMethodDef);
@@ -462,7 +460,7 @@ public class CodeVersionsTests
         var moduleAddress = new TargetPointer(0x00ca_ca00);
 
 
-        TargetPointer versioningState = builder.AddILCodeVersioningState(firstVersionNode: TargetPointer.Null, activeVersionKind: 0, activeVersionNode: TargetPointer.Null, activeVersionModule: moduleAddress, activeVersionMethodDef: methodDefToken);
+        TargetPointer versioningState = builder.AddILCodeVersioningState(activeVersionKind: 0/*==unknown*/, activeVersionNode: TargetPointer.Null, activeVersionModule: moduleAddress, activeVersionMethodDef: methodDefToken);
         var oneModule = new MockModule() {
             Address = moduleAddress,
             MethodDefToILCodeVersioningStateAddress = new TargetPointer(0x00da_da00),
