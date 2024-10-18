@@ -84,9 +84,12 @@ namespace System
         /// <summary>
         /// Gets an enumerator for the invocation targets of this delegate.
         /// </summary>
+        /// <typeparam name="TDelegate">Delegate type being enumerated.</typeparam>
+        /// <param name="d">The delegate being enumerated.</param>
+        /// <returns>A <see cref="InvocationListEnumerator{TDelegate}" /> that follows the IEnumerable pattern and
+        /// thus can be used in a C# 'foreach' statement to retrieve the invocation targets of this delegate without allocations.
+        /// The method returns an empty enumerator for <see langword="null" /> delegate.</returns>
         /// <remarks>
-        /// This returns a <see cref="InvocationListEnumerator{TDelegate}"/>" /> that follows the IEnumerable pattern and
-        /// thus can be used in a C# 'foreach' statements to retrieve the invocation targets of this delegate without allocations.
         /// The order of the delegates returned by the enumerator is the same order in which the current delegate invokes the methods that those delegates represent.
         /// The method returns an empty enumerator for null delegate.
         /// </remarks>
@@ -120,6 +123,8 @@ namespace System
             /// <summary>
             /// Implements the IEnumerator pattern.
             /// </summary>
+            /// <returns><see langword="true" /> if the enumerator was successfully advanced to the next element;
+            /// otherwise, <see langword="false" /> if the enumerator has passed the end of the collection. </returns>
             public bool MoveNext()
             {
                 int index = _index + 1;
@@ -132,8 +137,9 @@ namespace System
             }
 
             /// <summary>
-            /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator
+            /// Implement IEnumerable.GetEnumerator() to return 'this' as the IEnumerator.
             /// </summary>
+            /// <returns>An IEnumerator instance that can be used to iterate through the invocation targets of the delegate.</returns>
             [EditorBrowsable(EditorBrowsableState.Never)] // Only here to make foreach work
             public System.Delegate.InvocationListEnumerator<TDelegate> GetEnumerator() => this;
         }
