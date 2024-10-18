@@ -45,7 +45,8 @@ FORCEINLINE void InlinedMemmoveGCRefsHelper(void *dest, const void *src, size_t 
 
     SIZE_T* dptr = (SIZE_T*)dest;
     SIZE_T* sptr = (SIZE_T*)src;
-    for (size_t i = 0; i < len; i++)
+    SIZE_T  num  = len / sizeof(SIZE_T);
+    for (size_t i = 0; i < num; i++)
     {
         dptr[i] = sptr[i];
     }
