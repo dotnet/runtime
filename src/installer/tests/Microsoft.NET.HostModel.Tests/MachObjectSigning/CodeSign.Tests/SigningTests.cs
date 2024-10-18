@@ -123,20 +123,17 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         internal static void AdHocSignFile(string originalFilePath, string managedSignedPath, string fileName)
         {
             Assert.NotEqual(originalFilePath, managedSignedPath);
-            using (var managedSignFile = File.OpenWrite(originalFilePath))
-            {
-                long fileSize = managedSignFile.Length + MachObjectFile.GetSignatureSizeEstimate(managedSignFile.Length, fileName);
-                managedSignFile.SetLength(fileSize);
-            }
             using var appHostSourceStream = new FileStream(originalFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
             using var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
             using var managedSignedAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
 
-            long newSize = MachObjectFile.AdHocSign(managedSignedAccessor, fileName);
+            MachObjectFile machObjectFile = new MachObjectFile(managedSignedAccessor, fileName);
+            long newSize = machObjectFile.CreateAdHocSignature(managedSignedAccessor, fileName);
 
             using (FileStream fileStream = new FileStream(managedSignedPath, FileMode.Create, FileAccess.ReadWrite))
             {
                 BinaryUtils.WriteToStream(managedSignedAccessor, fileStream, newSize);
+                machObjectFile.WriteCodeSignature(fileStream);
             }
         }
     }
