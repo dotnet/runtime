@@ -206,7 +206,8 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
                 return true;
             }
             Data.MethodDescVersioningState versioningState = _target.ProcessedData.GetOrAdd<Data.MethodDescVersioningState>(versioningStateAddress);
-            return (((MethodDescVersioningStateFlags)versioningState.Flags) & MethodDescVersioningStateFlags.IsDefaultVersionActiveChildFlag) != 0;
+            MethodDescVersioningStateFlags flags = (MethodDescVersioningStateFlags)versioningState.Flags;
+            return flags.HasFlag(MethodDescVersioningStateFlags.IsDefaultVersionActiveChildFlag);
         }
         else if (nativeCodeVersion.CodeVersionNodeAddress != TargetPointer.Null)
         {
