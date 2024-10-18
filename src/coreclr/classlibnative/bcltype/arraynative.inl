@@ -43,9 +43,21 @@ FORCEINLINE void InlinedMemmoveGCRefsHelper(void *dest, const void *src, size_t 
         GCHeapMemoryBarrier();
     }
 
+#ifdef TARGET_ARM64
+    // dest and src at least 8b aligned, it should be fine to allow native compilers
+    // to unroll it with SIMD and still maintain atomicity guarantees (SIMD loads/stores
+    // only need 8b alignment for that).
+    auto dptr = (SIZE_T*)dest;
+    auto sptr = (SIZE_T*)src;
+#else
+    // Disallow native compilers to align only dest and then use misaligned SIMD for src
+    // TODO-RISCV64: Perhaps, can be relaxed just like the arm64
+    // TODO-LoongArch64: Ditto.
     auto dptr = (volatile SIZE_T*)dest;
     auto sptr = (volatile SIZE_T*)src;
-    SIZE_T num  = len / sizeof(SIZE_T);
+#endif
+
+    SIZE_T num = len / sizeof(SIZE_T);
     for (size_t i = 0; i < num; i++)
     {
         dptr[i] = sptr[i];
