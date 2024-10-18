@@ -844,4 +844,25 @@ And the various apis are implemented with the following algorithms
         return ((DynamicMethodDescExtendedFlags)ExtendedFlags).HasFlag(DynamicMethodDescExtendedFlags.IsILStub);
     }
 ```
-**TODO(cdac)** additional code pointers methods on MethodDesc
+
+Determining if a method is in a collectible module:
+
+```csharp
+bool IRuntimeTypeSystem.IsCollectibleMethod(MethodDescHandle methodDesc) => // TODO[cdac]: finish this
+```
+
+Determining if a method supports multiple code versions:
+
+```csharp
+bool IRuntimeTypeSystem.IsVersionable(MethodDescHandle methodDesc) => // TODO[cdac]: finish this
+```
+
+Extracting a pointer to the `MethodDescVersioningState` data for a given method
+```csharp
+TargetPointer IRuntimeTypeSystem.GetMethodDescVersioningState(MethodDescHandle methodDesc) => // TODO[cdac]: finish this
+```
+
+Getting the native code pointer for methods with a NativeCodeSlot or a stable entry point
+```csharp
+public virtual TargetCodePointer GetNativeCode(MethodDescHandle methodDesc) => // TODO[cdac]: finish this
+```
