@@ -338,7 +338,8 @@ void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
     {
         for (unsigned level = 0; level < chkLevel; level++)
         {
-            assert((verCurrentState.esStack[level].val->gtFlags & GTF_GLOB_EFFECT) == 0);
+            assert((verCurrentState.esStack[level].val->gtFlags & GTF_GLOB_EFFECT) == 0 ||
+                   impIsInvariant(verCurrentState.esStack[level].val));
         }
     }
 
@@ -361,7 +362,8 @@ void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
         {
             for (unsigned level = 0; level < chkLevel; level++)
             {
-                assert((verCurrentState.esStack[level].val->gtFlags & GTF_GLOB_REF) == 0);
+                assert((verCurrentState.esStack[level].val->gtFlags & GTF_GLOB_REF) == 0 ||
+                       impIsInvariant(verCurrentState.esStack[level].val));
             }
         }
     }
@@ -1839,13 +1841,18 @@ void Compiler::impEvalSideEffects()
 void Compiler::impSpillSideEffect(bool spillGlobEffects, unsigned i DEBUGARG(const char* reason))
 {
     assert(i <= verCurrentState.esStackDepth);
+    GenTree* tree = verCurrentState.esStack[i].val;
+
+    if (impIsInvariant(tree))
+    {
+        // No need to spill invariant trees like LCL_ADDR or static readonly loads
+        return;
+    }
 
     GenTreeFlags spillFlags = spillGlobEffects ? GTF_GLOB_EFFECT : GTF_SIDE_EFFECT;
-    GenTree*     tree       = verCurrentState.esStack[i].val;
 
     if ((tree->gtFlags & spillFlags) != 0 ||
         (spillGlobEffects &&           // Only consider the following when  spillGlobEffects == true
-         !impIsAddressInLocal(tree) && // No need to spill the LCL_ADDR nodes.
          gtHasLocalsWithAddrOp(tree))) // Spill if we still see GT_LCL_VAR that contains lvHasLdAddrOp or
                                        // lvAddrTaken flag.
     {
@@ -4258,7 +4265,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             }
             if (isStaticReadOnlyInitedRef)
             {
-                indirFlags |= (GTF_IND_INVARIANT | GTF_IND_NONNULL);
+                indirFlags |= (GTF_IND_NONFAULTING | GTF_IND_INVARIANT | GTF_IND_NONNULL);
             }
             break;
         }
@@ -12643,7 +12650,9 @@ void Compiler::impFixPredLists()
 //
 bool Compiler::impIsInvariant(const GenTree* tree)
 {
-    return tree->OperIsConst() || impIsAddressInLocal(tree) || tree->OperIs(GT_FTN_ADDR);
+    return tree->OperIsConst() || impIsAddressInLocal(tree) || tree->OperIs(GT_FTN_ADDR) ||
+           (tree->OperIs(GT_IND) && tree->AsIndir()->IsInvariantLoad() &&
+            ((tree->AsIndir()->gtFlags & GTF_SIDE_EFFECT) == 0));
 }
 
 //------------------------------------------------------------------------
@@ -13078,6 +13087,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     if (impIsInvariant(curArgVal))
     {
         inlCurArgInfo->argIsInvariant = true;
+        inlCurArgInfo->argIsConstant  = !curArgVal->OperIs(GT_IND);
         if (inlCurArgInfo->argIsThis && (curArgVal->gtOper == GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
         {
             // Abort inlining at this call site
@@ -13088,6 +13098,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     else if (gtIsTypeof(curArgVal))
     {
         inlCurArgInfo->argIsInvariant = true;
+        inlCurArgInfo->argIsConstant  = true;
         inlCurArgInfo->argHasSideEff  = false;
     }
 
@@ -13221,6 +13232,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 if (arg.GetNode()->IsCnsIntOrI())
                 {
                     ctxInfo->argIsInvariant = true;
+                    ctxInfo->argIsConstant  = true;
                 }
                 else
                 {
