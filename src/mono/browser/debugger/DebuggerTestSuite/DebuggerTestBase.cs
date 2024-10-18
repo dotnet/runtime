@@ -285,7 +285,14 @@ namespace DebuggerTests
 
         internal virtual async Task<JObject> WaitFor(string what)
         {
-            return await insp.WaitFor(what);
+            try
+            {
+                return await insp.WaitFor(what);
+            }
+            catch
+            {
+                new Exception($"Waiting for {what} failed");
+            }
         }
         public async Task WaitForConsoleMessage(string message)
         {
