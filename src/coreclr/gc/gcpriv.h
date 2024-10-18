@@ -5660,7 +5660,10 @@ private:
     {
         return (Seg == MaxSeg ? m_EndArray : m_FillPointers[Seg]);
     }
-
+    inline size_t SegQueueCount (unsigned int Seg)
+    {
+        return SegQueueLimit(Seg) - SegQueue(Seg);
+    }
     size_t UsedCount ()
     {
         return (SegQueue(FreeListSeg) - m_Array) + (m_EndArray - SegQueueLimit(FreeListSeg));
@@ -5671,6 +5674,8 @@ private:
         ASSERT ((int)i <= MaxSeg);
         return (SegQueueLimit(i) == SegQueue (i));
     }
+
+    void LogCounts(const char* label);
 
 public:
     ~CFinalize();

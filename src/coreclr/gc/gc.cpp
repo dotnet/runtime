@@ -52177,6 +52177,19 @@ void CFinalize::WalkFReachableObjects (fq_walk_fn fn)
     }
 }
 
+void CFinalize::LogCounts(const char* label)
+{
+    size_t genCounts[max_generation + 1] = {};
+    for (int gen = 0; gen <= max_generation; ++gen)
+    {
+        unsigned int seg = gen_segment(gen);
+        genCounts[gen] = SegQueueCount(seg);
+    }
+    dprintf(1, ("Finalizer counts @%5s; 0: %6zu; 1: %6zu, 2: %6zu; CF: %6zu; F: %6zu; Free: %6zu",
+        label, genCounts[0], genCounts[1], genCounts[2],
+        SegQueueCount(CriticalFinalizerListSeg), SegQueueCount(FinalizerListSeg), SegQueueCount(FreeListSeg)));
+}
+
 BOOL
 CFinalize::ScanForFinalization (promote_func* pfn, int gen, gc_heap* hp)
 {
@@ -52189,6 +52202,8 @@ CFinalize::ScanForFinalization (promote_func* pfn, int gen, gc_heap* hp)
     UNREFERENCED_PARAMETER(hp);
     sc.thread_count = 1;
 #endif //MULTIPLE_HEAPS
+
+    LogCounts("start");
 
     BOOL finalizedFound = FALSE;
 
@@ -52280,6 +52295,8 @@ CFinalize::ScanForFinalization (promote_func* pfn, int gen, gc_heap* hp)
         }
     }
 
+    LogCounts("scan");
+
     return finalizedFound;
 }
 
@@ -52359,6 +52376,8 @@ CFinalize::UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p)
             }
         }
     }
+
+    LogCounts("promo");
 }
 
 BOOL
