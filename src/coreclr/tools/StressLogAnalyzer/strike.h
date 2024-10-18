@@ -60,4 +60,4 @@ struct IDebugDataSpaces
 HRESULT OutputVaList(ULONG mask, PCSTR format, va_list args);
 void ExtOut(PCSTR format, ...);
 #define ___in
-void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inout __inout_z char* format, uint64_t threadId, double timeStamp, DWORD_PTR facility, ___in void** args, bool fPrintFormatString = false);
+void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inout __inout_z char* format, uint64_t threadId, double timeStamp, DWORD_PTR facility, uint32_t numArgs, ___in void** args, bool fPrintFormatString = false);
