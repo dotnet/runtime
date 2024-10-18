@@ -291,7 +291,7 @@ namespace DebuggerTests
             }
             catch
             {
-                new Exception($"Debugger inspector waiting for {what} failed");
+                throw new Exception($"Debugger inspector waiting for {what} failed");
             }
         }
         public async Task WaitForConsoleMessage(string message)
