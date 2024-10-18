@@ -88,7 +88,8 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         }
         else if (codeVersionHandle.CodeVersionNodeAddress != TargetPointer.Null)
         {
-            throw new NotImplementedException(); // TODO[cdac]: get native code from NativeCodeVersionNode
+            Data.NativeCodeVersionNode nativeCodeVersionNode = _target.ProcessedData.GetOrAdd<Data.NativeCodeVersionNode>(codeVersionHandle.CodeVersionNodeAddress);
+            return nativeCodeVersionNode.NativeCode;
         }
         else
         {
