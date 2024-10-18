@@ -64,12 +64,6 @@
     <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' != 'Windows_NT' and '$(_targetOS)' == 'win'"
       Text="Cross-OS native compilation is not supported." />
 
-    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(_targetArchitecture)' != 'x64' and '$(_targetArchitecture)' != 'x86' and '$(_targetArchitecture)' != 'arm64' and '$(_targetArchitecture)' != 'arm' and '$(_targetArchitecture)' != 'loongarch64'"
-      Text="Native compilation does not support targeting $(RuntimeIdentifier) yet." />
-
-    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(_hostArchitecture)' != 'x64' and '$(_hostArchitecture)' != 'x86' and '$(_hostArchitecture)' != 'arm64' and '$(_hostArchitecture)' != 'arm' and '$(_hostArchitecture)' != 'loongarch64'"
-      Text="Native compilation can run on x64, x86, arm64 and arm hosts only." />
-
     <Error Condition="'$(IlcHostPackagePath)' == '' and '$(RuntimePackagePath)' != '' and ('$(_hostArchitecture)' == 'x64' or '$(_hostArchitecture)' == 'arm64')"
       Text="Add a PackageReference for '$(_hostPackageName)' to allow cross-compilation for $(_targetArchitecture)" />
 
