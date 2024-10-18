@@ -139,7 +139,7 @@ static const char* ResultToString(ReplayResult result)
 
 static void PrintDiffsCsvHeader(FileWriter& fw)
 {
-    fw.Print("Context,Context size,Method full name,Tier name,Base result,Diff result,MinOpts,Has diff,Base size,Diff size,Base instructions,Diff instructions");
+    fw.Print("Context,Context size,Method full name,Tier name,Base result,Diff result,MinOpts,Has diff,Base size,Diff size,Base GCInfo size,Diff GCInfo size,Base instructions,Diff instructions");
 
 #define JITMETADATAINFO(name, type, flags)
 #define JITMETADATAMETRIC(name, type, flags) fw.Print(",Base " #name ",Diff " #name);
@@ -159,12 +159,13 @@ static void PrintDiffsCsvRow(
     fw.Printf("%d,%u,", context, contextSize);
     fw.PrintQuotedCsvField(baseRes.CompileResults->MethodFullName == nullptr ? "" : baseRes.CompileResults->MethodFullName);
     fw.Printf(
-        ",%s,%s,%s,%s,%s,%u,%u,%lld,%lld",
+        ",%s,%s,%s,%s,%s,%u,%u,%u,%u,%lld,%lld",
         baseRes.CompileResults->TieringName == nullptr ? "" : baseRes.CompileResults->TieringName,
         ResultToString(baseRes.Result), ResultToString(diffRes.Result),
         baseRes.IsMinOpts ? "True" : "False",
         hasDiff ? "True" : "False",
         baseRes.NumCodeBytes, diffRes.NumCodeBytes,
+        (uint32_t)baseRes.NumGCInfoBytes, (uint32_t)diffRes.NumGCInfoBytes,
         baseRes.NumExecutedInstructions, diffRes.NumExecutedInstructions);
 
 #define JITMETADATAINFO(name, type, flags)
@@ -181,7 +182,7 @@ static void PrintDiffsCsvRow(
 
 static void PrintReplayCsvHeader(FileWriter& fw)
 {
-    fw.Printf("Context,Context size,Method full name,Tier name,Result,MinOpts,Size,Instructions");
+    fw.Printf("Context,Context size,Method full name,Tier name,Result,MinOpts,Size,GCInfo size,Instructions");
 
 #define JITMETADATAINFO(name, type, flags)
 #define JITMETADATAMETRIC(name, type, flags) fw.Print("," #name);
@@ -198,11 +199,11 @@ static void PrintReplayCsvRow(
 {
     fw.Printf("%d,%u,", context, contextSize);
     fw.PrintQuotedCsvField(res.CompileResults->MethodFullName == nullptr ? "" : res.CompileResults->MethodFullName);
-    fw.Printf(",%s,%s,%s,%u,%lld",
+    fw.Printf(",%s,%s,%s,%u,%u,%lld",
         res.CompileResults->TieringName == nullptr ? "" : res.CompileResults->TieringName,
         ResultToString(res.Result),
         res.IsMinOpts ? "True" : "False",
-        res.NumCodeBytes, res.NumExecutedInstructions);
+        res.NumCodeBytes, (uint32_t)res.NumGCInfoBytes, res.NumExecutedInstructions);
 
 #define JITMETADATAINFO(name, type, flags)
 #define JITMETADATAMETRIC(name, type, flags) \

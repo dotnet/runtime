@@ -27,6 +27,8 @@
 //              Name,                                    type              flags
 JITMETADATAINFO(MethodFullName,                          const char*,      0)
 JITMETADATAINFO(TieringName,                             const char*,      0)
+JITMETADATAMETRIC(GCInfoBytes,                           int64_t,          JIT_METADATA_LOWER_IS_BETTER)
+JITMETADATAMETRIC(EHClauseCount,                         int,              0)
 JITMETADATAMETRIC(PhysicallyPromotedFields,              int,              0)
 JITMETADATAMETRIC(LoopsFoundDuringOpts,                  int,              0)
 JITMETADATAMETRIC(LoopsCloned,                           int,              0)
