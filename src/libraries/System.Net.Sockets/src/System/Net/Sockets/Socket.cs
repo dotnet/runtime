@@ -3777,7 +3777,7 @@ namespace System.Net.Sockets
         }
 
         // CreateAcceptSocket - pulls unmanaged results and assembles them into a new Socket object.
-        internal Socket CreateAcceptSocket(SafeSocketHandle fd, EndPoint remoteEP)
+        internal Socket CreateAcceptSocket(SafeSocketHandle fd, EndPoint? remoteEP)
         {
             // Internal state of the socket is inherited from listener.
             Debug.Assert(fd != null && !fd.IsInvalid);
@@ -3785,7 +3785,7 @@ namespace System.Net.Sockets
             return UpdateAcceptSocket(socket, remoteEP);
         }
 
-        internal Socket UpdateAcceptSocket(Socket socket, EndPoint remoteEP)
+        internal Socket UpdateAcceptSocket(Socket socket, EndPoint? remoteEP)
         {
             // Internal state of the socket is inherited from listener.
             socket._addressFamily = _addressFamily;
