@@ -21,6 +21,7 @@
 #include "posterror.h"
 #include "stgio.h"
 #include "sstring.h"
+#include <minipal/guid.h>
 
 #include "mdinternalrw.h"
 
@@ -246,7 +247,7 @@ RegMeta::CreateNewMD()
     ModuleRec *pModule;
     GUID       mvid;
     IfFailGo(m_pStgdb->m_MiniMd.AddModuleRecord(&pModule, &iRecord));
-    IfFailGo(CoCreateGuid(&mvid));
+    IfFailGo(minipal_guid_v4_create(&mvid) ? S_OK : E_FAIL);
     IfFailGo(m_pStgdb->m_MiniMd.PutGuid(TBL_Module, ModuleRec::COL_Mvid, pModule, mvid));
 
     // Add the dummy module typedef which we are using to parent global items.

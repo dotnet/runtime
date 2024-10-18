@@ -103,7 +103,6 @@ else()
     list(APPEND ILASM_LINK_LIBRARIES
         coreclrpal
         mscorrc
-        palrt
         coreclrminipal
     )
 endif(CLR_CMAKE_TARGET_WIN32)
@@ -116,7 +115,6 @@ if(CLR_CMAKE_HOST_UNIX)
     utilcodestaticnohost
     mscorrc
     coreclrpal
-    palrt
     ${CMAKE_DL_LIBS}
   )
 else()
