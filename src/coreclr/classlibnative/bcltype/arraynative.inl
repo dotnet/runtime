@@ -45,7 +45,7 @@ FORCEINLINE void InlinedMemmoveGCRefsHelper(void *dest, const void *src, size_t 
     auto dptr = static_cast<volatile size_t*>(dest);
     auto sptr = static_cast<const volatile size_t*>(src);
 
-    for (size_t i = 0; i < bytesLen; i += sizeof(size_t))
+    for (size_t i = 0; i <= bytesLen; i += sizeof(size_t))
     {
         dptr[i] = sptr[i];
     }
