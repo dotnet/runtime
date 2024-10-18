@@ -1,22 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Resources;
 
 namespace System
 {
     internal static partial class SR
     {
-        private static readonly bool s_usingResourceKeys = GetUsingResourceKeysSwitchValue();
+        private static readonly bool s_usingResourceKeys = GetUsingResourceKeysSwitchValue;
 
-        // This method is a target of ILLink substitution.
-        private static bool GetUsingResourceKeysSwitchValue() => AppContext.TryGetSwitch("System.Resources.UseSystemResourceKeys", out bool usingResourceKeys) ? usingResourceKeys : false;
+        [FeatureSwitchDefinition("System.Resources.UseSystemResourceKeys")]
+        private static bool GetUsingResourceKeysSwitchValue => AppContext.TryGetSwitch("System.Resources.UseSystemResourceKeys", out bool usingResourceKeys) ? usingResourceKeys : false;
 
-        // This method is used to decide if we need to append the exception message parameters to the message when calling SR.Format.
+        // This property is used to decide if we need to append the exception message parameters to the message when calling SR.Format.
         // by default it returns the value of System.Resources.UseSystemResourceKeys AppContext switch or false if not specified.
         // Native code generators can replace the value this returns based on user input at the time of native code generation.
         // The trimming tools are also capable of replacing the value of this method when the application is being trimmed.
-        internal static bool UsingResourceKeys() => s_usingResourceKeys;
+        [FeatureSwitchDefinition("System.Resources.UseSystemResourceKeys")]
+        internal static bool UsingResourceKeys => s_usingResourceKeys;
 
         // We can optimize out the resource string blob if we can see all accesses to it happening
         // through the generated SR.XXX properties.
@@ -30,7 +32,7 @@ namespace System
 #endif
         static string GetResourceString(string resourceKey)
         {
-            if (UsingResourceKeys())
+            if (UsingResourceKeys)
             {
                 return resourceKey;
             }
@@ -64,7 +66,7 @@ namespace System
 
         internal static string Format(string resourceFormat, object? p1)
         {
-            if (UsingResourceKeys())
+            if (UsingResourceKeys)
             {
                 return string.Join(", ", resourceFormat, p1);
             }
@@ -74,7 +76,7 @@ namespace System
 
         internal static string Format(string resourceFormat, object? p1, object? p2)
         {
-            if (UsingResourceKeys())
+            if (UsingResourceKeys)
             {
                 return string.Join(", ", resourceFormat, p1, p2);
             }
@@ -84,7 +86,7 @@ namespace System
 
         internal static string Format(string resourceFormat, object? p1, object? p2, object? p3)
         {
-            if (UsingResourceKeys())
+            if (UsingResourceKeys)
             {
                 return string.Join(", ", resourceFormat, p1, p2, p3);
             }
@@ -96,7 +98,7 @@ namespace System
         {
             if (args != null)
             {
-                if (UsingResourceKeys())
+                if (UsingResourceKeys)
                 {
                     return resourceFormat + ", " + string.Join(", ", args);
                 }
@@ -109,7 +111,7 @@ namespace System
 
         internal static string Format(IFormatProvider? provider, string resourceFormat, object? p1)
         {
-            if (UsingResourceKeys())
+            if (UsingResourceKeys)
             {
                 return string.Join(", ", resourceFormat, p1);
             }
@@ -119,7 +121,7 @@ namespace System
 
         internal static string Format(IFormatProvider? provider, string resourceFormat, object? p1, object? p2)
         {
-            if (UsingResourceKeys())
+            if (UsingResourceKeys)
             {
                 return string.Join(", ", resourceFormat, p1, p2);
             }
@@ -129,7 +131,7 @@ namespace System
 
         internal static string Format(IFormatProvider? provider, string resourceFormat, object? p1, object? p2, object? p3)
         {
-            if (UsingResourceKeys())
+            if (UsingResourceKeys)
             {
                 return string.Join(", ", resourceFormat, p1, p2, p3);
             }
@@ -141,7 +143,7 @@ namespace System
         {
             if (args != null)
             {
-                if (UsingResourceKeys())
+                if (UsingResourceKeys)
                 {
                     return resourceFormat + ", " + string.Join(", ", args);
                 }

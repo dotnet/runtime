@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <Compile Include="JsonSourceGenerator.Roslyn3.11.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" Link="Common\System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
   </ItemGroup>
 
 </Project>

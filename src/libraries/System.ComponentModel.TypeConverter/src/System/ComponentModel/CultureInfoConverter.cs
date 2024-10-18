@@ -22,7 +22,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the "default" name for our culture.
         /// </summary>
-        private static string DefaultCultureString => SR.UsingResourceKeys() ? "(Default)" : SR.CultureInfoConverterDefaultCultureString;
+        private static string DefaultCultureString => SR.UsingResourceKeys ? "(Default)" : SR.CultureInfoConverterDefaultCultureString;
 
         private const string DefaultInvariantCultureString = "(Default)";
 
