@@ -166,15 +166,22 @@ void GCHeap::UpdatePostGCCounters()
     FIRE_EVENT(GCEnd_V1, static_cast<uint32_t>(pSettings->gc_index), condemned_gen);
 
 #ifdef SIMPLE_DPRINTF
-    dprintf (2, ("GC#%zu: 0: %zu(%zu); 1: %zu(%zu); 2: %zu(%zu); 3: %zu(%zu)",
+    dprintf (1, ("GC#%zu: 0: %zu(%zu); 1: %zu(%zu); 2: %zu(%zu); 3: %zu(%zu); 4: %zu(%zu); final: %zu bytes(%zu); pin: %zu; sync: %zu; gchandles: %zu",
         (size_t)pSettings->gc_index,
         g_GenerationSizes[0], g_GenerationPromotedSizes[0],
         g_GenerationSizes[1], g_GenerationPromotedSizes[1],
         g_GenerationSizes[2], g_GenerationPromotedSizes[2],
-        g_GenerationSizes[3], g_GenerationPromotedSizes[3]));
+        g_GenerationSizes[3], g_GenerationPromotedSizes[3],
+        g_GenerationSizes[4], g_GenerationPromotedSizes[3],
+        promoted_finalization_mem,
+        GetFinalizablePromotedCount(),
+        static_cast<uint32_t>(total_num_pinned_objects),
+        total_num_sync_blocks,
+        static_cast<uint32_t>(total_num_gc_handles)));
 #endif //SIMPLE_DPRINTF
 
-    FIRE_EVENT(GCHeapStats_V2,
+    FIRE_DPRINTF_EVENT(GCHeapStats_V2, 1,
+        "0: %zu(%zu); 1: %zu(%zu); 2: %zu(%zu); 3: %zu(%zu); 4: %zu(%zu); final: %zu bytes(%zu); pin: %zu; sync: %zu; gchandles: %zu",
         g_GenerationSizes[0], g_GenerationPromotedSizes[0],
         g_GenerationSizes[1], g_GenerationPromotedSizes[1],
         g_GenerationSizes[2], g_GenerationPromotedSizes[2],

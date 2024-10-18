@@ -289,4 +289,9 @@ void FireDynamicEvent(const char* name, EventArgument... arguments)
 #define FIRE_EVENT(name, ...) 0
 #endif // FEATURE_EVENT_TRACE
 
+#define FIRE_DPRINTF_EVENT(name, level, format, ...) do { \
+    FIRE_EVENT(name, __VA_ARGS__);                        \
+    dprintf(level, (format, __VA_ARGS__));                \
+    } while(0)
+
 #endif // __GCEVENTSTATUS_H__
