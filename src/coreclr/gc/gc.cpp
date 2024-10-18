@@ -29535,12 +29535,13 @@ BOOL gc_heap::decide_on_promotion_surv (size_t threshold)
         size_t older_gen_size = dd_current_size (dd) + (dd_desired_allocation (dd) - dd_new_allocation (dd));
 
         size_t promoted = hp->total_promoted_bytes;
+        bool do_promote = ((threshold > older_gen_size) || (promoted > threshold));
 
         dprintf (6666, ("h%d promotion threshold: %zd, promoted bytes: %zd size n+1: %zd -> %s",
             i, threshold, promoted, older_gen_size,
-            (((threshold > (older_gen_size)) || (promoted > threshold)) ? "promote" : "don't promote")));
+            (do_promote ? "promote" : "don't promote")));
 
-        if ((threshold > (older_gen_size)) || (promoted > threshold))
+        if (do_promote)
         {
             return TRUE;
         }
