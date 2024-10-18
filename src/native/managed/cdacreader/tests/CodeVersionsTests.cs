@@ -62,9 +62,9 @@ public class CodeVersionsTests
             _codeBlocks = codeBlocks;
         }
 
-        CodeBlockHandle? IExecutionManager.GetCodeBlockHandle(TargetCodePointer ip)
+        private MockCodeBlockStart? FindCodeBlock(TargetPointer ip)
         {
-            if (ip == TargetCodePointer.Null)
+            if (ip == TargetPointer.Null)
             {
                 return null;
             }
@@ -72,35 +72,22 @@ public class CodeVersionsTests
             {
                 if (block.Contains(ip))
                 {
-                    return new CodeBlockHandle(ip.AsTargetPointer);
+                    return block;
                 }
             }
             return null;
         }
 
-        TargetCodePointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle)
+        CodeBlockHandle? IExecutionManager.GetCodeBlockHandle(TargetCodePointer ip)
         {
-            foreach (var block in _codeBlocks)
-            {
-                if (block.Contains(codeInfoHandle.Address))
-                {
-                    return block.StartAddress;
-                }
-            }
-            return TargetCodePointer.Null;
+            var block = FindCodeBlock(ip.AsTargetPointer);
+            if (block == null)
+                return null;
+            return new CodeBlockHandle(ip.AsTargetPointer);
         }
 
-        TargetPointer IExecutionManager.GetMethodDesc(CodeBlockHandle codeInfoHandle)
-        {
-            foreach (var block in _codeBlocks)
-            {
-                if (block.Contains(codeInfoHandle.Address))
-                {
-                    return block.MethodDescAddress;
-                }
-            }
-            return TargetPointer.Null;
-        }
+        TargetCodePointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle) => FindCodeBlock(codeInfoHandle.Address)?.StartAddress ?? TargetCodePointer.Null;
+        TargetPointer IExecutionManager.GetMethodDesc(CodeBlockHandle codeInfoHandle) => FindCodeBlock(codeInfoHandle.Address)?.MethodDescAddress ?? TargetPointer.Null;
     }
 
     internal class MockRuntimeTypeSystem : IRuntimeTypeSystem
@@ -177,6 +164,15 @@ public class CodeVersionsTests
                     Fields = layout.Fields,
                     Size = layout.Stride,
             };
+            layout = targetTestHelpers.LayoutFields([
+               (nameof(Data.NativeCodeVersionNode.Next), DataType.pointer),
+               (nameof(Data.NativeCodeVersionNode.MethodDesc), DataType.pointer),
+               (nameof(Data.NativeCodeVersionNode.NativeCode), DataType.pointer),
+            ]);
+            typeInfoCache[DataType.NativeCodeVersionNode] = new Target.TypeInfo() {
+                    Fields = layout.Fields,
+                    Size = layout.Stride,
+            };
         }
 
         public void MarkCreated() => Builder.MarkCreated();
@@ -189,6 +185,22 @@ public class CodeVersionsTests
             Span<byte> mdvs = Builder.BorrowAddressRange(fragment.Address, fragment.Data.Length);
             Builder.TargetTestHelpers.WritePointer(mdvs.Slice(info.Fields[nameof(Data.MethodDescVersioningState.NativeCodeVersionNode)].Offset, Builder.TargetTestHelpers.PointerSize), nativeCodeVersionNode);
             return fragment.Address;
+        }
+
+        public TargetPointer AddNativeCodeVersionNode()
+        {
+            Target.TypeInfo info = TypeInfoCache[DataType.NativeCodeVersionNode];
+            MockMemorySpace.HeapFragment fragment = _codeVersionsAllocator.Allocate((ulong)TypeInfoCache[DataType.NativeCodeVersionNode].Size, "NativeCodeVersionNode");
+            Builder.AddHeapFragment(fragment);
+            return fragment.Address;
+        }
+        public void FillNativeCodeVersionNode(TargetPointer dest, TargetPointer methodDesc, TargetCodePointer nativeCode, TargetPointer next)
+        {
+            Target.TypeInfo info = TypeInfoCache[DataType.NativeCodeVersionNode];
+            Span<byte> ncvn = Builder.BorrowAddressRange(dest, (int)info.Size!);
+            Builder.TargetTestHelpers.WritePointer(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.Next)].Offset, Builder.TargetTestHelpers.PointerSize), next);
+            Builder.TargetTestHelpers.WritePointer(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.MethodDesc)].Offset, Builder.TargetTestHelpers.PointerSize), methodDesc);
+            Builder.TargetTestHelpers.WritePointer(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.NativeCode)].Offset, Builder.TargetTestHelpers.PointerSize), nativeCode);
         }
 
     }
@@ -265,7 +277,8 @@ public class CodeVersionsTests
     public void TestGetNativeCodeVersionOneVersionVersionable(MockTarget.Architecture arch)
     {
         var builder = new CodeVersionsBuilder(arch, CodeVersionsBuilder.DefaultAllocationRange);
-        TargetPointer methodDescVersioningStateAddress = builder.AddMethodDescVersioningState(TargetPointer.Null/*FIXME*/);
+        TargetPointer nativeCodeVersionNode = builder.AddNativeCodeVersionNode();
+        TargetPointer methodDescVersioningStateAddress = builder.AddMethodDescVersioningState(nativeCodeVersionNode);
         TargetCodePointer codeBlockStart = new TargetCodePointer(0x0a0a_0000);
         MockMethodDesc oneMethod = MockMethodDesc.CreateVersionable(selfAddress: new TargetPointer(0x1a0a_0000), methodDescVersioningState: methodDescVersioningStateAddress);
         MockCodeBlockStart oneBlock = new MockCodeBlockStart()
@@ -274,6 +287,7 @@ public class CodeVersionsTests
             Length = 0x100,
             MethodDesc = oneMethod,
         };
+        builder.FillNativeCodeVersionNode(nativeCodeVersionNode, methodDesc: oneMethod.Address, nativeCode: codeBlockStart, next: TargetPointer.Null);
 
         builder.MarkCreated();
         var target = new CVTestTarget(arch, [oneMethod], [oneBlock], builder.Builder.GetReadContext().ReadFromTarget, builder.TypeInfoCache);
