@@ -336,7 +336,7 @@ namespace System
                 return current.Minor > minor;
             }
             // Unspecified build component is to be treated as zero
-            int currentBuild = current.Build == -1 ? 0 : current.Build;
+            int currentBuild = current.Build < 0 ? 0 : current.Build;
             build = build < 0 ? 0 : build;
             if (currentBuild != build)
             {
