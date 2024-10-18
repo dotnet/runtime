@@ -16,8 +16,8 @@
 
 #define __gmscpu_h__
 
-// S0 - S8, FP, TP
-#define NUM_CALLEESAVED_REGISTERS 11
+// S0 - S8, FP
+#define NUM_CALLEESAVED_REGISTERS 10
 
 struct MachState {
     ULONG64        captureCalleeSavedRegisters[NUM_CALLEESAVED_REGISTERS]; // preserved registers
