@@ -38,7 +38,7 @@ TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetThunkHeap(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
-TargetPointer GetModuleLookupMapElement(TargetPointer table, uint rid, out TargetNUInt flags);
+TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
 ```
 
 ## Version 1
@@ -113,6 +113,32 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle)
         MethodDefToILCodeVersioningState: target.ReadPointer(handle.Address + /*
         Module::MethodDefToILCodeVersioningState */));
 }
-```
 
-**TODO* pseudocode for IsCollectibleLoaderAllocator  and LookupTableMap element lookup
+TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
+{
+    uint rid = /* get row id from token*/ (token);
+    flags = new TargetNUInt(0);
+    if (table == TargetPointer.Null)
+        return TargetPointer.Null;
+    uint index = rid;
+    // have to read lookupMap an extra time upfront because only the first map
+    // has valid supportedFlagsMask
+    TargetNUInt supportedFlagsMask = _target.ReadNUInt(table + /* ModuleLookupMap::SupportedFlagsMask */);
+    do
+    {
+        if (index < _target.Read<uint>(table + /*ModuleLookupMap::Count*/))
+        {
+            TargetPointer entryAddress = _target.ReadPointer(lookupMap + /*ModuleLookupMap::TableData*/) + (ulong)(index * _target.PointerSize);
+            TargetPointer rawValue = _target.ReadPointer(entryAddress);
+            flags = rawValue & supportedFlagsMask;
+            return rawValue & ~(supportedFlagsMask.Value);
+        }
+        else
+        {
+            table = _target.ReadPointer(lookupMap + /*ModuleLookupMap::Next*/);
+            index -= _target.Read<uint>(lookupMap + /*ModuleLookupMap::Count*/);
+        }
+    } while (table != TargetPointer.Null);
+    return TargetPointer.Null;
+}
+```
