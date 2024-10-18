@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Configuration
 {
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     public sealed class IriParsingElement : ConfigurationElement
     {
         internal const bool EnabledDefaultValue = false;
@@ -13,6 +16,7 @@ namespace System.Configuration
             new ConfigurationProperty(CommonConfigurationStrings.Enabled, typeof(bool), EnabledDefaultValue,
                 ConfigurationPropertyOptions.None);
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public IriParsingElement()
         {
             _properties.Add(_enabled);
@@ -27,6 +31,8 @@ namespace System.Configuration
         }
 
         [ConfigurationProperty(CommonConfigurationStrings.Enabled, DefaultValue = EnabledDefaultValue)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         public bool Enabled
         {
             get { return (bool)this[_enabled]; }

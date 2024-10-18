@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Xml;
@@ -12,6 +13,7 @@ using System.Xml;
 namespace System.Diagnostics
 {
     [ConfigurationCollection(typeof(ListenerElement))]
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     internal class ListenerElementsCollection : ConfigurationElementCollection
     {
         public new ListenerElement this[string name] => (ListenerElement)BaseGet(name);
@@ -69,6 +71,7 @@ namespace System.Diagnostics
     [ConfigurationCollection(typeof(ListenerElement),
         AddItemName = "add",
         CollectionType = ConfigurationElementCollectionType.BasicMap)]
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     internal sealed class SharedListenerElementsCollection : ListenerElementsCollection
     {
         public override ConfigurationElementCollectionType CollectionType => ConfigurationElementCollectionType.BasicMap;
@@ -76,6 +79,7 @@ namespace System.Diagnostics
         protected override string ElementName => "add";
     }
 
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     internal sealed class ListenerElement : TypedElement
     {
         private static readonly ConfigurationProperty s_propFilter = new("filter", typeof(FilterElement), null, ConfigurationPropertyOptions.None);
@@ -108,9 +112,13 @@ namespace System.Diagnostics
 
         public StringDictionary Attributes => _attributes ?? new StringDictionary();
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("filter")]
         public FilterElement Filter => (FilterElement)this[s_propFilter];
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("name", IsRequired = true, IsKey = true)]
         public string Name
         {
@@ -124,6 +132,8 @@ namespace System.Diagnostics
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("traceOutputOptions", DefaultValue = (TraceOptions)TraceOptions.None)]
         public TraceOptions TraceOutputOptions
         {
@@ -139,6 +149,8 @@ namespace System.Diagnostics
 
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("type")]
         public override string TypeName
         {

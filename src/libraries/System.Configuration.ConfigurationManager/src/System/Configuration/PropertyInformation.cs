@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Configuration
 {
@@ -87,7 +88,11 @@ namespace System.Configuration
 
         public ConfigurationValidatorBase Validator => Prop.Validator;
 
-        public TypeConverter Converter => Prop.Converter;
+        public TypeConverter Converter
+        {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
+            get => Prop.Converter;
+        }
 
         public string Description => Prop.Description;
     }
