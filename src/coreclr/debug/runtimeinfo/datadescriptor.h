@@ -238,6 +238,9 @@ CDAC_TYPE_END(Module)
 
 CDAC_TYPE_BEGIN(ModuleLookupMap)
 CDAC_TYPE_FIELD(ModuleLookupMap, /*pointer*/, TableData, offsetof(LookupMapBase, pTable))
+CDAC_TYPE_FIELD(ModuleLookupMap, /*pointer*/, Next, offsetof(LookupMapBase, pNext))
+CDAC_TYPE_FIELD(ModuleLookupMap, /*uint32*/, Count, offsetof(LookupMapBase, dwCount))
+CDAC_TYPE_FIELD(ModuleLookupMap, /*nuint*/, SupportedFlagsMask, offsetof(LookupMapBase, supportedFlags))
 CDAC_TYPE_END(ModuleLookupMap)
 
 // RuntimeTypeSystem
@@ -344,6 +347,12 @@ CDAC_TYPE_BEGIN(CodePointer)
 CDAC_TYPE_SIZE(sizeof(PCODE))
 CDAC_TYPE_END(CodePointer)
 
+CDAC_TYPE_BEGIN(MethodDescVersioningState)
+CDAC_TYPE_INDETERMINATE(MethodDescVersioningState)
+CDAC_TYPE_FIELD(MethodDescVersioningState, /*pointer*/, NativeCodeVersionNode, cdac_data<MethodDescVersioningState>::NativeCodeVersionNode)
+CDAC_TYPE_FIELD(MethodDescVersioningState, /*uint8*/, Flags, cdac_data<MethodDescVersioningState>::Flags)
+CDAC_TYPE_END(MethodDescVersioningState)
+
 CDAC_TYPE_BEGIN(RangeSectionMap)
 CDAC_TYPE_INDETERMINATE(RangeSectionMap)
 CDAC_TYPE_FIELD(RangeSectionMap, /*pointer*/, TopLevelData, cdac_data<RangeSectionMap>::TopLevelData)
@@ -381,6 +390,20 @@ CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, MapBase, offsetof(HeapList, mapBa
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, HeaderMap, offsetof(HeapList, pHdrMap))
 CDAC_TYPE_END(CodeHeapListNode)
 
+CDAC_TYPE_BEGIN(ILCodeVersioningState)
+CDAC_TYPE_INDETERMINATE(ILCodeVersioningState)
+CDAC_TYPE_FIELD(ILCodeVersioningState, /*uint32*/, ActiveVersionKind, cdac_data<ILCodeVersioningState>::ActiveVersionKind)
+CDAC_TYPE_FIELD(ILCodeVersioningState, /*pointer*/, ActiveVersionNode, cdac_data<ILCodeVersioningState>::ActiveVersionNode)
+CDAC_TYPE_FIELD(ILCodeVersioningState, /*pointer*/, ActiveVersionModule, cdac_data<ILCodeVersioningState>::ActiveVersionModule)
+CDAC_TYPE_FIELD(ILCodeVersioningState, /*uint32*/, ActiveVersionMethodDef, cdac_data<ILCodeVersioningState>::ActiveVersionMethodDef)
+CDAC_TYPE_END(ILCodeVersioningState)
+
+CDAC_TYPE_BEGIN(NativeCodeVersionNode)
+CDAC_TYPE_INDETERMINATE(NativeCodeVersionNode)
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, Next, cdac_data<NativeCodeVersionNode>::Next)
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, MethodDesc, cdac_data<NativeCodeVersionNode>::MethodDesc)
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, NativeCode, cdac_data<NativeCodeVersionNode>::NativeCode)
+CDAC_TYPE_END(NativeCodeVersionNode)
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()

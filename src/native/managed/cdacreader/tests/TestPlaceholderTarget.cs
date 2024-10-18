@@ -63,7 +63,7 @@ internal class TestPlaceholderTarget : Target
 
     public override TargetPointer ReadGlobalPointer(string global) => throw new NotImplementedException();
     public override TargetPointer ReadPointer(ulong address) => DefaultReadPointer(address);
-    public override TargetCodePointer ReadCodePointer(ulong address) => throw new NotImplementedException();
+    public override TargetCodePointer ReadCodePointer(ulong address) => DefaultReadCodePointer(address);
     public override void ReadBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
     public override string ReadUtf8String(ulong address) => throw new NotImplementedException();
     public override string ReadUtf16String(ulong address) => throw new NotImplementedException();
@@ -176,6 +176,11 @@ internal class TestPlaceholderTarget : Target
 
         return new TargetNUInt(value);
     }
+
+    protected TargetCodePointer DefaultReadCodePointer(ulong address)
+    {
+        return new TargetCodePointer(DefaultReadPointer(address));
+    }
 #endregion subclass reader helpers
 
     public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
@@ -205,6 +210,7 @@ internal class TestPlaceholderTarget : Target
         internal Lazy<Contracts.IRuntimeTypeSystem>? RuntimeTypeSystemContract { get; set; }
         internal Lazy<Contracts.IDacStreams>? DacStreamsContract { get; set; }
         internal Lazy<Contracts.IExecutionManager> ExecutionManagerContract { get; set; }
+        internal Lazy<Contracts.ICodeVersions>? CodeVersionsContract { get; set; }
 
         public override Contracts.IException Exception => ExceptionContract.Value ?? throw new NotImplementedException();
         public override Contracts.ILoader Loader => LoaderContract.Value ?? throw new NotImplementedException();
@@ -214,6 +220,7 @@ internal class TestPlaceholderTarget : Target
         public override Contracts.IRuntimeTypeSystem RuntimeTypeSystem => RuntimeTypeSystemContract.Value ?? throw new NotImplementedException();
         public override Contracts.IDacStreams DacStreams => DacStreamsContract.Value ?? throw new NotImplementedException();
         public override Contracts.IExecutionManager ExecutionManager => ExecutionManagerContract.Value ?? throw new NotImplementedException();
+        public override Contracts.ICodeVersions CodeVersions => CodeVersionsContract.Value ?? throw new NotImplementedException();
     }
 
     // a data cache that throws NotImplementedException for all methods,
