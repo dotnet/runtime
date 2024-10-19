@@ -9594,10 +9594,10 @@ public:
 
         if (type == UnrollKind::MemcmpU16)
         {
-            // Don't depend on AVX here. String data typically 4b aligned, we don't want
-            // to use too many wide vectors - the penalty from crossing the cache-line boundary
-            // will be too big.
-            threshold = maxRegSize >= 16 ? 128 : 16;
+            threshold = maxRegSize * 2;
+#ifdef TARGET_ARM64
+            threshold = maxRegSize * 6;
+#endif
         }
 
         // For profiled memcmp/memmove we don't want to unroll too much as it's just a guess,
