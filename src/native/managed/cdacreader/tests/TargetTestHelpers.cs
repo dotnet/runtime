@@ -171,9 +171,6 @@ internal unsafe class TargetTestHelpers
 
     #endregion Data descriptor json formatting
 
-
-
-
     #region Mock memory initialization
 
     internal uint ObjHeaderSize => (uint)(Arch.Is64Bit ? 2 * sizeof(uint) /*alignpad + syncblock*/: sizeof(uint) /* syncblock */);
@@ -223,7 +220,6 @@ internal unsafe class TargetTestHelpers
             BinaryPrimitives.WriteUInt64BigEndian(dest, u);
         }
     }
-
 
     internal void WritePointer(Span<byte> dest, ulong value)
     {
@@ -314,7 +310,7 @@ internal unsafe class TargetTestHelpers
 
     // Implements a simple layout algorithm that aligns fields to their size
     // and aligns the structure to the largest field size.
-    public LayoutResult  LayoutFields(FieldLayout style, (string Name, DataType Type)[] fields)
+    public LayoutResult LayoutFields(FieldLayout style, (string Name, DataType Type)[] fields)
     {
         Dictionary<string,Target.FieldInfo> fieldInfos = new ();
         int maxAlign = 1;

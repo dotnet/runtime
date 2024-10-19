@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
@@ -87,6 +88,35 @@ public class MockDescriptors
             { nameof(Data.InteropSyncBlockInfo.CCW), new() { Offset = 0x8, Type = DataType.pointer} },
         },
     };
+
+    private static readonly (string, DataType)[] ModuleFields =
+    [
+        (nameof(Data.Module.Assembly), DataType.pointer),
+        (nameof(Data.Module.Flags), DataType.uint32),
+        (nameof(Data.Module.Base), DataType.pointer),
+        (nameof(Data.Module.LoaderAllocator), DataType.pointer),
+        (nameof(Data.Module.ThunkHeap), DataType.pointer),
+        (nameof(Data.Module.DynamicMetadata), DataType.pointer),
+        (nameof(Data.Module.Path), DataType.pointer),
+        (nameof(Data.Module.FileName), DataType.pointer),
+        (nameof(Data.Module.FieldDefToDescMap), DataType.pointer),
+        (nameof(Data.Module.ManifestModuleReferencesMap), DataType.pointer),
+        (nameof(Data.Module.MemberRefToDescMap), DataType.pointer),
+        (nameof(Data.Module.MethodDefToDescMap), DataType.pointer),
+        (nameof(Data.Module.TypeDefToMethodTableMap), DataType.pointer),
+        (nameof(Data.Module.TypeRefToMethodTableMap), DataType.pointer),
+        (nameof(Data.Module.MethodDefToILCodeVersioningStateMap), DataType.pointer),
+    ];
+
+    internal static MockMemorySpace.Builder AddUtf16String(TargetTestHelpers helpers, MockMemorySpace.Builder builder, TargetPointer address, string value)
+    {
+        Encoding encoding = helpers.Arch.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode;
+        MockMemorySpace.HeapFragment fragment = new() { Address = address, Data = new byte[encoding.GetByteCount(value) + sizeof(char)] };
+        encoding.GetBytes(value).AsSpan().CopyTo(fragment.Data);
+        fragment.Data[^2] = 0;
+        fragment.Data[^1] = 0;
+        return builder.AddHeapFragment(fragment);
+    }
 
     public static class RuntimeTypeSystem
     {
@@ -323,6 +353,26 @@ public class MockDescriptors
             targetTestHelpers.WritePointer(dest.Slice(ObjectTypeInfo.Fields["m_pMethTab"].Offset), methodTableAddress);
             targetTestHelpers.Write(dest.Slice(ArrayTypeInfo.Fields["m_NumComponents"].Offset), (uint)array.Length);
             return builder.AddHeapFragment(fragment);
+        }
+    }
+
+    public static class Loader
+    {
+        internal static Dictionary<DataType, Target.TypeInfo> Types(TargetTestHelpers helpers)
+        {
+            TargetTestHelpers.LayoutResult layout = helpers.LayoutFields(ModuleFields);
+            return new()
+            {
+                [DataType.Module] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride },
+            };
+        }
+
+        internal static MockMemorySpace.Builder AddModule(TargetTestHelpers helpers, MockMemorySpace.Builder builder, TargetPointer address)
+        {
+            Target.TypeInfo typeInfo = Types(helpers)[DataType.Module];
+            uint size = typeInfo.Size.Value;
+            MockMemorySpace.HeapFragment module = new() { Name = $"Module at '{address}'", Address = address, Data = new byte[size] };
+            return builder.AddHeapFragment(module);
         }
     }
 }
