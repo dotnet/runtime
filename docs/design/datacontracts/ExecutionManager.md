@@ -239,4 +239,3 @@ Now suppose we do a lookup for address 302 (0x12E)
 * Therefore we know there is no method start at any map index in the current map unit.
 * We will then align the map index to the start of the current map unit (map index 8) and move back to the previous map unit (map index 7)
 * At that point, we scan backwards for a non-zero map unit and a non-zero nibble within the first non-zero map unit. Since there are none, we return null.
-
