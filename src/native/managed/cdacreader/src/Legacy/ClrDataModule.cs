@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Runtime.InteropServices.Marshalling;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -10,11 +10,13 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 internal sealed unsafe partial class ClrDataModule : IXCLRDataModule
 {
+    private readonly TargetPointer _address;
     private readonly Target _target;
     private readonly IXCLRDataModule? _legacyModule;
 
-    public ClrDataModule(Target target, IXCLRDataModule? legacyModule)
+    public ClrDataModule(TargetPointer address, Target target, IXCLRDataModule? legacyModule)
     {
+        _address = address;
         _target = target;
         _legacyModule = legacyModule;
     }
@@ -84,7 +86,54 @@ internal sealed unsafe partial class ClrDataModule : IXCLRDataModule
     int IXCLRDataModule.GetName(uint bufLen, uint* nameLen, char* name)
         => _legacyModule is not null ? _legacyModule.GetName(bufLen, nameLen, name) : HResults.E_NOTIMPL;
     int IXCLRDataModule.GetFileName(uint bufLen, uint* nameLen, char* name)
-        => _legacyModule is not null ? _legacyModule.GetFileName(bufLen, nameLen, name) : HResults.E_NOTIMPL;
+    {
+        try
+        {
+            Contracts.ILoader contract = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(_address);
+            string result = string.Empty;
+            try
+            {
+                result = contract.GetPath(handle);
+            }
+            catch (InvalidOperationException)
+            {
+                // The memory for the path may not be enumerated - for example, in triage dumps
+                // In this case, GetPath will throw InvalidOperationException
+            }
+
+            if (string.IsNullOrEmpty(result))
+            {
+                result = contract.GetFileName(handle);
+            }
+
+            if (string.IsNullOrEmpty(result))
+                return HResults.E_FAIL;
+
+            OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, result);
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyModule is not null)
+        {
+            char[] nameLocal = new char[bufLen];
+            uint nameLenLocal;
+            int hrLocal;
+            fixed (char* ptr = nameLocal)
+            {
+                hrLocal = _legacyModule.GetFileName(bufLen, &nameLenLocal, ptr);
+            }
+            Debug.Assert(hrLocal == HResults.S_OK);
+            Debug.Assert(nameLen == null || *nameLen == nameLenLocal);
+            Debug.Assert(name == null || new ReadOnlySpan<char>(nameLocal, 0, (int)nameLenLocal - 1).SequenceEqual(new string(name)));
+        }
+#endif
+        return HResults.S_OK;
+    }
 
     int IXCLRDataModule.GetFlags(uint* flags)
         => _legacyModule is not null ? _legacyModule.GetFlags(flags) : HResults.E_NOTIMPL;

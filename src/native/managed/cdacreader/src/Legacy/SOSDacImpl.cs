@@ -263,7 +263,7 @@ internal sealed unsafe partial class SOSDacImpl
 
             if (hr ==  HResults.S_OK)
             {
-                CopyStringToTargetBuffer(name, count, pNeeded, stringBuilder.ToString());
+                OutputBufferHelpers.CopyStringToBuffer(name, count, pNeeded, stringBuilder.ToString());
             }
         }
         catch (System.Exception ex)
@@ -393,22 +393,6 @@ internal sealed unsafe partial class SOSDacImpl
         return HResults.S_OK;
     }
 
-    private unsafe void CopyStringToTargetBuffer(char* stringBuf, uint bufferSize, uint* neededBufferSize, string str)
-    {
-        ReadOnlySpan<char> strSpan = str.AsSpan();
-        if (neededBufferSize != null)
-            *neededBufferSize = checked((uint)(strSpan.Length + 1));
-
-        if (stringBuf != null && bufferSize > 0)
-        {
-            Span<char> target = new Span<char>(stringBuf, checked((int)bufferSize));
-            int nullTerminatorLocation = strSpan.Length > bufferSize - 1 ? checked((int)(bufferSize - 1)) : strSpan.Length;
-            strSpan = strSpan.Slice(0, nullTerminatorLocation);
-            strSpan.CopyTo(target);
-            target[nullTerminatorLocation] = '\0';
-        }
-    }
-
     int ISOSDacInterface.GetMethodTableName(ulong mt, uint count, char* mtName, uint* pNeeded)
     {
         if (mt == 0)
@@ -420,7 +404,7 @@ internal sealed unsafe partial class SOSDacImpl
             Contracts.TypeHandle methodTableHandle = typeSystemContract.GetTypeHandle(mt);
             if (typeSystemContract.IsFreeObjectMethodTable(methodTableHandle))
             {
-                CopyStringToTargetBuffer(mtName, count, pNeeded, "Free");
+                OutputBufferHelpers.CopyStringToBuffer(mtName, count, pNeeded, "Free");
                 return HResults.S_OK;
             }
 
@@ -446,7 +430,7 @@ internal sealed unsafe partial class SOSDacImpl
                 catch
                 { }
             }
-            CopyStringToTargetBuffer(mtName, count, pNeeded, methodTableName.ToString());
+            OutputBufferHelpers.CopyStringToBuffer(mtName, count, pNeeded, methodTableName.ToString());
         }
         catch (global::System.Exception ex)
         {
@@ -493,7 +477,7 @@ internal sealed unsafe partial class SOSDacImpl
             Marshal.Release(legacyModulePointer);
         }
 
-        ClrDataModule module = new(_target, legacyModule);
+        ClrDataModule module = new(addr, _target, legacyModule);
         nint ptr = cw.GetOrCreateComInterfaceForObject(module, CreateComInterfaceFlags.None);
         *mod = (void*)ptr;
         return HResults.S_OK;
@@ -728,7 +712,7 @@ internal sealed unsafe partial class SOSDacImpl
         {
             Contracts.IObject contract = _target.Contracts.Object;
             string str = contract.GetStringValue(obj);
-            CopyStringToTargetBuffer(stringData, count, pNeeded, str);
+            OutputBufferHelpers.CopyStringToBuffer(stringData, count, pNeeded, str);
         }
         catch (System.Exception ex)
         {
@@ -817,7 +801,7 @@ internal sealed unsafe partial class SOSDacImpl
                 }
             }
 
-            CopyStringToTargetBuffer(fileName, count, pNeeded, path);
+            OutputBufferHelpers.CopyStringToBuffer(fileName, count, pNeeded, path);
         }
         catch (System.Exception ex)
         {
@@ -836,7 +820,7 @@ internal sealed unsafe partial class SOSDacImpl
             }
             Debug.Assert(hrLocal == HResults.S_OK);
             Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
-            Debug.Assert(fileName == null || new Span<char>(fileName, (int)*pNeeded).SequenceEqual(fileNameLocal.AsSpan(0, (int)neededLocal)));
+            Debug.Assert(fileName == null || new ReadOnlySpan<char>(fileNameLocal, 0, (int)neededLocal - 1).SequenceEqual(new string(fileName)));
         }
 #endif
         return HResults.S_OK;
