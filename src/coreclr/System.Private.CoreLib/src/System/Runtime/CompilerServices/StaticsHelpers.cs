@@ -95,7 +95,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct ThreadStatics
+        internal struct ThreadLocalData
         {
             public const int NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY = 2;
             public int cNonCollectibleTlsData; // Size of offset into the non-collectible TLS array which is valid, NOTE: this is relative to the start of the pNonCollectibleTlsArrayData object, not the start of the data in the array
@@ -168,13 +168,13 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref byte GetThreadLocalStaticBaseByIndex(int index, bool gcStatics)
         {
-            ThreadStatics *t_ThreadStatics = (ThreadStatics*)System.Threading.Thread.GetThreadStaticsBase();
+            ThreadLocalData *t_ThreadStatics = System.Threading.Thread.GetThreadStaticsBase();
             int indexOffset = GetIndexOffset(index);
             if (GetIndexType(index) == NonCollectibleTLSIndexType)
             {
                 if (t_ThreadStatics->cNonCollectibleTlsData > GetIndexOffset(index))
                 {
-                    return ref GetObjectAsRefByte(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(t_ThreadStatics->pNonCollectibleTlsArrayData), indexOffset - ThreadStatics.NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY));
+                    return ref GetObjectAsRefByte(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(t_ThreadStatics->pNonCollectibleTlsArrayData), indexOffset - ThreadLocalData.NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY));
                 }
             }
             else if (GetIndexType(index) == DirectOnThreadLocalDataTLSIndexType)

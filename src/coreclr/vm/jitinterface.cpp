@@ -1231,7 +1231,12 @@ CorInfoHelpFunc CEEInfo::getSharedStaticsHelper(FieldDesc * pField, MethodTable 
         else
         {
             if (noCtor)
-                helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR;
+            {
+                if (pFieldMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
+                    helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2; // ALWAYS use this helper, as its needed to ensure basic thread static access works
+                else
+                    helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR;
+            }
             else
                 helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE;
         }
@@ -1435,7 +1440,12 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
 
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
-                if (CanJITOptimizeTLSAccess())
+                if (pFieldMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
+                {
+                    fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
+                    pResult->helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2;
+                }
+                else if (CanJITOptimizeTLSAccess())
                 {
                     // For windows x64/x86/arm64, linux x64/arm64/loongarch64/riscv64:
                     // We convert the TLS access to the optimized helper where we will store
