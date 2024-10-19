@@ -313,6 +313,7 @@ namespace System.Memory.Tests.Span
             IndexOfAny(StringComparison.OrdinalIgnoreCase, -1, " foO\uD801bar", "oo\uD800baR, bar\uD800foo");
 
             // Low surrogate without the high surrogate.
+            IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, "\uD801\uDCD8\uD8FB\uDCD8", "\uDCD8");
             IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, "\uD801\uDCD8\uD8FB\uDCD8", "foo, \uDCD8");
         }
 
@@ -337,6 +338,15 @@ namespace System.Memory.Tests.Span
         [InlineData("abcd!")]
         [InlineData("abcdefgh")]
         [InlineData("abcdefghi")]
+        [InlineData("123456789")]
+        [InlineData("123456789a")]
+        [InlineData("123456789ab")]
+        [InlineData("123456789abc")]
+        [InlineData("123456789abcd")]
+        [InlineData("123456789abcde")]
+        [InlineData("123456789abcdef")]
+        [InlineData("123456789abcdefg")]
+        [InlineData("123456789abcdefgh")]
         // Multiple values, but they all share the same prefix
         [InlineData("abc", "ab", "abcd")]
         // These should hit the Aho-Corasick implementation
