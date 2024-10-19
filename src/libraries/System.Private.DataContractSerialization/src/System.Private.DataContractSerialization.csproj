@@ -6,7 +6,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Too much private reflection. Do not bother with trimming -->
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
-    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -16,6 +16,12 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void ReadOnlyTensorSpanSystemArrayConstructorTests()
         {
+            // When using System.Array constructor make sure the type of the array matches T[]
+            Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<double>(array: new[] { 1 }));
+
+            string[] stringArray = { "a", "b", "c" };
+            Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<object>(array: stringArray));
+
             // Make sure basic T[,] constructor works
             int[,] a = new int[,] { { 91, 92, -93, 94 } };
             scoped ReadOnlyTensorSpan<int> spanInt = new ReadOnlyTensorSpan<int>(a);
@@ -224,6 +230,11 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void ReadOnlyTensorSpanArrayConstructorTests()
         {
+            // Make sure exception is thrown if lengths and strides would let you go past the end of the array
+            Assert.Throws<ArgumentException>(() => new TensorSpan<double>(new double[0], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 1 }));
+            Assert.Throws<ArgumentException>(() => new TensorSpan<double>(new double[1], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 1 }));
+            Assert.Throws<ArgumentException>(() => new TensorSpan<double>(new double[2], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 2 }));
+
             // Make sure basic T[] constructor works
             int[] a = { 91, 92, -93, 94 };
             scoped ReadOnlyTensorSpan<int> spanInt = new ReadOnlyTensorSpan<int>(a);
@@ -753,6 +764,70 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
+        public static void ReadOnlyTensorSpanLargeDimensionsTests()
+        {
+            int[] a = { 91, 92, -93, 94, 95, -96 };
+            int[] results = new int[6];
+            ReadOnlyTensorSpan<int> spanInt = a.AsTensorSpan(1, 1, 1, 1, 1, 6);
+            Assert.Equal(6, spanInt.Rank);
+
+            Assert.Equal(6, spanInt.Lengths.Length);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(1, spanInt.Lengths[1]);
+            Assert.Equal(1, spanInt.Lengths[2]);
+            Assert.Equal(1, spanInt.Lengths[3]);
+            Assert.Equal(1, spanInt.Lengths[4]);
+            Assert.Equal(6, spanInt.Lengths[5]);
+            Assert.Equal(6, spanInt.Strides.Length);
+            Assert.Equal(6, spanInt.Strides[0]);
+            Assert.Equal(6, spanInt.Strides[1]);
+            Assert.Equal(6, spanInt.Strides[2]);
+            Assert.Equal(6, spanInt.Strides[3]);
+            Assert.Equal(6, spanInt.Strides[4]);
+            Assert.Equal(1, spanInt.Strides[5]);
+            Assert.Equal(91, spanInt[0, 0, 0, 0, 0, 0]);
+            Assert.Equal(92, spanInt[0, 0, 0, 0, 0, 1]);
+            Assert.Equal(-93, spanInt[0, 0, 0, 0, 0, 2]);
+            Assert.Equal(94, spanInt[0, 0, 0, 0, 0, 3]);
+            Assert.Equal(95, spanInt[0, 0, 0, 0, 0, 4]);
+            Assert.Equal(-96, spanInt[0, 0, 0, 0, 0, 5]);
+            spanInt.FlattenTo(results);
+            Assert.Equal(a, results);
+
+            a = [91, 92, -93, 94, 95, -96, -91, -92, 93, -94, -95, 96];
+            results = new int[12];
+            spanInt = a.AsTensorSpan(1, 2, 2, 1, 1, 3);
+            Assert.Equal(6, spanInt.Lengths.Length);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(2, spanInt.Lengths[2]);
+            Assert.Equal(1, spanInt.Lengths[3]);
+            Assert.Equal(1, spanInt.Lengths[4]);
+            Assert.Equal(3, spanInt.Lengths[5]);
+            Assert.Equal(6, spanInt.Strides.Length);
+            Assert.Equal(12, spanInt.Strides[0]);
+            Assert.Equal(6, spanInt.Strides[1]);
+            Assert.Equal(3, spanInt.Strides[2]);
+            Assert.Equal(3, spanInt.Strides[3]);
+            Assert.Equal(3, spanInt.Strides[4]);
+            Assert.Equal(1, spanInt.Strides[5]);
+            Assert.Equal(91, spanInt[0, 0, 0, 0, 0, 0]);
+            Assert.Equal(92, spanInt[0, 0, 0, 0, 0, 1]);
+            Assert.Equal(-93, spanInt[0, 0, 0, 0, 0, 2]);
+            Assert.Equal(94, spanInt[0, 0, 1, 0, 0, 0]);
+            Assert.Equal(95, spanInt[0, 0, 1, 0, 0, 1]);
+            Assert.Equal(-96, spanInt[0, 0, 1, 0, 0, 2]);
+            Assert.Equal(-91, spanInt[0, 1, 0, 0, 0, 0]);
+            Assert.Equal(-92, spanInt[0, 1, 0, 0, 0, 1]);
+            Assert.Equal(93, spanInt[0, 1, 0, 0, 0, 2]);
+            Assert.Equal(-94, spanInt[0, 1, 1, 0, 0, 0]);
+            Assert.Equal(-95, spanInt[0, 1, 1, 0, 0, 1]);
+            Assert.Equal(96, spanInt[0, 1, 1, 0, 0, 2]);
+            spanInt.FlattenTo(results);
+            Assert.Equal(a, results);
+        }
+
+        [Fact]
         public static void IntArrayAsReadOnlyTensorSpan()
         {
             int[] a = { 91, 92, -93, 94 };
@@ -810,27 +885,16 @@ namespace System.Numerics.Tensors.Tests
             rightSpan[0, 0] = 100;
             Assert.NotEqual(leftSpan[0, 0], rightSpan[0, 0]);
 
-            leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            rightData = new int[15];
-            leftSpan = leftData.AsTensorSpan(9);
-            rightSpan = rightData.AsTensorSpan(15);
-            leftSpan.CopyTo(rightSpan);
-            leftEnum = leftSpan.GetEnumerator();
-            rightEnum = rightSpan.GetEnumerator();
-            // Make sure the first 9 spots are equal after copy
-            while (leftEnum.MoveNext() && rightEnum.MoveNext())
+            // Can't copy if data is not same shape or broadcastable to.
+            Assert.Throws<ArgumentException>(() =>
             {
-                Assert.Equal(leftEnum.Current, rightEnum.Current);
+                leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+                rightData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                TensorSpan<int> leftSpan = leftData.AsTensorSpan(9);
+                TensorSpan<int> tensor = rightData.AsTensorSpan(rightData.Length);
+                leftSpan.CopyTo(tensor);
             }
-            // The rest of the slots shouldn't have been touched.
-            while (rightEnum.MoveNext())
-            {
-                Assert.Equal(0, rightEnum.Current);
-            }
-
-            //Make sure its a copy
-            rightSpan[0] = 100;
-            Assert.NotEqual(leftSpan[0], rightSpan[0]);
+            );
 
             leftData = [.. Enumerable.Range(0, 27)];
             rightData = [.. Enumerable.Range(0, 27)];
@@ -876,23 +940,7 @@ namespace System.Numerics.Tensors.Tests
             leftSpan = leftData.AsTensorSpan(9);
             rightSpan = rightData.AsTensorSpan(15);
             success = leftSpan.TryCopyTo(rightSpan);
-            leftEnum = leftSpan.GetEnumerator();
-            rightEnum = rightSpan.GetEnumerator();
-            Assert.True(success);
-            // Make sure the first 9 spots are equal after copy
-            while (leftEnum.MoveNext() && rightEnum.MoveNext())
-            {
-                Assert.Equal(leftEnum.Current, rightEnum.Current);
-            }
-            // The rest of the slots shouldn't have been touched.
-            while (rightEnum.MoveNext())
-            {
-                Assert.Equal(0, rightEnum.Current);
-            }
-
-            //Make sure its a copy
-            rightSpan[0] = 100;
-            Assert.NotEqual(leftSpan[0], rightSpan[0]);
+            Assert.False(success);
 
             leftData = [.. Enumerable.Range(0, 27)];
             rightData = [.. Enumerable.Range(0, 27)];
@@ -910,11 +958,60 @@ namespace System.Numerics.Tensors.Tests
             var r = new TensorSpan<int>();
             success = l.TryCopyTo(r);
             Assert.False(success);
+
+            success = new ReadOnlyTensorSpan<double>(new double[1]).TryCopyTo(Array.Empty<double>());
+            Assert.False(success);
         }
 
         [Fact]
         public static void ReadOnlyTensorSpanSliceTest()
         {
+            // Make sure slicing an empty TensorSpan works
+            TensorSpan<int> emptyTensorSpan = new TensorSpan<int>(Array.Empty<int>()).Slice(new NRange[] { .. });
+            Assert.Equal([0], emptyTensorSpan.Lengths);
+            Assert.Equal(1, emptyTensorSpan.Rank);
+            Assert.Equal(0, emptyTensorSpan.FlattenedLength);
+
+            // Make sure slicing a multi-dimensional empty TensorSpan works
+            int[,] empty2dArray = new int[2, 0];
+            emptyTensorSpan = new TensorSpan<int>(empty2dArray);
+            TensorSpan<int> slicedEmptyTensorSpan = emptyTensorSpan.Slice(new NRange[] { .., .. });
+            Assert.Equal([2, 0], slicedEmptyTensorSpan.Lengths);
+            Assert.Equal(2, slicedEmptyTensorSpan.Rank);
+            Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+
+            slicedEmptyTensorSpan = emptyTensorSpan.Slice(new NRange[] { 0..1, .. });
+            Assert.Equal([1, 0], slicedEmptyTensorSpan.Lengths);
+            Assert.Equal(2, slicedEmptyTensorSpan.Rank);
+            Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+
+            // Make sure slicing a multi-dimensional empty TensorSpan works
+            int[,,,] empty4dArray = new int[2, 5, 1, 0];
+            emptyTensorSpan = new TensorSpan<int>(empty4dArray);
+            slicedEmptyTensorSpan = emptyTensorSpan.Slice(new NRange[] { .., .., .., .. });
+            Assert.Equal([2, 5, 1, 0], slicedEmptyTensorSpan.Lengths);
+            Assert.Equal(4, slicedEmptyTensorSpan.Rank);
+            Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+
+            emptyTensorSpan = new TensorSpan<int>(empty4dArray);
+            slicedEmptyTensorSpan = emptyTensorSpan.Slice(new NRange[] { 0..1, .., .., .. });
+            Assert.Equal([1, 5, 1, 0], slicedEmptyTensorSpan.Lengths);
+            Assert.Equal(4, slicedEmptyTensorSpan.Rank);
+            Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+
+            emptyTensorSpan = new TensorSpan<int>(empty4dArray);
+            slicedEmptyTensorSpan = emptyTensorSpan.Slice(new NRange[] { 0..1, 2..3, .., .. });
+            Assert.Equal([1, 1, 1, 0], slicedEmptyTensorSpan.Lengths);
+            Assert.Equal(4, slicedEmptyTensorSpan.Rank);
+            Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+
+            empty4dArray = new int[2, 0, 1, 5];
+            emptyTensorSpan = new TensorSpan<int>(empty4dArray);
+            slicedEmptyTensorSpan = emptyTensorSpan.Slice(new NRange[] { .., .., .., .. });
+            Assert.Equal([2, 0, 1, 5], slicedEmptyTensorSpan.Lengths);
+            Assert.Equal(4, slicedEmptyTensorSpan.Rank);
+            Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             int[] results = new int[9];
             ReadOnlyTensorSpan<int> spanInt = a.AsTensorSpan(3, 3);

@@ -9,6 +9,8 @@
 #include "logging.h"
 #include "spmiutil.h"
 
+#include <minipal/debugger.h>
+
 static bool breakOnDebugBreakorAV = false;
 
 bool BreakOnDebugBreakorAV()
@@ -35,12 +37,12 @@ void SetBreakOnException(bool value)
 
 void DebugBreakorAV(int val)
 {
-    if (IsDebuggerPresent())
+    if (minipal_is_native_debugger_present())
     {
         if (val == 0)
-            __debugbreak();
+            DEBUG_BREAK;
         if (BreakOnDebugBreakorAV())
-            __debugbreak();
+            DEBUG_BREAK;
     }
 
     int exception_code = EXCEPTIONCODE_DebugBreakorAV + val;

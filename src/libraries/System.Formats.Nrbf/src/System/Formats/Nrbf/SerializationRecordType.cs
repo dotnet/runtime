@@ -4,13 +4,10 @@
 namespace System.Formats.Nrbf;
 
 /// <summary>
-/// Record type.
+/// Specifies record types.
 /// </summary>
 /// <remarks>
-///  <para>
-///   The enumeration does not contain all values supported by the <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/954a0657-b901-4813-9398-4ec732fe8b32">
-///   [MS-NRBF] 2.1.2.1</see>, but only those supported by the <see cref="NrbfDecoder"/>.
-///  </para>
+/// SerializationRecordType enumeration is described in <see href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nrbf/954a0657-b901-4813-9398-4ec732fe8b32">[MS-NRBF] 2.1.2.1</see>.
 /// </remarks>
 public enum SerializationRecordType
 {
@@ -28,16 +25,16 @@ public enum SerializationRecordType
     /// <remarks>Not supported by design.</remarks>
     SystemClassWithMembers,
     /// <summary>
-    /// A class information with source library, but without type info.
+    /// Class information with source library, but without type info.
     /// </summary>
     /// <remarks>Not supported by design.</remarks>
     ClassWithMembers,
     /// <summary>
-    /// A system class information with type info.
+    /// System class information with type info.
     /// </summary>
     SystemClassWithMembersAndTypes,
     /// <summary>
-    /// A class information with type info and the source library.
+    /// Class information with type info and the source library.
     /// </summary>
     ClassWithMembersAndTypes,
     /// <summary>
@@ -73,7 +70,7 @@ public enum SerializationRecordType
     /// </summary>
     ObjectNullMultiple256,
     /// <summary>
-    /// Multiple <see langword="null" />.
+    /// Multiple <see langword="null" /> values.
     /// </summary>
     ObjectNullMultiple,
     /// <summary>
@@ -94,7 +91,7 @@ public enum SerializationRecordType
     /// <remarks>Not supported by design.</remarks>
     MethodCall = 21,
     /// <summary>
-    /// An information returned by a remote method.
+    /// Information returned by a remote method.
     /// </summary>
     /// <remarks>Not supported by design.</remarks>
     MethodReturn

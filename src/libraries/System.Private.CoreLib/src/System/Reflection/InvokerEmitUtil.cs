@@ -23,7 +23,7 @@ namespace System.Reflection
             bool emitNew = method is RuntimeConstructorInfo;
             bool hasThis = !emitNew && !method.IsStatic;
 
-            Type[] delegateParameters = new Type[5] { typeof(object), typeof(object), typeof(object), typeof(object), typeof(object) };
+            Type[] delegateParameters = [typeof(object), typeof(object), typeof(object), typeof(object), typeof(object)];
 
             string declaringTypeName = method.DeclaringType != null ? method.DeclaringType.Name + "." : string.Empty;
             var dm = new DynamicMethod(
@@ -91,7 +91,7 @@ namespace System.Reflection
             bool hasThis = !emitNew && !method.IsStatic;
 
             // The first parameter is unused but supports treating the DynamicMethod as an instance method which is slightly faster than a static.
-            Type[] delegateParameters = new Type[2] { typeof(object), typeof(Span<object>) };
+            Type[] delegateParameters = [typeof(object), typeof(Span<object>)];
 
             string declaringTypeName = method.DeclaringType != null ? method.DeclaringType.Name + "." : string.Empty;
             var dm = new DynamicMethod(
@@ -148,7 +148,7 @@ namespace System.Reflection
             bool hasThis = !(emitNew || method.IsStatic);
 
             // The first parameter is unused but supports treating the DynamicMethod as an instance method which is slightly faster than a static.
-            Type[] delegateParameters = new Type[3] { typeof(object), typeof(object), typeof(IntPtr*) };
+            Type[] delegateParameters = [typeof(object), typeof(object), typeof(IntPtr*)];
 
             string declaringTypeName = method.DeclaringType != null ? method.DeclaringType.Name + "." : string.Empty;
             var dm = new DynamicMethod(
@@ -339,11 +339,11 @@ namespace System.Reflection
 
             private static MethodInfo? s_Pointer_Box;
             public static MethodInfo Pointer_Box() =>
-                s_Pointer_Box ??= typeof(Pointer).GetMethod(nameof(Pointer.Box), new[] { typeof(void*), typeof(Type) })!;
+                s_Pointer_Box ??= typeof(Pointer).GetMethod(nameof(Pointer.Box), [typeof(void*), typeof(Type)])!;
 
             private static MethodInfo? s_Type_GetTypeFromHandle;
             public static MethodInfo Type_GetTypeFromHandle() =>
-                s_Type_GetTypeFromHandle ??= typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle), new[] { typeof(RuntimeTypeHandle) })!;
+                s_Type_GetTypeFromHandle ??= typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle), [typeof(RuntimeTypeHandle)])!;
 
 #if MONO
             private static MethodInfo? s_DisableInline;

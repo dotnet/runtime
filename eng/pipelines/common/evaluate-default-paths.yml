@@ -202,9 +202,6 @@ jobs:
       - src/coreclr/jit/*
       - src/coreclr/pal/*
       - src/coreclr/vm/*
-    - subset: coreclr_jit
-      include:
-      - src/coreclr/jit/*
 
     #
     # ** WASM **
@@ -290,7 +287,7 @@ jobs:
       - src/mono/tests/*
       - src/mono/tools/*
       - src/mono/wasi/*
-      - src/mono/wasm/debugger/*
+      - src/mono/browser/debugger/*
       - src/mono/wasm/host/*
       - src/mono/wasm/templates/*
       - src/mono/wasm/testassets/*

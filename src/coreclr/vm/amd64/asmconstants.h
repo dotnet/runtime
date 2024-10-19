@@ -111,17 +111,12 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
 
 
-#define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x48
-ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
+#define               OFFSETOF__ee_alloc_context__alloc_ptr 0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__alloc_ptr == offsetof(ee_alloc_context, m_GCAllocContext) +
+                                                               offsetof(gc_alloc_context, alloc_ptr));
 
-#define               OFFSET__Thread__m_alloc_context__alloc_limit 0x50
-ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_limit == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit));
-
-#define               OFFSETOF__gc_alloc_context__alloc_ptr 0x0
-ASMCONSTANT_OFFSETOF_ASSERT(gc_alloc_context, alloc_ptr);
-
-#define               OFFSETOF__gc_alloc_context__alloc_limit 0x8
-ASMCONSTANT_OFFSETOF_ASSERT(gc_alloc_context, alloc_limit);
+#define               OFFSETOF__ee_alloc_context__m_CombinedLimit 0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__m_CombinedLimit == offsetof(ee_alloc_context, m_CombinedLimit));
 
 #define               OFFSETOF__ThreadExceptionState__m_pCurrentTracker 0x000
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadExceptionState__m_pCurrentTracker
@@ -129,12 +124,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadExceptionState__m_pCurrentTracker
 
 
 
-
-#define           OFFSETOF__DelegateObject___methodPtr      0x18
-ASMCONSTANT_OFFSETOF_ASSERT(DelegateObject, _methodPtr);
-
-#define           OFFSETOF__DelegateObject___target         0x08
-ASMCONSTANT_OFFSETOF_ASSERT(DelegateObject, _target);
 
 #define               OFFSETOF__MethodTable__m_dwFlags              0x00
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_dwFlags
@@ -182,9 +171,9 @@ ASMCONSTANTS_C_ASSERT(METHODTABLE_EQUIVALENCE_FLAGS
 #define               METHODTABLE_EQUIVALENCE_FLAGS 0x0
 #endif
 
-#define               MethodTable__enum_flag_ContainsPointers 0x01000000
-ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsPointers
-                    == MethodTable::enum_flag_ContainsPointers);
+#define               MethodTable__enum_flag_ContainsGCPointers 0x01000000
+ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsGCPointers
+                    == MethodTable::enum_flag_ContainsGCPointers);
 
 #define               OFFSETOF__InterfaceInfo_t__m_pMethodTable  0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceInfo_t__m_pMethodTable
@@ -203,30 +192,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
 #define                OFFSETOF__DynamicStaticsInfo__m_pGCStatics 0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
                     == offsetof(DynamicStaticsInfo, m_pGCStatics));
-
-#define                  CORINFO_NullReferenceException_ASM 0
-ASMCONSTANTS_C_ASSERT(   CORINFO_NullReferenceException_ASM
-                      == CORINFO_NullReferenceException);
-
-#define                  CORINFO_InvalidCastException_ASM 2
-ASMCONSTANTS_C_ASSERT(   CORINFO_InvalidCastException_ASM
-                      == CORINFO_InvalidCastException);
-
-#define                  CORINFO_IndexOutOfRangeException_ASM 3
-ASMCONSTANTS_C_ASSERT(   CORINFO_IndexOutOfRangeException_ASM
-                      == CORINFO_IndexOutOfRangeException);
-
-#define                  CORINFO_ArrayTypeMismatchException_ASM 6
-ASMCONSTANTS_C_ASSERT(   CORINFO_ArrayTypeMismatchException_ASM
-                      == CORINFO_ArrayTypeMismatchException);
-
-#define                  CORINFO_ArgumentNullException_ASM 8
-ASMCONSTANTS_C_ASSERT(   CORINFO_ArgumentNullException_ASM
-                      == CORINFO_ArgumentNullException);
-
-#define                  CORINFO_ArgumentException_ASM 9
-ASMCONSTANTS_C_ASSERT(   CORINFO_ArgumentException_ASM
-                      == CORINFO_ArgumentException);
 
 
 // MachState offsets (AMD64\gmscpu.h)
@@ -427,13 +392,17 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Xmm15
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__VectorRegister
                     == offsetof(CONTEXT, VectorRegister[0]));
 
-#define               SIZEOF__FaultingExceptionFrame  (0x20 + SIZEOF__CONTEXT)
+#define               SIZEOF__FaultingExceptionFrame  (0x20 + SIZEOF__CONTEXT + 16)
 ASMCONSTANTS_C_ASSERT(SIZEOF__FaultingExceptionFrame
                     == sizeof(FaultingExceptionFrame));
 
 #define               OFFSETOF__FaultingExceptionFrame__m_fFilterExecuted 0x10
 ASMCONSTANTS_C_ASSERT(OFFSETOF__FaultingExceptionFrame__m_fFilterExecuted
                     == offsetof(FaultingExceptionFrame, m_fFilterExecuted));
+
+#define               OFFSETOF__FaultingExceptionFrame__m_SSP (0x20 + SIZEOF__CONTEXT)
+ASMCONSTANTS_C_ASSERT(OFFSETOF__FaultingExceptionFrame__m_SSP
+                    == offsetof(FaultingExceptionFrame, m_SSP));
 
 #define               OFFSETOF__PtrArray__m_NumComponents 0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__PtrArray__m_NumComponents

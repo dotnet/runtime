@@ -349,6 +349,46 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 		}
 
 		[Fact]
+		public Task FixInClass ()
+		{
+			var src = $$"""
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			public class C
+			{
+				[RequiresDynamicCodeAttribute("message")]
+				static int M1() => 0;
+
+				static int Field = M1();
+			}
+			""";
+
+			var fix = $$"""
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			[RequiresDynamicCode()]
+			public class C
+			{
+				[RequiresDynamicCodeAttribute("message")]
+				static int M1() => 0;
+
+				static int Field = M1();
+			}
+			""";
+			return VerifyRequiresDynamicCodeCodeFix (src, fix,
+				baselineExpected: new[] {
+					// /0/Test0.cs(9,21,9,25): warning IL2026: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
+					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(9, 21, 9, 25).WithArguments("C.M1()", " message.", ""),
+				},
+				fixedExpected: new[] {
+					// /0/Test0.cs(4,2): error CS7036: There is no argument given that corresponds to the required parameter 'message' of 'RequiresDynamicCodeAttribute.RequiresDynamicCodeAttribute(string)'
+					DiagnosticResult.CompilerError("CS7036").WithSpan(4, 2, 4, 23).WithArguments("message", "System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.RequiresDynamicCodeAttribute(string)"),
+					});
+		}
+
+		[Fact]
 		public Task MakeGenericTypeWithAllKnownTypes ()
 		{
 			const string src = $$"""
@@ -371,6 +411,22 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 				public void M<T>() => typeof(Gen<>).MakeGenericType(typeof(T));
 			}
 			class Gen<T> { }
+			""";
+
+			return VerifyRequiresDynamicCodeAnalyzer (src);
+		}
+
+		[Fact]
+		public Task MakeGenericTypeWithConstraint ()
+		{
+			const string src = $$"""
+			using System;
+			class C
+			{
+				public void M() => typeof(Gen<>).MakeGenericType(GetObject());
+				static Type GetObject() => typeof(object);
+			}
+			class Gen<T> where T : class { }
 			""";
 
 			return VerifyRequiresDynamicCodeAnalyzer (src);
@@ -434,6 +490,22 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 			{
 				public void M<T>() => typeof(C).GetMethod(nameof(N)).MakeGenericMethod(typeof(T));
 				public void N<T>() { }
+			}
+			""";
+
+			return VerifyRequiresDynamicCodeAnalyzer (src);
+		}
+
+		[Fact]
+		public Task MakeGenericMethodWithConstraint ()
+		{
+			const string src = $$"""
+			using System;
+			class C
+			{
+				public void M() => typeof(C).GetMethod(nameof(N)).MakeGenericMethod(GetObject());
+				public void N<T>() where T : class { }
+				static Type GetObject() => typeof(object);
 			}
 			""";
 

@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.Pkcs
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_CertBagNotX509);
             }
 
-            return new X509Certificate2(PkcsHelpers.DecodeOctetString(_decoded.CertValue));
+            return X509CertificateLoader.LoadCertificate(PkcsHelpers.DecodeOctetString(_decoded.CertValue));
         }
 
         private static byte[] EncodeBagValue(Oid certificateType, ReadOnlyMemory<byte> encodedCertificate)

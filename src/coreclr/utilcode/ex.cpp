@@ -174,7 +174,7 @@ BOOL Exception::IsTerminal()
         GC_NOTRIGGER;
         NOTHROW;
 
-        // CLRException::GetHR() can eventually call BaseDomain::CreateHandle(),
+        // CLRException::GetHR() can eventually call AppDomain::CreateHandle(),
         // which can indirectly cause a lock if we get a miss in the handle table
         // cache (TableCacheMissOnAlloc).  Since CLRException::GetHR() is virtual,
         // SCAN won't find this for you (though 40 minutes of one of the sql stress
@@ -811,11 +811,13 @@ HRESULT SEHException::GetHR()
         return m_exception.ExceptionCode;
 }
 
+#ifdef FEATURE_COMINTEROP
 IErrorInfo *SEHException::GetErrorInfo()
 {
     LIMITED_METHOD_CONTRACT;
     return NULL;
 }
+#endif // FEATURE_COMINTEROP
 
 void SEHException::GetMessage(SString &string)
 {
@@ -896,6 +898,7 @@ HRESULT DelegatingException::GetHR()
 
 } // HRESULT DelegatingException::GetHR()
 
+#ifdef FEATURE_COMINTEROP
 //------------------------------------------------------------------------------
 IErrorInfo *DelegatingException::GetErrorInfo()
 {
@@ -909,6 +912,7 @@ IErrorInfo *DelegatingException::GetErrorInfo()
     return pDelegate ? pDelegate->GetErrorInfo() : NULL;
 
 } // IErrorInfo *DelegatingException::GetErrorInfo()
+#endif // FEATURE_COMINTEROP
 
 //------------------------------------------------------------------------------
 void DelegatingException::GetMessage(SString &result)

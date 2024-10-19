@@ -116,13 +116,13 @@ REGDEF(P13,  13+PBASE, PMASK(13),  "p13",  "na")
 REGDEF(P14,  14+PBASE, PMASK(14),  "p14",  "na")
 REGDEF(P15,  15+PBASE, PMASK(15),  "p15",  "na")
 
-
 // The registers with values 80 (NBASE) and above are not real register numbers
 #define NBASE 80
 
 REGDEF(SP,    0+NBASE, 0x0000,    "sp",  "wsp?")
+REGDEF(FFR,   1+NBASE, 0x0000,    "ffr",  "na")
 // This must be last!
-REGDEF(STK,   1+NBASE, 0x0000,    "STK", "STK")
+REGDEF(STK,   2+NBASE, 0x0000,    "STK", "STK")
 
 /*****************************************************************************/
 #undef  RMASK

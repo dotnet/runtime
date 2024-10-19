@@ -56,7 +56,7 @@ aot_ipc_get_process_id_disambiguation_key(
 	// since the start of the Unix epoch).
 	struct kinfo_proc info = {};
 	size_t size = sizeof (info);
-	int mib [4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, process_id };
+	int mib [4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)process_id };
 
 	const int result_sysctl = sysctl (mib, sizeof(mib)/sizeof(*mib), &info, &size, NULL, 0);
 	if (result_sysctl == 0) {

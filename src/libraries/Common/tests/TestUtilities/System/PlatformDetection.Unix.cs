@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -27,9 +28,13 @@ namespace System
         public static bool IsFedora => IsDistroAndVersion("fedora");
         public static bool IsLinuxBionic => IsBionic();
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
+        public static bool IsAzureLinux => IsDistroAndVersionOrHigher("azurelinux", 3);
 
         public static bool IsMonoLinuxArm64 => IsMonoRuntime && IsLinux && IsArm64Process;
         public static bool IsNotMonoLinuxArm64 => !IsMonoLinuxArm64;
+        public static bool IsQemuLinux => IsLinux && Environment.GetEnvironmentVariable("DOTNET_RUNNING_UNDER_QEMU") != null;
+        public static bool IsNotQemuLinux => !IsQemuLinux;
+        public static bool IsNotAzureLinux => !IsAzureLinux;
 
         // OSX family
         public static bool IsApplePlatform => IsOSX || IsiOS || IstvOS || IsMacCatalyst;

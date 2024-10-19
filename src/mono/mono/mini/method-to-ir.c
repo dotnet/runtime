@@ -66,7 +66,6 @@
 #include <mono/metadata/mono-basic-block.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/utils/mono-threads-coop.h>
-#include <mono/utils/mono-utils-debug.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/icall-decl.h>
@@ -4179,6 +4178,20 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	if (method_does_not_return (method))
 		return FALSE;
 
+	MonoAotModule *amodule = m_class_get_image (method->klass)->aot_module;
+	// If method is present in aot image compiled with llvm and it uses hw intrinsics we don't inline it,
+	// since we might not have support for those intrinsics with JIT
+	if (amodule && (amodule != AOT_MODULE_NOT_FOUND) && (mono_aot_get_module_flags (amodule) & MONO_AOT_FILE_FLAG_WITH_LLVM)) {
+		ERROR_DECL (error);
+		mono_class_init_internal (method->klass);
+		gpointer addr = mono_aot_get_method (method, error);
+		if (addr && is_ok (error)) {
+			MonoAotMethodFlags flags = mono_aot_get_method_flags (addr);
+                        if (flags & MONO_AOT_METHOD_FLAG_HAS_LLVM_INTRINSICS)
+                                return FALSE;
+		}
+	}
+
 	return TRUE;
 }
 
@@ -5693,11 +5706,11 @@ is_addressable_valuetype_load (MonoCompile* cfg, guint8* ip, MonoType* ldtype)
 
 /*
  * check_get_virtual_method_assumptions:
- * 
+ *
  * This shadows mono_class_get_virtual_method, but instead of actually resolving
  * the virtual method, this only checks if mono_class_get_virtual_method would
  * succeed. This is in place because that function fails catastrophically in some
- * cases, bringing down the entire runtime. Returns TRUE if the function is safe 
+ * cases, bringing down the entire runtime. Returns TRUE if the function is safe
  * to call, FALSE otherwise.
  */
 static gboolean
@@ -5728,16 +5741,16 @@ check_get_virtual_method_assumptions (MonoClass* klass, MonoMethod* method)
 		if (iface_offset <= 0)
 			return FALSE;
     }
-	
+
 	if (method->is_inflated)
 		return FALSE;
-	
+
 	return TRUE;
 }
 
 /*
  * try_prepare_objaddr_callvirt_optimization:
- * 
+ *
  * Determine in a load+callvirt optimization can be performed and if so,
  * resolve the callvirt target method, so that it can behave as call.
  * Returns null, if the optimization cannot be performed.
@@ -5748,7 +5761,7 @@ try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, gu
 	// TODO: relax the _is_def requirement?
 	if (cfg->compile_aot || cfg->compile_llvm || !klass || !mono_class_is_def (klass))
 		return NULL;
-	
+
 	guchar* callvirt_ip;
 	guint32 callvirt_proc_token;
 	if (!(callvirt_ip = il_read_callvirt (next_ip, end, &callvirt_proc_token)) ||
@@ -5765,8 +5778,8 @@ try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, gu
 
 	MonoMethodSignature* iface_method_sig;
 	if (!((iface_method_sig = mono_method_signature_internal (iface_method)) &&
-		iface_method_sig->hasthis && 
-		iface_method_sig->param_count == 0 && 
+		iface_method_sig->hasthis &&
+		iface_method_sig->param_count == 0 &&
 		!iface_method_sig->has_type_parameters &&
 		iface_method_sig->generic_param_count == 0))
 		return NULL;
@@ -6223,7 +6236,7 @@ method_make_alwaysthrow_typeloadfailure (MonoCompile* cfg, MonoClass* klass)
 			mono_remove_bblock (cfg, cfg->bb_init->out_bb [i]);
 		}
 	}
-	
+
 	// Maintain linked list consistency. This BB should have been added as the last,
 	// ignoring the ones that held actual method code.
 	cfg->cbb = cfg->bb_init;
@@ -7521,10 +7534,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 */
 			if (fsig->pinvoke && mono_method_signature_has_ext_callconv (fsig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 				g_assert (!fsig->hasthis); // Swift P/Invoke calls shouldn't contain 'this'
-				
+
 				n = fsig->param_count;
 				sp -= n;
-				// Save the old arguments				
+				// Save the old arguments
 				MonoInst **old_params = (MonoInst**) mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * n);
 				for (int idx_param = 0; idx_param < n; ++idx_param) {
 					old_params [idx_param] = sp [idx_param];
@@ -7533,47 +7546,51 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), n);
 				uint32_t new_param_count = 0;
 				MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+				MonoClass *swift_self_t = mono_class_try_get_swift_self_t_class ();
 				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+				MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
 				/*
-				 * Go through the lowered arguments, if the argument is a struct, 
+				 * Go through the lowered arguments, if the argument is a struct,
 				 * we need to replace it with a sequence of lowered arguments.
 				 * Also record the updated parameters for the new signature.
 				 */
 				for (int idx_param = 0; idx_param < n; ++idx_param) {
 					MonoType *ptype = fsig->params [idx_param];
 					MonoClass *klass = mono_class_from_mono_type_internal (ptype);
+					MonoGenericClass *gklass = mono_class_try_get_generic_class (klass);
 
-					// SwiftSelf and SwiftError are special cases where we need to preserve the class information for the codegen to handle them correctly.
-					if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error)) {
+					// SwiftSelf, SwiftError, and SwiftIndirectResult are special cases where we need to preserve the class information for the codegen to handle them correctly.
+					if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error || klass == swift_indirect_result)) {
 						SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
+						// Create a new local variable to store the base address of the struct
+						MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+						CHECK_ARG (idx_param);
+						NEW_ARGLOADA (cfg, struct_base_address, idx_param);
+						MONO_ADD_INS (cfg->cbb, struct_base_address);
 						if (!lowered_swift_struct.by_reference) {
-							// Create a new local variable to store the base address of the struct
-							MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-							CHECK_ARG (idx_param);
-							NEW_ARGLOADA (cfg, struct_base_address, idx_param);
-							MONO_ADD_INS (cfg->cbb, struct_base_address);
-
+							// Load the lowered elements of the struct
 							for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; ++idx_lowered) {
-								MonoInst *lowered_arg = NULL;
-								// Load the lowered elements of the struct
-								lowered_arg = mini_emit_memory_load (cfg, lowered_swift_struct.lowered_elements [idx_lowered], struct_base_address, lowered_swift_struct.offsets [idx_lowered], 0);
+								MonoInst *lowered_arg = mini_emit_memory_load (cfg, lowered_swift_struct.lowered_elements [idx_lowered], struct_base_address, lowered_swift_struct.offsets [idx_lowered], 0);
 								*sp++ = lowered_arg;
 
-								++new_param_count;
 								g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
+								++new_param_count;
 							}
 						} else {
-							// For structs that cannot be lowered, we change the argument to byref type
-							ptype = mono_class_get_byref_type (mono_defaults.typed_reference_class);
-							// Load the address of the struct
-							MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-							CHECK_ARG (idx_param);
-							NEW_ARGLOADA (cfg, struct_base_address, idx_param);
-							MONO_ADD_INS (cfg->cbb, struct_base_address);
+							// For structs that cannot be lowered, we change the argument to a pointer-like argument type.
+							// If SwiftSelf<T> can't be lowered, it should be passed in the same manner as SwiftSelf, via the context register.
+							if (gklass && (gklass->container_class == swift_self_t)) {
+								ptype = mono_class_get_byref_type (swift_self);
+								// The ARGLOADA should be a pointer-like type.
+								struct_base_address->klass = mono_defaults.int_class;
+							} else {
+								ptype = mono_class_get_byref_type (klass);
+							}
+
 							*sp++ = struct_base_address;
 
-							++new_param_count;
 							g_array_append_val (new_params, ptype);
+							++new_param_count;
 						}
 					} else {
 						// Copy over non-struct arguments
@@ -7584,7 +7601,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					}
 				}
 
-				// Create a new dummy signature with the lowered arguments				
+				// Create a new dummy signature with the lowered arguments
 				fsig = mono_metadata_signature_dup_new_params (cfg->mempool, NULL, fsig, new_param_count, (MonoType**)new_params->data);
 
 				// Deallocate temp array
@@ -9916,11 +9933,11 @@ calli_end:
 					!mini_is_gsharedvt_klass (klass) &&
 					(iface_method = mini_get_method (cfg, method, callvirt_proc_token, NULL, generic_context)) &&
 					(iface_method_sig = mono_method_signature_internal (iface_method)) && // callee signture is healthy
-					iface_method_sig->hasthis && 
+					iface_method_sig->hasthis &&
 					iface_method_sig->param_count == 0 && // the callee has no args (other than this)
 					!iface_method_sig->has_type_parameters &&
 					iface_method_sig->generic_param_count == 0) { // and no type params, apparently virtual generic methods require special handling
-					
+
 					if (!m_class_is_inited (iface_method->klass)) {
 						if (!mono_class_init_internal (iface_method->klass))
 							TYPE_LOAD_ERROR (iface_method->klass);
@@ -9954,8 +9971,8 @@ calli_end:
 					} else {
 						mono_error_cleanup (struct_method_error);
 					}
-				} 
-			}			
+				}
+			}
 
 			gboolean is_true;
 
@@ -10112,7 +10129,7 @@ calli_end:
 						// and generate a runtime exception.
 						if (cfg->error->error_code == MONO_ERROR_BAD_IMAGE)
 							clear_cfg_error (cfg);
-						
+
 						// We need to push a dummy value onto the stack, respecting the intended type.
 						if (il_op == MONO_CEE_LDFLDA || il_op == MONO_CEE_LDSFLDA) {
 							// Address is expected, push a null pointer.
@@ -10125,7 +10142,7 @@ calli_end:
 							goto all_bbs_done;
 						}
 
-						break;	
+						break;
 				}
 				CHECK_CFG_ERROR;
 			}
@@ -12096,14 +12113,14 @@ mono_ldptr:
 				inline_costs += 10;
 				break; // reached only in AOT
 			}
-			
+
 			--sp;
 
 			if (mini_class_is_reference (klass))
 				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, sp [0]->dreg, 0, 0);
 			else
 				mini_emit_initobj (cfg, *sp, NULL, klass);
-			
+
 			inline_costs += 1;
 			break;
 		case MONO_CEE_CONSTRAINED_:

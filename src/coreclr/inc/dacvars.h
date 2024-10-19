@@ -140,7 +140,7 @@ DEFINE_DACVAR(ProfControlBlock, dac__g_profControlBlock, ::g_profControlBlock)
 DEFINE_DACVAR(PTR_DWORD, dac__g_card_table, ::g_card_table)
 DEFINE_DACVAR(PTR_BYTE, dac__g_lowest_address, ::g_lowest_address)
 DEFINE_DACVAR(PTR_BYTE, dac__g_highest_address, ::g_highest_address)
-DEFINE_DACVAR(gc_alloc_context, dac__g_global_alloc_context, ::g_global_alloc_context)
+DEFINE_DACVAR(ee_alloc_context, dac__g_global_alloc_context, ::g_global_alloc_context)
 
 DEFINE_DACVAR(IGCHeap, dac__g_pGCHeap, ::g_pGCHeap)
 
@@ -174,10 +174,6 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pBaseCOMObject, ::g_pBaseCOMObject)
 #endif
 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pIDynamicInterfaceCastableInterface, ::g_pIDynamicInterfaceCastableInterface)
-
-#ifdef FEATURE_ICASTABLE
-DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pICastableInterface, ::g_pICastableInterface)
-#endif // FEATURE_ICASTABLE
 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pObjectFinalizerMD, ::g_pObjectFinalizerMD)
 

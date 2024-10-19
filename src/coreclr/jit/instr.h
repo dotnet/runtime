@@ -213,9 +213,10 @@ enum insFlags : uint64_t
     Encoding_EVEX  = 1ULL << 40,
 
     KInstruction = 1ULL << 41,
+    KInstructionWithLBit = 1ULL << 42,
 
     // EVEX feature: embedded broadcast
-    INS_Flags_EmbeddedBroadcastSupported = 1ULL << 42,
+    INS_Flags_EmbeddedBroadcastSupported = 1ULL << 43,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
@@ -379,13 +380,6 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_IMM_BITMASK,         // Variants with an immediate that is a bitmask
 
     INS_SCALABLE_OPTS_IMM_FIRST,           // Variants with an immediate and a register, where the immediate comes first
-
-    // Removable once REG_V0 and REG_P0 are distinct
-    INS_SCALABLE_OPTS_UNPREDICATED,      // Variants without a predicate (eg add)
-    INS_SCALABLE_OPTS_UNPREDICATED_WIDE, // Variants without a predicate and wide elements (eg asr)
-    INS_SCALABLE_OPTS_TO_PREDICATE,      // Variants moving to a predicate from a vector (e.g. pmov)
-    INS_SCALABLE_OPTS_TO_VECTOR,         // Variants moving to a vector from a predicate (e.g. pmov)
-    INS_SCALABLE_OPTS_BROADCAST,         // Used to distinguish mov from cpy, where mov is an alias for both
 };
 
 // Maps directly to the pattern used in SVE instructions such as cntb.

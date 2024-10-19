@@ -17,7 +17,7 @@ if(HOST_WIN32 AND HOST_AMD64)
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
 
     list(APPEND utils_win32_sources win64.asm)
-elseif(HOST_WASI)
+elseif(HOST_WASM)
     set (CMAKE_ASM_COMPILER_VERSION "${CMAKE_C_COMPILER_VERSION}")
     set (CMAKE_ASM_COMPILER_TARGET "${CMAKE_C_COMPILER_TARGET}")
     enable_language(ASM)
@@ -30,8 +30,8 @@ set(utils_unix_sources
 
 if(HOST_WIN32)
     set(utils_platform_sources ${utils_win32_sources})
-elseif(HOST_WASI)
-    set(utils_platform_sources ${utils_unix_sources} mono-threads-wasi.S)
+elseif(HOST_WASM)
+    set(utils_platform_sources ${utils_unix_sources} mono-threads-wasm.S)
 else()
     set(utils_platform_sources ${utils_unix_sources})
 endif()
@@ -141,8 +141,6 @@ set(utils_common_sources
     mono-tls.h
     mono-tls-inline.h
     mono-tls.c
-    mono-utils-debug.c
-    mono-utils-debug.h
     mono-memory-model.h
     atomic.h
     atomic.c
@@ -216,12 +214,6 @@ else()
 endif()
 
 set(utils_sources "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
-
-set(utils_sources
-    ${utils_sources}
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf_common.h
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf32.h
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf64.h)
 
 if(ENABLE_DTRACE)
     find_program(DTRACE dtrace)

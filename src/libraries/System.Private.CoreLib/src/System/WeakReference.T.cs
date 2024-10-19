@@ -166,7 +166,7 @@ namespace System
 #pragma warning disable CA1821 // Remove empty Finalizers
         ~WeakReference()
         {
-            Debug.Assert(false, " WeakReference<T> finalizer should never run");
+            Debug.Fail(" WeakReference<T> finalizer should never run");
         }
 #pragma warning restore CA1821 // Remove empty Finalizers
 

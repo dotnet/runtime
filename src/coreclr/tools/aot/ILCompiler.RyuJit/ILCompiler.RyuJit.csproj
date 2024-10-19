@@ -82,11 +82,8 @@
     <Compile Include="..\..\Common\JitInterface\SystemVStructClassificator.cs">
       <Link>JitInterface\SystemVStructClassificator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\JitInterface\LoongArch64PassStructInRegister.cs">
-      <Link>JitInterface\LoongArch64PassStructInRegister.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\JitInterface\RISCV64PassStructInRegister.cs">
-      <Link>JitInterface\RISCV64PassStructInRegister.cs</Link>
+    <Compile Include="..\..\Common\Internal\Runtime\RiscVLoongArch64FpStruct.cs">
+      <Link>Common\RiscVLoongArch64FpStruct.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\JitInterface\SwiftPhysicalLowering.cs">
       <Link>JitInterface\SwiftPhysicalLowering.cs</Link>

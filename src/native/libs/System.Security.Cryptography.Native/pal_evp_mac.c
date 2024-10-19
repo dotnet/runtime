@@ -289,6 +289,20 @@ int32_t CryptoNative_EvpMacCurrent(EVP_MAC_CTX* ctx, uint8_t* mac, int32_t macLe
     return -2;
 }
 
+EVP_MAC_CTX* CryptoNative_EvpMacCtxDup(const EVP_MAC_CTX* ctx)
+{
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_MAC_CTX_dup))
+    {
+        return EVP_MAC_CTX_dup(ctx);
+    }
+#endif
+
+    (void)ctx;
+    assert(0 && "Inconsistent EVP_MAC API availability.");
+    return NULL;
+}
+
 int32_t CryptoNative_EvpMacOneShot(EVP_MAC* mac,
                                    uint8_t* key,
                                    int32_t keyLength,
@@ -355,32 +369,35 @@ int32_t CryptoNative_EvpMacOneShot(EVP_MAC* mac,
 
         params[i] = OSSL_PARAM_construct_end();
 
+        int32_t ret = 0;
+
         if (!EVP_MAC_init(ctx, NULL, 0, params))
         {
-            EVP_MAC_CTX_free(ctx);
-            return 0;
+            goto done;
         }
 
         if (!EVP_MAC_update(ctx, data, dataLengthT))
         {
-            EVP_MAC_CTX_free(ctx);
-            return 0;
+            goto done;
         }
 
         size_t written = 0;
 
         if (!EVP_MAC_final(ctx, destination, &written, macLengthT))
         {
-            EVP_MAC_CTX_free(ctx);
-            return 0;
+            goto done;
         }
 
         if (written != macLengthT)
         {
-            return -3;
+            ret = -3;
+            goto done;
         }
 
-        return 1;
+        ret = 1;
+done:
+        EVP_MAC_CTX_free(ctx);
+        return ret;
     }
 #else
     (void)mac;

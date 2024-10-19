@@ -15,6 +15,11 @@ namespace System.Security.Cryptography
             _liteKmac = LiteHashProvider.CreateKmac(algorithmId, key, customizationString, xof);
         }
 
+        private ConcurrentSafeKmac(LiteKmac liteKmac)
+        {
+            _liteKmac = liteKmac;
+        }
+
         public void Append(ReadOnlySpan<byte> data)
         {
             using (ConcurrencyBlock.Enter(ref _block))
@@ -44,6 +49,14 @@ namespace System.Security.Cryptography
             using (ConcurrencyBlock.Enter(ref _block))
             {
                 _liteKmac.Reset();
+            }
+        }
+
+        public ConcurrentSafeKmac Clone()
+        {
+            using (ConcurrencyBlock.Enter(ref _block))
+            {
+                return new ConcurrentSafeKmac(_liteKmac.Clone());
             }
         }
 

@@ -2058,10 +2058,10 @@ void emitter::emitIns_R_AI(instruction  ins,
 
     // INS_OPTS_RELOC: placeholders.  2-ins:
     //  case:EA_HANDLE_CNS_RELOC
-    //   pcaddu12i  reg, off-hi-20bits
+    //   pcalau12i  reg, off-hi-20bits
     //   addi_d  reg, reg, off-lo-12bits
     //  case:EA_PTR_DSP_RELOC
-    //   pcaddu12i  reg, off-hi-20bits
+    //   pcalau12i  reg, off-hi-20bits
     //   ld_d  reg, reg, off-lo-12bits
 
     instrDesc* id = emitNewInstr(attr);
@@ -3231,21 +3231,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_OPTS_RELOC:
         {
             //  case:EA_HANDLE_CNS_RELOC
-            //   pcaddu12i  reg, off-hi-20bits
+            //   pcalau12i  reg, off-hi-20bits
             //   addi_d  reg, reg, off-lo-12bits
             //  case:EA_PTR_DSP_RELOC
-            //   pcaddu12i  reg, off-hi-20bits
+            //   pcalau12i  reg, off-hi-20bits
             //   ld_d  reg, reg, off-lo-12bits
 
             regNumber reg1 = id->idReg1();
 
-            *(code_t*)dstRW = 0x1c000000 | (code_t)reg1;
+            *(code_t*)dstRW = 0x1a000000 | (code_t)reg1;
 
             dstRW += 4;
 
 #ifdef DEBUG
-            code = emitInsCode(INS_pcaddu12i);
-            assert(code == 0x1c000000);
+            code = emitInsCode(INS_pcalau12i);
+            assert(code == 0x1a000000);
             code = emitInsCode(INS_addi_d);
             assert(code == 0x02c00000);
             code = emitInsCode(INS_ld_d);
@@ -4918,7 +4918,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
         if (needCheckOv)
         {
-            emitIns_R_R_R(INS_or, attr, REG_R21, nonIntReg->GetRegNum(), REG_R0);
+            emitIns_R_R_I(INS_ori, attr, REG_R21, nonIntReg->GetRegNum(), 0);
         }
 
         emitIns_R_R_I(ins, attr, dst->GetRegNum(), nonIntReg->GetRegNum(), imm);
@@ -5058,7 +5058,18 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
             if (dst->OperIs(GT_ADD))
             {
-                saveOperReg1 = (dst->GetRegNum() == regOp1) ? regOp2 : regOp1;
+                saveOperReg1 = regOp1;
+                if (dst->GetRegNum() == regOp1)
+                {
+                    saveOperReg1 = regOp2;
+                    if (regOp1 == regOp2)
+                    {
+                        assert(REG_R21 != regOp1);
+                        assert(REG_RA != regOp1);
+                        emitIns_R_R_I(INS_ori, attr, REG_R21, regOp1, 0);
+                        saveOperReg1 = REG_R21;
+                    }
+                }
             }
             else
             {
@@ -5067,7 +5078,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     assert(REG_R21 != regOp1);
                     assert(REG_RA != regOp1);
                     saveOperReg1 = REG_R21;
-                    emitIns_R_R_R(INS_or, attr, REG_R21, regOp1, REG_R0);
+                    emitIns_R_R_I(INS_ori, attr, REG_R21, regOp1, 0);
                 }
                 else
                 {

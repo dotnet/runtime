@@ -35,16 +35,22 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         // Don't dequeue yet, because a transition might fail
                         MatchingState<TSet> state = toExplore.Peek();
+
                         // Include the special minterm for the last end-of-line if the state is sensitive to it
                         int maxMinterm = state.StartsWithLineAnchor ? _minterms!.Length : _minterms!.Length - 1;
+
                         // Explore successor states for each minterm
                         for (int mintermId = 0; mintermId <= maxMinterm; ++mintermId)
                         {
                             int offset = DeltaOffset(state.Id, mintermId);
-                            if (!TryCreateNewTransition(state, mintermId, offset, true, out MatchingState<TSet>? nextState))
+                            if (!TryCreateNewTransition(state, mintermId, offset, true, 0, out MatchingState<TSet>? nextState))
+                            {
                                 goto DfaLimitReached;
+                            }
+
                             EnqueueIfUnseen(nextState, seen, toExplore);
                         }
+
                         // Safe to dequeue now that the state has been completely handled
                         toExplore.Dequeue();
                     }

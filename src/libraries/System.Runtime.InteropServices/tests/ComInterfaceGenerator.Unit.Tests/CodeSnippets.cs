@@ -529,6 +529,27 @@ namespace ComInterfaceGenerator.Unit.Tests
                 void Method2();
             }
             """;
+
+        public string DerivedComInterfaceTypeMismatchInWrappers => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [GeneratedComInterface(Options = ComInterfaceOptions.ComObjectWrapper)]
+            [Guid("0E7204B5-4B61-4E06-B872-82BA652F2ECA")]
+            partial interface IComInterface
+            {
+                void Method();
+            }
+
+            [GeneratedComInterface(Options = ComInterfaceOptions.ManagedObjectWrapper)]
+            [Guid("0E7204B5-4B61-4E06-B872-82BA652F2ECA")]
+            partial interface {|#0:IComInterface2|} : IComInterface
+            {
+                void Method2();
+            }
+            """;
+
         public string DerivedComInterfaceTypeMultipleComInterfaceBases => $$"""
             using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;

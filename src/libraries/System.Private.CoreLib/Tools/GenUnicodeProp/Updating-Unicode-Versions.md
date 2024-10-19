@@ -41,7 +41,15 @@ This should be done automatically by dependency-flow, so in theory there shouldn
    - System.Globalization.Tests.csproj
    - System.Globalization.Nls.Tests.csproj
    - System.Text.Encodings.Web.Tests.csproj
-4. If the new Unicode data contains casing changes/updates, then we will also need to update `src/native/minipal/UnicodeDataGenerator/unicodedata.c` file. This file is used by most of the reflection stack whenever you specify the `BindingFlags.IgnoreCase`. In order to regenerate the contents of the `unicdedata.c` file, you need to run the Program located at `src/native/minipal/UnicodeDataGenerator/unicodedata.cs` and give a full path to the new UnicodeData.txt as a parameter.
+4. If the new Unicode data contains casing changes/updates, then we will also need to update `src/native/minipal/unicodedata.c` file. This file is used by most of the reflection stack whenever you specify the `BindingFlags.IgnoreCase`. In order to regenerate the contents of the `unicdedata.c` file, you need to run the Program located at `src/native/minipal/UnicodeDataGenerator/unicodedata.cs` and give a full path to the new UnicodeData.txt as a parameter. e.g. in Unix shell:
+    ```sh
+    # download UnicodeData.txt
+    $ curl -sSLo /tmp/UnicodeData.txt https://www.unicode.org/Public/14.0.0/ucd/UnicodeData.txt
+
+    # update unicodedata.c
+    $ cd runtime
+    $ ./dotnet.sh run --project src/native/minipal/UnicodeDataGenerator /tmp/UnicodeData.txt > src/native/minipal/unicodedata.c
+    ```
 5. Update the Regex casing equivalence table using the UnicodeData.txt file from the new Unicode version. You can find the instructions on how to do this [here](../../../System.Text.RegularExpressions/tools/Readme.md).
 6. Finally, last step is to update the license for the Unicode data into our [Third party notices](../../../../../THIRD-PARTY-NOTICES.TXT) by copying the contents located in `https://www.unicode.org/license.html` to the section that has the Unicode license in our notices.
 7. That's it, now commit all of the changed files, and send a PR into dotnet/runtime with the updates. If there were any special things you had to do that are not noted on this document, PLEASE UPDATE THESE INSTRUCTIONS to facilitate future updates.

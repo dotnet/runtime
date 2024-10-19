@@ -34,6 +34,11 @@ namespace ILCompiler
                 if (body is ISpecialUnboxThunkNode unboxThunk && unboxThunk.IsSpecialUnboxingThunk)
                     continue;
 
+                // Bodies that are visible from outside should not be folded because we don't know
+                // if they're address taken.
+                if (factory.GetSymbolAlternateName(body) != null)
+                    continue;
+
                 var key = new MethodInternKey(body, factory);
                 if (methodHash.TryGetValue(key, out MethodInternKey found))
                 {

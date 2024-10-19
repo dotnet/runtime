@@ -47,6 +47,8 @@ class CalledMethod;
 
 #include "genericdict.h"
 
+void FlushVirtualFunctionPointerCaches();
+
 inline FieldDesc* GetField(CORINFO_FIELD_HANDLE fieldHandle)
 {
     LIMITED_METHOD_CONTRACT;
@@ -143,18 +145,6 @@ EXTERN_C FCDECL1(void, JIT_MonExit_Portable, Object *obj);
 EXTERN_C FCDECL_MONHELPER(JIT_MonExitWorker, Object *obj);
 EXTERN_C FCDECL_MONHELPER(JIT_MonExitWorker_Portable, Object *obj);
 
-#ifndef JIT_MonEnterStatic
-#define JIT_MonEnterStatic JIT_MonEnterStatic_Portable
-#endif
-EXTERN_C FCDECL_MONHELPER(JIT_MonEnterStatic, AwareLock *lock);
-EXTERN_C FCDECL_MONHELPER(JIT_MonEnterStatic_Portable, AwareLock *lock);
-
-#ifndef JIT_MonExitStatic
-#define JIT_MonExitStatic JIT_MonExitStatic_Portable
-#endif
-EXTERN_C FCDECL_MONHELPER(JIT_MonExitStatic, AwareLock *lock);
-EXTERN_C FCDECL_MONHELPER(JIT_MonExitStatic_Portable, AwareLock *lock);
-
 #ifndef JIT_GetGCStaticBase
 #define JIT_GetGCStaticBase JIT_GetGCStaticBase_Portable
 #endif
@@ -207,7 +197,6 @@ extern FCDECL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
 extern FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
 
 extern FCDECL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength);
-extern FCDECL1(StringObject*, UnframedAllocateString, DWORD stringLength);
 extern FCDECL1(StringObject*, FramedAllocateString, DWORD stringLength);
 
 extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
@@ -244,15 +233,13 @@ extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Obje
 extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
 extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
 extern "C" FCDECL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj);
+extern "C" FCDECL2(void, JIT_Unbox_TypeTest, CORINFO_CLASS_HANDLE type, CORINFO_CLASS_HANDLE boxType);
 extern "C" FCDECL3(void, JIT_Unbox_Nullable, void * destPtr, CORINFO_CLASS_HANDLE type, Object* obj);
 
 // ARM64 JIT_WriteBarrier uses speciall ABI and thus is not callable directly
 // Copied write barriers must be called at a different location
 extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
 #define WriteBarrier_Helper JIT_WriteBarrier_Callable
-
-extern "C" FCDECL1(void, JIT_InternalThrow, unsigned exceptNum);
-extern "C" FCDECL1(void*, JIT_InternalThrowFromHelper, unsigned exceptNum);
 
 #ifdef TARGET_AMD64
 
@@ -317,14 +304,6 @@ private:
 };
 
 #endif // TARGET_AMD64
-
-#ifdef HOST_64BIT
-EXTERN_C FCDECL1(Object*, JIT_TrialAllocSFastMP_InlineGetThread, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL2(Object*, JIT_BoxFastMP_InlineGetThread, CORINFO_CLASS_HANDLE type, void* data);
-EXTERN_C FCDECL2(Object*, JIT_NewArr1VC_MP_InlineGetThread, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-EXTERN_C FCDECL2(Object*, JIT_NewArr1OBJ_MP_InlineGetThread, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-
-#endif // HOST_64BIT
 
 EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
 
@@ -460,6 +439,11 @@ public:
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClassHelper(
         CORINFO_CLASS_HANDLE elemType
         );
+
+    CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClassHelper(
+        CORINFO_CLASS_HANDLE elemType
+        );
+
 
     CorInfoType getFieldTypeInternal (CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = NULL,CORINFO_CLASS_HANDLE owner = NULL);
 
@@ -1026,27 +1010,10 @@ extern "C" const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT];
 
 #endif
 
-#if defined(_DEBUG) && (defined(TARGET_AMD64) || defined(TARGET_X86)) && !defined(TARGET_UNIX)
-typedef struct {
-    void*       pfnRealHelper;
-    const char* helperName;
-    LONG        count;
-    LONG        helperSize;
-} VMHELPCOUNTDEF;
-
-extern "C" VMHELPCOUNTDEF hlpFuncCountTable[CORINFO_HELP_COUNT+1];
-
-void InitJitHelperLogging();
-void WriteJitHelperCountToSTRESSLOG();
-#else
-inline void InitJitHelperLogging() { }
-inline void WriteJitHelperCountToSTRESSLOG() { }
-#endif
-
 // enum for dynamically assigned helper calls
 enum DynamicCorInfoHelpFunc {
-#define JITHELPER(code, pfnHelper, sig)
-#define DYNAMICJITHELPER(code, pfnHelper, sig) DYNAMIC_##code,
+#define JITHELPER(code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) DYNAMIC_##code,
 #include "jithelpers.h"
     DYNAMIC_CORINFO_HELP_COUNT
 };
@@ -1060,6 +1027,10 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 #define SetJitHelperFunction(ftnNum, pFunc) _SetJitHelperFunction(DYNAMIC_##ftnNum, (void*)(pFunc))
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
 
+VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc = NULL);
+bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);
+bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum);
+
 void *GenFastGetSharedStaticBase(bool bCheckCCtor);
 
 #ifdef HAVE_GCCOVER
@@ -1069,20 +1040,17 @@ BOOL OnGcCoverageInterrupt(PT_CONTEXT regs);
 void DoGcStress (PT_CONTEXT regs, NativeCodeVersion nativeCodeVersion);
 #endif //HAVE_GCCOVER
 
-EXTERN_C FCDECL2(LPVOID, ArrayStoreCheck, Object** pElement, PtrArray** pArray);
-
 // ppPinnedString: If the string is pinned (e.g. allocated in frozen heap),
 // the pointer to the pinned string is returned in *ppPinnedPointer. ppPinnedPointer == nullptr
 // means that the caller does not care whether the string is pinned or not.
 OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString = nullptr);
 
+FCDECL2(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL0(VOID, JIT_PollGC);
 
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 BOOL ObjIsInstanceOfCore(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
-
-EXTERN_C TypeHandle::CastResult STDCALL ObjIsInstanceOfCached(Object *pObject, TypeHandle toTypeHnd);
 
 #ifdef HOST_64BIT
 class InlinedCallFrame;
@@ -1098,8 +1066,6 @@ struct VirtualFunctionPointerArgs
     CORINFO_CLASS_HANDLE classHnd;
     CORINFO_METHOD_HANDLE methodHnd;
 };
-
-FCDECL2(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Dynamic, Object * objectUNSAFE, VirtualFunctionPointerArgs * pArgs);
 
 typedef HCCALL1_PTR(TADDR, FnStaticBaseHelper, TADDR arg0);
 
@@ -1120,17 +1086,6 @@ struct GenericHandleArgs
     DWORD dictionaryIndexAndSlot;
 };
 
-FCDECL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodWithSlotAndModule, CORINFO_METHOD_HANDLE  methodHnd, GenericHandleArgs * pArgs);
-FCDECL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO_CLASS_HANDLE classHnd, GenericHandleArgs * pArgs);
-
-CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc   *pMD,
-                                               MethodTable  *pMT,
-                                               LPVOID        signature,
-                                               DWORD         dictionaryIndexAndSlot = -1,
-                                               Module *      pModule = NULL);
-
-void ClearJitGenericHandleCache();
-
 CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags);
 
 bool __stdcall TrackAllocationsEnabled();
@@ -1143,8 +1098,8 @@ extern thread_local int64_t t_cbILJittedForThread;
 extern thread_local int64_t t_cMethodsJittedForThread;
 extern thread_local int64_t t_c100nsTicksInJitForThread;
 
-FCDECL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread);
-FCDECL1(INT64, GetCompiledMethodCount, CLR_BOOL currentThread);
-FCDECL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread);
+FCDECL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread);
+FCDECL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread);
+FCDECL1(INT64, GetCompilationTimeInTicks, FC_BOOL_ARG currentThread);
 
 #endif // JITINTERFACE_H

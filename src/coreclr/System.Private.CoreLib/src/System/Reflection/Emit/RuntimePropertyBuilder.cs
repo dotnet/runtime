@@ -29,7 +29,7 @@ namespace System.Reflection.Emit
             RuntimeModuleBuilder mod, // the module containing this PropertyBuilder
             string name, // property name
             PropertyAttributes attr, // property attribute such as DefaultProperty, Bindable, DisplayBind, etc
-            Type returnType, // return type of the property.
+            Type? returnType, // return type of the property.
             int prToken, // the metadata token for this property
             RuntimeTypeBuilder containingType) // the containing type
         {
@@ -40,7 +40,7 @@ namespace System.Reflection.Emit
             m_name = name;
             m_moduleBuilder = mod;
             m_attributes = attr;
-            m_returnType = returnType;
+            m_returnType = returnType ?? typeof(void);
             m_tkProperty = prToken;
             m_containingType = containingType;
         }
