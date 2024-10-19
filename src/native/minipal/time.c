@@ -30,6 +30,8 @@ int64_t minipal_hires_tick_frequency()
 #include <time.h> // nanosleep
 #include <errno.h>
 
+inline static void YieldProcessor(void);
+
 inline static void YieldProcessor(void)
 {
 #if defined(HOST_X86) || defined(HOST_AMD64)
