@@ -162,6 +162,16 @@ void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef FEATURE_EVENT_TRACE
+    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+        TRACE_LEVEL_INFORMATION,
+        CLR_ALLOCATIONSAMPLING_KEYWORD))
+    {
+        // skip AllocationTick if AllocationSampled is emitted
+        return;
+    }
+#endif // FEATURE_EVENT_TRACE
+
     void * typeId = nullptr;
     const WCHAR * name = nullptr;
     InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;

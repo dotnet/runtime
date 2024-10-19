@@ -1,5 +1,6 @@
 # Native runtime events supported by aot runtime.
 
+AllocationSampled
 BGC1stConEnd
 BGC1stNonConEnd
 BGC1stSweepEnd

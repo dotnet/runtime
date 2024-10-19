@@ -30,6 +30,8 @@ void InitializeEventTracing();
 
 #ifdef FEATURE_EVENT_TRACE
 
+bool IsRuntimeProviderEnabled(uint8_t level, uint64_t keyword);
+
 // !!!!!!! NOTE !!!!!!!!
 // The flags must match those in the ETW manifest exactly
 // !!!!!!! NOTE !!!!!!!!
@@ -102,6 +104,7 @@ struct ProfilingScanContext;
 #define CLR_GCHEAPSURVIVALANDMOVEMENT_KEYWORD 0x400000
 #define CLR_MANAGEDHEAPCOLLECT_KEYWORD 0x800000
 #define CLR_GCHEAPANDTYPENAMES_KEYWORD 0x1000000
+#define CLR_ALLOCATIONSAMPLING_KEYWORD 0x80000000000
 
 //
 // Using KEYWORDZERO means when checking the events category ignore the keyword

@@ -37,6 +37,11 @@ DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Con
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context
 };
 
+bool IsRuntimeProviderEnabled(uint8_t level, uint64_t keyword)
+{
+    return RUNTIME_PROVIDER_CATEGORY_ENABLED(level, keyword);
+}
+
 volatile LONGLONG ETW::GCLog::s_l64LastClientSequenceNumber = 0;
 
 //---------------------------------------------------------------------------------------
