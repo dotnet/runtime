@@ -2966,6 +2966,7 @@ dynamic_data gc_heap::dynamic_data_table [total_generation_count];
 gc_history_per_heap gc_heap::gc_data_per_heap;
 size_t gc_heap::total_promoted_bytes = 0;
 size_t gc_heap::finalization_promoted_bytes = 0;
+bool gc_heap::high_finalization_percentage = false;
 size_t gc_heap::maxgen_pinned_compact_before_advance = 0;
 
 uint8_t* gc_heap::alloc_allocated = 0;
@@ -30231,6 +30232,7 @@ void gc_heap::mark_phase (int condemned_gen_number)
 #endif //FEATURE_PREMORTEM_FINALIZATION
 
     total_promoted_bytes = get_promoted_bytes();
+    finalization_promoted_bytes = total_promoted_bytes - promoted_bytes_live;
 
 #ifdef MULTIPLE_HEAPS
     static VOLATILE(int32_t) syncblock_scan_p;
@@ -30281,7 +30283,11 @@ void gc_heap::mark_phase (int condemned_gen_number)
 #endif //FEATURE_EVENT_TRACE
 
         //decide on promotion
-        if (!settings.promotion)
+        int finalization_percent = (total_promoted_bytes > 0)
+            ? static_cast<int>((100 * finalization_promoted_bytes) / total_promoted_bytes) : 0;
+        dprintf (6666, ("finalization promotion: %d%% (%zd / %zd)", finalization_percent, finalization_promoted_bytes, total_promoted_bytes));
+	high_finalization_percentage = finalization_percent >= 90;
+        if (!settings.promotion && !high_finalization_percentage)
         {
             size_t m = 0;
             for (int n = 0; n <= condemned_gen_number;n++)
@@ -30360,8 +30366,6 @@ void gc_heap::mark_phase (int condemned_gen_number)
 #if defined(MULTIPLE_HEAPS) && !defined(USE_REGIONS)
     merge_mark_lists (total_mark_list_size);
 #endif //MULTIPLE_HEAPS && !USE_REGIONS
-
-    finalization_promoted_bytes = total_promoted_bytes - promoted_bytes_live;
 
     mark_queue.verify_empty();
 
@@ -45043,6 +45047,11 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
         {
             dprintf (GTC_LOG, ("PM doing compacting full GC after a gen1"));
         }
+        should_compact = TRUE;
+    }
+
+    if (high_finalization_percentage)
+    {
         should_compact = TRUE;
     }
 

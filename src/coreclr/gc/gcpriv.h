@@ -3474,6 +3474,7 @@ private:
 
     PER_HEAP_FIELD_SINGLE_GC size_t total_promoted_bytes;
     PER_HEAP_FIELD_SINGLE_GC size_t finalization_promoted_bytes;
+    PER_HEAP_FIELD_SINGLE_GC bool high_finalization_percentage;
 
     PER_HEAP_FIELD_SINGLE_GC size_t mark_stack_tos;
     PER_HEAP_FIELD_SINGLE_GC size_t mark_stack_bos;
