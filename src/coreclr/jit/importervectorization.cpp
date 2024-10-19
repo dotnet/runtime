@@ -484,9 +484,8 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;
         }
-        if (cnsLength > (int)getUnrollThreshold(MemcmpU16))
+        if (cnsLength > ((int)getUnrollThreshold(MemcmpU16) / 2))
         {
-            // Not more than two loads (of max width)
             JITDUMP("UTF16 data is too long to unroll - bail out.\n");
             return nullptr;
         }
@@ -642,9 +641,8 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;
         }
-        if (cnsLength > (int)getUnrollThreshold(MemcmpU16))
+        if (cnsLength > ((int)getUnrollThreshold(MemcmpU16) / 2))
         {
-            // Not more than two loads (of max width)
             JITDUMP("UTF16 data is too long to unroll - bail out.\n");
             return nullptr;
         }
