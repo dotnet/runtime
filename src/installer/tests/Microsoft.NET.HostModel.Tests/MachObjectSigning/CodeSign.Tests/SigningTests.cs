@@ -17,6 +17,8 @@ using FluentAssertions;
 using System.IO.MemoryMappedFiles;
 using System.Collections;
 using System.Collections.Generic;
+using Microsoft.DotNet.Cli.Build.Framework;
+using System.Security.AccessControl;
 
 namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 {
@@ -102,6 +104,30 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 var check = Codesign.Run("-v", managedSignedPath);
                 check.ExitCode.Should().Be(0, check.StdErr);
                 Assert.True(MachFilesAreEquivalent(codesignFilePath, managedSignedPath, fileName));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        void SignedHelloWorldRuns()
+        {
+            using var testArtifact = TestArtifact.Create(nameof(SignedHelloWorldRuns));
+            foreach (var filePath in GetTestFiles(testArtifact))
+            {
+                string fileName = Path.GetFileName(filePath);
+                string originalFilePath = filePath;
+                string managedSignedPath = filePath + ".signed";
+
+                // Codesigned file
+                Assert.True(Codesign.IsAvailable);
+
+                // Managed signed file
+                AdHocSignFile(originalFilePath, managedSignedPath, fileName);
+
+                // Set the file to be executable
+                File.SetUnixFileMode(managedSignedPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+                Command.Create(managedSignedPath).Execute().ExitCode.Should().Be(0);
             }
         }
 
