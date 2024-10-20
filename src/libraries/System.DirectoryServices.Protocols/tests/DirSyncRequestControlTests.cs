@@ -22,15 +22,25 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("1.2.840.113556.1.4.841", control.Type);
 
-            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } : new byte[] { 48, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 };
+#if NETFRAMEWORK
+            var expected = new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 };
+#else
+            var expected = new byte[] { 48, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 };
+#endif
             Assert.Equal(expected, control.GetValue());
         }
 
         public static IEnumerable<object[]> Ctor_Cookie_Data()
         {
-            yield return new object[] { null, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } : new byte[] { 48, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
-            yield return new object[] { new byte[0], (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } : new byte[] { 48, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
-            yield return new object[] { new byte[] { 97, 98, 99 }, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 13, 2, 1, 0, 2, 3, 16, 0, 0, 4, 3, 97, 98, 99 } : new byte[] { 48, 13, 2, 1, 0, 2, 3, 16, 0, 0, 4, 3, 97, 98, 99 } };
+#if NETFRAMEWORK
+            yield return new object[] { null, new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
+            yield return new object[] { new byte[0], new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
+            yield return new object[] { new byte[] { 97, 98, 99 }, new byte[] { 48, 132, 0, 0, 0, 13, 2, 1, 0, 2, 3, 16, 0, 0, 4, 3, 97, 98, 99 } };
+#else
+            yield return new object[] { null, new byte[] { 48, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
+            yield return new object[] { new byte[0], new byte[] { 48, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
+            yield return new object[] { new byte[] { 97, 98, 99 }, new byte[] { 48, 13, 2, 1, 0, 2, 3, 16, 0, 0, 4, 3, 97, 98, 99 } };
+#endif
         }
 
         [Theory]
@@ -51,9 +61,15 @@ namespace System.DirectoryServices.Protocols.Tests
 
         public static IEnumerable<object[]> Ctor_Cookie_Options_Data()
         {
-            yield return new object[] { null, DirectorySynchronizationOptions.None, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } : new byte[] { 48, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
-            yield return new object[] { new byte[0], DirectorySynchronizationOptions.None - 1, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 13, 2, 4, 255, 255, 255, 255, 2, 3, 16, 0, 0, 4, 0 } : new byte[] { 48, 10, 2, 1, 255, 2, 3, 16, 0, 0, 4, 0 } };
-            yield return new object[] { new byte[] { 97, 98, 99 }, DirectorySynchronizationOptions.ObjectSecurity, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 13, 2, 1, 1, 2, 3, 16, 0, 0, 4, 3, 97, 98, 99 } : new byte[] { 48, 13, 2, 1, 1, 2, 3, 16, 0, 0, 4, 3, 97, 98, 99 } };
+#if NETFRAMEWORK
+            yield return new object[] { null, DirectorySynchronizationOptions.None, new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
+            yield return new object[] { new byte[0], DirectorySynchronizationOptions.None - 1, new byte[] { 48, 132, 0, 0, 0, 13, 2, 4, 255, 255, 255, 255, 2, 3, 16, 0, 0, 4, 0 } };
+            yield return new object[] { new byte[] { 97, 98, 99 }, DirectorySynchronizationOptions.ObjectSecurity, new byte[] { 48, 132, 0, 0, 0, 13, 2, 1, 1, 2, 3, 16, 0, 0, 4, 3, 97, 98, 99 } };
+#else
+            yield return new object[] { null, DirectorySynchronizationOptions.None, new byte[] { 48, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
+            yield return new object[] { new byte[0], DirectorySynchronizationOptions.None - 1, new byte[] { 48, 10, 2, 1, 255, 2, 3, 16, 0, 0, 4, 0 } };
+            yield return new object[] { new byte[] { 97, 98, 99 }, DirectorySynchronizationOptions.ObjectSecurity, new byte[] { 48, 13, 2, 1, 1, 2, 3, 16, 0, 0, 4, 3, 97, 98, 99 } };
+#endif
         }
 
         [Theory]
@@ -74,9 +90,15 @@ namespace System.DirectoryServices.Protocols.Tests
 
         public static IEnumerable<object[]> Ctor_Cookie_Options_AttributeCount_Data()
         {
-            yield return new object[] { null, DirectorySynchronizationOptions.None, 1048576, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } : new byte[] { 48, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
-            yield return new object[] { new byte[0], DirectorySynchronizationOptions.None - 1, 0, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 11, 2, 4, 255, 255, 255, 255, 2, 1, 0, 4, 0 } : new byte[] { 48, 8, 2, 1, 255, 2, 1, 0, 4, 0 } };
-            yield return new object[] { new byte[] { 97, 98, 99 }, DirectorySynchronizationOptions.ObjectSecurity, 10, (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 11, 2, 1, 1, 2, 1, 10, 4, 3, 97, 98, 99 } : new byte[] { 48, 11, 2, 1, 1, 2, 1, 10, 4, 3, 97, 98, 99 } };
+#if NETFRAMEWORK
+            yield return new object[] { null, DirectorySynchronizationOptions.None, 1048576, new byte[] { 48, 132, 0, 0, 0, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
+            yield return new object[] { new byte[0], DirectorySynchronizationOptions.None - 1, 0, new byte[] { 48, 132, 0, 0, 0, 11, 2, 4, 255, 255, 255, 255, 2, 1, 0, 4, 0 } };
+            yield return new object[] { new byte[] { 97, 98, 99 }, DirectorySynchronizationOptions.ObjectSecurity, 10, new byte[] { 48, 132, 0, 0, 0, 11, 2, 1, 1, 2, 1, 10, 4, 3, 97, 98, 99 } };
+#else
+            yield return new object[] { null, DirectorySynchronizationOptions.None, 1048576, new byte[] { 48, 10, 2, 1, 0, 2, 3, 16, 0, 0, 4, 0 } };
+            yield return new object[] { new byte[0], DirectorySynchronizationOptions.None - 1, 0, new byte[] { 48, 8, 2, 1, 255, 2, 1, 0, 4, 0 } };
+            yield return new object[] { new byte[] { 97, 98, 99 }, DirectorySynchronizationOptions.ObjectSecurity, 10, new byte[] { 48, 11, 2, 1, 1, 2, 1, 10, 4, 3, 97, 98, 99 } };
+#endif
         }
 
         [Theory]
