@@ -1959,7 +1959,12 @@ void Assembly::EnsureLoadLevel(FileLoadLevel targetLevel)
         // Enforce the loading requirement.  Note that we may have a deadlock in which case we
         // may be off by one which is OK.  (At this point if we are short of targetLevel we know
         // we have done so because of reentrancy constraints.)
-
+        if (GetLoadLevel() < targetLevel)
+        {
+            // If we reach this point, we will certainly not have activated the assembly,
+            // So any current logic to mark MethodTable's as activated needs to be not be recorded.
+            DoNotRecordTheResultOfEnsureLoadLevel();
+        }
         RequireLoadLevel((FileLoadLevel)(targetLevel-1));
     }
     else
