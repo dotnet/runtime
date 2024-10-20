@@ -30,7 +30,6 @@ namespace System.IO.Compression
         private readonly Stream? _backingStream;
         private byte[] _archiveComment;
         private Encoding? _entryNameAndCommentEncoding;
-
         private long _firstDeletedEntryOffset;
 
 #if DEBUG_FORCE_ZIP64
@@ -427,7 +426,7 @@ namespace System.IO.Compression
             {
                 if (!_archiveStreamOwner.EverOpenedForWrite)
                 {
-                    _archiveStreamOwner.WriteAndFinishLocalEntry(true);
+                    _archiveStreamOwner.WriteAndFinishLocalEntry(forceWrite: true);
                 }
                 else
                 {
@@ -654,7 +653,7 @@ namespace System.IO.Compression
             Debug.Assert(_readEntries);
 
             // Entries starting after this offset have had a dynamically-sized change. Everything on or after this point must be rewritten.
-            long dynamicDirtyStartingOffset = 0;
+            long completeRewriteStartingOffset = 0;
             List<ZipArchiveEntry> entriesToWrite = _entries;
 
             if (_mode == ZipArchiveMode.Update)
@@ -663,20 +662,24 @@ namespace System.IO.Compression
                 // that single entry's metadata can be rewritten without impacting anything else.
                 long startingOffset = _firstDeletedEntryOffset;
                 long nextFileOffset = 0;
-                dynamicDirtyStartingOffset = startingOffset;
+                completeRewriteStartingOffset = startingOffset;
 
                 entriesToWrite = new(_entries.Count);
                 foreach (ZipArchiveEntry entry in _entries)
                 {
-                    if (entry.OriginallyInArchive)
+                    if (!entry.OriginallyInArchive)
                     {
-                        if (entry.Changed == ChangeState.Unchanged)
+                        entriesToWrite.Add(entry);
+                    }
+                    else
+                    {
+                        if (entry.Changes == ChangeState.Unchanged)
                         {
                             // Keep track of the expected position of the file entry after the final untouched file entry so that when the loop completes,
                             // we'll know which position to start writing new entries from.
                             nextFileOffset = Math.Max(nextFileOffset, entry.OffsetOfCompressedData + entry.CompressedLength);
                         }
-                        // When calculating the starting offset to load the files from, only look at dirty entries which are already in the archive.
+                        // When calculating the starting offset to load the files from, only look at changed entries which are already in the archive.
                         else
                         {
                             startingOffset = Math.Min(startingOffset, entry.OffsetOfLocalHeader);
@@ -688,21 +691,17 @@ namespace System.IO.Compression
                         {
                             // If the pending data to write is fixed-length metadata in the header, there's no need to load the full file for
                             // inflation and deflation.
-                            if ((entry.Changed & (ChangeState.DynamicLengthMetadata | ChangeState.StoredData)) != 0)
+                            if ((entry.Changes & (ChangeState.DynamicLengthMetadata | ChangeState.StoredData)) != 0)
                             {
-                                dynamicDirtyStartingOffset = Math.Min(dynamicDirtyStartingOffset, entry.OffsetOfLocalHeader);
+                                completeRewriteStartingOffset = Math.Min(completeRewriteStartingOffset, entry.OffsetOfLocalHeader);
                             }
-                            if (entry.OffsetOfLocalHeader >= dynamicDirtyStartingOffset)
+                            if (entry.OffsetOfLocalHeader >= completeRewriteStartingOffset)
                             {
                                 entry.LoadLocalHeaderExtraFieldAndCompressedBytesIfNeeded();
                             }
 
                             entriesToWrite.Add(entry);
                         }
-                    }
-                    else
-                    {
-                        entriesToWrite.Add(entry);
                     }
                 }
 
@@ -721,7 +720,7 @@ namespace System.IO.Compression
                 // We don't always need to write the local header entry, ZipArchiveEntry is usually able to work out when it doesn't need to.
                 // We want to force this header entry to be written (even for completely untouched entries) if the entry comes after one
                 // which had a pending dynamically-sized write.
-                bool forceWriteLocalEntry = !entry.OriginallyInArchive || (entry.OriginallyInArchive && entry.OffsetOfLocalHeader >= dynamicDirtyStartingOffset);
+                bool forceWriteLocalEntry = !entry.OriginallyInArchive || (entry.OriginallyInArchive && entry.OffsetOfLocalHeader >= completeRewriteStartingOffset);
 
                 entry.WriteAndFinishLocalEntry(forceWriteLocalEntry);
             }
@@ -734,7 +733,7 @@ namespace System.IO.Compression
             {
                 // The central directory needs to be rewritten if its position has moved, if there's a new entry in the archive, or if the entry might be different.
                 bool centralDirectoryEntryRequiresUpdate = startOfCentralDirectory != _centralDirectoryStart
-                    | (!entry.OriginallyInArchive || (entry.OriginallyInArchive && entry.OffsetOfLocalHeader >= dynamicDirtyStartingOffset));
+                    | (!entry.OriginallyInArchive || (entry.OriginallyInArchive && entry.OffsetOfLocalHeader >= completeRewriteStartingOffset));
 
                 entry.WriteCentralDirectoryFileHeader(centralDirectoryEntryRequiresUpdate);
                 archiveEpilogueRequiresUpdate |= centralDirectoryEntryRequiresUpdate;

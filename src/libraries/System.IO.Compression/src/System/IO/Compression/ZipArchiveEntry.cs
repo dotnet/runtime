@@ -88,7 +88,7 @@ namespace System.IO.Compression
 
             _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, CompressionMethod);
 
-            Changed = ZipArchive.ChangeState.Unchanged;
+            Changes = ZipArchive.ChangeState.Unchanged;
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
@@ -151,7 +151,7 @@ namespace System.IO.Compression
                 _archive.AcquireArchiveStream(this);
             }
 
-            Changed = ZipArchive.ChangeState.Unchanged;
+            Changes = ZipArchive.ChangeState.Unchanged;
         }
 
         /// <summary>
@@ -191,7 +191,7 @@ namespace System.IO.Compression
             {
                 ThrowIfInvalidArchive();
                 _externalFileAttr = (uint)value;
-                Changed |= ZipArchive.ChangeState.FixedLengthMetadata;
+                Changes |= ZipArchive.ChangeState.FixedLengthMetadata;
             }
         }
 
@@ -214,7 +214,7 @@ namespace System.IO.Compression
                 {
                     _generalPurposeBitFlag |= BitFlagValues.UnicodeFileNameAndComment;
                 }
-                Changed |= ZipArchive.ChangeState.DynamicLengthMetadata;
+                Changes |= ZipArchive.ChangeState.DynamicLengthMetadata;
             }
         }
 
@@ -279,7 +279,7 @@ namespace System.IO.Compression
                     throw new ArgumentOutOfRangeException(nameof(value), SR.DateTimeOutOfRange);
 
                 _lastModified = value;
-                Changed |= ZipArchive.ChangeState.FixedLengthMetadata;
+                Changes |= ZipArchive.ChangeState.FixedLengthMetadata;
             }
         }
 
@@ -302,7 +302,7 @@ namespace System.IO.Compression
         /// </summary>
         public string Name => ParseFileName(FullName, _versionMadeByPlatform);
 
-        internal ZipArchive.ChangeState Changed { get; private set; }
+        internal ZipArchive.ChangeState Changes { get; private set; }
 
         internal bool OriginallyInArchive => _originallyInArchive;
 
@@ -549,9 +549,9 @@ namespace System.IO.Compression
                 extraFieldLength = (ushort)bigExtraFieldLength;
             }
 
-            if (_originallyInArchive && Changed == ZipArchive.ChangeState.Unchanged && !forceWrite)
+            if (_originallyInArchive && Changes == ZipArchive.ChangeState.Unchanged && !forceWrite)
             {
-                long centralDirectoryHeaderLength = 46
+                long centralDirectoryHeaderLength = ZipCentralDirectoryFileHeader.SizeOfConstantHeaderFields
                     + _storedEntryNameBytes.Length
                     + (zip64Needed ? zip64ExtraField.TotalSize : 0)
                     + (_cdUnknownExtraFields != null ? ZipGenericExtraField.TotalSize(_cdUnknownExtraFields) : 0)
@@ -732,7 +732,7 @@ namespace System.IO.Compression
             _archive.DebugAssertIsStillArchiveStreamOwner(this);
 
             _everOpenedForWrite = true;
-            Changed |= ZipArchive.ChangeState.StoredData;
+            Changes |= ZipArchive.ChangeState.StoredData;
             CheckSumAndSizeWriteStream crcSizeStream = GetDataCompressor(_archive.ArchiveStream, true, (object? o, EventArgs e) =>
             {
                 // release the archive stream
@@ -753,7 +753,7 @@ namespace System.IO.Compression
             ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: true);
 
             _everOpenedForWrite = true;
-            Changed |= ZipArchive.ChangeState.StoredData;
+            Changes |= ZipArchive.ChangeState.StoredData;
             _currentlyOpenForWrite = true;
             // always put it at the beginning for them
             UncompressedData.Seek(0, SeekOrigin.Begin);
@@ -966,9 +966,9 @@ namespace System.IO.Compression
 
             // If this is an existing, unchanged entry then silently skip forwards.
             // If it's new or changed, write the header.
-            if (_originallyInArchive && Changed == ZipArchive.ChangeState.Unchanged && !forceWrite)
+            if (_originallyInArchive && Changes == ZipArchive.ChangeState.Unchanged && !forceWrite)
             {
-                writer.Seek(30 + _storedEntryNameBytes.Length, SeekOrigin.Current);
+                writer.Seek(ZipLocalFileHeader.SizeOfLocalHeader + _storedEntryNameBytes.Length, SeekOrigin.Current);
 
                 if (zip64Used)
                 {

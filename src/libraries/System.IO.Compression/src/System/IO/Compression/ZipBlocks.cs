@@ -461,6 +461,8 @@ namespace System.IO.Compression
     internal struct ZipCentralDirectoryFileHeader
     {
         public const uint SignatureConstant = 0x02014B50;
+        public const int SizeOfConstantHeaderFields = 46;
+
         public byte VersionMadeByCompatibility;
         public byte VersionMadeBySpecification;
         public ushort VersionNeededToExtract;
