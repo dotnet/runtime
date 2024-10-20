@@ -1773,6 +1773,94 @@ void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
     }
 }
 
+//------------------------------------------------------------------------
+// optShouldCloneLoop: Decide if a loop that can be cloned should be cloned.
+//
+// Arguments:
+//     loop        - the current loop for which the optimizations are performed.
+//     context     - data structure where all loop cloning info is kept.
+//
+// Returns:
+//     true if expected performance gain from cloning is worth the potential
+//     size increase.
+//
+// Remarks:
+//     This is a simple-minded heuristic meant to avoid "runaway" cloning
+//     where large loops are cloned.
+//
+//     We estimate the size cost of cloning by summing up the number of
+//     tree nodes in all statements in all blocks in the loop.
+//
+//     This value is compared to a hard-coded threshold, and if bigger,
+//     then the method returns false.
+//
+bool Compiler::optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
+{
+    // Compute loop size
+    //
+    unsigned loopSize = 0;
+
+    // For now we use a very simplistic model where each tree node
+    // has the same code size.
+    //
+    // CostSz is not available until later.
+    //
+    struct TreeCostWalker : GenTreeVisitor<TreeCostWalker>
+    {
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        unsigned m_nodeCount;
+
+        TreeCostWalker(Compiler* comp)
+            : GenTreeVisitor(comp)
+            , m_nodeCount(0)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            m_nodeCount++;
+            return WALK_CONTINUE;
+        }
+
+        void Reset()
+        {
+            m_nodeCount = 0;
+        }
+        unsigned Cost()
+        {
+            return m_nodeCount;
+        }
+    };
+
+    TreeCostWalker costWalker(this);
+
+    loop->VisitLoopBlocks([&](BasicBlock* block) {
+        weight_t normalizedWeight = block->getBBWeight(this);
+        for (Statement* const stmt : block->Statements())
+        {
+            costWalker.Reset();
+            costWalker.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            loopSize += costWalker.Cost();
+        }
+        return BasicBlockVisit::Continue;
+    });
+
+    int const sizeLimit = JitConfig.JitCloneLoopsSizeLimit();
+
+    if ((sizeLimit >= 0) && (loopSize >= (unsigned)sizeLimit))
+    {
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP " of size %u, size limit %d\n", loop->GetIndex(), loopSize,
+                sizeLimit);
+        return false;
+    }
+
+    return true;
+}
+
 //----------------------------------------------------------------------------
 // optIsLoopClonable: Determine whether this loop can be cloned.
 //
@@ -1841,7 +1929,6 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
                 loop->GetIndex());
         return false;
     }
-
     assert(!requireIterable || !lvaVarAddrExposed(iterInfo->IterVar));
 
     if (requireIterable)
@@ -1974,7 +2061,8 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     BasicBlock* fastPreheader = fgNewBBafter(BBJ_ALWAYS, preheader, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", fastPreheader->bbNum, preheader->bbNum);
-    fastPreheader->bbWeight = fastPreheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    fastPreheader->bbWeight = preheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    fastPreheader->CopyFlags(preheader, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
 
     assert(preheader->KindIs(BBJ_ALWAYS));
     assert(preheader->TargetIs(loop->GetHeader()));
@@ -2008,6 +2096,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, newPred->bbNum);
     slowPreheader->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    slowPreheader->CopyFlags(newPred, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
     slowPreheader->scaleBBWeight(LoopCloneContext::slowPathWeightScaleFactor);
     newPred = slowPreheader;
 
@@ -2561,7 +2650,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
 
                 assert(compCurBB->lastStmt() == info->stmt);
                 info->context->EnsureLoopOptInfo(info->loop->GetIndex())
-                    ->Push(new (this, CMK_LoopOpt) LcTypeTestOptInfo(info->stmt, indir, lclNum, clsHnd));
+                    ->Push(new (this, CMK_LoopOpt) LcTypeTestOptInfo(compCurBB, info->stmt, indir, lclNum, clsHnd));
             }
         }
         else if (optIsHandleOrIndirOfHandle(relopOp2, GTF_ICON_FTN_ADDR))
@@ -2642,7 +2731,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
                 assert(iconHandle->IsIconHandle(GTF_ICON_FTN_ADDR));
                 assert(compCurBB->lastStmt() == info->stmt);
                 LcMethodAddrTestOptInfo* optInfo = new (this, CMK_LoopOpt)
-                    LcMethodAddrTestOptInfo(info->stmt, indir, lclNum, (void*)iconHandle->IconValue(),
+                    LcMethodAddrTestOptInfo(compCurBB, info->stmt, indir, lclNum, (void*)iconHandle->IconValue(),
                                             relopOp2 != iconHandle DEBUG_ARG(
                                                             (CORINFO_METHOD_HANDLE)iconHandle->gtTargetHandle));
                 info->context->EnsureLoopOptInfo(info->loop->GetIndex())->Push(optInfo);
@@ -2940,6 +3029,10 @@ PhaseStatus Compiler::optCloneLoops()
                 ++optStaticallyOptimizedLoops;
 
                 // No need to clone.
+                context.CancelLoopOptInfo(loop->GetIndex());
+            }
+            else if (!optShouldCloneLoop(loop, &context))
+            {
                 context.CancelLoopOptInfo(loop->GetIndex());
             }
         }

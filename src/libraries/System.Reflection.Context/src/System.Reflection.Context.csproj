@@ -7,10 +7,7 @@
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
-    <PackageDescription>Provides classes that enable customized reflection contexts.
-
-Commonly Used Types:
-System.Reflection.Context.CustomReflectionContext</PackageDescription>
+    <PackageDescription>Provides CustomReflectionContext to enable customized reflection contexts.</PackageDescription>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->

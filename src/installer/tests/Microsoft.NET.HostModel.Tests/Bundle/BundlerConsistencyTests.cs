@@ -23,7 +23,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             sharedTestState = fixture;
         }
 
-        private static string BundlerHostName = Binaries.GetExeFileNameForCurrentPlatform(SharedTestState.AppName);
+        private static string BundlerHostName = Binaries.GetExeName(SharedTestState.AppName);
         private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, bool macosCodesign = true)
             => new Bundler(BundlerHostName, sharedTestState.App.GetUniqueSubdirectory("bundle"), bundleOptions, targetFrameworkVersion: version, macosCodesign: macosCodesign);
 

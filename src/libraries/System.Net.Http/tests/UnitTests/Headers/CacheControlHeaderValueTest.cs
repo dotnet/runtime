@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -137,9 +138,9 @@ namespace System.Net.Http.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void ToString_NegativeValues_UsesMinusSignRegardlessOfCurrentCulture()
+        public async Task ToString_NegativeValues_UsesMinusSignRegardlessOfCurrentCulture()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 var cacheControl = new CacheControlHeaderValue()
                 {
@@ -155,7 +156,7 @@ namespace System.Net.Http.Tests
                 CultureInfo.CurrentCulture = ci;
 
                 Assert.Equal("max-age=-1, s-maxage=-4, max-stale=-2, min-fresh=-3", cacheControl.ToString());
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [Fact]

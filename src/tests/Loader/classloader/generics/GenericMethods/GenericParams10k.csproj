@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <CLRTestPriority>1</CLRTestPriority>
+    <!-- 10000 generic parameters hits implementation limits in CodeView debug information -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GenericParams10k.cs" />

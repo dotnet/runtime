@@ -47,7 +47,6 @@ class FramedMethodFrame;
 class Module;
 struct DeclActionInfo;
 class ComCallMethodDesc;
-class BaseDomain;
 class ZapNode;
 struct ArgLocDesc;
 
@@ -70,8 +69,6 @@ EXTERN_C void checkStack(void);
 
 #define JUMP_ALLOCATE_SIZE                      8   // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         8   // # bytes to allocate for a back to back jump instruction
-
-#define HAS_COMPACT_ENTRYPOINTS                 1
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
 
@@ -363,7 +360,6 @@ inline PCODE decodeBackToBackJump(PCODE pBuffer)
 
 //----------------------------------------------------------------------
 #include "stublink.h"
-struct ArrayOpScript;
 
 inline BOOL IsThumbCode(PCODE pCode)
 {
@@ -940,8 +936,6 @@ public:
     VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 };
 
-extern "C" void SinglecastDelegateInvokeStub();
-
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4359) // Prevent "warning C4359: 'UMEntryThunkCode': Alignment specifier is less than actual alignment (8), and will be ignored." in crossbitness scenario
@@ -1023,11 +1017,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-#define JIT_GetSharedGCStaticBase           JIT_GetSharedGCStaticBase_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_SingleAppDomain
-#define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
-
 
 //------------------------------------------------------------------------
 //

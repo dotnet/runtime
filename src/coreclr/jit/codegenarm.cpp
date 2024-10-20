@@ -119,12 +119,12 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
-    GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
-
     BasicBlock* nextBlock = block->Next();
 
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
+        GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
+
         if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
         {
             instGen(INS_BREAKPOINT);
@@ -138,12 +138,12 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
         // Because of the way the flowgraph is connected, the liveness info for this one instruction
         // after the call is not (can not be) correct in cases where a variable has a last use in the
-        // handler.  So turn off GC reporting for this single instruction.
+        // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
         GetEmitter()->emitDisableGC();
-
-        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
+        GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
 
         // Now go to where the finally funclet needs to return to.
+        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
         if (nextBlock->NextIs(finallyContinuation) && !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
         {
             // Fall-through.
@@ -303,11 +303,6 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
         }
         break;
-
-        case GT_CNS_VEC:
-        {
-            unreached();
-        }
 
         default:
             unreached();
@@ -1927,14 +1922,15 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
 void CodeGen::genPushFltRegs(regMaskTP regMask)
 {
-    assert(regMask != 0);                        // Don't call uness we have some registers to push
-    assert((regMask & RBM_ALLFLOAT) == regMask); // Only floasting point registers should be in regMask
+    assert(regMask != 0);                        // Don't call unless we have some registers to push
+    assert((regMask & RBM_ALLFLOAT) == regMask); // Only floating point registers should be in regMask
 
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
+
     // regMask should be contiguously set
-    regMaskTP tmpMask = ((regMask >> lowReg) + 1); // tmpMask should have a single bit set
-    assert((tmpMask & (tmpMask - 1)) == 0);
+    regMaskSmall tmpMask = ((regMask.getLow() >> lowReg) + 1); // tmpMask should have a single bit set
+    assert(genMaxOneBit(tmpMask));
     assert(lowReg == REG_F16); // Currently we expect to start at F16 in the unwind codes
 
     // Our calling convention requires that we only use vpush for TYP_DOUBLE registers
@@ -1952,8 +1948,8 @@ void CodeGen::genPopFltRegs(regMaskTP regMask)
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
     // regMask should be contiguously set
-    regMaskTP tmpMask = ((regMask >> lowReg) + 1); // tmpMask should have a single bit set
-    assert((tmpMask & (tmpMask - 1)) == 0);
+    regMaskSmall tmpMask = ((regMask.getLow() >> lowReg) + 1); // tmpMask should have a single bit set
+    assert(genMaxOneBit(tmpMask));
 
     // Our calling convention requires that we only use vpop for TYP_DOUBLE registers
     noway_assert(floatRegCanHoldType(lowReg, TYP_DOUBLE));
@@ -2192,7 +2188,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         genUsedPopToReturn = false;
     }
 
-    assert(FitsIn<int>(maskPopRegsInt));
+    assert(FitsIn<int>(maskPopRegsInt.getLow()));
     inst_IV(INS_pop, (int)maskPopRegsInt);
     compiler->unwindPopMaskInt(maskPopRegsInt);
 }
@@ -2320,7 +2316,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     regMaskTP maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPushRegsFloat);
     maskPushRegsInt |= maskStackAlloc;
 
-    assert(FitsIn<int>(maskPushRegsInt));
+    assert(FitsIn<int>(maskPushRegsInt.getLow()));
     inst_IV(INS_push, (int)maskPushRegsInt);
     compiler->unwindPushMaskInt(maskPushRegsInt);
 
@@ -2437,7 +2433,7 @@ void CodeGen::genFuncletEpilog()
         compiler->unwindPopMaskFloat(maskPopRegsFloat);
     }
 
-    assert(FitsIn<int>(maskPopRegsInt));
+    assert(FitsIn<int>(maskPopRegsInt.getLow()));
     inst_IV(INS_pop, (int)maskPopRegsInt);
     compiler->unwindPopMaskInt(maskPopRegsInt);
 

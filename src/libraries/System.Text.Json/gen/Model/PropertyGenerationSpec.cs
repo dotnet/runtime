@@ -98,6 +98,16 @@ namespace System.Text.Json.SourceGeneration
         public required bool CanUseSetter { get; init; }
 
         /// <summary>
+        /// Whether the property getter returns a nullable type with a non-nullable annotation.
+        /// </summary>
+        public required bool IsGetterNonNullableAnnotation { get; init; }
+
+        /// <summary>
+        /// Whether the property setter accepts a nullable type with a non-nullable annotation.
+        /// </summary>
+        public required bool IsSetterNonNullableAnnotation { get; init; }
+
+        /// <summary>
         /// The <see cref="JsonIgnoreCondition"/> for the property.
         /// </summary>
         public required JsonIgnoreCondition? DefaultIgnoreCondition { get; init; }

@@ -20,6 +20,27 @@ namespace System.Text.Json.Serialization
         private bool _isFirstBlock;
         private bool _isFinalBlock;
 
+        // An "unsuccessful read" in this context refers to a buffer read operation that
+        // wasn't sufficient to advance the reader to the next token. This occurs primarily
+        // when consuming large JSON strings (which don't support streaming today) but is
+        // also possible with other token types such as numbers, booleans, or nulls.
+        //
+        // The JsonSerializer.DeserializeAsyncEnumerable methods employ a special buffering
+        // strategy where rather than attempting to fill the entire buffer, the deserializer
+        // will be invoked as soon as the first chunk of data is read from the stream.
+        // This is to ensure liveness: data should be surfaced on the IAE as soon as they
+        // are streamed from the server. On the other hand, this can create performance
+        // problems in cases where the underlying stream uses extremely fine-grained buffering.
+        // For this reason, we employ a threshold that will revert to buffer filling once crossed.
+        // The counter is reset to zero whenever the JSON reader has been advanced successfully.
+        //
+        // The threshold is set to 5 unsuccessful reads. This is a relatively conservative threshold
+        // but should still make fallback unlikely in most scenaria. It should ensure that fallback
+        // isn't triggered in null or boolean tokens even in the worst-case scenario where they are
+        // streamed one byte at a time.
+        private const int UnsuccessfulReadCountThreshold = 5;
+        private int _unsuccessfulReadCount;
+
         public ReadBufferState(int initialBufferSize)
         {
             _buffer = ArrayPool<byte>.Shared.Rent(Math.Max(initialBufferSize, JsonConstants.Utf8Bom.Length));
@@ -46,6 +67,7 @@ namespace System.Text.Json.Serialization
             // make all updates on a copy which is returned once complete.
             ReadBufferState bufferState = this;
 
+            int minBufferCount = fillBuffer || _unsuccessfulReadCount > UnsuccessfulReadCountThreshold ? bufferState._buffer.Length : 0;
             do
             {
                 int bytesRead = await utf8Json.ReadAsync(
@@ -64,7 +86,7 @@ namespace System.Text.Json.Serialization
 
                 bufferState._count += bytesRead;
             }
-            while (fillBuffer && bufferState._count < bufferState._buffer.Length);
+            while (bufferState._count < minBufferCount);
 
             bufferState.ProcessReadBytes();
             return bufferState;
@@ -105,8 +127,8 @@ namespace System.Text.Json.Serialization
         public void AdvanceBuffer(int bytesConsumed)
         {
             Debug.Assert(bytesConsumed <= _count);
-            Debug.Assert(!_isFinalBlock || _count == bytesConsumed, "The reader should have thrown if we have remaining bytes.");
 
+            _unsuccessfulReadCount = bytesConsumed == 0 ? _unsuccessfulReadCount + 1 : 0;
             _count -= bytesConsumed;
 
             if (!_isFinalBlock)

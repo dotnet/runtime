@@ -2716,12 +2716,46 @@ emit_managed_wrapper_validate_signature (MonoMethodSignature* sig, MonoMarshalSp
 }
 
 static void
+emit_swift_lowered_struct_load (MonoMethodBuilder *mb, MonoMethodSignature *csig, SwiftPhysicalLowering swift_lowering, int tmp_local, uint32_t csig_argnum)
+{
+	guint8 stind_op;
+	uint32_t offset = 0;
+
+	for (uint32_t idx_lowered = 0; idx_lowered < swift_lowering.num_lowered_elements; idx_lowered++) {
+		offset = swift_lowering.offsets [idx_lowered];
+		mono_mb_emit_ldloc_addr (mb, tmp_local);
+		mono_mb_emit_icon (mb, offset);
+		mono_mb_emit_byte (mb, CEE_ADD);
+
+		mono_mb_emit_ldarg (mb, csig_argnum + idx_lowered);
+		stind_op = mono_type_to_stind (csig->params [csig_argnum + idx_lowered]);
+		mono_mb_emit_byte (mb, stind_op);
+    }
+}
+
+/* Swift struct lowering handling causes csig to have additional arguments. 
+ * This function returns the index of the argument in the csig that corresponds to the argument in the original signature.
+ */
+static int
+get_csig_argnum (int i, EmitMarshalContext* m)
+{
+	if (m->swift_sig_to_csig_mp) {
+		g_assert (i < m->sig->param_count);
+		int csig_argnum = m->swift_sig_to_csig_mp [i];
+		g_assert (csig_argnum >= 0 && csig_argnum < m->csig->param_count);
+		return csig_argnum;
+	}
+	return i;
+}
+
+static void
 emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, gboolean runtime_init_callback, MonoError *error)
 {
 	MonoMethodSignature *sig, *csig;
 	int i, *tmp_locals;
 	gboolean closed = FALSE;
 	GCUnsafeTransitionBuilder gc_unsafe_builder = {0,};
+	SwiftPhysicalLowering *swift_lowering = m->swift_lowering;
 
 	sig = m->sig;
 	csig = m->csig;
@@ -2798,19 +2832,31 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	for (i = 0; i < sig->param_count; i ++) {
 		MonoType *t = sig->params [i];
 		MonoMarshalSpec *spec = mspecs [i + 1];
+		int csig_argnum = get_csig_argnum (i, m);
 
 		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
-			tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0,  &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+			tmp_locals [i] = mono_emit_marshal (m, csig_argnum, t, mspecs [i + 1], 0,  &csig->params [csig_argnum], MARSHAL_ACTION_MANAGED_CONV_IN);
 		} else {
 			switch (t->type) {
+			case MONO_TYPE_VALUETYPE:
+				if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+					if (swift_lowering [i].num_lowered_elements > 0) {
+						tmp_locals [i] = mono_mb_add_local (mb, sig->params [i]);
+						emit_swift_lowered_struct_load (mb, csig, swift_lowering [i], tmp_locals [i], csig_argnum);
+						break;
+					} else if (swift_lowering [i].by_reference) {
+						/* Structs passed by reference are handled during arg loading emission */
+						tmp_locals [i] = 0;
+						break;
+					}
+				} /* else fallthru */
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_CLASS:
-			case MONO_TYPE_VALUETYPE:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_BOOLEAN:
-				tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+				tmp_locals [i] = mono_emit_marshal (m, csig_argnum, t, mspecs [i + 1], 0, &csig->params [csig_argnum], MARSHAL_ACTION_MANAGED_CONV_IN);
 				break;
 			default:
 				tmp_locals [i] = 0;
@@ -2836,15 +2882,18 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
-
-		if (tmp_locals [i]) {
+		int csig_argnum = get_csig_argnum (i, m);
+		if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && swift_lowering [i].by_reference) {
+			mono_mb_emit_ldarg (mb, csig_argnum);
+			MonoClass* klass = mono_class_from_mono_type_internal (sig->params [i]);
+			mono_mb_emit_op (mb, CEE_LDOBJ, klass);
+		} else if (tmp_locals [i]) {
 			if (m_type_is_byref (t))
 				mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
 			else
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
-		}
-		else
-			mono_mb_emit_ldarg (mb, i);
+		} else
+			mono_mb_emit_ldarg (mb, csig_argnum);
 	}
 
 	/* ret = method (...) */

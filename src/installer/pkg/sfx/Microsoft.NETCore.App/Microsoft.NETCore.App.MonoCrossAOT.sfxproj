@@ -59,7 +59,4 @@
     <Error Condition="!Exists('$(AotCompilerPath)$(AotCompilerFileName)')" Text="Cross compiler not found in $(AotCompilerPath). MonoAotCrossDir=$(MonoAotCrossDir)" />
   </Target>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
-  </ItemGroup>
 </Project>

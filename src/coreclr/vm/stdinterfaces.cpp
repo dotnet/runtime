@@ -222,7 +222,7 @@ Unknown_AddRef_Internal(IUnknown* pUnk)
     if (pSimpleWrap  && (pOuter = pSimpleWrap->GetOuter()) != NULL)
     {
         // If we are in process detach, we cannot safely call release on our outer.
-        if (g_fProcessDetach)
+        if (IsAtProcessExit())
             return 1;
 
         ULONG cbRef = pOuter->AddRef();
@@ -284,7 +284,7 @@ Unknown_Release_Internal(IUnknown* pUnk)
     if (pSimpleWrap  && (pOuter = pSimpleWrap->GetOuter()) != NULL)
     {
         // If we are in process detach, we cannot safely call release on our outer.
-        if (g_fProcessDetach)
+        if (IsAtProcessExit())
             cbRef = 1;
 
         cbRef = SafeReleasePreemp(pOuter);

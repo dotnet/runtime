@@ -145,10 +145,10 @@ void GetInputFileFullPath()
     DWORD len = (DWORD) strlen(g_szInputFile) + 16;
     WCHAR* wzArg = new WCHAR[len];
     memset(wzArg, 0, len * sizeof(WCHAR));
-    WszMultiByteToWideChar(g_uConsoleCP, 0, g_szInputFile, -1, wzArg, len);
+    MultiByteToWideChar(g_uConsoleCP, 0, g_szInputFile, -1, wzArg, len);
 
     // Get the full path
-    len = WszGetFullPathName(wzArg, MAX_PATH, g_wszFullInputFile, NULL);
+    len = GetFullPathName(wzArg, MAX_PATH, g_wszFullInputFile, NULL);
     VDELETE(wzArg);
 }
 
@@ -433,7 +433,7 @@ int ParseCmdLineW(int argc, _In_ __nullterminated wchar_t* argv[], _Out_ char** 
     for(int i=1; i < argc; i++)
     {
         memset(szArg,0,2048);
-        WszWideCharToMultiByte(CP_UTF8,0,argv[i],-1,szArg,2048,NULL,NULL);
+        WideCharToMultiByte(CP_UTF8,0,argv[i],-1,szArg,2048,NULL,NULL);
         if((ret = ProcessOneArg(szArg,ppszObjFileName)) != 0) break;
     }
     VDELETE(szArg);
@@ -492,7 +492,7 @@ int main(int argc, char* argv[])
 
 #ifndef TARGET_UNIX
     // Dev11 #5320 - pull the localized resource loader up so if ParseCmdLineW need resources, they're already loaded
-    g_hResources = WszGetModuleHandle(NULL);
+    g_hResources = GetModuleHandle(NULL);
 #endif
 
 

@@ -83,7 +83,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of items in the immutable queue.</typeparam>
         /// <param name="items">A span that contains the items to prepopulate the queue with.</param>
         /// <returns>A new immutable queue that contains the specified items.</returns>
-        public static ImmutableQueue<T> Create<T>(/*params*/ ReadOnlySpan<T> items)
+        public static ImmutableQueue<T> Create<T>(params ReadOnlySpan<T> items)
         {
             if (items.IsEmpty)
             {

@@ -1,12 +1,27 @@
 <Project Sdk="Microsoft.Build.Traversal">
-  <ItemGroup>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)**\*.csproj" />
+  <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
+    <ProjectReference Include="AndroidAppBuilder\AndroidAppBuilder.csproj" />
+    <ProjectReference Include="AotCompilerTask\MonoAOTCompiler.csproj" />
+    <ProjectReference Include="AppleAppBuilder\AppleAppBuilder.csproj" />
+    <ProjectReference Include="LibraryBuilder\LibraryBuilder.csproj" />
+    <ProjectReference Include="Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
+    <ProjectReference Include="Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj" />
+    <ProjectReference Include="MobileBuildTasks\MobileBuildTasks.csproj" />
+    <ProjectReference Include="MonoTargetsTasks\MonoTargetsTasks.csproj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
+    <ProjectReference Include="MonoTargetsTasks\ILStrip\AssemblyStripper\AssemblyStripper.csproj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
+    <ProjectReference Include="TestExclusionListTasks\TestExclusionListTasks.csproj" />
+    <ProjectReference Include="WasmAppBuilder\WasmAppBuilder.csproj" />
+    <ProjectReference Include="WasmBuildTasks\WasmBuildTasks.csproj" />
+  
+    <!-- For WasmBuildTests or any other configuration that tests against workloads -->
+    <ProjectReference Include="WorkloadBuildTasks\WorkloadBuildTasks.csproj" />
+  </ItemGroup>
 
-    <!-- These projects do not need to be built during source-build. -->
-    <!-- For example, they may take dependencies on pre-built packages that aren't build-from-source. e.g. 'Microsoft.DotNet.CilStrip.Sources' -->
-    <ProjectReference Remove="MonoTargetsTasks\MonoTargetsTasks.csproj;
-                              MonoTargetsTasks\ILStrip\AssemblyStripper\AssemblyStripper.csproj"
-                      Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
+  <ItemGroup>
+    <!-- This could be conditioned on '$(RuntimeFlavor)' == 'CoreCLR' but Mono legs still need it right now -->
+    <ProjectReference Include="Crossgen2Tasks\Crossgen2Tasks.csproj" />
+
+    <ProjectReference Include="installer.tasks\installer.tasks.csproj" />
   </ItemGroup>
 
   <!--

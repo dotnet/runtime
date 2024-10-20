@@ -3914,10 +3914,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         {
             regNumber rsvdReg = codeGen->rsGetRsvdReg();
             emitIns_genStackOffset(rsvdReg, varx, offs, /* isFloatUsage */ true, &baseRegUsed);
-
-            // Ensure the baseReg calculated is correct.
-            assert(baseRegUsed == reg2);
-            emitIns_R_R(INS_add, EA_4BYTE, rsvdReg, reg2);
+            emitIns_R_R(INS_add, EA_4BYTE, rsvdReg, baseRegUsed);
             emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
             return;
         }
@@ -5771,15 +5768,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(REG_NA == (int)REG_NA);
 
     VARSET_TP GCvars(VarSetOps::UninitVal());
+    regMaskTP gcrefRegs;
+    regMaskTP byrefRegs;
 
     /* What instruction format have we got? */
 
     switch (fmt)
     {
-        int       imm;
-        BYTE*     addr;
-        regMaskTP gcrefRegs;
-        regMaskTP byrefRegs;
+        int   imm;
+        BYTE* addr;
 
         case IF_T1_A: // T1_A    ................
             sz   = SMALL_IDSC_SIZE;
@@ -6867,9 +6864,9 @@ void emitter::emitDispRegmask(int imm, bool encodedPC_LR)
     }
     else
     {
-        hasPC = (imm & RBM_PC) != 0;
-        hasLR = (imm & RBM_LR) != 0;
-        imm &= ~(RBM_PC | RBM_LR);
+        hasPC = (imm & SRBM_PC) != 0;
+        hasLR = (imm & SRBM_LR) != 0;
+        imm &= ~(SRBM_PC | SRBM_LR);
     }
 
     regNumber reg = REG_R0;

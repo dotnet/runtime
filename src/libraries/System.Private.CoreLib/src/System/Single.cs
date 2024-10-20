@@ -349,33 +349,33 @@ namespace System
 
         public override string ToString()
         {
-            return Number.FormatSingle(m_value, null, NumberFormatInfo.CurrentInfo);
+            return Number.FormatFloat(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatSingle(m_value, null, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatFloat(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
-            return Number.FormatSingle(m_value, format, NumberFormatInfo.CurrentInfo);
+            return Number.FormatFloat(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
-            return Number.FormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatFloat(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+            return Number.TryFormatFloat(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
 
         /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
         public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
+            return Number.TryFormatFloat(m_value, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
         }
 
         // Parses a float from a String in the given style.  If
@@ -857,7 +857,7 @@ namespace System
         public static int ILogB(float x) => MathF.ILogB(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
-        public static float Lerp(float value1, float value2, float amount) => (value1 * (1.0f - amount)) + (value2 * amount);
+        public static float Lerp(float value1, float value2, float amount) => MultiplyAddEstimate(value1, 1.0f - amount, value2 * amount);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         [Intrinsic]
@@ -2216,6 +2216,10 @@ namespace System
         static float IBinaryFloatParseAndFormatInfo<float>.BitsToFloat(ulong bits) => BitConverter.UInt32BitsToSingle((uint)(bits));
 
         static ulong IBinaryFloatParseAndFormatInfo<float>.FloatToBits(float value) => BitConverter.SingleToUInt32Bits(value);
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxRoundTripDigits => 9;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxPrecisionCustomFormat => 7;
 
         //
         // Helpers

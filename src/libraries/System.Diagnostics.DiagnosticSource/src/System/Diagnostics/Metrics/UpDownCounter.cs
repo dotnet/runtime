@@ -58,7 +58,7 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         /// <param name="delta">The amount to be added which can be positive, negative or zero.</param>
         /// <param name="tags">A span of key-value pair tags associated with the measurement.</param>
-        public void Add(T delta, /*params*/ ReadOnlySpan<KeyValuePair<string, object?>> tags) => RecordMeasurement(delta, tags);
+        public void Add(T delta, params ReadOnlySpan<KeyValuePair<string, object?>> tags) => RecordMeasurement(delta, tags);
 
         /// <summary>
         /// Record the delta value of the measurement. The delta can be positive, negative or zero.

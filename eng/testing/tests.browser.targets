@@ -173,16 +173,6 @@
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
 
       <WasmNativeDebugSymbols Condition="'$(DebuggerSupport)' == 'true' and '$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
-      <!--
-        Do this *after* importing BrowserWasmApp.targets. tests.wasm.targets sets this to `reset-to-zero` to indicate
-        that we want to force this value to zero.
-
-        BrowserWasmApp.targets *overrides* `WasmDebugLevel` when `DebuggerSupport=true`, but for the library tests
-        we explicitly want to:
-        1. build with DebuggerSupport=true so the debugger attributes are preserved by the linker;
-        2. *debugging* is disabled at run time so the interpreter optimizations don't get disabled.
-      -->
-      <WasmDebugLevel Condition="'$(WasmDebugLevel)' == 'reset-to-zero'">0</WasmDebugLevel>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
@@ -255,24 +245,17 @@
     <Error Condition="'$(Scenario)' != 'WasmTestOnV8' and 
                       '$(Scenario)' != 'WasmTestOnChrome' and 
                       '$(Scenario)' != 'WasmTestOnFirefox' and 
-                      '$(Scenario)' != 'WasmTestOnNodeJS' and 
                       '$(Scenario)' != 'WasmDebuggerTests' and 
                       '$(Scenario)' != 'BuildWasmApps'" 
-                      Text="Only supported scenarios are WasmTestOnV8, WasmTestOnNodeJS, WasmTestOnChrome, WasmTestOnFirefox, WasmDebuggerTests and BuildWasmApps at the moment. It was $(Scenario)." />
+                      Text="Only supported scenarios are WasmTestOnV8, WasmTestOnChrome, WasmTestOnFirefox, WasmDebuggerTests and BuildWasmApps at the moment. It was $(Scenario)." />
 
     <!-- Restore NPM packages -->
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-      <SetScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJS&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then export WasmXHarnessMonoArgs=&quot;$WasmXHarnessMonoArgs --setenv=NPM_MODULES=$(NodeNpmModuleString)&quot;; fi" />
-      <RunScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJS&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then npm ci; fi" />
-
       <SetScriptCommands Condition="'$(InstallChromeForTests)' == 'true' and '$(ChromeDriverBinaryPath)' != ''" Include="export PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(ChromeDriverBinaryPath)))" />
       <SetScriptCommands Condition="'$(InstallFirefoxForTests)' == 'true' and '$(GeckoDriverBinaryPath)' != ''" Include="export PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(GeckoDriverBinaryPath)))" />
       <SetScriptCommands Condition="'$(IsBrowserWasmProject)' == 'true'" Include="export RuntimeIdentifier=browser-wasm" />
     </ItemGroup>
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-      <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;WasmXHarnessMonoArgs=%WasmXHarnessMonoArgs% --setenv=NPM_MODULES^=$(NodeNpmModuleString)&quot; )" />
-      <RunScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( call npm ci )" />
-
       <SetScriptCommands Condition="'$(InstallChromeForTests)' == 'true' and '$(ChromeDriverBinaryPath)' != ''" Include="set PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(ChromeDriverBinaryPath)))" />
       <SetScriptCommands Condition="'$(InstallFirefoxForTests)' == 'true' and '$(GeckoDriverBinaryPath)' != ''" Include="set PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(GeckoDriverBinaryPath)))" />
       <SetScriptCommands Condition="'$(IsBrowserWasmProject)' == 'true'" Include="set RuntimeIdentifier=browser-wasm" />

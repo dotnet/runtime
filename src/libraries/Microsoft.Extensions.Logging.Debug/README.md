@@ -2,7 +2,7 @@
 
 `Microsoft.Extensions.Logging.Debug` provides a Debug output logger provider implementation for Microsoft.Extensions.Logging. This logger logs messages to a debugger monitor by writing messages with `System.Diagnostics.Debug.WriteLine()`.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/logging.
+Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/logging.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)

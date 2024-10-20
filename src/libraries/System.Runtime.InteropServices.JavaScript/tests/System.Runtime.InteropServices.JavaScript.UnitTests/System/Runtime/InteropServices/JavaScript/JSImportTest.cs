@@ -127,6 +127,27 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Contains("Overflow: value 9007199254740991 is out of -2147483648 2147483647 range", ex.Message);
         }
 
+        [Fact]
+        public async Task RejectString()
+        {
+            var ex = await Assert.ThrowsAsync<JSException>(() => JavaScriptTestHelper.Reject("noodles"));
+            Assert.Contains("noodles", ex.Message);
+        }
+
+        [Fact]
+        public async Task RejectException()
+        {
+            var expected = new Exception("noodles");
+            var actual = await Assert.ThrowsAsync<Exception>(() => JavaScriptTestHelper.Reject(expected));
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public async Task RejectNull()
+        {
+            var ex = await Assert.ThrowsAsync<JSException>(() => JavaScriptTestHelper.Reject(null));
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public unsafe void OptimizedPaths()
         {
@@ -1125,6 +1146,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await Task.Delay(100);
             Assert.True(task.IsCompleted);
             await task;
+        }
+
+        [Fact]
+        public async Task JsImportResolvedPromiseReturnsCompletedTask()
+        {
+            var promise = JavaScriptTestHelper.ReturnResolvedPromise();
+#if !FEATURE_WASM_MANAGED_THREADS
+            Assert.False(promise.IsCompleted);
+#endif
+            await promise;
+            Assert.True(promise.IsCompleted);
         }
 
         #endregion

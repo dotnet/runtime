@@ -13,6 +13,8 @@ typedef uint32_t UIntTarget;
 typedef uint64_t UIntTarget;
 #elif defined(TARGET_WASM)
 typedef uint32_t UIntTarget;
+#elif defined(TARGET_LOONGARCH64)
+typedef uint64_t UIntTarget;
 #else
 #error unexpected target architecture
 #endif

@@ -192,8 +192,10 @@ class Exception
     virtual BOOL IsDomainBound() {return m_innerException!=NULL && m_innerException->IsDomainBound();} ;
     virtual HRESULT GetHR() = 0;
     virtual void GetMessage(SString &s);
+#ifdef FEATURE_COMINTEROP
     virtual IErrorInfo *GetErrorInfo() { LIMITED_METHOD_CONTRACT; return NULL; }
     virtual HRESULT SetErrorInfo() { LIMITED_METHOD_CONTRACT; return S_OK; }
+#endif // FEATURE_COMINTEROP
     void SetInnerException(Exception * pInnerException) { LIMITED_METHOD_CONTRACT; m_innerException = pInnerException; }
 
     // Dynamic type query for catchers
@@ -432,8 +434,10 @@ class COMException : public HRException
 {
     friend bool DebugIsEECxxExceptionPointer(void* pv);
 
+#ifdef FEATURE_COMINTEROP
  private:
     IErrorInfo          *m_pErrorInfo;
+#endif // FEATURE_COMINTEROP
 
  public:
     COMException();
@@ -488,7 +492,9 @@ class SEHException : public Exception
 
     // Virtual overrides
     HRESULT GetHR();
+#ifdef FEATURE_COMINTEROP
     IErrorInfo *GetErrorInfo();
+#endif // FEATURE_COMINTEROP
     void GetMessage(SString &result);
 
  protected:
@@ -533,7 +539,9 @@ class DelegatingException : public Exception
     // Virtual overrides
     virtual BOOL IsDomainBound() {return Exception::IsDomainBound() ||(m_delegatedException!=NULL && m_delegatedException->IsDomainBound());} ;
     HRESULT GetHR();
+#ifdef FEATURE_COMINTEROP
     IErrorInfo *GetErrorInfo();
+#endif // FEATURE_COMINTEROP
     void GetMessage(SString &result);
     virtual Exception *Clone();
 
@@ -1290,15 +1298,19 @@ inline HRMsgException::HRMsgException(HRESULT hr, SString const &s)
 }
 
 inline COMException::COMException()
-  : HRException(),
-  m_pErrorInfo(NULL)
+  : HRException()
+#ifdef FEATURE_COMINTEROP
+  , m_pErrorInfo(NULL)
+#endif // FEATURE_COMINTEROP
 {
     WRAPPER_NO_CONTRACT;
 }
 
 inline COMException::COMException(HRESULT hr)
-  : HRException(hr),
-  m_pErrorInfo(NULL)
+  : HRException(hr)
+#ifdef FEATURE_COMINTEROP
+  , m_pErrorInfo(NULL)
+#endif // FEATURE_COMINTEROP
 {
     LIMITED_METHOD_CONTRACT;
 }

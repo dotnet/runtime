@@ -74,7 +74,7 @@ namespace System
             // Create user and remove/create if already exists
             uint result = NetUserAdd(null, 1, ref userInfo, out uint param_err);
 
-            // error codes https://docs.microsoft.com/en-us/windows/desktop/netmgmt/network-management-error-codes
+            // error codes https://learn.microsoft.com/windows/desktop/netmgmt/network-management-error-codes
             // 0 == NERR_Success
             if (result == 2224) // NERR_UserExists
             {
