@@ -207,5 +207,12 @@ namespace System.Net.NetworkInformation.Tests
             Assert.NotEmpty(await props.GetUnicastAddressesAsync());
             Assert.NotEmpty(await Task.Factory.FromAsync(props.BeginGetUnicastAddresses, props.EndGetUnicastAddresses, null));
         }
+
+        [Fact]
+        public void IPGlobalProperties_DomainName_ReturnsEmptyStringWhenNotSet()
+        {
+            IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
+            Assert.Equal(string.Empty, gp.DomainName);
+        }
     }
 }
