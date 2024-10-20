@@ -24,8 +24,6 @@ namespace System.IO.Tests
 
         protected override bool UsesOffsets => false;
 
-        protected override bool ThrowsForUnseekableFile => false;
-
         protected override long MethodUnderTest(SafeFileHandle handle, byte[] bytes, long fileOffset)
         {
             RandomAccess.FlushToDisk(handle);
