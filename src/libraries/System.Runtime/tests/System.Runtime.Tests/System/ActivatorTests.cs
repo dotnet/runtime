@@ -112,7 +112,7 @@ namespace System.Tests
         {
             // MissingMethodException not caused by a binder must not contain an inner exception.
             var mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(TypeWithPrivateDefaultConstructor), nonPublic: false));
-            Assert.Contains("System.Tests.ActivatorTests.TypeWithPrivateDefaultConstructor", mme.Message);
+            Assert.Contains("System.Tests.ActivatorTests+TypeWithPrivateDefaultConstructor", mme.Message);
             Assert.Null(mme.InnerException);
 
             // MissingMethodException caused by a binder must be wrapped.
