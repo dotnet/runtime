@@ -534,6 +534,15 @@
   <data name="Arg_MustBeDecimal" xml:space="preserve">
     <value>Object must be of type Decimal.</value>
   </data>
+  <data name="Arg_MustBeDecimal32" xml:space="preserve">
+    <value>Object must be of type Decimal32.</value>
+  </data>
+  <data name="Arg_MustBeDecimal64" xml:space="preserve">
+    <value>Object must be of type Decimal64.</value>
+  </data>
+  <data name="Arg_MustBeDecimal128" xml:space="preserve">
+    <value>Object must be of type Decimal128.</value>
+  </data>
   <data name="Arg_MustBeDelegate" xml:space="preserve">
     <value>Type must derive from Delegate.</value>
   </data>
@@ -3202,6 +3211,15 @@
   </data>
   <data name="Overflow_Decimal" xml:space="preserve">
     <value>Value was either too large or too small for a Decimal.</value>
+  </data>
+  <data name="Overflow_Decimal32" xml:space="preserve">
+    <value>Value was either too large or too small for a Decimal32.</value>
+  </data>
+  <data name="Overflow_Decimal64" xml:space="preserve">
+    <value>Value was either too large or too small for a Decimal64.</value>
+  </data>
+  <data name="Overflow_Decimal128" xml:space="preserve">
+    <value>Value was either too large or too small for a Decimal128.</value>
   </data>
   <data name="Overflow_Duration" xml:space="preserve">
     <value>The duration cannot be returned for TimeSpan.MinValue because the absolute value of TimeSpan.MinValue exceeds the value of TimeSpan.MaxValue.</value>
