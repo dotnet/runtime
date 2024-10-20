@@ -115,6 +115,10 @@ namespace System.Tests
             Assert.Contains("System.Tests.ActivatorTests+TypeWithPrivateDefaultConstructor", mme.Message);
             Assert.Null(mme.InnerException);
 
+            mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(TypeWithoutDefaultCtor)));
+            Assert.Contains("System.Tests.ActivatorTests+TypeWithoutDefaultCtor", mme.Message);
+            Assert.Null(mme.InnerException);
+
             // MissingMethodException caused by a binder must be wrapped.
             mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(
                 typeof(object), BindingFlags.CreateInstance,
@@ -126,10 +130,35 @@ namespace System.Tests
             Assert.IsType<MissingMethodException>(mme.InnerException);
             Assert.Equal("Hello, World!!", mme.InnerException.Message);
 
+            mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(
+                typeof(Random), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new MissingMethodException("good-bye...") },
+                null, null, null
+            ));
+            Assert.Contains("System.Random", mme.Message);
+            Assert.NotNull(mme.InnerException);
+            Assert.IsType<MissingMethodException>(mme.InnerException);
+            Assert.Equal("good-bye...", mme.InnerException.Message);
+
             // Any other exceptions will not be caught.
             Assert.Throws<Exception>(() => Activator.CreateInstance(
                 typeof(object), BindingFlags.CreateInstance,
                 new CustomBinder() { BindToMethodAction = () => throw new Exception() },
+                null, null, null
+            ));
+            Assert.Throws<ArgumentNullException>(() => Activator.CreateInstance(
+                typeof(object), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new ArgumentNullException() },
+                null, null, null
+            ));
+            Assert.Throws<FileNotFoundException>(() => Activator.CreateInstance(
+                typeof(Random), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new FileNotFoundException() },
+                null, null, null
+            ));
+            Assert.Throws<InvalidOperationException>(() => Activator.CreateInstance(
+                typeof(Random), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new InvalidOperationException() },
                 null, null, null
             ));
 
@@ -140,6 +169,14 @@ namespace System.Tests
                 null, null, null
             ));
             Assert.Contains("System.Object", mme.Message);
+            Assert.Null(mme.InnerException);
+
+            mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(
+                typeof(Random), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => null },
+                null, null, null
+            ));
+            Assert.Contains("System.Random", mme.Message);
             Assert.Null(mme.InnerException);
         }
 
