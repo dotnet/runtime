@@ -1258,7 +1258,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     INT32 high19 = ((int32_t)(high31 + 0x800)) >> 12;
 
     emitIns_R_I(INS_lui, size, reg, high19);
-    if (high31 & 0xFFF) {
+    if (high31 & 0xFFF)
+    {
         emitIns_R_R_I(INS_addiw, size, reg, reg, high31 & 0xFFF);
     }
 

@@ -1071,7 +1071,8 @@ void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
 
     EmitLuImm(reg, high19);
     int low12 = int(high31) << (32-12) >> (32-12);
-    if (low12) {
+    if (low12)
+    {
         EmitAddImm(reg, reg, low12);
     }
 
