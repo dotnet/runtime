@@ -127,9 +127,9 @@ extern "C" void QCALLTYPE Delegate_InternalAlloc(QCall::TypeHandle pType, QCall:
 
 extern "C" void QCALLTYPE Delegate_InternalAllocLike(QCall::ObjectHandleOnStack d);
 
-extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack retMethodInfo);
+extern "C" void QCALLTYPE Delegate_CreateMethodInfo(MethodDesc* methodDesc, QCall::ObjectHandleOnStack retMethodInfo);
 
-extern "C" BOOL QCALLTYPE Delegate_InternalEqualMethodHandles(QCall::ObjectHandleOnStack left, QCall::ObjectHandleOnStack right);
+extern "C" MethodDesc* QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnStack instance);
 
 
 void DistributeEvent(OBJECTREF *pDelegate,
