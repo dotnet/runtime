@@ -472,7 +472,7 @@ inline void ThreadStressLog::Activate (Thread * /*pThread*/)
     // a previous record.  Update curPtr to reflect the last safe beginning of a record,
     // but curPtr shouldn't wrap around, otherwise it'll break our assumptions about stress
     // log
-    curPtr = (StressMsg*)((char*)curPtr - StressMsg::maxMsgSize());
+    curPtr = (StressMsg*)((char*)curPtr - StressMsg::maxMsgSize);
     if (curPtr < (StressMsg*)curWriteChunk->StartPtr())
     {
         curPtr = (StressMsg *)curWriteChunk->StartPtr();
