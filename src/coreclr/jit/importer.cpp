@@ -842,7 +842,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
 
             unsigned retbufSpillLcl = BAD_VAR_NUM;
-            if (!destAddr->OperIs(GT_LCL_ADDR))
+            if (!destAddr->OperIs(GT_LCL_ADDR) && compIsAsync2StateMachine())
             {
                 retbufSpillLcl = lvaGrabTemp(true DEBUGARG("retbuf for async2 call stored to non-lcl"));
                 lvaGetDesc(retbufSpillLcl)->lvType = store->TypeGet();
