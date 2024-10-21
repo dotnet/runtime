@@ -146,16 +146,16 @@ EXTERN_C FCDECL_MONHELPER(JIT_MonExitWorker, Object *obj);
 EXTERN_C FCDECL_MONHELPER(JIT_MonExitWorker_Portable, Object *obj);
 
 #ifndef JIT_GetGCStaticBase
-#define JIT_GetGCStaticBase JIT_GetGCStaticBase_Portable
+#define JIT_GetGCStaticBase NULL
+#else
+EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
 #endif
-EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase, MethodTable *pMT);
-EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase_Portable, MethodTable *pMT);
 
 #ifndef JIT_GetNonGCStaticBase
-#define JIT_GetNonGCStaticBase JIT_GetNonGCStaticBase_Portable
+#define JIT_GetNonGCStaticBase NULL
+#else
+EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
 #endif
-EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase, MethodTable *pMT);
-EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase_Portable, MethodTable *pMT);
 
 #ifndef JIT_GetGCStaticBaseNoCtor
 #define JIT_GetGCStaticBaseNoCtor JIT_GetGCStaticBaseNoCtor_Portable
@@ -170,16 +170,16 @@ EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBaseNoCtor, MethodTable *pMT);
 EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBaseNoCtor_Portable, MethodTable *pMT);
 
 #ifndef JIT_GetDynamicGCStaticBase
-#define JIT_GetDynamicGCStaticBase JIT_GetDynamicGCStaticBase_Portable
-#endif
+#define JIT_GetDynamicGCStaticBase NULL
+#else
 EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBase_Portable, DynamicStaticsInfo* pStaticsInfo);
+#endif
 
 #ifndef JIT_GetDynamicNonGCStaticBase
-#define JIT_GetDynamicNonGCStaticBase JIT_GetDynamicNonGCStaticBase_Portable
-#endif
+#define JIT_GetDynamicNonGCStaticBase NULL
+#else
 EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBase_Portable, DynamicStaticsInfo* pStaticsInfo);
+#endif
 
 #ifndef JIT_GetDynamicGCStaticBaseNoCtor
 #define JIT_GetDynamicGCStaticBaseNoCtor JIT_GetDynamicGCStaticBaseNoCtor_Portable
