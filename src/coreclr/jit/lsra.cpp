@@ -954,21 +954,13 @@ void LinearScan::setBlockSequence()
     {
         // Ensure loop bodies are compact in the visitation order
         FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
-        unsigned                     index = dfsTree->GetPostOrderCount();
+        unsigned                     index = 0;
 
         auto addToSequence = [this, &index](BasicBlock* block) {
-            assert(index != 0);
-            blockSequence[--index] = block;
+            blockSequence[index++] = block;
         };
 
         compiler->fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
-
-        // Flip the DFS traversal to get the reverse post-order traversal
-        // (this is the order in which blocks will be allocated)
-        for (unsigned left = 0, right = dfsTree->GetPostOrderCount() - 1; left < right; left++, right--)
-        {
-            std::swap(blockSequence[left], blockSequence[right]);
-        }
     }
     else
     {
