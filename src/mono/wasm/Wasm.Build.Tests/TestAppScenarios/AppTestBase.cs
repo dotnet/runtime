@@ -37,23 +37,6 @@ public abstract class AppTestBase : BlazorWasmTestBase
         }
     }
 
-    protected void BlazorHostedBuild(
-        string config,
-        string assetName,
-        string projectDirSuffix,
-        string clientDirRelativeToProjectDir = "",
-        string? generatedProjectNamePrefix = null,
-        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
-    {
-        CopyTestAsset(assetName, generatedProjectNamePrefix, projectDirSuffix);
-        string frameworkDir = FindBlazorHostedBinFrameworkDir(config,
-            forPublish: false,
-            clientDirRelativeToProjectDir: clientDirRelativeToProjectDir);
-        BuildProject(configuration: config,
-            binFrameworkDir: frameworkDir,
-            runtimeType: runtimeType);
-    }
-
     protected void BuildProject(
         string configuration,
         string? binFrameworkDir = null,
@@ -96,10 +79,6 @@ public abstract class AppTestBase : BlazorWasmTestBase
             AssertAppBundle: assertAppBundle), extraArgs);
         result.EnsureSuccessful();
     }
-
-    protected ToolCommand CreateDotNetCommand() => new DotNetCommand(s_buildEnv, _testOutput)
-        .WithWorkingDirectory(_projectDir!)
-        .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir);
 
     protected Task<RunResult> RunSdkStyleAppForBuild(RunOptions options)
         => RunSdkStyleApp(options, BlazorRunHost.DotnetRun);

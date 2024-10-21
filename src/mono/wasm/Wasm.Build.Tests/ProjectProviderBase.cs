@@ -36,7 +36,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public string? ProjectDir { get; set; } = _projectDir;
     protected ITestOutputHelper _testOutput = new TestOutputWrapper(_testOutput);
     protected BuildEnvironment _buildEnv = BuildTestBase.s_buildEnv;
-    public string BundleDirName { get; set; } = "wwwroot";
+    protected abstract string BundleDirName { get; }
 
     public bool IsFingerprintingSupported { get; protected set; }
 
@@ -414,7 +414,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public BootJsonData AssertBootJson(AssertBundleOptionsBase options)
     {
         EnsureProjectDirIsSet();
-        // string binFrameworkDir = FindBinFrameworkDir(options.Config, options.IsPublish, options.TargetFramework);
         string binFrameworkDir = options.BinFrameworkDir;
         string bootJsonPath = Path.Combine(binFrameworkDir, options.BootJsonFileName);
         Assert.True(File.Exists(bootJsonPath), $"Expected to find {bootJsonPath}");
@@ -520,14 +519,9 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         Assert.Equal(expected, actualFileNames);
     }
 
-    public virtual string FindBinFrameworkDir(string config, bool forPublish, string framework, string? bundleDirName = null, string? projectDir = null)
+    public virtual string FindBinFrameworkDir(string config, bool forPublish, string framework, string? projectDir = null)
     {
-        EnsureProjectDirIsSet();
-        string basePath = Path.Combine(projectDir ?? ProjectDir!, "bin", config, framework);
-        if (forPublish)
-            basePath = FindSubDirIgnoringCase(basePath, "publish");
-
-        return Path.Combine(basePath, bundleDirName ?? this.BundleDirName, "_framework");
+        throw new NotImplementedException();
     }
 
     [MemberNotNull(nameof(ProjectDir))]

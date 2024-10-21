@@ -4413,6 +4413,9 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
                                      DebuggerControllerPatch *patch)
   : DebuggerController(thread, AppDomain::GetCurrentDomain()),
     m_address(patch->address)
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    ,m_fInPlaceSS(false)
+#endif
 {
     LOG((LF_CORDB, LL_INFO10000,
          "DPS::DPS: Patch skip 0x%p\n", patch->address));
