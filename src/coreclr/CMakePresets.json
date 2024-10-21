@@ -38,10 +38,7 @@
         "CLR_CMAKE_TARGET_OS": "darwin"
       },
       "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "hostOS": [
-            "macOS"
-          ]
+        "jetbrains.com/clion": {
         }
       }
     },
