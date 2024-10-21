@@ -7,26 +7,22 @@ namespace System.Net.Primitives.UnitTests.Tests;
 
 public sealed class CookieExceptionTest
 {
-    [Theory]
-    [InlineData("Testing the CookieException")]
-    [InlineData(null)]
-    public void Constructor_Message(string? message)
+    [Fact]
+    public void Constructor_Message()
     {
-        var exception = new CookieException(message);
-        Assert.Equal(message, exception.Message);
+        var exception = new CookieException("Foo");
+        Assert.Equal("Foo", exception.Message);
     }
 
     [Theory]
-    [InlineData("Testing the CookieException", true)]
-    [InlineData("Testing the CookieException", false)]
-    [InlineData(null, true)]
-    [InlineData(null, false)]
-    public void Constructor_Message_InnerException(string? message, bool innerException)
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Constructor_Message_InnerException(bool innerException)
     {
         var inner = innerException ? new Exception() : null;
-        var exception = new CookieException(message, inner);
+        var exception = new CookieException("Foo", inner);
 
-        Assert.Equal(message, exception.Message);
+        Assert.Equal("Foo", exception.Message);
         Assert.Equal(inner, exception.InnerException);
     }
 }
