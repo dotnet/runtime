@@ -8,6 +8,9 @@
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
     <ForceAOT Condition="'$(ForceAOT)' == ''">false</ForceAOT>
+
+    <!-- Disable event source by default - iOS and Android SDKs do this by default as well -->
+    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
   </PropertyGroup>
 
   <ItemGroup>
