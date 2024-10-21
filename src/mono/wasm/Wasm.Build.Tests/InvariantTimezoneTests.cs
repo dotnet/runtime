@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -10,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class InvariantTimezoneTests : TestMainJsTestBase
+    public class InvariantTimezoneTests : WasmTemplateTestsBase
     {
         public InvariantTimezoneTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -25,48 +26,50 @@ namespace Wasm.Build.Tests
                     new object?[] { true })
                 .UnwrapItemsAsArrays();
 
-        // [Theory]
-        // [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        // [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        // public void AOT_InvariantTimezone(ProjectInfo buildArgs, bool? invariantTimezone, RunHost host, string id)
-        //     => TestInvariantTimezone(buildArgs, invariantTimezone, host, id);
+        [Theory]
+        [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ false, })]
+        [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ true })]
+        public async Task AOT_InvariantTimezone(string config, bool aot, bool? invariantTimezone)
+            => await TestInvariantTimezone(config, aot, invariantTimezone);
 
-        // [Theory]
-        // [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        // public void RelinkingWithoutAOT(ProjectInfo buildArgs, bool? invariantTimezone, RunHost host, string id)
-        //     => TestInvariantTimezone(buildArgs, invariantTimezone, host, id,
-        //                                     extraProperties: "<WasmBuildNative>true</WasmBuildNative>",
-        //                                     dotnetWasmFromRuntimePack: false);
+        [Theory]
+        [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ false })]
+        public async Task RelinkingWithoutAOT(string config, bool aot, bool? invariantTimezone)
+            => await TestInvariantTimezone(config, aot, invariantTimezone, isNativeBuild: true);
 
-        // private void TestInvariantTimezone(ProjectInfo buildArgs, bool? invariantTimezone,
-        //                                                 RunHost host, string id, string extraProperties="", bool? dotnetWasmFromRuntimePack=null)
-        // {
-        //     string projectName = $"invariant_{invariantTimezone?.ToString() ?? "unset"}";
-        //     if (invariantTimezone != null)
-        //         extraProperties = $"{extraProperties}<InvariantTimezone>{invariantTimezone}</InvariantTimezone>";
+        private async Task TestInvariantTimezone(string config, bool aot, bool? invariantTimezone, bool isNativeBuild = false)
+        {
+            string extraProperties = isNativeBuild ? "<WasmBuildNative>true</WasmBuildNative>" : "";
+            if (invariantTimezone != null)
+                extraProperties = $"{extraProperties}<InvariantTimezone>{invariantTimezone}</InvariantTimezone>";
 
-        //     buildArgs = buildArgs with { ProjectName = projectName };
-        //     buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
+            string prefix = $"invariant_{invariantTimezone?.ToString() ?? "unset"}";
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, prefix, extraProperties: extraProperties);
+            UpdateFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "InvariantTimezone.cs"));
+            UpdateBrowserMainJs();
 
-        //     if (dotnetWasmFromRuntimePack == null)
-        //         dotnetWasmFromRuntimePack = IsDotnetWasmFromRuntimePack(buildArgs);
+            bool isPublish = false;
+            // invariantTimezone triggers native build
+            isNativeBuild = isNativeBuild || invariantTimezone == true;
+            BuildTemplateProject(info,
+                        new BuildProjectOptions(
+                            config,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: isNativeBuild),
+                            IsPublish: isPublish
+                        ));
 
-        //     BuildProject(buildArgs,
-        //                     id: id,
-        //                     new BuildProjectOptions(
-        //                         InitProject: () => File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "InvariantTimezone.cs"), Path.Combine(_projectDir!, "Program.cs")),
-        //                         DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
-
-        //     string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id);
-        //     Assert.Contains("UTC BaseUtcOffset is 0", output);
-        //     if (invariantTimezone == true)
-        //     {
-        //         Assert.Contains("Could not find Asia/Tokyo", output);
-        //     }
-        //     else
-        //     {
-        //         Assert.Contains("Asia/Tokyo BaseUtcOffset is 09:00:00", output);
-        //     }
-        // }
+            string output = await RunBuiltBrowserApp(info.Configuration, info.ProjectFilePath);
+            Assert.Contains("UTC BaseUtcOffset is 0", output);
+            if (invariantTimezone == true)
+            {
+                Assert.Contains("Could not find Asia/Tokyo", output);
+            }
+            else
+            {
+                Assert.Contains("Asia/Tokyo BaseUtcOffset is 09:00:00", output);
+            }
+        }
     }
 }
