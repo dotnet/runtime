@@ -110,7 +110,7 @@ namespace ILVerification.Tests
         /// The word after the '_' has to be 'Valid' (Case sensitive)
         /// E.g.: 'SimpleAdd_Valid'
         /// </summary>
-        public static TheoryData<TestCase> GetMethodsWithValidIL()
+        public static TheoryData<TestCase>[] GetMethodsWithValidIL()
         {
             var methodSelector = new Func<string[], MethodDefinitionHandle, TestCase>((mparams, methodHandle) =>
             {
@@ -120,7 +120,7 @@ namespace ILVerification.Tests
                 }
                 return null;
             });
-            return GetTestMethodsFromDll(methodSelector);
+            return new[] { GetTestMethodsFromDll(methodSelector) };
         }
 
         /// <summary>
@@ -132,7 +132,7 @@ namespace ILVerification.Tests
         /// 3. part: the expected VerifierErrors as string separated by '.'.
         /// E.g.: SimpleAdd_Invalid_ExpectedNumericType
         /// </summary>
-        public static TheoryData<TestCase> GetMethodsWithInvalidIL()
+        public static TheoryData<TestCase>[] GetMethodsWithInvalidIL()
         {
             var methodSelector = new Func<string[], MethodDefinitionHandle, TestCase>((mparams, methodHandle) =>
             {
@@ -160,7 +160,7 @@ namespace ILVerification.Tests
                 }
                 return null;
             });
-            return GetTestMethodsFromDll(methodSelector);
+            return new[] { GetTestMethodsFromDll(methodSelector) };
         }
 
         private static TheoryData<TestCase> GetTestMethodsFromDll(Func<string[], MethodDefinitionHandle, TestCase> methodSelector)
