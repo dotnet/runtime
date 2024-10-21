@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization
     public sealed class JsonPolymorphicAttribute : JsonAttribute
     {
         /// <summary>
-        /// Gets or sets a custom type discriminator property name for the polymorhic type.
+        /// Gets or sets a custom type discriminator property name for the polymorphic type.
         /// Uses the default '$type' property name if left unset.
         /// </summary>
         public string? TypeDiscriminatorPropertyName { get; set; }

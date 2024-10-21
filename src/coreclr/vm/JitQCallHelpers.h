@@ -20,5 +20,6 @@ class MethodDesc;
 
 extern "C" void * QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj, CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd);
 extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule);
+extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT);
 
 #endif //_JITQCALLHELPERS_H

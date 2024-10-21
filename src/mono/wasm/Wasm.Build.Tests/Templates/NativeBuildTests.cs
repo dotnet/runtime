@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading.Tasks;
 using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
@@ -10,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Templates.Tests
 {
-    public class NativeBuildTests : WasmTemplateTestBase
+    public class NativeBuildTests : WasmTemplateTestsBase
     {
         public NativeBuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -45,10 +46,10 @@ namespace Wasm.Build.Templates.Tests
             File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir!, "undefined_xyz.c"));
 
-            CommandResult result = new DotNetCommand(s_buildEnv, _testOutput)
-                .WithWorkingDirectory(_projectDir!)
-                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("build", "-c Release");
+            using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);
+            CommandResult result = cmd.WithWorkingDirectory(_projectDir!)
+                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                    .ExecuteWithCapturedOutput("build", "-c Release");
 
             if (allowUndefined)
             {
@@ -65,37 +66,40 @@ namespace Wasm.Build.Templates.Tests
         [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
-        public void ProjectWithDllImportsRequiringMarshalIlGen_ArrayTypeParameter(string config)
+        public async Task ProjectWithDllImportsRequiringMarshalIlGen_ArrayTypeParameter(string config)
         {
             string id = $"dllimport_incompatible_{GetRandomId()}";
-            string projectPath = CreateWasmTemplateProject(id, template: "wasmconsole");
+            string projectFile = CreateWasmTemplateProject(id, template: "wasmbrowser");
+            string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             string nativeSourceFilename = "incompatible_type.c";
             string nativeCode = "void call_needing_marhsal_ilgen(void *x) {}";
             File.WriteAllText(path: Path.Combine(_projectDir!, nativeSourceFilename), nativeCode);
 
             AddItemsPropertiesToProject(
-                projectPath,
+                projectFile,
                 extraItems: "<NativeFileReference Include=\"" + nativeSourceFilename + "\" />"
             );
 
+            UpdateBrowserMainJs();
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "marshal_ilgen_test.cs"),
                                     Path.Combine(_projectDir!, "Program.cs"),
                                     overwrite: true);
 
-            CommandResult result = new DotNetCommand(s_buildEnv, _testOutput)
-                .WithWorkingDirectory(_projectDir!)
-                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("build", $"-c {config} -bl");
+            var buildArgs = new BuildArgs(projectName, config, false, id, null);
+            buildArgs = ExpandBuildArgs(buildArgs);
+            BuildTemplateProject(buildArgs, id: id, new BuildProjectOptions(
+                                    AssertAppBundle: false,
+                                    CreateProject: false,
+                                    HasV8Script: false,
+                                    MainJS: "main.mjs",
+                                    Publish: false,
+                                    TargetFramework: DefaultTargetFramework,
+                                    IsBrowserProject: true)
+                                );
+            string runOutput = await RunBuiltBrowserApp(config, projectFile);
 
-            Assert.True(result.ExitCode == 0, "Expected build to succeed");
-
-            CommandResult res = new RunCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(_projectDir!)
-                                        .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config}")
-                                        .EnsureSuccessful();
-            Assert.Contains("Hello, Console!", res.Output);
-            Assert.Contains("Hello, World! Greetings from node version", res.Output);
+            Assert.Contains("call_needing_marhsal_ilgen got called", runOutput);
         }
     }
 }

@@ -961,32 +961,6 @@ DWORD GetRuntimeId()
 #endif
 }
 
-//---------------------------------------------------------------------------
-// Creates new Thread for reverse p-invoke calls.
-//---------------------------------------------------------------------------
-Thread* WINAPI CreateThreadBlockThrow()
-{
-
-    WRAPPER_NO_CONTRACT;
-
-    // This is a workaround to disable our check for throwing exception in SetupThread.
-    // We want to throw an exception for reverse p-invoke, and our assertion may fire if
-    // a unmanaged caller does not setup an exception handler.
-    CONTRACT_VIOLATION(ThrowsViolation); // WON'T FIX - This enables catastrophic failure exception in reverse P/Invoke - the only way we can communicate an error to legacy code.
-
-    HRESULT hr = S_OK;
-    Thread* pThread = SetupThreadNoThrow(&hr);
-    if (pThread == NULL)
-    {
-        // Creating Thread failed, and we need to throw an exception to report status.
-        // It is misleading to use our COM+ exception code, since this is not a managed exception.
-        ULONG_PTR arg = hr;
-        RaiseException(EXCEPTION_EXX, 0, 1, &arg);
-    }
-
-    return pThread;
-}
-
 #ifdef _DEBUG
 DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 #endif
@@ -2187,19 +2161,11 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
 // object.  We also place a reference count on it when we construct it, and we lose
 // that count when the thread finishes doing useful work (OnThreadTerminate).
 //
-// One way OnThreadTerminate() is called is when the thread finishes doing useful
-// work.  This case always happens on the correct thread.
-//
-// The other way OnThreadTerminate()  is called is during product shutdown.  We do
-// a "best effort" to eliminate all threads except the Main thread before shutdown
-// happens.  But there may be some background threads or external threads still
-// running.
+// OnThreadTerminate() is called is when the thread finishes doing useful
+// work.
 //
 // When the final reference count disappears, we destruct.  Until then, the thread
 // remains in the ThreadStore, but is marked as "Dead".
-//<TODO>
-// @TODO cwb: for a typical shutdown, only background threads are still around.
-// Should we interrupt them?  What about the non-typical shutdown?</TODO>
 
 int Thread::IncExternalCount()
 {
@@ -2755,11 +2721,12 @@ void Thread::CooperativeCleanup()
 
     if (GCHeapUtilities::IsGCHeapInitialized())
     {
+        gc_alloc_context* gc_alloc_context = &t_runtime_thread_locals.alloc_context.m_GCAllocContext; 
         // If the GC heap is initialized, we need to fix the alloc context for this detaching thread.
         // GetTotalAllocatedBytes reads dead_threads_non_alloc_bytes, but will suspend EE, being in COOP mode we cannot race with that
         // however, there could be other threads terminating and doing the same Add.
-        InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, t_runtime_thread_locals.alloc_context.alloc_limit - t_runtime_thread_locals.alloc_context.alloc_ptr);
-        GCHeapUtilities::GetGCHeap()->FixAllocContext(&t_runtime_thread_locals.alloc_context, NULL, NULL);
+        InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, gc_alloc_context->alloc_limit - gc_alloc_context->alloc_ptr);
+        GCHeapUtilities::GetGCHeap()->FixAllocContext(gc_alloc_context, NULL, NULL);
         t_runtime_thread_locals.alloc_context.init(); // re-initialize the context.
 
         // Clear out the alloc context pointer for this thread. When TLS is gone, this pointer will point into freed memory.
@@ -6201,9 +6168,9 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
             return FALSE;
         }
 
-        // Compute the limit used by EnsureSufficientExecutionStack and cache it on the thread. This minimum stack size should
+        // Compute the limit used by TryEnsureSufficientExecutionStack and cache it on the thread. This minimum stack size should
         // be sufficient to allow a typical non-recursive call chain to execute, including potential exception handling and
-        // garbage collection. Used for probing for available stack space through RuntimeImports.EnsureSufficientExecutionStack,
+        // garbage collection. Used for probing for available stack space through RuntimeImports.TryEnsureSufficientExecutionStack,
         // among other things.
 #ifdef HOST_64BIT
         const UINT_PTR MinExecutionStackSize = 128 * 1024;
