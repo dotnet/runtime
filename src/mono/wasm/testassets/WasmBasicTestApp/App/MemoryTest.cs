@@ -15,23 +15,23 @@ public partial class MemoryTest
     [JSExport]
     internal static void Run()
     {
-        // Allocate over 2GB space, 2 621 440 000 bytes
-        const int arrayCnt = 25;
+        // Allocate over 1GB space
+        const int arrayCnt = 10;
         int[][] arrayHolder = new int[arrayCnt][];
         string errors = "";
-        TestOutput.WriteLine("Starting over 2GB array allocation");
+        TestOutput.WriteLine("Starting over 1GB array allocation");
         for (int i = 0; i < arrayCnt; i++)
         {
             try
             {
-                arrayHolder[i] = new int[1024 * 1024 * 25];
+                arrayHolder[i] = new int[1024 * 1024 * 100];
             }
             catch (Exception ex)
             {
                 errors += $"Exception {ex} was thrown on i={i}";
             }
         }
-        TestOutput.WriteLine("Finished over 2GB array allocation");
+        TestOutput.WriteLine("Finished over 1GB array allocation");
 
         // call a method many times to trigger tier-up optimization
         string randomString = GenerateRandomString(1000);

@@ -345,6 +345,7 @@ export function mono_wasm_resolve_or_reject_promise_impl (args: JSMarshalerArgum
         mono_log_debug("This promise resolution/rejection can't be propagated to managed code, mono runtime already exited.");
         return;
     }
+    args = ((args as any) >>> 0) as any;
     const exc = get_arg(args, 0);
     const receiver_should_free = WasmEnableThreads && is_receiver_should_free(args);
     try {
@@ -524,13 +525,13 @@ function _marshal_array_to_js_impl (arg: JSMarshalerArgument, element_type: Mars
             result[index] = _marshal_js_object_to_js(element_arg);
         }
     } else if (element_type == MarshalerType.Byte) {
-        const sourceView = localHeapViewU8().subarray(<any>buffer_ptr, buffer_ptr + length);
+        const sourceView = localHeapViewU8().subarray(buffer_ptr >>> 0, (buffer_ptr >>> 0) + length);
         result = sourceView.slice();//copy
     } else if (element_type == MarshalerType.Int32) {
-        const sourceView = localHeapViewI32().subarray(buffer_ptr >> 2, (buffer_ptr >> 2) + length);
+        const sourceView = localHeapViewI32().subarray(buffer_ptr >>> 2, (buffer_ptr >>> 2) + length);
         result = sourceView.slice();//copy
     } else if (element_type == MarshalerType.Double) {
-        const sourceView = localHeapViewF64().subarray(buffer_ptr >> 3, (buffer_ptr >> 3) + length);
+        const sourceView = localHeapViewF64().subarray(buffer_ptr >>> 3, (buffer_ptr >>> 3) + length);
         result = sourceView.slice();//copy
     } else {
         throw new Error(`NotImplementedException ${element_type}. ${jsinteropDoc}`);

@@ -24,6 +24,7 @@ export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slo
 export function mono_wasm_bind_js_import_ST (signature: JSFunctionSignature): VoidPtr {
     if (WasmEnableThreads) return VoidPtrNull;
     assert_js_interop();
+    signature = ((signature as any) >>> 0) as any;
     try {
         bind_js_import(signature);
         return VoidPtrNull;
@@ -35,6 +36,8 @@ export function mono_wasm_bind_js_import_ST (signature: JSFunctionSignature): Vo
 export function mono_wasm_invoke_jsimport_MT (signature: JSFunctionSignature, args: JSMarshalerArguments) {
     if (!WasmEnableThreads) return;
     assert_js_interop();
+    signature = ((signature as any) >>> 0) as any;
+    args = ((args as any) >>> 0) as any;
 
     const function_handle = get_signature_handle(signature);
 
@@ -73,6 +76,7 @@ export function mono_wasm_invoke_jsimport_MT (signature: JSFunctionSignature, ar
 export function mono_wasm_invoke_jsimport_ST (function_handle: JSFnHandle, args: JSMarshalerArguments): void {
     if (WasmEnableThreads) return;
     loaderHelpers.assert_runtime_running();
+    args = ((args as any) >>> 0) as any;
     const bound_fn = js_import_wrapper_by_fn_handle[<any>function_handle];
     mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
     bound_fn(args);
@@ -364,6 +368,7 @@ export function mono_wasm_invoke_js_function_impl (bound_function_js_handle: JSH
     loaderHelpers.assert_runtime_running();
     const bound_fn = mono_wasm_get_jsobj_from_js_handle(bound_function_js_handle);
     mono_assert(bound_fn && typeof (bound_fn) === "function" && bound_fn[bound_js_function_symbol], () => `Bound function handle expected ${bound_function_js_handle}`);
+    args = ((args as any) >>> 0) as any;
     bound_fn(args);
 }
 
