@@ -298,8 +298,6 @@ namespace System.Threading
             }
         }
 
-        partial void ThreadNameChanged(string? value);
-
         public CultureInfo CurrentCulture
         {
             get
@@ -403,7 +401,7 @@ namespace System.Threading
 
         internal void SetThreadPoolWorkerThreadName()
         {
-            Debug.Assert(this == CurrentThread);
+            Debug.Assert(ThreadState.HasFlag(ThreadState.Unstarted) || this == CurrentThread);
             Debug.Assert(IsThreadPoolThread);
 
             lock (this)

@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.FileProviders
         /// Enumerates a directory at the given path, if any.
         /// </summary>
         /// <param name="subpath">The relative path that identifies the directory.</param>
-        /// <returns>Returns the contents of the directory.</returns>
+        /// <returns>The contents of the directory.</returns>
         IDirectoryContents GetDirectoryContents(string subpath);
 
         /// <summary>

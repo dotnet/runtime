@@ -31,6 +31,7 @@ struct JitInterfaceCallbacks
     CORINFO_METHOD_HANDLE (* getUnboxedEntry)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
     CORINFO_CLASS_HANDLE (* getDefaultComparerClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE elemType);
     CORINFO_CLASS_HANDLE (* getDefaultEqualityComparerClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE elemType);
+    CORINFO_CLASS_HANDLE (* getSZArrayHelperEnumeratorClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE elemType);
     void (* expandRawHandleIntrinsic)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult);
     bool (* isIntrinsicType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE classHnd);
     CorInfoCallConvExtension (* getUnmanagedCallConv)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition);
@@ -394,6 +395,15 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CORINFO_CLASS_HANDLE temp = _callbacks->getDefaultEqualityComparerClass(_thisHandle, &pException, elemType);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(
+          CORINFO_CLASS_HANDLE elemType)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CORINFO_CLASS_HANDLE temp = _callbacks->getSZArrayHelperEnumeratorClass(_thisHandle, &pException, elemType);
     if (pException != nullptr) throw pException;
     return temp;
 }

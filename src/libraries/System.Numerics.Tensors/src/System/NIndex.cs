@@ -115,7 +115,7 @@ namespace System.Buffers
             }
         }
 
-        /// <summary>Indicates whether the <see cref="NIndex"/> is from the start or the end.</summary>
+        /// <summary>Gets a value that indicates whether the <see cref="NIndex"/> is from the start or the end.</summary>
         public bool IsFromEnd => _value < 0;
 
         /// <summary>Calculates the offset from the start using the given collection length.</summary>

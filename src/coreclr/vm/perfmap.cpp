@@ -108,11 +108,9 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
     {
         AppDomain::AssemblyIterator assemblyIterator = GetAppDomain()->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        while (assemblyIterator.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (assemblyIterator.Next(pAssembly.This()))
         {
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
-
             // PerfMap does not log R2R methods so only proceed if we are emitting jitdumps
             if (type == PerfMapType::ALL || type == PerfMapType::JITDUMP)
             {

@@ -188,6 +188,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
       printf("\n/OUTPUT=<targetfile>    Compile to file with specified name \n\t\t\t(user must provide extension, if any)");
       printf("\n/KEY=<keyfile>      Compile with strong signature \n\t\t\t(<keyfile> contains private key)");
       printf("\n/KEY=@<keysource>   Compile with strong signature \n\t\t\t(<keysource> is the private key source name)");
+      printf("\n/ANAME=<asmname>    Override the name of the compiled assembly");
       printf("\n/INCLUDE=<path>     Set path to search for #include'd files");
       printf("\n/SUBSYSTEM=<int>    Set Subsystem value in the NT Optional header");
       printf("\n/SSVER=<int>.<int>  Set Subsystem version number in the NT Optional header");
@@ -523,6 +524,13 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         if(sscanf_s(str,pFmt,&g_dwTestRepeat)!=1) goto InvalidOption;
                     }
 #endif
+                    else if (!_stricmp(szOpt, "ANA"))
+                    {
+                        WCHAR *pEqualOrColon = EqualOrColon(argv[i]);
+                        if (pEqualOrColon == NULL) goto InvalidOption;
+                        MAKE_UTF8PTR_FROMWIDE_NOTHROW(anameOverride, pEqualOrColon + 1);
+                        pAsm->m_pOverrideAssemblyName = _strdup(anameOverride);
+                    }
                     else
                     {
                     InvalidOption:

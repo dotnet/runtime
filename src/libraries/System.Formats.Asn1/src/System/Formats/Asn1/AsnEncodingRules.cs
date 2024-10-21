@@ -10,17 +10,17 @@ namespace System.Formats.Asn1
     public enum AsnEncodingRules
     {
         /// <summary>
-        /// ITU-T X.690 Basic Encoding Rules
+        /// ITU-T X.690 Basic Encoding Rules.
         /// </summary>
         BER,
 
         /// <summary>
-        /// ITU-T X.690 Canonical Encoding Rules
+        /// ITU-T X.690 Canonical Encoding Rules.
         /// </summary>
         CER,
 
         /// <summary>
-        /// ITU-T X.690 Distinguished Encoding Rules
+        /// ITU-T X.690 Distinguished Encoding Rules.
         /// </summary>
         DER,
     }

@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
         }
 
         /// <summary>
-        /// The user secrets ID.
+        /// Gets the user secrets ID.
         /// </summary>
         public string UserSecretsId { get; }
     }

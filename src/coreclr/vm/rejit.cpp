@@ -731,15 +731,14 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
 
     // Iterate through all modules, for any that are NGEN or R2R need to check if there are inliners there and call
     // RequestReJIT on them
-    AppDomain::AssemblyIterator domainAssemblyIterator = SystemDomain::System()->DefaultDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    AppDomain::AssemblyIterator assemblyIterator = AppDomain::GetCurrentDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded | kIncludeExecution));
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
     NativeImageInliningIterator inlinerIter;
-    while (domainAssemblyIterator.Next(pDomainAssembly.This()))
+    while (assemblyIterator.Next(pAssembly.This()))
     {
-        _ASSERTE(pDomainAssembly != NULL);
-        _ASSERTE(pDomainAssembly->GetAssembly() != NULL);
+        _ASSERTE(pAssembly != NULL);
 
-        Module * pModule = pDomainAssembly->GetModule();
+        Module * pModule = pAssembly->GetModule();
         if (pModule->HasReadyToRunInlineTrackingMap())
         {
             inlinerIter.Reset(pModule, MethodInModule(pInlineeModule, inlineeMethodDef));

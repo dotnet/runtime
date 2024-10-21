@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Options
     public class ConfigureNamedOptions<TOptions> : IConfigureNamedOptions<TOptions> where TOptions : class
     {
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of <see cref="ConfigureNamedOptions{TOptions}"/>.
         /// </summary>
         /// <param name="name">The name of the options.</param>
         /// <param name="action">The action to register.</param>
@@ -23,12 +23,12 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The options name.
+        /// Gets the options name.
         /// </summary>
         public string? Name { get; }
 
         /// <summary>
-        /// The configuration action.
+        /// Gets the configuration action.
         /// </summary>
         public Action<TOptions>? Action { get; }
 
@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Invoked to configure a <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
+        /// Configures a <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
         /// </summary>
         /// <param name="options">The options instance to configure.</param>
         public void Configure(TOptions options) => Configure(Options.DefaultName, options);
@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.Options
         where TDep : class
     {
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of <see cref="ConfigureNamedOptions{TOptions, TDep}"/>.
         /// </summary>
         /// <param name="name">The name of the options.</param>
         /// <param name="dependency">A dependency.</param>
@@ -78,17 +78,17 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The options name.
+        /// Gets the options name.
         /// </summary>
         public string? Name { get; }
 
         /// <summary>
-        /// The configuration action.
+        /// Gets the configuration action.
         /// </summary>
         public Action<TOptions, TDep>? Action { get; }
 
         /// <summary>
-        /// The dependency.
+        /// Gets the dependency.
         /// </summary>
         public TDep Dependency { get; }
 
@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Invoked to configure a <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
+        /// Configures a <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
         /// </summary>
         /// <param name="options">The options instance to configure.</param>
         public void Configure(TOptions options) => Configure(Options.DefaultName, options);
@@ -127,7 +127,7 @@ namespace Microsoft.Extensions.Options
         where TDep2 : class
     {
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of <see cref="ConfigureNamedOptions{TOptions, TDep1, TDep2}"/>.
         /// </summary>
         /// <param name="name">The name of the options.</param>
         /// <param name="dependency">A dependency.</param>
@@ -142,22 +142,22 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The options name.
+        /// Gets the options name.
         /// </summary>
         public string? Name { get; }
 
         /// <summary>
-        /// The configuration action.
+        /// Gets the configuration action.
         /// </summary>
         public Action<TOptions, TDep1, TDep2>? Action { get; }
 
         /// <summary>
-        /// The first dependency.
+        /// Gets the first dependency.
         /// </summary>
         public TDep1 Dependency1 { get; }
 
         /// <summary>
-        /// The second dependency.
+        /// Gets the second dependency.
         /// </summary>
         public TDep2 Dependency2 { get; }
 
@@ -178,7 +178,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Invoked to configure a <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
+        /// Configures a <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
         /// </summary>
         /// <param name="options">The options instance to configure.</param>
         public void Configure(TOptions options) => Configure(Options.DefaultName, options);
@@ -215,27 +215,27 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The options name.
+        /// Gets the options name.
         /// </summary>
         public string? Name { get; }
 
         /// <summary>
-        /// The configuration action.
+        /// Gets the configuration action.
         /// </summary>
         public Action<TOptions, TDep1, TDep2, TDep3>? Action { get; }
 
         /// <summary>
-        /// The first dependency.
+        /// Gets the first dependency.
         /// </summary>
         public TDep1 Dependency1 { get; }
 
         /// <summary>
-        /// The second dependency.
+        /// Gets the second dependency.
         /// </summary>
         public TDep2 Dependency2 { get; }
 
         /// <summary>
-        /// The third dependency.
+        /// Gets the third dependency.
         /// </summary>
         public TDep3 Dependency3 { get; }
 
@@ -256,7 +256,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Invoked to configure a <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
+        /// Configures a <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
         /// </summary>
         /// <param name="options">The options instance to configure.</param>
         public void Configure(TOptions options) => Configure(Options.DefaultName, options);
@@ -297,32 +297,32 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The options name.
+        /// Gets the options name.
         /// </summary>
         public string? Name { get; }
 
         /// <summary>
-        /// The configuration action.
+        /// Gets the configuration action.
         /// </summary>
         public Action<TOptions, TDep1, TDep2, TDep3, TDep4>? Action { get; }
 
         /// <summary>
-        /// The first dependency.
+        /// Gets the first dependency.
         /// </summary>
         public TDep1 Dependency1 { get; }
 
         /// <summary>
-        /// The second dependency.
+        /// Gets the second dependency.
         /// </summary>
         public TDep2 Dependency2 { get; }
 
         /// <summary>
-        /// The third dependency.
+        /// Gets the third dependency.
         /// </summary>
         public TDep3 Dependency3 { get; }
 
         /// <summary>
-        /// The fourth dependency.
+        /// Gets the fourth dependency.
         /// </summary>
         public TDep4 Dependency4 { get; }
 
@@ -343,7 +343,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Invoked to configure a <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
+        /// Configures a <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
         /// </summary>
         /// <param name="options">The options instance to configure.</param>
         public void Configure(TOptions options) => Configure(Options.DefaultName, options);
@@ -388,37 +388,37 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The options name.
+        /// Gets the options name.
         /// </summary>
         public string? Name { get; }
 
         /// <summary>
-        /// The configuration action.
+        /// Gets the configuration action.
         /// </summary>
         public Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>? Action { get; }
 
         /// <summary>
-        /// The first dependency.
+        /// Gets the first dependency.
         /// </summary>
         public TDep1 Dependency1 { get; }
 
         /// <summary>
-        /// The second dependency.
+        /// Gets the second dependency.
         /// </summary>
         public TDep2 Dependency2 { get; }
 
         /// <summary>
-        /// The third dependency.
+        /// Gets the third dependency.
         /// </summary>
         public TDep3 Dependency3 { get; }
 
         /// <summary>
-        /// The fourth dependency.
+        /// Gets the fourth dependency.
         /// </summary>
         public TDep4 Dependency4 { get; }
 
         /// <summary>
-        /// The fifth dependency.
+        /// Gets the fifth dependency.
         /// </summary>
         public TDep5 Dependency5 { get; }
 
@@ -439,7 +439,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Invoked to configure a <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
+        /// Configures a <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.
         /// </summary>
         /// <param name="options">The options instance to configure.</param>
         public void Configure(TOptions options) => Configure(Options.DefaultName, options);

@@ -43,6 +43,9 @@ namespace System.Numerics.Tensors
             nint s1;
             nint s2;
 
+            if (lengths1.Length == 0 || lengths2.Length == 0)
+                return false;
+
             while (lengths1Index >= 0 || lengths2Index >= 0)
             {
                 // if a dimension is missing in one of the shapes, it is considered to be 1
@@ -56,7 +59,7 @@ namespace System.Numerics.Tensors
                 else
                     s2 = lengths2[lengths2Index--];
 
-                if (s1 == s2 || (s1 == 1 && s2 != 1) || (s2 == 1 && s1 != 1)) { }
+                if (s1 == s2 || (s1 == 1 && s2 > 1) || (s2 == 1 && s1 > 1)) { }
                 else
                 {
                     areCompatible = false;

@@ -46,7 +46,7 @@ public unsafe class Runtime_54956
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Test(Action action, [CallerArgumentExpression("action")] string expr = null)
+    static bool Test(Action action, [CallerArgumentExpression(nameof(action))] string expr = null)
     {
         try
         {

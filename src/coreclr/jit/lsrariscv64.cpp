@@ -94,7 +94,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // We need an internal register different from targetReg in which 'tree' produces its result
                 // because both targetReg and internal reg will be in use at the same time.
-                buildInternalFloatRegisterDefForNode(tree, allSIMDRegs());
+                buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
                 buildInternalRegisterUses();
             }
@@ -1284,7 +1284,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 int LinearScan::BuildCast(GenTreeCast* cast)
 {
     enum CodeGen::GenIntCastDesc::CheckKind kind = CodeGen::GenIntCastDesc(cast).CheckKind();
-    if ((kind != CodeGen::GenIntCastDesc::CHECK_NONE) && (kind != CodeGen::GenIntCastDesc::CHECK_POSITIVE))
+    if ((kind != CodeGen::GenIntCastDesc::CHECK_NONE))
     {
         buildInternalIntRegisterDefForNode(cast);
     }

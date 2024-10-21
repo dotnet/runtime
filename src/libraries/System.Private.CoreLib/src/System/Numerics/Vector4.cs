@@ -369,6 +369,7 @@ namespace System.Numerics
 
         /// <summary>Constructs a vector from the given <see cref="ReadOnlySpan{Single}" />. The span must contain at least 4 elements.</summary>
         /// <param name="values">The span of elements to assign to the vector.</param>
+        /// <returns>A new <see cref="Vector4" /> whose elements have the specified values.</returns>
         [Intrinsic]
         public static Vector4 Create(ReadOnlySpan<float> values) => Vector128.Create(values).AsVector4();
 

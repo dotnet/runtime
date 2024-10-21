@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.X509Certificates
             return new AndroidX509Pal();
         }
 
-        private sealed partial class AndroidX509Pal : ManagedX509ExtensionProcessor, IX509Pal
+        private sealed partial class AndroidX509Pal : IX509Pal
         {
             public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
             {

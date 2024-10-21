@@ -544,12 +544,12 @@ private:
     LoaderAllocator * GetLoaderAllocator(DomainAssembly * pDomainAssembly)
     {
         WRAPPER_NO_CONTRACT;
-        return pDomainAssembly->GetLoaderAllocator();
+        return pDomainAssembly->GetAssembly()->GetLoaderAllocator();
     }
     BOOL IsCollectible(DomainAssembly * pDomainAssembly)
     {
         WRAPPER_NO_CONTRACT;
-        return pDomainAssembly->IsCollectible();
+        return pDomainAssembly->GetAssembly()->IsCollectible();
     }
     LoaderAllocator * GetLoaderAllocator(Assembly * pAssembly)
     {
@@ -1002,9 +1002,9 @@ public:
         AssemblyIterationFlags m_assemblyIterationFlags;
 
     public:
-        BOOL Next(CollectibleAssemblyHolder<DomainAssembly *> * pDomainAssemblyHolder);
-        // Note: Does not lock the assembly list, but AddRefs collectible assemblies.
-        BOOL Next_Unlocked(CollectibleAssemblyHolder<DomainAssembly *> * pDomainAssemblyHolder);
+        BOOL Next(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder);
+        // Note: Does not lock the assembly list, but AddRefs collectible assemblies' loader allocator.
+        BOOL Next_Unlocked(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder);
 
     private:
         inline DWORD GetIndex()
@@ -1111,7 +1111,7 @@ public:
     //****************************************************************************************
     // Returns and Inserts assemblies into a lookup cache based on the binding information
     // in the AssemblySpec. There can be many AssemblySpecs to a single assembly.
-    DomainAssembly* FindCachedAssembly(AssemblySpec* pSpec, BOOL fThrow=TRUE)
+    Assembly* FindCachedAssembly(AssemblySpec* pSpec, BOOL fThrow=TRUE)
     {
         WRAPPER_NO_CONTRACT;
         return m_AssemblyCache.LookupAssembly(pSpec, fThrow);
@@ -1126,8 +1126,8 @@ public:
     BOOL AddFileToCache(AssemblySpec* pSpec, PEAssembly *pPEAssembly);
     BOOL RemoveFileFromCache(PEAssembly *pPEAssembly);
 
-    BOOL AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembly);
-    BOOL RemoveAssemblyFromCache(DomainAssembly* pAssembly);
+    BOOL AddAssemblyToCache(AssemblySpec* pSpec, Assembly *pAssembly);
+    BOOL RemoveAssemblyFromCache(Assembly* pAssembly);
 
     BOOL AddExceptionToCache(AssemblySpec* pSpec, Exception *ex);
     void AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HANDLE hMod);

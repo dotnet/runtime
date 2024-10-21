@@ -3174,6 +3174,8 @@ ImportHelper::CreateAssemblyRefFromAssembly(
     mdAssemblyRef tkAssemRef;
     HRESULT     hr = S_OK;
     StrongNameToken token;
+    const void  *pbToken = NULL;
+    ULONG       cbToken = 0;
     ULONG       i;
 
     // Set output to Nil.
@@ -3193,6 +3195,9 @@ ImportHelper::CreateAssemblyRefFromAssembly(
         IfFailGo(StrongNameTokenFromPublicKey((BYTE*)pbPublicKey,
             cbPublicKey,
             &token));
+
+        pbToken = &token;
+        cbToken = StrongNameToken::SIZEOF_TOKEN;
     }
     else
         _ASSERTE(!IsAfPublicKey(dwFlags));
@@ -3209,8 +3214,8 @@ ImportHelper::CreateAssemblyRefFromAssembly(
             continue;
 
         // See if the AssemblyRef already exists in the emit scope.
-        hr = FindAssemblyRef(pMiniMdEmit, szName, szLocale, &token,
-                             StrongNameToken::SIZEOF_TOKEN, usMajorVersion, usMinorVersion,
+        hr = FindAssemblyRef(pMiniMdEmit, szName, szLocale, pbToken,
+                             cbToken, usMajorVersion, usMinorVersion,
                              usBuildNumber, usRevisionNumber, dwFlags,
                              &tkAssemRef);
         if (hr == CLDB_E_RECORD_NOTFOUND)

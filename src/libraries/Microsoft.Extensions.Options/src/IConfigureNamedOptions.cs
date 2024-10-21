@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Options
     public interface IConfigureNamedOptions<in TOptions> : IConfigureOptions<TOptions> where TOptions : class
     {
         /// <summary>
-        /// Invoked to configure a <typeparamref name="TOptions"/> instance.
+        /// Configures a <typeparamref name="TOptions"/> instance.
         /// </summary>
         /// <param name="name">The name of the options instance being configured.</param>
         /// <param name="options">The options instance to configure.</param>

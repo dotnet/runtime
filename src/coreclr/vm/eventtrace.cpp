@@ -5373,16 +5373,15 @@ VOID ETW::EnumerationLog::IterateAppDomain(DWORD enumerationOptions)
 
         AppDomain::AssemblyIterator assemblyIterator = pDomain->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        while (assemblyIterator.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (assemblyIterator.Next(pAssembly.This()))
         {
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
             if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart)
             {
                 ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
             }
 
-            Module * pModule = pDomainAssembly->GetModule();
+            Module * pModule = pAssembly->GetModule();
             ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
 
             if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd) ||
@@ -5439,7 +5438,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
         {
             Assembly *pAssembly = domainAssemblyIt->GetAssembly(); // TODO: handle iterator
 
-            Module* pModule = domainAssemblyIt->GetModule();
+            Module* pModule = domainAssemblyIt->GetAssembly()->GetModule();
             ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
 
             if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload)

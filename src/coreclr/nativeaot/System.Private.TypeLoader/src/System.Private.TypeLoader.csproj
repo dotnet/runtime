@@ -200,9 +200,6 @@
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\ThrowHelper.Common.cs">
       <Link>Internal\TypeSystem\ThrowHelper.Common.cs</Link>
     </Compile>
-    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtableOfPointers.cs">
-      <Link>LockFreeReaderHashtableOfPointers.cs</Link>
-    </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\ExceptionTypeNameFormatter.cs">
       <Link>Internal\TypeSystem\Utilities\ExceptionTypeNameFormatter.cs</Link>
     </Compile>

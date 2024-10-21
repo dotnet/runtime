@@ -117,7 +117,7 @@ namespace DotnetFuzzing.Fuzzers
             }
         }
 
-        private class NonSeekableStream : MemoryStream
+        private sealed class NonSeekableStream : MemoryStream
         {
             public NonSeekableStream(byte[] buffer) : base(buffer) { }
             public override bool CanSeek => false;

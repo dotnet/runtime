@@ -99,17 +99,15 @@ public class MiscTests3 : BlazorWasmTestBase
         string wasmProjectDir = Path.Combine(_projectDir!, "wasm");
         string wasmProjectFile = Path.Combine(wasmProjectDir, "wasm.csproj");
         Directory.CreateDirectory(wasmProjectDir);
-        new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
-                .WithWorkingDirectory(wasmProjectDir)
-                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("new blazorwasm")
-                .EnsureSuccessful();
-
+        using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
+        cmd.WithWorkingDirectory(wasmProjectDir)
+            .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+            .ExecuteWithCapturedOutput("new blazorwasm")
+            .EnsureSuccessful();
 
         string razorProjectDir = Path.Combine(_projectDir!, "RazorClassLibrary");
         Directory.CreateDirectory(razorProjectDir);
-        new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
-                .WithWorkingDirectory(razorProjectDir)
+        cmd.WithWorkingDirectory(razorProjectDir)
                 .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
                 .ExecuteWithCapturedOutput("new razorclasslib")
                 .EnsureSuccessful();

@@ -54,7 +54,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         private const int InvalidArgFailure = unchecked((int)0x80008081);
         private const int HostInvalidState = unchecked((int)0x800080a3);
         private const int HostPropertyNotFound = unchecked((int)0x800080a4);
-        private const int CoreHostIncompatibleConfig = unchecked((int)0x800080a5);
+        private const int HostIncompatibleConfig = unchecked((int)0x800080a5);
         private const int Success_HostAlreadyInitialized = 0x00000001;
         private const int Success_DifferentRuntimeProperties = 0x00000002;
 
@@ -420,14 +420,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 else
                 {
                     result.Should().Fail()
-                        .And.FailToInitializeContextForConfig(CoreHostIncompatibleConfig)
+                        .And.FailToInitializeContextForConfig(HostIncompatibleConfig)
                         .And.HaveStdErrMatching($".*The specified framework '{frameworkName}', version '{version}', apply_patches=[0-1], version_compatibility_range=[^ ]* is incompatible with the previously loaded version '{SharedTestState.NetCoreAppVersion}'.*");
                 }
             }
             else
             {
                 result.Should().Fail()
-                    .And.FailToInitializeContextForConfig(CoreHostIncompatibleConfig)
+                    .And.FailToInitializeContextForConfig(HostIncompatibleConfig)
                     .And.HaveStdErrContaining($"The specified framework '{frameworkName}' is not present in the previously loaded runtime");
             }
         }

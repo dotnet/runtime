@@ -429,6 +429,7 @@ public class InvalidInputTests : ReadTests
                 yield return new object[] { recordType, binaryType, (byte)0 }; // value not used by the spec
                 yield return new object[] { recordType, binaryType, (byte)4 }; // value not used by the spec
                 yield return new object[] { recordType, binaryType, (byte)17 }; // used by the spec, but illegal in given context
+                yield return new object[] { recordType, binaryType, (byte)18 }; // used by the spec, but illegal in given context
                 yield return new object[] { recordType, binaryType, (byte)19 };
             }
         }

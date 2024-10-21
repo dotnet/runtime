@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <!-- SYSLIB5005: System.Formats.Nrbf is experimental -->
+    <NoWarn>$(NoWarn);SYSLIB5005</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

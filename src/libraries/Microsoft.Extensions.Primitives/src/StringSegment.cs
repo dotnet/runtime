@@ -193,7 +193,7 @@ namespace Microsoft.Extensions.Primitives
         /// Indicates whether the current object is equal to another object of the same type.
         /// </summary>
         /// <param name="obj">An object to compare with this object.</param>
-        /// <returns><see langword="true" /> if the current object is equal to the other parameter; otherwise, <see langword="false" />.</returns>
+        /// <returns><see langword="true" /> if the current object is equal to <paramref name="obj"/>; otherwise, <see langword="false" />.</returns>
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is StringSegment segment && Equals(segment);
@@ -203,7 +203,7 @@ namespace Microsoft.Extensions.Primitives
         /// Indicates whether the current object is equal to another object of the same type.
         /// </summary>
         /// <param name="other">An object to compare with this object.</param>
-        /// <returns><see langword="true" /> if the current object is equal to the other parameter; otherwise, <see langword="false" />.</returns>
+        /// <returns><see langword="true" /> if the current object is equal to <paramref name="other"/>; otherwise, <see langword="false" />.</returns>
         public bool Equals(StringSegment other) => Equals(other, StringComparison.Ordinal);
 
         /// <summary>
@@ -211,7 +211,7 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="other">An object to compare with this object.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
-        /// <returns><see langword="true" /> if the current object is equal to the other parameter; otherwise, <see langword="false" />.</returns>
+        /// <returns><see langword="true" /> if the current object is equal to <paramref name="other"/>; otherwise, <see langword="false" />.</returns>
         public bool Equals(StringSegment other, StringComparison comparisonType)
         {
             if (HasValue && other.HasValue)
@@ -303,7 +303,7 @@ namespace Microsoft.Extensions.Primitives
         /// <summary>
         /// Creates a new <see cref="StringSegment"/> from the given <see cref="string"/>.
         /// </summary>
-        /// <param name="value">The <see cref="string"/> to convert to a <see cref="StringSegment"/></param>
+        /// <param name="value">The <see cref="string"/> to convert to a <see cref="StringSegment"/>.</param>
         public static implicit operator StringSegment(string? value) => new StringSegment(value);
 
         /// <summary>
@@ -376,7 +376,7 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="offset">The zero-based starting character position of a substring in this <see cref="StringSegment"/>.</param>
         /// <returns>A <see cref="string"/> that is equivalent to the substring of remaining length that begins at
-        /// <paramref name="offset"/> in this <see cref="StringSegment"/></returns>
+        /// <paramref name="offset"/> in this <see cref="StringSegment"/>.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="offset"/> is greater than or equal to <see cref="Length"/> or less than zero.
         /// </exception>
@@ -389,7 +389,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="offset">The zero-based starting character position of a substring in this <see cref="StringSegment"/>.</param>
         /// <param name="length">The number of characters in the substring.</param>
         /// <returns>A <see cref="string"/> that is equivalent to the substring of <paramref name="length"/> that begins at
-        /// <paramref name="offset"/> in this <see cref="StringSegment"/></returns>
+        /// <paramref name="offset"/> in this <see cref="StringSegment"/>.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="offset"/> or <paramref name="length"/> is less than zero, or <paramref name="offset"/> + <paramref name="length"/> is
         /// greater than <see cref="Length"/>.
@@ -423,7 +423,7 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="offset">The zero-based starting character position of a substring in this <see cref="StringSegment"/>.</param>
         /// <param name="length">The number of characters in the substring.</param>
-        /// <returns>A <see cref="StringSegment"/> that is equivalent to the substring of <paramref name="length"/> that begins at <paramref name="offset"/> in this <see cref="StringSegment"/></returns>
+        /// <returns>A <see cref="StringSegment"/> that is equivalent to the substring of <paramref name="length"/> that begins at <paramref name="offset"/> in this <see cref="StringSegment"/>.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="offset"/> or <paramref name="length"/> is less than zero, or <paramref name="offset"/> + <paramref name="length"/> is
         /// greater than <see cref="Length"/>.

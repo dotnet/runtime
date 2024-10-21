@@ -302,18 +302,14 @@ HRESULT IterateUnsharedModules(AppDomain * pAppDomain,
     // earlier during FILE_LOAD_LOADLIBRARY. This does not affect the timeline, as either
     // way the profiler receives the notification AFTER the assembly would appear in the
     // enumeration.
-    //
-    // Although it's called an "AssemblyIterator", it actually iterates over
-    // DomainAssembly instances.
-    AppDomain::AssemblyIterator domainAssemblyIterator =
+    AppDomain::AssemblyIterator assemblyIterator =
         pAppDomain->IterateAssembliesEx(
             (AssemblyIterationFlags) (kIncludeAvailableToProfilers | kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-    while (domainAssemblyIterator.Next(pDomainAssembly.This()))
+    while (assemblyIterator.Next(pAssembly.This()))
     {
-        _ASSERTE(pDomainAssembly != NULL);
-        _ASSERTE(pDomainAssembly->GetAssembly() != NULL);
+        _ASSERTE(pAssembly != NULL);
 
         // #ProfilerEnumModules (See also code:#ProfilerEnumGeneral)
         //
@@ -327,7 +323,7 @@ HRESULT IterateUnsharedModules(AppDomain * pAppDomain,
         // code:#ProfilerEnumAssemblies for info on how the timing works.
 
         // Call user-supplied callback, and cancel iteration if requested
-        HRESULT hr = (callbackObj->*callbackMethod)(pDomainAssembly->GetModule());
+        HRESULT hr = (callbackObj->*callbackMethod)(pAssembly->GetModule());
         if (hr != S_OK)
         {
             return hr;

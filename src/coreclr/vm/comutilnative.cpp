@@ -688,19 +688,15 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeo
     return result;
 }
 
-/*================================GetGeneration=================================
+/*================================GetGenerationInternal=================================
 **Action: Returns the generation in which args->obj is found.
 **Returns: The generation in which args->obj is found.
 **Arguments: args->obj -- The object to locate.
-**Exceptions: ArgumentException if args->obj is null.
 ==============================================================================*/
-FCIMPL1(int, GCInterface::GetGeneration, Object* objUNSAFE)
+FCIMPL1(int, GCInterface::GetGenerationInternal, Object* objUNSAFE)
 {
     FCALL_CONTRACT;
-
-    if (objUNSAFE == NULL)
-        FCThrowArgumentNull(W("obj"));
-
+    _ASSERTE(objUNSAFE != NULL);
     int result = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(objUNSAFE);
     FC_GC_POLL_RET();
     return result;
@@ -912,7 +908,7 @@ FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
 
     INT64 currentAllocated = 0;
     Thread *pThread = GetThread();
-    gc_alloc_context* ac = &t_runtime_thread_locals.alloc_context;
+    gc_alloc_context* ac = &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
     currentAllocated = ac->alloc_bytes + ac->alloc_bytes_uoh - (ac->alloc_limit - ac->alloc_ptr);
 
     return currentAllocated;
@@ -1401,7 +1397,7 @@ void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1437,7 +1433,7 @@ NOINLINE void GCInterface::SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocate
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1814,6 +1810,14 @@ FCIMPL1(CorElementType, MethodTableNative::GetPrimitiveCorElementType, MethodTab
 }
 FCIMPLEND
 
+FCIMPL2(MethodTable*, MethodTableNative::GetMethodTableMatchingParentClass, MethodTable *mt, MethodTable* parent)
+{
+    FCALL_CONTRACT;
+
+    return mt->GetMethodTableMatchingParentClass(parent);
+}
+FCIMPLEND
+
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb)
 {
     QCALL_CONTRACT;
@@ -1862,6 +1866,13 @@ extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, 
     END_QCALL;
 
     return ret;
+}
+
+extern "C" INT32 QCALLTYPE TypeHandle_GetCorElementType(void* typeHnd)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    return (INT32)TypeHandle::FromPtr(typeHnd).GetSignatureCorElementType();
 }
 
 static bool HasOverriddenStreamMethod(MethodTable* streamMT, MethodTable* pMT, WORD slot)

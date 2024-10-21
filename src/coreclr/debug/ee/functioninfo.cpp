@@ -1432,7 +1432,7 @@ DebuggerMethodInfo::DebuggerMethodInfo(Module *module, mdMethodDef token) :
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
-    DebuggerModule * pModule = GetPrimaryModule();
+    DebuggerModule * pModule = GetModule();
 
     m_fJMCStatus = false;
 
@@ -1448,9 +1448,9 @@ DebuggerMethodInfo::DebuggerMethodInfo(Module *module, mdMethodDef token) :
 
 
 /******************************************************************************
- * Get the primary debugger module for this DMI. This is 1:1 w/ an EE Module.
+ * Get the debugger module for this DMI. This is 1:1 w/ an EE Module.
  ******************************************************************************/
-DebuggerModule* DebuggerMethodInfo::GetPrimaryModule()
+DebuggerModule* DebuggerMethodInfo::GetModule()
 {
     CONTRACTL
     {
@@ -1478,11 +1478,7 @@ DebuggerModule* DebuggerMethodInfo::GetPrimaryModule()
         return NULL;
     }
 
-    // Only give back primary modules...
-    DebuggerModule * p2 = pModule->GetPrimaryModule();
-    _ASSERTE(p2 != NULL);
-
-    return p2;
+    return pModule;
 }
 
 /******************************************************************************
@@ -2027,8 +2023,8 @@ void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Method
         // This also handles the possibility of getting the same methoddesc back from the iterator.
         // It also lets EnC + generics play nice together (including if an generic method was EnC-ed)
         LoadedMethodDescIterator it(pAppDomain, m_module, m_token);
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        while (it.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (it.Next(pAssembly.This()))
         {
             MethodDesc * pDesc = it.Current();
             if (!pDesc->HasNativeCode())

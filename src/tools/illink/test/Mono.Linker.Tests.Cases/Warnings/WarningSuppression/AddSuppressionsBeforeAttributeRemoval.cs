@@ -9,6 +9,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 	[SetupLinkAttributesFile ("AddSuppressionsBeforeAttributeRemoval.xml")]
 
 	[ExpectedNoWarnings]
+	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
 	public class AddSuppressionsBeforeAttributeRemoval
 	{
 		[Kept]

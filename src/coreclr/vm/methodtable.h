@@ -340,7 +340,7 @@ struct MethodTableAuxiliaryData
         enum_flag_HasCheckedStreamOverride  = 0x0400,
         enum_flag_StreamOverriddenRead      = 0x0800,
         enum_flag_StreamOverriddenWrite     = 0x1000,
-        // unused enum                      = 0x2000,
+        enum_flag_EnsuredInstanceActive     = 0x2000,
         // unused enum                      = 0x4000,
         // unused enum                      = 0x8000,
     };
@@ -457,6 +457,12 @@ public:
         return VolatileLoad(&m_dwFlags) & enum_flag_Initialized;
     }
 
+    inline BOOL IsEnsuredInstanceActive() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return VolatileLoad(&m_dwFlags) & enum_flag_EnsuredInstanceActive;
+    }
+
     inline bool IsClassInitedOrPreinitedDecided(bool *initResult) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -471,6 +477,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         InterlockedOr((LONG*)&m_dwFlags, (LONG)enum_flag_Initialized);
+    }
+
+    inline void SetEnsuredInstanceActive()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedOr((LONG*)&m_dwFlags, (LONG)enum_flag_EnsuredInstanceActive);
     }
 #endif
 
@@ -603,12 +615,12 @@ public:
     TADDR m_pGCStatics; // Always access through helper methods to properly handle the ISCLASSNOTINITED bit
     TADDR m_pNonGCStatics; // Always access through helper methods to properly handle the ISCLASSNOTINITED bit
     PTR_MethodTable m_pMethodTable;
-    PTR_OBJECTREF GetGCStaticsPointer() { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pGCStatics); return dac_cast<PTR_OBJECTREF>(staticsVal & STATICSPOINTERMASK); }
-    PTR_BYTE GetNonGCStaticsPointer() { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pNonGCStatics); return dac_cast<PTR_BYTE>(staticsVal & STATICSPOINTERMASK); }
+    PTR_OBJECTREF GetGCStaticsPointer() { TADDR staticsVal = VolatileLoad(&m_pGCStatics); return dac_cast<PTR_OBJECTREF>(staticsVal & STATICSPOINTERMASK); }
+    PTR_BYTE GetNonGCStaticsPointer() { TADDR staticsVal = VolatileLoad(&m_pNonGCStatics); return dac_cast<PTR_BYTE>(staticsVal & STATICSPOINTERMASK); }
     PTR_OBJECTREF GetGCStaticsPointerAssumeIsInited() { TADDR staticsVal = m_pGCStatics; _ASSERTE(staticsVal != 0); _ASSERTE((staticsVal & (ISCLASSNOTINITEDMASK)) == 0); return dac_cast<PTR_OBJECTREF>(staticsVal); }
     PTR_BYTE GetNonGCStaticsPointerAssumeIsInited() { TADDR staticsVal = m_pNonGCStatics; _ASSERTE(staticsVal != 0); _ASSERTE((staticsVal & (ISCLASSNOTINITEDMASK)) == 0); return dac_cast<PTR_BYTE>(staticsVal); }
-    bool GetIsInitedAndGCStaticsPointerIfInited(PTR_OBJECTREF *ptrResult) { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pGCStatics); *ptrResult = dac_cast<PTR_OBJECTREF>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
-    bool GetIsInitedAndNonGCStaticsPointerIfInited(PTR_BYTE *ptrResult) { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pNonGCStatics); *ptrResult = dac_cast<PTR_BYTE>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
+    bool GetIsInitedAndGCStaticsPointerIfInited(PTR_OBJECTREF *ptrResult) { TADDR staticsVal = VolatileLoad(&m_pGCStatics); *ptrResult = dac_cast<PTR_OBJECTREF>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
+    bool GetIsInitedAndNonGCStaticsPointerIfInited(PTR_BYTE *ptrResult) { TADDR staticsVal = VolatileLoad(&m_pNonGCStatics); *ptrResult = dac_cast<PTR_BYTE>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
 
     // This function sets the pointer portion of a statics pointer. It returns false if the statics value was already set.
     bool InterlockedUpdateStaticsPointer(bool isGC, TADDR newVal, bool isClassInitedByUpdatingStaticPointer)
@@ -1375,18 +1387,6 @@ public:
     // element type for an array
     Instantiation GetClassOrArrayInstantiation();
     Instantiation GetArrayInstantiation();
-
-    // Does this method table require that additional modules be loaded?
-    inline BOOL HasModuleDependencies()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return GetFlag(enum_flag_HasModuleDependencies);
-    }
-
-    inline void SetHasModuleDependencies()
-    {
-        SetFlag(enum_flag_HasModuleDependencies);
-    }
 
     inline BOOL IsIntrinsicType()
     {
@@ -2691,15 +2691,6 @@ public:
     void DebugDumpGCDesc(LPCUTF8 pszClassName, BOOL debug);
 #endif //_DEBUG
 
-    inline BOOL IsAgileAndFinalizable()
-    {
-        LIMITED_METHOD_CONTRACT;
-        // Right now, System.Thread is the only cases of this.
-        // Things should stay this way - please don't change without talking to EE team.
-        return this == g_pThreadClass;
-    }
-
-
     //-------------------------------------------------------------------
     // ENUMS, DELEGATES, VALUE TYPES, ARRAYS
     //
@@ -3037,9 +3028,6 @@ public :
     SString &_GetFullyQualifiedNameForClassNestedAware(SString &ssBuf);
     SString &_GetFullyQualifiedNameForClass(SString &ssBuf);
     LPCUTF8 GetFullyQualifiedNameInfo(LPCUTF8 *ppszNamespace);
-
-private:
-    template<typename RedirectFunctor> SString &_GetFullyQualifiedNameForClassNestedAwareInternal(SString &ssBuf);
 
 public :
     //-------------------------------------------------------------------
@@ -3744,7 +3732,7 @@ private:
         enum_flag_HasDispatchMapSlot        = 0x0004,
 
         enum_flag_wflags2_unused_2          = 0x0008,
-        enum_flag_HasModuleDependencies     = 0x0010,
+        //unused                            = 0x0010,
         enum_flag_IsIntrinsicType           = 0x0020,
         enum_flag_HasCctor                  = 0x0040,
         enum_flag_HasVirtualStaticMethods   = 0x0080,
@@ -3992,7 +3980,7 @@ public:
 
     static void GetStaticsOffsets(StaticsOffsetType staticsOffsetType, bool fGenericsStatics, uint32_t *dwGCOffset, uint32_t *dwNonGCOffset);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<MethodTable>;
 };  // class MethodTable
 
 template<> struct cdac_data<MethodTable>
@@ -4029,5 +4017,10 @@ void ThrowAmbiguousResolutionException(
     MethodTable* pTargetClass,
     MethodTable* pInterfaceMT,
     MethodDesc* pInterfaceMD);
+
+
+#ifndef DACCESS_COMPILE
+void DoNotRecordTheResultOfEnsureLoadLevel();
+#endif
 
 #endif // !_METHODTABLE_H_

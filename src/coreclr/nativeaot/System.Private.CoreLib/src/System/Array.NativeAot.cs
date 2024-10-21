@@ -897,6 +897,7 @@ namespace System
         // Prevent the C# compiler from generating a public default constructor
         private Array() { }
 
+        [Intrinsic]
         public new IEnumerator<T> GetEnumerator()
         {
             T[] @this = Unsafe.As<T[]>(this);

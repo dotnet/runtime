@@ -3,6 +3,9 @@
 
 namespace System.Formats.Nrbf;
 
+// See [MS-NRBF] Sec. 2.7 for more information.
+// https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/ca3ad2bc-777b-413a-a72a-9ba6ced76bc3
+
 [Flags]
 internal enum AllowedRecordTypes : uint
 {

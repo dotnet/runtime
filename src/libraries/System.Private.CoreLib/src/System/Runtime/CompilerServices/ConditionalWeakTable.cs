@@ -15,7 +15,7 @@ namespace System.Runtime.CompilerServices
         where TValue : class?
     {
         // Lifetimes of keys and values:
-        // Inserting a key and value into the dictonary will not
+        // Inserting a key and value into the dictionary will not
         // prevent the key from dying, even if the key is strongly reachable
         // from the value. Once the key dies, the dictionary automatically removes
         // the key/value entry.

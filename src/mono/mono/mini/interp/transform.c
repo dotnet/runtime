@@ -3364,7 +3364,7 @@ interp_try_devirt (MonoClass *this_klass, MonoMethod *target_method)
 	if (m_class_is_valuetype (new_target_method->klass))
 		return NULL;
 
-	// final methods can still be overriden with explicit overrides
+	// final methods can still be overridden with explicit overrides
 	if (m_class_is_sealed (this_klass))
 		return new_target_method;
 
