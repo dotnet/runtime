@@ -196,6 +196,10 @@ namespace DebuggerTests
                 scripts = SubscribeToScripts(insp);
                 await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
             }
+            catch (Exception other)
+            {
+                throw new Exception($"Debugger inspector failed opening the session: {other}");
+            }
         }
 
         public virtual async Task DisposeAsync()
