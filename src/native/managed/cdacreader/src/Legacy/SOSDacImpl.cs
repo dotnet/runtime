@@ -464,10 +464,10 @@ internal sealed unsafe partial class SOSDacImpl
         ComWrappers cw = new StrategyBasedComWrappers();
 
         int hr;
+        nint legacyModulePointer = 0;
         IXCLRDataModule? legacyModule = null;
         if (_legacyImpl is not null)
         {
-            nint legacyModulePointer;
             hr = _legacyImpl.GetModule(addr, (void**)&legacyModulePointer);
             if (hr < 0)
                 return hr;
@@ -478,7 +478,7 @@ internal sealed unsafe partial class SOSDacImpl
             Marshal.Release(legacyModulePointer);
         }
 
-        ClrDataModule module = new(addr, _target, legacyModule);
+        ClrDataModule module = new(addr, _target, legacyModule, legacyModulePointer);
         nint iunknownPtr = cw.GetOrCreateComInterfaceForObject(module, CreateComInterfaceFlags.None);
         hr = Marshal.QueryInterface(iunknownPtr, typeof(IXCLRDataModule).GUID, out nint modPtr);
         if (hr == HResults.S_OK)

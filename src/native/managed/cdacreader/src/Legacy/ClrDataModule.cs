@@ -3,22 +3,36 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [GeneratedComClass]
-internal sealed unsafe partial class ClrDataModule : IXCLRDataModule
+internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRDataModule
 {
     private readonly TargetPointer _address;
     private readonly Target _target;
     private readonly IXCLRDataModule? _legacyModule;
+    private readonly nint _legacyModulePointer;
 
-    public ClrDataModule(TargetPointer address, Target target, IXCLRDataModule? legacyModule)
+    public ClrDataModule(TargetPointer address, Target target, IXCLRDataModule? legacyModule, nint legacyModulePointer)
     {
         _address = address;
         _target = target;
         _legacyModule = legacyModule;
+        _legacyModulePointer = legacyModulePointer;
+    }
+
+    private static readonly Guid IID_IMetaDataImport = Guid.Parse("7DAC8207-D3AE-4c75-9B67-92801A497D44");
+
+    CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
+    {
+        ppv = default;
+        if (iid == IID_IMetaDataImport && Marshal.QueryInterface(_legacyModulePointer, iid, out ppv) >= 0)
+            return CustomQueryInterfaceResult.Handled;
+
+        return CustomQueryInterfaceResult.NotHandled;
     }
 
     int IXCLRDataModule.StartEnumAssemblies(ulong* handle)
