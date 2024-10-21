@@ -4887,16 +4887,18 @@ void Compiler::fgSearchImprovedLayout()
     // the block wasn't visited below, so it's not in the range of hot blocks.
     unsigned* const ordinals     = new (this, CMK_Generic) unsigned[fgBBNumMax + 1]{};
     unsigned        numHotBlocks = 0;
-    BasicBlock*     finalBlock   = fgLastBBInMainFunction();
+    BasicBlock*     finalBlock;
 
+    // Walk backwards through the main method body, looking for the last hot block.
+    // Since we moved all cold blocks to the end of the method already,
+    // we should have a span of hot blocks to consider reordering at the beginning of the method.
+    for (finalBlock = fgLastBBInMainFunction(); !finalBlock->IsFirst() && finalBlock->isBBWeightCold(this);
+         finalBlock = finalBlock->Prev())
+        ;
+
+    // Initialize the ordinal numbers for the hot blocks
     for (BasicBlock* const block : Blocks(fgFirstBB, finalBlock))
     {
-        if (block->isBBWeightCold(this))
-        {
-            finalBlock = block->Prev();
-            break;
-        }
-
         ordinals[block->bbNum] = numHotBlocks++;
     }
 
