@@ -4912,13 +4912,9 @@ void Compiler::fgSearchImprovedLayout()
     };
     PriorityQueue<FlowEdge*, decltype(edgeWeightComp)> cutPoints(getAllocator(CMK_FlowEdge), edgeWeightComp);
 
-    // We will also maintain a set of candidate edges to avoid adding duplicate edges to cutPoints.
-    // For large flowgraphs, we risk exploding 'cutPoints' with duplicate edges.
-    JitHashTable<FlowEdge*, JitPtrKeyFuncs<FlowEdge>, bool> usedCandidates(getAllocator(CMK_FlowEdge));
-
     // Since adding to priority queues has logarithmic time complexity,
     // try to avoid adding edges that we obviously won't consider when reordering.
-    auto considerEdge = [&cutPoints, &usedCandidates, ordinals](FlowEdge* edge) {
+    auto considerEdge = [&cutPoints, ordinals](FlowEdge* edge) {
         assert(edge != nullptr);
 
         BasicBlock* const srcBlk = edge->getSourceBlock();
@@ -4947,11 +4943,7 @@ void Compiler::fgSearchImprovedLayout()
             return;
         }
 
-        // Don't add an edge that we've already considered
-        if (!usedCandidates.Set(edge, true, usedCandidates.SetKind::Overwrite))
-        {
-            cutPoints.Push(edge);
-        }
+        cutPoints.Push(edge);
     };
 
     auto addNonFallthroughSuccs = [this, considerEdge](BasicBlock* block, BasicBlock* next) {
@@ -5003,7 +4995,6 @@ void Compiler::fgSearchImprovedLayout()
     {
         FlowEdge* const candidateEdge = cutPoints.Top();
         cutPoints.Pop();
-        assert(usedCandidates[candidateEdge]);
 
         BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
         BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
