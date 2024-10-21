@@ -1183,7 +1183,7 @@ void SsaBuilder::RenameVariables()
     JITDUMP("*************** In SsaBuilder::RenameVariables()\n");
 
     m_pCompiler->Metrics.VarsInSsa = 0;
-    // The first thing we do is treat parameters and must-init variables as if they have a
+    // The first thing we do is treat all SSA locals as if they have a
     // virtual definition before entry -- they start out at SSA name 1.
     for (unsigned lclNum = 0; lclNum < m_pCompiler->lvaCount; lclNum++)
     {
@@ -1197,17 +1197,12 @@ void SsaBuilder::RenameVariables()
         LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclNum);
         assert(varDsc->lvTracked);
 
-        if (varDsc->lvIsParam || m_pCompiler->info.compInitMem || varDsc->lvMustInit ||
-            (varTypeIsGC(varDsc) && !varDsc->lvHasExplicitInit) ||
-            VarSetOps::IsMember(m_pCompiler, m_pCompiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
-        {
-            unsigned ssaNum = varDsc->lvPerSsaData.AllocSsaNum(m_allocator);
+        unsigned ssaNum = varDsc->lvPerSsaData.AllocSsaNum(m_allocator);
 
-            // In ValueNum we'd assume un-inited variables get FIRST_SSA_NUM.
-            assert(ssaNum == SsaConfig::FIRST_SSA_NUM);
+        // In ValueNum we'd assume un-inited variables get FIRST_SSA_NUM.
+        assert(ssaNum == SsaConfig::FIRST_SSA_NUM);
 
-            m_renameStack.Push(m_pCompiler->fgFirstBB, lclNum, ssaNum);
-        }
+        m_renameStack.Push(m_pCompiler->fgFirstBB, lclNum, ssaNum);
     }
 
     // In ValueNum we'd assume un-inited memory gets FIRST_SSA_NUM.
