@@ -50,12 +50,12 @@ public abstract class TestMainJsTestBase : BuildTestBase
                     AppContext.BaseDirectory,
                     options.TargetFramework == "net7.0"
                         ? "data/test-main-7.0.js"
-                        : "test-main.js"
+                        : "test-main.mjs"
                 ),
-                Path.Combine(_projectDir, "test-main.js")
+                Path.Combine(_projectDir, "test-main.mjs")
             );
 
-            File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<!DOCTYPE html><html><body><script type=""module"" src=""test-main.js""></script></body></html>");
+            File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<!DOCTYPE html><html><body><script type=""module"" src=""test-main.mjs""></script></body></html>");
         }
         else if (_projectDir is null)
         {
