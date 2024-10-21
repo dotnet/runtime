@@ -10903,6 +10903,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_StubHelpers_NextCallReturnAddress;
                         }
+                        else if (strcmp(methodName, "Async2CallContinuation") == 0)
+                        {
+                            result = NI_System_StubHelpers_Async2CallContinuation;
+                        }
                     }
                 }
                 else if (strcmp(namespaceName, "Text") == 0)
@@ -10914,10 +10918,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             assert(strcmp(enclosingClassNames[0], "UTF8Encoding") == 0);
                             result = NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8;
                         }
-                    }
-                    else if (strcmp(methodName, "Async2CallContinuation") == 0)
-                    {
-                        result = NI_System_StubHelpers_Async2CallContinuation;
                     }
                 }
                 else if (strcmp(namespaceName, "Threading") == 0)
