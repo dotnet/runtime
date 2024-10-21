@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.NET.HostModel.MachO;
 
 namespace Microsoft.NET.HostModel.AppHost
 {
@@ -60,7 +61,7 @@ namespace Microsoft.NET.HostModel.AppHost
         /// <param name="appBinaryFilePath">Full path to app binary or relative path to the result apphost file</param>
         /// <param name="windowsGraphicalUserInterface">Specify whether to set the subsystem to GUI. Only valid for PE apphosts.</param>
         /// <param name="assemblyToCopyResourcesFrom">Path to the intermediate assembly, used for copying resources to PE apphosts.</param>
-        /// <param name="enableMacOSCodeSign">Sign the app binary using codesign with an anonymous certificate.</param>
+        /// <param name="enableMacOSCodeSign">Sign the app binary with an anonymous certificate. Only use when the AppHost is a Mach-O file built for MacOS.</param>
         /// <param name="disableCetCompat">Remove CET Shadow Stack compatibility flag if set</param>
         /// <param name="dotNetSearchOptions">Options for how the created apphost should look for the .NET install</param>
         public static void CreateAppHost(
@@ -112,6 +113,10 @@ namespace Microsoft.NET.HostModel.AppHost
                 {
                     PEUtils.RemoveCetCompatBit(mappedFile, accessor);
                 }
+                if (appHostIsPEImage && enableMacOSCodeSign)
+                {
+                    throw new InvalidDataException("Cannot sign a PE image with MacOS code signing.");
+                }
             }
 
             try
@@ -125,28 +130,42 @@ namespace Microsoft.NET.HostModel.AppHost
                     {
                         // Open the source host file.
                         appHostSourceStream = new FileStream(appHostSourceFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
-                        memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
-                        memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
-
                         // Get the size of the source app host to ensure that we don't write extra data to the destination.
                         // On Windows, the size of the view accessor is rounded up to the next page boundary.
-                        long sourceAppHostLength = appHostSourceStream.Length;
+                        var appHostLength = appHostSourceStream.Length;
+                        memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
+                        memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
 
                         // Transform the host file in-memory.
                         RewriteAppHost(memoryMappedFile, memoryMappedViewAccessor);
 
-                        // Save the transformed host.
-                        using (FileStream fileStream = new FileStream(appHostDestinationFilePath, FileMode.Create))
+                        MachObjectFile machObjectFile = null;
+                        if (!appHostIsPEImage)
                         {
-                            BinaryUtils.WriteToStream(memoryMappedViewAccessor, fileStream, sourceAppHostLength);
-
-                            // Remove the signature from MachO hosts.
-                            if (!appHostIsPEImage)
+                            if (enableMacOSCodeSign)
                             {
-                                MachOUtils.RemoveSignature(fileStream);
+                                string fileName = Path.GetFileName(appHostDestinationFilePath);
+                                machObjectFile = new MachObjectFile(memoryMappedViewAccessor, fileName);
+                                appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, fileName);
                             }
+                            else
+                            {
+                                if (MachObjectFile.TryRemoveCodesign(memoryMappedViewAccessor, out long? length))
+                                {
+                                    appHostLength = length.Value;
+                                }
+                            }
+                        }
 
-                            if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
+                        // Save the transformed host.
+                        using (FileStream fileStream = new FileStream(appHostDestinationFilePath, FileMode.Create, FileAccess.ReadWrite))
+                        {
+                            BinaryUtils.WriteToStream(memoryMappedViewAccessor, fileStream, appHostLength);
+                            if (!appHostIsPEImage && enableMacOSCodeSign)
+                            {
+                                machObjectFile.WriteCodeSignature(fileStream);
+                            }
+                            if (appHostIsPEImage && assemblyToCopyResourcesFrom != null)
                             {
                                 using var updater = new ResourceUpdater(fileStream, true);
                                 updater.AddResourcesFromPEImage(assemblyToCopyResourcesFrom);
@@ -177,15 +196,6 @@ namespace Microsoft.NET.HostModel.AppHost
                     if (chmodReturnCode == -1)
                     {
                         throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {appHostDestinationFilePath}.");
-                    }
-
-                    if (enableMacOSCodeSign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
-                    {
-                        (int exitCode, string stdErr) = HostModelUtils.RunCodesign("-s -", appHostDestinationFilePath);
-                        if (exitCode != 0)
-                        {
-                            throw new AppHostSigningException(exitCode, stdErr);
-                        }
                     }
                 }
             }
