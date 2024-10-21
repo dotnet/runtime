@@ -626,10 +626,8 @@ public:
     PrecodeMachineDescriptor() = default;
     PrecodeMachineDescriptor(const PrecodeMachineDescriptor&) = delete;
     PrecodeMachineDescriptor& operator=(const PrecodeMachineDescriptor&) = delete;
-    static void Init();
+    static void Init(PrecodeMachineDescriptor* dest);
 };
-
-extern PrecodeMachineDescriptor g_PrecodeMachineDescriptor;
 #endif //DACCESS_COMPILE
 
 #endif // __PRECODE_H__

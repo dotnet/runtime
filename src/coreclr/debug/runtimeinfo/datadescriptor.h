@@ -368,6 +368,11 @@ CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, FixupPrecodeType, offsetof(
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint32*/, StubCodePageSize, offsetof(PrecodeMachineDescriptor, StubCodePageSize))
 CDAC_TYPE_END(PrecodeMachineDescriptor)
 
+CDAC_TYPE_BEGIN(CDacMetadata)
+CDAC_TYPE_INDETERMINATE(CDacMetadata)
+CDAC_TYPE_FIELD(CDacMetadata, /*PrecodeMachineDescriptor*/, PrecodeMachineDescriptor, offsetof(CDacMetadata, precode))
+CDAC_TYPE_END(CDacMetadata)
+
 CDAC_TYPE_BEGIN(StubPrecodeData)
 CDAC_TYPE_INDETERMINATE(StubPrecodeData)
 CDAC_TYPE_FIELD(StubPrecodeData, /*pointer*/, MethodDesc, offsetof(StubPrecodeData, MethodDesc))
@@ -470,7 +475,7 @@ CDAC_GLOBAL_POINTER(SyncTableEntries, &::g_pSyncTable)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
-CDAC_GLOBAL_POINTER(PrecodeMachineDescriptor, &::g_PrecodeMachineDescriptor)
+CDAC_GLOBAL_POINTER(CDacMetadata, &::g_cdacMetadata)
 CDAC_GLOBALS_END()
 
 #undef CDAC_BASELINE
