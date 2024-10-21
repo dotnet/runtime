@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.Extensions.Logging
 {
     /// <summary>
-    /// An empty scope with no logic.
+    /// An empty scope without any logic.
     /// </summary>
     public sealed class NullScope : IDisposable
     {
