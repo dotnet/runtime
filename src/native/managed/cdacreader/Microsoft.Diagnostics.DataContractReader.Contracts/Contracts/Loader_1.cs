@@ -70,4 +70,35 @@ internal readonly struct Loader_1 : ILoader
             module.TypeRefToMethodTableMap,
             module.MethodDefToILCodeVersioningStateMap);
     }
+
+    TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
+    {
+        uint rid = EcmaMetadataUtils.GetRowId(token);
+        ArgumentOutOfRangeException.ThrowIfZero(rid);
+        flags = new TargetNUInt(0);
+        if (table == TargetPointer.Null)
+            return TargetPointer.Null;
+        uint index = rid;
+        Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+        // have to read lookupMap an extra time upfront because only the first map
+        // has valid supportedFlagsMask
+        TargetNUInt supportedFlagsMask = lookupMap.SupportedFlagsMask;
+        do
+        {
+            lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+            if (index < lookupMap.Count)
+            {
+                TargetPointer entryAddress = lookupMap.TableData + (ulong)(index * _target.PointerSize);
+                TargetPointer rawValue = _target.ReadPointer(entryAddress);
+                flags = new TargetNUInt(rawValue & supportedFlagsMask.Value);
+                return rawValue & ~(supportedFlagsMask.Value);
+            }
+            else
+            {
+                table = lookupMap.Next;
+                index -= lookupMap.Count;
+            }
+        } while (table != TargetPointer.Null);
+        return TargetPointer.Null;
+    }
 }
