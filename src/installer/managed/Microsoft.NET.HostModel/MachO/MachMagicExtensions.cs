@@ -28,7 +28,7 @@ internal static class MachMagicExtensions
                 => value,
             MachMagic.MachHeader64OppositeEndian or MachMagic.MachHeaderOppositeEndian
                 => BinaryPrimitives.ReverseEndianness(value),
-            _ => throw new InvalidDataException("Invalid magic value")
+            _ => throw new InvalidDataException($"Invalid magic value 0x{magic:X}")
         };
     }
 }
