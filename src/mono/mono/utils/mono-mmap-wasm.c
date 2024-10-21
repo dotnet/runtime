@@ -112,6 +112,8 @@ mono_valloc_aligned (size_t size, size_t alignment, int flags, MonoMemAccountTyp
 	}
 #endif
 
+	mono_account_mem (type, (ssize_t)size);
+
 	return res;
 }
 
@@ -121,6 +123,9 @@ mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 	// NOTE: this doesn't implement partial freeing like munmap does
 	// we set MS_BLOCK_ALLOC_NUM to 1 to avoid partial freeing
 	g_free (addr);
+
+	mono_account_mem (type, -(ssize_t)length);
+
 	return 0;
 }
 
