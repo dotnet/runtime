@@ -12,11 +12,23 @@ internal struct NameBuffer
     private ulong _nameLower;
     private ulong _nameUpper;
 
-    public static NameBuffer __TEXT = BitConverter.IsLittleEndian ?
-        new NameBuffer { _nameLower = 0x0000545845545F5F, _nameUpper = 0x0000000000000000 }
-        : new NameBuffer { _nameLower = 0x5F5F544558540000, _nameUpper = 0x0000000000000000 };
+    private NameBuffer(ReadOnlySpan<byte> nameBytes)
+    {
+        byte[] buffer = new byte[16];
+        nameBytes.CopyTo(buffer);
 
-    public static NameBuffer __LINKEDIT = BitConverter.IsLittleEndian ?
-        new NameBuffer { _nameLower = 0x44454B4E494C5F5F, _nameUpper = 0x0000000000005449 }
-        : new NameBuffer { _nameLower = 0x5F5F4C494E4B4544, _nameUpper = 0x4954000000000000 };
+        if (BitConverter.IsLittleEndian)
+        {
+            _nameLower = BitConverter.ToUInt64(buffer, 0);
+            _nameUpper = BitConverter.ToUInt64(buffer, 8);
+        }
+        else
+        {
+            _nameLower = BitConverter.ToUInt64(buffer, 8);
+            _nameUpper = BitConverter.ToUInt64(buffer, 0);
+        }
+    }
+
+    public static NameBuffer __TEXT = new NameBuffer("__TEXT"u8);
+    public static NameBuffer __LINKEDIT = new NameBuffer("__LINKEDIT"u8);
 }
