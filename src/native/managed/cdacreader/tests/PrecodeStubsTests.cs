@@ -15,6 +15,7 @@ public class PrecodeStubsTests
     public class PrecodeTestDescriptor {
         public string Name { get; }
         public required MockTarget.Architecture Arch { get; init; }
+        public bool IsThumb { get; init; }
         public required ulong CodePointerToInstrPointerMask { get; init; }
         public required int ReadWidthOfPrecodeType { get; init; }
         public required int OffsetOfPrecodeType { get; init; }
@@ -108,6 +109,7 @@ public class PrecodeStubsTests
 
     internal static PrecodeTestDescriptor Arm32Thumb = new PrecodeTestDescriptor("Arm32Thumb") {
         Arch = new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false },
+        IsThumb = true,
         CodePointerToInstrPointerMask = ~0x1u,
         ReadWidthOfPrecodeType = 1,
         ShiftOfPrecodeType = 0,
@@ -264,7 +266,11 @@ public class PrecodeStubsTests
             Span<byte> stubData = Builder.BorrowAddressRange(stubDataFragment.Address, (int)stubDataTypeInfo.Size);
             Builder.TargetTestHelpers.Write(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData.Type)].Offset, sizeof(byte)), test.StubPrecode);
             Builder.TargetTestHelpers.WritePointer(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData.MethodDesc)].Offset, Builder.TargetTestHelpers.PointerSize), methodDesc);
-            return stubCodeFragment.Address;
+            TargetCodePointer address = stubCodeFragment.Address;
+            if (test.IsThumb) {
+                address = new TargetCodePointer(address.Value | 1);
+            }
+            return address;
         }
 
         public void MarkCreated() => Builder.MarkCreated();
@@ -320,5 +326,7 @@ public class PrecodeStubsTests
 
         var actualMethodDesc = precodeContract.GetMethodDescFromStubAddress(stub1);
         Assert.Equal(expectedMethodDesc, actualMethodDesc);
+
+
     }
 }
