@@ -20,4 +20,9 @@ internal readonly partial struct CDacMetadata_1 : ICDacMetadata
     {
         return _cdacMetadata.PrecodeMachineDescriptor;
     }
+
+    CodePointerFlags ICDacMetadata.GetCodePointerFlags()
+    {
+        return (CodePointerFlags)_cdacMetadata.CodePointerFlags;
+    }
 }

@@ -5,10 +5,17 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+internal enum CodePointerFlags : byte
+{
+    HasArm32ThumbBit = 0x1,
+    HasArm64PtrAuth = 0x2,
+}
+
 internal interface ICDacMetadata : IContract
 {
     static string IContract.Name { get; } = nameof(CDacMetadata);
     TargetPointer GetPrecodeMachineDescriptor() => throw new NotImplementedException();
+    CodePointerFlags GetCodePointerFlags() => throw new NotImplementedException();
 }
 
 internal readonly struct CDacMetadata : ICDacMetadata

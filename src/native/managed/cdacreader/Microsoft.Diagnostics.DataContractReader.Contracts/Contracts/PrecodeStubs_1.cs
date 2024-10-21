@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct PrecodeStubs_1 : IPrecodeStubs
 {
     private readonly Target _target;
+    private readonly CodePointerFlags _codePointerFlags;
     internal readonly Data.PrecodeMachineDescriptor MachineDescriptor;
 
     internal enum KnownPrecodeType
@@ -130,9 +132,16 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
 
     internal TargetPointer CodePointerReadableInstrPointer(TargetCodePointer codePointer)
     {
-        // Mask off the thumb bit, if we're on arm32, to get the actual instruction pointer
-        ulong instrPointer = (ulong)codePointer.AsTargetPointer & MachineDescriptor.CodePointerToInstrPointerMask.Value;
-        return new TargetPointer(instrPointer);
+        if (_codePointerFlags.HasFlag(CodePointerFlags.HasArm32ThumbBit))
+        {
+            return codePointer.AsTargetPointer & ~1ul;
+        }
+        if (_codePointerFlags.HasFlag(CodePointerFlags.HasArm64PtrAuth))
+        {
+            throw new NotImplementedException("CodePointerReadableInstrPointer for ARM64 with pointer authentication");
+        }
+        Debug.Assert(_codePointerFlags == 0);
+        return codePointer.AsTargetPointer;
     }
 
 
@@ -157,10 +166,11 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
         }
         throw new InvalidOperationException($"Invalid precode type 0x{instrPointer:x16}");
     }
-    public PrecodeStubs_1(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    public PrecodeStubs_1(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor, CodePointerFlags codePointerFlags)
     {
         _target = target;
         MachineDescriptor = precodeMachineDescriptor;
+        _codePointerFlags = codePointerFlags;
     }
 
     TargetPointer IPrecodeStubs.GetMethodDescFromStubAddress(TargetCodePointer entryPoint)

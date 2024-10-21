@@ -601,7 +601,6 @@ static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
 // A summary of the precode layout for diagnostic purposes
 struct PrecodeMachineDescriptor
 {
-    uintptr_t CodePointerToInstrPointerMask;
     uint32_t StubCodePageSize;
 
     uint8_t OffsetOfPrecodeType;
