@@ -194,6 +194,11 @@ PhaseStatus Async2Transformation::Run()
 
     if (m_comp->opts.OptimizationEnabled())
     {
+        if (m_comp->m_dfsTree == nullptr)
+        {
+            m_comp->m_dfsTree = m_comp->fgComputeDfs<false>();
+        }
+
         m_comp->lvaComputeRefCounts(true, false);
         m_comp->fgLocalVarLiveness();
         VarSetOps::AssignNoCopy(m_comp, m_comp->compCurLife, VarSetOps::MakeEmpty(m_comp));
@@ -252,6 +257,8 @@ PhaseStatus Async2Transformation::Run()
     }
 
     CreateResumptionSwitch();
+
+    m_comp->fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
