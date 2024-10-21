@@ -113,6 +113,6 @@ if [[ "$buildonly" -eq 0 ]]; then
 
     export STRESS_CLIENT_ARGS=$clientstressargs
     export STRESS_SERVER_ARGS=$serverstressargs
-    docker compose --file "$compose_file" up --abort-on-container-exit
+    docker-compose --file "$compose_file" up --abort-on-container-exit
     exit $?
 fi
