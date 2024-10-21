@@ -38,6 +38,6 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
     public byte? FixupPrecodeType { get; init; }
 
     public uint StubCodePageSize { get; init; }
-    private const string HasPInvokeImportPrecode = nameof(HasPInvokeImportPrecode);
-    private const string HasFixupPrecode = nameof(HasFixupPrecode);
+    internal const string HasPInvokeImportPrecode = nameof(HasPInvokeImportPrecode);
+    internal const string HasFixupPrecode = nameof(HasFixupPrecode);
 }
