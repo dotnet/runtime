@@ -2379,7 +2379,7 @@ void Thread::PerformPreemptiveGC()
         // BUG(github #10318) - when not using allocation contexts, the alloc lock
         // must be acquired here. Until fixed, this assert prevents random heap corruption.
         _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-        GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context);
+        GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context.m_GCAllocContext);
         m_bGCStressing = FALSE;
     }
     m_GCOnTransitionsOK = TRUE;
