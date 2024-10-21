@@ -686,7 +686,7 @@ bool LinearScan::isContainableMemoryOp(GenTree* node)
 //    mask        - the mask (set) of registers.
 //    currentLoc  - the location at which they should be added
 //
-void LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
+RefPosition* LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
 {
     // The mask identifies a set of registers that will be used during
     // codegen. Mark these as modified here, so when we do final frame
@@ -705,6 +705,8 @@ void LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
 
     *killTail = pos;
     killTail  = &pos->nextRefPosition;
+
+    return pos;
 }
 
 //------------------------------------------------------------------------
@@ -1198,27 +1200,6 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKillGCRefs, tree,
                                           (availableIntRegs & ~RBM_ARG_REGS.GetIntRegSet()));
         insertedKills    = true;
-    }
-
-    if (tree->IsCall() && tree->AsCall()->IsAsync2() && compiler->compIsAsync2StateMachine())
-    {
-        // Async2 calls return an async continuation argument in a separate
-        // register. Since we do not have a flexible representation for
-        // multiple definitions (multi-reg support is tied into promotion) we
-        // have to utilize a hack here to make it work. We expect the return
-        // value to be consumed by an upcoming ASYNC_CONTINUATION node, but we
-        // must take care not to overwrite the register until we get to that
-        // node. To accomplish that we mark the register as "busy until next
-        // kill" when we see the call's kill, and then we have
-        // ASYNC_CONTINUATION insert its own kill to free up the register
-        // again.
-
-        assert((killMask & RBM_ASYNC_CONTINUATION_RET) != 0);
-
-        RegRecord*   asyncRetRegRec = getRegisterRecord(REG_ASYNC_CONTINUATION_RET);
-        RefPosition* pos            = asyncRetRegRec->lastRefPosition;
-        assert(pos->refType == RefTypeKill);
-        pos->busyUntilNextKill = true;
     }
 
     return insertedKills;
@@ -4731,3 +4712,19 @@ void LinearScan::MarkSwiftErrorBusyForCall(GenTreeCall* call)
     setDelayFree(swiftErrorRegRecord->lastRefPosition);
 }
 #endif
+
+void LinearScan::MarkAsyncContinuationBusyForCall(GenTreeCall* call)
+{
+    // Async2 calls return an async continuation argument in a separate
+    // register. Since we do not have a flexible representation for
+    // multiple definitions (multi-reg support is tied into promotion) we
+    // have to utilize a hack here to make it work. We expect the return
+    // value to be consumed by an upcoming ASYNC_CONTINUATION node, but we
+    // must take care not to overwrite the register until we get to that
+    // node. To accomplish that we mark the register as "busy until next
+    // kill" when we see the call's kill, and then we have
+    // ASYNC_CONTINUATION insert its own kill to free up the register
+    // again.
+    RefPosition* refPos       = addKillForRegs(RBM_ASYNC_CONTINUATION_RET, currentLoc + 1);
+    refPos->busyUntilNextKill = true;
+}

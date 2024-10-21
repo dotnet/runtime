@@ -1335,6 +1335,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
     }
 #endif // SWIFT_SUPPORT
 
+    if (call->IsAsync2() && compiler->compIsAsync2StateMachine())
+    {
+        MarkAsyncContinuationBusyForCall(call);
+    }
+
     // No args are placed in registers anymore.
     placedArgRegs      = RBM_NONE;
     numPlacedArgLocals = 0;

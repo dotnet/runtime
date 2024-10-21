@@ -1026,7 +1026,7 @@ private:
     // insert refpositions representing prolog zero-inits which will be added later
     void insertZeroInitRefPositions();
 
-    void addKillForRegs(regMaskTP mask, LsraLocation currentLoc);
+    RefPosition* addKillForRegs(regMaskTP mask, LsraLocation currentLoc);
 
     void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
 
@@ -1989,6 +1989,7 @@ private:
     int  BuildPutArgReg(GenTreeUnOp* node);
     int  BuildCall(GenTreeCall* call);
     void MarkSwiftErrorBusyForCall(GenTreeCall* call);
+    void MarkAsyncContinuationBusyForCall(GenTreeCall* call);
     int  BuildCmp(GenTree* tree);
     int  BuildCmpOperands(GenTree* tree);
     int  BuildBlockStore(GenTreeBlk* blkNode);

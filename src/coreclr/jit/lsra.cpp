@@ -3855,6 +3855,11 @@ void LinearScan::processKills(RefPosition* killRefPosition)
     regsBusyUntilKill &= ~killRefPosition->getKilledRegisters();
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, nullptr, NONE,
                                     killRefPosition->getKilledRegisters()));
+
+    if (killRefPosition->busyUntilNextKill)
+    {
+        regsBusyUntilKill |= killRefPosition->getKilledRegisters();
+    }
 }
 
 //------------------------------------------------------------------------
@@ -5737,11 +5742,6 @@ void LinearScan::allocateRegisters()
                 regsInUseNextLocation.AddRegsetForType(currentRefPosition.registerAssignment, regRecord->registerType);
             }
 #endif // SWIFT_SUPPORT
-
-            if (currentRefPosition.busyUntilNextKill)
-            {
-                setRegBusyUntilKill(regRecord->regNum, regRecord->registerType);
-            }
             continue;
         }
 
