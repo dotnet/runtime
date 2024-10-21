@@ -2437,7 +2437,7 @@ HRESULT Assembler::SavePdbFile()
 
     if (FAILED(hr = (m_pPortablePdbWriter == NULL ? E_FAIL : S_OK))) goto exit;
     if (FAILED(hr = (m_pPortablePdbWriter->GetEmitter() == NULL ? E_FAIL : S_OK))) goto exit;
-    if (FAILED(hr = m_pPortablePdbWriter->GetEmitter()->Save(m_wzPdbFileName, NULL))) goto exit;
+    if (FAILED(hr = m_pPortablePdbWriter->GetEmitter()->Save(m_wzPdbFileName, 0))) goto exit;
 
 exit:
     return hr;
