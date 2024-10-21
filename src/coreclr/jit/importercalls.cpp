@@ -919,8 +919,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         {
             if (varArgsCookie != nullptr)
             {
-                call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(varArgsCookie, TYP_REF)
-                                                           .WellKnown(WellKnownArg::VarArgsCookie));
+                call->AsCall()->gtArgs.PushFront(this,
+                                                 NewCallArg::Primitive(varArgsCookie).WellKnown(WellKnownArg::VarArgsCookie));
             }
 
             if (sig->isAsyncCall() && (JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() != 0))
