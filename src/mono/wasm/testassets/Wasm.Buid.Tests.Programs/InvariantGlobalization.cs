@@ -7,11 +7,8 @@ try
 {
     CultureInfo culture = new ("es-ES", false);
     Console.WriteLine($"es-ES: Is Invariant LCID: {culture.LCID == CultureInfo.InvariantCulture.LCID}");
-    
-    var nativeNameArg = args.FirstOrDefault(arg => arg.StartsWith("nativename="));
-    if (nativeNameArg == null)
-        throw new ArgumentException($"When not in invariant mode, InvariantGlobalization.cs expects nativename argument with expected es-ES NativeName.");
-    string expectedNativeName = nativeNameArg.Substring(11).Trim('"'); // skip nativename=
+   
+    string expectedNativeName = "espa\u00F1ol (Espa\u00F1a)";
     string nativeName = culture.NativeName;
     if (nativeName != expectedNativeName)
         throw new ArgumentException($"Expected es-ES NativeName: {expectedNativeName}, but got: {nativeName}");
