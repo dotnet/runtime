@@ -8,16 +8,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)\Extensions\ProviderAliasUtilities\ProviderAliasUtilities.cs"
-             Link="Common\Extensions\ProviderAliasUtilities\ProviderAliasUtilities.cs" />
-    <Compile Include="$(CommonPath)Extensions\Logging\NullExternalScopeProvider.cs"
-             Link="Common\src\Extensions\Logging\NullExternalScopeProvider.cs" />
-    <Compile Include="$(CommonPath)Extensions\Logging\NullScope.cs"
-             Link="Common\src\Extensions\Logging\NullScope.cs" />
-    <Compile Include="$(CommonPath)Extensions\Logging\DebuggerDisplayFormatting.cs"
-             Link="Common\src\Extensions\Logging\DebuggerDisplayFormatting.cs" />
-    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
-             Link="Common\System\ThrowHelper.cs" />
+    <Compile Include="$(CommonPath)\Extensions\ProviderAliasUtilities\ProviderAliasUtilities.cs" Link="Common\Extensions\ProviderAliasUtilities\ProviderAliasUtilities.cs" />
+    <Compile Remove="C:\Projects\dotnet\runtime\src\libraries\Common\src\Extensions\Logging\NullExternalScopeProvider.cs" />
+    <Compile Include="$(CommonPath)Extensions\Logging\NullExternalScopeProvider.cs" Link="Common\src\Extensions\Logging\NullExternalScopeProvider.cs" />
+    <Compile Remove="C:\Projects\dotnet\runtime\src\libraries\Common\src\Extensions\Logging\NullExternalScopeProvider.cs" />
+    <Compile Remove="C:\Projects\dotnet\runtime\src\libraries\Common\src\Extensions\Logging\NullScope.cs" />
+    <Compile Remove="C:\Projects\dotnet\runtime\src\libraries\Common\src\Extensions\Logging\NullScope.cs" />
+    <Compile Remove="C:\Projects\dotnet\runtime\src\libraries\Common\src\Extensions\Logging\NullScope.cs" />
+    <Compile Remove="C:\Projects\dotnet\runtime\src\libraries\Common\src\Extensions\Logging\NullScope.cs" />
+    <Compile Remove="C:\Projects\dotnet\runtime\src\libraries\Common\src\Extensions\Logging\NullScope.cs" />
+    <Compile Remove="C:\Projects\dotnet\runtime\src\libraries\Common\src\Extensions\Logging\NullScope.cs" />
+    <Compile Remove="C:\Projects\dotnet\runtime\src\libraries\Common\src\Extensions\Logging\NullScope.cs" />
+    <Compile Remove="C:\Projects\dotnet\runtime\src\libraries\Common\src\Extensions\Logging\NullScope.cs" />
+    <Compile Remove="C:\Projects\dotnet\runtime\src\libraries\Common\src\Extensions\Logging\NullScope.cs" />
+    <Compile Remove="C:\Projects\dotnet\runtime\src\libraries\Common\src\Extensions\Logging\NullScope.cs" />
+    <Compile Include="$(CommonPath)Extensions\Logging\DebuggerDisplayFormatting.cs" Link="Common\src\Extensions\Logging\DebuggerDisplayFormatting.cs" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs" Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>
