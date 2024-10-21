@@ -11,7 +11,6 @@
   <Target Name="SetupTestContextVariables"
           Condition="'$(IsTestProject)' == 'true'"
           DependsOnTargets="
-            GetProductVersions;
             DetermineTestOutputDirectory"
           BeforeTargets="Build">
     <PropertyGroup>
