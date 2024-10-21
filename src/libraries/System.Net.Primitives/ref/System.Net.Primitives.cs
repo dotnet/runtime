@@ -89,6 +89,8 @@ namespace System.Net
     public partial class CookieException : System.FormatException, System.Runtime.Serialization.ISerializable
     {
         public CookieException() { }
+        public CookieException(string? message) { }
+        public CookieException(string? message, System.Exception? innerException) { }
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected CookieException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
