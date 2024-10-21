@@ -1260,9 +1260,9 @@ void Async2Transformation::CreateResumptionSwitch()
 
         FlowEdge* to0 = m_comp->fgAddRefPred(m_resumptionBBs[0], condBB);
         FlowEdge* to1 = m_comp->fgAddRefPred(m_resumptionBBs[1], condBB);
-        condBB->SetCond(to0, to1);
-        to0->setLikelihood(0.5);
+        condBB->SetCond(to1, to0);
         to1->setLikelihood(0.5);
+        to0->setLikelihood(0.5);
 
         resumingEdge = m_comp->fgAddRefPred(condBB, newEntryBB);
 
