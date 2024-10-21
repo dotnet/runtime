@@ -275,7 +275,20 @@ public class PrecodeStubsTests
 
     internal class PrecodeTestTarget : TestPlaceholderTarget
     {
+        private class TestCDacMetadata : ICDacMetadata
+        {
+            private readonly TargetPointer _precodeMachineDescriptorAddress;
+            public TestCDacMetadata(TargetPointer precodeMachineDescriptorAddress) {
+                _precodeMachineDescriptorAddress = precodeMachineDescriptorAddress;
+            }
+            TargetPointer ICDacMetadata.GetPrecodeMachineDescriptor()
+            {
+                return _precodeMachineDescriptorAddress;
+            }
+        }
         internal readonly TargetPointer PrecodeMachineDescriptorAddress;
+        // hack for this test put the precode machine descriptor at the same address as the CDacMetadata
+        internal TargetPointer CDacMetadataAddress => PrecodeMachineDescriptorAddress;
         public static PrecodeTestTarget FromBuilder(PrecodeBuilder precodeBuilder)
         {
             precodeBuilder.MarkCreated();
@@ -284,21 +297,23 @@ public class PrecodeStubsTests
             var typeInfo = precodeBuilder.TypeInfoCache;
             return new PrecodeTestTarget(arch, reader, precodeBuilder.MachineDescriptorAddress, typeInfo);
         }
-        public PrecodeTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, TargetPointer machineDescriptorAddress, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch) {
-            PrecodeMachineDescriptorAddress = machineDescriptorAddress;
+        public PrecodeTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, TargetPointer cdacMetadataAddress, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch) {
+            PrecodeMachineDescriptorAddress = cdacMetadataAddress;
             SetTypeInfoCache(typeInfoCache);
             SetDataCache(new DefaultDataCache(this));
             SetDataReader(reader);
             IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();
             SetContracts(new TestRegistry() {
+                CDacMetadataContract = new (() => new TestCDacMetadata(PrecodeMachineDescriptorAddress)),
                 PrecodeStubsContract = new (() => precodeFactory.CreateContract(this, 1)),
+
             });
         }
 
         public override TargetPointer ReadGlobalPointer (string name)
         {
-            if (name == Constants.Globals.PrecodeMachineDescriptor) {
-                return PrecodeMachineDescriptorAddress;
+            if (name == Constants.Globals.CDacMetadata) {
+                return CDacMetadataAddress;
             }
             return base.ReadGlobalPointer(name);
         }

@@ -41,6 +41,6 @@ internal static class Constants
 
         internal const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
         internal const string StubCodeBlockLast = nameof(StubCodeBlockLast);
-        internal const string PrecodeMachineDescriptor = nameof(PrecodeMachineDescriptor);
+        internal const string CDacMetadata = nameof(CDacMetadata);
     }
 }
