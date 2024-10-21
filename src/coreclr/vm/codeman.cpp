@@ -4126,6 +4126,9 @@ namespace {
             // TODO: Is this check correct?
             _ASSERTE(pCode + codeSize <= pHp->startAddress + pHp->maxCodeHeapSize);
 
+            // Assert 4 byte aligned
+            _ASSERTE(!(pCode & 0b11))
+
             size_t delta = pCode - pHp->mapBase;
 
             size_t dwordIndex = GetDwordIndex(delta);
@@ -4227,7 +4230,7 @@ namespace {
             _ASSERTE(offset == (offset & NIBBLE_MASK));
 
             // #1 look up DWORD represnting current PC
-            PREFIX_ASSUME(pMap != NULL);
+            PREFIX_ASSUME(pMap + dwordIndex != NULL);
             dword = VolatileLoadWithoutBarrier<DWORD>(pMap + dwordIndex);
 
             // #2 if DWORD is a pointer, then we can return
@@ -4262,7 +4265,7 @@ namespace {
             dwordIndex--;
             nibbleIndex = NIBBLES_PER_DWORD;
 
-            PREFIX_ASSUME(pMap != NULL);
+            PREFIX_ASSUME(pMap + dwordIndex != NULL);
             dword = VolatileLoadWithoutBarrier<DWORD>(pMap + dwordIndex);
 
             // #5.2 if DWORD is a pointer, then we can return
