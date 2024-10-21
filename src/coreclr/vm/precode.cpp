@@ -662,53 +662,51 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
     return FALSE;
 }
 
-PrecodeMachineDescriptor g_PrecodeMachineDescriptor;
-
-void PrecodeMachineDescriptor::Init()
+void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
 {
 #ifndef TARGET_ARM
-    g_PrecodeMachineDescriptor.CodePointerToInstrPointerMask = ~0;
+    dest->CodePointerToInstrPointerMask = ~0;
 #else
     // mask off the thumb bit
-    g_PrecodeMachineDescriptor.CodePointerToInstrPointerMask = ~1;
+    dest->CodePointerToInstrPointerMask = ~1;
 #endif
-    g_PrecodeMachineDescriptor.OffsetOfPrecodeType = OFFSETOF_PRECODE_TYPE;
+    dest->OffsetOfPrecodeType = OFFSETOF_PRECODE_TYPE;
     // cDAC will do (where N = 8*ReadWidthOfPrecodeType):
     //   uintN_t PrecodeType = *(uintN_t*)(pPrecode + OffsetOfPrecodeType);
     //   PrecodeType >>= ShiftOfPrecodeType;
     //   return (byte)PrecodeType;
 #ifdef TARGET_LOONGARCH64
-    g_PrecodeMachineDescriptor.ReadWidthOfPrecodeType = 2;
-    g_PrecodeMachineDescriptor.ShiftOfPrecodeType = 5;
+    dest->ReadWidthOfPrecodeType = 2;
+    dest->ShiftOfPrecodeType = 5;
 #else
-    g_PrecodeMachineDescriptor.ReadWidthOfPrecodeType = 1;
-    g_PrecodeMachineDescriptor.ShiftOfPrecodeType = 0;
+    dest->ReadWidthOfPrecodeType = 1;
+    dest->ShiftOfPrecodeType = 0;
 #endif
 
-    g_PrecodeMachineDescriptor.InvalidPrecodeType = InvalidPrecode::Type;
-    g_PrecodeMachineDescriptor.StubPrecodeType = StubPrecode::Type;
+    dest->InvalidPrecodeType = InvalidPrecode::Type;
+    dest->StubPrecodeType = StubPrecode::Type;
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
-    g_PrecodeMachineDescriptor.HasPInvokeImportPrecode = 1;
-    g_PrecodeMachineDescriptor.PInvokeImportPrecodeType = NDirectImportPrecode::Type;
+    dest->HasPInvokeImportPrecode = 1;
+    dest->PInvokeImportPrecodeType = NDirectImportPrecode::Type;
 #else
-    g_PrecodeMachineDescriptor.HasPInvokeImportPrecode = 0;
-    g_PrecodeMachineDescriptor.PInvokeImportPrecodeType = 0;
+    dest->HasPInvokeImportPrecode = 0;
+    dest->PInvokeImportPrecodeType = 0;
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
-    g_PrecodeMachineDescriptor.HasFixupPrecode = 1;
-    g_PrecodeMachineDescriptor.FixupPrecodeType = FixupPrecode::Type;
+    dest->HasFixupPrecode = 1;
+    dest->FixupPrecodeType = FixupPrecode::Type;
 #else
-    g_PrecodeMachineDescriptor.HasFixupPrecode = 0;
-    g_PrecodeMachineDescriptor.FixupPrecodeType = 0;
+    dest->HasFixupPrecode = 0;
+    dest->FixupPrecodeType = 0;
 #endif // HAS_FIXUP_PRECODE
 #ifdef HAS_THISPTR_RETBUF_PRECODE
-    g_PrecodeMachineDescriptor.HasThisPtrRetBufPrecode = 1;
-    g_PrecodeMachineDescriptor.HasThisPointerRetBufPrecodeType = ThisPtrRetBufPrecode::Type;
+    dest->HasThisPtrRetBufPrecode = 1;
+    dest->HasThisPointerRetBufPrecodeType = ThisPtrRetBufPrecode::Type;
 #else
-    g_PrecodeMachineDescriptor.HasThisPtrRetBufPrecode = 0;
-    g_PrecodeMachineDescriptor.HasThisPointerRetBufPrecodeType = 0;
+    dest->HasThisPtrRetBufPrecode = 0;
+    dest->HasThisPointerRetBufPrecodeType = 0;
 #endif // HAS_THISPTR_RETBUF_PRECODE
-    g_PrecodeMachineDescriptor.StubCodePageSize = GetStubCodePageSize();
+    dest->StubCodePageSize = GetStubCodePageSize();
 }
 
 #endif // !DACCESS_COMPILE
