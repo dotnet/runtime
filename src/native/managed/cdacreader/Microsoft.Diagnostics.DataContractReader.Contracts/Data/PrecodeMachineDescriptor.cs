@@ -11,7 +11,6 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
     public PrecodeMachineDescriptor(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.PrecodeMachineDescriptor);
-        CodePointerToInstrPointerMask = target.ReadNUInt(address + (ulong)type.Fields[nameof(CodePointerToInstrPointerMask)].Offset);
         OffsetOfPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(OffsetOfPrecodeType)].Offset);
         ReadWidthOfPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(ReadWidthOfPrecodeType)].Offset);
         ShiftOfPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(ShiftOfPrecodeType)].Offset);
@@ -28,7 +27,6 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
         StubCodePageSize = target.Read<uint>(address + (ulong)type.Fields[nameof(StubCodePageSize)].Offset);
     }
 
-    public TargetNUInt CodePointerToInstrPointerMask { get; init; }
     public byte OffsetOfPrecodeType { get; init; }
     public byte ReadWidthOfPrecodeType { get; init; }
     public byte ShiftOfPrecodeType { get; init; }

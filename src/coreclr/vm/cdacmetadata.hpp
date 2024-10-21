@@ -8,9 +8,18 @@
 
 // Cross-cutting metadata for cDAC
 #ifndef DACCESS_COMPILE
+enum class CDacCodePointerFlags : uint8_t
+{
+    None = 0,
+    HasArm32ThumbBit = 0x1,
+    HasArm64PtrAuth = 0x2,
+};
+
+
 struct CDacMetadata
 {
     PrecodeMachineDescriptor precode;
+    CDacCodePointerFlags codePointerFlags;
     CDacMetadata() = default;
     CDacMetadata(const CDacMetadata&) = delete;
     CDacMetadata& operator=(const CDacMetadata&) = delete;

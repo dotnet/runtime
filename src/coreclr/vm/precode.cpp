@@ -664,12 +664,6 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
 
 void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
 {
-#ifndef TARGET_ARM
-    dest->CodePointerToInstrPointerMask = ~0;
-#else
-    // mask off the thumb bit
-    dest->CodePointerToInstrPointerMask = ~1;
-#endif
     dest->OffsetOfPrecodeType = OFFSETOF_PRECODE_TYPE;
     // cDAC will do (where N = 8*ReadWidthOfPrecodeType):
     //   uintN_t PrecodeType = *(uintN_t*)(pPrecode + OffsetOfPrecodeType);

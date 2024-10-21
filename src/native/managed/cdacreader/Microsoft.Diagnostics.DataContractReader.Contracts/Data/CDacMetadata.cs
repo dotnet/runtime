@@ -12,8 +12,10 @@ internal sealed class CDacMetadata : IData<CDacMetadata>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.CDacMetadata);
         PrecodeMachineDescriptor = address + (ulong)type.Fields[nameof(PrecodeMachineDescriptor)].Offset;
+        CodePointerFlags = target.Read<byte>(address + (ulong)type.Fields[nameof(CodePointerFlags)].Offset);
     }
 
     /* Address of */
     public TargetPointer PrecodeMachineDescriptor { get; init; }
+    public byte CodePointerFlags { get; init; }
 }
