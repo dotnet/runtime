@@ -753,13 +753,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.MonitorExit;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_MON_ENTER_STATIC:
-                    id = ReadyToRunHelper.MonitorEnterStatic;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_MON_EXIT_STATIC:
-                    id = ReadyToRunHelper.MonitorExitStatic;
-                    break;
-
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                     return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetHelperEntryPoint("SynchronizedMethodHelpers", "GetSyncFromClassHandle"));
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:

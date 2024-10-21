@@ -1747,7 +1747,6 @@ HRESULT CordbProcess::Init()
         // a flag on the dispenser to create threadsafe readers. This is done best-effort but
         // really shouldn't ever fail. See issue 696511.
         VARIANT optionValue;
-        VariantInit(&optionValue);
         V_VT(&optionValue) = VT_UI4;
         V_UI4(&optionValue) = MDThreadSafetyOn;
         m_pMetaDispenser->SetOption(MetaDataThreadSafetyOptions, &optionValue);
