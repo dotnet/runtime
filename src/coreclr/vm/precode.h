@@ -602,6 +602,8 @@ static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
 struct PrecodeMachineDescriptor
 {
     uintptr_t CodePointerToInstrPointerMask;
+    uint32_t StubCodePageSize;
+
     uint8_t OffsetOfPrecodeType;
     // cDAC will do (where N = 8*ReadWidthOfPrecodeType):
     //   uintN_t PrecodeType = *(uintN_t*)(pPrecode + OffsetOfPrecodeType);
@@ -621,7 +623,6 @@ struct PrecodeMachineDescriptor
     uint8_t HasThisPtrRetBufPrecode;
     uint8_t HasThisPointerRetBufPrecodeType;
 
-    uint32_t StubCodePageSize;
 public:
     PrecodeMachineDescriptor() = default;
     PrecodeMachineDescriptor(const PrecodeMachineDescriptor&) = delete;
