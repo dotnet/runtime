@@ -2148,8 +2148,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_MEMORYBARRIER:
         {
-            CodeGen::BarrierKind barrierKind =
-                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY : BARRIER_FULL;
+            BarrierKind barrierKind =
+                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD
+                    ? BARRIER_LOAD_ONLY
+                    : (treeNode->gtFlags & GTF_MEMORYBARRIER_STORE ? BARRIER_STORE_ONLY : BARRIER_FULL);
 
             instGen_MemoryBarrier(barrierKind);
             break;
@@ -6216,7 +6218,6 @@ void CodeGen::genCall(GenTreeCall* call)
             switch (helperNum)
             {
                 case CORINFO_HELP_MON_ENTER:
-                case CORINFO_HELP_MON_ENTER_STATIC:
                     noway_assert(compiler->syncStartEmitCookie == nullptr);
                     compiler->syncStartEmitCookie =
                         GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
@@ -6224,7 +6225,6 @@ void CodeGen::genCall(GenTreeCall* call)
                     noway_assert(compiler->syncStartEmitCookie != nullptr);
                     break;
                 case CORINFO_HELP_MON_EXIT:
-                case CORINFO_HELP_MON_EXIT_STATIC:
                     noway_assert(compiler->syncEndEmitCookie == nullptr);
                     compiler->syncEndEmitCookie =
                         GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
@@ -11108,7 +11108,7 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 // instGen_MemoryBarrier: Emit a MemoryBarrier instruction
 //
 // Arguments:
-//     barrierKind - kind of barrier to emit (Load-only is no-op on xarch)
+//     barrierKind - kind of barrier to emit (Load-only and Store-only are no-ops on xarch)
 //
 // Notes:
 //     All MemoryBarriers instructions can be removed by DOTNET_JitNoMemoryBarriers=1
