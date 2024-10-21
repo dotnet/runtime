@@ -56,5 +56,7 @@ public enum DataType
     RangeSection,
     RealCodeHeader,
     CodeHeapListNode,
-
+    MethodDescVersioningState,
+    ILCodeVersioningState,
+    NativeCodeVersionNode,
 }
