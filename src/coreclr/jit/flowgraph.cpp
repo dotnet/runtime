@@ -1241,11 +1241,23 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
 
     if (!kind.needsRuntimeLookup)
     {
-        void *critSect = nullptr, **pCrit = nullptr;
-        critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
-        noway_assert((!critSect) != (!pCrit));
+        CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(info.compClassHnd);
+        if (ptr != NULL)
+        {
+            setMethodHasFrozenObjects();
+            tree = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+        }
+        else
+        {
+            void *critSect = nullptr, **pCrit = nullptr;
+            critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
+            noway_assert((!critSect) != (!pCrit));
 
-        tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
+            tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
+
+            // Given the class handle, get the pointer to the Monitor.
+            tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_REF, tree);
+        }
     }
     else
     {
@@ -1291,7 +1303,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         noway_assert(tree); // tree should now contain the CORINFO_CLASS_HANDLE for the exact class.
 
         // Given the class handle, get the pointer to the Monitor.
-        tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_I_IMPL, tree);
+        tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_REF, tree);
     }
 
     noway_assert(tree);
@@ -1578,14 +1590,13 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
     if (info.compIsStatic)
     {
         tree = fgGetCritSectOfStaticMethod();
-        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER_STATIC : CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, tree,
-                                   varAddrNode);
     }
     else
     {
         tree = gtNewLclvNode(lvaThisVar, TYP_REF);
-        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER : CORINFO_HELP_MON_EXIT, TYP_VOID, tree, varAddrNode);
     }
+
+    tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER : CORINFO_HELP_MON_EXIT, TYP_VOID, tree, varAddrNode);
 
 #ifdef DEBUG
     if (verbose)
@@ -2494,14 +2505,14 @@ PhaseStatus Compiler::fgAddInternal()
         if (info.compIsStatic)
         {
             tree = fgGetCritSectOfStaticMethod();
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER_STATIC, TYP_VOID, tree);
         }
         else
         {
             noway_assert(lvaTable[info.compThisArg].lvType == TYP_REF);
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, tree);
         }
+
+        tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, tree);
 
         /* Create a new basic block and stick the call in it */
 
@@ -2527,13 +2538,13 @@ PhaseStatus Compiler::fgAddInternal()
         if (info.compIsStatic)
         {
             tree = fgGetCritSectOfStaticMethod();
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, tree);
         }
         else
         {
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, tree);
         }
+
+        tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, tree);
 
         fgNewStmtNearEnd(genReturnBB, tree);
 
@@ -3672,7 +3683,14 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
 {
     if (!UsesFunclets())
     {
-        *dsg = AcdKeyDesignator::KD_TRY;
+        if (blk->hasTryIndex())
+        {
+            *dsg = AcdKeyDesignator::KD_TRY;
+        }
+        else
+        {
+            *dsg = AcdKeyDesignator::KD_NONE;
+        }
         return blk->bbTryIndex;
     }
 
@@ -3772,6 +3790,95 @@ Compiler::AddCodeDscKey::AddCodeDscKey(AddCodeDsc* add)
         }
     }
 }
+
+//------------------------------------------------------------------------
+// UpdateKeyDesignator: determine new key designator after modifying
+//   the region indices.
+//
+// Arguments:
+//   compiler - current compiler instance
+//
+// Returns:
+//   true if the key desinator changes
+//
+bool Compiler::AddCodeDsc::UpdateKeyDesignator(Compiler* compiler)
+{
+    // This ACD may now have a new enclosing region.
+    // Figure out the new parent key designator.
+    //
+    // For example, suppose there is a try that has an array
+    // bounds check and an empty finally, all within a
+    // finally. When we remove the try, the ACD for the bounds
+    // check changes from being enclosed in a try to being
+    // enclosed in a finally.
+    //
+    const bool inHnd = acdHndIndex > 0;
+    const bool inTry = acdTryIndex > 0;
+
+    AcdKeyDesignator newDsg = AcdKeyDesignator::KD_NONE;
+
+    if (!compiler->UsesFunclets())
+    {
+        // Non-funclet case
+        //
+        newDsg = inTry ? AcdKeyDesignator::KD_TRY : AcdKeyDesignator::KD_NONE;
+    }
+    else if (!inTry && !inHnd)
+    {
+        // Moved outside of all EH regions.
+        //
+        newDsg = AcdKeyDesignator::KD_NONE;
+    }
+    else if (inTry && (!inHnd || (acdTryIndex < acdHndIndex)))
+    {
+        // Moved into a parent try region.
+        //
+        newDsg = AcdKeyDesignator::KD_TRY;
+    }
+    else
+    {
+        // Moved into a parent handler region.
+        // Note this cannot be a filter region.
+        //
+        newDsg = AcdKeyDesignator::KD_HND;
+    }
+
+    bool result = (newDsg != acdKeyDsg);
+    acdKeyDsg   = newDsg;
+
+    return result;
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// Dump: dump info about an AddCodeDesc
+//
+void Compiler::AddCodeDsc::Dump()
+{
+    printf("ACD%u %s ", acdNum, sckName(acdKind));
+    switch (acdKeyDsg)
+    {
+        case AcdKeyDesignator::KD_NONE:
+            printf("in method region");
+            break;
+        case AcdKeyDesignator::KD_TRY:
+            printf("in try region of EH#%u", acdTryIndex - 1);
+            break;
+        case AcdKeyDesignator::KD_HND:
+            printf("in handler region of EH#%u", acdHndIndex - 1);
+            break;
+        case AcdKeyDesignator::KD_FLT:
+            printf("in filter region of EH#%u", acdHndIndex - 1);
+            break;
+        default:
+            printf("(unexpected region)");
+            break;
+    }
+
+    AddCodeDscKey key(this);
+    printf(" map key 0x%x\n", key.Data());
+}
+#endif
 
 //------------------------------------------------------------------------
 // fgSetTreeSeq: Sequence the tree, setting the "gtPrev" and "gtNext" links.
@@ -4487,12 +4594,34 @@ FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByIndex(unsigned index)
 //
 FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByHeader(BasicBlock* block)
 {
-    // TODO-TP: This can use binary search based on post order number.
-    for (FlowGraphNaturalLoop* loop : m_loops)
+    if (!m_dfsTree->Contains(block))
     {
-        if (loop->m_header == block)
+        return nullptr;
+    }
+
+    // Loops are stored in reverse post-order,
+    // so we can binary-search for the desired loop's header by its post-order number.
+    size_t min = 0;
+    size_t max = NumLoops();
+
+    while (min < max)
+    {
+        const size_t                mid    = min + ((max - min) / 2);
+        FlowGraphNaturalLoop* const loop   = m_loops[mid];
+        BasicBlock* const           header = loop->m_header;
+
+        if (header == block)
         {
             return loop;
+        }
+        else if (header->bbPostorderNum < block->bbPostorderNum)
+        {
+            max = mid;
+        }
+        else
+        {
+            assert(header->bbPostorderNum > block->bbPostorderNum);
+            min = mid + 1;
         }
     }
 
@@ -5846,9 +5975,9 @@ bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
 
     Compiler*       comp   = m_dfsTree->GetCompiler();
     BasicBlockVisit result = VisitLoopBlocks([=](BasicBlock* block) {
-        if (comp->bbIsTryBeg(block))
+        if (!BasicBlock::sameEHRegion(block, GetHeader()))
         {
-            INDEBUG(*reason = "Loop has a `try` begin");
+            INDEBUG(*reason = "Loop not entirely within one EH region");
             return BasicBlockVisit::Abort;
         }
 
