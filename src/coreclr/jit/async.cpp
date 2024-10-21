@@ -832,6 +832,8 @@ void Async2Transformation::Transform(
     }
 
     unsigned resumeObjectArrLclNum = BAD_VAR_NUM;
+    BasicBlock* storeResultBB = resumeBB;
+
     if (gcRefsCount > 0)
     {
         resumeObjectArrLclNum = GetGCDataArrayVar();
@@ -907,7 +909,7 @@ void Async2Transformation::Transform(
             BasicBlock* rethrowExceptionBB = m_comp->fgNewBBinRegion(BBJ_THROW, block, /* runRarely */ true, /* insertAtEnd */ true);
             JITDUMP("  Created " FMT_BB " to rethrow exception on resumption\n", rethrowExceptionBB->bbNum);
 
-            BasicBlock* storeResultBB = m_comp->fgNewBBafter(BBJ_ALWAYS, resumeBB, true);
+            storeResultBB = m_comp->fgNewBBafter(BBJ_ALWAYS, resumeBB, true);
             JITDUMP("  Created " FMT_BB " to store result when resuming with no exception\n", storeResultBB->bbNum);
 
             FlowEdge* rethrowEdge = m_comp->fgAddRefPred(rethrowExceptionBB, resumeBB);
@@ -1010,7 +1012,7 @@ void Async2Transformation::Transform(
                                                      storeResultNode->GetLclOffs(), resultData);
                 }
 
-                LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
+                LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
             }
             else
             {
@@ -1020,7 +1022,7 @@ void Async2Transformation::Transform(
                 {
                     unsigned resultBaseVar   = GetResultBaseVar();
                     GenTree* storeResultBase = m_comp->gtNewStoreLclVarNode(resultBaseVar, resultBase);
-                    LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResultBase));
+                    LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResultBase));
 
                     resultBase = m_comp->gtNewLclVarNode(resultBaseVar, TYP_REF);
                 }
@@ -1034,7 +1036,7 @@ void Async2Transformation::Transform(
                     unsigned fldOffset = resultOffset + fieldDsc->lvFldOffset;
                     GenTree* value     = LoadFromOffset(resultBase, fldOffset, fieldDsc->TypeGet(), resultIndirFlags);
                     GenTree* store     = m_comp->gtNewStoreLclVarNode(fieldLclNum, value);
-                    LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+                    LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
 
                     if (i + 1 != resultLcl->lvFieldCnt)
                     {
@@ -1058,7 +1060,7 @@ void Async2Transformation::Transform(
                                                            storeResultNode->GetLclOffs(), value);
             }
 
-            LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
+            LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
         }
     }
 
