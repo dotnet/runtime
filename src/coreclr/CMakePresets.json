@@ -215,7 +215,7 @@
     },
     {
       "name": "osx.arm64.Release",
-      "displayName": "macos.arm64.Release",
+      "displayName": "osx.arm64.Release",
       "inherits": [
         "osx-base",
         "Release",
