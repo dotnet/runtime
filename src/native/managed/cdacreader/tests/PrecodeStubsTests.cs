@@ -16,7 +16,6 @@ public class PrecodeStubsTests
         public string Name { get; }
         public required MockTarget.Architecture Arch { get; init; }
         public bool IsThumb { get; init; }
-        public required ulong CodePointerToInstrPointerMask { get; init; }
         public required int ReadWidthOfPrecodeType { get; init; }
         public required int OffsetOfPrecodeType { get; init; }
         public required int ShiftOfPrecodeType { get; init; }
@@ -77,7 +76,6 @@ public class PrecodeStubsTests
 
     internal static PrecodeTestDescriptor X64TestDescriptor = new PrecodeTestDescriptor("X64") {
         Arch = new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true },
-        CodePointerToInstrPointerMask = ~0x0ul,
         ReadWidthOfPrecodeType = 1,
         ShiftOfPrecodeType = 0,
         OffsetOfPrecodeType = 0,
@@ -87,7 +85,6 @@ public class PrecodeStubsTests
     };
     internal static PrecodeTestDescriptor Arm64TestDescriptor = new PrecodeTestDescriptor("Arm64") {
         Arch = new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true },
-        CodePointerToInstrPointerMask = ~0x0ul,
         ReadWidthOfPrecodeType = 1,
         ShiftOfPrecodeType = 0,
         OffsetOfPrecodeType = 0,
@@ -98,7 +95,6 @@ public class PrecodeStubsTests
     };
     internal static PrecodeTestDescriptor LoongArch64TestDescriptor = new PrecodeTestDescriptor("LoongArch64") {
         Arch = new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true },
-        CodePointerToInstrPointerMask = ~0x0ul,
         ReadWidthOfPrecodeType = 2,
         ShiftOfPrecodeType = 5,
         OffsetOfPrecodeType = 0,
@@ -110,7 +106,6 @@ public class PrecodeStubsTests
     internal static PrecodeTestDescriptor Arm32Thumb = new PrecodeTestDescriptor("Arm32Thumb") {
         Arch = new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false },
         IsThumb = true,
-        CodePointerToInstrPointerMask = ~0x1u,
         ReadWidthOfPrecodeType = 1,
         ShiftOfPrecodeType = 0,
         OffsetOfPrecodeType = 7,
@@ -132,7 +127,6 @@ public class PrecodeStubsTests
         // FIXME: maybe make these a little more exotic
         yield return new object[] { new PrecodeTestDescriptor("Fake 32-bit LE") {
             Arch = arch32le,
-            CodePointerToInstrPointerMask = ~0x0u,
             ReadWidthOfPrecodeType = 1,
             ShiftOfPrecodeType = 0,
             OffsetOfPrecodeType = 0,
@@ -142,7 +136,6 @@ public class PrecodeStubsTests
         }};
         yield return new object[] { new PrecodeTestDescriptor("Fake 32-bit BE") {
             Arch = arch32be,
-            CodePointerToInstrPointerMask = ~0x0u,
             ReadWidthOfPrecodeType = 1,
             ShiftOfPrecodeType = 0,
             OffsetOfPrecodeType = 0,
@@ -152,7 +145,6 @@ public class PrecodeStubsTests
         }};
         yield return new object[] { new PrecodeTestDescriptor("Fake 64-bit BE") {
             Arch = arch64be,
-            CodePointerToInstrPointerMask = ~0x0ul,
             ReadWidthOfPrecodeType = 1,
             ShiftOfPrecodeType = 0,
             OffsetOfPrecodeType = 0,
@@ -237,7 +229,12 @@ public class PrecodeStubsTests
             Builder.AddHeapFragment(fragment);
             MachineDescriptorAddress = fragment.Address;
             Span<byte> desc = Builder.BorrowAddressRange(fragment.Address, (int)typeInfo.Size);
-            Builder.TargetTestHelpers.WriteNUInt(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.CodePointerToInstrPointerMask)].Offset, Builder.TargetTestHelpers.PointerSize), new TargetNUInt(descriptor.CodePointerToInstrPointerMask));
+            TargetNUInt codePointerToInstrPointerMask = new TargetNUInt(descriptor.Arch.Is64Bit ? ~0x0ul : ~0x0u);
+            if (descriptor.IsThumb) {
+                codePointerToInstrPointerMask = new TargetNUInt(~0x1u);
+            }
+            Builder.TargetTestHelpers.WriteNUInt(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.CodePointerToInstrPointerMask)].Offset, Builder.TargetTestHelpers.PointerSize), codePointerToInstrPointerMask);
+
             Builder.TargetTestHelpers.Write(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.ReadWidthOfPrecodeType)].Offset, sizeof(byte)), (byte)descriptor.ReadWidthOfPrecodeType);
             Builder.TargetTestHelpers.Write(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.OffsetOfPrecodeType)].Offset, sizeof(byte)), (byte)descriptor.OffsetOfPrecodeType);
             Builder.TargetTestHelpers.Write(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.ShiftOfPrecodeType)].Offset, sizeof(byte)), (byte)descriptor.ShiftOfPrecodeType);
