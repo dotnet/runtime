@@ -41,10 +41,10 @@ jobs:
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.317.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.17-helix-amd64
+        - (Alpine.317.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.17-helix-amd64
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.320.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-amd64
-        - (Alpine.318.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.18-helix-amd64
+        - (Alpine.320.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-amd64
+        - (Alpine.318.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.18-helix-amd64
 
     # Linux musl arm64
     - ${{ if and(eq(parameters.platform, 'linux_musl_arm64'), or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true))) }}:
@@ -57,26 +57,26 @@ jobs:
       - ${{ if and(eq(parameters.jobParameters.interpreter, ''), ne(parameters.jobParameters.isSingleFile, true)) }}:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - SLES.15.Amd64.Open
-          - (Centos.8.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8-helix
-          - (Fedora.38.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-38-helix
-          - (Ubuntu.2204.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-amd64
-          - (Debian.11.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
+          - (Centos.8.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8-helix
+          - (Fedora.38.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-38-helix
+          - (Ubuntu.2204.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-amd64
+          - (Debian.11.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - SLES.15.Amd64.Open
-            - (Fedora.38.Amd64.Open)ubuntu.2204.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-38-helix
+            - (Fedora.38.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-38-helix
             - Ubuntu.2204.Amd64.Open
-            - (Debian.11.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
-            - (Mariner.2.0.Amd64.Open)Ubuntu.2204.Amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-helix-amd64
-            - (AzureLinux.3.0.Amd64.Open)Ubuntu.2204.Amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64
-            - (openSUSE.15.2.Amd64.Open)Ubuntu.2204.Amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-15.2-helix-amd64
+            - (Debian.11.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
+            - (Mariner.2.0.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-helix-amd64
+            - (AzureLinux.3.0.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64
+            - (openSUSE.15.2.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-15.2-helix-amd64
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-            - (Centos.8.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8-helix
-            - (Debian.11.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
+            - (Centos.8.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8-helix
+            - (Debian.11.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
             - Ubuntu.2204.Amd64.Open
       - ${{ if or(eq(parameters.jobParameters.interpreter, 'true'), eq(parameters.jobParameters.isSingleFile, true)) }}:
         # Limiting interp runs as we don't need as much coverage.
-        - (Debian.11.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
+        - (Debian.11.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
 
     # Linux s390x
     - ${{ if eq(parameters.platform, 'linux_s390x') }}:
@@ -168,15 +168,15 @@ jobs:
 
     # WASI
     - ${{ if eq(parameters.platform, 'wasi_wasm') }}:
-      - (Ubuntu.2204.Amd64)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly
+      - (Ubuntu.2204.Amd64)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly
 
     # Browser WebAssembly
     - ${{ if eq(parameters.platform, 'browser_wasm') }}:
-      - (Ubuntu.2204.Amd64)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly
+      - (Ubuntu.2204.Amd64)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly
 
     # Browser WebAssembly Firefox
     - ${{ if eq(parameters.platform, 'browser_wasm_firefox') }}:
-      - (Ubuntu.2204.Amd64)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly
+      - (Ubuntu.2204.Amd64)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly
 
     # Browser WebAssembly windows
     - ${{ if in(parameters.platform, 'browser_wasm_win', 'wasi_wasm_win') }}:
