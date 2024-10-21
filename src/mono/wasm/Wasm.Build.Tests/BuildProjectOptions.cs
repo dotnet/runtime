@@ -1,31 +1,33 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 #nullable enable
 
 namespace Wasm.Build.Tests;
 
+// Attention: CreateProject that got remved was "true" by default,
+// so each build expects to create the app,
+// unless stated otherwise
 public record BuildProjectOptions
 (
-    Action?             InitProject               = null,
-    bool?               DotnetWasmFromRuntimePack = null,
-    GlobalizationMode   GlobalizationMode         = GlobalizationMode.Sharded,
-    string?             CustomIcuFile             = null,
-    bool                UseCache                  = true,
-    bool                ExpectSuccess             = true,
-    bool                AssertAppBundle           = true,
-    bool                CreateProject             = true,
-    bool                Publish                   = true,
-    bool                BuildOnlyAfterPublish     = true,
-    bool                HasV8Script               = true,
-    string?             Verbosity                 = null,
-    string?             Label                     = null,
-    string              TargetFramework           = BuildTestBase.DefaultTargetFramework,
-    string?             MainJS                    = null,
-    bool                IsBrowserProject          = true,
-    IDictionary<string, string>? ExtraBuildEnvironmentVariables = null,
-    string?             BinFrameworkDir           = null
+    string                          Configuration,
+    string                          Id,
+    string                          BinFrameworkDir,
+    NativeFilesType                 ExpectedFileType                = NativeFilesType.FromRuntimePack,
+    string                          TargetFramework                 = BuildTestBase.DefaultTargetFramework,
+    GlobalizationMode               GlobalizationMode               = GlobalizationMode.Sharded,
+    bool                            IsPublish                       = true,
+    string                          CustomIcuFile                   = "",
+    bool                            UseCache                        = true,
+    bool                            ExpectSuccess                   = true,
+    bool                            AssertAppBundle                 = true,
+    bool                            BuildOnlyAfterPublish           = true,
+    string                          Label                           = "",
+    bool                            WarnAsError                     = true,
+    RuntimeVariant                  RuntimeType                     = RuntimeVariant.SingleThreaded,
+    IDictionary<string, string>?    ExtraBuildEnvironmentVariables  = null,
+    string                          BootConfigFileName              = "blazor.boot.json",
+    bool                            ExpectRelinkDirWhenPublishing   = false
 );

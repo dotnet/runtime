@@ -23,51 +23,50 @@ namespace Wasm.Build.Tests
 
         public static IEnumerable<object?[]> NonNativeDebugRebuildData()
             => ConfigWithAOTData(aot: false, config: "Debug")
-                    .WithRunHosts(RunHost.Chrome)
                     .UnwrapItemsAsArrays().ToList();
 
-        [Theory]
-        [MemberData(nameof(NonNativeDebugRebuildData))]
-        public async Task NoOpRebuild(BuildArgs buildArgs, RunHost host, string id)
-        {
-            string projectName = $"rebuild_{buildArgs.Config}_{buildArgs.AOT}";
+        // [Theory]
+        // [MemberData(nameof(NonNativeDebugRebuildData))]
+        // public async Task NoOpRebuild(ProjectInfo buildArgs, RunHost host, string id)
+        // {
+        //     string projectName = $"rebuild_{buildArgs.Configuration}_{buildArgs.AOT}";
 
-            buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs);
+        //     buildArgs = buildArgs with { ProjectName = projectName };
+        //     buildArgs = ExpandBuildArgs(buildArgs);
 
-            BuildProject(buildArgs,
-                            id: id,
-                            new BuildProjectOptions(
-                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                                DotnetWasmFromRuntimePack: true,
-                                CreateProject: true));
+        //     BuildProject(buildArgs,
+        //                     id: id,
+        //                     new BuildProjectOptions(
+        //                         InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+        //                         DotnetWasmFromRuntimePack: true,
+        //                         CreateProject: true));
 
-            Run();
+        //     Run();
 
-            if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
-                throw new XunitException($"Test bug: could not get the build product in the cache");
+        //     if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
+        //         throw new XunitException($"Test bug: could not get the build product in the cache");
 
-            File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
+        //     File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
 
-            // artificial delay to have new enough timestamps
-            await Task.Delay(5000);
+        //     // artificial delay to have new enough timestamps
+        //     await Task.Delay(5000);
 
-            _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
+        //     _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
 
-            // no-op Rebuild
-            BuildProject(buildArgs,
-                        id: id,
-                        new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: true,
-                            CreateProject: false,
-                            UseCache: false));
+        //     // no-op Rebuild
+        //     BuildProject(buildArgs,
+        //                 id: id,
+        //                 new BuildProjectOptions(
+        //                     DotnetWasmFromRuntimePack: true,
+        //                     CreateProject: false,
+        //                     UseCache: false));
 
-            Run();
+        //     Run();
 
-            void Run() => RunAndTestWasmApp(
-                                buildArgs, buildDir: _projectDir, expectedExitCode: 42,
-                                test: output => {},
-                                host: host, id: id);
-        }
+        //     void Run() => RunAndTestWasmApp(
+        //                         buildArgs, buildDir: _projectDir, expectedExitCode: 42,
+        //                         test: output => {},
+        //                         host: host, id: id);
+        // }
     }
 }

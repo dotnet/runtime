@@ -4,4 +4,10 @@
 #nullable enable
 
 namespace Wasm.Build.Tests;
-public record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BinFrameworkDir);
+
+public record BuildProduct(
+    string ProjectDir,
+    string LogFile,
+    bool Result,
+    string BuildOutput
+);

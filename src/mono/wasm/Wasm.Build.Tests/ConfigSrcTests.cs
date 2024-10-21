@@ -9,29 +9,13 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests;
 
-public class ConfigSrcTests : TestMainJsTestBase
+public class ConfigSrcTests : WasmTemplateTestsBase
 {
     public ConfigSrcTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext) : base(output, buildContext)
     { }
 
-    // NOTE: port number determinizes dynamically, so could not generate absolute URI
-    [Theory]
-    [BuildAndRun(host: RunHost.V8)]
-    public void ConfigSrcAbsolutePath(BuildArgs buildArgs, RunHost host, string id)
-    {
-        buildArgs = buildArgs with { ProjectName = $"configsrcabsolute_{buildArgs.Config}_{buildArgs.AOT}" };
-        buildArgs = ExpandBuildArgs(buildArgs);
-
-        BuildProject(buildArgs,
-                        id: id,
-                        new BuildProjectOptions(
-                            InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                            DotnetWasmFromRuntimePack: IsDotnetWasmFromRuntimePack(buildArgs)));
-
-        string binDir = GetBinDir(baseDir: _projectDir!, config: buildArgs.Config);
-        string bundleDir = Path.Combine(binDir, "AppBundle");
-        string configSrc = Path.GetFullPath(Path.Combine(bundleDir, "_framework", "blazor.boot.json"));
-
-        RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, extraXHarnessMonoArgs: $"--config-src=\"{configSrc}\"");
-    }
+    // INFO FOR REVIWER:
+    // This class can be deleted and will be after your approval. Justification:
+    // It is testing the --config-src argument, which was supposed to be passed to test-main.js
+    // but does not make sense in the current form of testing where we are using "dotnet new" templates
 }
