@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Configuration.Internal
@@ -13,6 +14,7 @@ namespace System.Configuration.Internal
     // The BaseConfigurationRecord hierarchy is protected with the
     // _hierarchyLock. Functions that assume that the lock as been
     // taken begin with the prefix "hl", for example, "hlFindConfigRecord".
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     internal sealed class InternalConfigRoot : IInternalConfigRoot
     {
         private ReaderWriterLock _hierarchyLock;
