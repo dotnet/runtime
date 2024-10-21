@@ -273,6 +273,33 @@ namespace System.IO.Compression.Tests
             Assert.Equal(expectedDisposeCalls, disposeCallCountingStream.NumberOfDisposeCalls);
         }
 
+        [Fact]
+        public static void ArchivesInOffsetOrder()
+        {
+            byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+            byte[] sampleZipFile = CreateZipFile(50, sampleEntryContents);
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(sampleZipFile);
+                ms.Seek(0, SeekOrigin.Begin);
+
+                ZipArchive source = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: true);
+                long previousOffset = long.MinValue;
+                System.Reflection.FieldInfo offsetOfLocalHeader = typeof(ZipArchiveEntry).GetField("_offsetOfLocalHeader", System.Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+
+                for (int i = 0; i < source.Entries.Count; i++)
+                {
+                    ZipArchiveEntry entry = source.Entries[i];
+                    long offset = (long)offsetOfLocalHeader.GetValue(entry);
+
+                    Assert.True(offset > previousOffset);
+                }
+
+                source.Dispose();
+            }
+        }
+
         private class DisposeCallCountingStream : MemoryStream
         {
             public int NumberOfDisposeCalls { get; private set; }
