@@ -6247,12 +6247,13 @@ public:
     bool fgComputeCalledCount(weight_t returnWeight);
 
     bool fgReorderBlocks(bool useProfile);
-    void fgDoReversePostOrderLayout();
-    void fgMoveColdBlocks();
 
+    template <bool hasEH>
+    void fgDoReversePostOrderLayout();
     template <bool hasEH>
     void fgMoveHotJumps();
 
+    void fgMoveColdBlocks();
     bool fgFuncletsAreCold();
 
     PhaseStatus fgDetermineFirstColdBlock();

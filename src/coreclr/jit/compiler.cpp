@@ -5255,12 +5255,50 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         if (JitConfig.JitDoReversePostOrderLayout())
         {
             auto lateLayoutPhase = [this] {
-                fgDoReversePostOrderLayout();
-                fgMoveColdBlocks();
-
                 if (compHndBBtabCount != 0)
                 {
+                    // We will break up call-finally pairs, so save them before re-ordering
+                    //
+                    struct CallFinallyPair
+                    {
+                        BasicBlock* callFinally;
+                        BasicBlock* callFinallyRet;
+                    };
+                    ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator());
+
+                    for (EHblkDsc* const HBtab : EHClauses(this))
+                    {
+                        if (HBtab->HasFinallyHandler())
+                        {
+                            for (BasicBlock* const pred : HBtab->ebdHndBeg->PredBlocks())
+                            {
+                                assert(pred->KindIs(BBJ_CALLFINALLY));
+                                if (pred->isBBCallFinallyPair())
+                                {
+                                    callFinallyPairs.Push({pred, pred->Next()});
+                                }
+                            }
+                        }
+                    }
+
+                    fgDoReversePostOrderLayout</* hasEH */ true>();
+                    fgMoveColdBlocks();
+
+                    // Fix up call-finally pairs
+                    //
+                    for (int i = 0; i < callFinallyPairs.Height(); i++)
+                    {
+                        const CallFinallyPair& pair = callFinallyPairs.BottomRef(i);
+                        fgUnlinkBlock(pair.callFinallyRet);
+                        fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
+                    }
+
                     fgRebuildEHRegions();
+                }
+                else
+                {
+                    fgDoReversePostOrderLayout</* hasEH */ false>();
+                    fgMoveColdBlocks();
                 }
 
                 return PhaseStatus::MODIFIED_EVERYTHING;

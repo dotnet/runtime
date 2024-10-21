@@ -4630,14 +4630,6 @@ void Compiler::fgMoveHotJumps()
             fgUnlinkBlock(block);
             fgInsertBBbefore(target, block);
         }
-        else if (hasEH && target->isBBCallFinallyPair())
-        {
-            // target is a call-finally pair, so move the pair up to block
-            //
-            fgUnlinkRange(target, target->Next());
-            fgMoveBlocksAfter(target, target->Next(), block);
-            next = target->Next();
-        }
         else
         {
             // Move target up to block
@@ -4653,6 +4645,10 @@ void Compiler::fgMoveHotJumps()
 // fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO traversal,
 // taking care to keep loop bodies compact.
 //
+// Template parameters:
+//    hasEH - If true, method has EH regions, so avoid interleaving them
+//
+template <bool hasEH>
 void Compiler::fgDoReversePostOrderLayout()
 {
 #ifdef DEBUG
@@ -4680,60 +4676,6 @@ void Compiler::fgDoReversePostOrderLayout()
 
     fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
 
-    // Fast path: We don't have any EH regions, so just reorder the blocks
-    //
-    if (compHndBBtabCount == 0)
-    {
-        for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
-        {
-            BasicBlock* const block       = rpoSequence[i];
-            BasicBlock* const blockToMove = rpoSequence[i - 1];
-
-            if (!block->NextIs(blockToMove))
-            {
-                fgUnlinkBlock(blockToMove);
-                fgInsertBBafter(block, blockToMove);
-            }
-        }
-
-        fgMoveHotJumps</* hasEH */ false>();
-
-        return;
-    }
-
-    // The RPO will break up call-finally pairs, so save them before re-ordering
-    //
-    struct CallFinallyPair
-    {
-        BasicBlock* callFinally;
-        BasicBlock* callFinallyRet;
-
-        // Constructor provided so we can call ArrayStack::Emplace
-        //
-        CallFinallyPair(BasicBlock* first, BasicBlock* second)
-            : callFinally(first)
-            , callFinallyRet(second)
-        {
-        }
-    };
-
-    ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator());
-
-    for (EHblkDsc* const HBtab : EHClauses(this))
-    {
-        if (HBtab->HasFinallyHandler())
-        {
-            for (BasicBlock* const pred : HBtab->ebdHndBeg->PredBlocks())
-            {
-                assert(pred->KindIs(BBJ_CALLFINALLY));
-                if (pred->isBBCallFinallyPair())
-                {
-                    callFinallyPairs.Emplace(pred, pred->Next());
-                }
-            }
-        }
-    }
-
     // Reorder blocks
     //
     for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
@@ -4741,36 +4683,36 @@ void Compiler::fgDoReversePostOrderLayout()
         BasicBlock* const block       = rpoSequence[i];
         BasicBlock* const blockToMove = rpoSequence[i - 1];
 
-        // Only reorder blocks within the same EH region -- we don't want to make them non-contiguous
-        //
-        if (BasicBlock::sameEHRegion(block, blockToMove))
+        if (hasEH)
         {
+            // Only reorder blocks within the same EH region -- we don't want to make them non-contiguous
+            //
+            if (!BasicBlock::sameEHRegion(block, blockToMove))
+            {
+                continue;
+            }
+
             // Don't reorder EH regions with filter handlers -- we want the filter to come first
             //
             if (block->hasHndIndex() && ehGetDsc(block->getHndIndex())->HasFilter())
             {
                 continue;
             }
+        }
 
-            if (!block->NextIs(blockToMove))
-            {
-                fgUnlinkBlock(blockToMove);
-                fgInsertBBafter(block, blockToMove);
-            }
+        if (!block->NextIs(blockToMove))
+        {
+            fgUnlinkBlock(blockToMove);
+            fgInsertBBafter(block, blockToMove);
         }
     }
 
-    // Fix up call-finally pairs
-    //
-    for (int i = 0; i < callFinallyPairs.Height(); i++)
-    {
-        const CallFinallyPair& pair = callFinallyPairs.BottomRef(i);
-        fgUnlinkBlock(pair.callFinallyRet);
-        fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
-    }
-
-    fgMoveHotJumps</* hasEH */ true>();
+    fgMoveHotJumps<hasEH>();
 }
+
+// Add explicit instantiations.
+template void Compiler::fgDoReversePostOrderLayout<true>();
+template void Compiler::fgDoReversePostOrderLayout<false>();
 
 //-----------------------------------------------------------------------------
 // fgMoveColdBlocks: Move rarely-run blocks to the end of their respective regions.
@@ -4800,20 +4742,8 @@ void Compiler::fgMoveColdBlocks()
         // Also, leave try entries behind as a breadcrumb for where to reinsert try blocks.
         if (!bbIsTryBeg(block) && !block->hasHndIndex())
         {
-            if (block->isBBCallFinallyPair())
-            {
-                BasicBlock* const callFinallyRet = block->Next();
-                if (callFinallyRet != insertionPoint)
-                {
-                    fgUnlinkRange(block, callFinallyRet);
-                    fgMoveBlocksAfter(block, callFinallyRet, insertionPoint);
-                }
-            }
-            else
-            {
-                fgUnlinkBlock(block);
-                fgInsertBBafter(insertionPoint, block);
-            }
+            fgUnlinkBlock(block);
+            fgInsertBBafter(insertionPoint, block);
         }
     };
 
@@ -4828,24 +4758,16 @@ void Compiler::fgMoveColdBlocks()
     for (BasicBlock *block = lastMainBB->Prev(), *prev; !block->IsFirst(); block = prev)
     {
         prev = block->Prev();
-
-        // We only want to move cold blocks.
-        // Also, don't move block if it is the end of a call-finally pair,
-        // as we want to keep these pairs contiguous
-        // (if we encounter the beginning of a pair, we'll move the whole pair).
-        //
-        if (!block->isBBWeightCold(this) || block->isBBCallFinallyPairTail())
+        if (block->isBBWeightCold(this))
         {
-            continue;
+            moveBlock(block, lastMainBB);
         }
-
-        moveBlock(block, lastMainBB);
     }
 
     // We have moved all cold main blocks before lastMainBB to after lastMainBB.
     // If lastMainBB itself is cold, move it to the end of the method to restore its relative ordering.
     //
-    if (lastMainBB->isBBWeightCold(this) && !lastMainBB->isBBCallFinallyPairTail())
+    if (lastMainBB->isBBWeightCold(this))
     {
         BasicBlock* const newLastMainBB = fgLastBBInMainFunction();
         if (lastMainBB != newLastMainBB)
