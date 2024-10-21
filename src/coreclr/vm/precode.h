@@ -596,4 +596,40 @@ static_assert_no_msg(NDirectImportPrecode::Type != ThisPtrRetBufPrecode::Type);
 static_assert_no_msg(sizeof(Precode) <= sizeof(NDirectImportPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
+
+#ifndef DACCESS_COMPILE
+// A summary of the precode layout for diagnostic purposes
+struct PrecodeMachineDescriptor
+{
+    uintptr_t CodePointerToInstrPointerMask;
+    uint8_t OffsetOfPrecodeType;
+    // cDAC will do (where N = 8*ReadWidthOfPrecodeType):
+    //   uintN_t PrecodeType = *(uintN_t*)(pPrecode + OffsetOfPrecodeType);
+    //   PrecodeType >>= ShiftOfPrecodeType;
+    //   return (byte)PrecodeType;
+    uint8_t ReadWidthOfPrecodeType;
+    uint8_t ShiftOfPrecodeType;
+
+    uint8_t InvalidPrecodeType;
+    uint8_t StubPrecodeType;
+    uint8_t HasPInvokeImportPrecode;
+    uint8_t PInvokeImportPrecodeType;
+
+    uint8_t HasFixupPrecode;
+    uint8_t FixupPrecodeType;
+
+    uint8_t HasThisPtrRetBufPrecode;
+    uint8_t HasThisPointerRetBufPrecodeType;
+
+    uint32_t StubCodePageSize;
+public:
+    PrecodeMachineDescriptor() = default;
+    PrecodeMachineDescriptor(const PrecodeMachineDescriptor&) = delete;
+    PrecodeMachineDescriptor& operator=(const PrecodeMachineDescriptor&) = delete;
+    static void Init();
+};
+
+extern PrecodeMachineDescriptor g_PrecodeMachineDescriptor;
+#endif //DACCESS_COMPILE
+
 #endif // __PRECODE_H__

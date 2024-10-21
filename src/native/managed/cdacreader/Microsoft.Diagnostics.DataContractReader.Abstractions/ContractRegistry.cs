@@ -47,4 +47,7 @@ internal abstract class ContractRegistry
     /// Gets an instance of the CodeVersions contract for the target.
     /// </summary>
     public abstract ICodeVersions CodeVersions { get; }
+    /// Gets an instance of the PrecodeStubs contract for the target.
+    /// </summary>
+    public abstract IPrecodeStubs PrecodeStubs { get; }
 }
