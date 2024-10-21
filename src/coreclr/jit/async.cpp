@@ -263,9 +263,9 @@ PhaseStatus Async2Transformation::Run()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-const weight_t SUSPEND_LIKELIHOOD       = 0.01;
-const weight_t RETHROW_LIKELIHOOD       = 0.01;
-const weight_t RESUME_IN_OSR_LIKELIHOOD = 0.001;
+const weight_t RESUME_SUSPEND_LIKELIHOOD = 0.01;
+const weight_t RETHROW_LIKELIHOOD        = 0.01;
+const weight_t RESUME_IN_OSR_LIKELIHOOD  = 0.001;
 
 void Async2Transformation::Transform(
     BasicBlock* block, GenTreeCall* call, jitstd::vector<GenTree*>& defs, AsyncLiveness& life, BasicBlock** pRemainder)
@@ -554,8 +554,8 @@ void Async2Transformation::Transform(
     FlowEdge* retBBEdge = m_comp->fgAddRefPred(retBB, block);
     block->SetCond(retBBEdge, block->GetTargetEdge());
 
-    block->GetTrueEdge()->setLikelihood(SUSPEND_LIKELIHOOD);
-    block->GetFalseEdge()->setLikelihood(1 - SUSPEND_LIKELIHOOD);
+    block->GetTrueEdge()->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
+    block->GetFalseEdge()->setLikelihood(1 - RESUME_SUSPEND_LIKELIHOOD);
 
     // Allocate continuation
     returnedContinuation           = m_comp->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
@@ -1318,8 +1318,8 @@ void Async2Transformation::CreateResumptionSwitch()
     }
 
     newEntryBB->SetCond(resumingEdge, toPrevEntryEdge);
-    resumingEdge->setLikelihood(SUSPEND_LIKELIHOOD);
-    toPrevEntryEdge->setLikelihood(1 - SUSPEND_LIKELIHOOD);
+    resumingEdge->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
+    toPrevEntryEdge->setLikelihood(1 - RESUME_SUSPEND_LIKELIHOOD);
 
     if (m_comp->doesMethodHavePatchpoints())
     {
@@ -1343,6 +1343,7 @@ void Async2Transformation::CreateResumptionSwitch()
 
         FlowEdge* toCheckILOffsetBB = m_comp->fgAddRefPred(checkILOffsetBB, newEntryBB);
         newEntryBB->SetTrueEdge(toCheckILOffsetBB);
+        toCheckILOffsetBB->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
 
         FlowEdge* toOnContinuationBB = m_comp->fgAddRefPred(onContinuationBB, checkILOffsetBB);
         FlowEdge* toCallHelperBB = m_comp->fgAddRefPred(callHelperBB, checkILOffsetBB);
@@ -1392,6 +1393,7 @@ void Async2Transformation::CreateResumptionSwitch()
         m_comp->fgRemoveRefPred(newEntryBB->GetTrueEdge());
         FlowEdge* toCheckILOffset = m_comp->fgAddRefPred(checkILOffsetBB, newEntryBB);
         newEntryBB->SetTrueEdge(toCheckILOffset);
+        toCheckILOffset->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
 
         // Make checkILOffsetBB ->(true)  onNoContinuationBB 
         //                      ->(false) onContinuationBB
@@ -1399,8 +1401,8 @@ void Async2Transformation::CreateResumptionSwitch()
         FlowEdge* toOnContinuationBB = m_comp->fgAddRefPred(onContinuationBB, checkILOffsetBB);
         FlowEdge* toOnNoContinuationBB = m_comp->fgAddRefPred(onNoContinuationBB, checkILOffsetBB);
         checkILOffsetBB->SetCond(toOnNoContinuationBB, toOnContinuationBB);
-        toOnContinuationBB->setLikelihood(SUSPEND_LIKELIHOOD);
-        toOnNoContinuationBB->setLikelihood(1 - SUSPEND_LIKELIHOOD);
+        toOnContinuationBB->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
+        toOnNoContinuationBB->setLikelihood(1 - RESUME_SUSPEND_LIKELIHOOD);
 
         JITDUMP("    Created " FMT_BB " to check for Tier-0 continuations\n", checkILOffsetBB->bbNum);
 
