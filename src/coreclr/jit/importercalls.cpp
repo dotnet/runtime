@@ -10643,6 +10643,24 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
                             }
+                            else if (strcmp(methodName, "AwaitAwaiterFromRuntimeAsync") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_AwaitAwaiterFromRuntimeAsync;
+                            }
+                            else if (strcmp(methodName, "UnsafeAwaitAwaiterFromRuntimeAsync") == 0)
+                            {
+                                result =
+                                    NI_System_Runtime_CompilerServices_RuntimeHelpers_UnsafeAwaitAwaiterFromRuntimeAsync;
+                            }
+                            else if (strcmp(methodName, "SuspendAsync2") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_SuspendAsync2;
+                            }
+                            else if (strcmp(methodName, "get_RuntimeAsyncViaJitGeneratedStateMachines") == 0)
+                            {
+                                result =
+                                    NI_System_Runtime_CompilerServices_RuntimeHelpers_get_RuntimeAsyncViaJitGeneratedStateMachines;
+                            }
                         }
                         else if (strcmp(className, "Unsafe") == 0)
                         {
@@ -10750,24 +10768,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_SRCS_UNSAFE_WriteUnaligned;
                             }
-                        }
-                        else if (strcmp(methodName, "AwaitAwaiterFromRuntimeAsync") == 0)
-                        {
-                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_AwaitAwaiterFromRuntimeAsync;
-                        }
-                        else if (strcmp(methodName, "UnsafeAwaitAwaiterFromRuntimeAsync") == 0)
-                        {
-                            result =
-                                NI_System_Runtime_CompilerServices_RuntimeHelpers_UnsafeAwaitAwaiterFromRuntimeAsync;
-                        }
-                        else if (strcmp(methodName, "SuspendAsync2") == 0)
-                        {
-                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_SuspendAsync2;
-                        }
-                        else if (strcmp(methodName, "get_RuntimeAsyncViaJitGeneratedStateMachines") == 0)
-                        {
-                            result =
-                                NI_System_Runtime_CompilerServices_RuntimeHelpers_get_RuntimeAsyncViaJitGeneratedStateMachines;
                         }
                     }
                     else if (strcmp(namespaceName, "InteropServices") == 0)
