@@ -130,14 +130,8 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
         string programText = GetProgramText(testedLocales, onlyPredefinedCultures);
         File.WriteAllText(programPath, programText);
         _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
-
-        string mainPath = Path.Combine("wwwroot", "main.js");
-        var replacements = new Dictionary<string, string> {
-                { "runMain", "runMainAndExit" },
-                { ".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()" }
-            };
-        UpdateFile(mainPath, replacements);
-        RemoveContentsFromProjectFile(mainPath, ".create();", "await runMainAndExit();");
+        
+        UpdateBrowserMainJs();
         return info;
     }
 
