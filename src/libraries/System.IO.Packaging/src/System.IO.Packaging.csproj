@@ -6,6 +6,8 @@
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides classes that support storage of multiple data objects in a single container.</PackageDescription>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -19,6 +21,8 @@
     <Compile Include="System\IO\Packaging\EncryptionOption.cs" />
     <Compile Include="System\IO\Packaging\FileFormatException.cs" />
     <Compile Include="System\IO\Packaging\IgnoreFlushAndCloseStream.cs" />
+    <Compile Include="System\IO\Packaging\InterleavedZipPackagePartStream.cs" />
+    <Compile Include="System\IO\Packaging\InterleavedZipPackagePartStream.PieceDirectory.cs" />
     <Compile Include="System\IO\Packaging\InternalRelationshipCollection.cs" />
     <Compile Include="System\IO\Packaging\OrderedDictionary.cs" />
     <Compile Include="System\IO\Packaging\Package.cs" />
@@ -39,6 +43,7 @@
     <Compile Include="System\IO\Packaging\XmlWrappingReader.cs" />
     <Compile Include="System\IO\Packaging\ZipPackage.cs" />
     <Compile Include="System\IO\Packaging\ZipPackagePart.cs" />
+    <Compile Include="System\IO\Packaging\ZipPackagePartPiece.cs" />
     <Compile Include="System\IO\Packaging\ZipStreamManager.cs" />
     <Compile Include="System\IO\Packaging\ZipWrappingStream.cs" />
     <Compile Include="System\IO\Packaging\PackUriHelper.PackUriScheme.cs" />

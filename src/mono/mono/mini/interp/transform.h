@@ -311,10 +311,12 @@ typedef struct
 	int n_data_items;
 	int max_data_items;
 	void **data_items;
-	GHashTable *data_hash;
+	// FIXME: ptr_u32
+	dn_simdhash_ptr_ptr_t *data_hash;
 	GSList *imethod_items;
 #ifdef ENABLE_EXPERIMENT_TIERED
-	GHashTable *patchsite_hash;
+	// FIXME: ptr_u32
+	dn_simdhash_ptr_ptr_t *patchsite_hash;
 #endif
 	int *clause_indexes;
 	int *clause_vars;
@@ -504,7 +506,7 @@ interp_dump_ins (InterpInst *ins, gpointer *data_items);
 InterpInst*
 interp_get_ldc_i4_from_const (TransformData *td, InterpInst *ins, gint32 ct, int dreg);
 
-gint32 
+gint32
 interp_get_const_from_ldc_i4 (InterpInst *ins);
 
 int
@@ -520,7 +522,7 @@ void
 interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock *to);
 
 int
-interp_compute_native_offset_estimates (TransformData *td);
+interp_compute_native_offset_estimates (TransformData *td, gboolean final_code);
 
 void
 interp_optimize_code (TransformData *td);

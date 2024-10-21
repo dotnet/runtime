@@ -37,28 +37,13 @@ public abstract class AppTestBase : BlazorWasmTestBase
         }
     }
 
-    protected void BlazorHostedBuild(
-        string config,
-        string assetName,
-        string projectDirSuffix,
-        string clientDirRelativeToProjectDir = "",
-        string? generatedProjectNamePrefix = null,
-        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
-    {
-        CopyTestAsset(assetName, generatedProjectNamePrefix, projectDirSuffix);
-        string frameworkDir = FindBlazorHostedBinFrameworkDir(config,
-            forPublish: false,
-            clientDirRelativeToProjectDir: clientDirRelativeToProjectDir);
-        BuildProject(configuration: config,
-            binFrameworkDir: frameworkDir,
-            runtimeType: runtimeType);
-    }
-
     protected void BuildProject(
         string configuration,
         string? binFrameworkDir = null,
         RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
         bool assertAppBundle = true,
+        bool expectSuccess = true,
+        string bootConfigFileName = "blazor.boot.json",
         params string[] extraArgs)
     {
         (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(
@@ -66,27 +51,34 @@ public abstract class AppTestBase : BlazorWasmTestBase
             Config: configuration,
             BinFrameworkDir: binFrameworkDir,
             RuntimeType: runtimeType,
-            AssertAppBundle: assertAppBundle), extraArgs);
-        result.EnsureSuccessful();
+            AssertAppBundle: assertAppBundle,
+            BootConfigFileName: bootConfigFileName,
+            ExpectSuccess: expectSuccess), extraArgs);
+        if (expectSuccess)
+        {
+            result.EnsureSuccessful();
+        }
+        else
+        {
+            result.EnsureFailed();
+        }
     }
 
     protected void PublishProject(
         string configuration,
         RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
         bool assertAppBundle = true,
+        string bootConfigFileName = "blazor.boot.json",
         params string[] extraArgs)
     {
         (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(
             Id: Id,
             Config: configuration,
             RuntimeType: runtimeType,
+            BootConfigFileName: bootConfigFileName,
             AssertAppBundle: assertAppBundle), extraArgs);
         result.EnsureSuccessful();
     }
-
-    protected ToolCommand CreateDotNetCommand() => new DotNetCommand(s_buildEnv, _testOutput)
-        .WithWorkingDirectory(_projectDir!)
-        .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir);
 
     protected Task<RunResult> RunSdkStyleAppForBuild(RunOptions options)
         => RunSdkStyleApp(options, BlazorRunHost.DotnetRun);

@@ -343,6 +343,8 @@ class DynamicHelpers
 {
 private:
     static void EmitHelperWithArg(BYTE*& pCode, size_t rxOffset, LoaderAllocator * pAllocator, TADDR arg, PCODE target);
+
+    static PCODE GetDictionaryLookupHelper(CorInfoHelpFunc jitHelper);
 public:
     static PCODE CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target);
     static PCODE CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR arg, PCODE target);

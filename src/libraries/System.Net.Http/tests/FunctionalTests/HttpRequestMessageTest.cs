@@ -210,7 +210,6 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(
                 "Method: PUT, RequestUri: 'http://a.com/', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
                 $"{{{Environment.NewLine}" +
-                "  Content-Length: 7" + Environment.NewLine +
                 "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
                 "}", rm.ToString());
 
@@ -229,7 +228,6 @@ namespace System.Net.Http.Functional.Tests
                     "  Accept: text/xml; q=0.1" + Environment.NewLine +
                     "  Accept-Language: en-US,en;q=0.5" + Environment.NewLine +
                     "  Custom-Request-Header: value1" + Environment.NewLine +
-                    "  Content-Length: 7" + Environment.NewLine +
                     "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
                     "  Custom-Content-Header: value2" + Environment.NewLine +
                     "}", rm.ToString());
@@ -277,7 +275,7 @@ namespace System.Net.Http.Functional.Tests
                 await LoopbackServer.CreateServerAsync(async (server, uri) =>
                 {
                     var request = new HttpRequestMessage(HttpMethod.Post, uri);
-                    request.Content = new StringContent("", null, ((MediaTypeHeaderValue)null)!);
+                    request.Content = new StringContent("", null, (MediaTypeHeaderValue)null);
 
                     Task<HttpResponseMessage> requestTask = client.SendAsync(request);
                     await server.AcceptConnectionAsync(async connection =>

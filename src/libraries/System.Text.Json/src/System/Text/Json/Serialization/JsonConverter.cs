@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json.Schema;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
@@ -81,13 +82,18 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// The converter supports polymorphic writes; only reserved for System.Object types.
         /// </summary>
-        internal bool CanBePolymorphic { get; set; }
+        internal bool CanBePolymorphic { get; init; }
 
         /// <summary>
         /// The serializer must read ahead all contents of the next JSON value
         /// before calling into the converter for deserialization.
         /// </summary>
-        internal bool RequiresReadAhead { get; set; }
+        internal bool RequiresReadAhead { get; private protected set; }
+
+        /// <summary>
+        /// Whether the converter is a special root-level value streaming converter.
+        /// </summary>
+        internal bool IsRootLevelMultiContentStreamingConverter { get; init; }
 
         /// <summary>
         /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
@@ -173,14 +179,21 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal bool IsInternalConverterForNumberType { get; init; }
 
-        internal static bool ShouldFlush(ref WriteStack state)
+        /// <summary>
+        /// Whether the converter handles collection deserialization by converting from
+        /// an intermediate buffer such as immutable collections, arrays or memory types.
+        /// Used in conjunction with <see cref="JsonCollectionConverter{TCollection, TElement}.ConvertCollection(ref ReadStack, JsonSerializerOptions)"/>.
+        /// </summary>
+        internal virtual bool IsConvertibleCollection => false;
+
+        internal static bool ShouldFlush(ref WriteStack state, Utf8JsonWriter writer)
         {
             Debug.Assert(state.FlushThreshold == 0 || (state.PipeWriter is { CanGetUnflushedBytes: true }),
                 "ShouldFlush should only be called by resumable serializers, all of which use the PipeWriter abstraction with CanGetUnflushedBytes == true.");
             // If surpassed flush threshold then return true which will flush stream.
             if (state.PipeWriter is { } pipeWriter)
             {
-                return state.FlushThreshold > 0 && pipeWriter.UnflushedBytes > state.FlushThreshold;
+                return state.FlushThreshold > 0 && pipeWriter.UnflushedBytes > state.FlushThreshold - writer.BytesPending;
             }
 
             return false;
@@ -200,6 +213,10 @@ namespace System.Text.Json.Serialization
         internal abstract void WriteAsPropertyNameCoreAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, bool isWritingExtensionDataProperty);
         internal abstract void WriteNumberWithCustomHandlingAsObject(Utf8JsonWriter writer, object? value, JsonNumberHandling handling);
 
+        /// <summary>
+        /// Gets a schema from the type being converted
+        /// </summary>
+        internal virtual JsonSchema? GetSchema(JsonNumberHandling numberHandling) => null;
 
         // Whether a type (ConverterStrategy.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized { get; }

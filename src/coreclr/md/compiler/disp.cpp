@@ -745,11 +745,11 @@ Disp::SetOption(
         }
         else
         {
-            INT32 len = WszWideCharToMultiByte(CP_UTF8, 0, V_BSTR(pvalue), -1, NULL, 0, NULL, NULL);
+            INT32 len = WideCharToMultiByte(CP_UTF8, 0, V_BSTR(pvalue), -1, NULL, 0, NULL, NULL);
             m_OptionValue.m_RuntimeVersion = new (nothrow) char[len];
             if (m_OptionValue.m_RuntimeVersion == NULL)
             IfFailGo(E_INVALIDARG);
-            WszWideCharToMultiByte(CP_UTF8, 0, V_BSTR(pvalue), -1, m_OptionValue.m_RuntimeVersion, len, NULL, NULL);
+            WideCharToMultiByte(CP_UTF8, 0, V_BSTR(pvalue), -1, m_OptionValue.m_RuntimeVersion, len, NULL, NULL);
         }
     }
     else if (optionid == MetaDataInitialSize)

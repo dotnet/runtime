@@ -107,8 +107,7 @@ struct DebuggerFrameData
         this->info.fIsFilter  = false;
 #endif // FEATURE_EH_FUNCLETS
 
-        // Look strange?  Go to definition of this field.  I dare you.
-        this->info.fIgnoreThisFrameIfSuppressingUMChainFromComPlusMethodFrameGeneric = false;
+        this->info.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = false;
 
 #if defined(_DEBUG)
         this->previousFP = LEAF_MOST_FRAME;
@@ -1191,17 +1190,17 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
 
 #ifdef FEATURE_COMINTEROP
         if ((frame != NULL) &&
-            (frame->GetVTablePtr() == ComPlusMethodFrame::GetMethodFrameVPtr()))
+            (frame->GetVTablePtr() == CLRToCOMMethodFrame::GetMethodFrameVPtr()))
         {
             // This condition is part of the fix for 650903. (See
             // code:ControllerStackInfo::WalkStack and code:DebuggerStepper::TrapStepOut
             // for the other parts.) Here, we know that the frame we're looking it may be
-            // a ComPlusMethodFrameGeneric (this info is not otherwise plubmed down into
+            // a CLRToCOMMethodFrameGeneric (this info is not otherwise plubmed down into
             // the walker; even though the walker does get to see "f.frame", that may not
             // be "frame"). Given this, if the walker chooses to ignore these frames
             // (while doing a Step Out during managed-only debugging), then it can ignore
             // this frame.
-            f.fIgnoreThisFrameIfSuppressingUMChainFromComPlusMethodFrameGeneric = true;
+            f.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = true;
         }
 #endif // FEATURE_COMINTEROP
 
@@ -1563,9 +1562,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     {
         _ASSERTE(md->IsDynamicMethod());
         DynamicMethodDesc* dMD = md->AsDynamicMethodDesc();
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
         use |= dMD->IsMulticastStub();
-#endif
         use |= dMD->GetILStubType() == DynamicMethodDesc::StubTailCallCallTarget;
 
         if (use)
@@ -1760,28 +1757,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
             break;
 
-        // Put frames we want to ignore here:
-        case Frame::TYPE_MULTICAST:
-            LOG((LF_CORDB, LL_INFO100000, "DWSP: Frame type is TYPE_MULTICAST.\n"));
-            if (d->ShouldIgnoreNonmethodFrames())
-            {
-                // Multicast frames exist only to gc protect the arguments
-                // between invocations of a delegate.  They don't have code that
-                // we can (currently) show the user (we could change this with
-                // work, but why bother?  It's an internal stub, and even if the
-                // user could see it, they can't modify it).
-                LOG((LF_CORDB, LL_INFO100000, "DWSP: Skipping frame 0x%x b/c it's "
-                    "a multicast frame!\n", frame));
-                use = false;
-            }
-            else
-            {
-                LOG((LF_CORDB, LL_INFO100000, "DWSP: NOT Skipping frame 0x%x even thought it's "
-                    "a multicast frame!\n", frame));
-                INTERNAL_FRAME_ACTION(d, use);
-            }
-            break;
-
         default:
             _ASSERTE(!"Invalid frame type!");
             break;
@@ -1900,7 +1875,7 @@ bool ShouldSendUMLeafChain(Thread * pThread)
     // If we're in shutodown, don't bother trying to sniff for an UM leaf chain.
     // @todo - we'd like to never even be trying to stack trace on shutdown, this
     // comes up when we do helper thread duty on shutdown.
-    if (g_fProcessDetach)
+    if (IsAtProcessExit())
     {
         return false;
     }

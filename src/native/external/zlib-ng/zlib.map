@@ -13,6 +13,7 @@ ZLIB_1.2.0 {
     zcfree;
     z_errmsg;
     gz_error;
+    gz_intmax;
     _*;
 };
 

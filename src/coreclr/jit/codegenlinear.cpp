@@ -937,9 +937,20 @@ void CodeGen::genSpillVar(GenTree* tree)
         // but we will kill the var in the reg (below).
         if (!varDsc->IsAlwaysAliveInMemory())
         {
-            instruction storeIns = ins_Store(lclType, compiler->isSIMDTypeLocalAligned(varNum));
             assert(varDsc->GetRegNum() == tree->GetRegNum());
-            inst_TT_RV(storeIns, size, tree, tree->GetRegNum());
+#if defined(FEATURE_SIMD)
+            if (lclType == TYP_SIMD12)
+            {
+                // Store SIMD12 to stack as 12 bytes
+                GetEmitter()->emitStoreSimd12ToLclOffset(varNum, tree->AsLclVarCommon()->GetLclOffs(),
+                                                         tree->GetRegNum(), nullptr);
+            }
+            else
+#endif
+            {
+                instruction storeIns = ins_Store(lclType, compiler->isSIMDTypeLocalAligned(varNum));
+                inst_TT_RV(storeIns, size, tree, tree->GetRegNum());
+            }
         }
 
         // We should only have both GTF_SPILL (i.e. the flag causing this method to be called) and
@@ -2515,7 +2526,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
                 break;
 
 #ifdef TARGET_64BIT
-            case ZERO_EXTEND_INT: // ubyte/ushort/int -> long.
+            case ZERO_EXTEND_INT: // ubyte/ushort/uint -> long.
                 assert(varTypeIsUnsigned(srcLoadType) || (srcLoadType == TYP_INT));
                 m_extendKind    = varTypeIsSmall(srcLoadType) ? LOAD_ZERO_EXTEND_SMALL_INT : LOAD_ZERO_EXTEND_INT;
                 m_extendSrcSize = genTypeSize(srcLoadType);

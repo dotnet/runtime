@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 #endif
         bool IsCurveValid(Oid oid);
         bool ExplicitCurvesSupported { get; }
+        bool ExplicitCurvesSupportFailOnUseOnly => PlatformDetection.IsAzureLinux;
         bool CanDeriveNewPublicKey { get; }
         bool SupportsRawDerivation { get; }
         bool SupportsSha3 { get; }
@@ -48,5 +49,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         public static bool SupportsRawDerivation => s_provider.SupportsRawDerivation;
 
         public static bool SupportsSha3 => s_provider.SupportsSha3;
+
+        public static bool ExplicitCurvesSupportFailOnUseOnly => s_provider.ExplicitCurvesSupportFailOnUseOnly;
     }
 }

@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -14,87 +12,55 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public unsafe class TargetTests
 {
-    private const ulong ContractDescriptorAddr = 0xaaaaaaaa;
-    private const uint JsonDescriptorAddr = 0xdddddddd;
-    private const uint PointerDataAddr = 0xeeeeeeee;
-
-    private static readonly (DataType Type, Target.TypeInfo Info)[] TestTypes =
-    [
+    private static readonly Dictionary<DataType, Target.TypeInfo> TestTypes = new()
+    {
         // Size and fields
-        (DataType.Thread, new(){
+        [DataType.Thread] = new(){
             Size = 56,
-            Fields = {
+            Fields = new Dictionary<string, Target.FieldInfo> {
                 { "Field1", new(){ Offset = 8, Type = DataType.uint16, TypeName = DataType.uint16.ToString() }},
                 { "Field2", new(){ Offset = 16, Type = DataType.GCHandle, TypeName = DataType.GCHandle.ToString() }},
                 { "Field3", new(){ Offset = 32 }}
-            }}),
+            }},
         // Fields only
-        (DataType.ThreadStore, new(){
-            Fields = {
+        [DataType.ThreadStore] = new(){
+            Fields = new Dictionary<string, Target.FieldInfo> {
                 { "Field1", new(){ Offset = 0, TypeName = "FieldType" }},
                 { "Field2", new(){ Offset = 8 }}
-            }}),
+            }},
         // Size only
-        (DataType.GCHandle, new(){
+        [DataType.GCHandle] = new(){
             Size = 8
-        })
-    ];
+        }
+    };
 
     [Theory]
-    [InlineData(true, true)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(false, false)]
-    public void GetTypeInfo(bool isLittleEndian, bool is64Bit)
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetTypeInfo(MockTarget.Architecture arch)
     {
-        string typesJson = string.Join(',', TestTypes.Select(t => GetTypeJson(t.Type.ToString(), t.Info)));
-        byte[] json = Encoding.UTF8.GetBytes($$"""
-        {
-            "version": 0,
-            "baseline": "empty",
-            "contracts": {},
-            "types": { {{typesJson}} },
-            "globals": {}
-        }
-        """);
-        Span<byte> descriptor = stackalloc byte[ContractDescriptor.Size(is64Bit)];
-        ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, 0);
-        fixed (byte* jsonPtr = json)
-        {
-            ReadContext context = new ReadContext
-            {
-                ContractDescriptor = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(descriptor)),
-                ContractDescriptorLength = descriptor.Length,
-                JsonDescriptor = jsonPtr,
-                JsonDescriptorLength = json.Length,
-            };
+        TargetTestHelpers targetTestHelpers = new(arch);
+        MockMemorySpace.Builder builder = new (targetTestHelpers);
+        builder.SetTypes(TestTypes)
+            .SetGlobals(Array.Empty<(string, ulong, string?)>())
+            .SetContracts(Array.Empty<string>());
 
-            bool success = Target.TryCreate(ContractDescriptorAddr, &ReadFromTarget, &context, out Target? target);
-            Assert.True(success);
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        Assert.True(success);
 
-            foreach ((DataType type, Target.TypeInfo info) in TestTypes)
+        foreach ((DataType type, Target.TypeInfo info) in TestTypes)
+        {
             {
-                {
-                    // By known type
-                    Target.TypeInfo actual = target.GetTypeInfo(type);
-                    Assert.Equal(info.Size, actual.Size);
-                    Assert.Equal(info.Fields, actual.Fields);
-                }
-                {
-                    // By name
-                    Target.TypeInfo actual = target.GetTypeInfo(type.ToString());
-                    Assert.Equal(info.Size, actual.Size);
-                    Assert.Equal(info.Fields, actual.Fields);
-                }
+                // By known type
+                Target.TypeInfo actual = target.GetTypeInfo(type);
+                Assert.Equal(info.Size, actual.Size);
+                Assert.Equal(info.Fields, actual.Fields);
             }
-        }
-
-        static string GetTypeJson(string name, Target.TypeInfo info)
-        {
-            string ret = string.Empty;
-            List<string> fields = info.Size is null ? [] : [$"\"!\":{info.Size}"];
-            fields.AddRange(info.Fields.Select(f => $"\"{f.Key}\":{(f.Value.TypeName is null ? f.Value.Offset : $"[{f.Value.Offset},\"{f.Value.TypeName}\"]")}"));
-            return $"\"{name}\":{{{string.Join(',', fields)}}}";
+            {
+                // By name
+                Target.TypeInfo actual = target.GetTypeInfo(type.ToString());
+                Assert.Equal(info.Size, actual.Size);
+                Assert.Equal(info.Fields, actual.Fields);
+            }
         }
     }
 
@@ -115,120 +81,50 @@ public unsafe class TargetTests
     ];
 
     [Theory]
-    [InlineData(true, true)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(false, false)]
-    public void ReadGlobalValue(bool isLittleEndian, bool is64Bit)
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadGlobalValue(MockTarget.Architecture arch)
     {
-        string globalsJson = string.Join(',', TestGlobals.Select(i => $"\"{i.Name}\": {(i.Type is null ? i.Value.ToString() : $"[{i.Value}, \"{i.Type}\"]")}"));
-        byte[] json = Encoding.UTF8.GetBytes($$"""
-        {
-            "version": 0,
-            "baseline": "empty",
-            "contracts": {},
-            "types": {},
-            "globals": { {{globalsJson}} }
-        }
-        """);
-        Span<byte> descriptor = stackalloc byte[ContractDescriptor.Size(is64Bit)];
-        ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, 0);
-        fixed (byte* jsonPtr = json)
-        {
-            ReadContext context = new ReadContext
-            {
-                ContractDescriptor = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(descriptor)),
-                ContractDescriptorLength = descriptor.Length,
-                JsonDescriptor = jsonPtr,
-                JsonDescriptorLength = json.Length,
-            };
+        TargetTestHelpers targetTestHelpers = new(arch);
+        MockMemorySpace.Builder builder = new (targetTestHelpers);
+        builder.SetTypes(new Dictionary<DataType, Target.TypeInfo>())
+            .SetGlobals(TestGlobals)
+            .SetContracts([]);
 
-            bool success = Target.TryCreate(ContractDescriptorAddr, &ReadFromTarget, &context, out Target? target);
-            Assert.True(success);
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        Assert.True(success);
 
-            ValidateGlobals(target, TestGlobals);
-        }
+        ValidateGlobals(target, TestGlobals);
     }
 
     [Theory]
-    [InlineData(true, true)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(false, false)]
-    public void ReadIndirectGlobalValue(bool isLittleEndian, bool is64Bit)
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadIndirectGlobalValue(MockTarget.Architecture arch)
     {
-        int pointerSize = is64Bit ? sizeof(ulong) : sizeof(uint);
-        Span<byte> pointerData = stackalloc byte[TestGlobals.Length * pointerSize];
-        for (int i = 0; i < TestGlobals.Length; i++)
-        {
-            var (_, value, _) = TestGlobals[i];
-            WritePointer(pointerData.Slice(i * pointerSize), value, isLittleEndian, pointerSize);
-        }
+        TargetTestHelpers targetTestHelpers = new(arch);
+        MockMemorySpace.Builder builder = new (targetTestHelpers);
+        builder.SetTypes(new Dictionary<DataType, Target.TypeInfo>())
+            .SetContracts([])
+            .SetGlobals(TestGlobals.Select(MakeGlobalToIndirect).ToArray(),
+                        TestGlobals.Select((g) => g.Value).ToArray());
 
-        string globalsJson = string.Join(',', TestGlobals.Select((g, i) => $"\"{g.Name}\": {(g.Type is null ? $"[{i}]" : $"[[{i}], \"{g.Type}\"]")}"));
-        byte[] json = Encoding.UTF8.GetBytes($$"""
-        {
-            "version": 0,
-            "baseline": "empty",
-            "contracts": {},
-            "types": {},
-            "globals": { {{globalsJson}} }
-        }
-        """);
-        Span<byte> descriptor = stackalloc byte[ContractDescriptor.Size(is64Bit)];
-        ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, pointerData.Length / pointerSize);
-        fixed (byte* jsonPtr = json)
-        {
-            ReadContext context = new ReadContext
-            {
-                ContractDescriptor = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(descriptor)),
-                ContractDescriptorLength = descriptor.Length,
-                JsonDescriptor = jsonPtr,
-                JsonDescriptorLength = json.Length,
-                PointerData = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(pointerData)),
-                PointerDataLength = pointerData.Length
-            };
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        Assert.True(success);
 
-            bool success = Target.TryCreate(ContractDescriptorAddr, &ReadFromTarget, &context, out Target? target);
-            Assert.True(success);
+        // Indirect values are pointer-sized, so max 32-bits for a 32-bit target
+        var expected = arch.Is64Bit
+            ? TestGlobals
+            : TestGlobals.Select(g => (g.Name, g.Value & 0xffffffff, g.Type)).ToArray();
 
-            // Indirect values are pointer-sized, so max 32-bits for a 32-bit target
-            var expected = is64Bit
-                ? TestGlobals
-                : TestGlobals.Select(g => (g.Name, g.Value & 0xffffffff, g.Type)).ToArray();
+        ValidateGlobals(target, expected);
 
-            ValidateGlobals(target, expected);
-        }
-    }
-
-    private static void WritePointer(Span<byte> dest, ulong value, bool isLittleEndian, int pointerSize)
-    {
-        if (pointerSize == sizeof(ulong))
+        static (string Name, ulong? Value, uint? IndirectIndex, string? Type) MakeGlobalToIndirect((string Name, ulong Value, string? Type) global, int index)
         {
-            if (isLittleEndian)
-            {
-                BinaryPrimitives.WriteUInt64LittleEndian(dest, value);
-            }
-            else
-            {
-                BinaryPrimitives.WriteUInt64BigEndian(dest, value);
-            }
-        }
-        else if (pointerSize == sizeof(uint))
-        {
-            if (isLittleEndian)
-            {
-                BinaryPrimitives.WriteUInt32LittleEndian(dest, (uint)value);
-            }
-            else
-            {
-                BinaryPrimitives.WriteUInt32BigEndian(dest, (uint)value);
-            }
+            return (global.Name, null, (uint?)index, global.Type);
         }
     }
 
     private static void ValidateGlobals(
-        Target target,
+        ContractDescriptorTarget target,
         (string Name, ulong Value, string? Type)[] globals,
         [CallerMemberName] string caller = "",
         [CallerFilePath] string filePath = "",
@@ -302,145 +198,9 @@ public unsafe class TargetTests
             }
         }
 
-        void AssertEqualsWithCallerInfo<T>(T expected, T actual) 
+        void AssertEqualsWithCallerInfo<T>(T expected, T actual)
         {
             Assert.True((expected is null && actual is null) || expected.Equals(actual), $"Expected: {expected}. Actual: {actual}. [test case: {caller} in {filePath}:{lineNumber}]");
-        }
-    }
-
-    [UnmanagedCallersOnly]
-    private static int ReadFromTarget(ulong address, byte* buffer, uint length, void* context)
-    {
-        ReadContext* readContext = (ReadContext*)context;
-        var span = new Span<byte>(buffer, (int)length);
-
-        // Populate the span with the requested portion of the contract descriptor
-        if (address >= ContractDescriptorAddr && address <= ContractDescriptorAddr + (ulong)readContext->ContractDescriptorLength - length)
-        {
-            ulong offset = address - ContractDescriptorAddr;
-            new ReadOnlySpan<byte>(readContext->ContractDescriptor + offset, (int)length).CopyTo(span);
-            return 0;
-        }
-
-        // Populate the span with the JSON descriptor - this assumes the product will read it all at once.
-        if (address == JsonDescriptorAddr)
-        {
-            new ReadOnlySpan<byte>(readContext->JsonDescriptor, readContext->JsonDescriptorLength).CopyTo(span);
-            return 0;
-        }
-
-        // Populate the span with the requested portion of the pointer data
-        if (address >= PointerDataAddr && address <= PointerDataAddr + (ulong)readContext->PointerDataLength - length)
-        {
-            ulong offset = address - PointerDataAddr;
-            new ReadOnlySpan<byte>(readContext->PointerData + offset, (int)length).CopyTo(span);
-            return 0;
-        }
-
-        return -1;
-    }
-
-    // Used by ReadFromTarget to return the appropriate bytes
-    private struct ReadContext
-    {
-        public byte* ContractDescriptor;
-        public int ContractDescriptorLength;
-
-        public byte* JsonDescriptor;
-        public int JsonDescriptorLength;
-
-        public byte* PointerData;
-        public int PointerDataLength;
-    }
-
-    private static class ContractDescriptor
-    {
-        public static int Size(bool is64Bit) => is64Bit ? sizeof(ContractDescriptor64) : sizeof(ContractDescriptor32);
-
-        public static void Fill(Span<byte> dest, bool isLittleEndian, bool is64Bit, int jsonDescriptorSize, int pointerDataCount)
-        {
-            if (is64Bit)
-            {
-                ContractDescriptor64.Fill(dest, isLittleEndian, jsonDescriptorSize, pointerDataCount);
-            }
-            else
-            {
-                ContractDescriptor32.Fill(dest, isLittleEndian, jsonDescriptorSize, pointerDataCount);
-            }
-        }
-
-        private struct ContractDescriptor32
-        {
-            public ulong Magic = BitConverter.ToUInt64("DNCCDAC\0"u8);
-            public uint Flags = 0x2 /*32-bit*/ | 0x1;
-            public uint DescriptorSize;
-            public uint Descriptor = JsonDescriptorAddr;
-            public uint PointerDataCount;
-            public uint Pad0 = 0;
-            public uint PointerData = PointerDataAddr;
-
-            public ContractDescriptor32() { }
-
-            public static void Fill(Span<byte> dest, bool isLittleEndian, int jsonDescriptorSize, int pointerDataCount)
-            {
-                ContractDescriptor32 descriptor = new()
-                {
-                    DescriptorSize = (uint)jsonDescriptorSize,
-                    PointerDataCount = (uint)pointerDataCount,
-                };
-                if (BitConverter.IsLittleEndian != isLittleEndian)
-                    descriptor.ReverseEndianness();
-
-                MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref descriptor, 1)).CopyTo(dest);
-            }
-
-            private void ReverseEndianness()
-            {
-                Magic = BinaryPrimitives.ReverseEndianness(Magic);
-                Flags = BinaryPrimitives.ReverseEndianness(Flags);
-                DescriptorSize = BinaryPrimitives.ReverseEndianness(DescriptorSize);
-                Descriptor = BinaryPrimitives.ReverseEndianness(Descriptor);
-                PointerDataCount = BinaryPrimitives.ReverseEndianness(PointerDataCount);
-                Pad0 = BinaryPrimitives.ReverseEndianness(Pad0);
-                PointerData = BinaryPrimitives.ReverseEndianness(PointerData);
-            }
-        }
-
-        private struct ContractDescriptor64
-        {
-            public ulong Magic = BitConverter.ToUInt64("DNCCDAC\0"u8);
-            public uint Flags = 0x1;
-            public uint DescriptorSize;
-            public ulong Descriptor = JsonDescriptorAddr;
-            public uint PointerDataCount;
-            public uint Pad0 = 0;
-            public ulong PointerData = PointerDataAddr;
-
-            public ContractDescriptor64() { }
-
-            public static void Fill(Span<byte> dest, bool isLittleEndian, int jsonDescriptorSize, int pointerDataCount)
-            {
-                ContractDescriptor64 descriptor = new()
-                {
-                    DescriptorSize = (uint)jsonDescriptorSize,
-                    PointerDataCount = (uint)pointerDataCount,
-                };
-                if (BitConverter.IsLittleEndian != isLittleEndian)
-                    descriptor.ReverseEndianness();
-
-                MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref descriptor, 1)).CopyTo(dest);
-            }
-
-            private void ReverseEndianness()
-            {
-                Magic = BinaryPrimitives.ReverseEndianness(Magic);
-                Flags = BinaryPrimitives.ReverseEndianness(Flags);
-                DescriptorSize = BinaryPrimitives.ReverseEndianness(DescriptorSize);
-                Descriptor = BinaryPrimitives.ReverseEndianness(Descriptor);
-                PointerDataCount = BinaryPrimitives.ReverseEndianness(PointerDataCount);
-                Pad0 = BinaryPrimitives.ReverseEndianness(Pad0);
-                PointerData = BinaryPrimitives.ReverseEndianness(PointerData);
-            }
         }
     }
 

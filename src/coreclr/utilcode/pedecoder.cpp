@@ -2536,7 +2536,7 @@ BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
     if (hFile == INVALID_HANDLE_VALUE)
         goto ErrExit;
 
-    HANDLE hMap = WszCreateFileMapping(hFile,
+    HANDLE hMap = CreateFileMapping(hFile,
                                        NULL,
                                        SEC_IMAGE | PAGE_READONLY,
                                        0,

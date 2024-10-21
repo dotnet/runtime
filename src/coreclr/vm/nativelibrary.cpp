@@ -644,7 +644,7 @@ namespace
 #ifdef TARGET_WINDOWS
             if (u16_strcmp(wszLibName, W("hostpolicy.dll")) == 0)
             {
-                return WszGetModuleHandle(NULL);
+                return GetModuleHandle(NULL);
             }
 #else
             if (u16_strcmp(wszLibName, W("libhostpolicy")) == 0)

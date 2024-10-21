@@ -249,7 +249,7 @@ namespace System.Reflection.Emit
                         throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
                 }
 
-                CorElementType corType = RuntimeTypeHandle.GetCorElementType((RuntimeType)type);
+                CorElementType corType = ((RuntimeType)type).GetCorElementType();
 
                 switch (corType)
                 {
@@ -1388,7 +1388,7 @@ namespace System.Reflection.Emit
         #region Define Properties and Events
 
         protected override PropertyBuilder DefinePropertyCore(string name, PropertyAttributes attributes, CallingConventions callingConvention,
-            Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
+            Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             lock (SyncRoot)

@@ -20,8 +20,8 @@ namespace System.Threading.Tasks
         public static Task ForAsync<T>(T fromInclusive, T toExclusive, Func<T, CancellationToken, ValueTask> body)
             where T : notnull, IBinaryInteger<T>
         {
-            if (fromInclusive is null) throw new ArgumentNullException(nameof(fromInclusive));
-            if (toExclusive is null) throw new ArgumentNullException(nameof(toExclusive));
+            ArgumentNullException.ThrowIfNull(fromInclusive);
+            ArgumentNullException.ThrowIfNull(toExclusive);
             ArgumentNullException.ThrowIfNull(body);
 
             return ForAsync(fromInclusive, toExclusive, DefaultDegreeOfParallelism, TaskScheduler.Default, default, body);
@@ -38,8 +38,8 @@ namespace System.Threading.Tasks
         public static Task ForAsync<T>(T fromInclusive, T toExclusive, CancellationToken cancellationToken, Func<T, CancellationToken, ValueTask> body)
             where T : notnull, IBinaryInteger<T>
         {
-            if (fromInclusive is null) throw new ArgumentNullException(nameof(fromInclusive));
-            if (toExclusive is null) throw new ArgumentNullException(nameof(toExclusive));
+            ArgumentNullException.ThrowIfNull(fromInclusive);
+            ArgumentNullException.ThrowIfNull(toExclusive);
             ArgumentNullException.ThrowIfNull(body);
 
             return ForAsync(fromInclusive, toExclusive, DefaultDegreeOfParallelism, TaskScheduler.Default, cancellationToken, body);
@@ -56,8 +56,8 @@ namespace System.Threading.Tasks
         public static Task ForAsync<T>(T fromInclusive, T toExclusive, ParallelOptions parallelOptions, Func<T, CancellationToken, ValueTask> body)
             where T : notnull, IBinaryInteger<T>
         {
-            if (fromInclusive is null) throw new ArgumentNullException(nameof(fromInclusive));
-            if (toExclusive is null) throw new ArgumentNullException(nameof(toExclusive));
+            ArgumentNullException.ThrowIfNull(fromInclusive);
+            ArgumentNullException.ThrowIfNull(toExclusive);
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(body);
 
@@ -92,34 +92,10 @@ namespace System.Threading.Tasks
                 return Task.CompletedTask;
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static bool Interlockable() =>
-                typeof(T) == typeof(sbyte) ||
-                typeof(T) == typeof(byte) ||
-                typeof(T) == typeof(short) ||
-                typeof(T) == typeof(ushort) ||
-                typeof(T) == typeof(char) ||
-                typeof(T) == typeof(int) ||
-                typeof(T) == typeof(uint) ||
-                typeof(T) == typeof(long) ||
-                typeof(T) == typeof(ulong) ||
-                typeof(T) == typeof(nint) ||
-                typeof(T) == typeof(nuint);
-
-#pragma warning disable CS8500
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static unsafe bool CompareExchange(ref T location, T value, T comparand) =>
-                sizeof(T) == sizeof(byte) ? Interlocked.CompareExchange(ref Unsafe.As<T, byte>(ref location), Unsafe.As<T, byte>(ref value), Unsafe.As<T, byte>(ref comparand)) == Unsafe.As<T, byte>(ref comparand) :
-                sizeof(T) == sizeof(ushort) ? Interlocked.CompareExchange(ref Unsafe.As<T, ushort>(ref location), Unsafe.As<T, ushort>(ref value), Unsafe.As<T, ushort>(ref comparand)) == Unsafe.As<T, ushort>(ref comparand) :
-                sizeof(T) == sizeof(uint) ? Interlocked.CompareExchange(ref Unsafe.As<T, uint>(ref location), Unsafe.As<T, uint>(ref value), Unsafe.As<T, uint>(ref comparand)) == Unsafe.As<T, uint>(ref comparand) :
-                sizeof(T) == sizeof(ulong) ? Interlocked.CompareExchange(ref Unsafe.As<T, ulong>(ref location), Unsafe.As<T, ulong>(ref value), Unsafe.As<T, ulong>(ref comparand)) == Unsafe.As<T, ulong>(ref comparand) :
-                throw new UnreachableException();
-#pragma warning restore CS8500
-
             // The worker body. Each worker will execute this same body.
             Func<object, Task> taskBody = static async o =>
             {
-                var state = (ForEachState<T>)o;
+                var state = (ForAsyncState<T>)o;
                 bool launchedNext = false;
 
 #pragma warning disable CA2007 // Explicitly don't use ConfigureAwait, as we want to perform all work on the specified scheduler that's now current
@@ -128,10 +104,10 @@ namespace System.Threading.Tasks
                     // Continue to loop while there are more elements to be processed.
                     while (!state.Cancellation.IsCancellationRequested)
                     {
-                        // Get the next element from the enumerator. For some types, we can get the next element with just
+                        // Get the next element from the enumerator. For primitive types, we can get the next element with just
                         // interlocked operations, avoiding the need to take a lock.  For other types, we need to take a lock.
                         T element;
-                        if (Interlockable())
+                        if (typeof(T).IsPrimitive)
                         {
                             TryAgain:
                             element = state.NextAvailable;
@@ -140,7 +116,7 @@ namespace System.Threading.Tasks
                                 break;
                             }
 
-                            if (!CompareExchange(ref state.NextAvailable, element + T.One, element))
+                            if (Interlocked.CompareExchange(ref state.NextAvailable, element + T.One, element) != element)
                             {
                                 goto TryAgain;
                             }
@@ -202,7 +178,7 @@ namespace System.Threading.Tasks
             {
                 // Construct a state object that encapsulates all state to be passed and shared between
                 // the workers, and queues the first worker.
-                var state = new ForEachState<T>(fromInclusive, toExclusive, taskBody, !Interlockable(), dop, scheduler, cancellationToken, body);
+                var state = new ForAsyncState<T>(fromInclusive, toExclusive, taskBody, dop, scheduler, cancellationToken, body);
                 state.QueueWorkerIfDopAvailable();
                 return state.Task;
             }
@@ -749,18 +725,18 @@ namespace System.Threading.Tasks
             }
         }
 
-        /// <summary>Stores the state associated with an IAsyncEnumerable ForEachAsync operation, shared between all its workers.</summary>
+        /// <summary>Stores the state associated with an IAsyncEnumerable ForAsyncState operation, shared between all its workers.</summary>
         /// <typeparam name="T">Specifies the type of data being enumerated.</typeparam>
-        private sealed class ForEachState<T> : ForEachAsyncState<T>, IDisposable
+        private sealed class ForAsyncState<T> : ForEachAsyncState<T>, IDisposable
         {
             public T NextAvailable;
             public readonly T ToExclusive;
 
-            public ForEachState(
+            public ForAsyncState(
                 T fromExclusive, T toExclusive, Func<object, Task> taskBody,
-                bool needsLock, int dop, TaskScheduler scheduler, CancellationToken cancellationToken,
+                int dop, TaskScheduler scheduler, CancellationToken cancellationToken,
                 Func<T, CancellationToken, ValueTask> body) :
-                base(taskBody, needsLock, dop, scheduler, cancellationToken, body)
+                base(taskBody, !typeof(T).IsPrimitive, dop, scheduler, cancellationToken, body)
             {
                 NextAvailable = fromExclusive;
                 ToExclusive = toExclusive;

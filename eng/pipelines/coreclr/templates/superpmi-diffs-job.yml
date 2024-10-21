@@ -5,7 +5,7 @@ parameters:
   osSubgroup: ''                  # optional -- operating system subgroup
   condition: true
   pool: ''
-  timeoutInMinutes: 240           # build timeout
+  timeoutInMinutes: 360           # build timeout
   variables: {}
   helixQueues: ''
   runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-diffs-job.yml'

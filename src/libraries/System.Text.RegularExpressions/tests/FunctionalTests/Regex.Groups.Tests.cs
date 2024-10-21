@@ -956,6 +956,8 @@ namespace System.Text.RegularExpressions.Tests
 
                 yield return (enUS, @"(?((\w{3}))\1\1|no)", "dogdogdog", RegexOptions.None, new string[] { "dogdog", "dog" });
                 yield return (enUS, @"(?((\w{3}))\1\1|no)", "no", RegexOptions.None, new string[] { "no", "" });
+
+                yield return (enUS, @"(?()|.??(?<=))(?!.)", "", RegexOptions.None, new string[] { "" });
             }
 
             // Special cases involving starting position search optimizations

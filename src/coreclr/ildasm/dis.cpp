@@ -94,7 +94,7 @@ OPCODE DecodeOpcode(const BYTE *pCode, DWORD *pdwLen)
 WCHAR* UtfToUnicode(_In_ __nullterminated const char* sz)
 {
     WCHAR* wz = wzUniBuf;
-    if (WszMultiByteToWideChar(CP_UTF8,0,sz,-1,wz,UNIBUF_SIZE/2) == 0)
+    if (MultiByteToWideChar(CP_UTF8,0,sz,-1,wz,UNIBUF_SIZE/2) == 0)
     {
         wz[UNIBUF_SIZE/2 - 1] = 0;
     }
@@ -103,7 +103,7 @@ WCHAR* UtfToUnicode(_In_ __nullterminated const char* sz)
 char* UnicodeToAnsi(_In_ __nullterminated const WCHAR* wz)
 {
     char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
-    if (WszWideCharToMultiByte(g_uConsoleCP,0,wz,-1,sz,UNIBUF_SIZE,NULL,NULL) == 0)
+    if (WideCharToMultiByte(g_uConsoleCP,0,wz,-1,sz,UNIBUF_SIZE,NULL,NULL) == 0)
     {
         sz[UNIBUF_SIZE - 1] = 0;
     }
@@ -112,7 +112,7 @@ char* UnicodeToAnsi(_In_ __nullterminated const WCHAR* wz)
 WCHAR* AnsiToUnicode(_In_ __nullterminated const char* sz)
 {
     WCHAR* wz = wzUniBuf;
-    if (WszMultiByteToWideChar(g_uConsoleCP,0,sz,-1,wz,UNIBUF_SIZE/2) == 0)
+    if (MultiByteToWideChar(g_uConsoleCP,0,sz,-1,wz,UNIBUF_SIZE/2) == 0)
     {
         wz[UNIBUF_SIZE/2 - 1] = 0;
     }
@@ -121,7 +121,7 @@ WCHAR* AnsiToUnicode(_In_ __nullterminated const char* sz)
 char* UnicodeToUtf(_In_ __nullterminated const WCHAR* wz)
 {
     char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
-    if (WszWideCharToMultiByte(CP_UTF8,0,wz,-1,sz,UNIBUF_SIZE,NULL,NULL) == 0)
+    if (WideCharToMultiByte(CP_UTF8,0,wz,-1,sz,UNIBUF_SIZE,NULL,NULL) == 0)
     {
         sz[UNIBUF_SIZE - 1] = 0;
     }
@@ -760,7 +760,7 @@ char* DumpUnicodeString(void* GUICookie,
     szStr = new char[cbString*3 + 5];
     memset(szStr,0,cbString*3 + 5);
 
-    WszWideCharToMultiByte(CP_UTF8,0,pszString,cbString,&szStr[0],cbString*3,NULL,NULL);
+    WideCharToMultiByte(CP_UTF8,0,pszString,cbString,&szStr[0],cbString*3,NULL,NULL);
     L = (unsigned)strlen(szStr);
 
     szStr[L] = 0;
@@ -1106,7 +1106,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                     {
                         wcscpy_s(wzWasFileName,2048,wzFileName);
                         memset(szFileName,0,2048);
-                        WszWideCharToMultiByte(CP_UTF8,0,wzFileName,-1,szFileName,2048,NULL,NULL);
+                        WideCharToMultiByte(CP_UTF8,0,wzFileName,-1,szFileName,2048,NULL,NULL);
                         if(fShowSource)
                         {
                             if(pFile) fclose(pFile);

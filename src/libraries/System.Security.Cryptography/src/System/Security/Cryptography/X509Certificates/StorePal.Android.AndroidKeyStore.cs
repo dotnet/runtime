@@ -6,8 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-#pragma warning disable 8500 // taking address of managed type
-
 namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class StorePal
@@ -118,7 +116,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             private static string GetCertificateHashString(ICertificatePal certPal)
             {
-                return X509Certificate.GetCertHashString(HashAlgorithmName.SHA256, certPal);
+                return X509Certificate.GetCertHashString(HashAlgorithmName.SHA256, certPal.RawData);
             }
 
             private struct EnumCertificatesContext
@@ -129,9 +127,7 @@ namespace System.Security.Cryptography.X509Certificates
             [UnmanagedCallersOnly]
             private static unsafe void EnumCertificatesCallback(void* certPtr, void* privateKeyPtr, Interop.AndroidCrypto.PAL_KeyAlgorithm privateKeyAlgorithm, void* context)
             {
-#pragma warning disable 8500 // taking address of managed type
                 EnumCertificatesContext* callbackContext = (EnumCertificatesContext*)context;
-#pragma warning restore 8500
 
                 AndroidCertificatePal certPal;
                 var handle = new SafeX509Handle((IntPtr)certPtr);

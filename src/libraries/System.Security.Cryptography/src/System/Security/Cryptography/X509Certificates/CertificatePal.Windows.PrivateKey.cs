@@ -258,9 +258,8 @@ namespace System.Security.Cryptography.X509Certificates
             SafeCertContextHandle certificateContext,
             out CngKeyHandleOpenOptions handleOptions)
         {
-            Debug.Assert(certificateContext != null, "certificateContext != null");
-            Debug.Assert(!certificateContext.IsClosed && !certificateContext.IsInvalid,
-                         "!certificateContext.IsClosed && !certificateContext.IsInvalid");
+            Debug.Assert(certificateContext != null);
+            Debug.Assert(!certificateContext.IsClosed && !certificateContext.IsInvalid);
 
             IntPtr privateKeyPtr;
 

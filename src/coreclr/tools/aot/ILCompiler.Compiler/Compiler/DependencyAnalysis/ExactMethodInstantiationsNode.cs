@@ -50,15 +50,13 @@ namespace ILCompiler.DependencyAnalysis
             nativeSection.Place(hashtable);
 
 
-            foreach (MethodDesc method in factory.MetadataManager.GetCompiledMethods())
+            foreach (MethodDesc method in factory.MetadataManager.GetExactMethodHashtableEntries())
             {
-                if (!IsMethodEligibleForTracking(factory, method))
-                    continue;
-
                 // Get the method pointer vertex
 
                 bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
-                IMethodNode methodEntryPointNode = factory.MethodEntrypoint(method, getUnboxingStub);
+                // TODO-SIZE: we need address taken entrypoint only if this was a target of a delegate
+                IMethodNode methodEntryPointNode = factory.AddressTakenMethodEntrypoint(method, getUnboxingStub);
                 Vertex methodPointer = nativeWriter.GetUnsignedConstant(_externalReferences.GetIndex(methodEntryPointNode));
 
                 // Get native layout vertices for the declaring type
@@ -105,14 +103,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void GetExactMethodInstantiationDependenciesForMethod(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if (!IsMethodEligibleForTracking(factory, method))
-                return;
-
             dependencies ??= new DependencyList();
 
             // Method entry point dependency
             bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
-            IMethodNode methodEntryPointNode = factory.MethodEntrypoint(method, getUnboxingStub);
+            // TODO-SIZE: we need address taken entrypoint only if this was a target of a delegate
+            IMethodNode methodEntryPointNode = factory.AddressTakenMethodEntrypoint(method, getUnboxingStub);
             dependencies.Add(new DependencyListEntry(methodEntryPointNode, "Exact method instantiation entry"));
 
             // Get native layout dependencies for the declaring type
@@ -125,31 +121,6 @@ namespace ILCompiler.DependencyAnalysis
             // Get native layout dependencies for the method signature.
             NativeLayoutMethodNameAndSignatureVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(nameAndSig), "Exact method instantiation entry"));
-        }
-
-        private static bool IsMethodEligibleForTracking(NodeFactory factory, MethodDesc method)
-        {
-            // Runtime determined methods should never show up here.
-            Debug.Assert(!method.IsRuntimeDeterminedExactMethod);
-
-            if (method.IsAbstract)
-                return false;
-
-            if (!method.HasInstantiation)
-                return false;
-
-            // This hashtable is only for method instantiations that don't use generic dictionaries,
-            // so check if the given method is shared before proceeding
-            if (method.IsSharedByGenericInstantiations || method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method)
-                return false;
-
-            // The hashtable is used to find implementations of generic virtual methods at runtime
-            if (method.IsVirtual)
-                return true;
-
-            // The rest of the entries are potentially only useful for the universal
-            // canonical type loader.
-            return factory.TypeSystemContext.SupportsUniversalCanon;
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

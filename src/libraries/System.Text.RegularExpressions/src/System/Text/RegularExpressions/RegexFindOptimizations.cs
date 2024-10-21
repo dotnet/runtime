@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -140,12 +141,15 @@ namespace System.Text.RegularExpressions
             // We're now left-to-right only and looking for multiple prefixes and/or sets.
 
             // If there are multiple leading strings, we can search for any of them.
-            if (compiled)
+            if (!interpreter) // this works in the interpreter, but we avoid it due to additional cost during construction
             {
                 if (RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: true) is { Length: > 1 } caseInsensitivePrefixes)
                 {
                     LeadingPrefixes = caseInsensitivePrefixes;
                     FindMode = FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight;
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
+                    LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.OrdinalIgnoreCase);
+#endif
                     return;
                 }
 
@@ -156,6 +160,9 @@ namespace System.Text.RegularExpressions
                 //{
                 //    LeadingPrefixes = caseSensitivePrefixes;
                 //    FindMode = FindNextStartingPositionMode.LeadingStrings_LeftToRight;
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
+                //    LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.Ordinal);
+#endif
                 //    return;
                 //}
             }
@@ -274,6 +281,11 @@ namespace System.Text.RegularExpressions
         /// <summary>When in fixed distance set mode, gets the set and how far it is from the start of the pattern.</summary>
         /// <remarks>The case-insensitivity of the 0th entry will always match the mode selected, but subsequent entries may not.</remarks>
         public List<FixedDistanceSet>? FixedDistanceSets { get; }
+
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
+        /// <summary>When in leading strings mode, gets the search values to use for searching the input.</summary>
+        public SearchValues<string>? LeadingStrings { get; }
+#endif
 
         /// <summary>Data about a character class at a fixed offset from the start of any match to a pattern.</summary>
         public struct FixedDistanceSet(char[]? chars, string set, int distance)
@@ -676,6 +688,23 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
 
+                // There are multiple possible strings at the beginning. Search for one.
+                case FindNextStartingPositionMode.LeadingStrings_LeftToRight:
+                case FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight:
+                {
+                    Debug.Assert(LeadingStrings is not null);
+
+                    int i = textSpan.Slice(pos).IndexOfAny(LeadingStrings);
+                    if (i >= 0)
+                    {
+                        pos += i;
+                        return true;
+                    }
+
+                    pos = textSpan.Length;
+                    return false;
+                }
+
                 // There are one or more sets at fixed offsets from the start of the pattern.
 
                 case FindNextStartingPositionMode.FixedDistanceSets_LeftToRight:
@@ -799,12 +828,6 @@ namespace System.Text.RegularExpressions
                         pos = textSpan.Length;
                         return false;
                     }
-
-                // Not supported in the interpreter, but we could end up here for patterns so complex the compiler gave up on them.
-
-                case FindNextStartingPositionMode.LeadingStrings_LeftToRight:
-                case FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight:
-                    return true;
 
                 // Nothing special to look for.  Just return true indicating this is a valid position to try to match.
 

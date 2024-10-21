@@ -87,6 +87,7 @@ namespace System.Text.Json
         private bool _allowOutOfOrderMetadataProperties;
         private bool _allowTrailingCommas;
         private bool _respectNullableAnnotations = AppContextSwitchHelper.RespectNullableAnnotationsDefault;
+        private bool _respectRequiredConstructorParameters = AppContextSwitchHelper.RespectRequiredConstructorParametersDefault;
         private bool _ignoreNullValues;
         private bool _ignoreReadOnlyProperties;
         private bool _ignoreReadonlyFields;
@@ -141,6 +142,7 @@ namespace System.Text.Json
             _allowOutOfOrderMetadataProperties = options._allowOutOfOrderMetadataProperties;
             _allowTrailingCommas = options._allowTrailingCommas;
             _respectNullableAnnotations = options._respectNullableAnnotations;
+            _respectRequiredConstructorParameters = options._respectRequiredConstructorParameters;
             _ignoreNullValues = options._ignoreNullValues;
             _ignoreReadOnlyProperties = options._ignoreReadOnlyProperties;
             _ignoreReadonlyFields = options._ignoreReadonlyFields;
@@ -797,6 +799,9 @@ namespace System.Text.Json
         /// Due to restrictions in how nullable reference types are represented at run time,
         /// this setting only governs nullability annotations of non-generic properties and fields.
         /// It cannot be used to enforce nullability annotations of root-level types or generic parameters.
+        ///
+        /// The default setting for this property can be toggled application-wide using the
+        /// "System.Text.Json.Serialization.RespectNullableAnnotationsDefault" feature switch.
         /// </remarks>
         public bool RespectNullableAnnotations
         {
@@ -805,6 +810,29 @@ namespace System.Text.Json
             {
                 VerifyMutable();
                 _respectNullableAnnotations = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value that indicates whether non-optional constructor parameters should be specified during deserialization.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        /// <remarks>
+        /// For historical reasons constructor-based deserialization treats all constructor parameters as optional by default.
+        /// This flag allows users to toggle that behavior as necessary for each <see cref="JsonSerializerOptions"/> instance.
+        ///
+        /// The default setting for this property can be toggled application-wide using the
+        /// "System.Text.Json.Serialization.RespectRequiredConstructorParametersDefault" feature switch.
+        /// </remarks>
+        public bool RespectRequiredConstructorParameters
+        {
+            get => _respectRequiredConstructorParameters;
+            set
+            {
+                VerifyMutable();
+                _respectRequiredConstructorParameters = value;
             }
         }
 

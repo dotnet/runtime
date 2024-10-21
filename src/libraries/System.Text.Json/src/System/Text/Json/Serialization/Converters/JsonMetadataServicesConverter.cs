@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -65,5 +67,8 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
             => Converter.ConfigureJsonTypeInfo(jsonTypeInfo, options);
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling)
+            => Converter.GetSchema(numberHandling);
     }
 }
