@@ -3915,13 +3915,18 @@ namespace System
                 }
 
                 MethodBase? invokeMethod;
-                object? state = null;
+                object? state;
 
                 try
                 {
                     invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null, out state);
                 }
-                catch (MissingMethodException) { invokeMethod = null; }
+                catch (MissingMethodException innerMME)
+                {
+                    // Rethrows to rewrite a message to include the class name.
+                    // Make sure the original exception is set as an inner exception.
+                    throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName), innerMME);
+                }
 
                 if (invokeMethod is null)
                 {
