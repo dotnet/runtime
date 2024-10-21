@@ -4124,7 +4124,7 @@ namespace {
             _ASSERTE(pCode >= pHp->mapBase);
 
             // TODO: Is this check correct?
-            _ASSERTE(pCode + codeSize <= pHp->mapBase + pHp->maxCodeHeapSize);
+            _ASSERTE(pCode + codeSize <= pCodeHeap->startAddress + pCodeHeap->maxCodeHeapSize);
 
             size_t delta = pCode - pHp->mapBase;
 
