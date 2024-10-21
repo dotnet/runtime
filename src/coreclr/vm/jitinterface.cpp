@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: JITinterface.CPP
-//
-
 // ===========================================================================
 
 #include "common.h"
@@ -10702,6 +10701,7 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             _ASSERTE(ppIndirection != NULL);
             _ASSERTE(hlpDynamicFuncTable[dynamicFtnNum].pfnHelper != NULL); // Confirm the helper is non-null and doesn't require lazy loading.
             *ppIndirection = &hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
+            _ASSERTE(IndirectionAllowedForJitHelper(ftnNum));
             result = NULL;
             goto exit;
         }
@@ -10716,28 +10716,7 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             goto exit;
         }
 
-        if (dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFINTERFACE ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFANY ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFARRAY ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFCLASS ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTANY ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTARRAY ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTINTERFACE ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTCLASS ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTCLASS_SPECIAL ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_UNBOX ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ARRADDR_ST ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_LDELEMA_REF ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMSET ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMZERO ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMCPY ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_BULK_WRITEBARRIER ||
-            IN_TARGET_32BIT(dynamicFtnNum == DYNAMIC_CORINFO_HELP_LMUL_OVF ||)
-            IN_TARGET_32BIT(dynamicFtnNum == DYNAMIC_CORINFO_HELP_ULMUL_OVF ||)
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2INT_OVF ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2LNG_OVF ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2UINT_OVF ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2ULNG_OVF)
+        if (HasILBasedDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum))
         {
             MethodDesc* helperMD = NULL;
             (void)LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum, &helperMD);
@@ -10775,11 +10754,14 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
                 }
             }
 
-            Precode* pPrecode = helperMD->GetPrecode();
-            _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
-            *ppIndirection = ((FixupPrecode*)pPrecode)->GetTargetSlot();
-            result = NULL;
-            goto exit;
+            if (IndirectionAllowedForJitHelper(ftnNum))
+            {
+                Precode* pPrecode = helperMD->GetPrecode();
+                _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
+                *ppIndirection = ((FixupPrecode*)pPrecode)->GetTargetSlot();
+                result = NULL;
+                goto exit;
+            }
         }
 
         pfnHelper = LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum).pfnHelper;
@@ -14061,7 +14043,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                         methodNameImplCompiler.GetUTF8());
 
                     _ASSERTE_MSG(false, fatalErrorString.GetUTF8());
-                    _ASSERTE(!IsDebuggerPresent() && "Stop on assert here instead of fatal error for ease of live debugging");
+                    _ASSERTE(!minipal_is_native_debugger_present() && "Stop on assert here instead of fatal error for ease of live debugging");
 
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
                     return FALSE;
@@ -14208,7 +14190,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                         );
 
                     _ASSERTE_MSG(false, fatalErrorString.GetUTF8());
-                    _ASSERTE(!IsDebuggerPresent() && "Stop on assert here instead of fatal error for ease of live debugging");
+                    _ASSERTE(!minipal_is_native_debugger_present() && "Stop on assert here instead of fatal error for ease of live debugging");
 
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
                     return FALSE;

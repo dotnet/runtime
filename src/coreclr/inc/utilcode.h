@@ -225,8 +225,10 @@ typedef LPSTR   LPUTF8;
     } \
     LPSTR ptrname = (LPSTR)__CQuickBytes##ptrname.Ptr()
 
+// ptrname will be deleted when it goes out of scope.
 #define MAKE_UTF8PTR_FROMWIDE(ptrname, widestr) CQuickBytes _##ptrname; _##ptrname.ConvertUnicode_Utf8(widestr); LPSTR ptrname = (LPSTR) _##ptrname.Ptr();
 
+// ptrname will be deleted when it goes out of scope.
 #define MAKE_UTF8PTR_FROMWIDE_NOTHROW(ptrname, widestr) \
     CQuickBytes __qb##ptrname; \
     int __l##ptrname = (int)u16_strlen(widestr); \
