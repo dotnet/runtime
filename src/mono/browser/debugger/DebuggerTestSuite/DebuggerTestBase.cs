@@ -187,7 +187,7 @@ namespace DebuggerTests
             catch (Exception exc) //if failed some reason let's try again
             {
                 if (!retry)
-                    throw new Exception($"Debugger inspector session opening failed and will not be retried: {other}");
+                    throw new Exception($"Debugger inspector session opening failed and will not be retried: {exc}");
                 retry = false;
                 _testOutput.WriteLine($"Let's retry: {exc.ToString()}");
                 try
