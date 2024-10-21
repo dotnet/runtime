@@ -1,5 +1,9 @@
 # Data Formats
 
+> [!WARNING]
+> The file formats described in this file may not be supported for use outside the dotnet/runtime repo. Refer to the official documentation at https://learn.microsoft.com/dotnet/core/deploying/trimming/trim-self-contained for supported formats.
+
+
 ## Input Data Formats
 
 ILLink uses several data formats to control or influence the trimming process. The data formats are not versioned but are backward compatible.
