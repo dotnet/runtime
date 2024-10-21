@@ -9,7 +9,8 @@ internal sealed class PrecodeStubsFactory : IContractFactory<IPrecodeStubs>
 {
     IPrecodeStubs IContractFactory<IPrecodeStubs>.CreateContract(Target target, int version)
     {
-        TargetPointer precodeMachineDescriptorAddress = target.ReadGlobalPointer(Constants.Globals.PrecodeMachineDescriptor);
+        ICDacMetadata cDacMetadata = target.Contracts.CDacMetadata;
+        TargetPointer precodeMachineDescriptorAddress = cDacMetadata.GetPrecodeMachineDescriptor();
         Data.PrecodeMachineDescriptor precodeMachineDescriptor = target.ProcessedData.GetOrAdd<Data.PrecodeMachineDescriptor>(precodeMachineDescriptorAddress);
         return version switch
         {
