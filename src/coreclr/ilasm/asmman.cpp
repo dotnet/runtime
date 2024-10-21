@@ -28,10 +28,10 @@ BinStr* BinStrToUnicode(BinStr* pSource, bool Swap)
             {
                 memset(wz,0,L);
                 MultiByteToWideChar(g_uCodePage,0,pb,-1,wz,l);
-                tmp->remove(L-(DWORD)u16_strlen(wz)*sizeof(WCHAR));
+                tmp->remove(L-(DWORD)minipal_u16_strlen((const CHAR16_T*)wz)*sizeof(WCHAR));
 #if BIGENDIAN
                 if (Swap)
-                    SwapStringLength(wz, (DWORD)u16_strlen(wz));
+                    SwapStringLength(wz, (DWORD)minipal_u16_strlen((const CHAR16_T*)wz));
 #endif
                 delete pSource;
             }
@@ -996,8 +996,8 @@ HRESULT AsmMan::EmitManifest()
                         else
                         {
                             m_dwMResSizeTotal += m_dwMResSize[m_dwMResNum]+sizeof(DWORD);
-                            m_wzMResName[m_dwMResNum] = new WCHAR[u16_strlen(wzFileName)+1];
-                            wcscpy_s(m_wzMResName[m_dwMResNum],u16_strlen(wzFileName)+1,wzFileName);
+                            m_wzMResName[m_dwMResNum] = new WCHAR[minipal_u16_strlen((const CHAR16_T*)wzFileName)+1];
+                            wcscpy_s(m_wzMResName[m_dwMResNum],minipal_u16_strlen((const CHAR16_T*)wzFileName)+1,wzFileName);
                             m_fMResNew[m_dwMResNum] = TRUE;
                             m_dwMResNum++;
                         }

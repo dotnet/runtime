@@ -530,7 +530,7 @@ HRESULT LongFile::NormalizePath(SString & path)
         //In this case if path is \\server the extended syntax should be like  \\?\UNC\server
         //The below logic populates the path from prefixLen offset from the start. This ensures that first 2 characters are overwritten
         //
-        prefixLen = prefix.GetCount() - (COUNT_T)u16_strlen(UNCPATHPREFIX);
+        prefixLen = prefix.GetCount() - (COUNT_T)minipal_u16_strlen((const CHAR16_T*)UNCPATHPREFIX);
         _ASSERTE(prefixLen > 0 );
     }
 
@@ -574,10 +574,10 @@ HRESULT LongFile::NormalizePath(SString & path)
 	SString fullpath(SString::Literal,buffer + prefixLen);
 
     //Check if the resolved path is a UNC. By default we assume relative path to resolve to disk
-    if (fullpath.BeginsWith(SL(UNCPathPrefix)) && prefixLen != prefix.GetCount() - (COUNT_T)u16_strlen(UNCPATHPREFIX))
+    if (fullpath.BeginsWith(SL(UNCPathPrefix)) && prefixLen != prefix.GetCount() - (COUNT_T)minipal_u16_strlen((const CHAR16_T*)UNCPATHPREFIX))
     {
         //Remove the leading '\\' from the UNC path to be replaced with UNCExtendedPathPrefix
-        fullpath.Replace(fullpath.Begin(), (COUNT_T)u16_strlen(UNCPATHPREFIX), SL(UNCExtendedPathPrefix));
+        fullpath.Replace(fullpath.Begin(), (COUNT_T)minipal_u16_strlen((const CHAR16_T*)UNCPATHPREFIX), SL(UNCExtendedPathPrefix));
         path.CloseBuffer();
         path.Set(fullpath);
     }

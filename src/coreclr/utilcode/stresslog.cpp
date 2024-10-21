@@ -177,11 +177,11 @@ void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
         wcscat_s(replaced, replacedLength, pidStr);
 
         // append the rest of the filename
-        wcscat_s(replaced, replacedLength, original + pidInx + u16_strlen(pidLit));
+        wcscat_s(replaced, replacedLength, original + pidInx + minipal_u16_strlen((const CHAR16_T*)pidLit));
     }
     else
     {
-        size_t originalLength = u16_strlen(original);
+        size_t originalLength = minipal_u16_strlen((const CHAR16_T*)original);
         wcsncpy_s(replaced, replacedLength, original, originalLength);
     }
 }

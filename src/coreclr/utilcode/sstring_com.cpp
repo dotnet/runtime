@@ -73,7 +73,7 @@ HRESULT SString::LoadResourceAndReturnHR(CCompRC::ResourceCategory eCategory, in
 
             if (SUCCEEDED(hr))
             {
-                Truncate(Begin() + (COUNT_T) u16_strlen(GetRawUnicode()));
+                Truncate(Begin() + (COUNT_T) minipal_u16_strlen((const CHAR16_T*)GetRawUnicode()));
             }
 
             Normalize();

@@ -527,7 +527,7 @@ const WCHAR* JitInstance::getOption(const WCHAR* key, LightWeightMap<DWORD, DWOR
         return nullptr;
     }
 
-    size_t keyLenInBytes = sizeof(WCHAR) * (u16_strlen(key) + 1);
+    size_t keyLenInBytes = sizeof(WCHAR) * (minipal_u16_strlen((const CHAR16_T*)key) + 1);
     int    keyIndex      = options->Contains((unsigned char*)key, (unsigned int)keyLenInBytes);
     if (keyIndex == -1)
     {

@@ -1027,7 +1027,7 @@ int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LP
         0
     };
 
-    int srcLen = static_cast<int>(u16_strlen(pSource));
+    int srcLen = static_cast<int>(minipal_u16_strlen((const CHAR16_T*)pSource));
 
     // If the source contains unicode characters, they'll be encoded at 4 chars per char.
     int targLen = ContainsUnicodeChars(pSource) ? targetMaxLength / 4 : targetMaxLength;
@@ -1038,7 +1038,7 @@ int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LP
         for (int i = 0; truncations[i]; ++i)
         {
             // how long is this suffix?
-            int slen = static_cast<int>(u16_strlen(truncations[i]));
+            int slen = static_cast<int>(minipal_u16_strlen((const CHAR16_T*)truncations[i]));
 
             // Could the string have this suffix?
             if (slen < srcLen)
@@ -1069,7 +1069,7 @@ int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LP
 
     // String didn't fit, so hash it.
     SHA1Hash hash;
-    hash.AddData(reinterpret_cast<BYTE*>(const_cast<LPWSTR>(pSource)), (static_cast<int>(u16_strlen(pSource))) * sizeof(WCHAR));
+    hash.AddData(reinterpret_cast<BYTE*>(const_cast<LPWSTR>(pSource)), (static_cast<int>(minipal_u16_strlen((const CHAR16_T*)pSource))) * sizeof(WCHAR));
 
     // Encode in base32.  The hash is a fixed size; we'll accept up to maxLen characters of the encoding.
     BytesToBase32 b32(hash.GetHash(), SHA1_HASH_SIZE);

@@ -24,7 +24,7 @@ Unicode2UTF(
     LPUTF8  szDst,  // Buffer for the output UTF8 string.
     int     cbDst)  // Size of the buffer for UTF8 string.
 {
-    int cchSrc = (int)u16_strlen(wszSrc);
+    int cchSrc = (int)minipal_u16_strlen((const CHAR16_T*)wszSrc);
     int cchRet;
 
     cchRet = WideCharToMultiByte(

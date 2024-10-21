@@ -73,7 +73,7 @@ public:
     }
 
     OutString& operator<<(const WCHAR* str) {
-        size_t len = u16_strlen(str);
+        size_t len = minipal_u16_strlen((const CHAR16_T*)str);
         if (cur+len > end)
             Realloc(len);
         while(str != 0)

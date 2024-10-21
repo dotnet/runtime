@@ -1045,7 +1045,7 @@ ClrDataValue::GetString(
 
             if (strLen)
             {
-                *strLen = static_cast<ULONG32>(u16_strlen(msgStr) + 1);
+                *strLen = static_cast<ULONG32>(minipal_u16_strlen((const CHAR16_T*)msgStr) + 1);
             }
             status = StringCchCopy(str, bufLen, msgStr) == S_OK ?
                 S_OK : S_FALSE;

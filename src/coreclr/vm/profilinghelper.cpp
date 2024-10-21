@@ -674,7 +674,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
         return S_FALSE;
     }
 
-    if ((wszProfilerDLL != NULL) && (u16_strlen(wszProfilerDLL) >= MAX_LONGPATH))
+    if ((wszProfilerDLL != NULL) && (minipal_u16_strlen((const CHAR16_T*)(LPWSTR)wszProfilerDLL) >= MAX_LONGPATH))
     {
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling flag set, but CORECLR_PROFILER_PATH was not set properly.\n"));
 

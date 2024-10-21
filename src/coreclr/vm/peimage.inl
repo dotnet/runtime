@@ -309,7 +309,7 @@ inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle)
     int CaseHashHelper(const WCHAR *buffer, COUNT_T count);
 
     PEImageLocator locator(pPath, isInBundle);
-    DWORD dwHash = CaseHashHelper(pPath, (COUNT_T) u16_strlen(pPath));
+    DWORD dwHash = CaseHashHelper(pPath, (COUNT_T) minipal_u16_strlen((const CHAR16_T*)pPath));
     return (PEImage *) s_Images->LookupValue(dwHash, &locator);
 }
 

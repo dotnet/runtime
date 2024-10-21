@@ -6,11 +6,6 @@
 
 #include <dn-u16.h>
 
-size_t u16_strlen(const WCHAR* str)
-{
-    return ::wcslen(str);
-}
-
 int u16_strcmp(const WCHAR* str1, const WCHAR* str2)
 {
     return ::wcscmp(str1, str2);

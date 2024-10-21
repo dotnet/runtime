@@ -1447,7 +1447,7 @@ ep_rt_utf16_string_len (const ep_char16_t *str)
 	STATIC_CONTRACT_NOTHROW;
 	EP_ASSERT (str != NULL);
 
-	return u16_strlen (reinterpret_cast<LPCWSTR>(str));
+	return minipal_u16_strlen (str);
 }
 
 static

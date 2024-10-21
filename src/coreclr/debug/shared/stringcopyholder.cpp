@@ -68,7 +68,7 @@ HRESULT StringCopyHolder::AssignCopy(const WCHAR * pStringSrc)
     }
     else
     {
-        SIZE_T cchLen = u16_strlen(pStringSrc) + 1;
+        SIZE_T cchLen = minipal_u16_strlen((const CHAR16_T*)pStringSrc) + 1;
         m_szData = new (nothrow) WCHAR[cchLen];
         if (m_szData == NULL)
         {

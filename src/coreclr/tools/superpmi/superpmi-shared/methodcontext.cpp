@@ -1268,7 +1268,7 @@ void MethodContext::recGetJitTimeLogFilename(LPCWSTR tempFileName)
     DWORD name_index = -1;
     if (tempFileName != nullptr)
     {
-        name_index = GetJitTimeLogFilename->AddBuffer((unsigned char*)tempFileName, (DWORD)u16_strlen(tempFileName) + 2);
+        name_index = GetJitTimeLogFilename->AddBuffer((unsigned char*)tempFileName, (DWORD)minipal_u16_strlen((const CHAR16_T*)tempFileName) + 2);
     }
     GetJitTimeLogFilename->Add(0, name_index);
     DEBUG_REC(dmpGetJitTimeLogFilename(0, name_index));
@@ -7089,7 +7089,7 @@ void MethodContext::recGetIntConfigValue(const WCHAR* name, int defaultValue, in
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
 
     DWORD index =
-        (DWORD)GetIntConfigValue->AddBuffer((unsigned char*)name, sizeof(WCHAR) * ((unsigned int)u16_strlen(name) + 1));
+        (DWORD)GetIntConfigValue->AddBuffer((unsigned char*)name, sizeof(WCHAR) * ((unsigned int)minipal_u16_strlen((const CHAR16_T*)name) + 1));
 
     key.nameIndex    = index;
     key.defaultValue = defaultValue;
@@ -7119,7 +7119,7 @@ int MethodContext::repGetIntConfigValue(const WCHAR* name, int defaultValue)
     Agnostic_ConfigIntInfo key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
 
-    size_t nameLenInBytes = sizeof(WCHAR) * (u16_strlen(name) + 1);
+    size_t nameLenInBytes = sizeof(WCHAR) * (minipal_u16_strlen((const CHAR16_T*)name) + 1);
     int    nameIndex      = GetIntConfigValue->Contains((unsigned char*)name, (unsigned int)nameLenInBytes);
     if (nameIndex == -1) // config name not in map
         return defaultValue;
@@ -7147,12 +7147,12 @@ void MethodContext::recGetStringConfigValue(const WCHAR* name, const WCHAR* resu
     AssertCodeMsg(name != nullptr, EXCEPTIONCODE_MC, "Name can not be nullptr");
 
     DWORD nameIndex = (DWORD)GetStringConfigValue->AddBuffer((unsigned char*)name,
-                                                             sizeof(WCHAR) * ((unsigned int)u16_strlen(name) + 1));
+                                                             sizeof(WCHAR) * ((unsigned int)minipal_u16_strlen((const CHAR16_T*)name) + 1));
 
     DWORD resultIndex = (DWORD)-1;
     if (result != nullptr)
         resultIndex = (DWORD)GetStringConfigValue->AddBuffer((unsigned char*)result,
-                                                             sizeof(WCHAR) * ((unsigned int)u16_strlen(result) + 1));
+                                                             sizeof(WCHAR) * ((unsigned int)minipal_u16_strlen((const CHAR16_T*)result) + 1));
 
     GetStringConfigValue->Add(nameIndex, resultIndex);
     DEBUG_REC(dmpGetStringConfigValue(nameIndex, resultIndex));
@@ -7176,7 +7176,7 @@ const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
 
     AssertCodeMsg(name != nullptr, EXCEPTIONCODE_MC, "Name can not be nullptr");
 
-    size_t nameLenInBytes = sizeof(WCHAR) * (u16_strlen(name) + 1);
+    size_t nameLenInBytes = sizeof(WCHAR) * (minipal_u16_strlen((const CHAR16_T*)name) + 1);
     int    nameIndex      = GetStringConfigValue->Contains((unsigned char*)name, (unsigned int)nameLenInBytes);
     if (nameIndex == -1) // config name not in map
         return nullptr;

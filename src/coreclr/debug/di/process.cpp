@@ -9619,7 +9619,7 @@ void Ls_Rs_StringBuffer::CopyLSDataToRS(ICorDebugDataTarget * pTarget)
 
     // Now we know it's safe to call u16_strlen. The buffer is local, so we know the pages are there.
     // And we know there's a null capping the max length of the string.
-    SIZE_T dwActualLenWithNull = u16_strlen(pString) + 1;
+    SIZE_T dwActualLenWithNull = minipal_u16_strlen((const CHAR16_T*)pString) + 1;
     if (dwActualLenWithNull != dwExpectedLenWithNull)
     {
         ThrowHR(CORDBG_E_TARGET_INCONSISTENT);

@@ -36,6 +36,7 @@ using std::nothrow;
 #include "contract.h"
 
 #include <minipal/utils.h>
+#include <minipal/strings.h>
 #include <dn-u16.h>
 
 #include "clrnt.h"
@@ -213,7 +214,7 @@ typedef LPSTR   LPUTF8;
 // representable.  This is reasonable for writing to the console, but
 // shouldn't be used for most string conversions.
 #define MAKE_MULTIBYTE_FROMWIDE_BESTFIT(ptrname, widestr, codepage) \
-    int __l##ptrname = (int)u16_strlen(widestr);        \
+    int __l##ptrname = (int)minipal_u16_strlen((const CHAR16_T*)widestr);        \
     if (__l##ptrname > MAKE_MAX_LENGTH)         \
         MAKE_TOOLONGACTION;                     \
     __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
@@ -231,7 +232,7 @@ typedef LPSTR   LPUTF8;
 // ptrname will be deleted when it goes out of scope.
 #define MAKE_UTF8PTR_FROMWIDE_NOTHROW(ptrname, widestr) \
     CQuickBytes __qb##ptrname; \
-    int __l##ptrname = (int)u16_strlen(widestr); \
+    int __l##ptrname = (int)minipal_u16_strlen((const CHAR16_T*)widestr); \
     LPUTF8 ptrname = NULL; \
     if (__l##ptrname <= MAKE_MAX_LENGTH) { \
         __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
@@ -2186,7 +2187,7 @@ inline ULONG HashStringN(LPCWSTR szStr, SIZE_T cchStr)
     ULONG *ptr = (ULONG *)szStr;
 
     // we assume that szStr is null-terminated
-    _ASSERTE(cchStr <= u16_strlen(szStr));
+    _ASSERTE(cchStr <= minipal_u16_strlen((const CHAR16_T*)szStr));
     SIZE_T cDwordCount = (cchStr + 1) / 2;
 
     for (SIZE_T i = 0; i < cDwordCount; i++)

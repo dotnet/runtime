@@ -700,7 +700,7 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
     const WCHAR callerPrefix[] = W("caller.");
     // Include null terminator in prefixLen/regLen because wcscpy_s will fail otherwise
     unsigned int prefixLen = (unsigned int)ARRAY_SIZE(callerPrefix);
-    unsigned int regLen = (unsigned int)u16_strlen(regs[regNum]) + 1;
+    unsigned int regLen = (unsigned int)minipal_u16_strlen((const CHAR16_T*)regs[regNum]) + 1;
     unsigned int needed = (callerFrame ? prefixLen - 1 : 0) + regLen;
     if (pNeeded)
         *pNeeded = needed;
@@ -2140,7 +2140,7 @@ ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, _Inout_u
     else
     {
         // Turn from bytes to wide characters
-        unsigned int len = (unsigned int)u16_strlen(pszName);
+        unsigned int len = (unsigned int)minipal_u16_strlen((const CHAR16_T*)pszName);
 
         if (frameName)
         {
@@ -2614,7 +2614,7 @@ ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout
         if (pAppDomain->m_friendlyName.IsValid())
         {
             LPCWSTR friendlyName = (LPCWSTR)pAppDomain->m_friendlyName;
-            size_t friendlyNameLen = u16_strlen(friendlyName);
+            size_t friendlyNameLen = minipal_u16_strlen((const CHAR16_T*)friendlyName);
 
             if (pNeeded)
             {

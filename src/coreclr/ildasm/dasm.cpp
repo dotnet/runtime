@@ -3062,7 +3062,7 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
       for (i = 1; NumTyPars != 0; i++)
       {
         g_pPubImport->GetGenericParamProps(tkTyPar, &ulSequence, &attr, &tkOwner, NULL, wzArgName, UNIBUF_SIZE/2, &chName);
-        //if(u16_strlen(wzArgName) >= MAX_CLASSNAME_LENGTH)
+        //if(minipal_u16_strlen((const CHAR16_T*)wzArgName) >= MAX_CLASSNAME_LENGTH)
         //    wzArgName[MAX_CLASSNAME_LENGTH-1] = 0;
         hEnumTyParConstr = NULL;
         if (FAILED(g_pPubImport->EnumGenericParamConstraints(&hEnumTyParConstr, tkTyPar, tkConstr, 2048, &NumConstrs)))
@@ -3117,7 +3117,7 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
         }
         // re-get name, wzUniBuf may not contain it any more
         g_pPubImport->GetGenericParamProps(tkTyPar, NULL, &attr, NULL, NULL, wzArgName, UNIBUF_SIZE/2, &chName);
-        //if(u16_strlen(wzArgName) >= MAX_CLASSNAME_LENGTH)
+        //if(minipal_u16_strlen((const CHAR16_T*)wzArgName) >= MAX_CLASSNAME_LENGTH)
         //    wzArgName[MAX_CLASSNAME_LENGTH-1] = 0;
         if (chName)
         {
@@ -3187,7 +3187,7 @@ void DumpGenericParsCA(mdToken tok, void* GUICookie/*=NULL*/)
                 if(SUCCEEDED(g_pPubImport->GetGenericParamProps(tkTyPar, NULL, &attr, NULL, NULL, wzArgName, UNIBUF_SIZE/2, &chName))
                         &&(chName > 0))
                 {
-                    //if(u16_strlen(wzArgName) >= MAX_CLASSNAME_LENGTH)
+                    //if(minipal_u16_strlen((const CHAR16_T*)wzArgName) >= MAX_CLASSNAME_LENGTH)
                     //    wzArgName[MAX_CLASSNAME_LENGTH-1] = 0;
                     char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
                     WideCharToMultiByte(CP_UTF8,0,wzArgName,-1,sz,UNIBUF_SIZE,NULL,NULL);
@@ -7784,7 +7784,7 @@ ReportAndExit:
             memset(wzResFileName,0,sizeof(wzResFileName));
             MultiByteToWideChar(CP_UTF8,0,g_szOutputFile,-1,wzResFileName,2048);
             pwc = (WCHAR*)u16_strrchr(wzResFileName,L'.');
-            if(pwc == NULL) pwc = &wzResFileName[u16_strlen(wzResFileName)];
+            if(pwc == NULL) pwc = &wzResFileName[minipal_u16_strlen((const CHAR16_T*)wzResFileName)];
             wcscpy_s(pwc, 2048 - (pwc - wzResFileName), L".res");
             DWORD ret = DumpResourceToFile(wzResFileName);
             switch(ret)
