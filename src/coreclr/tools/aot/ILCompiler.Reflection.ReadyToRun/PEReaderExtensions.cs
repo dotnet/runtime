@@ -110,7 +110,10 @@ namespace ILCompiler.Reflection.ReadyToRun
             int index = reader.PEHeaders.GetContainingSectionIndex(rva);
             if (index == -1)
             {
-                throw new BadImageFormatException("Failed to convert invalid RVA to offset: " + rva);
+                var sectionInfo = new StringBuilder();
+                foreach (var sh in reader.PEHeaders.SectionHeaders)
+                    sectionInfo.AppendLine($"  {sh.Name} PTRD={sh.PointerToRawData} SORD={sh.SizeOfRawData} VA={sh.VirtualAddress} VS={sh.VirtualSize}");
+                throw new BadImageFormatException($"Failed to convert invalid RVA to offset: {rva}.\nSections:\n{sectionInfo}");
             }
             SectionHeader containingSection = reader.PEHeaders.SectionHeaders[index];
             return rva - containingSection.VirtualAddress + containingSection.PointerToRawData;

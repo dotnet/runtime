@@ -1140,7 +1140,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     count++;
                     i++;
                 } while (i < isEntryPoint.Length && !isEntryPoint[i] && i < firstColdRuntimeFunction);
-                
+
                 if (dHotColdMap.ContainsKey(runtimeFunctionId))
                 {
                     int coldSize = dHotColdMap[runtimeFunctionId].Length;
@@ -1380,7 +1380,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/zap/zapimport.cpp">ZapImportSectionsTable::Save</a>
+        /// originally based on <a href="https://github.com/dotnet/coreclr/blob/master/src/zap/zapimport.cpp">ZapImportSectionsTable::Save</a>
         /// </summary>
         private void EnsureImportSections()
         {
@@ -1582,11 +1582,13 @@ namespace ILCompiler.Reflection.ReadyToRun
                 }
                 else
                 {
-                    result = _assemblyResolver.FindAssembly(metadataReader, assemblyReferenceHandle, Filename);
+                    var probedPaths = new List<string>();
+                    result = _assemblyResolver.FindAssembly(metadataReader, assemblyReferenceHandle, Filename, probedPaths);
                     if (result == null)
                     {
                         string name = metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name);
-                        throw new Exception($"Missing reference assembly: {name}");
+                        string probedPathsList = string.Join(", ", probedPaths);
+                        throw new Exception($"Missing reference assembly: {name}.\nPaths probed: {probedPathsList}");
                     }
                 }
                 while (_assemblyCache.Count <= refAsmIndex)
