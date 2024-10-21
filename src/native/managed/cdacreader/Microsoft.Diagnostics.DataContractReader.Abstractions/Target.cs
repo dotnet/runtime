@@ -42,6 +42,13 @@ internal abstract class Target
     public abstract TargetPointer ReadPointer(ulong address);
 
     /// <summary>
+    /// Read a code pointer from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Pointer read from the target</returns>}
+    public abstract TargetCodePointer ReadCodePointer(ulong address);
+
+    /// <summary>
     /// Read some bytes from the target
     /// </summary>
     /// <param name="address">The address where to start reading</param>

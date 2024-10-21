@@ -964,17 +964,6 @@ extern "C" void LeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
     pthread_mutex_unlock(&lpCriticalSection->mutex);
 }
 
-extern "C" UInt32_BOOL IsDebuggerPresent()
-{
-#ifdef HOST_WASM
-    // For now always true since the browser will handle it in case of WASM.
-    return UInt32_TRUE;
-#else
-    // UNIXTODO: Implement this function
-    return UInt32_FALSE;
-#endif
-}
-
 extern "C" UInt32_BOOL SetEvent(HANDLE event)
 {
     EventUnixHandle* unixHandle = (EventUnixHandle*)event;

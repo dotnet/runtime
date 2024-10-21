@@ -135,6 +135,9 @@ switch (testCase) {
             }
         })
         break;
+    case "OverrideBootConfigName":
+        dotnet.withConfigSrc("boot.json");
+        break;
 }
 
 const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
@@ -187,7 +190,7 @@ try {
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
-            exit(0);
+            exit(42);
             break;
         case "InterpPgoTest":
             setModuleImports('main.js', {
@@ -233,6 +236,11 @@ try {
 
             let exit_code = ret == 42 ? 0 : 1;
             exit(exit_code);
+            break;
+        case "OverrideBootConfigName":
+            testOutput("ConfigSrc: " + Module.configSrc);
+            exports.OverrideBootConfigNameTest.Run();
+            exit(0);
             break;
         default:
             console.error(`Unknown test case: ${testCase}`);
