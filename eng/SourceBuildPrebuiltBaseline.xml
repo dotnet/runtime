@@ -35,5 +35,13 @@
     <UsagePattern IdentityGlob="System.IO.Pipelines/7.0.0" />
     <UsagePattern IdentityGlob="System.IO.Pipelines/8.0.*" />
     <UsagePattern IdentityGlob="System.Security.Cryptography.Pkcs/5.0.0" />
+
+    <!-- maintenance-packages https://github.com/dotnet/source-build/issues/4684 -->
+    <UsagePattern IdentityGlob="Microsoft.Bcl.HashCode/6.0.*" />
+    <UsagePattern IdentityGlob="System.Memory/4.6.*" />
+    <UsagePattern IdentityGlob="System.Numerics.Vectors/4.6.*" />
+    <UsagePattern IdentityGlob="System.Runtime.CompilerServices.Unsafe/6.1.*" />
+    <UsagePattern IdentityGlob="System.Threading.Tasks.Extensions/4.6.*" />
+    <UsagePattern IdentityGlob="System.Buffers/4.6.*" />
   </IgnorePatterns>
 </UsageData>
