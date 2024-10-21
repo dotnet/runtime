@@ -1262,15 +1262,27 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
     // And load remaining part part by batches of 11 bits size.
     INT32 remainingShift = msb - 30;
+
+    UINT32 shiftAccumulator = 0;
     while (remainingShift > 0)
     {
         UINT32 shift = remainingShift >= 11 ? 11 : remainingShift % 11;
-        emitIns_R_R_I(INS_slli, size, reg, reg, shift);
+        UINT32 mask  = 0x7ff >> (11 - shift);
+        remainingShift -= shift;
+        ssize_t low11 = (imm >> remainingShift) & mask;
+        shiftAccumulator += shift;
 
-        UINT32  mask  = 0x7ff >> (11 - shift);
-        ssize_t low11 = (imm >> (remainingShift - shift)) & mask;
-        emitIns_R_R_I(INS_addi, size, reg, reg, low11);
-        remainingShift = remainingShift - shift;
+        if (low11)
+        {
+            emitIns_R_R_I(INS_slli, size, reg, reg, shiftAccumulator);
+            shiftAccumulator = 0;
+
+            emitIns_R_R_I(INS_addi, size, reg, reg, low11);
+        }
+    }
+    if (shiftAccumulator)
+    {
+        emitIns_R_R_I(INS_slli, size, reg, reg, shiftAccumulator);
     }
 }
 
