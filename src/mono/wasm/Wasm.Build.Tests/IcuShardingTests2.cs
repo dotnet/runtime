@@ -31,14 +31,13 @@ public class IcuShardingTests2 : IcuTestsBase
             { "icudt_no_CJK.dat", GetNocjkTestedLocales() }
         }; 
         return
-            from templateType in templateTypes
             from aot in boolOptions
             from locale in locales
-            select new object[] { config, templateType, aot, locale.Key, locale.Value };
+            select new object[] { config, aot, locale.Key, locale.Value };
     }
 
-    // [Theory]
-    // [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { "Release" })]
-    // public async Task DefaultAvailableIcuShardsFromRuntimePack(string config, string templateType, bool aot, string shardName, string testedLocales) =>
-    //     await TestIcuShards(config, templateType, aot, shardName, testedLocales, GlobalizationMode.Custom);
+    [Theory]
+    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { "Release" })]
+    public async Task DefaultAvailableIcuShardsFromRuntimePack(string config, bool aot, string shardName, string testedLocales) =>
+        await TestIcuShards(config, Template.WasmBrowser, aot, shardName, testedLocales, GlobalizationMode.Custom);
 }

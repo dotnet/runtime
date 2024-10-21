@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -10,8 +11,11 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class HybridGlobalizationTests : TestMainJsTestBase
+    public class HybridGlobalizationTests : WasmTemplateTestsBase
     {
+        // FOR REVIEWER:
+        // This file will be deteled as a part of HybridGlobalization removal, so issues don't have to get logged
+
         public HybridGlobalizationTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
@@ -20,41 +24,42 @@ namespace Wasm.Build.Tests
         public static IEnumerable<object?[]> HybridGlobalizationTestData(bool aot)
             => ConfigWithAOTData(aot).UnwrapItemsAsArrays();
 
-        // [Theory]
-        // [MemberData(nameof(HybridGlobalizationTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        // [MemberData(nameof(HybridGlobalizationTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        // public void AOT_HybridGlobalizationTests(ProjectInfo buildArgs, RunHost host, string id)
-        //     => TestHybridGlobalizationTests(buildArgs, host, id);
+        [Theory]
+        [BuildAndRun(aot: false)]
+        [BuildAndRun(aot: true)]
+        public async Task AOT_HybridGlobalizationTests(string config, bool aot)
+            => await TestHybridGlobalizationTests(config, aot);
 
-        // [Theory]
-        // [MemberData(nameof(HybridGlobalizationTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        // public void RelinkingWithoutAOT(ProjectInfo buildArgs, RunHost host, string id)
-        //     => TestHybridGlobalizationTests(buildArgs, host, id,
-        //                                     extraProperties: "<WasmBuildNative>true</WasmBuildNative>",
-        //                                     dotnetWasmFromRuntimePack: false);
+        [Theory]
+        [BuildAndRun(aot: false)]
+        // Expected to find /workspaces/runtime/artifacts/bin/Wasm.Build.Tests/Release/net9.0/linux-x64/wbt artifacts/hybrid_Debug_False_g2xwxpxr_lus_鿀蜒枛遫䡫煉/obj/Debug/net9.0/wasm/for-build/dotnet.globalization.js
+        [ActiveIssue("dotnet.globalization.js not found")]
+        public async Task RelinkingWithoutAOT(string config, bool aot)
+            => await TestHybridGlobalizationTests(config, aot, isNativeBuild: true);
 
-        // private void TestHybridGlobalizationTests(ProjectInfo buildArgs, RunHost host, string id, string extraProperties="", bool? dotnetWasmFromRuntimePack=null)
-        // {
-        //     string projectName = $"hybrid";
-        //     extraProperties = $"{extraProperties}<HybridGlobalization>true</HybridGlobalization>";
+        private async Task TestHybridGlobalizationTests(string config, bool aot, bool isNativeBuild = false)
+        {
+            string extraProperties = $"<HybridGlobalization>true</HybridGlobalization>";
+            if (isNativeBuild)
+                extraProperties += "<WasmBuildNative>true</WasmBuildNative>";
 
-        //     buildArgs = buildArgs with { ProjectName = projectName };
-        //     buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, "hybrid", extraProperties: extraProperties);
+            UpdateFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "HybridGlobalization.cs"));
+            UpdateBrowserMainJs();
 
-        //     if (dotnetWasmFromRuntimePack == null)
-        //         dotnetWasmFromRuntimePack = IsDotnetWasmFromRuntimePack(buildArgs);
+            bool isPublish = false;
+            BuildTemplateProject(info,
+                        new BuildProjectOptions(
+                            config,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: isNativeBuild),
+                            IsPublish: isPublish,
+                            GlobalizationMode: GlobalizationMode.Hybrid
+                        ));
 
-        //     string programText = File.ReadAllText(Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "HybridGlobalization.cs"));
-
-        //     BuildProject(buildArgs,
-        //                     id: id,
-        //                     new BuildProjectOptions(
-        //                         InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-        //                         DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-        //                         GlobalizationMode: GlobalizationMode.Hybrid));
-
-        //     string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id);
-        //     Assert.Contains("HybridGlobalization works, thrown exception as expected", output);
-        // }
+            string output = await RunBuiltBrowserApp(info.Configuration, info.ProjectFilePath);
+            Assert.Contains("HybridGlobalization works, thrown exception as expected", output);
+        }
     }
 }

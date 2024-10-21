@@ -192,13 +192,13 @@ namespace Wasm.Build.Tests
             return (res, logFilePath);
         }
 
-        protected NativeFilesType GetExpectedFileType(ProjectInfo info, bool isPublish=false) =>
-            !isPublish ?
-                NativeFilesType.FromRuntimePack :
-                info.AOT ? NativeFilesType.AOT :
-                    (info.Configuration == "Debug" || !IsUsingWorkloads) ?
-                        NativeFilesType.FromRuntimePack :
-                        NativeFilesType.Relinked;
+        protected NativeFilesType GetExpectedFileType(ProjectInfo info, bool isPublish, bool isNativeBuild=false) =>
+            isNativeBuild ? NativeFilesType.Relinked :
+            !isPublish ? NativeFilesType.FromRuntimePack :
+            info.AOT ? NativeFilesType.AOT :
+                (info.Configuration == "Debug" || !IsUsingWorkloads) ?
+                    NativeFilesType.FromRuntimePack :
+                    NativeFilesType.Relinked;
 
         protected string RunAndTestWasmApp(ProjectInfo buildArgs,
                                            string id,

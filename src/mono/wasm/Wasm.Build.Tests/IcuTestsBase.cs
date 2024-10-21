@@ -106,94 +106,75 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
         public record Locale(string Code, string? SundayName);
         ";
 
-    // protected async Task TestIcuShards(string config, string templateType, bool aot, string shardName, string testedLocales, GlobalizationMode globalizationMode, bool onlyPredefinedCultures=false)
-    // {
-    //     string icuProperty = "BlazorIcuDataFileName"; // https://github.com/dotnet/runtime/issues/94133
-    //     // by default, we remove resource strings from an app. ICU tests are checking exception messages contents -> resource string keys are not enough
-    //     string extraProperties = $"<{icuProperty}>{shardName}</{icuProperty}><UseSystemResourceKeys>false</UseSystemResourceKeys><RunAOTCompilation>{aot}</RunAOTCompilation>";
-    //     if (onlyPredefinedCultures)
-    //         extraProperties = $"{extraProperties}<PredefinedCulturesOnly>true</PredefinedCulturesOnly>";
-    //     await BuildAndRunIcuTest(config, templateType, aot, testedLocales, globalizationMode, extraProperties, onlyPredefinedCultures, icuFileName: shardName);
-    // }
+    protected async Task TestIcuShards(string config, Template templateType, bool aot, string shardName, string testedLocales, GlobalizationMode globalizationMode, bool onlyPredefinedCultures=false)
+    {
+        string icuProperty = "BlazorIcuDataFileName"; // https://github.com/dotnet/runtime/issues/94133
+        // by default, we remove resource strings from an app. ICU tests are checking exception messages contents -> resource string keys are not enough
+        string extraProperties = $"<{icuProperty}>{shardName}</{icuProperty}><UseSystemResourceKeys>false</UseSystemResourceKeys><RunAOTCompilation>{aot}</RunAOTCompilation>";
+        if (onlyPredefinedCultures)
+            extraProperties = $"{extraProperties}<PredefinedCulturesOnly>true</PredefinedCulturesOnly>";
+        await BuildAndRunIcuTest(config, templateType, aot, testedLocales, globalizationMode, extraProperties, onlyPredefinedCultures, icuFileName: shardName);
+    }
 
-    // protected (ProjectInfo buildArgs, string projectFile) CreateIcuProject(
-    //     string config,
-    //     string templateType,
-    //     bool aot,
-    //     string testedLocales,
-    //     string extraProperties = "",
-    //     bool onlyPredefinedCultures=false)
-    // {
-    //     string id = $"icu_{config}_{aot}_{GetRandomId()}";
-    //     string projectFile = CreateWasmTemplateProject(id, templateType);
-    //     string projectDirectory = Path.GetDirectoryName(projectFile)!;
-    //     string projectName = Path.GetFileNameWithoutExtension(projectFile);
-    //     var buildArgs = new ProjectInfo(projectName, config, aot, id, null);
-    //     buildArgs = ExpandBuildArgs(buildArgs);
-    //     AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
-        
-    //     string programPath = Path.Combine(projectDirectory, "Program.cs");
-    //     string programText = GetProgramText(testedLocales, onlyPredefinedCultures);
-    //     File.WriteAllText(programPath, programText);
-    //     _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
+    protected ProjectInfo CreateIcuProject(
+        string config,
+        Template templateType,
+        bool aot,
+        string testedLocales,
+        string extraProperties = "",
+        bool onlyPredefinedCultures=false)
+    {
+        ProjectInfo info = CreateWasmTemplateProject(templateType, config, aot, "icu", extraProperties: extraProperties);
+        string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
+        string programPath = Path.Combine(projectDirectory, "Program.cs");
+        string programText = GetProgramText(testedLocales, onlyPredefinedCultures);
+        File.WriteAllText(programPath, programText);
+        _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
 
-    //     string mainPath = Path.Combine("wwwroot", "main.js");
-    //     var replacements = new Dictionary<string, string> {
-    //             { "runMain", "runMainAndExit" },
-    //             { ".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()" }
-    //         };
-    //     UpdateFile(mainPath, replacements);
-    //     RemoveContentsFromProjectFile(mainPath, ".create();", "await runMainAndExit();");
-    //     return (buildArgs, projectFile);
-    // }
+        string mainPath = Path.Combine("wwwroot", "main.js");
+        var replacements = new Dictionary<string, string> {
+                { "runMain", "runMainAndExit" },
+                { ".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()" }
+            };
+        UpdateFile(mainPath, replacements);
+        RemoveContentsFromProjectFile(mainPath, ".create();", "await runMainAndExit();");
+        return info;
+    }
 
-    // protected string BuildIcuTest(
-    //     ProjectInfo buildArgs,
-    //     GlobalizationMode globalizationMode,
-    //     string icuFileName = "",
-    //     bool expectSuccess = true,
-    //     bool assertAppBundle = true)
-    // {
-    //     bool dotnetWasmFromRuntimePack = IsDotnetWasmFromRuntimePack(buildArgs);
-    //     (string _, string buildOutput) = BuildTemplateProject(buildArgs,
-    //                     id: buildArgs.Id,
-    //                     new BuildProjectOptions(
-    //                         DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-    //                         CreateProject: false,
-    //                         Publish: true,
-    //                         TargetFramework: BuildTestBase.DefaultTargetFramework,
-    //                         UseCache: false,
-    //                         GlobalizationMode: globalizationMode,
-    //                         CustomIcuFile: icuFileName,
-    //                         ExpectSuccess: expectSuccess,
-    //                         AssertAppBundle: assertAppBundle
-    //                     ));
-    //     return buildOutput;
-    // }
-
-    // protected async Task<string> BuildAndRunIcuTest(
-    //     string config,
-    //     string templateType,
-    //     bool aot,
-    //     string testedLocales,
-    //     GlobalizationMode globalizationMode,
-    //     string extraProperties = "",
-    //     bool onlyPredefinedCultures=false,
-    //     string language = "en-US",
-    //     string icuFileName = "")
-    // {
-    //     try
-    //     {
-    //         (ProjectInfo buildArgs, string projectFile) = CreateIcuProject(
-    //             config, templateType, aot, testedLocales, extraProperties, onlyPredefinedCultures);
-    //         string buildOutput = BuildIcuTest(buildArgs, globalizationMode, icuFileName);
-    //         string runOutput = await RunBuiltBrowserApp(buildArgs.Configuration, projectFile, language);
-    //         return $"{buildOutput}\n{runOutput}";
-    //     }
-    //     catch(Exception ex)
-    //     {
-    //         Console.WriteLine($"Exception: {ex}; _testOutput={_testOutput}");
-    //         throw;
-    //     }
-    // }
+    protected async Task<string> BuildAndRunIcuTest(
+        string config,
+        Template templateType,
+        bool aot,
+        string testedLocales,
+        GlobalizationMode globalizationMode,
+        string extraProperties = "",
+        bool onlyPredefinedCultures=false,
+        string language = "en-US",
+        string icuFileName = "")
+    {
+        try
+        {
+            ProjectInfo info = CreateIcuProject(
+                config, templateType, aot, testedLocales, extraProperties, onlyPredefinedCultures);
+            bool isPublish = false;
+            bool triggersNativeBuild = globalizationMode == GlobalizationMode.Invariant;
+            (string _, string buildOutput) = BuildTemplateProject(info,
+                        new BuildProjectOptions(
+                            config,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish, triggersNativeBuild),
+                            IsPublish: isPublish,
+                            GlobalizationMode: globalizationMode,
+                            CustomIcuFile: icuFileName
+                        ));
+            string runOutput = await RunBuiltBrowserApp(info.Configuration, info.ProjectFilePath, language);
+            return $"{buildOutput}\n{runOutput}";
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex}; _testOutput={_testOutput}");
+            throw;
+        }
+    }
 }

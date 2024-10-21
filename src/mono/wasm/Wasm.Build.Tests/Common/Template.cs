@@ -8,5 +8,6 @@ namespace Wasm.Build.Tests;
 public enum Template
 {
     BlazorWasm,
-    WasmBrowser
+    WasmBrowser,
+    Wasi
 }
