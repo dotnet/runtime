@@ -48,11 +48,10 @@ namespace Wasm.Build.Tests
         public bool UseWBTOverridePackTargets = false;
 
         private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
-        private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        protected static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         // changing Windows's language programistically is complicated and Node is using OS's language to determine
         // what is client's preferred locale and then to load corresponding ICU => skip automatic icu testing with Node
         // on Linux sharding does not work because we rely on LANG env var to check locale and emcc is overwriting it
-        protected static RunHost s_hostsForOSLocaleSensitiveTests = RunHost.Chrome;
         // FIXME: use an envvar to override this
         protected static int s_defaultPerTestTimeoutMs = s_isWindows ? 30 * 60 * 1000 : 15 * 60 * 1000;
         public static BuildEnvironment s_buildEnv;
@@ -113,41 +112,36 @@ namespace Wasm.Build.Tests
             _providerOfBaseType = providerBase;
         }
 
-        public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, string? config = null, string? extraArgs = null)
+        public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, string? config = null)
         {
-            if (extraArgs == null)
-                extraArgs = string.Empty;
-
             if (config == null)
             {
                 return new IEnumerable<object?>[]
                     {
     #if TEST_DEBUG_CONFIG_ALSO
                         // list of each member data - for Debug+@aot
-                        new object?[] { new BuildArgs("placeholder", "Debug", aot, "placeholder", extraArgs) }.AsEnumerable(),
+                        new object?[] { "Debug", aot }.AsEnumerable(),
     #endif
                         // list of each member data - for Release+@aot
-                        new object?[] { new BuildArgs("placeholder", "Release", aot, "placeholder", extraArgs) }.AsEnumerable()
+                        new object?[] { "Release", aot }.AsEnumerable()
                     }.AsEnumerable();
             }
             else
             {
                 return new IEnumerable<object?>[]
                 {
-                    new object?[] { new BuildArgs("placeholder", config, aot, "placeholder", extraArgs) }.AsEnumerable()
+                    new object?[] { config, aot }.AsEnumerable()
                 };
             }
         }
 
         public (CommandResult res, string logPath) BuildProjectWithoutAssert(
-            string id,
-            string config,
-            BuildProjectOptions buildProjectOptions,
+            BuildProjectOptions buildOptions,
             params string[] extraArgs)
         {
-            string buildType = buildProjectOptions.Publish ? "publish" : "build";
-            string logFileSuffix = buildProjectOptions.Label == null ? string.Empty : buildProjectOptions.Label.Replace(' ', '_') + "-";
-            string logFilePath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-{logFileSuffix}{buildType}.binlog");
+            string buildType = buildOptions.IsPublish ? "publish" : "build";
+            string logFileSuffix = buildOptions.Label == null ? string.Empty : buildOptions.Label.Replace(' ', '_') + "-";
+            string logFilePath = Path.Combine(s_buildEnv.LogRootPath, buildOptions.Id, $"{buildOptions.Id}-{logFileSuffix}{buildType}.binlog");
 
             _testOutput.WriteLine($"{Environment.NewLine}** -------- {buildType} -------- **{Environment.NewLine}");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
@@ -156,23 +150,23 @@ namespace Wasm.Build.Tests
             {
                 buildType,
                 $"-bl:{logFilePath}",
-                $"-p:Configuration={config}",
+                $"-p:Configuration={buildOptions.Configuration}",
                 "-nr:false"
             };
             commandLineArgs.AddRange(extraArgs);
 
-            if (buildProjectOptions.Publish && buildProjectOptions.BuildOnlyAfterPublish)
+            if (buildOptions.IsPublish && buildOptions.BuildOnlyAfterPublish)
                 commandLineArgs.Append("-p:WasmBuildOnlyAfterPublish=true");
 
             using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!);
             cmd.WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables);
+                .WithEnvironmentVariables(buildOptions.ExtraBuildEnvironmentVariables);
             if (UseWBTOverridePackTargets && s_buildEnv.IsWorkload)
                 cmd.WithEnvironmentVariable("WBTOverrideRuntimePack", "true");
 
             CommandResult res = cmd.ExecuteWithCapturedOutput(commandLineArgs.ToArray());
-            if (buildProjectOptions.ExpectSuccess)
+            if (buildOptions.ExpectSuccess)
                 res.EnsureSuccessful();
             else if (res.ExitCode == 0)
                 throw new XunitException($"Build should have failed, but it didn't. Process exited with exitCode : {res.ExitCode}");
@@ -198,15 +192,19 @@ namespace Wasm.Build.Tests
             return (res, logFilePath);
         }
 
-        protected bool IsDotnetWasmFromRuntimePack(BuildArgs buildArgs) =>
-            !(buildArgs.AOT || (buildArgs.Config == "Release" && IsUsingWorkloads));
+        protected NativeFilesType GetExpectedFileType(ProjectInfo info, bool isPublish=false) =>
+            !isPublish ?
+                NativeFilesType.FromRuntimePack :
+                info.AOT ? NativeFilesType.AOT :
+                    (info.Configuration == "Debug" || !IsUsingWorkloads) ?
+                        NativeFilesType.FromRuntimePack :
+                        NativeFilesType.Relinked;
 
-        protected string RunAndTestWasmApp(BuildArgs buildArgs,
-                                           RunHost host,
+        protected string RunAndTestWasmApp(ProjectInfo buildArgs,
                                            string id,
+                                           string frameworkDir,
                                            Action<string>? test = null,
                                            string? buildDir = null,
-                                           string? bundleDir = null,
                                            int expectedExitCode = 0,
                                            string? args = null,
                                            Dictionary<string, string>? envVars = null,
@@ -231,20 +229,18 @@ namespace Wasm.Build.Tests
                     envVars[kvp.Key] = kvp.Value;
             }
 
-            bundleDir ??= Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config, targetFramework: targetFramework), "AppBundle");
-            IHostRunner hostRunner = GetHostRunnerFromRunHost(host);
-            if (!hostRunner.CanRunWBT())
-                throw new InvalidOperationException("Running tests with V8 on windows isn't supported");
+            string bundleDir = Path.Combine(frameworkDir, "..");
+            IHostRunner hostRunner = new BrowserHostRunner();
 
             // Use wasm-console.log to get the xharness output for non-browser cases
             string testCommand = hostRunner.GetTestCommand();
-            XHarnessArgsOptions options = new XHarnessArgsOptions(jsRelativePath, environmentLocale, host);
+            XHarnessArgsOptions options = new(jsRelativePath, environmentLocale);
             string xharnessArgs = s_isWindows ? hostRunner.GetXharnessArgsWindowsOS(options) : hostRunner.GetXharnessArgsOtherOS(options);
             bool useWasmConsoleOutput = hostRunner.UseWasmConsoleOutput();
 
             extraXHarnessArgs += " " + xharnessArgs;
 
-            string testLogPath = Path.Combine(_logPath, host.ToString());
+            string testLogPath = Path.Combine(_logPath, "chrome");
             string output = RunWithXHarness(
                                 testCommand,
                                 testLogPath,
@@ -390,38 +386,6 @@ namespace Wasm.Build.Tests
             }
         }
 
-        protected const string SimpleProjectTemplate =
-            @$"<Project Sdk=""Microsoft.NET.Sdk"">
-              <PropertyGroup>
-                <TargetFramework>{DefaultTargetFramework}</TargetFramework>
-                <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
-                <OutputType>Exe</OutputType>
-                <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-                <WasmMainJSPath>test-main.js</WasmMainJSPath>
-                ##EXTRA_PROPERTIES##
-              </PropertyGroup>
-              <ItemGroup>
-                ##EXTRA_ITEMS##
-              </ItemGroup>
-              ##INSERT_AT_END##
-            </Project>";
-
-        protected static BuildArgs ExpandBuildArgs(BuildArgs buildArgs, string extraProperties = "", string extraItems = "", string insertAtEnd = "", string projectTemplate = SimpleProjectTemplate)
-        {
-            if (buildArgs.AOT)
-            {
-                extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
-                extraProperties += $"\n<EmccVerbose>{s_isWindows}</EmccVerbose>\n";
-            }
-
-            extraItems += "<WasmExtraFilesToDeploy Include='index.html' />";
-
-            string projectContents = projectTemplate
-                                        .Replace("##EXTRA_PROPERTIES##", extraProperties)
-                                        .Replace("##EXTRA_ITEMS##", extraItems)
-                                        .Replace("##INSERT_AT_END##", insertAtEnd);
-            return buildArgs with { ProjectFileContents = projectContents };
-        }
 
         protected static string GetNuGetConfigWithLocalPackagesPath(string templatePath, string localNuGetsPath)
         {
@@ -432,19 +396,6 @@ namespace Wasm.Build.Tests
             return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{localNuGetsPath}"" />");
         }
 
-        protected string GetBinDir(string config, string targetFramework = DefaultTargetFramework, string? baseDir = null)
-        {
-            var dir = baseDir ?? _projectDir;
-            Assert.NotNull(dir);
-            return Path.Combine(dir!, "bin", config, targetFramework, "browser-wasm");
-        }
-
-        protected string GetObjDir(string config, string targetFramework = DefaultTargetFramework, string? baseDir = null)
-        {
-            var dir = baseDir ?? _projectDir;
-            Assert.NotNull(dir);
-            return Path.Combine(dir!, "obj", config, targetFramework, "browser-wasm");
-        }
 
         public static (int exitCode, string buildOutput) RunProcess(string path,
                                          ITestOutputHelper _testOutput,
@@ -619,14 +570,6 @@ namespace Wasm.Build.Tests
 
         public static string GetRandomId() => TestUtils.FixupSymbolName(Path.GetRandomFileName());
 
-        internal BuildPaths GetBuildPaths(BuildArgs buildArgs, bool forPublish = true)
-        {
-            string objDir = GetObjDir(buildArgs.Config);
-            string bundleDir = Path.Combine(GetBinDir(baseDir: _projectDir, config: buildArgs.Config), "AppBundle");
-            string wasmDir = Path.Combine(objDir, "wasm", forPublish ? "for-publish" : "for-build");
-
-            return new BuildPaths(wasmDir, objDir, GetBinDir(buildArgs.Config), bundleDir);
-        }
 
         protected static string GetSkiaSharpReferenceItems()
             => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.6"" />
@@ -640,21 +583,5 @@ namespace Wasm.Build.Tests
                     return 42;
                 }
             }";
-
-        private static IHostRunner GetHostRunnerFromRunHost(RunHost host) => host switch
-        {
-            RunHost.V8 => new V8HostRunner(),
-            _ => new BrowserHostRunner(),
-        };
     }
-
-    public record BuildArgs(string ProjectName,
-                            string Config,
-                            bool AOT,
-                            string Id,
-                            string? ExtraBuildArgs,
-                            string? ProjectFileContents=null);
-    public record BuildProduct(string ProjectDir, string LogFile, bool Result, string BuildOutput);
-
-    public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
 }

@@ -4,7 +4,7 @@
 using System;
 using System.IO;
 using System.Linq;
-using Wasm.Build.NativeRebuild.Tests;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -14,7 +14,7 @@ using System.Collections.Generic;
 
 namespace Wasm.Build.Tests
 {
-    public class BuildPublishTests : NativeRebuildTestsBase
+    public class BuildPublishTests : WasmTemplateTestsBase
     {
         public BuildPublishTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -22,172 +22,157 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
-        public void Wasm_CannotAOT_InDebug(BuildArgs buildArgs, RunHost _, string id)
+        [BuildAndRun(config: "Debug", aot: true)]
+        public void Wasm_CannotAOT_InDebug(string config, bool aot)
         {
-            string projectName = GetTestProjectPath(prefix: "no_aot_in_debug", config: buildArgs.Config);
-            buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs);
-            (string projectDir, string buildOutput) = BuildProject(buildArgs,
-                        id: id,
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, "no_aot_in_debug");
+
+            bool isPublish = true;
+            (string _, string buildOutput) = BuildTemplateProject(info,
                         new BuildProjectOptions(
-                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                        DotnetWasmFromRuntimePack: true,
-                        CreateProject: true,
-                        Publish: true,
-                        ExpectSuccess: false
+                            config,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish),
+                            IsPublish: isPublish,
+                            ExpectSuccess: false
                         ));
-
-            Console.WriteLine($"buildOutput={buildOutput}");
-
             Assert.Contains("AOT is not supported in debug configuration", buildOutput);
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Release")]
-        [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Debug")]
-        public void BuildThenPublishNoAOT(BuildArgs buildArgs, RunHost host, string id)
+        [BuildAndRun(config: "Release")]
+        [BuildAndRun(config: "Debug")]
+        public async Task BuildThenPublishNoAOT(string config, bool aot)
         {
-            string projectName = GetTestProjectPath(prefix: "build_publish", config: buildArgs.Config);
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, "build_publish");
+        
+            UpdateBrowserProgramFile();
+            UpdateBrowserMainJs();
 
-            buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs);
-
-            // no relinking for build
-            bool relinked = false;
-            BuildProject(buildArgs,
-                        id: id,
+            bool isPublish = false;
+            BuildTemplateProject(info,
                         new BuildProjectOptions(
-                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                        DotnetWasmFromRuntimePack: !relinked,
-                        CreateProject: true,
-                        Publish: false
+                            config,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish),
+                            IsPublish: isPublish
                         ));
 
-            Run();
-
-            if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
+            if (!_buildContext.TryGetBuildFor(info, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
 
-            File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
+            await RunBuiltBrowserApp(info.Configuration, info.ProjectFilePath);
 
-            _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
-
-            // relink by default for Release+publish
-            relinked = buildArgs.Config == "Release";
-            BuildProject(buildArgs,
-                        id: id,
+            isPublish = true;
+            BuildTemplateProject(info,
                         new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: !relinked,
-                            CreateProject: false,
-                            Publish: true,
-                            UseCache: false));
-
-            Run();
-
-            void Run() => RunAndTestWasmApp(
-                                buildArgs, buildDir: _projectDir, expectedExitCode: 42,
-                                test: output => {},
-                                host: host, id: id);
+                            config,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish),
+                            IsPublish: isPublish,
+                            UseCache: false
+                        ));
+            
+            await RunPublishedBrowserApp(info.Configuration);
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release")]
-        public void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id)
+        [BuildAndRun(config: "Release", aot: true)]
+        public async Task BuildThenPublishWithAOT(string config, bool aot)
         {
-            bool testUnicode = true;
-            string projectName = GetTestProjectPath(
-                prefix: "build_publish", config: buildArgs.Config, appendUnicode: testUnicode);
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, "build_publish");
 
-            buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs);
-
-            // no relinking for build
-            bool relinked = false;
-            (_, string output) = BuildProject(buildArgs,
-                                    id,
-                                    new BuildProjectOptions(
-                                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                                        DotnetWasmFromRuntimePack: !relinked,
-                                        CreateProject: true,
-                                        Publish: false,
-                                        Label: "first_build"));
-
-            BuildPaths paths = GetBuildPaths(buildArgs);
-            var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: false);
-
-            string mainDll = $"{buildArgs.ProjectName}.dll";
-            var firstBuildStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            UpdateBrowserProgramFile();
+            UpdateBrowserMainJs();
+            
+            bool isPublish = false;
+            (_, string output) = BuildTemplateProject(info,
+                        new BuildProjectOptions(
+                            config,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish),
+                            IsPublish: isPublish,
+                            Label: "first_build"
+                        ));
+            
+            BuildPaths paths = GetBuildPaths(info, forPublish: isPublish);
+            IDictionary<string, (string fullPath, bool unchanged)> pathsDict =
+                GetFilesTable(info, paths, unchanged: false);
+            
+            string mainDll = $"{info.ProjectName}.dll";
+            var firstBuildStat = StatFiles(pathsDict);
             Assert.False(firstBuildStat["pinvoke.o"].Exists);
             Assert.False(firstBuildStat[$"{mainDll}.bc"].Exists);
+            
+            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: isPublish, info, output);
 
-            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: relinked, buildArgs, output, testUnicode);
-
-            Run(expectAOT: false);
-
-            if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
+            if (!_buildContext.TryGetBuildFor(info, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
 
-            File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
+            await RunBuiltBrowserApp(info.Configuration, info.ProjectFilePath);
 
+            File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
+    
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
-            Dictionary<string, FileStat> publishStat = new();
             // relink by default for Release+publish
-            (_, output) = BuildProject(buildArgs,
-                                id: id,
-                                new BuildProjectOptions(
-                                    DotnetWasmFromRuntimePack: false,
-                                    CreateProject: false,
-                                    Publish: true,
-                                    UseCache: false,
-                                    Label: "first_publish"));
-
-            publishStat = (Dictionary<string, FileStat>)_provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            isPublish = true;
+            (_, output) = BuildTemplateProject(info,
+                        new BuildProjectOptions(
+                            config,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish),
+                            IsPublish: isPublish,
+                            UseCache: false,
+                            Label: "first_publish"
+                        ));
+            
+            // publish has different paths ("for-publish", not "for-build")
+            paths = GetBuildPaths(info, forPublish: isPublish);
+            pathsDict = GetFilesTable(info, paths, unchanged: false);    
+            IDictionary<string, FileStat> publishStat = StatFiles(pathsDict);
             Assert.True(publishStat["pinvoke.o"].Exists);
             Assert.True(publishStat[$"{mainDll}.bc"].Exists);
-            CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, buildArgs, output, testUnicode);
-            _provider.CompareStat(firstBuildStat, publishStat, pathsDict.Values);
-
-            Run(expectAOT: true);
+            CheckOutputForNativeBuild(expectAOT: true, expectRelinking: isPublish, info, output);
+            
+            // source maps are created for build but not for publish, make sure CompareStat won't expect them in publish:
+            pathsDict["dotnet.js.map"] = (pathsDict["dotnet.js.map"].fullPath, unchanged: false);
+            pathsDict["dotnet.runtime.js.map"] = (pathsDict["dotnet.runtime.js.map"].fullPath, unchanged: false);
+            CompareStat(firstBuildStat, publishStat, pathsDict);
+            await RunPublishedBrowserApp(info.Configuration);
 
             // second build
-            (_, output) = BuildProject(buildArgs,
-                                        id: id,
-                                        new BuildProjectOptions(
-                                            InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                                            DotnetWasmFromRuntimePack: !relinked,
-                                            CreateProject: true,
-                                            Publish: false,
-                                            Label: "second_build"));
-            var secondBuildStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
-
+            isPublish = false;
+            (_, output) = BuildTemplateProject(info,
+                        new BuildProjectOptions(
+                            config,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish),
+                            IsPublish: isPublish,
+                            UseCache: false,
+                            Label: "second_build"
+                        ));
+            var secondBuildStat = StatFiles(pathsDict);
+            
             // no relinking, or AOT
-            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: false, buildArgs, output, testUnicode);
+            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: isPublish, info, output);
 
             // no native files changed
             pathsDict.UpdateTo(unchanged: true);
-            _provider.CompareStat(publishStat, secondBuildStat, pathsDict.Values);
-
-            void Run(bool expectAOT) => RunAndTestWasmApp(
-                                buildArgs with { AOT = expectAOT },
-                                buildDir: _projectDir, expectedExitCode: 42,
-                                host: host, id: id);
+            CompareStat(publishStat, secondBuildStat, pathsDict);
         }
 
-        void CheckOutputForNativeBuild(bool expectAOT, bool expectRelinking, BuildArgs buildArgs, string buildOutput, bool testUnicode)
+        void CheckOutputForNativeBuild(bool expectAOT, bool expectRelinking, ProjectInfo buildArgs, string buildOutput)
         {
-            if (testUnicode)
-            {
-                string projectNameCore = buildArgs.ProjectName.Replace(s_unicodeChars, "");
-                TestUtils.AssertMatches(@$"{projectNameCore}\S+.dll -> {projectNameCore}\S+.dll.bc", buildOutput, contains: expectAOT);
-                TestUtils.AssertMatches(@$"{projectNameCore}\S+.dll.bc -> {projectNameCore}\S+.dll.o", buildOutput, contains: expectAOT);
-            }
-            else
-            {
-                TestUtils.AssertSubstring($"{buildArgs.ProjectName}.dll -> {buildArgs.ProjectName}.dll.bc", buildOutput, contains: expectAOT);
-                TestUtils.AssertSubstring($"{buildArgs.ProjectName}.dll.bc -> {buildArgs.ProjectName}.dll.o", buildOutput, contains: expectAOT);
-            }
+            string projectNameCore = buildArgs.ProjectName.Replace(s_unicodeChars, "");
+            TestUtils.AssertMatches(@$"{projectNameCore}\S+.dll -> {projectNameCore}\S+.dll.bc", buildOutput, contains: expectAOT);
+            TestUtils.AssertMatches(@$"{projectNameCore}\S+.dll.bc -> {projectNameCore}\S+.dll.o", buildOutput, contains: expectAOT);
             TestUtils.AssertMatches("pinvoke.c -> pinvoke.o", buildOutput, contains: expectRelinking || expectAOT);
         }
     }

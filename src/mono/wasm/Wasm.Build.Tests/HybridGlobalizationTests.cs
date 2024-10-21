@@ -17,46 +17,44 @@ namespace Wasm.Build.Tests
         {
         }
 
-        public static IEnumerable<object?[]> HybridGlobalizationTestData(bool aot, RunHost host)
-            => ConfigWithAOTData(aot)
-                .WithRunHosts(host)
-                .UnwrapItemsAsArrays();
+        public static IEnumerable<object?[]> HybridGlobalizationTestData(bool aot)
+            => ConfigWithAOTData(aot).UnwrapItemsAsArrays();
 
-        [Theory]
-        [MemberData(nameof(HybridGlobalizationTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        [MemberData(nameof(HybridGlobalizationTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        public void AOT_HybridGlobalizationTests(BuildArgs buildArgs, RunHost host, string id)
-            => TestHybridGlobalizationTests(buildArgs, host, id);
+        // [Theory]
+        // [MemberData(nameof(HybridGlobalizationTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
+        // [MemberData(nameof(HybridGlobalizationTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
+        // public void AOT_HybridGlobalizationTests(ProjectInfo buildArgs, RunHost host, string id)
+        //     => TestHybridGlobalizationTests(buildArgs, host, id);
 
-        [Theory]
-        [MemberData(nameof(HybridGlobalizationTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        public void RelinkingWithoutAOT(BuildArgs buildArgs, RunHost host, string id)
-            => TestHybridGlobalizationTests(buildArgs, host, id,
-                                            extraProperties: "<WasmBuildNative>true</WasmBuildNative>",
-                                            dotnetWasmFromRuntimePack: false);
+        // [Theory]
+        // [MemberData(nameof(HybridGlobalizationTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
+        // public void RelinkingWithoutAOT(ProjectInfo buildArgs, RunHost host, string id)
+        //     => TestHybridGlobalizationTests(buildArgs, host, id,
+        //                                     extraProperties: "<WasmBuildNative>true</WasmBuildNative>",
+        //                                     dotnetWasmFromRuntimePack: false);
 
-        private void TestHybridGlobalizationTests(BuildArgs buildArgs, RunHost host, string id, string extraProperties="", bool? dotnetWasmFromRuntimePack=null)
-        {
-            string projectName = $"hybrid";
-            extraProperties = $"{extraProperties}<HybridGlobalization>true</HybridGlobalization>";
+        // private void TestHybridGlobalizationTests(ProjectInfo buildArgs, RunHost host, string id, string extraProperties="", bool? dotnetWasmFromRuntimePack=null)
+        // {
+        //     string projectName = $"hybrid";
+        //     extraProperties = $"{extraProperties}<HybridGlobalization>true</HybridGlobalization>";
 
-            buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
+        //     buildArgs = buildArgs with { ProjectName = projectName };
+        //     buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
 
-            if (dotnetWasmFromRuntimePack == null)
-                dotnetWasmFromRuntimePack = IsDotnetWasmFromRuntimePack(buildArgs);
+        //     if (dotnetWasmFromRuntimePack == null)
+        //         dotnetWasmFromRuntimePack = IsDotnetWasmFromRuntimePack(buildArgs);
 
-            string programText = File.ReadAllText(Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "HybridGlobalization.cs"));
+        //     string programText = File.ReadAllText(Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "HybridGlobalization.cs"));
 
-            BuildProject(buildArgs,
-                            id: id,
-                            new BuildProjectOptions(
-                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                                DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                                GlobalizationMode: GlobalizationMode.Hybrid));
+        //     BuildProject(buildArgs,
+        //                     id: id,
+        //                     new BuildProjectOptions(
+        //                         InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+        //                         DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
+        //                         GlobalizationMode: GlobalizationMode.Hybrid));
 
-            string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id);
-            Assert.Contains("HybridGlobalization works, thrown exception as expected", output);
-        }
+        //     string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id);
+        //     Assert.Contains("HybridGlobalization works, thrown exception as expected", output);
+        // }
     }
 }

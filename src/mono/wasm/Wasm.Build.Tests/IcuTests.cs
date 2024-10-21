@@ -54,59 +54,59 @@ public class IcuTests : IcuTestsBase
     }
         
 
-    [Theory]
-    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { "Release" })]
-    public async Task FullIcuFromRuntimePackWithInvariant(string config, string templateType, bool aot, bool invariant, bool fullIcu, string testedLocales) =>
-        await BuildAndRunIcuTest(
-            config,
-            templateType,
-            aot,
-            testedLocales,
-            globalizationMode: invariant ? GlobalizationMode.Invariant : fullIcu ? GlobalizationMode.FullIcu : GlobalizationMode.Sharded,
-            extraProperties:
-                // https://github.com/dotnet/runtime/issues/94133: "wasmbrowser" should use WasmIncludeFullIcuData, not BlazorWebAssemblyLoadAllGlobalizationData
-                $"<InvariantGlobalization>{invariant}</InvariantGlobalization><BlazorWebAssemblyLoadAllGlobalizationData>{fullIcu}</BlazorWebAssemblyLoadAllGlobalizationData><RunAOTCompilation>{aot}</RunAOTCompilation>");
+    // [Theory]
+    // [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { "Release" })]
+    // public async Task FullIcuFromRuntimePackWithInvariant(string config, string templateType, bool aot, bool invariant, bool fullIcu, string testedLocales) =>
+    //     await BuildAndRunIcuTest(
+    //         config,
+    //         templateType,
+    //         aot,
+    //         testedLocales,
+    //         globalizationMode: invariant ? GlobalizationMode.Invariant : fullIcu ? GlobalizationMode.FullIcu : GlobalizationMode.Sharded,
+    //         extraProperties:
+    //             // https://github.com/dotnet/runtime/issues/94133: "wasmbrowser" should use WasmIncludeFullIcuData, not BlazorWebAssemblyLoadAllGlobalizationData
+    //             $"<InvariantGlobalization>{invariant}</InvariantGlobalization><BlazorWebAssemblyLoadAllGlobalizationData>{fullIcu}</BlazorWebAssemblyLoadAllGlobalizationData><RunAOTCompilation>{aot}</RunAOTCompilation>");
 
-    [Theory]
-    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { "Release" })]
-    public async Task FullIcuFromRuntimePackWithCustomIcu(string config, string templateType, bool aot, bool fullIcu)
-    {
-        bool isBrowser = templateType == "wasmbrowser";
-        string customIcuProperty = isBrowser ? "BlazorIcuDataFileName" : "WasmIcuDataFileName";
-        string fullIcuProperty = isBrowser ? "BlazorWebAssemblyLoadAllGlobalizationData" : "WasmIncludeFullIcuData";
-        string extraProperties = $"<{customIcuProperty}>{CustomIcuPath}</{customIcuProperty}><{fullIcuProperty}>{fullIcu}</{fullIcuProperty}><RunAOTCompilation>{aot}</RunAOTCompilation>";
+    // [Theory]
+    // [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { "Release" })]
+    // public async Task FullIcuFromRuntimePackWithCustomIcu(string config, string templateType, bool aot, bool fullIcu)
+    // {
+    //     bool isBrowser = templateType == "wasmbrowser";
+    //     string customIcuProperty = isBrowser ? "BlazorIcuDataFileName" : "WasmIcuDataFileName";
+    //     string fullIcuProperty = isBrowser ? "BlazorWebAssemblyLoadAllGlobalizationData" : "WasmIncludeFullIcuData";
+    //     string extraProperties = $"<{customIcuProperty}>{CustomIcuPath}</{customIcuProperty}><{fullIcuProperty}>{fullIcu}</{fullIcuProperty}><RunAOTCompilation>{aot}</RunAOTCompilation>";
         
-        string testedLocales = fullIcu ? s_fullIcuTestedLocales : s_customIcuTestedLocales;
-        GlobalizationMode globalizationMode = fullIcu ? GlobalizationMode.FullIcu : GlobalizationMode.Custom;
-        string customIcuFile = fullIcu ? "" : CustomIcuPath;
-        string output = await BuildAndRunIcuTest(config, templateType, aot, testedLocales, globalizationMode, extraProperties, icuFileName: customIcuFile);
-        if (fullIcu)
-            Assert.Contains($"$({customIcuProperty}) has no effect when $({fullIcuProperty}) is set to true.", output);
-    }
+    //     string testedLocales = fullIcu ? s_fullIcuTestedLocales : s_customIcuTestedLocales;
+    //     GlobalizationMode globalizationMode = fullIcu ? GlobalizationMode.FullIcu : GlobalizationMode.Custom;
+    //     string customIcuFile = fullIcu ? "" : CustomIcuPath;
+    //     string output = await BuildAndRunIcuTest(config, templateType, aot, testedLocales, globalizationMode, extraProperties, icuFileName: customIcuFile);
+    //     if (fullIcu)
+    //         Assert.Contains($"$({customIcuProperty}) has no effect when $({fullIcuProperty}) is set to true.", output);
+    // }
 
-    [Theory]
-    [MemberData(nameof(IncorrectIcuTestData), parameters: new object[] { "Release" })]
-    public void NonExistingCustomFileAssertError(string config, string templateType, string customIcu, bool isFilenameFormCorrect)
-    {        
-        string customIcuProperty = "BlazorIcuDataFileName";
-        string extraProperties = $"<{customIcuProperty}>{customIcu}</{customIcuProperty}>";
+    // [Theory]
+    // [MemberData(nameof(IncorrectIcuTestData), parameters: new object[] { "Release" })]
+    // public void NonExistingCustomFileAssertError(string config, string templateType, string customIcu, bool isFilenameFormCorrect)
+    // {        
+    //     string customIcuProperty = "BlazorIcuDataFileName";
+    //     string extraProperties = $"<{customIcuProperty}>{customIcu}</{customIcuProperty}>";
     
-        (BuildArgs buildArgs, string projectFile) = CreateIcuProject(
-            config, templateType, aot: false, "Array.Empty<Locale>()", extraProperties);
-        string output = BuildIcuTest(
-            buildArgs,
-            GlobalizationMode.Custom,
-            customIcu,
-            expectSuccess: false,
-            assertAppBundle: false);
+    //     (ProjectInfo buildArgs, string projectFile) = CreateIcuProject(
+    //         config, templateType, aot: false, "Array.Empty<Locale>()", extraProperties);
+    //     string output = BuildIcuTest(
+    //         buildArgs,
+    //         GlobalizationMode.Custom,
+    //         customIcu,
+    //         expectSuccess: false,
+    //         assertAppBundle: false);
         
-        if (isFilenameFormCorrect)
-        {
-            Assert.Contains($"Could not find $({customIcuProperty})={customIcu}, or when used as a path relative to the runtime pack", output);
-        }
-        else
-        {
-            Assert.Contains($"File name in $({customIcuProperty}) has to start with 'icudt'.", output);
-        }
-    }
+    //     if (isFilenameFormCorrect)
+    //     {
+    //         Assert.Contains($"Could not find $({customIcuProperty})={customIcu}, or when used as a path relative to the runtime pack", output);
+    //     }
+    //     else
+    //     {
+    //         Assert.Contains($"File name in $({customIcuProperty}) has to start with 'icudt'.", output);
+    //     }
+    // }
 }

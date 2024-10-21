@@ -8,21 +8,24 @@ using Microsoft.Playwright;
 
 #nullable enable
 
-namespace Wasm.Build.Tests.Blazor;
-public record BlazorRunOptions
+namespace Wasm.Build.Tests;
+public record RunOptions
 (
-    BlazorRunHost Host = BlazorRunHost.DotnetRun,
+    string Configuration,
+    RunHost Host = RunHost.DotnetRun,
     bool DetectRuntimeFailures = true,
     bool CheckCounter = true,
     Dictionary<string, string>? ServerEnvironment = null,
     Func<IPage, Task>? Test = null,
+    string? TestScenario = null,
+    Dictionary<string, string>? BrowserQueryString = null,
     Action<IPage, IConsoleMessage>? OnConsoleMessage = null,
     Action<string>? OnServerMessage = null,
     Action<string>? OnErrorMessage = null,
-    string Config = "Debug",
-    string? ExtraArgs = null,
+    string ExtraArgs = "",
     string BrowserPath = "",
-    string QueryString = ""
+    string QueryString = "",
+    int? ExpectedExitCode = 0
 );
 
-public enum BlazorRunHost { DotnetRun, WebServer };
+public enum RunHost { DotnetRun, WebServer };

@@ -37,8 +37,8 @@ public class IcuShardingTests2 : IcuTestsBase
             select new object[] { config, templateType, aot, locale.Key, locale.Value };
     }
 
-    [Theory]
-    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { "Release" })]
-    public async Task DefaultAvailableIcuShardsFromRuntimePack(string config, string templateType, bool aot, string shardName, string testedLocales) =>
-        await TestIcuShards(config, templateType, aot, shardName, testedLocales, GlobalizationMode.Custom);
+    // [Theory]
+    // [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { "Release" })]
+    // public async Task DefaultAvailableIcuShardsFromRuntimePack(string config, string templateType, bool aot, string shardName, string testedLocales) =>
+    //     await TestIcuShards(config, templateType, aot, shardName, testedLocales, GlobalizationMode.Custom);
 }

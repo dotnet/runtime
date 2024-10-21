@@ -32,9 +32,9 @@ Most of the tests are structured on the idea that for a given case (or
 combination of options), we want to:
 
 1. build once
-2. run the same build with different hosts, eg. V8, Chrome, Firefox etc.
+2. run the same build with different hosts, eg. Chrome, Firefox etc.
 
-For this, the builds get cached using `BuildArgs` as the key.
+For this, the builds get cached using `ProjectInfo` as the key.
 
 ## notes:
 

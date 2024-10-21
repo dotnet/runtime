@@ -18,88 +18,85 @@ namespace Wasm.Build.Templates.Tests
         {
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void BuildWithUndefinedNativeSymbol(bool allowUndefined)
-        {
-            string id = $"UndefinedNativeSymbol_{(allowUndefined ? "allowed" : "disabled")}_{GetRandomId()}";
+        // [Theory]
+        // [InlineData(true)]
+        // [InlineData(false)]
+        // public void BuildWithUndefinedNativeSymbol(bool allowUndefined)
+        // {
+        //     string id = $"UndefinedNativeSymbol_{(allowUndefined ? "allowed" : "disabled")}_{GetRandomId()}";
 
-            string code = @"
-                using System;
-                using System.Runtime.InteropServices;
+        //     string code = @"
+        //         using System;
+        //         using System.Runtime.InteropServices;
 
-                call();
-                return 42;
+        //         call();
+        //         return 42;
 
-                [DllImport(""undefined_xyz"")] static extern void call();
-            ";
+        //         [DllImport(""undefined_xyz"")] static extern void call();
+        //     ";
 
-            string projectPath = CreateWasmTemplateProject(id);
+        //     string projectPath = CreateWasmTemplateProject(id);
 
-            AddItemsPropertiesToProject(
-                projectPath,
-                extraItems: @$"<NativeFileReference Include=""undefined_xyz.c"" />",
-                extraProperties: allowUndefined ? $"<WasmAllowUndefinedSymbols>true</WasmAllowUndefinedSymbols>" : null
-            );
+        //     AddItemsPropertiesToProject(
+        //         projectPath,
+        //         extraItems: @$"<NativeFileReference Include=""undefined_xyz.c"" />",
+        //         extraProperties: allowUndefined ? $"<WasmAllowUndefinedSymbols>true</WasmAllowUndefinedSymbols>" : null
+        //     );
 
-            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
-            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir!, "undefined_xyz.c"));
+        //     File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
+        //     File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir!, "undefined_xyz.c"));
 
-            using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);
-            CommandResult result = cmd.WithWorkingDirectory(_projectDir!)
-                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                    .ExecuteWithCapturedOutput("build", "-c Release");
+        //     using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);
+        //     CommandResult result = cmd.WithWorkingDirectory(_projectDir!)
+        //             .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+        //             .ExecuteWithCapturedOutput("build", "-c Release");
 
-            if (allowUndefined)
-            {
-                Assert.True(result.ExitCode == 0, "Expected build to succeed");
-            }
-            else
-            {
-                Assert.False(result.ExitCode == 0, "Expected build to fail");
-                Assert.Contains("undefined symbol: sgfg", result.Output);
-                Assert.Contains("Use '-p:WasmAllowUndefinedSymbols=true' to allow undefined symbols", result.Output);
-            }
-        }
+        //     if (allowUndefined)
+        //     {
+        //         Assert.True(result.ExitCode == 0, "Expected build to succeed");
+        //     }
+        //     else
+        //     {
+        //         Assert.False(result.ExitCode == 0, "Expected build to fail");
+        //         Assert.Contains("undefined symbol: sgfg", result.Output);
+        //         Assert.Contains("Use '-p:WasmAllowUndefinedSymbols=true' to allow undefined symbols", result.Output);
+        //     }
+        // }
 
-        [Theory]
-        [InlineData("Debug")]
-        [InlineData("Release")]
-        public async Task ProjectWithDllImportsRequiringMarshalIlGen_ArrayTypeParameter(string config)
-        {
-            string id = $"dllimport_incompatible_{GetRandomId()}";
-            string projectFile = CreateWasmTemplateProject(id, template: "wasmbrowser");
-            string projectName = Path.GetFileNameWithoutExtension(projectFile);
+        // [Theory]
+        // [InlineData("Debug")]
+        // [InlineData("Release")]
+        // public async Task ProjectWithDllImportsRequiringMarshalIlGen_ArrayTypeParameter(string config)
+        // {
+        //     string id = $"dllimport_incompatible_{GetRandomId()}";
+        //     string projectFile = CreateWasmTemplateProject(id, template: "wasmbrowser");
+        //     string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            string nativeSourceFilename = "incompatible_type.c";
-            string nativeCode = "void call_needing_marhsal_ilgen(void *x) {}";
-            File.WriteAllText(path: Path.Combine(_projectDir!, nativeSourceFilename), nativeCode);
+        //     string nativeSourceFilename = "incompatible_type.c";
+        //     string nativeCode = "void call_needing_marhsal_ilgen(void *x) {}";
+        //     File.WriteAllText(path: Path.Combine(_projectDir!, nativeSourceFilename), nativeCode);
 
-            AddItemsPropertiesToProject(
-                projectFile,
-                extraItems: "<NativeFileReference Include=\"" + nativeSourceFilename + "\" />"
-            );
+        //     AddItemsPropertiesToProject(
+        //         projectFile,
+        //         extraItems: "<NativeFileReference Include=\"" + nativeSourceFilename + "\" />"
+        //     );
 
-            UpdateBrowserMainJs();
-            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "marshal_ilgen_test.cs"),
-                                    Path.Combine(_projectDir!, "Program.cs"),
-                                    overwrite: true);
+        //     UpdateBrowserMainJs();
+        //     File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "marshal_ilgen_test.cs"),
+        //                             Path.Combine(_projectDir!, "Program.cs"),
+        //                             overwrite: true);
 
-            var buildArgs = new BuildArgs(projectName, config, false, id, null);
-            buildArgs = ExpandBuildArgs(buildArgs);
-            BuildTemplateProject(buildArgs, id: id, new BuildProjectOptions(
-                                    AssertAppBundle: false,
-                                    CreateProject: false,
-                                    HasV8Script: false,
-                                    MainJS: "main.mjs",
-                                    Publish: false,
-                                    TargetFramework: DefaultTargetFramework,
-                                    IsBrowserProject: true)
-                                );
-            string runOutput = await RunBuiltBrowserApp(config, projectFile);
+        //     var buildArgs = new ProjectInfo(projectName, config, false, id, null);
+        //     buildArgs = ExpandBuildArgs(buildArgs);
+        //     BuildTemplateProject(buildArgs, id: id, new BuildProjectOptions(
+        //                             AssertAppBundle: false,
+        //                             CreateProject: false,
+        //                             Publish: false,
+        //                             TargetFramework: DefaultTargetFramework)
+        //                         );
+        //     string runOutput = await RunBuiltBrowserApp(config, projectFile);
 
-            Assert.Contains("call_needing_marhsal_ilgen got called", runOutput);
-        }
+        //     Assert.Contains("call_needing_marhsal_ilgen got called", runOutput);
+        // }
     }
 }

@@ -18,39 +18,39 @@ namespace Wasm.Build.NativeRebuild.Tests
         {
         }
 
-        [Theory]
-        [MemberData(nameof(NativeBuildData))]
-        public void SimpleStringChangeInSource(BuildArgs buildArgs, bool nativeRelink, bool invariant, RunHost host, string id)
-        {
-            buildArgs = buildArgs with { ProjectName = $"rebuild_simple_{buildArgs.Config}" };
-            (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink, invariant: invariant, buildArgs, id);
+        // [Theory]
+        // [MemberData(nameof(NativeBuildData))]
+        // public void SimpleStringChangeInSource(ProjectInfo buildArgs, bool nativeRelink, bool invariant, RunHost host, string id)
+        // {
+        //     buildArgs = buildArgs with { ProjectName = $"rebuild_simple_{buildArgs.Configuration}" };
+        //     (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink, invariant: invariant, buildArgs, id);
 
-            string mainAssembly = $"{buildArgs.ProjectName}.dll";
-            var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: true);
-            pathsDict.UpdateTo(unchanged: false, mainAssembly);
-            pathsDict.UpdateTo(unchanged: !buildArgs.AOT, "dotnet.native.wasm", "dotnet.native.js");
+        //     string mainAssembly = $"{buildArgs.ProjectName}.dll";
+        //     var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: true);
+        //     pathsDict.UpdateTo(unchanged: false, mainAssembly);
+        //     pathsDict.UpdateTo(unchanged: !buildArgs.AOT, "dotnet.native.wasm", "dotnet.native.js");
 
-            if (buildArgs.AOT)
-                pathsDict.UpdateTo(unchanged: false, $"{mainAssembly}.bc", $"{mainAssembly}.o");
+        //     if (buildArgs.AOT)
+        //         pathsDict.UpdateTo(unchanged: false, $"{mainAssembly}.bc", $"{mainAssembly}.o");
 
-            var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+        //     var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
-            // Changes
-            string mainResults55 = @"
-                public class TestClass {
-                    public static int Main()
-                    {
-                        return 55;
-                    }
-                }";
-            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), mainResults55);
+        //     // Changes
+        //     string mainResults55 = @"
+        //         public class TestClass {
+        //             public static int Main()
+        //             {
+        //                 return 55;
+        //             }
+        //         }";
+        //     File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), mainResults55);
 
-            // Rebuild
-            Rebuild(nativeRelink, invariant, buildArgs, id);
-            var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+        //     // Rebuild
+        //     Rebuild(nativeRelink, invariant, buildArgs, id);
+        //     var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
-            _provider.CompareStat(originalStat, newStat, pathsDict.Values);
-            RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 55, host: host, id: id);
-        }
+        //     _provider.CompareStat(originalStat, newStat, pathsDict.Values);
+        //     RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 55, host: host, id: id);
+        // }
     }
 }

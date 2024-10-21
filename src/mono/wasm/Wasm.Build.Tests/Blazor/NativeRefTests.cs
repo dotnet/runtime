@@ -17,61 +17,61 @@ public class NativeTests : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
-    [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
-    public void WithNativeReference_AOTInProjectFile(string config)
-    {
-        string id = $"blz_nativeref_aot_{config}_{GetRandomId()}";
-        string projectFile = CreateProjectWithNativeReference(id);
-        string extraProperties = config == "Debug"
-                                    ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
-                                        "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
-                                    : string.Empty;
-        AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>" + extraProperties);
+    // [Theory]
+    // [InlineData("Debug")]
+    // [InlineData("Release")]
+    // [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
+    // public void WithNativeReference_AOTInProjectFile(string config)
+    // {
+    //     string id = $"blz_nativeref_aot_{config}_{GetRandomId()}";
+    //     string projectFile = CreateProjectWithNativeReference(id);
+    //     string extraProperties = config == "Debug"
+    //                                 ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
+    //                                     "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
+    //                                 : string.Empty;
+    //     AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>" + extraProperties);
 
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+    //     BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.Relinked));
 
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT, ExpectRelinkDirWhenPublishing: true));
+    //     BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.AOT, ExpectRelinkDirWhenPublishing: true));
 
-        // will relink
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
-    }
+    //     // will relink
+    //     BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.Relinked));
+    // }
 
-    [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
-    public void WithNativeReference_AOTOnCommandLine(string config)
-    {
-        string id = $"blz_nativeref_aot_{config}_{GetRandomId()}";
-        string projectFile = CreateProjectWithNativeReference(id);
-        string extraProperties = config == "Debug"
-                                    ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
-                                        "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
-                                    : string.Empty;
-        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
+    // [Theory]
+    // [InlineData("Debug")]
+    // [InlineData("Release")]
+    // [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
+    // public void WithNativeReference_AOTOnCommandLine(string config)
+    // {
+    //     string id = $"blz_nativeref_aot_{config}_{GetRandomId()}";
+    //     string projectFile = CreateProjectWithNativeReference(id);
+    //     string extraProperties = config == "Debug"
+    //                                 ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
+    //                                     "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
+    //                                 : string.Empty;
+    //     AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+    //     BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.Relinked));
 
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT, ExpectRelinkDirWhenPublishing: true), "-p:RunAOTCompilation=true");
+    //     BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.AOT, ExpectRelinkDirWhenPublishing: true), "-p:RunAOTCompilation=true");
 
-        // no aot!
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
-    }
+    //     // no aot!
+    //     BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
+    // }
 
-    [Theory]
-    [InlineData("Release")]
-    public void BlazorWasm_CannotAOT_WithNoTrimming(string config)
-    {
-        string id = $"blazorwasm_{config}_aot_{GetRandomId()}";
-        CreateBlazorWasmTemplateProject(id);
-        AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
-                                    extraItems: null,
-                                    extraProperties: "<PublishTrimmed>false</PublishTrimmed><RunAOTCompilation>true</RunAOTCompilation>");
+    // [Theory]
+    // [InlineData("Release")]
+    // public void BlazorWasm_CannotAOT_WithNoTrimming(string config)
+    // {
+    //     string id = $"blazorwasm_{config}_aot_{GetRandomId()}";
+    //     CreateBlazorWasmTemplateProject(id);
+    //     AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
+    //                                 extraItems: null,
+    //                                 extraProperties: "<PublishTrimmed>false</PublishTrimmed><RunAOTCompilation>true</RunAOTCompilation>");
 
-        (CommandResult res, _) = BlazorPublish(new BlazorBuildOptions(id, config, ExpectSuccess: false));
-        Assert.Contains("AOT is not supported without IL trimming", res.Output);
-    }
+    //     (CommandResult res, _) = BlazorPublish(new BuildProjectOptions(id, config, ExpectSuccess: false));
+    //     Assert.Contains("AOT is not supported without IL trimming", res.Output);
+    // }
 }

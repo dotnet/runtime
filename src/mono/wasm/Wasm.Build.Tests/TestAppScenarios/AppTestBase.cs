@@ -46,9 +46,9 @@ public abstract class AppTestBase : BlazorWasmTestBase
         string bootConfigFileName = "blazor.boot.json",
         params string[] extraArgs)
     {
-        (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(
+        (CommandResult result, _) = BlazorBuild(new BuildProjectOptions(
             Id: Id,
-            Config: configuration,
+            Configuration: configuration,
             BinFrameworkDir: binFrameworkDir,
             RuntimeType: runtimeType,
             AssertAppBundle: assertAppBundle,
@@ -71,9 +71,10 @@ public abstract class AppTestBase : BlazorWasmTestBase
         string bootConfigFileName = "blazor.boot.json",
         params string[] extraArgs)
     {
-        (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(
+        (CommandResult result, _) = BlazorPublish(new BuildProjectOptions(
             Id: Id,
-            Config: configuration,
+            Configuration: configuration,
+            BinFrameworkDir: GetBinFrameworkDir(configuration, forPublish: true),
             RuntimeType: runtimeType,
             BootConfigFileName: bootConfigFileName,
             AssertAppBundle: assertAppBundle), extraArgs);
@@ -81,12 +82,12 @@ public abstract class AppTestBase : BlazorWasmTestBase
     }
 
     protected Task<RunResult> RunSdkStyleAppForBuild(RunOptions options)
-        => RunSdkStyleApp(options, BlazorRunHost.DotnetRun);
+        => RunSdkStyleApp(options, RunHost.DotnetRun);
 
     protected Task<RunResult> RunSdkStyleAppForPublish(RunOptions options)
-        => RunSdkStyleApp(options, BlazorRunHost.WebServer);
+        => RunSdkStyleApp(options, RunHost.WebServer);
 
-    private async Task<RunResult> RunSdkStyleApp(RunOptions options, BlazorRunHost host = BlazorRunHost.DotnetRun)
+    private async Task<RunResult> RunSdkStyleApp(RunOptions options, RunHost host = RunHost.DotnetRun)
     {
         var query = options.BrowserQueryString ?? new Dictionary<string, string>();
         if (!string.IsNullOrEmpty(options.TestScenario))
@@ -99,9 +100,9 @@ public abstract class AppTestBase : BlazorWasmTestBase
         List<string> serverOutput = new();
         Regex exitRegex = new Regex("WASM EXIT (?<exitCode>[0-9]+)$");
 
-        BlazorRunOptions blazorRunOptions = new(
+        RunOptions blazorRunOptions = new(
                 CheckCounter: false,
-                Config: options.Configuration,
+                Configuration: options.Configuration,
                 ServerEnvironment: options.ServerEnvironment,
                 OnConsoleMessage: OnConsoleMessage,
                 OnServerMessage: OnServerMessage,
@@ -157,22 +158,4 @@ public abstract class AppTestBase : BlazorWasmTestBase
         return new(wasmExitCode, testOutput, consoleOutput, serverOutput);
     }
 
-    protected record RunOptions(
-        string Configuration,
-        string BrowserPath = "",
-        string? TestScenario = null,
-        Dictionary<string, string> BrowserQueryString = null,
-        Dictionary<string, string> ServerEnvironment = null,
-        Action<IPage, IConsoleMessage> OnConsoleMessage = null,
-        Action<string> OnServerMessage = null,
-        int? ExpectedExitCode = 0,
-        string? ExtraArgs = null
-    );
-
-    protected record RunResult(
-        int ExitCode,
-        IReadOnlyCollection<string> TestOutput,
-        IReadOnlyCollection<string> ConsoleOutput,
-        IReadOnlyCollection<string> ServerOutput
-    );
 }

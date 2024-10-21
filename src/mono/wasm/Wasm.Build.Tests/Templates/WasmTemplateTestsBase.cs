@@ -31,72 +31,77 @@ public class WasmTemplateTestsBase : BuildTestBase
             { "partial class StopwatchSample", $"return 42;{Environment.NewLine}partial class StopwatchSample" }
         };
 
-    public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, bool addFrameworkArg = false, string? extraProperties = null)
+    public ProjectInfo CreateWasmTemplateProject(
+        Template template,
+        string config,
+        bool aot,
+        string idPrefix = "wbt",
+        bool appendUnicodeToPath = true,
+        string extraArgs = "",
+        bool runAnalyzers = true,
+        bool addFrameworkArg = false,
+        string extraProperties = "")
     {
-        InitPaths(id);
+        string projectName =  appendUnicodeToPath ?
+            $"{idPrefix}_{config}_{aot}_{GetRandomId()}_{s_unicodeChars}" :
+            $"{idPrefix}_{config}_{aot}_{GetRandomId()}";
+        InitPaths(projectName);
         InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
-
-        File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project />");
-        File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.targets"),
-            """
-            <Project>
-              <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
-                  <Message Text="** MicrosoftNetCoreAppRuntimePackDir : '@(ResolvedRuntimePack -> '%(PackageDirectory)')'" Importance="High" Condition="@(ResolvedRuntimePack->Count()) > 0" />
-              </Target>
-
-              <Import Project="WasmOverridePacks.targets" Condition="'$(WBTOverrideRuntimePack)' == 'true'" />
-            </Project>
-            """);
-        if (UseWBTOverridePackTargets)
-            File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(_projectDir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
 
         if (addFrameworkArg)
             extraArgs += $" -f {DefaultTargetFramework}";
+
         using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
         CommandResult result = cmd.WithWorkingDirectory(_projectDir!)
-            .ExecuteWithCapturedOutput($"new {template} {extraArgs}")
+            .ExecuteWithCapturedOutput($"new {template.ToString().ToLower()} {extraArgs}")
             .EnsureSuccessful();
 
-        string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
+        string projectFilePath = Path.Combine(_projectDir!, $"{projectName}.csproj");
 
-        if (extraProperties == null)
-            extraProperties = string.Empty;
-
+        if (aot)
+        {
+            extraProperties += $"\n<RunAOTCompilation>true</RunAOTCompilation>";
+            extraProperties += $"\n<EmccVerbose>{s_isWindows}</EmccVerbose>";
+        }
         extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
         if (runAnalyzers)
             extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
 
-        AddItemsPropertiesToProject(projectfile, extraProperties);
+        AddItemsPropertiesToProject(projectFilePath, extraProperties);
 
-        return projectfile;
+        return new ProjectInfo(config, aot, projectName, projectFilePath);
     }
 
     public (string projectDir, string buildOutput) BuildTemplateProject(
-        BuildArgs buildArgs,
-        string id,
-        BuildProjectOptions buildProjectOptions,
+        ProjectInfo projectInfo,
+        BuildProjectOptions buildOptions,
         params string[] extraArgs)
     {
-        if (buildProjectOptions.ExtraBuildEnvironmentVariables is null)
-            buildProjectOptions = buildProjectOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
+        if (buildOptions.ExtraBuildEnvironmentVariables is null)
+            buildOptions = buildOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
 
         // TODO: reenable this when the SDK supports targetting net10.0
-        //buildProjectOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
+        //buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
-        (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(id, buildArgs.Config, buildProjectOptions, extraArgs);
-        if (buildProjectOptions.UseCache)
-            _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir!, logFilePath, true, res.Output));
+        (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(buildOptions, extraArgs);
+        
+        if (buildOptions.UseCache)
+            _buildContext.CacheBuild(projectInfo, new BuildProduct(_projectDir!, logFilePath, true, res.Output));
 
-        if (buildProjectOptions.AssertAppBundle)
+        if (!buildOptions.ExpectSuccess)
         {
-            if (buildProjectOptions.IsBrowserProject)
-            {
-                _provider.AssertWasmSdkBundle(buildArgs, buildProjectOptions, res.Output);
-            }
-            else
-            {
-                _provider.AssertTestMainJsBundle(buildArgs, buildProjectOptions, res.Output);
-            }
+            res.EnsureFailed();
+            return (_projectDir!, res.Output);
+        }
+
+        if (string.IsNullOrEmpty(buildOptions.BinFrameworkDir))
+        {
+            buildOptions = buildOptions with { BinFrameworkDir = GetBinFrameworkDir(buildOptions.Configuration, buildOptions.IsPublish) };
+        }
+
+        if (buildOptions.AssertAppBundle)
+        {
+            _provider.AssertWasmSdkBundle(buildOptions, res.Output);
         }
         return (_projectDir!, res.Output);
     }
@@ -162,22 +167,6 @@ public class WasmTemplateTestsBase : BuildTestBase
         File.WriteAllText(mainJsPath, updatedMainJsContent);
     }
 
-    protected void UpdateMainJsEnvironmentVariables(params (string key, string value)[] variables)
-    {
-        string mainJsPath = Path.Combine(_projectDir!, "main.mjs");
-        string mainJsContent = File.ReadAllText(mainJsPath);
-
-        StringBuilder js = new();
-        foreach (var variable in variables)
-        {
-            js.Append($".withEnvironmentVariable(\"{variable.key}\", \"{variable.value}\")");
-        }
-
-        mainJsContent = StringReplaceWithAssert(mainJsContent, ".create()", js.ToString() + ".create()");
-
-        File.WriteAllText(mainJsPath, mainJsContent);
-    }
-
     // ToDo: consolidate with BlazorRunTest
     protected async Task<string> RunBuiltBrowserApp(string config, string projectFile, string language = "en-US", string extraArgs = "", string testScenario = "")
         => await RunBrowser(
@@ -189,7 +178,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     protected async Task<string> RunPublishedBrowserApp(string config, string language = "en-US", string extraArgs = "", string testScenario = "")
         => await RunBrowser(
             command: $"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
-            workingDirectory: Path.Combine(FindBinFrameworkDir(config, forPublish: true), ".."),
+            workingDirectory: Path.Combine(GetBinFrameworkDir(config, forPublish: true), ".."),
             language: language,
             testScenario: testScenario);
 
@@ -206,6 +195,18 @@ public class WasmTemplateTestsBase : BuildTestBase
         return string.Join("\n", runner.OutputLines);
     }
 
-    public string FindBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFramework, string? projectDir = null) =>
-        _provider.FindBinFrameworkDir(config: config, forPublish: forPublish, framework: framework, projectDir: projectDir);
+    public string GetBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFramework, string? projectDir = null) =>
+        _provider.GetBinFrameworkDir(config, forPublish, framework, projectDir);
+
+    public BuildPaths GetBuildPaths(ProjectInfo info, bool forPublish) =>
+        _provider.GetBuildPaths(info, forPublish);
+
+    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(ProjectInfo info, BuildPaths paths, bool unchanged) =>
+        _provider.GetFilesTable(info, paths, unchanged);
+
+    public IDictionary<string, FileStat> StatFiles(IDictionary<string, (string fullPath, bool unchanged)> fullpaths) =>
+        _provider.StatFiles(fullpaths);
+
+    public void CompareStat(IDictionary<string, FileStat> oldStat, IDictionary<string, FileStat> newStat, IDictionary<string, (string fullPath, bool unchanged)> expected) =>
+        _provider.CompareStat(oldStat, newStat, expected);
 }

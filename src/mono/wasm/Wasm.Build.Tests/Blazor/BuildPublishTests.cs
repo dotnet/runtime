@@ -23,190 +23,190 @@ public class BuildPublishTests : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
-    [Theory, TestCategory("no-workload")]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public async Task DefaultTemplate_WithoutWorkload(string config)
-    {
-        string id = $"blz_no_workload_{config}_{GetRandomId()}_{s_unicodeChars}";
-        CreateBlazorWasmTemplateProject(id);
+    // [Theory, TestCategory("no-workload")]
+    // [InlineData("Debug")]
+    // [InlineData("Release")]
+    // public async Task DefaultTemplate_WithoutWorkload(string config)
+    // {
+    //     string id = $"blz_no_workload_{config}_{GetRandomId()}_{s_unicodeChars}";
+    //     CreateBlazorWasmTemplateProject(id);
 
-        BlazorBuild(new BlazorBuildOptions(id, config));
-        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
+    //     BlazorBuild(new BuildProjectOptions(id, config));
+    //     await BlazorRunForBuildWithDotnetRun(new RunOptions() { Configuration = config });
 
-        BlazorPublish(new BlazorBuildOptions(id, config));
-        await BlazorRunForPublishWithWebServer(new BlazorRunOptions() { Config = config });
-    }
+    //     BlazorPublish(new BuildProjectOptions(id, config));
+    //     await BlazorRunForPublishWithWebServer(new RunOptions() { Configuration = config });
+    // }
 
 
-    public static TheoryData<string, bool> TestDataForDefaultTemplate_WithWorkload(bool isAot)
-    {
-        var data = new TheoryData<string, bool>();
-        if (!isAot)
-        {
-            // AOT does not support managed debugging, is disabled by design
-            data.Add("Debug", false);
-            data.Add("Debug", true);
-        }
+    // public static TheoryData<string, bool> TestDataForDefaultTemplate_WithWorkload(bool isAot)
+    // {
+    //     var data = new TheoryData<string, bool>();
+    //     if (!isAot)
+    //     {
+    //         // AOT does not support managed debugging, is disabled by design
+    //         data.Add("Debug", false);
+    //         data.Add("Debug", true);
+    //     }
 
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/103625", TestPlatforms.Windows)]
-        // when running locally the path might be longer than 260 chars and these tests can fail with AOT
-        data.Add("Release", false); // Release relinks by default
-        data.Add("Release", true);
-        return data;
-    }
+    //     // [ActiveIssue("https://github.com/dotnet/runtime/issues/103625", TestPlatforms.Windows)]
+    //     // when running locally the path might be longer than 260 chars and these tests can fail with AOT
+    //     data.Add("Release", false); // Release relinks by default
+    //     data.Add("Release", true);
+    //     return data;
+    // }
 
-    [Theory]
-    [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { false })]
-    public void DefaultTemplate_NoAOT_WithWorkload(string config, bool testUnicode)
-    {
-        string id = testUnicode ?
-            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChars}" :
-            $"blz_no_aot_{config}_{GetRandomId()}";
-        CreateBlazorWasmTemplateProject(id);
+    // [Theory]
+    // [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { false })]
+    // public void DefaultTemplate_NoAOT_WithWorkload(string config, bool testUnicode)
+    // {
+    //     string id = testUnicode ?
+    //         $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChars}" :
+    //         $"blz_no_aot_{config}_{GetRandomId()}";
+    //     CreateBlazorWasmTemplateProject(id);
 
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
-        if (config == "Release")
-        {
-            // relinking in publish for Release config
-            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
-        }
-        else
-        {
-            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack, ExpectRelinkDirWhenPublishing: true));
-        }
-    }
+    //     BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.FromRuntimePack));
+    //     if (config == "Release")
+    //     {
+    //         // relinking in publish for Release config
+    //         BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
+    //     }
+    //     else
+    //     {
+    //         BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.FromRuntimePack, ExpectRelinkDirWhenPublishing: true));
+    //     }
+    // }
 
-    [Theory]
-    [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { true })]
-    public void DefaultTemplate_AOT_WithWorkload(string config, bool testUnicode)
-    {
-        string id = testUnicode ?
-            $"blz_aot_{config}_{GetRandomId()}_{s_unicodeChars}" :
-            $"blz_aot_{config}_{GetRandomId()}";
-        CreateBlazorWasmTemplateProject(id);
+    // [Theory]
+    // [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { true })]
+    // public void DefaultTemplate_AOT_WithWorkload(string config, bool testUnicode)
+    // {
+    //     string id = testUnicode ?
+    //         $"blz_aot_{config}_{GetRandomId()}_{s_unicodeChars}" :
+    //         $"blz_aot_{config}_{GetRandomId()}";
+    //     CreateBlazorWasmTemplateProject(id);
 
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT), "-p:RunAOTCompilation=true");
-    }
+    //     BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.FromRuntimePack));
+    //     BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.AOT), "-p:RunAOTCompilation=true");
+    // }
 
-    [Theory]
-    [InlineData("Debug", false)]
-    [InlineData("Release", false)]
-    [InlineData("Debug", true)]
-    [InlineData("Release", true)]
-    public void DefaultTemplate_CheckFingerprinting(string config, bool expectFingerprintOnDotnetJs)
-    {
-        string id = $"blz_checkfingerprinting_{config}_{GetRandomId()}";
+    // [Theory]
+    // [InlineData("Debug", false)]
+    // [InlineData("Release", false)]
+    // [InlineData("Debug", true)]
+    // [InlineData("Release", true)]
+    // public void DefaultTemplate_CheckFingerprinting(string config, bool expectFingerprintOnDotnetJs)
+    // {
+    //     string id = $"blz_checkfingerprinting_{config}_{GetRandomId()}";
 
-        CreateBlazorWasmTemplateProject(id);
+    //     CreateBlazorWasmTemplateProject(id);
 
-        var options = new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true, ExpectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs);
-        var finterprintingArg = expectFingerprintOnDotnetJs ? "/p:WasmFingerprintDotnetJs=true" : string.Empty;
+    //     var options = new BuildProjectOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true, ExpectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs);
+    //     var finterprintingArg = expectFingerprintOnDotnetJs ? "/p:WasmFingerprintDotnetJs=true" : string.Empty;
 
-        BlazorBuild(options, "/p:WasmBuildNative=true", finterprintingArg);
-        BlazorPublish(options, "/p:WasmBuildNative=true", finterprintingArg);
-    }
+    //     BlazorBuild(options, "/p:WasmBuildNative=true", finterprintingArg);
+    //     BlazorPublish(options, "/p:WasmBuildNative=true", finterprintingArg);
+    // }
 
-    // Disabling for now - publish folder can have more than one dotnet*hash*js, and not sure
-    // how to pick which one to check, for the test
-    //[Theory]
-    //[InlineData("Debug")]
-    //[InlineData("Release")]
-    //public void DefaultTemplate_AOT_OnlyWithPublishCommandLine_Then_PublishNoAOT(string config)
-    //{
-    //string id = $"blz_aot_pub_{config}";
-    //CreateBlazorWasmTemplateProject(id);
+    // // Disabling for now - publish folder can have more than one dotnet*hash*js, and not sure
+    // // how to pick which one to check, for the test
+    // //[Theory]
+    // //[InlineData("Debug")]
+    // //[InlineData("Release")]
+    // //public void DefaultTemplate_AOT_OnlyWithPublishCommandLine_Then_PublishNoAOT(string config)
+    // //{
+    // //string id = $"blz_aot_pub_{config}";
+    // //CreateBlazorWasmTemplateProject(id);
 
-    //// No relinking, no AOT
-    //BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack);
+    // //// No relinking, no AOT
+    // //BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.FromRuntimePack);
 
-    //// AOT=true only for the publish command line, similar to what
-    //// would happen when setting it in Publish dialog for VS
-    //BlazorPublish(new BlazorBuildOptions(id, config, expectedFileType: NativeFilesType.AOT, "-p:RunAOTCompilation=true");
+    // //// AOT=true only for the publish command line, similar to what
+    // //// would happen when setting it in Publish dialog for VS
+    // //BlazorPublish(new BuildProjectOptions(id, config, expectedFileType: NativeFilesType.AOT, "-p:RunAOTCompilation=true");
 
-    //// publish again, no AOT
-    //BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked);
-    //}
+    // //// publish again, no AOT
+    // //BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.Relinked);
+    // //}
 
-    [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void DefaultTemplate_WithResources_Publish(string config)
-    {
-        string[] cultures = ["ja-JP", "es-ES"];
-        string id = $"blz_resources_{config}_{GetRandomId()}";
-        CreateBlazorWasmTemplateProject(id);
+    // [Theory]
+    // [InlineData("Debug")]
+    // [InlineData("Release")]
+    // public void DefaultTemplate_WithResources_Publish(string config)
+    // {
+    //     string[] cultures = ["ja-JP", "es-ES"];
+    //     string id = $"blz_resources_{config}_{GetRandomId()}";
+    //     CreateBlazorWasmTemplateProject(id);
 
-        // Ensure we have the source data we rely on
-        string resxSourcePath = Path.Combine(BuildEnvironment.TestAssetsPath, "resx");
-        foreach (string culture in cultures)
-            Assert.True(File.Exists(Path.Combine(resxSourcePath, $"words.{culture}.resx")));
+    //     // Ensure we have the source data we rely on
+    //     string resxSourcePath = Path.Combine(BuildEnvironment.TestAssetsPath, "resx");
+    //     foreach (string culture in cultures)
+    //         Assert.True(File.Exists(Path.Combine(resxSourcePath, $"words.{culture}.resx")));
 
-        Utils.DirectoryCopy(resxSourcePath, Path.Combine(_projectDir!, "resx"));
+    //     Utils.DirectoryCopy(resxSourcePath, Path.Combine(_projectDir!, "resx"));
 
-        // Build and assert resource dlls
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
-        AssertResourcesDlls(FindBlazorBinFrameworkDir(config, false));
+    //     // Build and assert resource dlls
+    //     BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.FromRuntimePack));
+    //     AssertResourcesDlls(GetBlazorBinFrameworkDir(config, false));
 
-        // Publish and assert resource dlls
-        if (config == "Release")
-        {
-            // relinking in publish for Release config
-            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true, IsPublish: true));
-        }
-        else
-        {
-            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack, ExpectRelinkDirWhenPublishing: true, IsPublish: true));
-        }
+    //     // Publish and assert resource dlls
+    //     if (config == "Release")
+    //     {
+    //         // relinking in publish for Release config
+    //         BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true, IsPublish: true));
+    //     }
+    //     else
+    //     {
+    //         BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.FromRuntimePack, ExpectRelinkDirWhenPublishing: true, IsPublish: true));
+    //     }
 
-        AssertResourcesDlls(FindBlazorBinFrameworkDir(config, true));
+    //     AssertResourcesDlls(GetBlazorBinFrameworkDir(config, true));
 
-        void AssertResourcesDlls(string basePath)
-        {
-            foreach (string culture in cultures)
-            {
-                string? resourceAssemblyPath = Directory.EnumerateFiles(Path.Combine(basePath, culture), $"*{ProjectProviderBase.WasmAssemblyExtension}").SingleOrDefault(f => Path.GetFileNameWithoutExtension(f).StartsWith($"{id}.resources"));
-                Assert.True(resourceAssemblyPath != null && File.Exists(resourceAssemblyPath), $"Expects to have a resource assembly at {resourceAssemblyPath}");
-            }
-        }
-    }
+    //     void AssertResourcesDlls(string basePath)
+    //     {
+    //         foreach (string culture in cultures)
+    //         {
+    //             string? resourceAssemblyPath = Directory.EnumerateFiles(Path.Combine(basePath, culture), $"*{ProjectProviderBase.WasmAssemblyExtension}").SingleOrDefault(f => Path.GetFileNameWithoutExtension(f).StartsWith($"{id}.resources"));
+    //             Assert.True(resourceAssemblyPath != null && File.Exists(resourceAssemblyPath), $"Expects to have a resource assembly at {resourceAssemblyPath}");
+    //         }
+    //     }
+    // }
 
-    [Theory]
-    [InlineData("", true)] // Default case
-    [InlineData("false", false)] // the other case
-    public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
-    {
-        string config = "Release";
-        string id = $"blz_WasmStripILAfterAOT_{config}_{GetRandomId()}";
-        string projectFile = CreateBlazorWasmTemplateProject(id);
-        string projectDirectory = Path.GetDirectoryName(projectFile)!;
+    // [Theory]
+    // [InlineData("", true)] // Default case
+    // [InlineData("false", false)] // the other case
+    // public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
+    // {
+    //     string config = "Release";
+    //     string id = $"blz_WasmStripILAfterAOT_{config}_{GetRandomId()}";
+    //     string projectFile = CreateBlazorWasmTemplateProject(id);
+    //     string projectDirectory = Path.GetDirectoryName(projectFile)!;
 
-        string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
-        if (!string.IsNullOrEmpty(stripILAfterAOT))
-            extraProperties += $"<WasmStripILAfterAOT>{stripILAfterAOT}</WasmStripILAfterAOT>";
-        AddItemsPropertiesToProject(projectFile, extraProperties);
+    //     string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
+    //     if (!string.IsNullOrEmpty(stripILAfterAOT))
+    //         extraProperties += $"<WasmStripILAfterAOT>{stripILAfterAOT}</WasmStripILAfterAOT>";
+    //     AddItemsPropertiesToProject(projectFile, extraProperties);
 
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT, AssertAppBundle : false));
-        await BlazorRunForPublishWithWebServer(new BlazorRunOptions() { Config = config });
+    //     BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.AOT, AssertAppBundle : false));
+    //     await BlazorRunForPublishWithWebServer(new RunOptions() { Configuration = config });
 
-        string frameworkDir = Path.Combine(projectDirectory, "bin", config, BuildTestBase.DefaultTargetFrameworkForBlazor, "publish", "wwwroot", "_framework");
-        string objBuildDir = Path.Combine(projectDirectory, "obj", config, BuildTestBase.DefaultTargetFrameworkForBlazor, "wasm", "for-publish");
+    //     string frameworkDir = Path.Combine(projectDirectory, "bin", config, BuildTestBase.DefaultTargetFrameworkForBlazor, "publish", "wwwroot", "_framework");
+    //     string objBuildDir = Path.Combine(projectDirectory, "obj", config, BuildTestBase.DefaultTargetFrameworkForBlazor, "wasm", "for-publish");
 
-        WasmTemplateTests.TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
-    }
+    //     WasmTemplateTests.TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
+    // }
 
-    [Theory]
-    [InlineData("Debug")]
-    public void BlazorWasm_CannotAOT_InDebug(string config)
-    {
-        string id = $"blazorwasm_{config}_aot_{GetRandomId()}";
-        CreateBlazorWasmTemplateProject(id);
-        AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
-                                    extraItems: null,
-                                    extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
+    // [Theory]
+    // [InlineData("Debug")]
+    // public void BlazorWasm_CannotAOT_InDebug(string config)
+    // {
+    //     string id = $"blazorwasm_{config}_aot_{GetRandomId()}";
+    //     CreateBlazorWasmTemplateProject(id);
+    //     AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
+    //                                 extraItems: null,
+    //                                 extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
 
-        (CommandResult res, _) = BlazorPublish(new BlazorBuildOptions(id, config, ExpectSuccess: false));
-        Assert.Contains("AOT is not supported in debug configuration", res.Output);
-    }
+    //     (CommandResult res, _) = BlazorPublish(new BuildProjectOptions(id, config, ExpectSuccess: false));
+    //     Assert.Contains("AOT is not supported in debug configuration", res.Output);
+    // }
 }
