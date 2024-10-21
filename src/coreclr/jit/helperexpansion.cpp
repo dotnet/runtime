@@ -809,7 +809,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // On Arm, Thread execution blocks are accessed using co-processor registers and instructions such
         // as MRC and MCR are used to access them. We do not support them and so should never optimize the
         // field access using TLS.
-        noway_assert(!"Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
+        return false;
 #endif
     }
     else
@@ -818,7 +818,11 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // On Arm, Thread execution blocks are accessed using co-processor registers and instructions such
         // as MRC and MCR are used to access them. We do not support them and so should never optimize the
         // field access using TLS.
-        noway_assert(!"Unsupported scenario of optimizing TLS access on Windows Arm32");
+        return false;
+#endif
+#ifdef TARGET_X86
+        // Optimizing TLS statics isn't support on Linux X86 at this time.
+        return false;
 #endif
     }
 

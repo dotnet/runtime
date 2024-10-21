@@ -48,9 +48,6 @@
     IMPORT $g_GCShadowEnd
 #endif // WRITE_BARRIER_CHECK
 
-    IMPORT JIT_GetDynamicNonGCStaticBase_Portable
-    IMPORT JIT_GetDynamicGCStaticBase_Portable
-
 #ifdef FEATURE_COMINTEROP
     IMPORT CLRToCOMWorker
 #endif // FEATURE_COMINTEROP
@@ -1026,7 +1023,7 @@ CallHelper1
     ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
     adrp     x1, g_pGetNonGCStaticBase
     ldr      x1, [x1, g_pGetNonGCStaticBase]
-    b        x1
+    br       x1
     LEAF_END
 
 ; void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo *dynamicInfo)
@@ -1044,7 +1041,7 @@ CallHelper2
     ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
     adrp     x1, g_pGetGCStaticBase
     ldr      x1, [x1, g_pGetGCStaticBase]
-    b        x1
+    br       x1
     LEAF_END
 
 ; ------------------------------------------------------------------

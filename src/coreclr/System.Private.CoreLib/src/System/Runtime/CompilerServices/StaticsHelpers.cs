@@ -100,8 +100,17 @@ namespace System.Runtime.CompilerServices
             public const int NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY = 2;
             public int cNonCollectibleTlsData; // Size of offset into the non-collectible TLS array which is valid, NOTE: this is relative to the start of the pNonCollectibleTlsArrayData object, not the start of the data in the array
             public int cCollectibleTlsData; // Size of offset into the TLS array which is valid
-            public object[] pNonCollectibleTlsArrayData;
+            private IntPtr pNonCollectibleTlsArrayData_private; // This is object[], but using object[] directly causes the structure to be laid out via auto-layout, which is not what we want.
             public IntPtr* pCollectibleTlsArrayData; // Points at the Thread local array data.
+
+            public object[] pNonCollectibleTlsArrayData
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get
+                {
+                    return Unsafe.As<IntPtr, object[]>(ref pNonCollectibleTlsArrayData_private);
+                }
+            }
         }
 
         [DebuggerHidden]
@@ -174,7 +183,11 @@ namespace System.Runtime.CompilerServices
             {
                 if (t_ThreadStatics->cNonCollectibleTlsData > GetIndexOffset(index))
                 {
-                    return ref GetObjectAsRefByte(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(t_ThreadStatics->pNonCollectibleTlsArrayData), indexOffset - ThreadLocalData.NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY));
+                    object? threadStaticObjectNonCollectible = Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(t_ThreadStatics->pNonCollectibleTlsArrayData), indexOffset - ThreadLocalData.NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY);
+                    if (threadStaticObjectNonCollectible != null)
+                    {
+                        return ref GetObjectAsRefByte(threadStaticObjectNonCollectible);
+                    }
                 }
             }
             else if (GetIndexType(index) == DirectOnThreadLocalDataTLSIndexType)
