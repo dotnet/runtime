@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Security.Policy;
 using System.Collections;
+using System.Security.Policy;
 
 namespace System.Security
 {
-#if NETCOREAPP
+#if NET
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public static partial class SecurityManager

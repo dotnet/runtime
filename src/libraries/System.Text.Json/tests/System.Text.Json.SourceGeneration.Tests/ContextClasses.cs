@@ -38,7 +38,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<JsonElement> JsonElement { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithEnumAndNullable> ClassWithEnumAndNullable { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithNullableProperties> ClassWithNullableProperties { get; }
-#if NETCOREAPP
+#if NET
         public JsonTypeInfo<RealWorldContextTests.ClassWithDateOnlyAndTimeOnlyValues> ClassWithDateOnlyAndTimeOnlyValues { get; }
 #endif
         public JsonTypeInfo<ClassWithCustomConverter> ClassWithCustomConverter { get; }
@@ -58,6 +58,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<TypeWithDerivedAttribute> TypeWithDerivedAttribute { get; }
         public JsonTypeInfo<PolymorphicClass> PolymorphicClass { get; }
         public JsonTypeInfo<PocoWithNumberHandlingAttr> PocoWithNumberHandlingAttr { get; }
+        public JsonTypeInfo<PocoWithMixedVisibilityMembers> PocoWithMixedVisibilityMembers { get; }
     }
 
     internal partial class JsonContext : JsonSerializerContext

@@ -73,7 +73,7 @@ public:
         void AssertIsValid() const;
         bool IsDummyUse() const;
 
-        void ReplaceWith(GenTree* replacement);
+        void     ReplaceWith(GenTree* replacement);
         unsigned ReplaceWithLclVar(Compiler* compiler, unsigned lclNum = BAD_VAR_NUM, GenTree** pStore = nullptr);
     };
 
@@ -113,7 +113,7 @@ public:
         GenTree* m_firstNode;
         GenTree* m_lastNode;
 
-        ReadOnlyRange(const ReadOnlyRange& other) = delete;
+        ReadOnlyRange(const ReadOnlyRange& other)            = delete;
         ReadOnlyRange& operator=(const ReadOnlyRange& other) = delete;
 
     public:
@@ -125,12 +125,14 @@ public:
 
             GenTree* m_node;
 
-            Iterator(GenTree* begin) : m_node(begin)
+            Iterator(GenTree* begin)
+                : m_node(begin)
             {
             }
 
         public:
-            Iterator() : m_node(nullptr)
+            Iterator()
+                : m_node(nullptr)
             {
             }
 
@@ -167,12 +169,14 @@ public:
 
             GenTree* m_node;
 
-            ReverseIterator(GenTree* begin) : m_node(begin)
+            ReverseIterator(GenTree* begin)
+                : m_node(begin)
             {
             }
 
         public:
-            ReverseIterator() : m_node(nullptr)
+            ReverseIterator()
+                : m_node(nullptr)
             {
             }
 
@@ -245,7 +249,7 @@ public:
     private:
         Range(GenTree* firstNode, GenTree* lastNode);
 
-        Range(const Range& other) = delete;
+        Range(const Range& other)            = delete;
         Range& operator=(const Range& other) = delete;
 
         template <bool markFlagsOperands = false>
@@ -294,7 +298,7 @@ public:
             InsertAtEnd(std::forward<Trees>(rest)...);
         }
 
-        void Remove(GenTree* node, bool markOperandsUnused = false);
+        void  Remove(GenTree* node, bool markOperandsUnused = false);
         Range Remove(GenTree* firstNode, GenTree* lastNode);
         Range Remove(ReadOnlyRange&& range);
 
@@ -317,7 +321,7 @@ public:
     };
 
 public:
-    static Range& AsRange(BasicBlock* block);
+    static Range&       AsRange(BasicBlock* block);
     static const Range& AsRange(const BasicBlock* block);
 
     static Range EmptyRange();
@@ -327,6 +331,7 @@ public:
 
     static GenTree* LastNode(GenTree* node1, GenTree* node2);
     static GenTree* LastNode(GenTree** nodes, size_t numNodes);
+    static GenTree* FirstNode(GenTree* node1, GenTree* node2);
 };
 
 inline void GenTree::SetUnusedValue()

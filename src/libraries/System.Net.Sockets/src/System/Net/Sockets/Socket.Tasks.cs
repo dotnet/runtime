@@ -97,7 +97,7 @@ namespace System.Net.Sockets
 
             saea.RemoteEndPoint = remoteEP;
 
-            ValueTask connectTask = saea.ConnectAsync(this);
+            ValueTask connectTask = saea.ConnectAsync(this, saeaCancelable: cancellationToken.CanBeCanceled);
             if (connectTask.IsCompleted || !cancellationToken.CanBeCanceled)
             {
                 // Avoid async invocation overhead
@@ -677,7 +677,6 @@ namespace System.Net.Sockets
             Debug.Assert(saea.BufferList == null);
             saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
             saea.SocketFlags = socketFlags;
-            saea._socketAddress = null;
             saea.RemoteEndPoint = remoteEP;
             saea.WrapExceptionsForNetworkStream = false;
             return saea.SendToAsync(this, cancellationToken);
@@ -709,8 +708,17 @@ namespace System.Net.Sockets
             saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
             saea.SocketFlags = socketFlags;
             saea._socketAddress = socketAddress;
+            saea.RemoteEndPoint = null;
             saea.WrapExceptionsForNetworkStream = false;
-            return saea.SendToAsync(this, cancellationToken);
+            try
+            {
+                return saea.SendToAsync(this, cancellationToken);
+            }
+            finally
+            {
+                // detach user provided SA so we do not accidentally stomp on it later.
+                saea._socketAddress = null;
+            }
         }
 
         /// <summary>
@@ -1202,11 +1210,11 @@ namespace System.Net.Sockets
                     ValueTask.FromException<int>(CreateException(error));
             }
 
-            public ValueTask ConnectAsync(Socket socket)
+            public ValueTask ConnectAsync(Socket socket, bool saeaCancelable)
             {
                 try
                 {
-                    if (socket.ConnectAsync(this, userSocket: true, saeaCancelable: false))
+                    if (socket.ConnectAsync(this, userSocket: true, saeaCancelable: saeaCancelable))
                     {
                         return new ValueTask(this, _mrvtsc.Version);
                     }

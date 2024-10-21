@@ -78,7 +78,7 @@ m_cbRec(0)
 HRESULT Target_CMiniTableDef::ReadFrom(DataTargetReader & reader)
 {
     HRESULT hr = S_OK;
-    CORDB_ADDRESS pColDefs = NULL;
+    CORDB_ADDRESS pColDefs = 0;
     IfFailRet(reader.ReadPointer(&pColDefs));
     IfFailRet(reader.Read8(&m_cCols));
     IfFailRet(reader.Read8(&m_iKey));
@@ -378,7 +378,7 @@ m_rENCRecs(0)
 {
     memset(&m_pLookUpHashes, 0, TBL_COUNT*sizeof(CORDB_ADDRESS));
     memset(&m_pVS, 0, TBL_COUNT*sizeof(CORDB_ADDRESS));
-    memset(&m_bSortable, 0, TBL_COUNT*sizeof(BOOL));
+    memset(&m_bSortable, 0, TBL_COUNT*sizeof(BYTE));
 }
 
 HRESULT Target_CMiniMdRW::ReadFrom(DataTargetReader & reader)

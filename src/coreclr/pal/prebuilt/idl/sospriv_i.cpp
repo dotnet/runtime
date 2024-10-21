@@ -5,11 +5,9 @@
 /* link this file in with the server and any clients */
 
 
- /* File created by MIDL compiler version 8.01.0622 */
-/* at Mon Jan 18 19:14:07 2038
- */
+ /* File created by MIDL compiler version 8.01.0628 */
 /* Compiler settings for sospriv.idl:
-    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.01.0622 
+    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.01.0628 
     protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data 
     VC __declspec() decoration level: 
@@ -119,6 +117,15 @@ MIDL_DEFINE_GUID(IID, IID_ISOSDacInterface12,0x1b93bacc,0x8ca4,0x432d,0x94,0x3a,
 
 
 MIDL_DEFINE_GUID(IID, IID_ISOSDacInterface13,0x3176a8ed,0x597b,0x4f54,0xa7,0x1f,0x83,0x69,0x5c,0x6a,0x8c,0x5e);
+
+
+MIDL_DEFINE_GUID(IID, IID_ISOSDacInterface14,0x9aa22aca,0x6dc6,0x4a0c,0xb4,0xe0,0x70,0xd2,0x41,0x6b,0x98,0x37);
+
+
+MIDL_DEFINE_GUID(IID, IID_ISOSMethodEnum,0x3c0fe725,0xc324,0x4a4f,0x81,0x00,0xd3,0x99,0x58,0x8a,0x66,0x2e);
+
+
+MIDL_DEFINE_GUID(IID, IID_ISOSDacInterface15,0x7ed81261,0x52a9,0x4a23,0xa3,0x58,0xc3,0x31,0x3d,0xea,0x30,0xa8);
 
 #undef MIDL_DEFINE_GUID
 

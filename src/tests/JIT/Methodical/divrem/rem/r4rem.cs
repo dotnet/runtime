@@ -93,6 +93,7 @@ public class r4rem
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         bool passed = true;

@@ -8,7 +8,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <!-- Disable analyzers in sourcebuild -->
-    <RunAnalyzers Condition="'$(DotNetBuildFromSource)' == 'true'">false</RunAnalyzers>
+    <RunAnalyzers Condition="'$(DotNetBuildSourceOnly)' == 'true'">false</RunAnalyzers>
     <EnableNETAnalyzers Condition="'$(EnableNETAnalyzers)' == ''">$(RunAnalyzers)</EnableNETAnalyzers>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RunAnalyzers)' != 'false'">

@@ -12,6 +12,7 @@
 // <Code> 
 
 using System;
+using Xunit;
 
 public class GenException<T> : Exception {}
 
@@ -51,7 +52,8 @@ public class Test_typeparameter017
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		Gen.ExceptionTest<Exception,InvalidOperationException>(new Exception());
 		Gen.ExceptionTest<Exception,GenException<int>>(new Exception());

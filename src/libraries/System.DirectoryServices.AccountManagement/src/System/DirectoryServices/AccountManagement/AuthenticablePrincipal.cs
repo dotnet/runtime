@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.DirectoryServices.AccountManagement
@@ -551,7 +551,8 @@ namespace System.DirectoryServices.AccountManagement
             {
                 try
                 {
-                    _certificates.Import(rawCert);
+                    X509Certificate2 cert = X509CertificateLoader.LoadCertificate(rawCert);
+                    _certificates.Add(cert);
                 }
                 catch (System.Security.Cryptography.CryptographicException)
                 {

@@ -130,6 +130,18 @@ namespace Internal.TypeSystem.Interop
             return false;
         }
 
+        public static bool IsMarshallingRequired(MethodSignature methodSig, ModuleDesc moduleContext, UnmanagedCallingConventions callingConvention)
+        {
+            Marshaller[] marshallers = GetMarshallersForSignature(methodSig, System.Array.Empty<ParameterMetadata>(), moduleContext);
+            for (int i = 0; i < marshallers.Length; i++)
+            {
+                if (marshallers[i].IsMarshallingRequired())
+                    return true;
+            }
+
+            return false;
+        }
+
         public static bool IsMarshallingRequired(MethodSignature methodSig, ParameterMetadata[] paramMetadata, ModuleDesc moduleContext)
         {
             Marshaller[] marshallers = GetMarshallersForSignature(methodSig, paramMetadata, moduleContext);

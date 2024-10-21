@@ -214,24 +214,6 @@ Name label proc
 PUBLIC Name
         endm
 
-EXPORT_POINTER_TO_ADDRESS macro Name
-
-        local   AddressToExport
-
-AddressToExport  label   proc
-
-        .const
-
-        align   8
-
-Name    dq      offset AddressToExport
-
-        public  Name
-
-        .code
-
-        endm
-
 _tls_array     equ 58h     ;; offsetof(TEB, ThreadLocalStoragePointer)
 
 ;;
@@ -354,8 +336,8 @@ TSF_DoNotTriggerGc              equ 10h
 ;;
 ;; Rename fields of nested structs
 ;;
-OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
+OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+OFFSETOF__Thread__m_eeAllocContext__combined_limit  equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit
 
 
 
@@ -391,7 +373,6 @@ STATUS_REDHAWK_THREAD_ABORT      equ 43h
 ;;
 
 ifdef FEATURE_GC_STRESS
-REDHAWKGCINTERFACE__STRESSGC                equ ?StressGc@RedhawkGCInterface@@SAXXZ
 THREAD__HIJACKFORGCSTRESS                   equ ?HijackForGcStress@Thread@@SAXPEAUPAL_LIMITED_CONTEXT@@@Z
 endif ;; FEATURE_GC_STRESS
 
@@ -409,7 +390,7 @@ EXTERN RhThrowEx                                : PROC
 EXTERN RhRethrow                                : PROC
 EXTERN RhpGcPoll2                               : PROC
 ifdef FEATURE_GC_STRESS
-EXTERN REDHAWKGCINTERFACE__STRESSGC             : PROC
+EXTERN RhpStressGc                              : PROC
 EXTERN THREAD__HIJACKFORGCSTRESS                : PROC
 endif ;; FEATURE_GC_STRESS
 

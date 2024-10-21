@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization.Converters
     /// Converter for <cref>System.Collections.Generic.List{TElement}</cref>.
     internal sealed class ListOfTConverter<TCollection, TElement>
         : IEnumerableDefaultConverter<TCollection, TElement>
-        where TCollection: List<TElement>
+        where TCollection : List<TElement>
     {
         internal override bool CanPopulate => true;
 
@@ -62,7 +62,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     state.Current.EndCollectionElement();
 
-                    if (ShouldFlush(writer, ref state))
+                    if (ShouldFlush(ref state, writer))
                     {
                         state.Current.EnumeratorIndex = ++index;
                         return false;

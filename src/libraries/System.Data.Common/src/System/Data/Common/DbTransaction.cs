@@ -180,7 +180,7 @@ namespace System.Data.Common
         /// reclaim some resources before the transaction ends.
         /// </summary>
         /// <param name="savepointName">The name of the savepoint to release.</param>
-        public virtual void Release(string savepointName) {}
+        public virtual void Release(string savepointName) { }
 
         #endregion
     }

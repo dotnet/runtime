@@ -286,7 +286,6 @@ CommonKey3:CommonKey4=IniValue6";
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void CanOverrideValuesWithNewConfigurationProvider()
         {
             WriteTestFiles();
@@ -941,7 +940,6 @@ IniKey1=IniValue2");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void BindingDoesNotThrowIfReloadedDuringBinding()
         {
             WriteTestFiles();

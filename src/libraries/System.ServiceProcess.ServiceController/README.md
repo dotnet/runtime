@@ -1,9 +1,9 @@
 # System.ServiceProcess.ServiceController
-Provides the [`System.ServiceProcess.ServiceController`](https://learn.microsoft.com/en-us/dotnet/api/system.serviceprocess.servicecontroller) class, which allows you to connect to a Windows service, manipulate it, or get information about it.
+Provides the [`System.ServiceProcess.ServiceController`](https://learn.microsoft.com/dotnet/api/system.serviceprocess.servicecontroller) class, which allows you to connect to a Windows service, manipulate it, or get information about it.
 
 Note that `System.ServiceProcess.ServiceController` supports Windows only.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.serviceprocess.
+Documentation can be found at https://learn.microsoft.com/dotnet/api/system.serviceprocess.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs and performance changes](../README.md#primary-bar)

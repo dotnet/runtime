@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<JsonDynamicNumber>(obj);
 
             double dbl = (double)obj;
-#if !NETCOREAPP
+#if !NET
             string temp = dbl.ToString(System.Globalization.CultureInfo.InvariantCulture);
             // The reader uses "G17" format which causes temp to be 4.2000000000000002 in this case.
             dbl = double.Parse(temp, System.Globalization.CultureInfo.InvariantCulture);
@@ -314,7 +314,7 @@ namespace System.Text.Json.Serialization.Tests
             dynamic obj = JsonSerializer.Deserialize<dynamic>("{}", options);
 
             // We return null here; ExpandoObject throws for missing properties.
-            Assert.Equal(null, obj.NonExistingProperty);
+            Assert.Null(obj.NonExistingProperty);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
@@ -345,7 +345,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var options = new JsonSerializerOptions();
             options.EnableDynamicTypes();
-            options.PropertyNamingPolicy = new SimpleSnakeCasePolicy();
+            options.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
 
             dynamic obj = JsonSerializer.Deserialize<dynamic>(Json, options);
 

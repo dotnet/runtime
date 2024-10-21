@@ -1,6 +1,6 @@
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
 set(SOURCES
-    NonBlittablePointerNative.cpp
+    PointerNative.cpp
 )
-add_library (NonBlittablePointerNative SHARED ${SOURCES})
-install (TARGETS NonBlittablePointerNative DESTINATION bin)
+add_library (PointerNative SHARED ${SOURCES})
+install (TARGETS PointerNative DESTINATION bin)

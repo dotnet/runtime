@@ -81,75 +81,79 @@
   ret
 }
 
-.method public hidebysig static int32 Main()
+.class public auto ansi abstract sealed beforefieldinit constrained2
+    extends [mscorlib]System.Object
 {
-    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-        01 00 00 00
-    )
-    .entrypoint
+  .method public hidebysig static int32 Main()
+  {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
+      .entrypoint
 
-    .locals init (
-      valuetype Adder`1<object>,
-      int32
-    )
+      .locals init (
+        valuetype Adder`1<object>,
+        int32
+      )
 
-    // This will end up calling the implementation of IAdder<string>.PlusPlus
-    // provided by the Adder valuetype.
-    // The sum returned by the Check method will be 2+4+6+8 = 20.
-    ldloc.0
-    call int32 Check<valuetype Adder`1<object>,string>(!!0)
-    ldc.i4 20
-    ceq
-    brtrue String_OK
-
-    ldc.i4 1
-    ret
-
-String_OK:
-
-    // This will end up calling the implementation of IAdder<object>.PlusPlus
-    // provided by the default interface method.
-    // The sum returned by the Check method will be 1+1+2+4 = 8.
-
-    // This requires a runtime that can generate boxing stubs. We will support
-    // both the case when this is not supported, and when it's implemented.
-    ldc.i4.8
-    stloc.1
-
-    .try
-    {
-      ldloca 0
-      initobj valuetype Adder`1<object>
+      // This will end up calling the implementation of IAdder<string>.PlusPlus
+      // provided by the Adder valuetype.
+      // The sum returned by the Check method will be 2+4+6+8 = 20.
       ldloc.0
-      call int32 Check<valuetype Adder`1<object>,object>(!!0)
+      call int32 Check<valuetype Adder`1<object>,string>(!!0)
+      ldc.i4 20
+      ceq
+      brtrue String_OK
+
+      ldc.i4 1
+      ret
+
+  String_OK:
+
+      // This will end up calling the implementation of IAdder<object>.PlusPlus
+      // provided by the default interface method.
+      // The sum returned by the Check method will be 1+1+2+4 = 8.
+
+      // This requires a runtime that can generate boxing stubs. We will support
+      // both the case when this is not supported, and when it's implemented.
+      ldc.i4.8
       stloc.1
 
-      ldstr "Runtime supports lookups with runtime determined boxing"
+      .try
+      {
+        ldloca 0
+        initobj valuetype Adder`1<object>
+        ldloc.0
+        call int32 Check<valuetype Adder`1<object>,object>(!!0)
+        stloc.1
+
+        ldstr "Runtime supports lookups with runtime determined boxing"
+        call void [mscorlib]System.Console::WriteLine(string)
+
+        leave AfterBoxingCall
+      }
+      catch [mscorlib]System.Exception
+      {
+        pop
+        leave AfterFailedBoxingCall
+      }
+
+  AfterFailedBoxingCall:
+      ldstr "Runtime does not support lookups with runtime determined boxing"
       call void [mscorlib]System.Console::WriteLine(string)
 
-      leave AfterBoxingCall
-    }
-    catch [mscorlib]System.Exception
-    {
-      pop
-      leave AfterFailedBoxingCall
-    }
+  AfterBoxingCall:
+      ldloc.1
+      ldc.i4 8
+      ceq
+      brtrue Object_OK
 
-AfterFailedBoxingCall:
-    ldstr "Runtime does not support lookups with runtime determined boxing"
-    call void [mscorlib]System.Console::WriteLine(string)
+      ldc.i4.2
+      ret
 
-AfterBoxingCall:
-    ldloc.1
-    ldc.i4 8
-    ceq
-    brtrue Object_OK
+  Object_OK:
 
-    ldc.i4.2
-    ret
-
-Object_OK:
-
-    ldc.i4 100
-    ret
+      ldc.i4 100
+      ret
+  }
 }

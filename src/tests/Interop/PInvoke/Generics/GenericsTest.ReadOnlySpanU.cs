@@ -23,9 +23,11 @@ unsafe partial class GenericsNative
     public static extern ReadOnlySpan<uint> AddReadOnlySpanUs(in ReadOnlySpan<uint> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestReadOnlySpanU()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void TestReadOnlySpanU()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetReadOnlySpanU(1u));
 

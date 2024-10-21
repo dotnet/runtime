@@ -122,9 +122,16 @@ namespace System.Security.Cryptography.Dsa.Tests
 
         private static bool GetHasSecondMinSize()
         {
-            using (DSA dsa = DSAFactory.Create())
+            try
             {
-                return GetSecondMin(dsa.LegalKeySizes) != int.MaxValue;
+                using (DSA dsa = DSAFactory.Create())
+                {
+                    return GetSecondMin(dsa.LegalKeySizes) != int.MaxValue;
+                }
+            }
+            catch (PlatformNotSupportedException)
+            {
+                return false;
             }
         }
     }

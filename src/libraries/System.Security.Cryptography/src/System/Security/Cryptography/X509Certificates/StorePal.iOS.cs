@@ -33,7 +33,6 @@ namespace System.Security.Cryptography.X509Certificates
                 return new CertCollectionLoader(certificateList);
             }
 
-            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
             X509ContentType contentType = AppleCertificatePal.GetDerCertContentType(rawData);
 
             if (contentType == X509ContentType.Pkcs7)
@@ -45,18 +44,20 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (contentType == X509ContentType.Pkcs12)
             {
-                X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile, password.PasswordProvided);
-                ApplePkcs12Reader reader = new ApplePkcs12Reader(rawData);
-
                 try
                 {
-                    reader.Decrypt(password, ephemeralSpecified);
-                    return new ApplePkcs12CertLoader(reader, password);
+                    return new CollectionBasedLoader(
+                        X509CertificateLoader.LoadPkcs12Collection(
+                            rawData,
+                            password.DangerousGetSpan(),
+                            keyStorageFlags,
+                            X509Certificate.GetPkcs12Limits(readingFromFile, password)));
                 }
-                catch
+                catch (Pkcs12LoadLimitExceededException e)
                 {
-                    reader.Dispose();
-                    throw;
+                    throw new CryptographicException(
+                        SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                        e);
                 }
             }
 

@@ -71,7 +71,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             if (_fileStreamHandle != null)
             {
-                SetHandle((IntPtr) (-1));
+                SetHandle((IntPtr)(-1));
 
                 if (_ownsFileHandle)
                 {

@@ -7,9 +7,9 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private sealed partial class SelectManySingleSelectorIterator<TSource, TResult> : IIListProvider<TResult>
+        private sealed partial class SelectManySingleSelectorIterator<TSource, TResult>
         {
-            public int GetCount(bool onlyIfCheap)
+            public override int GetCount(bool onlyIfCheap)
             {
                 if (onlyIfCheap)
                 {
@@ -29,44 +29,38 @@ namespace System.Linq
                 return count;
             }
 
-            public TResult[] ToArray()
+            public override TResult[] ToArray()
             {
-                SparseArrayBuilder<TResult> builder = new();
-                ArrayBuilder<IEnumerable<TResult>> deferredCopies = default;
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
-                foreach (TSource element in _source)
+                Func<TSource, IEnumerable<TResult>> selector = _selector;
+                foreach (TSource item in _source)
                 {
-                    IEnumerable<TResult> enumerable = _selector(element);
-
-                    if (builder.ReserveOrAdd(enumerable))
-                    {
-                        deferredCopies.Add(enumerable);
-                    }
+                    builder.AddRange(selector(item));
                 }
 
-                TResult[] array = builder.ToArray();
+                TResult[] result = builder.ToArray();
+                builder.Dispose();
 
-                ArrayBuilder<Marker> markers = builder.Markers;
-                for (int i = 0; i < markers.Count; i++)
-                {
-                    Marker marker = markers[i];
-                    IEnumerable<TResult> enumerable = deferredCopies[i];
-                    EnumerableHelpers.Copy(enumerable, array, marker.Index, marker.Count);
-                }
-
-                return array;
+                return result;
             }
 
-            public List<TResult> ToList()
+            public override List<TResult> ToList()
             {
-                var list = new List<TResult>();
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
-                foreach (TSource element in _source)
+                Func<TSource, IEnumerable<TResult>> selector = _selector;
+                foreach (TSource item in _source)
                 {
-                    list.AddRange(_selector(element));
+                    builder.AddRange(selector(item));
                 }
 
-                return list;
+                List<TResult> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
         }
     }

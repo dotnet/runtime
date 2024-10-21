@@ -217,9 +217,20 @@ namespace System.Buffers
             Vector128<ushort> source0 = Vector128.LoadUnsafe(ref source);
             Vector128<ushort> source1 = Vector128.LoadUnsafe(ref source, (nuint)Vector128<ushort>.Count);
 
-            return Sse2.IsSupported
-                ? Sse2.PackUnsignedSaturate(source0.AsInt16(), source1.AsInt16())
-                : AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(source0), source1);
+            if (Sse2.IsSupported)
+            {
+                return Sse2.PackUnsignedSaturate(source0.AsInt16(), source1.AsInt16());
+            }
+            else if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(source0), source1);
+            }
+            else
+            {
+                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                ThrowHelper.ThrowUnreachableException();
+                return default;
+            }
         }
 
         // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
@@ -314,7 +325,7 @@ namespace System.Buffers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
         private static Vector128<byte> RightShift1(Vector128<byte> left, Vector128<byte> right)
         {
             // Given input vectors like
@@ -327,20 +338,21 @@ namespace System.Buffers
             {
                 return Ssse3.AlignRight(right, left, 15);
             }
+            else if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.ExtractVector128(left, right, 15);
+            }
             else
             {
-                // We create a temporary 'leftShifted' vector where the 1st element is the 16th element of the input.
-                // We then use TBX to shuffle all the elements one place to the left.
-                // 0xFF is used for the first element to replace it with the one from 'leftShifted'.
-
-                Vector128<byte> leftShifted = Vector128.Shuffle(left, Vector128.Create(15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).AsByte());
-                return AdvSimd.Arm64.VectorTableLookupExtension(leftShifted, right, Vector128.Create(0xFF, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14));
+                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                ThrowHelper.ThrowUnreachableException();
+                return default;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
         private static Vector128<byte> RightShift2(Vector128<byte> left, Vector128<byte> right)
         {
             // Given input vectors like
@@ -353,14 +365,15 @@ namespace System.Buffers
             {
                 return Ssse3.AlignRight(right, left, 14);
             }
+            else if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.ExtractVector128(left, right, 14);
+            }
             else
             {
-                // We create a temporary 'leftShifted' vector where the 1st and 2nd element are the 15th and 16th element of the input.
-                // We then use TBX to shuffle all the elements two places to the left.
-                // 0xFF is used for the first two elements to replace them with the ones from 'leftShifted'.
-
-                Vector128<byte> leftShifted = Vector128.Shuffle(left, Vector128.Create(14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).AsByte());
-                return AdvSimd.Arm64.VectorTableLookupExtension(leftShifted, right, Vector128.Create(0xFF, 0xFF, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13));
+                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                ThrowHelper.ThrowUnreachableException();
+                return default;
             }
         }
 

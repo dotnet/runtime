@@ -469,6 +469,26 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionStop 
 		duration_ns);
 }
 
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStart (
+	uint8_t wait_source,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_wait_handle_wait_start (
+		wait_source,
+		associated_object_id,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStop (
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_wait_handle_wait_stop (
+		clr_instance_id);
+}
+
 #else /* ENABLE_PERFTRACING */
 
 gconstpointer
@@ -775,6 +795,26 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionStop 
 {
 	ERROR_DECL (error);
 	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogContentionStop");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStart (
+	uint8_t wait_source,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.WaitHandleWaitStart");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStop (
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.WaitHandleWaitStop");
 	mono_error_set_pending_exception (error);
 }
 

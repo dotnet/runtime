@@ -8,7 +8,9 @@ endif BUILD_PTRACE
 if BUILD_COREDUMP
 include_HEADERS += include/libunwind-coredump.h
 endif BUILD_COREDUMP
-
+if BUILD_NTO
+include_HEADERS += include/libunwind-nto.h
+endif BUILD_NTO
 if ARCH_AARCH64
 include_HEADERS += include/libunwind-aarch64.h
 endif
@@ -23,9 +25,6 @@ include_HEADERS += include/libunwind-hppa.h
 endif
 if ARCH_MIPS
 include_HEADERS += include/libunwind-mips.h
-endif
-if ARCH_TILEGX
-include_HEADERS += include/libunwind-tilegx.h
 endif
 if ARCH_X86
 include_HEADERS += include/libunwind-x86.h
@@ -85,8 +84,6 @@ noinst_HEADERS = include/dwarf.h include/dwarf_i.h include/dwarf-eh.h	\
 	include/tdep-hppa/jmpbuf.h include/tdep-hppa/dwarf-config.h	\
 	include/tdep-mips/libunwind_i.h					\
 	include/tdep-mips/jmpbuf.h include/tdep-mips/dwarf-config.h	\
-	include/tdep-tilegx/libunwind_i.h				\
-	include/tdep-tilegx/jmpbuf.h include/tdep-tilegx/dwarf-config.h	\
 	include/tdep-x86/libunwind_i.h					\
 	include/tdep-x86/jmpbuf.h include/tdep-x86/dwarf-config.h	\
 	include/tdep-x86_64/libunwind_i.h				\

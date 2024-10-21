@@ -253,9 +253,9 @@ namespace System
 
         /// <summary>Indicates whether a character is categorized as an uppercase ASCII letter.</summary>
         /// <param name="c">The character to evaluate.</param>
-        /// <returns>true if <paramref name="c"/> is a lowercase ASCII letter; otherwise, false.</returns>
+        /// <returns>true if <paramref name="c"/> is an uppercase ASCII letter; otherwise, false.</returns>
         /// <remarks>
-        /// This determines whether the character is in the range 'a' through 'z', inclusive.
+        /// This determines whether the character is in the range 'A' through 'Z', inclusive.
         /// </remarks>
         public static bool IsAsciiLetterUpper(char c) => IsBetween(c, 'A', 'Z');
 
@@ -1508,6 +1508,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static char INumberBase<char>.MinMagnitudeNumber(char x, char y) => (char)Math.Min(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static char INumberBase<char>.MultiplyAddEstimate(char left, char right, char addend) => (char)((left * right) + addend);
 
         static char INumberBase<char>.Parse(string s, NumberStyles style, IFormatProvider? provider) => Parse(s);
 

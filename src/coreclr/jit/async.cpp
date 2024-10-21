@@ -54,13 +54,13 @@ public:
             return true;
         }
 
-#ifdef FEATURE_EH_FUNCLETS
         if (lclNum == m_comp->lvaPSPSym)
         {
             // Initialized in prolog
             return true;
         }
-#else
+
+#ifdef FEATURE_EH_WINDOWS_X86
         if (lclNum == m_comp->lvaShadowSPslotsVar)
         {
             // Only expected to be live in handlers
@@ -122,17 +122,7 @@ public:
             // Dependently promoted structs are handled only through the base
             // struct local.
             //
-            // A dependently promoted struct is live either if it has significant
-            // padding (since we do not track liveness for the significant
-            // padding), or if all its fields are dead.
-
-            if (dsc->lvAnySignificantPadding)
-            {
-                // We could technically only save the padding and the live fields
-                // in this case, but that's a lot of complexity for not a lot of
-                // gain.
-                return true;
-            }
+            // A dependently promoted struct is live if any of its fields are live.
 
             for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
             {
@@ -204,6 +194,11 @@ PhaseStatus Async2Transformation::Run()
 
     if (m_comp->opts.OptimizationEnabled())
     {
+        if (m_comp->m_dfsTree == nullptr)
+        {
+            m_comp->m_dfsTree = m_comp->fgComputeDfs<false>();
+        }
+
         m_comp->lvaComputeRefCounts(true, false);
         m_comp->fgLocalVarLiveness();
         VarSetOps::AssignNoCopy(m_comp, m_comp->compCurLife, VarSetOps::MakeEmpty(m_comp));
@@ -263,8 +258,14 @@ PhaseStatus Async2Transformation::Run()
 
     CreateResumptionSwitch();
 
+    m_comp->fgInvalidateDfsTree();
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
+
+const weight_t RESUME_SUSPEND_LIKELIHOOD = 0.01;
+const weight_t RETHROW_LIKELIHOOD        = 0.01;
+const weight_t RESUME_IN_OSR_LIKELIHOOD  = 0.001;
 
 void Async2Transformation::Transform(
     BasicBlock* block, GenTreeCall* call, jitstd::vector<GenTree*>& defs, AsyncLiveness& life, BasicBlock** pRemainder)
@@ -535,7 +536,7 @@ void Async2Transformation::Transform(
 
     JITDUMP("  Remainder is " FMT_BB "\n", remainder->bbNum);
 
-    assert(block->KindIs(BBJ_NONE) && block->NextIs(remainder));
+    assert(block->KindIs(BBJ_ALWAYS) && block->TargetIs(remainder));
 
     if (m_lastSuspensionBB == nullptr)
     {
@@ -550,9 +551,11 @@ void Async2Transformation::Transform(
 
     JITDUMP("  Created suspension " FMT_BB " for state %u\n", retBB->bbNum, stateNum);
 
-    block->SetJumpKindAndTarget(BBJ_COND, retBB DEBUGARG(m_comp));
+    FlowEdge* retBBEdge = m_comp->fgAddRefPred(retBB, block);
+    block->SetCond(retBBEdge, block->GetTargetEdge());
 
-    m_comp->fgAddRefPred(retBB, block);
+    block->GetTrueEdge()->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
+    block->GetFalseEdge()->setLikelihood(1 - RESUME_SUSPEND_LIKELIHOOD);
 
     // Allocate continuation
     returnedContinuation           = m_comp->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
@@ -761,16 +764,17 @@ void Async2Transformation::Transform(
         m_lastResumptionBB = m_comp->fgLastBBInMainFunction();
     }
 
-    BasicBlock* resumeBB = m_comp->fgNewBBafter(BBJ_ALWAYS, m_lastResumptionBB, true, remainder);
+    BasicBlock* resumeBB = m_comp->fgNewBBafter(BBJ_ALWAYS, m_lastResumptionBB, true);
+    FlowEdge* remainderEdge = m_comp->fgAddRefPred(remainder, resumeBB);
+
+    resumeBB->SetTargetEdge(remainderEdge);
     resumeBB->bbSetRunRarely();
     resumeBB->clearTryIndex();
     resumeBB->clearHndIndex();
-    resumeBB->bbFlags |= BBF_ASYNC_RESUMPTION;
+    resumeBB->SetFlags(BBF_ASYNC_RESUMPTION);
     m_lastResumptionBB = resumeBB;
 
     JITDUMP("  Created resumption " FMT_BB " for state %u\n", resumeBB->bbNum, stateNum);
-
-    m_comp->fgAddRefPred(remainder, resumeBB);
 
     unsigned resumeByteArrLclNum = BAD_VAR_NUM;
     if (dataSize > 0)
@@ -828,6 +832,8 @@ void Async2Transformation::Transform(
     }
 
     unsigned resumeObjectArrLclNum = BAD_VAR_NUM;
+    BasicBlock* storeResultBB = resumeBB;
+
     if (gcRefsCount > 0)
     {
         resumeObjectArrLclNum = GetGCDataArrayVar();
@@ -896,23 +902,30 @@ void Async2Transformation::Transform(
             }
         }
 
-        BasicBlock* storeResultBB = resumeBB;
         if (exceptionGCDataIndex != UINT_MAX)
         {
             JITDUMP("  We need to rethrow an exception\n");
-            BasicBlock* rethrowExceptionBB = m_comp->fgNewBBinRegion(BBJ_THROW, block, /* jumpDest */ nullptr,
-                                                                     /* runRarely */ true, /* insertAtEnd */ true);
-            JITDUMP("  Created " FMT_BB " to rethrow exception on resumption\n", rethrowExceptionBB->bbNum);
-            resumeBB->SetJumpKindAndTarget(BBJ_COND, rethrowExceptionBB DEBUGARG(m_comp));
-            m_comp->fgAddRefPred(rethrowExceptionBB, resumeBB);
-            m_comp->fgRemoveRefPred(remainder, resumeBB);
 
+            BasicBlock* rethrowExceptionBB = m_comp->fgNewBBinRegion(BBJ_THROW, block, /* runRarely */ true, /* insertAtEnd */ true);
+            JITDUMP("  Created " FMT_BB " to rethrow exception on resumption\n", rethrowExceptionBB->bbNum);
+
+            storeResultBB = m_comp->fgNewBBafter(BBJ_ALWAYS, resumeBB, true);
+            JITDUMP("  Created " FMT_BB " to store result when resuming with no exception\n", storeResultBB->bbNum);
+
+            FlowEdge* rethrowEdge = m_comp->fgAddRefPred(rethrowExceptionBB, resumeBB);
+            FlowEdge* storeResultEdge = m_comp->fgAddRefPred(storeResultBB, resumeBB);
+
+            assert(resumeBB->KindIs(BBJ_ALWAYS));
+
+            resumeBB->SetCond(rethrowEdge, storeResultEdge);
+            rethrowEdge->setLikelihood(RETHROW_LIKELIHOOD);
+            storeResultEdge->setLikelihood(1 - RETHROW_LIKELIHOOD);
             JITDUMP("  Resumption " FMT_BB " becomes BBJ_COND to check for non-null exception\n", resumeBB->bbNum);
 
-            storeResultBB = m_comp->fgNewBBafter(BBJ_ALWAYS, resumeBB, true, remainder);
-            JITDUMP("  Created " FMT_BB " to store result when resuming with no exception\n", storeResultBB->bbNum);
-            m_comp->fgAddRefPred(remainder, storeResultBB);
-            m_comp->fgAddRefPred(storeResultBB, resumeBB);
+            m_comp->fgRemoveRefPred(remainderEdge);
+            remainderEdge = m_comp->fgAddRefPred(remainder, storeResultBB);
+
+            storeResultBB->SetTargetEdge(remainderEdge);
 
             m_lastResumptionBB = storeResultBB;
 
@@ -938,7 +951,7 @@ void Async2Transformation::Transform(
 
             LIR::AsRange(rethrowExceptionBB).InsertAtEnd(LIR::SeqTree(m_comp, rethrowException));
 
-            storeResultBB->bbFlags |= BBF_ASYNC_RESUMPTION;
+            storeResultBB->SetFlags(BBF_ASYNC_RESUMPTION);
             JITDUMP("  Added " FMT_BB " to rethrow exception at suspension point\n", rethrowExceptionBB->bbNum);
         }
     }
@@ -999,7 +1012,7 @@ void Async2Transformation::Transform(
                                                      storeResultNode->GetLclOffs(), resultData);
                 }
 
-                LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
+                LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
             }
             else
             {
@@ -1009,7 +1022,7 @@ void Async2Transformation::Transform(
                 {
                     unsigned resultBaseVar   = GetResultBaseVar();
                     GenTree* storeResultBase = m_comp->gtNewStoreLclVarNode(resultBaseVar, resultBase);
-                    LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResultBase));
+                    LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResultBase));
 
                     resultBase = m_comp->gtNewLclVarNode(resultBaseVar, TYP_REF);
                 }
@@ -1023,7 +1036,7 @@ void Async2Transformation::Transform(
                     unsigned fldOffset = resultOffset + fieldDsc->lvFldOffset;
                     GenTree* value     = LoadFromOffset(resultBase, fldOffset, fieldDsc->TypeGet(), resultIndirFlags);
                     GenTree* store     = m_comp->gtNewStoreLclVarNode(fieldLclNum, value);
-                    LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+                    LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
 
                     if (i + 1 != resultLcl->lvFieldCnt)
                     {
@@ -1047,7 +1060,7 @@ void Async2Transformation::Transform(
                                                            storeResultNode->GetLclOffs(), value);
             }
 
-            LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
+            LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
         }
     }
 
@@ -1206,7 +1219,7 @@ void Async2Transformation::LiftLIREdges(BasicBlock*                    block,
 
 void Async2Transformation::CreateResumptionSwitch()
 {
-    BasicBlock* newEntryBB = m_comp->bbNewBasicBlock(BBJ_NONE);
+    BasicBlock* newEntryBB = BasicBlock::New(m_comp, BBJ_ALWAYS);
 
     if (m_comp->fgFirstBB->hasProfileWeight())
     {
@@ -1214,8 +1227,8 @@ void Async2Transformation::CreateResumptionSwitch()
     }
     m_comp->fgFirstBB->bbRefs--;
 
-    FlowEdge* edge = m_comp->fgAddRefPred(m_comp->fgFirstBB, newEntryBB);
-    edge->setLikelihood(1);
+    FlowEdge* toPrevEntryEdge = m_comp->fgAddRefPred(m_comp->fgFirstBB, newEntryBB);
+    toPrevEntryEdge->setLikelihood(1);
 
     JITDUMP("  Inserting new entry " FMT_BB " before old entry " FMT_BB "\n", newEntryBB->bbNum,
             m_comp->fgFirstBB->bbNum);
@@ -1232,25 +1245,29 @@ void Async2Transformation::CreateResumptionSwitch()
     GenTree* jtrue           = m_comp->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
     LIR::AsRange(newEntryBB).InsertAtEnd(continuationArg, null, neNull, jtrue);
 
+    FlowEdge* resumingEdge;
+
     if (m_resumptionBBs.size() == 1)
     {
         JITDUMP("  Redirecting entry " FMT_BB " directly to " FMT_BB " as it is the only resumption block\n",
                 newEntryBB->bbNum, m_resumptionBBs[0]->bbNum);
-        newEntryBB->SetJumpKindAndTarget(BBJ_COND, m_resumptionBBs[0] DEBUGARG(m_comp));
-        m_comp->fgAddRefPred(m_resumptionBBs[0], newEntryBB);
+        resumingEdge = m_comp->fgAddRefPred(m_resumptionBBs[0], newEntryBB);
     }
     else if (m_resumptionBBs.size() == 2)
     {
-        BasicBlock* condBB = m_comp->fgNewBBbefore(BBJ_COND, m_resumptionBBs[0], true, m_resumptionBBs[1]);
+        BasicBlock* condBB = m_comp->fgNewBBbefore(BBJ_COND, m_resumptionBBs[0], true);
         condBB->bbSetRunRarely();
-        newEntryBB->SetJumpKindAndTarget(BBJ_COND, condBB DEBUGARG(m_comp));
+
+        FlowEdge* to0 = m_comp->fgAddRefPred(m_resumptionBBs[0], condBB);
+        FlowEdge* to1 = m_comp->fgAddRefPred(m_resumptionBBs[1], condBB);
+        condBB->SetCond(to1, to0);
+        to1->setLikelihood(0.5);
+        to0->setLikelihood(0.5);
+
+        resumingEdge = m_comp->fgAddRefPred(condBB, newEntryBB);
 
         JITDUMP("  Redirecting entry " FMT_BB " to BBJ_COND " FMT_BB " for resumption with 2 states\n",
                 newEntryBB->bbNum, condBB->bbNum);
-
-        m_comp->fgAddRefPred(condBB, newEntryBB);
-        m_comp->fgAddRefPred(m_resumptionBBs[0], condBB);
-        m_comp->fgAddRefPred(m_resumptionBBs[1], condBB);
 
         continuationArg          = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
         unsigned stateOffset     = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationStateFldHnd);
@@ -1268,12 +1285,11 @@ void Async2Transformation::CreateResumptionSwitch()
     {
         BasicBlock* switchBB = m_comp->fgNewBBbefore(BBJ_SWITCH, m_resumptionBBs[0], true);
         switchBB->bbSetRunRarely();
-        newEntryBB->SetJumpKindAndTarget(BBJ_COND, switchBB DEBUGARG(m_comp));
+
+        resumingEdge = m_comp->fgAddRefPred(switchBB, newEntryBB);
 
         JITDUMP("  Redirecting entry " FMT_BB " to BBJ_SWITCH " FMT_BB " for resumption with %zu states\n",
                 newEntryBB->bbNum, switchBB->bbNum, m_resumptionBBs.size());
-
-        m_comp->fgAddRefPred(switchBB, newEntryBB);
 
         continuationArg          = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
         unsigned stateOffset     = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationStateFldHnd);
@@ -1291,15 +1307,21 @@ void Async2Transformation::CreateResumptionSwitch()
         BBswtDesc* swtDesc     = new (m_comp, CMK_BasicBlock) BBswtDesc;
         swtDesc->bbsCount      = (unsigned)m_resumptionBBs.size();
         swtDesc->bbsHasDefault = true;
-        swtDesc->bbsDstTab     = m_resumptionBBs.data();
+        swtDesc->bbsDstTab = new (m_comp, CMK_Async2) FlowEdge*[m_resumptionBBs.size()];
 
-        switchBB->SetSwitchKindAndTarget(swtDesc);
-
-        for (BasicBlock* bb : m_resumptionBBs)
+        weight_t stateLikelihood = 1.0 / m_resumptionBBs.size();
+        for (size_t i = 0; i < m_resumptionBBs.size(); i++)
         {
-            m_comp->fgAddRefPred(bb, switchBB);
+            swtDesc->bbsDstTab[i] = m_comp->fgAddRefPred(m_resumptionBBs[i], switchBB);
+            swtDesc->bbsDstTab[i]->setLikelihood(stateLikelihood);
         }
+
+        switchBB->SetSwitch(swtDesc);
     }
+
+    newEntryBB->SetCond(resumingEdge, toPrevEntryEdge);
+    resumingEdge->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
+    toPrevEntryEdge->setLikelihood(1 - RESUME_SUSPEND_LIKELIHOOD);
 
     if (m_comp->doesMethodHavePatchpoints())
     {
@@ -1312,17 +1334,24 @@ void Async2Transformation::CreateResumptionSwitch()
 
         JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", callHelperBB->bbNum);
 
-        BasicBlock* checkILOffsetBB = m_comp->fgNewBBbefore(BBJ_COND, newEntryBB->GetJumpDest(), true, callHelperBB);
+        BasicBlock* onContinuationBB = newEntryBB->GetTrueTarget();
+        BasicBlock* checkILOffsetBB = m_comp->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
 
         JITDUMP("    Created " FMT_BB " to check whether we should transition immediately to OSR\n",
                 checkILOffsetBB->bbNum);
 
-        m_comp->fgRemoveRefPred(newEntryBB->GetJumpDest(), newEntryBB);
-        newEntryBB->SetJumpDest(checkILOffsetBB);
+        // Redirect newEntryBB -> onContinuationBB into newEntryBB -> checkILOffsetBB -> onContinuationBB
+        m_comp->fgRemoveRefPred(newEntryBB->GetTrueEdge());
 
-        m_comp->fgAddRefPred(checkILOffsetBB, newEntryBB);
-        m_comp->fgAddRefPred(checkILOffsetBB->Next(), checkILOffsetBB);
-        m_comp->fgAddRefPred(checkILOffsetBB->GetJumpDest(), checkILOffsetBB);
+        FlowEdge* toCheckILOffsetBB = m_comp->fgAddRefPred(checkILOffsetBB, newEntryBB);
+        newEntryBB->SetTrueEdge(toCheckILOffsetBB);
+        toCheckILOffsetBB->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
+
+        FlowEdge* toOnContinuationBB = m_comp->fgAddRefPred(onContinuationBB, checkILOffsetBB);
+        FlowEdge* toCallHelperBB = m_comp->fgAddRefPred(callHelperBB, checkILOffsetBB);
+        checkILOffsetBB->SetCond(toCallHelperBB, toOnContinuationBB);
+        toCallHelperBB->setLikelihood(RESUME_IN_OSR_LIKELIHOOD);
+        toOnContinuationBB->setLikelihood(1 - RESUME_IN_OSR_LIKELIHOOD);
 
         // We need to dispatch to the OSR version if the IL offset is non-negative.
         continuationArg           = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
@@ -1357,16 +1386,27 @@ void Async2Transformation::CreateResumptionSwitch()
         // version by normal means then we will see a non-zero continuation
         // here that belongs to the tier0 method. In that case we should just
         // ignore it, so create a BB that jumps back.
+        BasicBlock* onContinuationBB = newEntryBB->GetTrueTarget();
+        BasicBlock* onNoContinuationBB = newEntryBB->GetFalseTarget();
         BasicBlock* checkILOffsetBB =
-            m_comp->fgNewBBbefore(BBJ_COND, newEntryBB->GetJumpDest(), true, newEntryBB->Next());
-        m_comp->fgRemoveRefPred(newEntryBB->GetJumpDest(), newEntryBB);
-        newEntryBB->SetJumpDest(checkILOffsetBB);
+            m_comp->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
+
+        // Switch newEntryBB -> onContinuationBB into newEntryBB -> checkILOffsetBB
+        m_comp->fgRemoveRefPred(newEntryBB->GetTrueEdge());
+        FlowEdge* toCheckILOffset = m_comp->fgAddRefPred(checkILOffsetBB, newEntryBB);
+        newEntryBB->SetTrueEdge(toCheckILOffset);
+        toCheckILOffset->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
+
+        // Make checkILOffsetBB ->(true)  onNoContinuationBB 
+        //                      ->(false) onContinuationBB
+
+        FlowEdge* toOnContinuationBB = m_comp->fgAddRefPred(onContinuationBB, checkILOffsetBB);
+        FlowEdge* toOnNoContinuationBB = m_comp->fgAddRefPred(onNoContinuationBB, checkILOffsetBB);
+        checkILOffsetBB->SetCond(toOnNoContinuationBB, toOnContinuationBB);
+        toOnContinuationBB->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
+        toOnNoContinuationBB->setLikelihood(1 - RESUME_SUSPEND_LIKELIHOOD);
 
         JITDUMP("    Created " FMT_BB " to check for Tier-0 continuations\n", checkILOffsetBB->bbNum);
-
-        m_comp->fgAddRefPred(checkILOffsetBB, newEntryBB);
-        m_comp->fgAddRefPred(checkILOffsetBB->Next(), checkILOffsetBB);
-        m_comp->fgAddRefPred(checkILOffsetBB->GetJumpDest(), checkILOffsetBB);
 
         continuationArg           = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
         unsigned offsetOfData     = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);

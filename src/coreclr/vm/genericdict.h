@@ -45,7 +45,6 @@
 
 class TypeHandleList;
 class Module;
-class BaseDomain;
 class SigTypeContext;
 class SigBuilder;
 
@@ -182,7 +181,7 @@ public:
 class Dictionary
 {
 private:
-    // First N entries are generic instantiations arguments. 
+    // First N entries are generic instantiations arguments.
     // The rest of the open array are normal pointers (no optional indirection) and may be NULL.
     DictionaryEntry m_pEntries[1];
 

@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>

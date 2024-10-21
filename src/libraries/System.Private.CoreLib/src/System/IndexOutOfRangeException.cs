@@ -20,13 +20,13 @@ namespace System
         }
 
         public IndexOutOfRangeException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_IndexOutOfRangeException)
         {
             HResult = HResults.COR_E_INDEXOUTOFRANGE;
         }
 
         public IndexOutOfRangeException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_IndexOutOfRangeException, innerException)
         {
             HResult = HResults.COR_E_INDEXOUTOFRANGE;
         }

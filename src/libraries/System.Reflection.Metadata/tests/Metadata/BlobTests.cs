@@ -1090,5 +1090,31 @@ namespace System.Reflection.Metadata.Tests
 
             AssertEx.Equal(sourceArray, builder.ToArray());
         }
+
+        [Fact]
+        public void LinkEmptySuffixAndPrefixShouldFreeThem()
+        {
+            var b1 = PooledBlobBuilder.GetInstance();
+            var b2 = PooledBlobBuilder.GetInstance();
+            var b3 = PooledBlobBuilder.GetInstance();
+            var b4 = PooledBlobBuilder.GetInstance();
+            var b5 = PooledBlobBuilder.GetInstance();
+
+            b1.WriteBytes(1, 1);
+            b2.WriteBytes(1, 1);
+            b3.WriteBytes(1, 1);
+
+            b1.LinkSuffix(b2);
+            Assert.False(b2.IsHead);
+
+            b1.LinkPrefix(b3);
+            Assert.False(b3.IsHead);
+
+            b1.LinkSuffix(b4);
+            Assert.True(b4.IsHead);
+
+            b1.LinkPrefix(b5);
+            Assert.True(b4.IsHead);
+        }
     }
 }

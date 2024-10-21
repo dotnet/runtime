@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <RootNamespace>Microsoft.Extensions.FileProviders</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CA1865;CA1866</NoWarn>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
     <PackageDescription>File provider for physical files for Microsoft.Extensions.FileProviders.</PackageDescription>

@@ -3,8 +3,11 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for CBOR Object Signing and Encryption (COSE).</PackageDescription>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>

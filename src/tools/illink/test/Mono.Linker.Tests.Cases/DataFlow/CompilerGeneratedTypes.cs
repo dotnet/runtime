@@ -361,9 +361,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					(Func<T, T> x) => v => x(v);
 			}
 
-			[ExpectedWarning ("IL2091", "T", nameof (Container<T>), nameof (DynamicallyAccessedMemberTypes.PublicMethods),
-				// https://github.com/dotnet/runtime/issues/84918
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2091", "T", nameof (Container<T>), nameof (DynamicallyAccessedMemberTypes.PublicMethods))]
 			public static void Test<T> ()
 			{
 				Container<T>.NestedLambda ((T t) => t) (default (T));

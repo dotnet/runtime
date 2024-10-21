@@ -55,7 +55,7 @@ namespace System.Diagnostics
 
                             if (!string.IsNullOrEmpty(sourceElement.SwitchValue))
                             {
-                                traceSource.Switch.Level = (SourceLevels)Enum.Parse(typeof(SourceLevels), sourceElement.SwitchValue);
+                                traceSource.Switch.Level = Enum.Parse<SourceLevels>(sourceElement.SwitchValue);
                             }
                         }
                     }
@@ -74,7 +74,7 @@ namespace System.Diagnostics
                         // The SwitchValue changed; just update our internalSwitch.
                         if (!string.IsNullOrEmpty(sourceElement.SwitchValue))
                         {
-                            traceSource.Switch.Level = (SourceLevels)Enum.Parse(typeof(SourceLevels), sourceElement.SwitchValue);
+                            traceSource.Switch.Level = Enum.Parse<SourceLevels>(sourceElement.SwitchValue);
                         }
                         else
                         {

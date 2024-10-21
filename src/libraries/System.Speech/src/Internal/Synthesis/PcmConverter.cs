@@ -439,7 +439,12 @@ namespace System.Speech.Internal.Synthesis
 
         #region private Fields
 
-        private enum Block { First, Middle, Last };
+        private enum Block
+        {
+            First,
+            Middle,
+            Last
+        };
 
         private WAVEFORMATEX _inWavFormat;
         private WAVEFORMATEX _outWavFormat;

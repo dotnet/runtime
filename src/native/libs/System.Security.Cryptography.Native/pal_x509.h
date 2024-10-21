@@ -412,4 +412,4 @@ PALEXPORT int32_t CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx,
 Decode len bytes of buf into an OCSP response, process it against the OCSP request, and return if the bytes were valid.
 If the bytes were valid, and the OCSP response had a nextUpdate value, assign it to expiration.
 */
-PALEXPORT int32_t CryptoNative_X509DecodeOcspToExpiration(const uint8_t* buf, int32_t len, OCSP_REQUEST* req, X509* subject, X509* issuer, int64_t* expiration);
+PALEXPORT int32_t CryptoNative_X509DecodeOcspToExpiration(const uint8_t* buf, int32_t len, OCSP_REQUEST* req, X509* subject, X509** issuers, int issuersLen, int64_t* expiration);

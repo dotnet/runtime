@@ -20,9 +20,9 @@ namespace System.Collections.Tests
             return new Dictionary<string, string>();
         }
 
-        protected override ModifyOperation ModifyEnumeratorThrows => PlatformDetection.IsNetFramework ? base.ModifyEnumeratorThrows : ModifyOperation.Add | ModifyOperation.Insert;
+        protected override ModifyOperation ModifyEnumeratorThrows => ModifyOperation.Add | ModifyOperation.Insert;
 
-        protected override ModifyOperation ModifyEnumeratorAllowed => PlatformDetection.IsNetFramework ? base.ModifyEnumeratorAllowed : ModifyOperation.Overwrite | ModifyOperation.Remove | ModifyOperation.Clear;
+        protected override ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.Overwrite | ModifyOperation.Remove | ModifyOperation.Clear;
 
         /// <summary>
         /// Creates an object that is dependent on the seed given. The object may be either
@@ -451,6 +451,13 @@ namespace System.Collections.Tests
             bf.Serialize(s, dict);
             s.Position = 0;
             dict = (Dictionary<T, T>)bf.Deserialize(s);
+
+            if (equalityComparer.Equals(EqualityComparer<string>.Default))
+            {
+                // EqualityComparer<string>.Default is mapped to StringEqualityComparer, but serialized as GenericEqualityComparer<string>
+                Assert.Equal("System.Collections.Generic.GenericEqualityComparer`1[System.String]", dict.Comparer.GetType().ToString());
+                return;
+            }
 
             if (internalTypeName == null)
             {

@@ -1,8 +1,8 @@
 function(clr_unknown_arch)
     if (WIN32)
-        message(FATAL_ERROR "Only AMD64, ARM64, ARM and I386 are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
+        message(FATAL_ERROR "Only AMD64, ARM64, ARM and I386 hosts are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     elseif(CLR_CROSS_COMPONENTS_BUILD)
-        message(FATAL_ERROR "Only AMD64, I386 host are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
+        message(FATAL_ERROR "Only AMD64, ARM64 and I386 hosts are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     else()
         message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
     endif()
@@ -220,6 +220,12 @@ endfunction(convert_to_absolute_path)
 function(preprocess_file inputFilename outputFilename)
   get_compile_definitions(PREPROCESS_DEFINITIONS)
   get_include_directories(PREPROCESS_INCLUDE_DIRECTORIES)
+  get_source_file_property(SOURCE_FILE_DEFINITIONS ${inputFilename} COMPILE_DEFINITIONS)
+
+  foreach(DEFINITION IN LISTS SOURCE_FILE_DEFINITIONS)
+    list(APPEND PREPROCESS_DEFINITIONS -D${DEFINITION})
+  endforeach()
+
   if (MSVC)
     add_custom_command(
         OUTPUT ${outputFilename}
@@ -228,9 +234,12 @@ function(preprocess_file inputFilename outputFilename)
         COMMENT "Preprocessing ${inputFilename}. Outputting to ${outputFilename}"
     )
   else()
+    if (CMAKE_CXX_COMPILER_TARGET AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      set(_LOCAL_CROSS_TARGET "--target=${CMAKE_CXX_COMPILER_TARGET}")
+    endif()
     add_custom_command(
         OUTPUT ${outputFilename}
-        COMMAND ${CMAKE_CXX_COMPILER} -E -P ${PREPROCESS_DEFINITIONS} ${PREPROCESS_INCLUDE_DIRECTORIES} -o ${outputFilename} -x c ${inputFilename}
+        COMMAND ${CMAKE_CXX_COMPILER} ${_LOCAL_CROSS_TARGET} -E -P ${PREPROCESS_DEFINITIONS} ${PREPROCESS_INCLUDE_DIRECTORIES} -o ${outputFilename} -x c ${inputFilename}
         DEPENDS ${inputFilename}
         COMMENT "Preprocessing ${inputFilename}. Outputting to ${outputFilename}"
     )
@@ -369,7 +378,11 @@ endfunction()
 function (get_symbol_file_name targetName outputSymbolFilename)
   if (CLR_CMAKE_HOST_UNIX)
     if (CLR_CMAKE_TARGET_APPLE)
-      set(strip_destination_file $<TARGET_FILE:${targetName}>.dwarf)
+      if (CLR_CMAKE_APPLE_DSYM)
+        set(strip_destination_file $<TARGET_FILE:${targetName}>.dSYM)
+      else ()
+        set(strip_destination_file $<TARGET_FILE:${targetName}>.dwarf)
+      endif ()
     else ()
       set(strip_destination_file $<TARGET_FILE:${targetName}>.dbg)
     endif ()
@@ -416,7 +429,9 @@ function(strip_symbols targetName outputFilename)
         OUTPUT_VARIABLE DSYMUTIL_HELP_OUTPUT
       )
 
-      set(DSYMUTIL_OPTS "--flat")
+      if (NOT CLR_CMAKE_APPLE_DSYM)
+        set(DSYMUTIL_OPTS "--flat")
+      endif ()
       if ("${DSYMUTIL_HELP_OUTPUT}" MATCHES "--minimize")
         list(APPEND DSYMUTIL_OPTS "--minimize")
       endif ()
@@ -493,7 +508,7 @@ function(install_static_library targetName destination component)
   if (WIN32)
     set_target_properties(${targetName} PROPERTIES
         COMPILE_PDB_NAME "${targetName}"
-        COMPILE_PDB_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+        COMPILE_PDB_OUTPUT_DIRECTORY "$<TARGET_FILE_DIR:${targetName}>"
     )
     install (FILES "$<TARGET_FILE_DIR:${targetName}>/${targetName}.pdb" DESTINATION ${destination} COMPONENT ${component})
   endif()
@@ -588,6 +603,19 @@ function(disable_pax_mprotect targetName)
   endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 endfunction()
 
+# add_linker_flag(Flag [Config1 Config2 ...])
+function(add_linker_flag Flag)
+  if (ARGN STREQUAL "")
+    set("CMAKE_EXE_LINKER_FLAGS" "${CMAKE_EXE_LINKER_FLAGS} ${Flag}" PARENT_SCOPE)
+    set("CMAKE_SHARED_LINKER_FLAGS" "${CMAKE_SHARED_LINKER_FLAGS} ${Flag}" PARENT_SCOPE)
+  else()
+    foreach(Config ${ARGN})
+      set("CMAKE_EXE_LINKER_FLAGS_${Config}" "${CMAKE_EXE_LINKER_FLAGS_${Config}} ${Flag}" PARENT_SCOPE)
+      set("CMAKE_SHARED_LINKER_FLAGS_${Config}" "${CMAKE_SHARED_LINKER_FLAGS_${Config}} ${Flag}" PARENT_SCOPE)
+    endforeach()
+  endif()
+endfunction()
+
 function(link_natvis_sources_for_target targetName linkKind)
     if (NOT CLR_CMAKE_HOST_WIN32)
         return()
@@ -609,7 +637,7 @@ endfunction()
 function(add_sanitizer_runtime_support targetName)
   # Add sanitizer support functions.
   if (CLR_CMAKE_ENABLE_ASAN)
-    target_sources(${targetName} PRIVATE "$<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:${CLR_SRC_NATIVE_DIR}/minipal/asansupport.cpp>")
+    target_link_libraries(${targetName} PRIVATE $<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:minipal_sanitizer_support>)
   endif()
 endfunction()
 

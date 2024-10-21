@@ -62,14 +62,20 @@ namespace System.Linq.Tests
         public void EmptyAppend()
         {
             int[] first = { };
-            Assert.Single(first.Append(42), 42);
+            Assert.All(CreateSources(first), first =>
+            {
+                Assert.Single(first.Append(42), 42);
+            });
         }
 
         [Fact]
         public void EmptyPrepend()
         {
             string[] first = { };
-            Assert.Single(first.Prepend("aa"), "aa");
+            Assert.All(CreateSources(first), first =>
+            {
+                Assert.Single(first.Prepend("aa"), "aa");
+            });
         }
 
         [Fact]
@@ -89,7 +95,7 @@ namespace System.Linq.Tests
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Prepend(4);
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -98,7 +104,7 @@ namespace System.Linq.Tests
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Append(4);
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -107,7 +113,7 @@ namespace System.Linq.Tests
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Append(4).Append(5).Prepend(-1).Prepend(-2);
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -174,94 +180,88 @@ namespace System.Linq.Tests
         [Fact]
         public void Append1ToArrayToList()
         {
-            var source = Enumerable.Range(0, 2).Append(2);
-            Assert.Equal(Enumerable.Range(0, 3), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 3), source.ToArray());
-
-            source = Enumerable.Range(0, 2).ToList().Append(2);
-            Assert.Equal(Enumerable.Range(0, 3), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 3), source.ToArray());
-
-            source = NumberRangeGuaranteedNotCollectionType(0, 2).Append(2);
-            Assert.Equal(Enumerable.Range(0, 3), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 3), source.ToArray());
+            Assert.All(CreateSources(Enumerable.Range(0, 2)), source =>
+            {
+                source = source.Append(2);
+                Assert.Equal(Enumerable.Range(0, 3), source.ToList());
+                Assert.Equal(Enumerable.Range(0, 3), source.ToArray());
+            });
         }
 
         [Fact]
         public void Prepend1ToArrayToList()
         {
-            var source = Enumerable.Range(1, 2).Prepend(0);
-            Assert.Equal(Enumerable.Range(0, 3), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 3), source.ToArray());
-
-            source = Enumerable.Range(1, 2).ToList().Prepend(0);
-            Assert.Equal(Enumerable.Range(0, 3), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 3), source.ToArray());
-
-            source = NumberRangeGuaranteedNotCollectionType(1, 2).Prepend(0);
-            Assert.Equal(Enumerable.Range(0, 3), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 3), source.ToArray());
+            Assert.All(CreateSources(Enumerable.Range(1, 2)), source =>
+            {
+                source = source.Prepend(0);
+                Assert.Equal(Enumerable.Range(0, 3), source.ToList());
+                Assert.Equal(Enumerable.Range(0, 3), source.ToArray());
+            });
         }
 
         [Fact]
         public void AppendNToArrayToList()
         {
-            var source = Enumerable.Range(0, 2).Append(2).Append(3);
-            Assert.Equal(Enumerable.Range(0, 4), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 4), source.ToArray());
-
-            source = Enumerable.Range(0, 2).ToList().Append(2).Append(3);
-            Assert.Equal(Enumerable.Range(0, 4), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 4), source.ToArray());
-
-            source = NumberRangeGuaranteedNotCollectionType(0, 2).Append(2).Append(3);
-            Assert.Equal(Enumerable.Range(0, 4), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 4), source.ToArray());
+            Assert.All(CreateSources(Enumerable.Range(0, 2)), source =>
+            {
+                source = source.Append(2).Append(3);
+                Assert.Equal(Enumerable.Range(0, 4), source.ToList());
+                Assert.Equal(Enumerable.Range(0, 4), source.ToArray());
+            });
         }
 
         [Fact]
         public void PrependNToArrayToList()
         {
-            var source = Enumerable.Range(2, 2).Prepend(1).Prepend(0);
-            Assert.Equal(Enumerable.Range(0, 4), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 4), source.ToArray());
-
-            source = Enumerable.Range(2, 2).ToList().Prepend(1).Prepend(0);
-            Assert.Equal(Enumerable.Range(0, 4), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 4), source.ToArray());
-
-            source = NumberRangeGuaranteedNotCollectionType(2, 2).Prepend(1).Prepend(0);
-            Assert.Equal(Enumerable.Range(0, 4), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 4), source.ToArray());
+            Assert.All(CreateSources(Enumerable.Range(2, 2)), source =>
+            {
+                source = source.Prepend(1).Prepend(0);
+                Assert.Equal(Enumerable.Range(0, 4), source.ToList());
+                Assert.Equal(Enumerable.Range(0, 4), source.ToArray());
+            });
         }
 
         [Fact]
         public void AppendPrependToArrayToList()
         {
-            var source = Enumerable.Range(2, 2).Prepend(1).Append(4).Prepend(0).Append(5);
-            Assert.Equal(Enumerable.Range(0, 6), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 6), source.ToArray());
-
-            source = Enumerable.Range(2, 2).ToList().Prepend(1).Append(4).Prepend(0).Append(5);
-            Assert.Equal(Enumerable.Range(0, 6), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 6), source.ToArray());
-
-            source = NumberRangeGuaranteedNotCollectionType(2, 2).Append(4).Prepend(1).Append(5).Prepend(0);
-            Assert.Equal(Enumerable.Range(0, 6), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 6), source.ToArray());
-
-            source = NumberRangeGuaranteedNotCollectionType(2, 2).Prepend(1).Prepend(0).Append(4).Append(5);
-            Assert.Equal(Enumerable.Range(0, 6), source.ToList());
-            Assert.Equal(Enumerable.Range(0, 6), source.ToArray());
+            Assert.All(CreateSources(Enumerable.Range(2, 2)), source =>
+            {
+                source = source.Prepend(1).Append(4).Prepend(0).Append(5);
+                Assert.Equal(Enumerable.Range(0, 6), source.ToList());
+                Assert.Equal(Enumerable.Range(0, 6), source.ToArray());
+            });
         }
 
         [Fact]
         public void AppendPrependRunOnce()
         {
-            var source = NumberRangeGuaranteedNotCollectionType(2, 2).RunOnce().Prepend(1).RunOnce().Prepend(0).RunOnce().Append(4).RunOnce().Append(5).RunOnce();
-            Assert.Equal(Enumerable.Range(0, 6), source.ToList());
-            source = NumberRangeGuaranteedNotCollectionType(2, 2).Prepend(1).Prepend(0).Append(4).Append(5).RunOnce();
-            Assert.Equal(Enumerable.Range(0, 6), source.ToList());
+            Assert.All(CreateSources(Enumerable.Range(2, 2)), source =>
+            {
+                Assert.Equal(Enumerable.Range(0, 6), source.RunOnce().Prepend(1).RunOnce().Prepend(0).RunOnce().Append(4).RunOnce().Append(5).RunOnce().ToList());
+                Assert.Equal(Enumerable.Range(0, 6), source.Prepend(1).Prepend(0).Append(4).Append(5).RunOnce().ToList());
+            });
+        }
+
+        [Fact]
+        public void AppendPrepend_First_Last_ElementAt()
+        {
+            Assert.Equal(42, new int[] { 42 }.Append(84).First());
+            Assert.Equal(42, new int[] { 84 }.Prepend(42).First());
+            Assert.Equal(84, new int[] { 42 }.Append(84).Last());
+            Assert.Equal(84, new int[] { 84 }.Prepend(42).Last());
+            Assert.Equal(42, new int[] { 42 }.Append(84).ElementAt(0));
+            Assert.Equal(42, new int[] { 84 }.Prepend(42).ElementAt(0));
+            Assert.Equal(84, new int[] { 42 }.Append(84).ElementAt(1));
+            Assert.Equal(84, new int[] { 84 }.Prepend(42).ElementAt(1));
+
+            Assert.Equal(42, NumberRangeGuaranteedNotCollectionType(42, 1).Append(84).First());
+            Assert.Equal(42, NumberRangeGuaranteedNotCollectionType(84, 1).Prepend(42).First());
+            Assert.Equal(84, NumberRangeGuaranteedNotCollectionType(42, 1).Append(84).Last());
+            Assert.Equal(84, NumberRangeGuaranteedNotCollectionType(84, 1).Prepend(42).Last());
+            Assert.Equal(42, NumberRangeGuaranteedNotCollectionType(42, 1).Append(84).ElementAt(0));
+            Assert.Equal(42, NumberRangeGuaranteedNotCollectionType(84, 1).Prepend(42).ElementAt(0));
+            Assert.Equal(84, NumberRangeGuaranteedNotCollectionType(42, 1).Append(84).ElementAt(1));
+            Assert.Equal(84, NumberRangeGuaranteedNotCollectionType(84, 1).Prepend(42).ElementAt(1));
         }
     }
 }

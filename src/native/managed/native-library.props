@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <PublishAot>true</PublishAot>
+    <SelfContained>true</SelfContained>
+    <!-- Don't strip symbols NativeAOT's default way. We will strip and save the symbols ourselves,
+         the same way as eng/native/functions.cmake strip_symbols
+    -->
+    <StripSymbols>false</StripSymbols>
+    <ControlFlowGuard>Guard</ControlFlowGuard>
+  </PropertyGroup>
+
+  <PropertyGroup>
+      <!-- if IsRuntimeComponent is true, we will put the native library into the specified locations under `artifacts/bin/$(RuntimeFlavor)/os.arch.config/` -->
+      <IsRuntimeComponent Condition="'$(IsRuntimeComponent)' == ''">true</IsRuntimeComponent>
+  </PropertyGroup>
+
+</Project>

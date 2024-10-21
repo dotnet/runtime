@@ -4,6 +4,7 @@
 #
 
 scriptroot="$( cd -P "$( dirname "$0" )" && pwd )"
+reporoot="$(cd "$scriptroot"/../..; pwd -P)"
 
 if [[ "$#" -lt 4 ]]; then
   echo "Usage..."
@@ -93,19 +94,17 @@ if [[ "$scan_build" == "ON" && -n "$SCAN_BUILD_COMMAND" ]]; then
     cmake_command="$SCAN_BUILD_COMMAND $cmake_command"
 fi
 
+cmake_extra_defines_wasm=()
 if [[ "$host_arch" == "wasm" ]]; then
     if [[ "$target_os" == "browser" ]]; then
         cmake_command="emcmake $cmake_command"
     elif [[ "$target_os" == "wasi" ]]; then
-        true
+        cmake_extra_defines_wasm=("-DCLR_CMAKE_TARGET_OS=wasi" "-DCLR_CMAKE_TARGET_ARCH=wasm" "-DWASI_SDK_PREFIX=$WASI_SDK_PATH" "-DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-p2.cmake" "-DCMAKE_SYSROOT=${WASI_SDK_PATH}/share/wasi-sysroot" "-DCMAKE_CROSSCOMPILING_EMULATOR=node --experimental-wasm-bigint --experimental-wasi-unstable-preview1")
     else
         echo "target_os was not specified"
         exit 1
     fi
 fi
-
-# We have to be able to build with CMake 3.6.2, so we can't use the -S or -B options
-pushd "$2"
 
 $cmake_command \
   --no-warn-unused-cli \
@@ -114,6 +113,8 @@ $cmake_command \
   "-DCMAKE_INSTALL_PREFIX=$__CMakeBinDir" \
   $cmake_extra_defines \
   $__UnprocessedCMakeArgs \
-  "$1"
+  "${cmake_extra_defines_wasm[@]}" \
+  -S "$1" \
+  -B "$2"
 
-popd
+# don't add anything after this line so the cmake exit code gets propagated correctly

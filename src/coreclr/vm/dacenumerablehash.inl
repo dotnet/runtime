@@ -7,13 +7,14 @@
 // See DacEnumerableHash.h for a more detailed description.
 //
 
-#include "clr_std/type_traits"
+#include <type_traits>
 
 // Our implementation embeds entry data supplied by the hash sub-class into a larger entry structure
 // containing DacEnumerableHash metadata. We often end up returning pointers to the inner entry to sub-class code and
 // doing this in a DAC-friendly fashion involves some DAC gymnastics. The following couple of macros factor
 // those complexities out.
 #define VALUE_FROM_VOLATILE_ENTRY(_ptr) dac_cast<DPTR(VALUE)>(PTR_TO_MEMBER_TADDR(VolatileEntry, (_ptr), m_sValue))
+#define VALUE_TO_VOLATILE_ENTRY(_ptr) dac_cast<PTR_VolatileEntry>(dac_cast<TADDR>(_ptr))
 
 #ifndef DACCESS_COMPILE
 
@@ -460,11 +461,6 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindNextEntryByHash(
 
 namespace HashTableDetail
 {
-    // Use the C++ detection idiom (https://isocpp.org/blog/2017/09/detection-idiom-a-stopgap-for-concepts-simon-brand) to call the
-    // derived table's EnumMemoryRegionsForEntry method if it defines one.
-    template <class... > struct make_void { using type = void; };
-    template <class... T> using void_t = typename make_void<T...>::type;
-
     template<typename B>
     struct negation : std::integral_constant<bool, !bool(B::value)> { };
     template <DAC_ENUM_HASH_PARAMS, typename = void>
@@ -539,7 +535,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseInitIterator(BaseIterator *
     LIMITED_METHOD_DAC_CONTRACT;
 
     pIterator->m_pTable = dac_cast<DPTR(DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>)>(this);
-    pIterator->m_pEntry = NULL;
+    pIterator->m_pEntry = (TADDR)0;
     //+2 to skip "length" and "next" slots
     pIterator->m_dwBucket = SKIP_SPECIAL_SLOTS;
 }
@@ -563,7 +559,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
 
     while (m_dwBucket < cBuckets + SKIP_SPECIAL_SLOTS)
     {
-        if (m_pEntry == NULL)
+        if (m_pEntry == (TADDR)0)
         {
             // This is our first lookup for a particular bucket, return the first
             // entry in that bucket.
@@ -582,7 +578,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
 
         // Otherwise we found the end of a bucket chain. Increment the current bucket and, if there are
         // buckets left to scan go back around again.
-        m_pEntry = NULL;
+        m_pEntry = (TADDR)0;
         m_dwBucket++;
     }
 
@@ -590,4 +586,13 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
     _ASSERTE(GetNext(curBuckets) == NULL);
 
     return NULL;
+}
+
+template <DAC_ENUM_HASH_PARAMS>
+/*static*/ DacEnumerableHashValue DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseValuePtrToHash(DPTR(VALUE) pValue)
+{
+#ifndef DACCESS_COMPILE
+    _ASSERTE(offsetof(VolatileEntry, m_sValue) == 0);
+#endif
+    return VALUE_TO_VOLATILE_ENTRY(pValue)->m_iHashValue;
 }

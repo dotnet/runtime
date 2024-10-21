@@ -7,22 +7,28 @@ namespace System.Collections.Frozen
 {
     internal sealed class OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii<TValue> : OrdinalStringFrozenDictionary<TValue>
     {
+        private readonly ulong _lengthFilter;
+
         internal OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii(
             string[] keys,
             TValue[] values,
             IEqualityComparer<string> comparer,
             int minimumLength,
-            int maximumLengthDiff)
+            int maximumLengthDiff,
+            ulong lengthFilter)
             : base(keys, values, comparer, minimumLength, maximumLengthDiff)
         {
+            _lengthFilter = lengthFilter;
         }
 
-        // This override is necessary to force the jit to emit the code in such a way that it
-        // avoids virtual dispatch overhead when calling the Equals/GetHashCode methods. Don't
-        // remove this, or you'll tank performance.
+        // See comment in OrdinalStringFrozenDictionary for why these overrides exist. Do not remove.
         private protected override ref readonly TValue GetValueRefOrNullRefCore(string key) => ref base.GetValueRefOrNullRefCore(key);
+        private protected override ref readonly TValue GetValueRefOrNullRefCore<TAlternateKey>(TAlternateKey key) => ref base.GetValueRefOrNullRefCore(key);
 
         private protected override bool Equals(string? x, string? y) => StringComparer.OrdinalIgnoreCase.Equals(x, y);
+        private protected override bool Equals(ReadOnlySpan<char> x, string? y) => x.Equals(y.AsSpan(), StringComparison.OrdinalIgnoreCase);
         private protected override int GetHashCode(string s) => Hashing.GetHashCodeOrdinalIgnoreCaseAscii(s.AsSpan());
+        private protected override int GetHashCode(ReadOnlySpan<char> s) => Hashing.GetHashCodeOrdinalIgnoreCaseAscii(s);
+        private protected override bool CheckLengthQuick(uint length) => (_lengthFilter & (1UL << (int)(length % 64))) > 0;
     }
 }

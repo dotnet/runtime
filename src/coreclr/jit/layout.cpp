@@ -21,7 +21,8 @@ class ClassLayoutTable
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned>               BlkLayoutIndexMap;
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<CORINFO_CLASS_STRUCT_>, unsigned> ObjLayoutIndexMap;
 
-    union {
+    union
+    {
         // Up to 3 layouts can be stored "inline" and finding a layout by handle/size can be done using linear search.
         // Most methods need no more than 2 layouts.
         ClassLayout* m_layoutArray[3];
@@ -43,7 +44,10 @@ class ClassLayoutTable
     ClassLayout m_zeroSizedBlockLayout;
 
 public:
-    ClassLayoutTable() : m_layoutCount(0), m_layoutLargeCapacity(0), m_zeroSizedBlockLayout(0)
+    ClassLayoutTable()
+        : m_layoutCount(0)
+        , m_layoutLargeCapacity(0)
+        , m_zeroSizedBlockLayout(0)
     {
     }
 
@@ -416,23 +420,41 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
     INDEBUG(m_gcPtrsInitialized = true;)
 }
 
-//------------------------------------------------------------------------
-// HasGCByRef: does the layout contain at least one GC ByRef
-//
-// Return value:
-//    true if at least one GC ByRef, false otherwise.
-//
 bool ClassLayout::HasGCByRef() const
 {
-    unsigned slots = GetSlotCount();
-    for (unsigned i = 0; i < slots; i++)
+    if (!HasGCPtr())
     {
-        if (IsGCByRef(i))
+        return false;
+    }
+
+    unsigned numSlots = GetSlotCount();
+    for (unsigned i = 0; i < numSlots; i++)
+    {
+        if (GetGCPtrType(i) == TYP_BYREF)
         {
             return true;
         }
     }
 
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsStackOnly: does the layout represent a block that can never be on the heap?
+//
+// Parameters:
+//   comp - The Compiler object
+//
+// Return value:
+//    true if the block is stack only
+//
+bool ClassLayout::IsStackOnly(Compiler* comp) const
+{
+    // Byref-like structs are stack only
+    if ((m_classHandle != NO_CLASS_HANDLE) && comp->eeIsByrefLike(m_classHandle))
+    {
+        return true;
+    }
     return false;
 }
 

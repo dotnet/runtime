@@ -9,6 +9,9 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdCtxCopyEx")]
+        internal static partial SafeEvpMdCtxHandle EvpMdCtxCopyEx(SafeEvpMdCtxHandle ctx);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdCtxCreate")]
         internal static partial SafeEvpMdCtxHandle EvpMdCtxCreate(IntPtr type);
 
@@ -17,6 +20,13 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestReset")]
         internal static partial int EvpDigestReset(SafeEvpMdCtxHandle ctx, IntPtr type);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestSqueeze")]
+        private static partial int EvpDigestSqueeze(
+            SafeEvpMdCtxHandle ctx,
+            Span<byte> md,
+            uint len,
+            [MarshalAs(UnmanagedType.Bool)] out bool haveFeature);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestUpdate")]
         internal static partial int EvpDigestUpdate(SafeEvpMdCtxHandle ctx, ReadOnlySpan<byte> d, int cnt);
@@ -87,6 +97,18 @@ internal static partial class Interop
         internal static unsafe int EvpDigestXOFOneShot(IntPtr type, ReadOnlySpan<byte> source, Span<byte> destination)
         {
             return EvpDigestXOFOneShot(type, source, source.Length, destination, (uint)destination.Length);
+        }
+
+        internal static int EvpDigestSqueeze(SafeEvpMdCtxHandle ctx, Span<byte> destination)
+        {
+            int ret = EvpDigestSqueeze(ctx, destination, (uint)destination.Length, out bool haveFeature);
+
+            if (!haveFeature)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            return ret;
         }
 
         internal static readonly int EVP_MAX_MD_SIZE = GetMaxMdSize();

@@ -92,8 +92,14 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Sin(double a);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe (double Sin, double Cos) SinCos(double x)
         {
+            if (RuntimeHelpers.IsKnownConstant(x))
+            {
+                return (Sin(x), Cos(x));
+            }
+
             double sin, cos;
             SinCos(x, &sin, &cos);
             return (sin, cos);
@@ -114,10 +120,6 @@ namespace System
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Tanh(double value);
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern double FMod(double x, double y);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe double ModF(double x, double* intptr);

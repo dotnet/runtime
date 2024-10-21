@@ -4,6 +4,10 @@
 using System;
 using System.Threading;
 
+using Internal.Runtime.Augments;
+
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.Runtime.CompilerHelpers
 {
     /// <summary>
@@ -14,7 +18,8 @@ namespace Internal.Runtime.CompilerHelpers
         private static void MonitorEnter(object obj, ref bool lockTaken)
         {
             // Inlined Monitor.Enter with a few tweaks
-            int resultOrIndex = ObjectHeader.Acquire(obj);
+            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
+            int resultOrIndex = ObjectHeader.Acquire(obj, currentThreadID);
             if (resultOrIndex < 0)
             {
                 lockTaken = true;
@@ -25,7 +30,7 @@ namespace Internal.Runtime.CompilerHelpers
                 ObjectHeader.GetLockObject(obj) :
                 SyncTable.GetLockObject(resultOrIndex);
 
-            Monitor.TryAcquireSlow(lck, obj, Timeout.Infinite);
+            lck.TryEnterSlow(Timeout.Infinite, currentThreadID);
             lockTaken = true;
         }
         private static void MonitorExit(object obj, ref bool lockTaken)
@@ -38,38 +43,13 @@ namespace Internal.Runtime.CompilerHelpers
             lockTaken = false;
         }
 
-        private static unsafe void MonitorEnterStatic(MethodTable* pMT, ref bool lockTaken)
+        private static unsafe RuntimeType GetSyncFromClassHandle(MethodTable* pMT) => Type.GetTypeFromMethodTable(pMT);
+
+        private static unsafe MethodTable* GetClassFromMethodParam(IntPtr pDictionary)
         {
-            // Inlined Monitor.Enter with a few tweaks
-            object obj = GetStaticLockObject(pMT);
-            int resultOrIndex = ObjectHeader.Acquire(obj);
-            if (resultOrIndex < 0)
-            {
-                lockTaken = true;
-                return;
-            }
-
-            Lock lck = resultOrIndex == 0 ?
-                ObjectHeader.GetLockObject(obj) :
-                SyncTable.GetLockObject(resultOrIndex);
-
-            Monitor.TryAcquireSlow(lck, obj, Timeout.Infinite);
-            lockTaken = true;
-        }
-        private static unsafe void MonitorExitStatic(MethodTable* pMT, ref bool lockTaken)
-        {
-            // Inlined Monitor.Exit with a few tweaks
-            if (!lockTaken)
-                return;
-
-            object obj = GetStaticLockObject(pMT);
-            ObjectHeader.Release(obj);
-            lockTaken = false;
-        }
-
-        private static unsafe RuntimeType GetStaticLockObject(MethodTable* pMT)
-        {
-            return Type.GetTypeFromMethodTable(pMT);
+            bool success = RuntimeAugments.TypeLoaderCallbacks.TryGetOwningTypeForMethodDictionary(pDictionary, out RuntimeTypeHandle th);
+            Debug.Assert(success);
+            return th.ToMethodTable();
         }
     }
 }

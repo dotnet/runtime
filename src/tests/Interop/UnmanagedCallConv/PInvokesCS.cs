@@ -38,11 +38,11 @@ public unsafe static class PInvokesCS
 
         public static class Cdecl
         {
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Cdecl)]
             public static extern int Blittable_Double_CdeclUnmanagedCallConv(int a, int* b);
 
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Cdecl)]
             public static extern bool NotBlittable_Double_CdeclUnmanagedCallConv(int a, int* b);
         }
@@ -50,20 +50,20 @@ public unsafe static class PInvokesCS
         public static class Stdcall
         {
             // Mismatch
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall)]
             public static extern int Blittable_Double_CdeclUnmanagedCallConv(int a, int* b);
 
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvStdcall) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall)]
             public static extern int Blittable_Double_StdcallUnmanagedCallConv(int a, int* b);
 
             // Mismatch
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall)]
             public static extern bool NotBlittable_Double_CdeclUnmanagedCallConv(int a, int* b);
 
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvStdcall) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall)]
             public static extern bool NotBlittable_Double_StdcallUnmanagedCallConv(int a, int* b);
         }
@@ -84,11 +84,11 @@ public unsafe static class PInvokesCS
 
         public static class Cdecl
         {
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Cdecl, CallingConvention = CallingConvention.Winapi)]
             public static extern int Blittable_Double_CdeclUnmanagedCallConv(int a, int* b);
 
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Cdecl, CallingConvention = CallingConvention.Winapi)]
             public static extern bool NotBlittable_Double_CdeclUnmanagedCallConv(int a, int* b);
         }
@@ -96,20 +96,20 @@ public unsafe static class PInvokesCS
         public static class Stdcall
         {
             // Mismatch
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall, CallingConvention = CallingConvention.Winapi)]
             public static extern int Blittable_Double_CdeclUnmanagedCallConv(int a, int* b);
 
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvStdcall) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall, CallingConvention = CallingConvention.Winapi)]
             public static extern int Blittable_Double_StdcallUnmanagedCallConv(int a, int* b);
 
             // Mismatch
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall, CallingConvention = CallingConvention.Winapi)]
             public static extern bool NotBlittable_Double_CdeclUnmanagedCallConv(int a, int* b);
 
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvStdcall) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall, CallingConvention = CallingConvention.Winapi)]
             public static extern bool NotBlittable_Double_StdcallUnmanagedCallConv(int a, int* b);
         }
@@ -124,7 +124,7 @@ public unsafe static class PInvokesCS
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Default)]
             public static extern int Blittable_Double_DefaultUnmanagedCallConv_SuppressGCAttr(int a, int* b);
 
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSuppressGCTransition) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvSuppressGCTransition)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Default)]
             public static extern int Blittable_Double_DefaultUnmanagedCallConv_SuppressGC(int a, int* b);
 
@@ -133,7 +133,7 @@ public unsafe static class PInvokesCS
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Default)]
             public static extern bool NotBlittable_Double_DefaultUnmanagedCallConv_SuppressGCAttr(int a, int* b);
 
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSuppressGCTransition) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvSuppressGCTransition)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Default)]
             public static extern bool NotBlittable_Double_DefaultUnmanagedCallConv_SuppressGC(int a, int* b);
         }
@@ -141,20 +141,20 @@ public unsafe static class PInvokesCS
         public static class Cdecl
         {
             [SuppressGCTransition]
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Cdecl)]
             public static extern int Blittable_Double_CdeclUnmanagedCallConv_SuppressGCAttr(int a, int* b);
 
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl), typeof(CallConvSuppressGCTransition) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl), typeof(CallConvSuppressGCTransition)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Cdecl)]
             public static extern int Blittable_Double_CdeclUnmanagedCallConv_SuppressGC(int a, int* b);
 
             [SuppressGCTransition]
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Cdecl)]
             public static extern bool NotBlittable_Double_CdeclUnmanagedCallConv_SuppressGCAttr(int a, int* b);
 
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl), typeof(CallConvSuppressGCTransition) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl), typeof(CallConvSuppressGCTransition)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Cdecl)]
             public static extern bool NotBlittable_Double_CdeclUnmanagedCallConv_SuppressGC(int a, int* b);
         }
@@ -162,20 +162,20 @@ public unsafe static class PInvokesCS
         public static class Stdcall
         {
             [SuppressGCTransition]
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvStdcall) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall)]
             public static extern int Blittable_Double_StdcallUnmanagedCallConv_SuppressGCAttr(int a, int* b);
 
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvStdcall), typeof(CallConvSuppressGCTransition) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall), typeof(CallConvSuppressGCTransition)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall)]
             public static extern int Blittable_Double_StdcallUnmanagedCallConv_SuppressGC(int a, int* b);
 
             [SuppressGCTransition]
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvStdcall) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall)]
             public static extern bool NotBlittable_Double_StdcallUnmanagedCallConv_SuppressGCAttr(int a, int* b);
 
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvStdcall), typeof(CallConvSuppressGCTransition) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall), typeof(CallConvSuppressGCTransition)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall)]
             public static extern bool NotBlittable_Double_StdcallUnmanagedCallConv_SuppressGC(int a, int* b);
         }
@@ -186,22 +186,22 @@ public unsafe static class PInvokesCS
         public static class Cdecl
         {
             // UnmanagedCallConv should not be used
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvStdcall) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Cdecl, CallingConvention = CallingConvention.Cdecl)]
             public static extern int Blittable_Double_StdcallUnmanagedCallConv(int a, int* b);
 
             // UnmanagedCallConv should not be used
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSuppressGCTransition) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvSuppressGCTransition)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Cdecl, CallingConvention = CallingConvention.Cdecl)]
             public static extern int Blittable_Double_SuppressGCUnmanagedCallConv(int a, int* b);
 
             // UnmanagedCallConv should not be used
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvStdcall) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Cdecl, CallingConvention = CallingConvention.Cdecl)]
             public static extern bool NotBlittable_Double_StdcallUnmanagedCallConv(int a, int* b);
 
             // UnmanagedCallConv should not be used
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSuppressGCTransition) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvSuppressGCTransition)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Cdecl, CallingConvention = CallingConvention.Cdecl)]
             public static extern bool NotBlittable_Double_SuppressGCUnmanagedCallConv(int a, int* b);
         }
@@ -209,22 +209,22 @@ public unsafe static class PInvokesCS
         public static class Stdcall
         {
             // UnmanagedCallConv should not be used
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall, CallingConvention = CallingConvention.StdCall)]
             public static extern int Blittable_Double_CdeclUnmanagedCallConv(int a, int* b);
 
             // UnmanagedCallConv should not be used
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSuppressGCTransition) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvSuppressGCTransition)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall, CallingConvention = CallingConvention.StdCall)]
             public static extern int Blittable_Double_SuppressGCUnmanagedCallConv(int a, int* b);
 
             // UnmanagedCallConv should not be used
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall, CallingConvention = CallingConvention.StdCall)]
             public static extern bool NotBlittable_Double_CdeclUnmanagedCallConv(int a, int* b);
 
             // UnmanagedCallConv should not be used
-            [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSuppressGCTransition) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvSuppressGCTransition)])]
             [DllImport(nameof(UnmanagedCallConvNative), EntryPoint = Double_Stdcall, CallingConvention = CallingConvention.StdCall)]
             public static extern bool NotBlittable_Double_SuppressGCUnmanagedCallConv(int a, int* b);
         }

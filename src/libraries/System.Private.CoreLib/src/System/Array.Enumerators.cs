@@ -4,8 +4,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -78,6 +78,7 @@ namespace System
             _endIndex = endIndex;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool MoveNext()
         {
             int index = _index + 1;

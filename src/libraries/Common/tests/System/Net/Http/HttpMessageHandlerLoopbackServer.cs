@@ -60,7 +60,7 @@ namespace System.Net.Test.Common
                 _serverFunc = serverFunc;
             }
 
-#if NETCOREAPP
+#if NET
             protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 return SendAsync(request, cancellationToken).GetAwaiter().GetResult();

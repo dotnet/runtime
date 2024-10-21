@@ -9,9 +9,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.XHarness.Common" Version="$(MicrosoftDotNetXHarnessTestRunnersCommonVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
+    <!-- Update and drop package assets from Json, we'll use the framework version -->
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" PrivateAssets="All" ExcludeAssets="All" />
+  </ItemGroup>
 
+  <ItemGroup>
     <None Include="..\data\wasm-symbol-patterns.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

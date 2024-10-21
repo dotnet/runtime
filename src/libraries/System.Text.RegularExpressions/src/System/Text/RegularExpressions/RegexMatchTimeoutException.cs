@@ -32,7 +32,7 @@ namespace System.Text.RegularExpressions
         /// developers should prefer using the constructor
         /// <code>public RegexMatchTimeoutException(string input, string pattern, TimeSpan matchTimeout)</code>.
         /// </summary>
-        public RegexMatchTimeoutException() { }
+        public RegexMatchTimeoutException() : base(SR.RegexMatchTimeoutException_Occurred) { }
 
         /// <summary>
         /// This constructor is provided in compliance with common .NET Framework design patterns;
@@ -40,7 +40,7 @@ namespace System.Text.RegularExpressions
         /// <code>public RegexMatchTimeoutException(string input, string pattern, TimeSpan matchTimeout)</code>.
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
-        public RegexMatchTimeoutException(string message) : base(message) { }
+        public RegexMatchTimeoutException(string message) : base(message ?? SR.RegexMatchTimeoutException_Occurred) { }
 
         /// <summary>
         /// This constructor is provided in compliance with common .NET Framework design patterns;
@@ -49,7 +49,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
         /// <param name="inner">The exception that is the cause of the current exception, or a <code>null</code>.</param>
-        public RegexMatchTimeoutException(string message, Exception inner) : base(message, inner) { }
+        public RegexMatchTimeoutException(string message, Exception inner) : base(message ?? SR.RegexMatchTimeoutException_Occurred, inner) { }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]

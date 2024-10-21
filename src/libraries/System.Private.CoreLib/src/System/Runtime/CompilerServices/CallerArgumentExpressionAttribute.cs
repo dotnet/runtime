@@ -4,7 +4,12 @@
 namespace System.Runtime.CompilerServices
 {
     [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
-    public sealed class CallerArgumentExpressionAttribute : Attribute
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    sealed class CallerArgumentExpressionAttribute : Attribute
     {
         public CallerArgumentExpressionAttribute(string parameterName)
         {

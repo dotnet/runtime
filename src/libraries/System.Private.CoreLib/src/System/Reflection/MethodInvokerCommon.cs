@@ -96,7 +96,7 @@ namespace System.Reflection
 
             if (!method.DeclaringType!.IsInstanceOfType(target))
             {
-                throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
+                throw new TargetException(SR.Format(SR.RFLCT_Targ_ITargMismatch_WithType, method.DeclaringType, target.GetType()));
             }
         }
 
@@ -113,9 +113,10 @@ namespace System.Reflection
                 // If ByRefs are used, we can't use this strategy.
                 strategy |= InvokerStrategy.StrategyDetermined_ObjSpanArgs;
             }
-            else if ((strategy & InvokerStrategy.HasBeenInvoked_ObjSpanArgs) == 0)
+            else if (((strategy & InvokerStrategy.HasBeenInvoked_ObjSpanArgs) == 0) && !Debugger.IsAttached)
             {
-                // The first time, ignoring race conditions, use the slow path.
+                // The first time, ignoring race conditions, use the slow path, except for the case when running under a debugger.
+                // This is a workaround for the debugger issues with understanding exceptions propagation over the slow path.
                 strategy |= InvokerStrategy.HasBeenInvoked_ObjSpanArgs;
             }
             else
@@ -141,9 +142,10 @@ namespace System.Reflection
                 // If ByRefs are used, we can't use this strategy.
                 strategy |= InvokerStrategy.StrategyDetermined_Obj4Args;
             }
-            else if ((strategy & InvokerStrategy.HasBeenInvoked_Obj4Args) == 0)
+            else if (((strategy & InvokerStrategy.HasBeenInvoked_Obj4Args) == 0) && !Debugger.IsAttached)
             {
-                // The first time, ignoring race conditions, use the slow path.
+                // The first time, ignoring race conditions, use the slow path, except for the case when running under a debugger.
+                // This is a workaround for the debugger issues with understanding exceptions propagation over the slow path.
                 strategy |= InvokerStrategy.HasBeenInvoked_Obj4Args;
             }
             else
@@ -163,9 +165,10 @@ namespace System.Reflection
             MethodBase method,
             bool backwardsCompat)
         {
-            if ((strategy & InvokerStrategy.HasBeenInvoked_RefArgs) == 0)
+            if (((strategy & InvokerStrategy.HasBeenInvoked_RefArgs) == 0) && !Debugger.IsAttached)
             {
-                // The first time, ignoring race conditions, use the slow path.
+                // The first time, ignoring race conditions, use the slow path, except for the case when running under a debugger.
+                // This is a workaround for the debugger issues with understanding exceptions propagation over the slow path.
                 strategy |= InvokerStrategy.HasBeenInvoked_RefArgs;
             }
             else

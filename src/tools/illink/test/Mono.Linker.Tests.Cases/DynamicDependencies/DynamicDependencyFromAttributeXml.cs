@@ -7,7 +7,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 	// and will be found always.
 	// For mono though, we have to specify the assembly (Mono.Linker.Tests.Cases.Expectations) because at the time of processing
 	// that assembly is not yet loaded into the closure in ILLink, so it won't find the attribute type.
-#if NETCOREAPP
+#if NET
 	[SetupLinkAttributesFile ("DynamicDependencyFromAttributeXml.netcore.Attributes.xml")]
 #else
 	[SetupLinkAttributesFile ("DynamicDependencyFromAttributeXml.mono.Attributes.xml")]

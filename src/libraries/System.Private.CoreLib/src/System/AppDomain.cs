@@ -19,7 +19,8 @@ namespace System
 {
     public sealed partial class AppDomain : MarshalByRefObject
     {
-        private static readonly AppDomain s_domain = new AppDomain();
+        private static AppDomain? s_domain;
+
         private IPrincipal? _defaultPrincipal;
         private PrincipalPolicy _principalPolicy = PrincipalPolicy.NoPrincipal;
         private Func<IPrincipal>? s_getWindowsPrincipal;
@@ -27,7 +28,19 @@ namespace System
 
         private AppDomain() { }
 
-        public static AppDomain CurrentDomain => s_domain;
+        public static AppDomain CurrentDomain
+        {
+            get
+            {
+                // Create AppDomain instance only once external code asks for it. AppDomain brings lots of unnecessary
+                // dependencies into minimal trimmed app via ToString method.
+                if (s_domain == null)
+                {
+                    Interlocked.CompareExchange(ref s_domain, new AppDomain(), null);
+                }
+                return s_domain;
+            }
+        }
 
         public string BaseDirectory => AppContext.BaseDirectory;
 
@@ -72,10 +85,12 @@ namespace System
             remove { AppContext.FirstChanceException -= value; }
         }
 
-        public event EventHandler? ProcessExit
+        public event EventHandler? ProcessExit;
+
+        internal static void OnProcessExit()
         {
-            add { AppContext.ProcessExit += value; }
-            remove { AppContext.ProcessExit -= value; }
+            AppDomain? domain = s_domain;
+            domain?.ProcessExit?.Invoke(domain, EventArgs.Empty);
         }
 
         public string ApplyPolicy(string assemblyName)
@@ -119,17 +134,14 @@ namespace System
 
         private static int ExecuteAssembly(Assembly assembly, string?[]? args)
         {
-            MethodInfo? entry = assembly.EntryPoint;
-            if (entry == null)
-            {
+            MethodInfo entry = assembly.EntryPoint ??
                 throw new MissingMethodException(SR.Arg_EntryPointNotFoundException);
-            }
 
             object? result = entry.Invoke(
                 obj: null,
                 invokeAttr: BindingFlags.DoNotWrapExceptions,
                 binder: null,
-                parameters: entry.GetParametersAsSpan().Length > 0 ? new object?[] { args } : null,
+                parameters: entry.GetParametersAsSpan().Length > 0 ? [args] : null,
                 culture: null);
 
             return result != null ? (int)result : 0;
@@ -399,8 +411,7 @@ namespace System
                             Debug.Assert(mi != null);
                             // Don't throw PNSE if null like for WindowsPrincipal as UnauthenticatedPrincipal should
                             // be available on all platforms.
-                            Volatile.Write(ref s_getUnauthenticatedPrincipal,
-                                mi.CreateDelegate<Func<IPrincipal>>());
+                            s_getUnauthenticatedPrincipal = mi.CreateDelegate<Func<IPrincipal>>();
                         }
 
                         principal = s_getUnauthenticatedPrincipal();
@@ -410,13 +421,9 @@ namespace System
                         if (s_getWindowsPrincipal == null)
                         {
                             Type type = Type.GetType("System.Security.Principal.WindowsPrincipal, System.Security.Principal.Windows", throwOnError: true)!;
-                            MethodInfo? mi = type.GetMethod("GetDefaultInstance", BindingFlags.NonPublic | BindingFlags.Static);
-                            if (mi == null)
-                            {
+                            MethodInfo mi = type.GetMethod("GetDefaultInstance", BindingFlags.NonPublic | BindingFlags.Static) ??
                                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_Principal);
-                            }
-                            Volatile.Write(ref s_getWindowsPrincipal,
-                                mi.CreateDelegate<Func<IPrincipal>>());
+                            s_getWindowsPrincipal = mi.CreateDelegate<Func<IPrincipal>>();
                         }
 
                         principal = s_getWindowsPrincipal();

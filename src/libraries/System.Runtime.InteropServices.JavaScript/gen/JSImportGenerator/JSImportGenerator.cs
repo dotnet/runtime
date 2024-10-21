@@ -120,9 +120,7 @@ namespace Microsoft.Interop.JavaScript
 
             FieldDeclarationSyntax sigField = FieldDeclaration(VariableDeclaration(IdentifierName(Constants.JSFunctionSignatureGlobal))
                 .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(stub.BindingName)))))
-                .AddModifiers(Token(SyntaxKind.StaticKeyword))
-                .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
-                    Attribute(IdentifierName(Constants.ThreadStaticGlobal))))));
+                .AddModifiers(Token(SyntaxKind.StaticKeyword));
 
             MemberDeclarationSyntax toPrint = containingSyntaxContext.WrapMembersInContainingSyntaxWithUnsafeModifier(stubMethod, sigField);
             return toPrint;
@@ -206,7 +204,7 @@ namespace Microsoft.Interop.JavaScript
                 incrementalContext.JSImportData,
                 incrementalContext.SignatureContext,
                 diagnostics,
-                new JSGeneratorFactory());
+                new JSGeneratorResolver());
 
             BlockSyntax code = stubGenerator.GenerateJSImportBody();
 

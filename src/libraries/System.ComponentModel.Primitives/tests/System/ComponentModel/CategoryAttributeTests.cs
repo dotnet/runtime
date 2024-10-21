@@ -36,20 +36,10 @@ namespace System.ComponentModel.Tests
             yield return new object[] { attribute, new CategoryAttribute("category"), true };
             yield return new object[] { attribute, new CategoryAttribute("category2"), false };
             yield return new object[] { attribute, new CategoryAttribute(string.Empty), false };
-            // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsNetFramework)
-            {
-                yield return new object[] { attribute, new CategoryAttribute(null), false };
-            }
-
-            // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsNetFramework)
-            {
-                yield return new object[] { new CategoryAttribute(null), new CategoryAttribute(null), true };
-                yield return new object[] { new CategoryAttribute(null), new CategoryAttribute("category"), false };
-                yield return new object[] { new CategoryAttribute(null), new CategoryAttribute(string.Empty), false };
-            }
-
+            yield return new object[] { attribute, new CategoryAttribute(null), false };
+            yield return new object[] { new CategoryAttribute(null), new CategoryAttribute(null), true };
+            yield return new object[] { new CategoryAttribute(null), new CategoryAttribute("category"), false };
+            yield return new object[] { new CategoryAttribute(null), new CategoryAttribute(string.Empty), false };
             yield return new object[] { new CategoryAttribute("category"), new object(), false };
             yield return new object[] { new CategoryAttribute("category"), null, false };
             yield return new object[] { new CategoryAttribute(null), new object(), false };

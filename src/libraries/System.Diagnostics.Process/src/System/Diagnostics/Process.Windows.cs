@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -10,6 +10,7 @@ using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
@@ -231,7 +232,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
-            get { return GetProcessTimes().PrivilegedProcessorTime; }
+            get => IsCurrentProcess ? Environment.CpuUsage.PrivilegedTime : GetProcessTimes().PrivilegedProcessorTime;
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
@@ -250,7 +251,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
-            get { return GetProcessTimes().TotalProcessorTime; }
+            get => IsCurrentProcess ? Environment.CpuUsage.TotalTime : GetProcessTimes().TotalProcessorTime;
         }
 
         /// <summary>
@@ -262,7 +263,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
-            get { return GetProcessTimes().UserProcessorTime; }
+            get => IsCurrentProcess ? Environment.CpuUsage.UserTime : GetProcessTimes().UserProcessorTime;
         }
 
         /// <summary>
@@ -673,7 +674,7 @@ namespace System.Diagnostics
             // problems (it specifies exactly which part of the string
             // is the file to execute).
             ReadOnlySpan<char> fileName = startInfo.FileName.AsSpan().Trim();
-            bool fileNameIsQuoted = fileName.Length > 0 && fileName[0] == '\"' && fileName[fileName.Length - 1] == '\"';
+            bool fileNameIsQuoted = fileName.StartsWith('"') && fileName.EndsWith('"');
             if (!fileNameIsQuoted)
             {
                 commandLine.Append('"');
@@ -857,9 +858,9 @@ namespace System.Diagnostics
             }
         }
 
-        private static string GetEnvironmentVariablesBlock(IDictionary<string, string> sd)
+        private static string GetEnvironmentVariablesBlock(DictionaryWrapper sd)
         {
-            // https://docs.microsoft.com/en-us/windows/win32/procthread/changing-environment-variables
+            // https://learn.microsoft.com/windows/win32/procthread/changing-environment-variables
             // "All strings in the environment block must be sorted alphabetically by name. The sort is
             //  case-insensitive, Unicode order, without regard to locale. Because the equal sign is a
             //  separator, it must not be used in the name of an environment variable."
@@ -872,7 +873,13 @@ namespace System.Diagnostics
             var result = new StringBuilder(8 * keys.Length);
             foreach (string key in keys)
             {
-                result.Append(key).Append('=').Append(sd[key]).Append('\0');
+                string? value = sd[key];
+
+                // Ignore null values for consistency with Environment.SetEnvironmentVariable
+                if (value != null)
+                {
+                    result.Append(key).Append('=').Append(value).Append('\0');
+                }
             }
 
             return result.ToString();

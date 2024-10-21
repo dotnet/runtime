@@ -14,9 +14,7 @@ trigger:
 pr: none
 
 variables:
-# disable CodeQL here, we have a separate pipeline for it
-- name: Codeql.Enabled
-  value: False
+  - template: /eng/pipelines/common/variables.yml
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -24,10 +22,9 @@ extends:
     stages:
     - stage: Build
       jobs:
-
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
           - osx_arm64
@@ -40,10 +37,15 @@ extends:
           - windows_arm64
           jobParameters:
             disableComponentGovernance: true # Not a shipping artifact
+            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/upload-jits-steps.yml
+            extraVariablesTemplates:
+              - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
           - osx_arm64
@@ -56,3 +58,8 @@ extends:
           - windows_arm64
           jobParameters:
             disableComponentGovernance: true # Not a shipping artifact
+            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig) /p:NoPgoOptimize=true
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/upload-jits-steps.yml
+            extraVariablesTemplates:
+              - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml

@@ -230,7 +230,7 @@ namespace System.Linq.Tests
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Distinct();
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -303,6 +303,12 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> DistinctBy_TestData()
         {
+            yield return WrapArgs(
+                source: Array.Empty<int>(),
+                keySelector: x => x,
+                comparer: null,
+                expected: Enumerable.Empty<int>());
+
             yield return WrapArgs(
                 source: Enumerable.Range(0, 10),
                 keySelector: x => x,

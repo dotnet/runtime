@@ -5,9 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-
-using SuppressMessageAttribute = System.Diagnostics.CodeAnalysis.SuppressMessageAttribute;
 using Encoding = System.Text.Encoding;
+using SuppressMessageAttribute = System.Diagnostics.CodeAnalysis.SuppressMessageAttribute;
 
 namespace System.Xml.Linq
 {

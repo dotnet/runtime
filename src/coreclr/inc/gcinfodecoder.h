@@ -31,7 +31,17 @@
 
 #ifdef FEATURE_NATIVEAOT
 
+#include "gcinfo.h"
+
 typedef ArrayDPTR(const uint8_t) PTR_CBYTE;
+#ifdef TARGET_X86
+// Bridge few additional pointer types used in x86 unwinding code
+typedef DPTR(DWORD) PTR_DWORD;
+typedef DPTR(WORD) PTR_WORD;
+typedef DPTR(BYTE) PTR_BYTE;
+typedef DPTR(signed char) PTR_SBYTE;
+typedef DPTR(INT32) PTR_INT32;
+#endif
 
 #define LIMITED_METHOD_CONTRACT
 #define SUPPORTS_DAC
@@ -50,21 +60,11 @@ typedef ArrayDPTR(const uint8_t) PTR_CBYTE;
 #define SSIZE_T intptr_t
 #define LPVOID void*
 
+#define CHECK_APP_DOMAIN    0
+
 typedef void * OBJECTREF;
 
 #define GET_CALLER_SP(pREGDISPLAY) ((TADDR)0)
-
-struct GCInfoToken
-{
-    PTR_VOID Info;
-    UINT32 Version;
-
-    GCInfoToken(PTR_VOID info)
-    {
-        Info = info;
-        Version = 2;
-    }
-};
 
 #else // FEATURE_NATIVEAOT
 
@@ -87,6 +87,8 @@ inline TADDR GetSP(T_CONTEXT* context)
     return (TADDR)context->Sp;
 #elif defined(TARGET_LOONGARCH64)
     return (TADDR)context->Sp;
+#elif defined(TARGET_RISCV64)
+    return (TADDR)context->Sp;
 #else
     _ASSERTE(!"nyi for platform");
 #endif
@@ -101,6 +103,8 @@ inline PCODE GetIP(T_CONTEXT* context)
 #elif defined(TARGET_ARM64)
     return (PCODE)context->Pc;
 #elif defined(TARGET_LOONGARCH64)
+    return (PCODE)context->Pc;
+#elif defined(TARGET_RISCV64)
     return (PCODE)context->Pc;
 #else
     _ASSERTE(!"nyi for platform");
@@ -181,6 +185,9 @@ enum ICodeManagerFlags
     NoReportUntracked
                     =   0x0080, // EnumGCRefs/EnumerateLiveSlots should *not* include
                                 // any untracked slots
+    ReportFPBasedSlotsOnly
+                    =   0x0200, // EnumGCRefs/EnumerateLiveSlots should only include
+                                // slots that are based on the frame pointer
 };
 
 #endif // !_strike_h
@@ -261,6 +268,9 @@ public:
 
         m_pCurrent = m_pBuffer = dac_cast<PTR_size_t>((size_t)dac_cast<TADDR>(pBuffer) & ~((size_t)sizeof(size_t)-1));
         m_RelPos = m_InitialRelPos = (int)((size_t)dac_cast<TADDR>(pBuffer) % sizeof(size_t)) * 8/*BITS_PER_BYTE*/;
+        // There are always some bits in the GC info, at least the header.
+        // It is ok to prefetch.
+        m_current = *m_pCurrent >> m_RelPos;
     }
 
     BitStreamReader(const BitStreamReader& other)
@@ -271,6 +281,7 @@ public:
         m_InitialRelPos = other.m_InitialRelPos;
         m_pCurrent = other.m_pCurrent;
         m_RelPos = other.m_RelPos;
+        m_current = other.m_current;
     }
 
     const BitStreamReader& operator=(const BitStreamReader& other)
@@ -281,6 +292,7 @@ public:
         m_InitialRelPos = other.m_InitialRelPos;
         m_pCurrent = other.m_pCurrent;
         m_RelPos = other.m_RelPos;
+        m_current = other.m_current;
         return *this;
     }
 
@@ -291,35 +303,42 @@ public:
 
         _ASSERTE(numBits > 0 && numBits <= BITS_PER_SIZE_T);
 
-        size_t result = (*m_pCurrent) >> m_RelPos;
+        size_t result = m_current;
+        m_current >>= numBits;
         int newRelPos = m_RelPos + numBits;
-        if(newRelPos >= BITS_PER_SIZE_T)
+        if(newRelPos > BITS_PER_SIZE_T)
         {
             m_pCurrent++;
+            m_current = *m_pCurrent;
             newRelPos -= BITS_PER_SIZE_T;
-            if(newRelPos > 0)
-            {
-                size_t extraBits = (*m_pCurrent) << (numBits - newRelPos);
-                result ^= extraBits;
-            }
+            size_t extraBits = m_current << (numBits - newRelPos);
+            result |= extraBits;
+            m_current >>= newRelPos;
         }
         m_RelPos = newRelPos;
-        result &= SAFE_SHIFT_LEFT(1, numBits) - 1;
+        result &= ((size_t)-1 >> (BITS_PER_SIZE_T - numBits));
         return result;
     }
 
-    // This version reads one bit, returning zero/non-zero (not 0/1)
+    // This version reads one bit
     // NOTE: This routine is perf-critical
     __forceinline size_t ReadOneFast()
     {
         SUPPORTS_DAC;
 
-        size_t result = (*m_pCurrent) & (((size_t)1) << m_RelPos);
-        if(++m_RelPos == BITS_PER_SIZE_T)
+        // "m_RelPos == BITS_PER_SIZE_T" means that m_current
+        // is not yet fetched. Do that now.
+        if(m_RelPos == BITS_PER_SIZE_T)
         {
             m_pCurrent++;
+            m_current = *m_pCurrent;
             m_RelPos = 0;
         }
+
+        m_RelPos++;
+        size_t result = m_current & 1;
+        m_current >>= 1;
+
         return result;
     }
 
@@ -335,6 +354,10 @@ public:
         size_t adjPos = pos + m_InitialRelPos;
         m_pCurrent = m_pBuffer + adjPos / BITS_PER_SIZE_T;
         m_RelPos = (int)(adjPos % BITS_PER_SIZE_T);
+
+        // we always call SetCurrentPos just before reading.
+        // It is ok to prefetch.
+        m_current = *m_pCurrent >> m_RelPos;
         _ASSERTE(GetCurrentPos() == pos);
     }
 
@@ -342,28 +365,27 @@ public:
     {
         SUPPORTS_DAC;
 
-        SetCurrentPos(GetCurrentPos() + numBitsToSkip);
-    }
+        size_t pos = GetCurrentPos() + numBitsToSkip;
+        size_t adjPos = pos + m_InitialRelPos;
+        m_pCurrent = m_pBuffer + adjPos / BITS_PER_SIZE_T;
+        m_RelPos = (int)(adjPos % BITS_PER_SIZE_T);
 
-    __forceinline void AlignUpToByte()
-    {
-        if(m_RelPos <= BITS_PER_SIZE_T - 8)
+        // Skipping ahead may go to a position at the edge-exclusive
+        // end of the stream. The location may have no more data.
+        // We will not prefetch on word boundary - in case
+        // the next word in in an unreadable page.
+        if (m_RelPos == 0)
         {
-            m_RelPos = (m_RelPos + 7) & ~7;
+            m_pCurrent--;
+            m_RelPos = BITS_PER_SIZE_T;
+            m_current = 0;
         }
         else
         {
-            m_RelPos = 0;
-            m_pCurrent++;
+            m_current = *m_pCurrent >> m_RelPos;
         }
-    }
 
-    __forceinline size_t ReadBitAtPos( size_t pos )
-    {
-        size_t adjPos = pos + m_InitialRelPos;
-        size_t* ptr = m_pBuffer + adjPos / BITS_PER_SIZE_T;
-        int relPos = (int)(adjPos % BITS_PER_SIZE_T);
-        return (*ptr) & (((size_t)1) << relPos);
+        _ASSERTE(GetCurrentPos() == pos);
     }
 
 
@@ -372,23 +394,36 @@ public:
     // See the corresponding methods on BitStreamWriter for more information on the format
     //--------------------------------------------------------------------------
 
-    inline size_t DecodeVarLengthUnsigned( int base )
+    size_t DecodeVarLengthUnsignedMore ( int base )
     {
         _ASSERTE((base > 0) && (base < (int)BITS_PER_SIZE_T));
         size_t numEncodings = size_t{ 1 } << base;
-        size_t result = 0;
-        for(int shift=0; ; shift+=base)
+        size_t result = numEncodings;
+        for(int shift=base; ; shift+=base)
         {
             _ASSERTE(shift+base <= (int)BITS_PER_SIZE_T);
 
             size_t currentChunk = Read(base+1);
-            result |= (currentChunk & (numEncodings-1)) << shift;
+            result ^= (currentChunk & (numEncodings-1)) << shift;
             if(!(currentChunk & numEncodings))
             {
                 // Extension bit is not set, we're done.
                 return result;
             }
         }
+    }
+
+    __forceinline size_t DecodeVarLengthUnsigned(int base)
+    {
+        _ASSERTE((base > 0) && (base < (int)BITS_PER_SIZE_T));
+
+        size_t result = Read(base + 1);
+        if (result & ((size_t)1 << base))
+        {
+            result ^= DecodeVarLengthUnsignedMore(base);
+        }
+
+        return result;
     }
 
     inline SSIZE_T DecodeVarLengthSigned( int base )
@@ -418,6 +453,7 @@ private:
     int m_InitialRelPos;
     PTR_size_t m_pCurrent;
     int m_RelPos;
+    size_t m_current;
 };
 
 struct GcSlotDesc
@@ -488,12 +524,18 @@ public:
     //------------------------------------------------------------------------
 
     bool IsInterruptible();
+    bool HasInterruptibleRanges();
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
+    bool IsSafePoint();
+    bool AreSafePointsInterruptible();
+    bool IsInterruptibleSafePoint();
+    bool CouldBeInterruptibleSafePoint();
+
     // This is used for gccoverage
     bool IsSafePoint(UINT32 codeOffset);
 
-    typedef void EnumerateSafePointsCallback (UINT32 offset, void * hCallback);
+    typedef void EnumerateSafePointsCallback (GcInfoDecoder* decoder, UINT32 offset, void * hCallback);
     void EnumerateSafePoints(EnumerateSafePointsCallback * pCallback, void * hCallback);
 
 #endif
@@ -561,15 +603,8 @@ private:
     UINT32  m_InstructionOffset;
 
     // Pre-decoded information
+    GcInfoHeaderFlags m_headerFlags;
     bool    m_IsInterruptible;
-    bool    m_IsVarArg;
-    bool    m_GenericSecretParamIsMD;
-    bool    m_GenericSecretParamIsMT;
-#ifdef TARGET_AMD64
-    bool    m_WantsReportOnlyLeaf;
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    bool    m_HasTailCalls;
-#endif // TARGET_AMD64
     INT32   m_GSCookieStackSlot;
     INT32   m_ReversePInvokeFrameStackSlot;
     UINT32  m_ValidRangeStart;
@@ -586,7 +621,8 @@ private:
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     UINT32  m_NumSafePoints;
     UINT32  m_SafePointIndex;
-    UINT32 FindSafePoint(UINT32 codeOffset);
+    UINT32  NarrowSafePointSearch(size_t savedPos, UINT32 breakOffset, UINT32* searchEnd);
+    UINT32  FindSafePoint(UINT32 codeOffset);
 #endif
     UINT32  m_NumInterruptibleRanges;
 
@@ -599,6 +635,8 @@ private:
     PTR_CBYTE m_GcInfoAddress;
 #endif
     UINT32 m_Version;
+
+    bool PredecodeFatHeader(int remainingFlags);
 
     static bool SetIsInterruptibleCB (UINT32 startOffset, UINT32 stopOffset, void * hCallback);
 
@@ -667,11 +705,12 @@ private:
     {
         _ASSERTE(slotIndex < slotDecoder.GetNumSlots());
         const GcSlotDesc* pSlot = slotDecoder.GetSlotDesc(slotIndex);
+        bool reportFpBasedSlotsOnly = (inputFlags & ReportFPBasedSlotsOnly);
 
         if(slotIndex < slotDecoder.GetNumRegisters())
         {
             UINT32 regNum = pSlot->Slot.RegisterNumber;
-            if( reportScratchSlots || !IsScratchRegister( regNum, pRD ) )
+            if( ( reportScratchSlots || !IsScratchRegister( regNum, pRD ) ) && !reportFpBasedSlotsOnly )
             {
                 ReportRegisterToGC(
                             regNum,
@@ -691,7 +730,9 @@ private:
         {
             INT32 spOffset = pSlot->Slot.Stack.SpOffset;
             GcStackSlotBase spBase = pSlot->Slot.Stack.Base;
-            if( reportScratchSlots || !IsScratchStackSlot(spOffset, spBase, pRD) )
+
+            if( ( reportScratchSlots || !IsScratchStackSlot(spOffset, spBase, pRD) ) &&
+                ( !reportFpBasedSlotsOnly || (GC_FRAMEREG_REL == spBase ) ) )
             {
                 ReportStackSlotToGC(
                             spOffset,

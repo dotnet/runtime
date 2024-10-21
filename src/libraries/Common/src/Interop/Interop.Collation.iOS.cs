@@ -29,5 +29,8 @@ internal static partial class Interop
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_StartsWithNative", StringMarshalling = StringMarshalling.Utf16)]
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static unsafe partial int StartsWithNative(string localeName, int lNameLen, char* target, int cwTargetLength, char* source, int cwSourceLength, CompareOptions options);
+
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetSortKeyNative", StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial int GetSortKeyNative(string localeName, int lNameLen, char* str, int strLength, byte* sortKey, int sortKeyLength, CompareOptions options);
     }
 }

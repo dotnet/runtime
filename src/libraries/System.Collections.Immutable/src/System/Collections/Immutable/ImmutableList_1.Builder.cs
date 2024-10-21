@@ -28,7 +28,7 @@ namespace System.Collections.Immutable
         /// </remarks>
         [DebuggerDisplay("Count = {Count}")]
         [DebuggerTypeProxy(typeof(ImmutableListBuilderDebuggerProxy<>))]
-        public sealed class Builder : IList<T>, IList, IOrderedCollection<T>, IImmutableListQueries<T>, IReadOnlyList<T>
+        public sealed class Builder : IList<T>, IList, IReadOnlyList<T>
         {
             /// <summary>
             /// The binary tree used to store the contents of the list.  Contents are typically not entirely frozen.
@@ -134,17 +134,6 @@ namespace System.Collections.Immutable
                 set
                 {
                     this.Root = this.Root.ReplaceAt(index, value);
-                }
-            }
-
-            /// <summary>
-            /// Gets the element in the collection at a given index.
-            /// </summary>
-            T IOrderedCollection<T>.this[int index]
-            {
-                get
-                {
-                    return this[index];
                 }
             }
 
@@ -779,7 +768,7 @@ namespace System.Collections.Immutable
             public void RemoveRange(int index, int count)
             {
                 Requires.Range(index >= 0 && index <= this.Count, nameof(index));
-                Requires.Range(count >= 0 && index + count <= this.Count, nameof(count));
+                Requires.Range(count >= 0 && index <= this.Count - count, nameof(count));
 
                 int remaining = count;
                 while (remaining-- > 0)

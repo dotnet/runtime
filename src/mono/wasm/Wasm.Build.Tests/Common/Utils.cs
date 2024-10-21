@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
@@ -58,4 +59,16 @@ internal static class Utils
         }
     }
 
+    public static string GZipCompress(string fileSelected)
+    {
+        FileInfo fileToCompress = new FileInfo(fileSelected);
+        string compressedFileName = fileToCompress.FullName + ".gz";
+
+        using FileStream originalFileStream = fileToCompress.OpenRead();
+        using FileStream compressedFileStream = File.Create(compressedFileName);
+        using GZipStream compressionStream = new(compressedFileStream, CompressionMode.Compress);
+        originalFileStream.CopyTo(compressionStream);
+
+        return compressedFileName;
+    }
 }

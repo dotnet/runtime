@@ -29,6 +29,7 @@ Revision History:
 
 #include <pthread.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <errno.h>
 #include <stddef.h>
 #include <sys/stat.h>

@@ -281,7 +281,7 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         // The extension exposes the value as a hexadecimal string, or we can decode here.
                         // Enough parsing has gone on, let's decode.
-                        certKeyId = ManagedX509ExtensionProcessor.DecodeX509SubjectKeyIdentifierExtension(ext.RawData);
+                        certKeyId = X509SubjectKeyIdentifierExtension.DecodeX509SubjectKeyIdentifierExtension(ext.RawData);
                     }
                     else
                     {

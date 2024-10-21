@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix)
-                .Append("__InterfaceDispatchCell_")
+                .Append("__InterfaceDispatchCell_"u8)
                 .Append(nameMangler.GetMangledMethodName(_targetMethod));
 
             if (_callSiteIdentifier != null)
@@ -54,41 +54,31 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList result = new DependencyList();
 
-            if (!factory.VTable(_targetMethod.OwningType).HasFixedSlots)
+            if (!factory.VTable(_targetMethod.OwningType).HasKnownVirtualMethodUse)
             {
                 result.Add(factory.VirtualMethodUse(_targetMethod), "Interface method use");
             }
 
             factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref result, factory, _targetMethod);
 
-            TargetArchitecture targetArchitecture = factory.Target.Architecture;
-            if (targetArchitecture == TargetArchitecture.ARM)
-            {
-                result.Add(factory.InitialInterfaceDispatchStub, "Initial interface dispatch stub");
-            }
-            else
-            {
-                result.Add(factory.ExternSymbol("RhpInitialDynamicInterfaceDispatch"), "Initial interface dispatch stub");
-            }
+            result.Add(factory.InitialInterfaceDispatchStub, "Initial interface dispatch stub");
 
-            result.Add(factory.NecessaryTypeSymbol(_targetMethod.OwningType), "Interface type");
+            // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
+            // If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
+            // see a RuntimeTypeHandle representing this interface.
+            result.Add(factory.ConstructedTypeSymbol(_targetMethod.OwningType), "Interface type");
 
             return result;
         }
 
         public override void EncodeData(ref ObjectDataBuilder objData, NodeFactory factory, bool relocsOnly)
         {
-            TargetArchitecture targetArchitecture = factory.Target.Architecture;
-            if (targetArchitecture == TargetArchitecture.ARM)
-            {
-                objData.EmitPointerReloc(factory.InitialInterfaceDispatchStub);
-            }
-            else
-            {
-                objData.EmitPointerReloc(factory.ExternSymbol("RhpInitialDynamicInterfaceDispatch"));
-            }
+            objData.EmitPointerReloc(factory.InitialInterfaceDispatchStub);
 
-            IEETypeNode interfaceType = factory.NecessaryTypeSymbol(_targetMethod.OwningType);
+            // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
+            // If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
+            // see a RuntimeTypeHandle representing this interface.
+            IEETypeNode interfaceType = factory.ConstructedTypeSymbol(_targetMethod.OwningType);
             if (factory.Target.SupportsRelativePointers)
             {
                 if (interfaceType.RepresentsIndirectionCell)

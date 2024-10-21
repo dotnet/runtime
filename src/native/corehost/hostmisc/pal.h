@@ -27,6 +27,7 @@
 #define xerr std::wcerr
 #define xout std::wcout
 #define DIR_SEPARATOR L'\\'
+#define DIR_SEPARATOR_STR L"\\"
 #define PATH_SEPARATOR L';'
 #define PATH_MAX MAX_PATH
 #define _X(s) L ## s
@@ -44,6 +45,7 @@
 #define xerr std::cerr
 #define xout std::cout
 #define DIR_SEPARATOR '/'
+#define DIR_SEPARATOR_STR "/"
 #define PATH_SEPARATOR ':'
 #undef _X
 #define _X(s) s
@@ -55,6 +57,8 @@
 #define SUCCEEDED(Status) ((Status) >= 0)
 
 #endif
+
+#include "configure.h"
 
 // When running on a platform that is not supported in RID fallback graph (because it was unknown
 // at the time the SharedFX in question was built), we need to use a reasonable fallback RID to allow
@@ -143,7 +147,7 @@ namespace pal
         CRITICAL_SECTION _impl;
     };
 
-    inline string_t exe_suffix() { return _X(".exe"); }
+    inline const pal::char_t* exe_suffix() { return _X(".exe"); }
 
     inline int cstrcasecmp(const char* str1, const char* str2) { return ::_stricmp(str1, str2); }
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::wcscmp(str1, str2); }
@@ -157,9 +161,9 @@ namespace pal
 
     inline FILE* file_open(const string_t& path, const char_t* mode) { return ::_wfsopen(path.c_str(), mode, _SH_DENYNO); }
 
-    inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfwprintf(f, format, vl); ::fputwc(_X('\n'), f); }
-    inline void err_fputs(const char_t* message) { ::fputws(message, stderr); ::fputwc(_X('\n'), stderr); }
-    inline void out_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stdout, format, vl); ::fputwc(_X('\n'), stdout); }
+    void file_vprintf(FILE* f, const char_t* format, va_list vl);
+    void err_print_line(const char_t* message);
+    void out_vprint_line(const char_t* format, va_list vl);
 
     inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf_s(buffer, count, _TRUNCATE, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::_vscwprintf(format, vl); }
@@ -186,7 +190,7 @@ namespace pal
     inline bool munmap(void* addr, size_t length) { return UnmapViewOfFile(addr) != 0; }
     inline int get_pid() { return GetCurrentProcessId(); }
     inline void sleep(uint32_t milliseconds) { Sleep(milliseconds); }
-#else
+#else // _WIN32
 #ifdef EXPORT_SHARED_API
 #define SHARED_API extern "C" __attribute__((__visibility__("default")))
 #else
@@ -211,7 +215,7 @@ namespace pal
     typedef void* proc_t;
     typedef std::mutex mutex_t;
 
-    inline string_t exe_suffix() { return _X(""); }
+    inline const pal::char_t* exe_suffix() { return nullptr; }
 
     inline int cstrcasecmp(const char* str1, const char* str2) { return ::strcasecmp(str1, str2); }
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::strcmp(str1, str2); }
@@ -224,8 +228,8 @@ namespace pal
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
     inline FILE* file_open(const string_t& path, const char_t* mode) { return fopen(path.c_str(), mode); }
     inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfprintf(f, format, vl); ::fputc('\n', f); }
-    inline void err_fputs(const char_t* message) { ::fputs(message, stderr); ::fputc(_X('\n'), stderr); }
-    inline void out_vprintf(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
+    inline void err_print_line(const char_t* message) { ::fputs(message, stderr); ::fputc(_X('\n'), stderr); }
+    inline void out_vprint_line(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
     inline int str_vprintf(char_t* str, size_t size, const char_t* format, va_list vl) { return ::vsnprintf(str, size, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::vsnprintf(nullptr, 0, format, vl); }
 
@@ -252,7 +256,7 @@ namespace pal
     inline bool munmap(void* addr, size_t length) { return ::munmap(addr, length) == 0; }
     inline int get_pid() { return getpid(); }
     inline void sleep(uint32_t milliseconds) { usleep(milliseconds * 1000); }
-#endif
+#endif // _WIN32
 
     inline int snwprintf(char_t* buffer, size_t count, const char_t* format, ...)
     {
@@ -277,7 +281,10 @@ namespace pal
     void* mmap_copy_on_write(const string_t& path, size_t* length = nullptr);
 
     bool touch_file(const string_t& path);
+    // Realpath resolves a fully-qualified path to the target. It always resolves through file symlinks (not necessarily directory symlinks).
     bool realpath(string_t* path, bool skip_error_logging = false);
+    // Fullpath resolves a fully-qualified path to the target. It may resolve through symlinks, depending on platform.
+    bool fullpath(string_t* path, bool skip_error_logging = false);
     bool file_exists(const string_t& path);
     inline bool directory_exists(const string_t& path) { return file_exists(path); }
     void readdir(const string_t& path, const string_t& pattern, std::vector<string_t>* list);
@@ -344,8 +351,6 @@ namespace pal
     bool is_emulating_x64();
 
     bool are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2);
-
-    void initialize_createdump();
 }
 
 #endif // PAL_H

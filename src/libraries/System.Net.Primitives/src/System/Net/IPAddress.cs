@@ -86,6 +86,20 @@ namespace System.Net
             }
         }
 
+        internal uint PrivateIPv4Address
+        {
+            get
+            {
+                Debug.Assert(IsIPv4 || IsIPv4MappedToIPv6);
+                if (IsIPv4)
+                {
+                    return _addressOrScopeId;
+                }
+                uint address = (uint)_numbers[6] << 16 | (uint)_numbers[7];
+                return (uint)HostToNetworkOrder(unchecked((int)address));
+            }
+        }
+
         private uint PrivateScopeId
         {
             get
@@ -142,7 +156,6 @@ namespace System.Net
 
         internal IPAddress(ReadOnlySpan<ushort> numbers, uint scopeid)
         {
-            Debug.Assert(numbers != null);
             Debug.Assert(numbers.Length == NumberOfLabels);
 
             _numbers = numbers.ToArray();

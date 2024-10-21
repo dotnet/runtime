@@ -22,13 +22,23 @@ MONO_BEGIN_DECLS
 #include "options-def.h"
 MONO_END_DECLS
 
+typedef enum {
+	MONO_OPTION_BOOL,
+	MONO_OPTION_BOOL_READONLY,
+	MONO_OPTION_INT,
+	MONO_OPTION_STRING
+} MonoOptionType;
+
 extern int mono_options_version;
 
 void mono_options_print_usage (void);
 
-void mono_options_parse_options (const char **args, int argc, int *out_argc, MonoError *error);
+void mono_options_parse_options (const char **args, int argc, int *out_argc, GPtrArray *processed, MonoError *error);
 
 /* returns a json blob representing the current values of all options */
 char * mono_options_get_as_json (void);
+
+gboolean
+mono_options_get (const char *name, MonoOptionType *type, void **value_address);
 
 #endif

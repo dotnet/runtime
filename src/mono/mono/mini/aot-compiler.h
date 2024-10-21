@@ -7,7 +7,7 @@
 
 #include "mini.h"
 
-int mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 opts, const char *aot_options);
+int mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 opts, GPtrArray *runtime_args, const char *aot_options);
 void* mono_aot_readonly_field_override (MonoClassField *field);
 gboolean mono_aot_direct_icalls_enabled_for_method (MonoCompile *cfg, MonoMethod *method);
 gboolean mono_aot_is_shared_got_offset (int offset);

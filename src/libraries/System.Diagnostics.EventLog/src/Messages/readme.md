@@ -1,6 +1,6 @@
 These files are used to produce an Event Message File.
 
-For more information see https://docs.microsoft.com/en-us/windows/win32/eventlog/message-files.
+For more information see https://learn.microsoft.com/windows/win32/eventlog/message-files.
 
 The design of the EventLog class is to allow for the registration of event sources without specifying message files.
 

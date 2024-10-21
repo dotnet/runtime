@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Collections.Generic;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Reflection.Execution
@@ -381,7 +382,7 @@ namespace Internal.Reflection.Execution
         {
             Debug.Assert(!pBaseType.IsInterface, "did not expect interface type");
 
-            for (;;)
+            for (; ; )
             {
                 if (AreTypesEquivalentInternal(pDerivedType, pBaseType))
                     return true;

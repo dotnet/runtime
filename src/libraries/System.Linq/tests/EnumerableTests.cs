@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -87,7 +88,7 @@ namespace System.Linq.Tests
             public bool Equals(string x, string y)
             {
                 if (ReferenceEquals(x, y)) return true;
-                if (x == null | y == null) return false;
+                if (x is null | y is null) return false;
                 int length = x.Length;
                 if (length != y.Length) return false;
                 using (var en = x.OrderBy(i => i).GetEnumerator())
@@ -103,7 +104,7 @@ namespace System.Linq.Tests
 
             public int GetHashCode(string obj)
             {
-                if (obj == null) return 0;
+                if (obj is null) return 0;
                 int hash = obj.Length;
                 foreach (char c in obj)
                     hash ^= c;
@@ -307,6 +308,14 @@ namespace System.Linq.Tests
             IEnumerator IEnumerable.GetEnumerator() => NonGenericGetEnumeratorWorker();
         }
 
+        protected static IEnumerable<IEnumerable<T>> CreateSources<T>(IEnumerable<T> source)
+        {
+            foreach (Func<IEnumerable<T>, IEnumerable<T>> t in IdentityTransforms<T>())
+            {
+                yield return t(source);
+            }
+        }
+
         protected static List<Func<IEnumerable<T>, IEnumerable<T>>> IdentityTransforms<T>()
         {
             // All of these transforms should take an enumerable and produce
@@ -316,12 +325,16 @@ namespace System.Linq.Tests
                 e => e,
                 e => e.ToArray(),
                 e => e.ToList(),
+                e => e.ToList().Take(int.MaxValue),
                 e => e.Select(i => i),
-                e => e.Concat(Array.Empty<T>()),
-                e => ForceNotCollection(e),
-                e => e.Concat(ForceNotCollection(Array.Empty<T>())),
+                e => e.Select(i => i).Take(int.MaxValue),
+                e => e.Select(i => i).Where(i => true),
                 e => e.Where(i => true),
-                e => ForceNotCollection(e).Skip(0)
+                e => e.Concat(Array.Empty<T>()),
+                e => e.Concat(ForceNotCollection(Array.Empty<T>())),
+                e => ForceNotCollection(e),
+                e => ForceNotCollection(e).Skip(0),
+                e => new ReadOnlyCollection<T>(e.ToArray()),
             };
         }
 

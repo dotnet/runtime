@@ -9,9 +9,9 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -315,7 +315,7 @@ namespace System.Linq.Parallel
 
             if (sourceAsOperator == null)
             {
-                if (source is OrderedParallelQuery<TOutput>  orderedQuery)
+                if (source is OrderedParallelQuery<TOutput> orderedQuery)
                 {
                     // We have to handle OrderedParallelQuery<T> specially. In all other cases,
                     // ParallelQuery *is* the QueryOperator<T>. But, OrderedParallelQuery<T>

@@ -8,12 +8,14 @@ using System.Resources;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
+using Xunit;
 
-class MightyExceptor
+public class MightyExceptor
 {
 	static int Result = 100;
 
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		try
 		{

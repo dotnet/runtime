@@ -143,7 +143,7 @@ namespace System
         public bool Equals([NotNullWhen(true)] Version? obj)
         {
             return ReferenceEquals(obj, this) ||
-                (!(obj is null) &&
+                (obj is not null &&
                 _Major == obj._Major &&
                 _Minor == obj._Minor &&
                 _Build == obj._Build &&
@@ -249,8 +249,8 @@ namespace System
 
                 int valueCharsWritten;
                 bool formatted = typeof(TChar) == typeof(char) ?
-                    ((uint)value).TryFormat(MemoryMarshal.Cast<TChar, char>(destination), out valueCharsWritten) :
-                    ((uint)value).TryFormat(MemoryMarshal.Cast<TChar, byte>(destination), out valueCharsWritten, default, CultureInfo.InvariantCulture);
+                    ((uint)value).TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination), out valueCharsWritten) :
+                    ((uint)value).TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination), out valueCharsWritten, default, CultureInfo.InvariantCulture);
 
                 if (!formatted)
                 {
@@ -407,7 +407,7 @@ namespace System
         {
             if (v1 is null)
             {
-                return !(v2 is null);
+                return v2 is not null;
             }
 
             return v1.CompareTo(v2) < 0;

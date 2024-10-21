@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>System.IO</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <XunitShowProgress>true</XunitShowProgress>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' == 'true'">
+    <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
+    <!-- VSF is emulated on the UI thread and all calls are slow because they are marshaled -->
+    <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="IndentedTextWriter.cs" />
+    <Compile Include="BinaryReader\BinaryReaderTests.cs" />
+    <Compile Include="MemoryStream\MemoryStream.ToArrayTests.cs" />
+    <Compile Include="MemoryStream\MemoryStream.GetBufferTests.cs" />
+    <Compile Include="StreamReader\StreamReader.cs" />
+    <Compile Include="StreamReader\StreamReader.StringCtorTests.cs" />
+    <Compile Include="StreamWriter\StreamWriter.cs" />
+    <Compile Include="StreamWriter\StreamWriter.StringCtorTests.cs" />
+    <Compile Include="BinaryWriter\BinaryWriter.DisposeAsync.cs" />
+    <Compile Include="BinaryWriter\BinaryWriter.EncodingTests.cs" />
+    <Compile Include="BinaryWriter\BinaryWriter.EncodingTests_Serial.cs" />
+    <Compile Include="BinaryWriter\BinaryWriter.WriteByteCharTests.cs" />
+    <Compile Include="BinaryWriter\BinaryWriter.WriteTests.cs" />
+    <Compile Include="BinaryWriter\BinaryWriterTests.cs" />
+    <Compile Include="BufferedStream\BufferedStreamConnectedConformanceTests.cs" />
+    <Compile Include="BufferedStream\BufferedStreamTests.cs" />
+    <Compile Include="InvalidDataException\InvalidDataExceptionTests.cs" />
+    <Compile Include="MemoryStream\MemoryStream.ConstructorTests.cs" />
+    <Compile Include="MemoryStream\MemoryStream.TryGetBufferTests.cs" />
+    <Compile Include="MemoryStream\MemoryStreamTests.cs" />
+    <Compile Include="StreamReader\StreamReader.CtorTests.cs" />
+    <Compile Include="StreamReader\StreamReaderTests.cs" />
+    <Compile Include="StreamReader\StreamReaderTests_Serial.cs" />
+    <Compile Include="StreamWriter\StreamWriter.BaseStream.cs" />
+    <Compile Include="StreamWriter\StreamWriter.CloseTests.cs" />
+    <Compile Include="StreamWriter\StreamWriter.CtorTests.cs" />
+    <Compile Include="StreamWriter\StreamWriter.DisposeAsync.cs" />
+    <Compile Include="StreamWriter\StreamWriter.FlushTests.cs" />
+    <Compile Include="StreamWriter\StreamWriter.WriteTests.cs" />
+    <Compile Include="Stream\Stream.ReadAtLeast.cs" />
+    <Compile Include="Stream\Stream.ReadExactly.cs" />
+    <Compile Include="Stream\Stream.DisposeAsync.cs" />
+    <Compile Include="Stream\Stream.ReadWriteSpan.cs" />
+    <Compile Include="Stream\Stream.NullTests.cs" />
+    <Compile Include="Stream\Stream.CopyToTests.cs" />
+    <Compile Include="Stream\SyncStreamConformanceTests.cs" />
+    <Compile Include="Stream\Stream.TestLeaveOpen.cs" />
+    <Compile Include="Stream\Stream.TimeoutTests.cs" />
+    <Compile Include="Stream\Stream.ValidateArguments.cs" />
+    <Compile Include="StringReader\StringReader.CtorTests.cs" />
+    <Compile Include="StringWriter\StringWriterTests.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
+    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs" Link="Common\System\IO\DelegateStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="Common\System\IO\WrappedMemoryStream.cs" />
+    <Compile Include="TestDataProvider\TestDataProvider.cs" />
+    <Compile Include="TextReader\CharArrayTextReader.cs" />
+    <Compile Include="TextReader\TextReaderTests.cs" />
+    <Compile Include="TextWriter\CharArrayTextWriter.cs" />
+    <Compile Include="TextWriter\TextWriterTests.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="Common\System\IO\ConnectedStreams.cs" />
+    <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
+  </ItemGroup>
+</Project>

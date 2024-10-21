@@ -56,6 +56,7 @@ internal class MyCriticalHandle : CriticalHandle
     }
 }
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class CriticalHandleStructTest
 {
     private static Native.HandleCallback s_handleCallback = (handleValue) =>

@@ -33,19 +33,19 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         /// <summary>
-        /// Triggered when the application host has fully started and is about to wait
+        /// Gets a cancellation token. Triggered when the application host has fully started and is about to wait
         /// for a graceful shutdown.
         /// </summary>
         public CancellationToken ApplicationStarted => _startedSource.Token;
 
         /// <summary>
-        /// Triggered when the application host is performing a graceful shutdown.
-        /// Request may still be in flight. Shutdown will block until this event completes.
+        /// Gets a cancellation token. Triggered when the application host is performing a graceful shutdown.
+        /// Request might still be in flight. Shutdown will block until this event completes.
         /// </summary>
         public CancellationToken ApplicationStopping => _stoppingSource.Token;
 
         /// <summary>
-        /// Triggered when the application host is performing a graceful shutdown.
+        /// Gets a cancellation token. Triggered when the application host is performing a graceful shutdown.
         /// All requests should be complete at this point. Shutdown will block
         /// until this event completes.
         /// </summary>
@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 try
                 {
-                    ExecuteHandlers(_stoppingSource);
+                    _stoppingSource.Cancel();
                 }
                 catch (Exception ex)
                 {
@@ -81,7 +81,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             try
             {
-                ExecuteHandlers(_startedSource);
+                _startedSource.Cancel();
             }
             catch (Exception ex)
             {
@@ -98,7 +98,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             try
             {
-                ExecuteHandlers(_stoppedSource);
+                _stoppedSource.Cancel();
             }
             catch (Exception ex)
             {
@@ -106,18 +106,6 @@ namespace Microsoft.Extensions.Hosting.Internal
                                          "An error occurred stopping the application",
                                          ex);
             }
-        }
-
-        private static void ExecuteHandlers(CancellationTokenSource cancel)
-        {
-            // Noop if this is already cancelled
-            if (cancel.IsCancellationRequested)
-            {
-                return;
-            }
-
-            // Run the cancellation token callbacks
-            cancel.Cancel(throwOnFirstException: false);
         }
     }
 }

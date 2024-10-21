@@ -11,8 +11,7 @@
 #error This file relies on ARC for memory management, but ARC is not enabled.
 #endif
 
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
-
+#if defined(APPLE_HYBRID_GLOBALIZATION)
 /**
  * Is this code unit a lead surrogate (U+d800..U+dbff)?
  * @param c 16-bit code unit
@@ -79,7 +78,7 @@ int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName, int32_t
         }
         else
         {
-            NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
+            NSString *locName = [NSString stringWithCharacters: localeName length: (NSUInteger)lNameLength];
             currentLocale = [NSLocale localeWithLocaleIdentifier:locName];
         }
 
@@ -90,14 +89,14 @@ int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName, int32_t
             int32_t startIndex = srcIdx;
             NEXTOFFSET(lpSrc, srcIdx, cwSrcLength);
             int32_t srcLength = srcIdx - startIndex;
-            NSString *src = [NSString stringWithCharacters: lpSrc + startIndex length: srcLength];
+            NSString *src = [NSString stringWithCharacters: lpSrc + startIndex length: (NSUInteger)srcLength];
             NSString *dst = bToUpper ? [src uppercaseStringWithLocale:currentLocale] : [src lowercaseStringWithLocale:currentLocale];
             int32_t index = 0;
             // iterate over all code points of a surrogate pair character
             while (index < srcLength)
             {
                 // the dst.length > srcLength is to prevent code point expansions
-                dstCodepoint = dst.length > srcLength ? [src characterAtIndex: index] : [dst characterAtIndex: index];
+                dstCodepoint = (int32_t)dst.length > srcLength ? [src characterAtIndex: (NSUInteger)index] : [dst characterAtIndex: (NSUInteger)index];
                 Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
                 index++;
             }
@@ -131,14 +130,14 @@ int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc, int
             int32_t startIndex = srcIdx;
             NEXTOFFSET(lpSrc, srcIdx, cwSrcLength);
             int32_t srcLength = srcIdx - startIndex;
-            NSString *src = [NSString stringWithCharacters: lpSrc + startIndex length: srcLength];
+            NSString *src = [NSString stringWithCharacters: lpSrc + startIndex length: (NSUInteger)srcLength];
             NSString *dst = bToUpper ? src.uppercaseString : src.lowercaseString;
             int32_t index = 0;
             // iterate over all code points of a surrogate pair character
             while (index < srcLength)
             {
                 // the dst.length > srcLength is to prevent code point expansions
-                dstCodepoint = dst.length > srcLength ? [src characterAtIndex: index] : [dst characterAtIndex: index];
+                dstCodepoint = (int32_t)dst.length > srcLength ? [src characterAtIndex: (NSUInteger)index] : [dst characterAtIndex: (NSUInteger)index];
                 Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
                 index++;
             }
@@ -148,5 +147,4 @@ int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc, int
         return Success;
     }
 }
-
 #endif

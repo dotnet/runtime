@@ -35,7 +35,7 @@ namespace System.Composition.Convention
         private readonly List<Tuple<Predicate<Type>, Action<Type, ExportConventionBuilder>>> _interfaceExports;
         private readonly List<Predicate<MethodInfo>> _methodImportsSatisfiedNotifications;
 
-        internal Predicate<Type> SelectType { get; private set; }
+        internal Predicate<Type> SelectType { get; }
 
         internal PartConventionBuilder(Predicate<Type> selectType)
         {

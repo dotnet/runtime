@@ -1548,7 +1548,7 @@ static MODSTRUCT *LOADAllocModule(NATIVE_LIBRARY_HANDLE dl_handle, LPCSTR name)
     LPWSTR wide_name;
 
     /* no match found : try to create a new module structure */
-    module = (MODSTRUCT *)InternalMalloc(sizeof(MODSTRUCT));
+    module = (MODSTRUCT *)malloc(sizeof(MODSTRUCT));
     if (nullptr == module)
     {
         ERROR("malloc() failed! errno is %d (%s)\n", errno, strerror(errno));
@@ -1805,11 +1805,11 @@ MODSTRUCT *LOADGetPalLibrary()
         if (g_szCoreCLRPath == nullptr)
         {
             size_t  cbszCoreCLRPath = strlen(info.dli_fname) + 1;
-            g_szCoreCLRPath = (char*) InternalMalloc(cbszCoreCLRPath);
+            g_szCoreCLRPath = (char*) malloc(cbszCoreCLRPath);
 
             if (g_szCoreCLRPath == nullptr)
             {
-                ERROR("LOADGetPalLibrary: InternalMalloc failed!");
+                ERROR("LOADGetPalLibrary: malloc failed!");
                 goto exit;
             }
 

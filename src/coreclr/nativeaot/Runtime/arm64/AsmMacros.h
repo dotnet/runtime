@@ -87,8 +87,8 @@ STATUS_REDHAWK_THREAD_ABORT      equ 0x43
 ;;
 ;; Rename fields of nested structs
 ;;
-OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
+OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+OFFSETOF__Thread__m_eeAllocContext__combined_limit  equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit
 
 ;;
 ;; IMPORTS
@@ -171,25 +171,6 @@ MovInstr SETS "movk"
 
         adrp x$RegNum, $Name
         ldr  w$RegNum, [x$RegNum, $Name]
-    MEND
-
-
-;; -----------------------------------------------------------------------------
-;;
-;; Macro to export a pointer to an address inside a stub as a 64-bit variable
-;;
-    MACRO
-        EXPORT_POINTER_TO_ADDRESS $Name
-        LCLS CodeLbl
-CodeLbl SETS "$Name":CC:"Lbl"
-$CodeLbl
-        AREA | .rdata | , ALIGN = 8, DATA, READONLY
-$Name
-        DCQ         $CodeLbl
-        EXPORT      $Name
-        TEXTAREA
-        ROUT
-
     MEND
 
 ;; -----------------------------------------------------------------------------
@@ -337,8 +318,7 @@ DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 
 #ifdef FEATURE_GC_STRESS
     SETALIAS THREAD__HIJACKFORGCSTRESS, ?HijackForGcStress@Thread@@SAXPEAUPAL_LIMITED_CONTEXT@@@Z
-    SETALIAS REDHAWKGCINTERFACE__STRESSGC, ?StressGc@RedhawkGCInterface@@SAXXZ
 
-    EXTERN $REDHAWKGCINTERFACE__STRESSGC
+    EXTERN RhpStressGc
     EXTERN $THREAD__HIJACKFORGCSTRESS
 #endif ;; FEATURE_GC_STRESS

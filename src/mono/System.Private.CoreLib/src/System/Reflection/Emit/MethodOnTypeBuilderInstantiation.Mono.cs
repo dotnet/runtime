@@ -66,25 +66,6 @@ namespace System.Reflection.Emit
             return result;
         }
 
-        public override bool ContainsGenericParameters
-        {
-            get
-            {
-                if (_method.ContainsGenericParameters)
-                    return true;
-                if (!_method.IsGenericMethodDefinition)
-                    throw new NotSupportedException();
-                if (_typeArguments == null)
-                    return true;
-                foreach (Type t in _typeArguments)
-                {
-                    if (t.ContainsGenericParameters)
-                        return true;
-                }
-                return false;
-            }
-        }
-
         public override bool IsGenericMethodDefinition => _method.IsGenericMethodDefinition && _typeArguments == null;
 
         public override MethodInfo GetGenericMethodDefinition() { return _genericMethodDefinition ?? _method; }

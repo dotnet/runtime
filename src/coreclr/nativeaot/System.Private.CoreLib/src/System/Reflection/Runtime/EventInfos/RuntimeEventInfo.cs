@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.ParameterInfos;
+using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.TypeInfos;
+using System.Runtime.CompilerServices;
 
 using Internal.Reflection.Core.Execution;
 
@@ -47,7 +47,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return ContextTypeInfo;
+                return ContextTypeInfo.ToType();
             }
         }
 
@@ -78,7 +78,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return ReflectedTypeInfo;
+                return ReflectedTypeInfo.ToType();
             }
         }
 
@@ -114,7 +114,7 @@ namespace System.Reflection.Runtime.EventInfos
             if (parameters.Length == 0)
                 throw new InvalidOperationException(); // Legacy: Why is a ToString() intentionally throwing an exception?
             RuntimeParameterInfo runtimeParameterInfo = (RuntimeParameterInfo)(parameters[0]);
-            return runtimeParameterInfo.ParameterType.FormatTypeNameForReflection() + " " + this.Name;
+            return runtimeParameterInfo.ParameterType.FormatTypeName() + " " + this.Name;
         }
 
         protected RuntimeEventInfo WithDebugName()

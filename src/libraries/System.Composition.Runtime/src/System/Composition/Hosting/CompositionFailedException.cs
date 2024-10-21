@@ -22,7 +22,7 @@ namespace System.Composition.Hosting
         /// </summary>
         /// <param name="message">The exception message.</param>
         public CompositionFailedException(string message)
-            : base(message)
+            : base(message ?? SR.CompositionFailedDefaultExceptionMessage)
         { }
 
         /// <summary>
@@ -31,7 +31,7 @@ namespace System.Composition.Hosting
         /// <param name="message">The exception message.</param>
         /// <param name="innerException">The inner exception.</param>
         public CompositionFailedException(string message, Exception innerException)
-            : base(message, innerException)
+            : base(message ?? SR.CompositionFailedDefaultExceptionMessage, innerException)
         { }
     }
 }

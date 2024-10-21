@@ -358,7 +358,7 @@ TiggerStorage::GetStreamSaveSize(
     UINT32 cbTotalSize;            // Add up each element.
 
     // Find out how large the name will be.
-    cbTotalSize = ::WszWideCharToMultiByte(CP_ACP, 0, szStreamName, -1, 0, 0, 0, 0);
+    cbTotalSize = ::WideCharToMultiByte(CP_ACP, 0, szStreamName, -1, 0, 0, 0, 0);
     _ASSERTE(cbTotalSize != 0);
 
     // Add the size of the stream header minus the static name array.
@@ -441,7 +441,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::CreateStream(
     IStream     **ppstm)
 {
     char        rcStream[MAXSTREAMNAME];// For converted name.
-    VERIFY(Wsz_wcstombs(rcStream, pwcsName, sizeof(rcStream)));
+    VERIFY(WideCharToMultiByte(CP_ACP, 0, pwcsName, -1, rcStream, sizeof(rcStream), 0, 0));
     return (CreateStream(rcStream, grfMode, reserved1, reserved2, ppstm));
 }
 
@@ -630,7 +630,7 @@ HRESULT STDMETHODCALLTYPE TiggerStorage::OpenStream(
     HRESULT     hr;
 
     // Convert the name for internal use.
-    VERIFY(::WszWideCharToMultiByte(CP_ACP, 0, szStream, -1, rcName, sizeof(rcName), 0, 0));
+    VERIFY(::WideCharToMultiByte(CP_ACP, 0, szStream, -1, rcName, sizeof(rcName), 0, 0));
 
     // Look for the stream which must be found for this to work.  Note that
     // this error is explicitly not posted as an error object since unfound streams
@@ -725,7 +725,7 @@ TiggerStorage::FindStream(
         PSTORAGESTREAM p = m_pStreamList;
 
         SIZE_T pStartMD = (SIZE_T)(m_pStgIO->m_pData);
-        SIZE_T pEndMD = NULL;
+        SIZE_T pEndMD = 0;
 
         if (!ClrSafeInt<SIZE_T>::addition(pStartMD, m_pStgIO->m_cbData, pEndMD))
         {

@@ -36,28 +36,30 @@ unsafe partial class GenericsNative
     public static extern Vector64<char> AddVector64Cs(in Vector64<char> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestVector64C()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void TestVector64C()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64C('0', '1', '2', '3'));
 
         Vector64<char> value2;
         GenericsNative.GetVector64COut('0', '1', '2', '3', &value2);
         Vector64<short> tValue2 = *(Vector64<short>*)&value2;
-        Assert.Equal(tValue2.GetElement(0), (short)'0');
-        Assert.Equal(tValue2.GetElement(1), (short)'1');
-        Assert.Equal(tValue2.GetElement(2), (short)'2');
-        Assert.Equal(tValue2.GetElement(3), (short)'3');
+        Assert.Equal((short)'0', tValue2.GetElement(0));
+        Assert.Equal((short)'1', tValue2.GetElement(1));
+        Assert.Equal((short)'2', tValue2.GetElement(2));
+        Assert.Equal((short)'3', tValue2.GetElement(3));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64COut('0', '1', '2', '3', out Vector64<char> value3));
 
         Vector64<char>* value4 = GenericsNative.GetVector64CPtr('0', '1', '2', '3');
         Vector64<short>* tValue4 = (Vector64<short>*)value4;
-        Assert.Equal(tValue4->GetElement(0), (short)'0');
-        Assert.Equal(tValue4->GetElement(1), (short)'1');
-        Assert.Equal(tValue4->GetElement(2), (short)'2');
-        Assert.Equal(tValue4->GetElement(3), (short)'3');
+        Assert.Equal((short)'0', tValue4->GetElement(0));
+        Assert.Equal((short)'1', tValue4->GetElement(1));
+        Assert.Equal((short)'2', tValue4->GetElement(2));
+        Assert.Equal((short)'3', tValue4->GetElement(3));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64CRef('0', '1', '2', '3'));
 

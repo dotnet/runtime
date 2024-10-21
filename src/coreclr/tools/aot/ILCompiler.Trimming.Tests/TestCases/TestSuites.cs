@@ -37,14 +37,28 @@ namespace Mono.Linker.Tests.TestCases
 			Run(t);
 		}
 
-        [Theory]
-        [MemberData(nameof(TestDatabase.Libraries), MemberType = typeof(TestDatabase))]
-        public void Libraries(string t)
-        {
-            Run(t);
-        }
+		[Theory]
+		[MemberData(nameof(TestDatabase.Inheritance_Interaces), MemberType = typeof(TestDatabase))]
+		public void Inheritance_Interfaces(string t)
+		{
+			switch (t) {
+			case ".InterfaceWithoutNewSlot":
+				Run (t);
+				break;
+			default:
+				// Skip the rest for now
+				break;
+			}
+		}
 
-        [Theory]
+		[Theory]
+		[MemberData(nameof(TestDatabase.Libraries), MemberType = typeof(TestDatabase))]
+		public void Libraries(string t)
+		{
+			Run(t);
+		}
+
+		[Theory]
 		[MemberData (nameof (TestDatabase.LinkXml), MemberType = typeof (TestDatabase))]
 		public void LinkXml (string t)
 		{
@@ -59,6 +73,8 @@ namespace Mono.Linker.Tests.TestCases
 			case "TypeHierarchyReflectionWarnings":
 			case "ParametersUsedViaReflection":
 			case "UnsafeAccessor":
+			case "TypeUsedViaReflection":
+			case "RunClassConstructor":
 				Run (t);
 				break;
 			default:
@@ -86,6 +102,20 @@ namespace Mono.Linker.Tests.TestCases
 		public void SingleFile (string t)
 		{
 			Run (t);
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.Substitutions), MemberType = typeof (TestDatabase))]
+		public void Substitutions (string t)
+		{
+			switch (t) {
+			case "FeatureGuardSubstitutions":
+				Run (t);
+				break;
+			default:
+				// Skip the rest for now
+				break;
+			}
 		}
 
 		[Theory]

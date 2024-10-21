@@ -602,6 +602,22 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal(2, clients.Count());
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void AddHttpClient_TypedClient_NoHttpClientCtor_ThrowsSpecificException()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddHttpClient<TypedClientNoHttpClientCtor>();
+
+            var services = serviceCollection.BuildServiceProvider();
+
+            // Act
+            var ex = Assert.Throws<InvalidOperationException>(() => services.GetRequiredService<TypedClientNoHttpClientCtor>());
+            Assert.Equal(
+                SR.Format(SR.TypedClient_NoHttpClientCtor, typeof(TypedClientNoHttpClientCtor).Name),
+                ex.Message);
+        }
+
         [Fact]
         public void AddHttpClient_AddSameNameWithTypedClientTwice_ThrowsError()
         {
@@ -1204,7 +1220,6 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void AddHttpClient_GetAwaiterAndResult_InSingleThreadedSynchronizationContext_ShouldNotHangs()
         {
             // Arrange
@@ -1368,7 +1383,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91673", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public void AddHttpClient_ConfigurePrimaryHttpMessageHandler_ApplyChangesPrimaryHandler()
         {
             // Arrange
@@ -1573,6 +1588,18 @@ namespace Microsoft.Extensions.DependencyInjection
             public HttpClient HttpClient { get; }
 
             public TransientService Service { get; }
+        }
+
+        // Simple typed client but the HttpClient parameter is missing
+        private class TypedClientNoHttpClientCtor
+        {
+            // This is an error case - do not use Typed clients like this!
+            public TypedClientNoHttpClientCtor(IHttpClientFactory httpClientFactory)
+            {
+                HttpClientFactory = httpClientFactory;
+            }
+
+            public IHttpClientFactory HttpClientFactory { get; }
         }
     }
 }

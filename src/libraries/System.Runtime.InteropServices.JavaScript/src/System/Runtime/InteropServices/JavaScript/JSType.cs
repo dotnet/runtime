@@ -29,6 +29,15 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
+        /// Could return immediately without waiting for the execution to finish, when dispatching the call to another thread.
+        /// Suppresses marshaling of the JavaScript function's return value.
+        /// </summary>
+        public sealed class DiscardNoWait : JSType
+        {
+            internal DiscardNoWait() { }
+        }
+
+        /// <summary>
         /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</see> type.
         /// </summary>
         public sealed class Boolean : JSType

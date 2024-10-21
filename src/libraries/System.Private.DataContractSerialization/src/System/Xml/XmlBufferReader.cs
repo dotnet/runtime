@@ -2,18 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Xml;
+using System.Buffers.Binary;
 using System.Collections;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Globalization;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Runtime.CompilerServices;
-using System.Buffers.Binary;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Text;
+using System.Xml;
 
 namespace System.Xml
 {
@@ -396,13 +396,13 @@ namespace System.Xml
             {
                 byte[] buffer = GetBuffer(ValueHandleLength.Decimal, out int offset);
                 ReadOnlySpan<byte> bytes = buffer.AsSpan(offset, sizeof(decimal));
-                ReadOnlySpan<int> span = stackalloc int[4]
-                {
+                ReadOnlySpan<int> span =
+                [
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(8, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(12, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(4, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(0, 4))
-                };
+                ];
 
                 Advance(ValueHandleLength.Decimal);
                 return new decimal(span);
@@ -935,7 +935,6 @@ namespace System.Xml
             return (sbyte)GetByte(offset);
         }
 
-#pragma warning disable 8500 // sizeof of managed types
         private unsafe T ReadRawBytes<T>() where T : unmanaged
         {
             ReadOnlySpan<byte> buffer = GetBuffer(sizeof(T), out int offset)
@@ -948,7 +947,6 @@ namespace System.Xml
 
         private unsafe T ReadRawBytes<T>(int offset) where T : unmanaged
             => MemoryMarshal.Read<T>(_buffer.AsSpan(offset, sizeof(T)));
-#pragma warning restore 8500
 
         public int GetInt16(int offset)
             => BitConverter.IsLittleEndian ? ReadRawBytes<short>(offset) : BinaryPrimitives.ReverseEndianness(ReadRawBytes<short>(offset));
@@ -977,13 +975,13 @@ namespace System.Xml
             else
             {
                 ReadOnlySpan<byte> bytes = _buffer.AsSpan(offset, sizeof(decimal));
-                ReadOnlySpan<int> span = stackalloc int[4]
-                {
+                ReadOnlySpan<int> span =
+                [
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(8, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(12, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(4, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(0, 4))
-                };
+                ];
 
                 return new decimal(span);
             }

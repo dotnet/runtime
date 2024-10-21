@@ -36,12 +36,12 @@ struct GlobalValueEntry
 
 // This size should be one bigger than the number of entries since a null entry
 // signifies the end of the array.
-static constexpr size_t DebugTypeEntriesArraySize = 96;
+static constexpr size_t DebugTypeEntriesArraySize = 100;
 static DebugTypeEntry s_DebugEntries[DebugTypeEntriesArraySize];
 
 // This size should be one bigger than the number of entries since a null entry
 // signifies the end of the array.
-static constexpr size_t GlobalEntriesArraySize = 6;
+static constexpr size_t GlobalEntriesArraySize = 8;
 static GlobalValueEntry s_GlobalEntries[GlobalEntriesArraySize];
 
 // This structure is part of a in-memory serialization format that is used by diagnostic tools to
@@ -77,7 +77,12 @@ struct DotNetRuntimeDebugHeader
     // This counter can be incremented to indicate breaking changes
     // This field must be encoded little endian, regardless of the typical endianness of
     // the machine
-    const uint16_t MajorVersion = 4;
+    // Changes:
+    //  v1-v4 were never doc'ed but history is source control if you need it
+    //  v5 - Thread now has an m_eeAllocContext field and the previous m_rgbAllocContextBuffer
+    //       field is nested inside of it.
+    //          
+    const uint16_t MajorVersion = 5;
 
     // This counter can be incremented to indicate back-compatible changes
     // This field must be encoded little endian, regardless of the typical endianness of
@@ -108,6 +113,10 @@ struct DotNetRuntimeDebugHeader
 };
 
 extern "C" struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader;
+
+#ifdef HOST_UNIX
+__attribute__ ((visibility ("default")))
+#endif
 struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader = {};
 
 #define MAKE_DEBUG_ENTRY(TypeName, FieldName, Value)                             \
@@ -115,7 +124,7 @@ struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader = {};
     {                                                                            \
         s_DebugEntries[currentDebugPos] = { #TypeName, #FieldName, Value, 0  };  \
         ++currentDebugPos;                                                       \
-        ASSERT(currentDebugPos <= DebugTypeEntriesArraySize);                    \
+        ASSERT(currentDebugPos < DebugTypeEntriesArraySize);                     \
     } while(0)
 
 #define MAKE_DEBUG_FIELD_ENTRY(TypeName, FieldName) MAKE_DEBUG_ENTRY(TypeName, FieldName, offsetof(TypeName, FieldName))
@@ -129,7 +138,7 @@ struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader = {};
     {                                                                             \
         s_GlobalEntries[currentGlobalPos] = { #Name, Name };                      \
         ++currentGlobalPos;                                                       \
-        ASSERT(currentGlobalPos <= GlobalEntriesArraySize);                       \
+        ASSERT(currentGlobalPos < GlobalEntriesArraySize);                        \
     } while(0)                                                                    \
 
 extern "C" void PopulateDebugHeaders()
@@ -158,6 +167,9 @@ extern "C" void PopulateDebugHeaders()
     MAKE_DEBUG_FIELD_ENTRY(dac_gc_heap, ephemeral_heap_segment);
     MAKE_DEBUG_FIELD_ENTRY(dac_gc_heap, finalize_queue);
     MAKE_DEBUG_FIELD_ENTRY(dac_gc_heap, generation_table);
+
+    MAKE_SIZE_ENTRY(ee_alloc_context);
+    MAKE_DEBUG_FIELD_ENTRY(ee_alloc_context, m_rgbAllocContextBuffer);
 
     MAKE_SIZE_ENTRY(gc_alloc_context);
     MAKE_DEBUG_FIELD_ENTRY(gc_alloc_context, alloc_ptr);
@@ -188,12 +200,12 @@ extern "C" void PopulateDebugHeaders()
     MAKE_SIZE_ENTRY(ThreadStore);
     MAKE_DEBUG_FIELD_ENTRY(ThreadStore, m_ThreadList);
 
-    MAKE_SIZE_ENTRY(ThreadBuffer);
-    MAKE_DEBUG_FIELD_ENTRY(ThreadBuffer, m_pNext);
-    MAKE_DEBUG_FIELD_ENTRY(ThreadBuffer, m_rgbAllocContextBuffer);
-    MAKE_DEBUG_FIELD_ENTRY(ThreadBuffer, m_threadId);
-    MAKE_DEBUG_FIELD_ENTRY(ThreadBuffer, m_pThreadStressLog);
-    MAKE_DEBUG_FIELD_ENTRY(ThreadBuffer, m_pExInfoStackHead);
+    MAKE_SIZE_ENTRY(RuntimeThreadLocals);
+    MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_pNext);
+    MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_eeAllocContext);
+    MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_threadId);
+    MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_pThreadStressLog);
+    MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_pExInfoStackHead);
 
     MAKE_SIZE_ENTRY(ExInfo);
     MAKE_DEBUG_FIELD_ENTRY(ExInfo, m_pPrevExInfo);

@@ -71,6 +71,10 @@ uint32_t     CompareExchangeVariableHandleType(OBJECTHANDLE handle, uint32_t old
  */
 
 int GetCurrentThreadHomeHeapNumber();
+gc_alloc_context* GetCurrentThreadAllocContext();
+
+// helper for getting the total number of handle table slots we can allocate in
+int getNumberOfSlots();
 
 /*
  * Table maintenance routines
@@ -98,6 +102,7 @@ DhContext *Ref_GetDependentHandleContext(ScanContext* sc);
 bool Ref_ScanDependentHandlesForPromotion(DhContext *pDhContext);
 void Ref_ScanDependentHandlesForClearing(uint32_t condemned, uint32_t maxgen, ScanContext* sc);
 void Ref_ScanDependentHandlesForRelocation(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
+void Ref_ScanWeakInteriorPointersForRelocation(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
 void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
 
 void Ref_CheckReachable       (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, ScanContext* sc);

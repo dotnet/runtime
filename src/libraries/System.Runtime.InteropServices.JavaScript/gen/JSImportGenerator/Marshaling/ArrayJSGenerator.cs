@@ -13,13 +13,13 @@ namespace Microsoft.Interop.JavaScript
     {
         private readonly MarshalerType _elementMarshalerType;
 
-        public ArrayJSGenerator(MarshalerType elementMarshalerType)
-            : base(MarshalerType.Array)
+        public ArrayJSGenerator(TypePositionInfo info, StubCodeContext context, MarshalerType elementMarshalerType)
+            : base(info, context, MarshalerType.Array)
         {
             _elementMarshalerType = elementMarshalerType;
         }
 
-        public override IEnumerable<ExpressionSyntax> GenerateBind(TypePositionInfo info, StubCodeContext context)
+        public override IEnumerable<ExpressionSyntax> GenerateBind()
         {
             yield return InvocationExpression(MarshalerTypeName(Type),
                 ArgumentList(SingletonSeparatedList(Argument(MarshalerTypeName(_elementMarshalerType)))));

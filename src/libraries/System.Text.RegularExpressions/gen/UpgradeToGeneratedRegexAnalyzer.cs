@@ -5,10 +5,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -69,9 +65,7 @@ namespace System.Text.RegularExpressions.Generator
                 // This issue has now been fixed, but we are not yet consuming the fix and getting this package
                 // as a transitive dependency from Microsoft.CodeAnalysis.CSharp.Workspaces. Once that dependency
                 // is updated at the repo-level, we should come and remove the pragma disable.
-#pragma warning disable RS1024 // Compare symbols correctly
                 HashSet<IMethodSymbol> hash = new HashSet<IMethodSymbol>(SymbolEqualityComparer.Default);
-#pragma warning restore RS1024 // Compare symbols correctly
                 ImmutableArray<ISymbol> allMembers = regexTypeSymbol.GetMembers();
 
                 foreach (ISymbol member in allMembers)

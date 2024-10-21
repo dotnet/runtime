@@ -4,7 +4,8 @@
 #ifndef __smopenum_h__
 #define __smopenum_h__
 
-typedef enum smopcode_t {
+typedef enum smopcode_t
+{
 #define SMOPDEF(smname, string) smname,
 #include "smopcode.def"
 #undef SMOPDEF

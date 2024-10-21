@@ -10,6 +10,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	[Reference ("System.Core.dll")]
 	[ExpectedNoWarnings]
 	[KeptPrivateImplementationDetails ("ThrowSwitchExpressionException")]
+	[KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
+	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
 	public class ExpressionCallString
 	{
 		public static void Main ()
@@ -284,8 +286,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2060", "Expression.Call", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2060", "Expression.Call")]
 			static void TestMethodWithRequirementsUnknownTypeArray (Type[] types)
 			{
 				// The passed in types array cannot be analyzed, so a warning is produced.

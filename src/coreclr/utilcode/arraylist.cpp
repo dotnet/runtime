@@ -35,7 +35,7 @@ void ArrayListBase::Clear()
         delete [] block;
         block = next;
     }
-    m_firstBlock.m_next = 0;
+    m_firstBlock.m_next = nullptr;
     m_count = 0;
 }
 

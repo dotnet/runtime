@@ -160,7 +160,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                DotNet = new DotNetBuilder(BaseDirectory, Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"), "mockRuntime")
+                DotNet = new DotNetBuilder(BaseDirectory, TestContext.BuiltDotNet.BinPath, "mockRuntime")
                     .AddMicrosoftNETCoreAppFrameworkMockCoreClr(NetCoreAppVersion)
                     .Build();
 

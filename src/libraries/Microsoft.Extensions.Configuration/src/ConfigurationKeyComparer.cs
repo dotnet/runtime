@@ -7,14 +7,14 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// IComparer implementation used to order configuration keys.
+    /// Implements IComparer to order configuration keys.
     /// </summary>
     public class ConfigurationKeyComparer : IComparer<string>
     {
         private const char KeyDelimiter = ':';
 
         /// <summary>
-        /// The default instance.
+        /// Gets the default instance.
         /// </summary>
         public static ConfigurationKeyComparer Instance { get; } = new ConfigurationKeyComparer();
 
@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Configuration
 
             static int Compare(ReadOnlySpan<char> a, ReadOnlySpan<char> b)
             {
-#if NETCOREAPP
+#if NET
                 bool aIsInt = int.TryParse(a, out int value1);
                 bool bIsInt = int.TryParse(b, out int value2);
 #else

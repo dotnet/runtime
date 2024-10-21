@@ -1316,8 +1316,7 @@ HRESULT ImportHelper::FindAssemblyRef(
     const void  *pbToken = NULL;        // Token version of public key.
     ULONG       cbToken = 0;            // Count of bytes in token.
 #if !defined(FEATURE_METADATA_EMIT_IN_DEBUGGER) || defined(DACCESS_COMPILE)
-    const void  *pbTmpToken;            // Token version of public key.
-    ULONG       cbTmpToken;             // Count of bytes in token.
+    StrongNameToken token;              // Local buffer for token version of public key.
     bool        fMatch;                 // Did public key or tokens match?
 #endif // !FEATURE_METADATA_EMIT_IN_DEBUGGER || DACCESS_COMPILE
 
@@ -1392,13 +1391,12 @@ HRESULT ImportHelper::FindAssemblyRef(
 #if defined(FEATURE_METADATA_EMIT_IN_DEBUGGER) && !defined(DACCESS_COMPILE)
                 return E_FAIL;
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER || DACCESS_COMPILE
+                StrongNameToken tmpToken;
                 // Need to compress target public key to see if it matches.
                 IfFailRet(StrongNameTokenFromPublicKey((BYTE*)pbTmp,
                     cbTmp,
-                    (BYTE**)&pbTmpToken,
-                    &cbTmpToken));
-                fMatch = cbTmpToken == cbPublicKeyOrToken && !memcmp(pbTmpToken, pbPublicKeyOrToken, cbTmpToken);
-                StrongNameFreeBuffer((BYTE*)pbTmpToken);
+                    &tmpToken));
+                fMatch = StrongNameToken::SIZEOF_TOKEN == cbPublicKeyOrToken && !memcmp(&tmpToken, pbPublicKeyOrToken, StrongNameToken::SIZEOF_TOKEN);
                 if (!fMatch)
                     continue;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER || DACCESS_COMPILE
@@ -1414,8 +1412,9 @@ HRESULT ImportHelper::FindAssemblyRef(
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER || DACCESS_COMPILE
                     IfFailRet(StrongNameTokenFromPublicKey((BYTE*)pbPublicKeyOrToken,
                         cbPublicKeyOrToken,
-                        (BYTE**)&pbToken,
-                        &cbToken));
+                        &token));
+                    pbToken = &token;
+                    cbToken = StrongNameToken::SIZEOF_TOKEN;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER || DACCESS_COMPILE
                 }
                 if (cbTmp != cbToken || memcmp(pbTmp, pbToken, cbToken))
@@ -1423,20 +1422,8 @@ HRESULT ImportHelper::FindAssemblyRef(
             }
         }
 
-        if (pbToken && IsAfPublicKey(dwFlags))
-        {
-#if !defined(FEATURE_METADATA_EMIT_IN_DEBUGGER) || defined(DACCESS_COMPILE)
-            StrongNameFreeBuffer((BYTE*)pbToken);
-#endif
-        }
         *pmar = TokenFromRid(i, mdtAssemblyRef);
         return S_OK;
-    }
-    if (pbToken && IsAfPublicKey(dwFlags))
-    {
-#if !defined(FEATURE_METADATA_EMIT_IN_DEBUGGER) || defined(DACCESS_COMPILE)
-        StrongNameFreeBuffer((BYTE*)pbToken);
-#endif
     }
     return CLDB_E_RECORD_NOTFOUND;
 } // ImportHelper::FindAssemblyRef
@@ -3186,6 +3173,7 @@ ImportHelper::CreateAssemblyRefFromAssembly(
     LPCUTF8     szLocale;
     mdAssemblyRef tkAssemRef;
     HRESULT     hr = S_OK;
+    StrongNameToken token;
     const void  *pbToken = NULL;
     ULONG       cbToken = 0;
     ULONG       i;
@@ -3206,8 +3194,10 @@ ImportHelper::CreateAssemblyRefFromAssembly(
         dwFlags &= ~afPublicKey;
         IfFailGo(StrongNameTokenFromPublicKey((BYTE*)pbPublicKey,
             cbPublicKey,
-            (BYTE**)&pbToken,
-            &cbToken));
+            &token));
+
+        pbToken = &token;
+        cbToken = StrongNameToken::SIZEOF_TOKEN;
     }
     else
         _ASSERTE(!IsAfPublicKey(dwFlags));
@@ -3243,7 +3233,7 @@ ImportHelper::CreateAssemblyRefFromAssembly(
             pRecordEmit->SetFlags(dwFlags);
 
             IfFailGo(pMiniMdEmit->PutBlob(TBL_AssemblyRef, AssemblyRefRec::COL_PublicKeyOrToken,
-                                          pRecordEmit, pbToken, cbToken));
+                                          pRecordEmit, &token, StrongNameToken::SIZEOF_TOKEN));
             IfFailGo(pMiniMdEmit->PutString(TBL_AssemblyRef, AssemblyRefRec::COL_Name,
                                           pRecordEmit, szName));
             IfFailGo(pMiniMdEmit->PutString(TBL_AssemblyRef, AssemblyRefRec::COL_Locale,
@@ -3261,8 +3251,6 @@ ImportHelper::CreateAssemblyRefFromAssembly(
             *ptkAssemblyRef = tkAssemRef;
     }
 ErrExit:
-    if (pbToken)
-        StrongNameFreeBuffer((BYTE*)pbToken);
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // ImportHelper::CreateAssemblyRefFromAssembly
@@ -3299,8 +3287,6 @@ HRESULT ImportHelper::CompareAssemblyRefToAssembly(    // S_OK, S_FALSE or error
     ULONG       cbPublicKey2;
     LPCUTF8     szName2;
     LPCUTF8     szLocale2;
-    const void  *pbToken = NULL;
-    ULONG       cbToken = 0;
     bool        fMatch;
 
     // Get the AssemblyRef props.
@@ -3341,16 +3327,15 @@ HRESULT ImportHelper::CompareAssemblyRefToAssembly(    // S_OK, S_FALSE or error
              memcmp(pbPublicKeyOrToken1, pbPublicKey2, cbPublicKeyOrToken1)))
             return S_FALSE;
 
+        StrongNameToken token2;
+
         // Otherwise we need to compress the def public key into a token.
         IfFailRet(StrongNameTokenFromPublicKey((BYTE*)pbPublicKey2,
             cbPublicKey2,
-            (BYTE**)&pbToken,
-            &cbToken));
+            &token2));
 
-        fMatch = cbPublicKeyOrToken1 == cbToken &&
-            !memcmp(pbPublicKeyOrToken1, pbToken, cbPublicKeyOrToken1);
-
-        StrongNameFreeBuffer((BYTE*)pbToken);
+        fMatch = cbPublicKeyOrToken1 == StrongNameToken::SIZEOF_TOKEN &&
+            !memcmp(pbPublicKeyOrToken1, &token2, cbPublicKeyOrToken1);
 
         if (!fMatch)
             return S_FALSE;

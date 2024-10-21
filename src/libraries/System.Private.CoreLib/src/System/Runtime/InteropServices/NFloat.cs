@@ -780,19 +780,7 @@ namespace System.Runtime.InteropServices
         {
             if (obj is NFloat other)
             {
-                if (_value < other._value) return -1;
-                if (_value > other._value) return 1;
-                if (_value == other._value) return 0;
-
-                // At least one of the values is NaN.
-                if (NativeType.IsNaN(_value))
-                {
-                    return NativeType.IsNaN(other._value) ? 0 : -1;
-                }
-                else
-                {
-                    return 1;
-                }
+                return CompareTo(other);
             }
             else if (obj is null)
             {
@@ -854,7 +842,7 @@ namespace System.Runtime.InteropServices
         /// <summary>Converts the numeric value of this instance to its equivalent string representation using the specified culture-specific format information.</summary>
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <returns>The string representation of the value of this instance as specified by <paramref name="provider" />.</returns>
-        public string ToString(IFormatProvider? provider)=> _value.ToString(provider);
+        public string ToString(IFormatProvider? provider) => _value.ToString(provider);
 
         /// <summary>Converts the numeric value of this instance to its equivalent string representation using the specified format and culture-specific format information.</summary>
         /// <param name="format">A numeric format string.</param>
@@ -991,6 +979,14 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
         public static NFloat Ceiling(NFloat x) => new NFloat(NativeType.Ceiling(x._value));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        public static TInteger ConvertToInteger<TInteger>(NFloat value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        public static TInteger ConvertToIntegerNative<TInteger>(NFloat value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
         public static NFloat Floor(NFloat x) => new NFloat(NativeType.Floor(x._value));
@@ -1380,6 +1376,9 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         public static NFloat MinMagnitudeNumber(NFloat x, NFloat y) => new NFloat(NativeType.MinMagnitudeNumber(x._value, y._value));
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        public static NFloat MultiplyAddEstimate(NFloat left, NFloat right, NFloat addend) => new NFloat(NativeType.MultiplyAddEstimate(left._value, right._value, addend._value));
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

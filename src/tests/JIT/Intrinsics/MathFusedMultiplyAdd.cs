@@ -6,14 +6,16 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 namespace MathFusedMultiplyAddTest
 {
-    class Program
+    public class Program
     {
         private static int _returnCode = 100;
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             TestFloats();
             TestDoubles();

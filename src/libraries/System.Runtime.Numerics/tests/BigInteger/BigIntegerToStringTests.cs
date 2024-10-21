@@ -513,7 +513,7 @@ namespace System.Numerics.Tests
             Assert.Throws<FormatException>(() => b.ToString("E1000000000"));
             Assert.Throws<FormatException>(() => b.ToString("E000001000000000"));
 
-            // Check ParseFormatSpecifier in BigNumber.cs with `G` format
+            // Check ParseFormatSpecifier in Number.BigInteger.cs with `G` format
             Assert.Throws<FormatException>(() => b.ToString("G" + int.MaxValue.ToString()));
             Assert.Throws<FormatException>(() => b.ToString("G" + intMaxPlus1String));
             Assert.Throws<FormatException>(() => b.ToString("G4772185890"));
@@ -534,7 +534,7 @@ namespace System.Numerics.Tests
             b.ToString("E999999999"); // Should not throw
             b.ToString("E00000999999999"); // Should not throw
 
-            // Check ParseFormatSpecifier in BigNumber.cs with `G` format
+            // Check ParseFormatSpecifier in Number.BigInteger.cs with `G` format
             b.ToString("G999999999"); // Should not throw
             b.ToString("G00000999999999"); // Should not throw
         }

@@ -5,10 +5,10 @@ namespace System.Threading
 {
     internal struct WriteLock : IDisposable
     {
-        private readonly Lock _lock;
+        private readonly ReadWriteLock _lock;
         private int _isDisposed;
 
-        public WriteLock(Lock @lock)
+        public WriteLock(ReadWriteLock @lock)
         {
             _isDisposed = 0;
             _lock = @lock;

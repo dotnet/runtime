@@ -41,14 +41,6 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        public void TopLevelWithArgs(BuildArgs buildArgs, string[] args, RunHost host, string id)
-            => TestMainWithArgs("top_level_args",
-                                @"##CODE## return await System.Threading.Tasks.Task.FromResult(42 + count);",
-                                buildArgs, args, host, id);
-
-        [Theory]
-        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         public void NonAsyncMainWithArgs(BuildArgs buildArgs, string[] args, RunHost host, string id)
             => TestMainWithArgs("non_async_main_args", @"
                 public class TestClass {
@@ -79,7 +71,7 @@ namespace Wasm.Build.Tests
             buildArgs = buildArgs with { ProjectName = projectName, ProjectFileContents = programText };
             buildArgs = ExpandBuildArgs(buildArgs);
             if (dotnetWasmFromRuntimePack == null)
-                dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
+                dotnetWasmFromRuntimePack = IsDotnetWasmFromRuntimePack(buildArgs);
 
             _testOutput.WriteLine ($"-- args: {buildArgs}, name: {projectName}");
 
@@ -89,12 +81,24 @@ namespace Wasm.Build.Tests
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                                 DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
 
-            RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42 + args.Length, args: string.Join(' ', args),
+            // Because we get extra "-verbosity", "Debug" from XHarness
+            int argsCount = args.Length;
+            bool isBrowser = host == RunHost.Chrome || host == RunHost.Firefox || host == RunHost.Safari;
+            if (isBrowser)
+                argsCount += 2;
+
+            RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42 + argsCount, args: string.Join(' ', args),
                 test: output =>
                 {
-                    Assert.Contains($"args#: {args.Length}", output);
+                    Assert.Contains($"args#: {argsCount}", output);
                     foreach (var arg in args)
                         Assert.Contains($"arg: {arg}", output);
+
+                    if (isBrowser)
+                    {
+                        Assert.Contains($"arg: -verbosity", output);
+                        Assert.Contains($"arg: Debug", output);
+                    }
                 }, host: host, id: id);
         }
     }

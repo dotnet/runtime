@@ -419,7 +419,6 @@ namespace System.Xml.XmlSchemaValidatorApiTests
         [InlineData("SCHEMA", "schB1_a.xsd", 1, 3, 3)]
         [InlineData("SCHEMA", "schM2_a.xsd", 1, 3, 3)]
         [InlineData("SCHEMA", "schH2_a.xsd", 1, 3, 3)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/75132", TestPlatforms.Browser)]
         public void AddValid_Import_Include_Redefine(string testDir, string testFile, int expCount, int expCountGT, int expCountGE)
         {
             string xsd = Path.Combine(path, testDir, testFile);
@@ -902,7 +901,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 // TempDirectory path must end with a DirectorySeratorChar, otherwise it will throw in the Xml validation.
                 settings.Schemas.Add("mainschema", XmlReader.Create(new StringReader(xsd), null, EnsureTrailingSlash(tempDirectory.Path)));
                 settings.ValidationType = ValidationType.Schema;
-                XmlReader reader = XmlReader.Create(new StringReader(xml), settings);
+                using XmlReader reader = XmlReader.Create(new StringReader(xml), settings);
                 XmlDocument doc = new XmlDocument();
 
                 doc.Load(reader);
@@ -927,7 +926,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 // TempDirectory path must end with a DirectorySeratorChar, otherwise it will throw in the Xml validation.
                 settings.Schemas.Add("mainschema", XmlReader.Create(new StringReader(xsd), null, EnsureTrailingSlash(tempDirectory.Path)));
                 settings.ValidationType = ValidationType.Schema;
-                XmlReader reader = XmlReader.Create(new StringReader(xml), settings);
+                using XmlReader reader = XmlReader.Create(new StringReader(xml), settings);
                 XmlDocument doc = new XmlDocument();
 
                 doc.Load(reader);

@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.ComponentModel.Composition.Primitives;
+using System.Diagnostics;
 using Microsoft.Internal;
 using Microsoft.Internal.Collections;
 
@@ -95,6 +95,6 @@ namespace System.ComponentModel.Composition.Hosting
         ///     When the value is non-null it should be used to record temporary changed state
         ///     and actions that will be executed when the atomicComposition is completeed.
         /// </value>
-        public AtomicComposition? AtomicComposition { get; private set; }
+        public AtomicComposition? AtomicComposition { get; }
     }
 }

@@ -54,7 +54,7 @@ bool IsCorrectInnerSequential(InnerSequential* p)
 
 struct INNER2 // size = 12 bytes
 {
-    INT f1;
+    int32_t f1;
     FLOAT f2;
     LPCSTR f3;
 };
@@ -93,7 +93,7 @@ struct InnerExplicit
 #ifdef WINDOWS
     union
     {
-        INT f1;
+        int32_t f1;
         FLOAT f2;
     };
     CHAR _unused0[4];
@@ -101,10 +101,10 @@ struct InnerExplicit
 #else
     union
     {
-        INT f1;
+        int32_t f1;
         FLOAT f2;
     };
-    INT _unused0;
+    int32_t _unused0;
     LPCSTR f3;
 #endif
 };
@@ -343,17 +343,17 @@ bool IsCorrectCharSetUnicodeSequential(CharSetUnicodeSequential* p)
 
 struct NumberSequential // size = 64 bytes
 {
-    LONG64 i64;
-    ULONG64 ui64;
+    int64_t i64;
+    uint64_t ui64;
     DOUBLE d;
-    INT i32;
-    UINT ui32;
-    SHORT s1;
-    WORD us1;
-    SHORT i16;
-    WORD ui16;
+    int32_t i32;
+    uint32_t ui32;
+    int16_t s1;
+    uint16_t us1;
+    int16_t i16;
+    uint16_t ui16;
     FLOAT sgl;
-    BYTE b;
+    uint8_t b;
     CHAR sb;
 };
 
@@ -367,8 +367,8 @@ void PrintNumberSequential(NumberSequential* str, const char* name)
     printf("\t%s.sb = %d\n", name, str->sb);
     printf("\t%s.i16 = %d\n", name, str->i16);
     printf("\t%s.ui16 = %u\n", name, str->ui16);
-    printf("\t%s.i64 = %lld\n", name, str->i64);
-    printf("\t%s.ui64 = %llu\n", name, str->ui64);
+    printf("\t%s.i64 = %" PRIi64 "\n", name, str->i64);
+    printf("\t%s.ui64 = %" PRIu64 "\n", name, str->ui64);
     printf("\t%s.sgl = %f\n", name, str->sgl);
     printf("\t%s.d = %f\n",name, str->d);
 }
@@ -404,7 +404,7 @@ struct S3 // size = 1032 bytes
 {
     BOOL flag;
     LPCSTR str;
-    INT vals[256];
+    int32_t vals[256];
 };
 
 void PrintS3(S3* str, const char* name)
@@ -458,7 +458,7 @@ bool IsCorrectS3(S3* p)
 
 struct S4 // size = 8 bytes
 {
-    INT age;
+    int32_t age;
     LPCSTR name;
 };
 
@@ -614,7 +614,7 @@ struct S8 // size = 32 bytes
     BOOL gender;
     HRESULT i32;
     HRESULT ui32;
-    WORD jobNum;
+    uint16_t jobNum;
     CHAR mySByte;
 };
 
@@ -624,7 +624,7 @@ void PrintS8(S8* str, const char* name)
     printf("\t%s.gender = %d\n", name, str->gender);
     printf("\t%s.jobNum = %d\n",name, str->jobNum);
     printf("\t%s.i32 = %d\n", name, (int)(str->i32));
-    printf("\t%s.ui32 = %u\n", name, (unsigned int)(str->ui32));
+    printf("\t%s.ui32 = %u\n", name, (uint32_t)(str->ui32));
     printf("\t%s.mySByte = %c\n", name, str->mySByte);
 }
 
@@ -668,7 +668,7 @@ void ChangeS8(S8* str)
 #pragma pack (8)
 struct IntegerStructSequential // size = 4 bytes
 {
-    INT i;
+    int32_t i;
 };
 
 void PrintIntegerStructSequential(IntegerStructSequential* str, const char* name)
@@ -694,7 +694,7 @@ struct S9 // size = 8 bytes
 
 struct OuterIntegerStructSequential // size = 8 bytes
 {
-    INT i;
+    int32_t i;
     struct IntegerStructSequential s_int;
 };
 
@@ -724,28 +724,24 @@ void ChangeIncludeOuterIntegerStructSequential(IncludeOuterIntegerStructSequenti
     str->s.i = 64;
 }
 
-#ifndef WINDOWS
-typedef int* LPINT;
-#endif
-
 struct S11 // size = 8 bytes
 {
-    LPINT i32;
-    INT i;
+    int32_t* i32;
+    int32_t i;
 };
 
 union U // size = 8 bytes
 {
-    INT i32;
-    UINT ui32;
+    int32_t i32;
+    uint32_t ui32;
     LPVOID iPtr;
     LPVOID uiPtr;
-    SHORT s;
-    WORD us;
-    BYTE b;
+    int16_t s;
+    uint16_t us;
+    uint8_t b;
     CHAR sb;
-    LONG64 l;
-    ULONG64 ul;
+    int64_t l;
+    uint64_t ul;
     FLOAT f;
     DOUBLE d;
 };
@@ -760,8 +756,8 @@ void PrintU(U* str, const char* name)
     printf("\t%s.us = %u\n", name, str->us);
     printf("\t%s.b = %u\n", name, str->b);
     printf("\t%s.sb = %d\n", name, str->sb);
-    printf("\t%s.l = %lld\n", name, str->l);
-    printf("\t%s.ul = %llu\n", name, str->ul);
+    printf("\t%s.l = %" PRIi64 "\n", name, str->l);
+    printf("\t%s.ul = %" PRIu64 "\n", name, str->ul);
     printf("\t%s.f = %f\n", name, str->f);
     printf("\t%s.d = %f\n", name, str->d);
 }
@@ -793,8 +789,8 @@ bool IsCorrectU(U* p)
 
 struct ByteStructPack2Explicit // size = 2 bytes
 {
-    BYTE b1;
-    BYTE b2;
+    uint8_t b1;
+    uint8_t b2;
 };
 
 void PrintByteStructPack2Explicit(ByteStructPack2Explicit* str, const char* name)
@@ -818,8 +814,8 @@ bool IsCorrectByteStructPack2Explicit(ByteStructPack2Explicit* p)
 
 struct ShortStructPack4Explicit // size = 4 bytes
 {
-    SHORT s1;
-    SHORT s2;
+    int16_t s1;
+    int16_t s2;
 };
 
 void PrintShortStructPack4Explicit(ShortStructPack4Explicit* str, const char* name)
@@ -843,8 +839,8 @@ bool IsCorrectShortStructPack4Explicit(ShortStructPack4Explicit* p)
 
 struct IntStructPack8Explicit // size = 8 bytes
 {
-    INT i1;
-    INT i2;
+    int32_t i1;
+    int32_t i2;
 };
 
 void PrintIntStructPack8Explicit(IntStructPack8Explicit* str, const char* name)
@@ -868,14 +864,14 @@ bool IsCorrectIntStructPack8Explicit(IntStructPack8Explicit* p)
 
 struct LongStructPack16Explicit // size = 16 bytes
 {
-    LONG64 l1;
-    LONG64 l2;
+    int64_t l1;
+    int64_t l2;
 };
 
 void PrintLongStructPack16Explicit(LongStructPack16Explicit* str, const char* name)
 {
-    printf("\t%s.l1 = %lld", name, str->l1);
-    printf("\t%s.l2 = %lld", name, str->l2);
+    printf("\t%s.l1 = %" PRIi64, name, str->l1);
+    printf("\t%s.l2 = %" PRIi64, name, str->l2);
 }
 
 void ChangeLongStructPack16Explicit(LongStructPack16Explicit* p)
@@ -893,9 +889,9 @@ bool IsCorrectLongStructPack16Explicit(LongStructPack16Explicit* p)
 
 struct ByteStruct3Byte
 {
-    BYTE b1;
-    BYTE b2;
-    BYTE b3;
+    uint8_t b1;
+    uint8_t b2;
+    uint8_t b3;
 };
 void PrintByteStruct3Byte(ByteStruct3Byte* str, char const * name)
 {

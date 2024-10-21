@@ -11,6 +11,5 @@ namespace System.Text.Json.Serialization
     {
         private protected sealed override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.Object;
         internal override bool CanPopulate => true;
-        internal sealed override Type? ElementType => null;
     }
 }

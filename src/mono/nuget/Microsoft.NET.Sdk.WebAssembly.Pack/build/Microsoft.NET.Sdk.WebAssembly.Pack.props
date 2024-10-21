@@ -15,6 +15,5 @@ Copyright (c) .NET Foundation. All rights reserved.
   </PropertyGroup>
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
     <_WebAssemblyPropsFile>$(MSBuildThisFileDirectory)\Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
-    <_WebAssemblyTargetsFile>$(MSBuildThisFileDirectory)\Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>
   </PropertyGroup>
 </Project>

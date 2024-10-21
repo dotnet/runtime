@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Collections;
+using System.Diagnostics;
+using System.Globalization;
 using System.Xml;
 using System.Xml.XPath;
-using System.Globalization;
 
 namespace System.Xml.Xsl.XsltOld
 {

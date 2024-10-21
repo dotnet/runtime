@@ -8,7 +8,6 @@
 **
 ===========================================================*/
 
-using Microsoft.Win32;
 using System;
 using System.Collections;
 using System.Diagnostics;
@@ -17,6 +16,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
+using Microsoft.Win32;
 using FileNotFoundException = System.IO.FileNotFoundException;
 
 namespace System.Security.AccessControl

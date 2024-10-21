@@ -87,8 +87,8 @@ public:
     ThreadStore *   GetThreadStore();
     HANDLE          GetPalInstance();
 
-    PTR_UInt8 FindMethodStartAddress(PTR_VOID ControlPC);
-    PTR_UInt8 GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID ControlPC);
+    PTR_uint8_t FindMethodStartAddress(PTR_VOID ControlPC);
+    PTR_uint8_t GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID ControlPC);
     void EnableConservativeStackReporting();
     bool IsConservativeStackReportingEnabled() { return m_conservativeStackReportingEnabled; }
 

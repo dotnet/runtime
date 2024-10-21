@@ -45,9 +45,9 @@
 
 using System;
 using System.Collections.Generic;   // For Dictionary<string, string>
-using System.Text;                  // For StringBuilder
 using System.Diagnostics;           // For Debug.Assert
 using System.Diagnostics.CodeAnalysis;
+using System.Text;                  // For StringBuilder
 
 namespace System.IO.Packaging
 {
@@ -351,8 +351,6 @@ namespace System.IO.Packaging
         /// <returns></returns>
         private static int GetLengthOfParameterValue(ReadOnlySpan<char> s, int startIndex)
         {
-            Debug.Assert(s != null);
-
             int length;
 
             //if the parameter value does not start with a '"' then,

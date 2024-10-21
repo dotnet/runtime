@@ -27,6 +27,7 @@ namespace strswitch_loopstrswitchgoto_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             string[] s = { "one", "two", "three", "four", "five", "six" };

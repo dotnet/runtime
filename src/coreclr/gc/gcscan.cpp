@@ -132,10 +132,12 @@ void GCScan::GcWeakPtrScanBySingleThread( int condemned, int max_gen, ScanContex
     GCToEEInterface::SyncBlockCacheWeakPtrScan(&CheckPromoted, (uintptr_t)sc, 0);
 }
 
+#ifdef FEATURE_SIZED_REF_HANDLES
 void GCScan::GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
 {
     Ref_ScanSizedRefHandles(condemned, max_gen, sc, fn);
 }
+#endif // FEATURE_SIZED_REF_HANDLES
 
 void GCScan::GcShortWeakPtrScan(int condemned, int max_gen, ScanContext* sc)
 {
@@ -171,6 +173,7 @@ void GCScan::GcScanHandles (promote_func* fn,  int condemned, int max_gen,
         Ref_UpdatePointers(condemned, max_gen, sc, fn);
         Ref_UpdatePinnedPointers(condemned, max_gen, sc, fn);
         Ref_ScanDependentHandlesForRelocation(condemned, max_gen, sc, fn);
+        Ref_ScanWeakInteriorPointersForRelocation(condemned, max_gen, sc, fn);
     }
 }
 
@@ -244,27 +247,6 @@ void GCScan::GcPromotionsGranted (int condemned, int max_gen, ScanContext* sc)
         //       then "sc" argument will be used.
         GCToEEInterface::TaskletPromotionsGranted(condemned, max_gen, sc);
     }
-}
-
-size_t GCScan::AskForMoreReservedMemory (size_t old_size, size_t need_size)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#if !defined(FEATURE_CORECLR) && !defined(FEATURE_NATIVEAOT)
-    // call the host....
-
-    IGCHostControl *pGCHostControl = CorHost::GetGCHostControl();
-
-    if (pGCHostControl)
-    {
-        size_t new_max_limit_size = need_size;
-        pGCHostControl->RequestVirtualMemLimit (old_size,
-                                                (SIZE_T*)&new_max_limit_size);
-        return new_max_limit_size;
-    }
-#endif
-
-    return old_size + need_size;
 }
 
 void GCScan::VerifyHandleTable(int condemned, int max_gen, ScanContext* sc)

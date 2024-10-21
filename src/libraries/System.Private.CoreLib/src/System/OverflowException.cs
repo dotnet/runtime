@@ -21,13 +21,13 @@ namespace System
         }
 
         public OverflowException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_OverflowException)
         {
             HResult = HResults.COR_E_OVERFLOW;
         }
 
         public OverflowException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_OverflowException, innerException)
         {
             HResult = HResults.COR_E_OVERFLOW;
         }

@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
-
-using CFStringRef = System.IntPtr;
+using Microsoft.Win32.SafeHandles;
 using CFArrayRef = System.IntPtr;
 using CFIndex = System.IntPtr;
+using CFStringRef = System.IntPtr;
 using SCDynamicStoreRef = System.IntPtr;
 
 internal static partial class Interop

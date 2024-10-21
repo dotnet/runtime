@@ -24,13 +24,13 @@ namespace System.IO.IsolatedStorage
         }
 
         public IsolatedStorageException(string? message)
-            : base(message)
+            : base(message ?? SR.IsolatedStorage_Exception)
         {
             HResult = COR_E_ISOSTORE;
         }
 
         public IsolatedStorageException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.IsolatedStorage_Exception, inner)
         {
             HResult = COR_E_ISOSTORE;
         }

@@ -67,7 +67,7 @@
   <PropertyGroup>
     <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
     <CoreRootDirectory>$([MSBuild]::NormalizeDirectory($(CoreRootDirectory)))</CoreRootDirectory>
-    <XUnitLogCheckerDirectory>$(TestBinDir)Common\XUnitLogChecker\</XUnitLogCheckerDirectory>
+    <XUnitLogCheckerDirectory>$(TestBinDir)XUnitLogChecker\</XUnitLogCheckerDirectory>
     <XUnitLogCheckerDirectory>$([MSBuild]::NormalizeDirectory($(XUnitLogCheckerDirectory)))</XUnitLogCheckerDirectory>
     <LegacyPayloadsRootDirectory>$(TestBinDir)LegacyPayloads\</LegacyPayloadsRootDirectory>
     <LegacyPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(LegacyPayloadsRootDirectory)))</LegacyPayloadsRootDirectory>
@@ -109,7 +109,7 @@
         SuperPmiCollect=$(_SuperPmiCollect)
       </_PropertiesToPass>
 
-      <_PropertiesToPass Condition="'$(TargetOS)' == 'browser' Or '$(TargetsAndroid)' == 'true' Or '$(TargetsiOS)' == 'true' Or '$(TargetsiOSSimulator)' == 'true' Or '$(TargetstvOS)' == 'true' Or '$(TargetstvOSSimulator)' == 'true'">
+      <_PropertiesToPass Condition="'$(TargetOS)' == 'browser' Or '$(TargetsAndroid)' == 'true' Or '$(TargetsAppleMobile)' == 'true'">
         $(_PropertiesToPass);
         IncludeDotNetCli=$(IncludeDotNetCli);
         DotNetCliRuntime=$(DotNetCliRuntime);
@@ -206,16 +206,13 @@
 
   <Target Name="DiscoverLegacyXUnitWrappers">
     <ItemGroup>
-      <_XUnitWrapperDll Include="%(TestGrouping.XUnitWrapperDll)" Condition="Exists('%(XUnitWrapperDll)')">
-        <PayloadGroup>%(TestGroup)</PayloadGroup>
-      </_XUnitWrapperDll>
       <_XUnitWrapperDll Include="@(XUnitWrapperGrouping)" />
 
       <!-- This adds the remaining *.XUnitWrapper.dll files in TestBinDir unless
            1) they are in LegacyPayloadsRootDirectory or
            2) they are grouped by XUnitWrapperGrouping. -->
       <_XUnitWrapperDll Include="$(TestBinDir)**\*.XUnitWrapper.dll" Exclude="$(LegacyPayloadsRootDirectory)**\*.XUnitWrapper.dll;@(XUnitWrapperGrouping->Metadata('FullPath'))">
-         <!-- Set PayloadGroup to empty string, so we can update _XUnitWrapperDll items with no PayloadGroup to default value. Unfortunatelly, we can't do this right here. -->
+         <!-- Set PayloadGroup to empty string, so we can update _XUnitWrapperDll items with no PayloadGroup to default value. Unfortunately, we can't do this right here. -->
          <PayloadGroup></PayloadGroup>
       </_XUnitWrapperDll>
 
@@ -235,23 +232,8 @@
       <_XUnitWrapperDll>%(_XUnitWrapperDll.FullPath)</_XUnitWrapperDll>
     </PropertyGroup>
 
-    <ItemGroup>
-      <_TestGroupingRelevant Include="@(TestGrouping->WithMetadataValue('XUnitWrapperDll',$(_XUnitWrapperDll))->Metadata('FullPath'))" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <_TestGroupingExists>@(_TestGroupingRelevant->AnyHaveMetadataValue('TestGroup','$(_PayloadGroup)'))</_TestGroupingExists>
-    </PropertyGroup>
-
     <ItemGroup Condition="'$(_FileDirectory)' != ''">
-      <!-- If no TestGrouping is defined, all the files under $(_FileDirectory) and its subdirectories goes to the PayloadDirectory. -->
-      <_LegacyPayloadFiles Include="$(_FileDirectory)**" Exclude="@(_TestGroupingRelevant)" Condition="'$(_TestGroupingExists)' != 'true'" />
-      <!-- If there is a TestGrouping, then take only the files that belong to the TestGroup == $(_PayloadGroup). -->
-      <_LegacyPayloadFiles Include="@(_TestGroupingRelevant->WithMetadataValue('TestGroup','$(_PayloadGroup)')->DistinctWithCase())" Condition="'$(_TestGroupingExists)' == 'true'" />
-      <_LegacyPayloadFiles Include="$(_FileDirectory)*" Condition="'$(_TestGroupingExists)' == 'true'" />
-      <_LegacyPayloadFiles Include="$(_FileDirectory)/*.app" Condition="'$(_TestGroupingExists)' == 'true'" />
-      <_LegacyPayloadFiles Include="$(_FileDirectory)/*.app/**" Condition="'$(_TestGroupingExists)' == 'true'" />
-
+      <_LegacyPayloadFiles Include="$(_FileDirectory)**" />
       <_LegacyPayloadFiles Update="@(_LegacyPayloadFiles)">
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
@@ -354,8 +336,8 @@
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssembly" />
 
       <_MergedWrapperMarker Update="@(_MergedWrapperMarker)">
-        <TestExecutionScriptPath Condition="'$(TargetsBrowser)' != 'true'">$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
-        <TestExecutionScriptPath Condition="'$(TargetsBrowser)' == 'true'">%(RootDir)%(Directory)AppBundle/RunTests.$(TestScriptExtension)</TestExecutionScriptPath>
+        <TestExecutionScriptPath Condition="'$(TargetsMobile)' != 'true'">$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
+        <TestExecutionScriptPath Condition="'$(TargetsMobile)' == 'true'">%(RootDir)%(Directory)AppBundle/RunTests.$(TestScriptExtension)</TestExecutionScriptPath>
       </_MergedWrapperMarker>
 
       <!-- Exclude merged test wrappers without the test execution script for this target (skipped due to CLRTestTargetUnsupported et al) -->
@@ -410,12 +392,15 @@
     <PropertyGroup>
       <XUnitLogCheckerHelixPath Condition="'$(TestWrapperTargetsWindows)' != 'true'">%24HELIX_CORRELATION_PAYLOAD/</XUnitLogCheckerHelixPath>
       <XUnitLogCheckerHelixPath Condition="'$(TestWrapperTargetsWindows)' == 'true'">%25HELIX_CORRELATION_PAYLOAD%25/</XUnitLogCheckerHelixPath>
-      <XUnitLogCheckerHelixPath>$(XUnitLogCheckerHelixPath)XUnitLogChecker/</XUnitLogCheckerHelixPath>
 
-      <XUnitLogCheckerArgs>$(_MergedWrapperRunScriptDirectoryRelative) $(_MergedWrapperName)</XUnitLogCheckerArgs>
+      <XUnitLogCheckerArgs>--results-path $(_MergedWrapperRunScriptDirectoryRelative)</XUnitLogCheckerArgs>
+      <XUnitLogCheckerArgs>$(XUnitLogCheckerArgs) --test-wrapper $(_MergedWrapperName)</XUnitLogCheckerArgs>
+      <XUnitLogCheckerArgs>$(XUnitLogCheckerArgs) --dumps-path</XUnitLogCheckerArgs>
+
       <XUnitLogCheckerArgs Condition="'$(TestWrapperTargetsWindows)' != 'true'">$(XUnitLogCheckerArgs) %24HELIX_DUMP_FOLDER</XUnitLogCheckerArgs>
       <XUnitLogCheckerArgs Condition="'$(TestWrapperTargetsWindows)' == 'true'">$(XUnitLogCheckerArgs) %25HELIX_DUMP_FOLDER%25</XUnitLogCheckerArgs>
-      <XUnitLogCheckerCommand>dotnet $(XUnitLogCheckerHelixPath)XUnitLogChecker.dll $(XUnitLogCheckerArgs)</XUnitLogCheckerCommand>
+
+      <XUnitLogCheckerCommand>$(XUnitLogCheckerHelixPath)XUnitLogChecker$(ExeSuffix) $(XUnitLogCheckerArgs)</XUnitLogCheckerCommand>
     </PropertyGroup>
 
     <ItemGroup>
@@ -427,8 +412,8 @@
       <HelixCommandLines Include="$(_WorkaroundForNuGetMigrations)" />
 
       <!-- Force assemblies to lazy-load for LLVM AOT test runs to enable using tests that fail at AOT time (and as a result can't be AOTd) -->
-      <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher --aot-lazy-assembly-load" />
-      <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher" />
+      <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'minifullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher --aot-lazy-assembly-load" />
+      <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot' and '$(RuntimeVariant)' != 'minifullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher" />
 
       <!--
         Bug Fix: GH Issue #85056 - Helix takes the exit code of the last ran executable. Since that spot has now been
@@ -440,7 +425,7 @@
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="test_exit_code=%24%3F" />
 
       <!-- Add the XUnitLogChecker's running command and store its exit code. -->
-      <HelixCommandLines Include="$(XUnitLogCheckerCommand)" />
+      <HelixCommandLines Condition="'$(IsXunitLogCheckerSupported)' == 'true'" Include="$(XUnitLogCheckerCommand)" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set xunitlogchecker_exit_code=%25ERRORLEVEL%25" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="xunitlogchecker_exit_code=%24%3F" />
 
@@ -488,11 +473,15 @@
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+      <!-- Android package names can't have hyphens, so we replace them with underscores -->
+      <_MergedApkName>$(_MergedWrapperName.Replace('-', '_'))</_MergedApkName>
     </PropertyGroup>
 
     <ItemGroup>
-      <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
-      <_MergedPayloadFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(Identity).apk')" />
+      <_MergedPayloadGroups Include="$(_MergedWrapperName)">
+        <ApkPackageName>$(_MergedApkName)</ApkPackageName>
+      </_MergedPayloadGroups>
+      <_MergedPayloadFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(ApkPackageName).apk')" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')" />
@@ -637,7 +626,7 @@
     <TimeoutPerTestInMilliseconds Condition=" '$(TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
     <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
     <_XUnitParallelMode>collections</_XUnitParallelMode>
-    <_XUnitParallelMode Condition=" '$(TargetsAndroid)' == 'true' or '$(TargetsiOSSimulator)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOSSimulator)' == 'true' or '$(TargetstvOS)' == 'true'">none</_XUnitParallelMode>
+    <_XUnitParallelMode Condition=" '$(TargetsAndroid)' == 'true' or '$(TargetsAppleMobile)' == 'true'">none</_XUnitParallelMode>
     <_XUnitParallelMode Condition=" '$(LongRunningGCTests)' == 'true' ">none</_XUnitParallelMode>
     <_XUnitParallelMode Condition=" '$(GcSimulatorTests)' == 'true' ">none</_XUnitParallelMode>
     <XUnitRunnerArgs>-parallel $(_XUnitParallelMode) -nocolor -noshadow -xml testResults.xml</XUnitRunnerArgs>
@@ -723,7 +712,7 @@
     <HelixPreCommand Include="export __TestCollectionTimeoutMins=$(TimeoutPerTestCollectionInMinutes)" Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' " />
     <HelixPreCommand Include="export __CollectDumps=1" />
     <HelixPreCommand Include="export __CrashDumpFolder=$HELIX_DUMP_FOLDER" />
-    <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
+    <HelixPreCommand Include="export __TestArchitecture=$(TargetArchitecture)" />
     <HelixPreCommand Include="cat $__TestEnv" />
 
     <HelixPostCommand Include="find $HELIX_WORKITEM_PAYLOAD -name '*testResults.xml' -exec cp {} $HELIX_DUMP_FOLDER\; " />
@@ -775,7 +764,7 @@
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
 
     <!-- Browser-Wasm and iOS platforms follow a very different workflow, which is currently out of scope of the Log Checker. It's not useful on any platform that uses xharness. -->
-    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsiOSSimulator)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetstvOSSimulator)' != 'true'" />
+    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(IsXunitLogCheckerSupported)' == 'true' and '$(TargetsBrowser)' != 'true' and '$(TargetsAppleMobile)' != 'true'" />
     <HelixCorrelationPayload Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="dotnet-sos">
       <Destination>sos</Destination>
       <Uri>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/flat2/dotnet-sos/$(DotnetSosVersion)/dotnet-sos.$(DotnetSosVersion).nupkg</Uri>
@@ -788,15 +777,10 @@
       <XUnitWrapperDlls>$([System.String]::Join(' ', $([System.IO.Directory]::GetFiles(%(FullPath), '*.XUnitWrapper.dll', SearchOption.AllDirectories))).Replace($([MSBuild]::EnsureTrailingSlash(%(FullPath))),''))</XUnitWrapperDlls>
     </LegacyPayloads>
     <LegacyPayloads Update="@(LegacyPayloads)">
-      <!-- Specify the test group from the payload name. For explicitly named groups, PayloadGroup specifies the subset of tests we want to run in this Helix Work Item -->
-      <TestGroup>%(PayloadGroup)</TestGroup>
-      <!-- When Payload contains more than one *.XUnitWrapper.dll TestGroup should not be specified. When we specify multiple assemblies, we aren't trying to run only a subset of tests within one assembly. -->
-      <TestGroup Condition=" $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').IndexOf('.XUnitWrapper.dll')) != $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').LastIndexOf('.XUnitWrapper.dll')) "></TestGroup>
       <!--
         PayloadGroup0 is just a synthesized name for a bundle of multiple test assemblies that we send as one payload.
         Normally the condition above catches this case; however, when we're only sending one assembly, passing PayloadGroup0 to Helix means that no tests will be run.
       -->
-      <TestGroup Condition="'%(PayloadGroup)' == 'PayloadGroup0'"></TestGroup>
       <PayloadZipFile>$(LegacyPayloadsRootDirectory)\%(PayloadGroup).zip</PayloadZipFile>
     </LegacyPayloads>
   </ItemGroup>
@@ -821,7 +805,11 @@
   <ItemGroup Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
     <MergedPayloads Update="@(MergedPayloads)">
       <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
-      <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).apk</ApkPath>
+      <!-- Android package names can't have dashes, so we replace them with underscores. -->
+      <ApkFileName>$([System.String]::new('%(FileName)%(Extension)').Replace('-', '_'))</ApkFileName>
+    </MergedPayloads>
+    <MergedPayloads Update="@(MergedPayloads)">
+      <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(ApkFileName).apk</ApkPath>
       <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
     </MergedPayloads>
   </ItemGroup>
@@ -899,7 +887,6 @@
     <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>$(_WorkaroundForNuGetMigrationsForPrepending) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
-      <Command Condition=" '%(TestGroup)' != '' ">$(_WorkaroundForNuGetMigrationsForPrepending) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
       <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
     </HelixWorkItem>
@@ -907,12 +894,11 @@
     <XHarnessApkToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAndroid)' == 'true'">
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
       <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
-      <CustomCommands Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
     </XHarnessApkToTest>
 
     <XHarnessApkToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAndroid)' == 'true'">
       <Arguments>--arg=env:TestExclusionListPath=TestExclusionList.txt</Arguments>
-      <AndroidPackageName>net.dot.%(PayloadGroup)</AndroidPackageName>
+      <AndroidPackageName>net.dot.%(ApkFileName)</AndroidPackageName>
       <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
     </XHarnessApkToTest>
@@ -921,7 +907,6 @@
       <TestTarget>$(AppleTestTarget)</TestTarget>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
       <CustomCommands> $(SigningCommand) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
-      <CustomCommands Condition=" '%(TestGroup)' != '' ">$(SigningCommand) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
     </XHarnessAppBundleToTest>
 
     <XHarnessAppBundleToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAppleMobile)' == 'true'">

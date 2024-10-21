@@ -14,29 +14,39 @@ if (NOT CLR_CMAKE_TARGET_APPLE)
     set(CMAKE_INSTALL_RPATH "\$ORIGIN/netcoredeps")
 endif()
 
-set(SKIP_VERSIONING 1)
-
 include_directories(..)
+include_directories(../..)
+include_directories(../../hostmisc)
 include_directories(../../json)
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
+include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
+
+add_subdirectory(../../hostmisc hostmisc)
+
+configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
+target_include_directories(hostmisc PUBLIC ${GENERATED_INCLUDE_DIR}/corehost)
+
+if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/)
+endif()
 
 set(SOURCES
     ../bundle_marker.cpp
     ./hostfxr_resolver.cpp
     ./hostpolicy_resolver.cpp
     ../../hostpolicy/static/coreclr_resolver.cpp
+    ../../fxr_resolver.cpp
+    ../../corehost.cpp
 )
 
 set(HEADERS
     ../bundle_marker.h
     ../../hostfxr_resolver.h
+    ../../fxr_resolver.h
 )
 
-add_definitions(-D_NO_ASYNCRTIMP)
-add_definitions(-D_NO_PPLXIMP)
-remove_definitions(-DEXPORT_SHARED_API)
-add_definitions(-DNATIVE_LIBS_EMBEDDED)
+add_compile_definitions(NATIVE_LIBS_EMBEDDED)
 
 include(../../fxr/files.cmake)
 include(../../hostpolicy/files.cmake)
@@ -45,6 +55,7 @@ include(../../hostcommon/files.cmake)
 if(MSVC)
     # Host components don't try to handle asynchronous exceptions
     set_property(DIRECTORY PROPERTY CLR_EH_OPTION /EHsc)
+    set_property(TARGET hostmisc PROPERTY CLR_EH_OPTION /EHsc)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     # Prevents libc from calling pthread_cond_destroy on static objects in
     # dlopen()'ed library which we dlclose() in pal::unload_library.
@@ -52,7 +63,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
-    add_definitions(-DUNICODE)
+    add_compile_definitions(UNICODE)
     list(APPEND SOURCES
         ../apphost.windows.cpp
         ${CLR_SRC_NATIVE_DIR}/libs/Common/delayloadhook_windows.cpp
@@ -63,7 +74,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
-    add_link_options("/DEF:${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost.def")
+    add_linker_flag("/DEF:${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost.def")
 
 else()
     if(CLR_CMAKE_TARGET_FREEBSD)
@@ -78,11 +89,16 @@ else()
     set_exports_linker_option(${EXPORTS_FILE})
 endif()
 
-if (CLR_SINGLE_FILE_HOST_ONLY)
-    set(ADDITIONAL_INSTALL_ARGUMENTS COMPONENT runtime)
+add_executable(singlefilehost ${SOURCES})
+
+add_sanitizer_runtime_support(singlefilehost)
+
+if(NOT CLR_CMAKE_TARGET_WIN32)
+    disable_pax_mprotect(singlefilehost)
 endif()
 
-include(../../exe.cmake)
+install_with_stripped_symbols(singlefilehost TARGETS corehost COMPONENT runtime)
+
 include(configure.cmake)
 
 if(CLR_CMAKE_HOST_UNIX)
@@ -98,17 +114,22 @@ add_definitions(-DFEATURE_STATIC_HOST=1)
 
 if(CLR_CMAKE_TARGET_WIN32)
     # Disable manifest generation into the file .exe on Windows
-    add_link_options(/MANIFEST:NO)
+    add_linker_flag("/MANIFEST:NO")
+
+    # Enable CET-compatibility
+    if (CLR_CMAKE_HOST_ARCH_AMD64)
+        add_linker_flag("/CETCOMPAT")
+    endif()
 
     # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
-    add_link_options(/INCREMENTAL:NO)
+    add_linker_flag("/INCREMENTAL:NO")
 
     # Delay load libraries required for WinRT as that is not supported on all platforms
-    add_link_options(/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll)
+    add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
 
     # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
-    add_link_options(/DELAYLOAD:version.dll)
+    add_linker_flag("/DELAYLOAD:version.dll")
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -215,6 +236,10 @@ elseif (CLR_CMAKE_TARGET_SUNOS)
      LIST(APPEND NATIVE_LIBS
          socket
      )
+elseif (CLR_CMAKE_TARGET_HAIKU)
+     LIST(APPEND NATIVE_LIBS
+         network
+     )
 endif(CLR_CMAKE_TARGET_APPLE)
 
 # On *BSD, we always use the libunwind that's part of the OS
@@ -237,7 +262,7 @@ if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD
 endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
 
 if(CLR_CMAKE_TARGET_LINUX AND CLR_CMAKE_TARGET_ARCH_RISCV64)
-    add_link_options(LINKER:-z,notext)
+    add_linker_flag(-Wl,-z,notext)
 endif()
 
 if(CLR_CMAKE_TARGET_APPLE)
@@ -257,5 +282,7 @@ target_link_libraries(
     ${RUNTIMEINFO_LIB}
     ${END_WHOLE_ARCHIVE}
 )
+
+target_link_libraries(singlefilehost PRIVATE hostmisc)
 
 add_sanitizer_runtime_support(singlefilehost)

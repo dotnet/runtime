@@ -23,9 +23,10 @@ unsafe partial class GenericsNative
     public static extern ReadOnlySpan<char> AddReadOnlySpanCs(in ReadOnlySpan<char> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestReadOnlySpanC()
+    [Fact]
+    public static void TestReadOnlySpanC()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetReadOnlySpanC('1'));
 

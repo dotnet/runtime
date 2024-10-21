@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Runtime.Serialization;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics;
-
+using System.Runtime.Serialization;
 using static System.WeakReferenceHandleTags;
 
 namespace System
@@ -167,7 +166,7 @@ namespace System
 #pragma warning disable CA1821 // Remove empty Finalizers
         ~WeakReference()
         {
-            Debug.Assert(false, " WeakReference<T> finalizer should never run");
+            Debug.Fail(" WeakReference<T> finalizer should never run");
         }
 #pragma warning restore CA1821 // Remove empty Finalizers
 

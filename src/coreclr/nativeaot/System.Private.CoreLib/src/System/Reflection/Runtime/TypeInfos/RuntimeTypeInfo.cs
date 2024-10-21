@@ -1,19 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
+using System.Runtime.CompilerServices;
 
-using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Core.NonPortable;
 using Internal.Reflection.Augments;
+using Internal.Reflection.Core.Execution;
+using Internal.Runtime.Augments;
 
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
+using System.Threading;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -32,31 +33,36 @@ namespace System.Reflection.Runtime.TypeInfos
     //   - Overrides many "NotImplemented" members in TypeInfo with abstracts so failure to implement
     //     shows up as build error.
     //
-    internal abstract partial class RuntimeTypeInfo : RuntimeType, ICloneable
+    [DebuggerDisplay("{_debugName}")]
+    internal abstract partial class RuntimeTypeInfo
     {
         protected RuntimeTypeInfo()
         {
         }
 
-        public abstract override bool IsTypeDefinition { get; }
-        public abstract override bool IsGenericTypeDefinition { get; }
-        protected abstract override bool HasElementTypeImpl();
-        protected abstract override bool IsArrayImpl();
-        public abstract override bool IsSZArray { get; }
-        public abstract override bool IsVariableBoundArray { get; }
-        protected abstract override bool IsByRefImpl();
-        protected abstract override bool IsPointerImpl();
-        public abstract override bool IsGenericParameter { get; }
-        public abstract override bool IsGenericTypeParameter { get; }
-        public abstract override bool IsGenericMethodParameter { get; }
-        public abstract override bool IsConstructedGenericType { get; }
-        public abstract override bool IsByRefLike { get; }
-        public sealed override bool IsCollectible => false;
-        public abstract override string Name { get; }
+        public virtual bool IsTypeDefinition => false;
+        public virtual bool IsGenericTypeDefinition => false;
+        public virtual bool HasElementType => false;
+        public virtual bool IsArray => false;
+        public virtual bool IsSZArray => false;
+        public virtual bool IsVariableBoundArray => false;
+        public virtual bool IsByRef => false;
+        public virtual bool IsPointer => false;
+        public virtual bool IsGenericParameter => false;
+        public virtual bool IsGenericTypeParameter => false;
+        public virtual bool IsGenericMethodParameter => false;
+        public virtual bool IsConstructedGenericType => false;
+        public virtual bool IsByRefLike => false;
 
-        public abstract override Assembly Assembly { get; }
+        public bool IsGenericType => IsGenericTypeDefinition || IsConstructedGenericType;
 
-        public sealed override string AssemblyQualifiedName
+        public bool IsVoid => InternalTypeHandleIfAvailable.Equals(typeof(void).TypeHandle);
+
+        public abstract string Name { get; }
+
+        public abstract Assembly Assembly { get; }
+
+        public string AssemblyQualifiedName
         {
             get
             {
@@ -68,12 +74,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override Type AsType()
-        {
-            return this;
-        }
-
-        public sealed override Type BaseType
+        public Type? BaseType
         {
             get
             {
@@ -82,7 +83,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (!typeHandle.IsNull())
                 {
                     RuntimeTypeHandle baseTypeHandle;
-                    if (ReflectionCoreExecution.ExecutionEnvironment.TryGetBaseType(typeHandle, out baseTypeHandle))
+                    if (RuntimeAugments.TryGetBaseType(typeHandle, out baseTypeHandle))
                         return Type.GetTypeFromHandle(baseTypeHandle);
                 }
 
@@ -99,14 +100,14 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public abstract override bool ContainsGenericParameters { get; }
+        public abstract bool ContainsGenericParameters { get; }
 
-        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
+        public abstract IEnumerable<CustomAttributeData> CustomAttributes { get; }
 
         //
         // Left unsealed as generic parameter types must override.
         //
-        public override MethodBase DeclaringMethod
+        public virtual MethodBase DeclaringMethod
         {
             get
             {
@@ -125,27 +126,24 @@ namespace System.Reflection.Runtime.TypeInfos
         // the instance hashcode to implement GetHashCode() (otherwise, the hash code will not be stable if the TypeInfo is released and recreated.)
         // Thus, we override and seal Equals() here but defer to a flavor-specific hash code implementation.
         //
-        public sealed override bool Equals(object obj)
+        public override bool Equals(object obj)
         {
             return object.ReferenceEquals(this, obj);
         }
 
-        public sealed override bool Equals(Type o)
+        public bool Equals(Type o)
         {
             return object.ReferenceEquals(this, o);
         }
 
-        public sealed override int GetHashCode()
-        {
-            return InternalGetHashCode();
-        }
+        public abstract override int GetHashCode();
 
-        public abstract override string FullName { get; }
+        public abstract string FullName { get; }
 
         //
         // Left unsealed as generic parameter types must override.
         //
-        public override GenericParameterAttributes GenericParameterAttributes
+        public virtual GenericParameterAttributes GenericParameterAttributes
         {
             get
             {
@@ -157,7 +155,7 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         // Left unsealed as generic parameter types must override this.
         //
-        public override int GenericParameterPosition
+        public virtual int GenericParameterPosition
         {
             get
             {
@@ -166,28 +164,21 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override Type[] GenericTypeArguments
+        public Type[] GenericTypeArguments
         {
             get
             {
-                return InternalRuntimeGenericTypeArguments.CloneTypeArray();
+                return InternalRuntimeGenericTypeArguments.ToTypeArray();
             }
         }
 
-        [DynamicallyAccessedMembers(
-                DynamicallyAccessedMemberTypes.PublicFields
-                | DynamicallyAccessedMemberTypes.PublicMethods
-                | DynamicallyAccessedMemberTypes.PublicEvents
-                | DynamicallyAccessedMemberTypes.PublicProperties
-                | DynamicallyAccessedMemberTypes.PublicConstructors
-                | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
-        public sealed override MemberInfo[] GetDefaultMembers()
+        public MemberInfo[] GetDefaultMembers()
         {
             string? defaultMemberName = GetDefaultMemberName();
-            return defaultMemberName != null ? GetMember(defaultMemberName) : Array.Empty<MemberInfo>();
+            return defaultMemberName != null ? GetMember(defaultMemberName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public) : Array.Empty<MemberInfo>();
         }
 
-        public sealed override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
+        public InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             // restrictions and known limitations compared to CoreCLR:
             // - only interface.GetMethods() reflection visible interface methods are returned
@@ -200,25 +191,31 @@ namespace System.Reflection.Runtime.TypeInfos
 
             ArgumentNullException.ThrowIfNull(interfaceType);
 
-            if (!(interfaceType is RuntimeTypeInfo))
+            if (!(interfaceType is RuntimeType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(interfaceType));
 
+            RuntimeTypeHandle typeHandle = TypeHandle;
             RuntimeTypeHandle interfaceTypeHandle = interfaceType.TypeHandle;
 
-            ReflectionCoreExecution.ExecutionEnvironment.VerifyInterfaceIsImplemented(TypeHandle, interfaceTypeHandle);
-            Debug.Assert(interfaceType.IsInterface);
-            Debug.Assert(!IsInterface);
+            if (RuntimeAugments.IsInterface(typeHandle))
+                throw new ArgumentException(SR.Argument_InterfaceMap);
+
+            if (!RuntimeAugments.IsInterface(interfaceTypeHandle))
+                throw new ArgumentException(SR.Arg_MustBeInterface);
+
+            if (!RuntimeAugments.IsAssignableFrom(interfaceTypeHandle, typeHandle))
+                throw new ArgumentException(SR.Arg_NotFoundIFace);
 
             // SZArrays implement the methods on IList`1, IEnumerable`1, and ICollection`1 with
             // runtime magic. We don't have accurate interface maps for them.
             if (IsSZArray && interfaceType.IsGenericType)
                 throw new ArgumentException(SR.Argument_ArrayGetInterfaceMap);
 
-            ReflectionCoreExecution.ExecutionEnvironment.GetInterfaceMap(this, interfaceType, out MethodInfo[] interfaceMethods, out MethodInfo[] targetMethods);
+            ReflectionCoreExecution.ExecutionEnvironment.GetInterfaceMap(this.ToType(), interfaceType, out MethodInfo[] interfaceMethods, out MethodInfo[] targetMethods);
 
             InterfaceMapping im;
             im.InterfaceType = interfaceType;
-            im.TargetType = this;
+            im.TargetType = this.ToType();
             im.InterfaceMethods = interfaceMethods;
             im.TargetMethods = targetMethods;
 
@@ -229,7 +226,7 @@ namespace System.Reflection.Runtime.TypeInfos
         // Implements the correct GUID behavior for all "constructed" types (i.e. returning an all-zero GUID.) Left unsealed
         // so that RuntimeNamedTypeInfo can override.
         //
-        public override Guid GUID
+        public virtual Guid GUID
         {
             get
             {
@@ -237,87 +234,59 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        //
-        // Left unsealed so that RuntimeFunctionPointerInfo can override.
-        //
-        public override Type[] GetFunctionPointerCallingConventions()
+        public virtual bool IsFunctionPointer => false;
+        public virtual bool IsUnmanagedFunctionPointer => false;
+
+        public virtual Type[] GetFunctionPointerCallingConventions()
         {
             throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
         }
 
-        //
-        // Left unsealed so that RuntimeFunctionPointerInfo can override.
-        //
-        public override Type[] GetFunctionPointerParameterTypes()
+        public virtual Type[] GetFunctionPointerParameterTypes()
         {
             throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
         }
 
-        //
-        // Left unsealed so that RuntimeFunctionPointerInfo can override.
-        //
-        public override Type GetFunctionPointerReturnType()
+        public virtual Type GetFunctionPointerReturnType()
         {
             throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
         }
 
-        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
+        public abstract bool HasSameMetadataDefinitionAs(MemberInfo other);
 
-        public sealed override IEnumerable<Type> ImplementedInterfaces
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Interface lists on base types will be preserved same as for the current type")]
+        public Type[] GetInterfaces()
         {
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-                Justification = "Interface lists on base types will be preserved same as for the current type")]
-            get
+            // If this has a RuntimeTypeHandle, let the underlying runtime engine have the first crack. If it refuses, fall back to metadata.
+            RuntimeTypeHandle typeHandle = InternalTypeHandleIfAvailable;
+            if (!typeHandle.IsNull() && !IsGenericTypeDefinition)
+                return ToType().GetInterfaces();
+
+            ArrayBuilder<Type> result = default;
+
+            TypeContext typeContext = this.TypeContext;
+            Type baseType = this.BaseTypeWithoutTheGenericParameterQuirk;
+            if (baseType != null)
+                result.Append(baseType.GetInterfaces());
+            foreach (QTypeDefRefOrSpec directlyImplementedInterface in this.TypeRefDefOrSpecsForDirectlyImplementedInterfaces)
             {
-                LowLevelListWithIList<Type> result = new LowLevelListWithIList<Type>();
-
-                bool done = false;
-
-                // If this has a RuntimeTypeHandle, let the underlying runtime engine have the first crack. If it refuses, fall back to metadata.
-                RuntimeTypeHandle typeHandle = InternalTypeHandleIfAvailable;
-                if (!typeHandle.IsNull())
+                Type ifc = directlyImplementedInterface.Resolve(typeContext).ToType();
+                if (result.Contains(ifc))
+                    continue;
+                result.Add(ifc);
+                foreach (Type indirectIfc in ifc.GetInterfaces())
                 {
-                    IEnumerable<RuntimeTypeHandle> implementedInterfaces = ReflectionCoreExecution.ExecutionEnvironment.TryGetImplementedInterfaces(typeHandle);
-                    if (implementedInterfaces != null)
-                    {
-                        done = true;
-
-                        foreach (RuntimeTypeHandle th in implementedInterfaces)
-                        {
-                            result.Add(Type.GetTypeFromHandle(th));
-                        }
-                    }
+                    if (result.Contains(indirectIfc))
+                        continue;
+                    result.Add(indirectIfc);
                 }
-
-                if (!done)
-                {
-                    TypeContext typeContext = this.TypeContext;
-                    Type baseType = this.BaseTypeWithoutTheGenericParameterQuirk;
-                    if (baseType != null)
-                        result.AddRange(baseType.GetInterfaces());
-                    foreach (QTypeDefRefOrSpec directlyImplementedInterface in this.TypeRefDefOrSpecsForDirectlyImplementedInterfaces)
-                    {
-                        RuntimeTypeInfo ifc = directlyImplementedInterface.Resolve(typeContext);
-                        if (result.Contains(ifc))
-                            continue;
-                        result.Add(ifc);
-                        foreach (Type indirectIfc in ifc.GetInterfaces())
-                        {
-                            if (result.Contains(indirectIfc))
-                                continue;
-                            result.Add(indirectIfc);
-                        }
-                    }
-                }
-
-                return result.AsNothingButIEnumerable();
             }
+
+            return result.ToArray();
         }
 
-        public sealed override bool IsAssignableFrom(TypeInfo typeInfo) => IsAssignableFrom((Type)typeInfo);
-
-        public sealed override bool IsAssignableFrom(Type c)
+        public bool IsAssignableFrom(Type c)
         {
             if (c == null)
                 return false;
@@ -333,7 +302,7 @@ namespace System.Reflection.Runtime.TypeInfos
             if (typeInfo is not RuntimeType)
                 return false;  // Desktop compat: If typeInfo is null, or implemented by a different Reflection implementation, return "false."
 
-            RuntimeTypeInfo fromTypeInfo = typeInfo.CastToRuntimeTypeInfo();
+            RuntimeTypeInfo fromTypeInfo = typeInfo.ToRuntimeTypeInfo();
 
             if (toTypeInfo.Equals(fromTypeInfo))
                 return true;
@@ -344,7 +313,7 @@ namespace System.Reflection.Runtime.TypeInfos
             if (haveTypeHandles)
             {
                 // If both types have type handles, let MRT handle this. It's not dependent on metadata.
-                if (ReflectionCoreExecution.ExecutionEnvironment.IsAssignableFrom(toTypeHandle, fromTypeHandle))
+                if (RuntimeAugments.IsAssignableFrom(toTypeHandle, fromTypeHandle))
                     return true;
 
                 // Runtime IsAssignableFrom does not handle casts from generic type definitions: always returns false. For those, we fall through to the
@@ -356,22 +325,16 @@ namespace System.Reflection.Runtime.TypeInfos
             }
 
             // If we got here, the types are open, or reduced away, or otherwise lacking in type handles. Perform the IsAssignability check in managed code.
-            return Assignability.IsAssignableFrom(this, typeInfo);
+            return Assignability.IsAssignableFrom(this.ToType(), typeInfo);
         }
 
-        public sealed override bool IsEnum
+        public MemberTypes MemberType
         {
             get
             {
-                return 0 != (Classification & TypeClassification.IsEnum);
-            }
-        }
+                TypeAttributes attributes = Attributes;
 
-        public sealed override MemberTypes MemberType
-        {
-            get
-            {
-                if (IsPublic || IsNotPublic)
+                if ((attributes & TypeAttributes.VisibilityMask) is TypeAttributes.Public or TypeAttributes.NotPublic)
                     return MemberTypes.TypeInfo;
                 else
                     return MemberTypes.NestedType;
@@ -381,12 +344,12 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         // Left unsealed as there are so many subclasses. Need to be overridden by EcmaFormatRuntimeNamedTypeInfo and RuntimeConstructedGenericTypeInfo
         //
-        public abstract override int MetadataToken
+        public abstract int MetadataToken
         {
             get;
         }
 
-        public sealed override Module Module
+        public Module Module
         {
             get
             {
@@ -394,73 +357,74 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public abstract override string Namespace { get; }
+        public abstract string Namespace { get; }
 
-        public sealed override Type[] GenericTypeParameters
+        public Type[] GenericTypeParameters
         {
             get
             {
-                return RuntimeGenericTypeParameters.CloneTypeArray();
+                return RuntimeGenericTypeParameters.ToTypeArray();
             }
         }
 
         //
         // Left unsealed as array types must override this.
         //
-        public override int GetArrayRank()
+        public virtual int GetArrayRank()
         {
             Debug.Assert(!IsArray);
             throw new ArgumentException(SR.Argument_HasToBeArrayClass);
         }
 
-        public sealed override Type GetElementType()
+        public Type GetElementType()
         {
-            return InternalRuntimeElementType;
+            return InternalRuntimeElementType?.ToType();
         }
 
         //
         // Left unsealed as generic parameter types must override.
         //
-        public override Type[] GetGenericParameterConstraints()
+        public virtual Type[] GetGenericParameterConstraints()
         {
             Debug.Assert(!IsGenericParameter);
             throw new InvalidOperationException(SR.Arg_NotGenericParameter);
         }
 
         //
-        // Left unsealed as IsGenericType types must override this.
+        // Left unsealed as generic types must override this.
         //
-        public override Type GetGenericTypeDefinition()
+        public virtual Type GetGenericTypeDefinition()
         {
-            Debug.Assert(!IsGenericType);
+            Debug.Assert(!IsGenericTypeDefinition && !IsConstructedGenericType);
             throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
         }
 
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public sealed override Type MakeArrayType()
+        public Type MakeArrayType()
         {
             // Do not implement this as a call to MakeArrayType(1) - they are not interchangeable. MakeArrayType() returns a
             // vector type ("SZArray") while MakeArrayType(1) returns a multidim array of rank 1. These are distinct types
             // in the ECMA model and in CLR Reflection.
-            return this.GetArrayTypeWithTypeHandle();
+            return this.GetArrayTypeWithTypeHandle().ToType();
         }
 
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public sealed override Type MakeArrayType(int rank)
+        public Type MakeArrayType(int rank)
         {
             if (rank <= 0)
                 throw new IndexOutOfRangeException();
-            return this.GetMultiDimArrayTypeWithTypeHandle(rank);
+            return this.GetMultiDimArrayTypeWithTypeHandle(rank).ToType();
         }
 
-        public sealed override Type MakeByRefType()
+        public Type MakePointerType()
         {
-            return this.GetByRefType();
+            return this.GetPointerType().ToType();
         }
 
-        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
-        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public sealed override Type MakeGenericType(params Type[] typeArguments)
+        public Type MakeByRefType()
+        {
+            return this.GetByRefType().ToType();
+        }
+
+        public Type MakeGenericType(Type[] typeArguments)
         {
             ArgumentNullException.ThrowIfNull(typeArguments);
 
@@ -475,13 +439,17 @@ namespace System.Reflection.Runtime.TypeInfos
             RuntimeTypeInfo?[] runtimeTypeArguments = new RuntimeTypeInfo[typeArguments.Length];
             for (int i = 0; i < typeArguments.Length; i++)
             {
-                RuntimeTypeInfo? runtimeTypeArgument = runtimeTypeArguments[i] = typeArguments[i] as RuntimeTypeInfo;
-                if (runtimeTypeArgument == null)
-                {
-                    if (typeArguments[i] == null)
-                        throw new ArgumentNullException();
+                Type typeArgument = typeArguments[i];
+                if (typeArgument == null)
+                    throw new ArgumentNullException();
 
-                    if (typeArguments[i].IsSignatureType)
+                if (typeArgument is RuntimeType typeArgumentAsRuntimeType)
+                {
+                    runtimeTypeArguments[i] = typeArgumentAsRuntimeType.GetRuntimeTypeInfo();
+                }
+                else
+                {
+                    if (typeArgument.IsSignatureType)
                     {
                         foundSignatureType = true;
                     }
@@ -493,7 +461,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
 
             if (foundSignatureType)
-                return ReflectionAugments.MakeGenericSignatureType(this, typeArguments);
+                return new SignatureConstructedGenericType(this.ToType(), typeArguments);
 
             for (int i = 0; i < typeArguments.Length; i++)
             {
@@ -507,37 +475,22 @@ namespace System.Reflection.Runtime.TypeInfos
                     throw new TypeLoadException(SR.CannotUseByRefLikeTypeInInstantiation);
             }
 
-            return this.GetConstructedGenericTypeWithTypeHandle(runtimeTypeArguments!);
+            return this.GetConstructedGenericTypeWithTypeHandle(runtimeTypeArguments!).ToType();
         }
 
-        public sealed override Type MakePointerType()
-        {
-            return this.GetPointerType();
-        }
-
-        public sealed override Type DeclaringType
+        public Type DeclaringType
         {
             get
             {
-                return this.InternalDeclaringType;
+                return this.InternalDeclaringType?.ToType();
             }
         }
 
-        public sealed override Type ReflectedType
-        {
-            get
-            {
-                // Desktop compat: For types, ReflectedType == DeclaringType. Nested types are always looked up as BindingFlags.DeclaredOnly was passed.
-                // For non-nested types, the concept of a ReflectedType doesn't even make sense.
-                return DeclaringType;
-            }
-        }
-
-        public abstract override StructLayoutAttribute StructLayoutAttribute { get; }
+        public abstract StructLayoutAttribute StructLayoutAttribute { get; }
 
         public abstract override string ToString();
 
-        public sealed override RuntimeTypeHandle TypeHandle
+        public RuntimeTypeHandle TypeHandle
         {
             get
             {
@@ -557,41 +510,25 @@ namespace System.Reflection.Runtime.TypeInfos
                 // representation of the type is in the native metadata and there's no MethodTable at the runtime side.
                 // If you squint hard, this is a missing metadata situation - the metadata is missing on the runtime side - and
                 // the action for the user to take is the same: go mess with RD.XML.
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(this.ToType());
             }
         }
 
-        public sealed override Type UnderlyingSystemType
-        {
-            get
-            {
-                return this;
-            }
-        }
+        public abstract TypeAttributes Attributes { get; }
 
-        protected abstract override TypeAttributes GetAttributeFlagsImpl();
+        public bool IsAbstract => (Attributes & TypeAttributes.Abstract) != 0;
 
-        protected sealed override TypeCode GetTypeCodeImpl()
-        {
-            return ReflectionAugments.GetRuntimeTypeCode(this);
-        }
+        public bool IsInterface => (Attributes & TypeAttributes.Interface) != 0;
 
-        protected abstract int InternalGetHashCode();
+        public bool IsPrimitive => (Classification & TypeClassification.IsPrimitive) != 0;
 
-        protected sealed override bool IsCOMObjectImpl()
-        {
-            return false;
-        }
+        public bool IsValueType => (Classification & TypeClassification.IsValueType) != 0;
 
-        protected sealed override bool IsPrimitiveImpl()
-        {
-            return 0 != (Classification & TypeClassification.IsPrimitive);
-        }
+        public bool IsEnum => 0 != (Classification & TypeClassification.IsEnum);
 
-        protected sealed override bool IsValueTypeImpl()
-        {
-            return 0 != (Classification & TypeClassification.IsValueType);
-        }
+        public bool IsActualValueType => IsValueType && !IsGenericParameter;
+
+        public bool IsActualEnum => IsEnum && !IsGenericParameter;
 
         //
         // Returns the anchoring typedef that declares the members that this type wants returned by the Declared*** properties.
@@ -615,7 +552,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal abstract Type InternalDeclaringType { get; }
+        internal abstract RuntimeTypeInfo InternalDeclaringType { get; }
 
         //
         // Return the full name of the "defining assembly" for the purpose of computing TypeInfo.AssemblyQualifiedName;
@@ -647,6 +584,27 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         internal abstract RuntimeTypeHandle InternalTypeHandleIfAvailable { get; }
+
+        private RuntimeType _type;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RuntimeType ToType() => _type ?? InitializeType();
+
+        private RuntimeType InitializeType()
+        {
+            RuntimeTypeHandle runtimeTypeHandle = InternalTypeHandleIfAvailable;
+            if (runtimeTypeHandle.IsNull)
+            {
+                RuntimeType type = new RuntimeType(this);
+                if (Interlocked.CompareExchange(ref _type, type, null) != null)
+                    type.Free();
+            }
+            else
+            {
+                _type = (RuntimeType)Type.GetTypeFromHandle(runtimeTypeHandle)!;
+            }
+            return _type;
+        }
 
         internal bool IsDelegate
         {
@@ -769,14 +727,14 @@ namespace System.Reflection.Runtime.TypeInfos
                 {
                     baseType = baseTypeDefRefOrSpec.Resolve(this.TypeContext);
                 }
-                return baseType;
+                return baseType?.ToType();
             }
         }
 
         private string? GetDefaultMemberName()
         {
             Type defaultMemberAttributeType = typeof(DefaultMemberAttribute);
-            for (Type type = this; type != null; type = type.BaseType!)
+            for (Type type = this.ToType(); type != null; type = type.BaseType!)
             {
                 foreach (CustomAttributeData attribute in type.CustomAttributes)
                 {
@@ -815,7 +773,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     if (!typeHandle.IsNull())
                     {
                         RuntimeTypeHandle baseTypeHandle;
-                        if (ReflectionCoreExecution.ExecutionEnvironment.TryGetBaseType(typeHandle, out baseTypeHandle))
+                        if (RuntimeAugments.TryGetBaseType(typeHandle, out baseTypeHandle))
                             return Type.GetTypeFromHandle(baseTypeHandle);
                     }
 
@@ -826,10 +784,19 @@ namespace System.Reflection.Runtime.TypeInfos
                     if (baseTypeDefOrRefOrSpec.IsTypeDefinition)
                     {
                         QTypeDefinition baseTypeDef = baseTypeDefOrRefOrSpec.ToTypeDefinition();
-                        baseType = baseTypeDef.Resolve();
+                        baseType = baseTypeDef.Resolve().ToType();
                     }
                     return baseType;
                 }
+
+                static bool IsPrimitiveType(Type type)
+                    => type == typeof(bool) || type == typeof(char)
+                    || type == typeof(sbyte) || type == typeof(byte)
+                    || type == typeof(short) || type == typeof(ushort)
+                    || type == typeof(int) || type == typeof(uint)
+                    || type == typeof(long) || type == typeof(ulong)
+                    || type == typeof(float) || type == typeof(double)
+                    || type == typeof(nint) || type == typeof(nuint);
 
                 if (_lazyClassification == 0)
                 {
@@ -844,10 +811,10 @@ namespace System.Reflection.Runtime.TypeInfos
                             classification |= TypeClassification.IsEnum | TypeClassification.IsValueType;
                         if (baseType == typeof(MulticastDelegate))
                             classification |= TypeClassification.IsDelegate;
-                        if (baseType == valueType && this != enumType)
+                        if (baseType == valueType && this.ToType() != enumType)
                         {
                             classification |= TypeClassification.IsValueType;
-                            if (ExecutionDomain.IsPrimitiveType(this))
+                            if (IsPrimitiveType(this.ToType()))
                                 classification |= TypeClassification.IsPrimitive;
                         }
                     }
@@ -865,11 +832,6 @@ namespace System.Reflection.Runtime.TypeInfos
             IsEnum = 0x00000004,
             IsPrimitive = 0x00000008,
             IsDelegate = 0x00000010,
-        }
-
-        object ICloneable.Clone()
-        {
-            return this;
         }
 
         private volatile TypeClassification _lazyClassification;

@@ -217,7 +217,7 @@ namespace System.Globalization
 
             if (!_bUseOverrides)
             {
-                return new string[] { icuFormatString };
+                return [icuFormatString];
             }
 
             // When using ICU and need to get user overrides, we put the user override at the beginning
@@ -226,7 +226,7 @@ namespace System.Globalization
             Debug.Assert(!string.IsNullOrEmpty(userOverride));
 
             return userOverride != icuFormatString ?
-                 new string[] { userOverride, icuFormatString } : new string[] { userOverride };
+                 [userOverride, icuFormatString] : [userOverride];
         }
 
         private int GetAnsiCodePage(string _ /*cultureName*/) =>

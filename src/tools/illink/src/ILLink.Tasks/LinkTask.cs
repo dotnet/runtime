@@ -195,6 +195,13 @@ namespace ILLink.Tasks
 		bool? _removeSymbols;
 
 		/// <summary>
+		///   Preserve original path to debug symbols from each assembly's debug header.
+		///   Maps to '--preserve-symbol-paths' if true.
+		///   Default if not specified is to write out the full path to the pdb in the debug header.
+		/// </summary>
+		public bool PreserveSymbolPaths { get; set; }
+
+		/// <summary>
 		///   Sets the default action for trimmable assemblies.
 		///   Maps to '--trim-mode'
 		/// </summary>
@@ -262,7 +269,7 @@ namespace ILLink.Tasks
 				var taskDirectory = Path.GetDirectoryName (Assembly.GetExecutingAssembly ().Location);
 #pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
 				// IL Linker always runs on .NET Core, even when using desktop MSBuild to host ILLink.Tasks.
-				_illinkPath = Path.Combine (Path.GetDirectoryName (taskDirectory), "net8.0", "illink.dll");
+				_illinkPath = Path.Combine (Path.GetDirectoryName (taskDirectory), "net9.0", "illink.dll");
 				return _illinkPath;
 			}
 			set => _illinkPath = value;
@@ -473,6 +480,9 @@ namespace ILLink.Tasks
 
 			if (_removeSymbols == false)
 				args.AppendLine ("-b");
+
+			if (PreserveSymbolPaths)
+				args.AppendLine ("--preserve-symbol-paths");
 
 			if (CustomSteps != null) {
 				foreach (var customStep in CustomSteps) {

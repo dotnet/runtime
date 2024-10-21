@@ -4,10 +4,10 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Text;
 using System.Runtime.InteropServices;
-using System.Security.Principal;
 using System.Runtime.Versioning;
+using System.Security.Principal;
+using System.Text;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -716,7 +716,7 @@ namespace System.DirectoryServices.Protocols
             }
 
             IntPtr control = IntPtr.Zero;
-            int structSize = Marshal.SizeOf(typeof(SortKeyInterop));
+            int structSize = Marshal.SizeOf<SortKeyInterop>();
             int keyCount = nativeSortKeys.Length;
             IntPtr memHandle = Utility.AllocHGlobalIntPtrArray(keyCount + 1);
 
@@ -756,8 +756,8 @@ namespace System.DirectoryServices.Protocols
                 _directoryControlValue = null;
                 if (value != null)
                 {
-                    _directoryControlValue = new byte[value.bv_len];
-                    Marshal.Copy(value.bv_val, _directoryControlValue, 0, value.bv_len);
+                    _directoryControlValue = new byte[value.bv_len.Value];
+                    Marshal.Copy(value.bv_val, _directoryControlValue, 0, (int)value.bv_len.Value);
                 }
             }
             finally

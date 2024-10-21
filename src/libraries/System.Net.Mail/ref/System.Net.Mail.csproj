@@ -11,7 +11,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\ref\System.Collections.Specialized.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.EventBasedAsync\ref\System.ComponentModel.EventBasedAsync.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\ref\System.Net.Primitives.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Requests\ref\System.Net.Requests.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\ref\System.Security.Cryptography.csproj" />
   </ItemGroup>

@@ -94,8 +94,6 @@ class ECall
 
         static void PopulateManagedStringConstructors();
 
-        static void PopulateManagedCastHelpers();
-
         static void PopulateAsyncHelpers();
 
 #ifdef DACCESS_COMPILE

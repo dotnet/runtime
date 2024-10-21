@@ -24,6 +24,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/runtime.h>
 #include <mono/sgen/sgen-conf.h>
 #include <mono/sgen/sgen-gc.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -62,6 +63,8 @@ typedef struct DomainFinalizationReq {
 static gboolean gc_disabled;
 
 static gboolean finalizing_root_domain;
+
+extern gboolean mono_term_signaled;
 
 gboolean mono_log_finalizers;
 gboolean mono_do_not_finalize;
@@ -189,7 +192,6 @@ mono_gc_run_finalize (void *obj, void *data)
 #ifndef HAVE_SGEN_GC
 	MonoObject *o2;
 #endif
-	MonoMethod* finalizer = NULL;
 	MonoDomain *caller_domain = mono_domain_get ();
 
 	// This function is called from the innards of the GC, so our best alternative for now is to do polling here
@@ -281,18 +283,6 @@ mono_gc_run_finalize (void *obj, void *data)
 		return;
 	}
 
-	finalizer = mono_class_get_finalizer (o->vtable->klass);
-
-	/* If object has a CCW but has no finalizer, it was only
-	 * registered for finalization in order to free the CCW.
-	 * Else it needs the regular finalizer run.
-	 * FIXME: what to do about resurrection and suppression
-	 * of finalizer on object with CCW.
-	 */
-	if (mono_marshal_free_ccw (o) && !finalizer) {
-		mono_domain_set_internal_with_options (caller_domain, TRUE);
-		return;
-	}
 
 	/*
 	 * To avoid the locking plus the other overhead of mono_runtime_invoke_checked (),
@@ -329,6 +319,7 @@ mono_gc_run_finalize (void *obj, void *data)
 	MONO_PROFILER_RAISE (gc_finalizing_object, (o));
 
 #ifdef HOST_WASM
+	MonoMethod* finalizer = mono_class_get_finalizer (o->vtable->klass);
 	if (finalizer) { // null finalizers work fine when using the vcall invoke as Object has an empty one
 		gpointer params [1];
 		params [0] = NULL;
@@ -686,21 +677,6 @@ ves_icall_System_GCHandle_InternalSet (MonoGCHandle handle, MonoObjectHandle obj
 static MonoCoopSem finalizer_sem;
 static volatile gboolean finished;
 
-#ifdef HOST_WASM
-
-static void
-mono_wasm_gc_finalize_notify (void)
-{
-#if 0
-	/* use this if we are going to start the finalizer thread on wasm. */
-	mono_coop_sem_post (&finalizer_sem);
-#else
-	mono_main_thread_schedule_background_job (mono_runtime_do_background_work);
-#endif
-}
-
-#endif /* HOST_WASM */
-
 /*
  * mono_gc_finalize_notify:
  *
@@ -718,10 +694,10 @@ mono_gc_finalize_notify (void)
 	if (mono_gc_is_null ())
 		return;
 
-#if defined(HOST_WASI)
-	// TODO: Schedule the background job on WASI. Threads aren't yet supported in this build.
-#elif defined(HOST_WASM)
-	mono_wasm_gc_finalize_notify ();
+#if defined(HOST_WASI) && defined(DISABLE_THREADS)
+	mono_runtime_do_background_work ();
+#elif defined(HOST_WASM) && defined(DISABLE_THREADS)
+	mono_main_thread_schedule_background_job (mono_runtime_do_background_work);
 #else
 	mono_coop_sem_post (&finalizer_sem);
 #endif
@@ -879,6 +855,7 @@ finalizer_thread (gpointer unused)
 	mono_hazard_pointer_install_free_queue_size_callback (hazard_free_queue_is_too_big);
 
 	while (!finished) {
+
 		/* Wait to be notified that there's at least one
 		 * finaliser to run
 		 */
@@ -891,6 +868,12 @@ finalizer_thread (gpointer unused)
 			mono_coop_sem_wait (&finalizer_sem, MONO_SEM_FLAGS_ALERTABLE);
 		}
 		wait = TRUE;
+
+		/* Just in case we've received a SIGTERM */
+		if (mono_term_signaled) {
+			mono_runtime_try_shutdown();
+			exit(mono_environment_exitcode_get());
+		}
 
 		mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
 

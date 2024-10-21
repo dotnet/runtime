@@ -25,6 +25,11 @@ namespace System.Linq
         {
             T value;
 
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
             if (source.TryGetSpan(out ReadOnlySpan<T> span))
             {
                 if (span.IsEmpty)
@@ -32,7 +37,7 @@ namespace System.Linq
                     ThrowHelper.ThrowNoElementsException();
                 }
 
-                if (!Vector128.IsHardwareAccelerated || span.Length < Vector128<T>.Count)
+                if (!Vector128.IsHardwareAccelerated || !Vector128<T>.IsSupported || span.Length < Vector128<T>.Count)
                 {
                     value = span[0];
                     for (int i = 1; i < span.Length; i++)
@@ -43,7 +48,7 @@ namespace System.Linq
                         }
                     }
                 }
-                else if (!Vector256.IsHardwareAccelerated || span.Length < Vector256<T>.Count)
+                else if (!Vector256.IsHardwareAccelerated || !Vector256<T>.IsSupported || span.Length < Vector256<T>.Count)
                 {
                     ref T current = ref MemoryMarshal.GetReference(span);
                     ref T lastVectorStart = ref Unsafe.Add(ref current, span.Length - Vector128<T>.Count);
@@ -67,7 +72,7 @@ namespace System.Linq
                         }
                     }
                 }
-                else if (!Vector512.IsHardwareAccelerated || span.Length < Vector512<T>.Count)
+                else if (!Vector512.IsHardwareAccelerated || !Vector512<T>.IsSupported || span.Length < Vector512<T>.Count)
                 {
                     ref T current = ref MemoryMarshal.GetReference(span);
                     ref T lastVectorStart = ref Unsafe.Add(ref current, span.Length - Vector256<T>.Count);

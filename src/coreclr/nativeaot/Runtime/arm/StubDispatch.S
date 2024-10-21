@@ -22,7 +22,7 @@ NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
         ldr         r2, [r12, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         // Load the MethodTable from the object instance in r0.
-        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
+        GLOBAL_LABEL RhpInterfaceDispatchAVLocation\entries
         ldr         r1, [r0]
 
         CurrentOffset = OFFSETOF__InterfaceDispatchCache__m_rgEntries
@@ -102,10 +102,6 @@ LEAF_END RhpVTableOffsetDispatch, _TEXT
 
 // Initial dispatch on an interface when we don't have a cache yet.
 LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
-        // The stub that jumped here pushed r12, which contains the interface dispatch cell
-        // we need to pop it here
-        pop         { r12 }
-
         // Just tail call to the cache miss helper.
         b           C_FUNC(RhpInterfaceDispatchSlow)
 LEAF_END RhpInitialInterfaceDispatch, _TEXT
@@ -125,7 +121,7 @@ LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
         // for the universal thunk target is to be placed in sp-8
         // and the universal thunk target address is to be placed in sp-4
         str         r12, [sp, #-8]
-        ldr         r12, =C_FUNC(RhpCidResolve)
+        PREPARE_EXTERNAL_VAR RhpCidResolve, r12
         str         r12, [sp, #-4]
 
         // jump to universal transition thunk

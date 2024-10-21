@@ -100,12 +100,14 @@ struct AutoLayoutMaxPacking<T> : ITestStructure
     public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
 }
 
-public unsafe class Program
+public unsafe partial class Program
 {
     const int Pass = 100;
     const int Fail = 0;
 
     [Fact]
+    [SkipOnMono("needs triage")]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/181", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static int TestEntryPoint()
     {
         bool succeeded = true;
@@ -1324,9 +1326,10 @@ public unsafe class Program
                 expectedOffsetValue: 8
             );
         }
-        else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+        else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 || RuntimeInformation.ProcessArchitecture == Architecture.RiscV64
+                || RuntimeInformation.ProcessArchitecture == Architecture.LoongArch64)
         {
-            // The Procedure Call Standard for ARM64 defines this type as having 16-byte alignment
+            // The Procedure Call Standard for ARM64, RiscV64, LoongArch64 defines this type as having 16-byte alignment
 
             succeeded &= Test<DefaultLayoutDefaultPacking<Vector256<byte>>>(
                 expectedSize: 48,

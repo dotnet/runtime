@@ -5,6 +5,8 @@
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
+    <!-- Apple mobile trimming descriptor for Mono runtime -->
+    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AggregateTests.cs" />
@@ -26,13 +28,13 @@
     <Compile Include="ElementAtOrDefaultTests.cs" />
     <Compile Include="ElementAtTests.cs" />
     <Compile Include="EmptyEnumerable.cs" />
-    <Compile Include="EmptyPartitionTests.cs" />
     <Compile Include="EnumerableTests.cs" />
     <Compile Include="ExceptTests.cs" />
     <Compile Include="FirstOrDefaultTests.cs" />
     <Compile Include="FirstTests.cs" />
     <Compile Include="GroupByTests.cs" />
     <Compile Include="GroupJoinTests.cs" />
+    <Compile Include="IndexTests.cs" />
     <Compile Include="IntersectTests.cs" />
     <Compile Include="JoinTests.cs" />
     <Compile Include="LastOrDefaultTests.cs" />

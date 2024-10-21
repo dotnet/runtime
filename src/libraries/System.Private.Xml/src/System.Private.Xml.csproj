@@ -1,14 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs" Link="Common\System\StringBuilderCache.cs" />
@@ -788,4 +785,5 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
+
 </Project>

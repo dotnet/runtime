@@ -105,10 +105,15 @@ LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
     beqz t1, LOCAL_LABEL(No_Restore_CONTEXT_CONTROL)
 
     ld  ra, (CONTEXT_Ra)(t4)
+    ld  t1, (CONTEXT_T4)(t4)
+    ld  fp, (CONTEXT_Sp)(t4)
+    sd  t1, -8(fp)
     ld  fp, (CONTEXT_Fp)(t4)
-    ld  sp, (CONTEXT_Sp)(t4)
     ld  t1, (CONTEXT_Pc)(t4) // Since we cannot control $pc directly, we're going to corrupt t1
-    ld  t4, (CONTEXT_T4)(t4)
+    ld  t4, (CONTEXT_Sp)(t4)
+    addi sp, t4, -8
+    ld  t4, (sp)
+    addi sp, sp, 8
     jr  t1
 
 LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
@@ -134,7 +139,7 @@ LEAF_END RtlCaptureContext, _TEXT
 //
 
 LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
-    PROLOG_STACK_ALLOC 24
+    PROLOG_STACK_ALLOC 32
     sd  t0, 0(sp)
     sd  t1, 8(sp)
     sd  t3, 16(sp)
@@ -144,7 +149,7 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     and  t3, t1, t0
     bne t3, t0, LOCAL_LABEL(Done_CONTEXT_CONTROL)
 
-    addi  t0, sp, 24
+    addi  t0, sp, 32
     sd  fp, CONTEXT_Fp(a0)
     sd  t0, CONTEXT_Sp(a0)
     sd  ra, CONTEXT_Ra(a0)
@@ -160,6 +165,7 @@ LOCAL_LABEL(Done_CONTEXT_CONTROL):
     ld  t1, 8(sp)
     ld  t3, 16(sp)
 
+    sd  x0, (CONTEXT_X0)(a0)
     sd  tp, (CONTEXT_Tp)(a0)
     sd  gp, (CONTEXT_Gp)(a0)
     sd  a0, (CONTEXT_A0)(a0)
@@ -237,6 +243,6 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
 
 LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT):
 
-    EPILOG_STACK_FREE 24
+    EPILOG_STACK_FREE 32
     ret
 LEAF_END CONTEXT_CaptureContext, _TEXT

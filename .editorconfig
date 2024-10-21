@@ -31,7 +31,7 @@ csharp_new_line_between_query_expression_clauses = true
 csharp_indent_block_contents = true
 csharp_indent_braces = false
 csharp_indent_case_contents = true
-csharp_indent_case_contents_when_block = true
+csharp_indent_case_contents_when_block = false
 csharp_indent_switch_labels = true
 csharp_indent_labels = one_less_than_current
 
@@ -92,6 +92,7 @@ dotnet_style_readonly_field = true:suggestion
 # Expression-level preferences
 dotnet_style_object_initializer = true:suggestion
 dotnet_style_collection_initializer = true:suggestion
+dotnet_style_prefer_collection_expression = when_types_exactly_match
 dotnet_style_explicit_tuple_names = true:suggestion
 dotnet_style_coalesce_expression = true:suggestion
 dotnet_style_null_propagation = true:suggestion

@@ -19,7 +19,7 @@ namespace System.Diagnostics
         /// we avoid the allocation of a new array by using the second collection as is and not converting it to an array. the reason
         /// is we call this every time we try to create a meter or instrument and we don't want to allocate a new array every time.
         /// </remarks>
-        internal static bool CompareTags(List<KeyValuePair<string, object?>>? sortedTags, IEnumerable<KeyValuePair<string, object?>>? tags2)
+        internal static bool CompareTags(IList<KeyValuePair<string, object?>>? sortedTags, IEnumerable<KeyValuePair<string, object?>>? tags2)
         {
             if (sortedTags == tags2)
             {

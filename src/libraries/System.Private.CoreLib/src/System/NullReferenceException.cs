@@ -21,13 +21,13 @@ namespace System
         }
 
         public NullReferenceException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_NullReferenceException)
         {
             HResult = HResults.E_POINTER;
         }
 
         public NullReferenceException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_NullReferenceException, innerException)
         {
             HResult = HResults.E_POINTER;
         }

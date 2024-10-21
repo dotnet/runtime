@@ -1,14 +1,16 @@
 #include "tiering.h"
 
 static mono_mutex_t tiering_mutex;
-static GHashTable *patch_sites_table;
+// FIXME: The add/remove traffic on this table may require dn_simdhash to implement cascade flag cleanup
+//  and compaction
+static dn_simdhash_ptr_ptr_t *patch_sites_table;
 static gboolean enable_tiering;
 
 void
 mono_interp_tiering_init (void)
 {
 	mono_os_mutex_init_recursive (&tiering_mutex);
-	patch_sites_table = g_hash_table_new (NULL, NULL);
+	patch_sites_table = dn_simdhash_ptr_ptr_new (0, NULL);
 	enable_tiering = TRUE;
 }
 
@@ -61,11 +63,12 @@ patch_imethod_site (gpointer data, gpointer user_data)
 static void
 patch_interp_data_items (InterpMethod *old_imethod, InterpMethod *new_imethod)
 {
-	GSList *sites = g_hash_table_lookup (patch_sites_table, old_imethod);
-	g_slist_foreach (sites, patch_imethod_site, new_imethod);
-
-	g_hash_table_remove (patch_sites_table, sites);
-	g_slist_free (sites);
+	GSList *sites = NULL;
+	if (dn_simdhash_ptr_ptr_try_get_value (patch_sites_table, old_imethod, (void **)&sites)) {
+		g_slist_foreach (sites, patch_imethod_site, new_imethod);
+		dn_simdhash_ptr_ptr_try_remove (patch_sites_table, old_imethod);
+		g_slist_free (sites);
+	}
 }
 
 static InterpMethod*
@@ -100,9 +103,13 @@ static void
 register_imethod_patch_site (InterpMethod *imethod, gpointer *ptr)
 {
 	g_assert (!imethod->optimized);
-	GSList *sites = g_hash_table_lookup (patch_sites_table, imethod);
+	GSList *sites = NULL;
+	guint8 found = dn_simdhash_ptr_ptr_try_get_value (patch_sites_table, imethod, (void **)&sites);
 	sites = g_slist_prepend (sites, ptr);
-	g_hash_table_insert_replace (patch_sites_table, imethod, sites, TRUE);
+	if (found)
+		dn_simdhash_ptr_ptr_try_replace_value (patch_sites_table, imethod, sites);
+	else
+		dn_simdhash_ptr_ptr_try_add (patch_sites_table, imethod, sites);
 }
 
 static void

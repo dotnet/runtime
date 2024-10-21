@@ -238,7 +238,7 @@ private:
     {
         ClassLayout* dstLayout = m_store->GetLayout(m_compiler);
 
-        StructSegments segments = m_promotion->SignificantSegments(dstLayout);
+        StructSegments segments = m_compiler->GetSignificantSegments(dstLayout);
 
         for (int i = 0; i < m_entries.Height(); i++)
         {
@@ -275,7 +275,9 @@ private:
         var_types PrimitiveType;
 
         RemainderStrategy(int type, unsigned primitiveOffset = 0, var_types primitiveType = TYP_UNDEF)
-            : Type(type), PrimitiveOffset(primitiveOffset), PrimitiveType(primitiveType)
+            : Type(type)
+            , PrimitiveOffset(primitiveOffset)
+            , PrimitiveType(primitiveType)
         {
         }
     };
@@ -727,8 +729,8 @@ private:
     //   remainderStrategy - The strategy we are using for the remainder
     //   dump              - Whether to JITDUMP decisions made
     //
-    bool CanSkipEntry(const Entry&             entry,
-                      const StructDeaths&      deaths,
+    bool CanSkipEntry(const Entry&                               entry,
+                      const StructDeaths&                        deaths,
                       const RemainderStrategy& remainderStrategy DEBUGARG(bool dump = false))
     {
         if (entry.ToReplacement != nullptr)
@@ -760,7 +762,7 @@ private:
             // If the destination has replacements we still have usable
             // liveness information for the remainder. This case happens if the
             // source was also promoted.
-            if (m_dstInvolvesReplacements && deaths.IsRemainderDying())
+            if (m_dstInvolvesReplacements && !m_hasNonRemainderUseOfStructLocal && deaths.IsRemainderDying())
             {
 #ifdef DEBUG
                 if (dump)
@@ -1216,9 +1218,8 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
             GenTree* op1 = (*addr)->gtGetOp1();
             GenTree* op2 = (*addr)->gtGetOp2();
 
-            if (op2->IsCnsIntOrI() && !op2->AsIntCon()->IsIconHandle())
+            if (op2->IsCnsIntOrI() && op2->TypeIs(TYP_I_IMPL) && !op2->AsIntCon()->IsIconHandle())
             {
-                assert(op2->TypeIs(TYP_I_IMPL));
                 GenTreeIntCon* intCon = op2->AsIntCon();
                 *offset += (target_ssize_t)intCon->IconValue();
 
@@ -1229,9 +1230,8 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
 
                 *addr = op1;
             }
-            else if (op1->IsCnsIntOrI() && !op1->AsIntCon()->IsIconHandle())
+            else if (op1->IsCnsIntOrI() && op1->TypeIs(TYP_I_IMPL) && !op1->AsIntCon()->IsIconHandle())
             {
-                assert(op1->TypeIs(TYP_I_IMPL));
                 GenTreeIntCon* intCon = op1->AsIntCon();
                 *offset += (target_ssize_t)intCon->IconValue();
 

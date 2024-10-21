@@ -10,12 +10,12 @@ using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
-    public sealed class ConditionalWeakTable<TKey, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
+    public sealed class ConditionalWeakTable<TKey, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : class
         where TValue : class?
     {
         // Lifetimes of keys and values:
-        // Inserting a key and value into the dictonary will not
+        // Inserting a key and value into the dictionary will not
         // prevent the key from dying, even if the key is strongly reachable
         // from the value. Once the key dies, the dictionary automatically removes
         // the key/value entry.

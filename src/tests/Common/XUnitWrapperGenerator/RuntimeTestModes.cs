@@ -22,9 +22,9 @@ namespace Xunit
         JitMinOpts = 1 << 3, // DOTNET_JITMinOpts is set.
         TailcallStress = 1 << 4, // DOTNET_TailcallStress is set.
 
-        // ZapDisable says to not use NGEN or ReadyToRun images.
+        // DisableR2R says to not use ReadyToRun images.
         // This means we JIT everything.
-        ZapDisable = 1 << 5, // DOTNET_ZapDisable is set.
+        DisableR2R = 1 << 5, // DOTNET_ReadyToRun=0
 
         // GCStress3 forces a GC at various locations, typically transitions
         // to/from the VM from managed code.
@@ -33,6 +33,15 @@ namespace Xunit
         // GCStressC forces a GC at every JIT-generated code instruction,
         // including in NGEN/ReadyToRun code.
         GCStressC = 1 << 7, // DOTNET_GCStress includes mode 0xC.
-        AnyGCStress = GCStress3 | GCStressC // Disable when any GCStress is exercised.
+        AnyGCStress = GCStress3 | GCStressC, // Disable when any GCStress is exercised.
+        // TieredCompilation is on by default, but can cause some tests to fail
+        // As TieredCompilation is on by default, it does not count as a stress mode for RegularRun.
+        TieredCompilation = 1 << 8, // DOTNET_TieredCompilation (or COMPlus_TieredCompilation) is not set to 0.
+
+        AnyJitStress = JitStress | JitStressRegs | JitMinOpts | TailcallStress, // Disable when any JIT stress mode is exercised.
+
+        AnyJitOptimizationStress = AnyJitStress | TieredCompilation, // Disable when any JIT non-full optimization stress mode is exercised.
+
+        HeapVerify = 1 << 9, // DOTNET_HeapVerify (or COMPlus_HeapVerify) is set.
     }
 }

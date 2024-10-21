@@ -294,7 +294,7 @@ namespace System.Collections.Specialized
             if (_readOnly)
                 throw new NotSupportedException(SR.CollectionReadOnly);
 
-            NameObjectEntry?  entry = FindEntry(name);
+            NameObjectEntry? entry = FindEntry(name);
             if (entry != null)
             {
                 entry.Value = value;

@@ -104,23 +104,11 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
 
     if (regState->rsIsFloat)
     {
-        noway_assert(inArgMask & RBM_FLTARG_REGS);
+        assert((inArgMask & RBM_FLTARG_REGS) != RBM_NONE);
     }
-    else //  regState is for the integer registers
+    else
     {
-        // This might be the fixed return buffer register argument (on ARM64)
-        // We check and allow inArgReg to be theFixedRetBuffReg
-        if (hasFixedRetBuffReg() && (inArgReg == theFixedRetBuffReg()))
-        {
-            // We should have a TYP_BYREF or TYP_I_IMPL arg and not a TYP_STRUCT arg
-            noway_assert(argDsc->lvType == TYP_BYREF || argDsc->lvType == TYP_I_IMPL);
-            // We should have recorded the variable number for the return buffer arg
-            noway_assert(info.compRetBuffArg != BAD_VAR_NUM);
-        }
-        else // we have a regular arg
-        {
-            noway_assert(inArgMask & RBM_ARG_REGS);
-        }
+        assert((inArgMask & fullIntArgRegMask(info.compCallConv)) != RBM_NONE);
     }
 
     regState->rsCalleeRegArgMaskLiveIn |= inArgMask;
@@ -262,6 +250,16 @@ bool Compiler::rpMustCreateEBPFrame(INDEBUG(const char** wbReason))
     }
 #endif // TARGET_LOONGARCH64
 
+#ifdef TARGET_RISCV64
+    // TODO-RISCV64-NYI: This is temporary: force a frame pointer-based frame until genFnProlog
+    // can handle non-frame pointer frames.
+    if (!result)
+    {
+        INDEBUG(reason = "Temporary RISCV64 force frame pointer");
+        result = true;
+    }
+#endif // TARGET_RISCV64
+
 #ifdef DEBUG
     if ((result == true) && (wbReason != nullptr))
     {
@@ -379,7 +377,7 @@ void Compiler::raMarkStkVars()
         // to the GC, as the frame offsets in these local variables would
         // not be correct.
 
-        if (varDsc->lvIsParam && raIsVarargsStackArg(lclNum))
+        if (varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum))
         {
             if (!varDsc->lvPromoted && !varDsc->lvIsStructField)
             {

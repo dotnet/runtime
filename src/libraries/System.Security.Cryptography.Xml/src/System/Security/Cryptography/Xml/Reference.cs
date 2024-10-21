@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
 using System.Xml;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography.Xml
 {
@@ -266,18 +266,31 @@ namespace System.Security.Cryptography.Xml
                         // let the transform read the children of the transformElement for data
                         transform.LoadInnerXml(transformElement.ChildNodes);
                         // Hack! this is done to get around the lack of here() function support in XPath
-                        if (transform is XmlDsigEnvelopedSignatureTransform
-                            && _uri != null && (_uri.Length == 0 || _uri[0] == '#'))
+                        if (transform is XmlDsigEnvelopedSignatureTransform)
                         {
                             // Walk back to the Signature tag. Find the nearest signature ancestor
                             // Signature-->SignedInfo-->Reference-->Transforms-->Transform
                             XmlNode? signatureTag = transformElement.SelectSingleNode("ancestor::ds:Signature[1]", nsm);
 
                             // Resolve the reference to get starting point for position calculation.
-                            XmlNode? referenceTarget =
-                                _uri.Length == 0
-                                ? transformElement.OwnerDocument
-                                : SignedXml!.GetIdElement(transformElement.OwnerDocument, Utils.GetIdFromLocalUri(_uri, out bool _));
+                            // This needs to match the way CalculateSignature resolves URI references.
+                            XmlNode? referenceTarget = null;
+                            if (_uri == null || _uri.Length == 0)
+                            {
+                                referenceTarget = transformElement.OwnerDocument;
+                            }
+                            else if (_uri[0] == '#')
+                            {
+                                string idref = Utils.ExtractIdFromLocalUri(_uri);
+                                if (idref == "xpointer(/)")
+                                {
+                                    referenceTarget = transformElement.OwnerDocument;
+                                }
+                                else
+                                {
+                                    referenceTarget = SignedXml!.GetIdElement(transformElement.OwnerDocument, idref);
+                                }
+                            }
 
                             XmlNodeList? signatureList = referenceTarget?.SelectNodes(".//ds:Signature", nsm);
                             if (signatureList != null)

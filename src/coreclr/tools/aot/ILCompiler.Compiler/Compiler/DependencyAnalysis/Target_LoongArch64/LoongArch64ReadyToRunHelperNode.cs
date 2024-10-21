@@ -18,29 +18,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             switch (Id)
             {
-                case ReadyToRunHelperId.VirtualCall:
-                    {
-                        MethodDesc targetMethod = (MethodDesc)Target;
-
-                        Debug.Assert(!targetMethod.OwningType.IsInterface);
-                        Debug.Assert(!targetMethod.CanMethodBeInSealedVTable());
-
-                        int pointerSize = factory.Target.PointerSize;
-
-                        int slot = 0;
-                        if (!relocsOnly)
-                        {
-                            slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
-                            Debug.Assert(slot != -1);
-                        }
-
-                        encoder.EmitLD(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg0, 0);
-                        encoder.EmitLD(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.IntraProcedureCallScratch1,
-                                        EETypeNode.GetVTableOffset(pointerSize) + (slot * pointerSize));
-                        encoder.EmitJMP(encoder.TargetRegister.IntraProcedureCallScratch1);
-                    }
-                    break;
-
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
@@ -57,6 +34,7 @@ namespace ILCompiler.DependencyAnalysis
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitADD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Result, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
                             encoder.EmitLD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, factory.Target.PointerSize);
+                            encoder.EmitDBAR();
                             encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg2, 1);
                             encoder.EmitRETIfEqual(encoder.TargetRegister.IntraProcedureCallScratch1);
 
@@ -71,6 +49,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.GetThreadStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
+
                         encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeThreadStaticIndex(target));
 
                         // First arg: address of the TypeManager slot that provides the helper with
@@ -116,6 +95,7 @@ namespace ILCompiler.DependencyAnalysis
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
                             encoder.EmitADD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
                             encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, 0);
+                            encoder.EmitDBAR();
                             encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg3, 0);
                             encoder.EmitRETIfEqual(Register.R21);
 
@@ -133,7 +113,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         if (target.TargetNeedsVTableLookup)
                         {
-                            Debug.Assert(!target.TargetMethod.CanMethodBeInSealedVTable());
+                            Debug.Assert(!target.TargetMethod.CanMethodBeInSealedVTable(factory));
 
                             encoder.EmitLD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg1, 0);
 
@@ -166,12 +146,12 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     {
-                        // Not tested
-                        encoder.EmitBreak();
-
                         MethodDesc targetMethod = (MethodDesc)Target;
                         if (targetMethod.OwningType.IsInterface)
                         {
+                            // Not tested
+                            encoder.EmitBreak();
+
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.InterfaceDispatchCell(targetMethod));
                             encoder.EmitJMP(factory.ExternSymbol("RhpResolveInterfaceMethod"));
                         }
@@ -182,7 +162,7 @@ namespace ILCompiler.DependencyAnalysis
 
                             encoder.EmitLD(encoder.TargetRegister.Result, encoder.TargetRegister.Arg0, 0);
 
-                            Debug.Assert(!targetMethod.CanMethodBeInSealedVTable());
+                            Debug.Assert(!targetMethod.CanMethodBeInSealedVTable(factory));
 
                             int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
                             Debug.Assert(slot != -1);

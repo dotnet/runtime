@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
-using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -24,19 +24,19 @@ namespace System.Runtime.InteropServices
         }
 
         public COMException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_COMException)
         {
             HResult = HResults.E_FAIL;
         }
 
         public COMException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_COMException, inner)
         {
             HResult = HResults.E_FAIL;
         }
 
         public COMException(string? message, int errorCode)
-            : base(message)
+            : base(message ?? SR.Arg_COMException)
         {
             HResult = errorCode;
         }

@@ -93,6 +93,7 @@ public class i4div
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         bool passed = true;

@@ -79,7 +79,7 @@ public:
     BOOL_CONFIG  (GCLargePages,              "GCLargePages",              "System.GC.LargePages",              false,              "Enables using Large Pages in the GC")                                                     \
     INT_CONFIG   (HeapVerifyLevel,           "HeapVerify",                NULL,                                HEAPVERIFY_NONE,    "When set verifies the integrity of the managed heap on entry and exit of each GC")       \
     INT_CONFIG   (LOHCompactionMode,         "GCLOHCompact",              NULL,                                0,                  "Specifies the LOH compaction mode")                                                      \
-    INT_CONFIG   (LOHThreshold,              "GCLOHThreshold",            NULL,                                LARGE_OBJECT_SIZE,  "Specifies the size that will make objects go on LOH")                                     \
+    INT_CONFIG   (LOHThreshold,              "GCLOHThreshold",            "System.GC.LOHThreshold",            LARGE_OBJECT_SIZE,  "Specifies the size that will make objects go on LOH")                                    \
     INT_CONFIG   (BGCSpinCount,              "BGCSpinCount",              NULL,                                140,                "Specifies the bgc spin count")                                                           \
     INT_CONFIG   (BGCSpin,                   "BGCSpin",                   NULL,                                2,                  "Specifies the bgc spin time")                                                            \
     INT_CONFIG   (HeapCount,                 "GCHeapCount",               "System.GC.HeapCount",               0,                  "Specifies the number of server GC heaps")                                                 \
@@ -137,9 +137,13 @@ public:
     INT_CONFIG   (GCEnabledInstructionSets,  "GCEnabledInstructionSets",  NULL,                                -1,                 "Specifies whether GC can use AVX2 or AVX512F - 0 for neither, 1 for AVX2, 3 for AVX512F")\
     INT_CONFIG   (GCConserveMem,             "GCConserveMemory",          "System.GC.ConserveMemory",          0,                  "Specifies how hard GC should try to conserve memory - values 0-9")                       \
     INT_CONFIG   (GCWriteBarrier,            "GCWriteBarrier",            NULL,                                0,                  "Specifies whether GC should use more precise but slower write barrier")                  \
-    STRING_CONFIG(GCName,                    "GCName",                    "System.GC.Name",                                        "Specifies the path of the standalone GC implementation.")                                \
-    INT_CONFIG   (GCSpinCountUnit,           "GCSpinCountUnit",           0,                                   0,                  "Specifies the spin count unit used by the GC.")                                          \
-    INT_CONFIG   (GCDynamicAdaptationMode,   "GCDynamicAdaptationMode",   "System.GC.DynamicAdaptationMode",   0,                  "Enable the GC to dynamically adapt to application sizes.")
+    STRING_CONFIG(GCName,                    "GCName",                    "System.GC.Name",                                        "Specifies the name of the standalone GC implementation.")                                \
+    STRING_CONFIG(GCPath,                    "GCPath",                    "System.GC.Path",                                        "Specifies the path of the standalone GC implementation.")                                \
+    INT_CONFIG   (GCSpinCountUnit,           "GCSpinCountUnit",           NULL,                                0,                  "Specifies the spin count unit used by the GC.")                                          \
+    INT_CONFIG   (GCDynamicAdaptationMode,   "GCDynamicAdaptationMode",   "System.GC.DynamicAdaptationMode",   1,                  "Enable the GC to dynamically adapt to application sizes.")                               \
+    INT_CONFIG   (GCDTargetTCP,              "GCDTargetTCP",              "System.GC.DTargetTCP",              0,                  "Specifies the target tcp for DATAS")                                                     \
+    BOOL_CONFIG  (GCCacheSizeFromSysConf,    "GCCacheSizeFromSysConf",    NULL,                                false,              "Specifies using sysconf to retrieve the last level cache size for Unix.")
+
 // This class is responsible for retreiving configuration information
 // for how the GC should operate.
 class GCConfig

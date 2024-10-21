@@ -4,6 +4,8 @@
 using System;
 using System.Runtime.InteropServices;
 
+namespace SizeParamIndex.ReversePInvoke;
+
 public class Helper
 {
     #region General method

@@ -10,6 +10,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
 
+    <CLRTestEnvironmentVariable Include="DOTNET_JitEnableOptRepeat" Value="1" />
     <CLRTestEnvironmentVariable Include="DOTNET_JitOptRepeat" Value="*" />
   </ItemGroup>
 </Project>

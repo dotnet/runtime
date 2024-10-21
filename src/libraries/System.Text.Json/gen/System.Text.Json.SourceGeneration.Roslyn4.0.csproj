@@ -5,6 +5,8 @@
     <AnalyzerRoslynVersion>4.0</AnalyzerRoslynVersion>
     <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_0)</RoslynApiVersion>
     <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER</DefineConstants>
+    <!-- this Roslyn version brings in NS1.x dependencies -->
+    <FlagNetStandard1XDependencies>false</FlagNetStandard1XDependencies>
   </PropertyGroup>
 
   <Import Project="System.Text.Json.SourceGeneration.targets" />

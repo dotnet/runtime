@@ -96,6 +96,7 @@ public class classarr
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         bool pass = false;

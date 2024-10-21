@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 // Notes about the SerialStream:
 //  * The stream is always opened via the SerialStream constructor.
@@ -562,7 +562,7 @@ namespace System.IO.Ports
 
             if (!portName.StartsWith("COM", StringComparison.OrdinalIgnoreCase) ||
                 !uint.TryParse(
-#if NETCOREAPP
+#if NET
                     portName.AsSpan(3),
 #else
                     portName.Substring(3),

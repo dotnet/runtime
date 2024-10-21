@@ -189,7 +189,7 @@ DumpWriter::WriteDump()
                 size_t bytesToRead = std::min(size, sizeof(m_tempBuffer));
                 size_t read = 0;
 
-                if (!m_crashInfo.ReadProcessMemory((void*)address, m_tempBuffer, bytesToRead, &read)) {
+                if (!m_crashInfo.ReadProcessMemory(address, m_tempBuffer, bytesToRead, &read)) {
                     printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx FAILED %s (%d)\n", address, bytesToRead, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
                     return false;
                 }
@@ -290,7 +290,7 @@ DumpWriter::GetNTFileInfoSize(size_t* alignmentBytes)
     size += count;
 
     // File name storage needed
-    for (const MemoryRegion& image : m_crashInfo.ModuleMappings()) {
+    for (const ModuleRegion& image : m_crashInfo.ModuleMappings()) {
         size += image.FileName().length();
     }
     // Notes must end on 4 byte alignment
@@ -338,7 +338,7 @@ DumpWriter::WriteNTFileInfo()
         return false;
     }
 
-    for (const MemoryRegion& image : m_crashInfo.ModuleMappings())
+    for (const ModuleRegion& image : m_crashInfo.ModuleMappings())
     {
         struct NTFileEntry entry { (unsigned long)image.StartAddress(), (unsigned long)image.EndAddress(), (unsigned long)(image.Offset() / pageSize) };
         if (!WriteData(&entry, sizeof(entry))) {
@@ -346,7 +346,7 @@ DumpWriter::WriteNTFileInfo()
         }
     }
 
-    for (const MemoryRegion& image : m_crashInfo.ModuleMappings())
+    for (const ModuleRegion& image : m_crashInfo.ModuleMappings())
     {
         if (!WriteData(image.FileName().c_str(), image.FileName().length()) ||
             !WriteData("\0", 1)) {

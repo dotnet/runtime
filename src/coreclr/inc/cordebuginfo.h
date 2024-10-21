@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Keep in sync with llvm/tools/objwriter/cordebuginfo.h in current objwriter branch in https://github.com/dotnet/llvm-project repo
+// Keep in sync with src\coreclr\tools\Common\JitInterface\CorInfoTypes.VarInfo.cs
 //
 
 /**********************************************************************************/

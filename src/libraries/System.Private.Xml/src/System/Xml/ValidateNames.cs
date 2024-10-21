@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml.XPath;
 using System.Diagnostics;
 using System.Globalization;
+using System.Xml.XPath;
 
 namespace System.Xml
 {

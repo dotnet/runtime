@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@ulong;
+
 public struct VT
 {
     public ulong[,] ulong2darr;
@@ -35,6 +37,7 @@ public class ulongMDArrTest
     static ulong[][, ,] ja2_b = new ulong[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

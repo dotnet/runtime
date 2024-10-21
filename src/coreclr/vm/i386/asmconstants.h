@@ -153,34 +153,15 @@ ASMCONSTANTS_C_ASSERT(SIZEOF_TailCallFrame == sizeof(TailCallFrame))
 #define SHADOW_SP_IN_FILTER_ASM 0x1
 ASMCONSTANTS_C_ASSERT(SHADOW_SP_IN_FILTER_ASM == ICodeManager::SHADOW_SP_IN_FILTER)
 
-// from clr/src/inc/corinfo.h
-#define CORINFO_NullReferenceException_ASM 0
-ASMCONSTANTS_C_ASSERT(CORINFO_NullReferenceException_ASM == CORINFO_NullReferenceException)
-
-#define CORINFO_IndexOutOfRangeException_ASM 3
-ASMCONSTANTS_C_ASSERT(CORINFO_IndexOutOfRangeException_ASM == CORINFO_IndexOutOfRangeException)
-
-#define CORINFO_OverflowException_ASM 4
-ASMCONSTANTS_C_ASSERT(CORINFO_OverflowException_ASM == CORINFO_OverflowException)
-
-#define CORINFO_ArrayTypeMismatchException_ASM 6
-ASMCONSTANTS_C_ASSERT(CORINFO_ArrayTypeMismatchException_ASM == CORINFO_ArrayTypeMismatchException)
-
-#define CORINFO_ArgumentNullException_ASM 8
-ASMCONSTANTS_C_ASSERT(CORINFO_ArgumentNullException_ASM == CORINFO_ArgumentNullException)
-
-#define CORINFO_ArgumentException_ASM 9
-ASMCONSTANTS_C_ASSERT(CORINFO_ArgumentException_ASM == CORINFO_ArgumentException)
 
 
-
-#define Thread_m_State      0x04
+#define Thread_m_State      0x00
 ASMCONSTANTS_C_ASSERT(Thread_m_State == offsetof(Thread, m_State))
 
-#define Thread_m_fPreemptiveGCDisabled     0x08
+#define Thread_m_fPreemptiveGCDisabled     0x04
 ASMCONSTANTS_C_ASSERT(Thread_m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled))
 
-#define Thread_m_pFrame     0x0C
+#define Thread_m_pFrame     0x08
 ASMCONSTANTS_C_ASSERT(Thread_m_pFrame == offsetof(Thread, m_pFrame))
 
 
@@ -204,7 +185,7 @@ ASMCONSTANTS_C_ASSERT(MethodTable_m_wNumInterfaces == offsetof(MethodTable, m_wN
 ASMCONSTANTS_C_ASSERT(MethodTable_m_dwFlags == offsetof(MethodTable, m_dwFlags))
 
 #define MethodTable_m_pInterfaceMap     DBG_FRE(0x28, 0x24)
-ASMCONSTANTS_C_ASSERT(MethodTable_m_pInterfaceMap == offsetof(MethodTable, m_pMultipurposeSlot2))
+ASMCONSTANTS_C_ASSERT(MethodTable_m_pInterfaceMap == offsetof(MethodTable, m_pInterfaceMap))
 
 #define SIZEOF_MethodTable              DBG_FRE(0x2C, 0x28)
 ASMCONSTANTS_C_ASSERT(SIZEOF_MethodTable == sizeof(MethodTable))
@@ -231,22 +212,19 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_pEntryFrame == offsetof(
 #define STACK_OVERWRITE_BARRIER_VALUE 0xabcdefab
 #endif
 
-#define SIZEOF_FrameHandlerExRecordWithBarrier 0x5c
-ASMCONSTANTS_C_ASSERT(SIZEOF_FrameHandlerExRecordWithBarrier == sizeof(FrameHandlerExRecordWithBarrier))
 #endif
 
+#define CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo DBG_FRE(0x20, 0xC)
+ASMCONSTANTS_C_ASSERT(CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo == offsetof(CLRToCOMCallMethodDesc, m_pCLRToCOMCallInfo))
 
-#define MethodDesc_m_wFlags                   DBG_FRE(0x1a, 0x06)
-ASMCONSTANTS_C_ASSERT(MethodDesc_m_wFlags == offsetof(MethodDesc, m_wFlags))
+#define CLRToCOMCallInfo__m_pRetThunk 0x10
+ASMCONSTANTS_C_ASSERT(CLRToCOMCallInfo__m_pRetThunk == offsetof(CLRToCOMCallInfo, m_pRetThunk))
 
-#define MethodDesc_mdcClassification          7
-ASMCONSTANTS_C_ASSERT(MethodDesc_mdcClassification == mdcClassification)
+#define COMMETHOD_PREPAD_ASM  8
+ASMCONSTANTS_C_ASSERT(COMMETHOD_PREPAD_ASM == COMMETHOD_PREPAD)
 
-#define ComPlusCallMethodDesc__m_pComPlusCallInfo DBG_FRE(0x1C, 0x8)
-ASMCONSTANTS_C_ASSERT(ComPlusCallMethodDesc__m_pComPlusCallInfo == offsetof(ComPlusCallMethodDesc, m_pComPlusCallInfo))
-
-#define ComPlusCallInfo__m_pRetThunk 0x10
-ASMCONSTANTS_C_ASSERT(ComPlusCallInfo__m_pRetThunk == offsetof(ComPlusCallInfo, m_pRetThunk))
+#define OFFSETOF__UnmanagedToManagedFrame__m_pvDatum 8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedToManagedFrame, m_pvDatum))
 
 #endif // FEATURE_COMINTEROP
 
@@ -297,24 +275,6 @@ ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCallerReturnAddress == offsetof(Inlin
 
 #define               InlinedCallFrame__m_pCalleeSavedFP 0x14
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCalleeSavedFP == offsetof(InlinedCallFrame, m_pCalleeSavedFP));
-
-#ifdef FEATURE_STUBS_AS_IL
-// DelegateObject from src/vm/object.h
-#define DelegateObject___target             0x04    // offset 0 is m_pMethTab of base class Object
-#define DelegateObject___methodBase         0x08
-#define DelegateObject___methodPtr          0x0c
-#define DelegateObject___methodPtrAux       0x10
-#define DelegateObject___invocationList     0x14
-#define DelegateObject___invocationCount    0x18
-
-ASMCONSTANTS_C_ASSERT(DelegateObject___target           == offsetof(DelegateObject, _target));
-ASMCONSTANTS_C_ASSERT(DelegateObject___methodBase       == offsetof(DelegateObject, _methodBase));
-ASMCONSTANTS_C_ASSERT(DelegateObject___methodPtr        == offsetof(DelegateObject, _methodPtr));
-ASMCONSTANTS_C_ASSERT(DelegateObject___methodPtrAux     == offsetof(DelegateObject, _methodPtrAux));
-ASMCONSTANTS_C_ASSERT(DelegateObject___invocationList   == offsetof(DelegateObject, _invocationList));
-ASMCONSTANTS_C_ASSERT(DelegateObject___invocationCount  == offsetof(DelegateObject, _invocationCount));
-
-#endif
 
 // ResolveCacheElem from src/vm/virtualcallstub.h
 #define ResolveCacheElem__pMT               0x00

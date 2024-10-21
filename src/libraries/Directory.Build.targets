@@ -70,6 +70,16 @@
                                    '$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">true</ILLinkTrimAssembly>
   </PropertyGroup>
 
+  <!-- The assembly version gets updated during servicing when the assembly isn't part of a targeting pack. -->
+  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing' and
+                            '$(IsPackable)' == 'true' and
+                            '$(PackageUseIncrementalServicingVersion)' == 'true'">
+    <_IsWindowsDesktopApp Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsWindowsDesktopApp>
+    <_IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsAspNetCoreApp>
+    <_AssemblyInTargetingPack Condition="('$(IsNETCoreAppSrc)' == 'true' or '$(IsNetCoreAppRef)' == 'true' or '$(_IsAspNetCoreApp)' == 'true' or '$(_IsWindowsDesktopApp)' == 'true') and '$(TargetFrameworkIdentifier)' != '.NETFramework'">true</_AssemblyInTargetingPack>
+    <AssemblyVersion Condition="'$(_AssemblyInTargetingPack)' != 'true'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
   <Import Project="$(RepositoryEngineeringDir)intellisense.targets" Condition="'$(IsSourceProject)' == 'true'" />
 
@@ -111,7 +121,7 @@
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
 
   <PropertyGroup>
-      <!-- Libraries ref and source projects which don't bring in dependencies from outside the repository shouldn't reference compat shims. -->
+    <!-- Libraries ref and source projects which don't bring in dependencies from outside the repository shouldn't reference compat shims. -->
     <SkipTargetingPackShimReferences Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and
                                                 '$(IsTestProject)' != 'true' and
                                                 '$(IsTestSupportProject)' != 'true' and
@@ -121,7 +131,7 @@
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.targets" Condition="'$(IsPublishedAppTestProject)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.targets" Condition="'$(IsTrimmingTestProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\runsettings.targets" Condition="'$(EnableRunSettingsSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableRunSettingsSupport)' == 'true' or '$(EnableCoverageSupport)' == 'true'" />
@@ -160,6 +170,7 @@
   <!-- Adds Nullable annotation attributes to C# non .NETCoreApp builds. -->
   <ItemGroup Condition="'$(Nullable)' != '' and
                         '$(Nullable)' != 'disable' and
+                        '$(SkipIncludeNullableAttributes)' != 'true' and
                         '$(MSBuildProjectExtension)' == '.csproj' and
                         '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />

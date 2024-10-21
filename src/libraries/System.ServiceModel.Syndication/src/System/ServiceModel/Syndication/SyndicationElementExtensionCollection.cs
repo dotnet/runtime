@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Serialization;
-using System.Diagnostics;
 
 namespace System.ServiceModel.Syndication
 {

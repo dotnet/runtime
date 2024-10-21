@@ -9,9 +9,9 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -141,7 +141,9 @@ namespace System.Linq.Parallel
         //     An array of asynchronous channels, one for each partition.
         //
 
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+#endif
         internal static AsynchronousChannel<TInputOutput>[] MakeAsynchronousChannels(int partitionCount, ParallelMergeOptions options, IntValueEvent? consumerEvent, CancellationToken cancellationToken)
         {
             AsynchronousChannel<TInputOutput>[] channels = new AsynchronousChannel<TInputOutput>[partitionCount];

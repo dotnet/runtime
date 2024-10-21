@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Composition.Convention;
 using System.Composition.Hosting.Core;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Composition.Convention;
 
 namespace System.Composition.TypedParts.ActivationFeatures
 {

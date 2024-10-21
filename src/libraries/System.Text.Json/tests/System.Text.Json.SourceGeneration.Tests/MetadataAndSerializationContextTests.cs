@@ -34,7 +34,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(JsonElement))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties))]
-#if NETCOREAPP
+#if NET
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithDateOnlyAndTimeOnlyValues))]
 #endif
     [JsonSerializable(typeof(ClassWithCustomConverter))]
@@ -54,6 +54,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithDerivedAttribute))]
     [JsonSerializable(typeof(PolymorphicClass))]
     [JsonSerializable(typeof(PocoWithNumberHandlingAttr))]
+    [JsonSerializable(typeof(PocoWithMixedVisibilityMembers))]
     internal partial class MetadataAndSerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Default;

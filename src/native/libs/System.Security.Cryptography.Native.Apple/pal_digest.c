@@ -167,7 +167,7 @@ int32_t AppleCryptoNative_DigestOneShot(PAL_HashAlgorithm algorithm, uint8_t* pB
             {
                 return -1;
             }
-            CC_SHA1(pBuf, cbBuf, pOutput);
+            CC_SHA1(pBuf, (CC_LONG)cbBuf, pOutput);
             return 1;
         case PAL_SHA256:
             *pcbDigest = CC_SHA256_DIGEST_LENGTH;
@@ -175,7 +175,7 @@ int32_t AppleCryptoNative_DigestOneShot(PAL_HashAlgorithm algorithm, uint8_t* pB
             {
                 return -1;
             }
-            CC_SHA256(pBuf, cbBuf, pOutput);
+            CC_SHA256(pBuf, (CC_LONG)cbBuf, pOutput);
             return 1;
         case PAL_SHA384:
             *pcbDigest = CC_SHA384_DIGEST_LENGTH;
@@ -183,7 +183,7 @@ int32_t AppleCryptoNative_DigestOneShot(PAL_HashAlgorithm algorithm, uint8_t* pB
             {
                 return -1;
             }
-            CC_SHA384(pBuf, cbBuf, pOutput);
+            CC_SHA384(pBuf, (CC_LONG)cbBuf, pOutput);
             return 1;
         case PAL_SHA512:
             *pcbDigest = CC_SHA512_DIGEST_LENGTH;
@@ -191,7 +191,7 @@ int32_t AppleCryptoNative_DigestOneShot(PAL_HashAlgorithm algorithm, uint8_t* pB
             {
                 return -1;
             }
-            CC_SHA512(pBuf, cbBuf, pOutput);
+            CC_SHA512(pBuf, (CC_LONG)cbBuf, pOutput);
             return 1;
         case PAL_MD5:
             *pcbDigest = CC_MD5_DIGEST_LENGTH;
@@ -201,7 +201,7 @@ int32_t AppleCryptoNative_DigestOneShot(PAL_HashAlgorithm algorithm, uint8_t* pB
             }
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-            CC_MD5(pBuf, cbBuf, pOutput);
+            CC_MD5(pBuf, (CC_LONG)cbBuf, pOutput);
 #pragma clang diagnostic pop
             return 1;
         default:
@@ -233,6 +233,20 @@ int32_t AppleCryptoNative_DigestReset(DigestCtx* ctx)
             assert(false);
             return -2;
     }
+}
 
-    return 1;
+DigestCtx* AppleCryptoNative_DigestClone(const DigestCtx* ctx)
+{
+    if (ctx == NULL)
+        return NULL;
+
+    DigestCtx* cloneCtx = (DigestCtx*)malloc(sizeof(DigestCtx)); // Must use same allocator as AppleCryptoNative_DigestCreate
+
+    if (cloneCtx == NULL)
+    {
+        return NULL;
+    }
+
+    memcpy(cloneCtx, ctx, sizeof(DigestCtx));
+    return cloneCtx;
 }
