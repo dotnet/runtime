@@ -30,7 +30,7 @@ public enum DataType
     RuntimeThreadLocals,
     Module,
     ModuleLookupMap,
-    LoaderAllocator,
+    Assembly,
     MethodTable,
     EEClass,
     ArrayClass,

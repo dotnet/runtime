@@ -5,12 +5,12 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class LoaderAllocator : IData<LoaderAllocator>
+internal sealed class Assembly : IData<Assembly>
 {
-    static LoaderAllocator IData<LoaderAllocator>.Create(Target target, TargetPointer address) => new LoaderAllocator(target, address);
-    public LoaderAllocator(Target target, TargetPointer address)
+    static Assembly IData<Assembly>.Create(Target target, TargetPointer address) => new Assembly(target, address);
+    public Assembly(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.LoaderAllocator);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.Assembly);
 
         IsCollectible = target.Read<byte>(address + (ulong)type.Fields[nameof(IsCollectible)].Offset);
     }

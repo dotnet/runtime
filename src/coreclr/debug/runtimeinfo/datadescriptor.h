@@ -243,10 +243,12 @@ CDAC_TYPE_FIELD(ModuleLookupMap, /*uint32*/, Count, offsetof(LookupMapBase, dwCo
 CDAC_TYPE_FIELD(ModuleLookupMap, /*nuint*/, SupportedFlagsMask, offsetof(LookupMapBase, supportedFlags))
 CDAC_TYPE_END(ModuleLookupMap)
 
-CDAC_TYPE_BEGIN(LoaderAllocator)
-CDAC_TYPE_INDETERMINATE(LoaderAllocator)
-CDAC_TYPE_FIELD(LoaderAllocator, /*uint8*/, IsCollectible, cdac_data<LoaderAllocator>::IsCollectible)
-CDAC_TYPE_END(LoaderAllocator)
+CDAC_TYPE_BEGIN(Assembly)
+CDAC_TYPE_INDETERMINATE(Assembly)
+#ifdef FEATURE_COLLECTIBLE_TYPES
+CDAC_TYPE_FIELD(Assembly, /*uint8*/, IsCollectible, cdac_data<Assembly>::IsCollectible)
+#endif
+CDAC_TYPE_END(Assembly)
 
 // RuntimeTypeSystem
 

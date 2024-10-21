@@ -922,7 +922,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         MethodDesc md = _methodDescs[methodDesc.Address];
         TargetPointer loaderModuleAddr = GetLoaderModule(md);
         ModuleHandle mod = _target.Contracts.Loader.GetModuleHandle(loaderModuleAddr);
-        return _target.Contracts.Loader.IsCollectibleLoaderAllocator(mod); // TODO[cdac]: return pMethodDesc->GetLoaderAllocator()->IsCollectible()
+        return _target.Contracts.Loader.IsCollectible(mod); // TODO[cdac]: return pMethodDesc->GetLoaderAllocator()->IsCollectible()
     }
 
     bool IRuntimeTypeSystem.IsVersionable(MethodDescHandle methodDesc)

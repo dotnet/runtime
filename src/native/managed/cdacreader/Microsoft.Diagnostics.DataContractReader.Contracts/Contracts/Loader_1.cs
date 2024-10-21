@@ -102,11 +102,11 @@ internal readonly struct Loader_1 : ILoader
         return TargetPointer.Null;
     }
 
-    bool ILoader.IsCollectibleLoaderAllocator(ModuleHandle handle)
+    bool ILoader.IsCollectible(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        TargetPointer loaderAllocator = module.LoaderAllocator;
-        Data.LoaderAllocator la = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocator);
+        TargetPointer assembly = module.Assembly;
+        Data.Assembly la = _target.ProcessedData.GetOrAdd<Data.Assembly>(assembly);
         return la.IsCollectible != 0;
     }
 }

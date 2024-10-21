@@ -67,7 +67,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pLastUsedCodeHeap = NULL;
     m_pLastUsedDynamicCodeHeap = NULL;
     m_pJumpStubCache = NULL;
-    m_IsCollectible = collectible ? 1 : 0;
+    m_IsCollectible = collectible;
 
     m_pMarshalingData = NULL;
 

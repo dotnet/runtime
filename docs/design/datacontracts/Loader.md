@@ -39,7 +39,7 @@ TargetPointer GetThunkHeap(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
-bool IsCollectibleLoaderAllocator(ModuleHandle handle);
+bool IsCollectible(ModuleHandle handle);
 ```
 
 ## Version 1
@@ -63,7 +63,7 @@ Data descriptors used:
 | `ModuleLookupMap` | `SupportedFlagsMask` | Mask for flag bits on lookup map entries |
 | `ModuleLookupMap` | `Count` | Number of TargetPointer sized entries in this section of the map |
 | `ModuleLookupMap` | `Next` | Pointer to next ModuleLookupMap segment for this map
-| `LoaderAllocator` | `IsCollectible` | Flag indicating if this is loader allocator may be collected
+| `Assembly` | `IsCollectible` | Flag indicating if this is module may be collected
 
 ``` csharp
 ModuleHandle GetModuleHandle(TargetPointer modulePointer)
@@ -145,4 +145,11 @@ TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out Tar
 }
 ```
 
-**TODO* pseudocode for IsCollectibleLoaderAllocator
+```csharp
+bool ILoader.IsCollectible(ModuleHandle handle)
+{
+    TargetPointer assembly = _target.ReadPointer(handle.Address + /*Module::Assembly*/);
+    byte isCollectible = _target.Read<byte>(assembly + /* Assembly::IsCollectible*/);
+    return isCollectible != 0;
+}
+```

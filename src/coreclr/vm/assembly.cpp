@@ -129,7 +129,7 @@ Assembly::Assembly(PEAssembly* pPEAssembly, LoaderAllocator *pLoaderAllocator)
 #endif
     , m_pLoaderAllocator{pLoaderAllocator}
 #ifdef FEATURE_COLLECTIBLE_TYPES
-    , m_isCollectible{pLoaderAllocator->IsCollectible() != FALSE}
+    , m_isCollectible{static_cast<BYTE>(pLoaderAllocator->IsCollectible() != FALSE ? 1 : 0)}
 #endif
     , m_isDynamic(false)
     , m_isLoading{true}

@@ -261,7 +261,7 @@ class SegmentedHandleIndexStack
 public:
 
     ~SegmentedHandleIndexStack();
-    
+
     // Push the value to the stack. If the push cannot be done due to OOM, return false;
     inline bool Push(DWORD value);
 
@@ -330,7 +330,7 @@ protected:
     bool                m_fTerminated;
     bool                m_fMarked;
     int                 m_nGCCount;
-    BYTE                m_IsCollectible;
+    bool                m_IsCollectible;
 
     // Pre-allocated blocks of heap for collectible assemblies. Will be set to NULL as soon as it is
     // used. See code in GetVSDHeapInitialBlock and GetCodeHeapInitialBlock
@@ -566,7 +566,7 @@ public:
     DispatchToken GetDispatchToken(UINT32 typeId, UINT32 slotNumber);
 
     virtual LoaderAllocatorID* Id() =0;
-    BOOL IsCollectible() { WRAPPER_NO_CONTRACT; return m_IsCollectible != 0; }
+    BOOL IsCollectible() { WRAPPER_NO_CONTRACT; return m_IsCollectible; }
 
     // This function may only be called while the runtime is suspended
     // As it does not lock around access to a RangeList
@@ -861,14 +861,7 @@ public:
     virtual void CleanupDependentHandlesToNativeObjects() {};
 #endif
 
-    template<typename T> friend struct ::cdac_data;
 };  // class LoaderAllocator
-
-template<>
-struct cdac_data<LoaderAllocator>
-{
-    static constexpr size_t IsCollectible = offsetof(LoaderAllocator, m_IsCollectible);
-};
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
 
