@@ -802,6 +802,7 @@ namespace System.StubHelpers
             // COMPAT: We never pass null to MarshalManagedToNative.
             if (pManagedHome is null)
             {
+                *pNativeHome = IntPtr.Zero;
                 return;
             }
 
@@ -813,6 +814,7 @@ namespace System.StubHelpers
             // COMPAT: We never pass null to MarshalNativeToManaged.
             if (*pNativeHome == IntPtr.Zero)
             {
+                pManagedHome = null;
                 return;
             }
 
