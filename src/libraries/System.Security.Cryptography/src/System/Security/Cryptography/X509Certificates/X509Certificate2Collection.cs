@@ -718,24 +718,13 @@ namespace System.Security.Cryptography.X509Certificates
         private X509Certificate2Collection FindByThumbprintCore(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> thumbprintBytes)
         {
             const int MaxThumbprintStackAlloc = 64; // SHA-2/3-512 is the largest thumbprint currently known.
-            Span<byte> thumbprintBuffer = thumbprintBytes.Length > MaxThumbprintStackAlloc ?
-                new byte[thumbprintBytes.Length] :
-                stackalloc byte[MaxThumbprintStackAlloc];
+            Span<byte> thumbprintBuffer = stackalloc byte[MaxThumbprintStackAlloc];
 
             X509Certificate2Collection results = [];
 
             foreach (X509Certificate2 cert in this)
             {
-                if (!CryptographicOperations.TryHashData(hashAlgorithm, cert.RawDataMemory.Span, thumbprintBuffer, out int bytesWritten))
-                {
-                    // The destination is large enough to hold the same digest length as the supplied buffer.
-                    // If the destination is too short, then the algorithm's output is larger than what was supplied,
-                    // so the thumbprints can never match. Exit the loop.
-
-                    // There should never be anything valid to return in this situation.
-                    Debug.Assert(results.Count == 0);
-                    break;
-                }
+                int bytesWritten = CryptographicOperations.HashData(hashAlgorithm, cert.RawDataMemory.Span, thumbprintBuffer);
 
                 if (thumbprintBuffer.Slice(0, bytesWritten).SequenceEqual(thumbprintBytes))
                 {
