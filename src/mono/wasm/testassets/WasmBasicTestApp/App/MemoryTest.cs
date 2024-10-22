@@ -16,7 +16,7 @@ public partial class MemoryTest
     internal static void Run()
     {
         // Allocate over 1GB space
-        const int arrayCnt = 10;
+        const int arrayCnt = 25;
         int[][] arrayHolder = new int[arrayCnt][];
         string errors = "";
         TestOutput.WriteLine("Starting over 1GB array allocation");
@@ -24,7 +24,7 @@ public partial class MemoryTest
         {
             try
             {
-                arrayHolder[i] = new int[1024 * 1024 * 100];
+                arrayHolder[i] = new int[1024 * 1024 * 25];
             }
             catch (Exception ex)
             {
