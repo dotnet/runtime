@@ -7512,7 +7512,7 @@ static bool IsMarkedTransientMethod(MethodDesc* pMD, TransientCodeKind& kind)
         _ASSERTE(!"Unknown TransientCodeKind");
         break;
     }
-#endif // TARGET_WINDOWS
+#endif // FEATURE_IJW
 
     return false;
 }
