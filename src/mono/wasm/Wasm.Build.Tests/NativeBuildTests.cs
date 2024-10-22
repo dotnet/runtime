@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -12,105 +13,131 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests
 {
-    public class NativeBuildTests : TestMainJsTestBase
+    public class NativeBuildTests : WasmTemplateTestsBase
     {
         public NativeBuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
         }
 
-        // [Theory]
-        // [BuildAndRun]
-        // public void SimpleNativeBuild(ProjectInfo buildArgs, RunHost host, string id)
-        // {
-        //     string projectName = $"simple_native_build_{buildArgs.Configuration}_{buildArgs.AOT}";
+        [Theory]
+        [BuildAndRun(aot: false)]
+        public async Task SimpleNativeBuild(string config, bool aot)
+        {
+            ProjectInfo info = CreateWasmTemplateProject(
+                Template.WasmBrowser,
+                config,
+                aot,
+                "simple_native_build",
+                extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+            
+            UpdateBrowserProgramFile();
+            UpdateBrowserMainJs();
 
-        //     buildArgs = buildArgs with { ProjectName = projectName };
-        //     buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+            bool isPublish = true;
+            (string _, string buildOutput) = BuildTemplateProject(info,
+                        new BuildProjectOptions(
+                            info.Configuration,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild: true),
+                            IsPublish: isPublish
+                        ));
+            RunOptions runOptions = new(config);
+            await RunForPublishWithWebServer(runOptions);
+        }
 
-        //     BuildProject(buildArgs,
-        //                     id: id,
-        //                     new BuildProjectOptions(
-        //                         InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-        //                         DotnetWasmFromRuntimePack: false));
+        [Theory]
+        [BuildAndRun(aot: true)]
+        public void AOTNotSupportedWithNoTrimming(string config, bool aot)
+        {
+            ProjectInfo info = CreateWasmTemplateProject(
+                Template.WasmBrowser,
+                config,
+                aot,
+                "mono_aot_cross",
+                extraProperties: "<PublishTrimmed>false</PublishTrimmed>");
+            
+            UpdateBrowserProgramFile();
+            UpdateBrowserMainJs();
 
-        //     RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42,
-        //                 test: output => { },
-        //                 host: host, id: id);
-        // }
+            bool isPublish = true;
+            (string _, string buildOutput) = BuildTemplateProject(info,
+                        new BuildProjectOptions(
+                            info.Configuration,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild: false),
+                            IsPublish: isPublish,
+                            ExpectSuccess: false
+                        ));
+            Assert.Contains("AOT is not supported without IL trimming", output);
+        }
 
-        // [Theory]
-        // [BuildAndRun(aot: true)]
-        // public void AOTNotSupportedWithNoTrimming(ProjectInfo buildArgs, string id)
-        // {
-        //     string projectName = $"mono_aot_cross_{buildArgs.Configuration}_{buildArgs.AOT}";
+        [Theory]
+        [BuildAndRun(config: "Release", aot: true)]
+        public void IntermediateBitcodeToObjectFilesAreNotLLVMIR(string config, bool aot)
+        {
+            string printFileTypeTarget = @"
+                <Target Name=""PrintIntermediateFileType"" AfterTargets=""WasmNestedPublishApp"">
+                    <Exec Command=""wasm-dis &quot;$(_WasmIntermediateOutputPath)System.Private.CoreLib.dll.o&quot; -o &quot;$(_WasmIntermediateOutputPath)wasm-dis-out.txt&quot;""
+                          EnvironmentVariables=""@(EmscriptenEnvVars)""
+                          IgnoreExitCode=""true"">
 
-        //     buildArgs = buildArgs with { ProjectName = projectName, ExtraBuildArgs = "-p:PublishTrimmed=false" };
-        //     buildArgs = ExpandBuildArgs(buildArgs);
+                        <Output TaskParameter=""ExitCode"" PropertyName=""ExitCode"" />
+                    </Exec>
 
-        //     (_, string output) = BuildProject(
-        //                             buildArgs,
-        //                             id: id,
-        //                             new BuildProjectOptions(
-        //                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-        //                                 DotnetWasmFromRuntimePack: false,
-        //                                 ExpectSuccess: false));
+                    <Message Text=""
+                    ** wasm-dis exit code: $(ExitCode)
+                    "" Importance=""High"" />
+                </Target>
+                ";
+            
+            ProjectInfo info = CreateWasmTemplateProject(
+                Template.WasmBrowser,
+                config,
+                aot,
+                "bc_to_o",
+                atTheEnd: printFileTypeTarget);
 
-        //     Assert.Contains("AOT is not supported without IL trimming", output);
-        // }
+            bool isPublish = true;
+            (string _, string output) = BuildTemplateProject(info,
+                        new BuildProjectOptions(
+                            info.Configuration,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild: false),
+                            IsPublish: isPublish
+                        ));
 
-        // [Theory]
-        // [BuildAndRun(aot: true)]
-        // public void IntermediateBitcodeToObjectFilesAreNotLLVMIR(ProjectInfo buildArgs, string id)
-        // {
-        //     string printFileTypeTarget = @"
-        //         <Target Name=""PrintIntermediateFileType"" AfterTargets=""WasmNestedPublishApp"">
-        //             <Exec Command=""wasm-dis &quot;$(_WasmIntermediateOutputPath)System.Private.CoreLib.dll.o&quot; -o &quot;$(_WasmIntermediateOutputPath)wasm-dis-out.txt&quot;""
-        //                   EnvironmentVariables=""@(EmscriptenEnvVars)""
-        //                   IgnoreExitCode=""true"">
+            if (!output.Contains("** wasm-dis exit code: 0"))
+                throw new XunitException($"Expected to successfully run wasm-dis on System.Private.CoreLib.dll.o ."
+                                            + " It might fail if it was incorrectly compiled to a bitcode file, instead of wasm.");
+        }
 
-        //                 <Output TaskParameter=""ExitCode"" PropertyName=""ExitCode"" />
-        //             </Exec>
+        [Theory]
+        [BuildAndRun(config: "Release", aot: true)]
+        public void NativeBuildIsRequired(string config, bool aot)
+        {
+            ProjectInfo info = CreateWasmTemplateProject(
+                Template.WasmBrowser,
+                config,
+                aot,
+                "native_build",
+                extraProperties: "<WasmBuildNative>false</WasmBuildNative><WasmSingleFileBundle>true</WasmSingleFileBundle>");
 
-        //             <Message Text=""
-        //             ** wasm-dis exit code: $(ExitCode)
-        //             "" Importance=""High"" />
-        //         </Target>
-        //         ";
-        //     string projectName = $"bc_to_o_{buildArgs.Configuration}";
+            bool isPublish = true;
+            (string _, string output) = BuildTemplateProject(info,
+                        new BuildProjectOptions(
+                            info.Configuration,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild: false),
+                            IsPublish: isPublish,
+                            ExpectSuccess: false
+                        ));
 
-        //     buildArgs = buildArgs with { ProjectName = projectName };
-        //     buildArgs = ExpandBuildArgs(buildArgs, insertAtEnd: printFileTypeTarget);
-
-        //     (_, string output) = BuildProject(buildArgs,
-        //                             id: id,
-        //                             new BuildProjectOptions(
-        //                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-        //                                 DotnetWasmFromRuntimePack: false));
-
-        //     if (!output.Contains("** wasm-dis exit code: 0"))
-        //         throw new XunitException($"Expected to successfully run wasm-dis on System.Private.CoreLib.dll.o ."
-        //                                     + " It might fail if it was incorrectly compiled to a bitcode file, instead of wasm.");
-        // }
-
-        // [Theory]
-        // [BuildAndRun(aot: true)]
-        // public void NativeBuildIsRequired(ProjectInfo buildArgs, string id)
-        // {
-        //     string projectName = $"native_build_{buildArgs.Configuration}_{buildArgs.AOT}";
-
-        //     buildArgs = buildArgs with { ProjectName = projectName, ExtraBuildArgs = "-p:WasmBuildNative=false -p:WasmSingleFileBundle=true" };
-        //     buildArgs = ExpandBuildArgs(buildArgs);
-
-        //     (_, string output) = BuildProject(
-        //                             buildArgs,
-        //                             id: id,
-        //                             new BuildProjectOptions(
-        //                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-        //                                 DotnetWasmFromRuntimePack: false,
-        //                                 ExpectSuccess: false));
-
-        //     Assert.Contains("WasmBuildNative is required", output);
-        // }
+            Assert.Contains("WasmBuildNative is required", output);
+        }
     }
 }
