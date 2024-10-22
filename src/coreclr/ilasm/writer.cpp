@@ -88,7 +88,7 @@ HRESULT Assembler::InitMetaData()
         {
             // Default values for determinism.
             m_pPortablePdbWriter->SetGuid(GUID());
-            m_pPortablePdbWriter->SetTimestamp(0);
+            m_pPortablePdbWriter->SetTimestamp(1);
         }
     }
 
