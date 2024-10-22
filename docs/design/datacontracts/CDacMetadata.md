@@ -12,7 +12,7 @@ This contract exposes properties that describe the target platform
         // Set if arm64e pointer authentication is used in the target process
         HasArm64PtrAuth = 0x2,
     }
-    // Returns a pointer to a structure describing platform specific precode stubs properties
+    // Returns a pointer to a structure describing platform-specific precode stubs properties
     TargetPointer GetPrecodeMachineDescriptor();
 
     // Returns flags describing the behavior of code pointers
