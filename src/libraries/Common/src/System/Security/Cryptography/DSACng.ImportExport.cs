@@ -310,6 +310,18 @@ namespace System.Security.Cryptography
 
         public override DSAParameters ExportParameters(bool includePrivateParameters)
         {
+            if (includePrivateParameters && EncryptedOnlyExport)
+            {
+                const string TemporaryExportPassword = "DotnetExportPhrase";
+                byte[] exported = ExportEncryptedPkcs8(TemporaryExportPassword, 1);
+                DSAKeyFormatHelper.ReadEncryptedPkcs8(
+                    exported,
+                    TemporaryExportPassword,
+                    out _,
+                    out DSAParameters dsaParameters);
+                return dsaParameters;
+            }
+
             byte[] dsaBlob = ExportKeyBlob(includePrivateParameters);
 
             KeyBlobMagicNumber magic = (KeyBlobMagicNumber)BitConverter.ToInt32(dsaBlob, 0);
@@ -424,5 +436,13 @@ namespace System.Security.Cryptography
             }
         }
 
+        private bool EncryptedOnlyExport
+        {
+            get
+            {
+                const CngExportPolicies Exportable = CngExportPolicies.AllowPlaintextExport | CngExportPolicies.AllowExport;
+                return (Key.ExportPolicy & Exportable) == CngExportPolicies.AllowExport;
+            }
+        }
     }
 }

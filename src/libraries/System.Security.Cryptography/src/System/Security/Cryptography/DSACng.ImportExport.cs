@@ -50,6 +50,18 @@ namespace System.Security.Cryptography
 
         public override bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)
         {
+             if (EncryptedOnlyExport)
+            {
+                const string TemporaryExportPassword = "DotnetExportPhrase";
+                byte[] exported = ExportEncryptedPkcs8(TemporaryExportPassword, 1);
+                DSAKeyFormatHelper.ReadEncryptedPkcs8(
+                    exported,
+                    TemporaryExportPassword,
+                    out _,
+                    out DSAParameters dsaParameters);
+                return DSAKeyFormatHelper.WritePkcs8(dsaParameters).TryEncode(destination, out bytesWritten);
+            }
+
             return Key.TryExportKeyBlob(
                 Interop.NCrypt.NCRYPT_PKCS8_PRIVATE_KEY_BLOB,
                 destination,
