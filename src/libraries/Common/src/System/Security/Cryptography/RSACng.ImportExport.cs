@@ -180,7 +180,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public override RSAParameters ExportParameters(bool includePrivateParameters)
         {
-            if (includePrivateParameters && PlaintextOnlyExport)
+            if (includePrivateParameters && EncryptedOnlyExport)
             {
                 const string TemporaryExportPassword = "DotnetExportPhrase";
                 byte[] exported = ExportEncryptedPkcs8(TemporaryExportPassword, 1);
@@ -198,7 +198,7 @@ namespace System.Security.Cryptography
             return rsaParams;
         }
 
-        private bool PlaintextOnlyExport
+        private bool EncryptedOnlyExport
         {
             get
             {

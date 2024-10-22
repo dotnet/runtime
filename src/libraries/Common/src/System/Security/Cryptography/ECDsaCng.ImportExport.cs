@@ -130,7 +130,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                if (includePrivateParameters && PlaintextOnlyExport)
+                if (includePrivateParameters && EncryptedOnlyExport)
                 {
                     byte[] exported = ExportEncryptedPkcs8(TemporaryExportPassword, 1);
                     EccKeyFormatHelper.ReadEncryptedPkcs8(
@@ -293,7 +293,7 @@ namespace System.Security.Cryptography
                 out bytesWritten);
         }
 
-        private bool PlaintextOnlyExport
+        private bool EncryptedOnlyExport
         {
             get
             {
@@ -306,7 +306,7 @@ namespace System.Security.Cryptography
         {
             ECParameters ecparams = default;
 
-            if (PlaintextOnlyExport)
+            if (EncryptedOnlyExport)
             {
                 // We can't ask CNG for the explicit parameters when performing a PKCS#8 export. Instead,
                 // we ask CNG for the explicit parameters for the public part only, since the parameters are public.
