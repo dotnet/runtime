@@ -154,9 +154,15 @@ namespace System
         protected virtual MethodInfo GetMethodImpl()
         {
             return Cache.s_methodCache.TryGetValue(this, out MethodInfo? cachedValue) ? cachedValue : GetMethodImplUncached();
+
+            MethodInfo GetMethodImplUncached()
+            {
+                Debug.Assert(this is MulticastDelegate);
+                return Unsafe.As<MulticastDelegate>(this).GetMethodImplMulticast();
+            }
         }
 
-        internal virtual MethodInfo GetMethodImplUncached()
+        internal MethodInfo GetMethodImplNormal()
         {
             IRuntimeMethodInfo method = CreateMethodInfo(MethodDesc);
             RuntimeType? declaringType = RuntimeMethodHandle.GetDeclaringType(method);

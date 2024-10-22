@@ -1204,8 +1204,6 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
 
     pTargetMethod->EnsureActive();
 
-    refRealDelegate->SetMethodDesc(pTargetMethod);
-
     if (fIsOpenDelegate)
     {
         _ASSERTE(pRefFirstArg == NULL || *pRefFirstArg == NULL);
@@ -1508,8 +1506,6 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         // Wire up the unmanaged call stub to the delegate.
         delObj->SetTarget(delObj);              // We are the "this" object
 
-        delObj->SetMethodDesc(pMD);
-
         // For X86, we save the entry point in the delegate's method pointer and the UM Callsite in the aux pointer.
         delObj->SetMethodPtr(pMarshalStub);
         delObj->SetMethodPtrAux((PCODE)pCallback);
@@ -1729,8 +1725,6 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
 
     if (COMDelegate::NeedsWrapperDelegate(pMeth))
         refThis = COMDelegate::CreateWrapperDelegate(refThis, pMeth);
-
-    refThis->SetMethodDesc(pMethOrig);
 
     _ASSERTE(refThis->GetInvocationList() == NULL);
     if (pMeth->GetLoaderAllocator()->IsCollectible())
@@ -2149,7 +2143,6 @@ DELEGATEREF COMDelegate::CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc*
     // save the secure invoke stub.  GetWrapperInvoke() can trigger GC.
     PCODE tmp = GetWrapperInvoke(pMD);
 
-    gc.refWrapperDel->SetMethodDesc(pMD);
     gc.refWrapperDel->SetMethodPtr(tmp);
     // save the delegate MethodDesc for the frame
     gc.refWrapperDel->SetInvocationCount((INT_PTR)pMD);

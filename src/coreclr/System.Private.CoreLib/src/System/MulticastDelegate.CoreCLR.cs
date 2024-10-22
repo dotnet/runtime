@@ -494,7 +494,7 @@ namespace System
             return base.GetTarget();
         }
 
-        internal override MethodInfo GetMethodImplUncached()
+        internal MethodInfo GetMethodImplMulticast()
         {
             if (_invocationCount != 0 && _invocationList != null)
             {
@@ -532,7 +532,7 @@ namespace System
             }
 
             // Otherwise, must be an inner delegate of a wrapper delegate of an open virtual method. In that case, call base implementation
-            return base.GetMethodImplUncached();
+            return GetMethodImplNormal();
         }
 
         // this should help inlining
