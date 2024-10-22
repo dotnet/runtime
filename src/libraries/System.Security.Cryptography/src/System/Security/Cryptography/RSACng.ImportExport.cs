@@ -52,7 +52,9 @@ namespace System.Security.Cryptography
 
         public override bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)
         {
-            if (EncryptedOnlyExport)
+            bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(Key);
+
+            if (encryptedOnlyExport)
             {
                 const string TemporaryExportPassword = "DotnetExportPhrase";
                 byte[] exported = ExportEncryptedPkcs8(TemporaryExportPassword, 1);
