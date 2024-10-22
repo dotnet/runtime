@@ -88,17 +88,7 @@ namespace System.Security.Cryptography
         /// <returns>The key and explicit curve parameters used by the ECC object.</returns>
         public override ECParameters ExportExplicitParameters(bool includePrivateParameters)
         {
-            if (includePrivateParameters)
-            {
-                return ExportPrivateExplicitParameters();
-            }
-            else
-            {
-                byte[] blob = ExportFullKeyBlob(includePrivateParameters: false);
-                ECParameters ecparams = default;
-                ECCng.ExportPrimeCurveParameters(ref ecparams, blob, includePrivateParameters: false);
-                return ecparams;
-            }
+            return ECCng.ExportExplicitParameters(Key, includePrivateParameters);
         }
 
         /// <summary>
@@ -111,43 +101,7 @@ namespace System.Security.Cryptography
         /// <returns>The key and named curve parameters used by the ECC object.</returns>
         public override ECParameters ExportParameters(bool includePrivateParameters)
         {
-            ECParameters ecparams = default;
-
-            const string TemporaryExportPassword = "DotnetExportPhrase";
-            string? curveName = GetCurveName(out string? oidValue);
-
-            if (string.IsNullOrEmpty(curveName))
-            {
-                if (includePrivateParameters)
-                {
-                    ecparams = ExportPrivateExplicitParameters();
-                }
-                else
-                {
-                    byte[] fullKeyBlob = ExportFullKeyBlob(includePrivateParameters: false);
-                    ECCng.ExportPrimeCurveParameters(ref ecparams, fullKeyBlob, includePrivateParameters: false);
-                }
-            }
-            else
-            {
-                if (includePrivateParameters && EncryptedOnlyExport)
-                {
-                    byte[] exported = ExportEncryptedPkcs8(TemporaryExportPassword, 1);
-                    EccKeyFormatHelper.ReadEncryptedPkcs8(
-                        exported,
-                        TemporaryExportPassword,
-                        out _,
-                        out ecparams);
-                }
-                else
-                {
-                    byte[] keyBlob = ExportKeyBlob(includePrivateParameters);
-                    ECCng.ExportNamedCurveParameters(ref ecparams, keyBlob, includePrivateParameters);
-                    ecparams.Curve = ECCurve.CreateFromOid(new Oid(oidValue, curveName));
-                }
-            }
-
-            return ecparams;
+            return ECCng.ExportParameters(Key, includePrivateParameters);
         }
 
         public override void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
@@ -291,49 +245,6 @@ namespace System.Security.Cryptography
                 pbeParameters,
                 destination,
                 out bytesWritten);
-        }
-
-        private bool EncryptedOnlyExport
-        {
-            get
-            {
-                const CngExportPolicies Exportable = CngExportPolicies.AllowPlaintextExport | CngExportPolicies.AllowExport;
-                return (Key.ExportPolicy & Exportable) == CngExportPolicies.AllowExport;
-            }
-        }
-
-        private ECParameters ExportPrivateExplicitParameters()
-        {
-            ECParameters ecparams = default;
-
-            if (EncryptedOnlyExport)
-            {
-                // We can't ask CNG for the explicit parameters when performing a PKCS#8 export. Instead,
-                // we ask CNG for the explicit parameters for the public part only, since the parameters are public.
-                // Then we ask CNG by encrypted PKCS#8 for the private parameters (D) and combine the explicit public
-                // key along with the private key.
-                const string TemporaryExportPassword = "DotnetExportPhrase";
-                byte[] publicKeyBlob = ExportFullKeyBlob(includePrivateParameters: false);
-                ECCng.ExportPrimeCurveParameters(ref ecparams, publicKeyBlob, includePrivateParameters: false);
-
-                byte[] exported = ExportEncryptedPkcs8(TemporaryExportPassword, 1);
-                EccKeyFormatHelper.ReadEncryptedPkcs8(
-                    exported,
-                    TemporaryExportPassword,
-                    out _,
-                    out ECParameters localParameters);
-
-                Debug.Assert(ecparams.Q.X.AsSpan().SequenceEqual(localParameters.Q.X));
-                Debug.Assert(ecparams.Q.Y.AsSpan().SequenceEqual(localParameters.Q.Y));
-                ecparams.D = localParameters.D;
-            }
-            else
-            {
-                byte[] blob = ExportFullKeyBlob(includePrivateParameters: true);
-                ECCng.ExportPrimeCurveParameters(ref ecparams, blob, includePrivateParameters: true);
-            }
-
-            return ecparams;
         }
     }
 }
