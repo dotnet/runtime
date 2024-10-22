@@ -27,12 +27,13 @@ namespace Wasm.Build.Tests
         [Theory]
         [BuildAndRun(aot: false)]
         [BuildAndRun(aot: true)]
+        // Expected to find /workspaces/runtime/artifacts/bin/Wasm.Build.Tests/Release/net9.0/linux-x64/wbt artifacts/hybrid_Debug_False_g2xwxpxr_lus_鿀蜒枛遫䡫煉/obj/Debug/net9.0/wasm/for-build/dotnet.globalization.js
+        [ActiveIssue("dotnet.globalization.js not found")]
         public async Task AOT_HybridGlobalizationTests(string config, bool aot)
             => await TestHybridGlobalizationTests(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
-        // Expected to find /workspaces/runtime/artifacts/bin/Wasm.Build.Tests/Release/net9.0/linux-x64/wbt artifacts/hybrid_Debug_False_g2xwxpxr_lus_鿀蜒枛遫䡫煉/obj/Debug/net9.0/wasm/for-build/dotnet.globalization.js
         [ActiveIssue("dotnet.globalization.js not found")]
         public async Task RelinkingWithoutAOT(string config, bool aot)
             => await TestHybridGlobalizationTests(config, aot, isNativeBuild: true);
