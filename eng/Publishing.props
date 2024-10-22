@@ -140,9 +140,21 @@
     </MSBuild>
   </Target>
 
+  <!--
+    Only generate the productVersion.txt and runtime-productVersion.txt files when we're building
+    either the full VMR repo or not building in the VMR infrastructure.
+    This ensures that we don't produce these files in the "Repo source build" builds,
+    but we do produce them in both the VMR and the runtime official build.
+  -->
+  <PropertyGroup>
+    <_ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildRepo)' == 'true' and '$(DotNetBuildOrchestrator)' == 'true'">true</_ShouldGenerateProductVersionFiles>
+    <_ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildRepo)' != 'true' and '$(DotNetBuildOrchestrator)' != 'true'">true</_ShouldGenerateProductVersionFiles>
+  </PropertyGroup>
+
   <Target Name="GenerateProductVersionFiles"
           DependsOnTargets="GetNonStableProductVersion"
-          BeforeTargets="PublishToAzureDevOpsArtifacts">
+          BeforeTargets="PublishToAzureDevOpsArtifacts"
+          Condition="'$(_ShouldGenerateProductVersionFiles)' == 'true'">
     <!-- Retrieve the runtime pack product version. -->
     <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
              Targets="ReturnProductVersion"
