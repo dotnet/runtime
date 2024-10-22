@@ -15,11 +15,11 @@ public partial class MemoryTest
     [JSExport]
     internal static void Run()
     {
-        // Allocate over 1GB space
-        const int arrayCnt = 25;
+        // Allocate 250MB managed space above 2GB already wasted before startup
+        const int arrayCnt = 10;
         int[][] arrayHolder = new int[arrayCnt][];
         string errors = "";
-        TestOutput.WriteLine("Starting over 1GB array allocation");
+        TestOutput.WriteLine("Starting over managed array allocation");
         for (int i = 0; i < arrayCnt; i++)
         {
             try
@@ -31,7 +31,7 @@ public partial class MemoryTest
                 errors += $"Exception {ex} was thrown on i={i}";
             }
         }
-        TestOutput.WriteLine("Finished over 1GB array allocation");
+        TestOutput.WriteLine("Finished over managed array allocation");
 
         // call a method many times to trigger tier-up optimization
         string randomString = GenerateRandomString(1000);
