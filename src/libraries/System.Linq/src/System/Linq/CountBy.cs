@@ -33,26 +33,13 @@ namespace System.Linq
                 return [];
             }
 
-            return CountByIterator(source, keySelector, keyComparer);
-        }
-
-        private static IEnumerable<KeyValuePair<TKey, int>> CountByIterator<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
-        {
             using IEnumerator<TSource> enumerator = source.GetEnumerator();
 
             if (!enumerator.MoveNext())
             {
-                yield break;
+                return [];
             }
 
-            foreach (KeyValuePair<TKey, int> countBy in BuildCountDictionary(enumerator, keySelector, keyComparer))
-            {
-                yield return countBy;
-            }
-        }
-
-        private static Dictionary<TKey, int> BuildCountDictionary<TSource, TKey>(IEnumerator<TSource> enumerator, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
-        {
             Dictionary<TKey, int> countsBy = new(keyComparer);
 
             do
