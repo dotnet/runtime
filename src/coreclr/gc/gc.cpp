@@ -2342,10 +2342,6 @@ size_t      gc_heap::g_promoted;
 size_t      gc_heap::g_bpromoted;
 #endif //BACKGROUND_GC
 
-// this is just to have fewer #ifdefs in code shared between WKS and SVR
-// for filling out ScanContext structs
-const int n_heaps = 1;
-
 #endif //MULTIPLE_HEAPS
 
 size_t      gc_heap::card_table_element_layout[total_bookkeeping_elements + 1];
@@ -3276,7 +3272,7 @@ void gc_heap::fire_pevents()
         // Not every heap will compact LOH, the ones that didn't will just have 0s
         // in its info.
         FIRE_EVENT(GCLOHCompact,
-                   (uint16_t)get_num_heaps(),
+                   (uint16_t)n_heaps,
                    (uint32_t)(sizeof (etw_loh_compact_info)),
                    (void *)loh_compact_info);
     }
@@ -3445,12 +3441,7 @@ gc_heap::dt_estimate_reclaim_space_p (gc_tuning_point tp, int gen_number)
             {
                 size_t est_maxgen_free = estimated_reclaim (gen_number);
 
-                uint32_t num_heaps = 1;
-#ifdef MULTIPLE_HEAPS
-                num_heaps = gc_heap::n_heaps;
-#endif //MULTIPLE_HEAPS
-
-                size_t min_frag_th = min_reclaim_fragmentation_threshold (num_heaps);
+                size_t min_frag_th = min_reclaim_fragmentation_threshold (gc_heap::n_heaps);
                 dprintf (GTC_LOG, ("h%d, min frag is %zd", heap_number, min_frag_th));
                 ret = (est_maxgen_free >= min_frag_th);
             }
@@ -3506,12 +3497,7 @@ gc_heap::dt_estimate_high_frag_p (gc_tuning_point tp, int gen_number, uint64_t a
                     (int)(est_frag_ratio * 100),
                     est_frag));
 
-                uint32_t num_heaps = 1;
-
-#ifdef MULTIPLE_HEAPS
-                num_heaps = gc_heap::n_heaps;
-#endif //MULTIPLE_HEAPS
-                uint64_t min_frag_th = min_high_fragmentation_threshold(available_mem, num_heaps);
+                uint64_t min_frag_th = min_high_fragmentation_threshold(available_mem, gc_heap::n_heaps);
                 //dprintf (GTC_LOG, ("h%d, min frag is %zd", heap_number, min_frag_th));
                 ret = (est_frag >= min_frag_th);
             }
@@ -7859,12 +7845,7 @@ void gc_mechanisms::first_init()
 
 void gc_mechanisms::record (gc_history_global* history)
 {
-#ifdef MULTIPLE_HEAPS
     history->num_heaps = gc_heap::n_heaps;
-#else
-    history->num_heaps = 1;
-#endif //MULTIPLE_HEAPS
-
     history->condemned_generation = condemned_generation;
     history->gen0_reduction_count = gen0_reduction_count;
     history->reason = reason;
@@ -10039,13 +10020,8 @@ void gc_heap::copy_brick_card_table()
                           cardw_card_bundle (align_cardw_on_bundle (card_word (card_of (highest_address)))));
     }
     //check if we need to turn on card_bundles.
-#ifdef MULTIPLE_HEAPS
     // use INT64 arithmetic here because of possible overflow on 32p
     uint64_t th = (uint64_t)MH_TH_CARD_BUNDLE*gc_heap::n_heaps;
-#else
-    // use INT64 arithmetic here because of possible overflow on 32p
-    uint64_t th = (uint64_t)SH_TH_CARD_BUNDLE;
-#endif //MULTIPLE_HEAPS
     if (reserved_memory >= th)
     {
         enable_card_bundles();
@@ -13438,7 +13414,6 @@ void gc_heap::distribute_free_regions()
         gc_heap* hp = pGenGCHeap;
         // just to reduce the number of #ifdefs in the code below
         const int i = 0;
-        const int n_heaps = 1;
 #endif //MULTIPLE_HEAPS
 
         for (int kind = basic_free_region; kind < kind_count; kind++)
@@ -13495,7 +13470,6 @@ void gc_heap::distribute_free_regions()
             gc_heap* hp = pGenGCHeap;
             // just to reduce the number of #ifdefs in the code below
             const int i = 0;
-            const int n_heaps = 1;
 #endif //MULTIPLE_HEAPS
             ptrdiff_t budget_gen = max (hp->estimate_gen_growth (gen), (ptrdiff_t)0);
             int kind = gen >= loh_generation;
@@ -13522,11 +13496,6 @@ void gc_heap::distribute_free_regions()
 #ifdef TRACE_GC
     const char* kind_name[count_free_region_kinds] = { "basic", "large", "huge"};
 #endif // TRACE_GC
-
-#ifndef MULTIPLE_HEAPS
-    // just to reduce the number of #ifdefs in the code below
-    const int n_heaps = 1;
-#endif //!MULTIPLE_HEAPS
 
     size_t num_huge_region_units_to_consider[kind_count] = { 0, free_space_in_huge_regions / region_size[large_free_region] };
 
@@ -14188,12 +14157,13 @@ gc_heap::restart_EE ()
 
 HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
                                 size_t loh_segment_size,
-                                size_t poh_segment_size
-#ifdef MULTIPLE_HEAPS
-                                ,int number_of_heaps
-#endif //MULTIPLE_HEAPS
-)
+                                size_t poh_segment_size,
+                                int number_of_heaps)
 {
+#ifndef MULTIPLE_HEAPS
+    assert (number_of_heaps == 1);
+#endif // MULTIPLE_HEAPS
+
 #ifdef GC_CONFIG_DRIVEN
     if (GCConfig::GetConfigLogEnabled())
     {
@@ -14293,15 +14263,12 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     reserved_memory = 0;
     size_t initial_heap_size = soh_segment_size + loh_segment_size + poh_segment_size;
     uint16_t* heap_no_to_numa_node = nullptr;
-#ifdef MULTIPLE_HEAPS
     reserved_memory_limit = initial_heap_size * number_of_heaps;
+#ifdef MULTIPLE_HEAPS
     if (!heap_select::init(number_of_heaps))
         return E_OUTOFMEMORY;
     if (GCToOSInterface::CanEnableGCNumaAware())
         heap_no_to_numa_node = heap_select::heap_no_to_numa_node;
-#else //MULTIPLE_HEAPS
-    reserved_memory_limit = initial_heap_size;
-    int number_of_heaps = 1;
 #endif //MULTIPLE_HEAPS
 
     check_commit_cs.Initialize();
@@ -14665,7 +14632,7 @@ gc_heap::init_semi_shared()
     bgc_alloc_spin = static_cast<uint32_t>(GCConfig::GetBGCSpin());
 
     {
-        int number_bgc_threads = get_num_heaps();
+        int number_bgc_threads = n_heaps;
         if (!create_bgc_threads_support (number_bgc_threads))
         {
             goto cleanup;
@@ -14701,7 +14668,7 @@ gc_heap::init_semi_shared()
 #endif //BACKGROUND_GC
 
 #ifdef FEATURE_LOH_COMPACTION
-    loh_compact_info = new (nothrow) etw_loh_compact_info [get_num_heaps()];
+    loh_compact_info = new (nothrow) etw_loh_compact_info [n_heaps];
     if (!loh_compact_info)
     {
         goto cleanup;
@@ -21324,13 +21291,8 @@ size_t gc_heap::get_total_servo_alloc (int gen_number)
 size_t gc_heap::get_total_bgc_promoted()
 {
     size_t total_bgc_promoted = 0;
-#ifdef MULTIPLE_HEAPS
-    int num_heaps = gc_heap::n_heaps;
-#else //MULTIPLE_HEAPS
-    int num_heaps = 1;
-#endif //MULTIPLE_HEAPS
 
-    for (int i = 0; i < num_heaps; i++)
+    for (int i = 0; i < gc_heap::n_heaps; i++)
     {
         total_bgc_promoted += bpromoted_bytes (i);
     }
@@ -23317,9 +23279,7 @@ start_no_gc_region_status gc_heap::prepare_for_no_gc_region (uint64_t total_size
     size_t size_per_heap = 0;
     const double scale_factor = 1.05;
 
-    int num_heaps = get_num_heaps();
-
-    uint64_t total_allowed_soh_allocation = (uint64_t)max_soh_allocated * num_heaps;
+    uint64_t total_allowed_soh_allocation = (uint64_t)max_soh_allocated * n_heaps;
     // [LOCALGC TODO]
     // In theory, the upper limit here is the physical memory of the machine, not
     // SIZE_T_MAX. This is not true today because total_physical_mem can be
@@ -28600,12 +28560,7 @@ void gc_heap::check_bgc_mark_stack_length()
     if (total_heap_size < ((size_t)4*1024*1024*1024))
         return;
 
-#ifdef MULTIPLE_HEAPS
-    int total_heaps = n_heaps;
-#else
-    int total_heaps = 1;
-#endif //MULTIPLE_HEAPS
-    size_t size_based_on_heap = total_heap_size / (size_t)(100 * 100 * total_heaps * sizeof (uint8_t*));
+    size_t size_based_on_heap = total_heap_size / (size_t)(100 * 100 * n_heaps * sizeof (uint8_t*));
 
     size_t new_size = max (background_mark_stack_array_length, size_based_on_heap);
 
@@ -29508,16 +29463,6 @@ size_t gc_heap::get_generation_start_size (int gen_number)
     return Align (size (generation_allocation_start (generation_of (gen_number))),
                   get_alignment_constant (gen_number <= max_generation));
 #endif //!USE_REGIONS
-}
-
-inline
-int gc_heap::get_num_heaps()
-{
-#ifdef MULTIPLE_HEAPS
-    return n_heaps;
-#else
-    return 1;
-#endif //MULTIPLE_HEAPS
 }
 
 BOOL gc_heap::decide_on_promotion_surv (size_t threshold)
@@ -31355,7 +31300,7 @@ BOOL gc_heap::plan_loh()
     uint64_t start_time = 0, end_time;
     if (informational_event_enabled_p)
     {
-        memset (loh_compact_info, 0, (sizeof (etw_loh_compact_info) * get_num_heaps()));
+        memset (loh_compact_info, 0, (sizeof (etw_loh_compact_info) * n_heaps));
         start_time = GetHighPrecisionTimeStamp();
     }
 #endif //FEATURE_EVENT_TRACE
@@ -32385,7 +32330,7 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
 
 void gc_heap::grow_mark_list_piece()
 {
-    if (g_mark_list_piece_total_size < region_count * 2 * get_num_heaps())
+    if (g_mark_list_piece_total_size < region_count * 2 * n_heaps)
     {
         delete[] g_mark_list_piece;
 
@@ -32393,7 +32338,7 @@ void gc_heap::grow_mark_list_piece()
         size_t alloc_count = max ((g_mark_list_piece_size * 2), region_count);
 
         // we need two arrays with alloc_count entries per heap
-        g_mark_list_piece = new (nothrow) uint8_t * *[alloc_count * 2 * get_num_heaps()];
+        g_mark_list_piece = new (nothrow) uint8_t * *[alloc_count * 2 * n_heaps];
         if (g_mark_list_piece != nullptr)
         {
             g_mark_list_piece_size = alloc_count;
@@ -32402,11 +32347,11 @@ void gc_heap::grow_mark_list_piece()
         {
             g_mark_list_piece_size = 0;
         }
-        g_mark_list_piece_total_size = g_mark_list_piece_size * 2 * get_num_heaps();
+        g_mark_list_piece_total_size = g_mark_list_piece_size * 2 * n_heaps;
     }
     // update the size per heap in case the number of heaps has changed,
     // but the total size is still sufficient
-    g_mark_list_piece_size = g_mark_list_piece_total_size / (2 * get_num_heaps());
+    g_mark_list_piece_size = g_mark_list_piece_total_size / (2 * n_heaps);
 }
 
 void gc_heap::save_current_survived()
@@ -44176,14 +44121,8 @@ size_t gc_heap::joined_youngest_desired (size_t new_allocation)
     size_t final_new_allocation = new_allocation;
     if (new_allocation > MIN_YOUNGEST_GEN_DESIRED)
     {
-        uint32_t num_heaps = 1;
-
-#ifdef MULTIPLE_HEAPS
-        num_heaps = gc_heap::n_heaps;
-#endif //MULTIPLE_HEAPS
-
-        size_t total_new_allocation = new_allocation * num_heaps;
-        size_t total_min_allocation = MIN_YOUNGEST_GEN_DESIRED * num_heaps;
+        size_t total_new_allocation = new_allocation * n_heaps;
+        size_t total_min_allocation = MIN_YOUNGEST_GEN_DESIRED * n_heaps;
 
         if ((settings.entry_memory_load >= MAX_ALLOWED_MEM_LOAD) ||
             (total_new_allocation > max (youngest_gen_desired_th, total_min_allocation)))
@@ -44202,7 +44141,7 @@ size_t gc_heap::joined_youngest_desired (size_t new_allocation)
                                          dd_max_size (dynamic_data_of (0));
 #endif //MULTIPLE_HEAPS
 
-            final_new_allocation  = min (Align ((final_total / num_heaps), get_alignment_constant (TRUE)), max_new_allocation);
+            final_new_allocation  = min (Align ((final_total / n_heaps), get_alignment_constant (TRUE)), max_new_allocation);
         }
     }
 
@@ -45126,16 +45065,11 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
         // check for high memory situation
         if(!should_compact)
         {
-            uint32_t num_heaps = 1;
-#ifdef MULTIPLE_HEAPS
-            num_heaps = gc_heap::n_heaps;
-#endif // MULTIPLE_HEAPS
-
             ptrdiff_t reclaim_space = generation_size(max_generation) - generation_plan_size(max_generation);
 
             if((settings.entry_memory_load >= high_memory_load_th) && (settings.entry_memory_load < v_high_memory_load_th))
             {
-                if(reclaim_space > (int64_t)(min_high_fragmentation_threshold (entry_available_physical_mem, num_heaps)))
+                if(reclaim_space > (int64_t)(min_high_fragmentation_threshold (entry_available_physical_mem, n_heaps)))
                 {
                     dprintf(GTC_LOG,("compacting due to fragmentation in high memory"));
                     should_compact = TRUE;
@@ -45145,7 +45079,7 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
             }
             else if(settings.entry_memory_load >= v_high_memory_load_th)
             {
-                if(reclaim_space > (ptrdiff_t)(min_reclaim_fragmentation_threshold (num_heaps)))
+                if(reclaim_space > (ptrdiff_t)(min_reclaim_fragmentation_threshold (n_heaps)))
                 {
                     dprintf(GTC_LOG,("compacting due to fragmentation in very high memory"));
                     should_compact = TRUE;
@@ -45215,8 +45149,7 @@ bool gc_heap::check_against_hard_limit (size_t space_required)
     if (heap_hard_limit)
     {
         size_t left_in_commit = heap_hard_limit - current_total_committed;
-        int num_heaps = get_num_heaps();
-        left_in_commit /= num_heaps;
+        left_in_commit /= n_heaps;
         if (left_in_commit < space_required)
         {
             can_fit = FALSE;
@@ -49020,10 +48953,8 @@ HRESULT GCHeap::Initialize()
     }
     gc_heap::n_max_heaps = nhp;
     gc_heap::n_heaps = nhp;
-    hr = gc_heap::initialize_gc (seg_size, large_seg_size, pin_seg_size, nhp);
-#else
-    hr = gc_heap::initialize_gc (seg_size, large_seg_size, pin_seg_size);
 #endif //MULTIPLE_HEAPS
+    hr = gc_heap::initialize_gc (seg_size, large_seg_size, pin_seg_size, gc_heap::n_heaps);
 
     GCConfig::SetGCHeapHardLimit(static_cast<int64_t>(gc_heap::heap_hard_limit));
     GCConfig::SetGCHeapHardLimitSOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[soh]));
@@ -51354,11 +51285,7 @@ bool GCHeap::IsThreadUsingAllocationContextHeap(gc_alloc_context* context, int t
 // Returns the number of processors required to trigger the use of thread based allocation contexts
 int GCHeap::GetNumberOfHeaps ()
 {
-#ifdef MULTIPLE_HEAPS
     return gc_heap::n_heaps;
-#else
-    return 1;
-#endif //MULTIPLE_HEAPS
 }
 
 /*
@@ -51691,13 +51618,10 @@ size_t gc_heap::get_gen0_min_size()
         dprintf (1, ("cache: %zd-%zd",
             GCToOSInterface::GetCacheSizePerLogicalCpu(FALSE),
             GCToOSInterface::GetCacheSizePerLogicalCpu(TRUE)));
-
-        int n_heaps = gc_heap::n_heaps;
 #else //SERVER_GC
         size_t trueSize = GCToOSInterface::GetCacheSizePerLogicalCpu(TRUE);
         gen0size = max((4*trueSize/5),(size_t)(256*1024));
         trueSize = max(trueSize, (size_t)(256*1024));
-        int n_heaps = 1;
 #endif //SERVER_GC
 
         llc_size = trueSize;
@@ -53488,11 +53412,6 @@ int gc_heap::refresh_memory_limit()
     GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
 
     uint32_t nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
-#ifdef MULTIPLE_HEAPS
-    uint32_t nhp = n_heaps;
-#else
-    uint32_t nhp = 1;
-#endif //MULTIPLE_HEAPS
     size_t seg_size_from_config;
 
     bool old_is_restricted_physical_mem = is_restricted_physical_mem;
@@ -53520,11 +53439,14 @@ int gc_heap::refresh_memory_limit()
     size_t new_current_total_committed = 0;
 #endif //USE_REGIONS
 
+    uint32_t nhp = n_heaps;
+    uint32_t old_nhp = n_heaps;
     if (succeed && !compute_memory_settings(false, nhp, nhp_from_config, seg_size_from_config, current_total_committed))
     {
         succeed = false;
         status = refresh_hard_limit_too_low;
     }
+    assert(nhp == old_nhp);
 
     if (!succeed)
     {
