@@ -13,18 +13,6 @@ using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
 {
-    internal static class LowLevelListExtensions
-    {
-        public static void Expand<T>(this LowLevelList<T> list, int count)
-        {
-            if (list.Capacity < count)
-                list.Capacity = count;
-
-            while (list.Count < count)
-                list.Add(default(T));
-        }
-    }
-
     internal class TypeBuilder
     {
         public TypeBuilder()
@@ -447,17 +435,17 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         internal unsafe struct GCLayout
         {
-            private LowLevelList<bool> _bitfield;
+            private bool[] _bitfield;
             private unsafe void* _gcdesc;
             private int _size;
             private bool _isReferenceTypeGCLayout;
 
             public static GCLayout None { get { return default(GCLayout); } }
-            public static GCLayout SingleReference { get; } = new GCLayout(new LowLevelList<bool>(new bool[1] { true }), false);
+            public static GCLayout SingleReference { get; } = new GCLayout([true], false);
 
             public bool IsNone { get { return _bitfield == null && _gcdesc == null; } }
 
-            public GCLayout(LowLevelList<bool> bitfield, bool isReferenceTypeGCLayout)
+            public GCLayout(bool[] bitfield, bool isReferenceTypeGCLayout)
             {
                 Debug.Assert(bitfield != null);
 
@@ -473,7 +461,7 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(MethodTable != null);
 
                 _bitfield = null;
-                _isReferenceTypeGCLayout = false; // This field is only used for the LowLevelList<bool> path
+                _isReferenceTypeGCLayout = false; // This field is only used for the bool[] path
                 _gcdesc = MethodTable->ContainsGCPointers ? (void**)MethodTable - 1 : null;
                 _size = (int)MethodTable->BaseSize;
             }
@@ -484,7 +472,7 @@ namespace Internal.Runtime.TypeLoader
             /// <param name="bitfield">The bitfield to write a layout to (may be null, at which
             /// point it will be created and assigned).</param>
             /// <param name="offset">The offset at which we need to write the bitfield.</param>
-            public void WriteToBitfield(LowLevelList<bool> bitfield, int offset)
+            public void WriteToBitfield(ref bool[] bitfield, int offset)
             {
                 ArgumentNullException.ThrowIfNull(bitfield);
 
@@ -495,12 +483,12 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(_gcdesc != null ^ _bitfield != null);
 
                 if (_bitfield != null)
-                    MergeBitfields(bitfield, offset);
+                    MergeBitfields(ref bitfield, offset);
                 else
-                    WriteGCDescToBitfield(bitfield, offset);
+                    WriteGCDescToBitfield(ref bitfield, offset);
             }
 
-            private unsafe void WriteGCDescToBitfield(LowLevelList<bool> bitfield, int offset)
+            private unsafe void WriteGCDescToBitfield(ref bool[] bitfield, int offset)
             {
                 int startIndex = offset / IntPtr.Size;
 
@@ -513,7 +501,7 @@ namespace Internal.Runtime.TypeLoader
 
                 // Ensure capacity for the values we are about to write
                 int capacity = startIndex + _size / IntPtr.Size - 2;
-                bitfield.Expand(capacity);
+                Array.Resize(ref bitfield, capacity);
 
                 while (count-- >= 0)
                 {
@@ -528,25 +516,23 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
-            private void MergeBitfields(LowLevelList<bool> outputBitfield, int offset)
+            private void MergeBitfields(ref bool[] outputBitfield, int offset)
             {
                 int startIndex = offset / IntPtr.Size;
 
                 // These routines represent the GC layout after the MethodTable pointer
-                // in an object, but the LowLevelList<bool> bitfield logically contains
-                // the EETypepointer if it is describing a reference type. So, skip the
-                // first value.
+                // in an object, but the bool[] bitfield logically contains the EETypepointer
+                // if it is describing a reference type. So, skip the first value.
                 int itemsToSkip = _isReferenceTypeGCLayout ? 1 : 0;
 
                 // Assert that we only skip a non-reported pointer.
                 Debug.Assert(itemsToSkip == 0 || _bitfield[0] == false);
 
                 // Ensure capacity for the values we are about to write
-                int capacity = startIndex + _bitfield.Count - itemsToSkip;
-                outputBitfield.Expand(capacity);
+                int capacity = startIndex + _bitfield.Length - itemsToSkip;
+                Array.Resize(ref outputBitfield, capacity);
 
-
-                for (int i = itemsToSkip; i < _bitfield.Count; i++)
+                for (int i = itemsToSkip; i < _bitfield.Length; i++)
                 {
                     // We should never overwrite a TRUE value in the table.
                     Debug.Assert(!outputBitfield[startIndex + i - itemsToSkip] || _bitfield[i]);

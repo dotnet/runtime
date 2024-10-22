@@ -306,9 +306,11 @@ namespace Internal.Runtime.TypeLoader
 
         // Sentinel static to allow us to initialize _instanceLayout to something
         // and then detect that InstanceGCLayout should return null
-        private static LowLevelList<bool> s_emptyLayout = new LowLevelList<bool>();
+#pragma warning disable CA1825 // Can't use generic Array.Empty<T> within type loader
+        private static bool[] s_emptyLayout = new bool[0];
+#pragma warning restore CA1825
 
-        private LowLevelList<bool> _instanceGCLayout;
+        private bool[] _instanceGCLayout;
 
         /// <summary>
         /// The instance gc layout of a dynamically laid out type.
@@ -324,14 +326,12 @@ namespace Internal.Runtime.TypeLoader
         /// If the type is a valuetype array, this is the layout of the valuetype held in the array if the type has GC reference fields
         /// Otherwise, it is the layout of the fields in the type.
         /// </summary>
-        public LowLevelList<bool> InstanceGCLayout
+        public bool[] InstanceGCLayout
         {
             get
             {
                 if (_instanceGCLayout == null)
                 {
-                    LowLevelList<bool> instanceGCLayout;
-
                     if (TypeBeingBuilt is ArrayType)
                     {
                         if (!IsArrayOfReferenceTypes)
@@ -340,8 +340,8 @@ namespace Internal.Runtime.TypeLoader
                             TypeBuilder.GCLayout elementGcLayout = GetFieldGCLayout(arrayType.ElementType);
                             if (!elementGcLayout.IsNone)
                             {
-                                instanceGCLayout = new LowLevelList<bool>();
-                                elementGcLayout.WriteToBitfield(instanceGCLayout, 0);
+                                bool[] instanceGCLayout = s_emptyLayout;
+                                elementGcLayout.WriteToBitfield(ref instanceGCLayout, 0);
                                 _instanceGCLayout = instanceGCLayout;
                             }
                         }
