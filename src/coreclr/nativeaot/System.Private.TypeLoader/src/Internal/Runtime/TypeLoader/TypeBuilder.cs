@@ -485,23 +485,24 @@ namespace Internal.Runtime.TypeLoader
             /// <param name="bitfield">The bitfield to write a layout to (may be null, at which
             /// point it will be created and assigned).</param>
             /// <param name="offset">The offset at which we need to write the bitfield.</param>
-            public void WriteToBitfield(ref bool[] bitfield, int offset)
+            /// <returns>The result bitfield, may or may not be the input array.</returns>
+            public bool[] WriteToBitfield(bool[] bitfield, int offset)
             {
                 ArgumentNullException.ThrowIfNull(bitfield);
 
                 if (IsNone)
-                    return;
+                    return bitfield;
 
                 // Ensure exactly one of these two are set.
                 Debug.Assert(_gcdesc != null ^ _bitfield != null);
 
                 if (_bitfield != null)
-                    MergeBitfields(ref bitfield, offset);
+                    return MergeBitfields(bitfield, offset);
                 else
-                    WriteGCDescToBitfield(ref bitfield, offset);
+                    return WriteGCDescToBitfield(bitfield, offset);
             }
 
-            private unsafe void WriteGCDescToBitfield(ref bool[] bitfield, int offset)
+            private unsafe bool[] WriteGCDescToBitfield(bool[] bitfield, int offset)
             {
                 int startIndex = offset / IntPtr.Size;
 
@@ -527,9 +528,11 @@ namespace Internal.Runtime.TypeLoader
                     for (int i = 0; i < len; i++)
                         bitfield[startIndex + offs + i] = true;
                 }
+
+                return bitfield;
             }
 
-            private void MergeBitfields(ref bool[] outputBitfield, int offset)
+            private bool[] MergeBitfields(bool[] outputBitfield, int offset)
             {
                 int startIndex = offset / IntPtr.Size;
 
@@ -552,6 +555,8 @@ namespace Internal.Runtime.TypeLoader
 
                     outputBitfield[startIndex + i - itemsToSkip] = _bitfield[i];
                 }
+
+                return outputBitfield;
             }
         }
 

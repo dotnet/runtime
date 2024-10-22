@@ -341,9 +341,7 @@ namespace Internal.Runtime.TypeLoader
                             TypeBuilder.GCLayout elementGcLayout = GetFieldGCLayout(arrayType.ElementType);
                             if (!elementGcLayout.IsNone)
                             {
-                                bool[] instanceGCLayout = s_emptyLayout;
-                                elementGcLayout.WriteToBitfield(ref instanceGCLayout, 0);
-                                _instanceGCLayout = instanceGCLayout;
+                                _instanceGCLayout = elementGcLayout.WriteToBitfield(s_emptyLayout, 0);
                             }
                         }
                         else
