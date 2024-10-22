@@ -11,9 +11,9 @@ internal sealed class MethodTableAuxiliaryData : IData<MethodTableAuxiliaryData>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.MethodTableAuxiliaryData);
 
-        AuxFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(AuxFlags)].Offset);
+        LoaderModule = target.ReadPointer(address + (ulong)type.Fields[nameof(LoaderModule)].Offset);
 
     }
 
-    public uint AuxFlags { get; init; }
+    public TargetPointer LoaderModule { get; init; }
 }

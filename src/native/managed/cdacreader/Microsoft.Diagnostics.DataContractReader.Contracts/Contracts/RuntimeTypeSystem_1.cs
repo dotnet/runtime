@@ -34,6 +34,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         internal TargetPointer Module { get; }
         internal TargetPointer EEClassOrCanonMT { get; }
         internal TargetPointer PerInstInfo { get; }
+        internal TargetPointer AuxiliaryData { get; }
         internal MethodTable(Data.MethodTable data)
         {
             Flags = new MethodTableFlags
@@ -48,10 +49,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             Module = data.Module;
             ParentMethodTable = data.ParentMethodTable;
             PerInstInfo = data.PerInstInfo;
+            AuxiliaryData = data.AuxiliaryData;
         }
 
         // this MethodTable is a canonical MethodTable if its EEClassOrCanonMT is an EEClass
         internal bool IsCanonMT => GetEEClassOrCanonMTBits(EEClassOrCanonMT) == EEClassOrCanonMTBits.EEClass;
+
     }
 
     // Low order bit of EEClassOrCanonMT.
@@ -920,7 +923,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private TargetPointer GetLoaderModule(TypeHandle typeHandle)
     {
-        throw new NotImplementedException();
+        if (!typeHandle.IsMethodTable())
+            throw new NotImplementedException(); // TODO[cdac]: TypeDesc::GetLoaderModule()
+        MethodTable mt = _methodTables[typeHandle.Address];
+        Data.MethodTableAuxiliaryData mtAuxData = _target.ProcessedData.GetOrAdd<Data.MethodTableAuxiliaryData>(mt.AuxiliaryData);
+        return mtAuxData.LoaderModule;
     }
 
     private bool IsGenericMethodDefinition(MethodDesc md)
