@@ -7476,6 +7476,47 @@ public:
     }
 };
 
+enum class TransientCodeKind
+{
+    None = 0,
+
+    // Scenario involving C++/CLI copy constructor scenario.
+    CopyConstructor,
+};
+
+static bool IsMarkedTransientMethod(MethodDesc* pMD, TransientCodeKind& kind)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pMD != NULL);
+    _ASSERTE(pMD->IsIL());
+    _ASSERTE(pMD->GetRVA() == 0);
+
+    // Transient code paths are currently limited to C++/CLI scenarios.
+    // This can be changed when new non-Windows options are added.
+#ifdef TARGET_WINDOWS
+    const void* data;
+    ULONG dataLen;
+    HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::TransientCodeAttribute, &data, &dataLen);
+    if (hr != S_OK)
+        return false;
+
+    _ASSERTE(dataLen == sizeof(uint32_t));
+
+    memcpy(&kind, data, sizeof(kind));
+    switch (kind)
+    {
+    case TransientCodeKind::CopyConstructor:
+        return true;
+
+    default:
+        _ASSERTE(!"Unknown TransientCodeKind");
+        break;
+    }
+#endif // TARGET_WINDOWS
+
+    return false;
+}
+
 static void getMethodInfoHelper(
     MethodInfoHelperContext& cxt,
     CORINFO_METHOD_INFO* methInfo,
@@ -7488,6 +7529,7 @@ static void getMethodInfoHelper(
     methInfo->ftn        = (CORINFO_METHOD_HANDLE)ftn;
     methInfo->regionKind = CORINFO_REGION_JIT;
 
+    TransientCodeKind transientKind = TransientCodeKind::None;
     CORINFO_MODULE_HANDLE scopeHnd = NULL;
 
     /* Grab information from the IL header */
@@ -7550,17 +7592,17 @@ static void getMethodInfoHelper(
         SigPointer localSig = pResolver->GetLocalSig();
         localSig.GetSignature(&pLocalSig, &cbLocalSig);
     }
-    else if (ftn->GetMemberDef() == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__COPY_CONSTRUCT)->GetMemberDef())
+    else if (IsMarkedTransientMethod(ftn, transientKind))
     {
-        _ASSERTE(ftn->HasMethodInstantiation());
-        Instantiation inst = ftn->GetMethodInstantiation();
-
-        _ASSERTE(inst.GetNumArgs() == 1);
-        TypeHandle type = inst[0];
-
-        if (!GenerateCopyConstructorHelper(ftn, type, &cxt.TransientResolver, &cxt.Header, methInfo))
+        switch (transientKind)
         {
-            ThrowHR(COR_E_BADIMAGEFORMAT);
+        case TransientCodeKind::CopyConstructor:
+            if (!GenerateCopyConstructorHelper(ftn, &cxt.TransientResolver, &cxt.Header))
+                ThrowHR(COR_E_BADIMAGEFORMAT);
+            break;
+
+        default:
+            ThrowHR(E_INVALIDARG);
         }
 
         scopeHnd = cxt.CreateScopeHandle();
