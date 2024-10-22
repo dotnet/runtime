@@ -120,6 +120,7 @@ internal class RFLogging
                 }
                 catch (IOException e)
                 {
+                    throw new Exception("Fail to write message to log file: " + e.Message);
                 }
             }
         }

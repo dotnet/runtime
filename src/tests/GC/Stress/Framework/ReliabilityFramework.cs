@@ -275,13 +275,19 @@ public class ReliabilityFramework
 
     public void HandleOom(Exception e, string message)
     {
-        try
+        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Exception while running tests: {0}", e));
+        if (_curTestSet.DebugBreakOnOutOfMemory)
         {
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Exception while running tests: {0}", e));
+            string msg = "Interrupt because of out of memory";
+            Console.WriteLine(msg);
+            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, msg);
+            Debugger.Break();
         }
-        catch (OutOfMemoryException)
+        else
         {
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "Out of memory");
+            string msg = "Throw exception because of out of memory";
+            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, msg); 
+            throw e;
         }
     }
 
@@ -741,9 +747,21 @@ public class ReliabilityFramework
                 else
                 {
                     Thread.Sleep(250);	// give the CPU a bit of a rest if we don't need to start a new test.
-                    if (_curTestSet.DebugBreakOnMissingTest && DateTime.Now.Subtract(_startTime) > minTimeToStartTest)
+                    if (DateTime.Now.Subtract(_startTime) > minTimeToStartTest)
                     {
-                        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("New tests not starting"));
+                        if (_curTestSet.DebugBreakOnMissingTest)
+                        {
+                            string msg = "Interrupt because new tests not starting";
+                            Console.WriteLine(msg);
+                            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, msg);
+                            Debugger.Break();
+                        }
+                        else
+                        {
+                            string msg = "throw exception because new tests not starting";
+                            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, msg);
+                            throw new Exception("New tests not starting");
+                        }
                     }
                 }
             }
@@ -839,7 +857,7 @@ public class ReliabilityFramework
 
             if (_curTestSet.DebugBreakOnTestHang)
             {
-                string msg = "Test hang because of timeout";
+                string msg = "Interrupt because of timeout";
                 Console.WriteLine(msg);
                 _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
                 Debugger.Break();
@@ -1007,7 +1025,16 @@ public class ReliabilityFramework
                             {
                                 if (_curTestSet.DebugBreakOnPathTooLong)
                                 {
-                                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "Path too long");
+                                    string msg = "Interrupt because path is too long";
+                                    Console.WriteLine(msg);
+                                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, msg);
+                                    Debugger.Break();
+                                }
+                                else
+                                {
+                                    string msg = "Throw exception because path is too long";
+                                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, msg);
+                                    throw new Exception("Time limit reached.");
                                 }
                             }
                             catch (OutOfMemoryException e)
