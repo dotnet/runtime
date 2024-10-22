@@ -481,6 +481,9 @@ internal sealed unsafe partial class SOSDacImpl
         ClrDataModule module = new(addr, _target, legacyModule, legacyModulePointer);
         nint iunknownPtr = cw.GetOrCreateComInterfaceForObject(module, CreateComInterfaceFlags.None);
         hr = Marshal.QueryInterface(iunknownPtr, typeof(IXCLRDataModule).GUID, out nint modPtr);
+        if (iunknownPtr != 0)
+            Marshal.Release(iunknownPtr);
+
         if (hr == HResults.S_OK)
             *mod = (IXCLRDataModule*)modPtr;
 
