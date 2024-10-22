@@ -1417,12 +1417,34 @@ namespace System
 
         public static bool operator !=(ModuleHandle left, ModuleHandle right) => !left.Equals(right);
 
-        #region Internal FCalls
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IRuntimeMethodInfo GetDynamicMethod(Reflection.Emit.DynamicMethod method, RuntimeModule module, string name, byte[] sig, Resolver resolver);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleHandle_GetDynamicMethod", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial void GetDynamicMethod(
+            QCallModule module,
+            string name,
+            byte[] sig,
+            int sigLen,
+            ObjectHandleOnStack resolver,
+            ObjectHandleOnStack result);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetToken(RuntimeModule module);
+        internal static IRuntimeMethodInfo GetDynamicMethod(RuntimeModule module, string name, byte[] sig, Resolver resolver)
+        {
+            IRuntimeMethodInfo? methodInfo = null;
+            GetDynamicMethod(
+                new QCallModule(ref module),
+                name,
+                sig,
+                sig.Length,
+                ObjectHandleOnStack.Create(ref resolver),
+                ObjectHandleOnStack.Create(ref methodInfo));
+            return methodInfo!;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleHandle_GetToken")]
+        [SuppressGCTransition]
+        private static partial int GetToken(QCallModule module);
+
+        internal static int GetToken(RuntimeModule module)
+            => GetToken(new QCallModule(ref module));
 
         private static void ValidateModulePointer(RuntimeModule module)
         {
@@ -1621,11 +1643,14 @@ namespace System
             machine = (ImageFileMachine)lMachine;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetMDStreamVersion(RuntimeModule module);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleHandle_GetMDStreamVersion")]
+        [SuppressGCTransition]
+        private static partial int GetMDStreamVersion(QCallModule module);
+
+        internal static int GetMDStreamVersion(RuntimeModule module)
+            => GetMDStreamVersion(new QCallModule(ref module));
 
         public int MDStreamVersion => GetMDStreamVersion(GetRuntimeModule());
-        #endregion
     }
 
     internal sealed unsafe class Signature
