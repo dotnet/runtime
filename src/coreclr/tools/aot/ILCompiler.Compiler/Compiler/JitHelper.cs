@@ -234,29 +234,29 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.Mod:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "IMod");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModulusChecked", null);
                     break;
                 case ReadyToRunHelper.UMod:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "UMod");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModulusUnsigned", null);
                     break;
                 case ReadyToRunHelper.ULMod:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "ULMod");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModulusUnsignedLongs", null);
                     break;
                 case ReadyToRunHelper.LMod:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "LMod");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModulusLongs", null);
                     break;
 
                 case ReadyToRunHelper.Div:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "IDiv");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivideChecked", null);
                     break;
                 case ReadyToRunHelper.UDiv:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "UDiv");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivideUnsigned", null);
                     break;
                 case ReadyToRunHelper.ULDiv:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "ULDiv");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivideUnsignedLongs", null);
                     break;
                 case ReadyToRunHelper.LDiv:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "LDiv");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivideLongs", null);
                     break;
 
                 case ReadyToRunHelper.LRsz:

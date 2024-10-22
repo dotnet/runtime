@@ -14,6 +14,10 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
+#if TARGET_32BIT
+using System.Runtime.InteropServices;
+#endif
+
 namespace System
 {
     /// <summary>
@@ -1682,5 +1686,227 @@ namespace System
             ThrowHelper.ThrowOverflowException();
             return 0;
         }
+
+        [StackTraceHidden]
+        internal static int DivideChecked(int dividend, int divisor)
+        {
+#if TARGET_32BIT
+            if ((uint)(divisor + 1) <= 1)
+            {
+                if (divisor == 0)
+                {
+                    ThrowHelper.ThrowDivideByZeroException();
+                }
+                else if (divisor == -1)
+                {
+                    if (dividend == int.MinValue)
+                    {
+                        ThrowHelper.ThrowOverflowException();
+                    }
+                    return -dividend;
+                }
+            }
+
+            return ActualDivisionInt(dividend, divisor);
+#else
+            return DivideChecked(dividend, divisor);
+#endif
+        }
+
+        [StackTraceHidden]
+        internal static int ModulusChecked(int dividend, int divisor)
+        {
+#if TARGET_32BIT
+            if ((uint)(divisor + 1) <= 1)
+            {
+                if (divisor == 0)
+                {
+                    ThrowHelper.ThrowDivideByZeroException();
+                }
+                else if (divisor == -1)
+                {
+                    if (dividend == int.MinValue)
+                    {
+                        ThrowHelper.ThrowOverflowException();
+                    }
+                    return 0;
+                }
+            }
+
+            return ActualModulusInt(dividend, divisor);
+#else
+            return ModulusChecked(dividend, divisor);
+#endif
+        }
+
+        [StackTraceHidden]
+        internal static uint DivideUnsigned(uint dividend, uint divisor)
+        {
+#if TARGET_32BIT
+            if (divisor == 0)
+            {
+                ThrowHelper.ThrowDivideByZeroException();
+            }
+
+            return ActualDivisionUInt(dividend, divisor);
+#else
+            return DivideUnsigned(dividend, divisor);
+#endif
+        }
+
+        [StackTraceHidden]
+        internal static uint ModulusUnsigned(uint dividend, uint divisor)
+        {
+#if TARGET_32BIT
+            if (divisor == 0)
+            {
+                ThrowHelper.ThrowDivideByZeroException();
+            }
+
+            return ActualModulusUInt(dividend, divisor);
+#else
+            return ModulusUnsigned(dividend, divisor);
+#endif
+        }
+
+        [StackTraceHidden]
+        internal static long DivideLongs(long dividend, long divisor)
+        {
+#if TARGET_32BIT
+            if ((uint)(divisor + 1) <= 1)
+            {
+                if ((int)divisor == 0)
+                {
+                    ThrowHelper.ThrowDivideByZeroException();
+                }
+
+                if ((int)divisor == -1)
+                {
+                    if ((ulong)dividend == 0x8000000000000000)
+                    {
+                        ThrowHelper.ThrowOverflowException();
+                    }
+                    return -dividend;
+                }
+
+                if ((ulong)dividend >> 32 == 0 || (ulong)dividend >> 32 == 0xFFFFFFFF)
+                {
+                    return (int)dividend / (int)divisor;
+                }
+            }
+
+            return ActualDivisionLong(dividend, divisor);
+#else
+            return DivideLongs(dividend, divisor);
+#endif
+        }
+
+        [StackTraceHidden]
+        internal static long ModulusLongs(long dividend, long divisor)
+        {
+#if TARGET_32BIT
+            if ((uint)(divisor + 1) <= 1)
+            {
+                if ((int)divisor == 0)
+                {
+                    ThrowHelper.ThrowDivideByZeroException();
+                }
+
+                if ((int)divisor == -1)
+                {
+                    if ((ulong)dividend == 0x8000000000000000)
+                    {
+                        ThrowHelper.ThrowOverflowException();
+                    }
+                    return 0;
+                }
+
+                if ((ulong)dividend >> 32 == 0 || (ulong)dividend >> 32 == 0xFFFFFFFF)
+                {
+                    return (int)dividend % (int)divisor;
+                }
+            }
+
+            return ActualModulusLong(dividend, divisor);
+#else
+            return ModulusLongs(dividend, divisor);
+#endif
+        }
+
+        [StackTraceHidden]
+        internal static ulong DivideUnsignedLongs(ulong dividend, ulong divisor)
+        {
+#if TARGET_32BIT
+            if ((divisor >> 32) == 0)
+            {
+                if ((uint)divisor == 0)
+                {
+                    ThrowHelper.ThrowDivideByZeroException();
+                }
+
+                if ((dividend >> 32) == 0)
+                    return (uint)dividend / (uint)divisor;
+            }
+
+            return ActualDivisionULong(dividend, divisor);
+#else
+            return DivideUnsignedLongs(dividend, divisor);
+#endif
+        }
+
+        [StackTraceHidden]
+        internal static ulong ModulusUnsignedLongs(ulong dividend, ulong divisor)
+        {
+#if TARGET_32BIT
+            if ((divisor >> 32) == 0)
+            {
+                if ((uint)divisor == 0)
+                {
+                    ThrowHelper.ThrowDivideByZeroException();
+                }
+
+                if ((dividend >> 32) == 0)
+                    return (uint)dividend % (uint)divisor;
+            }
+
+            return ActualModulusULong(dividend, divisor);
+#else
+            return ModulusUnsignedLongs(dividend, divisor);
+#endif
+        }
+
+#if TARGET_32BIT
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Math_ActualDivisionInt")]
+        [SuppressGCTransition]
+        private static partial int ActualDivisionInt(int dividend, int divisor);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Math_ActualModulusInt")]
+        [SuppressGCTransition]
+        private static partial int ActualModulusInt(int dividend, int divisor);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Math_ActualDivisionUInt")]
+        [SuppressGCTransition]
+        private static partial uint ActualDivisionUInt(uint dividend, uint divisor);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Math_ActualModulusUInt")]
+        [SuppressGCTransition]
+        private static partial uint ActualModulusUInt(uint dividend, uint divisor);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Math_ActualDivisionLong")]
+        [SuppressGCTransition]
+        private static partial long ActualDivisionLong(long dividend, long divisor);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Math_ActualModulusLong")]
+        [SuppressGCTransition]
+        private static partial long ActualModulusLong(long dividend, long divisor);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Math_ActualDivisionULong")]
+        [SuppressGCTransition]
+        private static partial ulong ActualDivisionULong(ulong dividend, ulong divisor);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Math_ActualModulusULong")]
+        [SuppressGCTransition]
+        private static partial ulong ActualModulusULong(ulong dividend, ulong divisor);
+#endif
     }
 }
