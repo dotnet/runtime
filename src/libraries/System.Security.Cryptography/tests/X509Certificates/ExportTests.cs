@@ -539,8 +539,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     ca,
                     HashAlgorithmName.SHA256);
 
-                issuerRequest.CertificateExtensions.Add(
-                    new X509BasicConstraintsExtension(true, false, 0, true));
+                issuerRequest.CertificateExtensions.Add(X509BasicConstraintsExtension.CreateForCertificateAuthority());
 
                 DateTimeOffset notBefore = DateTimeOffset.UtcNow;
                 DateTimeOffset notAfter = notBefore.AddDays(30);

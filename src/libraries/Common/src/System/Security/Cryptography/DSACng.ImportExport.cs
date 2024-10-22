@@ -310,7 +310,9 @@ namespace System.Security.Cryptography
 
         public override DSAParameters ExportParameters(bool includePrivateParameters)
         {
-            if (includePrivateParameters && EncryptedOnlyExport)
+            bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(Key);
+
+            if (includePrivateParameters && encryptedOnlyExport)
             {
                 const string TemporaryExportPassword = "DotnetExportPhrase";
                 byte[] exported = ExportEncryptedPkcs8(TemporaryExportPassword, 1);
@@ -433,15 +435,6 @@ namespace System.Security.Cryptography
             {
                 if (magic != KeyBlobMagicNumber.BCRYPT_DSA_PUBLIC_MAGIC && magic != KeyBlobMagicNumber.BCRYPT_DSA_PUBLIC_MAGIC_V2)
                     throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
-            }
-        }
-
-        private bool EncryptedOnlyExport
-        {
-            get
-            {
-                const CngExportPolicies Exportable = CngExportPolicies.AllowPlaintextExport | CngExportPolicies.AllowExport;
-                return (Key.ExportPolicy & Exportable) == CngExportPolicies.AllowExport;
             }
         }
     }

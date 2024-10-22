@@ -95,8 +95,6 @@ namespace System.Security.Cryptography
 
         internal static ECParameters ExportParameters(CngKey key, bool includePrivateParameters)
         {
-            const CngExportPolicies Exportable = CngExportPolicies.AllowPlaintextExport | CngExportPolicies.AllowExport;
-            bool encryptedOnlyExport = (key.ExportPolicy & Exportable) == CngExportPolicies.AllowExport;
             ECParameters ecparams = default;
 
             const string TemporaryExportPassword = "DotnetExportPhrase";
@@ -116,6 +114,8 @@ namespace System.Security.Cryptography
             }
             else
             {
+                bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(key);
+
                 if (includePrivateParameters && encryptedOnlyExport)
                 {
                     byte[] exported = key.ExportPkcs8KeyBlob(TemporaryExportPassword, 1);
@@ -138,8 +138,7 @@ namespace System.Security.Cryptography
 
         private static ECParameters ExportPrivateExplicitParameters(CngKey key)
         {
-            const CngExportPolicies Exportable = CngExportPolicies.AllowPlaintextExport | CngExportPolicies.AllowExport;
-            bool encryptedOnlyExport = (key.ExportPolicy & Exportable) == CngExportPolicies.AllowExport;
+            bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(key);
 
             ECParameters ecparams = default;
 
