@@ -1068,6 +1068,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 string thumbprintHexUpper = Convert.ToHexString(thumbprint);
                 string thumbprintHexLower = Convert.ToHexStringLower(thumbprint);
 
+                AssertExtensions.GreaterThanOrEqualTo(thumbprintHexLower.AsSpan().IndexOfAnyExceptInRange('0', '9'), 0);
+
                 X509Certificate2Collection coll = [cert, unrelated];
                 X509Certificate2 found;
                 found = Assert.Single(coll.FindByThumbprint(hashAlgorithm, thumbprintHexLower));
@@ -1126,8 +1128,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        public static void FindByThumbprint_ByAlgorithm_ArgValidation_ThumbprintIsNotHex()
+        [Theory]
+        [InlineData("not a thumbprint")]
+        [InlineData("0xF00D")]
+        [InlineData("F0 0D")]
+        public static void FindByThumbprint_ByAlgorithm_ArgValidation_ThumbprintIsNotHex(string thumbprint)
         {
             HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA256;
 
@@ -1137,11 +1142,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 AssertExtensions.Throws<ArgumentException>(
                     "thumbprintHex",
-                    () => coll.FindByThumbprint(hashAlgorithm, "not a thumbprint"));
+                    () => coll.FindByThumbprint(hashAlgorithm, thumbprint));
 
                 AssertExtensions.Throws<ArgumentException>(
                     "thumbprintHex",
-                    () => coll.FindByThumbprint(hashAlgorithm, "not a thumbprint".AsSpan()));
+                    () => coll.FindByThumbprint(hashAlgorithm, thumbprint.AsSpan()));
             }
         }
 
