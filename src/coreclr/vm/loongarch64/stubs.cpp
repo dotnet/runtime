@@ -1282,10 +1282,7 @@ static bool IsRegisterFloating(UINT16 ofs)
 static int GetRegister(UINT16 ofs)
 {
     _ASSERTE(InRegister(ofs));
-    if (ofs & ShuffleEntry::FPREGMASK)
-    {
-        return (ofs & ShuffleEntry::OFSREGMASK);
-    }
+    _ASSERTE(!(ofs & ShuffleEntry::FPREGMASK));
     return (ofs & ShuffleEntry::OFSREGMASK) + 4; // First GPR argument register: a0
 }
 
