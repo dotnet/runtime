@@ -975,7 +975,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 found = Assert.Single(coll.FindByThumbprint(hashAlgorithm, thumbprintHex));
                 Assert.Same(cert, found);
             }
-
         }
 
         [Theory]
