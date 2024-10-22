@@ -328,12 +328,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             TargetPointer ppCode = GetAddrOfNativeCodeSlot(methodDescPointer, umd);
             TargetCodePointer pCode = _target.ReadCodePointer(ppCode);
 
-            // if arm32, set the thumb bit
-            TargetPointer machineDescriptorAddress = _target.Contracts.CDacMetadata.GetPrecodeMachineDescriptor();
-            Data.PrecodeMachineDescriptor precodeMachineDescriptor = _target.ProcessedData.GetOrAdd<Data.PrecodeMachineDescriptor>(machineDescriptorAddress);
-            pCode = (TargetCodePointer)(pCode.Value | ~precodeMachineDescriptor.CodePointerToInstrPointerMask.Value);
-
-            return pCode;
+            return CodePointerFromAddress(pCode.AsTargetPointer);
         }
 
         if (!umd.HasStableEntryPoint || umd.HasPrecode)
