@@ -180,6 +180,7 @@ public class PrecodeStubsTests
         public readonly Dictionary<DataType, Target.TypeInfo>? TypeInfoCache;
 
         public TargetPointer MachineDescriptorAddress;
+        public CodePointerFlags CodePointerFlags {get; private set;}
         public PrecodeBuilder(MockTarget.Architecture arch) : this(DefaultAllocationRange, new MockMemorySpace.Builder(new TargetTestHelpers(arch))) {
         }
         public PrecodeBuilder(AllocationRange allocationRange, MockMemorySpace.Builder builder, Dictionary<DataType, Target.TypeInfo>? typeInfoCache = null) {
@@ -198,7 +199,6 @@ public class PrecodeStubsTests
         public void AddToTypeInfoCache(Dictionary<DataType, Target.TypeInfo> typeInfoCache, TargetTestHelpers targetTestHelpers) {
             var layout = targetTestHelpers.LayoutFields([
                 (nameof(Data.PrecodeMachineDescriptor.StubCodePageSize), DataType.uint32),
-                (nameof(Data.PrecodeMachineDescriptor.CodePointerToInstrPointerMask), DataType.nuint),
                 (nameof(Data.PrecodeMachineDescriptor.OffsetOfPrecodeType), DataType.uint8),
                 (nameof(Data.PrecodeMachineDescriptor.ReadWidthOfPrecodeType), DataType.uint8),
                 (nameof(Data.PrecodeMachineDescriptor.ShiftOfPrecodeType), DataType.uint8),
@@ -223,25 +223,27 @@ public class PrecodeStubsTests
             };
         }
 
-        public TargetPointer AddPrecodeDesctiptor(PrecodeTestDescriptor descriptor) {
+        private void SetCodePointerFlags(PrecodeTestDescriptor test)
+        {
+            CodePointerFlags = default;
+            if (test.IsThumb) {
+                CodePointerFlags |= CodePointerFlags.HasArm32ThumbBit;
+            }
+        }
+
+        public void AddCDacMetadata(PrecodeTestDescriptor descriptor) {
+            SetCodePointerFlags(descriptor);
             var typeInfo = TypeInfoCache[DataType.PrecodeMachineDescriptor];
             var fragment = PrecodeAllocator.Allocate((ulong)typeInfo.Size, $"{descriptor.Name} Precode Machine Descriptor");
             Builder.AddHeapFragment(fragment);
             MachineDescriptorAddress = fragment.Address;
             Span<byte> desc = Builder.BorrowAddressRange(fragment.Address, (int)typeInfo.Size);
-            TargetNUInt codePointerToInstrPointerMask = new TargetNUInt(descriptor.Arch.Is64Bit ? ~0x0ul : ~0x0u);
-            if (descriptor.IsThumb) {
-                codePointerToInstrPointerMask = new TargetNUInt(~0x1u);
-            }
-            Builder.TargetTestHelpers.WriteNUInt(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.CodePointerToInstrPointerMask)].Offset, Builder.TargetTestHelpers.PointerSize), codePointerToInstrPointerMask);
-
             Builder.TargetTestHelpers.Write(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.ReadWidthOfPrecodeType)].Offset, sizeof(byte)), (byte)descriptor.ReadWidthOfPrecodeType);
             Builder.TargetTestHelpers.Write(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.OffsetOfPrecodeType)].Offset, sizeof(byte)), (byte)descriptor.OffsetOfPrecodeType);
             Builder.TargetTestHelpers.Write(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.ShiftOfPrecodeType)].Offset, sizeof(byte)), (byte)descriptor.ShiftOfPrecodeType);
             Builder.TargetTestHelpers.Write(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.StubCodePageSize)].Offset, sizeof(uint)), descriptor.StubCodePageSize);
             Builder.TargetTestHelpers.Write(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.StubPrecodeType)].Offset, sizeof(byte)), descriptor.StubPrecode);
             // FIXME: set the other fields
-            return fragment.Address;
         }
 
         public TargetCodePointer AddStubPrecodeEntry(string name, PrecodeTestDescriptor test, TargetPointer methodDesc) {
@@ -277,14 +279,14 @@ public class PrecodeStubsTests
     {
         private class TestCDacMetadata : ICDacMetadata
         {
+            private readonly CodePointerFlags _codePointerFlags;
             private readonly TargetPointer _precodeMachineDescriptorAddress;
-            public TestCDacMetadata(TargetPointer precodeMachineDescriptorAddress) {
+            public TestCDacMetadata(CodePointerFlags codePointerFlags, TargetPointer precodeMachineDescriptorAddress) {
+                _codePointerFlags = codePointerFlags;
                 _precodeMachineDescriptorAddress = precodeMachineDescriptorAddress;
             }
-            TargetPointer ICDacMetadata.GetPrecodeMachineDescriptor()
-            {
-                return _precodeMachineDescriptorAddress;
-            }
+            TargetPointer ICDacMetadata.GetPrecodeMachineDescriptor() => _precodeMachineDescriptorAddress;
+            CodePointerFlags ICDacMetadata.GetCodePointerFlags() => _codePointerFlags;
         }
         internal readonly TargetPointer PrecodeMachineDescriptorAddress;
         // hack for this test put the precode machine descriptor at the same address as the CDacMetadata
@@ -295,16 +297,16 @@ public class PrecodeStubsTests
             var arch = precodeBuilder.Builder.TargetTestHelpers.Arch;
             ReadFromTargetDelegate reader = precodeBuilder.Builder.GetReadContext().ReadFromTarget;
             var typeInfo = precodeBuilder.TypeInfoCache;
-            return new PrecodeTestTarget(arch, reader, precodeBuilder.MachineDescriptorAddress, typeInfo);
+            return new PrecodeTestTarget(arch, reader, precodeBuilder.CodePointerFlags, precodeBuilder.MachineDescriptorAddress, typeInfo);
         }
-        public PrecodeTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, TargetPointer cdacMetadataAddress, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch) {
+        public PrecodeTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, CodePointerFlags codePointerFlags, TargetPointer cdacMetadataAddress, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch) {
             PrecodeMachineDescriptorAddress = cdacMetadataAddress;
             SetTypeInfoCache(typeInfoCache);
             SetDataCache(new DefaultDataCache(this));
             SetDataReader(reader);
             IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();
             SetContracts(new TestRegistry() {
-                CDacMetadataContract = new (() => new TestCDacMetadata(PrecodeMachineDescriptorAddress)),
+                CDacMetadataContract = new (() => new TestCDacMetadata(codePointerFlags, PrecodeMachineDescriptorAddress)),
                 PrecodeStubsContract = new (() => precodeFactory.CreateContract(this, 1)),
 
             });
@@ -324,7 +326,7 @@ public class PrecodeStubsTests
     public void TestPrecodeStubPrecodeExpectedMethodDesc(PrecodeTestDescriptor test)
     {
         var builder = new PrecodeBuilder(test.Arch);
-        builder.AddPrecodeDesctiptor(test);
+        builder.AddCDacMetadata(test);
 
         TargetPointer expectedMethodDesc = new TargetPointer(0xeeee_eee0u); // arbitrary
         TargetCodePointer stub1 = builder.AddStubPrecodeEntry("Stub 1", test, expectedMethodDesc);
