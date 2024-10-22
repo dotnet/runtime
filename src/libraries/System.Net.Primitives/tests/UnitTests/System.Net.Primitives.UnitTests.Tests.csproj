@@ -15,6 +15,7 @@
     <DefaultReferenceExclusion Include="System.Net.Primitives" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CookieExceptionTest.cs" />
     <Compile Include="CookieInternalTest.cs" />
     <Compile Include="CookieContainerTest.cs" />
     <Compile Include="..\..\src\System\Net\CookieCollection.cs"
