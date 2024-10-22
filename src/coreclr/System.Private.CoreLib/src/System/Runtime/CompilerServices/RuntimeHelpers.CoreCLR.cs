@@ -377,10 +377,10 @@ namespace System.Runtime.CompilerServices
             return x.CompareTo(y);
         }
 
-        // Even though this is a C++/CLI API, we leave it for all platforms since there
-        // is no Trimmer feature switch for the generated ILLink.Descriptors.xml.
+#if FEATURE_IJW
         [TransientCode(TransientCodeKind.CopyConstructor)]
         internal static extern unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged;
+#endif
 
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
