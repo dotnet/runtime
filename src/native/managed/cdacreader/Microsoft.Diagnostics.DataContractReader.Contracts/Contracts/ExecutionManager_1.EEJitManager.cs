@@ -42,7 +42,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             }
             TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
             Data.RealCodeHeader realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
-            info = new CodeBlock(jittedCodeAddress, codeHeaderOffset, relativeOffset, realCodeHeader, rangeSection.Data!.JitManager);
+            info = new CodeBlock(start.Value, codeHeaderOffset, relativeOffset, realCodeHeader, rangeSection.Data!.JitManager);
             return true;
         }
 
