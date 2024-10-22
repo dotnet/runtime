@@ -4126,7 +4126,8 @@ namespace {
             // TODO: Is this check correct?
             _ASSERTE(pCode + codeSize <= pHp->startAddress + pHp->maxCodeHeapSize);
 
-            // remove bottom two bits to ensure alignment
+            // remove bottom two bits to ensure alignment math
+            // on ARM32 Thumb, the low bits indicate the thumb instruction set
             pCode = ALIGN_DOWN(pCode, CODE_ALIGN);
 
             size_t delta = pCode - pHp->mapBase;
