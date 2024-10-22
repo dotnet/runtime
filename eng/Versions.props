@@ -154,6 +154,7 @@
     <SystemTextRegularExpressionsTestDataVersion>10.0.0-beta.24480.2</SystemTextRegularExpressionsTestDataVersion>
     <SystemWindowsExtensionsTestDataVersion>10.0.0-beta.24480.2</SystemWindowsExtensionsTestDataVersion>
     <MicrosoftDotNetCilStripSourcesVersion>10.0.0-beta.24480.2</MicrosoftDotNetCilStripSourcesVersion>
+    <MicrosoftNETHostModelTestDataVersion>10.0.0-beta.24480.2</MicrosoftNETHostModelTestDataVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.24462.2</optimizationwindows_ntx64MIBCRuntimeVersion>
     <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.24462.2</optimizationwindows_ntx86MIBCRuntimeVersion>

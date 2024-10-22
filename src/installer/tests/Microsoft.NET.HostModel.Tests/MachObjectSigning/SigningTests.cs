@@ -36,33 +36,35 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             return new MachObjectFile(managedSignedAccessor, Path.GetFileName(filePath)).HasSignature;
         }
 
-        static readonly string[] embeddedTestFileNames = new string[] { "a.out", "a.unsigned.out", "rpath.out" };
         static readonly string[] liveBuiltHosts = new string[] { Binaries.AppHost.FilePath, Binaries.SingleFileHost.FilePath };
-        static IEnumerable<string> GetTestFiles(TestArtifact testArtifact)
+        static List<string> GetTestFiles(TestArtifact testArtifact)
         {
-            foreach (var fileName in embeddedTestFileNames)
+            List<(string Name, Stream Data)> testData = TestData.MachObjects.GetAll();
+            List<string> testFilePaths = new();
+            foreach ((string Name, Stream Data) in testData)
             {
-                string originalFilePath = Path.Combine(testArtifact.Location, fileName);
-                using (var aOutStream = typeof(SigningTests).Assembly.GetManifestResourceStream("Microsoft.NET.HostModel.Tests.MachObjectSigning.Data." + fileName))
+                string originalFilePath = Path.Combine(testArtifact.Location, Name);
+                using (var aOutStream = Data)
                 using (var managedSignFile = File.OpenWrite(originalFilePath))
                 {
                     aOutStream!.CopyTo(managedSignFile);
                 }
-                yield return originalFilePath;
+                testFilePaths.Add(originalFilePath);
             }
 
-            // If we're on mac, we're done
+            // If we're on mac, we can use the live built binaries to test against
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                yield break;
-
-            // Otherwise, we can use the live built binaries
-            foreach (var filePath in liveBuiltHosts)
             {
-                string fileName = Path.GetFileName(filePath);
-                string testFilePath = Path.Combine(testArtifact.Location, fileName);
-                File.Copy(filePath, testFilePath);
-                yield return testFilePath;
+                foreach (var filePath in liveBuiltHosts)
+                {
+                    string fileName = Path.GetFileName(filePath);
+                    string testFilePath = Path.Combine(testArtifact.Location, fileName);
+                    File.Copy(filePath, testFilePath);
+                    testFilePaths.Add(testFilePath);
+                }
             }
+
+            return testFilePaths;
         }
 
         [Fact]
@@ -96,6 +98,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 // Codesigned file
                 File.Copy(filePath, codesignFilePath);
                 Assert.True(Codesign.IsAvailable);
+                Codesign.Run("--remove-signature", codesignFilePath).ExitCode.Should().Be(0);
                 Codesign.Run("-s -", codesignFilePath).ExitCode.Should().Be(0);
 
                 // Managed signed file
@@ -127,7 +130,18 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 // Set the file to be executable
                 File.SetUnixFileMode(managedSignedPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
-                Command.Create(managedSignedPath).Execute().ExitCode.Should().Be(0);
+                var result = Command.Create(managedSignedPath).CaptureStdErr().CaptureStdOut().Execute();
+                switch(result.ExitCode)
+                {
+                    case 0:
+                        break;
+                    case 149:
+                        result.StdErr.Should().Contain("This executable is not bound to a managed DLL to execute");
+                        break;
+                    default:
+                        Assert.Fail($"'{managedSignedPath}' returned an unexpected exit code: {result.ExitCode}\n\tStdOut:'{result.StdOut}'\n\tStdErr: '{result.StdErr}'");
+                        break;
+                }
             }
         }
 

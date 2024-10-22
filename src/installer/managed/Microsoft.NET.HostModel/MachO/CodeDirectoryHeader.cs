@@ -6,8 +6,11 @@ using System.Runtime.InteropServices;
 namespace Microsoft.NET.HostModel.MachO;
 
 /// <summary>
-/// Version 0x20400
+/// For code signature version 0x20400 only
 /// </summary>
+/// <remarks>
+/// Format based off of https://github.com/apple-oss-distributions/Security/blob/3dab46a11f45f2ffdbd70e2127cc5a8ce4a1f222/OSX/libsecurity_codesigning/lib/codedirectory.h#L193
+/// </remarks>
 [StructLayout(LayoutKind.Sequential)]
 internal struct CodeDirectoryHeader
 {

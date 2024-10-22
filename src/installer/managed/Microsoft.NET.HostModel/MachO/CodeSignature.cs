@@ -9,6 +9,9 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.NET.HostModel.MachO;
 
+/// <summary>
+/// Managed class with information about a Mach-O code signature.
+/// </summary>
 internal class CodeSignature
 {
     private (EmbeddedSignatureHeader Header, long FileOffset) _embeddedSignature;

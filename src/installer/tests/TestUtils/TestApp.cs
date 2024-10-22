@@ -93,8 +93,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 windowsGraphicalUserInterface: isWindowsGui,
                 assemblyToCopyResourcesFrom: copyResources ? AppDll : null,
                 disableCetCompat: disableCetCompat,
-                dotNetSearchOptions: dotNetRootOptions,
-                enableMacOSCodeSign: RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+                dotNetSearchOptions: dotNetRootOptions);
         }
 
         public enum MockedComponent

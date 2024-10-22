@@ -347,6 +347,7 @@ namespace Microsoft.NET.HostModel.Bundle
             HostWriter.SetAsBundle(bundlePath, headerOffset);
 
             // Sign the bundle if requested
+            // TODO: use managed code signing
             if (_macosCodesign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && Codesign.IsAvailable)
             {
                 var (exitCode, stdErr) = Codesign.Run("-s -", bundlePath);

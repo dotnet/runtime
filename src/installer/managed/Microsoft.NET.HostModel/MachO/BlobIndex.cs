@@ -5,6 +5,9 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.NET.HostModel.MachO;
 
+/// <summary>
+/// Format based off of https://github.com/apple-oss-distributions/Security/blob/3dab46a11f45f2ffdbd70e2127cc5a8ce4a1f222/OSX/libsecurity_codesigning/lib/cscdefs.h#L18
+/// </summary>
 [StructLayout(LayoutKind.Sequential)]
 internal struct BlobIndex
 {

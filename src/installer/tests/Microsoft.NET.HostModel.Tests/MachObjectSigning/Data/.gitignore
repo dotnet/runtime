@@ -1,5 +1,0 @@
-./rpath/**/*
-!./rpath/CMakeLists.txt
-!./rpath/library.c
-!a.out
-!a.o

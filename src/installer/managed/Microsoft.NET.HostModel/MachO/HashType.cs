@@ -5,10 +5,5 @@ namespace Microsoft.NET.HostModel.MachO;
 
 internal enum HashType : byte
 {
-    None,
-    SHA1,
-    SHA256,
-    SHA256Truncated,
-    SHA384,
-    SHA512,
+    SHA256 = 2,
 }

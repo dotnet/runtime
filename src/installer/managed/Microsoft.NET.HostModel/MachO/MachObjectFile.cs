@@ -89,7 +89,6 @@ internal class MachObjectFile
             throw new ArgumentException("File is too small", nameof(file));
 
         file.Write(0, ref _header);
-        file.Write(_codeSignatureLC.FileOffset, ref _codeSignatureLC.Command);
 
         if (_linkEditSegment.Command.IsDefault)
             file.Write(_linkEditSegment64.FileOffset, ref _linkEditSegment64.Command);
@@ -305,7 +304,7 @@ internal class MachObjectFile
     }
 
     /// <summary>
-    /// Clears the old signature and sets the codeSignatureLC to a
+    /// Clears the old signature and sets the codeSignatureLC to the proper size and offset for a new signature.
     /// </summary>
     private void AllocateCodeSignatureLC(string identifier)
     {
@@ -333,6 +332,11 @@ internal class MachObjectFile
         _codeSignatureLC = (new LinkEditCommand(MachLoadCommandType.CodeSignature, csOffset, csSize, _header), csPtr);
     }
 
+    /// <summary>
+    /// Creates a new code signature from the file.
+    /// The signature is composed of an Embedded Signature Superblob header, followed by a CodeDirectory blob, a Requirements blob, and a CMS blob.
+    /// The codesign tool also adds an empty Requirements blob and an empty CMS blob, which are not strictly required but are added here for compatibility.
+    /// </summary>
     private CodeSignature CreateSignature(MemoryMappedViewAccessor file, string identifier)
     {
         (EmbeddedSignatureHeader Header, long FileOffset) embeddedSignature;
@@ -366,10 +370,10 @@ internal class MachObjectFile
         Encoding.UTF8.GetBytes(_identifier).CopyTo(identifierPtr.identifier, 0);
 
         // Create the CodeDirectory blob
-        codeDirectory.Header = CreateCodeDirectory(identifier);
+        codeDirectory.Header = CreateCodeDirectoryHeader(identifier);
         cdHashes.Item1 = new byte[(GetCodeSlotCount() + SpecialSlotCount) * DefaultHashSize];
 
-        // fill in the CD hashes
+        // Fill in the CodeDirectory hashes
         {
             var hasher = GetDefaultIncrementalHash();
 
@@ -423,7 +427,7 @@ internal class MachObjectFile
             cmsWrapperBlob);
     }
 
-    private CodeDirectoryHeader CreateCodeDirectory(string identifier)
+    private CodeDirectoryHeader CreateCodeDirectoryHeader(string identifier)
     {
         CodeDirectoryVersion version = CodeDirectoryVersion.HighestVersion;
         uint identifierLength = GetIdentifierLength(identifier);
