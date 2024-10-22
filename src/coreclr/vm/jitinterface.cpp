@@ -7480,7 +7480,7 @@ enum class TransientCodeKind
 {
     None = 0,
 
-    // Scenario involving C++/CLI copy constructor scenario.
+    // C++/CLI copy constructor helper
     CopyConstructor,
 };
 
@@ -7493,7 +7493,7 @@ static bool IsMarkedTransientMethod(MethodDesc* pMD, TransientCodeKind& kind)
 
     // Transient code paths are currently limited to C++/CLI scenarios.
     // This can be changed when new non-Windows options are added.
-#ifdef TARGET_WINDOWS
+#ifdef FEATURE_IJW
     const void* data;
     ULONG dataLen;
     HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::TransientCodeAttribute, &data, &dataLen);

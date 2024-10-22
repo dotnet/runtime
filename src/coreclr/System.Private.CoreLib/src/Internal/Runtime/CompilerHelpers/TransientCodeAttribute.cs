@@ -13,7 +13,7 @@ namespace Internal.Runtime.CompilerHelpers
         None = 0,
 
         /// <summary>
-        /// Scenario involving C++/CLI copy constructor scenario.
+        /// C++/CLI copy constructor helper
         /// </summary>
         CopyConstructor,
     }
