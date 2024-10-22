@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Security.Cryptography.EcDsa.Tests;
 using System.Security.Cryptography.Pkcs;
 using Xunit;
 
@@ -419,6 +420,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public static void ECDsa_Export_DefaultKeyStorePermitsUnencryptedExports_ExportParameters(bool explicitParameters)
         {
+            if (explicitParameters && !ECDsaFactory.ExplicitCurvesSupported)
+            {
+                return;
+            }
+
             (byte[] pkcs12, ECDsa ecdsa) = CreateSimplePkcs12<ECDsa>();
 
             using (ecdsa)
