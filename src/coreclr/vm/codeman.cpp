@@ -2492,6 +2492,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
     pHp->mapBase         = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
     pHp->pHdrMap         = (DWORD*)(void*)pJitMetaHeap->AllocMem(S_SIZE_T(nibbleMapSize));
+    pHp->pHdrMap2        = (DWORD*)(void*)pJitMetaHeap->AllocMem(S_SIZE_T(nibbleMapSize));
 
     pHp->pLoaderAllocator = pInfo->m_pAllocator;
 
@@ -4018,7 +4019,7 @@ namespace {
 
         static TADDR FindMethodCode(RangeSection * pRangeSection, PCODE currentPC)
         {
-                LIMITED_METHOD_DAC_CONTRACT;
+            LIMITED_METHOD_DAC_CONTRACT;
 
             _ASSERTE(pRangeSection != NULL);
             _ASSERTE(pRangeSection->_flags & RangeSection::RANGE_SECTION_CODEHEAP);
@@ -4126,6 +4127,8 @@ namespace {
             // TODO: Is this check correct?
             _ASSERTE(pCode + codeSize <= pHp->startAddress + pHp->maxCodeHeapSize);
 
+            LinearLookupNibbleMap::SetUnlocked(pHp, pCode, TRUE);
+
             // remove bottom two bits to ensure alignment math
             // on ARM32 Thumb, the low bits indicate the thumb instruction set
             pCode = ALIGN_DOWN(pCode, CODE_ALIGN);
@@ -4140,7 +4143,7 @@ namespace {
 
             value = value << Pos2ShiftCount(nibbleIndex);
 
-            PTR_DWORD pMap = pHp->pHdrMap;
+            PTR_DWORD pMap = pHp->pHdrMap2;
 
             // assert that we don't overwrite an existing offset
             // the nibble is empty and the DWORD is not a pointer
@@ -4169,6 +4172,8 @@ namespace {
 
             _ASSERTE(pCode >= pHp->mapBase);
 
+            LinearLookupNibbleMap::SetUnlocked(pHp, pCode, FALSE);
+
             size_t delta = pCode - pHp->mapBase;
 
             size_t dwordIndex = GetDwordIndex(delta);
@@ -4176,7 +4181,7 @@ namespace {
 
             DWORD mask  = POS2MASK(nibbleIndex);
 
-            PTR_DWORD pMap = pHp->pHdrMap;
+            PTR_DWORD pMap = pHp->pHdrMap2;
 
             // assert that the nibble is not empty and the DWORD is not a pointer
             _ASSERTE(((*(pMap+dwordIndex)) & ~mask) && !IsPointer(*(pMap+dwordIndex)));
@@ -4206,11 +4211,14 @@ namespace {
             _ASSERTE(pRangeSection != NULL);
             _ASSERTE(pRangeSection->_flags & RangeSection::RANGE_SECTION_CODEHEAP);
 
+            TADDR knownAddr = LinearLookupNibbleMap::FindMethodCode(pRangeSection, currentPC);
+
             HeapList *pHp = pRangeSection->_pHeapList;
 
             if ((currentPC < pHp->startAddress) ||
                 (currentPC > pHp->endAddress))
             {
+                _ASSERTE(0 == knownAddr);
                 return 0;
             }
 
@@ -4220,7 +4228,7 @@ namespace {
             size_t dwordIndex = GetDwordIndex(delta);
             size_t nibbleIndex = GetNibbleIndex(delta);
 
-            PTR_DWORD pMap = pHp->pHdrMap;
+            PTR_DWORD pMap = pHp->pHdrMap2;
 
             DWORD dword;
             DWORD nibble;
@@ -4237,14 +4245,18 @@ namespace {
             // #2 if DWORD is a pointer, then we can return
             if (IsPointer(dword))
             {
-                return base + DecodePointer(dword);
+                TADDR newAddr = base + DecodePointer(dword);
+                _ASSERTE(newAddr == knownAddr);
+                return newAddr;
             }
 
             // #3 if DWORD is nibbles and corresponding nibble is intialized and points to an equal or earlier address, return the corresponding address
             nibble = GetNibble(dword, nibbleIndex);
             if ((nibble) && (nibble <= offset) )
             {
-                return base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
+                TADDR newAddr = base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
+                _ASSERTE(newAddr == knownAddr);
+                return newAddr;
             }
 
             // #4 find preceeding nibble and return if found
@@ -4254,13 +4266,16 @@ namespace {
                 nibble = GetNibble(dword, nibbleIndex);
                 if (nibble)
                 {
-                    return base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
+                    TADDR newAddr = base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
+                    _ASSERTE(newAddr == knownAddr);
+                    return newAddr;
                 }
             }
 
             // #5.1 read previous DWORD. If no such DWORD return 0.
             if (dwordIndex == 0)
             {
+                _ASSERTE(0 == knownAddr);
                 return 0;
             }
             dwordIndex--;
@@ -4272,7 +4287,9 @@ namespace {
             // #5.2 if DWORD is a pointer, then we can return
             if (IsPointer(dword))
             {
-                return base + DecodePointer(dword);
+                TADDR newAddr = base + DecodePointer(dword);
+                _ASSERTE(newAddr == knownAddr);
+                return newAddr;
             }
 
             // #5.4 find preceeding nibble and return if found
@@ -4281,11 +4298,14 @@ namespace {
                 nibble = GetNibble(dword, nibbleIndex);
                 if (nibble)
                 {
-                    return base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
+                    TADDR newAddr = base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
+                    _ASSERTE(newAddr == knownAddr);
+                    return newAddr;
                 }
             }
 
             // If none of the above was found, return 0
+            _ASSERTE(0 == knownAddr);
             return 0;
         }
     };
