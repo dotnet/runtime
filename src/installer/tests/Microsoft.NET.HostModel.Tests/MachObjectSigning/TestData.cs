@@ -10,10 +10,16 @@ internal class TestData
     {
         internal static List<(string Name, Stream Data)> GetAll()
         {
-            return new DirectoryInfo("MachO")
-                .GetFiles()
-                .Select(f => (f.Name, (Stream)f.Open(FileMode.Open, FileAccess.Read)))
+            return GetRecursiveFiles(new DirectoryInfo("MachO"))
+                .Select(f => (f.UniqueName, (Stream)f.File.Open(FileMode.Open, FileAccess.Read)))
                 .ToList();
+        }
+
+        internal static IEnumerable<(FileInfo File, string UniqueName)> GetRecursiveFiles(DirectoryInfo dir, string prefix = "")
+        {
+            var files = dir.GetFiles().Select(f => (f, $"{prefix}{dir.Name}-{f.Name}"));
+            var recursiveFiles = dir.GetDirectories().SelectMany(sd => GetRecursiveFiles(sd, $"{prefix}{dir.Name}-"));
+            return files.Concat(recursiveFiles);
         }
 
         internal static (string Name, Stream Data) Get(string name)
