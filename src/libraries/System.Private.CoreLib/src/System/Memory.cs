@@ -327,7 +327,9 @@ namespace System
                     // least to be in-bounds when compared with the original Memory<T> instance, so using the span won't
                     // AV the process.
 
-                    int desiredStartIndex = _index & ReadOnlyMemory<T>.RemoveFlagsBitMask;
+                    // We use 'nuint' because it gives us a free early zero-extension to 64 bits when running on a 64-bit platform.
+                    nuint desiredStartIndex = (uint)_index & (uint)ReadOnlyMemory<T>.RemoveFlagsBitMask;
+
                     int desiredLength = _length;
 
 #if TARGET_64BIT
@@ -343,7 +345,7 @@ namespace System
                     }
 #endif
 
-                    refToReturn = ref Unsafe.Add(ref refToReturn, (uint)desiredStartIndex);
+                    refToReturn = ref Unsafe.Add(ref refToReturn, desiredStartIndex);
                     lengthOfUnderlyingSpan = desiredLength;
                 }
 
