@@ -249,12 +249,12 @@ namespace System
                     // least to be in-bounds when compared with the original Memory<T> instance, so using the span won't
                     // AV the process.
 
-                    nuint desiredStartIndex = (uint)_index & (uint)RemoveFlagsBitMask;
+                    int desiredStartIndex = _index & RemoveFlagsBitMask;
                     int desiredLength = _length;
 
 #if TARGET_64BIT
                     // See comment in Span<T>.Slice for how this works.
-                    if ((ulong)desiredStartIndex + (ulong)(uint)desiredLength > (ulong)(uint)lengthOfUnderlyingSpan)
+                    if ((ulong)(uint)desiredStartIndex + (ulong)(uint)desiredLength > (ulong)(uint)lengthOfUnderlyingSpan)
                     {
                         ThrowHelper.ThrowArgumentOutOfRangeException();
                     }
@@ -265,7 +265,7 @@ namespace System
                     }
 #endif
 
-                    refToReturn = ref Unsafe.Add(ref refToReturn, (nint)desiredStartIndex);
+                    refToReturn = ref Unsafe.Add(ref refToReturn, (uint)desiredStartIndex);
                     lengthOfUnderlyingSpan = desiredLength;
                 }
 
