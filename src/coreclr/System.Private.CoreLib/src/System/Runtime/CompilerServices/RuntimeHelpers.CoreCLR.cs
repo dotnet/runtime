@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if TARGET_WINDOWS
 using Internal.Runtime.CompilerHelpers;
-#endif
-
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -380,10 +377,10 @@ namespace System.Runtime.CompilerServices
             return x.CompareTo(y);
         }
 
-#if TARGET_WINDOWS
+        // Even though this is a C++/CLI API, we leave it for all platforms since there
+        // is no Trimmer feature switch for the generated ILLink.Descriptors.xml.
         [TransientCode(TransientCodeKind.CopyConstructor)]
         internal static extern unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged;
-#endif
 
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
