@@ -133,6 +133,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         TemporaryEntryPointAssigned = 0x04,
     }
 
+    // on MethodDescChunk.FlagsAndTokenRange
+    [Flags]
+    internal enum MethodDescChunkFlags : ushort
+    {
+        // Has this chunk had its methods been determined eligible for tiered compilation or not
+        DeterminedIsEligibleForTieredCompilation = 0x4000,
+        // Is this chunk associated with a LoaderModule directly? If this flag is set, then the LoaderModule pointer is placed at the end of the chunk.
+        LoaderModuleAttachedToChunk              = 0x8000,
+    }
+
     internal struct MethodDesc
     {
         private readonly Data.MethodDesc _desc;
@@ -140,11 +150,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         private readonly Target _target;
 
         internal TargetPointer Address { get; init; }
-        internal MethodDesc(Target target, TargetPointer methodDescPointer, Data.MethodDesc desc, Data.MethodDescChunk chunk)
+
+        internal TargetPointer ChunkAddress { get; init; }
+
+        internal MethodDesc(Target target, TargetPointer methodDescPointer, Data.MethodDesc desc, TargetPointer methodDescChunkAddress, Data.MethodDescChunk chunk)
         {
             _target = target;
             _desc = desc;
             _chunk = chunk;
+            ChunkAddress = methodDescChunkAddress;
             Address = methodDescPointer;
 
             Token = ComputeToken(target, desc, chunk);
@@ -172,6 +186,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         private bool HasFlags(MethodDescFlags flags) => (_desc.Flags & (ushort)flags) != 0;
         internal bool HasFlags(MethodDescFlags3 flags) => (_desc.Flags3AndTokenRemainder & (ushort)flags) != 0;
+
+        internal bool HasFlags(MethodDescChunkFlags flags) => (_chunk.FlagsAndTokenRange & (ushort)flags) != 0;
 
         public bool IsEligibleForTieredCompilation => HasFlags(MethodDescFlags3.IsEligibleForTieredCompilation);
 
@@ -220,6 +236,19 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         internal int AdditionalPointersCount => AdditionalPointersHelper(MethodDescFlags.MethodDescAdditionalPointersMask);
         #endregion Additional Pointers
+
+        internal bool IsLoaderModuleAttachedToChunk => HasFlags(MethodDescChunkFlags.LoaderModuleAttachedToChunk);
+
+        public ulong SizeOfChunk
+        {
+            get
+            {
+                ulong typeSize = _target.GetTypeInfo(DataType.MethodDescChunk).Size!.Value;
+                ulong chunkSize = (ulong)(_chunk.Size + 1) * _target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
+                ulong extra = IsLoaderModuleAttachedToChunk ? (ulong)_target.PointerSize : 0;
+                return typeSize + chunkSize + extra;
+            }
+        }
 
     }
 
@@ -681,7 +710,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             {
                 throw new InvalidOperationException("cached MethodDesc data but not its containing MethodDescChunk");
             }
-            MethodDesc validatedMethodDesc = new MethodDesc(_target, methodDescPointer, methodDescData, methodDescChunkData);
+            MethodDesc validatedMethodDesc = new MethodDesc(_target, methodDescPointer, methodDescData, mdescChunkPtr, methodDescChunkData);
             _ = _methodDescs.TryAdd(methodDescPointer, validatedMethodDesc);
             return new MethodDescHandle(methodDescPointer);
         }
@@ -695,7 +724,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         Data.MethodDescChunk validatedMethodDescChunkData = _target.ProcessedData.GetOrAdd<Data.MethodDescChunk>(methodDescChunkPointer);
         Data.MethodDesc validatedMethodDescData = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(methodDescPointer);
 
-        MethodDesc trustedMethodDescF = new MethodDesc(_target, methodDescPointer, validatedMethodDescData, validatedMethodDescChunkData);
+        MethodDesc trustedMethodDescF = new MethodDesc(_target, methodDescPointer, validatedMethodDescData, methodDescChunkPointer, validatedMethodDescChunkData);
         _ = _methodDescs.TryAdd(methodDescPointer, trustedMethodDescF);
         return new MethodDescHandle(methodDescPointer);
     }
@@ -901,13 +930,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private TargetPointer GetLoaderModule(MethodDesc md)
     {
-
-        if (HasMethodInstantiation(md) && !IsGenericMethodDefinition(md))
+        // MethodDesc::GetLoaderModule:
+        // return GetMethodDescChunk()->GetLoaderModule();
+        // MethodDescChunk::GetLoaderModule:
+        if (md.IsLoaderModuleAttachedToChunk)
         {
-            // TODO[cdac]: don't reimplement ComputeLoaderModuleWorker,
-            // but try caching the LoaderModule (or just the LoaderAllocator?) on the
-            // MethodDescChunk (and maybe MethodTable?).
-            throw new NotImplementedException();
+            TargetPointer methodDescChunkPointer = md.ChunkAddress;
+            TargetPointer endOfChunk = methodDescChunkPointer + md.SizeOfChunk;
+            TargetPointer ppLoaderModule = endOfChunk - (ulong)_target.PointerSize;
+            return _target.ReadPointer(ppLoaderModule);
         }
         else
         {
