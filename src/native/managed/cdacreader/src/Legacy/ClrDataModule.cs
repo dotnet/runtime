@@ -34,6 +34,9 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
         if (_legacyModulePointer == 0)
             return CustomQueryInterfaceResult.NotHandled;
 
+        // Legacy DAC implementation of IXCLRDataModule handles QIs for IMetaDataImport by creating and
+        // passing out an implementation of IMetaDataImport. Note that it does not do COM aggregation.
+        // It simply returns a completely separate object. See ClrDataModule::QueryInterface in task.cpp
         if (iid == IID_IMetaDataImport && Marshal.QueryInterface(_legacyModulePointer, iid, out ppv) >= 0)
             return CustomQueryInterfaceResult.Handled;
 
