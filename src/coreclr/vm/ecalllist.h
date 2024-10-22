@@ -393,6 +393,10 @@ FCFuncStart(gComAwareWeakReferenceFuncs)
     FCFuncElement("HasInteropInfo", ComAwareWeakReferenceNative::HasInteropInfo)
 FCFuncEnd()
 
+FCFuncStart(gStaticsHelperFuncs)
+    FCFuncElement("VolatileReadAsByref", JIT_VolatileReadAsByref)
+FCFuncEnd()
+
 //
 //
 // Class definitions
@@ -422,6 +426,7 @@ FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
+FCClassElement("StaticsHelper", "System.Runtime.CompilerServices", gStaticsHelperFuncs)
 FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)

@@ -884,8 +884,8 @@ namespace System.Runtime.CompilerServices
     internal unsafe ref struct DynamicStaticsInfo
     {
         public const int ISCLASSINITED = 1;
-        public ref byte _pGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
-        public ref byte _pNonGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
+        public IntPtr _pGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
+        public IntPtr _pNonGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
         public unsafe MethodTable* _methodTable;
     }
 
@@ -967,22 +967,16 @@ namespace System.Runtime.CompilerServices
 
         public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive)) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
 
-        public ref DynamicStaticsInfo DynamicStaticsInfo
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static DynamicStaticsInfo* GetDynamicStaticsInfo(MethodTableAuxiliaryData* pAuxiliaryData)
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref Unsafe.AddByteOffset(ref Unsafe.As<uint, DynamicStaticsInfo>(ref Flags), -sizeof(DynamicStaticsInfo));
-            }
+            return (DynamicStaticsInfo*)(((byte*)&pAuxiliaryData->Flags) - sizeof(DynamicStaticsInfo));
         }
 
-        public ref ThreadStaticsInfo ThreadStaticsInfo
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ThreadStaticsInfo* GetThreadStaticsInfo(MethodTableAuxiliaryData* pAuxiliaryData)
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref Unsafe.AddByteOffset(ref Unsafe.As<uint, ThreadStaticsInfo>(ref Flags), -sizeof(ThreadStaticsInfo));
-            }
+            return (ThreadStaticsInfo*)(((byte*)&pAuxiliaryData->Flags) - sizeof(ThreadStaticsInfo));
         }
     }
 

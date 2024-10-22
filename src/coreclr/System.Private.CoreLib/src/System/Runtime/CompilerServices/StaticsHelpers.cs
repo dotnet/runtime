@@ -16,18 +16,22 @@ namespace System.Runtime.CompilerServices
         [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void GetThreadStaticsByMethodTable(ByteRefOnStack result, MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [Intrinsic]
+        private static extern ref byte VolatileReadAsByref(ref IntPtr address);
+
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static ref byte GetNonGCStaticBaseSlow(MethodTable* mt)
         {
             InitHelpers.InitClassSlow(mt);
-            return ref MethodTable.MaskStaticsPointer(ref mt->AuxiliaryData->DynamicStaticsInfo._pNonGCStatics);
+            return ref MethodTable.MaskStaticsPointer(ref VolatileReadAsByref(ref MethodTableAuxiliaryData.GetDynamicStaticsInfo(mt->AuxiliaryData)->_pNonGCStatics));
         }
 
         [DebuggerHidden]
         private static ref byte GetNonGCStaticBase(MethodTable* mt)
         {
-            ref byte nonGCStaticBase = ref mt->AuxiliaryData->DynamicStaticsInfo._pNonGCStatics;
+            ref byte nonGCStaticBase = ref VolatileReadAsByref(ref MethodTableAuxiliaryData.GetDynamicStaticsInfo(mt->AuxiliaryData)->_pNonGCStatics);
 
             if ((((nuint)Unsafe.AsPointer(ref nonGCStaticBase)) & DynamicStaticsInfo.ISCLASSINITED) != 0)
                 return ref GetNonGCStaticBaseSlow(mt);
@@ -38,7 +42,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         private static ref byte GetDynamicNonGCStaticBase(DynamicStaticsInfo *dynamicStaticsInfo)
         {
-            ref byte nonGCStaticBase = ref dynamicStaticsInfo->_pNonGCStatics;
+            ref byte nonGCStaticBase = ref VolatileReadAsByref(ref dynamicStaticsInfo->_pNonGCStatics);
 
             if ((((nuint)Unsafe.AsPointer(ref nonGCStaticBase)) & DynamicStaticsInfo.ISCLASSINITED) != 0)
                 return ref GetNonGCStaticBaseSlow(dynamicStaticsInfo->_methodTable);
@@ -51,13 +55,13 @@ namespace System.Runtime.CompilerServices
         private static ref byte GetGCStaticBaseSlow(MethodTable* mt)
         {
             InitHelpers.InitClassSlow(mt);
-            return ref MethodTable.MaskStaticsPointer(ref mt->AuxiliaryData->DynamicStaticsInfo._pGCStatics);
+            return ref MethodTable.MaskStaticsPointer(ref VolatileReadAsByref(ref MethodTableAuxiliaryData.GetDynamicStaticsInfo(mt->AuxiliaryData)->_pGCStatics));
         }
 
         [DebuggerHidden]
         private static ref byte GetGCStaticBase(MethodTable* mt)
         {
-            ref byte gcStaticBase = ref mt->AuxiliaryData->DynamicStaticsInfo._pGCStatics;
+            ref byte gcStaticBase = ref VolatileReadAsByref(ref MethodTableAuxiliaryData.GetDynamicStaticsInfo(mt->AuxiliaryData)->_pGCStatics);
 
             if ((((nuint)Unsafe.AsPointer(ref gcStaticBase)) & DynamicStaticsInfo.ISCLASSINITED) != 0)
                 return ref GetGCStaticBaseSlow(mt);
@@ -68,7 +72,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         private static ref byte GetDynamicGCStaticBase(DynamicStaticsInfo *dynamicStaticsInfo)
         {
-            ref byte gcStaticBase = ref dynamicStaticsInfo->_pGCStatics;
+            ref byte gcStaticBase = ref VolatileReadAsByref(ref dynamicStaticsInfo->_pGCStatics);
 
             if ((((nuint)Unsafe.AsPointer(ref gcStaticBase)) & DynamicStaticsInfo.ISCLASSINITED) != 0)
                 return ref GetGCStaticBaseSlow(dynamicStaticsInfo->_methodTable);
@@ -223,7 +227,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         private static ref byte GetNonGCThreadStaticBase(MethodTable* mt)
         {
-            int index = mt->AuxiliaryData->ThreadStaticsInfo.NonGCTlsIndex;
+            int index = MethodTableAuxiliaryData.GetThreadStaticsInfo(mt->AuxiliaryData)->NonGCTlsIndex;
             if (IsIndexAllocated(index))
                 return ref GetThreadLocalStaticBaseByIndex(index, false);
             else
@@ -233,7 +237,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         private static ref byte GetGCThreadStaticBase(MethodTable* mt)
         {
-            int index = mt->AuxiliaryData->ThreadStaticsInfo.GCTlsIndex;
+            int index = MethodTableAuxiliaryData.GetThreadStaticsInfo(mt->AuxiliaryData)->GCTlsIndex;
             if (IsIndexAllocated(index))
                 return ref GetThreadLocalStaticBaseByIndex(index, true);
             else
