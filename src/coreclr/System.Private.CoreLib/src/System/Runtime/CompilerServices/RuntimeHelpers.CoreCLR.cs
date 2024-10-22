@@ -970,13 +970,13 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static DynamicStaticsInfo* GetDynamicStaticsInfo(MethodTableAuxiliaryData* pAuxiliaryData)
         {
-            return (DynamicStaticsInfo*)(((byte*)&pAuxiliaryData->Flags) - sizeof(DynamicStaticsInfo));
+            return (DynamicStaticsInfo*)(((byte*)pAuxiliaryData) - sizeof(DynamicStaticsInfo));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ThreadStaticsInfo* GetThreadStaticsInfo(MethodTableAuxiliaryData* pAuxiliaryData)
         {
-            return (ThreadStaticsInfo*)(((byte*)&pAuxiliaryData->Flags) - sizeof(ThreadStaticsInfo));
+            return (ThreadStaticsInfo*)(((byte*)pAuxiliaryData) - sizeof(ThreadStaticsInfo));
         }
     }
 
