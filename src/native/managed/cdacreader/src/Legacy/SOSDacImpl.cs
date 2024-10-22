@@ -465,20 +465,22 @@ internal sealed unsafe partial class SOSDacImpl
 
         int hr;
         nint legacyModulePointer = 0;
-        IXCLRDataModule? legacyModule = null;
+        object? legacyModule = null;
         if (_legacyImpl is not null)
         {
             hr = _legacyImpl.GetModule(addr, (void**)&legacyModulePointer);
             if (hr < 0)
                 return hr;
 
-            legacyModule = cw.GetOrCreateObjectForComInstance(legacyModulePointer, CreateObjectFlags.None) as IXCLRDataModule;
-
-            // Lifetime is now managed via the QI-ed IXCLRDataModule
-            Marshal.Release(legacyModulePointer);
+            legacyModule = cw.GetOrCreateObjectForComInstance(legacyModulePointer, CreateObjectFlags.None);
         }
 
-        ClrDataModule module = new(addr, _target, legacyModule, legacyModulePointer);
+        ClrDataModule module = new(addr, _target, legacyModulePointer, legacyModule);
+
+        // Lifetime is now managed via ClrDataModule
+        if (legacyModulePointer != 0)
+            Marshal.Release(legacyModulePointer);
+
         nint iunknownPtr = cw.GetOrCreateComInterfaceForObject(module, CreateComInterfaceFlags.None);
         hr = Marshal.QueryInterface(iunknownPtr, typeof(IXCLRDataModule).GUID, out nint modPtr);
         if (iunknownPtr != 0)

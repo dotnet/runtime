@@ -109,6 +109,14 @@ internal unsafe partial interface IXCLRDataModule
 }
 
 [GeneratedComInterface]
+[Guid("34625881-7EB3-4524-817B-8DB9D064C760")]
+internal unsafe partial interface IXCLRDataModule2
+{
+    [PreserveSig]
+    int SetJITCompilerFlags(uint flags);
+}
+
+[GeneratedComInterface]
 [Guid("5c552ab6-fc09-4cb3-8e36-22fa03c798b7")]
 internal unsafe partial interface IXCLRDataProcess
 {

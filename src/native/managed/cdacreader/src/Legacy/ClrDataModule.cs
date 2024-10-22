@@ -9,19 +9,21 @@ using System.Runtime.InteropServices.Marshalling;
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [GeneratedComClass]
-internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRDataModule
+internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRDataModule, IXCLRDataModule2
 {
     private readonly TargetPointer _address;
     private readonly Target _target;
-    private readonly IXCLRDataModule? _legacyModule;
     private readonly nint _legacyModulePointer;
+    private readonly IXCLRDataModule? _legacyModule;
+    private readonly IXCLRDataModule2? _legacyModule2;
 
-    public ClrDataModule(TargetPointer address, Target target, IXCLRDataModule? legacyModule, nint legacyModulePointer)
+    public ClrDataModule(TargetPointer address, Target target, nint legacyModulePointer, object? legacyImpl)
     {
         _address = address;
         _target = target;
-        _legacyModule = legacyModule;
         _legacyModulePointer = legacyModulePointer;
+        _legacyModule = legacyImpl as IXCLRDataModule;
+        _legacyModule2 = legacyImpl as IXCLRDataModule2;
     }
 
     private static readonly Guid IID_IMetaDataImport = Guid.Parse("7DAC8207-D3AE-4c75-9B67-92801A497D44");
@@ -174,4 +176,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
 
     int IXCLRDataModule.GetVersionId(Guid* vid)
         => _legacyModule is not null ? _legacyModule.GetVersionId(vid) : HResults.E_NOTIMPL;
+
+    int IXCLRDataModule2.SetJITCompilerFlags(uint flags)
+        => _legacyModule2 is not null ? _legacyModule2.SetJITCompilerFlags(flags) : HResults.E_NOTIMPL;
 }
