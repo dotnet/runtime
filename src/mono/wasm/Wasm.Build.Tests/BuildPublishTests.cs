@@ -53,9 +53,9 @@ namespace Wasm.Build.Tests
             bool isPublish = false;
             BuildTemplateProject(info,
                         new BuildProjectOptions(
-                            config,
+                            info.Configuration,
                             info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
+                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
                             ExpectedFileType: GetExpectedFileType(info, isPublish),
                             IsPublish: isPublish
                         ));
@@ -63,20 +63,20 @@ namespace Wasm.Build.Tests
             if (!_buildContext.TryGetBuildFor(info, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
 
-            await RunBuiltBrowserApp(info.Configuration, info.ProjectFilePath);
+            RunOptions runOptions = new(info.Configuration);
+            await RunForBuildWithDotnetRun(runOptions);
 
             isPublish = true;
             BuildTemplateProject(info,
                         new BuildProjectOptions(
-                            config,
+                            info.Configuration,
                             info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
+                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
                             ExpectedFileType: GetExpectedFileType(info, isPublish),
                             IsPublish: isPublish,
                             UseCache: false
                         ));
-            
-            await RunPublishedBrowserApp(info.Configuration);
+            await RunForPublishWithWebServer(runOptions);
         }
 
         [Theory]
@@ -113,7 +113,8 @@ namespace Wasm.Build.Tests
             if (!_buildContext.TryGetBuildFor(info, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
 
-            await RunBuiltBrowserApp(info.Configuration, info.ProjectFilePath);
+            RunOptions runOptions = new(info.Configuration);
+            await RunForBuildWithDotnetRun(runOptions);
 
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
     
@@ -144,7 +145,7 @@ namespace Wasm.Build.Tests
             pathsDict["dotnet.js.map"] = (pathsDict["dotnet.js.map"].fullPath, unchanged: false);
             pathsDict["dotnet.runtime.js.map"] = (pathsDict["dotnet.runtime.js.map"].fullPath, unchanged: false);
             CompareStat(firstBuildStat, publishStat, pathsDict);
-            await RunPublishedBrowserApp(info.Configuration);
+            await RunForPublishWithWebServer(runOptions);
 
             // second build
             isPublish = false;

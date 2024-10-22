@@ -21,12 +21,13 @@ namespace Wasm.Build.Tests
 
         public static IEnumerable<object?[]> MainWithArgsTestData(bool aot)
             => ConfigWithAOTData(aot).Multiply(
-                        new object?[] { new object?[] { "abc", "foobar"} },
+                        // ToDo:
+                        // ActiveIssue - passing args to the program does not work, possible error in the test logic
+                        // new object?[] { new object?[] { "abc", "foobar"} },
                         new object?[] { new object?[0] }
             ).UnwrapItemsAsArrays();
 
         [Theory]
-        [ActiveIssue("ToDo: passing args to the program does not work, possible error in the test logic")]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false })]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true })]
         public async Task AsyncMainWithArgs(string config, bool aot, string[] args)
@@ -54,7 +55,8 @@ namespace Wasm.Build.Tests
                 new Dictionary<string, string> {
                     { ".withApplicationArguments(\"start\")", $".withApplicationArgumentsFromQuery()" }
                 });
-            _testOutput.WriteLine ($"-- args: {args}, name: {projectContentsName}");
+            string argsStr = string.Join(" ", args);
+            _testOutput.WriteLine ($"-- args: {argsStr}, name: {projectContentsName}");
 
             bool isPublish = true;
             BuildTemplateProject(info,
@@ -68,9 +70,8 @@ namespace Wasm.Build.Tests
 
             int argsCount = args.Length;
             int expectedCode = 42 + argsCount;
-            string argsStr = string.Join(" ", args);
-            string output = await RunPublishedBrowserApp(info.Configuration, extraArgs: argsStr, expectedExitCode: expectedCode);
-            Console.WriteLine(output);
+            RunOptions runOptions = new(info.Configuration, ExtraArgs: argsStr);
+            string output = await RunForPublishWithWebServer(runOptions);
             Assert.Contains($"args#: {argsCount}", output);
             foreach (var arg in args)
                 Assert.Contains($"arg: {arg}", output);

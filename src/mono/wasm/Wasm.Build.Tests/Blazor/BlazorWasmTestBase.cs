@@ -174,85 +174,42 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 
     // Keeping these methods with explicit Build/Publish in the name
     // so in the test code it is evident which is being run!
-    public Task BlazorRunForBuildWithDotnetRun(RunOptions runOptions)
-        => BlazorRunTest(runOptions with { Host = RunHost.DotnetRun });
+    public async Task<string> BlazorRunForBuildWithDotnetRun(RunOptions runOptions)
+        => await BlazorRunTest(runOptions with { Host = RunHost.DotnetRun });
 
-    public Task BlazorRunForPublishWithWebServer(RunOptions runOptions)
-        => BlazorRunTest(runOptions with { Host = RunHost.WebServer });
+    public async Task<string> BlazorRunForPublishWithWebServer(RunOptions runOptions)
+        => await BlazorRunTest(runOptions with { Host = RunHost.WebServer });
 
-    public Task BlazorRunTest(RunOptions runOptions) => runOptions.Host switch
+    public async Task<string> BlazorRunTest(RunOptions runOptions)
     {
-        RunHost.DotnetRun =>
-                BlazorRunTest($"run -c {runOptions.Configuration} --no-build", _projectDir!, runOptions),
-
-        RunHost.WebServer =>
-                BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
-                     Path.GetFullPath(Path.Combine(GetBlazorBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")),
-                     runOptions),
-
-        _ => throw new NotImplementedException(runOptions.Host.ToString())
-    };
-
-    public async Task BlazorRunTest(string runArgs,
-                                    string workingDirectory,
-                                    RunOptions runOptions)
-    {
-        if (!string.IsNullOrEmpty(runOptions.ExtraArgs))
-            runArgs += $" {runOptions.ExtraArgs}";
-
-        runOptions.ServerEnvironment?.ToList().ForEach(
-            kv => s_buildEnv.EnvVars[kv.Key] = kv.Value);
-
-        using RunCommand runCommand = new RunCommand(s_buildEnv, _testOutput);
-        ToolCommand cmd = runCommand.WithWorkingDirectory(workingDirectory);
-
-        await using var runner = new BrowserRunner(_testOutput);
-        var page = await runner.RunAsync(
-            cmd,
-            runArgs,
-            onConsoleMessage: OnConsoleMessage,
-            onServerMessage: runOptions.OnServerMessage,
-            onError: OnErrorMessage,
-            modifyBrowserUrl: browserUrl => new Uri(new Uri(browserUrl), runOptions.BrowserPath + runOptions.QueryString).ToString());
-
-        _testOutput.WriteLine("Waiting for page to load");
-        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new () { Timeout = 1 * 60 * 1000 });
-
-        if (runOptions.CheckCounter)
+        if (runOptions.ExecuteAfterLoaded is null)
         {
-            await page.Locator("text=Counter").ClickAsync();
-            var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-            Assert.Equal("Current count: 0", txt);
+            runOptions = runOptions with { ExecuteAfterLoaded = async (runOptions, page) =>
+                {
+                    if (runOptions.CheckCounter)
+                    {
+                        await page.Locator("text=Counter").ClickAsync();
+                        var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+                        Assert.Equal("Current count: 0", txt);
 
-            await page.Locator("text=\"Click me\"").ClickAsync();
-            await Task.Delay(300);
-            txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-            Assert.Equal("Current count: 1", txt);
+                        await page.Locator("text=\"Click me\"").ClickAsync();
+                        await Task.Delay(300);
+                        txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+                        Assert.Equal("Current count: 1", txt);
+                    }
+                }
+            };
         }
-
-        if (runOptions.Test is not null)
-            await runOptions.Test(page);
-
-        _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
-        await Task.Delay(10_000);
-
-        void OnConsoleMessage(IPage page, IConsoleMessage msg)
+        switch (runOptions.Host)
         {
-            _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
-
-            runOptions.OnConsoleMessage?.Invoke(page, msg);
-
-            if (runOptions.DetectRuntimeFailures)
-            {
-                if (msg.Text.Contains("[MONO] * Assertion") || msg.Text.Contains("Error: [MONO] "))
-                    throw new XunitException($"Detected a runtime failure at line: {msg.Text}");
-            }
-        }
-
-        void OnErrorMessage(string msg)
-        {
-            _testOutput.WriteLine($"[ERROR] {msg}");
-            runOptions.OnErrorMessage?.Invoke(msg);
+            case RunHost.DotnetRun:
+                return await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", _projectDir!, runOptions);
+            case RunHost.WebServer:
+                return await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
+                    Path.GetFullPath(Path.Combine(GetBlazorBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")),
+                    runOptions);
+            default:
+                throw new NotImplementedException(runOptions.Host.ToString());
         }
     }
 

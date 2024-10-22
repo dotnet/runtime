@@ -116,7 +116,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     //     }
 
     //     StringBuilder sbOutput = new();
-    //     await BlazorRunTest(new RunOptions()
+    //     await RunBrowserTest(new RunOptions()
     //     {
     //         Configuration = config,
     //         Host = publish ? RunHost.WebServer : RunHost.DotnetRun,

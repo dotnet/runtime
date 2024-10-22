@@ -54,7 +54,7 @@ public class IcuTests : IcuTestsBase
     [Theory]
     [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { "Release" })]
     public async Task FullIcuFromRuntimePackWithInvariant(string config="Release", bool aot=false, bool invariant=true, bool fullIcu=true, string testedLocales="Array.Empty<Locale>()") =>
-        await BuildAndRunIcuTest(
+        await PublishAndRunIcuTest(
             config,
             Template.WasmBrowser,
             aot,
@@ -75,7 +75,7 @@ public class IcuTests : IcuTestsBase
         string testedLocales = fullIcu ? s_fullIcuTestedLocales : s_customIcuTestedLocales;
         GlobalizationMode globalizationMode = fullIcu ? GlobalizationMode.FullIcu : GlobalizationMode.Custom;
         string customIcuFile = fullIcu ? "" : CustomIcuPath;
-        string output = await BuildAndRunIcuTest(config, Template.WasmBrowser, aot, testedLocales, globalizationMode, extraProperties, icuFileName: customIcuFile);
+        string output = await PublishAndRunIcuTest(config, Template.WasmBrowser, aot, testedLocales, globalizationMode, extraProperties, icuFileName: customIcuFile);
         if (fullIcu)
             Assert.Contains($"$({customIcuProperty}) has no effect when $({fullIcuProperty}) is set to true.", output);
     }

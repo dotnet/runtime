@@ -3,10 +3,13 @@ using System.Globalization;
 using System.Linq;
 
 // https://github.com/dotnet/runtime/blob/main/docs/design/features/globalization-invariant-mode.md#cultures-and-culture-data
+
+
+void WriteTestOutput(string output) => Console.WriteLine($"TestOutput -> {output}");
 try
-{
+{    
     CultureInfo culture = new ("es-ES", false);
-    Console.WriteLine($"es-ES: Is Invariant LCID: {culture.LCID == CultureInfo.InvariantCulture.LCID}");
+    WriteTestOutput($"es-ES: Is Invariant LCID: {culture.LCID == CultureInfo.InvariantCulture.LCID}");
    
     string expectedNativeName = "espa\u00F1ol (Espa\u00F1a)";
     string nativeName = culture.NativeName;
@@ -15,8 +18,8 @@ try
 }
 catch (CultureNotFoundException cnfe)
 {
-    Console.WriteLine($"Could not create es-ES culture: {cnfe.Message}");
+    WriteTestOutput($"Could not create es-ES culture: {cnfe.Message}");
 }
 
-Console.WriteLine($"CurrentCulture.NativeName: {CultureInfo.CurrentCulture.NativeName}");
+WriteTestOutput($"CurrentCulture.NativeName: {CultureInfo.CurrentCulture.NativeName}");
 return 42;

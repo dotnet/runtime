@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Playwright;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -27,7 +28,7 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     private Dictionary<string, string> browserProgramReplacements = new Dictionary<string, string>
         {
-            { "while(true)", $"int i = 0;{Environment.NewLine}while(i++ < 10)" },
+            { "while(true)", $"int i = 0;{Environment.NewLine}while(i++ < 0)" },  // the test has to be fast, skip the loop
             { "partial class StopwatchSample", $"return 42;{Environment.NewLine}partial class StopwatchSample" }
         };
 
@@ -174,34 +175,83 @@ public class WasmTemplateTestsBase : BuildTestBase
         File.WriteAllText(mainJsPath, updatedMainJsContent);
     }
 
-    // ToDo: consolidate with BlazorRunTest
-    protected async Task<string> RunBuiltBrowserApp(string config, string projectFile, string language = "en-US", string extraArgs = "", string testScenario = "", int expectedExitCode = 42)
-        => await RunBrowser(
-            $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console {extraArgs}",
-            _projectDir!,
-            expectedExitCode: expectedExitCode,
-            language,
-            testScenario: testScenario);
+    // Keeping these methods with explicit Build/Publish in the name
+    // so in the test code it is evident which is being run!
+    public async Task<string> RunForBuildWithDotnetRun(RunOptions runOptions)
+        => await BrowserRun(runOptions with { Host = RunHost.DotnetRun });
 
-    protected async Task<string> RunPublishedBrowserApp(string config, string language = "en-US", string extraArgs = "", string testScenario = "", int expectedExitCode = 42)
-        => await RunBrowser(
-            command: $"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files {extraArgs}",
-            workingDirectory: Path.Combine(GetBinFrameworkDir(config, forPublish: true), ".."),
-            expectedExitCode: expectedExitCode,
-            language: language,
-            testScenario: testScenario);
+    public async Task<string> RunForPublishWithWebServer(RunOptions runOptions)
+        => await BrowserRun(runOptions with { Host = RunHost.WebServer });
 
-    private async Task<string> RunBrowser(string command, string workingDirectory, int expectedExitCode, string language = "en-US", string testScenario = "")
+    private async Task<string> BrowserRun(RunOptions runOptions) => runOptions.Host switch
     {
-        using var runCommand = new RunCommand(s_buildEnv, _testOutput).WithWorkingDirectory(workingDirectory);
+        RunHost.DotnetRun =>
+                await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", _projectDir!, runOptions),
+
+        RunHost.WebServer =>
+                await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
+                     Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")),
+                     runOptions),
+
+        _ => throw new NotImplementedException(runOptions.Host.ToString())
+    };
+
+    protected async Task<string> BrowserRunTest(string runArgs,
+                                    string workingDirectory,
+                                    RunOptions runOptions)
+    {
+        if (!string.IsNullOrEmpty(runOptions.ExtraArgs))
+            runArgs += $" {runOptions.ExtraArgs}";
+
+        runOptions.ServerEnvironment?.ToList().ForEach(
+            kv => s_buildEnv.EnvVars[kv.Key] = kv.Value);
+
+        using RunCommand runCommand = new RunCommand(s_buildEnv, _testOutput);
+        ToolCommand cmd = runCommand.WithWorkingDirectory(workingDirectory);
+
         await using var runner = new BrowserRunner(_testOutput);
-        Func<string, string>? modifyBrowserUrl = string.IsNullOrEmpty(testScenario) ?
-            null :
-            browserUrl => new Uri(new Uri(browserUrl), $"?test={testScenario}").ToString();
-        var page = await runner.RunAsync(runCommand, command, language: language, modifyBrowserUrl: modifyBrowserUrl);
-        await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
-        Assert.Contains($"WASM EXIT {expectedExitCode}", string.Join(Environment.NewLine, runner.OutputLines));
+        var page = await runner.RunAsync(
+            cmd,
+            runArgs,
+            onConsoleMessage: OnConsoleMessage,
+            onServerMessage: runOptions.OnServerMessage,
+            onError: OnErrorMessage,
+            modifyBrowserUrl: browserUrl => new Uri(new Uri(browserUrl), runOptions.BrowserPath + runOptions.QueryString).ToString());
+
+        _testOutput.WriteLine("Waiting for page to load");
+        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new () { Timeout = 1 * 60 * 1000 });
+
+        if (runOptions.ExecuteAfterLoaded is not null)
+        {
+            await runOptions.ExecuteAfterLoaded(runOptions, page);
+        }
+        
+        if (runOptions.Test is not null)
+            await runOptions.Test(page);
+        
+        _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
+        await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(10));
+
         return string.Join("\n", runner.OutputLines);
+
+        void OnConsoleMessage(IPage page, IConsoleMessage msg)
+        {
+            _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
+
+            runOptions.OnConsoleMessage?.Invoke(page, msg);
+
+            if (runOptions.DetectRuntimeFailures)
+            {
+                if (msg.Text.Contains("[MONO] * Assertion") || msg.Text.Contains("Error: [MONO] "))
+                    throw new XunitException($"Detected a runtime failure at line: {msg.Text}");
+            }
+        }
+
+        void OnErrorMessage(string msg)
+        {
+            _testOutput.WriteLine($"[ERROR] {msg}");
+            runOptions.OnErrorMessage?.Invoke(msg);
+        }
     }
 
     public string GetBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFramework, string? projectDir = null) =>

@@ -113,7 +113,7 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
         string extraProperties = $"<{icuProperty}>{shardName}</{icuProperty}><UseSystemResourceKeys>false</UseSystemResourceKeys><RunAOTCompilation>{aot}</RunAOTCompilation>";
         if (onlyPredefinedCultures)
             extraProperties = $"{extraProperties}<PredefinedCulturesOnly>true</PredefinedCulturesOnly>";
-        await BuildAndRunIcuTest(config, templateType, aot, testedLocales, globalizationMode, extraProperties, onlyPredefinedCultures, icuFileName: shardName);
+        await PublishAndRunIcuTest(config, templateType, aot, testedLocales, globalizationMode, extraProperties, onlyPredefinedCultures, icuFileName: shardName);
     }
 
     protected ProjectInfo CreateIcuProject(
@@ -135,7 +135,7 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
         return info;
     }
 
-    protected async Task<string> BuildAndRunIcuTest(
+    protected async Task<string> PublishAndRunIcuTest(
         string config,
         Template templateType,
         bool aot,
@@ -143,14 +143,14 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
         GlobalizationMode globalizationMode,
         string extraProperties = "",
         bool onlyPredefinedCultures=false,
-        string language = "en-US",
+        string locale = "en-US",
         string icuFileName = "")
     {
         try
         {
             ProjectInfo info = CreateIcuProject(
                 config, templateType, aot, testedLocales, extraProperties, onlyPredefinedCultures);
-            bool isPublish = false;
+            bool isPublish = true;
             bool triggersNativeBuild = globalizationMode == GlobalizationMode.Invariant;
             (string _, string buildOutput) = BuildTemplateProject(info,
                         new BuildProjectOptions(
@@ -162,7 +162,8 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
                             GlobalizationMode: globalizationMode,
                             CustomIcuFile: icuFileName
                         ));
-            string runOutput = await RunBuiltBrowserApp(info.Configuration, info.ProjectFilePath, language);
+            RunOptions runOptions = new(info.Configuration, Locale: locale);
+            string runOutput = await RunForPublishWithWebServer(runOptions);
             return $"{buildOutput}\n{runOutput}";
         }
         catch(Exception ex)

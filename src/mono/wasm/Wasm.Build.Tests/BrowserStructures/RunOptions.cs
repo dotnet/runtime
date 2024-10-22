@@ -25,7 +25,10 @@ public record RunOptions
     string ExtraArgs = "",
     string BrowserPath = "",
     string QueryString = "",
-    int? ExpectedExitCode = 0
+    string Locale = "en-US",
+    int? ExpectedExitCode = 0,
+
+    Func<RunOptions, IPage, Task>? ExecuteAfterLoaded = null
 );
 
 public enum RunHost { DotnetRun, WebServer };

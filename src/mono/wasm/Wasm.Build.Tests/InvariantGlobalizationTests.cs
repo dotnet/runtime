@@ -50,7 +50,7 @@ namespace Wasm.Build.Tests
             UpdateFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "InvariantGlobalization.cs"));
             UpdateBrowserMainJs();
 
-            bool isPublish = false;
+            bool isPublish = true;
             // invariantGlobalization triggers native build
             isNativeBuild = isNativeBuild || invariantGlobalization == true;
             BuildTemplateProject(info,
@@ -63,7 +63,8 @@ namespace Wasm.Build.Tests
                             GlobalizationMode: invariantGlobalization == true ? GlobalizationMode.Invariant : GlobalizationMode.Sharded
                         ));
 
-            string output = await RunBuiltBrowserApp(info.Configuration, info.ProjectFilePath);
+            RunOptions runOptions = new(info.Configuration);
+            string output = await RunForPublishWithWebServer(runOptions);
             if (invariantGlobalization == true)
             {
                 Assert.Contains("Could not create es-ES culture", output);

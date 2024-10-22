@@ -48,7 +48,7 @@ namespace Wasm.Build.Tests
             UpdateFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "InvariantTimezone.cs"));
             UpdateBrowserMainJs();
 
-            bool isPublish = false;
+            bool isPublish = true;
             // invariantTimezone triggers native build
             isNativeBuild = isNativeBuild || invariantTimezone == true;
             BuildTemplateProject(info,
@@ -60,7 +60,8 @@ namespace Wasm.Build.Tests
                             IsPublish: isPublish
                         ));
 
-            string output = await RunBuiltBrowserApp(info.Configuration, info.ProjectFilePath);
+            RunOptions runOptions = new(info.Configuration);
+            string output = await RunForPublishWithWebServer(runOptions);
             Assert.Contains("UTC BaseUtcOffset is 0", output);
             if (invariantTimezone == true)
             {

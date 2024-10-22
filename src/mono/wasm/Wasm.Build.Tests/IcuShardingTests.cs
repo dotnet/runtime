@@ -47,5 +47,5 @@ public class IcuShardingTests : IcuTestsBase
     [Theory]
     [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { "Release" })]
     public async Task AutomaticShardSelectionDependingOnEnvLocale(string config, bool aot, string environmentLocale, string testedLocales) =>
-        await BuildAndRunIcuTest(config, Template.WasmBrowser, aot, testedLocales, GlobalizationMode.Sharded, language: environmentLocale);
+        await PublishAndRunIcuTest(config, Template.WasmBrowser, aot, testedLocales, GlobalizationMode.Sharded, locale: environmentLocale);
 }

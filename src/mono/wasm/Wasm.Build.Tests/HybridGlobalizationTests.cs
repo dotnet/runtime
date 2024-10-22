@@ -47,7 +47,7 @@ namespace Wasm.Build.Tests
             UpdateFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "HybridGlobalization.cs"));
             UpdateBrowserMainJs();
 
-            bool isPublish = false;
+            bool isPublish = true;
             BuildTemplateProject(info,
                         new BuildProjectOptions(
                             config,
@@ -58,7 +58,8 @@ namespace Wasm.Build.Tests
                             GlobalizationMode: GlobalizationMode.Hybrid
                         ));
 
-            string output = await RunBuiltBrowserApp(info.Configuration, info.ProjectFilePath);
+            RunOptions runOptions = new(info.Configuration);
+            string output = await RunForPublishWithWebServer(runOptions);
             Assert.Contains("HybridGlobalization works, thrown exception as expected", output);
         }
     }
