@@ -22,11 +22,11 @@ namespace System.ComponentModel.Design
         /// </summary>
         public DesignerVerb(string text, EventHandler handler, CommandID startCommandID) : base(handler, startCommandID)
         {
-            Properties["Text"] = text == null ? null : GetParameterReplacementRegex().Replace(text, "");
+            Properties["Text"] = text == null ? null : GetParameterReplacementRegex.Replace(text, "");
         }
 
         [GeneratedRegex(@"\(\&.\)")]
-        private static partial Regex GetParameterReplacementRegex();
+        private static partial Regex GetParameterReplacementRegex { get; }
 
         /// <summary>
         /// Gets or sets the description of the menu item for the verb.

@@ -2234,7 +2234,7 @@ namespace System.Runtime.Serialization.DataContracts
                 string internalsVisibleAttributeAssemblyName = internalsVisibleAttribute.AssemblyName;
 
                 if (internalsVisibleAttributeAssemblyName.Trim().Equals("System.Runtime.Serialization") ||
-                    Globals.FullSRSInternalsVisibleRegex().IsMatch(internalsVisibleAttributeAssemblyName))
+                    Globals.FullSRSInternalsVisibleRegex.IsMatch(internalsVisibleAttributeAssemblyName))
                 {
                     return true;
                 }
