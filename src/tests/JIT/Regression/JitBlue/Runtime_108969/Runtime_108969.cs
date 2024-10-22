@@ -52,5 +52,4 @@ public class Runtime_108969
     {
         public int A, B, C, D;
     }
-
 }
