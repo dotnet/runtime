@@ -31,6 +31,9 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
     CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
     {
         ppv = default;
+        if (_legacyModulePointer == 0)
+            return CustomQueryInterfaceResult.NotHandled;
+
         if (iid == IID_IMetaDataImport && Marshal.QueryInterface(_legacyModulePointer, iid, out ppv) >= 0)
             return CustomQueryInterfaceResult.Handled;
 
