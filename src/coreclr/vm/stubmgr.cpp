@@ -1593,8 +1593,6 @@ BOOL RangeSectionStubManager::TraceManager(Thread *thread,
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetIP(pContext) == GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel));
-
     *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
 
     PCODE target = StubManagerHelpers::GetTailCallTarget(pContext);

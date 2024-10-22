@@ -3393,7 +3393,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     // Force a GC on every jit if the stress level is high enough
     GCStress<cfg_any>::MaybeTrigger();
-
+    if (g_externalMethodFixupTraceActiveCount > 0)
+    {
+        g_pDebugger->ExternalMethodFixupNextStep(pCode);
+    }
     // Ready to return
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -3402,10 +3405,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     pEMFrame->Pop(CURRENT_THREAD);          // Pop the ExternalMethodFrame from the frame stack
 
     END_PRESERVE_LAST_ERROR;
-    if (g_externalMethodFixupTraceActiveCount > 0)
-    {
-        g_pDebugger->ExternalMethodFixupNextStep(pCode);
-    }
 
     return pCode;
 }

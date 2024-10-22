@@ -4196,11 +4196,11 @@ void DebuggerController::DispatchFuncEvalExit(Thread * thread)
 }
 void DebuggerController::TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateCount)
 {
-    _ASSERTE(!"This code should be unreachable. If your controller enables MulticastDelegateHelper events,it should also override this callback to do something useful when the event arrives.");
+    _ASSERTE(!"This code should be unreachable. If your controller enables MulticastDelegateHelper events, it should also override this callback to do something useful when the event arrives.");
 }
 void DebuggerController::TriggerExternalMethodFixup(PCODE target)
 {
-    _ASSERTE(!"This code should be unreachable. If your controller enables ExternalMethodFixup events,it should also override this callback to do something useful when the event arrives.");
+    _ASSERTE(!"This code should be unreachable. If your controller enables ExternalMethodFixup events, it should also override this callback to do something useful when the event arrives.");
 }
 
 
