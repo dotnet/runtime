@@ -2334,6 +2334,8 @@ BOOL        gc_heap::gradual_decommit_in_progress_p = FALSE;
 size_t      gc_heap::max_decommit_step_size = 0;
 #else  //MULTIPLE_HEAPS
 
+const int   gc_heap::n_heaps;
+
 #if !defined(USE_REGIONS) || defined(_DEBUG)
 size_t      gc_heap::g_promoted;
 #endif //!USE_REGIONS || _DEBUG
