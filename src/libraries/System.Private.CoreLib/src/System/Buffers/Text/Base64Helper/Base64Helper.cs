@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 #if NET
 using System.Runtime.Intrinsics;
@@ -180,6 +181,16 @@ namespace System.Buffers.Text
             return Vector128.Shuffle(vector, indices);
         }
 #endif
+
+        [DoesNotReturn]
+        internal static void ThrowUnreachableException()
+        {
+#if NET
+            throw new UnreachableException();
+#else
+            throw new Exception("Unreachable");
+#endif
+        }
 
         internal interface IBase64Encoder<T> where T : unmanaged
         {

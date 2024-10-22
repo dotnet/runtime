@@ -18,6 +18,8 @@ internal class BrowserRunner : IAsyncDisposable
 {
     private static Regex s_blazorUrlRegex = new Regex("Now listening on: (?<url>https?://.*$)");
     private static Regex s_appHostUrlRegex = new Regex("^App url: (?<url>https?://.*$)");
+    private static Regex s_appPublishedUrlRegex = new Regex(@"^\s{2}(?<url>https?://.*$)");
+    private static readonly Regex s_payloadRegex = new Regex("\"payload\":\"(?<payload>[^\"]*)\"", RegexOptions.Compiled);
     private static Regex s_exitRegex = new Regex("WASM EXIT (?<exitCode>-?[0-9]+)$");
     private static readonly Lazy<string> s_chromePath = new(() =>
     {
@@ -52,9 +54,15 @@ internal class BrowserRunner : IAsyncDisposable
                 OutputLines.Add(msg);
             }
 
-            Match m = s_appHostUrlRegex.Match(msg);
-            if (!m.Success)
-                m = s_blazorUrlRegex.Match(msg);
+            var regexes = new[] { s_appHostUrlRegex, s_blazorUrlRegex, s_appPublishedUrlRegex };
+            Match m = Match.Empty;
+
+            foreach (var regex in regexes)
+            {
+                m = regex.Match(msg);
+                if (m.Success)
+                    break;
+            }
 
             if (m.Success)
             {
@@ -103,7 +111,7 @@ internal class BrowserRunner : IAsyncDisposable
     public async Task<IBrowser> SpawnBrowserAsync(
         string browserUrl,
         bool headless = true,
-        int timeout = 10000,
+        int? timeout = null,
         int maxRetries = 3,
         string language = "en-US"
     ) {
@@ -176,8 +184,36 @@ internal class BrowserRunner : IAsyncDisposable
 
         IPage page = await context.NewPageAsync();
 
-        if (onConsoleMessage is not null)
-            page.Console += (_, msg) => onConsoleMessage(page, msg);
+        page.Console += (_, msg) => 
+        {
+            string message = msg.Text;
+            Match payloadMatch = s_payloadRegex.Match(message);
+            if (payloadMatch.Success)
+            {
+                message = payloadMatch.Groups["payload"].Value;
+            }
+            if (message.StartsWith("TestOutput -> "))
+            {
+                lock (OutputLines)
+                {
+                    OutputLines.Add(message);
+                }
+            }
+            Match exitMatch = s_exitRegex.Match(message);
+            if (exitMatch.Success)
+            {
+                lock (OutputLines)
+                {
+                    OutputLines.Add(message);
+                }
+                int exitCode = int.Parse(exitMatch.Groups["exitCode"].Value);
+                _exited.TrySetResult(exitCode);
+            }
+            if (onConsoleMessage is not null)
+            {
+                onConsoleMessage(page, msg);
+            }
+        };
 
         onError ??= _testOutput.WriteLine;
         if (onError is not null)

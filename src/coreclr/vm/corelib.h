@@ -619,7 +619,7 @@ DEFINE_METHOD(RESOLVER,             RESOLVE_SIGNATURE,      ResolveSignature,   
 DEFINE_CLASS(RESOURCE_MANAGER,      Resources,              ResourceManager)
 
 DEFINE_CLASS(RTFIELD,               Reflection,             RtFieldInfo)
-DEFINE_METHOD(RTFIELD,              GET_FIELDHANDLE,        GetFieldHandle,            IM_RetIntPtr)
+DEFINE_METHOD(RTFIELD,              GET_FIELDESC,           GetFieldDesc,            IM_RetIntPtr)
 
 DEFINE_CLASS(RUNTIME_HELPERS,       CompilerServices,       RuntimeHelpers)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
@@ -1072,6 +1072,8 @@ DEFINE_METHOD(SZARRAYHELPER,        INDEXOF,                IndexOf,            
 DEFINE_METHOD(SZARRAYHELPER,        INSERT,                 Insert,                     NoSig)
 DEFINE_METHOD(SZARRAYHELPER,        REMOVEAT,               RemoveAt,                   NoSig)
 
+DEFINE_CLASS(SZGENERICARRAYENUMERATOR, System, SZGenericArrayEnumerator`1)
+
 DEFINE_CLASS(IENUMERABLEGENERIC,    CollectionsGeneric,     IEnumerable`1)
 DEFINE_CLASS(IENUMERATORGENERIC,    CollectionsGeneric,     IEnumerator`1)
 DEFINE_CLASS(ICOLLECTIONGENERIC,    CollectionsGeneric,     ICollection`1)
@@ -1181,6 +1183,10 @@ DEFINE_METHOD(GENERICSHELPERS, METHOD, Method, NoSig)
 DEFINE_METHOD(GENERICSHELPERS, CLASS, Class, NoSig)
 DEFINE_METHOD(GENERICSHELPERS, METHODWITHSLOTANDMODULE, MethodWithSlotAndModule, NoSig)
 DEFINE_METHOD(GENERICSHELPERS, CLASSWITHSLOTANDMODULE, ClassWithSlotAndModule, NoSig)
+
+DEFINE_CLASS(INITHELPERS, CompilerServices, InitHelpers)
+DEFINE_METHOD(INITHELPERS, INITCLASS, InitClass, NoSig)
+DEFINE_METHOD(INITHELPERS, INITINSTANTIATEDCLASS, InitInstantiatedClass, NoSig)
 
 DEFINE_CLASS_U(CompilerServices, GenericsHelpers+GenericHandleArgs, GenericHandleArgs)
 DEFINE_FIELD_U(signature, GenericHandleArgs, signature)
