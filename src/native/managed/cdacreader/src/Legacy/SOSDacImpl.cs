@@ -27,6 +27,9 @@ internal sealed unsafe partial class SOSDacImpl
       ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15
 {
     private readonly Target _target;
+
+    // When this class is created, the runtime may not have loaded the string and object method tables and set the global pointers.
+    // They should be set when actually requested via a DAC API, so we lazily read the global pointers.
     private readonly Lazy<TargetPointer> _stringMethodTable;
     private readonly Lazy<TargetPointer> _objectMethodTable;
 
