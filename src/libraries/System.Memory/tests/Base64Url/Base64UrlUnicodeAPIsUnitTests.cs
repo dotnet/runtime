@@ -112,7 +112,7 @@ namespace System.Buffers.Text.Tests
                 Assert.Equal(new String(encodedBytes), Base64Url.EncodeToString(source));
 
                 byte[] decoded = Base64Url.DecodeFromChars(encodedBytes);
-                Assert.Equal(source, decoded);
+                Assert.Equal(source, decoded.AsSpan());
             }
         }
 

@@ -911,8 +911,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     // Block sequencing (the order in which we schedule).
     // Note that we don't initialize the bbVisitedSet until we do the first traversal
-    // This is so that any blocks that are added during the first traversal
-    // are accounted for (and we don't have BasicBlockEpoch issues).
+    // This is so that any blocks that are added during the first traversal are accounted for.
     blockSequencingDone = false;
     blockSequence       = nullptr;
     curBBSeqNum         = 0;
@@ -943,26 +942,37 @@ void LinearScan::setBlockSequence()
 {
     assert(!blockSequencingDone); // The method should be called only once.
 
-    compiler->EnsureBasicBlockEpoch();
-#ifdef DEBUG
-    blockEpoch = compiler->GetCurBasicBlockEpoch();
-#endif // DEBUG
-
     // Initialize the "visited" blocks set.
-    bbVisitedSet = BlockSetOps::MakeEmpty(compiler);
+    traits       = new (compiler, CMK_LSRA) BitVecTraits(compiler->fgBBcount, compiler);
+    bbVisitedSet = BitVecOps::MakeEmpty(traits);
 
     assert((blockSequence == nullptr) && (bbSeqCount == 0));
     FlowGraphDfsTree* const dfsTree = compiler->fgComputeDfs</* useProfile */ true>();
-    blockSequence                   = dfsTree->GetPostOrder();
-    bbNumMaxBeforeResolution        = compiler->fgBBNumMax;
-    blockInfo                       = new (compiler, CMK_LSRA) LsraBlockInfo[bbNumMaxBeforeResolution + 1];
+    blockSequence                   = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
 
-    // Flip the DFS traversal to get the reverse post-order traversal
-    // (this is the order in which blocks will be allocated)
-    for (unsigned left = 0, right = dfsTree->GetPostOrderCount() - 1; left < right; left++, right--)
+    if (compiler->opts.OptimizationEnabled() && dfsTree->HasCycle())
     {
-        std::swap(blockSequence[left], blockSequence[right]);
+        // Ensure loop bodies are compact in the visitation order
+        FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
+        unsigned                     index = 0;
+
+        auto addToSequence = [this, &index](BasicBlock* block) {
+            blockSequence[index++] = block;
+        };
+
+        compiler->fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
     }
+    else
+    {
+        // TODO: Just use lexical block order in MinOpts
+        for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+        {
+            blockSequence[i] = dfsTree->GetPostOrder(dfsTree->GetPostOrderCount() - i - 1);
+        }
+    }
+
+    bbNumMaxBeforeResolution = compiler->fgBBNumMax;
+    blockInfo                = new (compiler, CMK_LSRA) LsraBlockInfo[bbNumMaxBeforeResolution + 1];
 
     hasCriticalEdges = false;
     // We use a bbNum of 0 for entry RefPositions.
@@ -1074,8 +1084,10 @@ void LinearScan::setBlockSequence()
         for (BasicBlock* block = compiler->fgLastBB; i < compiler->fgBBcount; block = block->Prev())
         {
             assert(block != nullptr);
-            if (!isBlockVisited(block))
+            if (!dfsTree->Contains(block))
             {
+                // Give this block a unique post-order number that can be used as a key into bbVisitedSet
+                block->bbPostorderNum = i;
                 visitBlock(block);
                 blockSequence[i++] = block;
             }
@@ -1277,7 +1289,6 @@ PhaseStatus LinearScan::doLinearScan()
     compiler->EndPhase(PHASE_LINEAR_SCAN_RESOLVE);
 
     assert(blockSequencingDone); // Should do at least one traversal.
-    assert(blockEpoch == compiler->GetCurBasicBlockEpoch());
 
 #if TRACK_LSRA_STATS
     if ((JitConfig.DisplayLsraStats() == 1)

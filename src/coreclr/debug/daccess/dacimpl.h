@@ -131,16 +131,13 @@ struct DAC_MD_IMPORT
     DAC_MD_IMPORT* next;       // list link field
     TADDR peFile;              // a TADDR for a PEAssembly* or a ReflectionModule*
     IMDInternalImport* impl;   // Associated metadata interface
-    bool isAlternate;          // for NGEN images set to true if the metadata corresponds to the IL image
 
     DAC_MD_IMPORT(TADDR peFile_,
         IMDInternalImport* impl_,
-        bool isAlt_ = false,
         DAC_MD_IMPORT* next_ = NULL)
         : next(next_)
         , peFile(peFile_)
         , impl(impl_)
-        , isAlternate(isAlt_)
     {
         SUPPORTS_DAC_HOST_ONLY;
     }
@@ -179,10 +176,10 @@ public:
     }
 
     FORCEINLINE
-    DAC_MD_IMPORT* Add(TADDR peFile, IMDInternalImport* impl, bool isAlt)
+    DAC_MD_IMPORT* Add(TADDR peFile, IMDInternalImport* impl)
     {
         SUPPORTS_DAC;
-        DAC_MD_IMPORT* importList = new (nothrow) DAC_MD_IMPORT(peFile, impl, isAlt, m_head);
+        DAC_MD_IMPORT* importList = new (nothrow) DAC_MD_IMPORT(peFile, impl, m_head);
         if (!importList)
         {
             return NULL;
@@ -1231,21 +1228,6 @@ public:
 
     HRESULT Initialize(void);
 
-    HRESULT GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *threadData);
-    HRESULT GetThreadStoreDataImpl(struct DacpThreadStoreData *data);
-    HRESULT GetModuleDataImpl(CLRDATA_ADDRESS addr, struct DacpModuleData *moduleData);
-    HRESULT GetNestedExceptionDataImpl(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS *exceptionObject, CLRDATA_ADDRESS *nextNestedException);
-    HRESULT GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTableData *data);
-    HRESULT GetMethodTableForEEClassImpl (CLRDATA_ADDRESS eeClassReallyMT, CLRDATA_ADDRESS *value);
-    HRESULT GetMethodTableNameImpl(CLRDATA_ADDRESS mt, unsigned int count, _Inout_updates_z_(count) WCHAR *mtName, unsigned int *pNeeded);
-    HRESULT GetObjectDataImpl(CLRDATA_ADDRESS addr, struct DacpObjectData *objectData);
-    HRESULT GetObjectExceptionDataImpl(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data);
-    HRESULT GetObjectStringDataImpl(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR *stringData, unsigned int *pNeeded);
-    HRESULT GetPEFileNameImpl(CLRDATA_ADDRESS moduleAddr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded);
-    HRESULT GetUsefulGlobalsImpl(struct DacpUsefulGlobalsData *globalsData);
-    HRESULT GetMethodDescDataImpl(CLRDATA_ADDRESS methodDesc, CLRDATA_ADDRESS ip, struct DacpMethodDescData *data, ULONG cRevertedRejitVersions, DacpReJitData * rgRevertedRejitData, ULONG * pcNeededRevertedRejitData);
-    HRESULT GetMethodDescNameImpl(CLRDATA_ADDRESS methodDesc, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
-
     BOOL IsExceptionFromManagedCode(EXCEPTION_RECORD * pExceptionRecord);
 #ifndef TARGET_UNIX
     HRESULT GetWatsonBuckets(DWORD dwThreadId, GenericModeBlock * pGM);
@@ -1371,8 +1353,7 @@ public:
     JITNotification* GetHostJitNotificationTable();
     GcNotification*  GetHostGcNotificationTable();
 
-    void* GetMetaDataFromHost(PEAssembly* pPEAssembly,
-                              bool* isAlternate);
+    void* GetMetaDataFromHost(PEAssembly* pPEAssembly);
 
     virtual
     interface IMDInternalImport* GetMDImport(const PEAssembly* pPEAssembly,
@@ -1432,10 +1413,9 @@ public:
     ULONG32 m_instanceAge;
     bool m_debugMode;
 
+    // This currently exists on the DAC as a way of managing lifetime of loading/freeing the cdacreader
+    // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
     CDAC m_cdac;
-    NonVMComHolder<ISOSDacInterface> m_cdacSos;
-    NonVMComHolder<ISOSDacInterface2> m_cdacSos2;
-    NonVMComHolder<ISOSDacInterface9> m_cdacSos9;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
@@ -1528,22 +1508,14 @@ protected:
 #endif
 
 public:
-    // APIs for picking up the info needed for a debugger to look up an ngen image or IL image
-    // from it's search path.
+    // API for picking up the info needed for a debugger to look up an image from its search path.
     static bool GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
                                               DWORD &dwImageTimestamp,
                                               DWORD &dwImageSize,
                                               DWORD &dwDataSize,
                                               DWORD &dwRvaHint,
-                                              bool  &isNGEN,
                                               _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                               DWORD cchFilePath);
-
-    static bool GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
-                                             DWORD &dwTimeStamp,
-                                             DWORD &dwSize,
-                                             _Out_writes_(cchPath) LPWSTR wszPath,
-                                             const DWORD cchPath);
 };
 
 extern ClrDataAccess* g_dacImpl;
