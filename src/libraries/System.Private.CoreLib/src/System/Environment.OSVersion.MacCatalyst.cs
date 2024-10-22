@@ -8,6 +8,12 @@ namespace System
         private static OperatingSystem GetOSVersion()
         {
             Version version = new Version(Interop.Sys.iOSSupportVersion());
+
+            int major = version.Major;
+            int minor = version.Minor;
+            int build = version.Build < 0 ? 0 : version.Build;
+
+            version = new Version(major, minor, build);
             return new OperatingSystem(PlatformID.Unix, version);
         }
     }
