@@ -40,8 +40,7 @@
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
           "hostOS": [
-            "macOS",
-            "OSX"
+            "macOS"
           ]
         }
       }
