@@ -41,7 +41,7 @@ namespace System.Collections.Generic
 
         protected T[] _items;
         protected int _size;
-        protected int _version;
+        // No _version field because no IEnumerable<T> support
 
 #pragma warning disable CA1825 // avoid the extra generic instantiation for Array.Empty<T>()
         private static readonly T[] s_emptyArray = new T[0];
@@ -109,7 +109,6 @@ namespace System.Collections.Generic
             {
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_size, nameof(index));
                 _items[index] = value;
-                _version++;
             }
         }
 
@@ -122,7 +121,6 @@ namespace System.Collections.Generic
         {
             if (_size == _items.Length) EnsureCapacity(_size + 1);
             _items[_size++] = item;
-            _version++;
         }
 
         // Ensures that the capacity of this list is at least the given minimum
