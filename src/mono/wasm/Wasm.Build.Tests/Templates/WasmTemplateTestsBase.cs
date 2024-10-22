@@ -152,7 +152,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     }
 
     protected void UpdateBrowserMainJs(string targetFramework = DefaultTargetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
-    {            
+    {
         string mainJsPath = Path.Combine(_projectDir!, "wwwroot", "main.js");
         string mainJsContent = File.ReadAllText(mainJsPath);
 
@@ -175,21 +175,23 @@ public class WasmTemplateTestsBase : BuildTestBase
     }
 
     // ToDo: consolidate with BlazorRunTest
-    protected async Task<string> RunBuiltBrowserApp(string config, string projectFile, string language = "en-US", string extraArgs = "", string testScenario = "")
+    protected async Task<string> RunBuiltBrowserApp(string config, string projectFile, string language = "en-US", string extraArgs = "", string testScenario = "", int expectedExitCode = 42)
         => await RunBrowser(
             $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console {extraArgs}",
             _projectDir!,
+            expectedExitCode: expectedExitCode,
             language,
             testScenario: testScenario);
 
-    protected async Task<string> RunPublishedBrowserApp(string config, string language = "en-US", string extraArgs = "", string testScenario = "")
+    protected async Task<string> RunPublishedBrowserApp(string config, string language = "en-US", string extraArgs = "", string testScenario = "", int expectedExitCode = 42)
         => await RunBrowser(
-            command: $"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
+            command: $"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files {extraArgs}",
             workingDirectory: Path.Combine(GetBinFrameworkDir(config, forPublish: true), ".."),
+            expectedExitCode: expectedExitCode,
             language: language,
             testScenario: testScenario);
 
-    private async Task<string> RunBrowser(string command, string workingDirectory, string language = "en-US", string testScenario = "")
+    private async Task<string> RunBrowser(string command, string workingDirectory, int expectedExitCode, string language = "en-US", string testScenario = "")
     {
         using var runCommand = new RunCommand(s_buildEnv, _testOutput).WithWorkingDirectory(workingDirectory);
         await using var runner = new BrowserRunner(_testOutput);
@@ -198,7 +200,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             browserUrl => new Uri(new Uri(browserUrl), $"?test={testScenario}").ToString();
         var page = await runner.RunAsync(runCommand, command, language: language, modifyBrowserUrl: modifyBrowserUrl);
         await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
-        Assert.Contains("WASM EXIT 42", string.Join(Environment.NewLine, runner.OutputLines));
+        Assert.Contains($"WASM EXIT {expectedExitCode}", string.Join(Environment.NewLine, runner.OutputLines));
         return string.Join("\n", runner.OutputLines);
     }
 

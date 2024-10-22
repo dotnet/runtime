@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -11,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class MainWithArgsTests : TestMainJsTestBase
+    public class MainWithArgsTests : WasmTemplateTestsBase
     {
         public MainWithArgsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -24,82 +25,55 @@ namespace Wasm.Build.Tests
                         new object?[] { new object?[0] }
             ).UnwrapItemsAsArrays();
 
-        // [Theory]
-        // [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        // [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        // public void AsyncMainWithArgs(ProjectInfo buildArgs, string[] args, RunHost host, string id)
-        //     => TestMainWithArgs("async_main_with_args", @"
-        //         public class TestClass {
-        //             public static async System.Threading.Tasks.Task<int> Main(string[] args)
-        //             {
-        //                 ##CODE##
-        //                 return await System.Threading.Tasks.Task.FromResult(42 + count);
-        //             }
-        //         }",
-        //         buildArgs, args, host, id);
+        [Theory]
+        [ActiveIssue("ToDo: passing args to the program does not work, possible error in the test logic")]
+        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false })]
+        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true })]
+        public async Task AsyncMainWithArgs(string config, bool aot, string[] args)
+            => await TestMainWithArgs(config, aot, "async_main_with_args", "AsyncMainWithArgs.cs", args);
 
-        // [Theory]
-        // [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        // [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        // public void NonAsyncMainWithArgs(ProjectInfo buildArgs, string[] args, RunHost host, string id)
-        //     => TestMainWithArgs("non_async_main_args", @"
-        //         public class TestClass {
-        //             public static int Main(string[] args)
-        //             {
-        //                 ##CODE##
-        //                 return 42 + count;
-        //             }
-        //         }", buildArgs, args, host, id);
+        [Theory]
+        [ActiveIssue("ToDo: passing args to the program does not work, possible error in the test logic")]
+        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false })]
+        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true })]
+        public async Task NonAsyncMainWithArgs(string config, bool aot, string[] args)
+            => await TestMainWithArgs(config, aot, "non_async_main_args", "SyncMainWithArgs.cs", args);
 
-        // void TestMainWithArgs(string projectNamePrefix,
-        //                       string projectContents,
-        //                       ProjectInfo buildArgs,
-        //                       string[] args,
-        //                       RunHost host,
-        //                       string id,
-        //                       bool? dotnetWasmFromRuntimePack=null)
-        // {
-        //     string projectName = $"{projectNamePrefix}_{buildArgs.Configuration}_{buildArgs.AOT}";
-        //     string code = @"
-        //             int count = args == null ? 0 : args.Length;
-        //             System.Console.WriteLine($""args#: {args?.Length}"");
-        //             foreach (var arg in args ?? System.Array.Empty<string>())
-        //                 System.Console.WriteLine($""arg: {arg}"");
-        //             ";
-        //     string programText = projectContents.Replace("##CODE##", code);
+        async Task TestMainWithArgs(string config,
+                                bool aot,
+                                string projectNamePrefix,
+                                string projectContentsName,
+                                string[] args)
+        {
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, projectNamePrefix);
+            UpdateFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", projectContentsName));
+            UpdateBrowserMainJs();
+            string mainJsPath = Path.Combine(_projectDir!, "wwwroot", "main.js");
+            UpdateFile(
+                mainJsPath,
+                new Dictionary<string, string> {
+                    { ".withApplicationArguments(\"start\")", $".withApplicationArgumentsFromQuery()" }
+                });
+            _testOutput.WriteLine ($"-- args: {args}, name: {projectContentsName}");
 
-        //     buildArgs = buildArgs with { ProjectName = projectName, ProjectFileContents = programText };
-        //     buildArgs = ExpandBuildArgs(buildArgs);
-        //     if (dotnetWasmFromRuntimePack == null)
-        //         dotnetWasmFromRuntimePack = IsDotnetWasmFromRuntimePack(buildArgs);
+            bool isPublish = true;
+            BuildTemplateProject(info,
+                        new BuildProjectOptions(
+                            config,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                            IsPublish: isPublish
+                        ));
 
-        //     _testOutput.WriteLine ($"-- args: {buildArgs}, name: {projectName}");
-
-        //     BuildProject(buildArgs,
-        //                     id: id,
-        //                     new BuildProjectOptions(
-        //                         InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-        //                         DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
-
-        //     // Because we get extra "-verbosity", "Debug" from XHarness
-        //     int argsCount = args.Length;
-        //     bool isBrowser = host == RunHost.Chrome || host == RunHost.Firefox || host == RunHost.Safari;
-        //     if (isBrowser)
-        //         argsCount += 2;
-
-        //     RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42 + argsCount, args: string.Join(' ', args),
-        //         test: output =>
-        //         {
-        //             Assert.Contains($"args#: {argsCount}", output);
-        //             foreach (var arg in args)
-        //                 Assert.Contains($"arg: {arg}", output);
-
-        //             if (isBrowser)
-        //             {
-        //                 Assert.Contains($"arg: -verbosity", output);
-        //                 Assert.Contains($"arg: Debug", output);
-        //             }
-        //         }, host: host, id: id);
-        // }
+            int argsCount = args.Length;
+            int expectedCode = 42 + argsCount;
+            string argsStr = string.Join(" ", args);
+            string output = await RunPublishedBrowserApp(info.Configuration, extraArgs: argsStr, expectedExitCode: expectedCode);
+            Console.WriteLine(output);
+            Assert.Contains($"args#: {argsCount}", output);
+            foreach (var arg in args)
+                Assert.Contains($"arg: {arg}", output);
+        }
     }
 }
