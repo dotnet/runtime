@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using Internal.NativeCrypto;
 
 namespace System.Security.Cryptography
@@ -87,10 +88,17 @@ namespace System.Security.Cryptography
         /// <returns>The key and explicit curve parameters used by the ECC object.</returns>
         public override ECParameters ExportExplicitParameters(bool includePrivateParameters)
         {
-            byte[] blob = ExportFullKeyBlob(includePrivateParameters);
-            ECParameters ecparams = default;
-            ECCng.ExportPrimeCurveParameters(ref ecparams, blob, includePrivateParameters);
-            return ecparams;
+            if (includePrivateParameters)
+            {
+                return ExportPrivateExplicitParameters();
+            }
+            else
+            {
+                byte[] blob = ExportFullKeyBlob(includePrivateParameters: false);
+                ECParameters ecparams = default;
+                ECCng.ExportPrimeCurveParameters(ref ecparams, blob, includePrivateParameters: false);
+                return ecparams;
+            }
         }
 
         /// <summary>
@@ -105,18 +113,38 @@ namespace System.Security.Cryptography
         {
             ECParameters ecparams = default;
 
+            const string TemporaryExportPassword = "DotnetExportPhrase";
             string? curveName = GetCurveName(out string? oidValue);
 
             if (string.IsNullOrEmpty(curveName))
             {
-                byte[] fullKeyBlob = ExportFullKeyBlob(includePrivateParameters);
-                ECCng.ExportPrimeCurveParameters(ref ecparams, fullKeyBlob, includePrivateParameters);
+                if (includePrivateParameters)
+                {
+                    ecparams = ExportPrivateExplicitParameters();
+                }
+                else
+                {
+                    byte[] fullKeyBlob = ExportFullKeyBlob(includePrivateParameters: false);
+                    ECCng.ExportPrimeCurveParameters(ref ecparams, fullKeyBlob, includePrivateParameters: false);
+                }
             }
             else
             {
-                byte[] keyBlob = ExportKeyBlob(includePrivateParameters);
-                ECCng.ExportNamedCurveParameters(ref ecparams, keyBlob, includePrivateParameters);
-                ecparams.Curve = ECCurve.CreateFromOid(new Oid(oidValue, curveName));
+                if (includePrivateParameters && PlaintextOnlyExport)
+                {
+                    byte[] exported = ExportEncryptedPkcs8(TemporaryExportPassword, 1);
+                    EccKeyFormatHelper.ReadEncryptedPkcs8(
+                        exported,
+                        TemporaryExportPassword,
+                        out _,
+                        out ecparams);
+                }
+                else
+                {
+                    byte[] keyBlob = ExportKeyBlob(includePrivateParameters);
+                    ECCng.ExportNamedCurveParameters(ref ecparams, keyBlob, includePrivateParameters);
+                    ecparams.Curve = ECCurve.CreateFromOid(new Oid(oidValue, curveName));
+                }
             }
 
             return ecparams;
@@ -263,6 +291,49 @@ namespace System.Security.Cryptography
                 pbeParameters,
                 destination,
                 out bytesWritten);
+        }
+
+        private bool PlaintextOnlyExport
+        {
+            get
+            {
+                const CngExportPolicies Exportable = CngExportPolicies.AllowPlaintextExport | CngExportPolicies.AllowExport;
+                return (Key.ExportPolicy & Exportable) == CngExportPolicies.AllowExport;
+            }
+        }
+
+        private ECParameters ExportPrivateExplicitParameters()
+        {
+            ECParameters ecparams = default;
+
+            if (PlaintextOnlyExport)
+            {
+                // We can't ask CNG for the explicit parameters when performing a PKCS#8 export. Instead,
+                // we ask CNG for the explicit parameters for the public part only, since the parameters are public.
+                // Then we ask CNG by encrypted PKCS#8 for the private parameters (D) and combine the explicit public
+                // key along with the private key.
+                const string TemporaryExportPassword = "DotnetExportPhrase";
+                byte[] publicKeyBlob = ExportFullKeyBlob(includePrivateParameters: false);
+                ECCng.ExportPrimeCurveParameters(ref ecparams, publicKeyBlob, includePrivateParameters: false);
+
+                byte[] exported = ExportEncryptedPkcs8(TemporaryExportPassword, 1);
+                EccKeyFormatHelper.ReadEncryptedPkcs8(
+                    exported,
+                    TemporaryExportPassword,
+                    out _,
+                    out ECParameters localParameters);
+
+                Debug.Assert(ecparams.Q.X.AsSpan().SequenceEqual(localParameters.Q.X));
+                Debug.Assert(ecparams.Q.Y.AsSpan().SequenceEqual(localParameters.Q.Y));
+                ecparams.D = localParameters.D;
+            }
+            else
+            {
+                byte[] blob = ExportFullKeyBlob(includePrivateParameters: true);
+                ECCng.ExportPrimeCurveParameters(ref ecparams, blob, includePrivateParameters: true);
+            }
+
+            return ecparams;
         }
     }
 }
