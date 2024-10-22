@@ -4174,6 +4174,10 @@ namespace {
 
             LinearLookupNibbleMap::SetUnlocked(pHp, pCode, FALSE);
 
+            // remove bottom two bits to ensure alignment math
+            // on ARM32 Thumb, the low bits indicate the thumb instruction set
+            pCode = ALIGN_DOWN(pCode, CODE_ALIGN);
+
             size_t delta = pCode - pHp->mapBase;
 
             size_t dwordIndex = GetDwordIndex(delta);
@@ -4212,6 +4216,10 @@ namespace {
             _ASSERTE(pRangeSection->_flags & RangeSection::RANGE_SECTION_CODEHEAP);
 
             TADDR knownAddr = LinearLookupNibbleMap::FindMethodCode(pRangeSection, currentPC);
+
+            // remove bottom two bits to ensure alignment math
+            // on ARM32 Thumb, the low bits indicate the thumb instruction set
+            currentPC = ALIGN_DOWN(currentPC, CODE_ALIGN);
 
             HeapList *pHp = pRangeSection->_pHeapList;
 
