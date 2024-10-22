@@ -19,10 +19,9 @@ variables:
   - name: dockerfilesFolder
     value: $(Build.SourcesDirectory)/eng/docker
   - name: sslStressProject
-    value: $(sourcesRoot)/System.Net.Security/tests/StressTests/SslStress
+    value: $(sourcesRoot)/System.Net.WebSockets/tests/StressTests/WebSocketStress
   - name: sdkBaseImage
     value: dotnet-sdk-libraries-current
-
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
