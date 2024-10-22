@@ -89,8 +89,10 @@ private:
     void ContainCheckReturnTrap(GenTreeOp* node);
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
+    bool TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next);
+#endif
 #ifdef TARGET_ARM64
-    bool      TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next);
     insCflags TruthifyingFlags(GenCondition cond);
     void      ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void      ContainCheckNeg(GenTreeOp* neg);
