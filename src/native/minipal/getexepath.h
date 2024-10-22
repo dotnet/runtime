@@ -25,8 +25,13 @@
 extern "C" {
 #endif
 
-// Returns the full path to the executable for the current process, resolving symbolic links.
-// The caller is responsible for releasing the buffer. Returns null on error.
+/**
+ * Get the full path to the executable for the current process.
+ * Resolves symbolic links. The caller is responsible for releasing the buffer.
+ *
+ * @return A pointer to a null-terminated string containing the executable path, 
+ *         or NULL if an error occurs.
+ */
 static inline char* minipal_getexepath(void)
 {
 #if defined(__APPLE__)

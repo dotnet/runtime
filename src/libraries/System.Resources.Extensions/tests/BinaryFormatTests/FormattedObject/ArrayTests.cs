@@ -48,7 +48,7 @@ public class ArrayTests : Common.ArrayTests<FormattedObjectSerializer>
         new DateTime[] { DateTime.MaxValue }
     };
 
-    public static IEnumerable<object[]> Array_TestData => StringArray_Parse_Data.Concat(PrimitiveArray_Parse_Data);
+    public static IEnumerable<object[]> Array_TestData => StringArray_Parse_Data.Concat<object[]>(PrimitiveArray_Parse_Data);
 
     public static TheoryData<Array> Array_UnsupportedTestData => new()
     {

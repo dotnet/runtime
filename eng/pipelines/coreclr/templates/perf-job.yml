@@ -5,7 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   runtimeVariant: ''
-  framework: net9.0 # Specify the appropriate framework when running release branches (ie net6.0 for release/6.0)
+  framework: net10.0 # Specify the appropriate framework when running release branches (ie net6.0 for release/6.0)
   liveLibrariesBuildConfig: ''
   variables: {}
   runtimeType: 'coreclr'
@@ -29,8 +29,8 @@ parameters:
   compare: false
   onlySanityCheck: false
   downloadSpecificBuild: null # buildId, pipeline, branchName, project
-  perfForkToUse: {} # url, branch
   crossBuild: false
+  perfBranch: 'main'
 
 ### Perf job
 
@@ -66,6 +66,7 @@ jobs:
     iosStripSymbols: ${{ parameters.iosStripSymbols }}
     hybridGlobalization: ${{ parameters.hybridGlobalization }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    extraSetupParameters: $(extraSetupParameters)
 
     ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'aot')) }}:
       helixTypeSuffix: '/wasm/aot'
@@ -93,51 +94,63 @@ jobs:
       - ${{ if eq(parameters.runtimeType, 'iOSNativeAOT')}}:
         - ${{ 'build_ios_arm64_release_iOSNativeAOT' }}
 
-    ${{ if and(eq(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'iOSNativeAOT'))) }}:
-      ${{ if eq(parameters.runtimeType, 'mono') }}:
-        extraSetupParameters: -Architecture ${{ parameters.archType }} -MonoDotnet $(Build.SourcesDirectory)\.dotnet-mono
-      ${{ if eq(parameters.runtimeType, 'coreclr') }}:
-        extraSetupParameters: -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Release\Tests\Core_Root -Architecture ${{ parameters.archType }}
-    ${{ if and(ne(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'iOSNativeAOT'))) }}:
-      ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
-        extraSetupParameters: --architecture ${{ parameters.archType }} --monodotnet $(Build.SourcesDirectory)/.dotnet-mono
-      ${{ if and(eq(parameters.runtimeType, 'wasm'), ne(parameters.codeGenType, 'AOT')) }}:
-        extraSetupParameters: --architecture ${{ parameters.archType }} --wasmbundle $(librariesDownloadDir)/bin/wasm --javascriptengine ${{ parameters.javascriptEngine }} --hybridglobalization ${{ parameters.hybridGlobalization }} $(extraSetupParametersSuffix)
-      ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'AOT')) }}:
-        extraSetupParameters: --architecture ${{ parameters.archType }} --wasmbundle $(librariesDownloadDir)/bin/wasm --wasmaot --javascriptengine ${{ parameters.javascriptEngine }} $(extraSetupParametersSuffix)
-      ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm')) }}:
-        extraSetupParameters: --architecture ${{ parameters.archType }} --monoaot $(librariesDownloadDir)/bin/aot --llvm
-      ${{ if and(eq(parameters.runtimeType, 'coreclr'), ne(parameters.osSubGroup, '_musl')) }}:
-        extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }}
-      ${{ if and(eq(parameters.runtimeType, 'coreclr'), eq(parameters.osSubGroup, '_musl')) }}:
-        extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }} --alpine
-    ${{ if in(parameters.runtimeType, 'AndroidMono') }}:
-      extraSetupParameters: -Architecture ${{ parameters.archType }} -AndroidMono
-    ${{ if in(parameters.runtimeType, 'iOSMono') }}:
-      extraSetupParameters: --architecture ${{ parameters.archType }} --iosmono --iosllvmbuild ${{ parameters.iOSLlvmBuild }} --iosstripsymbols ${{ parameters.iOSStripSymbols }} --hybridglobalization ${{ parameters.hybridGlobalization }}
-    ${{ if in(parameters.runtimeType, 'iOSNativeAOT') }}:
-      extraSetupParameters: --architecture ${{ parameters.archType }} --iosnativeaot --iosllvmbuild ${{ parameters.iOSLlvmBuild }} --iosstripsymbols ${{ parameters.iOSStripSymbols }} --hybridglobalization ${{ parameters.hybridGlobalization }}
-
     variables:
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
     - _crossBuildPropertyArg: ''
 
+    - name: _subGroupArg
+      ${{ if ne(parameters.osSubgroup, '') }}:
+        value: '--os-sub-group ${{ parameters.osSubgroup }}'
     - name: _compareArg
       ${{ if eq(parameters.compare, 'true') }}:
         value: '--compare'
     - name: _onlySanityCheckArg
       ${{ if eq(parameters.onlySanityCheck, 'true') }}:
         value: '--only-sanity'
-    - name: _perfForkArg
-      ${{ if ne(parameters.perfForkToUse.url, '') }}:
-        value: --perffork ${{ parameters.perfForkToUse.url }} --perfforkbranch ${{ coalesce(parameters.perfForkToUse.branch, 'main') }}
+    - name: _hybridGlobalizationArg
+      ${{ if eq(parameters.hybridGlobalization, 'True') }}:
+        value: '--hybrid-globalization'
+    - name: _pgoRunTypeArg
+      ${{ if ne(parameters.pgoRunType, '') }}:
+        value: '--pgo-run-type ${{ parameters.pgoRunType }}'
+    - name: _physicalPromotionRunTypeArg
+      ${{ if ne(parameters.physicalPromotionRunType, '') }}:
+        value: '--physical-promotion-run-type ${{ parameters.physicalPromotionRunType }}'
+    - name: _r2rRunTypeArg
+      ${{ if ne(parameters.r2rRunType, '') }}:
+        value: '--r2r-run-type ${{ parameters.r2rRunType }}'
+    - name: _experimentArg
+      ${{ if ne(parameters.experimentName, '') }}:
+        value: '--experiment-name ${{ parameters.experimentName }}'
+    - name: _jsEngineArg
+      ${{ if eq(parameters.runtimeType, 'wasm') }}:
+        value: '--javascript-engine ${{ parameters.javascriptEngine }}'
+    - name: _iOSLlvmBuildArg
+      ${{ if eq(parameters.iOSLlvmBuild, 'True') }}:
+        value: '--ios-llvm-build'
+    - name: _iOSStripSymbolsArg
+      ${{ if eq(parameters.iOSStripSymbols, 'True') }}:
+        value: '--ios-strip-symbols'
+    - name: _iosArgs
+      ${{ if in(parameters.runtimeType, 'iOSMono', 'iOSNativeAOT') }}:
+        value: '$(_iOSLlvmBuildArg) $(_iOSStripSymbolsArg)'
+    - name: _projectFileArg
+      ${{ if ne(parameters.projectFile, '') }}:
+        value: '--project-file ${{ parameters.projectFile }}'
 
-    - name: extraSetupParametersSuffix
-      value: "$(_compareArg) $(_onlySanityCheckArg) $(_perfForkArg)"
+    - name: extraSetupParameters
+      value: "--run-kind ${{ parameters.runKind }} --architecture ${{ parameters.archType }} --os-group ${{ parameters.osGroup }} $(_subGroupArg) --logical-machine ${{ parameters.logicalMachine }} --performance-repo-dir $(Agent.BuildDirectory)/performance --runtime-repo-dir $(Build.SourcesDirectory) --codegen-type ${{ parameters.codeGenType }} --runtime-type ${{ parameters.runtimeType }} --use-local-commit-time $(_compareArg) $(_onlySanityCheckArg) $(_hybridGlobalizationArg) $(_pgoRunTypeArg) $(_physicalPromotionRunTypeArg) $(_r2rRunTypeArg) $(_experimentArg) $(_jsEngineArg) $(_iosArgs) $(_projectFileArg)"
 
     - ${{ if eq(parameters.crossBuild, true) }}:
       - _crossBuildPropertyArg: '-cross'
+
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - name: Python
+        value: 'py -3'
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - name: Python
+        value: 'python3'
 
     - name: librariesDownloadDir
       value: '$(Build.SourcesDirectory)/artifacts'
@@ -151,6 +164,25 @@ jobs:
     frameworks:
       - ${{ parameters.framework }}
     steps:
+    - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+      - script: |
+          set -x
+          pwd
+          git clone https://github.com/dotnet/performance.git --depth 1 -b ${{ parameters.perfBranch }} --single-branch
+        displayName:  Clone performance
+        workingDirectory: $(Agent.BuildDirectory)
+    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      # Copy dotnet-runtime directory to Build.SourcesDirectory (TODO: Update yaml to just use the dotnet-runtime directory)
+      - task: CopyFiles@2
+        inputs:
+          SourceFolder: $(Build.SourcesDirectory)/dotnet-runtime
+          TargetFolder: $(Build.SourcesDirectory)
+      # And remove the original
+      - task: DeleteFiles@1
+        inputs:
+          SourceFolder: $(Build.SourcesDirectory)/dotnet-runtime
+      - checkout: git://internal/dotnet-performance@${{ parameters.perfBranch }}
+        path: performance
     # Extra steps that will be passed to the performance template and run before sending the job to helix (all of which is done in the template)
     - script: |
         $(Build.SourcesDirectory)/eng/common/msbuild.sh $(Build.SourcesDirectory)/eng/testing/performance/add_properties_to_pipeline.proj /t:SetVariables

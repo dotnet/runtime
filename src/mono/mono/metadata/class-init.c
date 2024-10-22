@@ -310,6 +310,10 @@ mono_class_setup_fields (MonoClass *klass)
 
 	/* Get the real size */
 	explicit_size = mono_metadata_packing_from_typedef (klass->image, klass->type_token, &packing_size, &real_size);
+
+	if (real_size > GINT32_TO_UINT32(INT32_MAX - MONO_ABI_SIZEOF (MonoObject)))
+		mono_class_set_type_load_failure (klass, "Can't load type %s. The size is too big.", m_class_get_name (klass));
+
 	if (explicit_size)
 		instance_size += real_size;
 
@@ -2322,7 +2326,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				}
 				/*TypeBuilders produce all sort of weird things*/
 				g_assert (image_is_dynamic (klass->image) || field_offsets [i] > 0);
-				real_size = field_offsets [i] + size;
+
+				gint64 raw_real_size = (gint64)field_offsets [i] + size;
+				real_size = (gint32)raw_real_size;
+
+				if (real_size != raw_real_size)
+					mono_class_set_type_load_failure (klass, "Can't load type %s. The size is too big.", m_class_get_name (klass));
 			}
 
 			instance_size = MAX (real_size, instance_size);
@@ -2381,7 +2390,13 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			/*
 			 * Calc max size.
 			 */
-			real_size = MAX (real_size, size + field_offsets [i]);
+			gint64 raw_real_size = (gint64)field_offsets [i] + size;
+			gint32 real_size_cast = (gint32)raw_real_size;
+
+			if (real_size_cast != raw_real_size)
+				mono_class_set_type_load_failure (klass, "Can't load type %s. The size is too big.", m_class_get_name (klass));
+
+			real_size = MAX (real_size, real_size_cast);
 		}
 
 		/* check for incorrectly aligned or overlapped by a non-object field */
@@ -2529,8 +2544,8 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		}
 	}
 
-	/*valuetypes can't be neither bigger than 1Mb or empty. */
-	if (klass->valuetype && (klass->instance_size <= 0 || klass->instance_size > (0x100000 + MONO_ABI_SIZEOF (MonoObject)))) {
+	/*valuetypes can not be size 0 or bigger than 2gb. */
+	if (klass->valuetype && (klass->instance_size <= 0 || klass->instance_size > INT32_MAX)) {
 		/* Special case compiler generated types */
 		/* Hard to check for [CompilerGenerated] here */
 		if (!strstr (klass->name, "StaticArrayInitTypeSize") && !strstr (klass->name, "$ArrayType"))

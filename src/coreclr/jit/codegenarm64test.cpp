@@ -1900,6 +1900,16 @@ void CodeGen::genArm64EmitterUnitTestsAdvSimd()
     theEmitter->emitIns_R_R_I(INS_stur, EA_8BYTE, REG_V7, REG_R10, 9);
     theEmitter->emitIns_R_R_I(INS_stur, EA_16BYTE, REG_V7, REG_R10, 17);
 
+    theEmitter->emitIns_R_R_I(INS_stlurb, EA_1BYTE, REG_V7, REG_R10, 0);
+    theEmitter->emitIns_R_R_I(INS_stlurh, EA_2BYTE, REG_V7, REG_R10, 0);
+    theEmitter->emitIns_R_R_I(INS_stlur, EA_4BYTE, REG_V7, REG_R10, 0);
+    theEmitter->emitIns_R_R_I(INS_stlur, EA_8BYTE, REG_V7, REG_R10, 0);
+
+    theEmitter->emitIns_R_R_I(INS_ldapurb, EA_1BYTE, REG_V8, REG_R9, 0);
+    theEmitter->emitIns_R_R_I(INS_ldapurh, EA_2BYTE, REG_V8, REG_R9, 0);
+    theEmitter->emitIns_R_R_I(INS_ldapur, EA_4BYTE, REG_V8, REG_R9, 0);
+    theEmitter->emitIns_R_R_I(INS_ldapur, EA_8BYTE, REG_V8, REG_R9, 0);
+
     // load/store pair
     theEmitter->emitIns_R_R_R(INS_ldnp, EA_8BYTE, REG_V0, REG_V1, REG_R10);
     theEmitter->emitIns_R_R_R_I(INS_stnp, EA_8BYTE, REG_V1, REG_V2, REG_R10, 0);

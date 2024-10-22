@@ -40,15 +40,13 @@ public abstract class ClassRecord : SerializationRecord
     internal List<object?> MemberValues { get; }
 
     /// <summary>
-    /// Checks if member of given name was present in the payload.
+    /// Checks if the member with the given name was present in the payload.
     /// </summary>
     /// <param name="memberName">The name of the member.</param>
     /// <returns><see langword="true" /> if it was present, otherwise <see langword="false" />.</returns>
     /// <remarks>
-    ///  <para>
-    ///   It's recommended to use this method when dealing with payload that may contain
+    ///   It's recommended to use this method when dealing with payload that might contain
     ///   different versions of the same type.
-    ///  </para>
     /// </remarks>
     public bool HasMember(string memberName) => ClassInfo.MemberNames.ContainsKey(memberName);
 
@@ -57,8 +55,8 @@ public abstract class ClassRecord : SerializationRecord
     /// </summary>
     /// <param name="memberName">The name of the member.</param>
     /// <returns>The value.</returns>
-    /// <exception cref="KeyNotFoundException"><paramref name="memberName" /> does not refer to a known member. You can use <see cref="HasMember(string)"/> to check if given member exists.</exception>
-    /// <exception cref="InvalidOperationException">Member of such name has value of a different type.</exception>
+    /// <exception cref="KeyNotFoundException"><paramref name="memberName" /> does not refer to a known member. You can use <see cref="HasMember(string)"/> to check if a given member exists.</exception>
+    /// <exception cref="InvalidOperationException">The member with the specified name has a value of a different type.</exception>
     public ClassRecord? GetClassRecord(string memberName) => GetMember<ClassRecord>(memberName);
 
     /// <inheritdoc cref="GetClassRecord(string)"/>
@@ -95,10 +93,10 @@ public abstract class ClassRecord : SerializationRecord
     public DateTime GetDateTime(string memberName) => GetMember<DateTime>(memberName);
 
     /// <returns>
-    /// <para>For primitive types like <see cref="int"/>, <see langword="string"/> or <see cref="DateTime"/> returns their value.</para>
+    /// <para>For primitive types like <see cref="int"/>, <see langword="string"/>, or <see cref="DateTime"/>, returns their value.</para>
     /// <para>For nulls, returns a null.</para>
     /// <para>For other types that are not arrays, returns an instance of <see cref="ClassRecord"/>.</para>
-    /// <para>For single-dimensional arrays returns <see cref="SZArrayRecord{T}"/> where the generic type is the primitive type or <see cref="ClassRecord"/>.</para>
+    /// <para>For single-dimensional arrays, returns <see cref="SZArrayRecord{T}"/> where the generic type is the primitive type or <see cref="ClassRecord"/>.</para>
     /// <para>For jagged and multi-dimensional arrays, returns an instance of <see cref="ArrayRecord"/>.</para>
     /// </returns>
     /// <inheritdoc cref="GetClassRecord(string)"/>
@@ -112,7 +110,7 @@ public abstract class ClassRecord : SerializationRecord
     /// </summary>
     /// <param name="memberName">The name of the field.</param>
     /// <returns>The serialization record, which can be any of <see cref="PrimitiveTypeRecord{T}"/>,
-    /// <see cref="ClassRecord"/>, <see cref="ArrayRecord"/> or <see langword="null" />.
+    /// <see cref="ClassRecord"/>, <see cref="ArrayRecord"/>, or <see langword="null" />.
     /// </returns>
     /// <exception cref="KeyNotFoundException"><paramref name="memberName" /> does not refer to a known member. You can use <see cref="HasMember(string)"/> to check if given member exists.</exception>
     /// <exception cref="InvalidOperationException">The specified member is not a <see cref="SerializationRecord"/>, but just a raw primitive value.</exception>

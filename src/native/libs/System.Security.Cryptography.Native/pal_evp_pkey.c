@@ -611,19 +611,20 @@ EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const cha
     return NULL;
 }
 
-EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle)
+EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle, int32_t* haveProvider)
 {
     ERR_clear_error();
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (!API_EXISTS(OSSL_PROVIDER_load))
     {
-        ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
+        *haveProvider = 0;
         return NULL;
     }
 #endif
 
 #ifdef NEED_OPENSSL_3_0
+    *haveProvider = 1;
     EVP_PKEY* ret = NULL;
     OSSL_LIB_CTX* libCtx = OSSL_LIB_CTX_new();
     OSSL_PROVIDER* prov = NULL;
@@ -730,6 +731,7 @@ end:
     (void)keyUri;
     ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
     *extraHandle = NULL;
+    *haveProvider = 0;
     return NULL;
 #endif
 }

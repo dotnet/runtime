@@ -17,9 +17,10 @@
    extension (eg. strike). There is no memory allocation system calls etc to purtub things */
 
 // ******************************************************************************
-// WARNING!!!: These classes are used by SOS in the diagnostics repo. Values should
-// added or removed in a backwards and forwards compatible way.
+// WARNING!!!: These classes are used by the runtime and SOS in the diagnostics 
+// repo. Values should added or removed in a backwards and forwards compatible way.
 // See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/stresslog.h
+//      https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/stresslog.h
 // Parser: https://github.com/dotnet/diagnostics/blob/main/src/SOS/Strike/stressLogDump.cpp
 // ******************************************************************************
 

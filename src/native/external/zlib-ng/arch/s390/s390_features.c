@@ -1,4 +1,4 @@
-#include "../../zbuild.h"
+#include "zbuild.h"
 #include "s390_features.h"
 
 #ifdef HAVE_SYS_AUXV_H

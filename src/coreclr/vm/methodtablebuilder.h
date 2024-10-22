@@ -1282,7 +1282,6 @@ private:
         // Com Interop, ComWrapper classes extend from ComObject
         bool fIsComObjectType;                  // whether this class is an instance of ComObject class
 #ifdef FEATURE_COMINTEROP
-        bool fIsMngStandardItf;                 // Set to true if the interface is a manages standard interface.
         bool fComEventItfType;                  // Set to true if the class is a special COM event interface.
 #endif // FEATURE_COMINTEROP
 #ifdef FEATURE_TYPEEQUIVALENCE

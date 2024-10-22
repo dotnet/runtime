@@ -28,9 +28,11 @@ endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${RUNTIME_ARCH_ASM_OBJECTS})
 add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
+target_link_libraries(Runtime.WorkstationGC PRIVATE minipal_objects_no_lto)
 
 add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
 add_dependencies(Runtime.ServerGC aot_eventing_headers)
+target_link_libraries(Runtime.ServerGC PRIVATE minipal_objects_no_lto)
 
 add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
 add_dependencies(standalonegc-disabled aot_eventing_headers)
@@ -60,11 +62,16 @@ if (CLR_CMAKE_TARGET_WIN32)
   add_library(Runtime.ServerGC.GuardCF STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
   target_compile_definitions(Runtime.ServerGC.GuardCF PRIVATE -DFEATURE_SVR_GC)
   set_target_properties(Runtime.ServerGC.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
+  target_link_libraries(Runtime.ServerGC.GuardCF PRIVATE minipal_objects_no_lto)
 
   if (CLR_CMAKE_TARGET_ARCH_AMD64)
     add_library(Runtime.VxsortEnabled.GuardCF STATIC ${VXSORT_SOURCES})
     set_target_properties(Runtime.VxsortEnabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
   endif (CLR_CMAKE_TARGET_ARCH_AMD64)
+
+  set_target_properties(minipal_objects_no_lto PROPERTIES
+    COMPILE_PDB_NAME "minipal"
+    COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
 endif (CLR_CMAKE_TARGET_WIN32)
 
 # Get the current list of definitions
@@ -120,6 +127,7 @@ if (CLR_CMAKE_TARGET_WIN32)
   add_dependencies(Runtime.ServerGC.GuardCF aot_eventing_headers)
   install_static_library(standalonegc-disabled.GuardCF aotsdk nativeaot)
   install_static_library(standalonegc-enabled.GuardCF aotsdk nativeaot)
+  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/minipal.pdb" DESTINATION aotsdk COMPONENT nativeaot)
 endif (CLR_CMAKE_TARGET_WIN32)
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
   install_static_library(Runtime.VxsortEnabled aotsdk nativeaot)

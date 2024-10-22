@@ -170,13 +170,6 @@ extern bool g_arm64_atomics_present;
 
 /******************* PAL-Specific Entrypoints *****************************/
 
-#define IsDebuggerPresent PAL_IsDebuggerPresent
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_IsDebuggerPresent();
-
 #define DLL_PROCESS_ATTACH 1
 #define DLL_THREAD_ATTACH  2
 #define DLL_THREAD_DETACH  3
@@ -191,6 +184,7 @@ PAL_IsDebuggerPresent();
 #define PAL_INITIALIZE_ENSURE_STACK_SIZE            0x20
 #define PAL_INITIALIZE_REGISTER_SIGNALS             0x40
 #define PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL   0x80
+#define PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS  0x100
 
 // PAL_Initialize() flags
 #define PAL_INITIALIZE                 (PAL_INITIALIZE_SYNC_THREAD | \
@@ -206,7 +200,8 @@ PAL_IsDebuggerPresent();
                                         PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | \
                                         PAL_INITIALIZE_ENSURE_STACK_SIZE | \
                                         PAL_INITIALIZE_REGISTER_SIGNALS | \
-                                        PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
+                                        PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL  | \
+                                        PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
 
 typedef DWORD (PALAPI_NOEXPORT *PTHREAD_START_ROUTINE)(LPVOID lpThreadParameter);
 typedef PTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE;

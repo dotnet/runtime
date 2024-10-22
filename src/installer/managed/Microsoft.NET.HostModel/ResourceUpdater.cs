@@ -67,7 +67,7 @@ namespace Microsoft.NET.HostModel
             if (_resourceData == null)
                 ThrowExceptionForInvalidUpdate();
 
-            using var module = new PEReader(File.Open(peFile, FileMode.Open, FileAccess.Read, FileShare.Read));
+            using var module = new PEReader(File.OpenRead(peFile));
             var moduleResources = new ResourceData(module);
             _resourceData.CopyResourcesFrom(moduleResources);
             return this;

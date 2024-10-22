@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Tests
         public static bool IsSupported => TKmacTrait.IsSupported;
         public static bool IsNotSupported => !IsSupported;
         public static KeySizes? PlatformKeySizeRequirements { get; } =
-            PlatformDetection.IsOpenSslSupported ? new KeySizes(4, 512, 1) : null;
+            PlatformDetection.IsOpenSslSupported && !PlatformDetection.IsAzureLinux ? new KeySizes(4, 512, 1) : null;
 
         public static int? PlatformMaxOutputSize { get; } = PlatformDetection.IsOpenSslSupported ? 0xFFFFFF / 8 : null;
         public static int? PlatformMaxCustomizationStringSize { get; } = PlatformDetection.IsOpenSslSupported ? 512 : null;

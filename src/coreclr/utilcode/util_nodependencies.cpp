@@ -144,7 +144,7 @@ BOOL GetRegistryLongValue(HKEY    hKeyParent,
 
 //----------------------------------------------------------------------------
 //
-// GetCurrentModuleFileName - Retrieve the current module's filename
+// GetCurrentExecutableFileName - Retrieve the current executable's filename
 //
 // Arguments:
 //    pBuffer - output string buffer
@@ -155,7 +155,7 @@ BOOL GetRegistryLongValue(HKEY    hKeyParent,
 // Note:
 //
 //----------------------------------------------------------------------------
-HRESULT GetCurrentModuleFileName(SString& pBuffer)
+HRESULT GetCurrentExecutableFileName(SString& pBuffer)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -211,7 +211,7 @@ BOOL IsCurrentModuleFileNameInAutoExclusionList()
     PathString wszAppName;
 
     // Get the appname to look up in the exclusion or inclusion list.
-    if (GetCurrentModuleFileName(wszAppName) != S_OK)
+    if (GetCurrentExecutableFileName(wszAppName) != S_OK)
     {
         // Assume it is not on the exclusion list if we cannot find the module's filename.
         return FALSE;
@@ -380,7 +380,7 @@ HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *p
             long iValue;
 
             // Check DebugApplications setting
-            if ((SUCCEEDED(GetCurrentModuleFileName(wzAppName))) &&
+            if ((SUCCEEDED(GetCurrentExecutableFileName(wzAppName))) &&
                 (
                     GetRegistryLongValue(HKEY_LOCAL_MACHINE, kDebugApplicationsPoliciesKey, wzAppName, &iValue, TRUE) ||
                     GetRegistryLongValue(HKEY_LOCAL_MACHINE, kDebugApplicationsKey, wzAppName, &iValue, TRUE) ||

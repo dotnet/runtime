@@ -217,9 +217,20 @@ namespace System.Buffers
             Vector128<ushort> source0 = Vector128.LoadUnsafe(ref source);
             Vector128<ushort> source1 = Vector128.LoadUnsafe(ref source, (nuint)Vector128<ushort>.Count);
 
-            return Sse2.IsSupported
-                ? Sse2.PackUnsignedSaturate(source0.AsInt16(), source1.AsInt16())
-                : AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(source0), source1);
+            if (Sse2.IsSupported)
+            {
+                return Sse2.PackUnsignedSaturate(source0.AsInt16(), source1.AsInt16());
+            }
+            else if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(source0), source1);
+            }
+            else
+            {
+                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                ThrowHelper.ThrowUnreachableException();
+                return default;
+            }
         }
 
         // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
@@ -323,9 +334,20 @@ namespace System.Buffers
             // We want to shift the last element of left (15) to be the first element of the result
             // result: [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
 
-            return Ssse3.IsSupported
-                ? Ssse3.AlignRight(right, left, 15)
-                : AdvSimd.ExtractVector128(left, right, 15);
+            if (Ssse3.IsSupported)
+            {
+                return Ssse3.AlignRight(right, left, 15);
+            }
+            else if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.ExtractVector128(left, right, 15);
+            }
+            else
+            {
+                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                ThrowHelper.ThrowUnreachableException();
+                return default;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -339,9 +361,20 @@ namespace System.Buffers
             // We want to shift the last two elements of left (14, 15) to be the first elements of the result
             // result: [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
 
-            return Ssse3.IsSupported
-                ? Ssse3.AlignRight(right, left, 14)
-                : AdvSimd.ExtractVector128(left, right, 14);
+            if (Ssse3.IsSupported)
+            {
+                return Ssse3.AlignRight(right, left, 14);
+            }
+            else if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.ExtractVector128(left, right, 14);
+            }
+            else
+            {
+                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                ThrowHelper.ThrowUnreachableException();
+                return default;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

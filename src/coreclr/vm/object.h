@@ -77,7 +77,6 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
 
 class MethodTable;
 class Thread;
-class BaseDomain;
 class Assembly;
 class DomainAssembly;
 class AssemblyNative;
@@ -463,7 +462,7 @@ class Object
  private:
     VOID ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<Object>;
 };
 
 template<>
@@ -639,7 +638,7 @@ public:
     inline static unsigned GetBoundsOffset(MethodTable* pMT);
     inline static unsigned GetLowerBoundsOffset(MethodTable* pMT);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ArrayBase>;
 };
 
 #ifndef DACCESS_COMPILE
@@ -951,7 +950,7 @@ private:
     static STRINGREF* EmptyStringRefPtr;
     static bool EmptyStringIsFrozen;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<StringObject>;
 };
 
 template<>
@@ -1219,13 +1218,6 @@ class ReflectModuleBaseObject : public Object
     }
 };
 
-NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pModule, OBJECTREF keepAlive);
-#define FC_RETURN_MODULE_OBJECT(pModule, refKeepAlive) FC_INNER_RETURN(ReflectModuleBaseObject*, GetRuntimeModuleHelper(__me, pModule, refKeepAlive))
-
-
-
-
-
 class ThreadBaseObject;
 class SynchronizationContextObject: public Object
 {
@@ -1302,7 +1294,6 @@ typedef DPTR(class ThreadBaseObject) PTR_ThreadBaseObject;
 class ThreadBaseObject : public Object
 {
     friend class ClrDataAccess;
-    friend class ThreadNative;
     friend class CoreLibBinder;
     friend class Object;
 
@@ -1332,6 +1323,11 @@ private:
 
     // Only used by managed code, see comment there
     bool          m_MayNeedResetForThreadPool;
+
+    // Set in unmanaged code and read in managed code.
+    bool          m_IsDead;
+
+    bool          m_IsThreadPool;
 
 protected:
     // the ctor and dtor can do no useful work.
@@ -1384,6 +1380,12 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_Priority;
     }
+
+    void SetIsDead()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_IsDead = true;
+    }
 };
 
 // MarshalByRefObjectBaseObject
@@ -1408,7 +1410,7 @@ class AssemblyBaseObject : public Object
     OBJECTREF     m_pModuleEventHandler;   // Delegate for 'resolve module' event
     STRINGREF     m_fullname;              // Slot for storing assemblies fullname
     OBJECTREF     m_pSyncRoot;             // Pointer to loader allocator to keep collectible types alive, and to serve as the syncroot for assembly building in ref.emit
-    DomainAssembly* m_pAssembly;           // Pointer to the Assembly Structure
+    Assembly* m_pAssembly;                 // Pointer to the Assembly Structure
 
   protected:
     AssemblyBaseObject() { LIMITED_METHOD_CONTRACT; }
@@ -1416,16 +1418,10 @@ class AssemblyBaseObject : public Object
 
   public:
 
-    void SetAssembly(DomainAssembly* p)
+    void SetAssembly(Assembly* p)
     {
         LIMITED_METHOD_CONTRACT;
         m_pAssembly = p;
-    }
-
-    DomainAssembly* GetDomainAssembly()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pAssembly;
     }
 
     Assembly* GetAssembly();
@@ -1436,8 +1432,6 @@ class AssemblyBaseObject : public Object
         SetObjectReference(&m_pSyncRoot, pSyncRoot);
     }
 };
-NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembly *pAssembly, OBJECTREF keepAlive);
-#define FC_RETURN_ASSEMBLY_OBJECT(pAssembly, refKeepAlive) FC_INNER_RETURN(AssemblyBaseObject*, GetRuntimeAssemblyHelper(__me, pAssembly, refKeepAlive))
 
 // AssemblyLoadContextBaseObject
 // This class is the base class for AssemblyLoadContext
@@ -2170,6 +2164,64 @@ typedef PTR_LoaderAllocatorObject LOADERALLOCATORREF;
 
 #endif // FEATURE_COLLECTIBLE_TYPES
 
+typedef DPTR(class GenericCacheStruct) PTR_GenericCacheStruct;
+class GenericCacheStruct
+{
+    friend class CoreLibBinder;
+    public:
+
+    ARRAYBASEREF GetTable() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _table;
+    }
+
+    int32_t CacheElementCount() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return GetTable()->GetNumComponents() - 1;
+    }
+
+    ARRAYBASEREF GetSentinelTable() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _sentinelTable;
+    }
+
+    void SetTable(ARRAYBASEREF table)
+    {
+        WRAPPER_NO_CONTRACT;
+        SetObjectReference((OBJECTREF*)&_table, (OBJECTREF)table);
+    }
+
+    void SetLastFlushSize(int32_t lastFlushSize)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _lastFlushSize = lastFlushSize;
+    }
+
+    int32_t GetInitialCacheSize() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _initialCacheSize;
+    }
+
+#ifdef DEBUG
+    static void ValidateLayout(MethodTable* pMTOfInstantiation);
+#endif
+
+    private:
+    // README:
+    // If you modify the order of these fields, make sure to update the definition in
+    // BCL for this object.
+
+    ARRAYBASEREF _table;
+    ARRAYBASEREF _sentinelTable;
+    int32_t _lastFlushSize;
+    int32_t _initialCacheSize;
+    int32_t _maxCacheSize;
+};
+
 // This class corresponds to Exception on the managed side.
 typedef DPTR(class ExceptionObject) PTR_ExceptionObject;
 #include "pshpack4.h"
@@ -2385,7 +2437,7 @@ private:
     INT32       _xcode;
     INT32       _HResult;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ExceptionObject>;
 };
 
 template<>

@@ -18,7 +18,7 @@ public abstract class ArrayRecord : SerializationRecord
     private protected ArrayRecord(ArrayInfo arrayInfo)
     {
         ArrayInfo = arrayInfo;
-        ValuesToRead = arrayInfo.TotalElementsCount;
+        ValuesToRead = arrayInfo.FlattenedLength;
     }
 
     /// <summary>
@@ -26,6 +26,12 @@ public abstract class ArrayRecord : SerializationRecord
     /// </summary>
     /// <value>A buffer of integers that represent the number of elements in every dimension.</value>
     public abstract ReadOnlySpan<int> Lengths { get; }
+
+    /// <summary>
+    /// When overridden in a derived class, gets the total number of all elements in every dimension.
+    /// </summary>
+    /// <value>A number that represent the total number of all elements in every dimension.</value>
+    public virtual long FlattenedLength => ArrayInfo.FlattenedLength;
 
     /// <summary>
     /// Gets the rank of the array.
@@ -44,7 +50,12 @@ public abstract class ArrayRecord : SerializationRecord
 
     internal long ValuesToRead { get; private protected set; }
 
-    private protected ArrayInfo ArrayInfo { get; }
+    internal ArrayInfo ArrayInfo { get; }
+
+    internal bool IsJagged
+        => ArrayInfo.ArrayType == BinaryArrayType.Jagged
+        // It is possible to have binary array records have an element type of array without being marked as jagged.
+        || TypeName.GetElementType().IsArray;
 
     /// <summary>
     /// Allocates an array and fills it with the data provided in the serialized records (in case of primitive types like <see cref="string"/> or <see cref="int"/>) or the serialized records themselves.

@@ -299,7 +299,7 @@ namespace System.Numerics.Tensors
         public static bool GreaterThanAny<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, T y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static bool GreaterThanAny<T>(T x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static bool GreaterThanOrEqualAll<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
-        public static bool GreaterThanOrEqualAll<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> s, T y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
+        public static bool GreaterThanOrEqualAll<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, T y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static bool GreaterThanOrEqualAll<T>(T x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static bool GreaterThanOrEqualAny<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static bool GreaterThanOrEqualAny<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, T y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
@@ -333,16 +333,16 @@ namespace System.Numerics.Tensors
         public static System.Numerics.Tensors.Tensor<T> LeadingZeroCount<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IBinaryInteger<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> LeadingZeroCount<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IBinaryInteger<T> { throw null; }
         public static bool LessThanAll<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
-        public static bool LessThanAll<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> f, T x) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
+        public static bool LessThanAll<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, T y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static bool LessThanAll<T>(T x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static bool LessThanAny<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
-        public static bool LessThanAny<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> f, T x) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
+        public static bool LessThanAny<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, T y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static bool LessThanAny<T>(T x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static bool LessThanOrEqualAll<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
-        public static bool LessThanOrEqualAll<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> f, T x) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
+        public static bool LessThanOrEqualAll<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, T y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static bool LessThanOrEqualAll<T>(T x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static bool LessThanOrEqualAny<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
-        public static bool LessThanOrEqualAny<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> f, T x) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
+        public static bool LessThanOrEqualAny<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, T y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static bool LessThanOrEqualAny<T>(T x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static System.Numerics.Tensors.Tensor<bool> LessThanOrEqual<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<bool> LessThanOrEqual<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y, in System.Numerics.Tensors.TensorSpan<bool> destination) where T : System.Numerics.IComparisonOperators<T, T, bool> { throw null; }

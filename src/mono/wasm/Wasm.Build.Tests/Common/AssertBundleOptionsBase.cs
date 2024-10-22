@@ -12,7 +12,7 @@ public abstract record AssertBundleOptionsBase(
     bool IsPublish,
     string TargetFramework,
     string BinFrameworkDir,
-    string? PredefinedIcudt,
+    string? CustomIcuFile,
     string BundleDirName = "wwwroot",
     GlobalizationMode GlobalizationMode = GlobalizationMode.Sharded,
     string BootJsonFileName = "blazor.boot.json",

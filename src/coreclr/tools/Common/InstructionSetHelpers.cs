@@ -117,9 +117,9 @@ namespace System.CommandLine
             else if (instructionSet != null)
             {
                 List<string> instructionSetParams = new List<string>();
+                string[] instructionSetParamsInput = instructionSet.Split(',');
 
                 // Normalize instruction set format to include implied +.
-                string[] instructionSetParamsInput = instructionSet.Split(',');
                 for (int i = 0; i < instructionSetParamsInput.Length; i++)
                 {
                     instructionSet = instructionSetParamsInput[i].Trim();
@@ -128,14 +128,15 @@ namespace System.CommandLine
                         throw new CommandLineException(string.Format(mustNotBeMessage, ""));
 
                     char firstChar = instructionSet[0];
+
                     if ((firstChar != '+') && (firstChar != '-'))
                     {
-                        instructionSet =  "+" + instructionSet;
+                        instructionSet = "+" + instructionSet;
                     }
+
                     instructionSetParams.Add(instructionSet);
                 }
 
-                Dictionary<string, bool> instructionSetSpecification = new Dictionary<string, bool>();
                 foreach (string instructionSetSpecifier in instructionSetParams)
                 {
                     instructionSet = instructionSetSpecifier.Substring(1);

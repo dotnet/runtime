@@ -8,11 +8,19 @@ namespace System.ComponentModel
 {
     public class ToolboxItemAttributeTests
     {
+        internal static bool IDesignerHostIsSupported => AppContext.TryGetSwitch("System.ComponentModel.Design.IDesignerHost.IsSupported", out bool isSupported) ? isSupported : true;
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public void Ctor_Bool(bool defaultType)
         {
+            if (!IDesignerHostIsSupported && defaultType)
+            {
+                AssertExtensions.Throws<NotSupportedException>(() => new ToolboxItemAttribute(defaultType));
+                return;
+            }
+
             var attribute = new ToolboxItemAttribute(defaultType);
             if (defaultType)
             {

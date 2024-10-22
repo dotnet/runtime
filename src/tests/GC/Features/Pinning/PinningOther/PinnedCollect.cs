@@ -7,10 +7,12 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
+using Xunit;
 
 public class Test_PinnedCollect
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float[] arr = new float[100];
         GCHandle handle1 = GCUtil.Alloc(arr, GCHandleType.Pinned);

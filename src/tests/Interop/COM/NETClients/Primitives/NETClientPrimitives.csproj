@@ -7,6 +7,7 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="ArrayTests.cs" />
+    <Compile Include="CallViaReflectionTests.cs" />
     <Compile Include="ErrorTests.cs" />
     <Compile Include="NumericTests.cs" />
     <Compile Include="StringTests.cs" />

@@ -8,7 +8,11 @@
 
   <ItemGroup>
     <PackageReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" />
+    <!-- Upgrade to a non-vulnerable version of Asn1 - which will be ignored in favor of the framework copy  -->
+    <PackageReference Include="System.Formats.Asn1" Version="$(SystemFormatsAsn1Version)" ExcludeAssets="All" />
   </ItemGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
 
   <ItemGroup>
     <ProjectReference Include="..\TestUtils\TestUtils.csproj" />

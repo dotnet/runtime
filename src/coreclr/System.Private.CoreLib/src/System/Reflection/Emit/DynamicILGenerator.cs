@@ -23,7 +23,7 @@ namespace System.Reflection.Emit
 
         internal void GetCallableMethod(RuntimeModule module, DynamicMethod dm)
         {
-            dm._methodHandle = ModuleHandle.GetDynamicMethod(dm,
+            dm._methodHandle = ModuleHandle.GetDynamicMethod(
                                           module,
                                           m_methodBuilder.Name,
                                           (byte[])m_scope[m_methodSigToken]!,
@@ -861,7 +861,7 @@ namespace System.Reflection.Emit
         #region Internal Methods
         internal void GetCallableMethod(RuntimeModule module, DynamicMethod dm)
         {
-            dm._methodHandle = ModuleHandle.GetDynamicMethod(dm,
+            dm._methodHandle = ModuleHandle.GetDynamicMethod(
                 module, m_method.Name, (byte[])m_scope[m_methodSignature]!, new DynamicResolver(this));
         }
 

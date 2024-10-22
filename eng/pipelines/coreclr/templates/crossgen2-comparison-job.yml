@@ -122,12 +122,11 @@ jobs:
           WorkItemCommand:
             echo $(displayname_comparison_job) ;
             echo Targeting $(targetFlavor) ;
-            chmod +x     $HELIX_WORKITEM_PAYLOAD/corerun;
+            chmod +x     $HELIX_WORKITEM_PAYLOAD/crossgen2/crossgen2;
             mkdir -p     $HELIX_WORKITEM_PAYLOAD/log;
             export CORE_ROOT=$HELIX_WORKITEM_PAYLOAD;
             python3 -u $HELIX_CORRELATION_PAYLOAD/crossgen2_comparison.py crossgen_framework
-            --crossgen    $HELIX_WORKITEM_PAYLOAD/crossgen2/crossgen2.dll
-            --dotnet      $HELIX_WORKITEM_PAYLOAD/corerun
+            --crossgen    $HELIX_WORKITEM_PAYLOAD/crossgen2/crossgen2
             --core_root   $HELIX_WORKITEM_PAYLOAD/prebuiltWork/dlls
             --result_dir  $HELIX_WORKITEM_UPLOAD_ROOT
             --target_os   $(target_crossgen2_os)
@@ -145,8 +144,7 @@ jobs:
             md        %HELIX_WORKITEM_PAYLOAD%\log &
             set CORE_ROOT=%HELIX_WORKITEM_PAYLOAD%&
             python -u %HELIX_CORRELATION_PAYLOAD%\crossgen2_comparison.py crossgen_framework
-            --crossgen    %HELIX_WORKITEM_PAYLOAD%\crossgen2\crossgen2.dll
-            --dotnet      %HELIX_WORKITEM_PAYLOAD%\corerun.exe
+            --crossgen    %HELIX_WORKITEM_PAYLOAD%\crossgen2\crossgen2.exe
             --core_root   %HELIX_WORKITEM_PAYLOAD%\prebuiltWork\dlls
             --result_dir  %HELIX_WORKITEM_UPLOAD_ROOT%
             --target_os   $(target_crossgen2_os)

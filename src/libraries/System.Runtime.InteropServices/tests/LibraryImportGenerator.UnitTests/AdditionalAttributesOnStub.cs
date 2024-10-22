@@ -49,7 +49,7 @@ namespace LibraryImportGenerator.UnitTests
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
-            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: true, TestTargetFramework.Net);
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: true);
         }
 
         [Fact]
@@ -63,7 +63,7 @@ namespace LibraryImportGenerator.UnitTests
                     public static partial void Method();
                 }
                 """;
-            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: false, TestTargetFramework.Net);
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: false);
         }
 
         [Fact]
@@ -97,7 +97,7 @@ namespace LibraryImportGenerator.UnitTests
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
-            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName, attributeAdded: true, TestTargetFramework.Net);
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName, attributeAdded: true);
         }
 
         [Fact]
@@ -111,15 +111,12 @@ namespace LibraryImportGenerator.UnitTests
                     public static partial void Method();
                 }
                 """;
-            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName, attributeAdded: false, TestTargetFramework.Net);
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName, attributeAdded: false);
         }
 
         public static IEnumerable<object[]> GetDownlevelTargetFrameworks()
         {
-            yield return new object[] { TestTargetFramework.Net, true };
-            yield return new object[] { TestTargetFramework.Net6, true };
-            yield return new object[] { TestTargetFramework.Core, false };
-            yield return new object[] { TestTargetFramework.Standard, false };
+            yield return new object[] { TestTargetFramework.Standard2_0, false };
             yield return new object[] { TestTargetFramework.Framework, false };
         }
 
@@ -138,7 +135,7 @@ namespace LibraryImportGenerator.UnitTests
                     public static partial bool Method();
                 }
                 """;
-            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: expectSkipLocalsInit, targetFramework);
+            await VerifyDownlevelSourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: expectSkipLocalsInit, targetFramework);
         }
 
         [Fact]
@@ -172,7 +169,7 @@ namespace LibraryImportGenerator.UnitTests
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
-            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: false, TestTargetFramework.Net);
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: false);
         }
 
         [Fact]
@@ -206,7 +203,7 @@ namespace LibraryImportGenerator.UnitTests
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
-            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: false, TestTargetFramework.Net);
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: false);
         }
 
         [Fact]
@@ -244,9 +241,9 @@ namespace LibraryImportGenerator.UnitTests
             await VerifyCS.VerifySourceGeneratorAsync(source);
         }
 
-        private static Task VerifySourceGeneratorAsync(string source, string typeName, string methodName, string? attributeName, bool attributeAdded, TestTargetFramework targetFramework)
+        private static Task VerifyDownlevelSourceGeneratorAsync(string source, string typeName, string methodName, string? attributeName, bool attributeAdded, TestTargetFramework targetFramework)
         {
-            AttributeAddedTest test = new(typeName, methodName, attributeName, attributeAdded, targetFramework)
+            AttributeAddedTest<DownlevelLibraryImportGenerator> test = new(typeName, methodName, attributeName, attributeAdded, targetFramework)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
@@ -254,7 +251,18 @@ namespace LibraryImportGenerator.UnitTests
             return test.RunAsync();
         }
 
-        class AttributeAddedTest : VerifyCS.Test
+        private static Task VerifySourceGeneratorAsync(string source, string typeName, string methodName, string? attributeName, bool attributeAdded)
+        {
+            AttributeAddedTest<Microsoft.Interop.LibraryImportGenerator> test = new(typeName, methodName, attributeName, attributeAdded)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
+            return test.RunAsync();
+        }
+
+        class AttributeAddedTest<TSourceGenerator> : Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<TSourceGenerator>.Test
+            where TSourceGenerator : new()
         {
             private readonly string _typeName;
             private readonly string _methodName;
@@ -263,6 +271,15 @@ namespace LibraryImportGenerator.UnitTests
 
             public AttributeAddedTest(string typeName, string methodName, string? attributeName, bool attributeAdded, TestTargetFramework targetFramework)
                 : base(targetFramework)
+            {
+                _typeName = typeName;
+                _methodName = methodName;
+                _attributeName = attributeName;
+                _expectAttributeAdded = attributeAdded;
+            }
+
+            public AttributeAddedTest(string typeName, string methodName, string? attributeName, bool attributeAdded)
+                : base(referenceAncillaryInterop: true)
             {
                 _typeName = typeName;
                 _methodName = methodName;

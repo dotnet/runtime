@@ -2,7 +2,6 @@
     <PropertyGroup>
         <FeatureCoreCLR>true</FeatureCoreCLR>
         <FeatureEventTrace>true</FeatureEventTrace>
-        <FeatureICastable>true</FeatureICastable>
         <FeaturePerfTracing>true</FeaturePerfTracing>
         <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
@@ -35,7 +34,6 @@
         <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
         <DefineConstants Condition="'$(FeatureXplatEventSource)' == 'true'">$(DefineConstants);FEATURE_EVENTSOURCE_XPLAT</DefineConstants>
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
-        <DefineConstants Condition="'$(FeatureICastable)' == 'true'">$(DefineConstants);FEATURE_ICASTABLE</DefineConstants>
         <DefineConstants Condition="'$(FeatureEHFunclets)' == 'true'">$(DefineConstants);FEATURE_EH_FUNCLETS</DefineConstants>
 
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>

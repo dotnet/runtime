@@ -11,7 +11,7 @@ using System.Linq;
 namespace Microsoft.Extensions.FileProviders.Physical
 {
     /// <summary>
-    /// Represents a directory on a physical filesystem
+    /// Represents a directory on a physical file system.
     /// </summary>
     public class PhysicalDirectoryInfo : IFileInfo, IDirectoryContents
     {
@@ -20,9 +20,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private readonly ExclusionFilters _filters;
 
         /// <summary>
-        /// Initializes an instance of <see cref="PhysicalDirectoryInfo"/> that wraps an instance of <see cref="System.IO.DirectoryInfo"/>
+        /// Initializes an instance of <see cref="PhysicalDirectoryInfo"/> that wraps an instance of <see cref="System.IO.DirectoryInfo"/>.
         /// </summary>
-        /// <param name="info">The directory</param>
+        /// <param name="info">The directory to represent.</param>
         public PhysicalDirectoryInfo(DirectoryInfo info)
         {
             _info = info;
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         public bool Exists => _info.Exists;
 
         /// <summary>
-        /// Always equals -1.
+        /// Gets a value that's always -1.
         /// </summary>
         public long Length => -1;
 
@@ -49,20 +49,20 @@ namespace Microsoft.Extensions.FileProviders.Physical
         public string Name => _info.Name;
 
         /// <summary>
-        /// The time when the directory was last written to.
+        /// Gets the time when the directory was last written to.
         /// </summary>
         public DateTimeOffset LastModified => _info.LastWriteTimeUtc;
 
         /// <summary>
-        /// Always true.
+        /// Gets a value that's always <see langword="true"/>.
         /// </summary>
         public bool IsDirectory => true;
 
         /// <summary>
         /// Always throws an exception because read streams are not support on directories.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Always thrown</exception>
-        /// <returns>Never returns</returns>
+        /// <exception cref="InvalidOperationException">In all cases.</exception>
+        /// <returns>Never returns.</returns>
         public Stream CreateReadStream()
         {
             throw new InvalidOperationException(SR.CannotCreateStream);

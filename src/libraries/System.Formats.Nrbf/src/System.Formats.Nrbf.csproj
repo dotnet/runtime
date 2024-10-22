@@ -5,19 +5,22 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <CLSCompliant>false</CLSCompliant>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Provides a safe reader for .NET Remoting Binary Format (NRBF) payloads.
-
-Commonly Used Types:
-System.Formats.Nrbf.NrbfDecoder</PackageDescription>    
+    <PackageDescription>Provides a safe reader for .NET Remoting Binary Format (NRBF) payloads.</PackageDescription>
 
     <!-- Disabling baseline validation since this is a brand new package.
          Once this package has shipped a stable version, the following line
          should be removed in order to re-enable validation. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
-    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
-    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\Experimentals.cs"
+         Link="Common\Experimentals.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs"
+         Link="Common\ExperimentalAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

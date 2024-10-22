@@ -121,100 +121,100 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
             dwarfReg = 31;
             break;
         case REG_F0:
-            dwarfReg = 64;
+            dwarfReg = 32;
             break;
         case REG_F1:
-            dwarfReg = 65;
+            dwarfReg = 33;
             break;
         case REG_F2:
-            dwarfReg = 66;
+            dwarfReg = 34;
             break;
         case REG_F3:
-            dwarfReg = 67;
+            dwarfReg = 35;
             break;
         case REG_F4:
-            dwarfReg = 68;
+            dwarfReg = 36;
             break;
         case REG_F5:
-            dwarfReg = 69;
+            dwarfReg = 37;
             break;
         case REG_F6:
-            dwarfReg = 70;
+            dwarfReg = 38;
             break;
         case REG_F7:
-            dwarfReg = 71;
+            dwarfReg = 39;
             break;
         case REG_F8:
-            dwarfReg = 72;
+            dwarfReg = 40;
             break;
         case REG_F9:
-            dwarfReg = 73;
+            dwarfReg = 41;
             break;
         case REG_F10:
-            dwarfReg = 74;
+            dwarfReg = 42;
             break;
         case REG_F11:
-            dwarfReg = 75;
+            dwarfReg = 43;
             break;
         case REG_F12:
-            dwarfReg = 76;
+            dwarfReg = 44;
             break;
         case REG_F13:
-            dwarfReg = 77;
+            dwarfReg = 45;
             break;
         case REG_F14:
-            dwarfReg = 78;
+            dwarfReg = 46;
             break;
         case REG_F15:
-            dwarfReg = 79;
+            dwarfReg = 47;
             break;
         case REG_F16:
-            dwarfReg = 80;
+            dwarfReg = 48;
             break;
         case REG_F17:
-            dwarfReg = 81;
+            dwarfReg = 49;
             break;
         case REG_F18:
-            dwarfReg = 82;
+            dwarfReg = 50;
             break;
         case REG_F19:
-            dwarfReg = 83;
+            dwarfReg = 51;
             break;
         case REG_F20:
-            dwarfReg = 84;
+            dwarfReg = 52;
             break;
         case REG_F21:
-            dwarfReg = 85;
+            dwarfReg = 53;
             break;
         case REG_F22:
-            dwarfReg = 86;
+            dwarfReg = 54;
             break;
         case REG_F23:
-            dwarfReg = 87;
+            dwarfReg = 55;
             break;
         case REG_F24:
-            dwarfReg = 88;
+            dwarfReg = 56;
             break;
         case REG_F25:
-            dwarfReg = 89;
+            dwarfReg = 57;
             break;
         case REG_F26:
-            dwarfReg = 90;
+            dwarfReg = 58;
             break;
         case REG_F27:
-            dwarfReg = 91;
+            dwarfReg = 59;
             break;
         case REG_F28:
-            dwarfReg = 92;
+            dwarfReg = 60;
             break;
         case REG_F29:
-            dwarfReg = 93;
+            dwarfReg = 61;
             break;
         case REG_F30:
-            dwarfReg = 94;
+            dwarfReg = 62;
             break;
         case REG_F31:
-            dwarfReg = 95;
+            dwarfReg = 63;
             break;
 
         default:

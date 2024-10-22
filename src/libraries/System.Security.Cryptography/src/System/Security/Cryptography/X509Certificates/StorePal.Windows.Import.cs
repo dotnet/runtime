@@ -212,26 +212,6 @@ namespace System.Security.Cryptography.X509Certificates
             return new StorePal(certStore);
         }
 
-        // this method maps a X509KeyStorageFlags enum to a combination of crypto API flags
-        private static Interop.Crypt32.PfxCertStoreFlags MapKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
-        {
-            Interop.Crypt32.PfxCertStoreFlags dwFlags = 0;
-            if ((keyStorageFlags & X509KeyStorageFlags.UserKeySet) == X509KeyStorageFlags.UserKeySet)
-                dwFlags |= Interop.Crypt32.PfxCertStoreFlags.CRYPT_USER_KEYSET;
-            else if ((keyStorageFlags & X509KeyStorageFlags.MachineKeySet) == X509KeyStorageFlags.MachineKeySet)
-                dwFlags |= Interop.Crypt32.PfxCertStoreFlags.CRYPT_MACHINE_KEYSET;
-
-            if ((keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable)
-                dwFlags |= Interop.Crypt32.PfxCertStoreFlags.CRYPT_EXPORTABLE;
-            if ((keyStorageFlags & X509KeyStorageFlags.UserProtected) == X509KeyStorageFlags.UserProtected)
-                dwFlags |= Interop.Crypt32.PfxCertStoreFlags.CRYPT_USER_PROTECTED;
-
-            if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
-                dwFlags |= Interop.Crypt32.PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | Interop.Crypt32.PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
-
-            return dwFlags;
-        }
-
         // this method maps X509Store OpenFlags to a combination of crypto API flags
         private static Interop.Crypt32.CertStoreFlags MapX509StoreFlags(StoreLocation storeLocation, OpenFlags flags)
         {

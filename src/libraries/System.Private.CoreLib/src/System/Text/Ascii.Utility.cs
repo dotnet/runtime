@@ -1677,7 +1677,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<byte> ExtractAsciiVector(Vector256<ushort> vectorFirst, Vector256<ushort> vectorSecond)
+        internal static Vector256<byte> ExtractAsciiVector(Vector256<ushort> vectorFirst, Vector256<ushort> vectorSecond)
         {
             return Avx2.IsSupported
                 ? PackedSpanHelpers.FixUpPackedVector256Result(Avx2.PackUnsignedSaturate(vectorFirst.AsInt16(), vectorSecond.AsInt16()))
@@ -1685,7 +1685,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<byte> ExtractAsciiVector(Vector512<ushort> vectorFirst, Vector512<ushort> vectorSecond)
+        internal static Vector512<byte> ExtractAsciiVector(Vector512<ushort> vectorFirst, Vector512<ushort> vectorSecond)
         {
             return Avx512BW.IsSupported
                 ? PackedSpanHelpers.FixUpPackedVector512Result(Avx512BW.PackUnsignedSaturate(vectorFirst.AsInt16(), vectorSecond.AsInt16()))

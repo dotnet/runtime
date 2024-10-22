@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
             field = "abcd";
         }
 
-        public string GetField => field;
+        public string GetField => this.field;
 
         private string field;
 

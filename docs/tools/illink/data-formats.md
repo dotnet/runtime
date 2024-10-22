@@ -382,7 +382,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
     <type fullname="Assembly.A">
       <field name="MyTypeField">
         <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
-          <argument>DefaultConstructor</argument>
+          <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">DefaultConstructor</argument>
         </attribute>
       </field>
     </type>
@@ -398,7 +398,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
     <type fullname="Assembly.A">
       <property name="MyTypeProperty">
         <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
-          <argument>DefaultConstructor</argument>
+          <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">DefaultConstructor</argument>
         </attribute>
       </property>
     </type>
@@ -414,7 +414,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
     <type fullname="Assembly.A">
       <event name="MyTypeEvent">
         <attribute fullname="CustomAttribute" assembly="AssemblyName">
-          <argument>DefaultConstructor</argument>
+          <argument>ArgumentValue</argument>
         </attribute>
       </event>
     </type>
@@ -431,21 +431,21 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
       <method signature="System.Void Method1(System.Type)">
         <parameter name="typeParameter">
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
-            <argument>DefaultConstructor</argument>
+            <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">DefaultConstructor</argument>
           </attribute>
         </parameter>
       </method>
       <method signature="System.Type Method2()">
         <return>
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
-            <argument>PublicConstructors</argument>
+            <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicConstructors</argument>
           </attribute>
         </return>
       </method>
       <method signature="Method3&lt;T&gt;(T)">
         <parameter name="genericParameter">
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
-            <argument>DefaultConstructor</argument>
+            <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">DefaultConstructor</argument>
           </attribute>
         </parameter>
       </method>
@@ -463,17 +463,17 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
       <method signature="System.Void Method1(System.Type, System.Type, System.Type)">
         <parameter name="typeParameter1">
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
-            <argument>DefaultConstructor</argument>
+            <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">DefaultConstructor</argument>
           </attribute>
         </parameter>
         <parameter name="typeParameter2">
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
-            <argument>DefaultConstructor</argument>
+            <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">DefaultConstructor</argument>
           </attribute>
         </parameter>
         <parameter name="typeParameter3">
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
-            <argument>PublicConstructors</argument>
+            <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicConstructors</argument>
           </attribute>
         </parameter>
       </method>
@@ -491,7 +491,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
       <type name="NestedType">
         <property name="MyTypeField">
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
-            <argument>DefaultConstructor</argument>
+            <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">DefaultConstructor</argument>
           </attribute>
         </property>
       </type>
@@ -507,7 +507,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
   <assembly fullname="*">
     <type fullname="Namespace.SpecialAttribute">
       <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
-        <argument>DefaultConstructor</argument>
+        <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">DefaultConstructor</argument>
       </attribute>
     </type>
   </assembly>
@@ -528,7 +528,7 @@ attributes are applied.
       <method signature="System.String TestMethod()">
         <return>
           <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
-            <argument>PublicConstructors</argument>
+            <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicConstructors</argument>
           </attribute>
         </return>
       </method>

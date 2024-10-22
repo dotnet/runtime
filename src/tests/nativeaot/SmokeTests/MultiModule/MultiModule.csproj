@@ -7,6 +7,8 @@
     <!-- This test always runs as multimodule. It's not supported if we don't have framework object files. -->
     <CLRTestTargetUnsupported Condition="'$(BuildNativeAotFrameworkObjects)' != 'true'">true</CLRTestTargetUnsupported>
     <IlcMultiModule>true</IlcMultiModule>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MultiModule.cs" />

@@ -380,7 +380,6 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
             case BBJ_COND:
                 // replace predecessor in true/false successors.
-                noway_assert(!bottom->IsLast());
                 fgReplacePred(top->GetFalseEdge(), bottom);
                 fgReplacePred(top->GetTrueEdge(), bottom);
                 break;
@@ -1242,11 +1241,23 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
 
     if (!kind.needsRuntimeLookup)
     {
-        void *critSect = nullptr, **pCrit = nullptr;
-        critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
-        noway_assert((!critSect) != (!pCrit));
+        CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(info.compClassHnd);
+        if (ptr != NULL)
+        {
+            setMethodHasFrozenObjects();
+            tree = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+        }
+        else
+        {
+            void *critSect = nullptr, **pCrit = nullptr;
+            critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
+            noway_assert((!critSect) != (!pCrit));
 
-        tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
+            tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
+
+            // Given the class handle, get the pointer to the Monitor.
+            tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_REF, tree);
+        }
     }
     else
     {
@@ -1292,7 +1303,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         noway_assert(tree); // tree should now contain the CORINFO_CLASS_HANDLE for the exact class.
 
         // Given the class handle, get the pointer to the Monitor.
-        tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_I_IMPL, tree);
+        tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_REF, tree);
     }
 
     noway_assert(tree);
@@ -1579,14 +1590,13 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
     if (info.compIsStatic)
     {
         tree = fgGetCritSectOfStaticMethod();
-        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER_STATIC : CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, tree,
-                                   varAddrNode);
     }
     else
     {
         tree = gtNewLclvNode(lvaThisVar, TYP_REF);
-        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER : CORINFO_HELP_MON_EXIT, TYP_VOID, tree, varAddrNode);
     }
+
+    tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER : CORINFO_HELP_MON_EXIT, TYP_VOID, tree, varAddrNode);
 
 #ifdef DEBUG
     if (verbose)
@@ -2495,14 +2505,14 @@ PhaseStatus Compiler::fgAddInternal()
         if (info.compIsStatic)
         {
             tree = fgGetCritSectOfStaticMethod();
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER_STATIC, TYP_VOID, tree);
         }
         else
         {
             noway_assert(lvaTable[info.compThisArg].lvType == TYP_REF);
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, tree);
         }
+
+        tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, tree);
 
         /* Create a new basic block and stick the call in it */
 
@@ -2528,13 +2538,13 @@ PhaseStatus Compiler::fgAddInternal()
         if (info.compIsStatic)
         {
             tree = fgGetCritSectOfStaticMethod();
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, tree);
         }
         else
         {
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, tree);
         }
+
+        tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, tree);
 
         fgNewStmtNearEnd(genReturnBB, tree);
 
@@ -3385,16 +3395,19 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
         return;
     }
 
-    JITDUMP(FMT_BB " requires throw helper block for %s\n", srcBlk->bbNum, sckName(kind));
-
-    unsigned const refData = (kind == SCK_FAIL_FAST) ? 0 : bbThrowIndex(srcBlk);
+    // Fetch block data and designator
+    //
+    AcdKeyDesignator dsg     = AcdKeyDesignator::KD_NONE;
+    unsigned const   refData = (kind == SCK_FAIL_FAST) ? 0 : bbThrowIndex(srcBlk, &dsg);
 
     // Look for an existing entry that matches what we're looking for
     //
-    AddCodeDsc* add = fgFindExcptnTarget(kind, refData);
+    AddCodeDsc* add = fgFindExcptnTarget(kind, srcBlk);
 
     if (add != nullptr)
     {
+        JITDUMP(FMT_BB " requires throw helper block for %s, sharing ACD%u (data 0x%08x)\n", srcBlk->bbNum,
+                sckName(kind), add->acdNum, refData);
         return;
     }
 
@@ -3402,30 +3415,40 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 
     // Allocate a new entry and prepend it to the list
     //
-    add          = new (this, CMK_Unknown) AddCodeDsc;
-    add->acdData = refData;
-    add->acdKind = kind;
-    add->acdNext = fgAddCodeList;
-#if !FEATURE_FIXED_OUT_ARGS
-    add->acdStkLvl     = 0;
-    add->acdStkLvlInit = false;
-#endif // !FEATURE_FIXED_OUT_ARGS
+    add              = new (this, CMK_Unknown) AddCodeDsc;
+    add->acdDstBlk   = nullptr;
+    add->acdTryIndex = srcBlk->bbTryIndex;
+    add->acdHndIndex = srcBlk->bbHndIndex;
+    add->acdKeyDsg   = dsg;
+    add->acdKind     = kind;
 
     // This gets set true in the stack level setter
     // if there's still a need for this helper
     add->acdUsed = false;
 
-    fgAddCodeList = add;
-
-    // Defer creating of the blocks until later.
-    //
-    add->acdDstBlk = srcBlk;
+#if !FEATURE_FIXED_OUT_ARGS
+    add->acdStkLvl     = 0;
+    add->acdStkLvlInit = false;
+#endif // !FEATURE_FIXED_OUT_ARGS
+    INDEBUG(add->acdNum = acdCount++);
 
     // Add to map
     //
     AddCodeDscMap* const map = fgGetAddCodeDscMap();
-    AddCodeDscKey        key(kind, refData);
+    AddCodeDscKey        key(add);
+    assert(key.Data() == refData);
     map->Set(key, add);
+
+    JITDUMP(FMT_BB " requires throw helper block for %s, created ACD%u with data 0x%08x\n", srcBlk->bbNum,
+            sckName(kind), add->acdNum, key.Data());
+
+#ifdef DEBUG
+    // Verify we can re-lookup...
+    AddCodeDscKey key2(kind, srcBlk, this);
+    AddCodeDsc*   add2 = nullptr;
+    assert(map->Lookup(key2, &add2));
+    assert(add == add2);
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -3436,7 +3459,7 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 //
 PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 {
-    if (fgAddCodeList == nullptr)
+    if (fgAddCodeDscMap == nullptr)
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
@@ -3457,22 +3480,17 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
 
-    for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
+    for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(fgAddCodeDscMap))
     {
-        // Create the target basic block in the region indicated by srcBlk.
+        // Create the target basic block in the region indicated by the acd info
         //
-        BasicBlock* const srcBlk = add->acdDstBlk;
-
-        // Double-check that this is a fail fast, or that srcBlk hasn't changed EH
-        // regions since the time the descriptor was created.
-        //
-        assert((add->acdKind == SCK_FAIL_FAST) || (bbThrowIndex(srcBlk) == add->acdData));
         assert(add->acdKind != SCK_NONE);
+        bool const        putInFilter = (add->acdKeyDsg == AcdKeyDesignator::KD_FLT);
+        BasicBlock* const newBlk      = fgNewBBinRegion(jumpKinds[add->acdKind], add->acdTryIndex, add->acdHndIndex,
+                                                        /* nearBlk */ nullptr, putInFilter,
+                                                        /* runRarely */ true, /* insertAtEnd */ true);
 
-        BasicBlock* const newBlk = fgNewBBinRegion(jumpKinds[add->acdKind], srcBlk,
-                                                   /* runRarely */ true, /* insertAtEnd */ true);
-
-        // Update the descriptor
+        // Update the descriptor so future lookups can find the block
         //
         add->acdDstBlk = newBlk;
 
@@ -3480,25 +3498,26 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
         if (verbose)
         {
             const char* msgWhere = "";
-            if (!srcBlk->hasTryIndex() && !srcBlk->hasHndIndex())
+            switch (add->acdKeyDsg)
             {
-                msgWhere = "non-EH region";
-            }
-            else if (!srcBlk->hasTryIndex())
-            {
-                msgWhere = "handler";
-            }
-            else if (!srcBlk->hasHndIndex())
-            {
-                msgWhere = "try";
-            }
-            else if (srcBlk->getTryIndex() < srcBlk->getHndIndex())
-            {
-                msgWhere = "try";
-            }
-            else
-            {
-                msgWhere = "handler";
+                case AcdKeyDesignator::KD_NONE:
+                    msgWhere = "non-EH region";
+                    break;
+
+                case AcdKeyDesignator::KD_HND:
+                    msgWhere = "handler";
+                    break;
+
+                case AcdKeyDesignator::KD_TRY:
+                    msgWhere = "try";
+                    break;
+
+                case AcdKeyDesignator::KD_FLT:
+                    msgWhere = "filter";
+                    break;
+
+                default:
+                    msgWhere = "? unexpected";
             }
 
             const char* msg;
@@ -3527,12 +3546,12 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
                     break;
             }
 
-            printf("\nAdding throw helper " FMT_BB " for %s in %s%s (inspired by " FMT_BB ")\n", newBlk->bbNum,
-                   sckName(add->acdKind), msgWhere, msg, srcBlk->bbNum);
+            printf("\nAdding throw helper " FMT_BB " for ACD%u %s in %s%s\n", newBlk->bbNum, add->acdNum,
+                   sckName(add->acdKind), msgWhere, msg);
         }
 #endif // DEBUG
 
-        //  Mark the block as added by the compiler and not removable by future flow
+        // Mark the block as added by the compiler and not removable by future flow
         // graph optimizations. Note that no target block points to these blocks.
         //
         newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
@@ -3621,29 +3640,245 @@ void Compiler::fgCreateThrowHelperBlockCode(AddCodeDsc* add)
 //
 // Arguments:
 //    kind -- kind of exception to throw
-//    refData -- bbThrowIndex of the block that will jump to the throw helper
+//    fromBlock -- block that will jump to the throw helper
 //
 // Return Value:
 //    Code descriptor for the appropriate throw helper block, or nullptr if no such
 //    descriptor exists.
 //
-Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData)
+Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock)
 {
     assert(fgUseThrowHelperBlocks() || (kind == SCK_FAIL_FAST));
     AddCodeDsc*          add = nullptr;
     AddCodeDscMap* const map = fgGetAddCodeDscMap();
-    AddCodeDscKey        key(kind, refData);
+    AddCodeDscKey        key(kind, fromBlock, this);
     map->Lookup(key, &add);
 
     if (add == nullptr)
     {
         // We shouldn't be asking for these blocks late in compilation
         // unless we know there are entries to be found.
+        if (fgRngChkThrowAdded)
+        {
+            JITDUMP(FMT_BB ": unexpected request for new throw helper: kind %d (%s), data 0x%08x\n", fromBlock->bbNum,
+                    kind, sckName(kind), key.Data());
+        }
         assert(!fgRngChkThrowAdded);
     }
 
     return add;
 }
+
+//------------------------------------------------------------------------
+// bbThrowIndex: find acd map key for a given block
+//
+// Arguments:
+//    blk -- block that may eventually throw an exception
+//    dsg [out] -- designator for which region controls throw block placement
+//
+// Return Value:
+//    encoded region value to use in acd key formation
+//
+unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
+{
+    if (!UsesFunclets())
+    {
+        if (blk->hasTryIndex())
+        {
+            *dsg = AcdKeyDesignator::KD_TRY;
+        }
+        else
+        {
+            *dsg = AcdKeyDesignator::KD_NONE;
+        }
+        return blk->bbTryIndex;
+    }
+
+    const unsigned tryIndex = blk->bbTryIndex;
+    const unsigned hndIndex = blk->bbHndIndex;
+    const bool     inTry    = tryIndex > 0;
+    const bool     inHnd    = hndIndex > 0;
+
+    if (!inTry && !inHnd)
+    {
+        *dsg = AcdKeyDesignator::KD_NONE;
+        return 0;
+    }
+
+    assert(inTry || inHnd);
+
+    if (inTry && (!inHnd || (tryIndex < hndIndex)))
+    {
+        // The most enclosing region is a try body, use it
+        assert(tryIndex <= 0x3FFFFFFF);
+        *dsg = AcdKeyDesignator::KD_TRY;
+        return tryIndex;
+    }
+
+    // The most enclosing region is a handler which will be a funclet
+    // Now we have to figure out if blk is in the filter or handler
+    assert(hndIndex <= 0x3FFFFFFF);
+    assert(hndIndex >= 1);
+    if (ehGetDsc(hndIndex - 1)->InFilterRegionBBRange(blk))
+    {
+        *dsg = AcdKeyDesignator::KD_FLT;
+        return hndIndex | 0x80000000;
+    }
+
+    *dsg = AcdKeyDesignator::KD_HND;
+    return hndIndex | 0x40000000;
+}
+
+//------------------------------------------------------------------------
+// AddCodedDscKey: construct from kind and block
+//
+// Arguments:
+//    kind - exception kind
+//    block - block throwing (or potentially throwing) an exception
+//
+// Returns:
+//    appropriate lookup key
+//
+Compiler::AddCodeDscKey::AddCodeDscKey(SpecialCodeKind kind, BasicBlock* block, Compiler* comp)
+    : acdKind(kind)
+{
+    if (acdKind == SCK_FAIL_FAST)
+    {
+        acdData = 0;
+    }
+    else
+    {
+        AcdKeyDesignator dsg;
+        acdData = comp->bbThrowIndex(block, &dsg);
+    }
+}
+
+//------------------------------------------------------------------------
+// AddCodedDscKey: construct from AddCodeDsc
+//
+// Arguments:
+//    add - add code dsc in querstion
+//
+// Returns:
+//    appropriate lookup key
+//
+Compiler::AddCodeDscKey::AddCodeDscKey(AddCodeDsc* add)
+    : acdKind(add->acdKind)
+{
+    if (acdKind == SCK_FAIL_FAST)
+    {
+        acdData = 0;
+    }
+    else
+    {
+        switch (add->acdKeyDsg)
+        {
+            case AcdKeyDesignator::KD_NONE:
+                acdData = 0;
+                break;
+            case AcdKeyDesignator::KD_TRY:
+                acdData = add->acdTryIndex;
+                break;
+            case AcdKeyDesignator::KD_HND:
+                acdData = add->acdHndIndex | 0x40000000;
+                break;
+            case AcdKeyDesignator::KD_FLT:
+                acdData = add->acdHndIndex | 0x80000000;
+                break;
+            default:
+                unreached();
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// UpdateKeyDesignator: determine new key designator after modifying
+//   the region indices.
+//
+// Arguments:
+//   compiler - current compiler instance
+//
+// Returns:
+//   true if the key desinator changes
+//
+bool Compiler::AddCodeDsc::UpdateKeyDesignator(Compiler* compiler)
+{
+    // This ACD may now have a new enclosing region.
+    // Figure out the new parent key designator.
+    //
+    // For example, suppose there is a try that has an array
+    // bounds check and an empty finally, all within a
+    // finally. When we remove the try, the ACD for the bounds
+    // check changes from being enclosed in a try to being
+    // enclosed in a finally.
+    //
+    const bool inHnd = acdHndIndex > 0;
+    const bool inTry = acdTryIndex > 0;
+
+    AcdKeyDesignator newDsg = AcdKeyDesignator::KD_NONE;
+
+    if (!compiler->UsesFunclets())
+    {
+        // Non-funclet case
+        //
+        newDsg = inTry ? AcdKeyDesignator::KD_TRY : AcdKeyDesignator::KD_NONE;
+    }
+    else if (!inTry && !inHnd)
+    {
+        // Moved outside of all EH regions.
+        //
+        newDsg = AcdKeyDesignator::KD_NONE;
+    }
+    else if (inTry && (!inHnd || (acdTryIndex < acdHndIndex)))
+    {
+        // Moved into a parent try region.
+        //
+        newDsg = AcdKeyDesignator::KD_TRY;
+    }
+    else
+    {
+        // Moved into a parent handler region.
+        // Note this cannot be a filter region.
+        //
+        newDsg = AcdKeyDesignator::KD_HND;
+    }
+
+    bool result = (newDsg != acdKeyDsg);
+    acdKeyDsg   = newDsg;
+
+    return result;
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// Dump: dump info about an AddCodeDesc
+//
+void Compiler::AddCodeDsc::Dump()
+{
+    printf("ACD%u %s ", acdNum, sckName(acdKind));
+    switch (acdKeyDsg)
+    {
+        case AcdKeyDesignator::KD_NONE:
+            printf("in method region");
+            break;
+        case AcdKeyDesignator::KD_TRY:
+            printf("in try region of EH#%u", acdTryIndex - 1);
+            break;
+        case AcdKeyDesignator::KD_HND:
+            printf("in handler region of EH#%u", acdHndIndex - 1);
+            break;
+        case AcdKeyDesignator::KD_FLT:
+            printf("in filter region of EH#%u", acdHndIndex - 1);
+            break;
+        default:
+            printf("(unexpected region)");
+            break;
+    }
+
+    AddCodeDscKey key(this);
+    printf(" map key 0x%x\n", key.Data());
+}
+#endif
 
 //------------------------------------------------------------------------
 // fgSetTreeSeq: Sequence the tree, setting the "gtPrev" and "gtNext" links.
@@ -4359,12 +4594,34 @@ FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByIndex(unsigned index)
 //
 FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByHeader(BasicBlock* block)
 {
-    // TODO-TP: This can use binary search based on post order number.
-    for (FlowGraphNaturalLoop* loop : m_loops)
+    if (!m_dfsTree->Contains(block))
     {
-        if (loop->m_header == block)
+        return nullptr;
+    }
+
+    // Loops are stored in reverse post-order,
+    // so we can binary-search for the desired loop's header by its post-order number.
+    size_t min = 0;
+    size_t max = NumLoops();
+
+    while (min < max)
+    {
+        const size_t                mid    = min + ((max - min) / 2);
+        FlowGraphNaturalLoop* const loop   = m_loops[mid];
+        BasicBlock* const           header = loop->m_header;
+
+        if (header == block)
         {
             return loop;
+        }
+        else if (header->bbPostorderNum < block->bbPostorderNum)
+        {
+            max = mid;
+        }
+        else
+        {
+            assert(header->bbPostorderNum > block->bbPostorderNum);
+            min = mid + 1;
         }
     }
 
@@ -5718,9 +5975,9 @@ bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
 
     Compiler*       comp   = m_dfsTree->GetCompiler();
     BasicBlockVisit result = VisitLoopBlocks([=](BasicBlock* block) {
-        if (comp->bbIsTryBeg(block))
+        if (!BasicBlock::sameEHRegion(block, GetHeader()))
         {
-            INDEBUG(*reason = "Loop has a `try` begin");
+            INDEBUG(*reason = "Loop not entirely within one EH region");
             return BasicBlockVisit::Abort;
         }
 

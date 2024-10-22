@@ -50,7 +50,7 @@ int initialize_runtime()
 #ifndef WASM_SINGLE_FILE
 	mono_set_assemblies_path("managed");
 #endif
-	mono_wasm_load_runtime("", 0);
+	mono_wasm_load_runtime(0);
 
 #ifdef WASI_AFTER_RUNTIME_LOADED_CALLS
 	// This is supplied from the MSBuild itemgroup @(WasiAfterRuntimeLoaded)
@@ -113,6 +113,7 @@ int main(int argc, char * argv[]) {
 	}
 	ret = ret < 0 ? -ret : ret;
 
+	// until WASI can work with unix exit code https://github.com/WebAssembly/wasi-cli/pull/44
 	char* dotnet_wasi_print_exit_code = monoeg_g_getenv ("DOTNET_WASI_PRINT_EXIT_CODE");
 	if (ret != 0 && dotnet_wasi_print_exit_code && strcmp(dotnet_wasi_print_exit_code, "1") == 0)
 	{

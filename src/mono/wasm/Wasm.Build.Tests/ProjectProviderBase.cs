@@ -36,7 +36,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public string? ProjectDir { get; set; } = _projectDir;
     protected ITestOutputHelper _testOutput = new TestOutputWrapper(_testOutput);
     protected BuildEnvironment _buildEnv = BuildTestBase.s_buildEnv;
-    public string BundleDirName { get; set; } = "wwwroot";
+    protected abstract string BundleDirName { get; }
 
     public bool IsFingerprintingSupported { get; protected set; }
 
@@ -364,12 +364,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 expected.Add("icudt_hybrid.dat");
                 expected.Add("segmentation-rules.json");
                 break;
-            case GlobalizationMode.PredefinedIcu:
-                if (string.IsNullOrEmpty(assertOptions.PredefinedIcudt))
-                    throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
+            case GlobalizationMode.Custom:
+                if (string.IsNullOrEmpty(assertOptions.CustomIcuFile))
+                    throw new ArgumentException("WasmBuildTest is invalid, value for Custom globalization mode is required when GlobalizationMode=Custom.");
 
                 // predefined ICU name can be identical with the icu files from runtime pack
-                expected.Add(Path.GetFileName(assertOptions.PredefinedIcudt));
+                expected.Add(Path.GetFileName(assertOptions.CustomIcuFile));
                 break;
             case GlobalizationMode.Sharded:
                 // icu shard chosen based on the locale
@@ -401,12 +401,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
 
         AssertFileNames(expected, actual);
-        if (assertOptions.GlobalizationMode is GlobalizationMode.PredefinedIcu)
+        if (assertOptions.GlobalizationMode is GlobalizationMode.Custom)
         {
-            string srcPath = assertOptions.PredefinedIcudt!;
+            string srcPath = assertOptions.CustomIcuFile!;
             string runtimePackDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.TargetFramework, assertOptions.RuntimeType);
             if (!Path.IsPathRooted(srcPath))
-                srcPath = Path.Combine(runtimePackDir, assertOptions.PredefinedIcudt!);
+                srcPath = Path.Combine(runtimePackDir, assertOptions.CustomIcuFile!);
             TestUtils.AssertSameFile(srcPath, actual.Single());
         }
     }
@@ -414,7 +414,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public BootJsonData AssertBootJson(AssertBundleOptionsBase options)
     {
         EnsureProjectDirIsSet();
-        // string binFrameworkDir = FindBinFrameworkDir(options.Config, options.IsPublish, options.TargetFramework);
         string binFrameworkDir = options.BinFrameworkDir;
         string bootJsonPath = Path.Combine(binFrameworkDir, options.BootJsonFileName);
         Assert.True(File.Exists(bootJsonPath), $"Expected to find {bootJsonPath}");
@@ -520,14 +519,9 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         Assert.Equal(expected, actualFileNames);
     }
 
-    public virtual string FindBinFrameworkDir(string config, bool forPublish, string framework, string? bundleDirName = null, string? projectDir = null)
+    public virtual string FindBinFrameworkDir(string config, bool forPublish, string framework, string? projectDir = null)
     {
-        EnsureProjectDirIsSet();
-        string basePath = Path.Combine(projectDir ?? ProjectDir!, "bin", config, framework);
-        if (forPublish)
-            basePath = FindSubDirIgnoringCase(basePath, "publish");
-
-        return Path.Combine(basePath, bundleDirName ?? this.BundleDirName, "_framework");
+        throw new NotImplementedException();
     }
 
     [MemberNotNull(nameof(ProjectDir))]

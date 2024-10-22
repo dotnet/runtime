@@ -674,6 +674,18 @@ static HRESULT PrettyPrintTypeA(
         sprintf_s(tempBuffer, 64, "pMT: %p", pMT);
         IfFailGo(appendStrA(out, tempBuffer));
         break;
+    
+    case ELEMENT_TYPE_CMOD_INTERNAL:
+        {
+            bool required = *typePtr++ != 0;
+            void* pMT;
+            memcpy(&pMT, &typePtr, sizeof(pMT));
+            typePtr += sizeof(pMT);
+            CHAR tempBuffer[64];
+            sprintf_s(tempBuffer, 64, "pMT: %p", pMT);
+            IfFailGo(appendStrA(out, tempBuffer));
+            break;
+        }
 
     case ELEMENT_TYPE_VALUETYPE:
         str = "value class ";

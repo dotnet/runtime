@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.Versioning;
 
 namespace System.Net
 {
@@ -42,6 +43,8 @@ namespace System.Net
                 }
             }
         }
+
+        public const bool SupportsGetNameInfo = true;
 
         public static unsafe SocketError TryGetAddrInfo(string name, bool justAddresses, AddressFamily addressFamily, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
         {

@@ -15,6 +15,7 @@ namespace Internal.Runtime.InteropServices
     [SupportedOSPlatform("windows")]
     internal static class InMemoryAssemblyLoader
     {
+        [FeatureSwitchDefinition("System.Runtime.InteropServices.EnableCppCLIHostActivation")]
         private static bool IsSupported { get; } = InitializeIsSupported();
         private static bool InitializeIsSupported() => AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableCppCLIHostActivation", out bool isSupported) ? isSupported : true;
 

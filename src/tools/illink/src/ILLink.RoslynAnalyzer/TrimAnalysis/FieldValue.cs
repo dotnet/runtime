@@ -15,11 +15,12 @@ namespace ILLink.Shared.TrimAnalysis
 		{
 			FieldSymbol = fieldSymbol;
 			StaticType = new (fieldSymbol.Type);
+			DynamicallyAccessedMemberTypes = FlowAnnotations.GetFieldAnnotation (fieldSymbol);
 		}
 
 		public readonly IFieldSymbol FieldSymbol;
 
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes => FieldSymbol.GetDynamicallyAccessedMemberTypes ();
+		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
 		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
 			=> new string[] { FieldSymbol.GetDisplayName () };

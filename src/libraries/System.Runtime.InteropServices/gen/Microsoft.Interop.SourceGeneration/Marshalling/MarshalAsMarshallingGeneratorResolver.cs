@@ -26,11 +26,11 @@ namespace Microsoft.Interop
         }
 
         /// <summary>
-        /// Create an <see cref="IMarshallingGenerator"/> instance for marshalling the supplied type in the given position.
+        /// Create an <see cref="IUnboundMarshallingGenerator"/> instance for marshalling the supplied type in the given position.
         /// </summary>
         /// <param name="info">Type details</param>
         /// <param name="context">Metadata about the stub the type is associated with</param>
-        /// <returns>A <see cref="IMarshallingGenerator"/> instance.</returns>
+        /// <returns>A <see cref="IUnboundMarshallingGenerator"/> instance.</returns>
         public ResolvedGenerator Create(
             TypePositionInfo info,
             StubCodeContext context)
@@ -51,7 +51,7 @@ namespace Microsoft.Interop
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Single }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R4, _) }
                     or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Double }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R8, _) }:
                     // TODO: Report the MarshalAs attribute as unnecessary
-                    return ResolvedGenerator.Resolved(s_blittable);
+                    return ResolvedGenerator.Resolved(s_blittable.Bind(info, context));
 
                 // Enum with no marshalling info
                 case { ManagedType: EnumTypeInfo enumType, MarshallingAttributeInfo: NoMarshallingInfo }:
@@ -59,37 +59,37 @@ namespace Microsoft.Interop
                     SpecialType underlyingSpecialType = enumType.UnderlyingType;
                     if (underlyingSpecialType == SpecialType.System_Boolean || underlyingSpecialType == SpecialType.System_Char)
                     {
-                        return ResolvedGenerator.NotSupported(new(info, context));
+                        return ResolvedGenerator.NotSupported(info, context, new(info));
                     }
-                    return ResolvedGenerator.Resolved(s_blittable);
+                    return ResolvedGenerator.Resolved(s_blittable.Bind(info, context));
 
                 // Pointer with no marshalling info
                 case { ManagedType: PointerTypeInfo{ IsFunctionPointer: false }, MarshallingAttributeInfo: NoMarshallingInfo }:
-                    return ResolvedGenerator.Resolved(s_blittable);
+                    return ResolvedGenerator.Resolved(s_blittable.Bind(info, context));
 
                 // Function pointer with no marshalling info
                 case { ManagedType: PointerTypeInfo { IsFunctionPointer: true }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
-                    return ResolvedGenerator.Resolved(s_blittable);
+                    return ResolvedGenerator.Resolved(s_blittable.Bind(info, context));
 
                 // Bool with marshalling info
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.U1, _) }:
-                    return ResolvedGenerator.Resolved(s_byteBool);
+                    return ResolvedGenerator.Resolved(s_byteBool.Bind(info, context));
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1, _) }:
-                    return ResolvedGenerator.Resolved(s_signed_byteBool);
+                    return ResolvedGenerator.Resolved(s_signed_byteBool.Bind(info, context));
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.U4, _) }:
-                    return ResolvedGenerator.Resolved(s_winBool);
+                    return ResolvedGenerator.Resolved(s_winBool.Bind(info, context));
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.Bool, _) }:
-                    return ResolvedGenerator.Resolved(s_signed_winBool);
+                    return ResolvedGenerator.Resolved(s_signed_winBool.Bind(info, context));
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.VariantBool, _) }:
-                    return ResolvedGenerator.Resolved(s_variantBool);
+                    return ResolvedGenerator.Resolved(s_variantBool.Bind(info, context));
 
                 // Delegate types
                 case { ManagedType: DelegateTypeInfo, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
-                    return ResolvedGenerator.Resolved(s_delegate);
+                    return ResolvedGenerator.Resolved(s_delegate.Bind(info, context));
 
                 // void
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Void } }:
-                    return ResolvedGenerator.Resolved(s_forwarder);
+                    return ResolvedGenerator.Resolved(s_forwarder.Bind(info, context));
 
                 default:
                     return ResolvedGenerator.UnresolvedGenerator;

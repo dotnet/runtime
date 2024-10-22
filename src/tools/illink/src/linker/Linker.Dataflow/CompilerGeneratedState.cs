@@ -54,7 +54,7 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		public static bool IsHoistedLocal (FieldDefinition field)
+		public static bool IsHoistedLocal (FieldReference field)
 		{
 			if (CompilerGeneratedNames.IsLambdaDisplayClass (field.DeclaringType.Name))
 				return true;

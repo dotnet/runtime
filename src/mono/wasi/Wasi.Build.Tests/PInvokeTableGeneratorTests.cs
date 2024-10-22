@@ -17,58 +17,38 @@ public class PInvokeTableGeneratorTests : BuildTestBase
     {
     }
 
-    [Fact]
-    public void InteropSupportForUnmanagedEntryPointWithoutDelegate()
+    [Theory]
+    [MemberData(nameof(TestDataForConsolePublishAndRunRelease))]
+    public void InteropSupportForUnmanagedEntryPointWithoutDelegate(bool singleFileBundle, bool aot)
     {
-        string config = "Release";
-        string id = $"{config}_{GetRandomId()}";
+        if(aot)
+        {
+            // Active issue https://github.com/dotnet/runtime/issues/101276
+            return;
+        }
+
+        string id = $"Release_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
-        string code =
-                """
-                using System;
-                using System.Runtime.InteropServices;
-                public unsafe class Test
-                {
-                    [UnmanagedCallersOnly(EntryPoint = "ManagedFunc")]
-                    public static int MyExport(int number)
-                    {
-                        // called from MyImport aka UnmanagedFunc
-                        Console.WriteLine($"MyExport({number}) -> 42");
-                        return 42;
-                    }
-
-                    [DllImport("*", EntryPoint = "UnmanagedFunc")]
-                    public static extern void MyImport(); // calls ManagedFunc aka MyExport
-
-                    public unsafe static int Main(string[] args)
-                    {
-                        Console.WriteLine($"main: {args.Length}");
-                        MyImport();
-                        return 0;
-                    }
-                }
-                """;
-        string cCode =
-                """
-                #include <stdio.h>
-
-                int ManagedFunc(int number);
-
-                void UnmanagedFunc()
-                {
-                    int ret = 0;
-                    printf("UnmanagedFunc calling ManagedFunc\n");
-                    ret = ManagedFunc(123);
-                    printf("ManagedFunc returned %d\n", ret);
-                }
-                """;
-        File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
-        File.WriteAllText(Path.Combine(_projectDir!, "local.c"), cCode);
-        string extraProperties = @"<WasmNativeStrip>false</WasmNativeStrip>
-                                   <AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
-        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties, extraItems: @"<NativeFileReference Include=""local.c"" />");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
-        var buildArgs = new BuildArgs(projectName, config, AOT: true, ProjectFileContents: id, ExtraBuildArgs: null);
+        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "Native.cs"), Path.Combine(_projectDir!, "Program.cs"), true);
+        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native.c"), Path.Combine(_projectDir!, "native.c")!, true);
+        
+        // workaround for https://github.com/dotnet/runtime/issues/106627
+        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "ILLink.Native.Descriptors.xml"), Path.Combine(_projectDir!, "ILLink.Native.Descriptors.xml")!, true);
+
+        string extraProperties = @"<WasmNativeStrip>false</WasmNativeStrip>
+                                   <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+                                   <PublishTrimmed>true</PublishTrimmed>
+                                   <AssemblyName>Wasi.Native.Test</AssemblyName>";
+        if (aot)
+            extraProperties += "<RunAOTCompilation>true</RunAOTCompilation><_WasmDevel>false</_WasmDevel>";
+        if (singleFileBundle)
+            extraProperties += "<WasmSingleFileBundle>true</WasmSingleFileBundle>";
+
+        string itemsProperties = @"<NativeFileReference Include=""native.c"" />
+                                   <TrimmerRootDescriptor Include=""$(MSBuildThisFileDirectory)ILLink.Native.Descriptors.xml"" />";
+        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties, extraItems: itemsProperties);
+        var buildArgs = new BuildArgs(projectName, Config: "Release", AOT: true, ProjectFileContents: id, ExtraBuildArgs: null);
         buildArgs = ExpandBuildArgs(buildArgs);
         BuildProject(buildArgs,
                     id: id,
@@ -80,7 +60,7 @@ public class PInvokeTableGeneratorTests : BuildTestBase
 
         CommandResult res = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(_projectDir!)
-                                    .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config}")
+                                    .ExecuteWithCapturedOutput($"run --no-silent --no-build -c Release")
                                     .EnsureSuccessful();
         Assert.Contains("MyExport(123) -> 42", res.Output);
     }

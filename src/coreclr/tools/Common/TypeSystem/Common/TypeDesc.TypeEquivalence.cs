@@ -136,20 +136,20 @@ namespace Internal.TypeSystem
                             return false;
                     }
 
-                    foreach (var field in GetFields())
+                    foreach (var fieldInfo in GetFields())
                     {
-                        if (field.IsLiteral)
+                        if (fieldInfo.IsLiteral)
                         {
                             // Literal fields are ok
                             continue;
                         }
 
-                        if (field.IsStatic)
+                        if (fieldInfo.IsStatic)
                         {
                             return false;
                         }
 
-                        if (field.GetEffectiveVisibility() != EffectiveVisibility.Public)
+                        if (fieldInfo.GetEffectiveVisibility() != EffectiveVisibility.Public)
                         {
                             return false;
                         }

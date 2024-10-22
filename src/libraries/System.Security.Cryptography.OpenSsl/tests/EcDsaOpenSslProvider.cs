@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             get
             {
-                return true;
+                return !PlatformDetection.IsAzureLinux;
             }
         }
     }

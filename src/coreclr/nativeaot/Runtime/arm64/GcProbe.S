@@ -4,12 +4,12 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-PROBE_FRAME_SIZE = 0xD0  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, lr, m_pThread, m_Flags) +
-                         // 10 * 8 for callee saved registers +
-                         // 1 * 8  for caller SP +
-                         // 2 * 8  for int returns +
-                         // 1 * 8  for alignment padding +
-                         // 4 * 16 for FP/HFA/HVA returns
+#define PROBE_FRAME_SIZE 0xD0  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, lr, m_pThread, m_Flags) +
+                               // 10 * 8 for callee saved registers +
+                               // 1 * 8  for caller SP +
+                               // 2 * 8  for int returns +
+                               // 1 * 8  for alignment padding +
+                               // 4 * 16 for FP/HFA/HVA returns
 
 // See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves return registers
 // and accepts the register bitmask

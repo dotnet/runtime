@@ -18,11 +18,12 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace System.Numerics.Tensors
 {
+    /// <summary>
+    /// Represents a tensor.
+    /// </summary>
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
     public sealed class Tensor<T>
         : ITensor<Tensor<T>, T>
-#pragma warning restore 1591
     {
         /// <summary>A byref or a native ptr.</summary>
         internal readonly T[] _values;
@@ -367,13 +368,20 @@ namespace System.Numerics.Tensors
             }
         }
 
-#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
+        /// <summary>
+        /// Defines an implicit conversion of an array to a <see cref="Tensor{T}"/>.
+        /// </summary>
         public static implicit operator Tensor<T>(T[] array) => new Tensor<T>(array, [array.Length]);
 
+        /// <summary>
+        /// Defines an implicit conversion of a <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/>.
+        /// </summary>
         public static implicit operator TensorSpan<T>(Tensor<T> value) => new TensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value._flattenedLength);
 
+        /// <summary>
+        /// Defines an implicit conversion of a <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/>.
+        /// </summary>
         public static implicit operator ReadOnlyTensorSpan<T>(Tensor<T> value) => new ReadOnlyTensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value.FlattenedLength);
-#pragma warning restore 1591
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/> pointing to the same backing memory."/>
@@ -618,12 +626,15 @@ namespace System.Numerics.Tensors
         }
 
         // REVIEW: PENDING API REVIEW TO DETERMINE IMPLEMENTATION
-#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
+        /// <summary>
+        /// Gets the hash code for the <see cref="Tensor{T}"/>.
+        /// </summary>
+        /// <returns>The hash code of the tensor.</returns>
+        /// <exception cref="NotImplementedException">In all cases.</exception>
         public override int GetHashCode()
         {
             throw new NotImplementedException();
         }
-#pragma warning restore 1591
 
         /// <summary>
         /// Get a string representation of the tensor.

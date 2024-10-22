@@ -144,10 +144,11 @@ namespace JIT.HardwareIntrinsics.Arm
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
         private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
 
         private static {Op2BaseType}[] _data = new {Op2BaseType}[RetElementCount];
 
-        private static {RetBaseType}[] _maskData = new {RetBaseType}[RetElementCount];
+        private static {Op1BaseType}[] _maskData = new {Op1BaseType}[Op1ElementCount];
         private static {RetBaseType}[] _falseData = new {RetBaseType}[RetElementCount];
 
         private {Op1VectorType}<{RetBaseType}> _fld1;
@@ -164,8 +165,8 @@ namespace JIT.HardwareIntrinsics.Arm
             for (var i = 0; i < RetElementCount; i++) { _data[i] = {NextValueOp2}; }
             _dataTable = new DataTable(_data, new {RetBaseType}[RetElementCount], LargestVectorSize);
 
-            for (var i = 0; i < RetElementCount; i++) { _maskData[i] = ({RetBaseType})({NextValueOp1}); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref _mask), ref Unsafe.As<{RetBaseType}, byte>(ref _maskData[0]), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+            for (var i = 0; i < Op1ElementCount; i++) { _maskData[i] = ({Op1BaseType})({NextValueOp1}); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskData[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
 
             for (var i = 0; i < RetElementCount; i++) { _falseData[i] = ({RetBaseType})({NextValueOp2}); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref _falseFld), ref Unsafe.As<{RetBaseType}, byte>(ref _falseData[0]), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
@@ -194,7 +195,8 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadFirstFaulting));
 
-            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
+            // Force loadMask to have the first and last element to be active.
+            var loadMask = _mask.WithElement<{Op1BaseType}>(0, 1).WithElement<{Op1BaseType}>(Vector<{Op1BaseType}>.Count - 1, 1);
 
             ref var op2Ref = ref (_dataTable.inBounded.Span.GetPinnableReference());
 
@@ -206,7 +208,7 @@ namespace JIT.HardwareIntrinsics.Arm
             var faultResult = Sve.GetFfr{GetFfrType}();
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateFirstFaultingResult(ref op2Ref, _dataTable.inBounded.Span.Length, _dataTable.outArrayPtr, faultResult);
+            ValidateFirstFaultingResult(loadMask, ref op2Ref, _dataTable.inBounded.Span.Length, _dataTable.outArrayPtr, faultResult);
         }
 
         public void RunReflectionScenario_Load()
@@ -353,25 +355,28 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateFirstFaultingResult(ref byte firstOp, int size, void* result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
+        private void ValidateFirstFaultingResult({Op1VectorType}<{Op1BaseType}> firstOp, ref byte secondOp, int size, void* result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
         {
+            {Op1BaseType}[] maskArray = new {Op1BaseType}[Op1ElementCount];
             {Op2BaseType}[] inArray = new {Op2BaseType}[size / Unsafe.SizeOf<{Op2BaseType}>()];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray[0]), ref firstOp, (uint)(inArray.Length * Unsafe.SizeOf<{Op2BaseType}>()));
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref maskArray[0]), firstOp);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray[0]), ref secondOp, (uint)(inArray.Length * Unsafe.SizeOf<{Op2BaseType}>()));
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
-            ValidateFirstFaultingResult(inArray, outArray, faultResult, method);
+            ValidateFirstFaultingResult(maskArray, inArray, outArray, faultResult, method);
         }
 
-        private void ValidateFirstFaultingResult({Op2BaseType}[] firstOp, {RetBaseType}[] result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
+        private void ValidateFirstFaultingResult({Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
         {
-            var succeeded = Helpers.CheckLoadVectorFirstFaultingBehavior(firstOp, result, faultResult);
+            var succeeded = Helpers.CheckLoadVectorFirstFaultingBehavior(firstOp, secondOp, result, faultResult);
 
             if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}({Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op2BaseType}>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"       firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"      secondOp: ({string.Join(", ", secondOp)})");
                 TestLibrary.TestFramework.LogInformation($"        result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation($"   faultResult: ({faultResult})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);

@@ -2292,9 +2292,8 @@ void LinearScan::buildIntervals()
             }
 
             const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
-            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& seg : abiInfo.Segments())
             {
-                const ABIPassingSegment& seg = abiInfo.Segment(i);
                 if (seg.IsPassedInRegister())
                 {
                     RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
@@ -3679,12 +3678,17 @@ int LinearScan::BuildOperandUses(GenTree* node, SingleTypeRegSet candidates)
     {
         GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
 
+        size_t numArgs = hwintrinsic->GetOperandCount();
         if (hwintrinsic->OperIsMemoryLoad())
         {
+#ifdef TARGET_ARM64
+            if (numArgs == 2)
+            {
+                return BuildAddrUses(hwintrinsic->Op(1)) + BuildOperandUses(hwintrinsic->Op(2), candidates);
+            }
+#endif
             return BuildAddrUses(hwintrinsic->Op(1));
         }
-
-        size_t numArgs = hwintrinsic->GetOperandCount();
 
         if (numArgs != 1)
         {
@@ -3841,6 +3845,15 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
             return 0;
         }
     }
+
+#ifdef TARGET_ARM64
+    // Multi register nodes should not go via this route.
+    assert(!node->IsMultiRegNode());
+    // The rmwNode should have the same register type as the node
+    assert(rmwNode == nullptr || varTypeUsesSameRegType(rmwNode->TypeGet(), node->TypeGet()) ||
+           (rmwNode->IsMultiRegNode() && varTypeUsesFloatReg(node->TypeGet())));
+#endif
+
     if (use != nullptr)
     {
         AddDelayFreeUses(use, rmwNode);
@@ -3860,14 +3873,13 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
     {
         use = BuildUse(addrMode->Base(), candidates);
         AddDelayFreeUses(use, rmwNode);
-
         srcCount++;
     }
+
     if (addrMode->HasIndex() && !addrMode->Index()->isContained())
     {
         use = BuildUse(addrMode->Index(), candidates);
         AddDelayFreeUses(use, rmwNode);
-
         srcCount++;
     }
 
@@ -4125,9 +4137,15 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 #ifdef FEATURE_SIMD
     if (varTypeIsSIMD(storeLoc) && !op1->IsVectorZero() && (storeLoc->TypeGet() == TYP_SIMD12))
     {
+#ifdef TARGET_ARM64
+        // Need an additional register to extract upper 4 bytes of Vector3,
+        // it has to be float for x86.
+        buildInternalIntRegisterDefForNode(storeLoc);
+#else
         // Need an additional register to extract upper 4 bytes of Vector3,
         // it has to be float for x86.
         buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
+#endif // TARGET_ARM64
     }
 #endif // FEATURE_SIMD
 

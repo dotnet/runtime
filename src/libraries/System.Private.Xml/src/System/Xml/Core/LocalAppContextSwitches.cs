@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using SwitchesHelpers = System.LocalAppContextSwitches;
 
@@ -59,6 +60,7 @@ namespace System.Xml
         }
 
         private static int s_isNetworkingEnabledByDefault;
+        [FeatureSwitchDefinition("System.Xml.XmlResolver.IsNetworkingEnabledByDefault")]
         public static bool IsNetworkingEnabledByDefault
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

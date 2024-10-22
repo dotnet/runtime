@@ -10,6 +10,8 @@
     <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
     <!-- Test infra issue on apple devices: https://github.com/dotnet/runtime/issues/89917 -->
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PInvoke.cs" />

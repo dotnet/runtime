@@ -86,14 +86,14 @@ export function mono_wasm_ends_with (culture: number, cultureLength: number, str
 
 export function mono_wasm_index_of (culture: number, cultureLength: number, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, resultPtr: Int32Ptr): VoidPtr {
     try {
-        const needle = runtimeHelpers.utf16ToString(<any>needlePtr, <any>(needlePtr + 2 * needleLength));
+        const needle = decodeToCleanStringForIndexing(needlePtr, needleLength);
         // no need to look for an empty string
         if (cleanString(needle).length == 0) {
             runtimeHelpers.setI32(resultPtr, fromBeginning ? 0 : srcLength);
             return VoidPtrNull;
         }
 
-        const source = runtimeHelpers.utf16ToString(<any>srcPtr, <any>(srcPtr + 2 * srcLength));
+        const source = decodeToCleanStringForIndexing(srcPtr, srcLength);
         // no need to look in an empty string
         if (cleanString(source).length == 0) {
             runtimeHelpers.setI32(resultPtr, fromBeginning ? 0 : srcLength);
@@ -251,5 +251,11 @@ function decodeToCleanString (strPtr: number, strLen: number) {
 
 function cleanString (str: string) {
     const nStr = str.normalize();
-    return nStr.replace(/[\u200B-\u200D\uFEFF\0]/g, "");
+    return nStr.replace(/[\u200B-\u200D\uFEFF\0\u00AD]/g, "");
+}
+
+// in ICU indexing only SoftHyphen is weightless
+function decodeToCleanStringForIndexing (strPtr: number, strLen: number) {
+    const str = runtimeHelpers.utf16ToString(<any>strPtr, <any>(strPtr + 2 * strLen));
+    return str.replace(/[\u00AD]/g, "");
 }

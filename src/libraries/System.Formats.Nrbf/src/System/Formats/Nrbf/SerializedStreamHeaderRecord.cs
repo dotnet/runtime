@@ -24,14 +24,8 @@ internal sealed class SerializedStreamHeaderRecord : SerializationRecord
 
     public override SerializationRecordType RecordType => SerializationRecordType.SerializedStreamHeader;
 
-    public override TypeName TypeName
-    {
-        get
-        {
-            Debug.Fail("TypeName should never be called on SerializedStreamHeaderRecord");
-            return TypeName.Parse(nameof(SerializedStreamHeaderRecord).AsSpan());
-        }
-    }
+    public override TypeName TypeName => TypeName.Parse(nameof(SerializedStreamHeaderRecord).AsSpan());
+
     public override SerializationRecordId Id => SerializationRecordId.NoId;
 
     internal SerializationRecordId RootId { get; }

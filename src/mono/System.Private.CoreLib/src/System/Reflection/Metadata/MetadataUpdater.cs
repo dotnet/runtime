@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Metadata
@@ -49,6 +50,7 @@ namespace System.Reflection.Metadata
 
         internal static string GetCapabilities() => s_ApplyUpdateCapabilities.Value;
 
+        [FeatureSwitchDefinition("System.Reflection.Metadata.MetadataUpdater.IsSupported")]
         public static bool IsSupported { get; } = ApplyUpdateEnabled(justComponentCheck: 0) != 0;
 
         private static readonly Lazy<string> s_ApplyUpdateCapabilities = new Lazy<string>(InitializeApplyUpdateCapabilities);

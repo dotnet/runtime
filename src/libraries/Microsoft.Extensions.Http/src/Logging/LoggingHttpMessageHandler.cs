@@ -19,8 +19,6 @@ namespace Microsoft.Extensions.Http.Logging
         private readonly ILogger _logger;
         private readonly HttpClientFactoryOptions? _options;
 
-        private static readonly Func<string, bool> _shouldNotRedactHeaderValue = (header) => false;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="LoggingHttpMessageHandler"/> class with a specified logger.
         /// </summary>
@@ -55,22 +53,31 @@ namespace Microsoft.Extensions.Http.Logging
 
             async Task<HttpResponseMessage> Core(HttpRequestMessage request, bool useAsync, CancellationToken cancellationToken)
             {
-                Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
+                Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? LogHelper.ShouldRedactHeaderValue;
 
                 // Not using a scope here because we always expect this to be at the end of the pipeline, thus there's
                 // not really anything to surround.
                 _logger.LogRequestStart(request, shouldRedactHeaderValue);
                 var stopwatch = ValueStopwatch.StartNew();
-                HttpResponseMessage response = useAsync
-                    ? await base.SendAsync(request, cancellationToken).ConfigureAwait(false)
-#if NET
-                    : base.Send(request, cancellationToken);
-#else
-                    : throw new NotImplementedException("Unreachable code");
-#endif
-                _logger.LogRequestEnd(response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
 
-                return response;
+                try
+                {
+                    HttpResponseMessage response = useAsync
+                        ? await base.SendAsync(request, cancellationToken).ConfigureAwait(false)
+#if NET
+                        : base.Send(request, cancellationToken);
+#else
+                        : throw new NotImplementedException("Unreachable code");
+#endif
+                    _logger.LogRequestEnd(response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
+
+                    return response;
+                }
+                catch (HttpRequestException ex)
+                {
+                    _logger.LogRequestFailed(stopwatch.GetElapsedTime(), ex);
+                    throw;
+                }
             }
         }
 

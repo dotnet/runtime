@@ -389,13 +389,13 @@ static CallsiteDetails CreateCallsiteDetails(_In_ FramedMethodFrame *pFrame)
         DelegateEEClass* delegateCls = (DelegateEEClass*)pMD->GetMethodTable()->GetClass();
         _ASSERTE(pFrame->GetThis()->GetMethodTable()->IsDelegate());
 
-        if (pMD == delegateCls->m_pBeginInvokeMethod)
+        if (strcmp(pMD->GetName(), "BeginInvoke") == 0)
         {
             callsiteFlags |= CallsiteDetails::BeginInvoke;
         }
         else
         {
-            _ASSERTE(pMD == delegateCls->m_pEndInvokeMethod);
+            _ASSERTE(strcmp(pMD->GetName(), "EndInvoke") == 0);
             callsiteFlags |= CallsiteDetails::EndInvoke;
         }
 

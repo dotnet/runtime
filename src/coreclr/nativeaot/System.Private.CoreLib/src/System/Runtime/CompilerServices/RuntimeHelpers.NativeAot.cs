@@ -180,12 +180,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
-        internal static unsafe bool IsReference<T>()
-        {
-            return !MethodTable.Of<T>()->IsValueType;
-        }
-
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsBitwiseEquatable<T>()
         {
@@ -216,8 +210,8 @@ namespace System.Runtime.CompilerServices
             return array.GetMethodTable()->ComponentSize;
         }
 
-        internal static unsafe MethodTable* GetMethodTable(this object obj)
-            => obj.m_pEEType;
+        [Intrinsic]
+        internal static unsafe MethodTable* GetMethodTable(this object obj) => obj.GetMethodTable();
 
         internal static unsafe ref MethodTable* GetMethodTableRef(this object obj)
             => ref obj.m_pEEType;

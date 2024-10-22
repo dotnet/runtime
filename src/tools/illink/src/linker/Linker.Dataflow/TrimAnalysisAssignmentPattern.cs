@@ -49,7 +49,7 @@ namespace Mono.Linker.Dataflow
 					if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
 						throw new NotImplementedException ();
 
-					var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (reflectionMarker, diagnosticContext);
+					var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (context, reflectionMarker, diagnosticContext);
 					requireDynamicallyAccessedMembersAction.Invoke (sourceValue, targetWithDynamicallyAccessedMembers);
 				}
 			}

@@ -288,13 +288,6 @@ namespace System.Diagnostics.Metrics.Tests
             instrumentRecorder.RecordObservableInstruments();
             var measurements = instrumentRecorder.GetMeasurements();
 
-            if (GC.GetGCMemoryInfo().Index == 0)
-            {
-                // No GC has occurred which can be the case on some platforms.
-                Assert.Empty(measurements);
-                return;
-            }
-
             bool[] foundGenerations = new bool[s_genNames.Length];
             for (int i = 0; i < 5; i++)
             {

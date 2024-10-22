@@ -16,6 +16,7 @@ namespace System.Reflection.Metadata
     public static partial class MetadataUpdater
     {
         public static void ApplyUpdate(Assembly assembly, ReadOnlySpan<byte> metadataDelta, ReadOnlySpan<byte> ilDelta, ReadOnlySpan<byte> pdbDelta) { throw null; }
+        [System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute("System.Reflection.Metadata.MetadataUpdater.IsSupported")]
         public static bool IsSupported { get { throw null; } }
     }
     [System.AttributeUsage(System.AttributeTargets.Assembly, AllowMultiple = true)]

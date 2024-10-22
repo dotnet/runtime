@@ -332,6 +332,7 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     : m_pPEAssembly{pPEAssembly}
     , m_dwTransientFlags{CLASSES_FREED}
     , m_pAssembly{pAssembly}
+    , m_pDynamicMethodTable{NULL}
     , m_hExposedObject{}
 {
     CONTRACTL
@@ -743,6 +744,8 @@ void Module::Destruct()
     }
 
     m_pPEAssembly->Release();
+    if (m_pDynamicMethodTable)
+        m_pDynamicMethodTable->Destroy();
 
 #if defined(PROFILING_SUPPORTED)
     delete m_pJitInlinerTrackingMap;
@@ -1851,7 +1854,7 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
         AppDomain *pDomain = AppDomain::GetCurrentDomain();
         if (pDomain->IsDebuggerAttached() && pDomain->ContainsAssembly(m_pAssembly))
         {
-            g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this, pDomain);
+            g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this);
         }
     }
 }
@@ -2255,7 +2258,6 @@ Assembly *
 Module::GetAssemblyIfLoaded(
     mdAssemblyRef       kAssemblyRef,
     IMDInternalImport * pMDImportOverride,  // = NULL
-    BOOL                fDoNotUtilizeExtraChecks, // = FALSE
     AssemblyBinder      *pBinderForLoadedAssembly // = NULL
 )
 {
@@ -2298,8 +2300,7 @@ Module::GetAssemblyIfLoaded(
     if ((pAssembly != NULL) && !IsGCThread() && !IsStackWalkerThread())
     {
         _ASSERTE(::GetAppDomain() != NULL);
-        DomainAssembly * pDomainAssembly = pAssembly->GetDomainAssembly();
-        if ((pDomainAssembly == NULL) || !pDomainAssembly->IsLoaded())
+        if (!pAssembly->IsLoaded())
             pAssembly = NULL;
     }
 
@@ -2326,10 +2327,10 @@ Module::GetAssemblyIfLoaded(
             spec.SetBinder(pBinderForLoadedAssembly);
         }
 
-        DomainAssembly * pDomainAssembly = AppDomain::GetCurrentDomain()->FindCachedAssembly(&spec, FALSE /*fThrow*/);
+        Assembly * pCachedAssembly = AppDomain::GetCurrentDomain()->FindCachedAssembly(&spec, FALSE /*fThrow*/);
 
-        if (pDomainAssembly && pDomainAssembly->IsLoaded())
-            pAssembly = pDomainAssembly->GetAssembly();
+        if (pCachedAssembly && pCachedAssembly->IsLoaded())
+            pAssembly = pCachedAssembly;
 
         // Only store in the rid map if working with the current AppDomain.
         if (fCanUseRidMap && pAssembly)
@@ -2384,9 +2385,9 @@ ModuleBase::GetAssemblyRefFlags(
 } // Module::GetAssemblyRefFlags
 
 #ifndef DACCESS_COMPILE
-DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
+Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 {
-    CONTRACT(DomainAssembly *)
+    CONTRACT(Assembly *)
     {
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
@@ -2399,18 +2400,14 @@ DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 
     ETWOnStartup (LoaderCatchCall_V1, LoaderCatchCallEnd_V1);
 
-    DomainAssembly * pDomainAssembly;
-
     //
     // Early out quickly if the result is cached
     //
     Assembly * pAssembly = LookupAssemblyRef(kAssemblyRef);
     if (pAssembly != NULL)
     {
-        pDomainAssembly = pAssembly->GetDomainAssembly();
-        ::GetAppDomain()->LoadDomainAssembly(pDomainAssembly, FILE_LOADED);
-
-        RETURN pDomainAssembly;
+        ::GetAppDomain()->LoadAssembly(pAssembly, FILE_LOADED);
+        RETURN pAssembly;
     }
 
     {
@@ -2425,26 +2422,20 @@ DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
         {
             spec.SetBinder(pBinder);
         }
-        pDomainAssembly = GetAppDomain()->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
+        pAssembly = GetAppDomain()->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
     }
 
-    if (pDomainAssembly != NULL)
-    {
-        _ASSERTE(
-            pDomainAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find CoreLib (see AppDomain::FindCachedFile)
-            !pDomainAssembly->IsLoaded() ||                 // GetAssemblyIfLoaded will not find not-yet-loaded assemblies
-            GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, pDomainAssembly->GetPEAssembly()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
+    _ASSERTE(pAssembly != NULL && pAssembly->IsLoaded());
+    _ASSERTE(
+        pAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find CoreLib (see AppDomain::FindCachedFile)
+        GetAssemblyIfLoaded(kAssemblyRef, NULL, pAssembly->GetPEAssembly()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
 
-        if (pDomainAssembly->GetAssembly() != NULL)
-        {
-            StoreAssemblyRef(kAssemblyRef, pDomainAssembly->GetAssembly());
-        }
-    }
+    StoreAssemblyRef(kAssemblyRef, pAssembly);
 
-    RETURN pDomainAssembly;
+    RETURN pAssembly;
 }
 #else
-DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
+Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 {
     WRAPPER_NO_CONTRACT;
     ThrowHR(E_FAIL);
@@ -2915,7 +2906,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
 
 #endif // DEBUGGING_SUPPORTED
 
-BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAssembly, int flags, BOOL attaching)
+BOOL Module::NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -2926,14 +2917,14 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAsse
     // Always capture metadata, even if no debugger is attached. If a debugger later attaches, it will use
     // this data.
     {
-        Module * pModule = pDomainAssembly->GetModule();
+        Module * pModule = pDomainAssembly->GetAssembly()->GetModule();
         pModule->UpdateDynamicMetadataIfNeeded();
     }
-
 
     //
     // Remaining work is only needed if a debugger is attached
     //
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
     if (!attaching && !pDomain->IsDebuggerAttached())
         return FALSE;
 
@@ -2946,7 +2937,6 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAsse
                                       m_pPEAssembly->GetPath(),
                                       m_pPEAssembly->GetPath().GetCount(),
                                       GetAssembly(),
-                                      pDomain,
                                       pDomainAssembly,
                                       attaching);
 
@@ -2961,7 +2951,7 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAsse
             MethodTable * pMT = typeDefIter.GetElement();
             if (pMT != NULL)
             {
-                result = TypeHandle(pMT).NotifyDebuggerLoad(pDomain, attaching) || result;
+                result = TypeHandle(pMT).NotifyDebuggerLoad(attaching) || result;
             }
         }
     }
@@ -2969,10 +2959,11 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAsse
     return result;
 }
 
-void Module::NotifyDebuggerUnload(AppDomain *pDomain)
+void Module::NotifyDebuggerUnload()
 {
     LIMITED_METHOD_CONTRACT;
 
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
     if (!pDomain->IsDebuggerAttached())
         return;
 
@@ -2986,11 +2977,11 @@ void Module::NotifyDebuggerUnload(AppDomain *pDomain)
         MethodTable * pMT = typeDefIter.GetElement();
         if (pMT != NULL)
         {
-            TypeHandle(pMT).NotifyDebuggerUnload(pDomain);
+            TypeHandle(pMT).NotifyDebuggerUnload();
         }
     }
 
-    g_pDebugInterface->UnloadModule(this, pDomain);
+    g_pDebugInterface->UnloadModule(this);
 }
 
 using GetTokenForVTableEntry_t = mdToken(STDMETHODCALLTYPE*)(HMODULE module, BYTE**ppVTEntry);
@@ -4464,29 +4455,11 @@ VOID Module::EnsureActive()
         MODE_ANY;
     }
     CONTRACTL_END;
-    GetDomainAssembly()->EnsureActive();
+    GetAssembly()->EnsureActive();
 }
 #endif // DACCESS_COMPILE
 
 #include <optdefault.h>
-
-
-#ifndef DACCESS_COMPILE
-
-VOID Module::EnsureAllocated()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    GetDomainAssembly()->EnsureAllocated();
-}
-
-#endif // !DACCESS_COMPILE
 
 CHECK Module::CheckActivated()
 {
@@ -4499,10 +4472,10 @@ CHECK Module::CheckActivated()
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-    DomainAssembly *pDomainAssembly = GetDomainAssembly();
-    CHECK(pDomainAssembly != NULL);
-    PREFIX_ASSUME(pDomainAssembly != NULL);
-    CHECK(pDomainAssembly->CheckActivated());
+    Assembly *pAssembly = GetAssembly();
+    CHECK(pAssembly != NULL);
+    PREFIX_ASSUME(pAssembly != NULL);
+    CHECK(pAssembly->CheckActivated());
 #endif
     CHECK_OK;
 }
@@ -4529,10 +4502,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         EMEM_OUT(("MEM: %p Module\n", dac_cast<TADDR>(this)));
     }
 
-    if (m_pDomainAssembly.IsValid())
-    {
-        m_pDomainAssembly->EnumMemoryRegions(flags);
-    }
     if (m_pPEAssembly.IsValid())
     {
         m_pPEAssembly->EnumMemoryRegions(flags);

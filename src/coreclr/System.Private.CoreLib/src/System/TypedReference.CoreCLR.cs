@@ -16,6 +16,12 @@ namespace System
         private readonly ref byte _value;
         private readonly IntPtr _type;
 
+        private TypedReference(ref byte target, RuntimeType type)
+        {
+            _value = ref target;
+            _type = type.GetUnderlyingNativeHandle();
+        }
+
         public static unsafe object? ToObject(TypedReference value)
         {
             TypeHandle typeHandle = new((void*)value._type);

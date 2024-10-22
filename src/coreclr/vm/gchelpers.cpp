@@ -40,7 +40,7 @@
 //
 //========================================================================
 
-inline gc_alloc_context* GetThreadAllocContext()
+inline ee_alloc_context* GetThreadEEAllocContext()
 {
     WRAPPER_NO_CONTRACT;
 
@@ -222,16 +222,19 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
 
     if (GCHeapUtilities::UseThreadAllocationContexts())
     {
-        gc_alloc_context *threadContext = GetThreadAllocContext();
-        GCStress<gc_on_alloc>::MaybeTrigger(threadContext);
-        retVal = GCHeapUtilities::GetGCHeap()->Alloc(threadContext, size, flags);
+        ee_alloc_context *threadContext = GetThreadEEAllocContext();
+        GCStress<gc_on_alloc>::MaybeTrigger(&threadContext->m_GCAllocContext);
+        retVal = GCHeapUtilities::GetGCHeap()->Alloc(&threadContext->m_GCAllocContext, size, flags);
+        threadContext->UpdateCombinedLimit();
+
     }
     else
     {
         GlobalAllocLockHolder holder(&g_global_alloc_lock);
-        gc_alloc_context *globalContext = &g_global_alloc_context;
-        GCStress<gc_on_alloc>::MaybeTrigger(globalContext);
-        retVal = GCHeapUtilities::GetGCHeap()->Alloc(globalContext, size, flags);
+        ee_alloc_context *globalContext = &g_global_alloc_context;
+        GCStress<gc_on_alloc>::MaybeTrigger(&globalContext->m_GCAllocContext);
+        retVal = GCHeapUtilities::GetGCHeap()->Alloc(&globalContext->m_GCAllocContext, size, flags);
+        globalContext->UpdateCombinedLimit();
     }
 
 
@@ -402,7 +405,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
 #endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8) &&
+    if ((pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)) &&
         ((DWORD)cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
     {
         STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
@@ -425,7 +428,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     else
     {
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-        if (pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8)
+        if (pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8))
         {
             flags |= GC_ALLOC_ALIGN8;
         }
@@ -497,7 +500,7 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 
     // FrozenObjectHeapManager doesn't yet support objects with a custom alignment,
     // so we give up on arrays of value types requiring 8 byte alignment on 32bit platforms.
-    if ((DATA_ALIGNMENT < sizeof(double)) && (pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8))
+    if ((DATA_ALIGNMENT < sizeof(double)) && (pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)))
     {
         return NULL;
     }
@@ -665,7 +668,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
 #endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8) &&
+    if ((pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)) &&
         (cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
     {
         STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);

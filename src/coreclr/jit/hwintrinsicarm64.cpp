@@ -2466,7 +2466,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             assert(HWIntrinsicInfo::isImmOp(intrinsic, op3));
             HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, 1, &immLowerBound, &immUpperBound);
-            op3     = addRangeCheckIfNeeded(intrinsic, op3, (!op3->IsCnsIntOrI()), immLowerBound, immUpperBound);
+            op3     = addRangeCheckIfNeeded(intrinsic, op3, immLowerBound, immUpperBound);
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
 
@@ -2939,11 +2939,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             assert(HWIntrinsicInfo::isImmOp(intrinsic, op2));
             HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, 1, &immLowerBound, &immUpperBound);
-            op2 = addRangeCheckIfNeeded(intrinsic, op2, (!op2->IsCnsIntOrI()), immLowerBound, immUpperBound);
+            op2 = addRangeCheckIfNeeded(intrinsic, op2, immLowerBound, immUpperBound);
 
             assert(HWIntrinsicInfo::isImmOp(intrinsic, op3));
             HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, 2, &immLowerBound, &immUpperBound);
-            op3 = addRangeCheckIfNeeded(intrinsic, op3, (!op3->IsCnsIntOrI()), immLowerBound, immUpperBound);
+            op3 = addRangeCheckIfNeeded(intrinsic, op3, immLowerBound, immUpperBound);
 
             retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic)
                                : gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
@@ -3010,7 +3010,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op3     = getArgForHWIntrinsic(argType, argClass);
 
                 assert(HWIntrinsicInfo::isImmOp(intrinsic, op3));
-                op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immLowerBound, immUpperBound);
+                op3 = addRangeCheckIfNeeded(intrinsic, op3, immLowerBound, immUpperBound);
 
                 argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
                 op2                        = getArgForHWIntrinsic(argType, argClass);
@@ -3040,7 +3040,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op4     = getArgForHWIntrinsic(argType, argClass);
 
                 assert(HWIntrinsicInfo::isImmOp(intrinsic, op4));
-                op4 = addRangeCheckIfNeeded(intrinsic, op4, mustExpand, immLowerBound, immUpperBound);
+                op4 = addRangeCheckIfNeeded(intrinsic, op4, immLowerBound, immUpperBound);
 
                 argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
                 op3                        = getArgForHWIntrinsic(argType, argClass);
@@ -3108,12 +3108,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg5, &argClass)));
             GenTree* op5 = getArgForHWIntrinsic(argType, argClass);
             assert(HWIntrinsicInfo::isImmOp(intrinsic, op5));
-            op5 = addRangeCheckIfNeeded(intrinsic, op5, mustExpand, imm1LowerBound, imm1UpperBound);
+            op5 = addRangeCheckIfNeeded(intrinsic, op5, imm1LowerBound, imm1UpperBound);
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg4, &argClass)));
             op4     = getArgForHWIntrinsic(argType, argClass);
             assert(HWIntrinsicInfo::isImmOp(intrinsic, op4));
-            op4 = addRangeCheckIfNeeded(intrinsic, op4, mustExpand, imm2LowerBound, imm2UpperBound);
+            op4 = addRangeCheckIfNeeded(intrinsic, op4, imm2LowerBound, imm2UpperBound);
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
             op3     = getArgForHWIntrinsic(argType, argClass);

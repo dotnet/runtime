@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 #endif
         bool IsCurveValid(Oid oid);
         bool ExplicitCurvesSupported { get; }
+        bool ExplicitCurvesSupportFailOnUseOnly => PlatformDetection.IsAzureLinux;
     }
 
     public static partial class ECDsaFactory
@@ -39,5 +40,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         public static bool ExplicitCurvesSupported => s_provider.ExplicitCurvesSupported;
+        public static bool ExplicitCurvesSupportFailOnUseOnly => s_provider.ExplicitCurvesSupportFailOnUseOnly;
     }
 }

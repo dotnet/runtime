@@ -248,8 +248,10 @@ private:
             mdMethodDef m_methodDef;
         } m_synthetic;
     };
-};
 
+    // cDAC accesses fields via ILCodeVersioningState.m_activeVersion
+    friend struct ::cdac_data<ILCodeVersioningState>;
+};
 
 class NativeCodeVersionNode
 {
@@ -263,11 +265,11 @@ public:
         PatchpointInfo* patchpointInfo, unsigned ilOffset);
 #endif
 
-    PTR_MethodDesc GetMethodDesc() const;
-    NativeCodeVersionId GetVersionId() const;
-    PCODE GetNativeCode() const;
-    ReJITID GetILVersionId() const;
-    ILCodeVersion GetILCodeVersion() const;
+    PTR_MethodDesc GetMethodDesc() const; // Can be called without any locks
+    NativeCodeVersionId GetVersionId() const; // Can be called without any locks
+    PCODE GetNativeCode() const; // Can be called without any locks, but result may be stale if it wasn't already set
+    ReJITID GetILVersionId() const; // Can be called without any locks
+    ILCodeVersion GetILCodeVersion() const;// Can be called without any locks
     BOOL IsActiveChildVersion() const;
 #ifndef DACCESS_COMPILE
     BOOL SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected);
@@ -287,28 +289,28 @@ public:
 #endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    PatchpointInfo * GetOSRInfo(unsigned * ilOffset);
+    PatchpointInfo * GetOSRInfo(unsigned * ilOffset) const;
 #endif
 
 private:
     //union - could save a little memory?
     //{
     PCODE m_pNativeCode;
-    PTR_MethodDesc m_pMethodDesc;
+    DAC_IGNORE(const) PTR_MethodDesc m_pMethodDesc;
     //};
 
-    ReJITID m_parentId;
-    PTR_NativeCodeVersionNode m_pNextMethodDescSibling;
-    NativeCodeVersionId m_id;
+    DAC_IGNORE(const) ReJITID m_parentId;
+    PTR_NativeCodeVersionNode m_pNextMethodDescSibling; // Never modified after being added to the linked list
+    DAC_IGNORE(const) NativeCodeVersionId m_id;
 #ifdef FEATURE_TIERED_COMPILATION
-    NativeCodeVersion::OptimizationTier m_optTier;
+    NativeCodeVersion::OptimizationTier m_optTier; // Set in constructor, but as the JIT runs it may upgrade the optimization tier
 #endif
 #ifdef HAVE_GCCOVER
     PTR_GCCoverageInfo m_gcCover;
 #endif
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    PTR_PatchpointInfo m_patchpointInfo;
-    unsigned m_ilOffset;
+    DAC_IGNORE(const) PTR_PatchpointInfo m_patchpointInfo;
+    DAC_IGNORE(const) unsigned m_ilOffset;
 #endif
 
     enum NativeCodeVersionNodeFlags
@@ -316,6 +318,16 @@ private:
         IsActiveChildFlag = 1
     };
     DWORD m_flags;
+
+    friend struct ::cdac_data<NativeCodeVersionNode>;
+};
+
+template<>
+struct cdac_data<NativeCodeVersionNode>
+{
+    static constexpr size_t Next = offsetof(NativeCodeVersionNode, m_pNextMethodDescSibling);
+    static constexpr size_t MethodDesc = offsetof(NativeCodeVersionNode, m_pMethodDesc);
+    static constexpr size_t NativeCode = offsetof(NativeCodeVersionNode, m_pNativeCode);
 };
 
 class NativeCodeVersionCollection
@@ -388,10 +400,10 @@ public:
 #endif
 
 private:
-    PTR_Module m_pModule;
-    mdMethodDef m_methodDef;
-    ReJITID m_rejitId;
-    PTR_ILCodeVersionNode m_pNextILVersionNode;
+    const PTR_Module m_pModule;
+    const mdMethodDef m_methodDef;
+    const ReJITID m_rejitId;
+    PTR_ILCodeVersionNode m_pNextILVersionNode; // Never modified after being added to the linked list
     Volatile<ILCodeVersion::RejitFlags> m_rejitState;
     VolatilePtr<COR_ILMETHOD, PTR_COR_ILMETHOD> m_pIL;
     Volatile<DWORD> m_jitFlags;
@@ -473,6 +485,15 @@ private:
     BYTE m_flags;
     NativeCodeVersionId m_nextId;
     PTR_NativeCodeVersionNode m_pFirstVersionNode;
+
+    friend struct ::cdac_data<MethodDescVersioningState>;
+};
+
+template<>
+struct cdac_data<MethodDescVersioningState>
+{
+    static constexpr size_t NativeCodeVersionNode = offsetof(MethodDescVersioningState, m_pFirstVersionNode);
+    static constexpr size_t Flags = offsetof(MethodDescVersioningState, m_flags);
 };
 
 class ILCodeVersioningState
@@ -505,6 +526,17 @@ private:
     PTR_ILCodeVersionNode m_pFirstVersionNode;
     PTR_Module m_pModule;
     mdMethodDef m_methodDef;
+
+    friend struct ::cdac_data<ILCodeVersioningState>;
+};
+
+template<>
+struct cdac_data<ILCodeVersioningState>
+{
+    static constexpr size_t ActiveVersionKind = offsetof(ILCodeVersioningState, m_activeVersion.m_storageKind);
+    static constexpr size_t ActiveVersionNode = offsetof(ILCodeVersioningState, m_activeVersion.m_pVersionNode);
+    static constexpr size_t ActiveVersionModule = offsetof(ILCodeVersioningState, m_activeVersion.m_synthetic.m_pModule);
+    static constexpr size_t ActiveVersionMethodDef = offsetof(ILCodeVersioningState, m_activeVersion.m_synthetic.m_methodDef);
 };
 
 class CodeVersionManager

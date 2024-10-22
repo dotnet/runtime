@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Runtime.Serialization.Schema;
 using System.Xml;
+using System.Xml.Schema;
+using System.Xml.Serialization;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -76,6 +78,26 @@ namespace System.Runtime.Serialization.Schema.Tests
                 Assert.DoesNotContain(@"public partial struct KeyValuePairOfNullableOfunsignedByteNullableOfunsignedByte_ShTDFhl_P : System.Runtime.Serialization.IExtensibleDataObject", code);
                 Assert.DoesNotContain(@"[System.Runtime.Serialization.DataContractAttribute(Name=""KeyValuePairOfstringNullableOfintU6ho3Bhd"", Namespace=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"")]", code);
             }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95981", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
+        public void RoundTripXmlSerializableWithSpecialAttributesTest()
+        {
+            XsdDataContractExporter exporter = new XsdDataContractExporter();
+            exporter.Export(typeof(SerializableWithSpecialAttributes));
+            string schemas = SchemaUtils.DumpSchema(exporter.Schemas);
+
+            XsdDataContractImporter importer = new XsdDataContractImporter();
+            importer.Options = new ImportOptions();
+            importer.Options.ImportXmlType = true;
+            importer.Options.ReferencedTypes.Add(typeof(DBNull));
+            importer.Options.ReferencedTypes.Add(typeof(DateTimeOffset));
+            importer.Import(exporter.Schemas);
+
+            string code = SchemaUtils.DumpCode(importer.CodeCompileUnit);
+            _output.WriteLine(code);
         }
 
         [Fact]
@@ -343,6 +365,69 @@ namespace System.Runtime.Serialization.Schema.Tests
             public RefCircularNodeB_ContainsRefWithBackpointer(RefCircularNodeA_ContainsRefWithBackpointer nodeA)
             {
                 linkToA = nodeA;
+            }
+        }
+        #endregion
+
+        #region RoundTripXmlSerializableWithSpecialAttributesTest Classes
+        public class SerializableWithSpecialAttributes : IXmlSerializable
+        {
+            const string nestedAttributeName = "nestedAsAttributeString";
+
+            // Special nested class definition
+            [Serializable]
+            public class NestedClass
+            {
+                [XmlAttribute(AttributeName = nestedAttributeName)]
+                public string AttributeString { get; set; }
+            }
+
+            // Property of type NestedClass
+            public NestedClass MySpecialProperty { get; set; }
+
+            // IXmlSerializable methods
+            public XmlSchema GetSchema()
+            {
+                // Create an XmlSchema instance
+                var schema = new XmlSchema() { Id = "SerializableWithSpecialAttributesTest" };
+
+                // Define the target namespace (if needed)
+                schema.TargetNamespace = "http://example.com/my-test-namespace";
+
+                // Define complex type for OuterClass
+                var outerClassType = new XmlSchemaComplexType() { Name = "SerializableWithSpecialAttributes" };
+                schema.Items.Add(outerClassType);
+
+                // Define attribute for MySpecialProperty
+                var attribute = new XmlSchemaAttribute
+                {
+                    Name = nestedAttributeName,
+                    SchemaTypeName = new XmlQualifiedName("string", XmlSchema.Namespace)
+                };
+                outerClassType.Attributes.Add(attribute);
+
+                return schema;
+            }
+
+            public void WriteXml(XmlWriter writer)
+            {
+                // Serialize MyNestedProperty as an attribute
+                if (MySpecialProperty != null)
+                {
+                    writer.WriteAttributeString(nestedAttributeName, MySpecialProperty.AttributeString);
+                }
+            }
+
+            public void ReadXml(XmlReader reader)
+            {
+                // Deserialize MyNestedProperty from an attribute
+                if (reader.MoveToAttribute(nestedAttributeName))
+                {
+                    MySpecialProperty = new NestedClass
+                    {
+                        AttributeString = reader.Value
+                    };
+                }
             }
         }
         #endregion

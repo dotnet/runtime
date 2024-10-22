@@ -3124,7 +3124,7 @@ namespace System
         /// <param name="span">The sorted <see cref="Span{T}"/> to search.</param>
         /// <param name="value">The object to locate. The value can be null for reference types.</param>
         /// <param name="comparer">The <typeparamref name="TComparer"/> to use when comparing.</param>
-        /// /// <returns>
+        /// <returns>
         /// The zero-based index of <paramref name="value"/> in the sorted <paramref name="span"/>,
         /// if <paramref name="value"/> is found; otherwise, a negative number that is the bitwise complement
         /// of the index of the next element that is larger than <paramref name="value"/> or, if there is
@@ -3198,7 +3198,7 @@ namespace System
         /// <param name="span">The sorted <see cref="ReadOnlySpan{T}"/> to search.</param>
         /// <param name="value">The object to locate. The value can be null for reference types.</param>
         /// <param name="comparer">The <typeparamref name="TComparer"/> to use when comparing.</param>
-        /// /// <returns>
+        /// <returns>
         /// The zero-based index of <paramref name="value"/> in the sorted <paramref name="span"/>,
         /// if <paramref name="value"/> is found; otherwise, a negative number that is the bitwise complement
         /// of the index of the next element that is larger than <paramref name="value"/> or, if there is

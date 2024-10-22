@@ -89,6 +89,10 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
 
     <None Include="DiagnosticSourceUsersGuide.md" />
     <None Include="ActivityUserGuide.md" />
+    <None Include="FlatRequestId.md" />
+    <None Include="HierarchicalRequestId.md" />
+    <None Include="HttpCorrelationProtocol.md" />
+    <None Include="ThisAssembly.cs.in" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
@@ -123,6 +127,10 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '9.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' or
                         '$(TargetFramework)' == 'netstandard2.0'">
     <Compile Include="System\Diagnostics\Activity.DateTime.corefx.cs" />
@@ -135,7 +143,6 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
     <Compile Include="System\Diagnostics\Metrics\RuntimeMetrics.cs" />
-    <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
@@ -147,11 +154,31 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" PrivateAssets="All" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
+  <Target Name="_GenerateThisAssemblyInfo"
+          BeforeTargets="CoreCompile"
+          Inputs="ThisAssembly.cs.in"
+          Outputs="$(IntermediateOutputPath)ThisAssembly.cs">
+    <GenerateFileFromTemplate
+      TemplateFile="ThisAssembly.cs.in"
+      Properties="AssemblyVersion=$(AssemblyVersion);AssemblyFileVersion=$(FileVersion)"
+      OutputPath="$(IntermediateOutputPath)ThisAssembly.cs" />
+
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)ThisAssembly.cs" />
+      <FileWrites Include="$(IntermediateOutputPath)ThisAssembly.cs" />
+    </ItemGroup>
+  </Target>
 
 </Project>

@@ -17,6 +17,38 @@
 #include "wellknownattributes.h"
 #include "nativeimage.h"
 
+#ifndef DACCESS_COMPILE
+static PCODE g_pMethodWithSlotAndModule = (PCODE)NULL;
+static PCODE g_pClassWithSlotAndModule = (PCODE)NULL;
+
+PCODE DynamicHelpers::GetDictionaryLookupHelper(CorInfoHelpFunc jitHelper)
+{
+    _ASSERTE(jitHelper == CORINFO_HELP_RUNTIMEHANDLE_METHOD || jitHelper == CORINFO_HELP_RUNTIMEHANDLE_CLASS);
+    if (jitHelper == CORINFO_HELP_RUNTIMEHANDLE_METHOD)
+    {
+        PCODE pFunc = VolatileLoadWithoutBarrier(&g_pMethodWithSlotAndModule);
+        if (pFunc == (PCODE)NULL)
+        {
+            pFunc = CoreLibBinder::GetMethod(METHOD__GENERICSHELPERS__METHODWITHSLOTANDMODULE)->GetMultiCallableAddrOfCode();
+            VolatileStore(&g_pMethodWithSlotAndModule, pFunc);
+        }
+
+        return pFunc;
+    }
+    else
+    {
+        PCODE pFunc = VolatileLoadWithoutBarrier(&g_pClassWithSlotAndModule);
+        if (pFunc == (PCODE)NULL)
+        {
+            pFunc = CoreLibBinder::GetMethod(METHOD__GENERICSHELPERS__CLASSWITHSLOTANDMODULE)->GetMultiCallableAddrOfCode();
+            VolatileStore(&g_pClassWithSlotAndModule, pFunc);
+        }
+
+        return pFunc;
+    }
+}
+#endif // DACCESS_COMPILE
+
 using namespace NativeFormat;
 
 ReadyToRunCoreInfo::ReadyToRunCoreInfo()
@@ -351,6 +383,12 @@ void ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, M
     }
     CONTRACTL_END;
 
+    // We are entering coop mode here so that we don't do it later inside LookupMap while we are already holding the Crst.
+    // Doing it in the other order can block the debugger from running func-evals. For example thread A would acquire the Crst,
+    // then block at the coop transition inside LookupMap waiting for the debugger to resume from a break state. The debugger then
+    // requests thread B to run a funceval, the funceval tries to load some R2R method calling in here, then it blocks because
+    // thread A is holding the Crst.
+    GCX_COOP();
     CrstHolder ch(&m_Crst);
 
     if ((TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint)) == (TADDR)INVALIDENTRY)
@@ -697,7 +735,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     m_pHeader(pHeader),
     m_pNativeImage(pModule != NULL ? pNativeImage: NULL), // m_pNativeImage is only set for composite image components, not the composite R2R info itself
     m_readyToRunCodeDisabled(FALSE),
-    m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
+    m_Crst(CrstReadyToRunEntryPointToMethodDescMap, CRST_UNSAFE_COOPGC),
     m_pPersistentInlineTrackingMap(NULL),
     m_pNextR2RForUnrelatedCode(NULL)
 {
@@ -742,7 +780,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
                 const GUID *componentMvids = (const GUID *)m_pComposite->GetLayout()->GetDirectoryData(pComponentAssemblyMvids);
                 // Take load lock so that DeclareDependencyOnMvid can be called
 
-                BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain(), pNativeImage == NULL); // LoadLock is already held for composite images
+                AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain(), pNativeImage == NULL); // LoadLock is already held for composite images
                 AppDomain::GetCurrentDomain()->AssertLoadLockHeld();
 
                 while (pNativeMDImport->EnumNext(&assemblyEnum, &assemblyRef))
@@ -1526,7 +1564,7 @@ public:
         return GetModuleIfLoaded(kFile);
     }
 
-    DomainAssembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final
+    Assembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final
     {
         STANDARD_VM_CONTRACT;
         // Since we can only load via ModuleRef, this should never fail unless the module is improperly formatted

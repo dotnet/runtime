@@ -52,10 +52,6 @@ namespace Internal.JitInterface
     {
     }
 
-    public struct CORINFO_ASSEMBLY_STRUCT_
-    {
-    }
-
     public struct CORINFO_CONTEXT_STRUCT
     {
     }
@@ -783,6 +779,7 @@ namespace Internal.JitInterface
     {
         CORINFO_TYPE_MASK = 0x3F,        // lower 6 bits are type mask
         CORINFO_TYPE_MOD_PINNED = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
+        CORINFO_TYPE_MOD_COPY_WITH_HELPER = 0x80, // can be applied to VALUECLASS to indicate 'needs helper to copy'
     };
 
     public struct CORINFO_HELPER_ARG
@@ -1084,17 +1081,21 @@ namespace Internal.JitInterface
         // [Out] results of resolveVirtualMethod.
         // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
         //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-        // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
         // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
         // - detail describes the computation done by the jit host
+        // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
+        // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
+        //     (in which case the method handle and context will be a generic method)
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
-        public byte _requiresInstMethodTableArg;
-        public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? (byte)1 : (byte)0; } }
         public CORINFO_CONTEXT_STRUCT* exactContext;
         public CORINFO_DEVIRTUALIZATION_DETAIL detail;
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
+        public byte _requiresInstMethodTableArg;
+        public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? (byte)1 : (byte)0; } }
+        public byte _wasArrayInterfaceDevirt;
+        public bool wasArrayInterfaceDevirt { get { return _wasArrayInterfaceDevirt != 0; } set { _wasArrayInterfaceDevirt = value ? (byte)1 : (byte)0; } }
     }
 
     //----------------------------------------------------------------------------

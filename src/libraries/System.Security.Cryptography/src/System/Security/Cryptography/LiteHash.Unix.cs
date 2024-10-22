@@ -71,6 +71,13 @@ namespace System.Security.Cryptography
             return destination.Length;
         }
 
+        public int FinalizeAndReset(Span<byte> destination)
+        {
+            int written = Finalize(destination);
+            Reset();
+            return written;
+        }
+
         public void Current(Span<byte> destination)
         {
             Check(Interop.Crypto.EvpDigestCurrentXOF(_ctx, destination));

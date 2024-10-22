@@ -22,6 +22,7 @@
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
 
     <!-- PackageReadmeFile specifies the package readme file name in the package. PackageReadmeFilePath points to the package readme file on disk. -->
+    <EnableDefaultPackageReadmeFile Condition="'$(EnableDefaultPackageReadmeFile)' == '' and '$(IsShipping)' == 'true'">true</EnableDefaultPackageReadmeFile>
     <PackageReadmeFile Condition="'$(PackageReadmeFile)' == '' and '$(EnableDefaultPackageReadmeFile)' == 'true'">PACKAGE.md</PackageReadmeFile>
     <PackageReadmeFilePath Condition="'$(PackageReadmeFilePath)' == '' and '$(EnableDefaultPackageReadmeFile)' == 'true'">PACKAGE.md</PackageReadmeFilePath>
     <BeforePack>$(BeforePack);ValidatePackageReadmeExists</BeforePack>
@@ -68,12 +69,6 @@
     <Version>$(MajorVersion).$(MinorVersion).$(ServicingVersion)</Version>
     <Version Condition="'$(VersionSuffix)' != ''">$(Version)-$(VersionSuffix)</Version>
   </PropertyGroup>
-
-  <!-- Main packages intentionally don't include assets for net6.0 and net7.0 anymore. -->
-  <ItemGroup>
-    <PackageValidationBaselineFrameworkToIgnore Include="net6.0" />
-    <PackageValidationBaselineFrameworkToIgnore Include="net7.0" />
-  </ItemGroup>
 
   <ItemGroup>
     <!-- Add a marker to help the designer optimize & share .NET Core packages -->
@@ -200,6 +195,21 @@
       <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\netstandard2.0\$(PackageId).targets" />
       <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\%(NETStandardCompatError.Supported)\$(PackageId).targets" Condition="'@(NETStandardCompatError)' != ''" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="WarnOnProjectReferenceToFrameworkAssemblies"
+          BeforeTargets="IncludeTransitiveProjectReferences"
+          Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and
+                     '@(ProjectReference)' != ''">
+    <!-- Find project references that overlap with NetCoreApp, are direct (NuGetPackageId is not set), actually referenced (ReferenceOutputAssembly), and not hidden with PrivateAssets
+         ProjectReferences can opt out of this checking by setting AllowFrameworkPackageReference, though they should not. -->
+    <Warning Text="Project reference '%(ProjectReference.Identity)' is a reference to a framework assembly and is not required in $(NetCoreAppCurrent) (NetCoreAppCurrent)."
+             Code="NETPKG0001"
+             Condition="$(NetCoreAppLibrary.Contains('%(ProjectReference.Filename);')) and
+                        '%(ProjectReference.ReferenceOutputAssembly)' != 'false' and
+                        '%(ProjectReference.NuGetPackageId)' == '' and
+                        '%(ProjectReference.PrivateAssets)' != 'all' and
+                        '%(ProjectReference.AllowFrameworkPackageReference)' != 'true'" />
   </Target>
 
   <Target Name="GenerateMultiTargetRoslynComponentTargetsFile"

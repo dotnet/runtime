@@ -3,15 +3,32 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
     public partial class Object
     {
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectNative_GetTypeSlow")]
+        private static unsafe partial void GetTypeSlow(MethodTable* methodTable, ObjectHandleOnStack ret);
+
         // Returns a Type object which represent this object instance.
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern Type GetType();
+        public unsafe Type GetType()
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
+            Type type = pMT->AuxiliaryData->ExposedClassObject ?? GetTypeWorker(pMT);
+            GC.KeepAlive(this);
+            return type;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetTypeWorker(MethodTable* pMT)
+            {
+                Type? type = null;
+                GetTypeSlow(pMT, ObjectHandleOnStack.Create(ref type));
+                return type!;
+            }
+        }
 
         // Returns a new object instance that is a memberwise copy of this
         // object.  This is always a shallow copy of the instance. The method is protected

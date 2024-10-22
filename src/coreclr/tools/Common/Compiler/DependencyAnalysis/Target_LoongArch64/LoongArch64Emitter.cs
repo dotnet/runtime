@@ -144,5 +144,11 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
 
             EmitJMP(symbol);
         }
+
+        // dbar
+        public void EmitDBAR()
+        {
+            Builder.EmitUInt(0x38720000);
+        }
     }
 }

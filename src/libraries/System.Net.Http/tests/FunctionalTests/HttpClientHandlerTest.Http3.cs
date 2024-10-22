@@ -21,7 +21,6 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
     public sealed class HttpClientHandlerTest_Http3 : HttpClientHandlerTestBase
     {
@@ -272,7 +271,7 @@ namespace System.Net.Http.Functional.Tests
                 await lastTask;
             });
 
-            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
         }
 
         [Fact]

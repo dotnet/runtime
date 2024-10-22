@@ -478,6 +478,10 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
 
     memcpy(pRD->pCurrentContext, &m_ctx, sizeof(CONTEXT));
 
+    // Clear the CONTEXT_XSTATE, since the REGDISPLAY contains just plain CONTEXT structure
+    // that cannot contain any extended state.
+    pRD->pCurrentContext->ContextFlags &= ~(CONTEXT_XSTATE & CONTEXT_AREA_MASK);
+
     pRD->SP = m_ctx.Esp;
     pRD->ControlPC = m_ctx.Eip;
 
@@ -909,27 +913,6 @@ Stub *GenerateInitPInvokeFrameHelper()
     RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
 }
 
-// Disable when calling into managed code from a place that fails via Exceptions
-extern "C" VOID STDCALL StubRareDisableTHROWWorker(Thread *pThread)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    // Do not add a CONTRACT here.  We haven't set up SEH.
-
-    // WARNING!!!!
-    // when we start executing here, we are actually in cooperative mode.  But we
-    // haven't synchronized with the barrier to reentry yet.  So we are in a highly
-    // dangerous mode.  If we call managed code, we will potentially be active in
-    // the GC heap, even as GC's are occurring!
-
-    // We must do the following in this order, because otherwise we would be constructing
-    // the exception for the abort without synchronizing with the GC.  Also, we have no
-    // CLR SEH set up, despite the fact that we may throw a ThreadAbortException.
-    pThread->RareDisablePreemptiveGC();
-    pThread->HandleThreadAbort();
-}
-
 //////////////////////////////////////////////////////////////////////////////
 //
 // JITInterface
@@ -1285,9 +1268,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
-        GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
-        GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
+    PCODE helperAddress = GetDictionaryLookupHelper(pLookup->helper);
 
     GenericHandleArgs * pArgs = (GenericHandleArgs *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(sizeof(GenericHandleArgs), DYNAMIC_HELPER_ALIGNMENT);
     ExecutableWriterHolder<GenericHandleArgs> argsWriterHolder(pArgs, sizeof(GenericHandleArgs));

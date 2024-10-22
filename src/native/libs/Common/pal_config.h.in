@@ -45,7 +45,6 @@
 #cmakedefine01 HAVE_IOCTL
 #cmakedefine01 HAVE_IOCTL_WITH_INT_REQUEST
 #cmakedefine01 HAVE_TIOCGWINSZ
-#cmakedefine01 HAVE_TIOCSWINSZ
 #cmakedefine01 HAVE_SCHED_GETAFFINITY
 #cmakedefine01 HAVE_SCHED_SETAFFINITY
 #cmakedefine01 HAVE_SCHED_GETCPU
@@ -57,6 +56,9 @@
 #cmakedefine01 HAVE_ETHTOOL_H
 #cmakedefine01 HAVE_SYS_POLL_H
 #cmakedefine01 HAVE_EPOLL
+#cmakedefine01 HAVE_GETHOSTNAME
+#cmakedefine01 HAVE_GETNAMEINFO
+#cmakedefine01 HAVE_SOCKADDR_UN_SUN_PATH
 #cmakedefine01 HAVE_ACCEPT4
 #cmakedefine01 HAVE_KQUEUE
 #cmakedefine01 HAVE_SENDFILE_4

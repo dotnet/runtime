@@ -926,7 +926,7 @@ public:
         NI_System_Threading_Interlocked_ExchangeAdd,
     };
     static InterpreterNamedIntrinsics getNamedIntrinsicID(CEEInfo* info, CORINFO_METHOD_HANDLE methodHnd);
-    static const char* getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName = NULL, const char **enclosingClassName = NULL);
+    static const char* getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName = NULL);
 
 private:
     // Architecture-dependent helpers.

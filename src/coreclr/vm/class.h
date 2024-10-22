@@ -1798,7 +1798,7 @@ protected:
     }
 #endif // !DACCESS_COMPILE
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<EEClass>;
 };
 
 template<> struct cdac_data<EEClass>
@@ -1895,11 +1895,9 @@ public:
     PTR_Stub                         m_pStaticCallStub;
     PTR_Stub                         m_pInstRetBuffCallStub;
     PTR_MethodDesc                   m_pInvokeMethod;
-    PTR_Stub                         m_pMultiCastInvokeStub;
-    PTR_Stub                         m_pWrapperDelegateInvokeStub;
+    PCODE                            m_pMultiCastInvokeStub;
+    PCODE                            m_pWrapperDelegateInvokeStub;
     UMThunkMarshInfo*                m_pUMThunkMarshInfo;
-    PTR_MethodDesc                   m_pBeginInvokeMethod;
-    PTR_MethodDesc                   m_pEndInvokeMethod;
     Volatile<PCODE>                  m_pMarshalStub;
 
 #ifdef FEATURE_COMINTEROP
@@ -1909,16 +1907,6 @@ public:
     PTR_MethodDesc GetInvokeMethod()
     {
         return m_pInvokeMethod;
-    }
-
-    PTR_MethodDesc GetBeginInvokeMethod()
-    {
-        return m_pBeginInvokeMethod;
-    }
-
-    PTR_MethodDesc GetEndInvokeMethod()
-    {
-        return m_pEndInvokeMethod;
     }
 
 #ifndef DACCESS_COMPILE
@@ -1953,7 +1941,6 @@ private:
 
     DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
     unsigned char   m_rank;
-    CorElementType  m_ElementType;// Cache of element type in m_ElementTypeHnd
 
 public:
     DWORD GetRank() {
@@ -1968,16 +1955,6 @@ public:
         _ASSERTE((Rank <= MAX_RANK) && (Rank <= (unsigned char)(-1)));
         m_rank = (unsigned char)Rank;
     }
-
-    CorElementType GetArrayElementType() {
-        LIMITED_METHOD_CONTRACT;
-        return m_ElementType;
-    }
-    void SetArrayElementType(CorElementType ElementType) {
-        LIMITED_METHOD_CONTRACT;
-        m_ElementType = ElementType;
-    }
-
 
     // Allocate a new MethodDesc for the methods we add to this class
     void InitArrayMethodDesc(
@@ -1997,7 +1974,7 @@ public:
                                       BOOL fForStubAsIL
     );
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ArrayClass>;
 };
 
 template<> struct cdac_data<ArrayClass>

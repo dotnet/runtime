@@ -600,7 +600,11 @@ namespace System.Security.Cryptography.Rsa.Tests
                         yield return new object[] { nameof(HashAlgorithmName.SHA1), rsaParameters };
                     }
 
-                    yield return new object[] { nameof(HashAlgorithmName.MD5), rsaParameters };
+                    if (RSAFactory.SupportsMd5Signatures)
+                    {
+                        yield return new object[] { nameof(HashAlgorithmName.MD5), rsaParameters };
+                    }
+
                     yield return new object[] { nameof(HashAlgorithmName.SHA256), rsaParameters };
                 }
 
@@ -1589,7 +1593,11 @@ namespace System.Security.Cryptography.Rsa.Tests
                 yield return new object[] { HashAlgorithmName.SHA256.Name };
                 yield return new object[] { HashAlgorithmName.SHA384.Name };
                 yield return new object[] { HashAlgorithmName.SHA512.Name };
-                yield return new object[] { HashAlgorithmName.MD5.Name };
+
+                if (RSAFactory.SupportsMd5Signatures)
+                {
+                    yield return new object[] { HashAlgorithmName.MD5.Name };
+                }
 
                 if (RSAFactory.SupportsSha1Signatures)
                 {

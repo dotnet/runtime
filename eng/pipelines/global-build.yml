@@ -126,5 +126,5 @@ extends:
         parameters:
           platforms:
           - name: Linux_x64
-            targetRid: linux-x64
+            targetRID: linux-x64
             container: SourceBuild_linux_x64

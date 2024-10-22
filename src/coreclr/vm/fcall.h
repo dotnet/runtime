@@ -151,7 +151,7 @@
 //    Also, initialize all the OBJECTREF's first.  Like this:
 //
 //    FCIMPL4(Object*, COMNlsInfo::nativeChangeCaseString, LocaleIDObject* localeUNSAFE,
-//            INT_PTR pNativeTextInfo, StringObject* pStringUNSAFE, CLR_BOOL bIsToUpper)
+//            INT_PTR pNativeTextInfo, StringObject* pStringUNSAFE, FC_BOOL_ARG bIsToUpper)
 //    {
 //      [ignoring CONTRACT for now]
 //      struct _gc
@@ -1229,65 +1229,21 @@ public:
 // Throws an exception from an FCall. See rexcep.h for a list of valid
 // exception codes.
 //==============================================================================================
-#define FCThrow(reKind) FCThrowEx(reKind, 0, 0, 0, 0)
-
-//==============================================================================================
-// This version lets you attach a message with inserts (similar to
-// COMPlusThrow()).
-//==============================================================================================
-#define FCThrowEx(reKind, resID, arg1, arg2, arg3)              \
+#define FCThrow(reKind)                                         \
     {                                                           \
         while (NULL ==                                          \
-            __FCThrow(__me, reKind, resID, arg1, arg2, arg3)) {}; \
-        return 0;                                               \
-    }
-
-//==============================================================================================
-// Like FCThrow but can be used for a VOID-returning FCall. The only
-// difference is in the "return" statement.
-//==============================================================================================
-#define FCThrowVoid(reKind) FCThrowExVoid(reKind, 0, 0, 0, 0)
-
-//==============================================================================================
-// This version lets you attach a message with inserts (similar to
-// COMPlusThrow()).
-//==============================================================================================
-#define FCThrowExVoid(reKind, resID, arg1, arg2, arg3)          \
-    {                                                           \
-        while (NULL ==                                          \
-            __FCThrow(__me, reKind, resID, arg1, arg2, arg3)) {}; \
-        return;                                                 \
-    }
-
-// Use FCThrowRes to throw an exception with a localized error message from the
-// ResourceManager in managed code.
-#define FCThrowRes(reKind, resourceName) FCThrowArgumentEx(reKind, NULL, resourceName)
-#define FCThrowArgumentNull(argName) FCThrowArgumentEx(kArgumentNullException, argName, NULL)
-#define FCThrowArgumentOutOfRange(argName, message) FCThrowArgumentEx(kArgumentOutOfRangeException, argName, message)
-#define FCThrowArgument(argName, message) FCThrowArgumentEx(kArgumentException, argName, message)
-
-#define FCThrowArgumentEx(reKind, argName, resourceName)        \
-    {                                                           \
-        while (NULL ==                                                  \
-            __FCThrowArgument(__me, reKind, argName, resourceName)) {}; \
+            __FCThrow(__me, reKind, 0, 0, 0, 0)) {};            \
         return 0;                                               \
     }
 
 // Use FCThrowRes to throw an exception with a localized error message from the
 // ResourceManager in managed code.
-#define FCThrowResVoid(reKind, resourceName) FCThrowArgumentVoidEx(reKind, NULL, resourceName)
-#define FCThrowArgumentNullVoid(argName) FCThrowArgumentVoidEx(kArgumentNullException, argName, NULL)
-#define FCThrowArgumentOutOfRangeVoid(argName, message) FCThrowArgumentVoidEx(kArgumentOutOfRangeException, argName, message)
-#define FCThrowArgumentVoid(argName, message) FCThrowArgumentVoidEx(kArgumentException, argName, message)
-
-#define FCThrowArgumentVoidEx(reKind, argName, resourceName)    \
-    {                                                           \
+#define FCThrowRes(reKind, resourceName)                                \
+    {                                                                   \
         while (NULL ==                                                  \
-            __FCThrowArgument(__me, reKind, argName, resourceName)) {};  \
-        return;                                                 \
+            __FCThrowArgument(__me, reKind, NULL, resourceName)) {};    \
+        return 0;                                                       \
     }
-
-
 
 // The managed calling convention expects returned small types (e.g. bool) to be
 // widened to 32-bit on return. The C/C++ calling convention does not guarantee returned
@@ -1335,7 +1291,10 @@ typedef UINT32 FC_UINT8_RET;
 typedef INT32 FC_INT16_RET;
 typedef UINT32 FC_UINT16_RET;
 
+// Small primitive args are not widened.
+typedef INT32 FC_BOOL_ARG;
 
+#define FC_ACCESS_BOOL(x) ((BYTE)x != 0)
 
 // The fcall entrypoints has to be at unique addresses. Use this helper macro to make
 // the code of the fcalls unique if you get assert in ecall.cpp that mentions it.

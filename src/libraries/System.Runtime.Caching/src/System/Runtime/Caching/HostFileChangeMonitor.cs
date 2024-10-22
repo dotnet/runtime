@@ -99,7 +99,7 @@ namespace System.Runtime.Caching
                 if (fcn == null)
                 {
 #if NET
-                    if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
+                    if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
                     {
                         throw new PlatformNotSupportedException();
                     }

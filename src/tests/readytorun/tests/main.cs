@@ -80,12 +80,21 @@ public class Program
         catch (InvalidOperationException) {}
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Func<string> GetChangedToNonVirtualDelegate(MyClass o)
+    {
+        return o.ChangedToNonVirtual;
+    }
+
     static void TestMovedVirtualMethods()
     {
         var o = new MyChildClass();
 
         Assert.AreEqual(o.MovedToBaseClass(), "MovedToBaseClass");
         Assert.AreEqual(o.ChangedToVirtual(), "ChangedToVirtual");
+
+        // Test that changing a virtual to a non-virtual doesn't cause a crash. (Behavior is somewhat undefined, as this change is explicitly defined as a breaking change.)
+        Assert.AreEqual(GetChangedToNonVirtualDelegate(o)(), "ChangedToNonVirtual");
 
         o = null;
 
@@ -185,12 +194,21 @@ public class Program
             "System.StringSystem.ObjectProgramSystem.Collections.Generic.IEnumerable`1[System.String]");
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Func<string> GetChangedToNonVirtualDelegate<TClass, TMethod>(MyGeneric<TClass, TClass> o)
+    {
+        return o.ChangedToNonVirtual<TMethod>;
+    }
+
     static void TestMovedGenericVirtualMethod()
     {
         var o = new MyChildGeneric<Object>();
 
         Assert.AreEqual(o.MovedToBaseClass<WeakReference>(), typeof(List<WeakReference>).ToString());
         Assert.AreEqual(o.ChangedToVirtual<WeakReference>(), typeof(List<WeakReference>).ToString());
+
+        // Test that changing a virtual to a non-virtual doesn't cause a crash. (Behavior is somewhat undefined, as this change is explicitly defined as a breaking change.)
+        Assert.AreEqual(GetChangedToNonVirtualDelegate<object, WeakReference>(o)(), typeof(List<WeakReference>).ToString());
 
         o = null;
 
@@ -235,6 +253,9 @@ public class Program
         var o2 = new MyChildGeneric<MyChangingStruct>();
         Assert.AreEqual(o2.MovedToBaseClass<MyGrowingStruct>(), typeof(List<MyGrowingStruct>).ToString());
         Assert.AreEqual(o2.ChangedToVirtual<MyGrowingStruct>(), typeof(List<MyGrowingStruct>).ToString());
+
+        // Test that changing a virtual to a non-virtual doesn't cause a crash. (Behavior is somewhat undefined, as this change is explicitly defined as a breaking change.)
+        Assert.AreEqual(GetChangedToNonVirtualDelegate<MyChangingStruct, MyGrowingStruct>(o2)(), typeof(List<MyGrowingStruct>).ToString());
     }
 
     static void TestInstanceFields()

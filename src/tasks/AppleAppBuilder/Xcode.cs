@@ -407,7 +407,10 @@ internal sealed class Xcode
             }
 
             string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
-            foreach (string lib in Directory.GetFiles(workspace, "*.a"))
+
+            // Sort the static libraries to link so the brotli libs are added to the list last (after the compression native libs)
+            List<string> staticLibsToLink = Directory.GetFiles(workspace, "*.a").OrderBy(libName => libName.Contains("brotli") ? 1 : 0).ToList();
+            foreach (string lib in staticLibsToLink)
             {
                 // all component libs already added to linker.
                 if (allComponentLibs.Any(lib.Contains))
