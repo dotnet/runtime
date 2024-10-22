@@ -4,16 +4,18 @@
 /*============================================================
 **
 **
-** Private version of List<T> for internal System.Private.CoreLib use. This
-** permits sharing more source between BCL and System.Private.CoreLib (as well as the
-** fact that List<T> is just a useful class in general.)
+** Private version of List<T> for internal System.Private.TypeLoader use. Type
+** loader itself can't use generic types without [ForceDictionaryLookups], and
+** we don't want to annotate List<T> with it because it would impact size and
+** performance for general usages.
 **
 ** This does not strive to implement the full api surface area
 ** (but any portion it does implement should match the real List<T>'s
 ** behavior.)
 **
-** This file is a subset of System.Collections\System\Collections\Generics\List.cs
-** and should be kept in sync with that file.
+** This file is a subset of
+** src\libraries\System.Private.CoreLib\src\System\Collections\Generics\List.cs
+** and should be kept in sync with that file when necessary.
 **
 ===========================================================*/
 
@@ -32,9 +34,7 @@ namespace System.Collections.Generic
     // Data size is smaller because there will be minimal virtual function table.
     // Code size is smaller because only functions called will be in the binary.
     [DebuggerDisplay("Count = {Count}")]
-#if TYPE_LOADER_IMPLEMENTATION
     [System.Runtime.CompilerServices.ForceDictionaryLookups]
-#endif
     internal class LowLevelList<T>
     {
         private const int _defaultCapacity = 4;
@@ -53,60 +53,6 @@ namespace System.Collections.Generic
         public LowLevelList()
         {
             _items = s_emptyArray;
-        }
-
-        // Constructs a List with a given initial capacity. The list is
-        // initially empty, but will have room for the given number of elements
-        // before any reallocations are required.
-        //
-        public LowLevelList(int capacity)
-        {
-            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-
-            if (capacity == 0)
-                _items = s_emptyArray;
-            else
-                _items = new T[capacity];
-        }
-
-        // Constructs a List, copying the contents of the given collection. The
-        // size and capacity of the new list will both be equal to the size of the
-        // given collection.
-        //
-        public LowLevelList(IEnumerable<T> collection)
-        {
-            ArgumentNullException.ThrowIfNull(collection);
-
-            ICollection<T>? c = collection as ICollection<T>;
-            if (c != null)
-            {
-                int count = c.Count;
-                if (count == 0)
-                {
-                    _items = s_emptyArray;
-                }
-                else
-                {
-                    _items = new T[count];
-                    c.CopyTo(_items, 0);
-                    _size = count;
-                }
-            }
-            else
-            {
-                _size = 0;
-                _items = s_emptyArray;
-                // This enumerable could be empty.  Let Add allocate a new array, if needed.
-                // Note it will also go to _defaultCapacity first, not 1, then 2, etc.
-
-                using (IEnumerator<T> en = collection.GetEnumerator())
-                {
-                    while (en.MoveNext())
-                    {
-                        Add(en.Current);
-                    }
-                }
-            }
         }
 
         // Gets and sets the capacity of this list.  The capacity is the size of
