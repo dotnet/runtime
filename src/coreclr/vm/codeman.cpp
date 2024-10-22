@@ -4126,8 +4126,8 @@ namespace {
             // TODO: Is this check correct?
             _ASSERTE(pCode + codeSize <= pHp->startAddress + pHp->maxCodeHeapSize);
 
-            // Assert 4 byte aligned
-            _ASSERTE(!(pCode & 0b11));
+            // remove bottom two bits to ensure alignment
+            pCode = ALIGN_DOWN(pCode, CODE_ALIGN);
 
             size_t delta = pCode - pHp->mapBase;
 
