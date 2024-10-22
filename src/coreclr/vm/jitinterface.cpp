@@ -10977,7 +10977,7 @@ void CEEJitInfo::WriteCode(EEJitManager * jitMgr)
     // Now that the code header was written to the final location, publish the code via the nibble map
     // m_codeWriteBufferSize is the size of the code region + code header. The nibble map should only use
     // the code region, therefore we subtract the size of the CodeHeader.
-    jitMgr->NibbleMapSet(m_pCodeHeap, m_CodeHeader->GetCodeStartAddress(), m_codeWriteBufferSize - sizeof(CodeHeader));
+    jitMgr->NibbleMapSet(m_pCodeHeap, m_CodeHeader->GetCodeStartAddress(), m_codeWriteBufferSize);
 
 #if defined(TARGET_AMD64)
     // Publish the new unwind information in a way that the ETW stack crawler can find
