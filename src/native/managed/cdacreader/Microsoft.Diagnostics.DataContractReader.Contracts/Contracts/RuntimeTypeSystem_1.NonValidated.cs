@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -339,7 +340,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private TargetCodePointer GetStableEntryPoint(TargetPointer methodDescPointer, NonValidated.MethodDesc umd)
     {
-        // TODO(cdac): _ASSERTE(HasStableEntryPoint());
+        Debug.Assert(umd.HasStableEntryPoint);
         // TODO(cdac): _ASSERTE(!IsVersionableWithVtableSlotBackpatch());
 
         return GetMethodEntryPointIfExists(methodDescPointer, umd);
@@ -356,7 +357,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         TargetPointer methodTablePointer = umd.MethodTable;
         TypeHandle typeHandle = GetTypeHandle(methodTablePointer);
-        // TODO: cdac:  _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
+        Debug.Assert(_methodTables[typeHandle.Address].IsCanonMT);
         TargetPointer addrOfSlot = GetAddressOfSlot(typeHandle, umd.Slot);
         return _target.ReadCodePointer(addrOfSlot);
     }
