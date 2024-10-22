@@ -62,7 +62,7 @@ namespace Wasm.Build.Tests
             UpdateBrowserMainJs();
 
             bool isPublish = true;
-            (string _, string buildOutput) = BuildTemplateProject(info,
+            (string _, string output) = BuildTemplateProject(info,
                         new BuildProjectOptions(
                             info.Configuration,
                             info.ProjectName,

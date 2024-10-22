@@ -42,6 +42,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         bool runAnalyzers = true,
         bool addFrameworkArg = false,
         string extraProperties = "",
+        string extraItems = "",
         string atTheEnd = "")
     {
         string projectName =  appendUnicodeToPath ?
@@ -69,7 +70,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (runAnalyzers)
             extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
 
-        AddItemsPropertiesToProject(projectFilePath, extraProperties, atTheEnd: atTheEnd);
+        AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, atTheEnd);
 
         return new ProjectInfo(config, aot, projectName, projectFilePath);
     }
