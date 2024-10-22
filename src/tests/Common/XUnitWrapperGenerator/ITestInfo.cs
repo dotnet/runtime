@@ -308,7 +308,7 @@ public sealed class MemberDataTest : ITestInfo
         CodeBuilder builder = new();
 
         builder.AppendLine();
-        builder.AppendLine($@"foreach (object[] {_loopVarIdentifier} in {_memberInvocation})");
+        builder.AppendLine($@"foreach (object {_loopVarIdentifier} in {_memberInvocation})");
 
         using (builder.NewBracesScope())
         {

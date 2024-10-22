@@ -175,8 +175,10 @@ public unsafe class StartupHookTests
 
     [Theory]
     [MemberData(nameof(InvalidSimpleAssemblyNameData))]
-    public static void InvalidSimpleAssemblyName(string name, bool failsSimpleNameCheck)
+    public static void InvalidSimpleAssemblyName(object[] arg)
     {
+        string name = (string)arg[0];
+        bool failsSimpleNameCheck = (bool)arg[1];
         Console.WriteLine($"Running {nameof(InvalidSimpleAssemblyName)}({name}, {failsSimpleNameCheck})...");
 
         AppContext.SetData(StartupHookKey, $"{Hook.Basic.Value}{Path.PathSeparator}{name}");
@@ -231,12 +233,12 @@ public unsafe class StartupHookTests
 
     [Theory]
     [MemberData(nameof(IncorrectInitializeSignatureData))]
-    public static void IncorrectInitializeSignature(Hook hook)
+    public static void IncorrectInitializeSignature(Hook[] hook)
     {
-        Console.WriteLine($"Running {nameof(IncorrectInitializeSignature)}({hook.Name})...");
+        Console.WriteLine($"Running {nameof(IncorrectInitializeSignature)}({hook[0].Name})...");
 
-        AppContext.SetData(StartupHookKey, hook.Value);
+        AppContext.SetData(StartupHookKey, hook[0].Value);
         var ex = Assert.Throws<ArgumentException>(() => ProcessStartupHooks(string.Empty));
-        Assert.Equal($"The signature of the startup hook 'StartupHook.Initialize' in assembly '{hook.Value}' was invalid. It must be 'public static void Initialize()'.", ex.Message);
+        Assert.Equal($"The signature of the startup hook 'StartupHook.Initialize' in assembly '{hook[0].Value}' was invalid. It must be 'public static void Initialize()'.", ex.Message);
     }
 }
