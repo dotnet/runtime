@@ -21,49 +21,54 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         public static IEnumerable<object?[]> FlagsChangesForNativeRelinkingData(bool aot)
             => ConfigWithAOTData(aot, config: "Release").Multiply(
-                        new object[] { /*cflags*/ "/p:EmccExtraCFlags=-g", /*ldflags*/ "" },
-                        new object[] { /*cflags*/ "",                      /*ldflags*/ "/p:EmccExtraLDFlags=-g" },
-                        new object[] { /*cflags*/ "/p:EmccExtraCFlags=-g", /*ldflags*/ "/p:EmccExtraLDFlags=-g" }
+                        new object[] { /*cflags*/ "/p:EmccExtraCFlags=-g", /*ldflags*/ "" }
+                        // File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not
+                        // new object[] { /*cflags*/ "",                      /*ldflags*/ "/p:EmccExtraLDFlags=-g" }
+                        // new object[] { /*cflags*/ "/p:EmccExtraCFlags=-g", /*ldflags*/ "/p:EmccExtraLDFlags=-g" }
             ).UnwrapItemsAsArrays();
 
-        // [Theory]
-        // [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ false)]
+        [Theory]
+        [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ false)]
+        // Found statically linked AOT module: failed
         // [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ true)]
-        // public void ExtraEmccFlagsSetButNoRealChange(ProjectInfo buildArgs, string extraCFlags, string extraLDFlags, RunHost host, string id)
-        // {
-        //     buildArgs = buildArgs with { ProjectName = $"rebuild_flags_{buildArgs.Configuration}" };
-        //     (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink: true, invariant: false, buildArgs, id);
-        //     var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: true);
-        //     if (extraLDFlags.Length > 0)
-        //         pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js");
+        public async void ExtraEmccFlagsSetButNoRealChange(string config, bool aot, string extraCFlags, string extraLDFlags)
+        {
+            string prefix = $"rebuild_flags_{config}";
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, prefix);
+            UpdateBrowserProgramFile();
+            UpdateBrowserMainJs();
+            BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink: true, invariant: false);
+            var pathsDict = GetFilesTable(info, paths, unchanged: true);
+            if (extraLDFlags.Length > 0)
+                pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js");
 
-        //     var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var originalStat = StatFiles(pathsDict);
 
-        //     // Rebuild
-
-        //     string mainAssembly = $"{buildArgs.ProjectName}.dll";
-        //     string extraBuildArgs = $" {extraCFlags} {extraLDFlags}";
-        //     string output = Rebuild(nativeRelink: true, invariant: false, buildArgs, id, extraBuildArgs: extraBuildArgs, verbosity: "normal");
-
-        //     var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
-        //     _provider.CompareStat(originalStat, newStat, pathsDict.Values);
-
-        //     // cflags: pinvoke get's compiled, but doesn't overwrite pinvoke.o
-        //     // and thus doesn't cause relinking
-        //     TestUtils.AssertSubstring("pinvoke.c -> pinvoke.o", output, contains: extraCFlags.Length > 0);
-
-        //     // ldflags: link step args change, so it should trigger relink
-        //     TestUtils.AssertSubstring("Linking with emcc", output, contains: extraLDFlags.Length > 0);
-
-        //     if (buildArgs.AOT)
-        //     {
-        //         // ExtraEmccLDFlags does not affect .bc files
-        //         Assert.DoesNotContain("Compiling assembly bitcode files", output);
-        //     }
-
-        //     string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-        //     TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput,
-        //                         contains: buildArgs.AOT);
-        // }
+            // Rebuild
+            string mainAssembly = $"{info.ProjectName}.dll";
+            string extraBuildArgs = $" {extraCFlags} {extraLDFlags}";
+            string output = Rebuild(info, nativeRelink: true, invariant: false, extraBuildArgs: extraBuildArgs, verbosity: "normal");
+            
+            pathsDict = GetFilesTable(info, paths, unchanged: true);
+            var newStat = StatFiles(pathsDict);
+            CompareStat(originalStat, newStat, pathsDict);
+            
+            // cflags: pinvoke get's compiled, but doesn't overwrite pinvoke.o
+            // and thus doesn't cause relinking
+            TestUtils.AssertSubstring("pinvoke.c -> pinvoke.o", output, contains: extraCFlags.Length > 0);
+            
+            // ldflags: link step args change, so it should trigger relink
+            TestUtils.AssertSubstring("Linking with emcc", output, contains: extraLDFlags.Length > 0);
+            
+            if (info.AOT)
+            {
+                // ExtraEmccLDFlags does not affect .bc files
+                Assert.DoesNotContain("Compiling assembly bitcode files", output);
+            }
+            
+            string runOutput = await RunForPublishWithWebServer(new (info.Configuration));
+            TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput,
+                                contains: info.AOT);
+        }
     }
 }

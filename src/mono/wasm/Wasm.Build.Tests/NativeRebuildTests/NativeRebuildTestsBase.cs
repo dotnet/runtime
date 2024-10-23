@@ -43,17 +43,18 @@ namespace Wasm.Build.NativeRebuild.Tests
                 => ConfigWithAOTData(aot)
                         .Multiply(new object[] { nativeRelinking, invariant })
                         // AOT in Debug is switched off
-                        .Where(item => !(item.ElementAt(0) is string config && config == "Debug") && !(item.ElementAt(1) is bool aotValue && aotValue))
+                        .Where(item => !(item.ElementAt(0) is string config && config == "Debug" && item.ElementAt(1) is bool aotValue && aotValue))
                         .UnwrapItemsAsArrays().ToList();
         }
 
-        internal async Task<BuildPaths> FirstNativeBuildAndRun(ProjectInfo info, bool nativeRelink, bool invariant)
+        internal async Task<BuildPaths> FirstNativeBuildAndRun(ProjectInfo info, bool nativeRelink, bool invariant, string extraBuildArgs="")
         {
             bool isNativeBuild = nativeRelink || invariant;
             var extraArgs = new string[] {
                 "-p:_WasmDevel=true",
                 $"-p:WasmBuildNative={nativeRelink}",
-                $"-p:InvariantGlobalization={invariant}"
+                $"-p:InvariantGlobalization={invariant}",                
+                extraBuildArgs
             };
             bool isPublish = true;
             BuildTemplateProject(info,
@@ -66,7 +67,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                             GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded
                         ),
                         extraArgs);
-            await RunForPublishWithWebServer(new (info.Configuration));
+            await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42));
             return GetBuildPaths(info, isPublish);
         }
 
@@ -78,11 +79,11 @@ namespace Wasm.Build.NativeRebuild.Tests
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
             
             var extraArgs = new string[] {
-                extraBuildArgs,
                 "-p:_WasmDevel=true",
                 $"-p:WasmBuildNative={nativeRelink}",
                 $"-p:InvariantGlobalization={invariant}",
-                $"-v:{verbosity}"
+                $"-v:{verbosity}",
+                extraBuildArgs
             };
 
             bool isNativeBuild = nativeRelink || invariant;

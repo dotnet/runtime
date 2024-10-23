@@ -19,42 +19,33 @@ namespace Wasm.Build.NativeRebuild.Tests
         {
         }
 
-        // [Theory]
-        // [MemberData(nameof(NativeBuildData))]
-        // public void ReferenceNewAssembly(ProjectInfo buildArgs, bool nativeRelink, bool invariant, RunHost host, string id)
-        // {
-        //     buildArgs = buildArgs with { ProjectName = $"rebuild_tasks_{buildArgs.Configuration}" };
-        //     (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink, invariant: invariant, buildArgs, id);
+        [Theory]
+        [MemberData(nameof(NativeBuildData))]
+        [ActiveIssue("File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not")]
+        public async void ReferenceNewAssembly(string config, bool aot, bool nativeRelink, bool invariant)
+        {
+            string prefix = $"rebuild_tasks_{config}";
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, prefix);
+            UpdateBrowserProgramFile();
+            UpdateBrowserMainJs();
 
-        //     var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: false);
-        //     pathsDict.UpdateTo(unchanged: true, "corebindings.o");
-        //     pathsDict.UpdateTo(unchanged: true, "driver.o");
-        //     if (!buildArgs.AOT) // relinking
-        //         pathsDict.UpdateTo(unchanged: true, "driver-gen.c");
+            BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink, invariant);
 
-        //     var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var pathsDict = GetFilesTable(info, paths, unchanged: false);
+            pathsDict.UpdateTo(unchanged: true, "corebindings.o");
+            pathsDict.UpdateTo(unchanged: true, "driver.o");
+            if (!info.AOT) // relinking
+                pathsDict.UpdateTo(unchanged: true, "driver-gen.c");
 
-        //     string programText =
-        //     @$"
-        //         using System;
-        //         using System.Text.Json;
-        //         public class Test
-        //         {{
-        //             public static int Main()
-        //             {{" +
-        //      @"          string json = ""{ \""name\"": \""value\"" }"";" +
-        //      @"          var jdoc = JsonDocument.Parse($""{json}"", new JsonDocumentOptions());" +
-        //     @$"          Console.WriteLine($""json: {{jdoc}}"");
-        //                 return 42;
-        //             }}
-        //         }}";
-        //     File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+            var originalStat = StatFiles(pathsDict);
 
-        //     Rebuild(nativeRelink, invariant, buildArgs, id);
-        //     var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            UpdateFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "NativeRebuildNewAssembly.cs"));
 
-        //     _provider.CompareStat(originalStat, newStat, pathsDict.Values);
-        //     RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-        // }
+            Rebuild(info, nativeRelink, invariant);
+            var newStat = StatFiles(pathsDict);
+
+            CompareStat(originalStat, newStat, pathsDict);
+            await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42));
+        }
     }
 }
