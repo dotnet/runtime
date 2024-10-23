@@ -1240,13 +1240,6 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Rn, int 
     }
 }
 
-void StubLinkerCPU::EmitLoadFloatRegImm(FloatReg ft, IntReg base, int offset)
-{
-    // fld.d ft,base,offset
-    _ASSERTE(offset <= 2047 && offset >= -2048);
-    Emit32(0x2b800000 | (base.reg << 5) | ((offset & 0xfff)<<10) | ft.reg);
-}
-
 void StubLinkerCPU::EmitMovReg(IntReg Rd, IntReg Rm)
 {
     // ori(Rd, Rm, 0);
