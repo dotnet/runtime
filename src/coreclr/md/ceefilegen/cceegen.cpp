@@ -439,7 +439,7 @@ HRESULT CCeeGen::emitMetaData(IMetaDataEmit *emitter, CeeSection* section, DWORD
         IfFailGoto((HRESULT)metaStream->Seek(disp, STREAM_SEEK_SET, NULL), Exit);
     }
     ULONG metaDataLen;
-    IfFailGoto((HRESULT)metaStream->Read(buffer, buffLen+1, &metaDataLen), Exit);
+    IfFailGoto((HRESULT)metaStream->Read(buffer, buffLen, &metaDataLen), Exit);
 
     _ASSERTE(metaDataLen <= buffLen);
 
