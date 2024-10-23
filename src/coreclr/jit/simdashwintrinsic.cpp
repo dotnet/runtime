@@ -352,7 +352,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         {
             if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic))
             {
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                impSpillSideEffect(true, stackState.esStackDepth -
                                              2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
 
@@ -1211,7 +1211,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         {
             if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic))
             {
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                impSpillSideEffect(true, stackState.esStackDepth -
                                              2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
 
@@ -1483,13 +1483,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         {
             if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic))
             {
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                impSpillSideEffect(true, stackState.esStackDepth -
                                              3 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
 
             if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic))
             {
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                impSpillSideEffect(true, stackState.esStackDepth -
                                              2 DEBUGARG("Spilling op2 side effects for SimdAsHWIntrinsic"));
             }
 
