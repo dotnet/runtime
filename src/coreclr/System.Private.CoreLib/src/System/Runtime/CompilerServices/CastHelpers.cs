@@ -8,19 +8,24 @@ namespace System.Runtime.CompilerServices
 {
     [StackTraceHidden]
     [DebuggerStepThrough]
-    internal static unsafe class CastHelpers
+    internal static unsafe partial class CastHelpers
     {
         // In coreclr the table is allocated and written to on the native side.
         internal static int[]? s_table;
+
+        [LibraryImport(RuntimeHelpers.QCall)]
+        internal static partial void ThrowInvalidCastException(void* fromTypeHnd, void* toTypeHnd);
+
+        internal static void ThrowInvalidCastException(object fromTypeHnd, void* toTypeHnd)
+        {
+            ThrowInvalidCastException(RuntimeHelpers.GetMethodTable(fromTypeHnd), toTypeHnd);
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern ref byte Unbox_Helper(void* toTypeHnd, object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void WriteBarrier(ref object? dst, object? obj);
@@ -365,13 +370,13 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        private static ref byte Unbox(void* toTypeHnd, object obj)
+        private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
         {
             // This will throw NullReferenceException if obj is null.
             if (RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
                 return ref obj.GetRawData();
 
-            return ref Unbox_Helper(toTypeHnd, obj);
+            return ref BoxingHelpers.Unbox_Helper(toTypeHnd, obj);
         }
 
         [DebuggerHidden]
