@@ -1142,6 +1142,7 @@ namespace System.Security.Cryptography.X509Certificates
                 case X509VerifyStatusCodeUniversal.X509_V_ERR_EXCLUDED_VIOLATION:
                     return X509ChainStatusFlags.HasExcludedNameConstraint;
 
+                case X509VerifyStatusCodeUniversal.X509_V_ERR_UNSUPPORTED_CONSTRAINT_TYPE:
                 case X509VerifyStatusCodeUniversal.X509_V_ERR_SUBTREE_MINMAX:
                     return X509ChainStatusFlags.HasNotSupportedNameConstraint;
 
