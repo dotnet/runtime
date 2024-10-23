@@ -630,7 +630,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
                 Assert.False(result, "chain.Build");
-                Assert.Equal(PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint), chain.AllStatusFlags());
+                Assert.Equal(PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint, true), chain.AllStatusFlags());
             });
         }
 
@@ -971,20 +971,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return flags;
         }
 
-        private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags)
+        private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags, bool allowNotSupported = false)
         {
             if (PlatformDetection.UsesAppleCrypto)
             {
-                const X509ChainStatusFlags AnyNameConstraintFlags =
+                X509ChainStatusFlags anyNameConstraintFlags =
                     X509ChainStatusFlags.HasExcludedNameConstraint |
                     X509ChainStatusFlags.HasNotDefinedNameConstraint |
                     X509ChainStatusFlags.HasNotPermittedNameConstraint |
-                    X509ChainStatusFlags.HasNotSupportedNameConstraint |
                     X509ChainStatusFlags.InvalidNameConstraints;
 
-                if ((flags & AnyNameConstraintFlags) != 0)
+                if (!allowNotSupported)
                 {
-                    flags &= ~AnyNameConstraintFlags;
+                    anyNameConstraintFlags |= X509ChainStatusFlags.HasNotSupportedNameConstraint;
+                }
+
+                if ((flags & anyNameConstraintFlags) != 0)
+                {
+                    flags &= ~anyNameConstraintFlags;
                     flags |= X509ChainStatusFlags.InvalidNameConstraints;
                 }
             }
