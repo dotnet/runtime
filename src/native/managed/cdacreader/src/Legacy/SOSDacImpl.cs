@@ -27,8 +27,11 @@ internal sealed unsafe partial class SOSDacImpl
       ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15
 {
     private readonly Target _target;
-    private readonly TargetPointer _stringMethodTable;
-    private readonly TargetPointer _objectMethodTable;
+
+    // When this class is created, the runtime may not have loaded the string and object method tables and set the global pointers.
+    // They should be set when actually requested via a DAC API, so we lazily read the global pointers.
+    private readonly Lazy<TargetPointer> _stringMethodTable;
+    private readonly Lazy<TargetPointer> _objectMethodTable;
 
     private readonly ISOSDacInterface? _legacyImpl;
     private readonly ISOSDacInterface2? _legacyImpl2;
@@ -52,8 +55,11 @@ internal sealed unsafe partial class SOSDacImpl
     public SOSDacImpl(Target target, object? legacyObj)
     {
         _target = target;
-        _stringMethodTable = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
-        _objectMethodTable = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
+        _stringMethodTable = new Lazy<TargetPointer>(
+            () => _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.StringMethodTable)));
+
+        _objectMethodTable = new Lazy<TargetPointer>(
+            () => _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable)));
 
         // Get all the interfaces for delegating to the legacy DAC
         if (legacyObj is not null)
@@ -619,14 +625,14 @@ internal sealed unsafe partial class SOSDacImpl
                 ulong numComponentsOffset = (ulong)_target.GetTypeInfo(DataType.Array).Fields[Data.Array.FieldNames.NumComponents].Offset;
                 data->Size += _target.Read<uint>(objAddr + numComponentsOffset) * data->dwComponentSize;
             }
-            else if (mt == _stringMethodTable)
+            else if (mt == _stringMethodTable.Value)
             {
                 data->ObjectType = DacpObjectType.OBJ_STRING;
 
                 // Update the size to include the string character components
                 data->Size += (uint)objectContract.GetStringValue(objAddr).Length * data->dwComponentSize;
             }
-            else if (mt == _objectMethodTable)
+            else if (mt == _objectMethodTable.Value)
             {
                 data->ObjectType = DacpObjectType.OBJ_OBJECT;
             }
@@ -967,8 +973,8 @@ internal sealed unsafe partial class SOSDacImpl
         {
             data->ArrayMethodTable = _target.ReadPointer(
                 _target.ReadGlobalPointer(Constants.Globals.ObjectArrayMethodTable));
-            data->StringMethodTable = _stringMethodTable;
-            data->ObjectMethodTable = _objectMethodTable;
+            data->StringMethodTable = _stringMethodTable.Value;
+            data->ObjectMethodTable = _objectMethodTable.Value;
             data->ExceptionMethodTable = _target.ReadPointer(
                 _target.ReadGlobalPointer(Constants.Globals.ExceptionMethodTable));
             data->FreeMethodTable = _target.ReadPointer(
