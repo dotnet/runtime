@@ -14398,7 +14398,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             // generated when a generic value is tested against null:
             //     <T> ... foo(T x) { ... if ((object)x == null) ...
             // Also fold checks against known non-null data like static readonlys
-            if ((val == 0) && op->IsBoxedValue())
+            if ((val == 0) && (op->IsBoxedValue() || !fgAddrCouldBeNull(op)))
             {
                 JITDUMP("\nAttempting to optimize BOX(valueType)/non-null %s null [%06u]\n", GenTree::OpName(oper),
                         dspTreeID(tree));
@@ -14420,7 +14420,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                         assert(!gtTreeHasSideEffects(op->AsBox()->BoxOp(), GTF_SIDE_EFFECT));
 
                         // See if we can optimize away the box and related statements.
-                        wrapEffects = gtTryRemoveBoxUpstreamEffects(op) == nullptr;
+                        wrapEffects = (gtTryRemoveBoxUpstreamEffects(op) == nullptr);
                     }
 
                     // Set up the result of the compare.
