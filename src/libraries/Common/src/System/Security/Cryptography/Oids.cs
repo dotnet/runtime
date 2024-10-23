@@ -105,11 +105,17 @@ namespace System.Security.Cryptography
 
         // X500 Names
         internal const string CommonName = "2.5.4.3";
+        internal const string Surname = "2.5.4.4";
         internal const string CountryOrRegionName = "2.5.4.6";
         internal const string LocalityName = "2.5.4.7";
         internal const string StateOrProvinceName = "2.5.4.8";
+        internal const string Street = "2.5.4.9";
         internal const string Organization = "2.5.4.10";
         internal const string OrganizationalUnit = "2.5.4.11";
+        internal const string Title = "2.5.4.12";
+        internal const string GivenName = "2.5.4.42";
+        internal const string Initials = "2.5.4.43";
+
         internal const string EmailAddress = "1.2.840.113549.1.9.1";
 
         // Cert Extensions

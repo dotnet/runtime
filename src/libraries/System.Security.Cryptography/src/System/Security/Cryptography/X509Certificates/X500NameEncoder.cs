@@ -522,7 +522,7 @@ namespace System.Security.Cryptography.X509Certificates
                         throw new CryptographicException(SR.Cryptography_Invalid_IA5String);
                     }
                 }
-                else if (forceUtf8Encoding)
+                else if (forceUtf8Encoding && IsForceUtf8Eligible(tagOid))
                 {
                     writer.WriteCharacterString(UniversalTagNumber.UTF8String, data);
                 }
@@ -540,6 +540,25 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             return writer.Encode();
+        }
+
+        private static bool IsForceUtf8Eligible(ReadOnlySpan<char> oid)
+        {
+            switch (oid)
+            {
+                case Oids.CommonName:
+                case Oids.GivenName:
+                case Oids.LocalityName:
+                case Oids.Organization:
+                case Oids.OrganizationalUnit:
+                case Oids.StateOrProvinceName:
+                case Oids.Surname:
+                case Oids.Street:
+                case Oids.Title:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         private static int ExtractValue(ReadOnlySpan<char> chars, Span<char> destination)
