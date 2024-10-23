@@ -23,6 +23,7 @@ public class MockDescriptors
             { nameof(Data.MethodTable.NumInterfaces), new () { Offset = 48, Type = DataType.uint16}},
             { nameof(Data.MethodTable.NumVirtuals), new () { Offset = 50, Type = DataType.uint16}},
             { nameof(Data.MethodTable.PerInstInfo), new () { Offset = 56, Type = DataType.pointer}},
+            { nameof(Data.MethodTable.AuxiliaryData), new () { Offset = 64, Type = DataType.pointer}},
         }
     };
 
