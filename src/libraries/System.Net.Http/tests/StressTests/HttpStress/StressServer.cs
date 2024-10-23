@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -154,9 +155,17 @@ namespace HttpStress
             {
                 loggerConfiguration = loggerConfiguration
                     // Output only warnings and errors
-                    .WriteTo.Console(Serilog.Events.LogEventLevel.Warning);
+                    .WriteTo.Console();
             }
-            Log.Logger = loggerConfiguration.CreateLogger();
+            var conf = new ConfigurationBuilder()
+                   .SetBasePath(Directory.GetCurrentDirectory())
+                   .AddJsonFile("appsettings.json")
+                   .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", true)
+                   .Build();
+
+            Log.Logger = loggerConfiguration
+                .ReadFrom.Configuration(conf)
+                .CreateLogger();
             if (configuration.Trace)
             {
                 _listener = new LogQuicEventListener(Log.Logger);
