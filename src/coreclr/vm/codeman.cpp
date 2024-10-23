@@ -4312,6 +4312,36 @@ namespace {
                 }
             }
 
+            while (dwordIndex != 0)
+            {
+                dwordIndex--;
+                nibbleIndex = NIBBLES_PER_DWORD;
+
+                PREFIX_ASSUME(pMap != NULL);
+                dword = VolatileLoadWithoutBarrier<DWORD>(pMap + dwordIndex);
+
+                // #5.2 if DWORD is a pointer, then we can return
+                if (IsPointer(dword))
+                {
+                    TADDR newAddr = base + DecodePointer(dword);
+                    _ASSERTE(newAddr == knownAddr);
+                    return newAddr;
+                }
+
+                // #5.4 find preceeding nibble and return if found
+                for(; nibbleIndex-- > 0;)
+                {
+                    nibble = GetNibble(dword, nibbleIndex);
+                    if (nibble)
+                    {
+                        TADDR newAddr = base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
+                        _ASSERTE(newAddr == knownAddr);
+                        return newAddr;
+                    }
+                }
+            }
+
+
             // If none of the above was found, return 0
             _ASSERTE(0 == knownAddr);
             return 0;
