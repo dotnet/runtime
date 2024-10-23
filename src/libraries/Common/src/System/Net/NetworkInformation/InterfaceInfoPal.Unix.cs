@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -21,7 +22,7 @@ namespace System.Net.NetworkInformation
 
             // Measured in bytes, including null terminator.
             int bufferSize = 0;
-            byte* nativeMemory = null;
+            byte[]? rentedBuffer = null;
 
             // The underlying API for this method accepts a null-terminated UTF8 string containing the interface name.
             // If TChar is byte, the only work required is a byte copy. If TChar is char, there's a transcoding step from Unicode
@@ -41,9 +42,10 @@ namespace System.Net.NetworkInformation
 
             try
             {
-                nativeMemory = bufferSize <= StackAllocationThreshold ? null : (byte*)NativeMemory.Alloc((nuint)bufferSize);
-
-                Span<byte> buffer = nativeMemory == null ? stackalloc byte[StackAllocationThreshold].Slice(0, bufferSize) : new Span<byte>(nativeMemory, bufferSize);
+                Span<byte> buffer = (bufferSize <= StackAllocationThreshold
+                    ? stackalloc byte[StackAllocationThreshold]
+                    : (rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize)))
+                    .Slice(0, bufferSize);
 
                 if (typeof(TChar) == typeof(byte))
                 {
@@ -63,12 +65,9 @@ namespace System.Net.NetworkInformation
             }
             finally
             {
-                if (nativeMemory != null)
+                if (rentedBuffer != null)
                 {
-                    int errNo = Marshal.GetLastPInvokeError();
-
-                    NativeMemory.Free(nativeMemory);
-                    Marshal.SetLastPInvokeError(errNo);
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
                 }
             }
         }

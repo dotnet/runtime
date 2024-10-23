@@ -8,7 +8,6 @@ namespace System.Net
 {
     internal static partial class IPv6AddressHelper
     {
-        private const int Decimal = 10;
         private const int Hex = 16;
         private const int NumberOfLabels = 8;
 
@@ -135,7 +134,7 @@ namespace System.Net
             int i;
             for (i = start; i < end; ++i)
             {
-                ushort currentCh = IPv4AddressHelper.ToUShort(name[i]);
+                int currentCh = IPv4AddressHelper.ToUShort(name[i]);
 
                 if (HexConverter.IsHexChar(currentCh))
                 {
@@ -196,7 +195,7 @@ namespace System.Net
                                 i += 4;
                                 for (; i < end; i++)
                                 {
-                                    ushort ch = IPv4AddressHelper.ToUShort(name[i]);
+                                    int ch = IPv4AddressHelper.ToUShort(name[i]);
 
                                     if (!HexConverter.IsHexChar(ch))
                                     {
@@ -209,7 +208,7 @@ namespace System.Net
                                 i += 2;
                                 for (; i < end; i++)
                                 {
-                                    if ((uint)(IPv4AddressHelper.ToUShort(name[i]) - '0') >= IPv6AddressHelper.Decimal)
+                                    if (!char.IsAsciiDigit((char)IPv4AddressHelper.ToUShort(name[i])))
                                     {
                                         return false;
                                     }
@@ -314,8 +313,8 @@ namespace System.Net
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
-            ushort number = 0;
-            ushort currentCh;
+            int number = 0;
+            int currentCh;
             int index = 0;
             int compressorIndex = -1;
             bool numberIsValid = true;
@@ -332,7 +331,7 @@ namespace System.Net
                     case '%':
                         if (numberIsValid)
                         {
-                            numbers[index++] = number;
+                            numbers[index++] = (ushort)number;
                             numberIsValid = false;
                         }
 
@@ -351,7 +350,7 @@ namespace System.Net
                         break;
 
                     case ':':
-                        numbers[index++] = number;
+                        numbers[index++] = (ushort)number;
                         number = 0;
                         // Two sequential colons form a compressor ('::').
                         ++i;
@@ -408,7 +407,7 @@ namespace System.Net
                     case '/':
                         if (numberIsValid)
                         {
-                            numbers[index++] = number;
+                            numbers[index++] = (ushort)number;
                             numberIsValid = false;
                         }
 
@@ -421,7 +420,7 @@ namespace System.Net
                     default:
                         int characterValue = HexConverter.FromChar(currentCh);
 
-                        number = (ushort)(number * IPv6AddressHelper.Hex + characterValue);
+                        number = number * IPv6AddressHelper.Hex + characterValue;
                         i++;
                         break;
                 }
@@ -431,7 +430,7 @@ namespace System.Net
             // an IPv4 address that's already been handled
             if (numberIsValid)
             {
-                numbers[index++] = number;
+                numbers[index++] = (ushort)number;
             }
 
             // If we had a compressor sequence ("::") then we need to expand the

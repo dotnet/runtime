@@ -26,8 +26,8 @@ namespace System.Net
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
             return typeof(TChar) == typeof(char)
-                        ? (char)(object)value
-                        : (byte)(object)value;
+                ? (char)(object)value
+                : (byte)(object)value;
         }
 
         // Only called from the IPv6Helper, only parse the canonical format
@@ -41,7 +41,7 @@ namespace System.Net
             for (int i = 0; i < numbers.Length; ++i)
             {
                 int b = 0;
-                ushort ch;
+                int ch;
 
                 for (; (start < end) && (ch = ToUShort(str[start])) != '.' && ch != ':'; ++start)
                 {
@@ -136,7 +136,7 @@ namespace System.Net
 
             while (start < end)
             {
-                ushort ch = ToUShort(name[start]);
+                int ch = ToUShort(name[start]);
 
                 if (allowIPv6)
                 {
@@ -155,7 +155,7 @@ namespace System.Net
                 }
 
                 // An explicit cast to an unsigned integer forces character values preceding '0' to underflow, eliminating one comparison below.
-                ushort parsedCharacter = (ushort)(ch - '0');
+                uint parsedCharacter = (uint)(ch - '0');
 
                 if (parsedCharacter < IPv4AddressHelper.Decimal)
                 {
@@ -216,8 +216,8 @@ namespace System.Net
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
             int numberBase = IPv4AddressHelper.Decimal;
-            ushort ch;
-            long* parts = stackalloc long[4];
+            int ch = 0;
+            long* parts = stackalloc long[3]; // One part per octet. Final octet doesn't have a terminator, so is stored in currentValue.
             long currentValue = 0;
             bool atLeastOneChar = false;
 
@@ -304,7 +304,7 @@ namespace System.Net
             {
                 // end of string, allowed
             }
-            else if ((ch = ToUShort(name[current])) == '/' || ch == '\\' || (notImplicitFile && (ch == ':' || ch == '?' || ch == '#')))
+            else if (ch == '/' || ch == '\\' || (notImplicitFile && (ch == ':' || ch == '?' || ch == '#')))
             {
                 // For a normal IPv4 address, the terminator is the prefix ('/' or its counterpart, '\'). If notImplicitFile is set, the terminator
                 // is one of the characters which signify the start of the rest of the URI - the port number (':'), query string ('?') or fragment ('#')
