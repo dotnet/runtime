@@ -102,28 +102,40 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
 
     private KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrAddress)
     {
+        // We get the precode type in two phases:
+        // 1. Read the precode type from the intruction address.
+        // 2. If it's "stub", look at the stub data and get the actual precode type - it could be stub,
+        //    but it could also be a pinvoke precode
         // precode.h Precode::GetType()
-        byte precodeType = ReadPrecodeType(instrAddress);
-        if (precodeType == MachineDescriptor.StubPrecodeType)
+        byte approxPrecodeType = ReadPrecodeType(instrAddress);
+        byte exactPrecodeType;
+        if (approxPrecodeType == MachineDescriptor.StubPrecodeType)
         {
             // get the actual type from the StubPrecodeData
             Data.StubPrecodeData stubPrecodeData = GetStubPrecodeData(instrAddress);
-            precodeType = stubPrecodeData.Type;
+            exactPrecodeType = stubPrecodeData.Type;
+        }
+        else
+        {
+            exactPrecodeType = approxPrecodeType;
         }
 
-        if (precodeType == MachineDescriptor.StubPrecodeType)
+        if (exactPrecodeType == MachineDescriptor.StubPrecodeType)
         {
             return KnownPrecodeType.Stub;
         }
-        else if (MachineDescriptor.PInvokeImportPrecodeType is byte ndType && precodeType == ndType)
+        else if (MachineDescriptor.PInvokeImportPrecodeType is byte ndType && exactPrecodeType == ndType)
         {
             return KnownPrecodeType.PInvokeImport;
         }
-        else if (MachineDescriptor.FixupPrecodeType is byte fixupType && precodeType == fixupType)
+        else if (MachineDescriptor.FixupPrecodeType is byte fixupType && exactPrecodeType == fixupType)
         {
             return KnownPrecodeType.Fixup;
         }
-        // TODO: ThisPtrRetBuf
+        else if (MachineDescriptor.ThisPointerRetBufPrecodeType is byte thisPtrRetBufType && exactPrecodeType == thisPtrRetBufType)
+        {
+            return KnownPrecodeType.ThisPtrRetBuf;
+        }
         else
         {
             return null;

@@ -5,23 +5,23 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly partial struct CDacMetadata_1 : ICDacMetadata
+internal readonly partial struct PlatformMetadata_1 : IPlatformMetadata
 {
     internal readonly Target _target;
-    private readonly Data.CDacMetadata _cdacMetadata;
+    private readonly Data.PlatformMetadata _cdacMetadata;
 
-    public CDacMetadata_1(Target target, Data.CDacMetadata cdacMetadata)
+    public PlatformMetadata_1(Target target, Data.PlatformMetadata cdacMetadata)
     {
         _target = target;
         _cdacMetadata = cdacMetadata;
     }
 
-    TargetPointer ICDacMetadata.GetPrecodeMachineDescriptor()
+    TargetPointer IPlatformMetadata.GetPrecodeMachineDescriptor()
     {
         return _cdacMetadata.PrecodeMachineDescriptor;
     }
 
-    CodePointerFlags ICDacMetadata.GetCodePointerFlags()
+    CodePointerFlags IPlatformMetadata.GetCodePointerFlags()
     {
         return (CodePointerFlags)_cdacMetadata.CodePointerFlags;
     }

@@ -39,12 +39,12 @@ Global variables used:
 Contracts used:
 | Contract Name |
 | --- |
-| *none* |
+| `PlatformMetadata` |
 
 ### Determining the precode type
 
 An initial approximation of the precode type relies on a particular pattern at a known offset from the precode entrypoint.
-The precode type is expected to be encoded as an immediate. On some platforms the value is spread over multiple instructon bytes and may need to be right-shifted.
+The precode type is expected to be encoded as an immediate. On some platforms the value is spread over multiple instruction bytes and may need to be right-shifted.
 
 ```
     private byte ReadPrecodeType(TargetPointer instrPointer)
@@ -71,28 +71,40 @@ After the initial precode type is determined, for stub precodes a refined precod
 ```csharp
     private KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrAddress)
     {
+        // We get the precode type in two phases:
+        // 1. Read the precode type from the intruction address.
+        // 2. If it's "stub", look at the stub data and get the actual precode type - it could be stub,
+        //    but it could also be a pinvoke precode
         // precode.h Precode::GetType()
-        byte precodeType = ReadPrecodeType(instrAddress);
-        if (precodeType == MachineDescriptor.StubPrecodeType)
+        byte approxPrecodeType = ReadPrecodeType(instrAddress);
+        byte exactPrecodeType;
+        if (approxPrecodeType == MachineDescriptor.StubPrecodeType)
         {
             // get the actual type from the StubPrecodeData
             Data.StubPrecodeData stubPrecodeData = GetStubPrecodeData(instrAddress);
-            precodeType = stubPrecodeData.Type;
+            exactPrecodeType = stubPrecodeData.Type;
+        }
+        else
+        {
+            exactPrecodeType = approxPrecodeType;
         }
 
-        if (precodeType == MachineDescriptor.StubPrecodeType)
+        if (exactPrecodeType == MachineDescriptor.StubPrecodeType)
         {
             return KnownPrecodeType.Stub;
         }
-        else if (MachineDescriptor.PInvokeImportPrecodeType is byte ndType && precodeType == ndType)
+        else if (MachineDescriptor.PInvokeImportPrecodeType is byte ndType && exactPrecodeType == ndType)
         {
             return KnownPrecodeType.PInvokeImport;
         }
-        else if (MachineDescriptor.FixupPrecodeType is byte fixupType && precodeType == fixupType)
+        else if (MachineDescriptor.FixupPrecodeType is byte fixupType && exactPrecodeType == fixupType)
         {
             return KnownPrecodeType.Fixup;
         }
-        // TODO: ThisPtrRetBuf
+        else if (MachineDescriptor.ThisPointerRetBufPrecodeType is byte thisPtrRetBufType && exactPrecodeType == thisPtrRetBufType)
+        {
+            return KnownPrecodeType.ThisPtrRetBuf;
+        }
         else
         {
             return null;
@@ -159,35 +171,6 @@ After the initial precode type is determined, for stub precodes a refined precod
         internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
         {
             throw new NotImplementedException(); // TODO(cdac)
-        }
-    }
-
-    private KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrAddress)
-    {
-        // precode.h Precode::GetType()
-        byte precodeType = ReadPrecodeType(instrAddress);
-        if (precodeType == MachineDescriptor.StubPrecodeType)
-        {
-            // get the actual type from the StubPrecodeData
-            precodeType = target.Read<byte>(instrAddress + MachineDescriptor.CodePageSize + /* offset of StubPrecodeData.Type */);
-        }
-
-        if (precodeType == MachineDescriptor.StubPrecodeType)
-        {
-            return KnownPrecodeType.Stub;
-        }
-        else if (MachineDescriptor.PInvokeImportPrecodeType is byte ndType && precodeType == ndType)
-        {
-            return KnownPrecodeType.PInvokeImport;
-        }
-        else if (MachineDescriptor.FixupPrecodeType is byte fixupType && precodeType == fixupType)
-        {
-            return KnownPrecodeType.Fixup;
-        }
-        // TODO: ThisPtrRetBuf
-        else
-        {
-            return null;
         }
     }
 

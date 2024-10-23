@@ -46,7 +46,7 @@ public enum DataType
     MethodDesc,
     MethodDescChunk,
     MethodDescCodeData,
-    CDacMetadata,
+    PlatformMetadata,
     PrecodeMachineDescriptor,
     StubPrecodeData,
     FixupPrecodeData,

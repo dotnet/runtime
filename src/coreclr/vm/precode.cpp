@@ -671,35 +671,26 @@ void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
     //   return (byte)PrecodeType;
 #ifdef TARGET_LOONGARCH64
     dest->ReadWidthOfPrecodeType = 2;
-    dest->ShiftOfPrecodeType = 5;
 #else
     dest->ReadWidthOfPrecodeType = 1;
+#endif
+#if defined(SHIFTOF_PRECODE_TYPE)
+    dest->ShiftOfPrecodeType = SHIFTOF_PRECODE_TYPE;
+#else
     dest->ShiftOfPrecodeType = 0;
 #endif
 
     dest->InvalidPrecodeType = InvalidPrecode::Type;
     dest->StubPrecodeType = StubPrecode::Type;
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
-    dest->HasPInvokeImportPrecode = 1;
     dest->PInvokeImportPrecodeType = NDirectImportPrecode::Type;
-#else
-    dest->HasPInvokeImportPrecode = 0;
-    dest->PInvokeImportPrecodeType = 0;
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
-    dest->HasFixupPrecode = 1;
     dest->FixupPrecodeType = FixupPrecode::Type;
-#else
-    dest->HasFixupPrecode = 0;
-    dest->FixupPrecodeType = 0;
-#endif // HAS_FIXUP_PRECODE
+#endif
 #ifdef HAS_THISPTR_RETBUF_PRECODE
-    dest->HasThisPtrRetBufPrecode = 1;
-    dest->HasThisPointerRetBufPrecodeType = ThisPtrRetBufPrecode::Type;
-#else
-    dest->HasThisPtrRetBufPrecode = 0;
-    dest->HasThisPointerRetBufPrecodeType = 0;
-#endif // HAS_THISPTR_RETBUF_PRECODE
+    dest->ThisPointerRetBufPrecodeType = ThisPtrRetBufPrecode::Type;
+#endif
     dest->StubCodePageSize = GetStubCodePageSize();
 }
 

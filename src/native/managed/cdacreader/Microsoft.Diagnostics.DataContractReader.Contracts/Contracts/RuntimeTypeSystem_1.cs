@@ -1047,7 +1047,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private TargetCodePointer CodePointerFromAddress(TargetPointer address)
     {
-        ICDacMetadata metadata = _target.Contracts.CDacMetadata;
+        IPlatformMetadata metadata = _target.Contracts.PlatformMetadata;
         CodePointerFlags flags = metadata.GetCodePointerFlags();
         if (flags.HasFlag(CodePointerFlags.HasArm32ThumbBit))
         {

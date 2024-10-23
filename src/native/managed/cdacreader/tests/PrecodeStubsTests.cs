@@ -204,10 +204,9 @@ public class PrecodeStubsTests
                 (nameof(Data.PrecodeMachineDescriptor.ShiftOfPrecodeType), DataType.uint8),
                 (nameof(Data.PrecodeMachineDescriptor.InvalidPrecodeType), DataType.uint8),
                 (nameof(Data.PrecodeMachineDescriptor.StubPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.HasPInvokeImportPrecode), DataType.uint8),
                 (nameof(Data.PrecodeMachineDescriptor.PInvokeImportPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.HasFixupPrecode), DataType.uint8),
                 (nameof(Data.PrecodeMachineDescriptor.FixupPrecodeType), DataType.uint8),
+                (nameof(Data.PrecodeMachineDescriptor.ThisPointerRetBufPrecodeType), DataType.uint8),
             ]);
             typeInfoCache[DataType.PrecodeMachineDescriptor] = new Target.TypeInfo() {
                 Fields = layout.Fields,
@@ -277,20 +276,20 @@ public class PrecodeStubsTests
 
     internal class PrecodeTestTarget : TestPlaceholderTarget
     {
-        private class TestCDacMetadata : ICDacMetadata
+        private class TestPlatformMetadata : IPlatformMetadata
         {
             private readonly CodePointerFlags _codePointerFlags;
             private readonly TargetPointer _precodeMachineDescriptorAddress;
-            public TestCDacMetadata(CodePointerFlags codePointerFlags, TargetPointer precodeMachineDescriptorAddress) {
+            public TestPlatformMetadata(CodePointerFlags codePointerFlags, TargetPointer precodeMachineDescriptorAddress) {
                 _codePointerFlags = codePointerFlags;
                 _precodeMachineDescriptorAddress = precodeMachineDescriptorAddress;
             }
-            TargetPointer ICDacMetadata.GetPrecodeMachineDescriptor() => _precodeMachineDescriptorAddress;
-            CodePointerFlags ICDacMetadata.GetCodePointerFlags() => _codePointerFlags;
+            TargetPointer IPlatformMetadata.GetPrecodeMachineDescriptor() => _precodeMachineDescriptorAddress;
+            CodePointerFlags IPlatformMetadata.GetCodePointerFlags() => _codePointerFlags;
         }
         internal readonly TargetPointer PrecodeMachineDescriptorAddress;
-        // hack for this test put the precode machine descriptor at the same address as the CDacMetadata
-        internal TargetPointer CDacMetadataAddress => PrecodeMachineDescriptorAddress;
+        // hack for this test put the precode machine descriptor at the same address as the PlatformMetadata
+        internal TargetPointer PlatformMetadataAddress => PrecodeMachineDescriptorAddress;
         public static PrecodeTestTarget FromBuilder(PrecodeBuilder precodeBuilder)
         {
             precodeBuilder.MarkCreated();
@@ -299,14 +298,14 @@ public class PrecodeStubsTests
             var typeInfo = precodeBuilder.TypeInfoCache;
             return new PrecodeTestTarget(arch, reader, precodeBuilder.CodePointerFlags, precodeBuilder.MachineDescriptorAddress, typeInfo);
         }
-        public PrecodeTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, CodePointerFlags codePointerFlags, TargetPointer cdacMetadataAddress, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch) {
-            PrecodeMachineDescriptorAddress = cdacMetadataAddress;
+        public PrecodeTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, CodePointerFlags codePointerFlags, TargetPointer platformMetadataAddress, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch) {
+            PrecodeMachineDescriptorAddress = platformMetadataAddress;
             SetTypeInfoCache(typeInfoCache);
             SetDataCache(new DefaultDataCache(this));
             SetDataReader(reader);
             IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();
             SetContracts(new TestRegistry() {
-                CDacMetadataContract = new (() => new TestCDacMetadata(codePointerFlags, PrecodeMachineDescriptorAddress)),
+                CDacMetadataContract = new (() => new TestPlatformMetadata(codePointerFlags, PrecodeMachineDescriptorAddress)),
                 PrecodeStubsContract = new (() => precodeFactory.CreateContract(this, 1)),
 
             });
@@ -314,8 +313,8 @@ public class PrecodeStubsTests
 
         public override TargetPointer ReadGlobalPointer (string name)
         {
-            if (name == Constants.Globals.CDacMetadata) {
-                return CDacMetadataAddress;
+            if (name == Constants.Globals.PlatformMetadata) {
+                return PlatformMetadataAddress;
             }
             return base.ReadGlobalPointer(name);
         }

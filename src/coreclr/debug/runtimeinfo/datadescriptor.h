@@ -381,18 +381,23 @@ CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ShiftOfPrecodeType, offseto
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, OffsetOfPrecodeType, offsetof(PrecodeMachineDescriptor, OffsetOfPrecodeType))
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, InvalidPrecodeType, offsetof(PrecodeMachineDescriptor, InvalidPrecodeType))
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, StubPrecodeType, offsetof(PrecodeMachineDescriptor, StubPrecodeType))
-CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, HasPInvokeImportPrecode, offsetof(PrecodeMachineDescriptor, HasPInvokeImportPrecode))
+#ifdef HAS_NDIRECT_IMPORT_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, PInvokeImportPrecodeType, offsetof(PrecodeMachineDescriptor, PInvokeImportPrecodeType))
-CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, HasFixupPrecode, offsetof(PrecodeMachineDescriptor, HasFixupPrecode))
+#endif
+#ifdef HAS_FIXUP_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, FixupPrecodeType, offsetof(PrecodeMachineDescriptor, FixupPrecodeType))
+#endif
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ThisPointerRetBufPrecodeType, offsetof(PrecodeMachineDescriptor, ThisPointerRetBufPrecodeType))
+#endif
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint32*/, StubCodePageSize, offsetof(PrecodeMachineDescriptor, StubCodePageSize))
 CDAC_TYPE_END(PrecodeMachineDescriptor)
 
-CDAC_TYPE_BEGIN(CDacMetadata)
-CDAC_TYPE_INDETERMINATE(CDacMetadata)
-CDAC_TYPE_FIELD(CDacMetadata, /*PrecodeMachineDescriptor*/, PrecodeMachineDescriptor, offsetof(CDacMetadata, precode))
-CDAC_TYPE_FIELD(CDacMetadata, /*uint8*/, CodePointerFlags, offsetof(CDacMetadata, codePointerFlags))
-CDAC_TYPE_END(CDacMetadata)
+CDAC_TYPE_BEGIN(PlatformMetadata)
+CDAC_TYPE_INDETERMINATE(PlatformMetadata)
+CDAC_TYPE_FIELD(PlatformMetadata, /*PrecodeMachineDescriptor*/, PrecodeMachineDescriptor, offsetof(CDacPlatformMetadata, precode))
+CDAC_TYPE_FIELD(PlatformMetadata, /*uint8*/, CodePointerFlags, offsetof(CDacPlatformMetadata, codePointerFlags))
+CDAC_TYPE_END(PlatformMetadata)
 
 CDAC_TYPE_BEGIN(StubPrecodeData)
 CDAC_TYPE_INDETERMINATE(StubPrecodeData)
@@ -501,7 +506,7 @@ CDAC_GLOBAL_POINTER(SyncTableEntries, &::g_pSyncTable)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
-CDAC_GLOBAL_POINTER(CDacMetadata, &::g_cdacMetadata)
+CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
 CDAC_GLOBALS_END()
 

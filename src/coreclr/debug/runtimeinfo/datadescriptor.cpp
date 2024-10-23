@@ -9,7 +9,7 @@
 #include "static_assert.h"
 
 #include <sospriv.h>
-#include "cdacmetadata.hpp"
+#include "cdacplatformmetadata.hpp"
 #include "methodtable.h"
 #include "threads.h"
 
