@@ -6657,6 +6657,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_SETCC:
         case GT_NO_OP:
         case GT_START_NONGC:
+        case GT_STOP_NONGC:
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
 #if defined(FEATURE_EH_WINDOWS_X86)
@@ -10212,6 +10213,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_SETCC:
         case GT_NO_OP:
         case GT_START_NONGC:
+        case GT_STOP_NONGC:
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
 #if defined(FEATURE_EH_WINDOWS_X86)
@@ -12367,6 +12369,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_NOP:
         case GT_NO_OP:
         case GT_START_NONGC:
+        case GT_STOP_NONGC:
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
         case GT_CATCH_ARG:
