@@ -53,45 +53,31 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [BuildAndRun(aot: true)]
+        [BuildAndRun(config: "Release", aot: true)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/103566")]
-        public void ProjectUsingSkiaSharp(ProjectInfo buildArgs, RunHost host, string id)
+        public async Task ProjectUsingSkiaSharp(string config, bool aot)
         {
-            string projectName = $"AppUsingSkiaSharp";
-            buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs,
-                            extraItems: @$"
+            string prefix = $"AppUsingSkiaSharp";
+            string extraItems = @$"
                                 {GetSkiaSharpReferenceItems()}
                                 <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
-                            ");
+                            ";
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, prefix, extraItems: extraItems);
+            UpdateFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "SkiaSharp.cs"));
+            UpdateBrowserMainJs();
 
-            string programText = @"
-using System;
-using SkiaSharp;
-
-public class Test
-{
-    public static int Main()
-    {
-        using SKFileStream skfs = new SKFileStream(""mono.png"");
-        using SKImage img = SKImage.FromEncodedData(skfs);
-
-        Console.WriteLine ($""Size: {skfs.Length} Height: {img.Height}, Width: {img.Width}"");
-        return 0;
-    }
-}";
-
-            BuildProject(buildArgs,
-                            id: id,
-                            new BuildProjectOptions(
-                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                                DotnetWasmFromRuntimePack: false));
-
-            string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
-                                test: output => {},
-                                host: host, id: id,
-                                args: "mono.png");
-
+            bool isPublish = true;
+            BuildTemplateProject(info,
+                        new BuildProjectOptions(
+                            info.Configuration,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                            IsPublish: isPublish
+                        ));
+            
+            RunOptions runOptions = new(info.Configuration, ExtraArgs: "mono.png");
+            string output = await RunForPublishWithWebServer(runOptions);            
             Assert.Contains("Size: 26462 Height: 599, Width: 499", output);
         }
 
