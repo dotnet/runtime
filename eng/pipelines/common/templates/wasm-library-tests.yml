@@ -6,7 +6,7 @@ parameters:
   isWasmOnlyBuild: false
   nameSuffix: ''
   platforms: []
-  scenarios: ['WasmTestOnV8']
+  scenarios: ['WasmTestOnChrome']
   shouldContinueOnError: false
   shouldRunSmokeOnly: false
 
