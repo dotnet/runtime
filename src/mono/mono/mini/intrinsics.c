@@ -2224,11 +2224,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 		}
 		return NULL;
-	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.iOS") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.TVOS") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.MacCatalyst") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.Mac") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.iOS") ||
+	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.iOS") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.tvOS") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.MacCatalyst") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.macOS")) &&
