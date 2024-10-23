@@ -10060,6 +10060,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
 
     JIT_TO_EE_TRANSITION();
 
+#ifdef FEATURE_IJW
     TypeHandle th = TypeHandle(type);
 
     _ASSERTE(th.IsValueType());
@@ -10076,6 +10077,9 @@ CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
 
     pHelperMD->CheckRestore();
     result = (CORINFO_METHOD_HANDLE)pHelperMD;
+#else
+    _ASSERTE(!"Requires IJW feature");
+#endif // FEATURE_IJW
 
     EE_TO_JIT_TRANSITION();
 
