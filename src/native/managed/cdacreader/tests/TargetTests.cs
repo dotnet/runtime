@@ -157,9 +157,7 @@ public unsafe class TargetTests
 
         Encoding encoding = arch.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode;
         MockMemorySpace.HeapFragment fragment = new() { Address = addr, Data = new byte[encoding.GetByteCount(expected) + sizeof(char)] };
-        encoding.GetBytes(expected).AsSpan().CopyTo(fragment.Data);
-        fragment.Data[^2] = 0;
-        fragment.Data[^1] = 0;
+        targetTestHelpers.WriteUtf16String(fragment.Data, expected);
         builder.AddHeapFragment(fragment);
 
         bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);

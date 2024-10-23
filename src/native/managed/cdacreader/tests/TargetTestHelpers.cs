@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 internal unsafe class TargetTestHelpers
@@ -257,6 +258,19 @@ internal unsafe class TargetTestHelpers
         {
             return Arch.IsLittleEndian ? BinaryPrimitives.ReadUInt32LittleEndian(src) : BinaryPrimitives.ReadUInt32BigEndian(src);
         }
+    }
+
+    internal void WriteUtf16String(Span<byte> dest, string value)
+    {
+        Encoding encoding = Arch.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode;
+        byte[] valueBytes = encoding.GetBytes(value);
+        int len = valueBytes.Length + sizeof(char);
+        if (dest.Length < len)
+            throw new InvalidOperationException($"Destination is too short to write '{value}'. Required length: {len}, actual: {dest.Length}");
+
+        valueBytes.AsSpan().CopyTo(dest);
+        dest[^2] = 0;
+        dest[^1] = 0;
     }
 
     internal int SizeOfPrimitive(DataType type)

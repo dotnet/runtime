@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
@@ -12,106 +11,75 @@ using MockLoader = MockDescriptors.Loader;
 
 public unsafe class LoaderTests
 {
-    private static void RunLoaderContractTest(TargetTestHelpers helpers, Func<MockMemorySpace.Builder, Dictionary<DataType, Target.TypeInfo>, MockMemorySpace.Builder> configure, Action<Target> testCase)
-    {
-        var types = MockLoader.Types(helpers);
-
-        MockMemorySpace.Builder builder = new(helpers);
-        builder = builder
-            .SetContracts([nameof(Contracts.Loader)])
-            .SetTypes(types);
-
-        if (configure != null)
-        {
-            builder = configure(builder, types);
-        }
-
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
-        Assert.True(success);
-        testCase(target);
-    }
-
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetPath(MockTarget.Architecture arch)
     {
-        TargetPointer address = 0x1000;
-        TargetPointer emptyPathAddress = 0x2000;
+        // Set up the target
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        builder = builder
+            .SetContracts([nameof(Contracts.Loader)])
+            .SetTypes(MockLoader.Types(helpers));
+
         string expected = $"{AppContext.BaseDirectory}{Path.DirectorySeparatorChar}TestModule.dll";
 
-        TargetTestHelpers helpers = new(arch);
-        RunLoaderContractTest(
-            helpers,
-            (builder, types) =>
-            {
-                MockLoader.AddModule(helpers, builder, address);
-                MockLoader.AddModule(helpers, builder, emptyPathAddress);
+        // Add the modules
+        MockLoader loader = new(builder);
+        TargetPointer moduleAddr = loader.AddModule(helpers, path: expected);
+        TargetPointer moduleAddrEmptyPath = loader.AddModule(helpers);
 
-                Target.TypeInfo typeInfo = types[DataType.Module];
-                ulong pathAddress = address + typeInfo.Size.Value;
-                helpers.WritePointer(
-                    builder.BorrowAddressRange(address + (ulong)typeInfo.Fields[nameof(Data.Module.Path)].Offset, helpers.PointerSize),
-                    pathAddress);
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        Assert.True(success);
 
-                MockDescriptors.AddUtf16String(helpers, builder, pathAddress, expected);
-                return builder;
-            },
-            (target) =>
-            {
-                Contracts.ILoader contract = target.Contracts.Loader;
-                Assert.NotNull(contract);
-                {
-                    Contracts.ModuleHandle handle = contract.GetModuleHandle(address);
-                    string actual = contract.GetPath(handle);
-                    Assert.Equal(expected, actual);
-                }
-                {
-                    Contracts.ModuleHandle handle = contract.GetModuleHandle(emptyPathAddress);
-                    string actual = contract.GetFileName(handle);
-                    Assert.Equal(string.Empty, actual);
-                }
-            });
+        // Validate the expected module data
+        Contracts.ILoader contract = target.Contracts.Loader;
+        Assert.NotNull(contract);
+        {
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddr);
+            string actual = contract.GetPath(handle);
+            Assert.Equal(expected, actual);
+        }
+        {
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddrEmptyPath);
+            string actual = contract.GetFileName(handle);
+            Assert.Equal(string.Empty, actual);
+        }
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetFileName(MockTarget.Architecture arch)
     {
-        TargetPointer address = 0x1000;
-        TargetPointer emptyNameAddress = 0x2000;
+        // Set up the target
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        builder = builder
+            .SetContracts([nameof(Contracts.Loader)])
+            .SetTypes(MockLoader.Types(helpers));
+
         string expected = $"TestModule.dll";
 
-        TargetTestHelpers helpers = new(arch);
-        RunLoaderContractTest(
-            helpers,
-            (builder, types) =>
-            {
-                MockLoader.AddModule(helpers, builder, address);
-                MockLoader.AddModule(helpers, builder, emptyNameAddress);
+        // Add the modules
+        MockLoader loader = new(builder);
+        TargetPointer moduleAddr = loader.AddModule(helpers, fileName: expected);
+        TargetPointer moduleAddrEmptyName = loader.AddModule(helpers);
 
-                Target.TypeInfo typeInfo = types[DataType.Module];
-                ulong fileNameAddress = address + typeInfo.Size.Value;
-                helpers.WritePointer(
-                    builder.BorrowAddressRange(address + (ulong)typeInfo.Fields[nameof(Data.Module.FileName)].Offset, helpers.PointerSize),
-                    fileNameAddress);
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        Assert.True(success);
 
-                MockDescriptors.AddUtf16String(helpers, builder, fileNameAddress, expected);
-                return builder;
-            },
-            (target) =>
-            {
-                Contracts.ILoader contract = target.Contracts.Loader;
-                Assert.NotNull(contract);
-                {
-                    Contracts.ModuleHandle handle = contract.GetModuleHandle(address);
-                    string actual = contract.GetFileName(handle);
-                    Assert.Equal(expected, actual);
-                }
-                {
-                    Contracts.ModuleHandle handle = contract.GetModuleHandle(emptyNameAddress);
-                    string actual = contract.GetFileName(handle);
-                    Assert.Equal(string.Empty, actual);
-                }
-            });
+        // Validate the expected module data
+        Contracts.ILoader contract = target.Contracts.Loader;
+        Assert.NotNull(contract);
+        {
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddr);
+            string actual = contract.GetFileName(handle);
+            Assert.Equal(expected, actual);
+        }
+        {
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddrEmptyName);
+            string actual = contract.GetFileName(handle);
+            Assert.Equal(string.Empty, actual);
+        }
     }
 }

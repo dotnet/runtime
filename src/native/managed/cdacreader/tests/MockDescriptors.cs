@@ -10,7 +10,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
-public class MockDescriptors
+internal class MockDescriptors
 {
     private static readonly Target.TypeInfo MethodTableTypeInfo = new()
     {
@@ -107,16 +107,6 @@ public class MockDescriptors
         (nameof(Data.Module.TypeRefToMethodTableMap), DataType.pointer),
         (nameof(Data.Module.MethodDefToILCodeVersioningStateMap), DataType.pointer),
     ];
-
-    internal static MockMemorySpace.Builder AddUtf16String(TargetTestHelpers helpers, MockMemorySpace.Builder builder, TargetPointer address, string value)
-    {
-        Encoding encoding = helpers.Arch.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode;
-        MockMemorySpace.HeapFragment fragment = new() { Address = address, Data = new byte[encoding.GetByteCount(value) + sizeof(char)] };
-        encoding.GetBytes(value).AsSpan().CopyTo(fragment.Data);
-        fragment.Data[^2] = 0;
-        fragment.Data[^1] = 0;
-        return builder.AddHeapFragment(fragment);
-    }
 
     public static class RuntimeTypeSystem
     {
@@ -356,8 +346,24 @@ public class MockDescriptors
         }
     }
 
-    public static class Loader
+    public class Loader
     {
+        private const ulong DefaultAllocationRangeStart = 0x0001_0000;
+        private const ulong DefaultAllocationRangeEnd = 0x0002_0000;
+
+        private readonly MockMemorySpace.Builder _builder;
+        private readonly MockMemorySpace.BumpAllocator _allocator;
+
+        public Loader(MockMemorySpace.Builder builder)
+            : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
+        { }
+
+        public Loader(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+        {
+            _builder = builder;
+            _allocator = _builder.CreateAllocator(allocationRange.Start, allocationRange.End);
+        }
+
         internal static Dictionary<DataType, Target.TypeInfo> Types(TargetTestHelpers helpers)
         {
             TargetTestHelpers.LayoutResult layout = helpers.LayoutFields(ModuleFields);
@@ -367,12 +373,44 @@ public class MockDescriptors
             };
         }
 
-        internal static MockMemorySpace.Builder AddModule(TargetTestHelpers helpers, MockMemorySpace.Builder builder, TargetPointer address)
+        internal TargetPointer AddModule(TargetTestHelpers helpers, string? path = null, string? fileName = null)
         {
             Target.TypeInfo typeInfo = Types(helpers)[DataType.Module];
             uint size = typeInfo.Size.Value;
-            MockMemorySpace.HeapFragment module = new() { Name = $"Module at '{address}'", Address = address, Data = new byte[size] };
-            return builder.AddHeapFragment(module);
+            MockMemorySpace.HeapFragment module = _allocator.Allocate(size, "Module");
+            _builder.AddHeapFragment(module);
+
+            if (path != null)
+            {
+                // Path data
+                Encoding encoding = helpers.Arch.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode;
+                ulong pathSize = (ulong)encoding.GetByteCount(path) + sizeof(char);
+                MockMemorySpace.HeapFragment pathFragment = _allocator.Allocate(pathSize, $"Module path = {path}");
+                helpers.WriteUtf16String(pathFragment.Data, path);
+                _builder.AddHeapFragment(pathFragment);
+
+                // Pointer to path
+                helpers.WritePointer(
+                    module.Data.AsSpan().Slice(typeInfo.Fields[nameof(Data.Module.Path)].Offset, helpers.PointerSize),
+                    pathFragment.Address);
+            }
+
+            if (fileName != null)
+            {
+                // File name data
+                Encoding encoding = helpers.Arch.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode;
+                ulong fileNameSize = (ulong)encoding.GetByteCount(fileName) + sizeof(char);
+                MockMemorySpace.HeapFragment fileNameFragment = _allocator.Allocate(fileNameSize, $"Module file name = {fileName}");
+                helpers.WriteUtf16String(fileNameFragment.Data, fileName);
+                _builder.AddHeapFragment(fileNameFragment);
+
+                // Pointer to file name
+                helpers.WritePointer(
+                    module.Data.AsSpan().Slice(typeInfo.Fields[nameof(Data.Module.FileName)].Offset, helpers.PointerSize),
+                    fileNameFragment.Address);
+            }
+
+            return module.Address;
         }
     }
 }
