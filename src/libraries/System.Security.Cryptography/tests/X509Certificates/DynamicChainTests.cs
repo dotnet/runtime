@@ -7,6 +7,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.Asn1;
+using System.Security.Cryptography.X509Certificates.Asn1;
 using Test.Cryptography;
 using Xunit;
 
@@ -591,6 +593,44 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             TestNameConstrainedChain(nameConstraints, builder, (bool result, X509Chain chain) => {
                 Assert.False(result, "chain.Build");
                 Assert.Equal(PlatformNameConstraints(X509ChainStatusFlags.InvalidNameConstraints), chain.AllStatusFlags());
+            });
+        }
+
+        [Fact]
+        public static void NameConstraintViolation_ExcludedTree_Upn()
+        {
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddUserPrincipalName("mona@github.com");
+
+            AsnWriter writer = new(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.UTF8String, "@github.com");
+            byte[] github = writer.Encode();
+            writer.Reset();
+
+            NameConstraintsAsn nameConstraints = new NameConstraintsAsn
+            {
+                excludedSubtrees =
+                [
+                    new GeneralSubtreeAsn
+                    {
+                        @base = new GeneralNameAsn
+                        {
+                            OtherName = new OtherNameAsn
+                            {
+                                TypeId = "1.3.6.1.4.1.311.20.2.3", //User Principal Name (UPN)
+                                Value = github,
+                            }
+                        }
+                    }
+                ]
+            };
+
+            nameConstraints.Encode(writer);
+            string encoded = writer.Encode(Convert.ToHexString);
+
+            TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
+                Assert.False(result, "chain.Build");
+                Assert.Equal(PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint), chain.AllStatusFlags());
             });
         }
 
