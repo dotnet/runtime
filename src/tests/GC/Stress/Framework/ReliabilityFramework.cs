@@ -79,6 +79,23 @@ public interface ISingleReliabilityTest
     bool Run();			// returns true on success, false on failure.
 }
 
+public class MissingTestException : Exception
+{
+    public MissingTestException()
+    {
+    }
+
+    public MissingTestException(string message)
+        : base(message)
+    {
+    }
+
+    public MissingTestException(string message, Exception inner)
+        : base(message, inner)
+    {
+    }
+}
+
 public class ReliabilityFramework
 {
     // instance members
@@ -102,6 +119,7 @@ public class ReliabilityFramework
     private static Random s_randNum = new Random(s_seed);
     private static string timeValue = null;
     private static bool s_fNoExit = false;
+    internal static bool _debugBreakOnTestHang = false;
     // constants
     private const string waitingText = "Waiting for all tests to finish loading, Remaining Tests: ";
 
@@ -226,8 +244,17 @@ public class ReliabilityFramework
             catch (OutOfMemoryException e)
             {
                 rf.HandleOom(e, "Running tests");
+                throw e;
             }
             catch (TimeoutException e)
+            {
+                throw e;
+            }
+            catch (PathTooLongException e)
+            {
+                throw e;
+            }
+            catch (MissingTestException e)
             {
                 throw e;
             }
@@ -286,7 +313,7 @@ public class ReliabilityFramework
         else
         {
             string msg = "Throw exception because of out of memory";
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, msg); 
+            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, msg);
             throw e;
         }
     }
@@ -344,6 +371,7 @@ public class ReliabilityFramework
             _testsRunningCount = 0;
             _testsRanCount = 0;
             _curTestSet = testSet;
+            _debugBreakOnTestHang = _curTestSet.DebugBreakOnTestHang;
             if (timeValue != null)
                 _curTestSet.MaximumTime = ReliabilityConfig.ConvertTimeValueToTestRunTime(timeValue);
 
@@ -760,7 +788,7 @@ public class ReliabilityFramework
                         {
                             string msg = "throw exception because new tests not starting";
                             _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, msg);
-                            throw new Exception("New tests not starting");
+                            throw new MissingTestException("New tests not starting");
                         }
                     }
                 }
@@ -1021,7 +1049,7 @@ public class ReliabilityFramework
                                 }
                                 _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Test {0} has exited with result {1}", daTest.RefOrID, exitCode));
                             }
-                            catch (PathTooLongException)
+                            catch (PathTooLongException e)
                             {
                                 if (_curTestSet.DebugBreakOnPathTooLong)
                                 {
@@ -1034,7 +1062,7 @@ public class ReliabilityFramework
                                 {
                                     string msg = "Throw exception because path is too long";
                                     _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, msg);
-                                    throw new Exception("Time limit reached.");
+                                    throw e;
                                 }
                             }
                             catch (OutOfMemoryException e)
