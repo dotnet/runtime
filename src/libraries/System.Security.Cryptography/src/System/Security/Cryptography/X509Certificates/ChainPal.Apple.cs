@@ -3,7 +3,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates.Asn1;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
@@ -266,6 +268,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             FixupRevocationStatus(elements, revocationFlag);
+            AddUnknownNameConstraints(elements);
             BuildAndSetProperties(elements);
         }
 
@@ -303,6 +306,57 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             return elements;
+        }
+
+        private static void AddUnknownNameConstraints((X509Certificate2, int)[] elements)
+        {
+            // Apple as of macOS 15 does not do anything when a certificate contains a name constraint on UPNs. Rather
+            // than silently ignore them, add a flag indicating its not supported.
+            for (int i = 0; i < elements.Length; i++)
+            {
+                (X509Certificate2 cert, int flags) = elements[i];
+                X509Extension? ext = cert.Extensions[Oids.NameConstraints];
+
+                if (ext is null || ext.RawData is null)
+                {
+                    continue;
+                }
+
+                NameConstraintsAsn asn;
+
+                try
+                {
+                    asn = NameConstraintsAsn.Decode(ext.RawData, AsnEncodingRules.DER);
+                }
+                catch (CryptographicException)
+                {
+                    elements[i] = (cert, flags | (int)X509ChainStatusFlags.InvalidExtension);
+                    return;
+                }
+
+                if (AnyUpnConstraint(asn.excludedSubtrees) || AnyUpnConstraint(asn.permittedSubtrees))
+                {
+                    elements[i] = (cert, flags | (int)X509ChainStatusFlags.HasNotSupportedNameConstraint);
+                }
+            }
+
+            static bool AnyUpnConstraint(GeneralSubtreeAsn[]? subtreeAsns)
+            {
+                if (subtreeAsns is null)
+                {
+                    return false;
+                }
+
+                foreach (GeneralSubtreeAsn subtreeAsn in subtreeAsns)
+                {
+                    if (subtreeAsn is { @base.OtherName.TypeId: Oids.UserPrincipalName })
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         private static bool IsPolicyMatch(
