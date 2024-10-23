@@ -162,7 +162,7 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
                             GlobalizationMode: globalizationMode,
                             CustomIcuFile: icuFileName
                         ));
-            RunOptions runOptions = new(info.Configuration, Locale: locale);
+            RunOptions runOptions = new(info.Configuration, Locale: locale, ExpectedExitCode: 42);
             string runOutput = await RunForPublishWithWebServer(runOptions);
             return $"{buildOutput}\n{runOutput}";
         }

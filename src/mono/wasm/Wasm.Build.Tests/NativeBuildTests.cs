@@ -43,8 +43,7 @@ namespace Wasm.Build.Tests
                             ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild: true),
                             IsPublish: isPublish
                         ));
-            RunOptions runOptions = new(config);
-            await RunForPublishWithWebServer(runOptions);
+            await RunForPublishWithWebServer(new(config, ExpectedExitCode: 42));
         }
 
         [Theory]

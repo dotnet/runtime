@@ -232,7 +232,9 @@ public class WasmTemplateTestsBase : BuildTestBase
             await runOptions.Test(page);
         
         _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
-        await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(10));
+        int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(10));
+        if (runOptions.ExpectedExitCode is not null && exitCode != runOptions.ExpectedExitCode)
+            throw new Exception($"Expected exit code {runOptions.ExpectedExitCode} but got {exitCode}");
 
         return string.Join("\n", runner.OutputLines);
 

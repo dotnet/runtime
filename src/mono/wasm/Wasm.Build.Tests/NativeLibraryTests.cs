@@ -44,8 +44,7 @@ namespace Wasm.Build.Tests
                             ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild: true),
                             IsPublish: isPublish
                         ));
-            RunOptions runOptions = new(config);
-            string output = await RunForPublishWithWebServer(runOptions);
+            string output = await RunForPublishWithWebServer(new(config, ExpectedExitCode: 0));
 
             Assert.Contains("print_line: 100", output);
             Assert.Contains("from pinvoke: 142", output);
@@ -77,7 +76,7 @@ namespace Wasm.Build.Tests
                         ));
             
             RunOptions runOptions = new(info.Configuration, ExtraArgs: "mono.png");
-            string output = await RunForPublishWithWebServer(runOptions);            
+            string output = await RunForPublishWithWebServer(new(config, ExpectedExitCode: 0));
             Assert.Contains("Size: 26462 Height: 599, Width: 499", output);
         }
 
@@ -101,8 +100,7 @@ namespace Wasm.Build.Tests
                             IsPublish: isPublish
                         ));
 
-            RunOptions runOptions = new(info.Configuration);
-            string output = await RunForPublishWithWebServer(runOptions);
+            string output = await RunForPublishWithWebServer(new(config, ExpectedExitCode: 0));
             
             Assert.Contains(
                 "Hashed: 24 95 141 179 34 113 254 37 245 97 166 252 147 139 46 38 67 6 236 48 78 218 81 128 7 209 118 72 38 56 25 105",
@@ -137,8 +135,7 @@ namespace Wasm.Build.Tests
                             ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild: true),
                             IsPublish: isPublish
                         ));
-            RunOptions runOptions = new(config);
-            string output = await RunForPublishWithWebServer(runOptions);
+            string output = await RunForPublishWithWebServer(new(config, ExpectedExitCode: 0));
 
             Assert.Contains("print_line: 100", output);
             Assert.Contains("from pinvoke: 142", output);

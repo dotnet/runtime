@@ -63,7 +63,7 @@ namespace Wasm.Build.Tests
             if (!_buildContext.TryGetBuildFor(info, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
 
-            RunOptions runOptions = new(info.Configuration);
+            RunOptions runOptions = new(info.Configuration, ExpectedExitCode: 42);
             await RunForBuildWithDotnetRun(runOptions);
 
             isPublish = true;
@@ -76,7 +76,7 @@ namespace Wasm.Build.Tests
                             IsPublish: isPublish,
                             UseCache: false
                         ));
-            await RunForPublishWithWebServer(runOptions);
+            string output = await RunForPublishWithWebServer(runOptions);
         }
 
         [Theory]
@@ -113,7 +113,7 @@ namespace Wasm.Build.Tests
             if (!_buildContext.TryGetBuildFor(info, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
 
-            RunOptions runOptions = new(info.Configuration);
+            RunOptions runOptions = new(info.Configuration, ExpectedExitCode: 42);
             await RunForBuildWithDotnetRun(runOptions);
 
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));

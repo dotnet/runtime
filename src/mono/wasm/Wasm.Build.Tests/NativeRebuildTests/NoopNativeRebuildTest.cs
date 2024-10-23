@@ -35,7 +35,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             var newStat = StatFiles(pathsDict);
 
             CompareStat(originalStat, newStat, pathsDict);
-            await RunForPublishWithWebServer(new (info.Configuration));
+            await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42));
         }
     }
 }

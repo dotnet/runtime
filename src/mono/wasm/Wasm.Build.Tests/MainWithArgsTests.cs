@@ -70,8 +70,7 @@ namespace Wasm.Build.Tests
 
             int argsCount = args.Length;
             int expectedCode = 42 + argsCount;
-            RunOptions runOptions = new(info.Configuration, ExtraArgs: argsStr);
-            string output = await RunForPublishWithWebServer(runOptions);
+            string output = await RunForPublishWithWebServer(new(info.Configuration, ExtraArgs: argsStr, ExpectedExitCode: expectedCode));
             Assert.Contains($"args#: {argsCount}", output);
             foreach (var arg in args)
                 Assert.Contains($"arg: {arg}", output);

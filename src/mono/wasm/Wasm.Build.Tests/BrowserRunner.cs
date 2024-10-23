@@ -227,7 +227,7 @@ internal class BrowserRunner : IAsyncDisposable
         return page;
     }
 
-    public async Task WaitForExitMessageAsync(TimeSpan timeout)
+    public async Task<int> WaitForExitMessageAsync(TimeSpan timeout)
     {
         if (RunTask is null || RunTask.IsCompleted)
             throw new Exception($"No run task, or already completed");
@@ -235,8 +235,9 @@ internal class BrowserRunner : IAsyncDisposable
         await Task.WhenAny(RunTask!, _exited.Task, Task.Delay(timeout));
         if (_exited.Task.IsCompleted)
         {
-            _testOutput.WriteLine ($"Exited with {await _exited.Task}");
-            return;
+            int code = await _exited.Task;
+            _testOutput.WriteLine ($"Exited with {code}");
+            return code;
         }
 
         throw new Exception($"Timed out after {timeout.TotalSeconds}s waiting for 'WASM EXIT' message");

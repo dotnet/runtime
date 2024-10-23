@@ -60,8 +60,7 @@ namespace Wasm.Build.Tests
                             IsPublish: isPublish
                         ));
 
-            RunOptions runOptions = new(info.Configuration);
-            string output = await RunForPublishWithWebServer(runOptions);
+            string output = await RunForPublishWithWebServer(new(info.Configuration, ExpectedExitCode: 42));
             Assert.Contains("UTC BaseUtcOffset is 0", output);
             if (invariantTimezone == true)
             {

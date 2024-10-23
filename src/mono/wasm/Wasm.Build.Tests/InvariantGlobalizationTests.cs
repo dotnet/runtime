@@ -63,8 +63,7 @@ namespace Wasm.Build.Tests
                             GlobalizationMode: invariantGlobalization == true ? GlobalizationMode.Invariant : GlobalizationMode.Sharded
                         ));
 
-            RunOptions runOptions = new(info.Configuration);
-            string output = await RunForPublishWithWebServer(runOptions);
+            string output = await RunForPublishWithWebServer(new(info.Configuration, ExpectedExitCode: 42));
             if (invariantGlobalization == true)
             {
                 Assert.Contains("Could not create es-ES culture", output);
