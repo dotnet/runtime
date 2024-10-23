@@ -8454,6 +8454,20 @@ namespace System.Runtime.Intrinsics.X86
             internal X64() { }
             public static new bool IsSupported { get { throw null; } }
         }
+        public abstract partial class V256
+        {
+            internal V256() { }
+            public static bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<long> CarrylessMultiply(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ulong> CarrylessMultiply(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+        }
+        public abstract partial class V512
+        {
+            internal V512() { }
+            public static bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<long> CarrylessMultiply(System.Runtime.Intrinsics.Vector512<long> left, System.Runtime.Intrinsics.Vector512<long> right, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<ulong> CarrylessMultiply(System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+        }
     }
     [System.CLSCompliantAttribute(false)]
     public abstract partial class Popcnt : System.Runtime.Intrinsics.X86.Sse42
