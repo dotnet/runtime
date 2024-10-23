@@ -279,7 +279,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     {
         List<string> files = new()
         {
-            Path.Combine(paths.BinDir, "publish", BundleDirName, "_framework", $"{projectInfo.ProjectName}.wasm"),
+            Path.Combine(paths.BinDir, "publish", BundleDirName, "_framework", $"{projectInfo.ProjectName}{WasmAssemblyExtension}"),
             Path.Combine(paths.ObjWasmDir, "driver.o"),
             Path.Combine(paths.ObjWasmDir, "runtime.o"),
             Path.Combine(paths.ObjWasmDir, "corebindings.o"),
