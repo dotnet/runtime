@@ -1,14 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // File: METHODTABLEBUILDER.CPP
 //
-
-
-//
-
-//
-// ============================================================================
 
 #include "common.h"
 
@@ -1260,8 +1255,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     }
     CONTRACTL_END;
 
-    pModule->EnsureAllocated();
-
     // The following structs, defined as private members of MethodTableBuilder, contain the necessary local
     // parameters needed for BuildMethodTable Look at the struct definitions for a detailed list of all
     // parameters available to BuildMethodTableThrowing.
@@ -2057,7 +2050,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared methods: %d\n", NumDeclaredMethods()));
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared non-abstract methods: %d\n", bmtMethod->dwNumDeclaredNonAbstractMethods));
 
-        BOOL debugging = IsDebuggerPresent();
+        BOOL debugging = minipal_is_native_debugger_present();
         pMT->Debug_DumpInterfaceMap("Approximate");
         pMT->DebugDumpVtable(pszDebugName, debugging);
         pMT->DebugDumpFieldLayout(pszDebugName, debugging);
@@ -6140,15 +6133,9 @@ MethodTableBuilder::InitMethodDesc(
             BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod == NULL);
             ((DelegateEEClass*)GetHalfBakedClass())->m_pInvokeMethod = pNewMD;
         }
-        else if (strcmp(pMethodName, "BeginInvoke") == 0)
+        else if (strcmp(pMethodName, "BeginInvoke") == 0 || strcmp(pMethodName, "EndInvoke") == 0)
         {
-            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod == NULL);
-            ((DelegateEEClass*)GetHalfBakedClass())->m_pBeginInvokeMethod = pNewMD;
-        }
-        else if (strcmp(pMethodName, "EndInvoke") == 0)
-        {
-            BAD_FORMAT_NOTHROW_ASSERT(((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod == NULL);
-            ((DelegateEEClass*)GetHalfBakedClass())->m_pEndInvokeMethod = pNewMD;
+            // Obsolete async methods
         }
         else
         {
@@ -10573,20 +10560,6 @@ MethodTableBuilder::SetupMethodTable2(
 
     if (GetParentMethodTable() != NULL)
     {
-        if (GetParentMethodTable()->HasModuleDependencies())
-        {
-            pMT->SetHasModuleDependencies();
-        }
-        else
-        {
-            Module * pModule = GetModule();
-            Module * pParentModule = GetParentMethodTable()->GetModule();
-            if (pModule != pParentModule)
-            {
-                pMT->SetHasModuleDependencies();
-            }
-        }
-
         if (GetParentMethodTable()->HasPreciseInitCctors() || !pClass->IsBeforeFieldInit())
         {
             pMT->SetHasPreciseInitCctors();

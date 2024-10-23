@@ -716,14 +716,6 @@ namespace System.Threading
         /// </summary>
         [Intrinsic]
         public static void MemoryBarrier() => MemoryBarrier();
-
-        /// <summary>
-        /// Synchronizes memory access as follows:
-        /// The processor that executes the current thread cannot reorder instructions in such a way that memory reads before
-        /// the call to <see cref="ReadMemoryBarrier"/> execute after memory accesses that follow the call to <see cref="ReadMemoryBarrier"/>.
-        /// </summary>
-        [Intrinsic]
-        internal static void ReadMemoryBarrier() => ReadMemoryBarrier();
         #endregion
     }
 }

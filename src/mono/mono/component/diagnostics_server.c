@@ -192,7 +192,7 @@ mono_wasm_diagnostic_server_post_resume_runtime (void)
 #define QUEUE_CLOSE_SENTINEL ((uint8_t*)(intptr_t)-1)
 
 /* single-reader single-writer one-element queue. See
- * src/mono/wasm/runtime/diagnostics/server_pthread/stream-queue.ts
+ * src/mono/browser/runtime/diagnostics/server_pthread/stream-queue.ts
  */
 typedef struct WasmIpcStreamQueue {
 	uint8_t *buf; /* or QUEUE_CLOSE_SENTINEL */

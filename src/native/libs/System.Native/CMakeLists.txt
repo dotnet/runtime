@@ -8,22 +8,13 @@ if (CLR_CMAKE_TARGET_OSX)
     add_definitions(-D_DARWIN_C_SOURCE)
 endif ()
 
-set (MINIPAL_SOURCES "")
-set (SHARED_MINIPAL_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/minipal")
-
-include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
-list(APPEND MINIPAL_SOURCES
-    random.c
-)
-
-addprefix(MINIPAL_SOURCES ${SHARED_MINIPAL_SOURCE_PATH} "${MINIPAL_SOURCES}")
-
 set(NATIVE_SOURCES
     pal_errno.c
     pal_interfaceaddresses.c
     pal_io.c
     pal_maphardwaretype.c
     pal_memory.c
+    pal_networking.c
     pal_networkstatistics.c
     pal_random.c
     pal_runtimeinformation.c
@@ -34,15 +25,10 @@ set(NATIVE_SOURCES
     pal_sysctl.c
 )
 
-list(APPEND NATIVE_SOURCES
-  ${MINIPAL_SOURCES}
-)
-
 if (NOT CLR_CMAKE_TARGET_WASI)
     list (APPEND NATIVE_SOURCES
         pal_dynamicload.c
         pal_mount.c
-        pal_networking.c
         pal_process.c
         pal_signal.c
         pal_threading.c
@@ -52,7 +38,6 @@ else()
     list (APPEND NATIVE_SOURCES
         pal_dynamicload_wasi.c
         pal_mount_wasi.c
-        pal_networking_wasi.c
         pal_process_wasi.c
         pal_signal_wasi.c
         pal_threading_wasi.c
@@ -127,6 +112,7 @@ if (GEN_SHARED_LIB)
 
     target_link_libraries(System.Native
         PRIVATE
+        minipal
         ${NATIVE_LIBS_EXTRA}
     )
 

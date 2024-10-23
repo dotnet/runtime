@@ -836,27 +836,6 @@ void ClassLoader::EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
 #endif // DACCESS_COMPILE
 }
 
-/*static*/
-void ClassLoader::TryEnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifndef DACCESS_COMPILE // Nothing to do for the DAC case
-
-    EX_TRY
-    {
-        ClassLoader::EnsureLoaded(typeHnd, level);
-    }
-    EX_CATCH
-    {
-        // Some type may not load successfully. For eg. generic instantiations
-        // that do not satisfy the constraints of the type arguments.
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
-
-#endif // DACCESS_COMPILE
-}
-
 /* static */
 TypeHandle ClassLoader::LookupTypeKey(const TypeKey *pKey, EETypeHashTable *pTable)
 {
@@ -2912,7 +2891,7 @@ void ClassLoader::Notify(TypeHandle typeHnd)
         if (CORDebuggerAttached())
         {
             LOG((LF_CORDB, LL_EVERYTHING, "NotifyDebuggerLoad clsload 2239 class %s\n", pMT->GetDebugClassName()));
-            typeHnd.NotifyDebuggerLoad(NULL, FALSE);
+            typeHnd.NotifyDebuggerLoad(FALSE);
         }
 #endif // DEBUGGING_SUPPORTED
     }

@@ -416,9 +416,7 @@ public:
     void EmitMovConstant(IntReg Rd, UINT64 constant);
     void EmitJumpRegister(IntReg regTarget);
     void EmitMovReg(IntReg dest, IntReg source);
-    void EmitMovFloatReg(FloatReg Fd, FloatReg Fs);
 
-    void EmitSubImm(IntReg Rd, IntReg Rn, unsigned int value);
     void EmitAddImm(IntReg Rd, IntReg Rn, unsigned int value);
 
     void EmitLoadStoreRegPairImm(DWORD flags, IntReg Rt1, IntReg Rt2, IntReg Rn, int offset=0);
@@ -426,15 +424,8 @@ public:
 
     void EmitLoadStoreRegImm(DWORD flags, IntReg Rt, IntReg Rn, int offset=0, int log2Size = 3);
 
-#if defined(TARGET_LOONGARCH64)
-    void EmitFloatLoadStoreRegImm(DWORD flags, FloatReg Ft, IntReg Xn, int offset=0);
-#else
-    void EmitLoadStoreRegImm(DWORD flags, VecReg Vt, IntReg Xn, int offset=0);
-#endif
     void EmitLoadFloatRegImm(FloatReg ft, IntReg base, int offset);
 };
-
-extern "C" void SinglecastDelegateInvokeStub();
 
 
 // preferred alignment for data

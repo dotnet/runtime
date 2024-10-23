@@ -39,12 +39,10 @@ public:
     static FCDECL2(void,            LogPinnedArgument, MethodDesc *localDesc, Object *nativeArg);
     static FCDECL1(DWORD,           CalcVaListSize, VARARGS *varargs);
 
-    static FCDECL2(void,            MulticastDebuggerTraceHelper, Object*, INT32);
-
     static FCDECL0(void*,           NextCallReturnAddress);
 };
 
-extern "C" void* QCALLTYPE StubHelpers_CreateCustomMarshalerHelper(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType);
+extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject);
 
 #ifdef PROFILING_SUPPORTED
 extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDesc* pTargetMD);
@@ -73,5 +71,7 @@ extern "C" void QCALLTYPE StubHelpers_MarshalToUnmanagedVaList(va_list va, DWORD
 
 extern "C" void QCALLTYPE StubHelpers_ValidateObject(QCall::ObjectHandleOnStack pObj, MethodDesc *pMD);
 extern "C" void QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pMD);
+
+extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::ObjectHandleOnStack element, INT32 count);
 
 #endif  // __STUBHELPERS_h__
