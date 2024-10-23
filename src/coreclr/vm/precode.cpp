@@ -671,9 +671,12 @@ void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
     //   return (byte)PrecodeType;
 #ifdef TARGET_LOONGARCH64
     dest->ReadWidthOfPrecodeType = 2;
-    dest->ShiftOfPrecodeType = 5;
 #else
     dest->ReadWidthOfPrecodeType = 1;
+#endif
+#if defined(SHIFTOF_PRECODE_TYPE)
+    dest->ShiftOfPrecodeType = SHIFTOF_PRECODE_TYPE;
+#else
     dest->ShiftOfPrecodeType = 0;
 #endif
 
@@ -695,7 +698,7 @@ void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
 #endif // HAS_FIXUP_PRECODE
 #ifdef HAS_THISPTR_RETBUF_PRECODE
     dest->HasThisPtrRetBufPrecode = 1;
-    dest->HasThisPointerRetBufPrecodeType = ThisPtrRetBufPrecode::Type;
+    dest->ThisPointerRetBufPrecodeType = ThisPtrRetBufPrecode::Type;
 #else
     dest->HasThisPtrRetBufPrecode = 0;
     dest->HasThisPointerRetBufPrecodeType = 0;
