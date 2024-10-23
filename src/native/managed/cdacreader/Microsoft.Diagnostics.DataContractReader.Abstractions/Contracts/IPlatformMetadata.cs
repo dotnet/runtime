@@ -11,14 +11,14 @@ internal enum CodePointerFlags : byte
     HasArm64PtrAuth = 0x2,
 }
 
-internal interface ICDacMetadata : IContract
+internal interface IPlatformMetadata : IContract
 {
-    static string IContract.Name { get; } = nameof(CDacMetadata);
+    static string IContract.Name { get; } = nameof(PlatformMetadata);
     TargetPointer GetPrecodeMachineDescriptor() => throw new NotImplementedException();
     CodePointerFlags GetCodePointerFlags() => throw new NotImplementedException();
 }
 
-internal readonly struct CDacMetadata : ICDacMetadata
+internal readonly struct PlatformMetadata : IPlatformMetadata
 {
 
 }

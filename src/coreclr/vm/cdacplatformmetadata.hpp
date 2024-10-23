@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef CDACMETADATA_HPP__
-#define CDACMETADATA_HPP__
+#ifndef CDACPLATFORMMETADATA_HPP__
+#define CDACPLATFORMMETADATA_HPP__
 
 #include "precode.h"
 
@@ -16,18 +16,18 @@ enum class CDacCodePointerFlags : uint8_t
 };
 
 
-struct CDacMetadata
+struct CDacPlatformMetadata
 {
     PrecodeMachineDescriptor precode;
     CDacCodePointerFlags codePointerFlags;
-    CDacMetadata() = default;
-    CDacMetadata(const CDacMetadata&) = delete;
-    CDacMetadata& operator=(const CDacMetadata&) = delete;
+    CDacPlatformMetadata() = default;
+    CDacPlatformMetadata(const CDacPlatformMetadata&) = delete;
+    CDacPlatformMetadata& operator=(const CDacPlatformMetadata&) = delete;
     static void Init();
 };
 
-extern CDacMetadata g_cdacMetadata;
+extern CDacPlatformMetadata g_cdacPlatformMetadata;
 #endif // DACCESS_COMPILE
 
 
-#endif// CDACMETADATA_HPP__
+#endif// CDACPLATFORMMETADATA_HPP__

@@ -9,7 +9,6 @@
 // cdac-build-tool can take multiple "-c contract_file" arguments
 // so to conditionally include contracts, put additional contracts in a separate file
 {
-  "CDacMetadata": 1,
   "CodeVersions": 1,
   "DacStreams": 1,
   "EcmaMetadata" : 1,
@@ -17,6 +16,7 @@
   "ExecutionManager": 1,
   "Loader": 1,
   "Object": 1,
+  "PlatformMetadata": 1,
   "PrecodeStubs": 1,
   "RuntimeTypeSystem": 1,
   "Thread": 1

@@ -1,4 +1,4 @@
-# Contract CDacMetadata
+# Contract PlatformMetadata
 
 This contract exposes properties that describe the target platform
 
@@ -24,13 +24,13 @@ This contract exposes properties that describe the target platform
 Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
-| CDacMetadata | PrecodeMachineDescriptor | precode stub-related platform specific properties |
-| CDacMetadata | CodePointerFlags | fields describing the behavior of target code pointers |
+| PlatformMetadata | PrecodeMachineDescriptor | precode stub-related platform specific properties |
+| PlatformMetadata | CodePointerFlags | fields describing the behavior of target code pointers |
 
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
-| CDacMetadata | pointer | address of the `CDacMetadata` data |
+| PlatformMetadata | pointer | address of the `PlatformMetadata` data |
 
 Contracts used:
 | Contract Name |
@@ -40,13 +40,13 @@ Contracts used:
 ```csharp
 TargetPointer GetPrecodeMachineDescriptor()
 {
-    TargetPointer metadataAddress = _target.ReadGlobalPointer("CDacMetadata");
-    return metadataAddress + /* CDacMetadata::PrecodeMachineDescriptor */
+    TargetPointer metadataAddress = _target.ReadGlobalPointer("PlatformMetadata");
+    return metadataAddress + /* PlatformMetadata::PrecodeMachineDescriptor */
 }
 
 CodePointerFlags GetCodePointerFlags()
 {
-    TargetPointer metadataAddress = _target.ReadGlobalPointer("CDacMetadata");
-    return (CodePointerFlags)_target.Read<byte>(metadataAddress  + /*CDacMetadata::CodePointerFlags*/);
+    TargetPointer metadataAddress = _target.ReadGlobalPointer("PlatformMetadata");
+    return (CodePointerFlags)_target.Read<byte>(metadataAddress  + /*PlatformMetadata::CodePointerFlags*/);
 }
 ```

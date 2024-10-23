@@ -39,7 +39,7 @@ Global variables used:
 Contracts used:
 | Contract Name |
 | --- |
-| `CDacMetadata` |
+| `PlatformMetadata` |
 
 ### Determining the precode type
 

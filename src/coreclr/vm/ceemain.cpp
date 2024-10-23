@@ -163,7 +163,7 @@
 #include "jithost.h"
 #include "pgo.h"
 #include "pendingload.h"
-#include "cdacmetadata.hpp"
+#include "cdacplatformmetadata.hpp"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -625,7 +625,7 @@ void EEStartupHelper()
 
         // We cache the SystemInfo for anyone to use throughout the life of the EE.
         GetSystemInfo(&g_SystemInfo);
-        CDacMetadata::Init();
+        CDacPlatformMetadata::Init();
 
         // Set callbacks so that LoadStringRC knows which language our
         // threads are in so that it can return the proper localized string.

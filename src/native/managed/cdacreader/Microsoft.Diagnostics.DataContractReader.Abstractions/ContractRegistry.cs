@@ -48,9 +48,9 @@ internal abstract class ContractRegistry
     /// </summary>
     public abstract ICodeVersions CodeVersions { get; }
     /// <summary>
-    /// Gets an instance of the CDacMetadata contract for the target.
+    /// Gets an instance of the PlatformMetadata contract for the target.
     /// </summary>
-    public abstract ICDacMetadata CDacMetadata { get; }
+    public abstract IPlatformMetadata PlatformMetadata { get; }
     /// <summary>
     /// Gets an instance of the PrecodeStubs contract for the target.
     /// </summary>

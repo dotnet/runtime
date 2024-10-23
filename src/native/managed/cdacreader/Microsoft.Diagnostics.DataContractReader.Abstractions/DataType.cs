@@ -44,7 +44,7 @@ public enum DataType
     String,
     MethodDesc,
     MethodDescChunk,
-    CDacMetadata,
+    PlatformMetadata,
     PrecodeMachineDescriptor,
     StubPrecodeData,
     FixupPrecodeData,
