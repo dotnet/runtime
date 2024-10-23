@@ -352,17 +352,17 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>a301793441179ac06d7e0e1d84cd5ebb12dd8009</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.12.0-3.24516.15">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.12.0-3.24522.8">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>3bff3622487486dec7794dfd0c71e05a52c313a4</Sha>
+      <Sha>1d59d9f40a804971aa2a4ddee7097dd668d48902</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis" Version="4.12.0-3.24516.15">
+    <Dependency Name="Microsoft.CodeAnalysis" Version="4.12.0-3.24522.8">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>3bff3622487486dec7794dfd0c71e05a52c313a4</Sha>
+      <Sha>1d59d9f40a804971aa2a4ddee7097dd668d48902</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.12.0-3.24516.15">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.12.0-3.24522.8">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>3bff3622487486dec7794dfd0c71e05a52c313a4</Sha>
+      <Sha>1d59d9f40a804971aa2a4ddee7097dd668d48902</Sha>
     </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.12.0-beta1.24516.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
@@ -373,9 +373,9 @@
       <Sha>5dd0dd5db8fa79932517f153854c0f2c24ac98a3</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.roslyn" Version="4.12.0-3.24516.15">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.roslyn" Version="4.12.0-3.24522.8">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>3bff3622487486dec7794dfd0c71e05a52c313a4</Sha>
+      <Sha>1d59d9f40a804971aa2a4ddee7097dd668d48902</Sha>
       <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="10.0.100-alpha.1.24480.5">
@@ -414,37 +414,37 @@
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="10.0.0-alpha.1.24514.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
       <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
+      <Sha>e252d360329507e992681e0ad6c87dd71196ed7f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
+    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="10.0.0-alpha.1.24514.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
       <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
+      <Sha>e252d360329507e992681e0ad6c87dd71196ed7f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="10.0.0-alpha.1.24514.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
       <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
+      <Sha>e252d360329507e992681e0ad6c87dd71196ed7f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
+    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="10.0.0-alpha.1.24514.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
       <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
+      <Sha>e252d360329507e992681e0ad6c87dd71196ed7f</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
+    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="10.0.0-alpha.1.24514.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
       <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
+      <Sha>e252d360329507e992681e0ad6c87dd71196ed7f</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
+    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="10.0.0-alpha.1.24514.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
       <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
+      <Sha>e252d360329507e992681e0ad6c87dd71196ed7f</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
+    <Dependency Name="runtime.win-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="10.0.0-alpha.1.24514.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
       <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
+      <Sha>e252d360329507e992681e0ad6c87dd71196ed7f</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="10.0.0-alpha.1.24514.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport">
       <Uri>https://github.com/dotnet/node</Uri>
-      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
+      <Sha>e252d360329507e992681e0ad6c87dd71196ed7f</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
