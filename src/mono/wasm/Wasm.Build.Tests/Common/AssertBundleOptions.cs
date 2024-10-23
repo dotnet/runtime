@@ -13,9 +13,4 @@ public record AssertBundleOptions(
     bool AssertIcuAssets = true,
     bool AssertSymbolsFile = true,
     bool ExpectFingerprintOnDotnetJs = false
-    )
-{
-    public bool DotnetWasmFromRuntimePack => BuildOptions.ExpectedFileType == NativeFilesType.FromRuntimePack;
-    public bool AOT => BuildOptions.ExpectedFileType == NativeFilesType.AOT;
-    public string BundleDir => Path.Combine(BuildOptions.BinFrameworkDir, "..");
-}
+);
