@@ -1,4 +1,4 @@
-<!-- Whenever altering this or other SourceBuild* files, please include @dotnet/source-build-internal as a reviewer. -->
+<!-- When altering this file, include @dotnet/product-construction as a reviewer. -->
 
 <Project>
 
@@ -42,8 +42,9 @@
            This allows to build the repository using './build.sh <args> /p:DotNetBuildSourceOnly=true'.
            Properties that control flags from the VMR build, and the expected output for the VMR build should be added to this file. -->
 
-      <!-- Enable regular Arcade publishing in VMR build -->
+      <!-- Enable regular Arcade signing and publishing in VMR build -->
       <InnerBuildArgs Condition="'$(DotNetBuildOrchestrator)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)restore $(FlagParameterPrefix)build $(FlagParameterPrefix)publish</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(Sign)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)sign</InnerBuildArgs>
 
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)arch $(TargetArch)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildSourceOnly)' != 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)os $(TargetOS)</InnerBuildArgs>
@@ -70,7 +71,7 @@
       <InnerBuildArgs Condition="'$(DotNetBuildMonoBundleLLVMOptimizer)' != ''">$(InnerBuildArgs) /p:MonoBundleLLVMOptimizer=$(DotNetBuildMonoBundleLLVMOptimizer)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PgoInstrument)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)pgoinstrument</InnerBuildArgs>
 
-      <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overriden above -->
+      <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overridden above -->
       <InnerBuildArgs Condition="'$(DotNetBuildRepo)' == 'true'">$(InnerBuildArgs) /p:DotNetBuildRepo=true</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildOrchestrator)' == 'true'">$(InnerBuildArgs) /p:DotNetBuildOrchestrator=true</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(OfficialBuildId)' != ''">$(InnerBuildArgs) /p:OfficialBuildId=$(OfficialBuildId)</InnerBuildArgs>

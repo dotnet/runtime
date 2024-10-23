@@ -615,12 +615,8 @@ struct hc_history
 #ifdef BACKGROUND_GC
     short bgc_t_join_n_threads;
     // We have observed a problem on Windows in production where GC indicates a BGC thread was created successfully yet we have
-    // invalid fields on the Thread object such as m_OSThreadId. This is to help with debugging that problem so I
-    // only enable it for retail builds on Windows. We can extend this with a GCToEEInterface interface method to get the offset
-    // of that particular field on the Thread object.
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(_DEBUG) && !defined(FEATURE_NATIVEAOT)
+    // invalid fields on the Thread object such as m_OSThreadId. This is to help with debugging that problem.
     int bgc_thread_os_id;
-#endif
     short bgc_t_join_join_lock;
 #endif //BACKGROUND_GC
     bool gc_t_join_joined_p;
@@ -1449,7 +1445,6 @@ public:
     size_t get_num_free_regions();
     size_t get_size_committed_in_free() { return size_committed_in_free_regions; }
     size_t get_size_free_regions() { return size_free_regions; }
-    size_t get_size_free_regions(int max_age);
     heap_segment* get_first_free_region() { return head_free_region; }
     static void unlink_region (heap_segment* region);
     static void add_region (heap_segment* region, region_free_list to_free_list[count_free_region_kinds]);
@@ -6191,7 +6186,6 @@ public:
     // the region's free list.
     #define MAX_AGE_IN_FREE 99
     #define AGE_IN_FREE_TO_DECOMMIT 20
-    #define MIN_AGE_TO_DECOMMIT_HUGE 2
     int             age_in_free;
     // This is currently only used by regions that are swept in plan -
     // we then thread this list onto the generation's free list.

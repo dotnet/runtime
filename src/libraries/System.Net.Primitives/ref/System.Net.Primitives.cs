@@ -89,6 +89,8 @@ namespace System.Net
     public partial class CookieException : System.FormatException, System.Runtime.Serialization.ISerializable
     {
         public CookieException() { }
+        public CookieException(string? message) { }
+        public CookieException(string? message, System.Exception? innerException) { }
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected CookieException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
@@ -526,6 +528,7 @@ namespace System.Net.Sockets
 }
 namespace System.Security.Authentication
 {
+    [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum CipherAlgorithmType
     {
         None = 0,
@@ -539,6 +542,7 @@ namespace System.Security.Authentication
         Aes = 26129,
         Rc4 = 26625,
     }
+    [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum ExchangeAlgorithmType
     {
         None = 0,
@@ -546,6 +550,7 @@ namespace System.Security.Authentication
         RsaKeyX = 41984,
         DiffieHellman = 43522,
     }
+    [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum HashAlgorithmType
     {
         None = 0,
@@ -563,11 +568,11 @@ namespace System.Security.Authentication
         Ssl2 = 12,
         [System.ObsoleteAttribute("SslProtocols.Ssl3 has been deprecated and is not supported.")]
         Ssl3 = 48,
-        [System.ObsoleteAttribute("TLS versions 1.0 and 1.1 have known vulnerabilities and are not recommended. Use a newer TLS version instead, or use SslProtocols.None to defer to OS defaults.", DiagnosticId="SYSLIB0039", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("TLS versions 1.0 and 1.1 have known vulnerabilities and are not recommended. Use a newer TLS version instead, or use SslProtocols.None to defer to OS defaults.", DiagnosticId = "SYSLIB0039", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         Tls = 192,
         [System.ObsoleteAttribute("SslProtocols.Default has been deprecated and is not supported.")]
         Default = 240,
-        [System.ObsoleteAttribute("TLS versions 1.0 and 1.1 have known vulnerabilities and are not recommended. Use a newer TLS version instead, or use SslProtocols.None to defer to OS defaults.", DiagnosticId="SYSLIB0039", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("TLS versions 1.0 and 1.1 have known vulnerabilities and are not recommended. Use a newer TLS version instead, or use SslProtocols.None to defer to OS defaults.", DiagnosticId = "SYSLIB0039", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         Tls11 = 768,
         Tls12 = 3072,
         Tls13 = 12288,
@@ -577,8 +582,8 @@ namespace System.Security.Authentication.ExtendedProtection
 {
     public abstract partial class ChannelBinding : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        protected ChannelBinding() : base (default(bool)) { }
-        protected ChannelBinding(bool ownsHandle) : base (default(bool)) { }
+        protected ChannelBinding() : base(default(bool)) { }
+        protected ChannelBinding(bool ownsHandle) : base(default(bool)) { }
         public abstract int Size { get; }
     }
     public enum ChannelBindingKind

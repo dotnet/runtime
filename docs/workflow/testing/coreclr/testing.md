@@ -44,6 +44,8 @@ Building the tests can be as simple as calling the build script without any argu
 
 Note that for the libraries configuration, we are passing the argument directly to MSBuild instead of the build script, hence the `/p:LibrariesConfiguration` flag. Also, make sure you use the correct syntax depending on our platform. The _cmd_ script takes the arguments by placing, while the _sh_ script requires them to be with a hyphen.
 
+In the case you are working with a different build configuration for the host, you can specify it here via the `/p:HostConfiguration` flag.
+
 **NOTE**: Building the whole test suite is a very lengthy process, so it is highly recommended you build individual tests, and/or test subtrees as you need them, to make your workflow more efficient. This is explained in detail later on in this doc.
 
 ## Building the Core_Root
