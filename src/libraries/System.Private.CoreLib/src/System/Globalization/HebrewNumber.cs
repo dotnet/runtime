@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -211,7 +212,7 @@ namespace System.Globalization
                 else
                 {
                     Debug.Assert(typeof(TChar) == typeof(byte));
-                    Rune.DecodeLastFromUtf8(MemoryMarshal.AsBytes(outputBuffer.AsSpan()), out Rune value, out int bytesConsumed);
+                    Rune.DecodeLastFromUtf8(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(outputBuffer.AsSpan()), out Rune value, out int bytesConsumed);
                     outputBuffer.Length -= bytesConsumed;
                     outputBuffer.Append(TChar.CastFrom('"'));
                     DateTimeFormat.AppendChar(ref outputBuffer, (char)value.Value);

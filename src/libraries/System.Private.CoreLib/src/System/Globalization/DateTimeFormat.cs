@@ -754,7 +754,7 @@ namespace System
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
                 var r = new Rune(ch);
-                r.EncodeToUtf8(MemoryMarshal.AsBytes(result.AppendSpan(r.Utf8SequenceLength)));
+                r.EncodeToUtf8(Unsafe.BitCast<Span<TChar>, Span<byte>>(result.AppendSpan(r.Utf8SequenceLength)));
             }
         }
 
