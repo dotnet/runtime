@@ -140,20 +140,20 @@
     <SystemReflectionMetadataToolsetVersion>8.0.0</SystemReflectionMetadataToolsetVersion>
     <SystemReflectionMetadataLoadContextToolsetVersion>8.0.0</SystemReflectionMetadataLoadContextToolsetVersion>
     <!-- Runtime-Assets dependencies -->
-    <SystemRuntimeNumericsTestDataVersion>10.0.0-beta.24521.1</SystemRuntimeNumericsTestDataVersion>
-    <SystemComponentModelTypeConverterTestDataVersion>10.0.0-beta.24521.1</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDataCommonTestDataVersion>10.0.0-beta.24521.1</SystemDataCommonTestDataVersion>
-    <SystemDrawingCommonTestDataVersion>10.0.0-beta.24521.1</SystemDrawingCommonTestDataVersion>
-    <SystemFormatsTarTestDataVersion>10.0.0-beta.24521.1</SystemFormatsTarTestDataVersion>
-    <SystemIOCompressionTestDataVersion>10.0.0-beta.24521.1</SystemIOCompressionTestDataVersion>
-    <SystemIOPackagingTestDataVersion>10.0.0-beta.24521.1</SystemIOPackagingTestDataVersion>
-    <SystemNetTestDataVersion>10.0.0-beta.24521.1</SystemNetTestDataVersion>
-    <SystemPrivateRuntimeUnicodeDataVersion>10.0.0-beta.24521.1</SystemPrivateRuntimeUnicodeDataVersion>
-    <SystemRuntimeTimeZoneDataVersion>10.0.0-beta.24521.1</SystemRuntimeTimeZoneDataVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataVersion>10.0.0-beta.24521.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
-    <SystemTextRegularExpressionsTestDataVersion>10.0.0-beta.24521.1</SystemTextRegularExpressionsTestDataVersion>
-    <SystemWindowsExtensionsTestDataVersion>10.0.0-beta.24521.1</SystemWindowsExtensionsTestDataVersion>
-    <MicrosoftDotNetCilStripSourcesVersion>10.0.0-beta.24521.1</MicrosoftDotNetCilStripSourcesVersion>
+    <SystemRuntimeNumericsTestDataVersion>10.0.0-beta.24522.1</SystemRuntimeNumericsTestDataVersion>
+    <SystemComponentModelTypeConverterTestDataVersion>10.0.0-beta.24522.1</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemDataCommonTestDataVersion>10.0.0-beta.24522.1</SystemDataCommonTestDataVersion>
+    <SystemDrawingCommonTestDataVersion>10.0.0-beta.24522.1</SystemDrawingCommonTestDataVersion>
+    <SystemFormatsTarTestDataVersion>10.0.0-beta.24522.1</SystemFormatsTarTestDataVersion>
+    <SystemIOCompressionTestDataVersion>10.0.0-beta.24522.1</SystemIOCompressionTestDataVersion>
+    <SystemIOPackagingTestDataVersion>10.0.0-beta.24522.1</SystemIOPackagingTestDataVersion>
+    <SystemNetTestDataVersion>10.0.0-beta.24522.1</SystemNetTestDataVersion>
+    <SystemPrivateRuntimeUnicodeDataVersion>10.0.0-beta.24522.1</SystemPrivateRuntimeUnicodeDataVersion>
+    <SystemRuntimeTimeZoneDataVersion>10.0.0-beta.24522.1</SystemRuntimeTimeZoneDataVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataVersion>10.0.0-beta.24522.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
+    <SystemTextRegularExpressionsTestDataVersion>10.0.0-beta.24522.1</SystemTextRegularExpressionsTestDataVersion>
+    <SystemWindowsExtensionsTestDataVersion>10.0.0-beta.24522.1</SystemWindowsExtensionsTestDataVersion>
+    <MicrosoftDotNetCilStripSourcesVersion>10.0.0-beta.24522.1</MicrosoftDotNetCilStripSourcesVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.24462.2</optimizationwindows_ntx64MIBCRuntimeVersion>
     <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.24462.2</optimizationwindows_ntx86MIBCRuntimeVersion>
@@ -258,7 +258,7 @@
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
     <!-- sdk version, for testing workloads -->
     <SdkVersionForWorkloadTesting>$(MicrosoftDotNetApiCompatTaskVersion)</SdkVersionForWorkloadTesting>
-    <runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>9.0.0-alpha.1.24175.1</runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>10.0.0-alpha.1.24514.4</runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
     <EmsdkPackageVersion>$(MicrosoftNETRuntimeEmscriptenVersion)</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
