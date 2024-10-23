@@ -683,26 +683,14 @@ void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
     dest->InvalidPrecodeType = InvalidPrecode::Type;
     dest->StubPrecodeType = StubPrecode::Type;
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
-    dest->HasPInvokeImportPrecode = 1;
     dest->PInvokeImportPrecodeType = NDirectImportPrecode::Type;
-#else
-    dest->HasPInvokeImportPrecode = 0;
-    dest->PInvokeImportPrecodeType = 0;
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
-    dest->HasFixupPrecode = 1;
     dest->FixupPrecodeType = FixupPrecode::Type;
-#else
-    dest->HasFixupPrecode = 0;
-    dest->FixupPrecodeType = 0;
-#endif // HAS_FIXUP_PRECODE
+#endif
 #ifdef HAS_THISPTR_RETBUF_PRECODE
-    dest->HasThisPtrRetBufPrecode = 1;
     dest->ThisPointerRetBufPrecodeType = ThisPtrRetBufPrecode::Type;
-#else
-    dest->HasThisPtrRetBufPrecode = 0;
-    dest->HasThisPointerRetBufPrecodeType = 0;
-#endif // HAS_THISPTR_RETBUF_PRECODE
+#endif
     dest->StubCodePageSize = GetStubCodePageSize();
 }
 

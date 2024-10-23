@@ -360,10 +360,15 @@ CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ShiftOfPrecodeType, offseto
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, OffsetOfPrecodeType, offsetof(PrecodeMachineDescriptor, OffsetOfPrecodeType))
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, InvalidPrecodeType, offsetof(PrecodeMachineDescriptor, InvalidPrecodeType))
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, StubPrecodeType, offsetof(PrecodeMachineDescriptor, StubPrecodeType))
-CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, HasPInvokeImportPrecode, offsetof(PrecodeMachineDescriptor, HasPInvokeImportPrecode))
+#ifdef HAS_NDIRECT_IMPORT_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, PInvokeImportPrecodeType, offsetof(PrecodeMachineDescriptor, PInvokeImportPrecodeType))
-CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, HasFixupPrecode, offsetof(PrecodeMachineDescriptor, HasFixupPrecode))
+#endif
+#ifdef HAS_FIXUP_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, FixupPrecodeType, offsetof(PrecodeMachineDescriptor, FixupPrecodeType))
+#endif
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ThisPointerRetBufPrecodeType, offsetof(PrecodeMachineDescriptor, ThisPointerRetBufPrecodeType))
+#endif
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint32*/, StubCodePageSize, offsetof(PrecodeMachineDescriptor, StubCodePageSize))
 CDAC_TYPE_END(PrecodeMachineDescriptor)
 

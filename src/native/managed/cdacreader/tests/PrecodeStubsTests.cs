@@ -204,10 +204,9 @@ public class PrecodeStubsTests
                 (nameof(Data.PrecodeMachineDescriptor.ShiftOfPrecodeType), DataType.uint8),
                 (nameof(Data.PrecodeMachineDescriptor.InvalidPrecodeType), DataType.uint8),
                 (nameof(Data.PrecodeMachineDescriptor.StubPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.HasPInvokeImportPrecode), DataType.uint8),
                 (nameof(Data.PrecodeMachineDescriptor.PInvokeImportPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.HasFixupPrecode), DataType.uint8),
                 (nameof(Data.PrecodeMachineDescriptor.FixupPrecodeType), DataType.uint8),
+                (nameof(Data.PrecodeMachineDescriptor.ThisPointerRetBufPrecodeType), DataType.uint8),
             ]);
             typeInfoCache[DataType.PrecodeMachineDescriptor] = new Target.TypeInfo() {
                 Fields = layout.Fields,

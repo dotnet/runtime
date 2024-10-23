@@ -618,14 +618,17 @@ struct PrecodeMachineDescriptor
 
     uint8_t InvalidPrecodeType;
     uint8_t StubPrecodeType;
-    uint8_t HasPInvokeImportPrecode;
+#ifdef HAS_NDIRECT_IMPORT_PRECODE
     uint8_t PInvokeImportPrecodeType;
+#endif
 
-    uint8_t HasFixupPrecode;
+#ifdef HAS_FIXUP_PRECODE
     uint8_t FixupPrecodeType;
+#endif
 
-    uint8_t HasThisPtrRetBufPrecode;
+#ifdef HAS_THISPTR_RETBUF_PRECODE
     uint8_t ThisPointerRetBufPrecodeType;
+#endif
 
 public:
     PrecodeMachineDescriptor() = default;

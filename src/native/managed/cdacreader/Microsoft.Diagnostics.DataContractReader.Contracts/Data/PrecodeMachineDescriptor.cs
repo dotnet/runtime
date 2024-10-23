@@ -16,13 +16,29 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
         ShiftOfPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(ShiftOfPrecodeType)].Offset);
         InvalidPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(InvalidPrecodeType)].Offset);
         StubPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(StubPrecodeType)].Offset);
-        if (target.Read<byte>(address + (ulong)type.Fields[nameof(HasPInvokeImportPrecode)].Offset) == 1)
+        if (type.Fields.ContainsKey(nameof(PInvokeImportPrecodeType)))
         {
             PInvokeImportPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(PInvokeImportPrecodeType)].Offset);
         }
-        if (target.Read<byte>(address + (ulong)type.Fields[nameof(HasFixupPrecode)].Offset) == 1)
+        else
+        {
+            PInvokeImportPrecodeType = null;
+        }
+        if (type.Fields.ContainsKey(nameof(FixupPrecodeType)))
         {
             FixupPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(FixupPrecodeType)].Offset);
+        }
+        else
+        {
+            FixupPrecodeType = null;
+        }
+        if (type.Fields.ContainsKey(nameof(ThisPointerRetBufPrecodeType)))
+        {
+            ThisPointerRetBufPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(ThisPointerRetBufPrecodeType)].Offset);
+        }
+        else
+        {
+            ThisPointerRetBufPrecodeType = null;
         }
         StubCodePageSize = target.Read<uint>(address + (ulong)type.Fields[nameof(StubCodePageSize)].Offset);
     }
@@ -34,8 +50,7 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
     public byte StubPrecodeType { get; init; }
     public byte? PInvokeImportPrecodeType { get; init; }
     public byte? FixupPrecodeType { get; init; }
+    public byte? ThisPointerRetBufPrecodeType { get; init; }
 
     public uint StubCodePageSize { get; init; }
-    internal const string HasPInvokeImportPrecode = nameof(HasPInvokeImportPrecode);
-    internal const string HasFixupPrecode = nameof(HasFixupPrecode);
 }
