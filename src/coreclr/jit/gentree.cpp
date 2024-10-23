@@ -14451,6 +14451,43 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                     }
                 }
             }
+            // Fold checks against known non-null data like static readonlys
+            else if ((val == 0) && !fgAddrCouldBeNull(op))
+            {
+                JITDUMP("\nAttempting to optimize non-null %s null [%06u]\n", GenTree::OpName(oper),
+                        dspTreeID(tree));
+                if ((oper == GT_GT) && !tree->IsUnsigned())
+                {
+                    JITDUMP(" bailing; unexpected signed compare via GT_GT\n");
+                }
+                else
+                {
+                    // Set up the result of the compare.
+                    int compareResult = 0;
+                    if (oper == GT_GT)
+                    {
+                        // GT_GT(null, box) == false
+                        // GT_GT(box, null) == true
+                        compareResult = (op1 == op);
+                    }
+                    else if (oper == GT_EQ)
+                    {
+                        // GT_EQ(box, null) == false
+                        // GT_EQ(null, box) == false
+                        compareResult = 0;
+                    }
+                    else
+                    {
+                        assert(oper == GT_NE);
+                        // GT_NE(box, null) == true
+                        // GT_NE(null, box) == true
+                        compareResult = 1;
+                    }
+
+                    op = gtWrapWithSideEffects(gtNewIconNode(compareResult), op, GTF_ALL_EFFECT);
+                    goto DONE_FOLD;
+                }
+            }
             else
             {
                 return gtFoldBoxNullable(tree);
