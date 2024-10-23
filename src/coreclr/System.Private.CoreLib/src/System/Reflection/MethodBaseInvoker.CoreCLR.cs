@@ -29,10 +29,10 @@ namespace System.Reflection
             _invokeFunc_RefArgs = InterpretedInvoke_Method;
         }
 
-        private unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr* args) =>
+        private unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr _, IntPtr* args) =>
             RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: obj is null);
 
-        private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr* args) =>
+        private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr _, IntPtr* args) =>
             RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: false);
     }
 }

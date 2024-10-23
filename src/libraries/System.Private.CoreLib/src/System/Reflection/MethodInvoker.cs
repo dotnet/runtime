@@ -36,6 +36,7 @@ namespace System.Reflection
         private readonly MethodBase _method;
         private readonly bool _needsByRefStrategy;
         private readonly bool _isStatic;
+        private readonly IntPtr _functionPointer;
 
         /// <summary>
         /// Creates a new instance of MethodInvoker.
@@ -83,6 +84,7 @@ namespace System.Reflection
             _argTypes = argumentTypes;
             _argCount = _argTypes.Length;
             _isStatic = _method.IsStatic;
+            _functionPointer = method.MethodHandle.GetFunctionPointer();
 
             Initialize(argumentTypes, out _strategy, out _invokerArgFlags, out _needsByRefStrategy);
         }
@@ -215,15 +217,15 @@ namespace System.Reflection
             // Check fast path first.
             if (_invokeFunc_Obj4Args is not null)
             {
-                return _invokeFunc_Obj4Args(obj, arg1, arg2, arg3, arg4);
+                return _invokeFunc_Obj4Args(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), arg1, arg2, arg3, arg4);
             }
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_Obj4Args) == 0)
             {
-                DetermineStrategy_Obj4Args(ref _strategy, ref _invokeFunc_Obj4Args, _method, _needsByRefStrategy, backwardsCompat: false);
+                DetermineStrategy_Obj4Args(ref _strategy, ref _invokeFunc_Obj4Args, _method, _needsByRefStrategy);
                 if (_invokeFunc_Obj4Args is not null)
                 {
-                    return _invokeFunc_Obj4Args(obj, arg1, arg2, arg3, arg4);
+                    return _invokeFunc_Obj4Args(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), arg1, arg2, arg3, arg4);
                 }
             }
 
@@ -311,16 +313,16 @@ namespace System.Reflection
             // Check fast path first.
             if (_invokeFunc_ObjSpanArgs is not null)
             {
-                return _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
+                return _invokeFunc_ObjSpanArgs(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), copyOfArgs);
                 // No need to call CopyBack here since there are no ref values.
             }
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
-                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: false);
+                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy);
                 if (_invokeFunc_ObjSpanArgs is not null)
                 {
-                    return _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
+                    return _invokeFunc_ObjSpanArgs(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), copyOfArgs);
                 }
             }
 
@@ -339,7 +341,7 @@ namespace System.Reflection
         {
             if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
             {
-                DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: false);
+                DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method);
             }
 
             StackAllocatedByRefs byrefs = default;
@@ -352,7 +354,7 @@ namespace System.Reflection
                     ByReference.Create(ref copyOfArgs[i]);
             }
 
-            return _invokeFunc_RefArgs!(obj, pByRefFixedStorage);
+            return _invokeFunc_RefArgs!(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), pByRefFixedStorage);
         }
 
         internal unsafe object? InvokeWithManyArgs(object? obj, Span<object?> arguments)
@@ -363,7 +365,7 @@ namespace System.Reflection
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
-                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: false);
+                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy);
             }
 
             if (_invokeFunc_ObjSpanArgs is not null)
@@ -384,7 +386,7 @@ namespace System.Reflection
                         copyOfArgs[i] = arg;
                     }
 
-                    ret = _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
+                    ret = _invokeFunc_ObjSpanArgs(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), copyOfArgs);
                     // No need to call CopyBack here since there are no ref values.
                 }
                 finally
@@ -396,7 +398,7 @@ namespace System.Reflection
             {
                 if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
                 {
-                    DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: false);
+                    DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method);
                 }
 
                 IntPtr* pStorage = stackalloc IntPtr[2 * _argCount];
@@ -424,7 +426,7 @@ namespace System.Reflection
                             ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i));
                     }
 
-                    ret = _invokeFunc_RefArgs!(obj, pByRefStorage);
+                    ret = _invokeFunc_RefArgs!(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), pByRefStorage);
                     CopyBack(arguments, copyOfArgs, shouldCopyBack);
                 }
                 finally

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.MethodBase;
@@ -105,8 +107,7 @@ namespace System.Reflection
             ref InvokeFunc_ObjSpanArgs?
             invokeFunc_ObjSpanArgs,
             MethodBase method,
-            bool needsByRefStrategy,
-            bool backwardsCompat)
+            bool needsByRefStrategy)
         {
             if (needsByRefStrategy)
             {
@@ -123,7 +124,7 @@ namespace System.Reflection
             {
                 if (RuntimeFeature.IsDynamicCodeSupported)
                 {
-                    invokeFunc_ObjSpanArgs = CreateInvokeDelegate_ObjSpanArgs(method, backwardsCompat);
+                    invokeFunc_ObjSpanArgs = CreateInvokeDelegate_ObjSpanArgs(method.DeclaringType!, method.IsStatic, GetNormalizedCalliParameters(method), GetNormalizedCalliReturnType(method));
                 }
 
                 strategy |= InvokerStrategy.StrategyDetermined_ObjSpanArgs;
@@ -134,8 +135,7 @@ namespace System.Reflection
             ref InvokerStrategy strategy,
             ref InvokeFunc_Obj4Args? invokeFunc_Obj4Args,
             MethodBase method,
-            bool needsByRefStrategy,
-            bool backwardsCompat)
+            bool needsByRefStrategy)
         {
             if (needsByRefStrategy)
             {
@@ -152,7 +152,7 @@ namespace System.Reflection
             {
                 if (RuntimeFeature.IsDynamicCodeSupported)
                 {
-                    invokeFunc_Obj4Args = CreateInvokeDelegate_Obj4Args(method, backwardsCompat);
+                    invokeFunc_Obj4Args = CreateInvokeDelegate_Obj4Args(method.DeclaringType!, method.IsStatic, GetNormalizedCalliParameters(method), GetNormalizedCalliReturnType(method));
                 }
 
                 strategy |= InvokerStrategy.StrategyDetermined_Obj4Args;
@@ -162,8 +162,7 @@ namespace System.Reflection
         internal static void DetermineStrategy_RefArgs(
             ref InvokerStrategy strategy,
             ref InvokeFunc_RefArgs? invokeFunc_RefArgs,
-            MethodBase method,
-            bool backwardsCompat)
+            MethodBase method)
         {
             if (((strategy & InvokerStrategy.HasBeenInvoked_RefArgs) == 0) && !Debugger.IsAttached)
             {
@@ -175,11 +174,106 @@ namespace System.Reflection
             {
                 if (RuntimeFeature.IsDynamicCodeSupported)
                 {
-                    invokeFunc_RefArgs = CreateInvokeDelegate_RefArgs(method, backwardsCompat);
+                    invokeFunc_RefArgs = CreateInvokeDelegate_RefArgs(method.DeclaringType!, method.IsStatic, GetNormalizedCalliParameters(method), GetNormalizedCalliReturnType(method));
                 }
 
                 strategy |= InvokerStrategy.StrategyDetermined_RefArgs;
             }
+        }
+
+        private static Type[] GetNormalizedCalliParameters(MethodBase method)
+        {
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
+            Type[]? parameterTypes = parameters.Length == 0 ? Array.Empty<Type>() : new Type[parameters.Length];
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                parameterTypes[i] = NormalizeCallIParameterType(parameters[i].ParameterType);
+            }
+
+            return parameterTypes;
+        }
+
+        internal static Type GetNormalizedCalliReturnType(MethodBase method)
+        {
+            Type returnType;
+
+            if (method is RuntimeMethodInfo rmi)
+            {
+                returnType = NormalizeCallIParameterType(rmi.ReturnType);
+            }
+            else if (method is DynamicMethod dm)
+            {
+                returnType = NormalizeCallIParameterType(dm.ReturnType);
+            }
+            else
+            {
+                Debug.Assert(method is RuntimeConstructorInfo);
+                returnType = typeof(void);
+            }
+
+            return returnType;
+        }
+
+        /// <summary>
+        /// For reference types, use System.Object so we can share DynamicMethods in more places.
+        /// </summary>
+        internal static Type NormalizeCallIParameterType(Type type)
+        {
+            if (type.IsValueType || type.IsByRef || type.IsPointer || type.IsFunctionPointer)
+            {
+                return type;
+            }
+
+            return typeof(object);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static IntPtr GetFunctionPointer(object? obj, IntPtr functionPointer, MethodBase method, Type[] parameterTypes)
+        {
+            if (obj is null || !method.IsVirtual || method.DeclaringType!.IsSealed || method.IsFinal)
+            {
+                return functionPointer;
+            }
+
+            Type actualType = obj.GetType();
+            if (actualType == method.DeclaringType)
+            {
+                return functionPointer;
+            }
+
+            return GetFunctionPointerSlow(actualType, method, parameterTypes);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Reflection implementation")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+            Justification = "Reflection implementation")]
+        // todo: optimize the polymorphic checks below.
+        internal static IntPtr GetFunctionPointerSlow(Type type, MethodBase method, Type[] parameterTypes)
+        {
+            if (method.DeclaringType!.IsInterface)
+            {
+                InterfaceMapping mapping = type.GetInterfaceMap(method.DeclaringType);
+
+                for (int i = 0; i < mapping.InterfaceMethods.Length; i++)
+                {
+                    if (mapping.InterfaceMethods[i] == method)
+                    {
+                        return mapping.TargetMethods[i].MethodHandle.GetFunctionPointer();
+                    }
+                }
+
+                throw new InvalidOperationException("todo:Method not found in interface mapping!!!");
+            }
+
+            method = type.GetMethod(method.Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, parameterTypes)!;
+            if (method == null)
+            {
+                throw new InvalidOperationException("todo:Method not found!!!");
+            }
+
+            return method.MethodHandle.GetFunctionPointer();
         }
     }
 }

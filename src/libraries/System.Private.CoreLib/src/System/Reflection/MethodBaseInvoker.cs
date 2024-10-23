@@ -26,12 +26,14 @@ namespace System.Reflection
         private readonly MethodBase _method;
         private readonly int _argCount;
         private readonly bool _needsByRefStrategy;
+        private readonly IntPtr _functionPointer;
 
         private MethodBaseInvoker(MethodBase method, RuntimeType[] argumentTypes)
         {
             _method = method;
             _argTypes = argumentTypes;
             _argCount = _argTypes.Length;
+            _functionPointer = method.MethodHandle.GetFunctionPointer();
 
             Initialize(argumentTypes, out _strategy, out _invokerArgFlags, out _needsByRefStrategy);
         }
@@ -49,12 +51,12 @@ namespace System.Reflection
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
             {
-                DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: true);
+                DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method);
             }
 
             try
             {
-                return _invokeFunc_RefArgs!(obj, refArguments: null);
+                return _invokeFunc_RefArgs!(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), refArguments: null);
             }
             catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
@@ -83,7 +85,7 @@ namespace System.Reflection
             object? ret;
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
-                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: true);
+                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy);
             }
 
             CheckArguments(parametersSpan, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
@@ -92,7 +94,7 @@ namespace System.Reflection
             {
                 try
                 {
-                    ret = _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
+                    ret = _invokeFunc_ObjSpanArgs(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), copyOfArgs);
                 }
                 catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
                 {
@@ -124,7 +126,7 @@ namespace System.Reflection
             object? ret;
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
-                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: true);
+                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy);
             }
 
             CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
@@ -133,7 +135,7 @@ namespace System.Reflection
             {
                 try
                 {
-                    ret = _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
+                    ret = _invokeFunc_ObjSpanArgs(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), copyOfArgs);
                 }
                 catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
                 {
@@ -156,7 +158,7 @@ namespace System.Reflection
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
             {
-                DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: true);
+                DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method);
             }
 
             StackAllocatedByRefs byrefs = default;
@@ -171,7 +173,7 @@ namespace System.Reflection
 
             try
             {
-                return _invokeFunc_RefArgs!(obj, pByRefFixedStorage);
+                return _invokeFunc_RefArgs!(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), pByRefFixedStorage);
             }
             catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
@@ -195,7 +197,7 @@ namespace System.Reflection
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
-                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: true);
+                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy);
             }
 
             if (_invokeFunc_ObjSpanArgs is not null)
@@ -214,7 +216,7 @@ namespace System.Reflection
 
                     try
                     {
-                        ret = _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
+                        ret = _invokeFunc_ObjSpanArgs(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), copyOfArgs);
                     }
                     catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
                     {
@@ -232,7 +234,7 @@ namespace System.Reflection
             {
                 if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
                 {
-                    DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: true);
+                    DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method);
                 }
 
                 IntPtr* pStorage = stackalloc IntPtr[3 * _argCount];
@@ -259,7 +261,7 @@ namespace System.Reflection
 
                     try
                     {
-                        ret = _invokeFunc_RefArgs!(obj, pByRefStorage);
+                        ret = _invokeFunc_RefArgs!(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), pByRefStorage);
                     }
                     catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
                     {
@@ -300,7 +302,7 @@ namespace System.Reflection
             {
                 try
                 {
-                    _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
+                    _invokeFunc_ObjSpanArgs(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), copyOfArgs);
                 }
                 catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
                 {
@@ -312,7 +314,7 @@ namespace System.Reflection
                 if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
                 {
                     // Initialize for next time.
-                    DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: true);
+                    DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy);
                 }
 
                 InvokeDirectByRefWithFewArgs(obj, copyOfArgs, invokeAttr);
