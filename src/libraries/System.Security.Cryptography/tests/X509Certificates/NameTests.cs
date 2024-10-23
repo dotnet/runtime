@@ -109,7 +109,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("ST=Main", UniversalTagNumber.UTF8String)]
         [InlineData("T=Pancake", UniversalTagNumber.UTF8String)]
         [InlineData("CN=Foo", UniversalTagNumber.UTF8String)]
+        [InlineData("I=DD", UniversalTagNumber.UTF8String)]
         [InlineData("E=noone@example.com", UniversalTagNumber.IA5String)]
+        [InlineData("OID.2.5.4.11=ProdSec", UniversalTagNumber.UTF8String)]
+        [InlineData("OID.2.5.4.43=DD", UniversalTagNumber.UTF8String)]
         [InlineData("OID.1.2.3.4=sample", UniversalTagNumber.PrintableString)]
         [InlineData("C=US", UniversalTagNumber.PrintableString)]
         public static void ForceUtf8EncodingForEligibleComponents(string distinguishedName, UniversalTagNumber tagNumber)

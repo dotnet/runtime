@@ -555,6 +555,7 @@ namespace System.Security.Cryptography.X509Certificates
                 case Oids.Surname:
                 case Oids.Street:
                 case Oids.Title:
+                case Oids.Initials:
                     return true;
                 default:
                     return false;
