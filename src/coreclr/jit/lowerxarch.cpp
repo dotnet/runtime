@@ -2600,6 +2600,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 intrinsicId = NI_VPCLMULQDQ_CarrylessMultiply;
                 node->ChangeHWIntrinsicId(intrinsicId);
             }
+            break;
         }
 
         default:
