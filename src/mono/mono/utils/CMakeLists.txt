@@ -155,9 +155,6 @@ set(utils_common_sources
     mono-conc-hashtable.c
     json.h
     json.c
-    mono-rand.c
-    mono-rand-windows.c
-    mono-rand.h
     memfuncs.c
     memfuncs.h
     parse.c

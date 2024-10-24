@@ -765,7 +765,7 @@ RegMeta::GetTypeDefProps(
             }
             else
             {
-                *pchTypeDef = (ULONG)(u16_strlen(szTypeDef) + 1);
+                *pchTypeDef = (ULONG)(minipal_u16_strlen((const CHAR16_T*)szTypeDef) + 1);
             }
         }
     }
@@ -900,7 +900,7 @@ RegMeta::GetTypeRefProps(
             }
             else
             {
-                *pchTypeRef = (ULONG)(u16_strlen(szTypeRef) + 1);
+                *pchTypeRef = (ULONG)(minipal_u16_strlen((const CHAR16_T*)szTypeRef) + 1);
             }
         }
     }

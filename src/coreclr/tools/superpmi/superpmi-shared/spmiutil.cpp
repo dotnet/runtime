@@ -10,6 +10,7 @@
 #include "spmiutil.h"
 
 #include <minipal/debugger.h>
+#include <minipal/random.h>
 
 static bool breakOnDebugBreakorAV = false;
 
@@ -89,7 +90,7 @@ WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* 
     {
         if (defaultValue != nullptr)
         {
-            dwRetVal  = (DWORD)u16_strlen(defaultValue) + 1; // add one for null terminator
+            dwRetVal  = (DWORD)minipal_u16_strlen((const CHAR16_T*)defaultValue) + 1; // add one for null terminator
             retString = new WCHAR[dwRetVal];
             memcpy_s(retString, dwRetVal * sizeof(WCHAR), defaultValue, dwRetVal * sizeof(WCHAR));
         }
@@ -189,8 +190,8 @@ void ReplaceIllegalCharacters(WCHAR* fileName)
 // All lengths in this function exclude the terminal NULL.
 WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const WCHAR* extension)
 {
-    const size_t extensionLength    = u16_strlen(extension);
-    const size_t fileNameLength     = u16_strlen(fileName);
+    const size_t extensionLength    = minipal_u16_strlen((const CHAR16_T*)extension);
+    const size_t fileNameLength     = minipal_u16_strlen((const CHAR16_T*)fileName);
     const size_t randomStringLength = 8;
     const size_t maxPathLength      = MAX_PATH - 50;
 
@@ -235,13 +236,8 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
 
     // Append a random string to improve uniqueness.
     //
-    unsigned randomNumber = 0;
-
-#ifdef TARGET_UNIX
-    PAL_Random(&randomNumber, sizeof(randomNumber));
-#else  // !TARGET_UNIX
-    rand_s(&randomNumber);
-#endif // !TARGET_UNIX
+    unsigned int randomNumber = 0;
+    minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&randomNumber, sizeof(randomNumber));
 
     WCHAR randomString[randomStringLength + 1];
     FormatInteger(randomString, randomStringLength + 1, "%08X", randomNumber);

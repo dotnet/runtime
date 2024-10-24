@@ -5,14 +5,7 @@ typedef char16_t WCHAR;
 
 #include <dn-u16.h>
 #include <string.h>
-
-size_t u16_strlen(const WCHAR* str)
-{
-    size_t nChar = 0;
-    while (*str++)
-        nChar++;
-    return nChar;
-}
+#include <minipal/strings.h>
 
 int u16_strcmp(const WCHAR* str1, const WCHAR* str2)
 {
@@ -54,7 +47,7 @@ WCHAR* u16_strcat_s(WCHAR* dst, size_t dstLen, const WCHAR* src)
     }
 
     // concatenate new string
-    size_t srcLength = u16_strlen(src);
+    size_t srcLength = minipal_u16_strlen((const CHAR16_T*)src);
     size_t loopCount = 0;
     while (*src && loopCount < srcLength)
     {
@@ -96,7 +89,7 @@ WCHAR* u16_strncpy_s(WCHAR* dst, size_t dstLen, const WCHAR* src, size_t count)
 {
     ::memset(dst, 0, dstLen * sizeof(WCHAR));
 
-    size_t srcLength = u16_strlen(src);
+    size_t srcLength = minipal_u16_strlen((const CHAR16_T*)src);
     size_t length = (count < srcLength) ? count : srcLength;
     if (length > dstLen)
         return nullptr;
@@ -113,7 +106,7 @@ const WCHAR* u16_strstr(const WCHAR *str, const WCHAR *strCharSet)
     }
 
     // No characters to examine
-    if (u16_strlen(strCharSet) == 0)
+    if (minipal_u16_strlen((const CHAR16_T*)strCharSet) == 0)
         return str;
 
     const WCHAR* ret = nullptr;

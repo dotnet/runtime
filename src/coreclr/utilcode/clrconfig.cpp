@@ -143,7 +143,7 @@ namespace
 
         WCHAR buff[64];
         const WCHAR* fallbackPrefix = NULL;
-        const size_t namelen = u16_strlen(name);
+        const size_t namelen = minipal_u16_strlen((const CHAR16_T*)name);
 
         bool noPrefix = CheckLookupOption(options, LookupOptions::DontPrependPrefix);
         if (noPrefix)
@@ -328,7 +328,7 @@ namespace
         *pwszTrimmed = NULL;
 
         // Get pointers into internal string that show where to do the trimming.
-        size_t cchOrig = u16_strlen(wszOrig);
+        size_t cchOrig = minipal_u16_strlen((const CHAR16_T*)wszOrig);
         if (!FitsIn<DWORD>(cchOrig))
             return COR_E_OVERFLOW;
         DWORD cchAfterTrim = (DWORD) cchOrig;

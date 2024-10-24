@@ -1657,7 +1657,7 @@ void OleVariant::MarshalLPWSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleA
                 // Allocate the string using CoTaskMemAlloc.
                 {
                     GCX_PREEMP();
-                    lpwstr = (LPWSTR)CoTaskMemAlloc(allocLength);
+                    lpwstr = (LPWSTR)minipal_co_task_mem_alloc(allocLength);
                 }
                 if (lpwstr == NULL)
                     ThrowOutOfMemory();
@@ -1694,7 +1694,7 @@ void OleVariant::ClearLPWSTRArray(void *oleArray, SIZE_T cElements, MethodTable 
         LPWSTR lpwstr = *pOle++;
 
         if (lpwstr != NULL)
-            CoTaskMemFree(lpwstr);
+            minipal_co_task_mem_free(lpwstr);
     }
 }
 
@@ -1801,7 +1801,7 @@ void OleVariant::MarshalLPSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleAr
                 // Allocate the string using CoTaskMemAlloc.
                 {
                     GCX_PREEMP();
-                    lpstr = (LPSTR)CoTaskMemAlloc(allocLength);
+                    lpstr = (LPSTR)minipal_co_task_mem_alloc(allocLength);
                 }
                 if (lpstr == NULL)
                     ThrowOutOfMemory();
@@ -1840,7 +1840,7 @@ void OleVariant::ClearLPSTRArray(void *oleArray, SIZE_T cElements, MethodTable *
         LPSTR lpstr = *pOle++;
 
         if (lpstr != NULL)
-            CoTaskMemFree(lpstr);
+            minipal_co_task_mem_free(lpstr);
     }
 }
 
@@ -2468,7 +2468,7 @@ void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * co
                                 AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_U1)) );
             *(BYTE*)((*pObj)->GetData()) = *(V_UI1REF(pOle));
             break;
-            
+
         case VT_I8:
             SetObjectReference( pObj,
                                 AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_I8)) );

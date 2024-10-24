@@ -1064,19 +1064,10 @@ BOOL Assembler::EmitClass(Class *pClass)
     LPCUTF8              szFullName;
     WCHAR*              wzFullName=&wzUniBuf[0];
     HRESULT             hr = E_FAIL;
-    GUID                guid;
     size_t              L;
     mdToken             tok;
 
     if(pClass == NULL) return FALSE;
-
-    hr = CoCreateGuid(&guid);
-    if (FAILED(hr))
-    {
-        printf("Unable to create GUID\n");
-        m_State = STATE_FAIL;
-        return FALSE;
-    }
 
     if(pClass->m_pEncloser)
         szFullName = strrchr(pClass->m_szFQN,NESTING_SEP) + 1;
@@ -1085,7 +1076,7 @@ BOOL Assembler::EmitClass(Class *pClass)
 
     MultiByteToWideChar(g_uCodePage,0,szFullName,-1,wzFullName,dwUniBuf);
 
-    L = u16_strlen(wzFullName);
+    L = minipal_u16_strlen((const CHAR16_T*)wzFullName);
     if((L==0)||(wzFullName[L-1]==L'.')) // Missing class name!
     {
         wcscat_s(wzFullName,dwUniBuf,W("$UNNAMED_TYPE$"));

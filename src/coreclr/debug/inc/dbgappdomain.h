@@ -43,7 +43,7 @@ struct AppDomainInfo
         else
             m_szAppDomainName = W("<NoName>");
 
-        m_iNameLengthInBytes = (int) (u16_strlen(m_szAppDomainName) + 1) * sizeof(WCHAR);
+        m_iNameLengthInBytes = (int) (minipal_u16_strlen((const CHAR16_T*)m_szAppDomainName) + 1) * sizeof(WCHAR);
     }
 #endif
 };

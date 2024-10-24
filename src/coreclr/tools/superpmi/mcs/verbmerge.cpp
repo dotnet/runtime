@@ -20,8 +20,8 @@ RemoveDup verbMerge::m_removeDups;
 // static
 LPWSTR verbMerge::MergePathStrings(LPCWSTR dir, LPCWSTR file)
 {
-    size_t dirlen  = u16_strlen(dir);
-    size_t filelen = u16_strlen(file);
+    size_t dirlen  = minipal_u16_strlen((const CHAR16_T*)dir);
+    size_t filelen = minipal_u16_strlen((const CHAR16_T*)file);
     size_t newlen  = dirlen + 1 /* slash */ + filelen + 1 /* null */;
     LPWSTR newpath = new WCHAR[newlen];
     u16_strcpy_s(newpath, newlen, dir);
@@ -352,14 +352,14 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
         const _WIN32_FIND_DATAW& findData     = fileArray[i];
         LPWSTR                   fileFullPath = MergePathStrings(dir, findData.cFileName);
 #ifdef TARGET_WINDOWS
-        if (u16_strlen(fileFullPath) > MAX_PATH) // This path is too long, use \\?\ to access it.
+        if (minipal_u16_strlen((const CHAR16_T*)fileFullPath) > MAX_PATH) // This path is too long, use \\?\ to access it.
         {
             if (u16_strcmp(dir, W(".")) == 0)
             {
                 LogError("can't access the relative path with UNC");
                 goto CLEAN_UP;
             }
-            size_t newBufferLen = u16_strlen(fileFullPath) + 30;
+            size_t newBufferLen = minipal_u16_strlen((const CHAR16_T*)fileFullPath) + 30;
             LPWSTR newBuffer = new WCHAR[newBufferLen];
             u16_strcpy_s(newBuffer, newBufferLen, W("\\\\?\\"));
             if (*fileFullPath == '\\') // It is UNC path, use \\?\UNC\serverName to access it.

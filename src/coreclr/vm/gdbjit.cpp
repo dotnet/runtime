@@ -452,7 +452,7 @@ HRESULT FunctionMember::GetLocalsDebugInfo(NotifyGdb::PTK_TypeInfoMap pTypeMap,
 
 MethodDebugInfo::MethodDebugInfo(int numPoints, int numLocals)
 {
-    points = (SequencePointInfo*) CoTaskMemAlloc(sizeof(SequencePointInfo) * numPoints);
+    points = (SequencePointInfo*) minipal_co_task_mem_alloc(sizeof(SequencePointInfo) * numPoints);
     if (points == nullptr)
     {
         COMPlusThrowOM();
@@ -467,10 +467,10 @@ MethodDebugInfo::MethodDebugInfo(int numPoints, int numLocals)
         return;
     }
 
-    locals = (LocalVarInfo*) CoTaskMemAlloc(sizeof(LocalVarInfo) * numLocals);
+    locals = (LocalVarInfo*) minipal_co_task_mem_alloc(sizeof(LocalVarInfo) * numLocals);
     if (locals == nullptr)
     {
-        CoTaskMemFree(points);
+        minipal_co_task_mem_free(points);
         COMPlusThrowOM();
     }
     memset(locals, 0, sizeof(LocalVarInfo) * numLocals);
@@ -482,13 +482,13 @@ MethodDebugInfo::~MethodDebugInfo()
     if (locals)
     {
         for (int i = 0; i < localsSize; i++)
-            CoTaskMemFree(locals[i].name);
-        CoTaskMemFree(locals);
+            minipal_co_task_mem_free(locals[i].name);
+        minipal_co_task_mem_free(locals);
     }
 
     for (int i = 0; i < size; i++)
-        CoTaskMemFree(points[i].fileName);
-    CoTaskMemFree(points);
+        minipal_co_task_mem_free(points[i].fileName);
+    minipal_co_task_mem_free(points);
 }
 
 /* Get mapping of IL offsets to source line numbers */
@@ -1846,8 +1846,8 @@ static inline bool isListedModule(const WCHAR *wszModuleFile)
     }
     if (isUserDebug == FALSE)
     {
-        u16_strncpy_s(wszModuleName, g_cBytesNeeded, tmp, u16_strlen(tmp));
-        wszModuleName[u16_strlen(tmp)] = W('\0');
+        u16_strncpy_s(wszModuleName, g_cBytesNeeded, tmp, minipal_u16_strlen((const CHAR16_T*)tmp));
+        wszModuleName[minipal_u16_strlen((const CHAR16_T*)tmp)] = W('\0');
         if (u16_strcmp(wszModuleName, wszModuleFile) == 0)
         {
             isUserDebug = TRUE;
@@ -2570,7 +2570,7 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
 
     if (pNIExt)
     {
-      u16_strcpy_s(pNIExt, u16_strlen(pNIExt) + 1, W(".dll"));
+      u16_strcpy_s(pNIExt, minipal_u16_strlen((const CHAR16_T*)pNIExt) + 1, W(".dll"));
     }
 
     if (isListedModule(wszModuleFile))

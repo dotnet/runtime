@@ -8,7 +8,6 @@
 // Wide character (UTF-16) abstraction layer.
 //
 
-size_t u16_strlen(const WCHAR* str);
 int u16_strcmp(const WCHAR* str1, const WCHAR* str2);
 int u16_strncmp(const WCHAR* str1, const WCHAR* str2, size_t count);
 WCHAR* u16_strcat_s(WCHAR* dst, size_t dstLen, const WCHAR* src);

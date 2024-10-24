@@ -4355,7 +4355,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     }
 
     // if we do not have a module path yet, we put the module name
-    if(bIsDynamicAssembly || ModuleILPath==NULL || u16_strlen(ModuleILPath) <= 2)
+    if(bIsDynamicAssembly || ModuleILPath==NULL || minipal_u16_strlen((const CHAR16_T*)ModuleILPath) <= 2)
     {
         moduleName.SetUTF8(pModule->GetSimpleName());
         ModuleILPath = (PWCHAR)moduleName.GetUnicode();

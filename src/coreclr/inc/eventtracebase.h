@@ -349,7 +349,7 @@ private:
         const WCHAR * end = u16_strchr(start, ComponentDelimiter);
         if (end == nullptr)
         {
-            end = start + u16_strlen(start);
+            end = start + minipal_u16_strlen((const CHAR16_T*)start);
         }
 
         return ComponentSpan(start, end);
@@ -460,7 +460,7 @@ private:
 #ifdef FEATURE_EVENT_TRACE
     static LTTNG_TRACE_CONTEXT * const GetProvider(LPCWSTR providerName)
     {
-        auto length = u16_strlen(providerName);
+        auto length = minipal_u16_strlen((const CHAR16_T*)providerName);
         for (auto provider : ALL_LTTNG_PROVIDERS_CONTEXT)
         {
             if (_wcsicmp(provider->Name, providerName) == 0)

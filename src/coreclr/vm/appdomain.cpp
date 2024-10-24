@@ -2975,7 +2975,7 @@ void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HAN
         return;
     }
 
-    size_t len = (u16_strlen(libraryName) + 1) * sizeof(WCHAR);
+    size_t len = (minipal_u16_strlen((const CHAR16_T*)libraryName) + 1) * sizeof(WCHAR);
     AllocMemHolder<WCHAR> copiedName(GetLowFrequencyHeap()->AllocMem(S_SIZE_T(len)));
     memcpy(copiedName, libraryName, len);
 
