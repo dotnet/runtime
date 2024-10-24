@@ -946,6 +946,7 @@ LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
     ; Tail call GetNonGCStaticBase
     ld.d $a0, $a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable
     PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, $t4
+    ld.d $t4, $t4, 0
     EPILOG_BRANCH_REG        $t4
 LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
@@ -964,6 +965,7 @@ LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
     ; Tail call GetGCStaticBase
     ld.d $a0, $a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable
     PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, $t4
+    ld.d $t4, $t4, 0
     EPILOG_BRANCH_REG        $t4
 LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 

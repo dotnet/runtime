@@ -393,7 +393,7 @@ FCFuncStart(gComAwareWeakReferenceFuncs)
     FCFuncElement("HasInteropInfo", ComAwareWeakReferenceNative::HasInteropInfo)
 FCFuncEnd()
 
-FCFuncStart(gStaticsHelperFuncs)
+FCFuncStart(gStaticsHelpersFuncs)
     FCFuncElement("VolatileReadAsByref", JIT_VolatileReadAsByref)
 FCFuncEnd()
 
@@ -435,7 +435,7 @@ FCClassElement("RuntimeMethodHandle", "System", gRuntimeMethodHandle)
 FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
 
 FCClassElement("Signature", "System", gSignatureNative)
-FCClassElement("StaticsHelper", "System.Runtime.CompilerServices", gStaticsHelperFuncs)
+FCClassElement("StaticsHelpers", "System.Runtime.CompilerServices", gStaticsHelpersFuncs)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
 FCClassElement("Thread", "System.Threading", gThreadFuncs)

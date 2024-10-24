@@ -22,7 +22,7 @@ CallHelper:
         // Tail call managed GetSharedNonGCStaticBase helper
         mov     rdi, [rdi + OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
         PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, r10
-        jmp     r10
+        jmp     [r10]
 LEAF_END_MARKED JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
 LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
@@ -37,6 +37,6 @@ CallHelper1:
         // Tail call managed GetSharedGCStaticBase helper
         mov     rdi, [rdi + OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
         PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, r10
-        jmp     r10
+        jmp     [r10]
 LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
