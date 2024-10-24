@@ -1750,11 +1750,8 @@ private:
 
     PER_HEAP_ISOLATED_METHOD HRESULT initialize_gc  (size_t soh_segment_size,
                                                      size_t loh_segment_size,
-                                                     size_t poh_segment_size
-#ifdef MULTIPLE_HEAPS
-                                                     , int number_of_heaps
-#endif //MULTIPLE_HEAPS
-        );
+                                                     size_t poh_segment_size,
+                                                     int number_of_heaps);
 
     PER_HEAP_ISOLATED_METHOD void shutdown_gc();
 
@@ -2815,8 +2812,6 @@ private:
     PER_HEAP_METHOD void scan_dependent_handles (int condemned_gen_number, ScanContext *sc, BOOL initial_scan_p);
 
     PER_HEAP_METHOD size_t get_generation_start_size (int gen_number);
-
-    PER_HEAP_ISOLATED_METHOD int get_num_heaps();
 
     PER_HEAP_METHOD BOOL decide_on_promotion_surv (size_t threshold);
 
@@ -5598,8 +5593,11 @@ public:
 
 #ifdef MULTIPLE_HEAPS
     // Init-ed in GCHeap::Initialize
-    PER_HEAP_ISOLATED_FIELD_INIT_ONLY int n_heaps;
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED int n_heaps;
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY int n_max_heaps;
+#else
+    // this is just to have fewer #ifdefs in code shared between WKS and SVR
+    static const int n_heaps = 1;
 #endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_BASICFREEZE
