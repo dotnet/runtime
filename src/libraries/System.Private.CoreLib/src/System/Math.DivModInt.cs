@@ -5,6 +5,10 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
+#if NATIVEAOT
+using System.Runtime.InteropServices;
+#endif
+
 namespace System
 {
     /// <summary>
@@ -136,8 +140,6 @@ namespace System
 
                 if ((int)divisor == -1)
                 {
-                    // <TODO>TODO, we really should remove this as it lengthens the code path
-                    // and the spec really says that it should not throw an exception. </TODO>
                     if ((ulong)dividend == 0x8000000000000000ul)
                     {
                         ThrowHelper.ThrowOverflowException();
@@ -189,11 +191,21 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern uint InternalDivUInt32(uint dividend, uint divisor);
 
+#if NATIVEAOT
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InternalDivInt64"), SuppressGCTransition]
+        private static partial long InternalDivInt64(long dividend, long divisor);
+#else
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern long InternalDivInt64(long dividend, long divisor);
+#endif
 
+#if NATIVEAOT
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InternalDivUInt64"), SuppressGCTransition]
+        private static partial ulong InternalDivUInt64(ulong dividend, ulong divisor);
+#else
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern ulong InternalDivUInt64(ulong dividend, ulong divisor);
+#endif
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int InternalModInt32(int dividend, int divisor);
@@ -201,10 +213,20 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern uint InternalModUInt32(uint dividend, uint divisor);
 
+#if NATIVEAOT
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InternalModInt64"), SuppressGCTransition]
+        private static partial long InternalModInt64(long dividend, long divisor);
+#else
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern long InternalModInt64(long dividend, long divisor);
+#endif
 
+#if NATIVEAOT
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InternalModUInt64"), SuppressGCTransition]
+        private static partial ulong InternalModUInt64(ulong dividend, ulong divisor);
+#else
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern ulong InternalModUInt64(ulong dividend, ulong divisor);
+#endif
     }
 }
