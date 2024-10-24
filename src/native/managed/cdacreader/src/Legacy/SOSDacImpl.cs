@@ -280,8 +280,6 @@ internal sealed unsafe partial class SOSDacImpl
                 throw new NotImplementedException(); // TODO[cdac]: get the dynamic method managed object
             }
 
-            // TODO[cdac]: compare with legacy
-            //return HResults.S_OK;
             hr = HResults.S_OK;
         }
         catch (global::System.Exception ex)

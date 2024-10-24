@@ -983,7 +983,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         MethodDesc md = _methodDescs[methodDesc.Address];
         TargetPointer loaderModuleAddr = GetLoaderModule(md);
         ModuleHandle mod = _target.Contracts.Loader.GetModuleHandle(loaderModuleAddr);
-        return _target.Contracts.Loader.IsCollectible(mod); // TODO[cdac]: return pMethodDesc->GetLoaderAllocator()->IsCollectible()
+        return _target.Contracts.Loader.IsCollectible(mod);
     }
 
     bool IRuntimeTypeSystem.IsVersionable(MethodDescHandle methodDesc)
@@ -1036,19 +1036,19 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             case MethodClassification.IL:
                 return _target.GetTypeInfo(DataType.MethodDesc).Size ?? throw new InvalidOperationException("size of MethodDesc not known");
             case MethodClassification.FCall:
-                throw new NotImplementedException();
+                throw new NotImplementedException(); //TODO(cdac):
             case MethodClassification.PInvoke:
-                throw new NotImplementedException();
+                throw new NotImplementedException(); //TODO(cdac):
             case MethodClassification.EEImpl:
-                throw new NotImplementedException();
+                throw new NotImplementedException(); //TODO(cdac):
             case MethodClassification.Array:
-                throw new NotImplementedException();
+                throw new NotImplementedException(); //TODO(cdac):
             case MethodClassification.Instantiated:
-                throw new NotImplementedException();
+                throw new NotImplementedException(); //TODO(cdac):
             case MethodClassification.ComInterop:
-                throw new NotImplementedException();
+                throw new NotImplementedException(); //TODO(cdac):
             case MethodClassification.Dynamic:
-                throw new NotImplementedException();
+                throw new NotImplementedException(); //TODO(cdac):
             default:
                 throw new InvalidOperationException($"Unexpected method classification 0x{cls:x2} for MethodDesc");
         }
