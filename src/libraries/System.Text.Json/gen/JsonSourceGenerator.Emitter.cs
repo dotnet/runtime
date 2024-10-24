@@ -70,6 +70,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonPropertyInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonPropertyInfoValues";
             private const string JsonTypeInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonTypeInfo";
             private const string JsonTypeInfoResolverTypeRef = "global::System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver";
+            private const string ReferenceHandlerTypeRef = "global::System.Text.Json.Serialization.ReferenceHandler";
             private const string EmptyTypeArray = "global::System.Array.Empty<global::System.Type>()";
 
             /// <summary>
@@ -1246,6 +1247,9 @@ namespace System.Text.Json.SourceGeneration
                 if (optionsSpec.ReadCommentHandling is JsonCommentHandling readCommentHandling)
                     writer.WriteLine($"ReadCommentHandling = {FormatCommentHandling(readCommentHandling)},");
 
+                if (optionsSpec.ReferenceHandler is JsonKnownReferenceHandler referenceHandler)
+                    writer.WriteLine($"ReferenceHandler = {FormatReferenceHandler(referenceHandler)},");
+
                 if (optionsSpec.UnknownTypeHandling is JsonUnknownTypeHandling unknownTypeHandling)
                     writer.WriteLine($"UnknownTypeHandling = {FormatUnknownTypeHandling(unknownTypeHandling)},");
 
@@ -1432,6 +1436,9 @@ namespace System.Text.Json.SourceGeneration
 
             private static string FormatJsonSerializerDefaults(JsonSerializerDefaults defaults)
                 => SourceGeneratorHelpers.FormatEnumLiteral(JsonSerializerDefaultsTypeRef, defaults);
+
+            private static string FormatReferenceHandler(JsonKnownReferenceHandler referenceHandler)
+                => SourceGeneratorHelpers.FormatEnumLiteral(ReferenceHandlerTypeRef, referenceHandler);
 
             private static string GetCreateValueInfoMethodRef(string typeCompilableName) => $"{CreateValueInfoMethodName}<{typeCompilableName}>";
 
