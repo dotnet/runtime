@@ -36,7 +36,7 @@ namespace System.Runtime.CompilerServices
                 return true;
             }
 
-            if (pMTa->HasTypeEquivalence && pMTb->HasTypeEquivalence)
+            if (!pMTa->HasTypeEquivalence || !pMTb->HasTypeEquivalence)
             {
                 return false;
             }

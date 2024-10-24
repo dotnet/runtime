@@ -1693,6 +1693,8 @@ extern "C" void QCALLTYPE ThrowInvalidCastException(CORINFO_CLASS_HANDLE pTarget
     TypeHandle targetType(pTargetType);
     TypeHandle sourceType(pSourceType);
 
+    GCX_COOP();
+
     COMPlusThrowInvalidCastException(sourceType, targetType);
 
     END_QCALL;
