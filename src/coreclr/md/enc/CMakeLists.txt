@@ -66,10 +66,6 @@ add_library_clr(mdruntimerw_wks OBJECT ${MDRUNTIMERW_SOURCES})
 target_compile_definitions(mdruntimerw_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
 target_precompile_headers(mdruntimerw_wks PRIVATE stdafx.h)
 
-if(CLR_CMAKE_TARGET_LINUX)
-  target_link_libraries(mdruntimerw_wks PRIVATE System.Security.Cryptography.Native.OpenSsl-Static)
-endif(CLR_CMAKE_TARGET_LINUX)
-
 add_library_clr(mdruntimerw-dbi ${MDRUNTIMERW_SOURCES})
 set_target_properties(mdruntimerw-dbi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(mdruntimerw-dbi PRIVATE stdafx.h)
@@ -77,3 +73,9 @@ target_precompile_headers(mdruntimerw-dbi PRIVATE stdafx.h)
 add_library_clr(mdruntimerw_ppdb ${MDRUNTIMERW_SOURCES})
 target_compile_definitions(mdruntimerw_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB)
 target_precompile_headers(mdruntimerw_ppdb PRIVATE stdafx.h)
+
+if(CLR_CMAKE_TARGET_LINUX)
+  target_link_libraries(mdruntimerw_wks PRIVATE System.Security.Cryptography.Native.OpenSsl-Static)
+  target_link_libraries(mdruntimerw_ppdb PRIVATE System.Security.Cryptography.Native.OpenSsl-Static)
+endif(CLR_CMAKE_TARGET_LINUX)
+

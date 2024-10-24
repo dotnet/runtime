@@ -10,15 +10,6 @@ add_definitions(-DFEATURE_CORECLR)
 
 include_directories(.)
 
-if(CLR_CMAKE_TARGET_LINUX)
-  configure_file(
-    ../../native/libs/System.Security.Cryptography.Native/pal_crypto_config.h.in
-    ${CMAKE_CURRENT_BINARY_DIR}/pal_crypto_config.h)
-  include_directories(../../native/libs/Common)
-  include_directories(../../native/libs/System.Security.Cryptography.Native)
-  include_directories(${CMAKE_CURRENT_BINARY_DIR})
-endif(CLR_CMAKE_TARGET_LINUX)
-
 set(ILASM_SOURCES
   assem.cpp
   writer.cpp
@@ -116,12 +107,6 @@ else()
         coreclrminipal
     )
 endif(CLR_CMAKE_TARGET_WIN32)
-
-if(CLR_CMAKE_TARGET_LINUX)
-    list(APPEND ILASM_LINK_LIBRARIES
-        System.Security.Cryptography.Native.OpenSsl-Static
-    )
-endif(CLR_CMAKE_TARGET_LINUX)
 
 
 if(CLR_CMAKE_HOST_UNIX)
