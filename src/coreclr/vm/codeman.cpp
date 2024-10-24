@@ -4217,7 +4217,7 @@ namespace {
             *(pMap+dwordIndex) = ((*(pMap+dwordIndex)) & mask);
 
             // the last DWORD of the nibble map is reserved to be empty for bounds checking
-            while (IsPointer(*(pMap+dwordIndex+1)) && DecodePointer(*(pMap+dwordIndex+1) == delta)){
+            while (IsPointer(*(pMap+dwordIndex+1)) && DecodePointer(*(pMap+dwordIndex+1)) == delta){
                 // The next DWORD is a pointer, so we can delete it
                 *(pMap+dwordIndex+1) = 0;
                 dwordIndex++;
