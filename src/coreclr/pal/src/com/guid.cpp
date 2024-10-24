@@ -10,7 +10,7 @@
 // ===========================================================================
 
 #define INITGUID
-#include <guiddef.h>
+#include <rt/guiddef.h>
 
 // These are GUIDs and IIDs that would normally be provided by the system via uuid.lib,
 // and that the PALRT exposes through headers.
