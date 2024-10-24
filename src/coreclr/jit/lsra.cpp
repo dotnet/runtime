@@ -9565,6 +9565,15 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         }
     }
 
+    bool apply_pr_107493 = true;
+    if (fromBlock && toBlock)
+    {
+        if ((fromBlock->bbNum == 12) && (toBlock->bbNum == 13))
+        {
+            printf("here");
+        }
+    }
+
     // REGISTER to REGISTER MOVES
 
     // First, find all the ones that are ready to move now
@@ -9575,10 +9584,26 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         if (location[targetReg] == REG_NA)
         {
 #ifdef TARGET_ARM
-            regNumber sourceReg = (regNumber)source[targetReg];
-            Interval* interval  = sourceIntervals[sourceReg];
+            // For Arm, check two things:
+            // 1. If sourceReg relates to DOUBLE interval, then make sure
+            //    the second half of targetReg is not participating in the resolution.
+            // 2. On the contrary, if targetReg is second half of a DOUBLE interval,
+            //    then make sure the first half is not participating in the resolution.
+            // Only when both these conditions are met, can we safely assume
+            // that sourceReg can be moved to targetReg.
+            regNumber sourceReg           = (regNumber)source[targetReg];
+            Interval* interval            = sourceIntervals[sourceReg];
+            Interval* otherTargetInterval = nullptr;
+            regNumber otherHalfTargetReg  = REG_NA;
+            if (apply_pr_107493 && genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
+            {
+                otherHalfTargetReg  = REG_PREV(targetReg);
+                otherTargetInterval = sourceIntervals[otherHalfTargetReg];
+            }
+
             if (interval->registerType == TYP_DOUBLE)
             {
+                // Condition 1 above.
                 // For ARM32, make sure that both of the float halves of the double register are available.
                 assert(genIsValidDoubleReg(targetReg));
                 regNumber anotherHalfRegNum = REG_NEXT(targetReg);
@@ -9587,11 +9612,22 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     targetRegsReady.AddRegNumInMask(targetReg);
                 }
             }
+            else if ((otherTargetInterval != nullptr) && (otherTargetInterval->registerType == TYP_DOUBLE))
+            {
+                // Condition 2 above.
+                assert(otherHalfTargetReg != REG_NA);
+                if (location[otherHalfTargetReg] == REG_NA)
+                {
+                    targetRegsReady.AddRegNumInMask(targetReg);
+                }
+            }
             else
-#endif // TARGET_ARM
             {
                 targetRegsReady.AddRegNumInMask(targetReg);
             }
+#else
+            targetRegsReady.AddRegNumInMask(targetReg);
+#endif
         }
     }
 
@@ -9633,6 +9669,10 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         if ((otherInterval->registerType == TYP_DOUBLE) && (location[upperHalfReg] != REG_NA))
                         {
                             targetRegsReady.RemoveRegNumFromMask(fromReg);
+                        }
+                        if ((source[upperHalfReg] != REG_NA) && !targetRegsFromStack.IsRegNumInMask(upperHalfReg) && targetRegsToDo.IsRegNumInMask(upperHalfReg))
+                        {
+                            targetRegsReady.AddRegNumInMask(upperHalfReg);
                         }
                     }
                 }
@@ -9805,6 +9845,13 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 {
                     compiler->codeGen->regSet.rsSetRegsModified(genRegMask(tempReg) DEBUGARG(true));
 #ifdef TARGET_ARM
+                    Interval* otherTargetInterval = nullptr;
+                    regNumber otherHalfTargetReg  = REG_NA;
+                    if (apply_pr_107493 && genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
+                    {
+                        otherHalfTargetReg  = REG_PREV(targetReg);
+                        otherTargetInterval = sourceIntervals[otherHalfTargetReg];
+                    }
                     if (sourceIntervals[fromReg]->registerType == TYP_DOUBLE)
                     {
                         assert(genIsValidDoubleReg(targetReg));
@@ -9813,16 +9860,45 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         addResolutionForDouble(block, insertionPoint, sourceIntervals, location, tempReg, targetReg,
                                                resolveType DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock));
                     }
-                    else
-#endif // TARGET_ARM
+                    else if (otherTargetInterval != nullptr)
                     {
+                        assert(otherHalfTargetReg != REG_NA);
+                        assert(otherTargetInterval->registerType == TYP_DOUBLE);
+
+                        addResolutionForDouble(block, insertionPoint, sourceIntervals, location, tempReg,
+                                               otherHalfTargetReg, resolveType DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock));
+                    }
+                    else
+                    {
+                        if (sourceIntervals[targetReg] == nullptr)
+                        {
+                            printf("here");
+                        }
                         assert(sourceIntervals[targetReg] != nullptr);
 
                         addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg,
                                       targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
                                           DEBUG_ARG(resolveTypeName[resolveType]));
                         location[targetReg] = (regNumberSmall)tempReg;
+
+                        if (sourceIntervals[targetReg]->registerType == TYP_DOUBLE)
+                        {
+                            regNumber upperHalfReg = REG_NEXT(targetReg);
+                            if (location[upperHalfReg] == REG_NA && targetRegsToDo.IsRegNumInMask(upperHalfReg) &&
+                                !targetRegsFromStack.IsRegNumInMask(upperHalfReg))
+                            {
+                                targetRegMask |= genRegMask(upperHalfReg);
+                            }
+                        }
                     }
+#else
+                    assert(sourceIntervals[targetReg] != nullptr);
+
+                    addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg,
+                                  targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
+                                      DEBUG_ARG(resolveTypeName[resolveType]));
+                    location[targetReg] = (regNumberSmall)tempReg;
+#endif // TARGET_ARM
                     targetRegsReady |= targetRegMask;
                 }
             }
