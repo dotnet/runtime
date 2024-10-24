@@ -33,11 +33,10 @@ internal class MockDescriptors
         (nameof(Data.EEClass.InternalCorElementType), DataType.uint8),
         (nameof(Data.EEClass.NumNonVirtualSlots), DataType.uint16),
     };
-    private static readonly Target.TypeInfo ArrayClassTypeInfo = new Target.TypeInfo()
+
+    private static readonly (string Name, DataType Type)[] ArrayClassFields = new[]
     {
-        Fields = new Dictionary<string, Target.FieldInfo> {
-            { nameof (Data.ArrayClass.Rank), new () { Offset = 0x70, Type = DataType.uint8}},
-        }
+        (nameof(Data.ArrayClass.Rank), DataType.uint8),
     };
 
     private static readonly Target.TypeInfo ObjectTypeInfo = new()
@@ -140,12 +139,13 @@ internal class MockDescriptors
 
         internal static void AddTypes(TargetTestHelpers targetTestHelpers, Dictionary<DataType, Target.TypeInfo> types)
         {
-            //TODO(cdac): use targetTestHelpers.LayoutFields()
             var layout = targetTestHelpers.LayoutFields(MethodTableFields);
             types[DataType.MethodTable] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            layout = targetTestHelpers.LayoutFields(EEClassFields);
+            var eeClassLayout = targetTestHelpers.LayoutFields(EEClassFields);
+            layout = eeClassLayout;
             types[DataType.EEClass] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            types[DataType.ArrayClass] = ArrayClassTypeInfo;
+            layout = targetTestHelpers.ExtendLayout(ArrayClassFields, eeClassLayout);
+            types[DataType.ArrayClass] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
         }
 
         internal static readonly (string Name, ulong Value, string? Type)[] Globals =
@@ -180,16 +180,18 @@ internal class MockDescriptors
             return builder.AddHeapFragment(eeClassFragment);
         }
 
-        internal static MockMemorySpace.Builder AddArrayClass(TargetTestHelpers targetTestHelpers, Target.TypeInfo eeClassTypeInfo, MockMemorySpace.Builder builder, TargetPointer eeClassPtr, string name, TargetPointer canonMTPtr, uint attr, ushort numMethods, ushort numNonVirtualSlots, byte rank)
+        internal static MockMemorySpace.Builder AddArrayClass(TargetTestHelpers targetTestHelpers, Dictionary<DataType, Target.TypeInfo> types, MockMemorySpace.Builder builder, TargetPointer eeClassPtr, string name, TargetPointer canonMTPtr, uint attr, ushort numMethods, ushort numNonVirtualSlots, byte rank)
         {
-            int size = targetTestHelpers.SizeOfTypeInfo(eeClassTypeInfo) + targetTestHelpers.SizeOfTypeInfo(ArrayClassTypeInfo);
+            Target.TypeInfo eeClassTypeInfo = types[DataType.EEClass];
+            Target.TypeInfo arrayClassTypeInfo = types[DataType.ArrayClass];
+            int size = (int)arrayClassTypeInfo.Size.Value;
             MockMemorySpace.HeapFragment eeClassFragment = new() { Name = $"ArrayClass '{name}'", Address = eeClassPtr, Data = new byte[size] };
             Span<byte> dest = eeClassFragment.Data;
             targetTestHelpers.WritePointer(dest.Slice(eeClassTypeInfo.Fields[nameof(Data.EEClass.MethodTable)].Offset), canonMTPtr);
             targetTestHelpers.Write(dest.Slice(eeClassTypeInfo.Fields[nameof(Data.EEClass.CorTypeAttr)].Offset), attr);
             targetTestHelpers.Write(dest.Slice(eeClassTypeInfo.Fields[nameof(Data.EEClass.NumMethods)].Offset), numMethods);
             targetTestHelpers.Write(dest.Slice(eeClassTypeInfo.Fields[nameof(Data.EEClass.NumNonVirtualSlots)].Offset), numNonVirtualSlots);
-            targetTestHelpers.Write(dest.Slice(ArrayClassTypeInfo.Fields[nameof(Data.ArrayClass.Rank)].Offset), rank);
+            targetTestHelpers.Write(dest.Slice(arrayClassTypeInfo.Fields[nameof(Data.ArrayClass.Rank)].Offset), rank);
             return builder.AddHeapFragment(eeClassFragment);
         }
 
@@ -363,7 +365,7 @@ internal class MockDescriptors
 
             string name = string.Join(',', array);
 
-            builder = RuntimeTypeSystem.AddArrayClass(targetTestHelpers, types[DataType.EEClass], builder, arrayClassAddress, name, methodTableAddress,
+            builder = RuntimeTypeSystem.AddArrayClass(targetTestHelpers, types, builder, arrayClassAddress, name, methodTableAddress,
                 attr: 0, numMethods: 0, numNonVirtualSlots: 0, rank: (byte)array.Rank);
             builder = RuntimeTypeSystem.AddMethodTable(targetTestHelpers, types[DataType.MethodTable], builder, methodTableAddress, name, arrayClassAddress,
                 mtflags: flags, mtflags2: default, baseSize: targetTestHelpers.ArrayBaseBaseSize,
