@@ -253,7 +253,7 @@ CDAC_TYPE_END(Assembly)
 // RuntimeTypeSystem
 
 CDAC_TYPE_BEGIN(MethodTable)
-CDAC_TYPE_INDETERMINATE(MethodTable)
+CDAC_TYPE_SIZE(sizeof(MethodTable))
 CDAC_TYPE_FIELD(MethodTable, /*uint32*/, MTFlags, cdac_data<MethodTable>::MTFlags)
 CDAC_TYPE_FIELD(MethodTable, /*uint32*/, BaseSize, cdac_data<MethodTable>::BaseSize)
 CDAC_TYPE_FIELD(MethodTable, /*uint32*/, MTFlags2, cdac_data<MethodTable>::MTFlags2)
