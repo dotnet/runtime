@@ -6977,14 +6977,26 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         {
             // Fold (x + c1) + c2
             while (op1->OperIs(GT_ADD) && op2->IsIntegralConst() && op1->gtGetOp2()->IsIntegralConst() &&
-                   !node->gtOverflow() && !op1->gtOverflow() && !op2->AsIntConCommon()->ImmedValNeedsReloc(comp) &&
-                   !op1->gtGetOp2()->AsIntConCommon()->ImmedValNeedsReloc(comp))
+                   !node->gtOverflow() && !op1->gtOverflow())
             {
+                GenTreeIntConCommon* cns1 = op1->gtGetOp2()->AsIntConCommon();
+                GenTreeIntConCommon* cns2 = op2->AsIntConCommon();
+
+                if (cns1->ImmedValNeedsReloc(comp) || cns2->ImmedValNeedsReloc(comp))
+                {
+                    break;
+                }
+
+                if (varTypeIsGC(cns1) || (cns1->TypeGet() != cns2->TypeGet()))
+                {
+                    break;
+                }
+
                 JITDUMP("Folding (x + c1) + c2. Before:\n");
                 DISPTREERANGE(BlockRange(), node);
 
-                int64_t c1 = op1->gtGetOp2()->AsIntConCommon()->IntegralValue();
-                int64_t c2 = op2->AsIntConCommon()->IntegralValue();
+                int64_t c1 = cns1->IntegralValue();
+                int64_t c2 = cns2->IntegralValue();
 
                 int64_t result;
                 if (genTypeSize(node) == sizeof(int64_t))
@@ -6996,10 +7008,10 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
                     result = static_cast<int32_t>(c1) + static_cast<int32_t>(c2);
                 }
 
-                op2->AsIntConCommon()->SetIntegralValue(result);
+                cns2->SetIntegralValue(result);
                 node->gtOp1 = op1->gtGetOp1();
 
-                BlockRange().Remove(op1->gtGetOp2());
+                BlockRange().Remove(cns1);
                 BlockRange().Remove(op1);
 
                 op1 = node->gtGetOp1();
