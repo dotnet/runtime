@@ -111,4 +111,12 @@ internal readonly struct Loader_1 : ILoader
         } while (table != TargetPointer.Null);
         return TargetPointer.Null;
     }
+
+    bool ILoader.IsCollectible(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        TargetPointer assembly = module.Assembly;
+        Data.Assembly la = _target.ProcessedData.GetOrAdd<Data.Assembly>(assembly);
+        return la.IsCollectible != 0;
+    }
 }

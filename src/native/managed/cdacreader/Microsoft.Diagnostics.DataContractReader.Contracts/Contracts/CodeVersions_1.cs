@@ -132,6 +132,14 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
 
     private NativeCodeVersionHandle GetSpecificNativeCodeVersion(IRuntimeTypeSystem rts, MethodDescHandle md, TargetCodePointer startAddress)
     {
+        // initial stage of NativeCodeVersionIterator::Next() with a null m_ilCodeFilter
+        TargetCodePointer firstNativeCode = rts.GetNativeCode(md);
+        if (firstNativeCode == startAddress)
+        {
+            NativeCodeVersionHandle first = new NativeCodeVersionHandle(md.Address, TargetPointer.Null);
+            return first;
+        }
+        // ImplicitCodeVersion stage of NativeCodeVersionIterator::Next()
         TargetPointer methodDescVersioningStateAddress = rts.GetMethodDescVersioningState(md);
         if (methodDescVersioningStateAddress == TargetPointer.Null)
         {

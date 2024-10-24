@@ -148,6 +148,15 @@ partial interface IRuntimeTypeSystem : IContract
     // Return a pointer to the IL versioning state of the MethodDesc
     public virtual TargetPointer GetMethodDescVersioningState(MethodDescHandle methodDesc);
 
+    // Return the MethodTable slot number of the MethodDesc
+    public virtual ushort GetSlotNumber(MethodDescHandle methodDesc);
+
+    // Return true if the MethodDesc has space associated with it for storing a pointer to a code block
+    public virtual bool HasNativeCodeSlot(MethodDescHandle methodDesc);
+
+    // Return the address of the space that stores a pointer to a code block associated with the MethodDesc
+    public virtual TargetPointer GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc);
+
     // Get an instruction pointer that can be called to cause the MethodDesc to be executed
     public virtual TargetCodePointer GetNativeCode(MethodDescHandle methodDesc);
 
