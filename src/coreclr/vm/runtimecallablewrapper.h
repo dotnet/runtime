@@ -174,8 +174,8 @@ struct RCW
     enum MarshalingType
      {
          MarshalingType_Unknown = 0,      /* The MarshalingType has not been set*/
-         MarshalingType_Inhibit = 1,      /* This value is same as the MarshalingType.Inhibit*/
-         MarshalingType_FreeThreaded = 2, /* This value is same as the MarshalingType.FreeThreaded*/
+         MarshalingType_Inhibit = 1,      /* Type implements INoMarshal */
+         MarshalingType_FreeThreaded = 2, /* Type aggregates the FreeThreaded marshaller */
      };
 
     //-------------------------------------------------
