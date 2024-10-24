@@ -35,7 +35,7 @@ namespace System
                 }
             }
 
-            return InternalDivInt32(dividend, divisor);
+            return DivInt32Internal(dividend, divisor);
         }
 
         [StackTraceHidden]
@@ -46,7 +46,7 @@ namespace System
                 ThrowHelper.ThrowDivideByZeroException();
             }
 
-            return InternalDivUInt32(dividend, divisor);
+            return DivUInt32Internal(dividend, divisor);
         }
 
         [StackTraceHidden]
@@ -75,7 +75,7 @@ namespace System
                 }
             }
 
-            return InternalDivInt64(dividend, divisor);
+            return DivInt64Internal(dividend, divisor);
         }
 
         [StackTraceHidden]
@@ -92,7 +92,7 @@ namespace System
                     return (uint)dividend / (uint)divisor;
             }
 
-            return InternalDivUInt64(dividend, divisor);
+            return DivUInt64Internal(dividend, divisor);
         }
 
         [StackTraceHidden]
@@ -114,7 +114,7 @@ namespace System
                 }
             }
 
-            return InternalModInt32(dividend, divisor);
+            return ModInt32Internal(dividend, divisor);
         }
 
         [StackTraceHidden]
@@ -125,7 +125,7 @@ namespace System
                 ThrowHelper.ThrowDivideByZeroException();
             }
 
-            return InternalModUInt32(dividend, divisor);
+            return ModUInt32Internal(dividend, divisor);
         }
 
         [StackTraceHidden]
@@ -153,7 +153,7 @@ namespace System
                 }
             }
 
-            return InternalModInt64(dividend, divisor);
+            return ModInt64Internal(dividend, divisor);
         }
 
         [StackTraceHidden]
@@ -170,7 +170,7 @@ namespace System
                     return (uint)dividend % (uint)divisor;
             }
 
-            return InternalModUInt64(dividend, divisor);
+            return ModUInt64Internal(dividend, divisor);
         }
 
         // helper method to get high 32-bit of 64-bit int
@@ -186,47 +186,47 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int InternalDivInt32(int dividend, int divisor);
+        private static extern int DivInt32Internal(int dividend, int divisor);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern uint InternalDivUInt32(uint dividend, uint divisor);
+        private static extern uint DivUInt32Internal(uint dividend, uint divisor);
 
 #if NATIVEAOT
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InternalDivInt64"), SuppressGCTransition]
-        private static partial long InternalDivInt64(long dividend, long divisor);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DivInt64Internal"), SuppressGCTransition]
+        private static partial long DivInt64Internal(long dividend, long divisor);
 #else
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern long InternalDivInt64(long dividend, long divisor);
+        private static extern long DivInt64Internal(long dividend, long divisor);
 #endif
 
 #if NATIVEAOT
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InternalDivUInt64"), SuppressGCTransition]
-        private static partial ulong InternalDivUInt64(ulong dividend, ulong divisor);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DivUInt64Internal"), SuppressGCTransition]
+        private static partial ulong DivUInt64Internal(ulong dividend, ulong divisor);
 #else
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern ulong InternalDivUInt64(ulong dividend, ulong divisor);
+        private static extern ulong DivUInt64Internal(ulong dividend, ulong divisor);
 #endif
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int InternalModInt32(int dividend, int divisor);
+        private static extern int ModInt32Internal(int dividend, int divisor);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern uint InternalModUInt32(uint dividend, uint divisor);
+        private static extern uint ModUInt32Internal(uint dividend, uint divisor);
 
 #if NATIVEAOT
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InternalModInt64"), SuppressGCTransition]
-        private static partial long InternalModInt64(long dividend, long divisor);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModInt64Internal"), SuppressGCTransition]
+        private static partial long ModInt64Internal(long dividend, long divisor);
 #else
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern long InternalModInt64(long dividend, long divisor);
+        private static extern long ModInt64Internal(long dividend, long divisor);
 #endif
 
 #if NATIVEAOT
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InternalModUInt64"), SuppressGCTransition]
-        private static partial ulong InternalModUInt64(ulong dividend, ulong divisor);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModUInt64Internal"), SuppressGCTransition]
+        private static partial ulong ModUInt64Internal(ulong dividend, ulong divisor);
 #else
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern ulong InternalModUInt64(ulong dividend, ulong divisor);
+        private static extern ulong ModUInt64Internal(ulong dividend, ulong divisor);
 #endif
     }
 }
