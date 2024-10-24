@@ -62,6 +62,7 @@ if [[ "$__TargetOS" == browser ]]; then
             exit 1
         fi
     fi
+    source "$EMSDK_PATH"/pre_emsdk_env.sh
     source "$EMSDK_PATH"/emsdk_env.sh
     export CLR_CC=$(which emcc)
 elif [[ "$__TargetOS" == wasi ]]; then
