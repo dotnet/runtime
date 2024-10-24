@@ -85,15 +85,15 @@ namespace System.Diagnostics.Eventing.Reader
             int flag = 0;
 
             if (_eventQuery.ThePathType == PathType.LogName)
-                flag |= (int)UnsafeNativeMethods.EvtQueryFlags.EvtQueryChannelPath;
+                flag |= (int)Interop.Wevtapi.EVT_QUERY_FLAGS.EvtQueryChannelPath;
             else
-                flag |= (int)UnsafeNativeMethods.EvtQueryFlags.EvtQueryFilePath;
+                flag |= (int)Interop.Wevtapi.EVT_QUERY_FLAGS.EvtQueryFilePath;
 
             if (_eventQuery.ReverseDirection)
-                flag |= (int)UnsafeNativeMethods.EvtQueryFlags.EvtQueryReverseDirection;
+                flag |= (int)Interop.Wevtapi.EVT_QUERY_FLAGS.EvtQueryReverseDirection;
 
             if (_eventQuery.TolerateQueryErrors)
-                flag |= (int)UnsafeNativeMethods.EvtQueryFlags.EvtQueryTolerateQueryErrors;
+                flag |= (int)Interop.Wevtapi.EVT_QUERY_FLAGS.EvtQueryTolerateQueryErrors;
 
             _handle = NativeWrapper.EvtQuery(_eventQuery.Session.Handle,
                 _eventQuery.Path, _eventQuery.Query,
@@ -105,7 +105,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 using (bookmarkHandle)
                 {
-                    NativeWrapper.EvtSeek(_handle, 1, bookmarkHandle, 0, UnsafeNativeMethods.EvtSeekFlags.EvtSeekRelativeToBookmark);
+                    NativeWrapper.EvtSeek(_handle, 1, bookmarkHandle, 0, Interop.Wevtapi.EVT_SEEK_FLAGS.EvtSeekRelativeToBookmark);
                 }
             }
         }
@@ -222,7 +222,7 @@ namespace System.Diagnostics.Eventing.Reader
 
             SeekReset();
 
-            NativeWrapper.EvtSeek(_handle, offset, EventLogHandle.Zero, 0, UnsafeNativeMethods.EvtSeekFlags.EvtSeekRelativeToCurrent);
+            NativeWrapper.EvtSeek(_handle, offset, EventLogHandle.Zero, 0, Interop.Wevtapi.EVT_SEEK_FLAGS.EvtSeekRelativeToCurrent);
         }
 
         public void Seek(EventBookmark bookmark)
@@ -237,7 +237,7 @@ namespace System.Diagnostics.Eventing.Reader
             SeekReset();
             using (EventLogHandle bookmarkHandle = EventLogRecord.GetBookmarkHandleFromBookmark(bookmark))
             {
-                NativeWrapper.EvtSeek(_handle, offset, bookmarkHandle, 0, UnsafeNativeMethods.EvtSeekFlags.EvtSeekRelativeToBookmark);
+                NativeWrapper.EvtSeek(_handle, offset, bookmarkHandle, 0, Interop.Wevtapi.EVT_SEEK_FLAGS.EvtSeekRelativeToBookmark);
             }
         }
 
@@ -248,13 +248,13 @@ namespace System.Diagnostics.Eventing.Reader
                 case SeekOrigin.Begin:
 
                     SeekReset();
-                    NativeWrapper.EvtSeek(_handle, offset, EventLogHandle.Zero, 0, UnsafeNativeMethods.EvtSeekFlags.EvtSeekRelativeToFirst);
+                    NativeWrapper.EvtSeek(_handle, offset, EventLogHandle.Zero, 0, Interop.Wevtapi.EVT_SEEK_FLAGS.EvtSeekRelativeToFirst);
                     return;
 
                 case SeekOrigin.End:
 
                     SeekReset();
-                    NativeWrapper.EvtSeek(_handle, offset, EventLogHandle.Zero, 0, UnsafeNativeMethods.EvtSeekFlags.EvtSeekRelativeToLast);
+                    NativeWrapper.EvtSeek(_handle, offset, EventLogHandle.Zero, 0, Interop.Wevtapi.EVT_SEEK_FLAGS.EvtSeekRelativeToLast);
                     return;
 
                 case SeekOrigin.Current:
@@ -306,8 +306,8 @@ namespace System.Diagnostics.Eventing.Reader
                 if (queryHandle.IsInvalid)
                     throw new InvalidOperationException();
 
-                string[] channelNames = (string[])NativeWrapper.EvtGetQueryInfo(queryHandle, UnsafeNativeMethods.EvtQueryPropertyId.EvtQueryNames);
-                int[] errorStatuses = (int[])NativeWrapper.EvtGetQueryInfo(queryHandle, UnsafeNativeMethods.EvtQueryPropertyId.EvtQueryStatuses);
+                string[] channelNames = (string[])NativeWrapper.EvtGetQueryInfo(queryHandle, Interop.Wevtapi.EVT_QUERY_PROPERTY_ID.EvtQueryNames);
+                int[] errorStatuses = (int[])NativeWrapper.EvtGetQueryInfo(queryHandle, Interop.Wevtapi.EVT_QUERY_PROPERTY_ID.EvtQueryStatuses);
 
                 if (channelNames.Length != errorStatuses.Length)
                     throw new InvalidOperationException();

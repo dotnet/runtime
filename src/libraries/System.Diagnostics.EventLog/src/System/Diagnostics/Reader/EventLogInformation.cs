@@ -17,14 +17,14 @@ namespace System.Diagnostics.Eventing.Reader
 
             using (logHandle)
             {
-                CreationTime = (DateTime?)NativeWrapper.EvtGetLogInfo(logHandle, UnsafeNativeMethods.EvtLogPropertyId.EvtLogCreationTime);
-                LastAccessTime = (DateTime?)NativeWrapper.EvtGetLogInfo(logHandle, UnsafeNativeMethods.EvtLogPropertyId.EvtLogLastAccessTime);
-                LastWriteTime = (DateTime?)NativeWrapper.EvtGetLogInfo(logHandle, UnsafeNativeMethods.EvtLogPropertyId.EvtLogLastWriteTime);
-                FileSize = (long?)((ulong?)NativeWrapper.EvtGetLogInfo(logHandle, UnsafeNativeMethods.EvtLogPropertyId.EvtLogFileSize));
-                Attributes = (int?)((uint?)NativeWrapper.EvtGetLogInfo(logHandle, UnsafeNativeMethods.EvtLogPropertyId.EvtLogAttributes));
-                RecordCount = (long?)((ulong?)NativeWrapper.EvtGetLogInfo(logHandle, UnsafeNativeMethods.EvtLogPropertyId.EvtLogNumberOfLogRecords));
-                OldestRecordNumber = (long?)((ulong?)NativeWrapper.EvtGetLogInfo(logHandle, UnsafeNativeMethods.EvtLogPropertyId.EvtLogOldestRecordNumber));
-                IsLogFull = (bool?)NativeWrapper.EvtGetLogInfo(logHandle, UnsafeNativeMethods.EvtLogPropertyId.EvtLogFull);
+                CreationTime = (DateTime?)NativeWrapper.EvtGetLogInfo(logHandle, Interop.Wevtapi.EVT_LOG_PROPERTY_ID.EvtLogCreationTime);
+                LastAccessTime = (DateTime?)NativeWrapper.EvtGetLogInfo(logHandle, Interop.Wevtapi.EVT_LOG_PROPERTY_ID.EvtLogLastAccessTime);
+                LastWriteTime = (DateTime?)NativeWrapper.EvtGetLogInfo(logHandle, Interop.Wevtapi.EVT_LOG_PROPERTY_ID.EvtLogLastWriteTime);
+                FileSize = (long?)((ulong?)NativeWrapper.EvtGetLogInfo(logHandle, Interop.Wevtapi.EVT_LOG_PROPERTY_ID.EvtLogFileSize));
+                Attributes = (int?)((uint?)NativeWrapper.EvtGetLogInfo(logHandle, Interop.Wevtapi.EVT_LOG_PROPERTY_ID.EvtLogAttributes));
+                RecordCount = (long?)((ulong?)NativeWrapper.EvtGetLogInfo(logHandle, Interop.Wevtapi.EVT_LOG_PROPERTY_ID.EvtLogNumberOfLogRecords));
+                OldestRecordNumber = (long?)((ulong?)NativeWrapper.EvtGetLogInfo(logHandle, Interop.Wevtapi.EVT_LOG_PROPERTY_ID.EvtLogOldestRecordNumber));
+                IsLogFull = (bool?)NativeWrapper.EvtGetLogInfo(logHandle, Interop.Wevtapi.EVT_LOG_PROPERTY_ID.EvtLogFull);
             }
         }
 

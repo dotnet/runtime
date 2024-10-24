@@ -32,7 +32,7 @@ namespace System.Diagnostics.Eventing.Reader
                 paths = queries.ToArray();
             }
 
-            Handle = NativeWrapper.EvtCreateRenderContext(paths.Length, paths, UnsafeNativeMethods.EvtRenderContextFlags.EvtRenderContextValues);
+            Handle = NativeWrapper.EvtCreateRenderContext(paths.Length, paths, Interop.Wevtapi.EVT_RENDER_CONTEXT_FLAGS.EvtRenderContextValues);
         }
 
         internal EventLogHandle Handle { get; }

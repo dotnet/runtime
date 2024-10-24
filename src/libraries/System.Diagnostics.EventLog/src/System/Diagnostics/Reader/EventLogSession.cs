@@ -63,7 +63,7 @@ namespace System.Diagnostics.Eventing.Reader
                 {
                     // Create the SYSTEM render context
                     // Call the EvtCreateRenderContext to get the renderContextHandleSystem, so that we can get the system/values/user properties.
-                    this.renderContextHandleSystem = NativeWrapper.EvtCreateRenderContext(0, null, UnsafeNativeMethods.EvtRenderContextFlags.EvtRenderContextSystem);
+                    this.renderContextHandleSystem = NativeWrapper.EvtCreateRenderContext(0, null, Interop.Wevtapi.EVT_RENDER_CONTEXT_FLAGS.EvtRenderContextSystem);
                 }
             }
         }
@@ -75,7 +75,7 @@ namespace System.Diagnostics.Eventing.Reader
                 if (this.renderContextHandleUser.IsInvalid)
                 {
                     // Create the USER render context
-                    this.renderContextHandleUser = NativeWrapper.EvtCreateRenderContext(0, null, UnsafeNativeMethods.EvtRenderContextFlags.EvtRenderContextUser);
+                    this.renderContextHandleUser = NativeWrapper.EvtCreateRenderContext(0, null, Interop.Wevtapi.EVT_RENDER_CONTEXT_FLAGS.EvtRenderContextUser);
                 }
             }
         }
@@ -103,7 +103,7 @@ namespace System.Diagnostics.Eventing.Reader
             _user = user;
             _logOnType = logOnType;
 
-            UnsafeNativeMethods.EvtRpcLogin erLogin = default;
+            Interop.Wevtapi.EVT_RPC_LOGIN erLogin = default;
             erLogin.Server = _server;
             erLogin.User = _user;
             erLogin.Domain = _domain;
@@ -115,7 +115,7 @@ namespace System.Diagnostics.Eventing.Reader
                 if (password != null)
                     erLogin.Password.SetMemory(SecureStringMarshal.SecureStringToCoTaskMemUnicode(password));
                 // Open a session using the erLogin structure.
-                Handle = NativeWrapper.EvtOpenSession(UnsafeNativeMethods.EvtLoginClass.EvtRpcLogin, ref erLogin, 0, 0);
+                Handle = NativeWrapper.EvtOpenSession(Interop.Wevtapi.EVT_LOGIN_CLASS.EvtRpcLogin, ref erLogin, 0, 0);
             }
             finally
             {
@@ -219,16 +219,16 @@ namespace System.Diagnostics.Eventing.Reader
             ArgumentNullException.ThrowIfNull(path);
             ArgumentNullException.ThrowIfNull(targetFilePath);
 
-            UnsafeNativeMethods.EvtExportLogFlags flag = pathType switch
+            Interop.Wevtapi.EVT_EXPORTLOG_FLAGS flag = pathType switch
             {
-                PathType.LogName => UnsafeNativeMethods.EvtExportLogFlags.EvtExportLogChannelPath,
-                PathType.FilePath => UnsafeNativeMethods.EvtExportLogFlags.EvtExportLogFilePath,
+                PathType.LogName => Interop.Wevtapi.EVT_EXPORTLOG_FLAGS.EvtExportLogChannelPath,
+                PathType.FilePath => Interop.Wevtapi.EVT_EXPORTLOG_FLAGS.EvtExportLogFilePath,
                 _ => throw new ArgumentOutOfRangeException(nameof(pathType)),
             };
             if (tolerateQueryErrors == false)
                 NativeWrapper.EvtExportLog(this.Handle, path, query, targetFilePath, (int)flag);
             else
-                NativeWrapper.EvtExportLog(this.Handle, path, query, targetFilePath, (int)flag | (int)UnsafeNativeMethods.EvtExportLogFlags.EvtExportLogTolerateQueryErrors);
+                NativeWrapper.EvtExportLog(this.Handle, path, query, targetFilePath, (int)flag | (int)Interop.Wevtapi.EVT_EXPORTLOG_FLAGS.EvtExportLogTolerateQueryErrors);
         }
 
         public void ExportLogAndMessages(string path, PathType pathType, string query, string targetFilePath)

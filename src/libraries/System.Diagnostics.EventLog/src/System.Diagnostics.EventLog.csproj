@@ -60,7 +60,6 @@ System.Diagnostics.EventLog</PackageDescription>
     <Compile Include="System\Diagnostics\Reader\ProviderMetadata.cs" />
     <Compile Include="System\Diagnostics\Reader\ProviderMetadataCachedInformation.cs" />
     <Compile Include="System\Diagnostics\Reader\Winmeta.cs" />
-    <Compile Include="System\Diagnostics\Reader\UnsafeNativeMethods.cs" />
     <Compile Include="System\Diagnostics\EventLogEntryCollection.cs" />
     <Compile Include="System\Diagnostics\EventLogEntryType.cs" />
     <Compile Include="System\Diagnostics\EventLogInternal.cs" />
@@ -69,57 +68,89 @@ System.Diagnostics.EventLog</PackageDescription>
     <Compile Include="System\Diagnostics\OverflowAction.cs" />
     <Compile Include="System\Diagnostics\SafeEventLogReadHandle.cs" />
     <Compile Include="System\Diagnostics\SafeEventLogWriteHandle.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ClearEventLog.cs"
-             Link="Common\Interop\Windows\Advapi32\Interop.ClearEventLog.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CloseEventLog.cs"
-             Link="Common\Interop\Windows\Advapi32\Interop.CloseEventLog.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DeregisterEventSource.cs"
-             Link="Common\Interop\Windows\Advapi32\Interop.DeregisterEventSource.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetNumberOfEventLogRecords.cs"
-             Link="Common\Interop\Windows\Advapi32\Interop.GetNumberOfEventLogRecords.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetOldestEventLogRecord.cs"
-             Link="Common\Interop\Windows\Advapi32\Interop.GetOldestEventLogRecord.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LookupAccountSid.cs"
-             Link="Common\Interop\Windows\Advapi32\Interop.LookupAccountSid.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.NotifyChangeEventLog.cs"
-             Link="Common\Interop\Windows\Advapi32\Interop.NotifyChangeEventLog.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenEventLog.cs"
-             Link="Common\Interop\Windows\Advapi32\Interop.OpenEventLog.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ReadEventLog.cs"
-             Link="Common\Interop\Windows\Advapi32\Interop.ReadEventLog.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegisterEventSource.cs"
-             Link="Common\Interop\Windows\Advapi32\Interop.RegisterEventSource.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ReportEvent.cs"
-             Link="Common\Interop\Windows\Advapi32\Interop.ReportEvent.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.Constants.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage_SafeLibraryHandle.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage_SafeLibraryHandle.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
-             Link="Common\Interop\Windows\Interop.Errors.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
-             Link="Common\Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)System\Diagnostics\NetFrameworkUtils.cs"
-             Link="Common\System\Diagnostics\NetFrameworkUtils.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
-             Link="Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs"
-             Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ClearEventLog.cs" Link="Common\Interop\Windows\Advapi32\Interop.ClearEventLog.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CloseEventLog.cs" Link="Common\Interop\Windows\Advapi32\Interop.CloseEventLog.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DeregisterEventSource.cs" Link="Common\Interop\Windows\Advapi32\Interop.DeregisterEventSource.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetNumberOfEventLogRecords.cs" Link="Common\Interop\Windows\Advapi32\Interop.GetNumberOfEventLogRecords.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetOldestEventLogRecord.cs" Link="Common\Interop\Windows\Advapi32\Interop.GetOldestEventLogRecord.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LookupAccountSid.cs" Link="Common\Interop\Windows\Advapi32\Interop.LookupAccountSid.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.NotifyChangeEventLog.cs" Link="Common\Interop\Windows\Advapi32\Interop.NotifyChangeEventLog.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenEventLog.cs" Link="Common\Interop\Windows\Advapi32\Interop.OpenEventLog.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ReadEventLog.cs" Link="Common\Interop\Windows\Advapi32\Interop.ReadEventLog.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegisterEventSource.cs" Link="Common\Interop\Windows\Advapi32\Interop.RegisterEventSource.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ReportEvent.cs" Link="Common\Interop\Windows\Advapi32\Interop.ReportEvent.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" Link="Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs" Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs" Link="Common\Interop\Windows\Kernel32\Interop.Constants.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage_SafeLibraryHandle.cs" Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage_SafeLibraryHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs" Link="Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs" Link="Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.TimeZone.cs" Link="Common\Interop\Windows\Kernel32\Interop.TimeZone.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs" Link="Common\Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.Constants.cs" Link="Common\Interop\Windows\Wevtapi\Interop.Constants.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_CHANNEL_CONFIG_PROPERTY_ID.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_CHANNEL_CONFIG_PROPERTY_ID.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_CHANNEL_REFERENCE_FLAGS.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_CHANNEL_REFERENCE_FLAGS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_EVENT_METADATA_PROPERTY_ID.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_EVENT_METADATA_PROPERTY_ID.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_EVENT_PROPERTY_ID.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_EVENT_PROPERTY_ID.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_EXPORTLOG_FLAGS.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_EXPORTLOG_FLAGS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_FORMAT_MESSAGE_FLAGS.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_FORMAT_MESSAGE_FLAGS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_LOG_PROPERTY_ID.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_LOG_PROPERTY_ID.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_LOGIN_CLASS.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_LOGIN_CLASS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_PUBLISHER_METADATA_PROPERTY_ID.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_PUBLISHER_METADATA_PROPERTY_ID.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_QUERY_FLAGS.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_QUERY_FLAGS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_QUERY_PROPERTY_ID.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_QUERY_PROPERTY_ID.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_RENDER_CONTEXT_FLAGS.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_RENDER_CONTEXT_FLAGS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_RENDER_FLAGS.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_RENDER_FLAGS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_RPC_LOGIN.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_RPC_LOGIN.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_SEEK_FLAGS.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_SEEK_FLAGS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_SUBSCRIBE_FLAGS.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_SUBSCRIBE_FLAGS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_SYSTEM_PROPERTY_ID.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_SYSTEM_PROPERTY_ID.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_VARIANT_TYPE.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_VARIANT_TYPE.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EVT_VARIANT.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EVT_VARIANT.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtArchiveExportedLog.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtArchiveExportedLog.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtCancel.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtCancel.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtClearLog.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtClearLog.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtClose.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtClose.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtCreateBookmark.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtCreateBookmark.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtCreateRenderContext.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtCreateRenderContext.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtExportLog.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtExportLog.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtFormatMessage.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtFormatMessage.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtGetChannelConfigProperty.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtGetChannelConfigProperty.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtGetEventInfo.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtGetEventInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtGetEventMetadataProperty.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtGetEventMetadataProperty.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtGetLogInfo.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtGetLogInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtGetObjectArrayProperty.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtGetObjectArrayProperty.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtGetObjectArraySize.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtGetObjectArraySize.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtGetPublisherMetadataProperty.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtGetPublisherMetadataProperty.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtGetQueryInfo.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtGetQueryInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtNext.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtNext.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtNextChannelPath.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtNextChannelPath.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtNextEventMetadata.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtNextEventMetadata.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtNextPublisherId.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtNextPublisherId.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtOpenChannelConfig.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtOpenChannelConfig.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtOpenChannelEnum.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtOpenChannelEnum.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtOpenEventMetadataEnum.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtOpenEventMetadataEnum.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtOpenLog.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtOpenLog.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtOpenPublisherEnum.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtOpenPublisherEnum.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtOpenPublisherMetadata.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtOpenPublisherMetadata.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtOpenSession.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtOpenSession.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtQuery.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtQuery.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtRender.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtRender.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtSaveChannelConfig.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtSaveChannelConfig.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtSeek.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtSeek.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtSetChannelConfigProperty.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtSetChannelConfigProperty.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtSubscribe.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtSubscribe.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtUpdateBookmark.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtUpdateBookmark.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.SafeEventLogHandle.cs" Link="Common\Interop\Windows\Wevtapi\Interop.SafeEventLogHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
+    <Compile Include="$(CommonPath)System\Diagnostics\NetFrameworkUtils.cs" Link="Common\System\Diagnostics\NetFrameworkUtils.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
-             Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -133,10 +164,11 @@ System.Diagnostics.EventLog</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <ProjectReference Include="Messages\System.Diagnostics.EventLog.Messages.csproj"
-                      ReferenceOutputAssembly="false"
-                      OutputItemType="TfmRuntimeSpecificPackageFile"
-                      PrivateAssets="true" />
+    <ProjectReference Include="Messages\System.Diagnostics.EventLog.Messages.csproj" ReferenceOutputAssembly="false" OutputItemType="TfmRuntimeSpecificPackageFile" PrivateAssets="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="E:\external\dotnet\runtime\src\libraries\Common\src\Interop\Windows\Wevtapi\Interop.SafeEventLogHandle.cs" />
   </ItemGroup>
 
 </Project>

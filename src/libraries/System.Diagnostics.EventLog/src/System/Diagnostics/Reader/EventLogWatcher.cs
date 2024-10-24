@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection.Metadata;
 using System.Threading;
 using Microsoft.Win32;
 
@@ -130,7 +131,7 @@ namespace System.Diagnostics.Eventing.Reader
 
                 if (_eventsBuffer[i] != IntPtr.Zero)
                 {
-                    UnsafeNativeMethods.EvtClose(_eventsBuffer[i]);
+                    Interop.Wevtapi.EvtClose(_eventsBuffer[i]);
                     _eventsBuffer[i] = IntPtr.Zero;
                 }
             }
@@ -153,23 +154,21 @@ namespace System.Diagnostics.Eventing.Reader
             int flag = 0;
             if (_bookmark != null)
             {
-                flag |= (int)UnsafeNativeMethods.EvtSubscribeFlags.EvtSubscribeStartAfterBookmark;
+                flag |= (int)Interop.Wevtapi.EVT_SUBSCRIBE_FLAGS.EvtSubscribeStartAfterBookmark;
             }
             else if (_readExistingEvents)
             {
-                flag |= (int)UnsafeNativeMethods.EvtSubscribeFlags.EvtSubscribeStartAtOldestRecord;
+                flag |= (int)Interop.Wevtapi.EVT_SUBSCRIBE_FLAGS.EvtSubscribeStartAtOldestRecord;
             }
             else
             {
-                flag |= (int)UnsafeNativeMethods.EvtSubscribeFlags.EvtSubscribeToFutureEvents;
+                flag |= (int)Interop.Wevtapi.EVT_SUBSCRIBE_FLAGS.EvtSubscribeToFutureEvents;
             }
 
             if (_eventQuery.TolerateQueryErrors)
             {
-                flag |= (int)UnsafeNativeMethods.EvtSubscribeFlags.EvtSubscribeTolerateQueryErrors;
+                flag |= (int)Interop.Wevtapi.EVT_SUBSCRIBE_FLAGS.EvtSubscribeTolerateQueryErrors;
             }
-
-            // C:\public\System.Diagnostics.Eventing\Microsoft\Win32\SafeHandles;
 
             _callbackThreadId = -1;
             _unregisterDoneHandle = new AutoResetEvent(false);
@@ -180,7 +179,7 @@ namespace System.Diagnostics.Eventing.Reader
             using (bookmarkHandle)
             {
 
-                _handle = UnsafeNativeMethods.EvtSubscribe(_eventQuery.Session.Handle,
+                _handle = Interop.Wevtapi.EvtSubscribe(_eventQuery.Session.Handle,
                     _subscriptionWaitHandle.SafeWaitHandle,
                     _eventQuery.Path,
                     _eventQuery.Query,
