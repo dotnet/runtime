@@ -132,14 +132,14 @@ namespace ILLink.CodeFix
 
 			var editor = await DocumentEditor.CreateAsync (document, cancellationToken).ConfigureAwait (false);
 			var generator = editor.Generator;
-			var attributeArguments = new[] { generator.AttributeArgument (generator.MemberAccessExpression (generator.DottedName ("System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"), stringArguments)) };
+			SyntaxNode[] attributeArguments = [generator.AttributeArgument (generator.MemberAccessExpression (generator.DottedName ("System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes"), stringArguments))];
 			var attribute = generator.Attribute (
 				generator.TypeExpression (attributeSymbol), attributeArguments)
 				.WithAdditionalAnnotations (Simplifier.Annotation, Simplifier.AddImportsAnnotation);
 
 			if (addAsReturnAttribute) {
 				// don't use AddReturnAttribute because it's the same as AddAttribute https://github.com/dotnet/roslyn/pull/63084
-				editor.ReplaceNode (targetNode, (d, g) => g.AddReturnAttributes (d, new[] { attribute }));
+				editor.ReplaceNode (targetNode, (d, g) => g.AddReturnAttributes (d, [attribute]));
 			} else if (addGenericParameterAttribute) {
 				// AddReturnAttributes currently doesn't support adding attributes to type arguments https://github.com/dotnet/roslyn/pull/63292
 				var newNode = (TypeParameterSyntax) targetNode;
