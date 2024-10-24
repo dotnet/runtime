@@ -84,6 +84,26 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector128<T> Add<T>(Vector128<T> left, Vector128<T> right) => left + right;
 
+        /// <summary>Performs saturating addition on two vectors.</summary>
+        /// <param name="left">The vector to add with <paramref name="right" />.</param>
+        /// <param name="right">The vector to add with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The saturated sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> AddSaturate<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AddSaturate<Vector128<T>, T>(left, right);
+            }
+
+            return Create(
+                Vector64.AddSaturate(left._lower, right._lower),
+                Vector64.AddSaturate(left._upper, right._upper)
+            );
+        }
+
         /// <summary>Computes the bitwise-and of a given vector and the ones complement of another vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
@@ -3396,6 +3416,26 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector128<T> Subtract<T>(Vector128<T> left, Vector128<T> right) => left - right;
 
+        /// <summary>Performs saturating subtraction on two vectors.</summary>
+        /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>
+        /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The saturated difference of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> SubtractSaturate<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SubtractSaturate<Vector128<T>, T>(left, right);
+            }
+
+            return Create(
+                Vector64.SubtractSaturate(left._lower, right._lower),
+                Vector64.SubtractSaturate(left._upper, right._upper)
+            );
+        }
+
         /// <summary>Computes the sum of all elements in a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector whose elements will be summed.</param>
@@ -3894,56 +3934,6 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowNotSupportedException();
             }
             return AdvSimd.Arm64.ZipHigh(left, right);
-        }
-
-        // TODO: Make generic versions of these public, see https://github.com/dotnet/runtime/issues/82559
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        [CompExactlyDependsOn(typeof(Sse2))]
-        internal static Vector128<byte> AddSaturate(Vector128<byte> left, Vector128<byte> right)
-        {
-            if (Sse2.IsSupported)
-            {
-                return Sse2.AddSaturate(left, right);
-            }
-            else if (!AdvSimd.Arm64.IsSupported)
-            {
-                ThrowHelper.ThrowNotSupportedException();
-            }
-            return AdvSimd.AddSaturate(left, right);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        [CompExactlyDependsOn(typeof(Sse2))]
-        internal static Vector128<byte> SubtractSaturate(Vector128<byte> left, Vector128<byte> right)
-        {
-            if (Sse2.IsSupported)
-            {
-                return Sse2.SubtractSaturate(left, right);
-            }
-            else if (!AdvSimd.Arm64.IsSupported)
-            {
-                ThrowHelper.ThrowNotSupportedException();
-            }
-            return AdvSimd.SubtractSaturate(left, right);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        [CompExactlyDependsOn(typeof(Sse2))]
-        internal static Vector128<ushort> AddSaturate(Vector128<ushort> left, Vector128<ushort> right)
-        {
-            if (Sse2.IsSupported)
-            {
-                return Sse2.AddSaturate(left, right);
-            }
-            else if (!AdvSimd.Arm64.IsSupported)
-            {
-                ThrowHelper.ThrowNotSupportedException();
-            }
-            return AdvSimd.AddSaturate(left, right);
         }
     }
 }

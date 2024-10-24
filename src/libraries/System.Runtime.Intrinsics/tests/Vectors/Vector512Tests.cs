@@ -5843,5 +5843,97 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             Vector512<float> actualResult = Vector512.Truncate(Vector512.Create(value));
             AssertEqual(Vector512.Create(expectedResult), actualResult, Vector512<float>.Zero);
         }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AddSaturateByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void AddSaturateByte(byte left, byte right, byte expected) => TestAddSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AddSaturateSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void AddSaturateSByte(sbyte left, sbyte right, sbyte expected) => TestAddSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AddSaturateInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void AddSaturateInt16(short left, short right, short expected) => TestAddSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AddSaturateUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void AddSaturateUInt16(ushort left, ushort right, ushort expected) => TestAddSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AddSaturateInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void AddSaturateInt32(int left, int right, int expected) => TestAddSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AddSaturateUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void AddSaturateUInt32(uint left, uint right, uint expected) => TestAddSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AddSaturateInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void AddSaturateInt64(long left, long right, long expected) => TestAddSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AddSaturateUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void AddSaturateUInt64(ulong left, ulong right, ulong expected) => TestAddSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AddSaturateDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void AddSaturateDouble(double left, double right, double expected) => TestAddSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AddSaturateSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void AddSaturateSingle(float left, float right, float expected) => TestAddSaturate(left, right, expected);
+
+        private void TestAddSaturate<T>(T left, T right, T expected)
+        {
+            Vector512<T> actualResult = Vector512.AddSaturate(Vector512.Create(left), Vector512.Create(right));
+            Assert.Equal(Vector512.Create(expected), actualResult);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SubtractSaturateByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void SubtractSaturateByte(byte left, byte right, byte expected) => TestSubtractSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SubtractSaturateSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void SubtractSaturateSByte(sbyte left, sbyte right, sbyte expected) => TestSubtractSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SubtractSaturateInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void SubtractSaturateInt16(short left, short right, short expected) => TestSubtractSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SubtractSaturateUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void SubtractSaturateUInt16(ushort left, ushort right, ushort expected) => TestSubtractSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SubtractSaturateInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void SubtractSaturateInt32(int left, int right, int expected) => TestSubtractSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SubtractSaturateUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void SubtractSaturateUInt32(uint left, uint right, uint expected) => TestSubtractSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SubtractSaturateInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void SubtractSaturateInt64(long left, long right, long expected) => TestSubtractSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SubtractSaturateUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void SubtractSaturateUInt64(ulong left, ulong right, ulong expected) => TestSubtractSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SubtractSaturateDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void SubtractSaturateDouble(double left, double right, double expected) => TestSubtractSaturate(left, right, expected);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SubtractSaturateSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void SubtractSaturateSingle(float left, float right, float expected) => TestSubtractSaturate(left, right, expected);
+
+        private void TestSubtractSaturate<T>(T left, T right, T expected)
+        {
+            Vector512<T> actualResult = Vector512.SubtractSaturate(Vector512.Create(left), Vector512.Create(right));
+            Assert.Equal(Vector512.Create(expected), actualResult);
+        }
     }
 }

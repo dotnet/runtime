@@ -204,6 +204,7 @@ namespace System.Numerics
     {
         public static bool IsHardwareAccelerated { get { throw null; } }
         public static System.Numerics.Vector<T> Abs<T>(System.Numerics.Vector<T> value) { throw null; }
+        public static System.Numerics.Vector<T> AddSaturate<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Add<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> AndNot<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<TTo> As<TFrom, TTo>(this System.Numerics.Vector<TFrom> vector) { throw null; }
@@ -420,6 +421,7 @@ namespace System.Numerics
         public static void StoreUnsafe<T>(this System.Numerics.Vector<T> source, ref T destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void StoreUnsafe<T>(this System.Numerics.Vector<T> source, ref T destination, nuint elementOffset) { throw null; }
+        public static System.Numerics.Vector<T> SubtractSaturate<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Subtract<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static T Sum<T>(System.Numerics.Vector<T> value) { throw null; }
         public static T ToScalar<T>(this System.Numerics.Vector<T> vector) { throw null; }
