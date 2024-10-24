@@ -72,9 +72,23 @@
             )
             .maxstack 8
 
-            IL_0000: call void Mono.Linker.Tests.Cases.Warnings.Dependencies.MultipleMethodsUseSameAsyncStateMachine::'<M>g__LocalFunction'()
-            IL_0005: ret
+            IL_0000: call void Mono.Linker.Tests.Cases.Warnings.Dependencies.MultipleMethodsUseSameAsyncStateMachine::RUC();
+            IL_0005: call void Mono.Linker.Tests.Cases.Warnings.Dependencies.MultipleMethodsUseSameAsyncStateMachine::'<M>g__LocalFunction'()
+            IL_000a: ret
         } // end of method MultipleMethodsUseSameAsyncStateMachine::M
+
+        .method private hidebysig static 
+            void RUC () cil managed 
+        {
+            .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute::.ctor(string) = (
+                01 00 03 52 55 43 00 00
+            )
+            // Method begins at RVA 0x205c
+            // Code size 1 (0x1)
+            .maxstack 8
+
+            IL_0000: ret
+        } // end of method MultipleMethodsUseSameAsyncStateMachine::RUC
 
         .method public hidebysig static 
             void '<M>g__LocalFunction' () cil managed 
