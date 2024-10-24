@@ -846,5 +846,37 @@ namespace System.Text.Json.SourceGeneration.Tests
         internal partial class ContextWithInterpolatedAnnotations : JsonSerializerContext
         {
         }
+
+        [Fact]
+        public static async Task SupportsReferences()
+        {
+            ContextWithPreserveReference context = ContextWithPreserveReference.Default;
+            var selfRef = new SelfReference();
+            selfRef.Me = selfRef;
+
+            string expectedJson = """{"$id":"1","Me":{"$ref":"1"}}""";
+
+            string json = JsonSerializer.Serialize(selfRef, context.SelfReference);
+            Assert.Equal(expectedJson, json);
+
+            var stream = new Utf8MemoryStream();
+            await JsonSerializer.SerializeAsync(stream, selfRef, typeof(SelfReference), context);
+            Assert.Equal(expectedJson, stream.AsString());
+
+            SelfReference deserialized = JsonSerializer.Deserialize(expectedJson, context.SelfReference);
+            Assert.Same(deserialized, deserialized.Me);
+        }
+
+        [JsonSourceGenerationOptions(
+            ReferenceHandler = JsonKnownReferenceHandler.Preserve)]
+        [JsonSerializable(typeof(SelfReference))]
+        internal partial class ContextWithPreserveReference : JsonSerializerContext
+        {
+        }
+
+        internal class SelfReference
+        {
+            public SelfReference Me { get; set; }
+        }
     }
 }
