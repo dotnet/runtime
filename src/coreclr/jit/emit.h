@@ -470,6 +470,8 @@ public:
 #ifdef TARGET_XARCH
         SetUseVEXEncoding(false);
         SetUseEvexEncoding(false);
+        SetUseRex2Encoding(false);
+        SetUsePromotedEVEXEncoding(false);
 #endif // TARGET_XARCH
 
         emitDataSecCur = nullptr;
@@ -792,7 +794,10 @@ protected:
         // For normal and embedded broadcast intrinsics, EVEX.L'L has the same semantic, vector length.
         // For embedded rounding, EVEX.L'L semantic changes to indicate the rounding mode.
         // Multiple bits in _idEvexbContext are used to inform emitter to specially handle the EVEX.L'L bits.
-        unsigned _idEvexbContext : 2;
+        unsigned _idCustom5 : 2;
+
+#define _idEvexbContext   _idCustom5 /* Evex.b: embedded broadcast, embedded rounding, embedded SAE */
+#define _idEvexNdContext  _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
 #endif //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
@@ -1727,6 +1732,17 @@ protected:
             assert(!idIsEvexZContextSet());
             _idEvexZContext = 1;
         }
+
+        bool idIsEvexNdContextSet() const
+        {
+            return _idEvexNdContext != 0;
+        }
+
+        void idSetEvexNdContext()
+        {
+            assert(!idIsEvexNdContextSet());
+            _idEvexNdContext = 1;
+        }
 #endif
 
 #ifdef TARGET_ARMARCH
@@ -2530,7 +2546,12 @@ private:
     CORINFO_FIELD_HANDLE emitSimdMaskConst(simdmask_t constValue);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
+
+#if defined(TARGET_XARCH)
+    regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src, regNumber targetReg = REG_NA);
+#else
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
+#endif
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
     void      emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
     void      emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);

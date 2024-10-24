@@ -2298,6 +2298,11 @@ void Compiler::compSetProcessor()
             codeGen->GetEmitter()->SetUseEvexEncoding(true);
             // TODO-XArch-AVX512 : Revisit other flags to be set once avx512 instructions are added.
         }
+        if (canUseApxEncodings())
+        {
+            codeGen->GetEmitter()->SetUseRex2Encoding(true);
+            codeGen->GetEmitter()->SetUsePromotedEVEXEncoding(true);
+        }
     }
 #endif // TARGET_XARCH
 }

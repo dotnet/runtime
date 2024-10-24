@@ -58,6 +58,7 @@ using asm_sigcontext::_xstate;
 
 #if defined(XSTATE_SUPPORTED) || (defined(HOST_AMD64) && defined(HAVE_MACH_EXCEPTIONS))
 bool Xstate_IsAvx512Supported();
+bool Xstate_IsApxSupported();
 #endif // XSTATE_SUPPORTED || (HOST_AMD64 && HAVE_MACH_EXCEPTIONS)
 
 #if defined(HOST_64BIT) && defined(HOST_ARM64) && !defined(TARGET_FREEBSD) && !defined(TARGET_OSX)
@@ -467,6 +468,14 @@ struct sve_context {
 #define XFEATURE_MASK_AVX512 (XFEATURE_MASK_OPMASK | XFEATURE_MASK_ZMM_Hi256 | XFEATURE_MASK_Hi16_ZMM)
 #endif // XFEATURE_MASK_AVX512
 
+#ifndef XSTATE_APX
+#define XSTATE_APX 19
+#endif // XSTATE_APX
+
+#ifndef XFEATURE_MASK_APX
+#define XFEATURE_MASK_APX (1 << XSTATE_APX)
+#endif  // XFEATURE_MASK_APX
+
 #if HAVE__FPX_SW_BYTES_WITH_XSTATE_BV
 #define FPREG_FpxSwBytes_xfeatures(uc) FPREG_FpxSwBytes(uc)->xstate_bv
 #else
@@ -489,7 +498,7 @@ struct Xstate_ExtendedFeature
     uint32_t size;
 };
 
-#define Xstate_ExtendedFeatures_Count (XSTATE_AVX512_ZMM + 1)
+#define Xstate_ExtendedFeatures_Count (XSTATE_APX + 1)
 extern Xstate_ExtendedFeature Xstate_ExtendedFeatures[Xstate_ExtendedFeatures_Count];
 
 inline _fpx_sw_bytes *FPREG_FpxSwBytes(const ucontext_t *uc)
@@ -625,6 +634,27 @@ inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
 {
     _ASSERTE(FPREG_HasAvx512Registers(uc));
     return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX512_ZMM);
+}
+
+inline bool FPREG_HasApxRegisters(const ucontext_t *uc)
+{
+    if (!FPREG_HasExtendedState(uc))
+    {
+        return false;
+    }
+
+    if ((FPREG_FpxSwBytes_xfeatures(uc) & XFEATURE_MASK_APX) != XFEATURE_MASK_APX)
+    {
+        return false;
+    }
+
+    return Xstate_IsApxSupported();
+}
+
+inline void *FPREG_Xstate_Egpr(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasApxRegisters(uc));
+    return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_APX);
 }
 #endif // XSTATE_SUPPORTED && HOST_AMD64
 

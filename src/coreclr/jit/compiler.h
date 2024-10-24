@@ -9887,6 +9887,23 @@ public:
         return (compOpportunisticallyDependsOn(InstructionSet_EVEX));
     }
 
+    //------------------------------------------------------------------------
+    // canUseApxEncodings - Answer the question: are Apx encodings - rex2 and promoted EVEX supported on this target.
+    //
+    // Returns:
+    //    `true` if Apx encodings are supported, `false` if not.
+    //
+    bool canUseApxEncodings() const
+    {
+#ifdef DEBUG
+        if(JitConfig.JitBypassAPXCheck())
+        {
+            return true;
+        }
+#endif // DEBUG
+        return compOpportunisticallyDependsOn(InstructionSet_APX);
+    }
+
 private:
     //------------------------------------------------------------------------
     // DoJitStressEvexEncoding- Answer the question: Do we force EVEX encoding.
@@ -9915,6 +9932,42 @@ private:
             return true;
         }
         else if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+        {
+            return true;
+        }
+#endif // DEBUG
+
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    // DoJitStressRex2Encoding- Answer the question: Do we force REX2 encoding.
+    //
+    // Returns:
+    //    `true` if user requests REX2 encoding.
+    //
+    bool DoJitStressRex2Encoding() const
+    {
+#ifdef DEBUG
+        if (JitConfig.JitStressRex2Encoding())
+        {
+            return true;
+        }
+#endif // DEBUG
+
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    // DoJitStressPromotedEvexEncoding- Answer the question: Do we force promoted EVEX encoding.
+    //
+    // Returns:
+    //    `true` if user requests promoted EVEX encoding.
+    //
+    bool DoJitStressPromotedEvexEncoding() const
+    {
+#ifdef DEBUG
+        if (JitConfig.JitStressPromotedEVEXEncoding())
         {
             return true;
         }
@@ -11646,6 +11699,8 @@ public:
         return this->cntCalleeTrashMask;
     }
 #endif // TARGET_XARCH
+
+
 
 }; // end of class Compiler
 
