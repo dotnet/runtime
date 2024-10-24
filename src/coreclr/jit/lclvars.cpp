@@ -1021,6 +1021,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                         secondAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct2, 1);
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2, info.compCallConv));
+
+                        varDsc->lvIsMultiRegArg = true;
                     }
                     else if (cSlotsToEnregister > 1)
                     {
@@ -1042,6 +1044,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     {
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL, info.compCallConv));
+
+                        varDsc->lvIsMultiRegArg = true;
                     }
 
                     assert(cSlots <= 2);

@@ -50,6 +50,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     bundle.cpp
     castcache.cpp
     callcounting.cpp
+    cdacplatformmetadata.cpp
     ceeload.cpp
     class.cpp
     classhash.cpp
