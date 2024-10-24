@@ -79,6 +79,23 @@ public interface ISingleReliabilityTest
     bool Run();			// returns true on success, false on failure.
 }
 
+public class MissingTestException : Exception
+{
+    public MissingTestException()
+    {
+    }
+
+    public MissingTestException(string message)
+        : base(message)
+    {
+    }
+
+    public MissingTestException(string message, Exception inner)
+        : base(message, inner)
+    {
+    }
+}
+
 public class ReliabilityFramework
 {
     // instance members
@@ -102,6 +119,7 @@ public class ReliabilityFramework
     private static Random s_randNum = new Random(s_seed);
     private static string timeValue = null;
     private static bool s_fNoExit = false;
+    internal static bool _debugBreakOnTestHang = false;
     // constants
     private const string waitingText = "Waiting for all tests to finish loading, Remaining Tests: ";
 
@@ -226,6 +244,19 @@ public class ReliabilityFramework
             catch (OutOfMemoryException e)
             {
                 rf.HandleOom(e, "Running tests");
+                throw e;
+            }
+            catch (TimeoutException e)
+            {
+                throw e;
+            }
+            catch (PathTooLongException e)
+            {
+                throw e;
+            }
+            catch (MissingTestException e)
+            {
+                throw e;
             }
             catch (Exception e)
             {
@@ -271,25 +302,20 @@ public class ReliabilityFramework
 
     public void HandleOom(Exception e, string message)
     {
-        try
+        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Exception while running tests: {0}", e));
+        if (_curTestSet.DebugBreakOnOutOfMemory)
         {
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Exception while running tests: {0}", e));
-            if (_curTestSet.DebugBreakOnOutOfMemory)
-            {
-                OomExceptionCausedDebugBreak();
-            }
+            string msg = "Interrupt because of out of memory";
+            Console.WriteLine(msg);
+            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, msg);
+            Debugger.Break();
         }
-        catch (OutOfMemoryException)
+        else
         {
-            // hang and let someone debug if we can't even break in...
-            Thread.CurrentThread.Join();
+            string msg = "Throw exception because of out of memory";
+            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, msg);
+            throw e;
         }
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private void OomExceptionCausedDebugBreak()
-    {
-        MyDebugBreak("Harness");
     }
 
     /// <summary>
@@ -345,6 +371,7 @@ public class ReliabilityFramework
             _testsRunningCount = 0;
             _testsRanCount = 0;
             _curTestSet = testSet;
+            _debugBreakOnTestHang = _curTestSet.DebugBreakOnTestHang;
             if (timeValue != null)
                 _curTestSet.MaximumTime = ReliabilityConfig.ConvertTimeValueToTestRunTime(timeValue);
 
@@ -506,15 +533,6 @@ public class ReliabilityFramework
         return (99);
     }
 
-    [DllImport("kernel32.dll")]
-    private extern static void DebugBreak();
-
-    [DllImport("kernel32.dll")]
-    private extern static bool IsDebuggerPresent();
-
-    [DllImport("kernel32.dll")]
-    private extern static void OutputDebugString(string debugStr);
-
     /// <summary>
     /// Checks to see if we should block all execution due to a fatal error
     /// (when DebugBreak is not available on win9x or running outside the debugger).
@@ -529,27 +547,6 @@ public class ReliabilityFramework
             }
             finally
             {
-                Thread.CurrentThread.Join();
-            }
-        }
-    }
-    internal static void MyDebugBreak(string extraData)
-    {
-        if (IsDebuggerPresent())
-        {
-            Console.WriteLine(string.Format("DebugBreak: {0}", extraData));
-            DebugBreak();
-        }
-        {
-            // We need to stop the process now,
-            // but all the threads are still running
-            try
-            {
-                Console.WriteLine("MyDebugBreak called, stopping process... {0}", extraData);
-            }
-            finally
-            {
-                s_fNoExit = true;
                 Thread.CurrentThread.Join();
             }
         }
@@ -778,9 +775,21 @@ public class ReliabilityFramework
                 else
                 {
                     Thread.Sleep(250);	// give the CPU a bit of a rest if we don't need to start a new test.
-                    if (_curTestSet.DebugBreakOnMissingTest && DateTime.Now.Subtract(_startTime) > minTimeToStartTest)
+                    if (DateTime.Now.Subtract(_startTime) > minTimeToStartTest)
                     {
-                        NewTestsNotStartingDebugBreak();
+                        if (_curTestSet.DebugBreakOnMissingTest)
+                        {
+                            string msg = "Interrupt because new tests not starting";
+                            Console.WriteLine(msg);
+                            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, msg);
+                            Debugger.Break();
+                        }
+                        else
+                        {
+                            string msg = "throw exception because new tests not starting";
+                            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, msg);
+                            throw new MissingTestException("New tests not starting");
+                        }
                     }
                 }
             }
@@ -797,12 +806,6 @@ public class ReliabilityFramework
          */
 
         TestSetShutdown(totalTestsToRun);
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private void NewTestsNotStartingDebugBreak()
-    {
-        MyDebugBreak("Tests haven't been started in a long time!");
     }
 
     /// <summary>
@@ -882,18 +885,18 @@ public class ReliabilityFramework
 
             if (_curTestSet.DebugBreakOnTestHang)
             {
-                TestIsHungDebugBreak();
+                string msg = "Interrupt because of timeout";
+                Console.WriteLine(msg);
+                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+                Debugger.Break();
+            }
+            else
+            {
+                string msg = "Throw exception because of timeout";
+                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+                throw new TimeoutException("Time limit reached.");
             }
         }
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private void TestIsHungDebugBreak()
-    {
-        string msg = String.Format("break");
-        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
-
-        MyDebugBreak("TestHang");
     }
 
     /// <summary>
@@ -1046,11 +1049,20 @@ public class ReliabilityFramework
                                 }
                                 _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Test {0} has exited with result {1}", daTest.RefOrID, exitCode));
                             }
-                            catch (PathTooLongException)
+                            catch (PathTooLongException e)
                             {
                                 if (_curTestSet.DebugBreakOnPathTooLong)
                                 {
-                                    MyDebugBreak("Path too long");
+                                    string msg = "Interrupt because path is too long";
+                                    Console.WriteLine(msg);
+                                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, msg);
+                                    Debugger.Break();
+                                }
+                                else
+                                {
+                                    string msg = "Throw exception because path is too long";
+                                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, msg);
+                                    throw e;
                                 }
                             }
                             catch (OutOfMemoryException e)
@@ -1196,12 +1208,6 @@ public class ReliabilityFramework
         }
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private void UnexpectedThreadAbortDebugBreak()
-    {
-        MyDebugBreak("Unexpected Thread Abort");
-    }
-
     /// <summary>
     /// Called after a test has finished executing.
     /// </summary>
@@ -1313,10 +1319,6 @@ public class ReliabilityFramework
             _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, msg);
             test.ConcurrentCopies = 0;
             test.TestLoadFailed = true;
-            if (_curTestSet.DebugBreakOnBadTest)
-            {
-                BadTestDebugBreak(msg);
-            }
 
             // crash on exceptions when running as a unit test.
             if (IsRunningAsUnitTest)
@@ -1325,11 +1327,6 @@ public class ReliabilityFramework
         Interlocked.Decrement(ref LoadingCount);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private void BadTestDebugBreak(string msg)
-    {
-        MyDebugBreak(msg);
-    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     WeakReference UnloadAssemblyLoadContextInner(ReliabilityTest test)
