@@ -224,11 +224,15 @@ class LocalEqualsLocalAddrAssertions
     ArrayStack<LocalEqualsLocalAddrAssertion> m_assertions;
     AssertionToIndexMap                       m_map;
     uint64_t*                                 m_lclAssertions;
-    uint64_t*                                 m_outgoingAssertions;
-    BitVec                                    m_localsToExpose;
+    // Assertions true going out of each block
+    uint64_t* m_outgoingAssertions;
+    // Assertions true at all points within each block
+    uint64_t* m_alwaysTrueAssertions;
+    BitVec    m_localsToExpose;
 
 public:
     uint64_t CurrentAssertions = 0;
+    uint64_t AlwaysAssertions  = 0;
 
     LocalEqualsLocalAddrAssertions(Compiler* comp)
         : m_comp(comp)
@@ -237,7 +241,8 @@ public:
     {
         m_lclAssertions =
             comp->lvaCount == 0 ? nullptr : new (comp, CMK_LocalAddressVisitor) uint64_t[comp->lvaCount]{};
-        m_outgoingAssertions = new (comp, CMK_LocalAddressVisitor) uint64_t[comp->m_dfsTree->GetPostOrderCount()]{};
+        m_outgoingAssertions   = new (comp, CMK_LocalAddressVisitor) uint64_t[comp->m_dfsTree->GetPostOrderCount()]{};
+        m_alwaysTrueAssertions = new (comp, CMK_LocalAddressVisitor) uint64_t[comp->m_dfsTree->GetPostOrderCount()]{};
 
         BitVecTraits localsTraits(comp->lvaCount, comp);
         m_localsToExpose = BitVecOps::MakeEmpty(&localsTraits);
@@ -284,24 +289,45 @@ public:
     //
     void StartBlock(BasicBlock* block)
     {
-        if ((m_assertions.Height() == 0) || (block->bbPreds == nullptr) || m_comp->bbIsHandlerBeg(block))
+        FlowEdge* preds;
+        if ((m_assertions.Height() == 0) || ((preds = m_comp->BlockPredsWithEH(block)) == nullptr))
         {
             CurrentAssertions = 0;
+            AlwaysAssertions  = 0;
             return;
         }
 
         CurrentAssertions = UINT64_MAX;
-        for (BasicBlock* pred : block->PredBlocks())
+
+        uint64_t* assertionMap = m_comp->bbIsHandlerBeg(block) ? m_alwaysTrueAssertions : m_outgoingAssertions;
+
+        INDEBUG(bool anyReachablePred = false);
+
+        for (FlowEdge* predEdge = preds; predEdge != nullptr; predEdge = predEdge->getNextPredEdge())
         {
-            assert(m_comp->m_dfsTree->Contains(pred));
+            BasicBlock* pred = predEdge->getSourceBlock();
+            if (!m_comp->m_dfsTree->Contains(pred))
+            {
+                // Edges induced due to implicit EH flow can come from
+                // unreachable blocks; skip those.
+                continue;
+            }
+
+            INDEBUG(anyReachablePred = true);
+
             if (pred->bbPostorderNum <= block->bbPostorderNum)
             {
                 CurrentAssertions = 0;
                 break;
             }
 
-            CurrentAssertions &= m_outgoingAssertions[pred->bbPostorderNum];
+            CurrentAssertions &= assertionMap[pred->bbPostorderNum];
         }
+
+        // There should always be at least one reachable pred for all blocks.
+        assert(anyReachablePred);
+
+        AlwaysAssertions = CurrentAssertions;
 
 #ifdef DEBUG
         if (CurrentAssertions != 0)
@@ -329,7 +355,8 @@ public:
     //
     void EndBlock(BasicBlock* block)
     {
-        m_outgoingAssertions[block->bbPostorderNum] = CurrentAssertions;
+        m_outgoingAssertions[block->bbPostorderNum]   = CurrentAssertions;
+        m_alwaysTrueAssertions[block->bbPostorderNum] = AlwaysAssertions;
     }
 
     //-------------------------------------------------------------------
@@ -403,6 +430,7 @@ public:
     void Clear(unsigned dstLclNum)
     {
         CurrentAssertions &= ~m_lclAssertions[dstLclNum];
+        AlwaysAssertions &= CurrentAssertions;
     }
 
     //-----------------------------------------------------------------------------------
@@ -1148,6 +1176,9 @@ private:
 
         if (m_lclAddrAssertions != nullptr)
         {
+            // Save and restore CurrentAssertions for each branch.
+            // AlwaysAssertions only shrinks, so it does not require special
+            // handling around QMARKs.
             uint64_t origAssertions = m_lclAddrAssertions->CurrentAssertions;
 
             if (WalkTree(&qmark->gtOp2->AsOp()->gtOp1, qmark->gtOp2) == Compiler::WALK_ABORT)
@@ -2128,6 +2159,9 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
     }
     else
     {
+        // We'll be using BlockPredsWithEH, so clear its cache.
+        m_blockToEHPreds = nullptr;
+
         LocalEqualsLocalAddrAssertions  assertions(this);
         LocalEqualsLocalAddrAssertions* pAssertions = &assertions;
 
