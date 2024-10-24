@@ -18,7 +18,7 @@ using System.Threading;
 namespace Wasm.Build.NativeRebuild.Tests
 {
     // TODO: test for runtime components
-    public class NativeRebuildTestsBase : TestMainJsTestBase
+    public class NativeRebuildTestsBase : WasmTemplateTestsBase
     {
         public NativeRebuildTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -42,75 +42,66 @@ namespace Wasm.Build.NativeRebuild.Tests
             IEnumerable<object?[]> GetData(bool aot, bool nativeRelinking, bool invariant)
                 => ConfigWithAOTData(aot)
                         .Multiply(new object[] { nativeRelinking, invariant })
-                        .WithRunHosts(RunHost.Chrome)
+                        // AOT in Debug is switched off
+                        .Where(item => !(item.ElementAt(0) is string config && config == "Debug" && item.ElementAt(1) is bool aotValue && aotValue))
                         .UnwrapItemsAsArrays().ToList();
         }
 
-        internal (BuildArgs BuildArgs, BuildPaths paths) FirstNativeBuild(string programText, bool nativeRelink, bool invariant, BuildArgs buildArgs, string id, string extraProperties="")
+        internal async Task<BuildPaths> FirstNativeBuildAndRun(ProjectInfo info, bool nativeRelink, bool invariant, string extraBuildArgs="")
         {
-            buildArgs = GenerateProjectContents(buildArgs, nativeRelink, invariant, extraProperties);
-            BuildProject(buildArgs,
-                            id: id,
-                            new BuildProjectOptions(
-                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                                DotnetWasmFromRuntimePack: false,
-                                GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded,
-                                CreateProject: true));
-
-            RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: RunHost.Chrome, id: id);
-            return (buildArgs, GetBuildPaths(buildArgs));
+            bool isNativeBuild = nativeRelink || invariant;
+            var extraArgs = new string[] {
+                "-p:_WasmDevel=true",
+                $"-p:WasmBuildNative={nativeRelink}",
+                $"-p:InvariantGlobalization={invariant}",                
+                extraBuildArgs
+            };
+            bool isPublish = true;
+            BuildTemplateProject(info,
+                        new BuildProjectOptions(
+                            info.Configuration,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: nativeRelink),
+                            IsPublish: isPublish,
+                            GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded
+                        ),
+                        extraArgs);
+            await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42));
+            return GetBuildPaths(info, isPublish);
         }
 
-        protected string Rebuild(bool nativeRelink, bool invariant, BuildArgs buildArgs, string id, string extraProperties="", string extraBuildArgs="", string? verbosity=null)
+        protected string Rebuild(ProjectInfo info, bool nativeRelink, bool invariant, string extraBuildArgs="", string verbosity="normal")
         {
-            if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
+            if (!_buildContext.TryGetBuildFor(info, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
 
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
+            
+            var extraArgs = new string[] {
+                "-p:_WasmDevel=true",
+                $"-p:WasmBuildNative={nativeRelink}",
+                $"-p:InvariantGlobalization={invariant}",
+                $"-v:{verbosity}",
+                extraBuildArgs
+            };
 
-            buildArgs = buildArgs with { ExtraBuildArgs = $"{buildArgs.ExtraBuildArgs} {extraBuildArgs}" };
-            var newBuildArgs = GenerateProjectContents(buildArgs, nativeRelink, invariant, extraProperties);
-
-            // key(buildArgs) being changed
-            _buildContext.RemoveFromCache(product.ProjectDir);
-            _buildContext.CacheBuild(newBuildArgs, product);
-
-            if (buildArgs.ProjectFileContents != newBuildArgs.ProjectFileContents)
-                File.WriteAllText(Path.Combine(_projectDir!, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
-            buildArgs = newBuildArgs;
-
-            // artificial delay to have new enough timestamps
-            Thread.Sleep(5000);
-
-            _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
-            (_, string output) = BuildProject(buildArgs,
-                                            id: id,
-                                            new BuildProjectOptions(
-                                                DotnetWasmFromRuntimePack: false,
-                                                GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded,
-                                                CreateProject: false,
-                                                UseCache: false,
-                                                Verbosity: verbosity));
+            bool isNativeBuild = nativeRelink || invariant;
+            bool isPublish = true;
+            (string _, string output) = BuildTemplateProject(info,
+                        new BuildProjectOptions(
+                            info.Configuration,
+                            info.ProjectName,
+                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                            ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild),
+                            IsPublish: isPublish,
+                            GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded,
+                            UseCache: false
+                        ),
+                        extraArgs);
 
             return output;
         }
-
-        protected BuildArgs GenerateProjectContents(BuildArgs buildArgs, bool nativeRelink, bool invariant, string extraProperties)
-        {
-            StringBuilder propertiesBuilder = new();
-            propertiesBuilder.Append("<_WasmDevel>true</_WasmDevel>");
-            if (nativeRelink)
-                propertiesBuilder.Append($"<WasmBuildNative>true</WasmBuildNative>");
-            if (invariant)
-                propertiesBuilder.Append($"<InvariantGlobalization>true</InvariantGlobalization>");
-            propertiesBuilder.Append(extraProperties);
-
-            return ExpandBuildArgs(buildArgs, propertiesBuilder.ToString());
-        }
-
-        // appending UTF-8 char makes sure project build&publish under all types of paths is supported
-        protected string GetTestProjectPath(string prefix, string config, bool appendUnicode=true) =>
-            appendUnicode ? $"{prefix}_{config}_{s_unicodeChars}" : $"{prefix}_{config}";
 
     }
 }

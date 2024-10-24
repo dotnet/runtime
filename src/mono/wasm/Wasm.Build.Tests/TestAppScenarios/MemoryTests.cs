@@ -13,7 +13,7 @@ using Xunit;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class MemoryTests : AppTestBase
+public class MemoryTests : WasmTemplateTestsBase
 {
     public MemoryTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -29,13 +29,25 @@ public class MemoryTests : AppTestBase
     public async Task AllocateLargeHeapThenRepeatedlyInterop()
     {
         string config = "Release";
-        CopyTestAsset("WasmBasicTestApp", "MemoryTests", "App");
+        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "MemoryTests", "App");
+        bool isPublish = false;
         string extraArgs = BuildTestBase.IsUsingWorkloads ? "-p:EmccMaximumHeapSize=4294901760" : "-p:EmccMaximumHeapSize=4294901760";
-        BuildProject(config, assertAppBundle: false, extraArgs: extraArgs, expectSuccess: BuildTestBase.IsUsingWorkloads);
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                // using EmccMaximumHeapSize forces native rebuild
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
+                IsPublish: isPublish,
+                ExpectSuccess: BuildTestBase.IsUsingWorkloads
+            ),
+            extraArgs: extraArgs
+        );
 
         if (BuildTestBase.IsUsingWorkloads)
         {
-            await RunSdkStyleAppForBuild(new (Configuration: config, TestScenario: "AllocateLargeHeapThenInterop"));
+            await RunForBuildWithDotnetRun(new (Configuration: config, TestScenario: "AllocateLargeHeapThenInterop"));
         }
     }
 
@@ -43,12 +55,23 @@ public class MemoryTests : AppTestBase
     public async Task RunSimpleAppWithProfiler()
     {
         string config = "Release";
-        CopyTestAsset("WasmBasicTestApp", "ProfilerTest", "App");
+        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "ProfilerTest", "App");
+        bool isPublish = false;
         // are are linking all 3 profilers, but below we only initialize log profiler and test it
         string extraArgs = $"-p:WasmProfilers=\"aot+browser+log\" -p:WasmBuildNative=true";
-        BuildProject(config, assertAppBundle: false, extraArgs: extraArgs);
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish,
+                AssertAppBundle: false
+            ),
+            extraArgs: extraArgs
+        );
 
-        var result = await RunSdkStyleAppForBuild(new (Configuration: config, TestScenario: "ProfilerTest"));
+        var result = await RunForBuildWithDotnetRun(new (Configuration: config, TestScenario: "ProfilerTest"));
         Regex regex = new Regex(@"Profile data of size (\d+) bytes");
         var match = result.TestOutput
             .Select(line => regex.Match(line))

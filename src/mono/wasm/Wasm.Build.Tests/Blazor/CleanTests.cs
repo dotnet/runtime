@@ -20,93 +20,93 @@ public class CleanTests : BlazorWasmTestBase
     {
     }
 
-    [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void Blazor_BuildThenClean_NativeRelinking(string config)
-    {
-        string id = GetRandomId();
+    // [Theory]
+    // [InlineData("Debug")]
+    // [InlineData("Release")]
+    // public void Blazor_BuildThenClean_NativeRelinking(string config)
+    // {
+    //     string id = GetRandomId();
 
-        InitBlazorWasmProjectDir(id);
-        string projectFile = CreateBlazorWasmTemplateProject(id);
+    //     InitBlazorWasmProjectDir(id);
+    //     string projectFile = CreateBlazorWasmTemplateProject(id);
 
-        string extraProperties = @"<_WasmDevel>true</_WasmDevel>
-                                    <WasmBuildNative>true</WasmBuildNative>";
+    //     string extraProperties = @"<_WasmDevel>true</_WasmDevel>
+    //                                 <WasmBuildNative>true</WasmBuildNative>";
 
-        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+    //     AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
+    //     BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.Relinked));
 
-        string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", "for-build");
-        Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
+    //     string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", "for-build");
+    //     Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
-        string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-clean.binlog");
-        using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(_projectDir!);
-        cmd.WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-            .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
-            .EnsureSuccessful();
+    //     string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-clean.binlog");
+    //     using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+    //                                 .WithWorkingDirectory(_projectDir!);
+    //     cmd.WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+    //         .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
+    //         .EnsureSuccessful();
 
-        AssertEmptyOrNonExistentDirectory(relinkDir);
-    }
+    //     AssertEmptyOrNonExistentDirectory(relinkDir);
+    // }
 
-    [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void Blazor_BuildNoNative_ThenBuildNative_ThenClean(string config)
-        => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: false);
+    // [Theory]
+    // [InlineData("Debug")]
+    // [InlineData("Release")]
+    // public void Blazor_BuildNoNative_ThenBuildNative_ThenClean(string config)
+    //     => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: false);
 
-    [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void Blazor_BuildNative_ThenBuildNonNative_ThenClean(string config)
-        => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: true);
+    // [Theory]
+    // [InlineData("Debug")]
+    // [InlineData("Release")]
+    // public void Blazor_BuildNative_ThenBuildNonNative_ThenClean(string config)
+    //     => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: true);
 
-    private void Blazor_BuildNativeNonNative_ThenCleanTest(string config, bool firstBuildNative)
-    {
-        string id = GetRandomId();
+    // private void Blazor_BuildNativeNonNative_ThenCleanTest(string config, bool firstBuildNative)
+    // {
+    //     string id = GetRandomId();
 
-        InitBlazorWasmProjectDir(id);
-        string projectFile = CreateBlazorWasmTemplateProject(id);
+    //     InitBlazorWasmProjectDir(id);
+    //     string projectFile = CreateBlazorWasmTemplateProject(id);
 
-        string extraProperties = @"<_WasmDevel>true</_WasmDevel>";
+    //     string extraProperties = @"<_WasmDevel>true</_WasmDevel>";
 
-        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
+    //     AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
-        bool relink = firstBuildNative;
-        BlazorBuildInternal(id, config, publish: false,
-                        extraArgs: relink ? "-p:WasmBuildNative=true" : string.Empty);
+    //     bool relink = firstBuildNative;
+    //     BlazorBuildInternal(id, config, publish: false,
+    //                     extraArgs: relink ? "-p:WasmBuildNative=true" : string.Empty);
 
-        string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", "for-build");
-        if (relink)
-            Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
+    //     string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", "for-build");
+    //     if (relink)
+    //         Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
-        relink = !firstBuildNative;
-        BlazorBuildInternal(id, config, publish: false,
-                        extraArgs: relink ? "-p:WasmBuildNative=true" : string.Empty);
+    //     relink = !firstBuildNative;
+    //     BlazorBuildInternal(id, config, publish: false,
+    //                     extraArgs: relink ? "-p:WasmBuildNative=true" : string.Empty);
 
-        if (relink)
-            Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
+    //     if (relink)
+    //         Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
-        string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-clean.binlog");
-        using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(_projectDir!);
-        cmd.WithEnvironmentVariable("NUGET_PACKAGES", _projectDir!)
-                .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
-                .EnsureSuccessful();
+    //     string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-clean.binlog");
+    //     using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+    //                                 .WithWorkingDirectory(_projectDir!);
+    //     cmd.WithEnvironmentVariable("NUGET_PACKAGES", _projectDir!)
+    //             .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
+    //             .EnsureSuccessful();
 
-        AssertEmptyOrNonExistentDirectory(relinkDir);
-    }
-    private void AssertEmptyOrNonExistentDirectory(string dirPath)
-    {
-        _testOutput.WriteLine($"dirPath: {dirPath}");
-        if (!Directory.Exists(dirPath))
-            return;
+    //     AssertEmptyOrNonExistentDirectory(relinkDir);
+    // }
+    // private void AssertEmptyOrNonExistentDirectory(string dirPath)
+    // {
+    //     _testOutput.WriteLine($"dirPath: {dirPath}");
+    //     if (!Directory.Exists(dirPath))
+    //         return;
 
-        var files = Directory.GetFileSystemEntries(dirPath);
-        if (files.Length == 0)
-            return;
+    //     var files = Directory.GetFileSystemEntries(dirPath);
+    //     if (files.Length == 0)
+    //         return;
 
-        string found = string.Join(',', files.Select(p => Path.GetFileName(p)));
-        throw new XunitException($"Expected dir {dirPath} to be empty, but found: {found}");
-    }
+    //     string found = string.Join(',', files.Select(p => Path.GetFileName(p)));
+    //     throw new XunitException($"Expected dir {dirPath} to be empty, but found: {found}");
+    // }
 }

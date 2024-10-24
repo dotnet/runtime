@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class LazyLoadingTests : AppTestBase
+public class LazyLoadingTests : WasmTemplateTestsBase
 {
     public LazyLoadingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -30,16 +30,27 @@ public class LazyLoadingTests : AppTestBase
     [MemberData(nameof(LoadLazyAssemblyBeforeItIsNeededData))]
     public async Task LoadLazyAssemblyBeforeItIsNeeded(string lazyLoadingTestExtension, string[] allLazyLoadingTestExtensions)
     {
-        CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests", "App");
-        BuildProject("Debug", extraArgs: $"-p:LazyLoadingTestExtension={lazyLoadingTestExtension}");
+        string config = "Debug";
+        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "LazyLoadingTests", "App");
+        bool isPublish = false;
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish
+            ),
+            extraArgs: $"-p:LazyLoadingTestExtension={lazyLoadingTestExtension}"
+        );
 
         // We are running the app and passing all possible lazy extensions to test matrix of all possibilities.
         // We don't need to rebuild the application to test how client is trying to load the assembly.
         foreach (var clientLazyLoadingTestExtension in allLazyLoadingTestExtensions)
         {
-            var result = await RunSdkStyleAppForBuild(new(
-                Configuration: "Debug", 
-                TestScenario: "LazyLoadingTest", 
+            RunResult result = await RunForBuildWithDotnetRun(new(
+                info.Configuration,
+                TestScenario: "LazyLoadingTest",
                 BrowserQueryString: new Dictionary<string, string> { ["lazyLoadingTestExtension"] = clientLazyLoadingTestExtension }
             ));
 
@@ -51,15 +62,23 @@ public class LazyLoadingTests : AppTestBase
     [Fact]
     public async Task FailOnMissingLazyAssembly()
     {
-        CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests", "App");
-        PublishProject("Debug");
-
-        var result = await RunSdkStyleAppForPublish(new(
-            Configuration: "Debug",
+        string config = "Debug";
+        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "LazyLoadingTests", "App");
+        bool isPublish = true;
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish
+        ));
+        RunOptions options = new(
+            info.Configuration,
             TestScenario: "LazyLoadingTest",
             BrowserQueryString: new Dictionary<string, string> { ["loadRequiredAssembly"] = "false" },
-            ExpectedExitCode: 1
-        ));
+            ExpectedExitCode: 1);
+        RunResult result = await RunForPublishWithWebServer(options);
         Assert.True(result.ConsoleOutput.Any(m => m.Contains("Could not load file or assembly") && m.Contains("Json")), "The lazy loading test didn't emit expected error message");
     }
 }

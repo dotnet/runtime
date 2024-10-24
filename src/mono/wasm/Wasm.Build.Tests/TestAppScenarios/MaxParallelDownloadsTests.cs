@@ -13,7 +13,7 @@ using Xunit;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class MaxParallelDownloadsTests : AppTestBase
+public class MaxParallelDownloadsTests : WasmTemplateTestsBase
 {
     public MaxParallelDownloadsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -25,14 +25,22 @@ public class MaxParallelDownloadsTests : AppTestBase
     [InlineData("Release", "4")]
     public async Task NeverFetchMoreThanMaxAllowed(string config, string maxParallelDownloads)
     {
-        CopyTestAsset("WasmBasicTestApp", "MaxParallelDownloadsTests", "App");
-        BuildProject(config);
-
-        var result = await RunSdkStyleAppForBuild(new(
-            Configuration: config,
-            TestScenario: "MaxParallelDownloads",
-            BrowserQueryString:  new Dictionary<string, string> { ["maxParallelDownloads"] = maxParallelDownloads }
+         ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "MaxParallelDownloadsTests", "App");
+        bool isPublish = false;
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish
         ));
+        RunResult result = await RunForBuildWithDotnetRun(new(
+            info.Configuration,
+            TestScenario: "MaxParallelDownloads",
+            BrowserQueryString: new Dictionary<string, string> { ["maxParallelDownloads"] = maxParallelDownloads }
+        ));
+
         var resultTestOutput = result.TestOutput.ToList();
         var regex = new Regex(@"Active downloads: (\d+)");
         foreach (var line in resultTestOutput)

@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class DownloadThenInitTests : AppTestBase
+public class DownloadThenInitTests : WasmTemplateTestsBase
 {
     public DownloadThenInitTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -24,12 +24,20 @@ public class DownloadThenInitTests : AppTestBase
     [InlineData("Release")]
     public async Task NoResourcesReFetchedAfterDownloadFinished(string config)
     {
-        CopyTestAsset("WasmBasicTestApp", "DownloadThenInitTests", "App");
-        BuildProject(config);
-
-        var result = await RunSdkStyleAppForBuild(new(Configuration: config, TestScenario: "DownloadThenInit"));
+        ProjectInfo info = CopyTestAsset(config, aot: false, "WasmBasicTestApp", "DownloadThenInitTests", "App");
+        bool isPublish = false;
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish
+        ));
+        RunOptions options = new(info.Configuration, TestScenario: "DownloadThenInit");
+        RunResult result = await RunForBuildWithDotnetRun(options);
         var resultTestOutput = result.TestOutput.ToList();
-        int index = resultTestOutput.FindIndex(s => s == "download finished");
+        int index = resultTestOutput.FindIndex(s => s.Contains("download finished"));
         Assert.True(index > 0); // number of fetched resources cannot be 0
         var afterDownload = resultTestOutput.Skip(index + 1).Where(s => s.StartsWith("fetching")).ToList();
         if (afterDownload.Count > 0)

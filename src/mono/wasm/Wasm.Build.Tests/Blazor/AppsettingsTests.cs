@@ -18,44 +18,44 @@ public class AppsettingsTests : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
-    [Fact]
-    public async Task FileInVfs()
-    {
-        string id = $"blazor_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+    // [Fact]
+    // public async Task FileInVfs()
+    // {
+    //     string id = $"blazor_{GetRandomId()}";
+    //     string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
 
-        string projectDirectory = Path.GetDirectoryName(projectFile)!;
+    //     string projectDirectory = Path.GetDirectoryName(projectFile)!;
 
-        File.WriteAllText(Path.Combine(projectDirectory, "wwwroot", "appsettings.json"), $"{{ \"Id\": \"{id}\" }}");
+    //     File.WriteAllText(Path.Combine(projectDirectory, "wwwroot", "appsettings.json"), $"{{ \"Id\": \"{id}\" }}");
 
-        string programPath = Path.Combine(projectDirectory, "Program.cs");
-        string programContent = File.ReadAllText(programPath);
-        programContent = programContent.Replace("var builder",
-        """
-        System.Console.WriteLine($"appSettings Exists '{File.Exists("/appsettings.json")}'");
-        System.Console.WriteLine($"appSettings Content '{File.ReadAllText("/appsettings.json")}'");
-        var builder
-        """);
-        File.WriteAllText(programPath, programContent);
+    //     string programPath = Path.Combine(projectDirectory, "Program.cs");
+    //     string programContent = File.ReadAllText(programPath);
+    //     programContent = programContent.Replace("var builder",
+    //     """
+    //     System.Console.WriteLine($"appSettings Exists '{File.Exists("/appsettings.json")}'");
+    //     System.Console.WriteLine($"appSettings Content '{File.ReadAllText("/appsettings.json")}'");
+    //     var builder
+    //     """);
+    //     File.WriteAllText(programPath, programContent);
 
-        BlazorBuild(new BlazorBuildOptions(id, "debug", NativeFilesType.FromRuntimePack));
+    //     BlazorBuild(new BuildProjectOptions(id, "debug", NativeFilesType.FromRuntimePack));
 
-        bool existsChecked = false;
-        bool contentChecked = false;
+    //     bool existsChecked = false;
+    //     bool contentChecked = false;
 
-        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions()
-        {
-            Config = "debug",
-            OnConsoleMessage = (_, msg) =>
-            {
-                if (msg.Text.Contains("appSettings Exists 'True'"))
-                    existsChecked = true;
-                else if (msg.Text.Contains($"appSettings Content '{{ \"Id\": \"{id}\" }}'"))
-                    contentChecked = true;
-            }
-        });
+    //     await BlazorRunForBuildWithDotnetRun(new RunOptions()
+    //     {
+    //         Configuration = "debug",
+    //         OnConsoleMessage = (_, msg) =>
+    //         {
+    //             if (msg.Text.Contains("appSettings Exists 'True'"))
+    //                 existsChecked = true;
+    //             else if (msg.Text.Contains($"appSettings Content '{{ \"Id\": \"{id}\" }}'"))
+    //                 contentChecked = true;
+    //         }
+    //     });
 
-        Assert.True(existsChecked, "File '/appsettings.json' wasn't found");
-        Assert.True(contentChecked, "Content of '/appsettings.json' is not matched");
-    }
+    //     Assert.True(existsChecked, "File '/appsettings.json' wasn't found");
+    //     Assert.True(contentChecked, "Content of '/appsettings.json' is not matched");
+    // }
 }

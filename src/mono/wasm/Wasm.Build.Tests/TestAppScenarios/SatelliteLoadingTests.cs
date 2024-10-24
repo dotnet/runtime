@@ -17,7 +17,7 @@ using System.Xml.Linq;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class SatelliteLoadingTests : AppTestBase
+public class SatelliteLoadingTests : WasmTemplateTestsBase
 {
     public SatelliteLoadingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -29,11 +29,20 @@ public class SatelliteLoadingTests : AppTestBase
     [InlineData(true)]
     public async Task LoadSatelliteAssembly(bool loadAllSatelliteResources)
     {
-        CopyTestAsset("WasmBasicTestApp", "SatelliteLoadingTests", "App");
-        BuildProject("Debug");
+        string config = "Debug";
+        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "SatelliteLoadingTests", "App");
+        bool isPublish = false;
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish
+        ));
 
-        var result = await RunSdkStyleAppForBuild(new(
-            Configuration: "Debug", 
+        var result = await RunForBuildWithDotnetRun(new(
+            Configuration: info.Configuration, 
             TestScenario: "SatelliteAssembliesTest",
             BrowserQueryString: new Dictionary<string, string> { ["loadAllSatelliteResources"] = loadAllSatelliteResources.ToString().ToLowerInvariant() }
         ));
@@ -59,7 +68,9 @@ public class SatelliteLoadingTests : AppTestBase
     [Fact]
     public async Task LoadSatelliteAssemblyFromReference()
     {
-        CopyTestAsset("WasmBasicTestApp", "SatelliteLoadingTestsFromReference", "App");
+        string config = "Release";
+        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "SatelliteLoadingTestsFromReference", "App");
+        bool isPublish = true;
 
         // Replace ProjectReference with Reference
         var appCsprojPath = Path.Combine(_projectDir!, "WasmBasicTestApp.csproj");
@@ -84,9 +95,16 @@ public class SatelliteLoadingTests : AppTestBase
             .EnsureSuccessful();
 
         // Publish the app and assert
-        PublishProject("Release");
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish
+        ));
 
-        var result = await RunSdkStyleAppForPublish(new(Configuration: "Release", TestScenario: "SatelliteAssembliesTest"));
+        var result = await RunForPublishWithWebServer(new(Configuration: "Release", TestScenario: "SatelliteAssembliesTest"));
         Assert.Collection(
             result.TestOutput,
             m => Assert.Equal("default: hello", m),

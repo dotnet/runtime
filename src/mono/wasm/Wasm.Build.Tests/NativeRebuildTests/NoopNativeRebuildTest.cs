@@ -19,19 +19,23 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [Theory]
         [MemberData(nameof(NativeBuildData))]
-        public void NoOpRebuildForNativeBuilds(BuildArgs buildArgs, bool nativeRelink, bool invariant, RunHost host, string id)
+        public async void NoOpRebuildForNativeBuilds(string config, bool aot, bool nativeRelink, bool invariant)
         {
-            buildArgs = buildArgs with { ProjectName = $"rebuild_noop_{buildArgs.Config}" };
-            (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink: nativeRelink, invariant: invariant, buildArgs, id);
+            string prefix = $"rebuild_noop_{config}";
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, prefix);
+            UpdateBrowserProgramFile();
+            UpdateBrowserMainJs();
 
-            var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: true);
-            var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink, invariant);
 
-            Rebuild(nativeRelink, invariant, buildArgs, id);
-            var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var pathsDict = GetFilesTable(info, paths, unchanged: true);
+            var originalStat = StatFiles(pathsDict);
 
-            _provider.CompareStat(originalStat, newStat, pathsDict.Values);
-            RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Rebuild(info, nativeRelink, invariant);
+            var newStat = StatFiles(pathsDict);
+
+            CompareStat(originalStat, newStat, pathsDict);
+            await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42));
         }
     }
 }

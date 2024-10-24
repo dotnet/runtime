@@ -5,7 +5,7 @@
 
 namespace Wasm.Build.Tests;
 
-public record XHarnessArgsOptions(string jsRelativePath, string environmentLocale, RunHost host);
+public record XHarnessArgsOptions(string jsRelativePath, string environmentLocale);
 
 interface IHostRunner
 {
@@ -13,5 +13,4 @@ interface IHostRunner
     string GetXharnessArgsWindowsOS(XHarnessArgsOptions options);
     string GetXharnessArgsOtherOS(XHarnessArgsOptions options);
     bool UseWasmConsoleOutput();
-    bool CanRunWBT();
 }

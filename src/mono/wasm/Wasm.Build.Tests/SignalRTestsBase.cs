@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Wasm.Build.Tests;
 
-public class SignalRTestsBase : AppTestBase
+public class SignalRTestsBase : WasmTemplateTestsBase
 {
     public SignalRTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -21,10 +21,20 @@ public class SignalRTestsBase : AppTestBase
 
     protected async Task SignalRPassMessage(string staticWebAssetBasePath, string config, string transport)
     {
-        CopyTestAsset("WasmOnAspNetCore", "SignalRClientTests", "AspNetCoreServer");
-        PublishProject(config, runtimeType: RuntimeVariant.MultiThreaded, assertAppBundle: false);
+        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "SignalRClientTests", "AspNetCoreServer");
+        bool isPublish = true;
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish,
+                RuntimeType: RuntimeVariant.MultiThreaded,
+                AssertAppBundle: false
+        ));
 
-        var result = await RunSdkStyleAppForBuild(new(
+        var result = await RunForPublishWithWebServer(new(
             Configuration: config,
             ServerEnvironment: new Dictionary<string, string> { ["ASPNETCORE_ENVIRONMENT"] = "Development" },
             BrowserPath: staticWebAssetBasePath,

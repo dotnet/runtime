@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class AppSettingsTests : AppTestBase
+public class AppSettingsTests : WasmTemplateTestsBase
 {
     public AppSettingsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -25,22 +25,25 @@ public class AppSettingsTests : AppTestBase
     [InlineData("Production")]
     public async Task LoadAppSettingsBasedOnApplicationEnvironment(string applicationEnvironment)
     {
-        CopyTestAsset("WasmBasicTestApp", "AppSettingsTests", "App");
-        PublishProject("Debug");
-
-        var result = await RunSdkStyleAppForPublish(new(
-            Configuration: "Debug",
+        string config = "Debug";
+        ProjectInfo info = CopyTestAsset(config, aot: false, "WasmBasicTestApp", "AppSettingsTest", "App");
+        bool isPublish = true;
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish
+        ));
+        RunOptions options = new(
+            info.Configuration,
             TestScenario: "AppSettingsTest",
             BrowserQueryString: new Dictionary<string, string> { ["applicationEnvironment"] = applicationEnvironment }
-        ));
-        Assert.Collection(
-            result.TestOutput,
-            m => Assert.Equal(GetFileExistenceMessage("/appsettings.json", true), m),
-            m => Assert.Equal(GetFileExistenceMessage("/appsettings.Development.json", applicationEnvironment == "Development"), m),
-            m => Assert.Equal(GetFileExistenceMessage("/appsettings.Production.json", applicationEnvironment == "Production"), m)
         );
+        RunResult result = await RunForPublishWithWebServer(options);
+        Assert.Contains(result.TestOutput, m => m.Contains("'/appsettings.json' exists 'True'"));
+        Assert.Contains(result.TestOutput, m => m.Contains($"'/appsettings.Development.json' exists '{applicationEnvironment == "Development"}'"));
+        Assert.Contains(result.TestOutput, m => m.Contains($"'/appsettings.Production.json' exists '{applicationEnvironment == "Production"}'"));
     }
-
-    // Synchronize with AppSettingsTest
-    private static string GetFileExistenceMessage(string path, bool expected) => $"'{path}' exists '{expected}'";
 }
