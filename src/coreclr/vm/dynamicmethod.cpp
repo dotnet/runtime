@@ -476,6 +476,9 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     size_t nibbleMapSize = HEAP2MAPSIZE(ROUND_UP_TO_PAGE(pHp->maxCodeHeapSize));
     pHp->pHdrMap = new DWORD[nibbleMapSize / sizeof(DWORD)];
     ZeroMemory(pHp->pHdrMap, nibbleMapSize);
+    pHp->pHdrMap2 = new DWORD[nibbleMapSize / sizeof(DWORD)];
+    ZeroMemory(pHp->pHdrMap2, nibbleMapSize);
+    pHp->operations = new NibbleOperation();
 
     return pHp;
 }

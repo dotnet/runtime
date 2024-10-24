@@ -27,6 +27,7 @@ struct FakeHeapList
     DWORD_PTR           endAddress;     // changed from PBYTE
     DWORD_PTR           mapBase;        // changed from PBYTE
     DWORD_PTR           pHdrMap;        // changed from DWORD*
+    DWORD_PTR           pHdrMap2;
     size_t              maxCodeHeapSize;
     size_t              reserveForJumpStubs;
     DWORD_PTR           pLoaderAllocator;
