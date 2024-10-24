@@ -508,7 +508,7 @@
       <MergedAssemblyMarkerPaths Include="$(XunitTestBinBase)\**\*.MergedTestAssembly"/>
       <MergedAssemblyFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyMarkerPaths.Identity)'))" />
       <MergedAssemblyParentFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyFolders.Identity)'))" />
-      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(MergedAssemblyParentFolders)' != '' and '$(TargetsAppleMobile)' != 'true'" />
+      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(MergedAssemblyParentFolders)' != ''" />
       <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(MergedAssemblyMarkerPaths)' != ''" />
       <OutOfProcessTestMarkerPaths Include="$(XunitTestBinBase)\**\*.OutOfProcessTest"/>
       <OutOfProcessTestPaths Include="$([System.IO.Path]::ChangeExtension('%(OutOfProcessTestMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(OutOfProcessTestMarkerPaths)' != ''" />
@@ -521,7 +521,6 @@
     </PropertyGroup>
     <ItemGroup>
       <LegacyRunnableTestPaths Include="@(AllRunnableTestPaths)" Exclude="@(MergedRunnableTestPaths);@(OutOfProcessTestPaths);$(MergedRunnableTestAppBundleScriptPathsPattern)" />
-      <LegacyRunnableTestPaths Condition="'$(TargetsAppleMobile)' == 'true'" Include="@(MergedRunnableTestPaths)" />
     </ItemGroup>
   </Target>
 
@@ -622,6 +621,10 @@
       <GroupBuildCmd Condition="'$(IlcMultiModule)' == 'true'">$(GroupBuildCmd) "/p:IlcMultiModule=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(IlcUseServerGc)' == 'false'">$(GroupBuildCmd) "/p:IlcUseServerGc=false"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(GroupBuildCmd) "/p:BuildNativeAotFrameworkObjects=true"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(GroupBuildCmd) /p:ContinuousIntegrationBuild=true</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(BuildTestsOnHelix)' == 'true'">$(GroupBuildCmd) "/p:BuildTestsOnHelix=true"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(MonoForceInterpreter)' == 'true'">$(GroupBuildCmd) "/p:MonoForceInterpreter=true"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(DevTeamProvisioning)' != ''">$(GroupBuildCmd) "/p:DevTeamProvisioning=$(DevTeamProvisioning)"</GroupBuildCmd>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Building managed test group $(__TestGroupToBuild): $(GroupBuildCmd)" />
