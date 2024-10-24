@@ -9953,10 +9953,12 @@ public:
     //
     bool canUseRex2Encoding() const
     {
+#ifdef DEBUG
         if(JitConfig.JitBypassAPXCheck())
         {
             return true;
         }
+#endif // DEBUG
         return compOpportunisticallyDependsOn(InstructionSet_APX);
     }
 
