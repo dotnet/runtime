@@ -57,7 +57,7 @@ namespace System
 
                 if ((int)divisor == -1)
                 {
-                    if ((ulong)dividend == 0x8000000000000000)
+                    if ((ulong)dividend == 0x8000000000000000ul)
                     {
                         ThrowHelper.ThrowOverflowException();
                     }
@@ -136,7 +136,9 @@ namespace System
 
                 if ((int)divisor == -1)
                 {
-                    if ((ulong)dividend == 0x8000000000000000)
+                    // <TODO>TODO, we really should remove this as it lengthens the code path
+                    // and the spec really says that it should not throw an exception. </TODO>
+                    if ((ulong)dividend == 0x8000000000000000ul)
                     {
                         ThrowHelper.ThrowOverflowException();
                     }

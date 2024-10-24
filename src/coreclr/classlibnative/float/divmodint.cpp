@@ -21,13 +21,13 @@ FCIMPL2(uint32_t, COMDivModInt::DivUInt32, uint32_t dividend, uint32_t divisor)
     return dividend / divisor;
 FCIMPLEND
 
-FCIMPL2(int64_t, COMDivModInt::DivInt64, int64_t dividend, int64_t divisor)
+FCIMPL2_VV(int64_t, COMDivModInt::DivInt64, int64_t dividend, int64_t divisor)
     FCALL_CONTRACT;
 
     return dividend / divisor;
 FCIMPLEND
 
-FCIMPL2(uint64_t, COMDivModInt::DivUInt64, uint64_t dividend, uint64_t divisor)
+FCIMPL2_VV(uint64_t, COMDivModInt::DivUInt64, uint64_t dividend, uint64_t divisor)
     FCALL_CONTRACT;
 
     return dividend / divisor;
@@ -45,13 +45,13 @@ FCIMPL2(uint32_t, COMDivModInt::ModUInt32, uint32_t dividend, uint32_t divisor)
     return dividend % divisor;
 FCIMPLEND
 
-FCIMPL2(int64_t, COMDivModInt::ModInt64, int64_t dividend, int64_t divisor)
+FCIMPL2_VV(int64_t, COMDivModInt::ModInt64, int64_t dividend, int64_t divisor)
     FCALL_CONTRACT;
 
     return dividend % divisor;
 FCIMPLEND
 
-FCIMPL2(uint64_t, COMDivModInt::ModUInt64, uint64_t dividend, uint64_t divisor)
+FCIMPL2_VV(uint64_t, COMDivModInt::ModUInt64, uint64_t dividend, uint64_t divisor)
     FCALL_CONTRACT;
 
     return dividend % divisor;
