@@ -22,7 +22,7 @@ namespace Internal.Reflection.Execution
     {
         public sealed override ManifestResourceInfo GetManifestResourceInfo(Assembly assembly, string resourceName)
         {
-            LowLevelList<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
+            List<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
             for (int i = 0; i < resourceInfos.Count; i++)
             {
                 if (resourceName == resourceInfos[i].Name)
@@ -35,7 +35,7 @@ namespace Internal.Reflection.Execution
 
         public sealed override string[] GetManifestResourceNames(Assembly assembly)
         {
-            LowLevelList<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
+            List<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
             string[] names = new string[resourceInfos.Count];
             for (int i = 0; i < resourceInfos.Count; i++)
             {
@@ -50,7 +50,7 @@ namespace Internal.Reflection.Execution
 
             // This was most likely an embedded resource which the toolchain should have embedded
             // into an assembly.
-            LowLevelList<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
+            List<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
             for (int i = 0; i < resourceInfos.Count; i++)
             {
                 ResourceInfo resourceInfo = resourceInfos[i];
@@ -78,17 +78,17 @@ namespace Internal.Reflection.Execution
             return new UnmanagedMemoryStream(pBlob + resourceInfo.Index, resourceInfo.Length);
         }
 
-        private static LowLevelList<ResourceInfo> GetExtractedResources(Assembly assembly)
+        private static List<ResourceInfo> GetExtractedResources(Assembly assembly)
         {
-            LowLevelDictionary<string, LowLevelList<ResourceInfo>> extractedResourceDictionary = ExtractedResourceDictionary;
+            LowLevelDictionary<string, List<ResourceInfo>> extractedResourceDictionary = ExtractedResourceDictionary;
             string assemblyName = assembly.GetName().FullName;
-            LowLevelList<ResourceInfo> resourceInfos;
+            List<ResourceInfo> resourceInfos;
             if (!extractedResourceDictionary.TryGetValue(assemblyName, out resourceInfos))
-                return new LowLevelList<ResourceInfo>();
+                return new List<ResourceInfo>();
             return resourceInfos;
         }
 
-        private static LowLevelDictionary<string, LowLevelList<ResourceInfo>> ExtractedResourceDictionary
+        private static LowLevelDictionary<string, List<ResourceInfo>> ExtractedResourceDictionary
         {
             get
             {
@@ -97,7 +97,7 @@ namespace Internal.Reflection.Execution
                     // Lazily create the extracted resource dictionary. If two threads race here, we may construct two dictionaries
                     // and overwrite one - this is ok since the dictionaries are read-only once constructed and they contain the identical data.
 
-                    LowLevelDictionary<string, LowLevelList<ResourceInfo>> dict = new LowLevelDictionary<string, LowLevelList<ResourceInfo>>();
+                    LowLevelDictionary<string, List<ResourceInfo>> dict = new LowLevelDictionary<string, List<ResourceInfo>>();
 
                     foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
                     {
@@ -120,10 +120,10 @@ namespace Internal.Reflection.Execution
 
                             ResourceInfo resourceInfo = new ResourceInfo(resourceName, resourceOffset, resourceLength, module);
 
-                            LowLevelList<ResourceInfo> assemblyResources;
+                            List<ResourceInfo> assemblyResources;
                             if (!dict.TryGetValue(assemblyName, out assemblyResources))
                             {
-                                assemblyResources = new LowLevelList<ResourceInfo>();
+                                assemblyResources = new List<ResourceInfo>();
                                 dict[assemblyName] = assemblyResources;
                             }
 
@@ -144,7 +144,7 @@ namespace Internal.Reflection.Execution
         /// The dictionary's key is a Fusion-style assembly name.
         /// The dictionary's value is a list of (resourcename,index) tuples.
         /// </summary>
-        private static volatile LowLevelDictionary<string, LowLevelList<ResourceInfo>> s_extractedResourceDictionary;
+        private static volatile LowLevelDictionary<string, List<ResourceInfo>> s_extractedResourceDictionary;
 
         private struct ResourceInfo
         {

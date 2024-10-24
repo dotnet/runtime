@@ -120,7 +120,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                     return rawPassesFilter(attributeType);
                 };
 
-            LowLevelList<CustomAttributeData> immediateResults = new LowLevelList<CustomAttributeData>();
+            List<CustomAttributeData> immediateResults = new List<CustomAttributeData>();
             foreach (CustomAttributeData cad in GetDeclaredCustomAttributes(element))
             {
                 if (passesFilter(cad.AttributeType))
