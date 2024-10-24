@@ -185,8 +185,8 @@ public class PrecodeStubsTests
         }
         public PrecodeBuilder(AllocationRange allocationRange, MockMemorySpace.Builder builder, Dictionary<DataType, Target.TypeInfo>? typeInfoCache = null) {
             Builder = builder;
-            PrecodeAllocator = new MockMemorySpace.BumpAllocator(allocationRange.PrecodeDescriptorStart, allocationRange.PrecodeDescriptorEnd);
-            StubDataPageAllocator = new MockMemorySpace.BumpAllocator(allocationRange.StubDataPageStart, allocationRange.StubDataPageEnd);
+            PrecodeAllocator = builder.CreateAllocator(allocationRange.PrecodeDescriptorStart, allocationRange.PrecodeDescriptorEnd);
+            StubDataPageAllocator = builder.CreateAllocator(allocationRange.StubDataPageStart, allocationRange.StubDataPageEnd);
             TypeInfoCache = typeInfoCache ?? CreateTypeInfoCache(Builder.TargetTestHelpers);
         }
 
