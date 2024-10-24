@@ -2114,6 +2114,33 @@ ErrExit:
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineLocalVariable
+
+//*******************************************************************************
+// ComputeSha256PdbStreamChecksum
+//*******************************************************************************
+STDMETHODIMP RegMeta::ComputeSha256PdbStreamChecksum(
+        BYTE (&checksum)[32])
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return m_pStgdb->m_pPdbHeap->ComputeSha256Checksum(checksum);
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+}
+
+//*******************************************************************************
+// ChangePdbStreamGuid
+//*******************************************************************************
+STDMETHODIMP RegMeta::ChangePdbStreamGuid(
+        REFGUID newGuid)
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return m_pStgdb->m_pPdbHeap->SetDataGuid(newGuid);
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+}
+
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 //*****************************************************************************
