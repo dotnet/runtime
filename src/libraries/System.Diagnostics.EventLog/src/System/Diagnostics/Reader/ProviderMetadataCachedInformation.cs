@@ -184,7 +184,7 @@ namespace System.Diagnostics.Eventing.Reader
                 try
                 {
                     ProviderMetadata pm = GetProviderMetadata(key);
-                    return NativeWrapper.EvtFormatMessageRenderName(pm.Handle, eventHandle, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageEvent);
+                    return NativeWrapper.EvtFormatMessageRenderName(pm.Handle, eventHandle, Interop.Wevtapi.EVT_FORMAT_MESSAGE_FLAGS.EvtFormatMessageEvent);
                 }
                 catch (EventLogNotFoundException)
                 {
@@ -216,7 +216,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 ProviderMetadataId key = new ProviderMetadataId(ProviderName, CultureInfo.CurrentCulture);
                 ProviderMetadata pm = GetProviderMetadata(key);
-                return NativeWrapper.EvtFormatMessageRenderName(pm.Handle, eventHandle, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageLevel);
+                return NativeWrapper.EvtFormatMessageRenderName(pm.Handle, eventHandle, Interop.Wevtapi.EVT_FORMAT_MESSAGE_FLAGS.EvtFormatMessageLevel);
             }
         }
 
@@ -226,7 +226,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 ProviderMetadataId key = new ProviderMetadataId(ProviderName, CultureInfo.CurrentCulture);
                 ProviderMetadata pm = GetProviderMetadata(key);
-                return NativeWrapper.EvtFormatMessageRenderName(pm.Handle, eventHandle, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageOpcode);
+                return NativeWrapper.EvtFormatMessageRenderName(pm.Handle, eventHandle, Interop.Wevtapi.EVT_FORMAT_MESSAGE_FLAGS.EvtFormatMessageOpcode);
             }
         }
 
@@ -236,7 +236,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 ProviderMetadataId key = new ProviderMetadataId(ProviderName, CultureInfo.CurrentCulture);
                 ProviderMetadata pm = GetProviderMetadata(key);
-                return NativeWrapper.EvtFormatMessageRenderName(pm.Handle, eventHandle, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageTask);
+                return NativeWrapper.EvtFormatMessageRenderName(pm.Handle, eventHandle, Interop.Wevtapi.EVT_FORMAT_MESSAGE_FLAGS.EvtFormatMessageTask);
             }
         }
 
@@ -246,7 +246,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 ProviderMetadataId key = new ProviderMetadataId(ProviderName, CultureInfo.CurrentCulture);
                 ProviderMetadata pm = GetProviderMetadata(key);
-                return NativeWrapper.EvtFormatMessageRenderKeywords(pm.Handle, eventHandle, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageKeyword);
+                return NativeWrapper.EvtFormatMessageRenderKeywords(pm.Handle, eventHandle, Interop.Wevtapi.EVT_FORMAT_MESSAGE_FLAGS.EvtFormatMessageKeyword);
             }
         }
     }

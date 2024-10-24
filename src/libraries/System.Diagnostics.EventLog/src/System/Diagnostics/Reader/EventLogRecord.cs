@@ -57,7 +57,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 if (_systemProperties.filled == false)
                 {
-                    NativeWrapper.EvtRenderBufferWithContextSystem(_session.renderContextHandleSystem, Handle, UnsafeNativeMethods.EvtRenderFlags.EvtRenderEventValues, _systemProperties);
+                    NativeWrapper.EvtRenderBufferWithContextSystem(_session.renderContextHandleSystem, Handle, Interop.Wevtapi.EVT_RENDER_FLAGS.EvtRenderEventValues, _systemProperties);
                     _systemProperties.filled = true;
                 }
             }
@@ -235,7 +235,7 @@ namespace System.Diagnostics.Eventing.Reader
                     return _containerChannel;
                 lock (_syncObject)
                 {
-                    return _containerChannel ??= (string)NativeWrapper.EvtGetEventInfo(this.Handle, UnsafeNativeMethods.EvtEventPropertyId.EvtEventPath);
+                    return _containerChannel ??= (string)NativeWrapper.EvtGetEventInfo(this.Handle, Interop.Wevtapi.EVT_EVENT_PROPERTY_ID.EvtEventPath);
                 }
             }
         }
@@ -248,7 +248,7 @@ namespace System.Diagnostics.Eventing.Reader
                     return _matchedQueryIds;
                 lock (_syncObject)
                 {
-                    return _matchedQueryIds ??= (int[])NativeWrapper.EvtGetEventInfo(this.Handle, UnsafeNativeMethods.EvtEventPropertyId.EvtEventQueryIDs);
+                    return _matchedQueryIds ??= (int[])NativeWrapper.EvtGetEventInfo(this.Handle, Interop.Wevtapi.EVT_EVENT_PROPERTY_ID.EvtEventQueryIDs);
                 }
             }
         }
