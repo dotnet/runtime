@@ -813,9 +813,6 @@
   <data name="Arg_TypeLoadNullStr" xml:space="preserve">
     <value>A null or zero length string does not represent a valid Type.</value>
   </data>
-  <data name="Arg_TypeRefPrimitive" xml:space="preserve">
-    <value>TypedReferences cannot be redefined as primitives. Field name '{0}'.</value>
-  </data>
   <data name="Arg_TypeUnloadedException" xml:space="preserve">
     <value>Type had been unloaded.</value>
   </data>
