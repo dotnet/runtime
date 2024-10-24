@@ -122,7 +122,7 @@ namespace Mono.Linker.Dataflow
 				return null;
 
 			// Avoid repeat scans of the same type
-			if (_cachedTypeToCompilerGeneratedMembers.ContainsKey (type))
+			if (!_cachedTypeToCompilerGeneratedMembers.TryAdd (type, null))
 				return type;
 
 			var callGraph = new CompilerGeneratedCallGraph ();
@@ -297,7 +297,7 @@ namespace Mono.Linker.Dataflow
 				}
 			}
 
-			_cachedTypeToCompilerGeneratedMembers.Add (type, compilerGeneratedCallees);
+			_cachedTypeToCompilerGeneratedMembers[type] = compilerGeneratedCallees;
 			return type;
 
 			/// <summary>
