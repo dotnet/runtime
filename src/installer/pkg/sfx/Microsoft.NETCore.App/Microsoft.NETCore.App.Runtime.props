@@ -123,9 +123,7 @@
         <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
       </CoreCLRCrossTargetFiles>
       <CoreCLROptimizationFiles Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"
-                                Condition="Exists('$(CoreCLRArtifactsPath)StandardOptimizationData.mibc')">
-        <TargetPath>tools</TargetPath>
-      </CoreCLROptimizationFiles>
+                                Condition="Exists('$(CoreCLRArtifactsPath)StandardOptimizationData.mibc')" />
     </ItemGroup>
     <ItemGroup>
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles);@(CoreCLRCrossTargetFiles);@(CoreCLROptimizationFiles)" />
@@ -187,18 +185,6 @@
   <PropertyGroup>
     <PublishReadyToRunComposite Condition="$(ForcePublishReadyToRunComposite) == 'true'">true</PublishReadyToRunComposite>
   </PropertyGroup>
-
-  <!-- Put the mibc file into tools and not into PgoData, which will also hide it from being part of the RuntimeList.xml -->
-  <Target Name="RemoveMibcFromRuntimeListXml"
-          AfterTargets="GetFilesToPackage">
-    <ItemGroup>
-      <FilesToPackageMibcData Include="@(FilesToPackage)" Condition="'%(FilesToPackage.Identity)' == '$(CoreCLRArtifactsPath)StandardOptimizationData.mibc'">
-        <TargetPath>tools</TargetPath>
-      </FilesToPackageMibcData>
-      <FilesToPackage Remove="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"/>
-      <FilesToPackage Include="@(FilesToPackageMibcData)"/>
-    </ItemGroup>
-  </Target>
 
   <Target Name="IncludeSymbolFilesInNativeAOTPackage"
           Condition="'$(BuildNativeAOTRuntimePack)' == 'true'"
