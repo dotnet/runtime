@@ -479,7 +479,7 @@ as follows:
 The negative of the offset from the runtime EBP (i.e. while the table has an unsigned
 number it refers to a negative offset from the EBP - a a slot in the locals area).
 Thus for an EBP frame is is not possible refer to the pushed arguments area.
-  
+
 - **In an EBP-less Frame or a double-aligned frame**.
 Offset from the initial default ESP for the method (i.e, the lowest address of the
 callee-saves area of the stack frame, or the value of ESP upon exiting the prolog)
