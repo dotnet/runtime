@@ -14,9 +14,10 @@ set(CLR_CMAKE_KEEP_NATIVE_SYMBOLS TRUE)
 add_executable_clr(corerun
   corerun.cpp
   dotenv.cpp
-  ${CLR_SRC_NATIVE_DIR}/minipal/debugger.c
   native.rc
 )
+
+target_link_libraries(corerun PRIVATE minipal)
 
 if(CLR_CMAKE_HOST_WIN32)
     target_link_libraries(corerun
