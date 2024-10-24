@@ -19,6 +19,7 @@ namespace System
         // This is set under 2 circumstances
         // 1. Multicast delegate
         // 2. Wrapper delegate
+        // 3. DynamicMethods
         private object? _invocationList; // Initialized by VM as needed
         private nint _invocationCount;
 
@@ -29,7 +30,7 @@ namespace System
 
         internal bool InvocationListLogicallyNull()
         {
-            return (_invocationList == null) || (_invocationList is LoaderAllocator) || (_invocationList is DynamicResolver);
+            return (_invocationList == null) || (_invocationList is LoaderAllocator) || (_invocationList is DynamicResolver) || (_invocationList is DynamicMethod);
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -200,10 +201,13 @@ namespace System
                 Debug.Assert(!IsUnmanagedFunctionPtr(), "dynamic method and unmanaged fntptr delegate combined");
                 // must be a secure/wrapper one, unwrap and save
                 MulticastDelegate d = ((MulticastDelegate?)_invocationList)!;
-                d.SetCachedMethod(dynamicMethod);
+                d.StoreDynamicMethod(dynamicMethod);
             }
             else
-                SetCachedMethod(dynamicMethod);
+            {
+                Debug.Assert(InvocationListLogicallyNull(), "dynamic method with invocation list");
+                _invocationList = dynamicMethod;
+            }
         }
 
         // This method will combine this delegate with the passed delegate
@@ -510,6 +514,10 @@ namespace System
                     // must be a wrapper delegate
                     return innerDelegate.GetMethodImpl();
                 }
+            }
+            else if (_invocationList is DynamicMethod dynamicMethod)
+            {
+                return dynamicMethod;
             }
             else if (IsUnmanagedFunctionPtr())
             {
