@@ -365,7 +365,7 @@ namespace System.Runtime.CompilerServices
         internal static bool EnumEquals<T>(T x, T y) where T : struct, Enum
         {
             // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementation for how this happens.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             return x.Equals(y);
         }
 
@@ -373,13 +373,18 @@ namespace System.Runtime.CompilerServices
         internal static int EnumCompareTo<T>(T x, T y) where T : struct, Enum
         {
             // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementation for how this happens.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             return x.CompareTo(y);
         }
 
 #if FEATURE_IJW
-        [TransientCode(TransientCodeKind.CopyConstructor)]
-        internal static extern unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged;
+        [Intrinsic]
+        internal static unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged
+        {
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
+            throw new InvalidOperationException();
+        }
 #endif
 
         internal static ref byte GetRawData(this object obj) =>

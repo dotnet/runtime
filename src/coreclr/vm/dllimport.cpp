@@ -6086,7 +6086,7 @@ namespace
         {
             THROWS;
             GC_TRIGGERS;    // CompareTypeTokens may trigger GC
-            MODE_ANY;
+            MODE_PREEMPTIVE;
         }
         CONTRACTL_END;
 
@@ -6274,7 +6274,6 @@ namespace
         }
     }
 
-
     //-------------------------------------------------------------------------------------
     // Return the destructor for a VC class (if any exists)
     //-------------------------------------------------------------------------------------
@@ -6284,7 +6283,7 @@ namespace
         {
             THROWS;
             GC_TRIGGERS;    // CompareTypeTokens may trigger GC
-            MODE_ANY;
+            MODE_PREEMPTIVE;
         }
         CONTRACTL_END;
 
