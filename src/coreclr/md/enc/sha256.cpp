@@ -92,7 +92,15 @@ HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
         return E_FAIL;
     }
 
-    memcpy(pDst, hash, min(CC_SHA256_DIGEST_LENGTH, dstSize));
+    if (dstSize < CC_SHA256_DIGEST_LENGTH)
+    {
+        memcpy(pDst, hash, dstSize);
+    }
+    else
+    {
+        memcpy(pDst, hash, CC_SHA256_DIGEST_LENGTH);
+    }
+
     return S_OK;
 }
 #elif defined(__linux__)
@@ -120,13 +128,6 @@ HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
     {
         return E_FAIL;
     }
-
-    for (int i = 0; i < 32; i++)
-    {
-        fprintf(stderr, "%c", hash[i]);
-    }
-
-    fprintf(stderr, "\n");
 
     memcpy(pDst, hash, min(hashLength, dstSize));
     return S_OK;
