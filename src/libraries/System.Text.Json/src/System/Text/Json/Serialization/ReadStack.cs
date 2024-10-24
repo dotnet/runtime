@@ -96,7 +96,7 @@ namespace System.Text.Json
         internal void Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation = false)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
-            if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
+            if (options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Preserve)
             {
                 ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: false);
                 PreserveReferences = true;

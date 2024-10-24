@@ -476,7 +476,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(Name != null);
 
-            if (Options.ReferenceHandlingStrategy is ReferenceHandlingStrategy.Preserve &&
+            if (Options.ReferenceHandlingStrategy is JsonKnownReferenceHandler.Preserve &&
                 this is { DeclaringType.IsValueType: false, IsIgnored: false, IsExtensionData: false } &&
                 Name is JsonSerializer.IdPropertyName or JsonSerializer.RefPropertyName)
             {
@@ -681,7 +681,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowNotSupportedException_ObjectCreationHandlingPropertyDoesNotSupportParameterizedConstructors();
                 }
 
-                if (Options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
+                if (Options.ReferenceHandlingStrategy != JsonKnownReferenceHandler.Unspecified)
                 {
                     ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowReferenceHandling();
                 }
