@@ -56,25 +56,25 @@ FCIMPL1_D(uint32_t, RhpDbl2UInt, double val)
 FCIMPLEND
 
 #ifndef HOST_64BIT
-EXTERN_C int64_t QCALLTYPE Math_ActualDivisionLong(int64_t i, int64_t j)
+EXTERN_C int64_t F_CALL_CONV InternalDivInt64(int64_t i, int64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
 }
 
-EXTERN_C uint64_t QCALLTYPE Math_ActualDivisionULong(uint64_t i, uint64_t j)
+EXTERN_C uint64_t F_CALL_CONV InternalDivUInt64(uint64_t i, uint64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
 }
 
-EXTERN_C int64_t QCALLTYPE Math_ActualModulusLong(int64_t i, int64_t j)
+EXTERN_C int64_t F_CALL_CONV InternalModInt64(int64_t i, int64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
 
-EXTERN_C uint64_t QCALLTYPE Math_ActualModulusULong(uint64_t i, uint64_t j)
+EXTERN_C uint64_t F_CALL_CONV InternalModUInt64(uint64_t i, uint64_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
@@ -95,25 +95,25 @@ FCIMPLEND
 #endif
 
 #ifdef HOST_ARM
-EXTERN_C int32_t QCALLTYPE Math_ActualDivisionInt(int32_t i, int32_t j)
+EXTERN_C int32_t F_CALL_CONV InternalDivInt32(int32_t i, int32_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
 }
 
-EXTERN_C uint32_t QCALLTYPE Math_ActualDivisionUInt(uint32_t i, uint32_t j)
+EXTERN_C uint32_t F_CALL_CONV InternalDivUInt32(uint32_t i, uint32_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i / j;
 }
 
-EXTERN_C int32_t QCALLTYPE Math_ActualModulusInt(int32_t i, int32_t j)
+EXTERN_C int32_t F_CALL_CONV InternalModInt32(int32_t i, int32_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
 
-EXTERN_C uint32_t QCALLTYPE Math_ActualModulusUInt(uint32_t i, uint32_t j)
+EXTERN_C uint32_t F_CALL_CONV InternalModUInt32(uint32_t i, uint32_t j)
 {
     ASSERT(j && "Divide by zero!");
     return i % j;

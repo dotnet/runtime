@@ -503,16 +503,6 @@ static const Entry s_QCall[] =
     DllImportEntry(InitClassHelper)
     DllImportEntry(ResolveVirtualFunctionPointer)
     DllImportEntry(GenericHandleWorker)
-#ifdef TARGET_32BIT
-    DllImportEntry(Math_ActualDivisionInt)
-    DllImportEntry(Math_ActualDivisionUInt)
-    DllImportEntry(Math_ActualModulusInt)
-    DllImportEntry(Math_ActualModulusUInt)
-    DllImportEntry(Math_ActualDivisionLong)
-    DllImportEntry(Math_ActualDivisionULong)
-    DllImportEntry(Math_ActualModulusLong)
-    DllImportEntry(Math_ActualModulusULong)
-#endif // TARGET_32BIT
 };
 
 const void* QCallResolveDllImport(const char* name)

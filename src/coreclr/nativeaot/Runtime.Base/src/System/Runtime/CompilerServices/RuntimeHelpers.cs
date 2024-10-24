@@ -18,7 +18,5 @@ namespace System.Runtime.CompilerServices
 
         [Intrinsic]
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
-
-        public const string QCall = "*";
     }
 }

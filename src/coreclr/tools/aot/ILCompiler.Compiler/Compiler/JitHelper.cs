@@ -233,30 +233,30 @@ namespace ILCompiler
                     }
                     break;
 
-                case ReadyToRunHelper.Mod:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModulusChecked", null);
-                    break;
-                case ReadyToRunHelper.UMod:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModulusUnsigned", null);
-                    break;
-                case ReadyToRunHelper.ULMod:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModulusUnsignedLongs", null);
-                    break;
-                case ReadyToRunHelper.LMod:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModulusLongs", null);
-                    break;
-
                 case ReadyToRunHelper.Div:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivideChecked", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivInt32", null);
                     break;
                 case ReadyToRunHelper.UDiv:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivideUnsigned", null);
-                    break;
-                case ReadyToRunHelper.ULDiv:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivideUnsignedLongs", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivUInt32", null);
                     break;
                 case ReadyToRunHelper.LDiv:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivideLongs", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivInt64", null);
+                    break;
+                case ReadyToRunHelper.ULDiv:
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivUInt64", null);
+                    break;
+
+                case ReadyToRunHelper.Mod:
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModInt32", null);
+                    break;
+                case ReadyToRunHelper.UMod:
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModulUInt32", null);
+                    break;
+                case ReadyToRunHelper.LMod:
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModInt64", null);
+                    break;
+                case ReadyToRunHelper.ULMod:
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModUInt64", null);
                     break;
 
                 case ReadyToRunHelper.LRsz:
