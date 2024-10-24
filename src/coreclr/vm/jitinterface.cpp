@@ -436,8 +436,7 @@ enum ConvToJitSigFlags : int
 // contextType  - The type with any instantiaton information
 //
 static void ConvToJitSig(
-    PCCOR_SIGNATURE       pSig,
-    DWORD                 cbSig,
+    SigPointer            sig,
     CORINFO_MODULE_HANDLE scopeHnd,
     mdToken               token,
     SigTypeContext*       typeContext,
@@ -456,10 +455,7 @@ static void ConvToJitSig(
     static_assert_no_msg(CORINFO_CALLCONV_MASK == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_MASK);
     static_assert_no_msg(CORINFO_CALLCONV_HASTHIS == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_HASTHIS);
 
-    TypeHandle typeHnd = TypeHandle();
-
-    sigRet->pSig = pSig;
-    sigRet->cbSig = cbSig;
+    sig.GetSignature(&sigRet->pSig, &sigRet->cbSig);
     sigRet->methodSignature = 0;
     sigRet->retTypeClass = 0;
     sigRet->retTypeSigClass = 0;
@@ -469,8 +465,6 @@ static void ConvToJitSig(
     sigRet->sigInst.classInstCount = (unsigned) typeContext->m_classInst.GetNumArgs();
     sigRet->sigInst.methInst = (CORINFO_CLASS_HANDLE *) typeContext->m_methodInst.GetRawArgs();
     sigRet->sigInst.methInstCount = (unsigned) typeContext->m_methodInst.GetNumArgs();
-
-    SigPointer sig(pSig, cbSig);
 
     if ((flags & CONV_TO_JITSIG_FLAGS_LOCALSIG) == 0)
     {
@@ -506,6 +500,7 @@ static void ConvToJitSig(
 
         CorElementType type = sig.PeekElemTypeClosed(module, typeContext);
 
+        TypeHandle typeHnd = TypeHandle();
         if (!CorTypeInfo::IsPrimitiveType(type))
         {
             typeHnd = sig.GetTypeHandleThrowing(module, typeContext);
@@ -1680,13 +1675,10 @@ CEEInfo::findCallSiteSig(
 
     JIT_TO_EE_TRANSITION();
 
-    PCCOR_SIGNATURE       pSig = NULL;
-    uint32_t              cbSig = 0;
-
+    SigPointer sig{};
     if (IsDynamicScope(scopeHnd))
     {
         DynamicResolver * pResolver = GetDynamicResolver(scopeHnd);
-        SigPointer sig;
 
         if (TypeFromToken(sigMethTok) == mdtMemberRef)
         {
@@ -1711,13 +1703,14 @@ CEEInfo::findCallSiteSig(
             scopeHnd = GetScopeHandle(resolved.Method->GetModule());
         }
 
-        sig.GetSignature(&pSig, &cbSig);
         sigMethTok = mdTokenNil;
     }
     else
     {
         Module * module = (Module *)scopeHnd;
         LPCUTF8  szName;
+        PCCOR_SIGNATURE pSig = NULL;
+        uint32_t cbSig = 0;
 
         if (TypeFromToken(sigMethTok) == mdtMemberRef)
         {
@@ -1727,14 +1720,15 @@ CEEInfo::findCallSiteSig(
         {
             IfFailThrow(module->GetMDImport()->GetSigOfMethodDef(sigMethTok, (ULONG*)&cbSig, &pSig));
         }
+
+        sig = SigParser{ pSig, cbSig };
     }
 
     SigTypeContext typeContext;
     GetTypeContext(context, &typeContext);
 
     ConvToJitSig(
-        pSig,
-        cbSig,
+        sig,
         scopeHnd,
         sigMethTok,
         &typeContext,
@@ -1760,32 +1754,31 @@ CEEInfo::findSig(
 
     JIT_TO_EE_TRANSITION();
 
-    PCCOR_SIGNATURE       pSig = NULL;
-    uint32_t              cbSig = 0;
-
+    SigPointer sig{};
     if (IsDynamicScope(scopeHnd))
     {
-        SigPointer sig = GetDynamicResolver(scopeHnd)->ResolveSignature(sigTok);
-        sig.GetSignature(&pSig, &cbSig);
+        sig = GetDynamicResolver(scopeHnd)->ResolveSignature(sigTok);
         sigTok = mdTokenNil;
     }
     else
     {
         Module * module = (Module *)scopeHnd;
 
+        PCCOR_SIGNATURE pSig = NULL;
+        uint32_t cbSig = 0;
         // We need to resolve this stand alone sig
         IfFailThrow(module->GetMDImport()->GetSigFromToken(
             (mdSignature)sigTok,
             (ULONG*)(&cbSig),
             &pSig));
+        sig = SigParser{ pSig, cbSig };
     }
 
     SigTypeContext typeContext;
     GetTypeContext(context, &typeContext);
 
     ConvToJitSig(
-        pSig,
-        cbSig,
+        sig,
         scopeHnd,
         sigTok,
         &typeContext,
@@ -4843,8 +4836,7 @@ static void getMethodSigInternal(
     // Type parameters in the signature are instantiated
     // according to the class/method/array instantiation of ftnHnd and owner
     ConvToJitSig(
-        pSig,
-        cbSig,
+        SigParser{ pSig, cbSig },
         GetScopeHandle(ftn),
         mdTokenNil,
         &context,
@@ -7509,8 +7501,7 @@ static void getMethodInfoHelper(
     CORINFO_MODULE_HANDLE scopeHnd = NULL;
 
     /* Grab information from the IL header */
-    PCCOR_SIGNATURE pLocalSig   = NULL;
-    uint32_t        cbLocalSig  = 0;
+    SigPointer localSig{};
 
     // Having a header means there is backing IL for the method.
     if (NULL != cxt.Header)
@@ -7530,21 +7521,11 @@ static void getMethodInfoHelper(
             }
             else if (CoreLibBinder::IsClass(pMT, CLASS__RUNTIME_HELPERS))
             {
-                SigPointer localSig;
                 fILIntrinsic = getILIntrinsicImplementationForRuntimeHelpers(cxt, methInfo, &localSig);
-                if (fILIntrinsic)
-                {
-                    localSig.GetSignature(&pLocalSig, &cbLocalSig);
-                }
             }
             else if (CoreLibBinder::IsClass(pMT, CLASS__ACTIVATOR))
             {
-                SigPointer localSig;
                 fILIntrinsic = getILIntrinsicImplementationForActivator(ftn, methInfo, &localSig);
-                if (fILIntrinsic)
-                {
-                    localSig.GetSignature(&pLocalSig, &cbLocalSig);
-                }
             }
         }
 
@@ -7555,8 +7536,7 @@ static void getMethodInfoHelper(
         if (!fILIntrinsic)
         {
             getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
-            pLocalSig = cxt.Header->LocalVarSig;
-            cbLocalSig = cxt.Header->cbLocalVarSig;
+            localSig = SigPointer{ cxt.Header->LocalVarSig, cxt.Header->cbLocalVarSig };
         }
     }
     else if (ftn->IsDynamicMethod())
@@ -7570,8 +7550,7 @@ static void getMethodInfoHelper(
                                                   &methInfo->options,
                                                   &EHCount);
         methInfo->EHcount = (unsigned short)EHCount;
-        SigPointer localSig = pResolver->GetLocalSig();
-        localSig.GetSignature(&pLocalSig, &cbLocalSig);
+        localSig = pResolver->GetLocalSig();
     }
     else if (ftn->TryGenerateUnsafeAccessor(&cxt.TransientResolver, &cxt.Header))
     {
@@ -7579,8 +7558,7 @@ static void getMethodInfoHelper(
 
         _ASSERTE(cxt.Header != NULL);
         getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
-        pLocalSig = cxt.Header->LocalVarSig;
-        cbLocalSig = cxt.Header->cbLocalVarSig;
+        localSig = SigPointer{ cxt.Header->LocalVarSig, cxt.Header->cbLocalVarSig };
     }
     else
     {
@@ -7620,10 +7598,6 @@ static void getMethodInfoHelper(
 #endif // defined(PROFILING_SUPPORTED)
     }
 
-    PCCOR_SIGNATURE pSig = NULL;
-    DWORD           cbSig = 0;
-    ftn->GetSig(&pSig, &cbSig);
-
     SigTypeContext context;
 
     if (exactContext == NULL || exactContext == METHOD_BEING_COMPILED_CONTEXT())
@@ -7642,12 +7616,15 @@ static void getMethodInfoHelper(
         SigTypeContext::InitTypeContext(th, &context);
     }
 
+    PCCOR_SIGNATURE pSig = NULL;
+    DWORD           cbSig = 0;
+    ftn->GetSig(&pSig, &cbSig);
+
     /* Fetch the method signature */
     // Type parameters in the signature should be instantiated according to the
     // class/method/array instantiation of ftnHnd
     ConvToJitSig(
-        pSig,
-        cbSig,
+        SigParser{ pSig, cbSig },
         methInfo->scope,
         mdTokenNil,
         &context,
@@ -7665,8 +7642,7 @@ static void getMethodInfoHelper(
     // Type parameters in the signature should be instantiated according to the
     // class/method/array instantiation of ftnHnd
     ConvToJitSig(
-        pLocalSig,
-        cbLocalSig,
+        localSig,
         methInfo->scope,
         mdTokenNil,
         &context,

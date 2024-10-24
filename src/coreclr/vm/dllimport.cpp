@@ -6082,13 +6082,7 @@ namespace
     //-------------------------------------------------------------------------------------
     void FindCopyConstructor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;    // CompareTypeTokens may trigger GC
-            MODE_PREEMPTIVE;
-        }
-        CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
 
         *pMDOut = NULL;
 
@@ -6279,13 +6273,7 @@ namespace
     //-------------------------------------------------------------------------------------
     void FindDestructor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;    // CompareTypeTokens may trigger GC
-            MODE_PREEMPTIVE;
-        }
-        CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
 
         *pMDOut = NULL;
 
