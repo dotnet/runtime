@@ -811,7 +811,6 @@ void EEStartupHelper()
 
         CoreLibBinder::Startup();
 
-        Stub::Init();
         StubLinkerCPU::Init();
         StubPrecode::StaticInitialize();
         FixupPrecode::StaticInitialize();
@@ -1275,7 +1274,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         Interpreter::PrintPostMortemData();
 #endif // FEATURE_INTERPRETER
         VirtualCallStubManager::LogFinalStats();
-        WriteJitHelperCountToSTRESSLOG();
 
 #ifdef PROFILING_SUPPORTED
         // If profiling is enabled, then notify of shutdown first so that the

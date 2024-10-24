@@ -18,16 +18,23 @@ namespace DotnetFuzzing.Fuzzers
 
         public void FuzzTarget(ReadOnlySpan<byte> bytes)
         {
-            using PooledBoundedMemory<byte> inputPoisonedAfter = PooledBoundedMemory<byte>.Rent(bytes, PoisonPagePlacement.After);
-            using PooledBoundedMemory<byte> inputPoisonedBefore = PooledBoundedMemory<byte>.Rent(bytes, PoisonPagePlacement.Before);
-            using MemoryStream streamAfter = new MemoryStream(inputPoisonedAfter.Memory.ToArray());
-            using MemoryStream streamBefore = new MemoryStream(inputPoisonedBefore.Memory.ToArray());
-
-            Test(inputPoisonedAfter.Span, streamAfter);
-            Test(inputPoisonedBefore.Span, streamBefore);
+            Test(bytes, PoisonPagePlacement.Before);
+            Test(bytes, PoisonPagePlacement.After);
         }
 
-        private static void Test(Span<byte> testSpan, MemoryStream stream)
+        private static void Test(ReadOnlySpan<byte> bytes, PoisonPagePlacement poisonPagePlacement)
+        {
+            using PooledBoundedMemory<byte> inputPoisoned = PooledBoundedMemory<byte>.Rent(bytes, poisonPagePlacement);
+
+            using MemoryStream seekableStream = new(inputPoisoned.Memory.ToArray());
+            Test(inputPoisoned.Span, seekableStream);
+
+            // NrbfDecoder has few code paths dedicated to non-seekable streams, let's test them as well.
+            using NonSeekableStream nonSeekableStream = new(inputPoisoned.Memory.ToArray());
+            Test(inputPoisoned.Span, nonSeekableStream);
+        }
+
+        private static void Test(Span<byte> testSpan, Stream stream)
         {
             if (NrbfDecoder.StartsWithPayloadHeader(testSpan))
             {
@@ -108,6 +115,12 @@ namespace DotnetFuzzing.Fuzzers
                 catch (NotSupportedException) { /* Reading from the stream encountered unsupported records */ }
                 catch (EndOfStreamException) { /* The end of the stream was reached before reading SerializationRecordType.MessageEnd record. */ }
             }
+        }
+
+        private sealed class NonSeekableStream : MemoryStream
+        {
+            public NonSeekableStream(byte[] buffer) : base(buffer) { }
+            public override bool CanSeek => false;
         }
     }
 }

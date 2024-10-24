@@ -5496,6 +5496,9 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
     GenTree*  op1  = *pOp1;
     GenTree*  op2  = *pOp2;
 
+    assert(op1 != nullptr);
+    assert(op2 != nullptr);
+
     // Arithmetic operations are generally only allowed with primitive types, but certain operations are allowed
     // with byrefs.
     //
@@ -5569,13 +5572,21 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
         if (genActualType(op1) != TYP_I_IMPL)
         {
             // insert an explicit upcast
-            op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, TYP_I_IMPL);
+            op1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, TYP_I_IMPL);
         }
         else if (genActualType(op2) != TYP_I_IMPL)
         {
             // insert an explicit upcast
-            op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, TYP_I_IMPL);
+            op2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, TYP_I_IMPL);
         }
+
+        if (opts.OptimizationEnabled())
+        {
+            op1 = gtFoldExpr(op1);
+            op2 = gtFoldExpr(op2);
+        }
+        *pOp1 = op1;
+        *pOp2 = op2;
 
         type = TYP_I_IMPL;
     }
@@ -6238,17 +6249,36 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     //
     // Note unlike OSR, it's ok to forgo these.
     //
-    // Todo: stress mode...
-    //
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation() > 0) &&
-        compCanHavePatchpoints() && !compTailPrefixSeen)
+        compCanHavePatchpoints() && !compTailPrefixSeen && (verCurrentState.esStackDepth == 0) &&
+        !block->HasFlag(BBF_PATCHPOINT) && !block->hasHndIndex())
     {
         // Is this block a good place for partial compilation?
         //
-        if ((block != fgFirstBB) && block->isRunRarely() && (verCurrentState.esStackDepth == 0) &&
-            !block->HasFlag(BBF_PATCHPOINT) && !block->hasHndIndex())
+        bool addPartialCompilationPatchpoint = (block != fgFirstBB) && block->isRunRarely();
+
+#ifdef DEBUG
+        // Stress mode
+        //
+        const char* reason                   = "rarely run";
+        const int   randomPartialCompilation = JitConfig.JitRandomPartialCompilation();
+        if (randomPartialCompilation > 0)
         {
-            JITDUMP("\nBlock " FMT_BB " will be a partial compilation patchpoint -- not importing\n", block->bbNum);
+            // Reuse the random inliner's random state.
+            // Note m_inlineStrategy is always created, even if we're not inlining.
+            //
+            CLRRandom* const random      = impInlineRoot()->m_inlineStrategy->GetRandom(randomPartialCompilation);
+            const int        randomValue = (int)random->Next(100);
+
+            addPartialCompilationPatchpoint = (randomValue < randomPartialCompilation);
+            reason                          = "randomly chosen";
+        }
+#endif
+
+        if (addPartialCompilationPatchpoint)
+        {
+            JITDUMP("\nBlock " FMT_BB " (%s) will be a partial compilation patchpoint -- not importing\n", block->bbNum,
+                    reason);
             block->SetFlags(BBF_PARTIAL_COMPILATION_PATCHPOINT);
             setMethodHasPartialCompilationPatchpoint();
 
@@ -7157,7 +7187,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assertImp(op1->TypeIs(TYP_REF));
 
                 // Check for null pointer - in the inliner case we simply abort.
-                if (compIsForInlining() && op1->IsCnsIntOrI())
+                if (compIsForInlining() && op1->IsIntegralConst(0))
                 {
                     compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_NULL_FOR_LDELEM);
                     return;
@@ -9390,11 +9420,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     lclTyp = TypeHandleToVarType(fieldInfo.fieldType, clsHnd, &layout);
                     op1    = (lclTyp == TYP_STRUCT) ? gtNewBlkIndir(layout, op1, indirFlags)
                                                     : gtNewIndir(lclTyp, op1, indirFlags);
-                    if ((indirFlags & GTF_IND_INVARIANT) != 0)
-                    {
-                        // TODO-ASG: delete this zero-diff quirk.
-                        op1->gtFlags |= GTF_GLOB_REF;
-                    }
 
                     impAnnotateFieldIndir(op1->AsIndir());
                 }
@@ -10614,10 +10639,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (isVolatile)
                     {
-                        // Wrap with memory barriers: full-barrier + call + load-barrier
-                        impAppendTree(gtNewMemoryBarrier(), CHECK_SPILL_ALL, impCurStmtDI);
+                        // Wrap with memory barriers: store-barrier + call + load-barrier
+                        impAppendTree(gtNewMemoryBarrier(BARRIER_STORE_ONLY), CHECK_SPILL_ALL, impCurStmtDI);
                         impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
-                        op1 = gtNewMemoryBarrier(true);
+                        op1 = gtNewMemoryBarrier(BARRIER_LOAD_ONLY);
                     }
                     else
                     {

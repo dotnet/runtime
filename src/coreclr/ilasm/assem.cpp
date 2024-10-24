@@ -154,6 +154,7 @@ Assembler::Assembler()
     indexKeywords(&indxKeywords);
 
     m_pPortablePdbWriter = NULL;
+    m_pOverrideAssemblyName = NULL;
 }
 
 
