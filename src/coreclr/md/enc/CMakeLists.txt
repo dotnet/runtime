@@ -78,4 +78,3 @@ if(CLR_CMAKE_TARGET_LINUX)
   target_link_libraries(mdruntimerw_wks PRIVATE System.Security.Cryptography.Native.OpenSsl-Static)
   target_link_libraries(mdruntimerw_ppdb PRIVATE System.Security.Cryptography.Native.OpenSsl-Static)
 endif(CLR_CMAKE_TARGET_LINUX)
-
