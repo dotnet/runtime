@@ -24,7 +24,7 @@ public unsafe class ObjectTests
             .SetGlobals(MockObject.Globals(targetTestHelpers))
             .SetTypes(types);
 
-        builder = MockObject.AddGlobalPointers(targetTestHelpers, types[DataType.MethodTable], builder);
+        builder = MockObject.AddGlobalPointers(types[DataType.MethodTable], builder);
 
         if (configure != null)
         {
@@ -95,9 +95,9 @@ public unsafe class ObjectTests
         ObjectContractHelper(arch,
             (builder) =>
             {
-                builder = MockObject.AddArrayObject(targetTestHelpers, builder, SingleDimensionArrayAddress, singleDimension);
-                builder = MockObject.AddArrayObject(targetTestHelpers, builder, MultiDimensionArrayAddress, multiDimension);
-                builder = MockObject.AddArrayObject(targetTestHelpers, builder, NonZeroLowerBoundArrayAddress, nonZeroLowerBound);
+                builder = MockObject.AddArrayObject(builder, SingleDimensionArrayAddress, singleDimension);
+                builder = MockObject.AddArrayObject(builder, MultiDimensionArrayAddress, multiDimension);
+                builder = MockObject.AddArrayObject(builder, NonZeroLowerBoundArrayAddress, nonZeroLowerBound);
                 return builder;
             },
             (target) =>
