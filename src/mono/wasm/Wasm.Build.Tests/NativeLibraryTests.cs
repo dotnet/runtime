@@ -44,10 +44,10 @@ namespace Wasm.Build.Tests
                             ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild: true),
                             IsPublish: isPublish
                         ));
-            string output = await RunForPublishWithWebServer(new(config, ExpectedExitCode: 0));
+            RunResult output = await RunForPublishWithWebServer(new(config, ExpectedExitCode: 0));
 
-            Assert.Contains("print_line: 100", output);
-            Assert.Contains("from pinvoke: 142", output);
+            Assert.Contains(output.TestOutput, m => m.Contains("print_line: 100"));
+            Assert.Contains(output.TestOutput, m => m.Contains("from pinvoke: 142"));
         }
 
         [Theory]
@@ -76,8 +76,8 @@ namespace Wasm.Build.Tests
                         ));
             
             RunOptions runOptions = new(info.Configuration, ExtraArgs: "mono.png");
-            string output = await RunForPublishWithWebServer(new(config, ExpectedExitCode: 0));
-            Assert.Contains("Size: 26462 Height: 599, Width: 499", output);
+            RunResult output = await RunForPublishWithWebServer(new(config, ExpectedExitCode: 0));
+            Assert.Contains(output.TestOutput, m => m.Contains("Size: 26462 Height: 599, Width: 499"));
         }
 
         [Theory]
@@ -100,14 +100,13 @@ namespace Wasm.Build.Tests
                             IsPublish: isPublish
                         ));
 
-            string output = await RunForPublishWithWebServer(new(config, ExpectedExitCode: 0));
-            
-            Assert.Contains(
-                "Hashed: 24 95 141 179 34 113 254 37 245 97 166 252 147 139 46 38 67 6 236 48 78 218 81 128 7 209 118 72 38 56 25 105",
-                output);
+            RunResult output = await RunForPublishWithWebServer(new(config, ExpectedExitCode: 0));
+
+            string hash = "Hashed: 24 95 141 179 34 113 254 37 245 97 166 252 147 139 46 38 67 6 236 48 78 218 81 128 7 209 118 72 38 56 25 105";
+            Assert.Contains(output.TestOutput, m => m.Contains(hash));
 
             string cryptoInitMsg = "MONO_WASM: Initializing Crypto WebWorker";
-            Assert.DoesNotContain(cryptoInitMsg, output);
+            Assert.All(output.TestOutput, m => Assert.DoesNotContain(cryptoInitMsg, m));
         }
 
         [Theory]
@@ -135,10 +134,10 @@ namespace Wasm.Build.Tests
                             ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild: true),
                             IsPublish: isPublish
                         ));
-            string output = await RunForPublishWithWebServer(new(config, ExpectedExitCode: 0));
+            RunResult output = await RunForPublishWithWebServer(new(config, ExpectedExitCode: 0));
 
-            Assert.Contains("print_line: 100", output);
-            Assert.Contains("from pinvoke: 142", output);
+            Assert.Contains(output.TestOutput, m => m.Contains("print_line: 100"));
+            Assert.Contains(output.TestOutput, m => m.Contains("from pinvoke: 142"));
         }
     }
 }

@@ -174,13 +174,13 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 
     // Keeping these methods with explicit Build/Publish in the name
     // so in the test code it is evident which is being run!
-    public async Task<string> BlazorRunForBuildWithDotnetRun(RunOptions runOptions)
+    public async Task<RunResult> BlazorRunForBuildWithDotnetRun(RunOptions runOptions)
         => await BlazorRunTest(runOptions with { Host = RunHost.DotnetRun });
 
-    public async Task<string> BlazorRunForPublishWithWebServer(RunOptions runOptions)
+    public async Task<RunResult> BlazorRunForPublishWithWebServer(RunOptions runOptions)
         => await BlazorRunTest(runOptions with { Host = RunHost.WebServer });
 
-    public async Task<string> BlazorRunTest(RunOptions runOptions)
+    public async Task<RunResult> BlazorRunTest(RunOptions runOptions)
     {
         if (runOptions.ExecuteAfterLoaded is null)
         {

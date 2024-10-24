@@ -60,15 +60,15 @@ namespace Wasm.Build.Tests
                             IsPublish: isPublish
                         ));
 
-            string output = await RunForPublishWithWebServer(new(info.Configuration, ExpectedExitCode: 42));
-            Assert.Contains("UTC BaseUtcOffset is 0", output);
+            RunResult output = await RunForPublishWithWebServer(new(info.Configuration, ExpectedExitCode: 42));
+            Assert.Contains("UTC BaseUtcOffset is 0", output.TestOutput);
             if (invariantTimezone == true)
             {
-                Assert.Contains("Could not find Asia/Tokyo", output);
+                Assert.Contains(output.TestOutput, m => m.Contains("Could not find Asia/Tokyo"));
             }
             else
             {
-                Assert.Contains("Asia/Tokyo BaseUtcOffset is 09:00:00", output);
+                Assert.Contains(output.TestOutput, m => m.Contains("Asia/Tokyo BaseUtcOffset is 09:00:00"));
             }
         }
     }

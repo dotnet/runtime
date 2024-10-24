@@ -32,6 +32,19 @@ public class WasmTemplateTestsBase : BuildTestBase
             { "partial class StopwatchSample", $"return 42;{Environment.NewLine}partial class StopwatchSample" }
         };
 
+    private string GetProjectName(string idPrefix, string config, bool aot, bool appendUnicodeToPath) =>
+        appendUnicodeToPath ?
+            $"{idPrefix}_{config}_{aot}_{GetRandomId()}_{s_unicodeChars}" :
+            $"{idPrefix}_{config}_{aot}_{GetRandomId()}";
+
+    private string InitProjectLocation(string idPrefix, string config, bool aot, bool appendUnicodeToPath)
+    {
+        string projectName = GetProjectName(idPrefix, config, aot, appendUnicodeToPath);
+        InitPaths(projectName);
+        InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
+        return projectName;
+    }
+
     public ProjectInfo CreateWasmTemplateProject(
         Template template,
         string config,
@@ -45,11 +58,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         string extraItems = "",
         string atTheEnd = "")
     {
-        string projectName =  appendUnicodeToPath ?
-            $"{idPrefix}_{config}_{aot}_{GetRandomId()}_{s_unicodeChars}" :
-            $"{idPrefix}_{config}_{aot}_{GetRandomId()}";
-        InitPaths(projectName);
-        InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
+        string projectName = InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath);
 
         if (addFrameworkArg)
             extraArgs += $" -f {DefaultTargetFramework}";
@@ -74,6 +83,19 @@ public class WasmTemplateTestsBase : BuildTestBase
 
         return new ProjectInfo(config, aot, projectName, projectFilePath);
     }
+
+    protected ProjectInfo CopyTestAsset(string config, bool aot, string assetDirName, string idPrefix, string projectDirReativeToAssetDir = "", bool appendUnicodeToPath = true)
+    {
+        string projectName = InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath);
+        Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetDirName), Path.Combine(_projectDir!));
+        if (!string.IsNullOrEmpty(projectDirReativeToAssetDir))
+        {
+            _projectDir = Path.Combine(_projectDir!, projectDirReativeToAssetDir);
+        }
+        string projectFilePath = Path.Combine(_projectDir!, $"{projectName}.csproj");
+        return new ProjectInfo(config, aot, projectName, projectFilePath);
+    }
+
 
     public (string projectDir, string buildOutput) BuildTemplateProject(
         ProjectInfo projectInfo,
@@ -179,13 +201,13 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     // Keeping these methods with explicit Build/Publish in the name
     // so in the test code it is evident which is being run!
-    public async Task<string> RunForBuildWithDotnetRun(RunOptions runOptions)
+    public async Task<RunResult> RunForBuildWithDotnetRun(RunOptions runOptions)
         => await BrowserRun(runOptions with { Host = RunHost.DotnetRun });
 
-    public async Task<string> RunForPublishWithWebServer(RunOptions runOptions)
+    public async Task<RunResult> RunForPublishWithWebServer(RunOptions runOptions)
         => await BrowserRun(runOptions with { Host = RunHost.WebServer });
 
-    private async Task<string> BrowserRun(RunOptions runOptions) => runOptions.Host switch
+    private async Task<RunResult> BrowserRun(RunOptions runOptions) => runOptions.Host switch
     {
         RunHost.DotnetRun =>
                 await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", _projectDir!, runOptions),
@@ -198,7 +220,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         _ => throw new NotImplementedException(runOptions.Host.ToString())
     };
 
-    protected async Task<string> BrowserRunTest(string runArgs,
+    protected async Task<RunResult> BrowserRunTest(string runArgs,
                                     string workingDirectory,
                                     RunOptions runOptions)
     {
@@ -211,14 +233,23 @@ public class WasmTemplateTestsBase : BuildTestBase
         using RunCommand runCommand = new RunCommand(s_buildEnv, _testOutput);
         ToolCommand cmd = runCommand.WithWorkingDirectory(workingDirectory);
 
+        var query = runOptions.BrowserQueryString ?? new Dictionary<string, string>();
+        if (!string.IsNullOrEmpty(runOptions.TestScenario))
+            query.Add("test", runOptions.TestScenario);
+        var queryString = query.Any() ? "?" + string.Join("&", query.Select(kvp => $"{kvp.Key}={kvp.Value}")) : "";
+
+        List<string> testOutput = new();
+        List<string> consoleOutput = new();
+        List<string> serverOutput = new();
         await using var runner = new BrowserRunner(_testOutput);
         var page = await runner.RunAsync(
             cmd,
             runArgs,
+            locale: runOptions.Locale,
             onConsoleMessage: OnConsoleMessage,
-            onServerMessage: runOptions.OnServerMessage,
+            onServerMessage: OnServerMessage,
             onError: OnErrorMessage,
-            modifyBrowserUrl: browserUrl => new Uri(new Uri(browserUrl), runOptions.BrowserPath + runOptions.QueryString).ToString());
+            modifyBrowserUrl: browserUrl => new Uri(new Uri(browserUrl), runOptions.BrowserPath + queryString).ToString());
 
         _testOutput.WriteLine("Waiting for page to load");
         await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new () { Timeout = 1 * 60 * 1000 });
@@ -234,21 +265,39 @@ public class WasmTemplateTestsBase : BuildTestBase
         _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
         int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(10));
         if (runOptions.ExpectedExitCode is not null && exitCode != runOptions.ExpectedExitCode)
-            throw new Exception($"Expected exit code {runOptions.ExpectedExitCode} but got {exitCode}");
+            throw new Exception($"Expected exit code {runOptions.ExpectedExitCode} but got {exitCode}.\nconsoleOutput={string.Join("\n", consoleOutput)}");
 
-        return string.Join("\n", runner.OutputLines);
+        return new(exitCode, testOutput, consoleOutput, serverOutput);
 
-        void OnConsoleMessage(IPage page, IConsoleMessage msg)
+        void OnConsoleMessage(string type, string msg)
         {
-            _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
+            _testOutput.WriteLine($"[{type}] {msg}");
+            consoleOutput.Add(msg);
+            OnTestOutput(msg);
 
-            runOptions.OnConsoleMessage?.Invoke(page, msg);
+            runOptions.OnConsoleMessage?.Invoke(type, msg);
 
             if (runOptions.DetectRuntimeFailures)
             {
-                if (msg.Text.Contains("[MONO] * Assertion") || msg.Text.Contains("Error: [MONO] "))
-                    throw new XunitException($"Detected a runtime failure at line: {msg.Text}");
+                if (msg.Contains("[MONO] * Assertion") || msg.Contains("Error: [MONO] "))
+                    throw new XunitException($"Detected a runtime failure at line: {msg}");
             }
+        }
+
+        void OnServerMessage(string msg)
+        {
+            serverOutput.Add(msg);
+            OnTestOutput(msg);
+
+            if (runOptions.OnServerMessage != null)
+                runOptions.OnServerMessage(msg);
+        }
+
+        void OnTestOutput(string msg)
+        {
+            const string testOutputPrefix = "TestOutput -> ";
+            if (msg.StartsWith(testOutputPrefix))
+                testOutput.Add(msg.Substring(testOutputPrefix.Length));
         }
 
         void OnErrorMessage(string msg)

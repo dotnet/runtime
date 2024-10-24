@@ -156,7 +156,7 @@ internal class BrowserRunner : IAsyncDisposable
         string args,
         bool headless = true,
         string locale = "en-US",
-        Action<IPage, IConsoleMessage>? onConsoleMessage = null,
+        Action<string, string>? onConsoleMessage = null,
         Action<string>? onServerMessage = null,
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null)
@@ -171,7 +171,7 @@ internal class BrowserRunner : IAsyncDisposable
         IBrowserContext context,
         string browserUrl,
         bool headless = true,
-        Action<IPage, IConsoleMessage>? onConsoleMessage = null,
+        Action<string, string>? onConsoleMessage = null,
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null,
         bool resetExitedState = false
@@ -192,26 +192,15 @@ internal class BrowserRunner : IAsyncDisposable
             {
                 message = payloadMatch.Groups["payload"].Value;
             }
-            if (message.StartsWith("TestOutput -> "))
-            {
-                lock (OutputLines)
-                {
-                    OutputLines.Add(message);
-                }
-            }
             Match exitMatch = s_exitRegex.Match(message);
             if (exitMatch.Success)
             {
-                lock (OutputLines)
-                {
-                    OutputLines.Add(message);
-                }
                 int exitCode = int.Parse(exitMatch.Groups["exitCode"].Value);
                 _exited.TrySetResult(exitCode);
             }
             if (onConsoleMessage is not null)
             {
-                onConsoleMessage(page, msg);
+                onConsoleMessage(msg.Type, message);
             }
         };
 

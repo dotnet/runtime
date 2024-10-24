@@ -15,7 +15,7 @@ using Microsoft.Playwright;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class InterpPgoTests : AppTestBase
+public class InterpPgoTests : WasmTemplateTestsBase
 {
     public InterpPgoTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -34,10 +34,20 @@ public class InterpPgoTests : AppTestBase
         const int iterationCount = 70;
 
         _testOutput.WriteLine("/// Creating project");
-        CopyTestAsset("WasmBasicTestApp", "InterpPgoTest", "App");
+        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "InterpPgoTest", "App");
 
         _testOutput.WriteLine("/// Building");
-        BuildProject(config, extraArgs: "-p:WasmDebugLevel=0");
+        bool isPublish = false;
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish
+            ),
+            extraArgs: "-p:WasmDebugLevel=0"
+        );
 
         _testOutput.WriteLine("/// Starting server");
 

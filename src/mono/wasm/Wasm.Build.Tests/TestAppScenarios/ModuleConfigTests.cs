@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class ModuleConfigTests : AppTestBase
+public class ModuleConfigTests : WasmTemplateTestsBase
 {
     public ModuleConfigTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -25,11 +25,20 @@ public class ModuleConfigTests : AppTestBase
     [InlineData(true)]
     public async Task DownloadProgressFinishes(bool failAssemblyDownload)
     {
-        CopyTestAsset("WasmBasicTestApp", $"ModuleConfigTests_DownloadProgressFinishes_{failAssemblyDownload}", "App");
-        PublishProject("Debug");
+        string config = "Debug";
+        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", $"ModuleConfigTests_DownloadProgressFinishes_{failAssemblyDownload}", "App");
+        bool isPublish = true;
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish
+        ));
 
-        var result = await RunSdkStyleAppForPublish(new(
-            Configuration: "Debug",
+        var result = await RunForPublishWithWebServer(new(
+            Configuration: info.Configuration,
             TestScenario: "DownloadResourceProgressTest",
             BrowserQueryString: new Dictionary<string, string> { ["failAssemblyDownload"] = failAssemblyDownload.ToString().ToLowerInvariant() }
         ));
@@ -58,10 +67,19 @@ public class ModuleConfigTests : AppTestBase
     [Fact]
     public async Task OutErrOverrideWorks()
     {
-        CopyTestAsset("WasmBasicTestApp", $"ModuleConfigTests_OutErrOverrideWorks", "App");
-        PublishProject("Debug");
+        string config = "Debug";
+        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "ModuleConfigTests_OutErrOverrideWorks", "App");
+        bool isPublish = true;
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish
+        ));
 
-        var result = await RunSdkStyleAppForPublish(new(
+        var result = await RunForPublishWithWebServer(new(
             Configuration: "Debug",
             TestScenario: "OutErrOverrideWorks"
         ));
@@ -80,21 +98,37 @@ public class ModuleConfigTests : AppTestBase
     [InlineData("Release", false)]
     public async Task OverrideBootConfigName(string config, bool isPublish)
     {
-        CopyTestAsset("WasmBasicTestApp", $"OverrideBootConfigName", "App");
+        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "OverrideBootConfigName", "App");
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish
+        ));
 
         string[] extraArgs = ["-p:WasmBootConfigFileName=boot.json"];
-        if (isPublish)
-            PublishProject(config, bootConfigFileName: "boot.json", extraArgs: extraArgs);
-        else
-            BuildProject(config, bootConfigFileName: "boot.json", extraArgs: extraArgs);
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish,
+                BootConfigFileName: "boot.json",
+                UseCache: false
+            ),
+            extraArgs: extraArgs
+        );
 
         var runOptions = new RunOptions(
             Configuration: config,
             TestScenario: "OverrideBootConfigName"
         );
         var result = await (isPublish
-            ? RunSdkStyleAppForPublish(runOptions)
-            : RunSdkStyleAppForBuild(runOptions)
+            ? RunForPublishWithWebServer(runOptions)
+            : RunForBuildWithDotnetRun(runOptions)
         );
 
         Assert.Collection(

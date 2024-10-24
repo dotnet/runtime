@@ -59,8 +59,8 @@ namespace Wasm.Build.Tests
                             GlobalizationMode: GlobalizationMode.Hybrid
                         ));
 
-            string output = await RunForPublishWithWebServer(new(info.Configuration, ExpectedExitCode: 42));
-            Assert.Contains("HybridGlobalization works, thrown exception as expected", output);
+            RunResult output = await RunForPublishWithWebServer(new(info.Configuration, ExpectedExitCode: 42));
+            Assert.Contains(output.TestOutput, m => m.Contains("HybridGlobalization works, thrown exception as expected"));
         }
     }
 }

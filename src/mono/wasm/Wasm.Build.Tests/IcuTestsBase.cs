@@ -163,8 +163,8 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
                             CustomIcuFile: icuFileName
                         ));
             RunOptions runOptions = new(info.Configuration, Locale: locale, ExpectedExitCode: 42);
-            string runOutput = await RunForPublishWithWebServer(runOptions);
-            return $"{buildOutput}\n{runOutput}";
+            RunResult runOutput = await RunForPublishWithWebServer(runOptions);
+            return $"{buildOutput}\n{runOutput.TestOutput}";
         }
         catch(Exception ex)
         {

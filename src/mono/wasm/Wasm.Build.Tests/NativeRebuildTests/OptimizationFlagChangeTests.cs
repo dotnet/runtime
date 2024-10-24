@@ -68,8 +68,8 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
         var newStat = StatFiles(pathsDict);
         CompareStat(originalStat, newStat, pathsDict);
 
-        string runOutput = await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42));
-        TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput,
+        RunResult runOutput = await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42));
+        TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput.TestOutput,
                             contains: info.AOT);
     }
 }

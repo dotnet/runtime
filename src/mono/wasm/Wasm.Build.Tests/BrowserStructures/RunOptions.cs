@@ -19,12 +19,11 @@ public record RunOptions
     Func<IPage, Task>? Test = null,
     string? TestScenario = null,
     Dictionary<string, string>? BrowserQueryString = null,
-    Action<IPage, IConsoleMessage>? OnConsoleMessage = null,
+    Action<string, string>? OnConsoleMessage = null,
     Action<string>? OnServerMessage = null,
     Action<string>? OnErrorMessage = null,
     string ExtraArgs = "",
     string BrowserPath = "",
-    string QueryString = "",
     string Locale = "en-US",
     int? ExpectedExitCode = 0,
 

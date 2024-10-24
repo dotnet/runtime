@@ -16,7 +16,7 @@ using Xunit;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public partial class LibraryInitializerTests : AppTestBase
+public partial class LibraryInitializerTests : WasmTemplateTestsBase
 {
     public LibraryInitializerTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -26,10 +26,18 @@ public partial class LibraryInitializerTests : AppTestBase
     [Fact]
     public async Task LoadLibraryInitializer()
     {
-        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_LoadLibraryInitializer", "App");
-        PublishProject("Debug");
-
-        var result = await RunSdkStyleAppForPublish(new(Configuration: "Debug", TestScenario: "LibraryInitializerTest"));
+        string config = "Debug";        
+        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "LibraryInitializerTests_LoadLibraryInitializer", "App");
+        bool isPublish = true;
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish
+        ));
+        RunResult result = await RunForPublishWithWebServer(new(info.Configuration, TestScenario: "LibraryInitializerTest"));
         Assert.Collection(
             result.TestOutput,
             m => Assert.Equal("LIBRARY_INITIALIZER_TEST = 1", m)
@@ -42,15 +50,24 @@ public partial class LibraryInitializerTests : AppTestBase
     [Fact]
     public async Task AbortStartupOnError()
     {
-        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_AbortStartupOnError", "App");
-        PublishProject("Debug");
+        string config = "Debug";        
+        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "LibraryInitializerTests_AbortStartupOnError", "App");
+        bool isPublish = true;
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish
+        ));
 
-        var result = await RunSdkStyleAppForPublish(new(
-            Configuration: "Debug",
+        RunOptions options = new(
+            info.Configuration,
             TestScenario: "LibraryInitializerTest",
             BrowserQueryString: new Dictionary<string, string> { ["throwError"] = "true" },
-            ExpectedExitCode: 1
-        ));
+            ExpectedExitCode: 1);
+        RunResult result = await RunForPublishWithWebServer(options);
         Assert.True(result.ConsoleOutput.Any(m => AbortStartupOnErrorRegex().IsMatch(m)), "The library initializer test didn't emit expected error message");
     }
 }

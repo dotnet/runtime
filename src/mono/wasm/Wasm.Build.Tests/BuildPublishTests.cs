@@ -76,7 +76,7 @@ namespace Wasm.Build.Tests
                             IsPublish: isPublish,
                             UseCache: false
                         ));
-            string output = await RunForPublishWithWebServer(runOptions);
+            await RunForPublishWithWebServer(runOptions);
         }
 
         [Theory]

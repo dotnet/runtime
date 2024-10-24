@@ -63,15 +63,15 @@ namespace Wasm.Build.Tests
                             GlobalizationMode: invariantGlobalization == true ? GlobalizationMode.Invariant : GlobalizationMode.Sharded
                         ));
 
-            string output = await RunForPublishWithWebServer(new(info.Configuration, ExpectedExitCode: 42));
+            RunResult output = await RunForPublishWithWebServer(new(info.Configuration, ExpectedExitCode: 42));
             if (invariantGlobalization == true)
             {
-                Assert.Contains("Could not create es-ES culture", output);
-                Assert.Contains("CurrentCulture.NativeName: Invariant Language (Invariant Country)", output);
+                Assert.Contains(output.TestOutput, m => m.Contains("Could not create es-ES culture"));
+                Assert.Contains(output.TestOutput, m => m.Contains("CurrentCulture.NativeName: Invariant Language (Invariant Country)"));
             }
             else
             {
-                Assert.Contains("es-ES: Is Invariant LCID: False", output);
+                Assert.Contains(output.TestOutput, m => m.Contains("es-ES: Is Invariant LCID: False"));
                 // ignoring the last line of the output which prints the current culture
             }
         }
