@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Configuration
 {
@@ -20,6 +21,7 @@ namespace System.Configuration
 
         public virtual object this[string propertyName]
         {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 if (IsSynchronized)
@@ -50,6 +52,7 @@ namespace System.Configuration
             }
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private object GetPropertyValueByName(string propertyName)
         {
             if (Properties == null || _propertyValues == null || Properties.Count == 0)

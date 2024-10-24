@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Specialized;
 using System.Configuration;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 
 namespace System.Diagnostics
@@ -11,6 +12,7 @@ namespace System.Diagnostics
     [ConfigurationCollection(typeof(SourceElement),
         AddItemName = "source",
         CollectionType = ConfigurationElementCollectionType.BasicMap)]
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     internal sealed class SourceElementsCollection : ConfigurationElementCollection
     {
         public new SourceElement this[string name] => (SourceElement)BaseGet(name);
@@ -30,6 +32,7 @@ namespace System.Diagnostics
     }
 
 
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     internal sealed class SourceElement : ConfigurationElement
     {
         private static readonly ConfigurationPropertyCollection _properties = new();
@@ -52,20 +55,30 @@ namespace System.Diagnostics
 
         public StringDictionary Attributes => _attributes ??= new StringDictionary();
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("listeners")]
         public ListenerElementsCollection Listeners => (ListenerElementsCollection)this[_propListeners];
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("name", IsRequired = true, DefaultValue = "")]
         public string Name => (string)this[_propName];
 
         protected internal override ConfigurationPropertyCollection Properties => _properties;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("switchName")]
         public string SwitchName => (string)this[_propSwitchName];
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("switchValue")]
         public string SwitchValue => (string)this[_propSwitchValue];
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("switchType")]
         public string SwitchType => (string)this[_propSwitchType];
 
