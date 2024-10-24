@@ -251,6 +251,8 @@ internal unsafe class TargetTestHelpers
         }
     }
 
+    internal void WriteNUInt(Span<byte> dest, TargetNUInt targetNUInt) => WritePointer(dest, targetNUInt.Value);
+
     internal TargetPointer ReadPointer(ReadOnlySpan<byte> src)
     {
         if (Arch.Is64Bit)
