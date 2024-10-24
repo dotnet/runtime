@@ -361,6 +361,7 @@ FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetPrimitiveCorElementType", MethodTableNative::GetPrimitiveCorElementType)
     FCFuncElement("GetMethodTableMatchingParentClass", MethodTableNative::GetMethodTableMatchingParentClass)
     FCFuncElement("GetNullableValueFieldReferenceAndSize", MethodTableNative::GetNullableValueFieldReferenceAndSize)
+    FCFuncElement("InstantiationArg0", MethodTableNative::InstantiationArg0)
 FCFuncEnd()
 
 FCFuncStart(gStubHelperFuncs)

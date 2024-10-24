@@ -85,7 +85,7 @@ namespace System.Runtime.CompilerServices
                 }
 
                 // Set the hasValue field on the Nullable type. It MUST always be placed at the start of the object.
-                *(bool*)destPtr = true;
+                Unsafe.As<byte, bool>(ref destPtr) = true;
                 ref byte destValuePtr = ref typeMT->GetNullableValueFieldReferenceAndSize(ref destPtr, out uint size);
                 Unsafe.CopyBlockUnaligned(ref destValuePtr, ref RuntimeHelpers.GetRawData(obj), size);
             }
