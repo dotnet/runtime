@@ -5,6 +5,12 @@
 
 //
 
+#ifdef __linux__
+extern "C" {
+    #include "openssl.h"
+}
+#endif
+
 #include "ilasmpch.h"
 
 #include "asmparse.h"
@@ -180,6 +186,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
       printf("\n/DEBUG          Disable JIT optimization, create PDB file, use sequence points from PDB");
       printf("\n/DEBUG=IMPL     Disable JIT optimization, create PDB file, use implicit sequence points");
       printf("\n/DEBUG=OPT      Enable JIT optimization, create PDB file, use implicit sequence points");
+      printf("\n/DET            Produce deterministic outputs");
       printf("\n/OPTIMIZE       Optimize long instructions to short");
       printf("\n/FOLD           Fold the identical method bodies into one");
       printf("\n/CLOCK          Measure and report compilation times");
@@ -318,6 +325,13 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                     else if (!_stricmp(szOpt, "DET"))
                     {
                       pAsm->m_fDeterministic = TRUE;
+#ifdef __linux__
+                      if (!CryptoNative_OpenSslAvailable())
+                      {
+                        fprintf(stderr, "\nWarning: OpenSSL not available. Disabling build determinism.\n");
+                        pAsm->m_fDeterministic = FALSE;
+                      }
+#endif
                     }
                     else if (!_stricmp(szOpt, "X64"))
                     {
