@@ -848,7 +848,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
-        public static async Task SupportsReferences()
+        public static async Task SupportsPreserveReferenceHandling()
         {
             ContextWithPreserveReference context = ContextWithPreserveReference.Default;
             var selfRef = new SelfReference();
@@ -863,7 +863,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             await JsonSerializer.SerializeAsync(stream, selfRef, typeof(SelfReference), context);
             Assert.Equal(expectedJson, stream.AsString());
 
-            SelfReference deserialized = JsonSerializer.Deserialize(expectedJson, context.SelfReference);
+            SelfReference? deserialized = JsonSerializer.Deserialize(expectedJson, context.SelfReference);
+            Assert.NotNull(deserialized);
             Assert.Same(deserialized, deserialized.Me);
         }
 
@@ -871,6 +872,64 @@ namespace System.Text.Json.SourceGeneration.Tests
             ReferenceHandler = JsonKnownReferenceHandler.Preserve)]
         [JsonSerializable(typeof(SelfReference))]
         internal partial class ContextWithPreserveReference : JsonSerializerContext
+        {
+        }
+
+        [Fact]
+        public static async Task SupportsIgnoreCyclesReferenceHandling()
+        {
+            ContextWithIgnoreCyclesReferenceHandling context = ContextWithIgnoreCyclesReferenceHandling.Default;
+            var selfRef = new SelfReference();
+            selfRef.Me = selfRef;
+
+            string expectedJson = """{"Me":null}""";
+
+            string json = JsonSerializer.Serialize(selfRef, context.SelfReference);
+            Assert.Equal(expectedJson, json);
+
+            var stream = new Utf8MemoryStream();
+            await JsonSerializer.SerializeAsync(stream, selfRef, typeof(SelfReference), context);
+            Assert.Equal(expectedJson, stream.AsString());
+
+            string circularJson = """{"$id":"1","Me":{"$ref":"1"}}""";
+            SelfReference? deserialized = JsonSerializer.Deserialize(circularJson, context.SelfReference);
+            Assert.NotNull(deserialized);
+            Assert.NotNull(deserialized.Me);
+            Assert.NotSame(deserialized, deserialized.Me);
+            Assert.Null(deserialized.Me.Me);
+        }
+
+        [JsonSourceGenerationOptions(
+            ReferenceHandler = JsonKnownReferenceHandler.IgnoreCycles)]
+        [JsonSerializable(typeof(SelfReference))]
+        internal partial class ContextWithIgnoreCyclesReferenceHandling : JsonSerializerContext
+        {
+        }
+
+        [Fact]
+        public static async Task SupportsUnspecifiedReferenceHandling()
+        {
+            ContextWithUnspecifiedReferenceHandling context = ContextWithUnspecifiedReferenceHandling.Default;
+            var selfRef = new SelfReference();
+            selfRef.Me = selfRef;
+
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(selfRef, context.SelfReference));
+
+            var stream = new Utf8MemoryStream();
+            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.SerializeAsync(stream, selfRef, typeof(SelfReference), context));
+
+            string circularJson = """{"$id":"1","Me":{"$ref":"1"}}""";
+            SelfReference deserialized = JsonSerializer.Deserialize(circularJson, context.SelfReference);
+            Assert.NotNull(deserialized);
+            Assert.NotNull(deserialized.Me);
+            Assert.NotSame(deserialized, deserialized.Me);
+            Assert.Null(deserialized.Me.Me);
+        }
+
+        [JsonSourceGenerationOptions(
+            ReferenceHandler = JsonKnownReferenceHandler.Unspecified)]
+        [JsonSerializable(typeof(SelfReference))]
+        internal partial class ContextWithUnspecifiedReferenceHandling : JsonSerializerContext
         {
         }
 

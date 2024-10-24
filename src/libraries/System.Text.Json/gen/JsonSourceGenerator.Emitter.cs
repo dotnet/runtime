@@ -37,6 +37,8 @@ namespace System.Text.Json.SourceGeneration
             private const string OptionsLocalVariableName = "options";
             private const string ValueVarName = "value";
             private const string WriterVarName = "writer";
+            private const string PreserveReferenceHandlerPropertyName = "Preserve";
+            private const string IgnoreCyclesReferenceHandlerPropertyName = "IgnoreCycles";
 
             private static readonly AssemblyName s_assemblyName = typeof(Emitter).Assembly.GetName();
 
@@ -1284,6 +1286,20 @@ namespace System.Text.Json.SourceGeneration
                     ? $"{JsonNamingPolicyTypeRef}.{policyName}"
                     : "null";
                 }
+
+                static string FormatReferenceHandler(JsonKnownReferenceHandler referenceHandler)
+                {
+                    string? referenceHandlerName = referenceHandler switch
+                    {
+                        JsonKnownReferenceHandler.Preserve => PreserveReferenceHandlerPropertyName,
+                        JsonKnownReferenceHandler.IgnoreCycles => IgnoreCyclesReferenceHandlerPropertyName,
+                        _ => null,
+                    };
+
+                    return referenceHandlerName != null
+                    ? $"{ReferenceHandlerTypeRef}.{referenceHandlerName}"
+                    : "null";
+                }
             }
 
             private static void GenerateConverterHelpers(SourceWriter writer, bool emitGetConverterForNullablePropertyMethod)
@@ -1436,9 +1452,6 @@ namespace System.Text.Json.SourceGeneration
 
             private static string FormatJsonSerializerDefaults(JsonSerializerDefaults defaults)
                 => SourceGeneratorHelpers.FormatEnumLiteral(JsonSerializerDefaultsTypeRef, defaults);
-
-            private static string FormatReferenceHandler(JsonKnownReferenceHandler referenceHandler)
-                => SourceGeneratorHelpers.FormatEnumLiteral(ReferenceHandlerTypeRef, referenceHandler);
 
             private static string GetCreateValueInfoMethodRef(string typeCompilableName) => $"{CreateValueInfoMethodName}<{typeCompilableName}>";
 
