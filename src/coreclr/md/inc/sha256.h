@@ -13,4 +13,8 @@
 
 HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize);
 
+#ifdef __linux__
+bool IsOpenSslAvailable();
+#endif
+
 #endif // __sha256__h__

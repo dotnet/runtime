@@ -15,6 +15,10 @@
 
 #include "assembler.h"
 
+#ifdef __linux__
+#include "sha256.h"
+#endif
+
 void indexKeywords(Indx* indx); // defined in asmparse.y
 
 unsigned int g_uCodePage = CP_ACP;
@@ -242,7 +246,17 @@ BOOL Assembler::Init(BOOL generatePdb)
 
     if (m_fDeterministic)
     {
-        m_dwCeeFileFlags |= ICEE_CREATE_FILE_DET;
+#ifdef __linux__
+        if (!IsOpenSslAvailable())
+        {
+            fprintf(stderr, "\nWarning: OpenSSL not available. Disabling build determinism.\n");
+            m_fDeterministic = FALSE;
+        }
+        else
+#endif
+        {
+            m_dwCeeFileFlags |= ICEE_CREATE_FILE_DET;
+        }
     }
 
     if (FAILED(m_pCeeFileGen->CreateCeeFileEx(&m_pCeeFile,(ULONG)m_dwCeeFileFlags))) return FALSE;

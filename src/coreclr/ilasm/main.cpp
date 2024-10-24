@@ -5,12 +5,6 @@
 
 //
 
-#ifdef __linux__
-extern "C" {
-    #include "openssl.h"
-}
-#endif
-
 #include "ilasmpch.h"
 
 #include "asmparse.h"
@@ -325,13 +319,6 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                     else if (!_stricmp(szOpt, "DET"))
                     {
                       pAsm->m_fDeterministic = TRUE;
-#ifdef __linux__
-                      if (!CryptoNative_OpenSslAvailable())
-                      {
-                        fprintf(stderr, "\nWarning: OpenSSL not available. Disabling build determinism.\n");
-                        pAsm->m_fDeterministic = FALSE;
-                      }
-#endif
                     }
                     else if (!_stricmp(szOpt, "X64"))
                     {

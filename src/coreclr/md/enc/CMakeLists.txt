@@ -42,6 +42,15 @@ set(MDRUNTIMERW_HEADERS
   ../runtime/mdinternalro.h
 )
 
+if(CLR_CMAKE_TARGET_LINUX)
+  configure_file(
+    ../../../native/libs/System.Security.Cryptography.Native/pal_crypto_config.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/pal_crypto_config.h)
+  include_directories(../../../native/libs/Common)
+  include_directories(../../../native/libs/System.Security.Cryptography.Native)
+  include_directories(${CMAKE_CURRENT_BINARY_DIR})
+endif(CLR_CMAKE_TARGET_LINUX)
+
 if (CLR_CMAKE_TARGET_WIN32)
   list(APPEND MDRUNTIMERW_SOURCES ${MDRUNTIMERW_HEADERS})
 endif(CLR_CMAKE_TARGET_WIN32)
@@ -56,6 +65,10 @@ target_precompile_headers(mdruntimerw_dac PRIVATE stdafx.h)
 add_library_clr(mdruntimerw_wks OBJECT ${MDRUNTIMERW_SOURCES})
 target_compile_definitions(mdruntimerw_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
 target_precompile_headers(mdruntimerw_wks PRIVATE stdafx.h)
+
+if(CLR_CMAKE_TARGET_LINUX)
+  target_link_libraries(mdruntimerw_wks PRIVATE System.Security.Cryptography.Native.OpenSsl-Static)
+endif(CLR_CMAKE_TARGET_LINUX)
 
 add_library_clr(mdruntimerw-dbi ${MDRUNTIMERW_SOURCES})
 set_target_properties(mdruntimerw-dbi PROPERTIES DBI_COMPONENT TRUE)

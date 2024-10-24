@@ -95,11 +95,46 @@ HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
     memcpy(pDst, hash, min(CC_SHA256_DIGEST_LENGTH, dstSize));
     return S_OK;
 }
+#elif defined(__linux__)
+extern "C" {
+    #include "openssl.h"
+    #include "pal_evp.h"
+}
+
+bool IsOpenSslAvailable()
+{
+    return CryptoNative_OpenSslAvailable() != 0;
+}
+
+HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
+{
+    if (!IsOpenSslAvailable())
+    {
+        return E_FAIL;
+    }
+
+    BYTE hash[32];
+    DWORD hashLength = 0;
+
+    if (!CryptoNative_EvpDigestOneShot(CryptoNative_EvpSha256(), pSrc, srcSize, hash, &hashLength))
+    {
+        return E_FAIL;
+    }
+
+    for (int i = 0; i < 32; i++)
+    {
+        fprintf(stderr, "%c", hash[i]);
+    }
+
+    fprintf(stderr, "\n");
+
+    memcpy(pDst, hash, min(hashLength, dstSize));
+    return S_OK;
+}
 #else
 // Unsupported platform
 HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
-    memset(pDst, 0, dstSize);
-    return S_OK;
+    return E_FAIL;
 }
 #endif
