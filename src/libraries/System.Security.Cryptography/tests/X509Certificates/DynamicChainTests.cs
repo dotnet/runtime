@@ -7,6 +7,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.Asn1;
+using System.Security.Cryptography.X509Certificates.Asn1;
 using Test.Cryptography;
 using Xunit;
 
@@ -595,6 +597,102 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void NameConstraintViolation_ExcludedTree_Upn()
+        {
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddUserPrincipalName("mona@github.com");
+
+            AsnWriter writer = new(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.UTF8String, "@github.com");
+            byte[] github = writer.Encode();
+            writer.Reset();
+
+            NameConstraintsAsn nameConstraints = new NameConstraintsAsn
+            {
+                excludedSubtrees =
+                [
+                    new GeneralSubtreeAsn
+                    {
+                        @base = new GeneralNameAsn
+                        {
+                            OtherName = new OtherNameAsn
+                            {
+                                TypeId = "1.3.6.1.4.1.311.20.2.3", //User Principal Name (UPN)
+                                Value = github,
+                            }
+                        }
+                    }
+                ]
+            };
+
+            nameConstraints.Encode(writer);
+            string encoded = writer.Encode(Convert.ToHexString);
+
+            TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
+                Assert.False(result, "chain.Build");
+
+                if (PlatformDetection.IsWindows)
+                {
+                    Assert.Equal(X509ChainStatusFlags.HasExcludedNameConstraint, chain.AllStatusFlags());
+                }
+                else
+                {
+                    Assert.Equal(
+                        PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint, true),
+                        chain.AllStatusFlags());
+                }
+            });
+        }
+
+        [Fact]
+        public static void NameConstraintViolation_PermittedTree_Upn()
+        {
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddUserPrincipalName("mona@github.com");
+
+            AsnWriter writer = new(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.UTF8String, "@microsoft.com");
+            byte[] github = writer.Encode();
+            writer.Reset();
+
+            NameConstraintsAsn nameConstraints = new NameConstraintsAsn
+            {
+                permittedSubtrees =
+                [
+                    new GeneralSubtreeAsn
+                    {
+                        @base = new GeneralNameAsn
+                        {
+                            OtherName = new OtherNameAsn
+                            {
+                                TypeId = "1.3.6.1.4.1.311.20.2.3", //User Principal Name (UPN)
+                                Value = github,
+                            }
+                        }
+                    }
+                ]
+            };
+
+            nameConstraints.Encode(writer);
+            string encoded = writer.Encode(Convert.ToHexString);
+
+            TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
+                Assert.False(result, "chain.Build");
+
+                if (PlatformDetection.IsWindows)
+                {
+                    Assert.Equal(X509ChainStatusFlags.HasNotPermittedNameConstraint, chain.AllStatusFlags());
+                }
+                else
+                {
+                    Assert.Equal(
+                        PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint, true),
+                        chain.AllStatusFlags());
+                }
+            });
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52976", TestPlatforms.Android)]
         public static void MismatchKeyIdentifiers()
         {
@@ -931,20 +1029,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return flags;
         }
 
-        private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags)
+        private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags, bool allowNotSupported = false)
         {
             if (PlatformDetection.UsesAppleCrypto)
             {
-                const X509ChainStatusFlags AnyNameConstraintFlags =
+                X509ChainStatusFlags anyNameConstraintFlags =
                     X509ChainStatusFlags.HasExcludedNameConstraint |
                     X509ChainStatusFlags.HasNotDefinedNameConstraint |
                     X509ChainStatusFlags.HasNotPermittedNameConstraint |
-                    X509ChainStatusFlags.HasNotSupportedNameConstraint |
                     X509ChainStatusFlags.InvalidNameConstraints;
 
-                if ((flags & AnyNameConstraintFlags) != 0)
+                if (!allowNotSupported)
                 {
-                    flags &= ~AnyNameConstraintFlags;
+                    anyNameConstraintFlags |= X509ChainStatusFlags.HasNotSupportedNameConstraint;
+                }
+
+                if ((flags & anyNameConstraintFlags) != 0)
+                {
+                    flags &= ~anyNameConstraintFlags;
                     flags |= X509ChainStatusFlags.InvalidNameConstraints;
                 }
             }
