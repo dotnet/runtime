@@ -3644,6 +3644,9 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 		}
 		case EVENT_KIND_TYPE_LOAD:
 			buffer_add_typeid (&buf, domain, (MonoClass *)arg);
+			if (CHECK_PROTOCOL_VERSION (2, 67)) {
+				buffer_add_assemblyid (&buf, tls->domain_unloading, m_class_get_image (((MonoClass *)arg))->assembly);
+			}
 			break;
 		case MDBGPROT_EVENT_KIND_METHOD_UPDATE:
 			buffer_add_methodid (&buf, domain, (MonoMethod *)arg);
