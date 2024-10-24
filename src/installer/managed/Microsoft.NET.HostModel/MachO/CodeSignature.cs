@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
@@ -14,17 +15,18 @@ namespace Microsoft.NET.HostModel.MachO;
 /// </summary>
 internal class CodeSignature
 {
-    private (EmbeddedSignatureHeader Header, long FileOffset) _embeddedSignature;
-    private (CodeDirectoryHeader Header, long FileOffset) _codeDirectory;
-    private (byte[] Identifier, long FileOffset) _identifierPtr;
-    private (byte[] Blob, long FileOffset) _cdHashes;
-    private (RequirementsBlob Header, long FileOffset) _requirementsBlob;
-    private (CmsWrapperBlob Header, long FileOffset) _cmsWrapperBlob;
+    private readonly long _fileOffset;
+    private EmbeddedSignatureHeader _embeddedSignature;
+    private CodeDirectoryHeader _codeDirectory;
+    private byte[] _identifier;
+    private byte[] _cdHashes;
+    private RequirementsBlob _requirementsBlob;
+    private CmsWrapperBlob _cmsWrapperBlob;
     private bool _unrecognizedFormat;
 
-    public uint Size => _embeddedSignature.Header.Size;
+    public uint Size => _embeddedSignature.Size;
 
-    private CodeSignature() { }
+    private CodeSignature(long fileOffset) { _fileOffset = fileOffset; }
 
     public static bool AreEquivalent(CodeSignature a, CodeSignature b)
     {
@@ -38,15 +40,15 @@ internal class CodeSignature
             return false;
         if (!a._codeDirectory.Equals(b._codeDirectory))
             return false;
-        if (!a._identifierPtr.Identifier.SequenceEqual(b._identifierPtr.Identifier))
+        if (!a._identifier.SequenceEqual(b._identifier))
             return false;
 
-        var aSpecialSlotHashes = a._cdHashes.Blob.AsSpan(0, (int)MachObjectFile.SpecialSlotCount * MachObjectFile.DefaultHashSize);
-        var bSpecialSlotHashes = b._cdHashes.Blob.AsSpan(0, (int)MachObjectFile.SpecialSlotCount * MachObjectFile.DefaultHashSize);
+        var aSpecialSlotHashes = a._cdHashes.AsSpan(0, (int)MachObjectFile.SpecialSlotCount * MachObjectFile.DefaultHashSize);
+        var bSpecialSlotHashes = b._cdHashes.AsSpan(0, (int)MachObjectFile.SpecialSlotCount * MachObjectFile.DefaultHashSize);
         if (!aSpecialSlotHashes.SequenceEqual(bSpecialSlotHashes))
             return false;
-        var aCodeHashes = a._cdHashes.Blob.AsSpan(((int)MachObjectFile.SpecialSlotCount + 1) * MachObjectFile.DefaultHashSize);
-        var bCodeHashes = b._cdHashes.Blob.AsSpan(((int)MachObjectFile.SpecialSlotCount + 1) * MachObjectFile.DefaultHashSize);
+        var aCodeHashes = a._cdHashes.AsSpan(((int)MachObjectFile.SpecialSlotCount + 1) * MachObjectFile.DefaultHashSize);
+        var bCodeHashes = b._cdHashes.AsSpan(((int)MachObjectFile.SpecialSlotCount + 1) * MachObjectFile.DefaultHashSize);
         if (!aCodeHashes.SequenceEqual(bCodeHashes))
             return false;
 
@@ -54,66 +56,69 @@ internal class CodeSignature
     }
 
     public static CodeSignature Create(
-        (EmbeddedSignatureHeader Header, long FileOffset) embeddedSignature,
-        (CodeDirectoryHeader Header, long FileOffset) codeDirectory,
-        (byte[] identifier, long FileOffset) identifierPtr,
-        (byte[], long FileOffset) cdHashes,
-        (RequirementsBlob Header, long FileOffset) requirementsBlob,
-        (CmsWrapperBlob Header, long FileOffset) cmsWrapperBlob)
+        long fileOffset,
+        EmbeddedSignatureHeader embeddedSignature,
+        CodeDirectoryHeader codeDirectory,
+        byte[] identifier,
+        byte[] cdHashes,
+        RequirementsBlob requirementsBlob,
+        CmsWrapperBlob cmsWrapperBlob)
     {
-        var cs = new CodeSignature();
-        cs._embeddedSignature = embeddedSignature;
-        cs._codeDirectory = codeDirectory;
-        cs._identifierPtr = identifierPtr;
-        cs._cdHashes = cdHashes;
-        cs._requirementsBlob = requirementsBlob;
-        cs._cmsWrapperBlob = cmsWrapperBlob;
-        cs._unrecognizedFormat = false;
+        var cs = new CodeSignature(fileOffset)
+        {
+            _embeddedSignature = embeddedSignature,
+            _codeDirectory = codeDirectory,
+            _identifier = identifier,
+            _cdHashes = cdHashes,
+            _requirementsBlob = requirementsBlob,
+            _cmsWrapperBlob = cmsWrapperBlob,
+            _unrecognizedFormat = false
+        };
         return cs;
     }
 
     public static CodeSignature Read(MemoryMappedViewAccessor file, long fileOffset)
     {
-        CodeSignature cs = new CodeSignature();
-        cs._embeddedSignature.FileOffset = fileOffset;
-        file.Read(fileOffset, out cs._embeddedSignature.Header);
-        if (cs._embeddedSignature.Header.BlobCount != 3
-            || cs._embeddedSignature.Header.CodeDirectory.Slot != CodeDirectorySpecialSlot.CodeDirectory
-            || cs._embeddedSignature.Header.Requirements.Slot != CodeDirectorySpecialSlot.Requirements
-            || cs._embeddedSignature.Header.CmsWrapper.Slot != CodeDirectorySpecialSlot.CmsWrapper)
+        CodeSignature cs = new CodeSignature(fileOffset);
+        file.Read(fileOffset, out cs._embeddedSignature);
+        if (cs._embeddedSignature.BlobCount != 3
+            || cs._embeddedSignature.CodeDirectory.Slot != CodeDirectorySpecialSlot.CodeDirectory
+            || cs._embeddedSignature.Requirements.Slot != CodeDirectorySpecialSlot.Requirements
+            || cs._embeddedSignature.CmsWrapper.Slot != CodeDirectorySpecialSlot.CmsWrapper)
         {
             cs._unrecognizedFormat = true;
             return cs;
         }
-        cs._codeDirectory.FileOffset = fileOffset + cs._embeddedSignature.Header.CodeDirectory.Offset;
-        file.Read(cs._codeDirectory.FileOffset, out cs._codeDirectory.Header);
-        if (cs._codeDirectory.Header.Version != CodeDirectoryVersion.HighestVersion
-            || cs._codeDirectory.Header.HashType != HashType.SHA256)
-        {
-            cs._unrecognizedFormat = true;
-            return cs;
-        }
-
-        cs._identifierPtr.FileOffset = cs._codeDirectory.FileOffset + cs._codeDirectory.Header.IdentifierOffset;
-        cs._cdHashes.FileOffset = cs._codeDirectory.FileOffset + cs._codeDirectory.Header.HashesOffset - MachObjectFile.SpecialSlotCount * MachObjectFile.DefaultHashSize;;
-
-        cs._identifierPtr.Identifier = new byte[cs._cdHashes.FileOffset - cs._identifierPtr.FileOffset];
-        file.ReadArray(cs._identifierPtr.FileOffset, cs._identifierPtr.Identifier, 0, cs._identifierPtr.Identifier.Length);
-
-        cs._cdHashes.Blob = new byte[(MachObjectFile.SpecialSlotCount + cs._codeDirectory.Header.CodeSlotCount) * MachObjectFile.DefaultHashSize];
-        file.ReadArray(cs._cdHashes.FileOffset, cs._cdHashes.Blob, 0, cs._cdHashes.Blob.Length);
-
-        cs._requirementsBlob.FileOffset = fileOffset + cs._embeddedSignature.Header.Requirements.Offset;
-        file.Read(cs._requirementsBlob.FileOffset, out cs._requirementsBlob.Header);
-        if (!cs._requirementsBlob.Header.Equals(RequirementsBlob.Empty))
+        var cdOffset = cs._fileOffset + cs._embeddedSignature.CodeDirectory.Offset;
+        file.Read(cdOffset, out cs._codeDirectory);
+        if (cs._codeDirectory.Version != CodeDirectoryVersion.HighestVersion
+            || cs._codeDirectory.HashType != HashType.SHA256
+            || cs._codeDirectory.SpecialSlotCount != MachObjectFile.SpecialSlotCount)
         {
             cs._unrecognizedFormat = true;
             return cs;
         }
 
-        cs._cmsWrapperBlob.FileOffset = fileOffset + cs._embeddedSignature.Header.CmsWrapper.Offset;
-        file.Read(cs._cmsWrapperBlob.FileOffset, out cs._cmsWrapperBlob.Header);
-        if (!cs._cmsWrapperBlob.Header.Equals(CmsWrapperBlob.Empty))
+        var identifierOffset = cs._fileOffset + cs._embeddedSignature.CodeDirectory.Offset + cs._codeDirectory.IdentifierOffset;
+        var codeHashesOffset = cs._fileOffset + cs._codeDirectory.HashesOffset - MachObjectFile.SpecialSlotCount * MachObjectFile.DefaultHashSize;;;
+
+        cs._identifier = new byte[codeHashesOffset - identifierOffset];
+        file.ReadArray(identifierOffset, cs._identifier, 0, cs._identifier.Length);
+
+        cs._cdHashes = new byte[(MachObjectFile.SpecialSlotCount + cs._codeDirectory.CodeSlotCount) * MachObjectFile.DefaultHashSize];
+        file.ReadArray(codeHashesOffset, cs._cdHashes, 0, cs._cdHashes.Length);
+
+        var requirementsOffset = cs._fileOffset + cs._embeddedSignature.Requirements.Offset;
+        file.Read(requirementsOffset, out cs._requirementsBlob);
+        if (!cs._requirementsBlob.Equals(RequirementsBlob.Empty))
+        {
+            cs._unrecognizedFormat = true;
+            return cs;
+        }
+
+        var cmsOffset = fileOffset + cs._embeddedSignature.CmsWrapper.Offset;
+        file.Read(cmsOffset, out cs._cmsWrapperBlob);
+        if (!cs._cmsWrapperBlob.Equals(CmsWrapperBlob.Empty))
         {
             cs._unrecognizedFormat = true;
             return cs;
@@ -123,12 +128,25 @@ internal class CodeSignature
 
     internal void WriteToFile(MemoryMappedViewAccessor file)
     {
-        file.Write(_embeddedSignature.FileOffset, ref _embeddedSignature.Header);
-        file.Write(_codeDirectory.FileOffset, ref _codeDirectory.Header);
-        file.WriteArray(_identifierPtr.FileOffset, _identifierPtr.Identifier, 0, _identifierPtr.Identifier.Length);
-        file.WriteArray(_cdHashes.FileOffset, _cdHashes.Blob, 0, _cdHashes.Blob.Length);
-        file.Write(_requirementsBlob.FileOffset, ref _requirementsBlob.Header);
-        file.Write(_cmsWrapperBlob.FileOffset, ref _cmsWrapperBlob.Header);
+        long fileOffset = _fileOffset;
+
+        file.Write(fileOffset, ref _embeddedSignature);
+        fileOffset += Marshal.SizeOf<EmbeddedSignatureHeader>();
+
+        file.Write(fileOffset, ref _codeDirectory);
+        fileOffset += Marshal.SizeOf<CodeDirectoryHeader>();
+
+        file.WriteArray(fileOffset, _identifier, 0, _identifier.Length);
+        fileOffset += _identifier.Length;
+
+        file.WriteArray(fileOffset, _cdHashes, 0, _cdHashes.Length);
+        fileOffset += _cdHashes.Length;
+
+        file.Write(fileOffset, ref _requirementsBlob);
+        fileOffset += Marshal.SizeOf<RequirementsBlob>();
+
+        file.Write(fileOffset, ref _cmsWrapperBlob);
+        Debug.Assert(fileOffset + Marshal.SizeOf<CmsWrapperBlob>() == _fileOffset + Size);
     }
 
     internal void WriteToStream(FileStream file)
@@ -136,22 +154,23 @@ internal class CodeSignature
         byte[] arr = new byte[(int)Size];
         Span<byte> buffer = arr;
 
-        MemoryMarshal.Write(buffer, ref _embeddedSignature.Header);
+        MemoryMarshal.Write(buffer, ref _embeddedSignature);
+        int bufferOffset = Marshal.SizeOf<EmbeddedSignatureHeader>();
 
-        int fileOffset = (int)(_codeDirectory.FileOffset - _embeddedSignature.FileOffset);
-        MemoryMarshal.Write(buffer.Slice(fileOffset), ref _codeDirectory.Header);
+        MemoryMarshal.Write(buffer.Slice(bufferOffset), ref _codeDirectory);
+        bufferOffset += Marshal.SizeOf<CodeDirectoryHeader>();
 
-        fileOffset = (int)(_identifierPtr.FileOffset - _embeddedSignature.FileOffset);
-        _identifierPtr.Identifier.CopyTo(buffer.Slice(fileOffset));
+        _identifier.CopyTo(buffer.Slice(bufferOffset));
+        bufferOffset += _identifier.Length;
 
-        fileOffset = (int)(_cdHashes.FileOffset - _embeddedSignature.FileOffset);
-        _cdHashes.Blob.AsSpan().CopyTo(buffer.Slice(fileOffset));
+        _cdHashes.AsSpan().CopyTo(buffer.Slice(bufferOffset));
+        bufferOffset += _cdHashes.Length;
 
-        fileOffset = (int)(_requirementsBlob.FileOffset - _embeddedSignature.FileOffset);
-        MemoryMarshal.Write(buffer.Slice(fileOffset), ref _requirementsBlob.Header);
+        MemoryMarshal.Write(buffer.Slice(bufferOffset), ref _requirementsBlob);
+        bufferOffset += Marshal.SizeOf<RequirementsBlob>();
 
-        fileOffset = (int)(_cmsWrapperBlob.FileOffset - _embeddedSignature.FileOffset);
-        MemoryMarshal.Write(buffer.Slice(fileOffset), ref _cmsWrapperBlob.Header);
+        MemoryMarshal.Write(buffer.Slice(bufferOffset), ref _cmsWrapperBlob);
+        Debug.Assert(bufferOffset + Marshal.SizeOf<CmsWrapperBlob>() == buffer.Length);
 
         file.Write(arr, 0, buffer.Length);
     }

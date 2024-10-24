@@ -8,11 +8,11 @@ namespace Microsoft.NET.HostModel.MachO;
 
 public static class EndianConversionExtensions
 {
-    public static uint MakeBigEndian(this uint value)
+    public static uint ConvertToBigEndian(this uint value)
     {
         return BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value;
     }
-    public static ulong MakeBigEndian(this ulong value)
+    public static ulong ConvertToBigEndian(this ulong value)
     {
         return BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value;
     }

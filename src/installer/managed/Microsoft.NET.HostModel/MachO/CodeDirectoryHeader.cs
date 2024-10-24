@@ -14,7 +14,7 @@ namespace Microsoft.NET.HostModel.MachO;
 [StructLayout(LayoutKind.Sequential)]
 internal struct CodeDirectoryHeader
 {
-    private BlobMagic _magic;
+    private readonly BlobMagic _magic = (BlobMagic)((uint)BlobMagic.CodeDirectory).ConvertToBigEndian();
     private uint _size;
     private CodeDirectoryVersion _version;
     private CodeDirectoryFlags _flags;
@@ -27,98 +27,77 @@ internal struct CodeDirectoryHeader
     public HashType HashType;
     public byte Platform;
     public byte Log2PageSize;
-    private uint _reserved;
-    private uint _scatterOffset;
-    private uint _teamIdOffset;
-    private uint _reserved2;
+    private readonly uint _reserved = 0;
+    private readonly uint _scatterOffset = 0;
+    private readonly uint _teamIdOffset = 0;
+    private readonly uint _reserved2 = 0;
     private ulong _codeLimit64;
     private ulong _execSegmentBase;
     private ulong _execSegmentLimit;
     private ExecutableSegmentFlags _execSegmentFlags;
 
-    public BlobMagic Magic
+    public CodeDirectoryHeader()
     {
-        get => (BlobMagic)((uint)_magic).ConvertFromBigEndian();
-        set => _magic = (BlobMagic)((uint)value).MakeBigEndian();
     }
+
     public uint Size
     {
         get => _size.ConvertFromBigEndian();
-        set => _size = value.MakeBigEndian();
+        set => _size = value.ConvertToBigEndian();
     }
     public CodeDirectoryVersion Version
     {
         get => (CodeDirectoryVersion)((uint)_version).ConvertFromBigEndian();
-        set => _version = (CodeDirectoryVersion)((uint)value).MakeBigEndian();
+        set => _version = (CodeDirectoryVersion)((uint)value).ConvertToBigEndian();
     }
     public CodeDirectoryFlags Flags
     {
         get => (CodeDirectoryFlags)((uint)_flags).ConvertFromBigEndian();
-        set => _flags = (CodeDirectoryFlags)((uint)value).MakeBigEndian();
+        set => _flags = (CodeDirectoryFlags)((uint)value).ConvertToBigEndian();
     }
     public uint HashesOffset
     {
         get => _hashesOffset.ConvertFromBigEndian();
-        set => _hashesOffset = value.MakeBigEndian();
+        set => _hashesOffset = value.ConvertToBigEndian();
     }
     public uint IdentifierOffset
     {
         get => _identifierOffset.ConvertFromBigEndian();
-        set => _identifierOffset = value.MakeBigEndian();
+        set => _identifierOffset = value.ConvertToBigEndian();
     }
     public uint SpecialSlotCount
     {
         get => _specialSlotCount.ConvertFromBigEndian();
-        set => _specialSlotCount = value.MakeBigEndian();
+        set => _specialSlotCount = value.ConvertToBigEndian();
     }
     public uint CodeSlotCount
     {
         get => _codeSlotCount.ConvertFromBigEndian();
-        set => _codeSlotCount = value.MakeBigEndian();
+        set => _codeSlotCount = value.ConvertToBigEndian();
     }
     public uint ExecutableLength
     {
         get => _executableLength.ConvertFromBigEndian();
-        set => _executableLength = value.MakeBigEndian();
-    }
-    public uint Reserved
-    {
-        get => _reserved.ConvertFromBigEndian();
-        set => _reserved = value.MakeBigEndian();
-    }
-    public uint ScatterOffset
-    {
-        get => _scatterOffset.ConvertFromBigEndian();
-        set => _scatterOffset = value.MakeBigEndian();
-    }
-    public uint TeamIdOffset
-    {
-        get => _teamIdOffset.ConvertFromBigEndian();
-        set => _teamIdOffset = value.MakeBigEndian();
-    }
-    public uint Reserved2
-    {
-        get => _reserved2.ConvertFromBigEndian();
-        set => _reserved2 = value.MakeBigEndian();
+        set => _executableLength = value.ConvertToBigEndian();
     }
     public ulong CodeLimit64
     {
         get => _codeLimit64.ConvertFromBigEndian();
-        set => _codeLimit64 = value.MakeBigEndian();
+        set => _codeLimit64 = value.ConvertToBigEndian();
     }
     public ulong ExecSegmentBase
     {
         get => _execSegmentBase.ConvertFromBigEndian();
-        set => _execSegmentBase = value.MakeBigEndian();
+        set => _execSegmentBase = value.ConvertToBigEndian();
     }
     public ulong ExecSegmentLimit
     {
         get => _execSegmentLimit.ConvertFromBigEndian();
-        set => _execSegmentLimit = value.MakeBigEndian();
+        set => _execSegmentLimit = value.ConvertToBigEndian();
     }
     public ExecutableSegmentFlags ExecSegmentFlags
     {
         get => (ExecutableSegmentFlags)((ulong)_execSegmentFlags).ConvertFromBigEndian();
-        set => _execSegmentFlags = (ExecutableSegmentFlags)((ulong)value).MakeBigEndian();
+        set => _execSegmentFlags = (ExecutableSegmentFlags)((ulong)value).ConvertToBigEndian();
     }
 }

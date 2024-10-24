@@ -33,7 +33,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             using var appHostSourceStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
             using var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
             using var managedSignedAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
-            return new MachObjectFile(managedSignedAccessor, Path.GetFileName(filePath)).HasSignature;
+            return MachObjectFile.Create(managedSignedAccessor, Path.GetFileName(filePath)).HasSignature;
         }
 
         static readonly string[] liveBuiltHosts = new string[] { Binaries.AppHost.FilePath, Binaries.SingleFileHost.FilePath };
@@ -155,8 +155,8 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             using var codesignedMMapFile = MemoryMappedFile.CreateFromFile(codesignedFileStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
             using var codesignedAccessor = codesignedMMapFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
 
-            var codesignedObject = new MachObjectFile(codesignedAccessor, fileName);
-            var managedSignedObject = new MachObjectFile(managedSignedAccessor, fileName);
+            var codesignedObject = MachObjectFile.Create(codesignedAccessor, fileName);
+            var managedSignedObject = MachObjectFile.Create(managedSignedAccessor, fileName);
             return MachObjectFile.AreEquivalent(codesignedObject, managedSignedObject);
         }
 
@@ -167,7 +167,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             using var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
             using var managedSignedAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
 
-            MachObjectFile machObjectFile = new MachObjectFile(managedSignedAccessor, fileName);
+            MachObjectFile machObjectFile = MachObjectFile.Create(managedSignedAccessor, fileName);
             long newSize = machObjectFile.CreateAdHocSignature(managedSignedAccessor, fileName);
 
             using (FileStream fileStream = new FileStream(managedSignedPath, FileMode.Create, FileAccess.ReadWrite))

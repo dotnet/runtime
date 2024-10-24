@@ -16,7 +16,7 @@ internal struct CmsWrapperBlob
 
     public static CmsWrapperBlob Empty = new CmsWrapperBlob
     {
-        _magic = (BlobMagic)((uint)BlobMagic.CmsWrapper).MakeBigEndian(),
-        _length = 8u.MakeBigEndian()
+        _magic = (BlobMagic)((uint)BlobMagic.CmsWrapper).ConvertToBigEndian(),
+        _length = 8u.ConvertToBigEndian()
     };
 }

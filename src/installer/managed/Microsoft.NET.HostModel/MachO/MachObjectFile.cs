@@ -27,8 +27,10 @@ internal class MachObjectFile
 
     private MachHeader _header;
     private (LinkEditCommand Command, long FileOffset) _codeSignatureLC;
+    // A Mach-O file will have either a 32-bit or 64-bit __TEXT segment, but not both.
     private readonly (SegmentLoadCommand Command, long FileOffset) _textSegment;
     private readonly (Segment64LoadCommand Command, long FileOffset) _textSegment64;
+    // A Mach-O file will have either a 32-bit or 64-bit __LINKEDIT segment, but not both.
     private (SegmentLoadCommand Command, long FileOffset) _linkEditSegment;
     private (Segment64LoadCommand Command, long FileOffset) _linkEditSegment64;
     private readonly long _lowestSection;
@@ -39,16 +41,51 @@ internal class MachObjectFile
     /// <summary>
     /// Creates a new MachObjectFile from a memory mapped file.
     /// </summary>
-    public MachObjectFile(MemoryMappedViewAccessor file, string identifier)
+    private MachObjectFile(
+        MachHeader header,
+        (LinkEditCommand Command, long FileOffset) codeSignatureLC,
+        (SegmentLoadCommand Command, long FileOffset) textSegment,
+        (Segment64LoadCommand Command, long FileOffset) textSegment64,
+        (SegmentLoadCommand Command, long FileOffset) linkEditSegment,
+        (Segment64LoadCommand Command, long FileOffset) linkEditSegment64,
+        long lowestSection,
+        string identifier,
+        CodeSignature codeSignatureBlob,
+        long nextCommandPtr)
+    {
+        _codeSignatureBlob = codeSignatureBlob;
+        _header = header;
+        _codeSignatureLC = codeSignatureLC;
+        _textSegment = textSegment;
+        _textSegment64 = textSegment64;
+        _linkEditSegment = linkEditSegment;
+        _linkEditSegment64 = linkEditSegment64;
+        _lowestSection = lowestSection;
+        _identifier = identifier;
+        _nextCommandPtr = nextCommandPtr;
+    }
+
+    public static MachObjectFile Create(MemoryMappedViewAccessor file, string identifier)
     {
         long commandsPtr = 0;
-        file.Read(commandsPtr, out _header);
-        _nextCommandPtr = ReadCommands(file, in _header, out _codeSignatureLC, out _textSegment, out _textSegment64, out _linkEditSegment, out _linkEditSegment64, out _lowestSection);
-        Debug.Assert(_linkEditSegment.Command.IsDefault ^ _linkEditSegment64.Command.IsDefault);
-        Debug.Assert(_textSegment.Command.IsDefault ^ _textSegment64.Command.IsDefault);
-        this._identifier = identifier;
-        if (!_codeSignatureLC.Command.IsDefault)
-            _codeSignatureBlob = CodeSignature.Read(file, _codeSignatureLC.Command.GetDataOffset(_header));
+        file.Read(commandsPtr, out MachHeader header);
+        var nextCommandPtr = ReadCommands(file, in header, out var codeSignatureLC, out var textSegment, out var textSegment64, out var linkEditSegment, out var linkEditSegment64, out var lowestSection);
+        Debug.Assert(linkEditSegment.Command.IsDefault ^ linkEditSegment64.Command.IsDefault);
+        Debug.Assert(textSegment.Command.IsDefault ^ textSegment64.Command.IsDefault);
+        CodeSignature codeSignatureBlob = null;
+        if (!codeSignatureLC.Command.IsDefault)
+            codeSignatureBlob = CodeSignature.Read(file, codeSignatureLC.Command.GetDataOffset(header));
+        return new MachObjectFile(
+            header,
+            codeSignatureLC,
+            textSegment,
+            textSegment64,
+            linkEditSegment,
+            linkEditSegment64,
+            lowestSection,
+            identifier,
+            codeSignatureBlob,
+            nextCommandPtr);
     }
 
     /// <summary>
@@ -72,6 +109,9 @@ internal class MachObjectFile
         return GetSignatureStart();
     }
 
+    /// <summary>
+    /// Writes the embedded signature blob to the stream at the current offset.
+    /// </summary>
     public void WriteCodeSignature(FileStream stream)
     {
         if (_codeSignatureBlob is null)
@@ -113,13 +153,21 @@ internal class MachObjectFile
             or MachMagic.FatMagicCurrentEndian or MachMagic.FatMagicOppositeEndian;
     }
 
+    /// <summary>
+    /// Removes the code signature load command and signature blob from the file if present.
+    /// Returns true and sets <paramref name="newLength"/> to a non-null value if the file is a MachO file and the signature was removed.
+    /// Returns false and sets newLength to null otherwise.
+    /// </summary>
+    /// <param name="memoryMappedViewAccessor">The file to remove the signature from.</param>
+    /// <param name="newLength">The new length of the file if the signature is remove and the method returns true</param>
+    /// <returns></returns>
     public static bool TryRemoveCodesign(MemoryMappedViewAccessor memoryMappedViewAccessor, out long? newLength)
     {
         newLength = null;
         if (!IsMachFile(memoryMappedViewAccessor))
             return false;
 
-        var machFile = new MachObjectFile(memoryMappedViewAccessor, "");
+        MachObjectFile machFile = Create(memoryMappedViewAccessor, "");
         if (machFile._codeSignatureLC.Command.IsDefault)
             return false;
 
@@ -339,39 +387,15 @@ internal class MachObjectFile
     /// </summary>
     private CodeSignature CreateSignature(MemoryMappedViewAccessor file, string identifier)
     {
-        (EmbeddedSignatureHeader Header, long FileOffset) embeddedSignature;
-        (CodeDirectoryHeader Header, long FileOffset) codeDirectory;
-        (byte[] identifier, long FileOffset) identifierPtr;
-        (byte[], long FileOffset) cdHashes;
-        (RequirementsBlob Header, long FileOffset) requirementsBlob;
-        (CmsWrapperBlob Header, long FileOffset) cmsWrapperBlob;
+        EmbeddedSignatureHeader embeddedSignature = new();
+        CodeDirectoryHeader codeDirectory = CreateCodeDirectoryHeader(identifier);
+        RequirementsBlob requirementsBlob = RequirementsBlob.Empty;
+        CmsWrapperBlob cmsWrapperBlob = CmsWrapperBlob.Empty;
 
-        long signaturePtr = GetSignatureStart();
+        byte[] identifierBytes = new byte[GetIdentifierLength(identifier)];
+        Encoding.UTF8.GetBytes(_identifier).CopyTo(identifierBytes, 0);
 
-        embeddedSignature = (default, signaturePtr);
-        signaturePtr += Marshal.SizeOf<EmbeddedSignatureHeader>();
-
-        codeDirectory = (default, signaturePtr);
-        signaturePtr += Marshal.SizeOf<CodeDirectoryHeader>();
-
-        identifierPtr = (default, signaturePtr);
-        signaturePtr += GetIdentifierLength(identifier);
-
-        cdHashes = (default, signaturePtr);
-        signaturePtr += SpecialSlotCount * DefaultHashSize;
-        signaturePtr += GetCodeSlotCount() * DefaultHashSize;
-
-        requirementsBlob = (RequirementsBlob.Empty, signaturePtr);
-        signaturePtr += Marshal.SizeOf<RequirementsBlob>();
-
-        cmsWrapperBlob = (CmsWrapperBlob.Empty, signaturePtr);
-
-        identifierPtr.identifier = new byte[GetIdentifierLength(identifier)];
-        Encoding.UTF8.GetBytes(_identifier).CopyTo(identifierPtr.identifier, 0);
-
-        // Create the CodeDirectory blob
-        codeDirectory.Header = CreateCodeDirectoryHeader(identifier);
-        cdHashes.Item1 = new byte[(GetCodeSlotCount() + SpecialSlotCount) * DefaultHashSize];
+        byte[] cdHashes = new byte[(GetCodeSlotCount() + SpecialSlotCount) * DefaultHashSize];
 
         // Fill in the CodeDirectory hashes
         {
@@ -380,10 +404,10 @@ internal class MachObjectFile
             // Special slot hashes
             int hashSlotsOffset = 0;
             // -2 is the requirements blob hash
-            hasher.AppendData(requirementsBlob.Header.GetBytes());
+            hasher.AppendData(requirementsBlob.GetBytes());
             byte[] hash = hasher.GetHashAndReset();
             Debug.Assert(hash.Length == DefaultHashSize);
-            hash.CopyTo(cdHashes.Item1, hashSlotsOffset);
+            hash.CopyTo(cdHashes, hashSlotsOffset);
             hashSlotsOffset += DefaultHashSize;
             // -1 is the CMS blob hash (which is empty)
             hashSlotsOffset += DefaultHashSize;
@@ -402,7 +426,7 @@ internal class MachObjectFile
                 hasher.AppendData(pageBuffer, 0, codePageSize);
                 hash = hasher.GetHashAndReset();
                 Debug.Assert(hash.Length == DefaultHashSize);
-                hash.CopyTo(cdHashes.Item1, hashSlotsOffset);
+                hash.CopyTo(cdHashes, hashSlotsOffset);
                 remaining -= codePageSize;
                 hashSlotsOffset += DefaultHashSize;
             }
@@ -410,18 +434,26 @@ internal class MachObjectFile
 
         // Create Embedded Signature Header
         {
-            embeddedSignature.Header.Magic = BlobMagic.EmbeddedSignature;
-            embeddedSignature.Header.BlobCount = 3u;
-            embeddedSignature.Header.Size = GetCodeSignatureSize(identifier);
-            embeddedSignature.Header.CodeDirectory = new BlobIndex(CodeDirectorySpecialSlot.CodeDirectory, (uint)(codeDirectory.FileOffset - embeddedSignature.FileOffset));
-            embeddedSignature.Header.Requirements = new BlobIndex(CodeDirectorySpecialSlot.Requirements, (uint)(requirementsBlob.FileOffset - embeddedSignature.FileOffset));
-            embeddedSignature.Header.CmsWrapper = new BlobIndex(CodeDirectorySpecialSlot.CmsWrapper, (uint)(cmsWrapperBlob.FileOffset - embeddedSignature.FileOffset));
+            embeddedSignature.Size = GetCodeSignatureSize(identifier);
+            embeddedSignature.CodeDirectory = new BlobIndex(
+                CodeDirectorySpecialSlot.CodeDirectory,
+                (uint)Marshal.SizeOf<EmbeddedSignatureHeader>());
+            embeddedSignature.Requirements = new BlobIndex(
+                CodeDirectorySpecialSlot.Requirements,
+                (uint)Marshal.SizeOf<EmbeddedSignatureHeader>()
+                    + GetCodeDirectorySize(identifier));
+            embeddedSignature.CmsWrapper = new BlobIndex(
+                CodeDirectorySpecialSlot.CmsWrapper,
+                (uint)Marshal.SizeOf<EmbeddedSignatureHeader>()
+                    + GetCodeDirectorySize(identifier)
+                    + (uint)Marshal.SizeOf<RequirementsBlob>());
         }
 
         return CodeSignature.Create(
+            GetSignatureStart(),
             embeddedSignature,
             codeDirectory,
-            identifierPtr,
+            identifierBytes,
             cdHashes,
             requirementsBlob,
             cmsWrapperBlob);
@@ -435,7 +467,6 @@ internal class MachObjectFile
 
         CodeDirectoryHeader codeDirectoryBlob = default;
         uint hashesOffset = (uint)Marshal.SizeOf<CodeDirectoryHeader>() + identifierLength + DefaultHashSize * SpecialSlotCount;
-        codeDirectoryBlob.Magic = BlobMagic.CodeDirectory;
         codeDirectoryBlob.Size = codeDirectorySize;
         codeDirectoryBlob.Version = version;
         codeDirectoryBlob.Flags = CodeDirectoryFlags.Adhoc;
@@ -449,7 +480,6 @@ internal class MachObjectFile
         codeDirectoryBlob.Platform = 0;
         codeDirectoryBlob.Log2PageSize = Log2PageSize;
 
-        codeDirectoryBlob.Reserved2 = 0;
         codeDirectoryBlob.CodeLimit64 = GetSignatureStart() >= uint.MaxValue ? GetSignatureStart() : 0;
         codeDirectoryBlob.ExecSegmentBase = _textSegment.Command.GetFileOffset(_header) + _textSegment64.Command.GetFileOffset(_header);
         codeDirectoryBlob.ExecSegmentLimit = _textSegment.Command.GetFileSize(_header) + _textSegment64.Command.GetFileSize(_header);

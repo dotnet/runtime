@@ -19,7 +19,7 @@ internal struct BlobIndex
 
     public BlobIndex(CodeDirectorySpecialSlot slot, uint offset)
     {
-        _slot = (CodeDirectorySpecialSlot)((uint)slot).MakeBigEndian();
-        _offset = offset.MakeBigEndian();
+        _slot = (CodeDirectorySpecialSlot)((uint)slot).ConvertToBigEndian();
+        _offset = offset.ConvertToBigEndian();
     }
 }

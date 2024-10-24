@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.NET.HostModel.MachO;
@@ -18,17 +19,24 @@ internal struct RequirementsBlob
 
     public static RequirementsBlob Empty = new RequirementsBlob
     {
-        _magic = (BlobMagic)((uint)BlobMagic.Requirements).MakeBigEndian(),
-        _size = 12u.MakeBigEndian(),
+        _magic = (BlobMagic)((uint)BlobMagic.Requirements).ConvertToBigEndian(),
+        _size = 12u.ConvertToBigEndian(),
         _subBlobCount = 0
     };
 
     public byte[] GetBytes()
     {
         byte[] buffer = new byte[12];
-        BitConverter.GetBytes((uint)_magic).CopyTo(buffer, 0);
-        BitConverter.GetBytes(_size).CopyTo(buffer, 4);
-        BitConverter.GetBytes(_subBlobCount).CopyTo(buffer, 8);
+        if (BitConverter.IsLittleEndian)
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer, (uint)_magic);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.AsSpan(4), (int)_size);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.AsSpan(8), (int)_subBlobCount);
+            return buffer;
+        }
+        BinaryPrimitives.WriteUInt32BigEndian(buffer, (uint)_magic);
+        BinaryPrimitives.WriteInt32BigEndian(buffer.AsSpan(4), (int)_size);
+        BinaryPrimitives.WriteInt32BigEndian(buffer.AsSpan(8), (int)_subBlobCount);
         return buffer;
     }
 }

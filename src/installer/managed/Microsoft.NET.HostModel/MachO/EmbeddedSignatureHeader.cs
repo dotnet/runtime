@@ -11,26 +11,19 @@ namespace Microsoft.NET.HostModel.MachO;
 [StructLayout(LayoutKind.Sequential)]
 internal struct EmbeddedSignatureHeader
 {
-    private BlobMagic _magic;
+    private readonly BlobMagic _magic = (BlobMagic)((uint)BlobMagic.EmbeddedSignature).ConvertToBigEndian();
     private uint _size;
-    private uint _blobCount; // 3
+    private readonly uint _blobCount = 3u.ConvertToBigEndian();
     public BlobIndex CodeDirectory;
     public BlobIndex Requirements;
     public BlobIndex CmsWrapper;
 
-    public BlobMagic Magic
-    {
-        get => (BlobMagic)((uint)_magic).ConvertFromBigEndian();
-        set => _magic = (BlobMagic)((uint)value).MakeBigEndian();
-    }
+    public EmbeddedSignatureHeader() { }
+
+    public uint BlobCount => _blobCount.ConvertFromBigEndian();
     public uint Size
     {
         get => _size.ConvertFromBigEndian();
-        set => _size = value.MakeBigEndian();
-    }
-    public uint BlobCount
-    {
-        get => _blobCount.ConvertFromBigEndian();
-        set => _blobCount = value.MakeBigEndian();
+        set => _size = value.ConvertToBigEndian();
     }
 }

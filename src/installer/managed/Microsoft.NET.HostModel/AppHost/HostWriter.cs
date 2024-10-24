@@ -145,7 +145,7 @@ namespace Microsoft.NET.HostModel.AppHost
                             if (enableMacOSCodeSign)
                             {
                                 string fileName = Path.GetFileName(appHostDestinationFilePath);
-                                machObjectFile = new MachObjectFile(memoryMappedViewAccessor, fileName);
+                                machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor, fileName);
                                 appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, fileName);
                             }
                             else
