@@ -878,6 +878,35 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return _methodTables[methodDesc.MethodTable];
     }
 
+    private struct VtableIndirections
+    {
+        // See methodtable.inl  VTABLE_SLOTS_PER_CHUNK and the comment on it
+        private const int NumPointersPerIndirection = 8;
+        private const int NumPointersPerIndirectionLog2 = 3;
+        private readonly Target _target;
+        public readonly TargetPointer Address;
+        public VtableIndirections(Target target, TargetPointer address)
+        {
+            _target = target;
+            Address = address;
+        }
+
+        public TargetPointer GetAddressOfSlot(uint slotNum)
+        {
+            TargetPointer indirectionPointer = Address + (ulong)(slotNum >> NumPointersPerIndirectionLog2) * (ulong)_target.PointerSize;
+            TargetPointer slotsStart = _target.ReadPointer(indirectionPointer);
+            return slotsStart + (ulong)(slotNum & (NumPointersPerIndirection - 1)) * (ulong)_target.PointerSize;
+        }
+
+
+    }
+
+    private VtableIndirections GetVTableIndirections(TargetPointer methodTableAddress)
+    {
+        var typeInfo = _target.GetTypeInfo(DataType.MethodTable);
+        return new VtableIndirections(_target, methodTableAddress + typeInfo.Size!.Value);
+    }
+
     private TargetPointer GetAddressOfSlot(TypeHandle typeHandle, uint slotNum)
     {
         if (!typeHandle.IsMethodTable())
@@ -889,10 +918,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (slotNum < mt.NumVirtuals)
         {
             // Virtual slots live in chunks pointed to by vtable indirections
-#if false
-            return GetVtableIndirections()[GetIndexOfVtableIndirection(slotNum)] + GetIndexAfterVtableIndirection(slotNum);
-#endif
-            throw new NotImplementedException(); // TODO(cdac):
+            return GetVTableIndirections(typeHandle.Address).GetAddressOfSlot(slotNum);
         }
         else
         {
