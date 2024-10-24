@@ -76,7 +76,7 @@ target_precompile_headers(mdruntimerw_ppdb PRIVATE stdafx.h)
 
 if(CLR_CMAKE_TARGET_LINUX)
   if(NOT FEATURE_DISTRO_AGNOSTIC_SSL)
-    find_package(OpenSSL REQUIRED)
+    find_package(OpenSSL)
     target_link_libraries(mdruntimerw_wks PRIVATE OpenSSL::SSL OpenSSL::Crypto System.Security.Cryptography.Native.OpenSsl-Static)
     target_link_libraries(mdruntimerw_ppdb PRIVATE OpenSSL::SSL OpenSSL::Crypto System.Security.Cryptography.Native.OpenSsl-Static)
   else()
