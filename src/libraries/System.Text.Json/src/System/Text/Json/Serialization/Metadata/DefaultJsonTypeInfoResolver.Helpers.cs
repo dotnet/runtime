@@ -180,8 +180,8 @@ namespace System.Text.Json.Serialization.Metadata
 
             foreach (FieldInfo fieldInfo in currentType.GetFields(AllInstanceMembers))
             {
-                bool hasJsonIncludeAtribute = fieldInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
-                if (hasJsonIncludeAtribute || (fieldInfo.IsPublic && typeInfo.Options.IncludeFields))
+                bool hasJsonIncludeAttribute = fieldInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
+                if (hasJsonIncludeAttribute || (fieldInfo.IsPublic && typeInfo.Options.IncludeFields))
                 {
                     AddMember(
                         typeInfo,
@@ -189,7 +189,7 @@ namespace System.Text.Json.Serialization.Metadata
                         memberInfo: fieldInfo,
                         nullabilityCtx,
                         shouldCheckMembersForRequiredMemberAttribute,
-                        hasJsonIncludeAtribute,
+                        hasJsonIncludeAttribute,
                         ref state);
                 }
             }
