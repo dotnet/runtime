@@ -1098,9 +1098,6 @@ _DelayLoad_MethodCall@0 proc public
 
     STUB_EPILOG
 
-_ExternalMethodFixupPatchLabel@0:
-public _ExternalMethodFixupPatchLabel@0
-
     ; Tailcall target
     jmp eax
 
