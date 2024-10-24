@@ -59,6 +59,7 @@ namespace Microsoft.Win32
         internal SystemEvents() { }
         public static event System.EventHandler? DisplaySettingsChanged { add { } remove { } }
         public static event System.EventHandler? DisplaySettingsChanging { add { } remove { } }
+        [System.Obsolete("SystemEvents.EventsThreadShutdown callbacks are not run before process exits. Use AppDomain.ProcessExit instead.")]
         public static event System.EventHandler? EventsThreadShutdown { add { } remove { } }
         public static event System.EventHandler? InstalledFontsChanged { add { } remove { } }
         [System.ComponentModel.BrowsableAttribute(false)]
