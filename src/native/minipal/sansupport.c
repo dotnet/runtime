@@ -5,9 +5,7 @@
 
 // Use a typedef here as __declspec + pointer return type causes a parse error in MSVC
 typedef const char* charptr_t;
-
-
-charptr_t SANITIZER_CALLBACK_CALLCONV __asan_default_options(void) {
+extern "C" charptr_t SANITIZER_CALLBACK_CALLCONV __asan_default_options() {
     // symbolize=1 to get symbolized stack traces
     // use_sigaltstack=0 as coreclr uses own alternate stack for signal handlers
     // detect_leaks=0 as coreclr intentionally doesn't clean up all memory on exit
@@ -18,5 +16,5 @@ charptr_t SANITIZER_CALLBACK_CALLCONV __asan_default_options(void) {
   return "symbolize=1 use_sigaltstack=0 detect_leaks=0 handle_segv=0 allocator_may_return_null=1";
 }
 
-void SANITIZER_CALLBACK_CALLCONV __asan_on_error(void) {
+extern "C" void SANITIZER_CALLBACK_CALLCONV __asan_on_error() {
 }
