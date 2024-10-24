@@ -289,19 +289,18 @@ public:
     //
     void StartBlock(BasicBlock* block)
     {
-        FlowEdge* preds;
-        if ((m_assertions.Height() == 0) || ((preds = m_comp->BlockPredsWithEH(block)) == nullptr))
+        CurrentAssertions = 0;
+        if (m_assertions.Height() == 0)
         {
-            CurrentAssertions = 0;
-            AlwaysAssertions  = 0;
+            AlwaysAssertions = 0;
             return;
         }
 
-        CurrentAssertions = UINT64_MAX;
+        FlowEdge*             preds = m_comp->BlockPredsWithEH(block);
+        bool                  first = true;
+        FlowGraphNaturalLoop* loop  = nullptr;
 
         uint64_t* assertionMap = m_comp->bbIsHandlerBeg(block) ? m_alwaysTrueAssertions : m_outgoingAssertions;
-
-        INDEBUG(bool anyReachablePred = false);
 
         for (FlowEdge* predEdge = preds; predEdge != nullptr; predEdge = predEdge->getNextPredEdge())
         {
@@ -313,21 +312,42 @@ public:
                 continue;
             }
 
-            INDEBUG(anyReachablePred = true);
-
             if (pred->bbPostorderNum <= block->bbPostorderNum)
             {
+                loop = m_comp->m_loops->GetLoopByHeader(block);
+                if ((loop != nullptr) && loop->ContainsBlock(pred))
+                {
+                    JITDUMP("Ignoring loop backedge " FMT_BB "->" FMT_BB "\n", pred->bbNum, block->bbNum);
+                    continue;
+                }
+
+                JITDUMP("Found non-loop backedge " FMT_BB "->" FMT_BB ", clearing assertions\n", pred->bbNum,
+                        block->bbNum);
                 CurrentAssertions = 0;
                 break;
             }
 
-            CurrentAssertions &= assertionMap[pred->bbPostorderNum];
+            uint64_t prevAssertions = assertionMap[pred->bbPostorderNum];
+            if (first)
+            {
+                CurrentAssertions = prevAssertions;
+                first             = false;
+            }
+            else
+            {
+                CurrentAssertions &= prevAssertions;
+            }
         }
 
-        // There should always be at least one reachable pred for all blocks.
-        assert(anyReachablePred);
-
         AlwaysAssertions = CurrentAssertions;
+
+        if ((loop != nullptr) && (CurrentAssertions != 0))
+        {
+            JITDUMP("Block " FMT_BB " is a loop header; clearing assertions about defined locals\n");
+            m_comp->m_loopDefinitions->VisitDefinedLocalNums(loop, [=](unsigned lclNum) {
+                Clear(lclNum);
+            });
+        }
 
 #ifdef DEBUG
         if (CurrentAssertions != 0)
@@ -2173,6 +2193,9 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
             pAssertions = nullptr;
         }
 #endif
+
+        m_loops           = FlowGraphNaturalLoops::Find(m_dfsTree);
+        m_loopDefinitions = LoopDefinitions::Find(m_loops);
 
         LocalSequencer      sequencer(this);
         LocalAddressVisitor visitor(this, &sequencer, pAssertions);
