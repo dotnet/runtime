@@ -9636,10 +9636,8 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         // - The source interval isn't yet completed (sourceIntervals[otherHalfSrcReg] != nullptr)
         // - It's in the TODO set                    (targetRegsToDo.IsRegNumInMask(otherHalfReg))
         // - It's not resolved from stack            (!targetRegsFromStack.IsRegNumInMask(otherHalfReg))
-        if ((otherHalfSrcReg != REG_NA) &&
-            (otherHalfSrcLoc == REG_NA) &&
-            (sourceIntervals[otherHalfSrcReg] != nullptr) &&
-            targetRegsToDo.IsRegNumInMask(otherHalfReg) &&
+        if ((otherHalfSrcReg != REG_NA) && (otherHalfSrcLoc == REG_NA) &&
+            (sourceIntervals[otherHalfSrcReg] != nullptr) && targetRegsToDo.IsRegNumInMask(otherHalfReg) &&
             !targetRegsFromStack.IsRegNumInMask(otherHalfReg))
         {
             // if this is a double interval, make sure the source is also double interval
@@ -9698,7 +9696,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     }
                 }
                 else if (genIsValidFloatReg(fromReg) && !genIsValidDoubleReg(fromReg))
-                {                    
+                {
                     // We may have freed up the other half of a double where the lower half
                     // was already free.
                     addOtherHalfRegToReady(REG_PREV(fromReg));
