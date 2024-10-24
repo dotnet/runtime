@@ -43,7 +43,7 @@ Location of epilog (method exit) code.
 
 This table specifies which slots in the fixed-length portion of this method's stack frame
 contain pointers to be traced by the GC, as well as the particular kind of pointer, either
-an object reference or <a href="#Dfn: interior pointers">interior</a> (i.e. a pointer that
+an object reference or [interior](#Dfn-interior-pointers) (i.e. a pointer that
 may point to the interior of a garbage collectable object) stored at that location. A
 `this` pointer is required to be tracked and thus cannot
 appear in this table. Additionally each untracked local can be marked as
@@ -945,7 +945,7 @@ method at a GC safe point. For a code that is still excuting inside a
 <a href="#Dfn: Fully Interruptible Method">fully interruptible</a> method, the code manager
 provides other methods for initiating garbage collection in addition to hijacking.
 
-<a name="Dfn: interior pointers">*interior pointers*</a>
+<a name="Dfn-interior-pointers">*interior pointers*</a>
 
 A pointer to a location inside of a garbage collectible object.
 An interior pointer or by-ref pointer is typically created by a compiler for temporary use.
