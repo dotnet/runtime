@@ -73,22 +73,26 @@ cleanup:
 
 HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
-    if (dstSize < CC_SHA256_DIGEST_LENGTH)
+    CC_SHA256_CTX ctx = {{ 0 }};
+
+    if (!CC_SHA256_Init(&ctx))
     {
         return E_FAIL;
     }
 
-    // Apple's documentation states these functions return 1 on success.
-    CC_SHA256_CTX ctx = {{ 0 }};
-    int ret = CC_SHA256_Init(&ctx);
-    assert(ret == 1);
+    if (!CC_SHA256_Update(&ctx, pSrc, srcSize))
+    {
+        return E_FAIL;
+    }
 
-    ret = CC_SHA256_Update(&ctx, pSrc, srcSize);
-    assert(ret == 1);
+    BYTE hash[CC_SHA256_DIGEST_LENGTH];
 
-    ret = CC_SHA256_Final(pDst, &ctx);
-    assert(ret == 1);
+    if (!CC_SHA256_Final(hash, &ctx))
+    {
+        return E_FAIL;
+    }
 
+    memcpy(pDst, hash, min(CC_SHA256_DIGEST_LENGTH, dstSize));
     return S_OK;
 }
 #else
