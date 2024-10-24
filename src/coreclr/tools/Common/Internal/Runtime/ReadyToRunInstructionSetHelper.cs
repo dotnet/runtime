@@ -127,6 +127,8 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_VectorT128: return ReadyToRunInstructionSet.VectorT128;
                             case InstructionSet.X64_VectorT256: return ReadyToRunInstructionSet.VectorT256;
                             case InstructionSet.X64_VectorT512: return ReadyToRunInstructionSet.VectorT512;
+                            case InstructionSet.X64_APX: return ReadyToRunInstructionSet.Apx;
+                            case InstructionSet.X64_APX_X64: return ReadyToRunInstructionSet.Apx;
 
                             default: throw new Exception("Unknown instruction set");
                         }
@@ -206,6 +208,8 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_VectorT128: return ReadyToRunInstructionSet.VectorT128;
                             case InstructionSet.X86_VectorT256: return ReadyToRunInstructionSet.VectorT256;
                             case InstructionSet.X86_VectorT512: return ReadyToRunInstructionSet.VectorT512;
+                            case InstructionSet.X86_APX: return ReadyToRunInstructionSet.Apx;
+                            case InstructionSet.X86_APX_X64: return null;
 
                             default: throw new Exception("Unknown instruction set");
                         }
