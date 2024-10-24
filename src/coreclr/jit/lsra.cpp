@@ -9622,6 +9622,33 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         }
     }
 
+#ifdef TARGET_ARM
+    auto addOtherHalfRegToReady = [&](regNumber otherHalfReg) {
+        // For a double interval, if the first half if freed up, check if the other
+        // half can also be freed (if it is a target for resolution).
+
+        regNumber otherHalfSrcReg = (regNumber)source[otherHalfReg];
+        regNumber otherHalfSrcLoc = (regNumber)location[otherHalfReg];
+
+        // Necessary conditions:
+        // - There is a source register for this reg (otherHalfSrcReg != REG_NA)
+        // - It is currently free                    (otherHalfSrcLoc == REG_NA)
+        // - The source interval isn't yet completed (sourceIntervals[otherHalfSrcReg] != nullptr)
+        // - It's in the TODO set                    (targetRegsToDo.IsRegNumInMask(otherHalfReg))
+        // - It's not resolved from stack            (!targetRegsFromStack.IsRegNumInMask(otherHalfReg))
+        if ((otherHalfSrcReg != REG_NA) &&
+            (otherHalfSrcLoc == REG_NA) &&
+            (sourceIntervals[otherHalfSrcReg] != nullptr) &&
+            targetRegsToDo.IsRegNumInMask(otherHalfReg) &&
+            !targetRegsFromStack.IsRegNumInMask(otherHalfReg))
+        {
+            // if this is a double interval, make sure the source is also double interval
+            assert(!genIsValidDoubleReg(otherHalfReg) || sourceIntervals[otherHalfSrcReg]->registerType == TYP_DOUBLE);
+            targetRegsReady.AddRegNumInMask(otherHalfReg);
+        }
+    };
+#endif // TARGET_ARM
+
     // Perform reg to reg moves
     while (targetRegsToDo.IsNonEmpty())
     {
@@ -9663,41 +9690,18 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         }
 
                         // Since we want to check if we can free upperHalfReg, only do it
-                        // if lowerHalfReg is ready.
+                        // if lowerHalfReg is ready and it is one of the target candidate.
                         if (targetRegsReady.IsRegNumInMask(fromReg))
                         {
-                            if ((source[upperHalfReg] != REG_NA) &&         // and it is one of the target candidate
-                                !targetRegsFromStack.IsRegNumInMask(upperHalfReg) &&
-                                targetRegsToDo.IsRegNumInMask(upperHalfReg))
-                            {
-                                targetRegsReady.AddRegNumInMask(upperHalfReg);
-                            }
+                            addOtherHalfRegToReady(upperHalfReg);
                         }
                     }
                 }
                 else if (genIsValidFloatReg(fromReg) && !genIsValidDoubleReg(fromReg))
-                {
+                {                    
                     // We may have freed up the other half of a double where the lower half
                     // was already free.
-                    regNumber lowerHalfReg     = REG_PREV(fromReg);
-                    regNumber lowerHalfSrcReg  = (regNumber)source[lowerHalfReg];
-                    regNumber lowerHalfSrcLoc  = (regNumber)location[lowerHalfReg];
-                    // Necessary conditions:
-                    // - There is a source register for this reg (lowerHalfSrcReg != REG_NA)
-                    // - It is currently free                    (lowerHalfSrcLoc == REG_NA)
-                    // - The source interval isn't yet completed (sourceIntervals[lowerHalfSrcReg] != nullptr)
-                    // - It's not in the ready set               (!targetRegsReady.IsRegNumInMask(lowerHalfReg))
-                    // - It's not resolved from stack            (!targetRegsFromStack.IsRegNumInMask(lowerHalfReg))
-                    if ((lowerHalfSrcReg != REG_NA) && (lowerHalfSrcLoc == REG_NA) &&
-                        (sourceIntervals[lowerHalfSrcReg] != nullptr) &&
-                        !targetRegsReady.IsRegNumInMask(lowerHalfReg) &&
-                        !targetRegsFromStack.IsRegNumInMask(lowerHalfReg))
-                    {
-                        // This must be a double interval, otherwise it would be in targetRegsReady, or already
-                        // completed.
-                        assert(sourceIntervals[lowerHalfSrcReg]->registerType == TYP_DOUBLE);
-                        targetRegsReady.AddRegNumInMask(lowerHalfReg);
-                    }
+                    addOtherHalfRegToReady(REG_PREV(fromReg));
 #endif // TARGET_ARM
                 }
             }
@@ -9875,13 +9879,10 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
                         if (sourceIntervals[targetReg]->registerType == TYP_DOUBLE)
                         {
-                            // If source 
-                            regNumber upperHalfReg = REG_NEXT(targetReg);
-                            if (location[upperHalfReg] == REG_NA && targetRegsToDo.IsRegNumInMask(upperHalfReg) &&
-                                !targetRegsFromStack.IsRegNumInMask(upperHalfReg))
-                            {
-                                targetRegMask |= genRegMask(upperHalfReg);
-                            }
+                            // Free up upperHalf reg of this targetReg, if it is one of the target candidate.
+
+                            assert(genIsValidDoubleReg(targetReg));
+                            addOtherHalfRegToReady(REG_NEXT(targetReg));
                         }
                     }
 #else
