@@ -64,8 +64,6 @@ namespace System.Collections.Generic
 
         internal const int StackAllocThreshold = 100;
 
-        internal const int BitHelperThreshold = 8191; // See GetInternalIndexOfBitHelperLength on how this relates to count and max tree height
-
         #endregion
 
         #region Constructors
@@ -717,7 +715,6 @@ namespace System.Collections.Generic
         /// <remarks>
         /// <para>
         /// This implementation is based off of http://en.wikipedia.org/wiki/Binary_Tree#Methods_for_storing_binary_trees
-        /// if Count is not greater than InternalIndexOfCountThreshold, otherwise it returns the index according to the order of the set's elements.
         /// </para>
         /// <para>
         /// This method is used with the <see cref="BitHelper"/> class. Note that this implementation is
@@ -765,7 +762,7 @@ namespace System.Collections.Generic
             // |  255 - 510 |        16 |              65535
             // | 511 - 1022 |        18 |             262143
 
-            if (Count > 255)
+            if (Count > 254)
             {
                 return -1;
             }
