@@ -2288,7 +2288,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
     // Create and store the GC info for this method.
     genCreateAndStoreGCInfo(codeSize, prologSize, epilogSize DEBUGARG(codePtr));
-    compiler->Metrics.GCInfoBytes = compiler->compInfoBlkSize;
+    compiler->Metrics.GCInfoBytes = (int)compiler->compInfoBlkSize;
 
     /* Tell the emitter that we're done with this function */
 

@@ -20,8 +20,6 @@ struct ReplayResults
 {
     ReplayResult Result = ReplayResult::Success;
     bool IsMinOpts = false;
-    uint32_t NumCodeBytes = 0;
-    size_t NumGCInfoBytes = 0;
     uint64_t NumExecutedInstructions = 0;
     CompileResult* CompileResults = nullptr;
 };

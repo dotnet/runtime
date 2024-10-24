@@ -409,14 +409,6 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
             pParam->pThis->mc->cr->recAllocGCInfoCapture();
 
             pParam->pThis->mc->cr->recMessageLog(jitResult == CORJIT_OK ? "Successful Compile" : "Successful Compile (BADCODE)");
-
-            pParam->results.NumCodeBytes   = NCodeSizeBlock;
-
-            // Extract the GCInfo size.
-            size_t size;
-            void* retval_unused;
-            pParam->pThis->mc->cr->repAllocGCInfo(&size, &retval_unused);
-            pParam->results.NumGCInfoBytes = size;
         }
         else
         {
