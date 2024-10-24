@@ -2676,7 +2676,6 @@ public:
     OBJECTREF Box(void* data);
     OBJECTREF FastBox(void** data);
 #ifndef DACCESS_COMPILE
-    BOOL UnBoxInto(void *dest, OBJECTREF src);
     void UnBoxIntoUnchecked(void *dest, OBJECTREF src);
 #endif
 

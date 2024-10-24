@@ -1600,19 +1600,6 @@ BOOL Nullable::IsNullableForTypeHelper(MethodTable* nullableMT, MethodTable* par
 }
 
 //===============================================================================
-// Returns true if nullableMT is Nullable<T> for T == paramMT
-
-BOOL Nullable::IsNullableForTypeHelperNoGC(MethodTable* nullableMT, MethodTable* paramMT)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (!nullableMT->IsNullable())
-        return FALSE;
-
-    // we require an exact match of the parameter types
-    return TypeHandle(paramMT) == nullableMT->GetInstantiation()[0];
-}
-
-//===============================================================================
 int32_t Nullable::GetValueAddrOffset(MethodTable* nullableMT)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1734,53 +1721,6 @@ BOOL Nullable::UnBox(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
         GCPROTECT_END();
     }
     return fRet;
-}
-
-//===============================================================================
-// Special Logic to unbox a boxed T as a nullable<T>
-// Does not handle type equivalence (may conservatively return FALSE)
-BOOL Nullable::UnBoxNoGC(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-    Nullable* dest = (Nullable*) destPtr;
-
-    // We should only get here if we are unboxing a T as a Nullable<T>
-    _ASSERTE(IsNullableType(destMT));
-
-    // We better have a concrete instantiation, or our field offset asserts are not useful
-    _ASSERTE(!destMT->ContainsGenericVariables());
-
-    if (boxedVal == NULL)
-    {
-        // Logically we are doing *dest->HasValueAddr(destMT) = false;
-        // We zero out the whole structure because it may contain GC references
-        // and these need to be initialized to zero.   (could optimize in the non-GC case)
-        InitValueClass(destPtr, destMT);
-    }
-    else
-    {
-        if (!IsNullableForTypeNoGC(destMT, boxedVal->GetMethodTable()))
-        {
-            // For safety's sake, also allow true nullables to be unboxed normally.
-            // This should not happen normally, but we want to be robust
-            if (destMT == boxedVal->GetMethodTable())
-            {
-                CopyValueClass(dest, boxedVal->GetData(), destMT);
-                return TRUE;
-            }
-            return FALSE;
-        }
-
-        *dest->HasValueAddr(destMT) = true;
-        CopyValueClass(dest->ValueAddr(destMT), boxedVal->UnBox(), boxedVal->GetMethodTable());
-    }
-    return TRUE;
 }
 
 //===============================================================================

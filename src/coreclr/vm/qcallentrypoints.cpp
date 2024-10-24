@@ -503,6 +503,7 @@ static const Entry s_QCall[] =
     DllImportEntry(InitClassHelper)
     DllImportEntry(ResolveVirtualFunctionPointer)
     DllImportEntry(GenericHandleWorker)
+    DllImportEntry(ThrowInvalidCastException)
 };
 
 const void* QCallResolveDllImport(const char* name)

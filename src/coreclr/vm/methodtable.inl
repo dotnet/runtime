@@ -1242,31 +1242,6 @@ inline OBJECTREF MethodTable::AllocateNoChecks()
 
 #ifndef DACCESS_COMPILE
 //==========================================================================================
-// unbox src into dest, making sure src is of the correct type.
-
-inline BOOL MethodTable::UnBoxInto(void *dest, OBJECTREF src)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (Nullable::IsNullableType(TypeHandle(this)))
-        return Nullable::UnBoxNoGC(dest, src, this);
-    else
-    {
-        if (src == NULL || src->GetMethodTable() != this)
-            return FALSE;
-
-        CopyValueClass(dest, src->UnBox(), this);
-    }
-    return TRUE;
-}
-
-//==========================================================================================
 // unbox src into dest, No checks are done
 
 inline void MethodTable::UnBoxIntoUnchecked(void *dest, OBJECTREF src)
@@ -1280,9 +1255,7 @@ inline void MethodTable::UnBoxIntoUnchecked(void *dest, OBJECTREF src)
     CONTRACTL_END;
 
     if (Nullable::IsNullableType(TypeHandle(this))) {
-        BOOL ret;
-        ret = Nullable::UnBoxNoGC(dest, src, this);
-        _ASSERTE(ret);
+        Nullable::UnBoxNoCheck(dest, src, this);
     }
     else
     {
