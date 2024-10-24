@@ -541,7 +541,7 @@ private:
 };
 
 template<>
-struct ::cdac_data<Assembly>
+struct cdac_data<Assembly>
 {
 #ifdef FEATURE_COLLECTIBLE_TYPES
     static constexpr size_t IsCollectible = offsetof(Assembly, m_isCollectible);
