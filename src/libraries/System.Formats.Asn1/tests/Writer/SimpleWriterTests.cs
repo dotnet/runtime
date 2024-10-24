@@ -49,6 +49,18 @@ namespace System.Formats.Asn1.Tests.Writer
             Assert.Equal(0, written);
             Assert.True(writer.EncodedValueEquals(ReadOnlySpan<byte>.Empty));
 
+#if NET9_0_OR_GREATER
+            writer.Encode<object>(encoded => {
+                Assert.Equal(0, encoded.Length);
+                return null;
+            });
+
+            writer.Encode<object, object>(null, (_, encoded) => {
+                Assert.Equal(0, encoded.Length);
+                return null;
+            });
+#endif
+
             Span<byte> negativeTest = stackalloc byte[] { 5, 0 };
             Assert.False(writer.EncodedValueEquals(negativeTest));
         }
@@ -234,6 +246,38 @@ namespace System.Formats.Asn1.Tests.Writer
             buffer = PeekRawBuffer(writer);
             Assert.Equal(1024, buffer?.Length);
         }
+
+#if NET9_0_OR_GREATER
+        [Fact]
+        public static void Encode_Callback_NoModifications()
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            writer.Encode(writer, static (writer, encoded) =>
+            {
+                writer.Encode(writer, static (writer, encoded) =>
+                {
+                    Assert.Throws<InvalidOperationException>(() => writer.WriteNull());
+                    return (object)null;
+                });
+
+                Assert.Throws<InvalidOperationException>(() => writer.WriteNull());
+                return (object)null;
+            });
+
+            writer.Encode(writer, static (writer, encoded) =>
+            {
+                writer.Encode(writer, static (writer, encoded) =>
+                {
+                    Assert.Throws<InvalidOperationException>(() => writer.Reset());
+                    return (object)null;
+                });
+
+                Assert.Throws<InvalidOperationException>(() => writer.Reset());
+                return (object)null;
+            });
+        }
+#endif
 
         private static byte[]? PeekRawBuffer(AsnWriter writer)
         {

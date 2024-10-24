@@ -147,6 +147,9 @@
   <data name="Argument_PemImport_EncryptedPem" xml:space="preserve">
     <value>An encrypted key was found, but no password was provided. Use ImportFromEncryptedPem to import this key.</value>
   </data>
+  <data name="Argument_Thumbprint_Invalid" xml:space="preserve">
+    <value>The supplied thumbprint is not a valid hex-encoded digest.</value>
+  </data>
   <data name="Argument_X500_EmailTooLong" xml:space="preserve">
     <value>The email address cannot exceed 255 characters.</value>
   </data>
@@ -833,6 +836,9 @@
   </data>
   <data name="PlatformNotSupported_CryptographyOpenSSLNotFound" xml:space="preserve">
     <value>OpenSSL is required for algorithm '{0}' but could not be found or loaded.</value>
+  </data>
+  <data name="PlatformNotSupported_CryptographyOpenSSLProvidersNotSupported" xml:space="preserve">
+    <value>OpenSSL providers are not supported on this platform.</value>
   </data>
   <data name="Security_AccessDenied" xml:space="preserve">
     <value>Access is denied.</value>

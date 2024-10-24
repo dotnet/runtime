@@ -52,7 +52,6 @@ namespace System.Net.Quic.Tests
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
         readonly CertificateSetup _certificates;
-        static bool DoesNotSupportAsyncCertValidation => QuicTestCollection.MsQuicVersion < new Version(2, 4);
 
         public MsQuicTests(ITestOutputHelper output, CertificateSetup setup) : base(output)
         {
@@ -354,7 +353,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99074", typeof(MsQuicTests), nameof(DoesNotSupportAsyncCertValidation))]
         public async Task CertificateCallbackThrowPropagates()
         {
             using CancellationTokenSource cts = new CancellationTokenSource(PassingTestTimeout);

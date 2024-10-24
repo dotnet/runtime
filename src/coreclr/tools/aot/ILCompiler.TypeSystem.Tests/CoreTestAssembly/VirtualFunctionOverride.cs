@@ -60,4 +60,44 @@ namespace VirtualFunctionOverride
         public override Type Method(delegate* unmanaged[Stdcall, SuppressGCTransition]<void> p) => null;
         public override Type Method(delegate*<void> p) => null;
     }
+
+    class BaseCovariant
+    {
+        public virtual BaseCovariant FromType()
+        {
+            return new BaseCovariant();
+        }
+    }
+
+    class ImplCovariant : BaseCovariant
+    {
+        public override ImplCovariant FromType()
+        {
+            return new ImplCovariant();
+        }
+    }
+
+    class SubImplCovariant : ImplCovariant
+    {
+        public override SubImplCovariant FromType()
+        {
+            return new SubImplCovariant();
+        }
+    }
+
+    class SubImplCovariant2 : ImplCovariant
+    {
+        public override ImplCovariant FromType()
+        {
+            return new ImplCovariant();
+        }
+    }
+
+    class SubSubImplCovariant : SubImplCovariant2
+    {
+        public override SubSubImplCovariant FromType()
+        {
+            return new SubSubImplCovariant();
+        }
+    }
 }

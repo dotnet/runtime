@@ -41,6 +41,8 @@
 //     then the field layout can be specified as
 //     CDAC_TYPE_FIELD(MyClassLayout, pointer, MyField, cdac_data<MyClass>::MyField)
 //  There can be zero or more CDAC_TYPE_FIELD entries per type layout
+//  For types mapping to managed objects, use exact managed type field names in the descriptor, as
+//  field names often can't change due to binary serialization or implicit diagnostic contracts
 //
 // CDAC_TYPE_END(cdacTypeIdentifier)  specifies the end of the type layout for cdacTypeIdentifier
 //
@@ -132,8 +134,13 @@ CDAC_TYPE_END(ThreadStore)
 
 CDAC_TYPE_BEGIN(RuntimeThreadLocals)
 CDAC_TYPE_INDETERMINATE(RuntimeThreadLocals)
-CDAC_TYPE_FIELD(RuntimeThreadLocals, AllocContext, AllocContext, offsetof(RuntimeThreadLocals, alloc_context))
+CDAC_TYPE_FIELD(RuntimeThreadLocals, /*EEAllocContext*/, AllocContext, offsetof(RuntimeThreadLocals, alloc_context))
 CDAC_TYPE_END(RuntimeThreadLocals)
+
+CDAC_TYPE_BEGIN(EEAllocContext)
+CDAC_TYPE_INDETERMINATE(EEAllocContext)
+CDAC_TYPE_FIELD(EEAllocContext, /*GCAllocContext*/, GCAllocationContext, offsetof(ee_alloc_context, m_GCAllocContext))
+CDAC_TYPE_END(EEAllocContext)
 
 CDAC_TYPE_BEGIN(GCAllocContext)
 CDAC_TYPE_INDETERMINATE(GCAllocContext)
@@ -172,6 +179,8 @@ CDAC_TYPE_BEGIN(GCHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
 CDAC_TYPE_END(GCHandle)
 
+// Object
+
 CDAC_TYPE_BEGIN(Object)
 CDAC_TYPE_INDETERMINATE(Object)
 CDAC_TYPE_FIELD(Object, /*pointer*/, m_pMethTab, cdac_data<Object>::m_pMethTab)
@@ -188,6 +197,24 @@ CDAC_TYPE_SIZE(sizeof(ArrayBase))
 CDAC_TYPE_FIELD(Array, /*pointer*/, m_NumComponents, cdac_data<ArrayBase>::m_NumComponents)
 CDAC_TYPE_END(Array)
 
+CDAC_TYPE_BEGIN(InteropSyncBlockInfo)
+CDAC_TYPE_INDETERMINATE(InteropSyncBlockInfo)
+#ifdef FEATURE_COMINTEROP
+CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, CCW, cdac_data<InteropSyncBlockInfo>::CCW)
+CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, RCW, cdac_data<InteropSyncBlockInfo>::RCW)
+#endif // FEATURE_COMINTEROP
+CDAC_TYPE_END(InteropSyncBlockInfo)
+
+CDAC_TYPE_BEGIN(SyncBlock)
+CDAC_TYPE_INDETERMINATE(SyncBlock)
+CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, InteropInfo, cdac_data<SyncBlock>::InteropInfo)
+CDAC_TYPE_END(SyncBlock)
+
+CDAC_TYPE_BEGIN(SyncTableEntry)
+CDAC_TYPE_SIZE(sizeof(SyncTableEntry))
+CDAC_TYPE_FIELD(SyncTableEntry, /*pointer*/, SyncBlock, offsetof(SyncTableEntry, m_SyncBlock))
+CDAC_TYPE_END(SyncTableEntry)
+
 // Loader
 
 CDAC_TYPE_BEGIN(Module)
@@ -198,6 +225,7 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, Flags, cdac_data<Module>::Flags)
 CDAC_TYPE_FIELD(Module, /*pointer*/, LoaderAllocator, cdac_data<Module>::LoaderAllocator)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ThunkHeap, cdac_data<Module>::ThunkHeap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicMetadata, cdac_data<Module>::DynamicMetadata)
+CDAC_TYPE_FIELD(Module, /*pointer*/, Path, cdac_data<Module>::Path)
 
 CDAC_TYPE_FIELD(Module, /*pointer*/, FieldDefToDescMap, cdac_data<Module>::FieldDefToDescMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ManifestModuleReferencesMap, cdac_data<Module>::ManifestModuleReferencesMap)
@@ -205,7 +233,15 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, MemberRefToDescMap, cdac_data<Module>::Memb
 CDAC_TYPE_FIELD(Module, /*pointer*/, MethodDefToDescMap, cdac_data<Module>::MethodDefToDescMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, TypeDefToMethodTableMap, cdac_data<Module>::TypeDefToMethodTableMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, TypeRefToMethodTableMap, cdac_data<Module>::TypeRefToMethodTableMap)
+CDAC_TYPE_FIELD(Module, /*pointer*/, MethodDefToILCodeVersioningStateMap, cdac_data<Module>::MethodDefToILCodeVersioningStateMap)
 CDAC_TYPE_END(Module)
+
+CDAC_TYPE_BEGIN(ModuleLookupMap)
+CDAC_TYPE_FIELD(ModuleLookupMap, /*pointer*/, TableData, offsetof(LookupMapBase, pTable))
+CDAC_TYPE_FIELD(ModuleLookupMap, /*pointer*/, Next, offsetof(LookupMapBase, pNext))
+CDAC_TYPE_FIELD(ModuleLookupMap, /*uint32*/, Count, offsetof(LookupMapBase, dwCount))
+CDAC_TYPE_FIELD(ModuleLookupMap, /*nuint*/, SupportedFlagsMask, offsetof(LookupMapBase, supportedFlags))
+CDAC_TYPE_END(ModuleLookupMap)
 
 // RuntimeTypeSystem
 
@@ -238,7 +274,8 @@ CDAC_TYPE_END(ArrayClass)
 
 CDAC_TYPE_BEGIN(GenericsDictInfo)
 CDAC_TYPE_INDETERMINATE(GenericsDictInfo)
-CDAC_TYPE_FIELD(GenericsDictInfo, /*uint16*/, NumTypeArgs, cdac_data<GenericsDictInfo>::NumTypeArgs)
+CDAC_TYPE_FIELD(GenericsDictInfo, /*uint16*/, NumDicts, offsetof(GenericsDictInfo, m_wNumDicts))
+CDAC_TYPE_FIELD(GenericsDictInfo, /*uint16*/, NumTypeArgs, offsetof(GenericsDictInfo, m_wNumTyPars))
 CDAC_TYPE_END(GenericsDictInfo)
 
 CDAC_TYPE_BEGIN(TypeDesc)
@@ -262,6 +299,7 @@ CDAC_TYPE_INDETERMINATE(FnPtrTypeDesc)
 CDAC_TYPE_FIELD(FnPtrTypeDesc, /*uint32*/, NumArgs, cdac_data<FnPtrTypeDesc>::NumArgs)
 CDAC_TYPE_FIELD(FnPtrTypeDesc, /*uint32*/, CallConv, cdac_data<FnPtrTypeDesc>::CallConv)
 CDAC_TYPE_FIELD(FnPtrTypeDesc, /*uint32*/, RetAndArgTypes, cdac_data<FnPtrTypeDesc>::RetAndArgTypes)
+CDAC_TYPE_FIELD(FnPtrTypeDesc, /*pointer*/, LoaderModule, cdac_data<FnPtrTypeDesc>::LoaderModule)
 CDAC_TYPE_END(FnPtrTypeDesc)
 
 CDAC_TYPE_BEGIN(DynamicMetadata)
@@ -274,6 +312,7 @@ CDAC_TYPE_INDETERMINATE(MethodDesc)
 CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, ChunkIndex, cdac_data<MethodDesc>::ChunkIndex)
 CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Slot, cdac_data<MethodDesc>::Slot)
 CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags, cdac_data<MethodDesc>::Flags)
+CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags3AndTokenRemainder, cdac_data<MethodDesc>::Flags3AndTokenRemainder)
 CDAC_TYPE_END(MethodDesc)
 
 CDAC_TYPE_BEGIN(MethodDescChunk)
@@ -282,8 +321,89 @@ CDAC_TYPE_FIELD(MethodDescChunk, /*pointer*/, MethodTable, cdac_data<MethodDescC
 CDAC_TYPE_FIELD(MethodDescChunk, /*pointer*/, Next, cdac_data<MethodDescChunk>::Next)
 CDAC_TYPE_FIELD(MethodDescChunk, /*uint8*/, Size, cdac_data<MethodDescChunk>::Size)
 CDAC_TYPE_FIELD(MethodDescChunk, /*uint8*/, Count, cdac_data<MethodDescChunk>::Count)
+CDAC_TYPE_FIELD(MethodDescChunk, /*uint16*/, FlagsAndTokenRange, cdac_data<MethodDescChunk>::FlagsAndTokenRange)
 CDAC_TYPE_END(MethodDescChunk)
 
+CDAC_TYPE_BEGIN(InstantiatedMethodDesc)
+CDAC_TYPE_INDETERMINATE(InstantiatedMethodDesc)
+CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*pointer*/, PerInstInfo, cdac_data<InstantiatedMethodDesc>::PerInstInfo)
+CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*uint16*/, Flags2, cdac_data<InstantiatedMethodDesc>::Flags2)
+CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*uint16*/, NumGenericArgs, cdac_data<InstantiatedMethodDesc>::NumGenericArgs)
+CDAC_TYPE_END(InstantiatedMethodDesc)
+
+CDAC_TYPE_BEGIN(StoredSigMethodDesc)
+CDAC_TYPE_INDETERMINATE(StoredSigMethodDesc)
+CDAC_TYPE_FIELD(StoredSigMethodDesc, /*pointer*/, Sig, cdac_data<StoredSigMethodDesc>::Sig)
+CDAC_TYPE_FIELD(StoredSigMethodDesc, /*uint32*/, cSig, cdac_data<StoredSigMethodDesc>::cSig)
+CDAC_TYPE_FIELD(StoredSigMethodDesc, /*uint32*/, ExtendedFlags, cdac_data<StoredSigMethodDesc>::ExtendedFlags)
+CDAC_TYPE_END(StoredSigMethodDesc)
+
+CDAC_TYPE_BEGIN(DynamicMethodDesc)
+CDAC_TYPE_INDETERMINATE(DynamicMethodDesc)
+CDAC_TYPE_FIELD(DynamicMethodDesc, /*pointer*/, MethodName, cdac_data<DynamicMethodDesc>::MethodName)
+CDAC_TYPE_END(DynamicMethodDesc)
+
+CDAC_TYPE_BEGIN(CodePointer)
+CDAC_TYPE_SIZE(sizeof(PCODE))
+CDAC_TYPE_END(CodePointer)
+
+CDAC_TYPE_BEGIN(MethodDescVersioningState)
+CDAC_TYPE_INDETERMINATE(MethodDescVersioningState)
+CDAC_TYPE_FIELD(MethodDescVersioningState, /*pointer*/, NativeCodeVersionNode, cdac_data<MethodDescVersioningState>::NativeCodeVersionNode)
+CDAC_TYPE_FIELD(MethodDescVersioningState, /*uint8*/, Flags, cdac_data<MethodDescVersioningState>::Flags)
+CDAC_TYPE_END(MethodDescVersioningState)
+
+CDAC_TYPE_BEGIN(RangeSectionMap)
+CDAC_TYPE_INDETERMINATE(RangeSectionMap)
+CDAC_TYPE_FIELD(RangeSectionMap, /*pointer*/, TopLevelData, cdac_data<RangeSectionMap>::TopLevelData)
+CDAC_TYPE_END(RangeSectionMap)
+
+CDAC_TYPE_BEGIN(RangeSectionFragment)
+CDAC_TYPE_INDETERMINATE(RangeSectionFragment)
+CDAC_TYPE_FIELD(RangeSectionFragment, /*pointer*/, RangeBegin, cdac_data<RangeSectionMap>::RangeSectionFragment::RangeBegin)
+CDAC_TYPE_FIELD(RangeSectionFragment, /*pointer*/, RangeEndOpen, cdac_data<RangeSectionMap>::RangeSectionFragment::RangeEndOpen)
+CDAC_TYPE_FIELD(RangeSectionFragment, /*pointer*/, RangeSection, cdac_data<RangeSectionMap>::RangeSectionFragment::RangeSection)
+CDAC_TYPE_FIELD(RangeSectionFragment, /*pointer*/, Next, cdac_data<RangeSectionMap>::RangeSectionFragment::Next)
+CDAC_TYPE_END(RangeSectionFragment)
+
+CDAC_TYPE_BEGIN(RangeSection)
+CDAC_TYPE_INDETERMINATE(RangeSection)
+CDAC_TYPE_FIELD(RangeSection, /*pointer*/, RangeBegin, cdac_data<RangeSection>::RangeBegin)
+CDAC_TYPE_FIELD(RangeSection, /*pointer*/, RangeEndOpen, cdac_data<RangeSection>::RangeEndOpen)
+CDAC_TYPE_FIELD(RangeSection, /*pointer*/, NextForDelete, cdac_data<RangeSection>::NextForDelete)
+CDAC_TYPE_FIELD(RangeSection, /*pointer*/, JitManager, cdac_data<RangeSection>::JitManager)
+CDAC_TYPE_FIELD(RangeSection, /*int32_t*/, Flags, cdac_data<RangeSection>::Flags)
+CDAC_TYPE_FIELD(RangeSection, /*pointer*/, HeapList, cdac_data<RangeSection>::HeapList)
+CDAC_TYPE_FIELD(RangeSection, /*pointer*/, R2RModule, cdac_data<RangeSection>::R2RModule)
+CDAC_TYPE_END(RangeSection)
+
+CDAC_TYPE_BEGIN(RealCodeHeader)
+CDAC_TYPE_INDETERMINATE(RealCodeHeader)
+CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, MethodDesc, offsetof(RealCodeHeader, phdrMDesc))
+CDAC_TYPE_END(RealCodeHeader)
+
+CDAC_TYPE_BEGIN(CodeHeapListNode)
+CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, Next, offsetof(HeapList, hpNext))
+CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, StartAddress, offsetof(HeapList, startAddress))
+CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, EndAddress, offsetof(HeapList, endAddress))
+CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, MapBase, offsetof(HeapList, mapBase))
+CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, HeaderMap, offsetof(HeapList, pHdrMap))
+CDAC_TYPE_END(CodeHeapListNode)
+
+CDAC_TYPE_BEGIN(ILCodeVersioningState)
+CDAC_TYPE_INDETERMINATE(ILCodeVersioningState)
+CDAC_TYPE_FIELD(ILCodeVersioningState, /*uint32*/, ActiveVersionKind, cdac_data<ILCodeVersioningState>::ActiveVersionKind)
+CDAC_TYPE_FIELD(ILCodeVersioningState, /*pointer*/, ActiveVersionNode, cdac_data<ILCodeVersioningState>::ActiveVersionNode)
+CDAC_TYPE_FIELD(ILCodeVersioningState, /*pointer*/, ActiveVersionModule, cdac_data<ILCodeVersioningState>::ActiveVersionModule)
+CDAC_TYPE_FIELD(ILCodeVersioningState, /*uint32*/, ActiveVersionMethodDef, cdac_data<ILCodeVersioningState>::ActiveVersionMethodDef)
+CDAC_TYPE_END(ILCodeVersioningState)
+
+CDAC_TYPE_BEGIN(NativeCodeVersionNode)
+CDAC_TYPE_INDETERMINATE(NativeCodeVersionNode)
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, Next, cdac_data<NativeCodeVersionNode>::Next)
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, MethodDesc, cdac_data<NativeCodeVersionNode>::MethodDesc)
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, NativeCode, cdac_data<NativeCodeVersionNode>::NativeCode)
+CDAC_TYPE_END(NativeCodeVersionNode)
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -291,6 +411,7 @@ CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
+CDAC_GLOBAL(MethodDescTokenRemainderBitCount, uint8, METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #if FEATURE_EH_FUNCLETS
 CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
 #else
@@ -308,16 +429,21 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1)
 #endif //TARGET_64BIT
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
+CDAC_GLOBAL(DirectorySeparator, uint8, (uint8_t)DIRECTORY_SEPARATOR_CHAR_A)
 CDAC_GLOBAL(MethodDescAlignment, uint64, MethodDesc::ALIGNMENT)
 CDAC_GLOBAL(ObjectHeaderSize, uint64, OBJHEADER_SIZE)
+CDAC_GLOBAL(SyncBlockValueToObjectOffset, uint16, OBJHEADER_SIZE - cdac_data<ObjHeader>::SyncBlockValue)
+CDAC_GLOBAL(StubCodeBlockLast, uint8, STUB_CODE_BLOCK_LAST)
 CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_data<ArrayBase>::ArrayBoundsZero)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
 CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)
 CDAC_GLOBAL_POINTER(ObjectArrayMethodTable, &::g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT])
 CDAC_GLOBAL_POINTER(StringMethodTable, &::g_pStringClass)
+CDAC_GLOBAL_POINTER(SyncTableEntries, &::g_pSyncTable)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
+CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBALS_END()
 
 #undef CDAC_BASELINE

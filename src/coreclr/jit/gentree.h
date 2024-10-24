@@ -467,6 +467,7 @@ enum GenTreeFlags : unsigned int
     GTF_TLS_GET_ADDR            = 0x01000000, // GT_CALL -- call is tls_get_addr
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
+    GTF_MEMORYBARRIER_STORE     = 0x80000000, // GT_MEMORYBARRIER -- Store barrier
 
     GTF_FLD_TLS                 = 0x80000000, // GT_FIELD_ADDR -- field address is a Windows x86 TLS reference
     GTF_FLD_DEREFERENCED        = 0x40000000, // GT_FIELD_ADDR -- used to preserve previous behavior
@@ -488,7 +489,7 @@ enum GenTreeFlags : unsigned int
     GTF_IND_ALLOW_NON_ATOMIC    = 0x00100000, // GT_IND -- this memory access does not need to be atomic
 
     GTF_IND_COPYABLE_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS,
-    GTF_IND_FLAGS = GTF_IND_COPYABLE_FLAGS | GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP | GTF_IND_INVARIANT,
+    GTF_IND_FLAGS = GTF_IND_COPYABLE_FLAGS | GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP | GTF_IND_INVARIANT | GTF_IND_ALLOW_NON_ATOMIC,
 
     GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
                                               //                         addressing mode
@@ -2095,7 +2096,7 @@ public:
 
     void ClearUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsMul());
+        assert(OperIs(GT_ADD, GT_SUB, GT_CAST, GT_LE, GT_LT, GT_GT, GT_GE) || OperIsMul());
         gtFlags &= ~GTF_UNSIGNED;
     }
 
@@ -6637,6 +6638,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     static NamedIntrinsic GetHWIntrinsicIdForUnOp(
         Compiler* comp, genTreeOps oper, GenTree* op1, var_types simdBaseType, unsigned simdSize, bool isScalar);
+
     static NamedIntrinsic GetHWIntrinsicIdForBinOp(Compiler*  comp,
                                                    genTreeOps oper,
                                                    GenTree*   op1,
@@ -6644,14 +6646,20 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                                                    var_types  simdBaseType,
                                                    unsigned   simdSize,
                                                    bool       isScalar);
+
     static NamedIntrinsic GetHWIntrinsicIdForCmpOp(Compiler*  comp,
                                                    genTreeOps oper,
+                                                   var_types  type,
                                                    GenTree*   op1,
                                                    GenTree*   op2,
                                                    var_types  simdBaseType,
                                                    unsigned   simdSize,
                                                    bool       isScalar);
-    static genTreeOps     GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
+
+    static var_types GetLookupTypeForCmpOp(
+        Compiler* comp, genTreeOps oper, var_types type, var_types simdBaseType, unsigned simdSize);
+
+    static genTreeOps GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
 
     genTreeOps GetOperForHWIntrinsicId(bool* isScalar) const
     {
@@ -6659,6 +6667,20 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     }
 
     bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
+
+    void NormalizeJitBaseTypeToInt(NamedIntrinsic id, var_types simdBaseType)
+    {
+        assert(varTypeIsSmall(simdBaseType));
+
+        if (varTypeIsUnsigned(simdBaseType))
+        {
+            SetSimdBaseJitType(CORINFO_TYPE_UINT);
+        }
+        else
+        {
+            SetSimdBaseJitType(CORINFO_TYPE_UINT);
+        }
+    }
 
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);

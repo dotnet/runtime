@@ -77,6 +77,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Thread_get_ManagedThreadId,
     NI_System_Threading_Volatile_Read,
     NI_System_Threading_Volatile_Write,
+    NI_System_Threading_Volatile_ReadBarrier,
+    NI_System_Threading_Volatile_WriteBarrier,
     NI_System_Type_get_IsEnum,
     NI_System_Type_GetEnumUnderlyingType,
     NI_System_Type_get_IsValueType,
@@ -114,6 +116,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
 
     NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
 
@@ -143,7 +146,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Interlocked_Exchange,
     NI_System_Threading_Interlocked_ExchangeAdd,
     NI_System_Threading_Interlocked_MemoryBarrier,
-    NI_System_Threading_Interlocked_ReadMemoryBarrier,
 
     // These two are special marker IDs so that we still get the inlining profitability boost
     NI_System_Numerics_Intrinsic,
@@ -152,11 +154,11 @@ enum NamedIntrinsic : unsigned short
 #ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
 #if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)    \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)           \
     NI_##isa##_##name,
 #include "hwintrinsiclistxarch.h"
 #elif defined(TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)    \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)           \
     NI_##isa##_##name,
 #include "hwintrinsiclistarm64.h"
 #endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
@@ -250,6 +252,12 @@ enum NamedIntrinsic : unsigned short
     NI_PRIMITIVE_TrailingZeroCount,
 
     NI_PRIMITIVE_END,
+
+    //
+    // Array Intrinsics
+    //
+    NI_System_SZArrayHelper_GetEnumerator,
+    NI_System_Array_T_GetEnumerator,
 };
 
 #endif // _NAMEDINTRINSICLIST_H_

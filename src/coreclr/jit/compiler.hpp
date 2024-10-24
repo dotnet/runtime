@@ -3229,19 +3229,23 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
     }
 
     // We can get to this point for blocks that we didn't create as throw helper blocks
-    // under stress, with implausible flow graph optimizations. So, walk the fgAddCodeList
+    // under stress, with implausible flow graph optimizations. So, walk the fgAddCodeDscMap
     // for the final determination.
 
-    for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
+    if (fgHasAddCodeDscMap())
     {
-        if (block == add->acdDstBlk)
+        for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(fgGetAddCodeDscMap()))
         {
-            return add->acdKind == SCK_RNGCHK_FAIL || add->acdKind == SCK_DIV_BY_ZERO || add->acdKind == SCK_OVERFLOW ||
-                   add->acdKind == SCK_ARG_EXCPN || add->acdKind == SCK_ARG_RNG_EXCPN || add->acdKind == SCK_FAIL_FAST;
+            if (block == add->acdDstBlk)
+            {
+                return add->acdKind == SCK_RNGCHK_FAIL || add->acdKind == SCK_DIV_BY_ZERO ||
+                       add->acdKind == SCK_OVERFLOW || add->acdKind == SCK_ARG_EXCPN ||
+                       add->acdKind == SCK_ARG_RNG_EXCPN || add->acdKind == SCK_FAIL_FAST;
+            }
         }
     }
 
-    // We couldn't find it in the fgAddCodeList
+    // We couldn't find it in the fgAddCodeDscMap
     return false;
 }
 
@@ -3255,7 +3259,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
 
 inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 {
-    for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
+    for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(fgGetAddCodeDscMap()))
     {
         if (block == add->acdDstBlk)
         {
@@ -3273,7 +3277,7 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
     }
 
     noway_assert(!"fgThrowHlpBlkStkLevel should only be called if fgIsThrowHlpBlk() is true, but we can't find the "
-                  "block in the fgAddCodeList list");
+                  "block in the fgAddCodeDscMap");
 
     /* We couldn't find the basic block: it must not have been a throw helper block */
 
@@ -4245,6 +4249,10 @@ bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
     bool       result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (varNum == lvaGSSecurityCookie) ||
                   (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
 
+#ifdef TARGET_ARM64
+    result = result || (varNum == lvaFfrRegister);
+#endif
+
 #if FEATURE_FIXED_OUT_ARGS
     result = result || (varNum == lvaOutgoingArgSpaceVar);
 #endif
@@ -4964,6 +4972,75 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
 
     assert(preOrderIndex == postOrderIndex);
     return preOrderIndex;
+}
+
+//------------------------------------------------------------------------
+// fgVisitBlocksInLoopAwareRPO: Visit the blocks in 'dfsTree' in reverse post-order,
+// but ensure loop bodies are visited before loop successors.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Parameters:
+//   dfsTree - The DFS tree of the flow graph
+//   loops   - A collection of the loops in the flow graph
+//   func    - Callback functor that operates on a BasicBlock*
+//
+// Returns:
+//   A postorder traversal with compact loop bodies.
+//
+template <typename TFunc>
+void Compiler::fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphNaturalLoops* loops, TFunc func)
+{
+    assert(dfsTree != nullptr);
+    assert(loops != nullptr);
+
+    // We will start by visiting blocks in reverse post-order.
+    // If we encounter the header of a loop, we will visit the loop's remaining blocks next
+    // to keep the loop body compact in the visitation order.
+    // We have to do this recursively to handle nested loops.
+    // Since the presence of loops implies we will try to visit some blocks more than once,
+    // we need to track visited blocks.
+    struct LoopAwareVisitor
+    {
+        BitVecTraits           traits;
+        BitVec                 visitedBlocks;
+        FlowGraphNaturalLoops* loops;
+        TFunc                  func;
+
+        LoopAwareVisitor(FlowGraphDfsTree* dfsTree, FlowGraphNaturalLoops* loops, TFunc func)
+            : traits(dfsTree->PostOrderTraits())
+            , visitedBlocks(BitVecOps::MakeEmpty(&traits))
+            , loops(loops)
+            , func(func)
+        {
+        }
+
+        void VisitBlock(BasicBlock* block)
+        {
+            if (BitVecOps::TryAddElemD(&traits, visitedBlocks, block->bbPostorderNum))
+            {
+                func(block);
+
+                FlowGraphNaturalLoop* const loop = loops->GetLoopByHeader(block);
+                if (loop != nullptr)
+                {
+                    loop->VisitLoopBlocksReversePostOrder([&](BasicBlock* block) {
+                        VisitBlock(block);
+                        return BasicBlockVisit::Continue;
+                    });
+                }
+            }
+        }
+    };
+
+    LoopAwareVisitor visitor(dfsTree, loops, func);
+
+    for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+    {
+        BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+        visitor.VisitBlock(block);
+    }
 }
 
 //------------------------------------------------------------------------------

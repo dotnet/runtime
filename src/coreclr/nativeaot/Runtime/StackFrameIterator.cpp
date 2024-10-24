@@ -258,8 +258,6 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     if (pFrame->m_Flags & PTFF_SAVE_SP) { m_RegDisplay.SP = *pPreservedRegsCursor++; }
 
     if (pFrame->m_Flags & PTFF_SAVE_R0) { m_RegDisplay.pR0 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_RA) { m_RegDisplay.pRA = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_R2) { m_RegDisplay.pR2 = pPreservedRegsCursor++; }
 
     if (pFrame->m_Flags & PTFF_SAVE_R4) { m_RegDisplay.pR4 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R5) { m_RegDisplay.pR5 = pPreservedRegsCursor++; }
@@ -279,6 +277,8 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     if (pFrame->m_Flags & PTFF_SAVE_R19) { m_RegDisplay.pR19 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R20) { m_RegDisplay.pR20 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R21) { m_RegDisplay.pR21 = pPreservedRegsCursor++; }
+
+    if (pFrame->m_Flags & PTFF_SAVE_RA) { m_RegDisplay.pRA = pPreservedRegsCursor++; }
 
     GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags);
     if (retValueKind != GCRK_Scalar)
@@ -811,11 +811,6 @@ PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)
         // Sync our 'current' ExInfo with the updated state (we may have skipped other dispatches)
         ResetNextExInfoForSP(m_RegDisplay.GetSP());
 
-        // In case m_ControlPC is pre-adjusted, counteract here, since the caller of this routine
-        // will apply the adjustment again once we return. If the m_ControlPC is not pre-adjusted,
-        // this is simply an no-op.
-        m_ControlPC = m_OriginalControlPC;
-
         m_dwFlags = curFlags;
 
         // The iterator has been moved to the "owner frame" (either a parent funclet or the main
@@ -1300,7 +1295,7 @@ private:
     uintptr_t m_pushedFP;                  // ChildSP+000     CallerSP-100 (0x08 bytes)    (fp)
     uintptr_t m_pushedLR;                  // ChildSP+008     CallerSP-0F8 (0x08 bytes)    (lr)
     Fp128   m_fpArgRegs[8];                // ChildSP+010     CallerSP-0F0 (0x80 bytes)    (q0-q7)
-    uintptr_t m_returnBlock[4];            // ChildSP+090     CallerSP-070 (0x40 bytes)
+    uintptr_t m_returnBlock[4];            // ChildSP+090     CallerSP-070 (0x20 bytes)
     uintptr_t m_intArgRegs[9];             // ChildSP+0B0     CallerSP-050 (0x48 bytes)    (x0-x8)
     uintptr_t m_alignmentPad;              // ChildSP+0F8     CallerSP-008 (0x08 bytes)
     uintptr_t m_stackPassedArgs[1];        // ChildSP+100     CallerSP+000 (unknown size)
@@ -1320,13 +1315,12 @@ public:
     // Conservative GC reporting must be applied to everything between the base of the
     // ReturnBlock and the top of the StackPassedArgs.
 private:
-    uintptr_t m_pushedFP;                  // ChildSP+000     CallerSP-100 (0x08 bytes)    (fp)
-    uintptr_t m_pushedRA;                  // ChildSP+008     CallerSP-0F8 (0x08 bytes)    (ra)
-    Fp128   m_fpArgRegs[8];                // ChildSP+010     CallerSP-0F0 (0x80 bytes)    (q0-q7)
-    uintptr_t m_returnBlock[4];            // ChildSP+090     CallerSP-070 (0x40 bytes)
-    uintptr_t m_intArgRegs[9];             // ChildSP+0B0     CallerSP-050 (0x48 bytes)    (x0-x8)
-    uintptr_t m_alignmentPad;              // ChildSP+0F8     CallerSP-008 (0x08 bytes)
-    uintptr_t m_stackPassedArgs[1];        // ChildSP+100     CallerSP+000 (unknown size)
+    uintptr_t m_pushedFP;                  // ChildSP+000     CallerSP-0F0 (0x08 bytes)    (fp)
+    uintptr_t m_pushedRA;                  // ChildSP+008     CallerSP-0E8 (0x08 bytes)    (ra)
+    Fp128   m_fpArgRegs[8];                // ChildSP+010     CallerSP-0E0 (0x80 bytes)    (fa0-fa7)
+    uintptr_t m_returnBlock[4];            // ChildSP+090     CallerSP-060 (0x20 bytes)
+    uintptr_t m_intArgRegs[8];             // ChildSP+0B0     CallerSP-040 (0x40 bytes)    (a0-a7)
+    uintptr_t m_stackPassedArgs[1];        // ChildSP+0F0     CallerSP+000 (unknown size)
 
 public:
     PTR_uintptr_t get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }
@@ -1830,7 +1824,9 @@ void StackFrameIterator::PrepareToYieldFrame()
     ASSERT(m_pInstance->IsManaged(m_ControlPC) ||
          ((m_dwFlags & SkipNativeFrames) == 0 && (m_dwFlags & UnwoundReversePInvoke) != 0));
 
-    if (m_dwFlags & ApplyReturnAddressAdjustment)
+    // Do not adjust the PC if ExCollide is set. In that case the m_ControlPC was copied from
+    // another stack frame iterator and it already has a correct value.
+    if ((m_dwFlags & (ApplyReturnAddressAdjustment | ExCollide)) == ApplyReturnAddressAdjustment)
     {
         m_ControlPC = AdjustReturnAddressBackward(m_ControlPC);
     }
@@ -2139,9 +2135,9 @@ bool StackFrameIterator::Next(uint32_t* puExCollideClauseIdx, bool* pfUnwoundRev
     return isValid;
 }
 
-FCIMPL4(FC_BOOL_RET, RhpSfiInit, StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
+FCIMPL4(FC_BOOL_RET, RhpSfiInit, StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, FC_BOOL_ARG instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
 {
-    bool isValid = pThis->Init(pStackwalkCtx, instructionFault);
+    bool isValid = pThis->Init(pStackwalkCtx, FC_ACCESS_BOOL(instructionFault));
 
     if (pfIsExceptionIntercepted)
     {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
@@ -7,6 +8,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[Reference ("System.Core.dll")]
 	[ExpectedNoWarnings]
+	[KeptAttributeAttribute (typeof (UnconditionalSuppressMessageAttribute))]
+	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
 	public class ExpressionCallStringAndLocals
 	{
 		public static void Main ()

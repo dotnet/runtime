@@ -46,7 +46,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Playwright" Version="1.21.0" />
+    <PackageReference Include="Microsoft.Playwright" Version="1.47.0" />
+    <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
     <Compile Include="$(BrowserProjectRoot)debugger\DebuggerTestSuite\BrowserLocator.cs" />
 
@@ -87,14 +89,14 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export IS_RUNNING_ON_CI=true" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set IS_RUNNING_ON_CI=true" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/playwright.sh" />
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/node" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux-x64/playwright.sh" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux-x64/node" />
     </ItemGroup>
 
     <PropertyGroup>
       <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
-      <_XUnitTraitArg Condition="'$(TestUsingFingerprinting)' == 'false'">-trait category=no-fingerprinting</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">-trait category=no-fingerprinting</_XUnitTraitArg>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
@@ -110,11 +112,11 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export SDK_DIR_NAME=$(_SdkPathForLocalTesting)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set SDK_DIR_NAME=$(_SdkPathForLocalTesting)" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WEBCIL=$(TestUsingWebcil)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WEBCIL=$(TestUsingWebcil)" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WASM_ENABLE_WEBCIL=$(WasmEnableWebcil)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WASM_ENABLE_WEBCIL=$(WasmEnableWebcil)" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_FINGERPRINTING=$(TestUsingFingerprinting)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_FINGERPRINTING=$(TestUsingFingerprinting)" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WASM_FINGERPRINT_ASSETS=$(WasmFingerprintAssets)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WASM_FINGERPRINT_ASSETS=$(WasmFingerprintAssets)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />

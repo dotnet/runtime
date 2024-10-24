@@ -209,6 +209,15 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultEqualityComparerClass(
     return temp;
 }
 
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getSZArrayHelperEnumeratorClass(
+          CORINFO_CLASS_HANDLE elemType)
+{
+    API_ENTER(getSZArrayHelperEnumeratorClass);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getSZArrayHelperEnumeratorClass(elemType);
+    API_LEAVE(getSZArrayHelperEnumeratorClass);
+    return temp;
+}
+
 void WrapICorJitInfo::expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_METHOD_HANDLE callerHandle,
@@ -416,30 +425,12 @@ uint32_t WrapICorJitInfo::getClassAttribs(
     return temp;
 }
 
-CORINFO_MODULE_HANDLE WrapICorJitInfo::getClassModule(
+const char* WrapICorJitInfo::getClassAssemblyName(
           CORINFO_CLASS_HANDLE cls)
 {
-    API_ENTER(getClassModule);
-    CORINFO_MODULE_HANDLE temp = wrapHnd->getClassModule(cls);
-    API_LEAVE(getClassModule);
-    return temp;
-}
-
-CORINFO_ASSEMBLY_HANDLE WrapICorJitInfo::getModuleAssembly(
-          CORINFO_MODULE_HANDLE mod)
-{
-    API_ENTER(getModuleAssembly);
-    CORINFO_ASSEMBLY_HANDLE temp = wrapHnd->getModuleAssembly(mod);
-    API_LEAVE(getModuleAssembly);
-    return temp;
-}
-
-const char* WrapICorJitInfo::getAssemblyName(
-          CORINFO_ASSEMBLY_HANDLE assem)
-{
-    API_ENTER(getAssemblyName);
-    const char* temp = wrapHnd->getAssemblyName(assem);
-    API_LEAVE(getAssemblyName);
+    API_ENTER(getClassAssemblyName);
+    const char* temp = wrapHnd->getClassAssemblyName(cls);
+    API_LEAVE(getClassAssemblyName);
     return temp;
 }
 
@@ -939,10 +930,10 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getFieldClass(
 CorInfoType WrapICorJitInfo::getFieldType(
           CORINFO_FIELD_HANDLE field,
           CORINFO_CLASS_HANDLE* structType,
-          CORINFO_CLASS_HANDLE memberParent)
+          CORINFO_CLASS_HANDLE fieldOwnerHint)
 {
     API_ENTER(getFieldType);
-    CorInfoType temp = wrapHnd->getFieldType(field, structType, memberParent);
+    CorInfoType temp = wrapHnd->getFieldType(field, structType, fieldOwnerHint);
     API_LEAVE(getFieldType);
     return temp;
 }
@@ -1202,10 +1193,11 @@ const char* WrapICorJitInfo::getMethodNameFromMetadata(
           CORINFO_METHOD_HANDLE ftn,
           const char** className,
           const char** namespaceName,
-          const char** enclosingClassName)
+          const char** enclosingClassNames,
+          size_t maxEnclosingClassNames)
 {
     API_ENTER(getMethodNameFromMetadata);
-    const char* temp = wrapHnd->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassName);
+    const char* temp = wrapHnd->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassNames, maxEnclosingClassNames);
     API_LEAVE(getMethodNameFromMetadata);
     return temp;
 }
@@ -1738,6 +1730,15 @@ uint32_t WrapICorJitInfo::getJitFlags(
     API_ENTER(getJitFlags);
     uint32_t temp = wrapHnd->getJitFlags(flags, sizeInBytes);
     API_LEAVE(getJitFlags);
+    return temp;
+}
+
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getSpecialCopyHelper(
+          CORINFO_CLASS_HANDLE type)
+{
+    API_ENTER(getSpecialCopyHelper);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getSpecialCopyHelper(type);
+    API_LEAVE(getSpecialCopyHelper);
     return temp;
 }
 

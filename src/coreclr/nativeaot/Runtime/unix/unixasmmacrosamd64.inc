@@ -33,7 +33,12 @@ C_FUNC(\Name):
 .endm
 
 .macro ALTERNATE_ENTRY Name
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name)
+        .private_extern C_FUNC(\Name)
+#else
         .global C_FUNC(\Name)
+#endif
 C_FUNC(\Name):
 .endm
 
@@ -240,8 +245,8 @@ C_FUNC(\Name):
 //
 // Rename fields of nested structs
 //
-#define OFFSETOF__Thread__m_alloc_context__alloc_ptr    OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-#define OFFSETOF__Thread__m_alloc_context__alloc_limit  OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
+#define OFFSETOF__Thread__m_alloc_context__alloc_ptr        OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+#define OFFSETOF__Thread__m_eeAllocContext__combined_limit   OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit
 
 // GC type flags
 #define GC_ALLOC_FINALIZE           1
@@ -306,7 +311,7 @@ C_FUNC(\Name):
 1:
 .endm
 
-DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
+#define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP)
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
     push_nonvol_reg rbp                         // push RBP frame

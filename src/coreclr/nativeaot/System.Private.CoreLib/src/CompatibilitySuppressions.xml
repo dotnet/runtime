@@ -711,10 +711,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Runtime.CompilerHelpers.ThrowHelpers</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Runtime.CompilerServices.FunctionPointerOps</Target>
   </Suppression>
   <Suppression>
@@ -830,6 +826,10 @@
     <Target>T:System.Runtime.CompilerServices.StaticClassConstructionContext</Target>
   </Suppression>
   <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Internal.TypeSystem.LockFreeReaderHashtableOfPointers`2</Target>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Reflection.MethodBase.GetParametersAsSpan</Target>
   </Suppression>
@@ -840,7 +840,5 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Diagnostics.DiagnosticMethodInfo.#ctor(System.String,System.String,System.String)</Target>
-    <Left>ref/net9.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net9.0/System.Private.CoreLib.dll</Right>
   </Suppression>
 </Suppressions>
