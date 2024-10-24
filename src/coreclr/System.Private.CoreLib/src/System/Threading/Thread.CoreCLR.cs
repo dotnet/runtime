@@ -8,6 +8,12 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 
+namespace System.Runtime
+{
+    internal sealed class BypassReadyToRunAttribute : Attribute
+    {
+    }
+}
 namespace System.Threading
 {
     internal readonly struct ThreadHandle
@@ -428,6 +434,22 @@ namespace System.Threading
         {
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
+        }
+
+        private static class DirectOnThreadLocalData
+        {
+            // Special Thread Static variable which is always allocated at the address of the Thread variable in the ThreadLocalData of the current thread
+            [ThreadStatic]
+            public static IntPtr pNativeThread;
+        }
+        /// <summary>
+        /// Get the ThreadStaticBase used for this threads TLS data
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunAttribute]
+        internal static unsafe StaticsHelpers.ThreadLocalData* GetThreadStaticsBase()
+        {
+            return (StaticsHelpers.ThreadLocalData*)(((byte*)Unsafe.AsPointer(ref DirectOnThreadLocalData.pNativeThread)) - sizeof(StaticsHelpers.ThreadLocalData));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

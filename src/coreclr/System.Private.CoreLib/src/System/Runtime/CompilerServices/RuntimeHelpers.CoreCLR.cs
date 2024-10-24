@@ -872,7 +872,39 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
+
+        /// <summary>
+        /// Given a statics pointer in the DynamicStaticsInfo, get the actual statics pointer.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern ref byte MaskStaticsPointer(ref byte staticsPtr);
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe ref struct DynamicStaticsInfo
+    {
+        public const int ISCLASSINITED = 1;
+        public IntPtr _pGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
+        public IntPtr _pNonGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
+        public unsafe MethodTable* _methodTable;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe ref struct GenericsStaticsInfo
+    {
+        // Pointer to field descs for statics
+        public IntPtr _pFieldDescs;
+        public DynamicStaticsInfo _dynamicStatics;
+    };  // struct GenericsStaticsInfo
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe ref struct ThreadStaticsInfo
+    {
+        public int NonGCTlsIndex;
+        public int GCTlsIndex;
+        public GenericsStaticsInfo _genericStatics;
+    }
+
 
     // Subset of src\vm\methodtable.h
     [StructLayout(LayoutKind.Sequential)]
@@ -934,6 +966,18 @@ namespace System.Runtime.CompilerServices
         public bool IsClassInited => (Volatile.Read(ref Flags) & enum_flag_Initialized) != 0;
 
         public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive)) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static DynamicStaticsInfo* GetDynamicStaticsInfo(MethodTableAuxiliaryData* pAuxiliaryData)
+        {
+            return (DynamicStaticsInfo*)(((byte*)pAuxiliaryData) - sizeof(DynamicStaticsInfo));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ThreadStaticsInfo* GetThreadStaticsInfo(MethodTableAuxiliaryData* pAuxiliaryData)
+        {
+            return (ThreadStaticsInfo*)(((byte*)pAuxiliaryData) - sizeof(ThreadStaticsInfo));
+        }
     }
 
     /// <summary>

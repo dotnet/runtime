@@ -260,6 +260,7 @@ FCFuncEnd()
 FCFuncStart(gThreadFuncs)
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
+    FCFuncElement("GetThreadStaticsBase", ThreadNative::GetThreadLocalStaticBase)
 FCFuncEnd()
 
 FCFuncStart(gThreadPoolFuncs)
@@ -363,6 +364,7 @@ FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
     FCFuncElement("GetPrimitiveCorElementType", MethodTableNative::GetPrimitiveCorElementType)
     FCFuncElement("GetMethodTableMatchingParentClass", MethodTableNative::GetMethodTableMatchingParentClass)
+    FCFuncElement("MaskStaticsPointer", MethodTableNative::MaskStaticsPointer)
 FCFuncEnd()
 
 FCFuncStart(gStubHelperFuncs)
@@ -389,6 +391,10 @@ FCFuncEnd()
 
 FCFuncStart(gComAwareWeakReferenceFuncs)
     FCFuncElement("HasInteropInfo", ComAwareWeakReferenceNative::HasInteropInfo)
+FCFuncEnd()
+
+FCFuncStart(gStaticsHelpersFuncs)
+    FCFuncElement("VolatileReadAsByref", JIT_VolatileReadAsByref)
 FCFuncEnd()
 
 //
@@ -429,6 +435,7 @@ FCClassElement("RuntimeMethodHandle", "System", gRuntimeMethodHandle)
 FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
 
 FCClassElement("Signature", "System", gSignatureNative)
+FCClassElement("StaticsHelpers", "System.Runtime.CompilerServices", gStaticsHelpersFuncs)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
 FCClassElement("Thread", "System.Threading", gThreadFuncs)
