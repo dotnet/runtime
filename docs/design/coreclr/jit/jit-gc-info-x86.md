@@ -47,19 +47,19 @@ an object reference or [interior](#Dfn-interior-pointers) (i.e. a pointer that
 may point to the interior of a garbage collectable object) stored at that location. A
 `this` pointer is required to be tracked and thus cannot
 appear in this table. Additionally each untracked local can be marked as
-<a href="#Dfn: pinned pointer">pinned</a>. (i.e. a pointer to a location that must be
+[pinned](#Dfn-pinned-pointer). (i.e. a pointer to a location that must be
 considered pinned for the purposes of a garbage collection) Any frame slot mentioned here
 is considered live for GC purposes during the *entire* lifetime of the frame so it must be
 initialized in the method prolog unless the frame slot correponds to an incoming argument
 and it should be explicitly cleared when it reaches the end of its lifetime (if the compiler
 knows where the lifetime ends prior to the exit from the method).
 
-**Rationale**: The term <a href="#Dfn: untracked">untracked</a>
+**Rationale**: The term [untracked](#Dfn-untracked)
 means that there is no lifetime information for these items, even though they are known to
 contain GC pointers. The JITter currently has a hard-coded limit of 64 items whose lifetime
 it can track and any additional pointers in the stack frame will be untracked. In addition
 it is also useful to mark GC references for infrequently accessed incoming arguments that
-reside in the <a href="#Dfn: pushed argument area">pushed argument area</a> as untracked.
+reside in the [pushed argument area](#Dfn-pushed-argument-area) as untracked.
 
 ## 4. Stack Lifetime Table (tag `0xCAFE`)
 
@@ -68,9 +68,9 @@ PC within the method code. The table specifies which slots in the fixed-length p
 of this method's stack frame contain pointers to be traced by the GC, their lifetimes (i,e.
 their starting and ending offsets) as well as the particular kind of pointer, either an
 object reference, a `this` pointer or an
-<a href="#Dfn: interior pointer">interior</a> (i.e. a pointer that may point to the
+[interior](#Dfn-interior-pointer) (i.e. a pointer that may point to the
 interior of a garbage collectable object) stored at that location. Tracked locals cannot
-be marked as <a href="#Dfn: pinned pointer">pinned</a>. Items tracked here need not
+be marked as [pinned](#Dfn-pinned-pointer). Items tracked here need not
 be initialized or cleared at runtime (unlike items mentioned in the Untracked Locals
 Table), and they may contain non-pointers during the portions of code when they are not
 marked as live. As mentioned above, there is a tradeoff between compile-time/space and
@@ -81,8 +81,8 @@ listed in the Untracked Locals table.
 
 This table provides, at specific code addresses within the method, the GC pointer
 liveness of registers, and the GC pointer liveness of the local stack frame. In addition
-for an <a href="#Dfn: EBP-less Method">EBP-less method</a> this table also provides
-information on tracking changes to <a href="#Dfn: ESP Register">ESP</a>.
+for an [EBP-less method](#Dfn-EBP-less-Method) this table also provides
+information on tracking changes to [ESP](#Dfn-ESP-Register).
 
 # General Comments on Encoding
 
@@ -169,14 +169,14 @@ dynamic links (saved previous frame pointer) or by information in the method hea
 described here. The .NET runtime system requires the ability to walk back the stack at any
 time that a fault may occur (i.e. at all times).
 
-<a name="Dfn: Constructing a stack frame"></a>
+<a name="Dfn-Constructing-a-stack-frame"></a>
 
 A stack frame is created in the following order (see diagram above):
 
 In the callers code up to and including the call instruction:
 
 - push the arguments to the method.
-  This is called the <a href="#Dfn: pushed argument area">pushed argument area</a>.
+  This is called the [pushed argument area](#Dfn-pushed-argument-area).
   The size of this pushed argument area is recorded in the `argCount`
   field of the Method Header Information for the called method.
   **Note**: that the first two arguments are passed in registers and thus
@@ -185,19 +185,19 @@ In the callers code up to and including the call instruction:
 
 In the method prolog for the called method:
 
-- push the <a href="#Dfn: EBP Register">EBP</a> register and setup a new EBP equal to the
+- push the [EBP](#Dfn-EBP-Register) register and setup a new EBP equal to the
   current value of ESP. This step only takes place if the current method uses the EBP
   register to point to the base of this frame. (i.e. `ebpFrame=1`)
 - if `doubleAlign=1` is specified then the
-  <a href="#Dfn: local variable area">local variable area</a> requires quad word (8-byte) alignment,
+  [local variable area](#Dfn-local-variable-area) requires quad word (8-byte) alignment,
   a pad word is pushed here if the stack is not currently quad word (8-byte) aligned.
-- allocate the <a href="#Dfn: local variable area">local variable area</a> for the current method; its
+- allocate the [local variable area](#Dfn-local-variable-area) for the current method; its
   size is available from the method header (i.e. `frameSize`).
-  The allocation takes place by subtracting the size of the local area from <a href="#Dfn: ESP Register">ESP</a>.
+  The allocation takes place by subtracting the size of the local area from [ESP](#Dfn-ESP-Register).
   This area will hold both the user visible local variables and any temporary locations needed
   by the compiler. The critical issue is that its size is known at compile time and that
   the space is allocated for the entire duration of the method activation.
-- save any <a href="#Dfn: callee saves">callee saves</a> registers that will be modified
+- save any [callee saves](#Dfn-callee-saves) registers that will be modified
   by the method code; they are saved in a known order and which ones are saved by this
   method is specified in the method header. At this point the fixed portion of the stack
   frame (the part that is always present while in the main body of the method code) is complete.
@@ -206,18 +206,18 @@ In the method prolog for the called method:
   the JITter may choose to zero initialize the entire local frame instead of initializing
   each untracked local slot.
 - if `localloc=1` is specified then the current value of ESP
-  which is the initial default <a href="#Dfn: ESP Register">ESP</a> for the method is saved
+  which is the initial default [ESP](#Dfn-ESP-Register) for the method is saved
   into the first local slot.
 
-Offsets used at runtime into the <a href="#Dfn: local variable area">local variable area</a>
-and the <a href="#Dfn: pushed argument area">pushed argument area</a> are handled
-differently depending on whether the method uses <a href="#Dfn: EBP Register">EBP</a> as a
+Offsets used at runtime into the [local variable area](#Dfn-local-variable-area)
+and the [pushed argument area](#Dfn-pushed-argument-area) are handled
+differently depending on whether the method uses [EBP](#Dfn-EBP-Register) as a
 frame pointer and whether a frame has locals that require quad word (8-byte) alignment at
 run time. For frames with an EBP but no double alignment constraint, offsets are relative
 to the EBP, which always points at the saved value of the EBP; negative offsets refer to
 local variables or temporary values while positive offsets refer to this method's arguments.
 If the method does not use an EBP, all offsets will be from the method's initial default
-<a href="#Dfn: ESP Register">ESP</a> and will necessarily be positive. If a frame requires
+[ESP](#Dfn-ESP-Register) and will necessarily be positive. If a frame requires
 quad word (8-byte) alignment, it will use positive offsets from EBP (which is not
 required to be quad word aligned) to reference the arguments and positive offsets from
 ESP (which will be quad word aligned) to reference locals and temporaries.
@@ -282,17 +282,17 @@ struct InfoHdr {
   callee-saves area of the stack frame at entry to the method.
 - **ebxSaved**: is a one-bit boolean specifying whether or not the EBX register is saved in the
   callee-saves area of the stack frame at entry to the method.
-- **ebpSaved**: is a one-bit boolean specifying whether or not the <a href="#Dfn: EBP Register">EBP</a>
+- **ebpSaved**: is a one-bit boolean specifying whether or not the [EBP](#Dfn-EBP-Register)
   register is saved in the callee-saves area of the stack frame at entry to the method.
   If `ebpFrame=1` this bit is ignored and the EBP will
   always be saved immediately after the return address rather than in the callee-saves
   area of the stack frame.
-- **ebpFrame**: is a one-bit boolean specifying whether or not, at runtime, the <a href="#Dfn: EBP Register">EBP</a>
+- **ebpFrame**: is a one-bit boolean specifying whether or not, at runtime, the [EBP](#Dfn-EBP-Register)
   register will be dedicated for used as a frame pointer in the body of the method. When
   `ebpFrame=1` the method will be known as an
-  <a href="#Dfn: EBP-Frame or EBP-based Method">EBP-based method</a>. When
+  [EBP-based method](#Dfn-EBP-Frame-or-EBP-based-Method). When
   `ebpFrame=0` the method will be known as an
-  <a href="#Dfn: EBP-less Method">EBP-less method</a>.
+  [EBP-less method](#Dfn-EBP-less-Method).
   The ramifications of this boolean are wide-ranging, since maintaining a reliable frame
   pointer requires additional execution code (larger prolog and epilog sequences and thus
   slower running time) but can reduce the amount of data in the Method GC Information tables
@@ -302,11 +302,11 @@ struct InfoHdr {
   information about the depth of the stack at runtime and the liveness of registers and
   values on the non-fixed length portion of the stack. The preferred
   representation is with `interruptible=0`
-  (<a href="#Dfn: Non Fully Interruptible Method">non fully interruptible</a>) which
+  ([non fully interruptible](#Dfn-Non-Fully-Interruptible-Method)) which
   indicates that the method is known to run for only a short interval (order of a few
   hundred instructions) before it either exits or makes a method call. The other
   representation, `interruptible=1`
-  (<a href="#Dfn: Fully Interruptible Method">fully interruptible</a>),
+  ([fully interruptible](#Dfn-Fully-Interruptible-Method)),
   is used when the method can't make this guarantee. In that case,
   additional information is made available by the compiler to allow the garbage collector to
   run while the method is active. ***Important Note***: the
@@ -319,16 +319,16 @@ struct InfoHdr {
   quad word (8-byte) boundaries. If this bit is set, the compiler is responsible for emitting a
   prolog that aligns the stack pointer at run time by conditionally inserting either 0 or 4
   bytes of padding between the stored EBP and the local variables. The JITter requires
-  that any double aligned method use an <a href="#Dfn: EBP-Frame or EBP-based Method">EBP frame</a>
-  so that locals can be referenced using the aligned <a href="#Dfn: ESP Register">ESP</a> while
-  arguments are referenced using the unaligned <a href="#Dfn: EBP Register">EBP</a>.
+  that any double aligned method use an [EBP frame](#Dfn-EBP-Frame-or-EBP-based-Method)
+  so that locals can be referenced using the aligned [ESP](#Dfn-ESP-Register) while
+  arguments are referenced using the unaligned [EBP](#Dfn-EBP-Register).
   The name `doubleAlign` is perhaphs a bit confusing since
   it actually requires a quad word or 8-byte alignment for ESP. Its purpose however is to
   allow the proper alignment for the floating point type `double`
   thus the name `doubleAlign`.
 - **security**: is a one-bit boolean specifying whether the stack frame includes a security object.
   If present, the object will be located in the
-  <a href="#Dfn: local variable area">local variable area</a>,
+  [local variable area](#Dfn-local-variable-area),
   immediately after the area actually used by the compiler. The security object is created and
   stored by the runtime system as needed; compiled code should never reference this location
   in any way (and the space for the security object is not included in the  frameSize,
@@ -341,16 +341,16 @@ struct InfoHdr {
   For example any usage of the C/C++ `_alloca` routine
   in the method would require the method to allocate a variable sized stack frame.
   In such cases the stack frame will include a slot for the initial default
-  <a href="#Dfn: ESP Register">ESP</a> for the method. **Note**:
+  [ESP](#Dfn-ESP-Register) for the method. **Note**:
   By convention the JITter and the Code Manager use the first local slot to save the
   value of the initial default ESP.
 - **editNcontinue**: is a one-bit boolean specifying whether the method was compiled for EnC
   This also requires that the method have an
-  <a href="#Dfn: EBP-Frame or EBP-based Method">EBP frame</a>.
+  [EBP frame](#Dfn-EBP-Frame-or-EBP-based-Method).
 - **varargs**: is a one-bit boolean specifying whether the method is a vararg method.
   Reporting of GC arguments of such methods is specially handled.
 - **argCount**: is the length (in units of 4 bytes) that is expected to be allocated and initialized by
-  the caller of this method. (i.e. the size of the <a href="#Dfn: pushed argument area">pushed argument area</a>)
+  the caller of this method. (i.e. the size of the [pushed argument area](#Dfn-pushed-argument-area))
   **Note**: Since the first two arguments are normally passed in registers this value
   is normally either zero or two less than the actual number of arguments.
 - **frameSize**: is the size (in units of 4 bytes) of the area labeled "Local Variables (incl.
@@ -426,8 +426,8 @@ modify the ESP are simulated).
 
 The number of entries is specified in the Method Header Information as **untrackedCnt**.
 Each entry is a single Signed. The values of these entries encode offsets within the
-<a href="#Dfn: pushed argument area">pushed argument area</a> or the
-<a href="#Dfn: local variable area">local variable area</a> of the stack.
+[pushed argument area](#Dfn-pushed-argument-area) or the
+[local variable area](#Dfn-local-variable-area) of the stack.
 Since locals are required to be a multiple of 4 bytes long, the bottom two bits of the value
 are used to encode additional information about the data stored at the true offset (which is
 the encoded offset with the bottom two bits cleared). The bottom two bits are interpreted as
@@ -443,8 +443,8 @@ follows:
 The size of this table is specified in the Method Header Information by the value of
 **varPtrTableSize**. This table is similar to the Untracked Locals Table
 in that each entry encode offsets within the
-<a href="#Dfn: pushed argument area">pushed argument area</a> or the
-<a href="#Dfn: local variable area">local variable area</a> of the stack.
+[pushed argument area](#Dfn-pushed-argument-area) or the
+[local variable area](#Dfn-local-variable-area) of the stack.
 However additional lifetime information for each entry is provided,
 
 Each entry consists of three parts:
@@ -471,8 +471,8 @@ the birth address of the previous entry. The second UDelta ("death") is relative
 to the birth specified in this entry.
 
 For both the Untracked Local Table and the Stack Lifetime Table the offsets within the
-<a href="#Dfn: pushed argument area">pushed argument area</a> or the
-<a href="#Dfn: local variable area">local variable area</a> of the stack are interpreted
+[pushed argument area](#Dfn-pushed-argument-area) or the
+[local variable area](#Dfn-local-variable-area) of the stack are interpreted
 as follows:
 
 - **In an EBP Frame**.
@@ -488,7 +488,7 @@ larger offsets. (i.e. Offsets larger than frameSize + the size of the callee-sav
 For double aligned frames it is not possible to refer into the pushed argument area
 
 An encoded value of 0x11 refers to the local at offset encoded by 0x10 (16 bytes)
-and specifies that it is an <a href="#Dfn: interior pointers">interior</a> pointer
+and specifies that it is an [interior](#Dfn-interior-pointers) pointer
 In an EBP frame this would be an offset of -16 bytes from the EBP. For an EBP-less frame
 this would be an offset of +16 bytes from ESP.
 
@@ -506,17 +506,17 @@ method's code, how large the variable-length portion of the stack frame is and w
 that frame there are live pointers to be traced by the garbage collector. However,
 this information need not be completely accurate for all addresses in the code:
 
-1. <a href="#Dfn: Fully Interruptible Method">Fully interruptible</a> methods must be
+1. [Fully interruptible](#Dfn-Fully-Interruptible-Method) methods must be
 able to provide this information accurately for every point in the code except the
 prolog and epilog.
 
-2. <a href="#Dfn: Non Fully Interruptible Method">Non fully interruptible</a> methods
+2. [Non fully interruptible](#Dfn-Non-Fully-Interruptible-Method) methods
 need only have accurate information available for points where the method calls another
 method (through any calling mechanism).
 
-3. A method that does not set up <a href="#Dfn: EBP Register">EBP</a> as a frame pointer
-and instead references all it's locals and arguments using the <a href="#Dfn: ESP Register">ESP</a>
-register is known as an <a href="#Dfn: EBP-less Method">EBP-less method</a>).
+3. A method that does not set up [EBP](#Dfn-EBP-Register) as a frame pointer
+and instead references all it's locals and arguments using the [ESP](#Dfn-ESP-Register)
+register is known as an [EBP-less method](#Dfn-EBP-less-Method)).
 It must provide additional information about which locations in the code modify the
 ESP register. This information is required to be accurate for every point in the code
 expect the prolog and the epilog. This information is used in the unwind process to reconstruct
@@ -544,15 +544,15 @@ must process.
 There are three different encodings used:
 
 1. Methods that are *not* fully interruptible and have dedicated the EBP register
-as the frame pointer at runtime are called <a href="#Dfn: EBP-Frame or EBP-based Method">EBP-based methods</a>.
+as the frame pointer at runtime are called [EBP-based methods](#Dfn-EBP-Frame-or-EBP-based-Method).
 The GC liveness information is only  available at call sites. This is the most space-efficient
 GC encoding format, but it is not the fastest in terms of execution speed, since extra work must be
 performed in the prolog and epilog code to setup and restore the EBP frame pointer.
 
 2. Methods that are *not* fully interruptible and have *not* dedicated the EBP register
-as a frame pointer at runtime are called <a href="#Dfn: EBP-less Method">EBP-less methods</a>.
+as a frame pointer at runtime are called [EBP-less methods](#Dfn-EBP-less-Method).
 Like the EBP-based methods described above, the GC liveness information is only available at
-call sites. However additional information for tracking changes to the <a href="#Dfn: ESP Register">ESP</a>
+call sites. However additional information for tracking changes to the [ESP](#Dfn-ESP-Register)
 register must be maintained in the Method GC Information so that the return address
 (stored on the stack) can be found and for translating the ESP-based offsets into the proper
 addresses needed by the runtime. Methods of this type execute the fastest and are the preferred
@@ -560,21 +560,21 @@ output format for the JITter. The Method GC Information is necessarily slightly 
 EBP-based methods to support the required ESP tracking.
 
 3. Methods that are marked by the JITter as *fully interruptible* are called
-<a href="#Dfn: Fully Interruptible Method">Fully Interruptible methods</a>.
+[Fully Interruptible methods](#Dfn-Fully-Interruptible-Method).
 Unlike the two alternatives described above, fully interruptible methods provide complete
 GC liveness information for all points in the method. The must providing liveness register
-information for all registers, including the the <a href="#Dfn: caller saves">scratch registers</a>
+information for all registers, including the the [scratch registers](#Dfn-caller-saves)
 (EAX, ECX, EDX). Fully interruptible methods can either dedicate the EBP register as a frame
 pointer or not. If they do *not* dedicate the EBP register as a frame pointer register
 then the must also include additional information for tracking changes to the
-<a href="#Dfn: ESP Register">ESP</a> register. Regardless of how the EBP register is used the
+[ESP](#Dfn-ESP-Register) register. Regardless of how the EBP register is used the
 information that is required in the Method GC Information for a Fully Interruptible method can
 be quite large, typically ten times larger than the other two encoding formats. Thus this is
 the least efficient GC liveness encoding mechanism. It use is required, however, for certain
 methods that may execute for an unbounded length of time due to a compute bound loop.
 
 ***Important Note***: While the actual values of the
-<a href="#Dfn: callee saves">callee saves</a> registers are stored in a method's frame,
+[callee saves](#Dfn-callee-saves) registers are stored in a method's frame,
 the information about whether these values are alive is available from the method that
 *called* this method. In other words, this frame supplies a storage location
 but it is the caller that knows what was in the register at the time of the call.
@@ -689,7 +689,7 @@ EBP-less methods or fully interruptible methods.
 
 ## 2. EBP-less Methods
 
-For an <a href="#Dfn: EBP-less Method">EBP-less method</a> the encoding tracks:
+For an [EBP-less method](#Dfn-EBP-less-Method) the encoding tracks:
 
 - stack depth (so that initial default value of ESP can be reconstructed)
 - liveness of 4 registers (EBX, ESI, EDI and EBP)
@@ -771,7 +771,7 @@ This encoding tracks:
 - and for ESP-based methods the stack depth (so that the initial default value of ESP can be reconstructed)
 
 Accurate GC liveness information is provided at all locations in the method,
-hence the term <a href="#Dfn: Fully Interruptible Method">Fully Interruptible</a>.
+hence the term [Fully Interruptible](#Dfn-Fully-Interruptible-Method).
 Addionally if the method header specifies an EBP-less frame then the stack depth information is
 provided along with the liveness information.
 
@@ -843,16 +843,16 @@ track the locations in the parameter area that contain pointers.
 
 # Glossary
 
-<a name="Dfn: by-ref pointer">*by-ref pointer*</a>
+<a name="Dfn-by-ref-pointer">*by-ref pointer*</a>
 
 A pointer to a location inside of a garbage collectible object, created in order
 to pass a parameter *by reference* rather than *by value*. A by-ref
 pointer refers to either an address on the stack (when passing the address of a local
 variable), an address in the static area (when passing the address of a static or
 class variable) or into an array (when passing the address of an array element).
-(Also see <a name="Dfn: interior pointer">*interior pointer*</a>)
+(Also see <a name="Dfn-interior-pointer">*interior pointer*</a>)
 
-<a name="Dfn: callee saves">*callee saves*</a>
+<a name="Dfn-callee-saves">*callee saves*</a>
 
 Registers that must be preserved by the called method so that the calling method
 can assume that they are unchanged when control returns.
@@ -861,13 +861,13 @@ The values of `ediSaved`, `esiSaved`, `ebxSaved` and `ebpSaved`
 in the Method Header Information indicates whether each of these registers should be saved in
 the method prolog.
 
-<a name="Dfn: caller saves">*caller saves*</a>
+<a name="Dfn-caller-saves">*caller saves*</a>
 
 Registers that are consider to be scratch registers at a call site. If the caller
 wants the value in these registers to be saved it has to arrange to saved them into
 the local frame. The caller saves registers are EAX, ECX and EDX.
 
-<a name="Dfn: EBP-Frame or EBP-based Method">*EBP-Frame or EBP-based Method*</a>
+<a name="Dfn-EBP-Frame-or-EBP-based-Method">*EBP-Frame or EBP-based Method*</a>
 
 Methods that have been compiled to use the EBP pointer to locate the current stack
 frame. The Method Header Information will have `ebpFrame=0`.
@@ -881,7 +881,7 @@ with respect to the EBP, but the temporaries and locals are reference using the 
 that a padding word can be inserted at runtime to provide the required alignment of the
 locals, temporaries and ESP without affecting the EBP.
 
-<a name="Dfn: EBP-less Method">*EBP-less Method*</a>
+<a name="Dfn-EBP-less-Method">*EBP-less Method*</a>
 
 Methods that use ESP (the stack pointer) rather than EBP (the frame pointer) to
 reference arguments, local variables, and compiler temporary values. The Method Header Informatiom
@@ -890,25 +890,25 @@ saved only if the method's code uses the register for its own purposes. In this 
 the old value is saved along with the other *callee-saves* registers rather than in
 a special location in the frame.
 
-<a name="Dfn: EBP Register">*EBP Register*</a>
+<a name="Dfn-EBP-Register">*EBP Register*</a>
 
 One of the 7 general purpose 32-bit registers used in the x86 architecture. It can either
 be used as a general purpose registers which may contain a GC reference or in may be used
 as a special purpose frame pointer registers. The value of the Method Header Information
 `ebpFrame=1` when it is used as a special purpose frame pointer.
 
-<a name="Dfn: ESP Register">*ESP Register*</a>
+<a name="Dfn-ESP-Register">*ESP Register*</a>
 
 The name given to the 32-bit register which is always used as the stack pointer on the x86 architecture.
 
-<a name="Dfn: epilog">*epilog*</a>
+<a name="Dfn-epilog">*epilog*</a>
 
 Code generated to exit a method. Because the stack pointer and frame pointer are
 adjusted by this code, the JIT code manager assumes that a garbage collection is not
 allowed during this code, and stack unwinding has detailed knowledge of the precise code
 sequences present in the epilog.
 
-<a name="Dfn: Fully Interruptible Method">*Fully Interruptible Method*</a>
+<a name="Dfn-Fully-Interruptible-Method">*Fully Interruptible Method*</a>
 
 A method in which the information for garbage collection is available at all points
 inside the main body of the method (excluding the prolog and epilog portions of
@@ -917,16 +917,16 @@ Because of the size of the Method GC Information required to supply this informa
 avoids creating fully interruptible methods where possible. However if a method has a compute
 bound loop with no method calls the method is required to be fully interruptible.
 
-<a name="Dfn: Non Fully Interruptible Method">*Non Fully Interruptible Method*</a>
+<a name="Dfn-Non-Fully-Interruptible-Method">*Non Fully Interruptible Method*</a>
 
 A method in which the information for garbage collection is only provided at method call sites.
 The Method Header Information has `interruptible=0`.
-The runtime system will <a href="#Dfn: hijack">hijack</a> a method exit (i.e. replace the
+The runtime system will [hijack](#Dfn-hijack) a method exit (i.e. replace the
 actual return address on the stack with an address within the runtime system) in order to
 accomplish a garbage collection. The JITter will prefer to make a method non fully interruptible
 in order to keep the size of the Method GC Information to a minimum.
 
-<a name="Dfn: garbage collection">*garbage collection*</a>
+<a name="Dfn-garbage-collection">*garbage collection*</a>
 
 The process of tracing through all pointers to actively used objects, transitively, to
 locate all objects that might be potentially referenced, and then arranging to reuse any
@@ -934,15 +934,15 @@ heap memory that was not found during this trace. The .NET runtime garbage colle
 also arranges to compact the memory that is in use to reduce the working space needed for
 the heap.
 
-<a name="Dfn: hijack">*hijack*</a>
+<a name="Dfn-hijack">*hijack*</a>
 
 This is the normal method used to initiate a garbage collection when the code is executing.
 The .NET runtime system does this by stopping all threads and modifying their current
 stack frame so that the return address from the current method points to .NET runtime
 code that will initiate the garbage collection. This will place all of the threads that
-were executing a <a href="#Dfn: Non Fully Interruptible Method">non fully interruptible</a>
+were executing a [non fully interruptible](#Dfn-Non-Fully-Interruptible-Method)
 method at a GC safe point. For a code that is still excuting inside a
-<a href="#Dfn: Fully Interruptible Method">fully interruptible</a> method, the code manager
+[fully interruptible](#Dfn-Fully-Interruptible-Method) method, the code manager
 provides other methods for initiating garbage collection in addition to hijacking.
 
 <a name="Dfn-interior-pointers">*interior pointers*</a>
@@ -953,18 +953,18 @@ Three examples of interior pointers are:
 
 - A pointer to an element within a garbage collectible array.
 - A pointer to a data member or field of a garbage collectible object.
-- An argument that has been identified as a <a href="#Dfn: by-ref pointer">by-ref pointer</a>
+- An argument that has been identified as a [by-ref pointer](#Dfn-by-ref-pointer)
 
 The garbage collector must update all interior pointers when it compacts the heap.
 To operate correctly, there must be a live pointer to the whole object (somewhere visible
 to the garbage collector) whenever there is an interior pointer to it.
 
-<a name="Dfn: JIT, JITter">*JIT, JITter*</a>
+<a name="Dfn-JIT-JITter">*JIT, JITter*</a>
 
 Just In Time compiler, which converts the .NET intermediate language (IL) into native
 machine code at runtime.
 
-<a name="Dfn: lifetime">*lifetime*</a>
+<a name="Dfn-lifetime">*lifetime*</a>
 
 The addresses in the body of a method during which a storage location is actively in
 use, beginning when the location is initialized and ending with the last reference to the
@@ -979,13 +979,13 @@ not trace through locations that have not been initialized or have out-of-date
 information. *The garbage collector assumes that live locations are safe to
 trace.*
 
-<a name="Dfn: liveness">*liveness*</a>
+<a name="Dfn-liveness">*liveness*</a>
 
 A property of a storage location related to its lifetime. The location is
 "alive" or "live" at all code addresses during its lifetime and is
 "dead" outside of it.
 
-<a name="Dfn: local variable area">*local variable area*</a>
+<a name="Dfn-local-variable-area">*local variable area*</a>
 
 Locations allocated on the stack by a method for its own storage purposes. This
 includes, for example, local variables declared by the user as well as temporary
@@ -994,7 +994,7 @@ In this specification, the *locals area* does *not*> include the linkage
 area or callee-saves area, nor does it include the variable-sized region of the stack
 frame that is used to store parameters for methods that are being called.
 
-<a name="Dfn: Method GC Information">*Method GC Information*</a>
+<a name="Dfn-Method-GC-Information">*Method GC Information*</a>
 
 A data structure used to describe a method so that the .NET runtime system can perform
 garbage collection, handle exceptions, and so forth. It can be stored in compacted
@@ -1003,14 +1003,14 @@ memory by the OS loader or created in the same compacted format directly in memo
 JITter. The .NET runtime system is responsible for expanding the information as
 necessary.
 
-<a name="Dfn: parameter area">*parameter area*</a>
+<a name="Dfn-parameter-area">*parameter area*</a>
 
 The part of the method's stack frame that is used to store parameters being passed to
 methods that it calls. This is the part of the stack frame that grows and shrinks as
 the method executes. In the future it may also include memory allocated by
 methods like `_alloca`.
 
-<a name="Dfn: pinned pointer">*pinned pointer*</a>
+<a name="Dfn-pinned-pointer">*pinned pointer*</a>
 
 A pointer to a location that must be considered as pinned for the purposes of a
 garbage collection. Only untracked local varaibles can be marked as pinned pointers.
@@ -1021,7 +1021,7 @@ by-ref or pinned interior pointer.
 A pinned pointer is *only* considered to be pinned during the lifetime of the
 stack frame associated with the local variable which contains the pinning mark.
 
-<a name="Dfn: pending arguments">*pending arguments*</a>
+<a name="Dfn-pending-arguments">*pending arguments*</a>
 
 For nested calls, e.g. `foo(a, b, c, d, e, bar(), f, g, h)`, when the call
 to the innner `bar()` is made, the JITed code for `foo()` typically
@@ -1031,7 +1031,7 @@ The values already pushed of the stack at the time of a nested call are known as
 arguments. When `bar()` returns, `foo()` will continue pushing its
 remaining arguments; the return value of `bar()` and the values of f, g and h.
 
-<a name="Dfn: prolog">*prolog*</a>
+<a name="Dfn-prolog">*prolog*</a>
 
 The part of a method's code that is executed when the method starts and during which the
 fixed part of the stack frame is not yet completely initialized.
@@ -1039,9 +1039,9 @@ The code manager does not permit a garbage collection to occur during a method p
 and it must take extra care during stack unwinding for methods that are executing their prolog.
 The prolog is resonsible for constructing the local stack frame, savinng the callee saved
 registers and initializing the untracked locals. The process of how the prolog constructs
-a stack frame is described <a href="#Dfn: Constructing a stack frame">here</a>.
+a stack frame is described [here](#Dfn-Constructing-a-stack-frame).
 
-<a name="Dfn: pushed argument area">*pushed argument area*</a>
+<a name="Dfn-pushed-argument-area">*pushed argument area*</a>
 
 The portion of the current stack that holds the incoming arguments passed on the stack
 for this method. The JITter assumes that this area occupies the portion of the stack frame
@@ -1051,14 +1051,14 @@ the base of the current stack frame.
 **Note**: that the first two arguments are passed in registers and thus
 do not get pushed onto the stack and are thus not part of the pushed argument area.
 
-<a name="Dfn: pushed args mask">*pushed args mask*</a>
+<a name="Dfn-pushed-args-mask">*pushed args mask*</a>
 
 A bit mask used to indicate which locations in the outgoing parameter area (*not* the
-incoming <a href="#Dfn: pushed argument area">pushed argument area</a>) contain live GC pointers.
+incoming [pushed argument area](#Dfn-pushed-argument-area)) contain live GC pointers.
 It sometimes also includes bits to indicate whether particular machine registers contain live
 GC pointers.
 
-<a name="Dfn: Security Object">*Security Object*</a>
+<a name="Dfn-Security-Object">*Security Object*</a>
 
 Some methods are compiled knowing that they will be calling system services that require
 security checks. These methods allocate a location in their stack frame (currently,
@@ -1067,13 +1067,13 @@ at runtime. The compiler is responsible *only* for initializing the location
 when the method begins execution and for making sure that the Method GC INformation
 indicates that the method has a security object.
 
-<a name="Dfn: this">*this*</a>
+<a name="Dfn-this">*this*</a>
 
 A pointer to the object instance on whose behalf the current method is executing.
 Not all methods have a **this** pointer (static
 methods, for example, do not have a **this** pointer).
 
-<a name="Dfn: untracked">*untracked*</a>
+<a name="Dfn-untracked">*untracked*</a>
 
 An argument, variable, or local which contains a GC pointer but whose lifetime
 information is not available at runtime. Untracked locations are assumed by the
@@ -1082,6 +1082,6 @@ the prolog and must be either cleared at the end of their lifetime (if known) or
 their contents might become incorrect. It is an compilation time/space vs. execution
 time vs. MIH space tradeoff to decide whether an item is tracked.
 
-<a name="Dfn: variable-sized stack area">*variable-sized stack area*</a>
+<a name="Dfn-variable-sized-stack-area">*variable-sized stack area*</a>
 
-See <a href="#Dfn: parameter area">*parameter area*</a>.
+See [*parameter area*](#Dfn-parameter-area).
