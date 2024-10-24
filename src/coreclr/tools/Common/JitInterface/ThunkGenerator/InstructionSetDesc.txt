@@ -22,6 +22,8 @@
 
 ; DO NOT CHANGE R2R NUMERIC VALUES OF THE EXISTING SETS. Changing R2R numeric values definitions would be R2R format breaking change.
 
+; The ISA definiitons should also be mapped to `hwintrinsicIsaRangeArray` in hwintrinsic.cpp.
+
 ; Definition of X86 instruction sets
 definearch         ,X86   ,32Bit                ,X64, X64
 
@@ -63,6 +65,7 @@ instructionset     ,X86   ,Avx10v1_V512         ,        ,46 ,AVX10v1_V512      
 instructionset     ,X86   ,VectorT128           ,        ,39 ,VectorT128            ,vectort128
 instructionset     ,X86   ,VectorT256           ,        ,40 ,VectorT256            ,vectort256
 instructionset     ,X86   ,VectorT512           ,        ,41 ,VectorT512            ,vectort512
+instructionset     ,X86   ,Apx                  ,        ,48 ,APX                   ,apx
 
 instructionset64bit,X86   ,X86Base
 instructionset64bit,X86   ,SSE
@@ -96,6 +99,7 @@ instructionset64bit,X86   ,AVX512VBMI
 instructionset64bit,X86   ,AVX512VBMI_VL
 instructionset64bit,X86   ,AVX10v1
 instructionset64bit,X86   ,AVX10v1_V512
+instructionset64bit,X86   ,APX
 
 vectorinstructionset,X86  ,Vector128
 vectorinstructionset,X86  ,Vector256

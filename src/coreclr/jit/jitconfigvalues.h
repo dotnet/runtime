@@ -356,14 +356,18 @@ RELEASE_CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 0)
 // fallback to main JIT on hitting a NYI.
 RELEASE_CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 1) // Controls the AltJit behavior of NYI stuff
 
-// Enable the register allocator to support EH-write thru: partial enregistration of vars exposed on EH boundaries
-RELEASE_CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1)
-
-// Enable the enregistration of locals that are defined or used in a multireg context.
-RELEASE_CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1)
+RELEASE_CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1) // Enable the register allocator to support EH-write thru:
+                                                             // partial enregistration of vars exposed on EH boundaries
+RELEASE_CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
+                                                                   // defined or used in a multireg context.
 
 // Disables inlining of all methods
 RELEASE_CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)
+
+#if defined(DEBUG)
+CONFIG_INTEGER(JitStressRex2Encoding, W("JitStressRex2Encoding"), 0) // Enable rex2 encoding for legacy instructions.                                                                     
+CONFIG_INTEGER(JitBypassAPXCheck, W("JitBypassAPXCheck"), 0) // Bypass APX CPUID check.                                                                     
+#endif
 
 // clang-format off
 
