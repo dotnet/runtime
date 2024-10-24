@@ -7,5 +7,6 @@
   <ItemGroup>
     <Compile Include="Microsoft.Win32.SystemEvents.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" />
     <Compile Include="Microsoft.Win32.SystemEvents.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 </Project>
