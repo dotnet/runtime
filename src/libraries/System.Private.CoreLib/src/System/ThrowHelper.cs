@@ -54,6 +54,12 @@ namespace System
     internal static class ThrowHelper
     {
         [DoesNotReturn]
+        internal static void ThrowUnreachableException()
+        {
+            throw new UnreachableException();
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArithmeticException(string message)
         {
             throw new ArithmeticException(message);

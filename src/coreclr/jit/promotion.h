@@ -290,6 +290,7 @@ private:
     bool VisitOverlappingReplacements(unsigned lcl, unsigned offs, unsigned size, Func func);
 
     void      InsertPreStatementReadBacks();
+    void      InsertPreStatementReadBackIfNecessary(unsigned aggLclNum, Replacement& rep);
     void      InsertPreStatementWriteBacks();
     GenTree** InsertMidTreeReadBacks(GenTree** use);
 

@@ -42,6 +42,15 @@
     <RestorePackages>false</RestorePackages>
   </PropertyGroup>
 
+  <!-- Most IL tests do not depend on having a specific assembly name, but some of them contain
+    hard-coded assembly name directives which are incorrect. This MSBuild property default configures ilasm
+    to override the assembly name directive when assembling so that it matches the output dll name,
+    which fixes a variety of failures in crossgen r2r tests (from not being able to find dlls for references).
+  -->
+  <PropertyGroup>
+    <SynthesizeIlasmAssemblyName>true</SynthesizeIlasmAssemblyName>
+  </PropertyGroup>
+
   <!-- Which tests shall we build? Default: Priority 0 tests.
     At the command-line, the user can specify /p:CLRTestPriorityToBuild=666 (for example), and
     all tests with CLRTestPriority 666,..., 1 AND 0 will build.
