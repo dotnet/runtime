@@ -457,7 +457,7 @@
 
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
-      <_WasmNativeFileForLinking Include="@(_WasmObjectFilesForBundle)" />
+      <_WasmNativeFileForLinking Include="%(_WasmObjectFilesForBundle.RelativePath)" />
 
       <_WasmNativeFileForLinking
           Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)*.a"
