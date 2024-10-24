@@ -18,12 +18,13 @@ public unsafe class ObjectTests
         TargetTestHelpers targetTestHelpers = new(arch);
 
         MockMemorySpace.Builder builder = new(targetTestHelpers);
+        var types = MockObject.Types(targetTestHelpers);
         builder = builder
             .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem) ])
             .SetGlobals(MockObject.Globals(targetTestHelpers))
-            .SetTypes(MockObject.Types(targetTestHelpers));
+            .SetTypes(types);
 
-        builder = MockObject.AddGlobalPointers(targetTestHelpers, builder);
+        builder = MockObject.AddGlobalPointers(targetTestHelpers, types[DataType.MethodTable], builder);
 
         if (configure != null)
         {
