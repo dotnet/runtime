@@ -2493,6 +2493,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     pHp->mapBase         = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
     pHp->pHdrMap         = (DWORD*)(void*)pJitMetaHeap->AllocMem(S_SIZE_T(nibbleMapSize));
     pHp->pHdrMap2        = (DWORD*)(void*)pJitMetaHeap->AllocMem(S_SIZE_T(nibbleMapSize));
+    pHp->operations      = new NibbleOperation();
 
     pHp->pLoaderAllocator = pInfo->m_pAllocator;
 
@@ -4109,6 +4110,7 @@ namespace {
         }
     };
 
+#pragma optimize("", off) 
     struct ConstantLookupNibbleMap
     {
         public:
@@ -4128,6 +4130,16 @@ namespace {
             _ASSERTE(pCode + codeSize <= pHp->startAddress + pHp->maxCodeHeapSize);
 
             LinearLookupNibbleMap::SetUnlocked(pHp, pCode, TRUE);
+
+            NibbleOperation* operation = pHp->operations;
+            while(operation->next != nullptr)
+            {
+                operation = operation->next;
+            }
+            operation->next = new NibbleOperation();
+            operation = operation->next;
+            operation->startAddress = pCode;
+            operation->size = codeSize;
 
             // remove bottom two bits to ensure alignment math
             // on ARM32 Thumb, the low bits indicate the thumb instruction set
@@ -4173,6 +4185,16 @@ namespace {
             _ASSERTE(pCode >= pHp->mapBase);
 
             LinearLookupNibbleMap::SetUnlocked(pHp, pCode, FALSE);
+
+            NibbleOperation* operation = pHp->operations;
+            while(operation->next != nullptr)
+            {
+                operation = operation->next;
+            }
+            operation->next = new NibbleOperation();
+            operation = operation->next;
+            operation->startAddress = pCode;
+            operation->size = -1LL;
 
             // remove bottom two bits to ensure alignment math
             // on ARM32 Thumb, the low bits indicate the thumb instruction set
@@ -4317,6 +4339,7 @@ namespace {
             return 0;
         }
     };
+#pragma optimize("", on)
 } // end anonymous namespace
 
 TADDR EEJitManager::FindMethodCode(PCODE currentPC)
