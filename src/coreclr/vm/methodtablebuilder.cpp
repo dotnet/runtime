@@ -16,6 +16,129 @@
 #include "customattribute.h"
 #include "typestring.h"
 
+static volatile HANDLE LogFileHandle = INVALID_HANDLE_VALUE;
+static volatile int64_t TimerFrequency = 0;
+
+void DumpInstrumentedMethodTimingInfo()
+{
+    InstrumentedMethod::DumpAllTiming();
+}
+
+int64_t GetPreciseTickCount()
+{
+    int64_t result;
+    QueryPerformanceCounter((LARGE_INTEGER *)&result);
+    return result;
+}
+
+void DumpTimingInfo(const char *action, uint32_t threadID, int64_t callCount, int64_t inclusiveTickCount, int64_t subtreeTickCount = 0)
+{
+    static long timingCallCount = 0;
+    static const int BufferSize = 1024;
+    static char buffer[BufferSize];
+    static const char *TimingInfoFileName =
+#ifdef TARGET_WINDOWS
+        "\\"
+#else
+        "/"
+#endif
+        "timing-info.txt";
+    
+    if (LogFileHandle == INVALID_HANDLE_VALUE)
+    {
+        QueryPerformanceFrequency((LARGE_INTEGER *)&TimerFrequency);
+        GetCurrentDirectoryA(BufferSize, buffer);
+        strcat_s(buffer, BufferSize, TimingInfoFileName);
+        fputs("Output file: ", stdout);
+        puts(buffer);
+
+        LogFileHandle = CreateFileA(buffer,
+            GENERIC_READ | GENERIC_WRITE,
+            0,
+            NULL,
+            CREATE_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
+
+        const char *titleLine = "CALLS/INDEX |   THREAD | INCLUSIVE SECS | EXCLUSIVE SECS |   SUBTREE SECS | EXCLUSIVE % | SUBTREE % | ACTION\n";
+        WriteFile(LogFileHandle, titleLine, (DWORD)strlen(titleLine), nullptr, nullptr);
+        fputs(titleLine, stdout);
+    }
+
+    int64_t exclusiveTickCount = inclusiveTickCount - subtreeTickCount;
+    double inclusiveTicksPercentageFactor = 100.0 / (inclusiveTickCount ? inclusiveTickCount : 1);
+    snprintf(buffer, sizeof(buffer), "%11lld | %8x | %14.9f | %14.9f | %14.9f | %11.2f | %9.2f | %s\n",
+        callCount, threadID,
+        inclusiveTickCount / (double)TimerFrequency,
+        exclusiveTickCount / (double)TimerFrequency,
+        subtreeTickCount / (double)TimerFrequency,
+        exclusiveTickCount * inclusiveTicksPercentageFactor,
+        subtreeTickCount * inclusiveTicksPercentageFactor,
+        action);
+    fputs(buffer, stdout);
+    WriteFile(LogFileHandle, buffer, (DWORD)strlen(buffer), nullptr, nullptr);
+}
+
+void FlushTimingInfo()
+{
+    if (LogFileHandle != INVALID_HANDLE_VALUE)
+    {
+        FlushFileBuffers(LogFileHandle);
+        CloseHandle(LogFileHandle);
+        LogFileHandle = INVALID_HANDLE_VALUE;
+    }
+}
+
+InstrumentedMethod *InstrumentedMethod::s_list = nullptr;
+
+InstrumentedMethod::InstrumentedMethod(const char *methodName)
+{
+    _methodName = methodName;
+    _count = 0;
+    _ticks = 0;
+    _next = InterlockedExchangeT<InstrumentedMethod *>(&s_list, this);
+}
+
+void InstrumentedMethod::DumpAllTiming()
+{
+    const InstrumentedMethod *minMethod = nullptr;
+    const InstrumentedMethod *nextMethod;
+    do
+    {
+        nextMethod = nullptr;
+        for (InstrumentedMethod *list = s_list; list != nullptr; list = list->_next)
+        {
+            if (minMethod != nullptr && strcmp(list->_methodName, minMethod->_methodName) <= 0)
+            {
+                continue;
+            }
+            if (nextMethod == nullptr || strcmp(list->_methodName, nextMethod->_methodName) < 0)
+            {
+                nextMethod = list;
+            }
+        }
+        if (nextMethod != nullptr)
+        {
+            nextMethod->DumpTiming();
+            minMethod = nextMethod;
+        }
+    }
+    while (nextMethod != nullptr);
+}
+
+void InstrumentedMethod::DumpTiming() const
+{
+#if !defined(DACCESS_COMPILE)
+    DumpTimingInfo(_methodName, 0, _count, _ticks);
+#endif
+}
+
+void InstrumentedMethod::Add(int64_t ticks)
+{
+    InterlockedIncrement64(&_count);
+    InterlockedAdd64(&_ticks, ticks);
+}
+
 //*******************************************************************************
 // Helper functions to sort GCdescs by offset (decending order)
 int __cdecl compareCGCDescSeries(const void *arg1, const void *arg2)
@@ -1247,6 +1370,8 @@ MethodTableBuilder::BuildMethodTableThrowing(
     SigPointer                 parentInst,
     WORD                       cBuildingInterfaceList)
 {
+    INSTRUMENTED_METHOD("MethodTableBuilder::BuildMethodTableThrowing");
+
     CONTRACTL
     {
         STANDARD_VM_CHECK;
@@ -9256,6 +9381,8 @@ bool InstantiationIsAllTypeVariables(const Instantiation &inst)
 void
 MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 {
+    INSTRUMENTED_METHOD("MethodTableBuilder::LoadExactInterfaceMap");
+    
     CONTRACTL
     {
         STANDARD_VM_CHECK;
@@ -9326,6 +9453,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     DWORD nAssigned = 0;
     do
     {
+        INSTRUMENTED_METHOD("MethodTableBuilder::LoadExactInterfaceMap / do-while retry");
+
         nAssigned = 0;
         retry = false;
         duplicates = false;
@@ -9340,6 +9469,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
         InterfaceImplEnum ie(pMT->GetModule(), pMT->GetCl(), NULL);
         while ((hr = ie.Next()) == S_OK)
         {
+            INSTRUMENTED_METHOD("MethodTableBuilder::LoadExactInterfaceMap / do-while retry / LoadTypeDefOrRefOrSpecThrowing");
+
             MethodTable *pNewIntfMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pMT->GetModule(),
                                                                                 ie.CurrentToken(),
                                                                                 &typeContext,
@@ -9365,6 +9496,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                     MethodTable *pItfPossiblyApprox = intIt.GetInterfaceApprox();
                     if (uninstGenericCase && pItfPossiblyApprox->HasInstantiation() && pItfPossiblyApprox->ContainsGenericVariables())
                     {
+                        INSTRUMENTED_METHOD("MethodTableBuilder::LoadExactInterfaceMap / HasInstantiation && ContainsGenericVariables");
+                        
                         // We allow a limited set of interface generic shapes with type variables. In particular, we require the
                         // instantiations to be exactly simple type variables, and to have a relatively small number of generic arguments
                         // so that the fallback instantiating logic works efficiently
@@ -9417,6 +9550,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     CONSISTENCY_CHECK(duplicates || (nAssigned == pMT->GetNumInterfaces()));
     if (duplicates)
     {
+        INSTRUMENTED_METHOD("MethodTableBuilder::LoadExactInterfaceMap / duplicates");
+
         //#LoadExactInterfaceMap_Algorithm2
         // Exact interface instantiation loading TECHNIQUE 2 - The exact instantiation has caused some duplicates to
         // appear in the interface map!  This may not be an error: if the duplicates were ones that arose because of
@@ -12169,6 +12304,81 @@ BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, 
     return TRUE;
 }
 
+int64_t GetPreciseTickCount();
+
+struct TypeLoadTiming
+{
+    int64_t InclusiveTicks;
+    int64_t SubtreeTicks;
+    TypeHandle Type;
+    uint32_t Thread;
+};
+
+const int RING_BUFFER_SIZE = 65536;
+
+static TypeLoadTiming TypeLoadTimingRingBuffer[RING_BUFFER_SIZE];
+static volatile long TypeLoadRingBufferIndex = 0;
+
+void RecordTypeLoadTime(const TypeHandle& type, int64_t inclusiveTicks, int64_t subtreeTicks)
+{
+    long timingIndex = InterlockedIncrement(&TypeLoadRingBufferIndex) - 1;
+    if (timingIndex >= 0 && timingIndex < RING_BUFFER_SIZE)
+    {
+        TypeLoadTimingRingBuffer[timingIndex].Thread = GetCurrentThreadId();
+        TypeLoadTimingRingBuffer[timingIndex].InclusiveTicks = inclusiveTicks;
+        TypeLoadTimingRingBuffer[timingIndex].SubtreeTicks = subtreeTicks;
+        TypeLoadTimingRingBuffer[timingIndex].Type = type;
+    }
+}
+
+void DumpTypeLoadTimingInfo()
+{
+    HashMap threadMap;
+    threadMap.Init(/*cbInitialSize*/ 32, /*fAsyncMode*/ false, /*pLock*/ nullptr);
+
+    for (int32_t ringBufferIndex = 0; ringBufferIndex < TypeLoadRingBufferIndex; ringBufferIndex++)
+    {
+        const TypeLoadTiming& timing = TypeLoadTimingRingBuffer[ringBufferIndex];
+        SString typeName;
+        timing.Type.GetName(typeName);
+        DumpTimingInfo(typeName.GetUTF8(), timing.Thread, ringBufferIndex, timing.InclusiveTicks, timing.SubtreeTicks);
+        if (threadMap.LookupValue(timing.Thread, timing.Thread) == INVALIDENTRY)
+        {
+            threadMap.InsertValue(timing.Thread, timing.Thread);
+        }
+    }
+
+    int32_t totalCount = 0;
+    int64_t totalInclusiveTicks = 0;
+    int64_t totalSubtreeTicks = 0;
+    for (HashMap::Iterator it = threadMap.begin(); !it.end(); ++it)
+    {
+        uint32_t threadID = (uint32_t)it.GetKey();
+        int32_t threadCount = 0;
+        int64_t threadInclusiveTicks = 0;
+        int64_t threadSubtreeTicks = 0;
+        for (int32_t ringBufferIndex = 0; ringBufferIndex < TypeLoadRingBufferIndex; ringBufferIndex++)
+        {
+            const TypeLoadTiming& timing = TypeLoadTimingRingBuffer[ringBufferIndex];
+            if (timing.Thread == threadID)
+            {
+                threadInclusiveTicks += timing.InclusiveTicks;
+                threadSubtreeTicks += timing.SubtreeTicks;
+                threadCount++;
+            }
+        }
+        char buffer[100];
+        sprintf(buffer, "LoadTypeHandleForTypeKey @ %08x", threadID);
+        DumpTimingInfo(buffer, threadID, threadCount, threadInclusiveTicks, threadSubtreeTicks);
+        
+        totalCount += threadCount;
+        totalInclusiveTicks += threadInclusiveTicks;
+        totalSubtreeTicks += threadSubtreeTicks;
+    }
+
+    DumpTimingInfo("LoadTypeHandleForTypeKey", GetCurrentThreadId(), totalCount, totalInclusiveTicks, totalSubtreeTicks);
+}
+
 //---------------------------------------------------------------------------------------
 //
 // This service is called for normal classes -- and for the pseudo class we invent to
@@ -12182,6 +12392,10 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
     Instantiation     inst,
     AllocMemTracker * pamTracker)
 {
+    INSTRUMENTED_METHOD("ClassLoader::CreateTypeHandleForTypeDefThrowing");
+    
+    int64_t startTicks = GetPreciseTickCount();
+    
     CONTRACT(TypeHandle)
     {
         STANDARD_VM_CHECK;
