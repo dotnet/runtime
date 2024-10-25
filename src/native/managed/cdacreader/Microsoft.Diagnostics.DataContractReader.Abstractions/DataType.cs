@@ -44,6 +44,10 @@ public enum DataType
     String,
     MethodDesc,
     MethodDescChunk,
+    PlatformMetadata,
+    PrecodeMachineDescriptor,
+    StubPrecodeData,
+    FixupPrecodeData,
     Array,
     SyncBlock,
     SyncTableEntry,
@@ -56,5 +60,7 @@ public enum DataType
     RangeSection,
     RealCodeHeader,
     CodeHeapListNode,
-
+    MethodDescVersioningState,
+    ILCodeVersioningState,
+    NativeCodeVersionNode,
 }
