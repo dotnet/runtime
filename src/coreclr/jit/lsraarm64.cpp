@@ -2274,6 +2274,7 @@ GenTree* LinearScan::getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree)
         assert(pAddr != nullptr);
         return pAddr;
     }
+
     if (intrinsicTree->OperIsMemoryStore(&pAddr))
     {
         assert(pAddr != nullptr);
