@@ -642,9 +642,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Methods/Method002/**">
             <Issue>https://github.com/dotnet/runtime/issues/109202</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandledTester/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109203</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_72845/**">
             <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>
         </ExcludeList>
