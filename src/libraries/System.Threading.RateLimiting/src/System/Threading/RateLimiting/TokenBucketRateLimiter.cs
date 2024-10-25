@@ -37,7 +37,7 @@ namespace System.Threading.RateLimiting
         public override TimeSpan? IdleDuration => _idleSince is null ? null : 
 #if NET
             Stopwatch.GetElapsedTime(_idleSince)
-#endif
+#else
             RateLimiterHelper.GetElapsedTime(_idleSince)
 #endif
             ;
