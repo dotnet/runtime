@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -10,105 +11,93 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class WasmSIMDTests : WasmBuildAppBase
+    public class WasmSIMDTests : WasmTemplateTestsBase
     {
         public WasmSIMDTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
         }
 
-        // public static IEnumerable<object?[]> MainMethodSimdTestData(bool aot, bool simd)
-        //     => ConfigWithAOTData(aot, extraArgs: $"-p:WasmEnableSIMD={simd}").UnwrapItemsAsArrays();
+        public static IEnumerable<object?[]> MainMethodSimdTestData(bool aot, bool simd)
+            => ConfigWithAOTData(aot)
+                .Multiply(new object[] { simd })
+                .Where(item => !(item.ElementAt(0) is string config && config == "Debug" && item.ElementAt(1) is bool aotValue && aotValue))
+                .UnwrapItemsAsArrays();
 
-        // [Theory]
-        // [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, RunHost.All, true /* simd */ })]
-        // public void Build_NoAOT_ShouldNotRelink(ProjectInfo buildArgs, RunHost host, string id)
-        // {
-        //     string projectName = $"build_with_workload_no_aot";
-        //     buildArgs = buildArgs with { ProjectName = projectName };
-        //     buildArgs = ExpandBuildArgs(buildArgs);
+        [Theory]
+        [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, /* simd */ true })]
+        public async void Build_NoAOT_ShouldNotRelink(string config, bool aot, bool simd)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "build_with_workload_no_aot", "App");
+            UpdateFile(Path.Combine("Common", "Program.cs"), s_simdProgramText);
+            bool isPublish = false;
+            (string _, string output) = BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    info.Configuration,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                    IsPublish: isPublish
+                    ),
+                extraArgs: $"-p:WasmEnableSIMD={simd}"
+            );
+            // Confirm that we didn't relink
+            Assert.DoesNotContain("Compiling native assets with emcc", output);
 
-        //     (_, string output) = BuildProject(buildArgs,
-        //                             id: id,
-        //                             new BuildProjectOptions(
-        //                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simdProgramText),
-        //                                 Publish: false,
-        //                                 DotnetWasmFromRuntimePack: true));
+            RunResult result = await RunForBuildWithDotnetRun(new(
+                info.Configuration,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42)
+            );
 
-        //     // Confirm that we didn't relink
-        //     Assert.DoesNotContain("Compiling native assets with emcc", output);
+            Assert.Contains(result.TestOutput, m => m.Contains("<-2094756296, -2094756296, -2094756296, -2094756296>"));
+            Assert.Contains(result.TestOutput, m => m.Contains("Hello, World!"));
+        }
 
-        //     RunAndTestWasmApp(buildArgs,
-        //                         expectedExitCode: 42,
-        //                         test: output =>
-        //                         {
-        //                             Assert.Contains("<-2094756296, -2094756296, -2094756296, -2094756296>", output);
-        //                             Assert.Contains("Hello, World!", output);
-        //                         }, host: host, id: id);
-        // }
+        [Theory]
+        [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ true, /* simd */ true })]
+        [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, /* simd */ true })]
+        [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ true, /* simd */ false })]
+        public async void PublishSIMD_AOT(string config, bool aot, bool simd)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "simd_publish", "App");
+            UpdateFile(Path.Combine("Common", "Program.cs"), s_simdProgramText);
+            bool isPublish = true;
+            (string _, string output) = BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    info.Configuration,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                    IsPublish: isPublish
+                    ),
+                extraArgs: $"-p:WasmEnableSIMD={simd}"
+            );
 
-        // [Theory]
-        // [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        // [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        // public void PublishWithSIMD_AOT(ProjectInfo buildArgs, RunHost host, string id)
-        // {
-        //     string projectName = $"simd_with_workload_aot";
-        //     buildArgs = buildArgs with { ProjectName = projectName };
-        //     buildArgs = ExpandBuildArgs(buildArgs, "<WasmEnableSIMD>true</WasmEnableSIMD>");
+            RunResult result = await RunForPublishWithWebServer(new(
+                info.Configuration,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42)
+            );
+            Assert.Contains(result.TestOutput, m => m.Contains("<-2094756296, -2094756296, -2094756296, -2094756296>"));
+            Assert.Contains(result.TestOutput, m => m.Contains("Hello, World!"));
+        }
 
-        //     BuildProject(buildArgs,
-        //                     id: id,
-        //                     new BuildProjectOptions(
-        //                         InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simdProgramText),
-        //                         DotnetWasmFromRuntimePack: false));
+        private static string s_simdProgramText = @"
+            using System;
+            using System.Runtime.Intrinsics;
 
-        //     RunAndTestWasmApp(buildArgs,
-        //                         expectedExitCode: 42,
-        //                         test: output =>
-        //                         {
-        //                             Assert.Contains("<-2094756296, -2094756296, -2094756296, -2094756296>", output);
-        //                             Assert.Contains("Hello, World!", output);
-        //                         }, host: host, id: id);
-        // }
+            public class TestClass {
+                public static int Main()
+                {
+                    var v1 = Vector128.Create(0x12345678);
+                    var v2 = Vector128.Create(0x23456789);
+                    var v3 = v1*v2;
+                    Console.WriteLine($""TestOutput -> {v3}"");
+                    Console.WriteLine(""TestOutput -> Hello, World!"");
 
-        // [Theory]
-        // [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        // public void PublishWithoutSIMD_AOT(ProjectInfo buildArgs, RunHost host, string id)
-        // {
-        //     string projectName = $"nosimd_with_workload_aot";
-        //     buildArgs = buildArgs with { ProjectName = projectName };
-        //     buildArgs = ExpandBuildArgs(buildArgs, "<WasmEnableSIMD>false</WasmEnableSIMD>");
-
-        //     BuildProject(buildArgs,
-        //                     id: id,
-        //                     new BuildProjectOptions(
-        //                         InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simdProgramText),
-        //                         DotnetWasmFromRuntimePack: false));
-
-        //     RunAndTestWasmApp(buildArgs,
-        //                         expectedExitCode: 42,
-        //                         test: output =>
-        //                         {
-        //                             Assert.Contains("<-2094756296, -2094756296, -2094756296, -2094756296>", output);
-        //                             Assert.Contains("Hello, World!", output);
-        //                         }, host: host, id: id);
-        // }
-
-        // private static string s_simdProgramText = @"
-        //     using System;
-        //     using System.Runtime.Intrinsics;
-
-        //     public class TestClass {
-        //         public static int Main()
-        //         {
-        //             var v1 = Vector128.Create(0x12345678);
-        //             var v2 = Vector128.Create(0x23456789);
-        //             var v3 = v1*v2;
-        //             Console.WriteLine(v3);
-        //             Console.WriteLine(""Hello, World!"");
-
-        //             return 42;
-        //         }
-        //     }";
+                    return 42;
+                }
+            }";
     }
 }

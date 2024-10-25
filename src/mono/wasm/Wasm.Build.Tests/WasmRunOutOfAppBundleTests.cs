@@ -9,48 +9,48 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests;
 
-public class WasmRunOutOfAppBundleTests : TestMainJsTestBase
+public class WasmRunOutOfAppBundleTests : WasmTemplateTestsBase
 {
     public WasmRunOutOfAppBundleTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext) : base(output, buildContext)
     {}
 
-    // [Theory]
-    // [BuildAndRun]
-    // public void RunOutOfAppBundle(ProjectInfo buildArgs, RunHost host, string id)
-    // {
-    //     buildArgs = buildArgs with { ProjectName = $"outofappbundle_{buildArgs.Configuration}_{buildArgs.AOT}" };
-    //     buildArgs = ExpandBuildArgs(buildArgs);
+    [Theory]
+    [BuildAndRun]
+    public async void RunOutOfAppBundle(string config, bool aot)
+    {
+        ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "outofappbundle", "App");
+        UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
+        bool isPublish = true;
+        string binFrameworkDir = GetBinFrameworkDir(info.Configuration, isPublish);
+        (string _, string output) = BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: binFrameworkDir,
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                IsPublish: isPublish
+        ));
+        
+        string appBundleDir = Path.Combine(binFrameworkDir, "..");
+        string outerDir = Path.GetFullPath(Path.Combine(appBundleDir, ".."));        
+        string indexHtmlPath = Path.Combine(appBundleDir, "index.html");
+        // Delete the original one, so we don't use that by accident
+        if (File.Exists(indexHtmlPath))
+            File.Delete(indexHtmlPath);
+        
+        indexHtmlPath = Path.Combine(outerDir, "index.html");
+        string relativeMainJsPath = "./wwwroot/main.js";
+        if (!File.Exists(indexHtmlPath))
+        {
+            var html = $@"<!DOCTYPE html><html><body><script type=""module"" src=""{relativeMainJsPath}""></script></body></html>";
+            File.WriteAllText(indexHtmlPath, html);
+        }
 
-    //     BuildProject(buildArgs,
-    //                     id: id,
-    //                     new BuildProjectOptions(
-    //                         InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-    //                         DotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Configuration == "Release")));
-
-    //     string binDir = GetBinDir(baseDir: _projectDir!, config: buildArgs.Configuration);
-    //     string appBundleDir = Path.Combine(binDir, "AppBundle");
-    //     string outerDir = Path.GetFullPath(Path.Combine(appBundleDir, ".."));
-
-    //     if (host is RunHost.Chrome)
-    //     {
-    //         string indexHtmlPath = Path.Combine(appBundleDir, "index.html");
-    //         // Delete the original one, so we don't use that by accident
-    //         if (File.Exists(indexHtmlPath))
-    //             File.Delete(indexHtmlPath);
-
-    //         indexHtmlPath = Path.Combine(outerDir, "index.html");
-    //         if (!File.Exists(indexHtmlPath))
-    //         {
-    //             var html = @"<!DOCTYPE html><html><body><script type=""module"" src=""./AppBundle/test-main.js""></script></body></html>";
-    //             File.WriteAllText(indexHtmlPath, html);
-    //         }
-    //     }
-
-    //     RunAndTestWasmApp(buildArgs,
-    //                         expectedExitCode: 42,
-    //                         host: host,
-    //                         id: id,
-    //                         bundleDir: outerDir,
-    //                         jsRelativePath: "./AppBundle/test-main.js");
-    // }
+        RunResult result = await RunForPublishWithWebServer(new(
+                info.Configuration,
+                TestScenario: "DotnetRun",
+                CustomBundleDir: outerDir,
+                ExpectedExitCode: 42)
+            );
+    }
 }

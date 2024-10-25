@@ -48,7 +48,7 @@ namespace Wasm.Build.Tests
         //     var buildArgs = new ProjectInfo(projectName, config, false, id, null);
 
         //     AddItemsPropertiesToProject(projectFile,
-        //         atTheEnd:
+        //         insertAtEnd:
         //             """
         //             <Target Name="CheckLinkedFiles" AfterTargets="ILLink">
         //                 <ItemGroup>

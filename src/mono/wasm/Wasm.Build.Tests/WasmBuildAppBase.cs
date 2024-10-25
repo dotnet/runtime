@@ -1,0 +1,60 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Xunit;
+using Xunit.Abstractions;
+
+#nullable enable
+
+namespace Wasm.Build.Tests
+{
+    public class WasmBuildAppBase : WasmTemplateTestsBase
+    {
+        public static IEnumerable<object?[]> MainMethodTestData(bool aot)
+            => ConfigWithAOTData(aot)
+                .Where(item => !(item.ElementAt(0) is string config && config == "Debug" && item.ElementAt(1) is bool aotValue && aotValue))
+                .UnwrapItemsAsArrays();
+
+        public WasmBuildAppBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext) : base(output, buildContext)
+        {
+        }
+
+        protected async void TestMain(string projectName,
+              string programText,
+              string config,
+              bool aot,
+              bool isNativeBuild = false,
+              int expectedExitCode = 42,
+              string expectedOutput = "Hello, World!",
+              string runtimeConfigContents = "",
+              params string[] extraArgs)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "DotnetRun", "App");
+            UpdateFile(Path.Combine("Common", "Program.cs"), programText);
+            if (!string.IsNullOrEmpty(runtimeConfigContents))
+            {
+                UpdateFile("runtimeconfig.template.json", new Dictionary<string, string> { {  "}\n}", runtimeConfigContents } });
+            }
+            bool isPublish = true;
+            BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    info.Configuration,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild),
+                    IsPublish: isPublish
+                    ),
+                extraArgs
+            );
+            RunResult result = await RunForPublishWithWebServer(new(
+                info.Configuration,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: expectedExitCode)
+            );
+            Assert.Contains(result.ConsoleOutput, m => m.Contains(expectedOutput));
+        }
+    }
+}

@@ -97,7 +97,7 @@ namespace Wasm.Build.Tests
                 config,
                 aot,
                 "bc_to_o",
-                atTheEnd: printFileTypeTarget);
+                insertAtEnd: printFileTypeTarget);
 
             bool isPublish = true;
             (string _, string output) = BuildTemplateProject(info,

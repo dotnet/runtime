@@ -156,7 +156,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     //     string id = $"props_req_workload_{(publish ? "publish" : "build")}_{GetRandomId()}";
     //     string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
     //     AddItemsPropertiesToProject(projectFile, extraProperties,
-    //         atTheEnd: @"<Target Name=""StopBuildBeforeCompile"" BeforeTargets=""Compile"">
+    //         insertAtEnd: @"<Target Name=""StopBuildBeforeCompile"" BeforeTargets=""Compile"">
     //                 <Error Text=""Stopping the build"" />
     //         </Target>");
 

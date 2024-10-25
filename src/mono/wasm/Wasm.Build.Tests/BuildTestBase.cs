@@ -527,11 +527,11 @@ namespace Wasm.Build.Tests
             }
         }
 
-        public static string AddItemsPropertiesToProject(string projectFile, string? extraProperties = null, string? extraItems = null, string? atTheEnd = null)
+        public static string AddItemsPropertiesToProject(string projectFile, string? extraProperties = null, string? extraItems = null, string? insertAtEnd = null)
         {
             if (!File.Exists(projectFile))
                 throw new Exception($"{projectFile} does not exist");
-            if (extraProperties == null && extraItems == null && atTheEnd == null)
+            if (extraProperties == null && extraItems == null && insertAtEnd == null)
                 return projectFile;
 
             XmlDocument doc = new();
@@ -552,10 +552,10 @@ namespace Wasm.Build.Tests
                 root.AppendChild(node);
             }
 
-            if (atTheEnd != null)
+            if (insertAtEnd != null)
             {
                 XmlNode node = doc.CreateNode(XmlNodeType.DocumentFragment, "foo", null);
-                node.InnerXml = atTheEnd;
+                node.InnerXml = insertAtEnd;
                 root.InsertAfter(node, root.LastChild);
             }
 

@@ -26,6 +26,7 @@ public record RunOptions
     string BrowserPath = "",
     string Locale = "en-US",
     int? ExpectedExitCode = 0,
+    string CustomBundleDir = "",
 
     Func<RunOptions, IPage, Task>? ExecuteAfterLoaded = null
 );

@@ -56,7 +56,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         bool addFrameworkArg = false,
         string extraProperties = "",
         string extraItems = "",
-        string atTheEnd = "")
+        string insertAtEnd = "")
     {
         string projectName = InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath);
 
@@ -79,21 +79,31 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (runAnalyzers)
             extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
 
-        AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, atTheEnd);
+        AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
 
         return new ProjectInfo(config, aot, projectName, projectFilePath);
     }
 
-    protected ProjectInfo CopyTestAsset(string config, bool aot, string assetDirName, string idPrefix, string projectDirReativeToAssetDir = "", bool appendUnicodeToPath = true)
+    protected ProjectInfo CopyTestAsset(
+        string config,
+        bool aot,
+        string assetDirName,
+        string idPrefix,
+        string projectDirReativeToAssetDir = "",
+        bool appendUnicodeToPath = true,
+        string extraProperties = "",
+        string extraItems = "",
+        string insertAtEnd = "")
     {
-        string projectName = InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath);
+        InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath);
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetDirName), Path.Combine(_projectDir!));
         if (!string.IsNullOrEmpty(projectDirReativeToAssetDir))
         {
             _projectDir = Path.Combine(_projectDir!, projectDirReativeToAssetDir);
         }
-        string projectFilePath = Path.Combine(_projectDir!, $"{projectName}.csproj");
-        return new ProjectInfo(config, aot, projectName, projectFilePath);
+        string projectFilePath = Path.Combine(_projectDir!, $"{assetDirName}.csproj");
+        AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
+        return new ProjectInfo(config, aot, assetDirName, projectFilePath);
     }
 
 
@@ -219,7 +229,9 @@ public class WasmTemplateTestsBase : BuildTestBase
 
         RunHost.WebServer =>
                 await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
-                     Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")),
+                    string.IsNullOrEmpty(runOptions.CustomBundleDir) ?
+                        Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")) :
+                        runOptions.CustomBundleDir,
                      runOptions),
 
         _ => throw new NotImplementedException(runOptions.Host.ToString())
