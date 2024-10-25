@@ -256,16 +256,18 @@ internal class MockDescriptors
             (nameof(Constants.Globals.SyncBlockValueToObjectOffset), TestSyncBlockValueToObjectOffset, "uint16"),
         ]).ToArray();
 
-        internal static void AddGlobalPointers(Target.TypeInfo methodTableTypeInfo, MockMemorySpace.Builder builder)
+        internal void AddGlobalPointers()
         {
-            RuntimeTypeSystem.AddGlobalPointers(methodTableTypeInfo, builder);
-            AddStringMethodTablePointer(builder);
-            AddSyncTableEntriesPointer(builder);
+            Target.TypeInfo methodTableTypeInfo = Types[DataType.MethodTable];
+            RuntimeTypeSystem.AddGlobalPointers(methodTableTypeInfo, Builder);
+            AddStringMethodTablePointer();
+            AddSyncTableEntriesPointer();
 
         }
 
-        private static void AddStringMethodTablePointer(MockMemorySpace.Builder builder)
+        private void AddStringMethodTablePointer()
         {
+            MockMemorySpace.Builder builder = Builder;
             TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
             MockMemorySpace.HeapFragment fragment = new() { Name = "Address of String Method Table", Address = TestStringMethodTableGlobalAddress, Data = new byte[targetTestHelpers.PointerSize] };
             targetTestHelpers.WritePointer(fragment.Data, TestStringMethodTableAddress);
@@ -275,8 +277,9 @@ internal class MockDescriptors
             ]);
         }
 
-        private static MockMemorySpace.Builder AddSyncTableEntriesPointer(MockMemorySpace.Builder builder)
+        private MockMemorySpace.Builder AddSyncTableEntriesPointer()
         {
+            MockMemorySpace.Builder builder = Builder;
             TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
             MockMemorySpace.HeapFragment fragment = new() { Name = "Address of Sync Table Entries", Address = TestSyncTableEntriesGlobalAddress, Data = new byte[targetTestHelpers.PointerSize] };
             targetTestHelpers.WritePointer(fragment.Data, TestSyncTableEntriesAddress);

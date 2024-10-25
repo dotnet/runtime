@@ -12,21 +12,22 @@ using MockObject = MockDescriptors.Object;
 public unsafe class ObjectTests
 {
 
-    private static void ObjectContractHelper(MockTarget.Architecture arch, Action<Dictionary<DataType, Target.TypeInfo>, MockMemorySpace.Builder> configure, Action<Target> testCase)
+    private static void ObjectContractHelper(MockTarget.Architecture arch, Action<MockObject> configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
 
         MockMemorySpace.Builder builder = new(targetTestHelpers);
         Dictionary<DataType, Target.TypeInfo> types = new();
+        MockObject objectBuilder = new(types, builder);
         MockObject.AddTypes(types, targetTestHelpers);
         builder = builder
             .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem) ])
             .SetGlobals(MockObject.Globals(targetTestHelpers))
             .SetTypes(types);
 
-        MockObject.AddGlobalPointers(types[DataType.MethodTable], builder);
+        objectBuilder.AddGlobalPointers();
 
-        configure?.Invoke(types, builder);
+        configure?.Invoke(objectBuilder);
 
         bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
         Assert.True(success);
@@ -40,9 +41,8 @@ public unsafe class ObjectTests
         const ulong TestObjectAddress = 0x00000000_10000010;
         const ulong TestMethodTableAddress = 0x00000000_10000027;
         ObjectContractHelper(arch,
-            (types, builder) =>
+            (objectBuilder) =>
             {
-                MockObject objectBuilder = new(types, builder);
                 objectBuilder.AddObject(TestObjectAddress, TestMethodTableAddress);
             },
             (target) =>
@@ -61,9 +61,8 @@ public unsafe class ObjectTests
         const ulong TestStringAddress = 0x00000000_10000010;
         string expected = "test_string_value";
         ObjectContractHelper(arch,
-            (types, builder) =>
+            (objectBuilder) =>
             {
-                MockObject objectBuilder = new(types, builder);
                 objectBuilder.AddStringObject(TestStringAddress, expected);
             },
             (target) =>
@@ -88,9 +87,8 @@ public unsafe class ObjectTests
         Array nonZeroLowerBound = Array.CreateInstance(typeof(int), [10], [5]);
         TargetTestHelpers targetTestHelpers = new(arch);
         ObjectContractHelper(arch,
-            (types, builder) =>
+            (objectBuilder) =>
             {
-                MockObject objectBuilder = new(types, builder);
                 objectBuilder.AddArrayObject(SingleDimensionArrayAddress, singleDimension);
                 objectBuilder.AddArrayObject(MultiDimensionArrayAddress, multiDimension);
                 objectBuilder.AddArrayObject(NonZeroLowerBoundArrayAddress, nonZeroLowerBound);
@@ -135,10 +133,9 @@ public unsafe class ObjectTests
         TargetPointer expectedCCW = 0xbbbb;
 
         ObjectContractHelper(arch,
-            (types, builder) =>
+            (objectBuilder) =>
             {
                 uint syncBlockIndex = 0;
-                MockObject objectBuilder = new(types, builder);
                 objectBuilder.AddObjectWithSyncBlock(TestComObjectAddress, 0, syncBlockIndex++, expectedRCW, expectedCCW);
                 objectBuilder.AddObjectWithSyncBlock(TestNonComObjectAddress, 0, syncBlockIndex++, TargetPointer.Null, TargetPointer.Null);
             },
