@@ -1757,6 +1757,7 @@ void Nullable::UnBoxNoCheck(void* destPtr, OBJECTREF boxedVal, MethodTable* dest
             // For safety's sake, also allow true nullables to be unboxed normally.
             // This should not happen normally, but we want to be robust
             CopyValueClass(dest, boxedVal->GetData(), destMT);
+            return;
         }
 
         *dest->HasValueAddr(destMT) = true;
