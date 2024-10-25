@@ -2818,7 +2818,7 @@ private:
 
     PER_HEAP_ISOLATED_METHOD int get_num_heaps();
 
-    PER_HEAP_METHOD BOOL decide_on_promotion_surv (size_t threshold);
+    PER_HEAP_ISOLATED_METHOD BOOL decide_on_promotion_surv (size_t threshold);
 
     PER_HEAP_METHOD void mark_phase (int condemned_gen_number);
 
@@ -3474,6 +3474,7 @@ private:
 
     PER_HEAP_FIELD_SINGLE_GC size_t total_promoted_bytes;
     PER_HEAP_FIELD_SINGLE_GC size_t finalization_promoted_bytes;
+    PER_HEAP_FIELD_SINGLE_GC bool high_finalization_percentage;
 
     PER_HEAP_FIELD_SINGLE_GC size_t mark_stack_tos;
     PER_HEAP_FIELD_SINGLE_GC size_t mark_stack_bos;
@@ -5660,7 +5661,10 @@ private:
     {
         return (Seg == MaxSeg ? m_EndArray : m_FillPointers[Seg]);
     }
-
+    inline size_t SegQueueCount (unsigned int Seg)
+    {
+        return SegQueueLimit(Seg) - SegQueue(Seg);
+    }
     size_t UsedCount ()
     {
         return (SegQueue(FreeListSeg) - m_Array) + (m_EndArray - SegQueueLimit(FreeListSeg));
@@ -5671,6 +5675,8 @@ private:
         ASSERT ((int)i <= MaxSeg);
         return (SegQueueLimit(i) == SegQueue (i));
     }
+
+    void LogCounts(const char* label);
 
 public:
     ~CFinalize();

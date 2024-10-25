@@ -165,16 +165,8 @@ void GCHeap::UpdatePostGCCounters()
 
     FIRE_EVENT(GCEnd_V1, static_cast<uint32_t>(pSettings->gc_index), condemned_gen);
 
-#ifdef SIMPLE_DPRINTF
-    dprintf (2, ("GC#%zu: 0: %zu(%zu); 1: %zu(%zu); 2: %zu(%zu); 3: %zu(%zu)",
-        (size_t)pSettings->gc_index,
-        g_GenerationSizes[0], g_GenerationPromotedSizes[0],
-        g_GenerationSizes[1], g_GenerationPromotedSizes[1],
-        g_GenerationSizes[2], g_GenerationPromotedSizes[2],
-        g_GenerationSizes[3], g_GenerationPromotedSizes[3]));
-#endif //SIMPLE_DPRINTF
-
-    FIRE_EVENT(GCHeapStats_V2,
+    FIRE_DPRINTF_EVENT(GCHeapStats_V2, 1,
+        "0: %zu(%zu); 1: %zu(%zu); 2: %zu(%zu); 3: %zu(%zu); 4: %zu(%zu); final: %zu bytes(%zu); pin: %zu; sync: %zu; gchandles: %zu",
         g_GenerationSizes[0], g_GenerationPromotedSizes[0],
         g_GenerationSizes[1], g_GenerationPromotedSizes[1],
         g_GenerationSizes[2], g_GenerationPromotedSizes[2],

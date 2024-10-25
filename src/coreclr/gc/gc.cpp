@@ -2966,6 +2966,7 @@ dynamic_data gc_heap::dynamic_data_table [total_generation_count];
 gc_history_per_heap gc_heap::gc_data_per_heap;
 size_t gc_heap::total_promoted_bytes = 0;
 size_t gc_heap::finalization_promoted_bytes = 0;
+bool gc_heap::high_finalization_percentage = false;
 size_t gc_heap::maxgen_pinned_compact_before_advance = 0;
 
 uint8_t* gc_heap::alloc_allocated = 0;
@@ -29535,12 +29536,13 @@ BOOL gc_heap::decide_on_promotion_surv (size_t threshold)
         size_t older_gen_size = dd_current_size (dd) + (dd_desired_allocation (dd) - dd_new_allocation (dd));
 
         size_t promoted = hp->total_promoted_bytes;
+        bool do_promote = ((threshold > older_gen_size) || (promoted > threshold));
 
         dprintf (6666, ("h%d promotion threshold: %zd, promoted bytes: %zd size n+1: %zd -> %s",
             i, threshold, promoted, older_gen_size,
-            (((threshold > (older_gen_size)) || (promoted > threshold)) ? "promote" : "don't promote")));
+            (do_promote ? "promote" : "don't promote")));
 
-        if ((threshold > (older_gen_size)) || (promoted > threshold))
+        if (do_promote)
         {
             return TRUE;
         }
@@ -30231,6 +30233,7 @@ void gc_heap::mark_phase (int condemned_gen_number)
 #endif //FEATURE_PREMORTEM_FINALIZATION
 
     total_promoted_bytes = get_promoted_bytes();
+    finalization_promoted_bytes = total_promoted_bytes - promoted_bytes_live;
 
 #ifdef MULTIPLE_HEAPS
     static VOLATILE(int32_t) syncblock_scan_p;
@@ -30281,7 +30284,11 @@ void gc_heap::mark_phase (int condemned_gen_number)
 #endif //FEATURE_EVENT_TRACE
 
         //decide on promotion
-        if (!settings.promotion)
+        int finalization_percent = (total_promoted_bytes > 0)
+            ? static_cast<int>((100 * finalization_promoted_bytes) / total_promoted_bytes) : 0;
+        dprintf (6666, ("finalization promotion: %d%% (%zd / %zd)", finalization_percent, finalization_promoted_bytes, total_promoted_bytes));
+	high_finalization_percentage = finalization_percent >= 90;
+        if (!settings.promotion && !high_finalization_percentage)
         {
             size_t m = 0;
             for (int n = 0; n <= condemned_gen_number;n++)
@@ -30360,8 +30367,6 @@ void gc_heap::mark_phase (int condemned_gen_number)
 #if defined(MULTIPLE_HEAPS) && !defined(USE_REGIONS)
     merge_mark_lists (total_mark_list_size);
 #endif //MULTIPLE_HEAPS && !USE_REGIONS
-
-    finalization_promoted_bytes = total_promoted_bytes - promoted_bytes_live;
 
     mark_queue.verify_empty();
 
@@ -45054,6 +45059,11 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
         should_compact = TRUE;
     }
 
+    if (high_finalization_percentage)
+    {
+        should_compact = TRUE;
+    }
+
     dprintf (2, ("Fragmentation: %zu Fragmentation burden %d%%",
                 fragmentation, (int) (100*fragmentation_burden)));
 
@@ -52185,6 +52195,19 @@ void CFinalize::WalkFReachableObjects (fq_walk_fn fn)
     }
 }
 
+void CFinalize::LogCounts(const char* label)
+{
+    size_t genCounts[max_generation + 1] = {};
+    for (int gen = 0; gen <= max_generation; ++gen)
+    {
+        unsigned int seg = gen_segment(gen);
+        genCounts[gen] = SegQueueCount(seg);
+    }
+    dprintf(1, ("Finalizer counts @%5s; 0: %6zu; 1: %6zu, 2: %6zu; CF: %6zu; F: %6zu; Free: %6zu",
+        label, genCounts[0], genCounts[1], genCounts[2],
+        SegQueueCount(CriticalFinalizerListSeg), SegQueueCount(FinalizerListSeg), SegQueueCount(FreeListSeg)));
+}
+
 BOOL
 CFinalize::ScanForFinalization (promote_func* pfn, int gen, gc_heap* hp)
 {
@@ -52197,6 +52220,8 @@ CFinalize::ScanForFinalization (promote_func* pfn, int gen, gc_heap* hp)
     UNREFERENCED_PARAMETER(hp);
     sc.thread_count = 1;
 #endif //MULTIPLE_HEAPS
+
+    LogCounts("start");
 
     BOOL finalizedFound = FALSE;
 
@@ -52288,6 +52313,8 @@ CFinalize::ScanForFinalization (promote_func* pfn, int gen, gc_heap* hp)
         }
     }
 
+    LogCounts("scan");
+
     return finalizedFound;
 }
 
@@ -52367,6 +52394,8 @@ CFinalize::UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p)
             }
         }
     }
+
+    LogCounts("promo");
 }
 
 BOOL
