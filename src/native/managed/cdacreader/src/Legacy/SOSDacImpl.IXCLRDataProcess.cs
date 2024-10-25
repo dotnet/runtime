@@ -26,7 +26,56 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         => _legacyProcess is not null ? _legacyProcess.EndEnumTasks(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetTaskByOSThreadID(uint osThreadID, /*IXCLRDataTask*/ void** task)
-        => _legacyProcess is not null ? _legacyProcess.GetTaskByOSThreadID(osThreadID, task) : HResults.E_NOTIMPL;
+    {
+        // Find the thread correspending to the OS thread ID
+        Contracts.IThread contract = _target.Contracts.Thread;
+        TargetPointer thread = contract.GetThreadStoreData().FirstThread;
+        TargetPointer matchingThread = TargetPointer.Null;
+        while (thread != TargetPointer.Null)
+        {
+            Contracts.ThreadData threadData = contract.GetThreadData(thread);
+            if (threadData.OSId.Value == osThreadID)
+            {
+                matchingThread = thread;
+                break;
+            }
+
+            thread = threadData.NextThread;
+        }
+
+        if (matchingThread == TargetPointer.Null)
+            return HResults.E_INVALIDARG;
+
+        ComWrappers cw = new StrategyBasedComWrappers();
+
+        int hr;
+        nint legacyTaskPointer = 0;
+        object? legacyTask = null;
+        if (_legacyProcess is not null)
+        {
+            hr = _legacyProcess.GetTaskByOSThreadID(osThreadID, (void**)&legacyTaskPointer);
+            if (hr < 0)
+                return hr;
+
+            legacyTask = cw.GetOrCreateObjectForComInstance(legacyTaskPointer, CreateObjectFlags.None);
+        }
+
+        ClrDataTask taskObj = new(matchingThread, _target, legacyTask);
+
+        // Lifetime is now managed via ClrDataTask
+        if (legacyTaskPointer != 0)
+            Marshal.Release(legacyTaskPointer);
+
+        nint iunknownPtr = cw.GetOrCreateComInterfaceForObject(taskObj, CreateComInterfaceFlags.None);
+        hr = Marshal.QueryInterface(iunknownPtr, typeof(IXCLRDataTask).GUID, out nint taskPtr);
+        if (iunknownPtr != 0)
+            Marshal.Release(iunknownPtr);
+
+        if (hr == HResults.S_OK)
+            *task = (IXCLRDataModule*)taskPtr;
+
+        return hr;
+    }
 
     int IXCLRDataProcess.GetTaskByUniqueID(ulong taskID, /*IXCLRDataTask*/ void** task)
         => _legacyProcess is not null ? _legacyProcess.GetTaskByUniqueID(taskID, task) : HResults.E_NOTIMPL;
