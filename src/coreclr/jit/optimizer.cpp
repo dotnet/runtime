@@ -4399,48 +4399,78 @@ LoopDefinitions* LoopDefinitions::Find(FlowGraphNaturalLoops* loops)
 
     assert(comp->fgNodeThreading == NodeThreading::AllLocals);
 
-    for (FlowGraphNaturalLoop* loop : loops->InPostOrder())
+    struct LocalsVisitor : GenTreeVisitor<LocalsVisitor>
     {
-        loop->VisitLoopBlocks([=, &poTraits, &visitedBlocks](BasicBlock* block) {
-            if (!BitVecOps::TryAddElemD(&poTraits, visitedBlocks, block->bbPostorderNum))
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+        };
+
+        LocalsVisitor(Compiler* comp, LoopDefinitions* loopDefs)
+            : GenTreeVisitor(comp)
+            , m_loopDefs(loopDefs)
+        {
+        }
+
+        void SetLoop(FlowGraphNaturalLoop* loop)
+        {
+            m_loop = loop;
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTreeLclVarCommon* lcl = (*use)->AsLclVarCommon();
+            if (!lcl->OperIsLocalStore())
             {
-                return BasicBlockVisit::Continue;
+                return Compiler::WALK_CONTINUE;
             }
 
-            for (Statement* stmt : block->Statements())
+            m_loopDefs->Add(m_loop, lcl->GetLclNum());
+
+            LclVarDsc* lclDsc = m_compiler->lvaGetDesc(lcl);
+            if (m_compiler->lvaIsImplicitByRefLocal(lcl->GetLclNum()) && lclDsc->lvPromoted)
             {
-                for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+                // fgRetypeImplicitByRefArgs created a new promoted
+                // struct local to represent this arg. The stores will
+                // be rewritten by morph.
+                assert(lclDsc->lvFieldLclStart != 0);
+                m_loopDefs->Add(m_loop, lclDsc->lvFieldLclStart);
+                lclDsc = m_compiler->lvaGetDesc(lclDsc->lvFieldLclStart);
+            }
+
+            if (lclDsc->lvPromoted)
+            {
+                for (unsigned i = 0; i < lclDsc->lvFieldCnt; i++)
                 {
-                    if (!lcl->OperIsLocalStore())
-                    {
-                        continue;
-                    }
+                    unsigned fieldLclNum = lclDsc->lvFieldLclStart + i;
+                    m_loopDefs->Add(m_loop, fieldLclNum);
+                }
+            }
+            else if (lclDsc->lvIsStructField)
+            {
+                m_loopDefs->Add(m_loop, lclDsc->lvParentLcl);
+            }
 
-                    result->Add(loop, lcl->GetLclNum());
+            return Compiler::WALK_CONTINUE;
+        }
 
-                    LclVarDsc* lclDsc = comp->lvaGetDesc(lcl);
-                    if (comp->lvaIsImplicitByRefLocal(lcl->GetLclNum()) && lclDsc->lvPromoted)
-                    {
-                        // fgRetypeImplicitByRefArgs created a new promoted
-                        // struct local to represent this arg. The stores will
-                        // be rewritten by morph.
-                        assert(lclDsc->lvFieldLclStart != 0);
-                        result->Add(loop, lclDsc->lvFieldLclStart);
-                        lclDsc = comp->lvaGetDesc(lclDsc->lvFieldLclStart);
-                    }
+    private:
+        LoopDefinitions*      m_loopDefs;
+        FlowGraphNaturalLoop* m_loop = nullptr;
+    };
 
-                    if (lclDsc->lvPromoted)
-                    {
-                        for (unsigned i = 0; i < lclDsc->lvFieldCnt; i++)
-                        {
-                            unsigned fieldLclNum = lclDsc->lvFieldLclStart + i;
-                            result->Add(loop, fieldLclNum);
-                        }
-                    }
-                    else if (lclDsc->lvIsStructField)
-                    {
-                        result->Add(loop, lclDsc->lvParentLcl);
-                    }
+    LocalsVisitor visitor(comp, result);
+    for (FlowGraphNaturalLoop* loop : loops->InPostOrder())
+    {
+        visitor.SetLoop(loop);
+
+        loop->VisitLoopBlocks([=, &visitor, &poTraits, &visitedBlocks](BasicBlock* block) {
+            if (BitVecOps::TryAddElemD(&poTraits, visitedBlocks, block->bbPostorderNum))
+            {
+                for (Statement* stmt : block->Statements())
+                {
+                    visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
                 }
             }
 

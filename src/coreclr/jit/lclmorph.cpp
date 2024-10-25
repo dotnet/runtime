@@ -343,10 +343,13 @@ public:
 
         if ((loop != nullptr) && (CurrentAssertions != 0))
         {
-            JITDUMP("Block " FMT_BB " is a loop header; clearing assertions about defined locals\n");
+            JITDUMP("Block " FMT_BB " is a loop header; clearing assertions about defined locals\n", block->bbNum);
             m_comp->m_loopDefinitions->VisitDefinedLocalNums(loop, [=](unsigned lclNum) {
+                JITDUMP("  V%02u", lclNum);
                 Clear(lclNum);
             });
+
+            JITDUMP("\n");
         }
 
 #ifdef DEBUG
