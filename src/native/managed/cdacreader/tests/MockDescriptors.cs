@@ -283,25 +283,27 @@ internal class MockDescriptors
             return builder.AddHeapFragment(fragment);
         }
 
-        internal static void AddObject(Dictionary<DataType, Target.TypeInfo> types, MockMemorySpace.Builder builder, TargetPointer address, TargetPointer methodTable)
+        internal void AddObject(TargetPointer address, TargetPointer methodTable)
         {
+            MockMemorySpace.Builder builder = Builder;
             TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
-            Target.TypeInfo objectTypeInfo = types[DataType.Object];
+            Target.TypeInfo objectTypeInfo = Types[DataType.Object];
             MockMemorySpace.HeapFragment fragment = new() { Name = $"Object : MT = '{methodTable}'", Address = address, Data = new byte[targetTestHelpers.SizeOfTypeInfo(objectTypeInfo)] };
             Span<byte> dest = fragment.Data;
             targetTestHelpers.WritePointer(dest.Slice(objectTypeInfo.Fields["m_pMethTab"].Offset), methodTable);
             builder.AddHeapFragment(fragment);
         }
 
-        internal static void AddObjectWithSyncBlock(Dictionary<DataType, Target.TypeInfo> types, MockMemorySpace.Builder builder, TargetPointer address, TargetPointer methodTable, uint syncBlockIndex, TargetPointer rcw, TargetPointer ccw)
+        internal void AddObjectWithSyncBlock(TargetPointer address, TargetPointer methodTable, uint syncBlockIndex, TargetPointer rcw, TargetPointer ccw)
         {
+            MockMemorySpace.Builder builder = Builder;
             TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
             const uint IsSyncBlockIndexBits = 0x08000000;
             const uint SyncBlockIndexMask = (1 << 26) - 1;
             if ((syncBlockIndex & SyncBlockIndexMask) != syncBlockIndex)
                 throw new ArgumentOutOfRangeException(nameof(syncBlockIndex), "Invalid sync block index");
 
-            AddObject(types, builder, address, methodTable);
+            AddObject(address, methodTable);
 
             // Add the sync table value before the object
             uint syncTableValue = IsSyncBlockIndexBits | syncBlockIndex;
@@ -311,7 +313,7 @@ internal class MockDescriptors
             builder.AddHeapFragment(fragment);
 
             // Add the actual sync block and associated data
-            AddSyncBlock(types, builder, syncBlockIndex, rcw, ccw);
+            AddSyncBlock(Types, builder, syncBlockIndex, rcw, ccw);
         }
 
         private static void AddSyncBlock(Dictionary<DataType, Target.TypeInfo> types, MockMemorySpace.Builder builder, uint index, TargetPointer rcw, TargetPointer ccw)
