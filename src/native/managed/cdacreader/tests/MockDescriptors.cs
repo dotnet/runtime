@@ -259,6 +259,7 @@ internal class MockDescriptors
         internal const ulong TestArrayBoundsZeroGlobalAddress = 0x00000000_100000b0;
 
         private const ulong TestSyncTableEntriesGlobalAddress = 0x00000000_100000c0;
+        // The sync table entries address range is manually managed in AddObjectWithSyncBlock
         private const ulong TestSyncTableEntriesAddress = 0x00000000_f0000000;
 
         internal const ulong TestObjectToMethodTableUnmask = 0x7;
@@ -315,7 +316,6 @@ internal class MockDescriptors
             RTSBuilder.AddGlobalPointers();
             AddStringMethodTablePointer();
             AddSyncTableEntriesPointer();
-
         }
 
         private void AddStringMethodTablePointer()
