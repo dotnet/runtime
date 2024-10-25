@@ -20509,10 +20509,9 @@ bool GenTree::isEvexCompatibleHWIntrinsic() const
 //
 bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
 {
-    NamedIntrinsic intrinsicId = AsHWIntrinsic()->GetHWIntrinsicId();
-
     if (OperIsHWIntrinsic())
     {
+        NamedIntrinsic intrinsicId = AsHWIntrinsic()->GetHWIntrinsicId();
 #if defined(TARGET_XARCH)
         var_types simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
 
