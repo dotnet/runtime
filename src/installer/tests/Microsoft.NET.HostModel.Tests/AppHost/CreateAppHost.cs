@@ -511,7 +511,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         {
             string fileName = "MockAppHost.mach.o";
             string outputFilePath = Path.Combine(directory, fileName);
-            using (var aOutStream = TestData.MachObjects.Get("a.out").Data)
+            using (var aOutStream = TestData.MachObjects.GetSingle().File.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
             using (var managedSignFile = File.OpenWrite(outputFilePath))
             {
                 aOutStream!.CopyTo(managedSignFile);

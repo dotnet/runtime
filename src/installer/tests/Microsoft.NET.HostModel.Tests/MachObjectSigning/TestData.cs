@@ -8,23 +8,24 @@ internal class TestData
 {
     internal class MachObjects
     {
-        internal static List<(string Name, Stream Data)> GetAll()
+        internal static List<(string Name, FileInfo Data)> GetAll()
         {
             return GetRecursiveFiles(new DirectoryInfo("MachO"))
-                .Select(f => (f.UniqueName, (Stream)f.File.Open(FileMode.Open, FileAccess.Read)))
+                .Select(f => (f.UniqueName, f.File))
                 .ToList();
         }
 
-        internal static IEnumerable<(FileInfo File, string UniqueName)> GetRecursiveFiles(DirectoryInfo dir, string prefix = "")
+        private static IEnumerable<(FileInfo File, string UniqueName)> GetRecursiveFiles(DirectoryInfo dir, string prefix = "")
         {
             var files = dir.GetFiles().Select(f => (f, $"{prefix}{dir.Name}-{f.Name}"));
             var recursiveFiles = dir.GetDirectories().SelectMany(sd => GetRecursiveFiles(sd, $"{prefix}{dir.Name}-"));
             return files.Concat(recursiveFiles);
         }
 
-        internal static (string Name, Stream Data) Get(string name)
+        internal static (string Name, FileInfo File) GetSingle()
         {
-            return (name, new FileStream(Path.Combine("MachO", name), FileMode.Open, FileAccess.Read));
+            var file = GetRecursiveFiles(new DirectoryInfo("MachO")).First();
+            return (file.File.Name, file.File);
         }
     }
 }

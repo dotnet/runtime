@@ -37,17 +37,17 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         }
 
         static readonly string[] liveBuiltHosts = new string[] { Binaries.AppHost.FilePath, Binaries.SingleFileHost.FilePath };
-        static List<string> GetTestFiles(TestArtifact testArtifact)
+        static List<string> GetTestFilePaths(TestArtifact testArtifact)
         {
-            List<(string Name, Stream Data)> testData = TestData.MachObjects.GetAll();
+            List<(string Name, FileInfo Info)> testData = TestData.MachObjects.GetAll();
             List<string> testFilePaths = new();
-            foreach ((string Name, Stream Data) in testData)
+            foreach ((string name, FileInfo file) in testData)
             {
-                string originalFilePath = Path.Combine(testArtifact.Location, Name);
-                using (var aOutStream = Data)
-                using (var managedSignFile = File.OpenWrite(originalFilePath))
+                string originalFilePath = Path.Combine(testArtifact.Location, name);
+                using (var src = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var dest = new FileStream(originalFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite))
                 {
-                    aOutStream!.CopyTo(managedSignFile);
+                    src.CopyTo(dest);
                 }
                 testFilePaths.Add(originalFilePath);
             }
@@ -71,7 +71,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         public void CanSignMachObject()
         {
             using var testArtifact = TestArtifact.Create(nameof(CanSignMachObject));
-            foreach (var filePath in GetTestFiles(testArtifact))
+            foreach (var filePath in GetTestFilePaths(testArtifact))
             {
                 string fileName = Path.GetFileName(filePath);
                 string originalFilePath = filePath;
@@ -88,7 +88,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         void MatchesCodesignOutput()
         {
             using var testArtifact = TestArtifact.Create(nameof(MatchesCodesignOutput));
-            foreach (var filePath in GetTestFiles(testArtifact))
+            foreach (var filePath in GetTestFilePaths(testArtifact))
             {
                 string fileName = Path.GetFileName(filePath);
                 string originalFilePath = filePath;
@@ -115,7 +115,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         void SignedHelloWorldRuns()
         {
             using var testArtifact = TestArtifact.Create(nameof(SignedHelloWorldRuns));
-            foreach (var filePath in GetTestFiles(testArtifact))
+            foreach (var filePath in GetTestFilePaths(testArtifact))
             {
                 string fileName = Path.GetFileName(filePath);
                 string originalFilePath = filePath;

@@ -465,7 +465,7 @@ internal class MachObjectFile
         uint identifierLength = GetIdentifierLength(identifier);
         uint codeDirectorySize = GetCodeDirectorySize(identifier);
 
-        CodeDirectoryHeader codeDirectoryBlob = default;
+        CodeDirectoryHeader codeDirectoryBlob = new();
         uint hashesOffset = (uint)Marshal.SizeOf<CodeDirectoryHeader>() + identifierLength + DefaultHashSize * SpecialSlotCount;
         codeDirectoryBlob.Size = codeDirectorySize;
         codeDirectoryBlob.Version = version;

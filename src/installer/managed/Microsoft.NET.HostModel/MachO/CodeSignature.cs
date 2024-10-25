@@ -99,8 +99,8 @@ internal class CodeSignature
             return cs;
         }
 
-        var identifierOffset = cs._fileOffset + cs._embeddedSignature.CodeDirectory.Offset + cs._codeDirectory.IdentifierOffset;
-        var codeHashesOffset = cs._fileOffset + cs._codeDirectory.HashesOffset - MachObjectFile.SpecialSlotCount * MachObjectFile.DefaultHashSize;;;
+        long identifierOffset = cdOffset + cs._codeDirectory.IdentifierOffset;
+        long codeHashesOffset = cdOffset + cs._codeDirectory.HashesOffset - (MachObjectFile.SpecialSlotCount * MachObjectFile.DefaultHashSize);
 
         cs._identifier = new byte[codeHashesOffset - identifierOffset];
         file.ReadArray(identifierOffset, cs._identifier, 0, cs._identifier.Length);
