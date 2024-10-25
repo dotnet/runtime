@@ -120,4 +120,5 @@ steps:
       runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       nativeAotTest: ${{ parameters.nativeAotTest }}
       helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
+      extraHelixArguments: ${{ parameters.extraHelixArguments }}
       scenarios: ${{ parameters.scenarios }}
