@@ -365,14 +365,6 @@ protected:
 
 typedef DPTR(struct HeapList) PTR_HeapList;
 
-struct NibbleOperation
-{
-    TADDR            startAddress;
-    size_t           size;
-
-    NibbleOperation* next;
-};
-
 struct HeapList
 {
     PTR_HeapList        hpNext;
@@ -393,8 +385,6 @@ struct HeapList
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine
 #endif
-
-    NibbleOperation*    operations;
 
     TADDR GetModuleBase()
     {
