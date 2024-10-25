@@ -47,7 +47,7 @@ namespace Wasm.Build.Tests
 
             string prefix = $"invariant_{invariantGlobalization?.ToString() ?? "unset"}";
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, prefix, extraProperties: extraProperties);
-            UpdateFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "InvariantGlobalization.cs"));
+            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "InvariantGlobalization.cs"));
             UpdateBrowserMainJs();
 
             bool isPublish = true;

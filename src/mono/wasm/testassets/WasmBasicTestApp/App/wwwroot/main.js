@@ -186,6 +186,7 @@ try {
             exit(0);
             break;
         case "OutErrOverrideWorks":
+        case "TestMain":
             dotnet.run();
             break;
         case "DebugLevelTest":

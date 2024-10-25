@@ -45,7 +45,7 @@ namespace Wasm.Build.Tests
 
             string prefix = $"invariant_{invariantTimezone?.ToString() ?? "unset"}";
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, prefix, extraProperties: extraProperties);
-            UpdateFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "InvariantTimezone.cs"));
+            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "InvariantTimezone.cs"));
             UpdateBrowserMainJs();
 
             bool isPublish = true;

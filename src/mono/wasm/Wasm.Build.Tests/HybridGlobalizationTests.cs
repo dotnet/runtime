@@ -45,7 +45,7 @@ namespace Wasm.Build.Tests
                 extraProperties += "<WasmBuildNative>true</WasmBuildNative>";
 
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, "hybrid", extraProperties: extraProperties);
-            UpdateFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "HybridGlobalization.cs"));
+            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "HybridGlobalization.cs"));
             UpdateBrowserMainJs();
 
             bool isPublish = true;

@@ -154,11 +154,16 @@ public class WasmTemplateTestsBase : BuildTestBase
         File.WriteAllText(path, text);
     }
 
-    protected void UpdateFile(string pathRelativeToProjectDir, string pathWithNewContent)
+    protected void UpdateFile(string pathRelativeToProjectDir, string newContent)
     {
         var updatedFilePath = Path.Combine(_projectDir!, pathRelativeToProjectDir);
-        string newContent = File.ReadAllText(pathWithNewContent);
         File.WriteAllText(updatedFilePath, newContent);
+    }
+
+    protected void ReplaceFile(string pathRelativeToProjectDir, string pathWithNewContent)
+    {
+        string newContent = File.ReadAllText(pathWithNewContent);
+        UpdateFile(pathRelativeToProjectDir, newContent);
     }
 
     protected void RemoveContentsFromProjectFile(string pathRelativeToProjectDir, string afterMarker, string beforeMarker)

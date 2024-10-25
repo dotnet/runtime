@@ -62,7 +62,7 @@ namespace Wasm.Build.Tests
                                 <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
                             ";
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, prefix, extraItems: extraItems);
-            UpdateFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "SkiaSharp.cs"));
+            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "SkiaSharp.cs"));
             UpdateBrowserMainJs();
 
             bool isPublish = true;
@@ -87,7 +87,7 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, "AppUsingBrowserNativeCrypto");
             
-            UpdateFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "NativeCrypto.cs"));
+            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "NativeCrypto.cs"));
             UpdateBrowserMainJs();
 
             bool isPublish = true;

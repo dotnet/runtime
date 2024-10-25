@@ -39,7 +39,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             var originalStat = StatFiles(pathsDict);
 
-            UpdateFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "NativeRebuildNewAssembly.cs"));
+            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "NativeRebuildNewAssembly.cs"));
 
             Rebuild(info, nativeRelink, invariant);
             var newStat = StatFiles(pathsDict);
