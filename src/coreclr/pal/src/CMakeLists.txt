@@ -203,6 +203,12 @@ set(SOURCES
   thread/threadsusp.cpp
 )
 
+set_source_files_properties(
+    com/guid.cpp
+    PROPERTIES
+    INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/../inc/rt
+)
+
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   set(LIBUNWIND_OBJECTS $<TARGET_OBJECTS:libunwind>)
 endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)

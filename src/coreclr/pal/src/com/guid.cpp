@@ -2,15 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-//
-// ===========================================================================
-// File: guid.cpp
-//
-// PALRT guids
-// ===========================================================================
-
 #define INITGUID
-#include <rt/guiddef.h>
+#include <guiddef.h>
 
 // These are GUIDs and IIDs that would normally be provided by the system via uuid.lib,
 // and that the PALRT exposes through headers.
