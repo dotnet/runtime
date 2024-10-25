@@ -56,26 +56,20 @@ internal class MockDescriptors
         ("m_NumComponents", DataType.uint32),
     };
 
-    private static readonly Target.TypeInfo SyncTableEntryInfo = new Target.TypeInfo()
+    private static readonly (string Name, DataType Type)[] SyncTableEntryFields = new[]
     {
-        Fields = new Dictionary<string, Target.FieldInfo> {
-            { nameof(Data.SyncTableEntry.SyncBlock), new() { Offset = 0, Type = DataType.pointer} },
-        },
+        (nameof(Data.SyncTableEntry.SyncBlock), DataType.pointer),
     };
 
-    private static readonly Target.TypeInfo SyncBlockTypeInfo = new Target.TypeInfo()
+    private static readonly (string Name, DataType Type)[] SyncBlockFields = new[]
     {
-        Fields = new Dictionary<string, Target.FieldInfo> {
-            { nameof(Data.SyncBlock.InteropInfo), new() { Offset = 0, Type = DataType.pointer} },
-        },
+        (nameof(Data.SyncBlock.InteropInfo), DataType.pointer),
     };
 
-    private static readonly Target.TypeInfo InteropSyncBlockTypeInfo = new Target.TypeInfo()
+    private static readonly (string Name, DataType Type)[] InteropSyncBlockFields = new[]
     {
-        Fields = new Dictionary<string, Target.FieldInfo> {
-            { nameof(Data.InteropSyncBlockInfo.RCW), new() { Offset = 0, Type = DataType.pointer} },
-            { nameof(Data.InteropSyncBlockInfo.CCW), new() { Offset = 0x8, Type = DataType.pointer} },
-        },
+        (nameof(Data.InteropSyncBlockInfo.RCW), DataType.pointer),
+        (nameof(Data.InteropSyncBlockInfo.CCW), DataType.pointer),
     };
 
     private static readonly (string, DataType)[] ModuleFields =
@@ -236,9 +230,12 @@ internal class MockDescriptors
             layout = helpers.ExtendLayout(ArrayFields, objectLayout);
             types[DataType.Array] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
             Debug.Assert(types[DataType.Array].Size == helpers.ArrayBaseSize);
-            types[DataType.SyncTableEntry] = SyncTableEntryInfo with { Size = (uint)helpers.SizeOfTypeInfo(SyncTableEntryInfo) };
-            types[DataType.SyncBlock] = SyncBlockTypeInfo;
-            types[DataType.InteropSyncBlockInfo] = InteropSyncBlockTypeInfo;
+            layout = helpers.LayoutFields(SyncTableEntryFields);
+            types[DataType.SyncTableEntry] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
+            layout = helpers.LayoutFields(SyncBlockFields);
+            types[DataType.SyncBlock] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
+            layout = helpers.LayoutFields(InteropSyncBlockFields);
+            types[DataType.InteropSyncBlockInfo] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
             return types;
         }
 
@@ -307,35 +304,39 @@ internal class MockDescriptors
             builder = builder.AddHeapFragment(fragment);
 
             // Add the actual sync block and associated data
-            return AddSyncBlock(targetTestHelpers, builder, syncBlockIndex, rcw, ccw);
+            return AddSyncBlock(types, builder, syncBlockIndex, rcw, ccw);
         }
 
-        private static MockMemorySpace.Builder AddSyncBlock(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, uint index, TargetPointer rcw, TargetPointer ccw)
+        private static MockMemorySpace.Builder AddSyncBlock(Dictionary<DataType, Target.TypeInfo> types, MockMemorySpace.Builder builder, uint index, TargetPointer rcw, TargetPointer ccw)
         {
+            TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
             // Tests write the sync blocks starting at TestSyncBlocksAddress
             const ulong TestSyncBlocksAddress = 0x00000000_e0000000;
-            int syncBlockSize = targetTestHelpers.SizeOfTypeInfo(SyncBlockTypeInfo);
-            int interopSyncBlockInfoSize = targetTestHelpers.SizeOfTypeInfo(InteropSyncBlockTypeInfo);
+            Target.TypeInfo syncBlockTypeInfo = types[DataType.SyncBlock];
+            Target.TypeInfo interopSyncBlockTypeInfo = types[DataType.InteropSyncBlockInfo];
+            int syncBlockSize = targetTestHelpers.SizeOfTypeInfo(syncBlockTypeInfo);
+            int interopSyncBlockInfoSize = targetTestHelpers.SizeOfTypeInfo(interopSyncBlockTypeInfo);
             ulong syncBlockAddr = TestSyncBlocksAddress + index * (ulong)(syncBlockSize + interopSyncBlockInfoSize);
 
             // Add the sync table entry - pointing at the sync block
-            uint syncTableEntrySize = (uint)targetTestHelpers.SizeOfTypeInfo(SyncTableEntryInfo);
+            Target.TypeInfo syncTableEntryInfo = types[DataType.SyncTableEntry];
+            uint syncTableEntrySize = (uint)targetTestHelpers.SizeOfTypeInfo(syncTableEntryInfo);
             ulong syncTableEntryAddr = TestSyncTableEntriesAddress + index * syncTableEntrySize;
             MockMemorySpace.HeapFragment syncTableEntry = new() { Name = $"SyncTableEntries[{index}]", Address = syncTableEntryAddr, Data = new byte[syncTableEntrySize] };
             Span<byte> syncTableEntryData = syncTableEntry.Data;
-            targetTestHelpers.WritePointer(syncTableEntryData.Slice(SyncTableEntryInfo.Fields[nameof(Data.SyncTableEntry.SyncBlock)].Offset), syncBlockAddr);
+            targetTestHelpers.WritePointer(syncTableEntryData.Slice(syncTableEntryInfo.Fields[nameof(Data.SyncTableEntry.SyncBlock)].Offset), syncBlockAddr);
 
             // Add the sync block - pointing at the interop sync block info
             ulong interopInfoAddr = syncBlockAddr + (ulong)syncBlockSize;
             MockMemorySpace.HeapFragment syncBlock = new() { Name = $"Sync Block", Address = syncBlockAddr, Data = new byte[syncBlockSize] };
             Span<byte> syncBlockData = syncBlock.Data;
-            targetTestHelpers.WritePointer(syncBlockData.Slice(SyncBlockTypeInfo.Fields[nameof(Data.SyncBlock.InteropInfo)].Offset), interopInfoAddr);
+            targetTestHelpers.WritePointer(syncBlockData.Slice(syncBlockTypeInfo.Fields[nameof(Data.SyncBlock.InteropInfo)].Offset), interopInfoAddr);
 
             // Add the interop sync block info
             MockMemorySpace.HeapFragment interopInfo = new() { Name = $"Interop Sync Block Info", Address = interopInfoAddr, Data = new byte[interopSyncBlockInfoSize] };
             Span<byte> interopInfoData = interopInfo.Data;
-            targetTestHelpers.WritePointer(interopInfoData.Slice(InteropSyncBlockTypeInfo.Fields[nameof(Data.InteropSyncBlockInfo.RCW)].Offset), rcw);
-            targetTestHelpers.WritePointer(interopInfoData.Slice(InteropSyncBlockTypeInfo.Fields[nameof(Data.InteropSyncBlockInfo.CCW)].Offset), ccw);
+            targetTestHelpers.WritePointer(interopInfoData.Slice(interopSyncBlockTypeInfo.Fields[nameof(Data.InteropSyncBlockInfo.RCW)].Offset), rcw);
+            targetTestHelpers.WritePointer(interopInfoData.Slice(interopSyncBlockTypeInfo.Fields[nameof(Data.InteropSyncBlockInfo.CCW)].Offset), ccw);
 
             return builder.AddHeapFragments([syncTableEntry, syncBlock, interopInfo]);
         }
