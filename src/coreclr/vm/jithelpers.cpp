@@ -611,52 +611,6 @@ __declspec(selectany) __declspec(thread)  ThreadLocalData t_ThreadStatics;
 __thread ThreadLocalData t_ThreadStatics;
 #endif // _MSC_VER
 
-// This is the routine used by the JIT helpers for the fast path. It is not used by the JIT for the slow path, or by the EE for any path.
-// This is inlined in the header to improve code gen quality
-FORCEINLINE void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index)
-{
-    LIMITED_METHOD_CONTRACT;
-    TADDR pTLSBaseAddress = (TADDR)NULL;
-
-    if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
-    {
-        PTRARRAYREF tlsArray = (PTRARRAYREF)UNCHECKED_OBJECTREF_TO_OBJECTREF(t_ThreadStatics.pNonCollectibleTlsArrayData);
-        if (t_ThreadStatics.cNonCollectibleTlsData <= index.GetIndexOffset())
-        {
-            return NULL;
-        }
-        pTLSBaseAddress = (TADDR)OBJECTREFToObject(tlsArray->GetAt(index.GetIndexOffset() - NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY));
-    }
-    else if (index.GetTLSIndexType() == TLSIndexType::DirectOnThreadLocalData)
-    {
-        return ((BYTE*)&t_ThreadStatics) + index.GetIndexOffset();
-    }
-    else
-    {
-        int32_t cCollectibleTlsData = t_ThreadStatics.cCollectibleTlsData;
-        if (cCollectibleTlsData <= index.GetIndexOffset())
-        {
-            return NULL;
-        }
-
-        OBJECTHANDLE* pCollectibleTlsArrayData = t_ThreadStatics.pCollectibleTlsArrayData;
-        pCollectibleTlsArrayData += index.GetIndexOffset();
-        OBJECTHANDLE objHandle = *pCollectibleTlsArrayData;
-        if (IsHandleNullUnchecked(objHandle))
-            return NULL;
-        pTLSBaseAddress = dac_cast<TADDR>(OBJECTREFToObject(ObjectFromHandle(objHandle)));
-    }
-    return reinterpret_cast<void*>(pTLSBaseAddress);
-}
-
-FCIMPL0(void*, ThreadNative::GetThreadLocalStaticBase)
-{
-    FCALL_CONTRACT;
-
-    return &t_ThreadStatics;
-}
-FCIMPLEND
-
 extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, bool gcStatic)
 {
     QCALL_CONTRACT;

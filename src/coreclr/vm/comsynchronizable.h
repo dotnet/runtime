@@ -40,7 +40,6 @@ public:
     };
 
     static FCDECL0(INT32,   GetOptimalMaxSpinWaitsPerSpinIteration);
-    static FCDECL0(void*,   GetThreadLocalStaticBase);
     static FCDECL1(void,    Finalize,                       ThreadBaseObject* pThis);
 };
 
