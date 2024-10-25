@@ -9631,8 +9631,6 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             (sourceIntervals[otherHalfSrcReg] != nullptr) && targetRegsToDo.IsRegNumInMask(otherHalfReg) &&
             !targetRegsFromStack.IsRegNumInMask(otherHalfReg))
         {
-            // if this is a double interval, make sure the source is also double interval
-            assert(!genIsValidDoubleReg(otherHalfReg) || sourceIntervals[otherHalfSrcReg]->registerType == TYP_DOUBLE);
             targetRegsReady.AddRegNumInMask(otherHalfReg);
         }
     };
