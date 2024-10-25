@@ -43,11 +43,17 @@ public class MethodTableTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void HasRuntimeTypeSystemContract(MockTarget.Architecture arch)
     {
-        RTSContractHelper(arch, default, (target) =>
+        TargetPointer freeObjectMethodTableAddress = default;
+        RTSContractHelper(arch,
+        (builder) =>
+        {
+            freeObjectMethodTableAddress = builder.FreeObjectMethodTableAddress;
+        },
+        (target) =>
         {
             Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
             Assert.NotNull(metadataContract);
-            Contracts.TypeHandle handle = metadataContract.GetTypeHandle(MockRTS.TestFreeObjectMethodTableAddress);
+            Contracts.TypeHandle handle = metadataContract.GetTypeHandle(freeObjectMethodTableAddress);
             Assert.NotEqual(TargetPointer.Null, handle.Address);
             Assert.True(metadataContract.IsFreeObjectMethodTable(handle));
         });

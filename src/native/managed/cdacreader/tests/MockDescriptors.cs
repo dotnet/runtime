@@ -124,7 +124,6 @@ internal class MockDescriptors
     public static class RuntimeTypeSystem
     {
         internal const ulong TestFreeObjectMethodTableGlobalAddress = 0x00000000_7a0000a0;
-        internal const ulong TestFreeObjectMethodTableAddress = 0x00000000_7a0000a8;
 
         internal static void AddTypes(TargetTestHelpers targetTestHelpers, Dictionary<DataType, Target.TypeInfo> types)
         {
@@ -148,6 +147,8 @@ internal class MockDescriptors
 
         internal MockMemorySpace.BumpAllocator TypeSystemAllocator { get; set; }
 
+        internal TargetPointer FreeObjectMethodTableAddress { get; private set; }
+
         internal RuntimeTypeSystem(Dictionary<DataType, Target.TypeInfo> types, MockMemorySpace.Builder builder)
         {
             Types = types;
@@ -161,15 +162,15 @@ internal class MockDescriptors
 
         private void AddFreeObjectMethodTable()
         {
-            MockMemorySpace.Builder builder = Builder;
             Target.TypeInfo methodTableTypeInfo = Types[DataType.MethodTable];
-            TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
+            MockMemorySpace.HeapFragment freeObjectMethodTableFragment = TypeSystemAllocator.Allocate(methodTableTypeInfo.Size.Value, "Free Object Method Table");
+            Builder.AddHeapFragment(freeObjectMethodTableFragment);
+            FreeObjectMethodTableAddress = freeObjectMethodTableFragment.Address;
+
+            TargetTestHelpers targetTestHelpers = Builder.TargetTestHelpers;
             MockMemorySpace.HeapFragment globalAddr = new() { Name = "Address of Free Object Method Table", Address = TestFreeObjectMethodTableGlobalAddress, Data = new byte[targetTestHelpers.PointerSize] };
-            targetTestHelpers.WritePointer(globalAddr.Data, TestFreeObjectMethodTableAddress);
-            builder.AddHeapFragments([
-                globalAddr,
-                new () { Name = "Free Object Method Table", Address = TestFreeObjectMethodTableAddress, Data = new byte[targetTestHelpers.SizeOfTypeInfo(methodTableTypeInfo)] }
-            ]);
+            targetTestHelpers.WritePointer(globalAddr.Data, FreeObjectMethodTableAddress);
+            Builder.AddHeapFragment(globalAddr);
         }
 
         // set the eeClass MethodTable pointer to the canonMT and the canonMT's EEClass pointer to the eeClass
