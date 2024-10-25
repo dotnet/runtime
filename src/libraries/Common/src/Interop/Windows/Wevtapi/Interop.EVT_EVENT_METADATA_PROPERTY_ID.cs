@@ -16,7 +16,6 @@ internal static partial class Interop
             EventMetadataEventKeyword,   // EvtVarTypeUInt64
             EventMetadataEventMessageID, // EvtVarTypeUInt32
             EventMetadataEventTemplate   // EvtVarTypeString
-            // EvtEventMetadataPropertyIdEND
         }
     }
 }
