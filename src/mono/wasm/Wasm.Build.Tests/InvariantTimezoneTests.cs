@@ -61,7 +61,7 @@ namespace Wasm.Build.Tests
                         ));
 
             RunResult output = await RunForPublishWithWebServer(new(info.Configuration, ExpectedExitCode: 42));
-            Assert.Contains("UTC BaseUtcOffset is 0", output.TestOutput);
+            Assert.Contains(output.TestOutput, m => m.Contains("UTC BaseUtcOffset is 0"));
             if (invariantTimezone == true)
             {
                 Assert.Contains(output.TestOutput, m => m.Contains("Could not find Asia/Tokyo"));

@@ -66,7 +66,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 Assert.DoesNotContain("Compiling assembly bitcode files", output);
             }
             
-            RunResult runOutput = await RunForPublishWithWebServer(new (info.Configuration));
+            RunResult runOutput = await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42));
             TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput.TestOutput,
                                 contains: info.AOT);
         }
