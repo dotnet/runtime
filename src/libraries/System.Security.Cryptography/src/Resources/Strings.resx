@@ -147,6 +147,9 @@
   <data name="Argument_PemImport_EncryptedPem" xml:space="preserve">
     <value>An encrypted key was found, but no password was provided. Use ImportFromEncryptedPem to import this key.</value>
   </data>
+  <data name="Argument_Thumbprint_Invalid" xml:space="preserve">
+    <value>The supplied thumbprint is not a valid hex-encoded digest.</value>
+  </data>
   <data name="Argument_X500_EmailTooLong" xml:space="preserve">
     <value>The email address cannot exceed 255 characters.</value>
   </data>
