@@ -19,7 +19,10 @@ public unsafe class ObjectTests
 
         MockMemorySpace.Builder builder = new(targetTestHelpers);
         Dictionary<DataType, Target.TypeInfo> types = new();
-        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(types, builder);
+        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(types, builder) {
+            // arbtrary address range
+            TypeSystemAllocator = builder.CreateAllocator(start: 0x00000000_4a000000, end: 0x00000000_4b000000),
+        };
         MockObject objectBuilder = new(rtsBuilder);
         MockObject.AddTypes(types, targetTestHelpers);
         builder = builder
