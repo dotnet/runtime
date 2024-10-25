@@ -856,21 +856,21 @@ namespace Internal.JitInterface
                         {
                             string sixtyFourBitInstructionSet = ArchToManagedInstructionSetSuffixArch(architecture);
                             tr.Write($@"
-                            if (nestedTypeName == ""{(nestedTypeName is null ? sixtyFourBitInstructionSet : $"{nestedTypeName}_{sixtyFourBitInstructionSet}")}"")
-                            {{ return InstructionSet.{architecture}_{relatedInstructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)}; }}
-                            else");
+                        if (nestedTypeName == ""{(nestedTypeName is null ? sixtyFourBitInstructionSet : $"{nestedTypeName}_{sixtyFourBitInstructionSet}")}"")
+                        {{ return InstructionSet.{architecture}_{relatedInstructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)}; }}
+                        else");
                         }
                         if (nestedTypeName != null)
                         {
                             tr.Write($@"
-                            if (nestedTypeName == ""{nestedTypeName}"")
-                            {{ return InstructionSet.{architecture}_{relatedInstructionSet.JitName}; }}
-                            else");
+                        if (nestedTypeName == ""{nestedTypeName}"")
+                        {{ return InstructionSet.{architecture}_{relatedInstructionSet.JitName}; }}
+                        else");
                         }
                     }
 
                     tr.Write($@"
-                            {{ return InstructionSet.{architecture}_{instructionSet.JitName}; }}
+                        {{ return InstructionSet.{architecture}_{instructionSet.JitName}; }}
 ");
                 }
                 tr.Write($@"

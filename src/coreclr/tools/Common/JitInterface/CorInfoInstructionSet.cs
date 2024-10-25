@@ -1586,61 +1586,61 @@ namespace Internal.JitInterface
                 {
 
                     case "ArmBase":
-                            if (nestedTypeName == "Arm64")
-                            { return InstructionSet.ARM64_ArmBase_Arm64; }
-                            else
-                            { return InstructionSet.ARM64_ArmBase; }
+                        if (nestedTypeName == "Arm64")
+                        { return InstructionSet.ARM64_ArmBase_Arm64; }
+                        else
+                        { return InstructionSet.ARM64_ArmBase; }
 
                     case "AdvSimd":
-                            if (nestedTypeName == "Arm64")
-                            { return InstructionSet.ARM64_AdvSimd_Arm64; }
-                            else
-                            { return InstructionSet.ARM64_AdvSimd; }
+                        if (nestedTypeName == "Arm64")
+                        { return InstructionSet.ARM64_AdvSimd_Arm64; }
+                        else
+                        { return InstructionSet.ARM64_AdvSimd; }
 
                     case "Aes":
-                            if (nestedTypeName == "Arm64")
-                            { return InstructionSet.ARM64_Aes_Arm64; }
-                            else
-                            { return InstructionSet.ARM64_Aes; }
+                        if (nestedTypeName == "Arm64")
+                        { return InstructionSet.ARM64_Aes_Arm64; }
+                        else
+                        { return InstructionSet.ARM64_Aes; }
 
                     case "Crc32":
-                            if (nestedTypeName == "Arm64")
-                            { return InstructionSet.ARM64_Crc32_Arm64; }
-                            else
-                            { return InstructionSet.ARM64_Crc32; }
+                        if (nestedTypeName == "Arm64")
+                        { return InstructionSet.ARM64_Crc32_Arm64; }
+                        else
+                        { return InstructionSet.ARM64_Crc32; }
 
                     case "Dp":
-                            if (nestedTypeName == "Arm64")
-                            { return InstructionSet.ARM64_Dp_Arm64; }
-                            else
-                            { return InstructionSet.ARM64_Dp; }
+                        if (nestedTypeName == "Arm64")
+                        { return InstructionSet.ARM64_Dp_Arm64; }
+                        else
+                        { return InstructionSet.ARM64_Dp; }
 
                     case "Rdm":
-                            if (nestedTypeName == "Arm64")
-                            { return InstructionSet.ARM64_Rdm_Arm64; }
-                            else
-                            { return InstructionSet.ARM64_Rdm; }
+                        if (nestedTypeName == "Arm64")
+                        { return InstructionSet.ARM64_Rdm_Arm64; }
+                        else
+                        { return InstructionSet.ARM64_Rdm; }
 
                     case "Sha1":
-                            if (nestedTypeName == "Arm64")
-                            { return InstructionSet.ARM64_Sha1_Arm64; }
-                            else
-                            { return InstructionSet.ARM64_Sha1; }
+                        if (nestedTypeName == "Arm64")
+                        { return InstructionSet.ARM64_Sha1_Arm64; }
+                        else
+                        { return InstructionSet.ARM64_Sha1; }
 
                     case "Sha256":
-                            if (nestedTypeName == "Arm64")
-                            { return InstructionSet.ARM64_Sha256_Arm64; }
-                            else
-                            { return InstructionSet.ARM64_Sha256; }
+                        if (nestedTypeName == "Arm64")
+                        { return InstructionSet.ARM64_Sha256_Arm64; }
+                        else
+                        { return InstructionSet.ARM64_Sha256; }
 
                     case "VectorT128":
-                            { return InstructionSet.ARM64_VectorT128; }
+                        { return InstructionSet.ARM64_VectorT128; }
 
                     case "Sve":
-                            if (nestedTypeName == "Arm64")
-                            { return InstructionSet.ARM64_Sve_Arm64; }
-                            else
-                            { return InstructionSet.ARM64_Sve; }
+                        if (nestedTypeName == "Arm64")
+                        { return InstructionSet.ARM64_Sve_Arm64; }
+                        else
+                        { return InstructionSet.ARM64_Sve; }
 
                 }
                 break;
@@ -1650,190 +1650,190 @@ namespace Internal.JitInterface
                 {
 
                     case "X86Base":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_X86Base_X64; }
-                            else
-                            { return InstructionSet.X64_X86Base; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_X86Base_X64; }
+                        else
+                        { return InstructionSet.X64_X86Base; }
 
                     case "Sse":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_SSE_X64; }
-                            else
-                            { return InstructionSet.X64_SSE; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_SSE_X64; }
+                        else
+                        { return InstructionSet.X64_SSE; }
 
                     case "Sse2":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_SSE2_X64; }
-                            else
-                            { return InstructionSet.X64_SSE2; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_SSE2_X64; }
+                        else
+                        { return InstructionSet.X64_SSE2; }
 
                     case "Sse3":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_SSE3_X64; }
-                            else
-                            { return InstructionSet.X64_SSE3; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_SSE3_X64; }
+                        else
+                        { return InstructionSet.X64_SSE3; }
 
                     case "Ssse3":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_SSSE3_X64; }
-                            else
-                            { return InstructionSet.X64_SSSE3; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_SSSE3_X64; }
+                        else
+                        { return InstructionSet.X64_SSSE3; }
 
                     case "Sse41":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_SSE41_X64; }
-                            else
-                            { return InstructionSet.X64_SSE41; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_SSE41_X64; }
+                        else
+                        { return InstructionSet.X64_SSE41; }
 
                     case "Sse42":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_SSE42_X64; }
-                            else
-                            { return InstructionSet.X64_SSE42; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_SSE42_X64; }
+                        else
+                        { return InstructionSet.X64_SSE42; }
 
                     case "Avx":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_AVX_X64; }
-                            else
-                            { return InstructionSet.X64_AVX; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_AVX_X64; }
+                        else
+                        { return InstructionSet.X64_AVX; }
 
                     case "Avx2":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_AVX2_X64; }
-                            else
-                            { return InstructionSet.X64_AVX2; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_AVX2_X64; }
+                        else
+                        { return InstructionSet.X64_AVX2; }
 
                     case "Aes":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_AES_X64; }
-                            else
-                            { return InstructionSet.X64_AES; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_AES_X64; }
+                        else
+                        { return InstructionSet.X64_AES; }
 
                     case "Bmi1":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_BMI1_X64; }
-                            else
-                            { return InstructionSet.X64_BMI1; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_BMI1_X64; }
+                        else
+                        { return InstructionSet.X64_BMI1; }
 
                     case "Bmi2":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_BMI2_X64; }
-                            else
-                            { return InstructionSet.X64_BMI2; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_BMI2_X64; }
+                        else
+                        { return InstructionSet.X64_BMI2; }
 
                     case "Fma":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_FMA_X64; }
-                            else
-                            { return InstructionSet.X64_FMA; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_FMA_X64; }
+                        else
+                        { return InstructionSet.X64_FMA; }
 
                     case "Lzcnt":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_LZCNT_X64; }
-                            else
-                            { return InstructionSet.X64_LZCNT; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_LZCNT_X64; }
+                        else
+                        { return InstructionSet.X64_LZCNT; }
 
                     case "Pclmulqdq":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_PCLMULQDQ_X64; }
-                            else
-                            { return InstructionSet.X64_PCLMULQDQ; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_PCLMULQDQ_X64; }
+                        else
+                        { return InstructionSet.X64_PCLMULQDQ; }
 
                     case "Popcnt":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_POPCNT_X64; }
-                            else
-                            { return InstructionSet.X64_POPCNT; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_POPCNT_X64; }
+                        else
+                        { return InstructionSet.X64_POPCNT; }
 
                     case "AvxVnni":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_AVXVNNI_X64; }
-                            else
-                            { return InstructionSet.X64_AVXVNNI; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_AVXVNNI_X64; }
+                        else
+                        { return InstructionSet.X64_AVXVNNI; }
 
                     case "Movbe":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_MOVBE_X64; }
-                            else
-                            { return InstructionSet.X64_MOVBE; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_MOVBE_X64; }
+                        else
+                        { return InstructionSet.X64_MOVBE; }
 
                     case "X86Serialize":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_X86Serialize_X64; }
-                            else
-                            { return InstructionSet.X64_X86Serialize; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_X86Serialize_X64; }
+                        else
+                        { return InstructionSet.X64_X86Serialize; }
 
                     case "EVEX":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_EVEX_X64; }
-                            else
-                            { return InstructionSet.X64_EVEX; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_EVEX_X64; }
+                        else
+                        { return InstructionSet.X64_EVEX; }
 
                     case "Avx512F":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_AVX512F_X64; }
-                            else
-                            if (nestedTypeName == "VL")
-                            { return InstructionSet.X64_AVX512F_VL; }
-                            else
-                            { return InstructionSet.X64_AVX512F; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_AVX512F_X64; }
+                        else
+                        if (nestedTypeName == "VL")
+                        { return InstructionSet.X64_AVX512F_VL; }
+                        else
+                        { return InstructionSet.X64_AVX512F; }
 
                     case "Avx512BW":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_AVX512BW_X64; }
-                            else
-                            if (nestedTypeName == "VL")
-                            { return InstructionSet.X64_AVX512BW_VL; }
-                            else
-                            { return InstructionSet.X64_AVX512BW; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_AVX512BW_X64; }
+                        else
+                        if (nestedTypeName == "VL")
+                        { return InstructionSet.X64_AVX512BW_VL; }
+                        else
+                        { return InstructionSet.X64_AVX512BW; }
 
                     case "Avx512CD":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_AVX512CD_X64; }
-                            else
-                            if (nestedTypeName == "VL")
-                            { return InstructionSet.X64_AVX512CD_VL; }
-                            else
-                            { return InstructionSet.X64_AVX512CD; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_AVX512CD_X64; }
+                        else
+                        if (nestedTypeName == "VL")
+                        { return InstructionSet.X64_AVX512CD_VL; }
+                        else
+                        { return InstructionSet.X64_AVX512CD; }
 
                     case "Avx512DQ":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_AVX512DQ_X64; }
-                            else
-                            if (nestedTypeName == "VL")
-                            { return InstructionSet.X64_AVX512DQ_VL; }
-                            else
-                            { return InstructionSet.X64_AVX512DQ; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_AVX512DQ_X64; }
+                        else
+                        if (nestedTypeName == "VL")
+                        { return InstructionSet.X64_AVX512DQ_VL; }
+                        else
+                        { return InstructionSet.X64_AVX512DQ; }
 
                     case "Avx512Vbmi":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_AVX512VBMI_X64; }
-                            else
-                            if (nestedTypeName == "VL")
-                            { return InstructionSet.X64_AVX512VBMI_VL; }
-                            else
-                            { return InstructionSet.X64_AVX512VBMI; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_AVX512VBMI_X64; }
+                        else
+                        if (nestedTypeName == "VL")
+                        { return InstructionSet.X64_AVX512VBMI_VL; }
+                        else
+                        { return InstructionSet.X64_AVX512VBMI; }
 
                     case "Avx10v1":
-                            if (nestedTypeName == "X64")
-                            { return InstructionSet.X64_AVX10v1_X64; }
-                            else
-                            if (nestedTypeName == "V512_X64")
-                            { return InstructionSet.X64_AVX10v1_V512_X64; }
-                            else
-                            if (nestedTypeName == "V512")
-                            { return InstructionSet.X64_AVX10v1_V512; }
-                            else
-                            { return InstructionSet.X64_AVX10v1; }
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_AVX10v1_X64; }
+                        else
+                        if (nestedTypeName == "V512_X64")
+                        { return InstructionSet.X64_AVX10v1_V512_X64; }
+                        else
+                        if (nestedTypeName == "V512")
+                        { return InstructionSet.X64_AVX10v1_V512; }
+                        else
+                        { return InstructionSet.X64_AVX10v1; }
 
                     case "VectorT128":
-                            { return InstructionSet.X64_VectorT128; }
+                        { return InstructionSet.X64_VectorT128; }
 
                     case "VectorT256":
-                            { return InstructionSet.X64_VectorT256; }
+                        { return InstructionSet.X64_VectorT256; }
 
                     case "VectorT512":
-                            { return InstructionSet.X64_VectorT512; }
+                        { return InstructionSet.X64_VectorT512; }
 
                 }
                 break;
@@ -1843,109 +1843,109 @@ namespace Internal.JitInterface
                 {
 
                     case "X86Base":
-                            { return InstructionSet.X86_X86Base; }
+                        { return InstructionSet.X86_X86Base; }
 
                     case "Sse":
-                            { return InstructionSet.X86_SSE; }
+                        { return InstructionSet.X86_SSE; }
 
                     case "Sse2":
-                            { return InstructionSet.X86_SSE2; }
+                        { return InstructionSet.X86_SSE2; }
 
                     case "Sse3":
-                            { return InstructionSet.X86_SSE3; }
+                        { return InstructionSet.X86_SSE3; }
 
                     case "Ssse3":
-                            { return InstructionSet.X86_SSSE3; }
+                        { return InstructionSet.X86_SSSE3; }
 
                     case "Sse41":
-                            { return InstructionSet.X86_SSE41; }
+                        { return InstructionSet.X86_SSE41; }
 
                     case "Sse42":
-                            { return InstructionSet.X86_SSE42; }
+                        { return InstructionSet.X86_SSE42; }
 
                     case "Avx":
-                            { return InstructionSet.X86_AVX; }
+                        { return InstructionSet.X86_AVX; }
 
                     case "Avx2":
-                            { return InstructionSet.X86_AVX2; }
+                        { return InstructionSet.X86_AVX2; }
 
                     case "Aes":
-                            { return InstructionSet.X86_AES; }
+                        { return InstructionSet.X86_AES; }
 
                     case "Bmi1":
-                            { return InstructionSet.X86_BMI1; }
+                        { return InstructionSet.X86_BMI1; }
 
                     case "Bmi2":
-                            { return InstructionSet.X86_BMI2; }
+                        { return InstructionSet.X86_BMI2; }
 
                     case "Fma":
-                            { return InstructionSet.X86_FMA; }
+                        { return InstructionSet.X86_FMA; }
 
                     case "Lzcnt":
-                            { return InstructionSet.X86_LZCNT; }
+                        { return InstructionSet.X86_LZCNT; }
 
                     case "Pclmulqdq":
-                            { return InstructionSet.X86_PCLMULQDQ; }
+                        { return InstructionSet.X86_PCLMULQDQ; }
 
                     case "Popcnt":
-                            { return InstructionSet.X86_POPCNT; }
+                        { return InstructionSet.X86_POPCNT; }
 
                     case "AvxVnni":
-                            { return InstructionSet.X86_AVXVNNI; }
+                        { return InstructionSet.X86_AVXVNNI; }
 
                     case "Movbe":
-                            { return InstructionSet.X86_MOVBE; }
+                        { return InstructionSet.X86_MOVBE; }
 
                     case "X86Serialize":
-                            { return InstructionSet.X86_X86Serialize; }
+                        { return InstructionSet.X86_X86Serialize; }
 
                     case "EVEX":
-                            { return InstructionSet.X86_EVEX; }
+                        { return InstructionSet.X86_EVEX; }
 
                     case "Avx512F":
-                            if (nestedTypeName == "VL")
-                            { return InstructionSet.X86_AVX512F_VL; }
-                            else
-                            { return InstructionSet.X86_AVX512F; }
+                        if (nestedTypeName == "VL")
+                        { return InstructionSet.X86_AVX512F_VL; }
+                        else
+                        { return InstructionSet.X86_AVX512F; }
 
                     case "Avx512BW":
-                            if (nestedTypeName == "VL")
-                            { return InstructionSet.X86_AVX512BW_VL; }
-                            else
-                            { return InstructionSet.X86_AVX512BW; }
+                        if (nestedTypeName == "VL")
+                        { return InstructionSet.X86_AVX512BW_VL; }
+                        else
+                        { return InstructionSet.X86_AVX512BW; }
 
                     case "Avx512CD":
-                            if (nestedTypeName == "VL")
-                            { return InstructionSet.X86_AVX512CD_VL; }
-                            else
-                            { return InstructionSet.X86_AVX512CD; }
+                        if (nestedTypeName == "VL")
+                        { return InstructionSet.X86_AVX512CD_VL; }
+                        else
+                        { return InstructionSet.X86_AVX512CD; }
 
                     case "Avx512DQ":
-                            if (nestedTypeName == "VL")
-                            { return InstructionSet.X86_AVX512DQ_VL; }
-                            else
-                            { return InstructionSet.X86_AVX512DQ; }
+                        if (nestedTypeName == "VL")
+                        { return InstructionSet.X86_AVX512DQ_VL; }
+                        else
+                        { return InstructionSet.X86_AVX512DQ; }
 
                     case "Avx512Vbmi":
-                            if (nestedTypeName == "VL")
-                            { return InstructionSet.X86_AVX512VBMI_VL; }
-                            else
-                            { return InstructionSet.X86_AVX512VBMI; }
+                        if (nestedTypeName == "VL")
+                        { return InstructionSet.X86_AVX512VBMI_VL; }
+                        else
+                        { return InstructionSet.X86_AVX512VBMI; }
 
                     case "Avx10v1":
-                            if (nestedTypeName == "V512")
-                            { return InstructionSet.X86_AVX10v1_V512; }
-                            else
-                            { return InstructionSet.X86_AVX10v1; }
+                        if (nestedTypeName == "V512")
+                        { return InstructionSet.X86_AVX10v1_V512; }
+                        else
+                        { return InstructionSet.X86_AVX10v1; }
 
                     case "VectorT128":
-                            { return InstructionSet.X86_VectorT128; }
+                        { return InstructionSet.X86_VectorT128; }
 
                     case "VectorT256":
-                            { return InstructionSet.X86_VectorT256; }
+                        { return InstructionSet.X86_VectorT256; }
 
                     case "VectorT512":
-                            { return InstructionSet.X86_VectorT512; }
+                        { return InstructionSet.X86_VectorT512; }
 
                 }
                 break;
