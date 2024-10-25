@@ -163,6 +163,7 @@
 #include "jithost.h"
 #include "pgo.h"
 #include "pendingload.h"
+#include "cdacplatformmetadata.hpp"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -624,6 +625,7 @@ void EEStartupHelper()
 
         // We cache the SystemInfo for anyone to use throughout the life of the EE.
         GetSystemInfo(&g_SystemInfo);
+        CDacPlatformMetadata::Init();
 
         // Set callbacks so that LoadStringRC knows which language our
         // threads are in so that it can return the proper localized string.
@@ -811,7 +813,6 @@ void EEStartupHelper()
 
         CoreLibBinder::Startup();
 
-        Stub::Init();
         StubLinkerCPU::Init();
         StubPrecode::StaticInitialize();
         FixupPrecode::StaticInitialize();
@@ -1275,7 +1276,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         Interpreter::PrintPostMortemData();
 #endif // FEATURE_INTERPRETER
         VirtualCallStubManager::LogFinalStats();
-        WriteJitHelperCountToSTRESSLOG();
 
 #ifdef PROFILING_SUPPORTED
         // If profiling is enabled, then notify of shutdown first so that the

@@ -489,9 +489,6 @@ struct tagVARIANT
 
 typedef VARIANT VARIANTARG, *LPVARIANTARG;
 
-STDAPI_(void) VariantInit(VARIANT * pvarg);
-STDAPI_(HRESULT) VariantClear(VARIANT * pvarg);
-
 #define V_VT(X)         ((X)->n1.n2.vt)
 #define V_UNION(X, Y)   ((X)->n1.n2.n3.Y)
 #define V_RECORDINFO(X) ((X)->n1.n2.n3.brecVal.pRecInfo)
@@ -555,8 +552,6 @@ STDAPI_(HRESULT) VariantClear(VARIANT * pvarg);
 #define V_DECIMALREF(X)    V_UNION(X, pdecVal)
 
 #define V_ISBYREF(X)     (V_VT(X)&VT_BYREF)
-
-STDAPI CreateStreamOnHGlobal(PVOID hGlobal, BOOL fDeleteOnRelease, interface IStream** ppstm);
 
 #define STGM_DIRECT             0x00000000L
 

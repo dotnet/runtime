@@ -105,6 +105,9 @@ CORINFO_CLASS_HANDLE getDefaultComparerClass(
 CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
           CORINFO_CLASS_HANDLE elemType) override;
 
+CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(
+          CORINFO_CLASS_HANDLE elemType) override;
+
 void expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_METHOD_HANDLE callerHandle,
@@ -193,14 +196,8 @@ bool isValueClass(
 uint32_t getClassAttribs(
           CORINFO_CLASS_HANDLE cls) override;
 
-CORINFO_MODULE_HANDLE getClassModule(
+const char* getClassAssemblyName(
           CORINFO_CLASS_HANDLE cls) override;
-
-CORINFO_ASSEMBLY_HANDLE getModuleAssembly(
-          CORINFO_MODULE_HANDLE mod) override;
-
-const char* getAssemblyName(
-          CORINFO_ASSEMBLY_HANDLE assem) override;
 
 void* LongLifetimeMalloc(
           size_t sz) override;

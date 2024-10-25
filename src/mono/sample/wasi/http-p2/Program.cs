@@ -13,6 +13,7 @@ public static class WasiMainWrapper
 {
     public static async Task<int> MainAsync(string[] args)
     {
+        _ = Task.Delay(100_000_000);  // create a task that will not complete before main
         await Task.Delay(100);
         GC.Collect(); // test that Pollable->Task is not collected until resolved
 
@@ -78,7 +79,7 @@ public static class WasiMainWrapper
         return PollWasiEventLoopUntilResolved((Thread)null!, MainAsync(args));
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "PollWasiEventLoopUntilResolved")]
-        static extern int PollWasiEventLoopUntilResolved(Thread t, Task<int> mainTask);
+        static extern T PollWasiEventLoopUntilResolved<T>(Thread t, Task<T> mainTask);
     }
 
 }

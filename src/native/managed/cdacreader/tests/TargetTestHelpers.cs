@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 internal unsafe class TargetTestHelpers
@@ -137,13 +138,39 @@ internal unsafe class TargetTestHelpers
 
     public static string MakeGlobalsJson(IEnumerable<(string Name, ulong Value, string? Type)> globals)
     {
-        return string.Join(',', globals.Select(i => $"\"{i.Name}\": {(i.Type is null ? i.Value.ToString() : $"[{i.Value}, \"{i.Type}\"]")}"));
+        return MakeGlobalsJson (globals.Select(g => (g.Name, (ulong?)g.Value, (uint?)null, g.Type)));
+    }
+    public static string MakeGlobalsJson(IEnumerable<(string Name, ulong? Value, uint? IndirectIndex, string? Type)> globals)
+    {
+        return string.Join(',', globals.Select(FormatGlobal));
+
+        static string FormatGlobal((string Name, ulong? Value, uint? IndirectIndex, string? Type) global)
+        {
+            if (global.Value is ulong value)
+            {
+                return $"\"{global.Name}\": {FormatValue(value, global.Type)}";
+            }
+            else if (global.IndirectIndex is uint index)
+            {
+                return $"\"{global.Name}\": {FormatIndirect(index, global.Type)}";
+            }
+            else
+            {
+                throw new InvalidOperationException("Global must have a value or indirect index");
+            }
+
+        }
+        static string FormatValue(ulong value, string? type)
+        {
+            return type is null ? $"{value}" : $"[{value},\"{type}\"]";
+        }
+        static string FormatIndirect(uint value, string? type)
+        {
+            return type is null ? $"[{value}]" : $"[[{value}],\"{type}\"]";
+        }
     }
 
     #endregion Data descriptor json formatting
-
-
-
 
     #region Mock memory initialization
 
@@ -195,7 +222,6 @@ internal unsafe class TargetTestHelpers
         }
     }
 
-
     internal void WritePointer(Span<byte> dest, ulong value)
     {
         if (Arch.Is64Bit)
@@ -220,6 +246,33 @@ internal unsafe class TargetTestHelpers
                 BinaryPrimitives.WriteUInt32BigEndian(dest, (uint)value);
             }
         }
+    }
+
+    internal void WriteNUInt(Span<byte> dest, TargetNUInt targetNUInt) => WritePointer(dest, targetNUInt.Value);
+
+    internal TargetPointer ReadPointer(ReadOnlySpan<byte> src)
+    {
+        if (Arch.Is64Bit)
+        {
+            return Arch.IsLittleEndian ? BinaryPrimitives.ReadUInt64LittleEndian(src) : BinaryPrimitives.ReadUInt64BigEndian(src);
+        }
+        else
+        {
+            return Arch.IsLittleEndian ? BinaryPrimitives.ReadUInt32LittleEndian(src) : BinaryPrimitives.ReadUInt32BigEndian(src);
+        }
+    }
+
+    internal void WriteUtf16String(Span<byte> dest, string value)
+    {
+        Encoding encoding = Arch.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode;
+        byte[] valueBytes = encoding.GetBytes(value);
+        int len = valueBytes.Length + sizeof(char);
+        if (dest.Length < len)
+            throw new InvalidOperationException($"Destination is too short to write '{value}'. Required length: {len}, actual: {dest.Length}");
+
+        valueBytes.AsSpan().CopyTo(dest);
+        dest[^2] = 0;
+        dest[^1] = 0;
     }
 
     internal int SizeOfPrimitive(DataType type)
@@ -247,5 +300,63 @@ internal unsafe class TargetTestHelpers
     }
 
     #endregion Mock memory initialization
+
+    private int AlignUp(int offset, int align)
+    {
+        return (offset + align - 1) & ~(align - 1);
+    }
+
+    public enum FieldLayout
+    {
+        CIsh, /* align each field to its size */
+        Packed, /* pack fields contiguously */
+    }
+
+    public readonly struct LayoutResult
+    {
+        public Dictionary<string, Target.FieldInfo> Fields { get; init; }
+        /* offset between elements of this type in an array */
+        public uint Stride { get; init; }
+        /* maximum alignment of any field */
+        public readonly uint MaxAlign { get; init; }
+    }
+
+    public LayoutResult LayoutFields((string Name, DataType Type)[] fields)
+        => LayoutFields(FieldLayout.CIsh, fields);
+
+    // Implements a simple layout algorithm that aligns fields to their size
+    // and aligns the structure to the largest field size.
+    public LayoutResult LayoutFields(FieldLayout style, (string Name, DataType Type)[] fields)
+    {
+        Dictionary<string,Target.FieldInfo> fieldInfos = new ();
+        int maxAlign = 1;
+        int offset = 0;
+        for (int i = 0; i < fields.Length; i++)
+        {
+            var (name, type) = fields[i];
+            int size = SizeOfPrimitive(type);
+            int align = size;
+            if (align > maxAlign)
+            {
+                maxAlign = align;
+            }
+            offset = style switch
+            {
+                FieldLayout.CIsh => AlignUp(offset, align),
+                FieldLayout.Packed => offset,
+                _ => throw new InvalidOperationException("Unknown layout style"),
+            };
+            fieldInfos[name] = new Target.FieldInfo {
+                Offset = offset,
+            };
+            offset += size;
+        }
+        int stride = style switch {
+            FieldLayout.CIsh => AlignUp(offset, maxAlign),
+            FieldLayout.Packed => offset,
+            _ => throw new InvalidOperationException("Unknown layout style"),
+        };
+        return new LayoutResult() { Fields = fieldInfos, Stride = (uint)stride, MaxAlign = (uint)maxAlign};
+    }
 
 }

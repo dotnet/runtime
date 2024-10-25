@@ -27,24 +27,24 @@ namespace Internal.IL.Stubs
             ILEmitter emitter = new ILEmitter();
             ILCodeStream codestream = emitter.NewCodeStream();
 
-            ILCodeLabel lOverriden = emitter.NewCodeLabel();
+            ILCodeLabel lOverridden = emitter.NewCodeLabel();
 
             ILToken beginMethodToken = emitter.NewToken(beginMethod);
             codestream.EmitLdArg(0);
             codestream.Emit(ILOpcode.ldvirtftn, beginMethodToken);
             codestream.Emit(ILOpcode.ldftn, beginMethodToken);
-            codestream.Emit(ILOpcode.bne_un, lOverriden);
+            codestream.Emit(ILOpcode.bne_un, lOverridden);
 
             ILToken endMethodToken = emitter.NewToken(endMethod);
             codestream.EmitLdArg(0);
             codestream.Emit(ILOpcode.ldvirtftn, endMethodToken);
             codestream.Emit(ILOpcode.ldftn, endMethodToken);
-            codestream.Emit(ILOpcode.bne_un, lOverriden);
+            codestream.Emit(ILOpcode.bne_un, lOverridden);
 
             codestream.EmitLdc(0);
             codestream.Emit(ILOpcode.ret);
 
-            codestream.EmitLabel(lOverriden);
+            codestream.EmitLabel(lOverridden);
             codestream.EmitLdc(1);
             codestream.Emit(ILOpcode.ret);
 

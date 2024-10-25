@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
@@ -217,8 +218,18 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void PrepareDelegate(Delegate d);
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareDelegate")]
+        private static partial void PrepareDelegate(ObjectHandleOnStack d);
+
+        public static void PrepareDelegate(Delegate d)
+        {
+            if (d is null)
+            {
+                return;
+            }
+
+            PrepareDelegate(ObjectHandleOnStack.Create(ref d));
+        }
 
         /// <summary>
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
@@ -301,13 +312,18 @@ namespace System.Runtime.CompilerServices
 
         // This method ensures that there is sufficient stack to execute the average Framework function.
         // If there is not enough stack, then it throws System.InsufficientExecutionStackException.
-        // Note: this method is not part of the CER support, and is not to be confused with ProbeForSufficientStack.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void EnsureSufficientExecutionStack();
+        // Note: this method is not to be confused with ProbeForSufficientStack.
+        public static void EnsureSufficientExecutionStack()
+        {
+            if (!TryEnsureSufficientExecutionStack())
+            {
+                throw new InsufficientExecutionStackException();
+            }
+        }
 
         // This method ensures that there is sufficient stack to execute the average Framework function.
         // If there is not enough stack, then it return false.
-        // Note: this method is not part of the CER support, and is not to be confused with ProbeForSufficientStack.
+        // Note: this method is not to be confused with ProbeForSufficientStack.
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool TryEnsureSufficientExecutionStack();
 
@@ -339,7 +355,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static bool IsBitwiseEquatable<T>()
         {
-            // The body of this function will be replaced by the EE with unsafe code!!!
+            // The body of this function will be replaced by the EE.
             // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             throw new InvalidOperationException();
         }
@@ -347,23 +363,28 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static bool EnumEquals<T>(T x, T y) where T : struct, Enum
         {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementation for how this happens.
+            // The body of this function will be replaced by the EE.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             return x.Equals(y);
         }
 
         [Intrinsic]
         internal static int EnumCompareTo<T>(T x, T y) where T : struct, Enum
         {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementation for how this happens.
+            // The body of this function will be replaced by the EE.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             return x.CompareTo(y);
         }
 
-        // The body of this function will be created by the EE for the specific type.
-        // See getILIntrinsicImplementation for how this happens.
+#if FEATURE_IJW
         [Intrinsic]
-        internal static extern unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged;
+        internal static unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged
+        {
+            // The body of this function will be replaced by the EE.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
+            throw new InvalidOperationException();
+        }
+#endif
 
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
@@ -469,7 +490,17 @@ namespace System.Runtime.CompilerServices
         private static partial IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc);
+        private static extern IntPtr AllocTailCallArgBufferWorker(int size, IntPtr gcDesc);
+
+        private static IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc)
+        {
+            IntPtr buffer = AllocTailCallArgBufferWorker(size, gcDesc);
+            if (buffer == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+            return buffer;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
@@ -585,6 +616,33 @@ namespace System.Runtime.CompilerServices
         public byte Data;
     }
 
+    // Subset of src\vm\methoddesc.hpp
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct MethodDesc
+    {
+        public ushort Flags3AndTokenRemainder;
+        public byte ChunkIndex;
+        public byte Flags4; // Used to hold more flags
+        public ushort SlotNumber; // The slot number of this MethodDesc in the vtable array.
+        public ushort Flags; // See MethodDescFlags
+        public IntPtr CodeData;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private MethodDescChunk* GetMethodDescChunk() => (MethodDescChunk*)(((byte*)Unsafe.AsPointer<MethodDesc>(ref this)) - (sizeof(MethodDescChunk) + ChunkIndex * sizeof(IntPtr)));
+
+        public MethodTable* MethodTable => GetMethodDescChunk()->MethodTable;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct MethodDescChunk
+    {
+        public MethodTable* MethodTable;
+        public MethodDescChunk*  Next;
+        public byte Size;        // The size of this chunk minus 1 (in multiples of MethodDesc::ALIGNMENT)
+        public byte Count;       // The number of MethodDescs in this chunk minus 1
+        public ushort FlagsAndTokenRange;
+    }
+
     // Subset of src\vm\methodtable.h
     [StructLayout(LayoutKind.Explicit)]
     internal unsafe struct MethodTable
@@ -674,6 +732,8 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_Category_Nullable = 0x00050000;
         private const uint enum_flag_Category_PrimitiveValueType = 0x00060000; // sub-category of ValueType, Enum or primitive value type
         private const uint enum_flag_Category_TruePrimitive = 0x00070000; // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.)
+        private const uint enum_flag_Category_Array = 0x00080000;
+        private const uint enum_flag_Category_Array_Mask = 0x000C0000;
         private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
         private const uint enum_flag_Category_Interface = 0x000C0000;
         // Types that require non-trivial interface cast have this bit set in the category
@@ -764,6 +824,8 @@ namespace System.Runtime.CompilerServices
 
         public bool IsTruePrimitive => (Flags & enum_flag_Category_Mask) is enum_flag_Category_TruePrimitive;
 
+        public bool IsArray => (Flags & enum_flag_Category_Array_Mask) == enum_flag_Category_Array;
+
         public bool HasInstantiation => (Flags & enum_flag_HasComponentSize) == 0 && (Flags & enum_flag_GenericsMask) != enum_flag_GenericsMask_NonGeneric;
 
         public bool IsGenericTypeDefinition => (Flags & (enum_flag_HasComponentSize | enum_flag_GenericsMask)) == enum_flag_GenericsMask_TypicalInst;
@@ -774,6 +836,15 @@ namespace System.Runtime.CompilerServices
             {
                 uint genericsFlags = Flags & (enum_flag_HasComponentSize | enum_flag_GenericsMask);
                 return genericsFlags == enum_flag_GenericsMask_GenericInst || genericsFlags == enum_flag_GenericsMask_SharedInst;
+            }
+        }
+
+        public bool IsSharedByGenericInstantiations
+        {
+            get
+            {
+                uint genericsFlags = Flags & (enum_flag_HasComponentSize | enum_flag_GenericsMask);
+                return genericsFlags == enum_flag_GenericsMask_SharedInst;
             }
         }
 
@@ -800,6 +871,12 @@ namespace System.Runtime.CompilerServices
         /// <remarks>This method should only be called when <see cref="IsPrimitive"/> returns <see langword="true"/>.</remarks>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern CorElementType GetPrimitiveCorElementType();
+
+        /// <summary>
+        /// Get the MethodTable in the type hierarchy of this MethodTable that has the same TypeDef/Module as parent.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
     }
 
     // Subset of src\vm\methodtable.h
@@ -813,9 +890,12 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
         private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
 
+        private const uint enum_flag_Initialized                = 0x0001;
         private const uint enum_flag_HasCheckedStreamOverride   = 0x0400;
         private const uint enum_flag_StreamOverriddenRead       = 0x0800;
         private const uint enum_flag_StreamOverriddenWrite      = 0x1000;
+        private const uint enum_flag_EnsuredInstanceActive      = 0x2000;
+
 
         public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
 
@@ -855,6 +935,10 @@ namespace System.Runtime.CompilerServices
                 return *(RuntimeType*)Unsafe.AsPointer(ref ExposedClassObjectRaw);
             }
         }
+
+        public bool IsClassInited => (Volatile.Read(ref Flags) & enum_flag_Initialized) != 0;
+
+        public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive)) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
     }
 
     /// <summary>
@@ -927,9 +1011,15 @@ namespace System.Runtime.CompilerServices
             return CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr);
         }
 
+        public int GetCorElementType() => GetCorElementType(m_asTAddr);
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo_NoCacheLookup")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
+
+        [SuppressGCTransition]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_GetCorElementType")]
+        private static partial int GetCorElementType(void* typeHnd);
     }
 
     // Helper structs used for tail calls via helper.

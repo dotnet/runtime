@@ -130,17 +130,9 @@ public:
     void dmpGetMethodAttribs(DWORDLONG key, DWORD value);
     DWORD repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle);
 
-    void recGetClassModule(CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE mod);
-    void dmpGetClassModule(DWORDLONG key, DWORDLONG value);
-    CORINFO_MODULE_HANDLE repGetClassModule(CORINFO_CLASS_HANDLE cls);
-
-    void recGetModuleAssembly(CORINFO_MODULE_HANDLE mod, CORINFO_ASSEMBLY_HANDLE assem);
-    void dmpGetModuleAssembly(DWORDLONG key, DWORDLONG value);
-    CORINFO_ASSEMBLY_HANDLE repGetModuleAssembly(CORINFO_MODULE_HANDLE mod);
-
-    void recGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem, const char* assemblyName);
-    void dmpGetAssemblyName(DWORDLONG key, DWORD value);
-    const char* repGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem);
+    void recGetClassAssemblyName(CORINFO_CLASS_HANDLE cls, const char* assemblyName);
+    void dmpGetClassAssemblyName(DWORDLONG key, DWORD value);
+    const char* repGetClassAssemblyName(CORINFO_CLASS_HANDLE cls);
 
     void recGetVars(CORINFO_METHOD_HANDLE ftn, ULONG32* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers);
     void dmpGetVars(DWORDLONG key, const Agnostic_GetVars& value);
@@ -475,6 +467,10 @@ public:
     void recGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
     void dmpGetDefaultEqualityComparerClass(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls);
+
+    void recGetSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
+    void dmpGetSZArrayHelperEnumeratorClass(DWORDLONG key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE cls);
 
     void recGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CLASS_HANDLE result);
     void dmpGetTokenTypeAsHandle(const GetTokenTypeAsHandleValue& key, DWORDLONG value);
@@ -1158,9 +1154,9 @@ enum mcPackets
     Packet_AllocPgoInstrumentationBySchema = 186,
     Packet_GetPgoInstrumentationResults = 187,
     Packet_GetDefaultComparerClass = 188,
-    Packet_GetClassModule = 189,
-    Packet_GetModuleAssembly = 190,
-    Packet_GetAssemblyName = 191,
+    //Packet_GetClassModule = 189,
+    //Packet_GetModuleAssembly = 190,
+    //Packet_GetAssemblyName = 191,
     Packet_IsIntrinsic = 192,
     Packet_UpdateEntryPointForTailCall = 193,
     //Packet_GetLoongArch64PassStructInRegisterFlags = 194,
@@ -1194,6 +1190,8 @@ enum mcPackets
     Packet_GetTypeDefinition = 222,
     Packet_GetFpStructLowering = 223,
     Packet_GetSpecialCopyHelper = 224,
+    Packet_GetClassAssemblyName = 225,
+    Packet_GetSZArrayHelperEnumeratorClass = 226,
 };
 
 void SetDebugDumpVariables();

@@ -4491,8 +4491,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_MEMORYBARRIER:
         {
-            CodeGen::BarrierKind barrierKind =
-                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY : BARRIER_FULL;
+            BarrierKind barrierKind =
+                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD
+                    ? BARRIER_LOAD_ONLY
+                    : (treeNode->gtFlags & GTF_MEMORYBARRIER_STORE ? BARRIER_STORE_ONLY : BARRIER_FULL);
 
             instGen_MemoryBarrier(barrierKind);
             break;
@@ -6227,90 +6229,81 @@ void CodeGen::genJmpPlaceVarArgs()
 //
 void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg)
 {
+    const regNumber tempReg = internalRegisters.GetSingle(cast);
+
     switch (desc.CheckKind())
     {
+        // int -> uint/ulong
+        // uint -> int
+        // long -> ulong
+        // ulong -> long
         case GenIntCastDesc::CHECK_POSITIVE:
         {
+            if (desc.CheckSrcSize() == 4) // is int or uint
+            {
+                // If uint is bigger than INT32_MAX then it will be treated as a signed
+                // number so overflow will also be triggered
+                GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, tempReg, reg);
+                reg = tempReg;
+            }
+            // Check if integral is smaller than zero
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, reg, nullptr, REG_R0);
         }
         break;
 
+        // ulong/long -> uint
         case GenIntCastDesc::CHECK_UINT_RANGE:
         {
-            regNumber tempReg = internalRegisters.GetSingle(cast);
-            // We need to check if the value is not greater than 0xFFFFFFFF
-            // if the upper 32 bits are zero.
-            ssize_t imm = -1;
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_8BYTE, tempReg, REG_R0, imm);
-
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, tempReg, 32);
-            GetEmitter()->emitIns_R_R_R(INS_and, EA_8BYTE, tempReg, reg, tempReg);
-            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg);
+            // Check if upper 32-bits are zeros
+            GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, 32);
+            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
         }
         break;
 
+        // ulong -> int
         case GenIntCastDesc::CHECK_POSITIVE_INT_RANGE:
         {
-            regNumber tempReg = internalRegisters.GetSingle(cast);
-            // We need to check if the value is not greater than 0x7FFFFFFF
-            // if the upper 33 bits are zero.
-            // instGen_Set_Reg_To_Imm(EA_8BYTE, tempReg, 0xFFFFFFFF80000000LL);
-            ssize_t imm = -1;
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_8BYTE, tempReg, REG_R0, imm);
-
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, tempReg, 31);
-
-            GetEmitter()->emitIns_R_R_R(INS_and, EA_8BYTE, tempReg, reg, tempReg);
-            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg);
+            // Check if upper 33-bits are zeros (biggest allowed value is 0x7FFFFFFF)
+            GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, 31);
+            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
         }
         break;
 
+        // long -> int
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
-            const regNumber tempReg = internalRegisters.GetSingle(cast);
-            assert(tempReg != reg);
-            GetEmitter()->emitLoadImmediate(EA_8BYTE, tempReg, INT32_MAX);
-            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, reg);
-
-            GetEmitter()->emitLoadImmediate(EA_8BYTE, tempReg, INT32_MIN);
-            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, reg, nullptr, tempReg);
+            // Extend sign of lower half of long so that it overrides its upper half
+            // If a new value differs from the original then the upper half was not
+            // a pure sign extension so there is an overflow
+            GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, tempReg, reg);
+            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, reg);
         }
         break;
 
-        default:
+        // * -> short/ushort/byte/ubyte
+        default: // CHECK_SMALL_INT_RANGE
         {
             assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
-            const int       castMaxValue = desc.CheckSmallIntMax();
-            const int       castMinValue = desc.CheckSmallIntMin();
-            const regNumber tempReg      = internalRegisters.GetSingle(cast);
-            instruction     ins;
+            const unsigned castSize           = genTypeSize(cast->gtCastType);
+            const bool     isSrcOrDstUnsigned = desc.CheckSmallIntMin() == 0;
 
-            if (castMaxValue > 2047)
+            if (isSrcOrDstUnsigned)
             {
-                assert((castMaxValue == 32767) || (castMaxValue == 65535));
-                GetEmitter()->emitLoadImmediate(EA_ATTR(desc.CheckSrcSize()), tempReg, castMaxValue + 1);
-                ins = castMinValue == 0 ? INS_bgeu : INS_bge;
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, ins, reg, nullptr, tempReg);
+                // Check if bits leading the actual small int are all zeros
+                // If destination type is signed then also check if MSB of it is zero
+                const bool     isDstSigned = !varTypeIsUnsigned(cast->gtCastType);
+                const unsigned excludeMsb  = isDstSigned ? 1 : 0;
+                const unsigned typeSize    = 8 * castSize - excludeMsb;
+                GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, typeSize);
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
             }
-            else
+            else // Signed to signed cast
             {
-                GetEmitter()->emitIns_R_R_I(INS_addiw, EA_ATTR(desc.CheckSrcSize()), tempReg, REG_R0, castMaxValue);
-                ins = castMinValue == 0 ? INS_bltu : INS_blt;
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, ins, tempReg, nullptr, reg);
-            }
-
-            if (castMinValue != 0)
-            {
-                if (emitter::isValidSimm12(castMinValue))
-                {
-                    GetEmitter()->emitIns_R_R_I(INS_slti, EA_ATTR(desc.CheckSrcSize()), tempReg, reg, castMinValue);
-                }
-                else
-                {
-                    GetEmitter()->emitLoadImmediate(EA_8BYTE, tempReg, castMinValue);
-                    GetEmitter()->emitIns_R_R_R(INS_slt, EA_ATTR(desc.CheckSrcSize()), tempReg, reg, tempReg);
-                }
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg);
+                // Extend sign of a small int on all of the bits above it and check whether the original type was same
+                const auto extensionSize = (8 - castSize) * 8;
+                GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, reg, extensionSize);
+                GetEmitter()->emitIns_R_R_I(INS_srai, EA_8BYTE, tempReg, tempReg, extensionSize);
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, reg);
             }
         }
         break;
@@ -6497,7 +6490,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
     // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
     // let's save the values anyway for debugging purposes
     compiler->compInfoBlkAddr = gcInfoEncoder->Emit();
-    compiler->compInfoBlkSize = 0; // not exposed by the GCEncoder interface
+    compiler->compInfoBlkSize = gcInfoEncoder->GetEncodedGCInfoSize();
 }
 
 //------------------------------------------------------------------------
@@ -6871,8 +6864,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
             excpRaisingBlock = failBlk;
 
 #ifdef DEBUG
-            Compiler::AddCodeDsc* add =
-                compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
             assert(add->acdUsed);
             assert(excpRaisingBlock == add->acdDstBlk);
 #if !FEATURE_FIXED_OUT_ARGS
@@ -6883,8 +6875,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
         else
         {
             // Find the helper-block which raises the exception.
-            Compiler::AddCodeDsc* add =
-                compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
             PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
             assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
