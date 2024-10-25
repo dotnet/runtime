@@ -101,7 +101,7 @@ public:
     // is compiling a method containing a P/Invoke that is being considered for inlining.
     static BOOL MarshalingRequired(
         _In_opt_ MethodDesc* pMD,
-        _In_opt_ PCCOR_SIGNATURE pSig = NULL,
+        _In_opt_ SigPointer sigPointer = {},
         _In_opt_ Module* pModule = NULL,
         _In_opt_ SigTypeContext* pTypeContext = NULL,
         _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
