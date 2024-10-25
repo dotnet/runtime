@@ -1511,7 +1511,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // - details on the computation done by the jit host
     // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targeting an R2R image
     //   use it as the parameter to getCallInfo
-    // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
+    // - requiresInstMethodDescArg is set to TRUE if the devirtualized method requires a method desc arg.
     // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
     //     (in which case the method handle and context will be a generic method)
     //
@@ -1520,7 +1520,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     CORINFO_DEVIRTUALIZATION_DETAIL detail;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedMethod;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedUnboxedMethod;
-    bool                            requiresInstMethodTableArg;
+    bool                            requiresInstMethodDescArg;
     bool                            wasArrayInterfaceDevirt;
 };
 

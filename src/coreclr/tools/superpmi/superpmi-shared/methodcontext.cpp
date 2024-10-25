@@ -3290,7 +3290,7 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     Agnostic_ResolveVirtualMethodResult result;
     result.returnValue                = returnValue;
     result.devirtualizedMethod        = CastHandle(info->devirtualizedMethod);
-    result.requiresInstMethodTableArg = info->requiresInstMethodTableArg;
+    result.requiresInstMethodDescArg  = info->requiresInstMethodDescArg;
     result.exactContext               = CastHandle(info->exactContext);
     result.detail                     = (DWORD) info->detail;
     result.wasArrayInterfaceDevirt    = info->wasArrayInterfaceDevirt;
@@ -3321,7 +3321,7 @@ void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodK
     printf(", value returnValue-%s, devirtMethod-%016" PRIX64 ", requiresInstArg-%s, wasArrayInterfaceDevirt-%s, exactContext-%016" PRIX64 ", detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}",
         result.returnValue ? "true" : "false",
         result.devirtualizedMethod,
-        result.requiresInstMethodTableArg ? "true" : "false",
+        result.requiresInstMethodDescArg ? "true" : "false",
         result.wasArrayInterfaceDevirt ? "true" : "false",
         result.exactContext,
         result.detail,
@@ -3346,7 +3346,7 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     DEBUG_REP(dmpResolveVirtualMethod(key, result));
 
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) result.devirtualizedMethod;
-    info->requiresInstMethodTableArg = result.requiresInstMethodTableArg;
+    info->requiresInstMethodDescArg = result.requiresInstMethodDescArg;
     info->wasArrayInterfaceDevirt = result.wasArrayInterfaceDevirt;
     info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
     info->detail = (CORINFO_DEVIRTUALIZATION_DETAIL) result.detail;

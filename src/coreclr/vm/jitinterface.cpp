@@ -8561,7 +8561,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     info->detail = CORINFO_DEVIRTUALIZATION_UNKNOWN;
     memset(&info->resolvedTokenDevirtualizedMethod, 0, sizeof(info->resolvedTokenDevirtualizedMethod));
     memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
-    info->requiresInstMethodTableArg = false;
+    info->requiresInstMethodDescArg = false;
     info->wasArrayInterfaceDevirt = false;
 
     MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
@@ -8765,21 +8765,28 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
     // Success! Pass back the results.
     //
-    info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
-
     if (isArray)
     {
+        // If array devirtualization produced an instantiation stub,
+        // find the wrapped method and return that instead.
+        //
+        if (pDevirtMD->IsInstantiatingStub())
+        {
+            pDevirtMD = pDevirtMD->GetWrappedMethodDesc();
+        }
+
         info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-        info->requiresInstMethodTableArg = pDevirtMD->RequiresInstMethodTableArg();
+        info->requiresInstMethodDescArg = pDevirtMD->RequiresInstMethodDescArg();
         info->wasArrayInterfaceDevirt = true;
     }
     else
     {
         info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
-        info->requiresInstMethodTableArg = false;
+        info->requiresInstMethodDescArg = false;
         info->wasArrayInterfaceDevirt = false;
     }
 
+    info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
     info->detail = CORINFO_DEVIRTUALIZATION_SUCCESS;
 
     return true;

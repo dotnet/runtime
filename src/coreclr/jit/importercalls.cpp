@@ -8189,7 +8189,34 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     const char* derivedClassName  = "?derivedClass";
     const char* derivedMethodName = "?derivedMethod";
     const char* note              = "inexact or not final";
+    const char* instArg           = "";
 #endif
+
+    if (dvInfo.requiresInstMethodDescArg)
+    {
+        // We should only end up with generic methods for array interface devirt.
+        //
+        assert(dvInfo.wasArrayInterfaceDevirt);
+
+        // We don't expect NAOT to end up here, since it has Array<T>
+        // and normal devirtualization.
+        //
+        assert(!IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+
+        // We don't expect R2R to end up here, since it does not (yet) support
+        // array interface devirtualization.
+        //
+        assert(!opts.IsReadyToRun());
+
+        // We don't expect there to be an existing inst param arg.
+        //
+        CallArg* const instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+        if (instParam != nullptr)
+        {
+            assert(!"unexpected inst param in virtual/interface call");
+            return;
+        }
+    }
 
     // If we failed to get a method handle, we can't directly devirtualize.
     //
@@ -8219,6 +8246,10 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         {
             note = "final method";
         }
+        if (dvInfo.requiresInstMethodDescArg)
+        {
+            instArg = " + requires inst arg";
+        }
 
         if (verbose || doPrint)
         {
@@ -8226,7 +8257,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             derivedClassName  = eeGetClassName(derivedClass);
             if (verbose)
             {
-                printf("    devirt to %s::%s -- %s\n", derivedClassName, derivedMethodName, note);
+                printf("    devirt to %s::%s -- %s%s\n", derivedClassName, derivedMethodName, note, instArg);
                 gtDispTree(call);
             }
         }
@@ -8267,11 +8298,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     // All checks done. Time to transform the call.
     //
-    // We should always have an exact class context.
-    //
-    // Note that wouldnt' be true if the runtime side supported array interface devirt,
-    // the resulting method would be a generic method of the non-generic SZArrayHelper class.
-    //
     assert(canDevirtualize);
     Metrics.DevirtualizedCall++;
 
@@ -8284,6 +8310,15 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     call->gtCallType    = CT_USER_FUNC;
     call->gtControlExpr = nullptr;
     INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
+
+    if (dvInfo.requiresInstMethodDescArg)
+    {
+        // Pass the method desc as the inst param arg.
+        // Need to make sure this works in all cases. We might need more complex embedding.
+        //
+        GenTree* const instParam = gtNewIconNode((ssize_t)derivedMethod, TYP_I_IMPL);
+        call->gtArgs.InsertInstParam(this, instParam);
+    }
 
     // Virtual calls include an implicit null check, which we may
     // now need to make explicit.
