@@ -38,24 +38,14 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX2_X64;
         case InstructionSet_AVX512BW:
             return InstructionSet_AVX512BW_X64;
-        case InstructionSet_AVX512BW_VL:
-            return InstructionSet_AVX512BW_VL_X64;
         case InstructionSet_AVX512CD:
             return InstructionSet_AVX512CD_X64;
-        case InstructionSet_AVX512CD_VL:
-            return InstructionSet_AVX512CD_VL_X64;
         case InstructionSet_AVX512DQ:
             return InstructionSet_AVX512DQ_X64;
-        case InstructionSet_AVX512DQ_VL:
-            return InstructionSet_AVX512DQ_VL_X64;
         case InstructionSet_AVX512F:
             return InstructionSet_AVX512F_X64;
-        case InstructionSet_AVX512F_VL:
-            return InstructionSet_AVX512F_VL_X64;
         case InstructionSet_AVX512VBMI:
             return InstructionSet_AVX512VBMI_X64;
-        case InstructionSet_AVX512VBMI_VL:
-            return InstructionSet_AVX512VBMI_VL_X64;
         case InstructionSet_AVX10v1:
             return InstructionSet_AVX10v1_X64;
         case InstructionSet_AVX10v1_V512:
@@ -832,23 +822,18 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX2_X64:
         case InstructionSet_AVX512F:
         case InstructionSet_AVX512F_VL:
-        case InstructionSet_AVX512F_VL_X64:
         case InstructionSet_AVX512F_X64:
         case InstructionSet_AVX512BW:
         case InstructionSet_AVX512BW_VL:
-        case InstructionSet_AVX512BW_VL_X64:
         case InstructionSet_AVX512BW_X64:
         case InstructionSet_AVX512CD:
         case InstructionSet_AVX512CD_VL:
-        case InstructionSet_AVX512CD_VL_X64:
         case InstructionSet_AVX512CD_X64:
         case InstructionSet_AVX512DQ:
         case InstructionSet_AVX512DQ_VL:
-        case InstructionSet_AVX512DQ_VL_X64:
         case InstructionSet_AVX512DQ_X64:
         case InstructionSet_AVX512VBMI:
         case InstructionSet_AVX512VBMI_VL:
-        case InstructionSet_AVX512VBMI_VL_X64:
         case InstructionSet_AVX512VBMI_X64:
         case InstructionSet_AVXVNNI:
         case InstructionSet_AVXVNNI_X64:
