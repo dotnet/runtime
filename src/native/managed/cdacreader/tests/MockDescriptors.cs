@@ -124,6 +124,7 @@ internal class MockDescriptors
 
     public class RuntimeTypeSystem
     {
+
         internal const ulong TestFreeObjectMethodTableGlobalAddress = 0x00000000_7a0000a0;
 
         private Dictionary<DataType, Target.TypeInfo>  GetTypes()
@@ -140,10 +141,12 @@ internal class MockDescriptors
             return types;
         }
 
-        internal static readonly (string Name, ulong Value, string? Type)[] Globals =
+        internal static uint GetMethodDescAlignment(TargetTestHelpers helpers) => helpers.Arch.Is64Bit ? 8u : 4u;
+
+        internal static (string Name, ulong Value, string? Type)[] GetGlobals(TargetTestHelpers helpers) =>
         [
             (nameof(Constants.Globals.FreeObjectMethodTable), TestFreeObjectMethodTableGlobalAddress, null),
-            (nameof(Constants.Globals.MethodDescAlignment), 8, nameof(DataType.uint64)),
+            (nameof(Constants.Globals.MethodDescAlignment), GetMethodDescAlignment(helpers), nameof(DataType.uint64)),
         ];
 
         internal readonly MockMemorySpace.Builder Builder;
@@ -311,7 +314,7 @@ internal class MockDescriptors
             return types;
         }
 
-        internal static (string Name, ulong Value, string? Type)[] Globals(TargetTestHelpers helpers) => RuntimeTypeSystem.Globals.Concat(
+        internal static (string Name, ulong Value, string? Type)[] Globals(TargetTestHelpers helpers) => RuntimeTypeSystem.GetGlobals(helpers).Concat(
         [
             (nameof(Constants.Globals.ObjectToMethodTableUnmask), TestObjectToMethodTableUnmask, "uint8"),
             (nameof(Constants.Globals.StringMethodTable), TestStringMethodTableGlobalAddress, null),
@@ -688,5 +691,84 @@ internal class MockDescriptors
             _previousThread = thread.Address;
             return thread.Address;
         }
+    }
+
+    internal class MethodDescriptors
+    {
+
+        private static readonly (string Name, DataType Type)[] MethodDescFields = new[]
+        {
+            (nameof(Data.MethodDesc.ChunkIndex), DataType.uint8),
+            (nameof(Data.MethodDesc.Slot), DataType.uint16),
+            (nameof(Data.MethodDesc.Flags), DataType.uint16),
+            (nameof(Data.MethodDesc.Flags3AndTokenRemainder), DataType.uint16),
+            (nameof(Data.MethodDesc.EntryPointFlags), DataType.uint8),
+            (nameof(Data.MethodDesc.CodeData), DataType.pointer),
+        };
+
+        private static readonly (string Name, DataType Type)[] MethodDescChunkFields = new[]
+        {
+                (nameof(Data.MethodDescChunk.MethodTable), DataType.pointer),
+                (nameof(Data.MethodDescChunk.Next), DataType.pointer),
+                (nameof(Data.MethodDescChunk.Size), DataType.uint8),
+                (nameof(Data.MethodDescChunk.Count), DataType.uint8),
+                (nameof(Data.MethodDescChunk.FlagsAndTokenRange), DataType.uint16)
+        };
+
+        internal readonly RuntimeTypeSystem RTSBuilder;
+
+        internal MockMemorySpace.BumpAllocator MethodDescChunkAllocator { get; set; }
+
+        internal TargetTestHelpers TargetTestHelpers => RTSBuilder.Builder.TargetTestHelpers;
+        internal Dictionary<DataType, Target.TypeInfo> Types => RTSBuilder.Types;
+        internal MockMemorySpace.Builder Builder => RTSBuilder.Builder;
+        internal uint MethodDescAlignment => RuntimeTypeSystem.GetMethodDescAlignment(TargetTestHelpers);
+
+        internal MethodDescriptors(RuntimeTypeSystem rtsBuilder)
+        {
+            RTSBuilder = rtsBuilder;
+        }
+
+        internal static void AddTypes(TargetTestHelpers targetTestHelpers, Dictionary<DataType, Target.TypeInfo> types)
+        {
+            var layout = targetTestHelpers.LayoutFields(MethodDescFields);
+            types[DataType.MethodDesc] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
+            layout = targetTestHelpers.LayoutFields(MethodDescChunkFields);
+            types[DataType.MethodDescChunk] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
+        }
+
+        internal TargetPointer AddMethodDescChunk(TargetPointer methodTable, string name, byte count, byte size)
+        {
+            uint totalAllocSize = Types[DataType.MethodDescChunk].Size.Value;
+            totalAllocSize += (uint)(size * MethodDescAlignment);
+
+            MockMemorySpace.HeapFragment methodDescChunk = MethodDescChunkAllocator.Allocate(totalAllocSize, $"MethodDescChunk {name}");
+            Span<byte> dest = methodDescChunk.Data;
+            TargetTestHelpers.WritePointer(dest.Slice(Types[DataType.MethodDescChunk].Fields[nameof(Data.MethodDescChunk.MethodTable)].Offset), methodTable);
+            TargetTestHelpers.Write(dest.Slice(Types[DataType.MethodDescChunk].Fields[nameof(Data.MethodDescChunk.Size)].Offset), size);
+            TargetTestHelpers.Write(dest.Slice(Types[DataType.MethodDescChunk].Fields[nameof(Data.MethodDescChunk.Count)].Offset), count);
+            Builder.AddHeapFragment(methodDescChunk);
+            return methodDescChunk.Address;
+        }
+
+        internal TargetPointer GetMethodDescAddress(TargetPointer chunkAddress, byte index)
+        {
+            Target.TypeInfo methodDescChunkTypeInfo = Types[DataType.MethodDescChunk];
+            return chunkAddress + methodDescChunkTypeInfo.Size.Value + index * MethodDescAlignment;
+        }
+        internal Span<byte> BorrowMethodDesc(TargetPointer methodDescChunk, byte index)
+        {
+            TargetPointer methodDescAddress = GetMethodDescAddress(methodDescChunk, index);
+            Target.TypeInfo methodDescTypeInfo = Types[DataType.MethodDesc];
+            return Builder.BorrowAddressRange(methodDescAddress, (int)methodDescTypeInfo.Size.Value);
+        }
+
+        internal void SetMethodDesc(scoped Span<byte> dest, byte index)
+        {
+            Target.TypeInfo methodDescTypeInfo = Types[DataType.MethodDesc];
+            TargetTestHelpers.Write(dest.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.ChunkIndex)].Offset), (byte)index);
+            // TODO: write more fields
+        }
+
     }
 }

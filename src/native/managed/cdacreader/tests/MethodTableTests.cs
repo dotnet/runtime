@@ -25,7 +25,7 @@ public class MethodTableTests
         builder
                 .SetContracts ([ nameof(Contracts.RuntimeTypeSystem) ])
                 .SetTypes (rtsBuilder.Types)
-                .SetGlobals (MockRTS.Globals);
+                .SetGlobals (MockRTS.GetGlobals(targetTestHelpers));
 
         rtsBuilder.AddGlobalPointers();
 
