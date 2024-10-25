@@ -3138,7 +3138,7 @@ class SuperPMIReplayThroughputDiff:
                     os.remove(overall_md_summary_file)
 
                 with open(overall_md_summary_file, "w") as write_fh:
-                    self.write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, True)
+                    write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, True)
                     logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
                 short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "tpdiff_short_summary", "md")
@@ -3147,7 +3147,7 @@ class SuperPMIReplayThroughputDiff:
                     os.remove(short_md_summary_file)
 
                 with open(short_md_summary_file, "w") as write_fh:
-                    self.write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, False)
+                    write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, False)
                     logging.info("  Short Summary Markdown file: %s", short_md_summary_file)                
 
         return True
