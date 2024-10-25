@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
@@ -19,13 +18,14 @@ public unsafe class ObjectTests
         TargetTestHelpers targetTestHelpers = new(arch);
 
         MockMemorySpace.Builder builder = new(targetTestHelpers);
-        var types = MockObject.Types(targetTestHelpers);
+        Dictionary<DataType, Target.TypeInfo> types = new();
+        MockObject.AddTypes(types, targetTestHelpers);
         builder = builder
             .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem) ])
             .SetGlobals(MockObject.Globals(targetTestHelpers))
             .SetTypes(types);
 
-        builder = MockObject.AddGlobalPointers(types[DataType.MethodTable], builder);
+        MockObject.AddGlobalPointers(types[DataType.MethodTable], builder);
 
         if (configure != null)
         {
@@ -46,7 +46,7 @@ public unsafe class ObjectTests
         ObjectContractHelper(arch,
             (types, builder) =>
             {
-                builder = MockObject.AddObject(types, builder, TestObjectAddress, TestMethodTableAddress);
+                MockObject.AddObject(types, builder, TestObjectAddress, TestMethodTableAddress);
                 return builder;
             },
             (target) =>
@@ -67,7 +67,8 @@ public unsafe class ObjectTests
         ObjectContractHelper(arch,
             (types, builder) =>
             {
-                builder = MockObject.AddStringObject(types, builder, TestStringAddress, expected);
+                MockObject objectBuilder = new(types, builder);
+                objectBuilder.AddStringObject(TestStringAddress, expected);
                 return builder;
             },
             (target) =>
@@ -94,9 +95,10 @@ public unsafe class ObjectTests
         ObjectContractHelper(arch,
             (types, builder) =>
             {
-                builder = MockObject.AddArrayObject(types, builder, SingleDimensionArrayAddress, singleDimension);
-                builder = MockObject.AddArrayObject(types, builder, MultiDimensionArrayAddress, multiDimension);
-                builder = MockObject.AddArrayObject(types, builder, NonZeroLowerBoundArrayAddress, nonZeroLowerBound);
+                MockObject objectBuilder = new(types, builder);
+                objectBuilder.AddArrayObject(SingleDimensionArrayAddress, singleDimension);
+                objectBuilder.AddArrayObject(MultiDimensionArrayAddress, multiDimension);
+                objectBuilder.AddArrayObject(NonZeroLowerBoundArrayAddress, nonZeroLowerBound);
                 return builder;
             },
             (target) =>
@@ -107,7 +109,8 @@ public unsafe class ObjectTests
                     TargetPointer data = contract.GetArrayData(SingleDimensionArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
                     Assert.Equal(SingleDimensionArrayAddress + targetTestHelpers.ArrayBaseBaseSize - targetTestHelpers.ObjHeaderSize, data.Value);
                     Assert.Equal((uint)singleDimension.Length, count);
-                    Assert.Equal(SingleDimensionArrayAddress + (ulong)MockObject.Types(targetTestHelpers)[DataType.Array].Fields["m_NumComponents"].Offset, boundsStart.Value);
+                    Target.TypeInfo arrayType = target.GetTypeInfo(DataType.Array);
+                    Assert.Equal(SingleDimensionArrayAddress + (ulong)arrayType.Fields["m_NumComponents"].Offset, boundsStart.Value);
                     Assert.Equal(MockObject.TestArrayBoundsZeroGlobalAddress, lowerBounds.Value);
                 }
                 {
@@ -141,8 +144,8 @@ public unsafe class ObjectTests
             (types, builder) =>
             {
                 uint syncBlockIndex = 0;
-                builder = MockObject.AddObjectWithSyncBlock(types, builder, TestComObjectAddress, 0, syncBlockIndex++, expectedRCW, expectedCCW);
-                builder = MockObject.AddObjectWithSyncBlock(types, builder, TestNonComObjectAddress, 0, syncBlockIndex++, TargetPointer.Null, TargetPointer.Null);
+                MockObject.AddObjectWithSyncBlock(types, builder, TestComObjectAddress, 0, syncBlockIndex++, expectedRCW, expectedCCW);
+                MockObject.AddObjectWithSyncBlock(types, builder, TestNonComObjectAddress, 0, syncBlockIndex++, TargetPointer.Null, TargetPointer.Null);
                 return builder;
             },
             (target) =>
