@@ -13,6 +13,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         curl \
         git \
         lldb \
+        llvm \
         liblldb-dev \
         libunwind8 \
         libunwind8-dev \
