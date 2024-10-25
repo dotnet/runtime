@@ -255,7 +255,7 @@ internal class MockDescriptors
     public class Object
     {
         private const ulong TestStringMethodTableGlobalAddress = 0x00000000_100000a0;
-        private const ulong TestStringMethodTableAddress = 0x00000000_100000a8;
+
         internal const ulong TestArrayBoundsZeroGlobalAddress = 0x00000000_100000b0;
 
         private const ulong TestSyncTableEntriesGlobalAddress = 0x00000000_100000c0;
@@ -268,9 +268,18 @@ internal class MockDescriptors
         internal Dictionary<DataType, Target.TypeInfo> Types => RTSBuilder.Types;
         internal MockMemorySpace.Builder Builder => RTSBuilder.Builder;
 
+        internal MockMemorySpace.BumpAllocator ManagedObjectAllocator { get; set; }
+
+        internal MockMemorySpace.BumpAllocator SyncBlockAllocator { get; private set; }
+
+        internal TargetPointer TestStringMethodTableAddress { get; private set; }
+
         internal Object(RuntimeTypeSystem rtsBuilder)
         {
             RTSBuilder = rtsBuilder;
+
+            const ulong TestSyncBlocksAddress = 0x00000000_e0000000;
+            SyncBlockAllocator = Builder.CreateAllocator(start: TestSyncBlocksAddress, end: TestSyncBlocksAddress + 0x1000);
         }
 
         internal static void AddTypes(Dictionary<DataType, Target.TypeInfo> types, TargetTestHelpers helpers)
@@ -313,12 +322,11 @@ internal class MockDescriptors
         {
             MockMemorySpace.Builder builder = Builder;
             TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
+            MockMemorySpace.HeapFragment stringMethodTableFragment = RTSBuilder.TypeSystemAllocator.Allocate((ulong)targetTestHelpers.PointerSize /*HACK*/, "String Method Table (fake)");
+            TestStringMethodTableAddress = stringMethodTableFragment.Address;
             MockMemorySpace.HeapFragment fragment = new() { Name = "Address of String Method Table", Address = TestStringMethodTableGlobalAddress, Data = new byte[targetTestHelpers.PointerSize] };
-            targetTestHelpers.WritePointer(fragment.Data, TestStringMethodTableAddress);
-            builder.AddHeapFragments([
-                fragment,
-                new () { Name = "String Method Table", Address = TestStringMethodTableAddress, Data = new byte[targetTestHelpers.PointerSize] }
-            ]);
+            targetTestHelpers.WritePointer(fragment.Data, stringMethodTableFragment.Address);
+            builder.AddHeapFragment(fragment);
         }
 
         private void AddSyncTableEntriesPointer()
@@ -330,18 +338,21 @@ internal class MockDescriptors
             builder.AddHeapFragment(fragment);
         }
 
-        internal void AddObject(TargetPointer address, TargetPointer methodTable)
+        internal TargetPointer AddObject(TargetPointer methodTable, uint prefixSize =0)
         {
             MockMemorySpace.Builder builder = Builder;
             TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
             Target.TypeInfo objectTypeInfo = Types[DataType.Object];
-            MockMemorySpace.HeapFragment fragment = new() { Name = $"Object : MT = '{methodTable}'", Address = address, Data = new byte[targetTestHelpers.SizeOfTypeInfo(objectTypeInfo)] };
-            Span<byte> dest = fragment.Data;
+            uint totalSize = objectTypeInfo.Size.Value + prefixSize;
+            MockMemorySpace.HeapFragment fragment = ManagedObjectAllocator.Allocate(totalSize, $"Object : MT = '{methodTable}'");
+
+            Span<byte> dest = fragment.Data.AsSpan((int)prefixSize);
             targetTestHelpers.WritePointer(dest.Slice(objectTypeInfo.Fields["m_pMethTab"].Offset), methodTable);
             builder.AddHeapFragment(fragment);
+            return fragment.Address + prefixSize; // return pointer to the object, not the prefix;
         }
 
-        internal void AddObjectWithSyncBlock(TargetPointer address, TargetPointer methodTable, uint syncBlockIndex, TargetPointer rcw, TargetPointer ccw)
+        internal TargetPointer AddObjectWithSyncBlock(TargetPointer methodTable, uint syncBlockIndex, TargetPointer rcw, TargetPointer ccw)
         {
             MockMemorySpace.Builder builder = Builder;
             TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
@@ -350,29 +361,33 @@ internal class MockDescriptors
             if ((syncBlockIndex & SyncBlockIndexMask) != syncBlockIndex)
                 throw new ArgumentOutOfRangeException(nameof(syncBlockIndex), "Invalid sync block index");
 
-            AddObject(address, methodTable);
+            TargetPointer address = AddObject(methodTable, prefixSize: (uint)TestSyncBlockValueToObjectOffset);
 
             // Add the sync table value before the object
             uint syncTableValue = IsSyncBlockIndexBits | syncBlockIndex;
             TargetPointer syncTableValueAddr = address - TestSyncBlockValueToObjectOffset;
-            MockMemorySpace.HeapFragment fragment = new() { Name = $"Sync Table Value : index = {syncBlockIndex}", Address = syncTableValueAddr, Data = new byte[sizeof(uint)] };
-            targetTestHelpers.Write(fragment.Data, syncTableValue);
-            builder.AddHeapFragment(fragment);
+            Span<byte> syncTableValueDest = builder.BorrowAddressRange(syncTableValueAddr, sizeof(uint));
+            targetTestHelpers.Write(syncTableValueDest, syncTableValue);
 
             // Add the actual sync block and associated data
-            AddSyncBlock(Types, builder, syncBlockIndex, rcw, ccw);
+            AddSyncBlock(syncBlockIndex, rcw, ccw);
+            return address;
         }
 
-        private static void AddSyncBlock(Dictionary<DataType, Target.TypeInfo> types, MockMemorySpace.Builder builder, uint index, TargetPointer rcw, TargetPointer ccw)
+        private void AddSyncBlock(uint index, TargetPointer rcw, TargetPointer ccw)
         {
+            Dictionary<DataType, Target.TypeInfo> types = Types;
+            MockMemorySpace.Builder builder = Builder;
             TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
             // Tests write the sync blocks starting at TestSyncBlocksAddress
-            const ulong TestSyncBlocksAddress = 0x00000000_e0000000;
             Target.TypeInfo syncBlockTypeInfo = types[DataType.SyncBlock];
             Target.TypeInfo interopSyncBlockTypeInfo = types[DataType.InteropSyncBlockInfo];
-            int syncBlockSize = targetTestHelpers.SizeOfTypeInfo(syncBlockTypeInfo);
-            int interopSyncBlockInfoSize = targetTestHelpers.SizeOfTypeInfo(interopSyncBlockTypeInfo);
-            ulong syncBlockAddr = TestSyncBlocksAddress + index * (ulong)(syncBlockSize + interopSyncBlockInfoSize);
+            uint syncBlockSize = syncBlockTypeInfo.Size.Value;;
+            uint interopSyncBlockInfoSize = syncBlockSize + interopSyncBlockTypeInfo.Size.Value;
+
+
+            MockMemorySpace.HeapFragment syncBlock = SyncBlockAllocator.Allocate(interopSyncBlockInfoSize, $"Sync Block {index}");
+            TargetPointer syncBlockAddr = syncBlock.Address;
 
             // Add the sync table entry - pointing at the sync block
             Target.TypeInfo syncTableEntryInfo = types[DataType.SyncTableEntry];
@@ -383,21 +398,19 @@ internal class MockDescriptors
             targetTestHelpers.WritePointer(syncTableEntryData.Slice(syncTableEntryInfo.Fields[nameof(Data.SyncTableEntry.SyncBlock)].Offset), syncBlockAddr);
 
             // Add the sync block - pointing at the interop sync block info
-            ulong interopInfoAddr = syncBlockAddr + (ulong)syncBlockSize;
-            MockMemorySpace.HeapFragment syncBlock = new() { Name = $"Sync Block", Address = syncBlockAddr, Data = new byte[syncBlockSize] };
+            TargetPointer interopInfoAddr = syncBlockAddr + syncBlockSize;
             Span<byte> syncBlockData = syncBlock.Data;
             targetTestHelpers.WritePointer(syncBlockData.Slice(syncBlockTypeInfo.Fields[nameof(Data.SyncBlock.InteropInfo)].Offset), interopInfoAddr);
 
             // Add the interop sync block info
-            MockMemorySpace.HeapFragment interopInfo = new() { Name = $"Interop Sync Block Info", Address = interopInfoAddr, Data = new byte[interopSyncBlockInfoSize] };
-            Span<byte> interopInfoData = interopInfo.Data;
+            Span<byte> interopInfoData = syncBlock.Data.AsSpan((int)syncBlockSize);
             targetTestHelpers.WritePointer(interopInfoData.Slice(interopSyncBlockTypeInfo.Fields[nameof(Data.InteropSyncBlockInfo.RCW)].Offset), rcw);
             targetTestHelpers.WritePointer(interopInfoData.Slice(interopSyncBlockTypeInfo.Fields[nameof(Data.InteropSyncBlockInfo.CCW)].Offset), ccw);
 
-            builder.AddHeapFragments([syncTableEntry, syncBlock, interopInfo]);
+            builder.AddHeapFragments([syncTableEntry, syncBlock]);
         }
 
-        internal void AddStringObject(TargetPointer address, string value)
+        internal TargetPointer AddStringObject(string value)
         {
             MockMemorySpace.Builder builder = Builder;
             Dictionary<DataType, Target.TypeInfo> types = Types;
@@ -405,15 +418,16 @@ internal class MockDescriptors
             Target.TypeInfo objectTypeInfo = types[DataType.Object];
             Target.TypeInfo stringTypeInfo = types[DataType.String];
             int size = (int)stringTypeInfo.Size.Value + value.Length * sizeof(char);
-            MockMemorySpace.HeapFragment fragment = new() { Name = $"String = '{value}'", Address = address, Data = new byte[size] };
+            MockMemorySpace.HeapFragment fragment = ManagedObjectAllocator.Allocate((uint)size, $"String = '{value}'");
             Span<byte> dest = fragment.Data;
             targetTestHelpers.WritePointer(dest.Slice(objectTypeInfo.Fields["m_pMethTab"].Offset), TestStringMethodTableAddress);
             targetTestHelpers.Write(dest.Slice(stringTypeInfo.Fields["m_StringLength"].Offset), (uint)value.Length);
             MemoryMarshal.Cast<char, byte>(value).CopyTo(dest.Slice(stringTypeInfo.Fields["m_FirstChar"].Offset));
             builder.AddHeapFragment(fragment);
+            return fragment.Address;
         }
 
-        internal void AddArrayObject(TargetPointer address, Array array)
+        internal TargetPointer AddArrayObject(Array array)
         {
             MockMemorySpace.Builder builder = Builder;
             Dictionary<DataType, Target.TypeInfo> types = Types;
@@ -446,11 +460,12 @@ internal class MockDescriptors
                 module: TargetPointer.Null, parentMethodTable: TargetPointer.Null, numInterfaces: 0, numVirtuals: 0);
             RTSBuilder.SetEEClassAndCanonMTRefs(arrayClassAddress, methodTableAddress);
 
-            MockMemorySpace.HeapFragment fragment = new() { Name = $"Array = '{string.Join(',', array)}'", Address = address, Data = new byte[size] };
+            MockMemorySpace.HeapFragment fragment = ManagedObjectAllocator.Allocate((uint)size, $"Array = '{string.Join(',', array)}'");
             Span<byte> dest = fragment.Data;
             targetTestHelpers.WritePointer(dest.Slice(objectTypeInfo.Fields["m_pMethTab"].Offset), methodTableAddress);
             targetTestHelpers.Write(dest.Slice(arrayTypeInfo.Fields["m_NumComponents"].Offset), (uint)array.Length);
             builder.AddHeapFragment(fragment);
+            return fragment.Address;
         }
     }
 

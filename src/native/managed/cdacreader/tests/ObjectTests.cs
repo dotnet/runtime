@@ -23,7 +23,10 @@ public unsafe class ObjectTests
             // arbtrary address range
             TypeSystemAllocator = builder.CreateAllocator(start: 0x00000000_4a000000, end: 0x00000000_4b000000),
         };
-        MockObject objectBuilder = new(rtsBuilder);
+        MockObject objectBuilder = new(rtsBuilder) {
+            // arbtrary adress range
+            ManagedObjectAllocator = builder.CreateAllocator(start: 0x00000000_10000000, end: 0x00000000_20000000),
+        };
         MockObject.AddTypes(types, targetTestHelpers);
         builder = builder
             .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem) ])
@@ -43,12 +46,12 @@ public unsafe class ObjectTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void UnmaskMethodTableAddress(MockTarget.Architecture arch)
     {
-        const ulong TestObjectAddress = 0x00000000_10000010;
+        TargetPointer TestObjectAddress = default;
         const ulong TestMethodTableAddress = 0x00000000_10000027;
         ObjectContractHelper(arch,
             (objectBuilder) =>
             {
-                objectBuilder.AddObject(TestObjectAddress, TestMethodTableAddress);
+                TestObjectAddress = objectBuilder.AddObject(TestMethodTableAddress);
             },
             (target) =>
             {
@@ -63,12 +66,12 @@ public unsafe class ObjectTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void StringValue(MockTarget.Architecture arch)
     {
-        const ulong TestStringAddress = 0x00000000_10000010;
+        TargetPointer TestStringAddress = default;
         string expected = "test_string_value";
         ObjectContractHelper(arch,
             (objectBuilder) =>
             {
-                objectBuilder.AddStringObject(TestStringAddress, expected);
+                TestStringAddress = objectBuilder.AddStringObject(expected);
             },
             (target) =>
             {
@@ -83,9 +86,9 @@ public unsafe class ObjectTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void ArrayData(MockTarget.Architecture arch)
     {
-        const ulong SingleDimensionArrayAddress = 0x00000000_20000010;
-        const ulong MultiDimensionArrayAddress = 0x00000000_30000010;
-        const ulong NonZeroLowerBoundArrayAddress = 0x00000000_40000010;
+        TargetPointer SingleDimensionArrayAddress = default;
+        TargetPointer MultiDimensionArrayAddress = default;
+        TargetPointer NonZeroLowerBoundArrayAddress = default;
 
         Array singleDimension = new int[10];
         Array multiDimension = new int[1, 2, 3, 4];
@@ -94,9 +97,9 @@ public unsafe class ObjectTests
         ObjectContractHelper(arch,
             (objectBuilder) =>
             {
-                objectBuilder.AddArrayObject(SingleDimensionArrayAddress, singleDimension);
-                objectBuilder.AddArrayObject(MultiDimensionArrayAddress, multiDimension);
-                objectBuilder.AddArrayObject(NonZeroLowerBoundArrayAddress, nonZeroLowerBound);
+                SingleDimensionArrayAddress = objectBuilder.AddArrayObject(singleDimension);
+                MultiDimensionArrayAddress = objectBuilder.AddArrayObject(multiDimension);
+                NonZeroLowerBoundArrayAddress = objectBuilder.AddArrayObject(nonZeroLowerBound);
             },
             (target) =>
             {
@@ -131,8 +134,8 @@ public unsafe class ObjectTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void ComData(MockTarget.Architecture arch)
     {
-        const ulong TestComObjectAddress = 0x00000000_10000010;
-        const ulong TestNonComObjectAddress = 0x00000000_10000020;
+        TargetPointer TestComObjectAddress = default;
+        TargetPointer TestNonComObjectAddress = default;
 
         TargetPointer expectedRCW = 0xaaaa;
         TargetPointer expectedCCW = 0xbbbb;
@@ -141,8 +144,8 @@ public unsafe class ObjectTests
             (objectBuilder) =>
             {
                 uint syncBlockIndex = 0;
-                objectBuilder.AddObjectWithSyncBlock(TestComObjectAddress, 0, syncBlockIndex++, expectedRCW, expectedCCW);
-                objectBuilder.AddObjectWithSyncBlock(TestNonComObjectAddress, 0, syncBlockIndex++, TargetPointer.Null, TargetPointer.Null);
+                TestComObjectAddress = objectBuilder.AddObjectWithSyncBlock(0, syncBlockIndex++, expectedRCW, expectedCCW);
+                TestNonComObjectAddress = objectBuilder.AddObjectWithSyncBlock(0, syncBlockIndex++, TargetPointer.Null, TargetPointer.Null);
             },
             (target) =>
             {
