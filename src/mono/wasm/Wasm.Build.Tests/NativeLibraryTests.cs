@@ -50,7 +50,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [BuildAndRun(aot: true)]
+        [BuildAndRun(aot: true, config: "Release")]
         public void ProjectUsingSkiaSharp(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"AppUsingSkiaSharp";
