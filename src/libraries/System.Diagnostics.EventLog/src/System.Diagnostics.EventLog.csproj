@@ -143,7 +143,6 @@ System.Diagnostics.EventLog</PackageDescription>
     <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtSetChannelConfigProperty.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtSetChannelConfigProperty.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtSubscribe.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtSubscribe.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.EvtUpdateBookmark.cs" Link="Common\Interop\Windows\Wevtapi\Interop.EvtUpdateBookmark.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Wevtapi\Interop.SafeEventLogHandle.cs" Link="Common\Interop\Windows\Wevtapi\Interop.SafeEventLogHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
     <Compile Include="$(CommonPath)System\Diagnostics\NetFrameworkUtils.cs" Link="Common\System\Diagnostics\NetFrameworkUtils.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
@@ -165,10 +164,6 @@ System.Diagnostics.EventLog</PackageDescription>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <ProjectReference Include="Messages\System.Diagnostics.EventLog.Messages.csproj" ReferenceOutputAssembly="false" OutputItemType="TfmRuntimeSpecificPackageFile" PrivateAssets="true" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="E:\external\dotnet\runtime\src\libraries\Common\src\Interop\Windows\Wevtapi\Interop.SafeEventLogHandle.cs" />
   </ItemGroup>
 
 </Project>
