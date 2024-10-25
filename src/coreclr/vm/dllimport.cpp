@@ -6082,13 +6082,7 @@ namespace
     //-------------------------------------------------------------------------------------
     void FindCopyConstructor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;    // CompareTypeTokens may trigger GC
-            MODE_ANY;
-        }
-        CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
 
         *pMDOut = NULL;
 
@@ -6274,19 +6268,12 @@ namespace
         }
     }
 
-
     //-------------------------------------------------------------------------------------
     // Return the destructor for a VC class (if any exists)
     //-------------------------------------------------------------------------------------
     void FindDestructor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;    // CompareTypeTokens may trigger GC
-            MODE_ANY;
-        }
-        CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
 
         *pMDOut = NULL;
 
@@ -6413,8 +6400,19 @@ namespace
     }
 }
 
-bool GenerateCopyConstructorHelper(MethodDesc* ftn, TypeHandle type, DynamicResolver** ppResolver, COR_ILMETHOD_DECODER** ppHeader, CORINFO_METHOD_INFO* methInfo)
+bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver, COR_ILMETHOD_DECODER** ppHeader)
 {
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(ftn != NULL);
+    _ASSERTE(ppResolver != NULL);
+    _ASSERTE(ppHeader != NULL);
+
+    _ASSERTE(ftn->HasMethodInstantiation());
+    Instantiation inst = ftn->GetMethodInstantiation();
+
+    _ASSERTE(inst.GetNumArgs() == 1);
+    TypeHandle type = inst[0];
+
     if (!type.IsValueType())
         return false;
 

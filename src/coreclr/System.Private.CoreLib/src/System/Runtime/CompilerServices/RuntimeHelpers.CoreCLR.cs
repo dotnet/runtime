@@ -355,7 +355,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static bool IsBitwiseEquatable<T>()
         {
-            // The body of this function will be replaced by the EE with unsafe code!!!
+            // The body of this function will be replaced by the EE.
             // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             throw new InvalidOperationException();
         }
@@ -363,23 +363,28 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static bool EnumEquals<T>(T x, T y) where T : struct, Enum
         {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementation for how this happens.
+            // The body of this function will be replaced by the EE.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             return x.Equals(y);
         }
 
         [Intrinsic]
         internal static int EnumCompareTo<T>(T x, T y) where T : struct, Enum
         {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementation for how this happens.
+            // The body of this function will be replaced by the EE.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             return x.CompareTo(y);
         }
 
-        // The body of this function will be created by the EE for the specific type.
-        // See getILIntrinsicImplementation for how this happens.
+#if FEATURE_IJW
         [Intrinsic]
-        internal static extern unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged;
+        internal static unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged
+        {
+            // The body of this function will be replaced by the EE.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
+            throw new InvalidOperationException();
+        }
+#endif
 
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
