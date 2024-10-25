@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
@@ -18,7 +19,8 @@ public unsafe class ObjectTests
 
         MockMemorySpace.Builder builder = new(targetTestHelpers);
         Dictionary<DataType, Target.TypeInfo> types = new();
-        MockObject objectBuilder = new(types, builder);
+        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(types, builder);
+        MockObject objectBuilder = new(rtsBuilder);
         MockObject.AddTypes(types, targetTestHelpers);
         builder = builder
             .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem) ])
