@@ -4827,16 +4827,12 @@ static void getMethodSigInternal(
 
     MethodDesc * ftn = GetMethod(ftnHnd);
 
-    PCCOR_SIGNATURE pSig = NULL;
-    DWORD           cbSig = 0;
-    ftn->GetSig(&pSig, &cbSig);
-
     SigTypeContext context(ftn, (TypeHandle)owner);
 
     // Type parameters in the signature are instantiated
     // according to the class/method/array instantiation of ftnHnd and owner
     ConvToJitSig(
-        SigParser{ pSig, cbSig },
+        ftn->GetSigParser(),
         GetScopeHandle(ftn),
         mdTokenNil,
         &context,
@@ -7616,15 +7612,11 @@ static void getMethodInfoHelper(
         SigTypeContext::InitTypeContext(th, &context);
     }
 
-    PCCOR_SIGNATURE pSig = NULL;
-    DWORD           cbSig = 0;
-    ftn->GetSig(&pSig, &cbSig);
-
     /* Fetch the method signature */
     // Type parameters in the signature should be instantiated according to the
     // class/method/array instantiation of ftnHnd
     ConvToJitSig(
-        SigParser{ pSig, cbSig },
+        ftn->GetSigParser(),
         methInfo->scope,
         mdTokenNil,
         &context,
