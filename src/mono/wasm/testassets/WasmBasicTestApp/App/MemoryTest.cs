@@ -19,7 +19,7 @@ public partial class MemoryTest
         const int arrayCnt = 10;
         int[][] arrayHolder = new int[arrayCnt][];
         string errors = "";
-        TestOutput.WriteLine("Starting over managed array allocation");
+        TestOutput.WriteLine("Starting managed array allocation");
         for (int i = 0; i < arrayCnt; i++)
         {
             try
