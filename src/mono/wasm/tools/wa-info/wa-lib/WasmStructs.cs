@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace WebAssemblyInfo
 {
-    struct Instruction
+    public struct Instruction
     {
         public Opcode Opcode;
 
@@ -37,7 +37,7 @@ namespace WebAssemblyInfo
 
         public string ToString(WasmReader? reader)
         {
-            var prefix = Program.PrintOffsets ? $"0x{Offset:x8}: " : null;
+            var prefix = reader != null && reader.Context.PrintOffsets ? $"0x{Offset:x8}: " : null;
             var opStr = prefix + Opcode.ToString().ToLower().Replace("_", ".");
             switch (Opcode)
             {
@@ -67,13 +67,13 @@ namespace WebAssemblyInfo
                 case Opcode.Catch:
                 case Opcode.Throw:
                 case Opcode.I32_Const:
-                    return opStr + (Program.ShowConstLoad ? $" {I32}" : "");
+                    return opStr + (reader != null && reader.Context.ShowConstLoad ? $" {I32}" : "");
                 case Opcode.I64_Const:
-                    return opStr + (Program.ShowConstLoad ? $" {I64}" : "");
+                    return opStr + (reader != null && reader.Context.ShowConstLoad ? $" {I64}" : "");
                 case Opcode.F32_Const:
-                    return opStr + (Program.ShowConstLoad ? $" {F32}" : "");
+                    return opStr + (reader != null && reader.Context.ShowConstLoad ? $" {F32}" : "");
                 case Opcode.F64_Const:
-                    return opStr + (Program.ShowConstLoad ? $" {F64}" : "");
+                    return opStr + (reader != null && reader.Context.ShowConstLoad ? $" {F64}" : "");
                 case Opcode.I32_Load:
                 case Opcode.I64_Load:
                 case Opcode.F32_Load:
@@ -202,14 +202,14 @@ namespace WebAssemblyInfo
         }
     }
 
-    struct TableType
+    public struct TableType
     {
         public ReferenceType RefType;
         public UInt32 Min;
         public UInt32 Max;
     }
 
-    struct Element
+    public struct Element
     {
         public ElementFlag Flags;
         public UInt32 TableIdx;
@@ -263,14 +263,14 @@ namespace WebAssemblyInfo
     }
 
     [Flags]
-    enum ElementFlag
+    public enum ElementFlag
     {
         PassiveOrDeclarative = 1,
         ExplicitIndex = 2,
         TypeAndExpressions = 4
     }
 
-    struct Data
+    public struct Data
     {
         public DataMode Mode;
         public Instruction[] Expression;
@@ -278,32 +278,32 @@ namespace WebAssemblyInfo
         public byte[] Content;
     }
 
-    struct Global
+    public struct Global
     {
         public ValueType Type;
         public Mutability Mutability;
         public Instruction[] Expression;
     }
 
-    struct Memory
+    public struct Memory
     {
         public UInt32 Min;
         public UInt32 Max;
     }
 
-    enum Mutability
+    public enum Mutability
     {
         Const = 0,
         Var = 1,
     }
 
-    struct MemArg
+    public struct MemArg
     {
         public UInt32 Align;
         public UInt32 Offset;
     }
 
-    struct LocalsBlock
+    public struct LocalsBlock
     {
         public UInt32 Count;
         public ValueType Type;
@@ -321,7 +321,7 @@ namespace WebAssemblyInfo
         }
     }
 
-    struct Code
+    public struct Code
     {
         public LocalsBlock[] Locals;
         public Instruction[] Instructions;
@@ -333,13 +333,13 @@ namespace WebAssemblyInfo
         {
             reader.Reader.BaseStream.Seek(Offset, SeekOrigin.Begin);
 
-            if (Program.Verbose2)
+            if (reader.Context.Verbose2)
                 Console.WriteLine($"  code[{Idx}]: {Size} bytes");
 
             var vecSize = reader.ReadU32();
             Locals = new LocalsBlock[vecSize];
 
-            if (Program.Verbose2)
+            if (reader.Context.Verbose2)
                 Console.WriteLine($"    locals blocks count {vecSize}");
 
             for (var j = 0; j < vecSize; j++)
@@ -353,7 +353,7 @@ namespace WebAssemblyInfo
             // read expr
             (Instructions, _) = reader.ReadBlock();
 
-            if (Program.Verbose2)
+            if (reader.Context.Verbose2)
                 Console.WriteLine(ToString().Indent("    "));
         }
 
@@ -391,21 +391,21 @@ namespace WebAssemblyInfo
         }
     }
 
-    enum BlockTypeKind
+    public enum BlockTypeKind
     {
         Empty,
         ValueType,
         TypeIdx
     }
 
-    struct BlockType
+    public struct BlockType
     {
         public BlockTypeKind Kind;
         public ValueType ValueType;
         public UInt32 TypeIdx;
     }
 
-    enum ExportDesc : Byte
+    public enum ExportDesc : Byte
     {
         FuncIdx = 0,
         TableIdx,
@@ -413,7 +413,7 @@ namespace WebAssemblyInfo
         GlobalIdx
     }
 
-    struct Export
+    public struct Export
     {
         public string Name;
         public UInt32 Idx;
@@ -425,7 +425,7 @@ namespace WebAssemblyInfo
         }
     }
 
-    enum ImportDesc : Byte
+    public enum ImportDesc : Byte
     {
         TypeIdx = 0,
         TableIdx,
@@ -433,7 +433,7 @@ namespace WebAssemblyInfo
         GlobalIdx
     }
 
-    struct Import
+    public struct Import
     {
         public string Module;
         public string Name;
@@ -448,12 +448,12 @@ namespace WebAssemblyInfo
         }
     }
 
-    struct Function
+    public struct Function
     {
         public UInt32 TypeIdx;
     }
 
-    enum WitExternDescriptionKind : Byte
+    public enum WitExternDescriptionKind : Byte
     {
         CoreModule = 0,
         Function,
@@ -463,17 +463,17 @@ namespace WebAssemblyInfo
         Instance,
     }
 
-    enum WitTypeBound : byte {
+    public enum WitTypeBound : byte {
         Eq = 0,
         Sub,
     }
 
-    enum WitValueBound : byte {
+    public enum WitValueBound : byte {
         Eq = 0,
         Type,
     }
 
-    enum WitPrimaryValueType : byte {
+    public enum WitPrimaryValueType : byte {
         String = 0x73,
         Char,
         F64,
@@ -489,12 +489,12 @@ namespace WebAssemblyInfo
         Bool,
     }
 
-    enum WitValueTypeKind {
+    public enum WitValueTypeKind {
         Type,
         PrimaryValueType,
     }
 
-    struct WitValueType {
+    public struct WitValueType {
         public WitValueTypeKind Kind;
         public UInt32 TypeIdx;
         public WitPrimaryValueType PrimaryValueType;
@@ -505,7 +505,7 @@ namespace WebAssemblyInfo
         }
     }
 
-    struct WitExternDescription {
+    public struct WitExternDescription {
         public WitExternDescriptionKind Kind;
         public WitTypeBound TypeBound;
         public WitValueBound ValueBound;
@@ -513,7 +513,7 @@ namespace WebAssemblyInfo
         public UInt32 Idx;
     }
 
-    struct WitImport
+    public struct WitImport
     {
         public string Name;
         public UInt32 Length;
@@ -543,7 +543,7 @@ namespace WebAssemblyInfo
         }
     }
 
-    enum WitCoreSort {
+    public enum WitCoreSort {
         Function = 0,
         Table,
         Memory,
@@ -553,7 +553,7 @@ namespace WebAssemblyInfo
         Instance,
     }
 
-    enum WitSort {
+    public enum WitSort {
         CoreSort = 0,
         Function,
         Value,
@@ -577,7 +577,7 @@ namespace WebAssemblyInfo
         }
     }
 
-    enum NumberType : Byte
+    public enum NumberType : Byte
     {
         i32 = 0x7f,
         i64 = 0x7e,
@@ -585,14 +585,14 @@ namespace WebAssemblyInfo
         f64 = 0x7c
     }
 
-    enum ReferenceType : Byte
+    public enum ReferenceType : Byte
     {
         FuncRef = 0x70,
         ExternRef = 0x6f,
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    struct ValueType : IComparable<ValueType>
+    public struct ValueType : IComparable<ValueType>
     {
         [FieldOffset(0)]
         public byte value;
@@ -624,7 +624,7 @@ namespace WebAssemblyInfo
         }
     }
 
-    struct ResultType : IComparable<ResultType>
+    public struct ResultType : IComparable<ResultType>
     {
         public ValueType[] Types;
 
@@ -672,7 +672,7 @@ namespace WebAssemblyInfo
 
     }
 
-    struct FunctionType : IComparable<FunctionType>
+    public struct FunctionType : IComparable<FunctionType>
     {
         public ResultType Parameters;
         public ResultType Results;

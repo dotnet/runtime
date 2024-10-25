@@ -9,12 +9,12 @@ namespace WebAssemblyInfo
 {
     class WasmDiffReader : WasmReader
     {
-        public WasmDiffReader(string path) : base(path) { }
-        public WasmDiffReader(Stream stream, long length) : base(stream, length) { }
+        public WasmDiffReader(WasmContext context, string path) : base(context, path) { }
+        public WasmDiffReader(WasmContext context, Stream stream, long length) : base(context, stream, length) { }
 
-        override protected WasmReader CreateEmbeddedReader(Stream stream, long length)
+        override protected WasmReader CreateEmbeddedReader(WasmContext context, Stream stream, long length)
         {
-            return new WasmDiffReader(stream, length);
+            return new WasmDiffReader(context, stream, length);
         }
 
         void CompareSections(SectionInfo section1, SectionInfo section2)
@@ -77,13 +77,13 @@ namespace WebAssemblyInfo
                 throw new ArgumentNullException("data");
 
             (var otherReader, var secondPass) = ((WasmDiffReader, bool))data;
-            if (otherReader == null || otherReader.functionTypes == null || otherReader.functions == null || functionTypes == null || functions == null || funcsCode == null || otherReader.funcsCode == null)
+            if (otherReader == null || otherReader.functionTypes == null || otherReader.functions == null || functionTypes == null || functions == null || FuncsCode == null || otherReader.FuncsCode == null)
                 throw new InvalidOperationException();
 
             if (secondPass)
             {
-                if (Program.ShowFunctionSize)
-                    Console.WriteLine($"code size difference: +{otherReader.funcsCode[idx].Size} bytes");
+                if (Context.ShowFunctionSize)
+                    Console.WriteLine($"code size difference: +{otherReader.FuncsCode[idx].Size} bytes");
 
                 otherReader.PrintFunctionWithPrefix(idx, name, "+ ");
 
@@ -103,8 +103,8 @@ namespace WebAssemblyInfo
 
             if (f2 == null)
             {
-                if (Program.ShowFunctionSize)
-                    Console.WriteLine($"code size difference: -{funcsCode[idx].Size} bytes");
+                if (Context.ShowFunctionSize)
+                    Console.WriteLine($"code size difference: -{FuncsCode[idx].Size} bytes");
 
                 PrintFunctionWithPrefix(idx, GetFunctionName(idx), "- ");
 
@@ -118,9 +118,9 @@ namespace WebAssemblyInfo
 
             string sizeDiff = "";
             int sizeDelta = 0;
-            if (Program.ShowFunctionSize)
+            if (Context.ShowFunctionSize)
             {
-                sizeDelta = (int)otherReader.funcsCode[otherIdx].Size - (int)funcsCode[idx].Size;
+                sizeDelta = (int)otherReader.FuncsCode[otherIdx].Size - (int)FuncsCode[idx].Size;
                 sizeDiff = $" code size difference: {sizeDelta} bytes";
             }
 
@@ -132,8 +132,8 @@ namespace WebAssemblyInfo
                 sigPrinted = true;
             }
 
-            string code1 = funcsCode[idx].ToString(this, functionType1.Parameters.Types.Length);
-            string code2 = otherReader.funcsCode[otherIdx].ToString(otherReader, functionType1.Parameters.Types.Length);
+            string code1 = FuncsCode[idx].ToString(this, functionType1.Parameters.Types.Length);
+            string code2 = otherReader.FuncsCode[otherIdx].ToString(otherReader, functionType1.Parameters.Types.Length);
 
             if (code1 == code2)
                 return;
@@ -208,12 +208,12 @@ namespace WebAssemblyInfo
                 throw new ArgumentNullException("data");
 
             (var otherReader, var secondPass) = ((WasmDiffReader, bool))data;
-            if (otherReader == null || otherReader.functionTypes == null || otherReader.functions == null || functionTypes == null || functions == null || funcsCode == null || otherReader.funcsCode == null)
+            if (otherReader == null || otherReader.functionTypes == null || otherReader.functions == null || functionTypes == null || functions == null || FuncsCode == null || otherReader.FuncsCode == null)
                 throw new InvalidOperationException();
 
             if (secondPass)
             {
-                sizeDiffs[$"+{name}"] = (int)otherReader.funcsCode[idx].Size;
+                sizeDiffs[$"+{name}"] = (int)otherReader.FuncsCode[idx].Size;
 
                 return;
             }
@@ -231,12 +231,12 @@ namespace WebAssemblyInfo
 
             if (f2 == null)
             {
-                sizeDiffs[$"-{name}"] = -(int)funcsCode[idx].Size;
+                sizeDiffs[$"-{name}"] = -(int)FuncsCode[idx].Size;
 
                 return;
             }
 
-            int delta = (int)otherReader.funcsCode[otherIdx].Size - (int)funcsCode[idx].Size;
+            int delta = (int)otherReader.FuncsCode[otherIdx].Size - (int)FuncsCode[idx].Size;
             if (delta != 0)
                 sizeDiffs[$" {name}"] = delta;
         }
@@ -269,7 +269,7 @@ namespace WebAssemblyInfo
 
             Console.WriteLine("------------------------------------------------");
             Console.WriteLine($"{sum,10:n0}   bytes total");
-            var msize = other.funcMetadataSize - funcMetadataSize;
+            var msize = other.FuncMetadataSize - FuncMetadataSize;
             Console.WriteLine($"{sum + msize,10:n0}   bytes total, including metadata");
             Console.WriteLine("------------------------------------------------");
 

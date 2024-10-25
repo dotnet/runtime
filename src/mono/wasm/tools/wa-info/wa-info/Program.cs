@@ -10,35 +10,24 @@ namespace WebAssemblyInfo
 {
     public class Program
     {
-
-        public static int VerboseLevel;
-        static public bool Verbose { get { return VerboseLevel > 0; } }
-        static public bool Verbose2 { get { return VerboseLevel > 1; } }
-
         static internal Regex? AssemblyFilter;
-        static internal Regex? FunctionFilter;
-        static internal long FunctionOffset = -1;
         static internal Regex? TypeFilter;
-        public static bool AotStats;
-        public static bool Disassemble;
         public static bool ListWitImports;
         public static bool ListWitExports;
-        public static bool PrintOffsets;
-        public static bool ShowFunctionSize;
-        public static bool ShowConstLoad = true;
 
         readonly static Dictionary<string, AssemblyReader> assemblies = new();
 
         static int Main(string[] args)
         {
-            var files = ProcessArguments(args);
+            var context = new WasmContext();
+            var files = ProcessArguments(context, args);
 
             foreach (var file in files)
             {
-                var reader = new WasmReader(file);
+                var reader = new WasmReader(context, file);
                 reader.Parse();
 
-                if (!Disassemble && !AotStats && !ListWitImports && !ListWitExports)
+                if (!context.Disassemble && !context.AotStats && !ListWitImports && !ListWitExports)
                 {
                     reader.PrintSummary();
                     continue;
@@ -50,10 +39,10 @@ namespace WebAssemblyInfo
                 if (ListWitImports)
                     reader.PrintWitImports();
 
-                if (Disassemble)
+                if (context.Disassemble)
                     reader.PrintFunctions();
 
-                if (!AotStats)
+                if (!context.AotStats)
                     continue;
 
                 reader.FindFunctionsCallingInterp();
@@ -91,7 +80,7 @@ namespace WebAssemblyInfo
             return reader;
         }
 
-        static List<string> ProcessArguments(string[] args)
+        static List<string> ProcessArguments(WasmContext context, string[] args)
         {
             var help = false;
             var options = new OptionSet {
@@ -104,36 +93,36 @@ namespace WebAssemblyInfo
                 "Options:",
                 { "aot-stats",
                     "Show stats about methods",
-                    v => AotStats = true },
+                    v => context.AotStats = true },
                 { "a|assembly-filter=",
                     "Filter assemblies and process only those matching {REGEX}",
                     v => AssemblyFilter = new Regex (v) },
                 { "d|disassemble",
                     "Show functions(s) disassembled code",
-                    v => Disassemble = true },
+                    v => context.Disassemble = true },
                 { "f|function-filter=",
                     "Filter wasm functions {REGEX}",
-                    v => FunctionFilter = new Regex (v) },
+                    v => context.FunctionFilter = new Regex (v) },
                 { "function-offset=",
                     "Filter wasm functions {REGEX}",
                     v => {
                             if (long.TryParse(v, out var offset))
-                                FunctionOffset = offset;
+                                context.FunctionOffset = offset;
                             else if (v.StartsWith("0x") && long.TryParse(v[2..], NumberStyles.AllowHexSpecifier, null, out offset))
-                                FunctionOffset = offset;
+                                context.FunctionOffset = offset;
                     } },
                 { "h|help|?",
                     "Show this message and exit",
                     v => help = v != null },
                 { "o|instruction-offsets",
                     "Show instruction offsets",
-                    v => PrintOffsets = true },
+                    v => context.PrintOffsets = true },
                 { "t|type-filter=",
                     "Filter types and process only those matching {REGEX}",
                     v => TypeFilter = new Regex (v) },
                 { "v|verbose",
                     "Output information about progress during the run of the tool. Use multiple times to increase verbosity, like -vv",
-                    v => VerboseLevel++ },
+                    v => context.VerboseLevel++ },
                 { "wit-imports",
                     "List WIT imports",
                     v => ListWitImports = true },

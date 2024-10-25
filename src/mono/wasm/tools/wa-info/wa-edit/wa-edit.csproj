@@ -20,12 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Extensions.cs" Link="Extensions.cs" />
-    <Compile Include="..\WasmData.cs" Link="WasmData.cs" />
-    <Compile Include="..\WasmOpcode.cs" Link="WasmOpcode.cs" />
-    <Compile Include="..\WasmReaderBase.cs" Link="WasmReaderBase.cs" />
-    <Compile Include="..\WasmMTOpcode.cs" Link="WasmMTOpcode.cs" />
-    <Compile Include="..\WasmSIMDOpcode.cs" Link="WasmSIMDOpcode.cs" />
+    <ProjectReference Include="..\wa-lib\wa-lib.csproj"/>
     <PackageReference Include="Mono.Options" Version="6.12.0.148" />
     <None Include="..\README.md" Pack="true" PackagePath="\"/>
     <None Include="..\LICENSE" Pack="true" PackagePath="\"/>

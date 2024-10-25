@@ -9,24 +9,10 @@ namespace WebAssemblyInfo
 {
     public class Program
     {
-        public static int VerboseLevel;
-        static public bool Verbose { get { return VerboseLevel > 0; } }
-        static public bool Verbose2 { get { return VerboseLevel > 1; } }
-
-        public static Regex? AssemblyFilter;
-        public static Regex? FunctionFilter;
-        public static long FunctionOffset = -1;
-        public static bool ShowFunctionSize = false;
-        public static bool ShowConstLoad = true;
-        public static Regex? TypeFilter;
-
-        public static bool AotStats;
-        public static bool Disassemble;
-        public static bool PrintOffsets;
-
         static int Main(string[] args)
         {
-            var files = ProcessArguments(args);
+            var context = new WasmContext();
+            var files = ProcessArguments(context, args);
 
             if (files.Count != 2)
             {
@@ -35,22 +21,22 @@ namespace WebAssemblyInfo
                 return -1;
             }
 
-            var reader1 = new WasmDiffReader(files[0]);
+            var reader1 = new WasmDiffReader(context, files[0]);
             reader1.Parse();
 
-            var reader2 = new WasmDiffReader(files[1]);
+            var reader2 = new WasmDiffReader(context, files[1]);
             reader2.Parse();
 
-            return CompareReaders(reader1, reader2);
+            return CompareReaders(context, reader1, reader2);
         }
 
-        static int CompareReaders(WasmDiffReader reader1, WasmDiffReader reader2)
+        static int CompareReaders(WasmContext context, WasmDiffReader reader1, WasmDiffReader reader2)
         {
             int rv = 0;
 
-            if (!Disassemble)
+            if (!context.Disassemble)
             {
-                if (Program.ShowFunctionSize)
+                if (context.ShowFunctionSize)
                     reader1.CompareFunctions(reader2);
 
                 rv |= reader1.CompareSummary(reader2);
@@ -68,14 +54,14 @@ namespace WebAssemblyInfo
 
                     Console.WriteLine($"Comparing {module1} and {module2}");
 
-                    rv |= CompareReaders(module1, module2);
+                    rv |= CompareReaders(context, module1, module2);
                 }
             }
 
             return rv;
         }
 
-        static List<string> ProcessArguments(string[] args)
+        static List<string> ProcessArguments(WasmContext context, string[] args)
         {
             var help = false;
             var options = new OptionSet {
@@ -88,31 +74,31 @@ namespace WebAssemblyInfo
                 "Options:",
                 { "d|disassemble",
                     "Show functions(s) disassembled code",
-                    v => Disassemble = true },
+                    v => context.Disassemble = true },
                 { "f|function-filter=",
                     "Filter wasm functions {REGEX}",
-                    v => FunctionFilter = new Regex (v) },
+                    v => context.FunctionFilter = new Regex (v) },
                 { "function-offset=",
                     "Filter wasm functions {REGEX}",
                     v => {
                             if (long.TryParse(v, out var offset))
-                                FunctionOffset = offset;
+                                context.FunctionOffset = offset;
                             else if (v.StartsWith("0x") && long.TryParse(v[2..], NumberStyles.AllowHexSpecifier, null, out offset))
-                                FunctionOffset = offset;
+                                context.FunctionOffset = offset;
                     } },
                 { "h|hide-const-loads",
                     "Hide const loads values",
                     v => {
-                        ShowConstLoad = false;
+                        context.ShowConstLoad = false;
                     } },
                 { "s|function-size",
                     "Compare function code sizes",
                     v => {
-                        ShowFunctionSize = true;
+                        context.ShowFunctionSize = true;
                     } },
                 { "v|verbose",
                     "Output information about progress during the run of the tool. Use multiple times to increase verbosity, like -vv",
-                    v => VerboseLevel++ },
+                    v => context.VerboseLevel++ },
             };
 
             var remaining = options.Parse(args);

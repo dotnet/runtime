@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace WebAssemblyInfo
 {
-    enum Opcode : byte
+    public enum Opcode : byte
     {
         // control
         Unreachable = 0x00,
@@ -210,7 +210,7 @@ namespace WebAssemblyInfo
         MTPrefix = 0xfe,
     }
 
-    enum PrefixOpcode : byte
+    public enum PrefixOpcode : byte
     {
         // saturating
         I32_Trunc_Sat_F32_S = 0,

@@ -11,10 +11,13 @@ namespace WebAssemblyInfo
     {
         readonly string DestinationPath;
         BinaryWriter Writer;
+        WasmEditContext editContext;
 
-        public WasmRewriter(string source, string destination) : base(source)
+        public WasmRewriter(WasmEditContext context, string source, string destination) : base(context, source)
         {
-            if (Program.Verbose)
+            editContext = context;
+
+            if (editContext.Verbose)
                 Console.WriteLine($"Writing wasm file: {destination}");
 
             DestinationPath = destination;
@@ -35,7 +38,7 @@ namespace WebAssemblyInfo
 
         override protected void ReadSection(SectionInfo section)
         {
-            if (File.Exists(Program.DataSectionFile))
+            if (File.Exists(editContext.DataSectionFile))
             {
                 if (section.id == SectionId.Data)
                 {
@@ -78,7 +81,7 @@ namespace WebAssemblyInfo
                 int index = span.IndexOf(zeroes);
                 if (index == -1)
                 {
-                    if (Program.Verbose2)
+                    if (editContext.Verbose2)
                         Console.WriteLine($"  add last idx: {offset} size: {data.Length - offset} span remaining len: {span.Length}");
 
                     list.Add(new Chunk { index = offset, size = data.Length - offset });
@@ -86,7 +89,7 @@ namespace WebAssemblyInfo
                 }
                 if (index != 0)
                 {
-                    if (Program.Verbose2)
+                    if (editContext.Verbose2)
                         Console.WriteLine($"  add idx: {offset} size: {index} span remaining len: {span.Length} span index: {index}");
 
                     list.Add(new Chunk { index = offset, size = index });
@@ -110,7 +113,7 @@ namespace WebAssemblyInfo
                 }
             } while (true);
 
-            if (Program.Verbose)
+            if (editContext.Verbose)
                 Console.Write($"    segments detected: {list.Count:N0} zero bytes stripped: {stripped:N0}");
 
             return list;
@@ -119,14 +122,14 @@ namespace WebAssemblyInfo
         void RewriteDataSection()
         {
             //var oo = Writer.BaseStream.Position;
-            var bytes = File.ReadAllBytes(Program.DataSectionFile);
+            var bytes = File.ReadAllBytes(editContext.DataSectionFile);
             var chunk = new Chunk { index = 0, size = bytes.Length };
-            var segments = Program.DataSectionAutoSplit ? Split(bytes) : new List<Chunk> { chunk };
+            var segments = editContext.DataSectionAutoSplit ? Split(bytes) : new List<Chunk> { chunk };
 
-            var mode = Program.DataSectionMode;
+            var mode = editContext.DataSectionMode;
             var sectionLen = U32Len((uint)segments.Count);
             foreach (var segment in segments)
-                sectionLen += GetDataSegmentLength(mode, segment, Program.DataOffset + segment.index);
+                sectionLen += GetDataSegmentLength(mode, segment, editContext.DataOffset + segment.index);
 
             // section beginning
             Writer.Write((byte)SectionId.Data);
@@ -135,7 +138,7 @@ namespace WebAssemblyInfo
             // section content
             WriteU32((uint)segments.Count);
             foreach (var segment in segments)
-                WriteDataSegment(mode, bytes, segment, Program.DataOffset + segment.index);
+                WriteDataSegment(mode, bytes, segment, editContext.DataOffset + segment.index);
 
             //var pos = Writer.BaseStream.Position;
             //Writer.BaseStream.Position = oo;
@@ -154,7 +157,7 @@ namespace WebAssemblyInfo
 
         void WriteDataSegment(DataMode mode, byte[] data, Chunk chunk, int memoryOffset)
         {
-            if (Program.Verbose2)
+            if (editContext.Verbose2)
                 Console.WriteLine($"  write data segment at offset: {memoryOffset} chunk index: {chunk.index} size: {chunk.size}");
 
             // data segment

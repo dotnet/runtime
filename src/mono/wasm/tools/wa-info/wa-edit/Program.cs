@@ -10,28 +10,17 @@ namespace WebAssemblyInfo
 {
     public class Program
     {
-
-        public static int VerboseLevel;
-        static public bool Verbose { get { return VerboseLevel > 0; } }
-        static public bool Verbose2 { get { return VerboseLevel > 1; } }
-
-        public static bool DataSectionAutoSplit = false;
-        public static string DataSectionFile = "";
-        public static DataMode DataSectionMode = DataMode.Active;
-        public static int DataOffset = 0;
-        public static bool ShowFunctionSize;
-        public static bool ShowConstLoad = true;
-
         static int Main(string[] args)
         {
-            var files = ProcessArguments(args);
-            var reader = new WasmRewriter(files[0], files[1]);
+            var context = new WasmEditContext();
+            var files = ProcessArguments(context, args);
+            var reader = new WasmRewriter(context, files[0], files[1]);
             reader.Parse();
 
             return 0;
         }
 
-        static List<string> ProcessArguments(string[] args)
+        static List<string> ProcessArguments(WasmEditContext context, string[] args)
         {
             var help = false;
             var options = new OptionSet {
@@ -44,23 +33,23 @@ namespace WebAssemblyInfo
                 "Options:",
                 { "a|data-auto-split",
                     "Split the data segment to avoid long empty chunks with zeroes",
-                    v => DataSectionAutoSplit = true },
+                    v => context.DataSectionAutoSplit = true },
                 { "d|data-section=",
                     "Replace the data section with content of the {FILE}",
-                    v => DataSectionFile = v },
+                    v => context.DataSectionFile = v },
                 { "m|data-section-mode=",
                     "Set the data section replacement {MODE}. Possible values: Active, Passive",
-                    v => DataSectionMode = (string.Equals(v, "Passive", StringComparison.InvariantCultureIgnoreCase)) ? DataMode.Passive : DataMode.Active },
+                    v => context.DataSectionMode = (string.Equals(v, "Passive", StringComparison.InvariantCultureIgnoreCase)) ? DataMode.Passive : DataMode.Active },
                 { "o|data-offset=",
                     "Data section offset",
-                    v => { if (!int.TryParse(v, out DataOffset))
+                    v => { if (!int.TryParse(v, out context.DataOffset))
                             Console.WriteLine("Specify number for data-offset option"); } },
                 { "h|help|?",
                     "Show this message and exit",
                     v => help = v != null },
                 { "v|verbose",
                     "Output information about progress during the run of the tool. Use multiple times to increase verbosity, like -vv",
-                    v => VerboseLevel++ },
+                    v => context.VerboseLevel++ },
             };
 
             var remaining = options.Parse(args);

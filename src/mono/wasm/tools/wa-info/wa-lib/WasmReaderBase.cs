@@ -9,6 +9,8 @@ namespace WebAssemblyInfo
 {
     public abstract class WasmReaderBase
     {
+        public WasmContext Context;
+
         public readonly BinaryReader Reader;
         public UInt32 Version { get; private set; }
         public string Path { get; private set; }
@@ -16,9 +18,11 @@ namespace WebAssemblyInfo
         protected readonly long Length;
         protected readonly Stack<long> EndOfModulePositions = new();
 
-        public WasmReaderBase(string path)
+        public WasmReaderBase(WasmContext context, string path)
         {
-            if (Program.Verbose)
+            Context = context;
+
+            if (Context.Verbose)
                 Console.WriteLine($"Reading wasm file: {path}");
 
             Path = path;
@@ -28,8 +32,9 @@ namespace WebAssemblyInfo
             EndOfModulePositions.Push(Length);
         }
 
-        public WasmReaderBase(Stream stream, long len)
+        public WasmReaderBase(WasmContext context, Stream stream, long len)
         {
+            Context = context;
             Length =  len;
             Path = "[embedded]";
             Reader = new BinaryReader(stream);
@@ -59,7 +64,7 @@ namespace WebAssemblyInfo
             }
 
             Version = Reader.ReadUInt32();
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.WriteLine($"WebAssembly binary format version: 0x{Version:x8}");
 
             switch (Version)
@@ -143,12 +148,12 @@ namespace WebAssemblyInfo
 
             sectionsById[section.id].Add(section);
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.Write($"Reading section: {section.id,9} size: {section.size,12}");
 
             ReadSection(section);
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.WriteLine();
 
             Reader.BaseStream.Seek(section.begin + section.size, SeekOrigin.Begin);

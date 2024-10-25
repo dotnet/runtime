@@ -2,7 +2,7 @@
 
 namespace WebAssemblyInfo
 {
-    enum SIMDOpcode : Int32
+    public enum SIMDOpcode : Int32
     {
         V128_Load = 0x00,
         V128_Load8x8_S = 0x01,

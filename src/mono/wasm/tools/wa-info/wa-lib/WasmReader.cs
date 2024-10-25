@@ -7,21 +7,21 @@ using NameMap = System.Collections.Generic.Dictionary<System.UInt32, string>;
 
 namespace WebAssemblyInfo
 {
-    class WasmReader : WasmReaderBase
+    public class WasmReader : WasmReaderBase
     {
         public List<WasmReader> ModuleReaders = new();
 
-        public WasmReader(string path) : base(path)
+        public WasmReader(WasmContext context, string path) : base(context, path)
         {
         }
 
-        public WasmReader(Stream stream, long length) : base(stream, length)
+        public WasmReader(WasmContext context, Stream stream, long length) : base(context, stream, length)
         {
         }
 
-        protected virtual WasmReader CreateEmbeddedReader(Stream stream, long length)
+        protected virtual WasmReader CreateEmbeddedReader(WasmContext context, Stream stream, long length)
         {
-            return new WasmReader(stream, length);
+            return new WasmReader(context, stream, length);
         }
 
         protected override void PostParse()
@@ -38,7 +38,7 @@ namespace WebAssemblyInfo
             if (!File.Exists(symPath))
                 return;
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.WriteLine($"Reading function names from: {symPath}");
 
             var lines = File.ReadAllLines(symPath);
@@ -89,7 +89,7 @@ namespace WebAssemblyInfo
                     ReadElementSection();
                     break;
                 case SectionId.Code:
-                    if (Program.AotStats || Program.Disassemble || Program.ShowFunctionSize)
+                    if (Context.AotStats || Context.Disassemble || Context.ShowFunctionSize)
                         ReadCodeSection();
                     break;
                 case SectionId.Data:
@@ -105,7 +105,7 @@ namespace WebAssemblyInfo
                     InWitComponent = false;
                     EndOfModulePositions.Push(Reader.BaseStream.Position + section.size);
 
-                    var reader = CreateEmbeddedReader(Reader.BaseStream, section.size);
+                    var reader = CreateEmbeddedReader(Context, Reader.BaseStream, section.size);
                     reader.ReadModule();
                     ModuleReaders.Add(reader);
                     EndOfModulePositions.Pop();
@@ -136,10 +136,10 @@ namespace WebAssemblyInfo
         {
             UInt32 count = ReadU32();
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.Write($" count: {count}");
 
-            if (Program.Verbose2)
+            if (Context.Verbose2)
                 Console.WriteLine();
 
             tables = new TableType[count];
@@ -148,7 +148,7 @@ namespace WebAssemblyInfo
                 tables[i].RefType = (ReferenceType)Reader.ReadByte();
                 (tables[i].Min, tables[i].Max) = ReadLimits();
 
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.WriteLine($"  table: {i} reftype: {tables[i].RefType} limits: {tables[i].Min}, {tables[i].Max}");
             }
         }
@@ -158,17 +158,17 @@ namespace WebAssemblyInfo
         {
             UInt32 count = ReadU32();
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.Write($" count: {count}");
 
-            if (Program.Verbose2)
+            if (Context.Verbose2)
                 Console.WriteLine();
 
             elements = new Element[count];
             for (uint i = 0; i < count; i++)
             {
                 elements[i].Flags = (ElementFlag)Reader.ReadByte();
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.WriteLine($"  element: {i} flags: {elements[i].Flags}");
 
                 if (elements[i].HasTableIdx)
@@ -177,7 +177,7 @@ namespace WebAssemblyInfo
                 if (elements[i].HasExpression)
                 {
                     (elements[i].Expression, _) = ReadBlock();
-                    if (Program.Verbose2)
+                    if (Context.Verbose2)
                     {
                         Console.WriteLine("  expression:");
                         foreach (var instruction in elements[i].Expression)
@@ -203,7 +203,7 @@ namespace WebAssemblyInfo
                         elements[i].Kind = Reader.ReadByte();
 
                     var size = ReadU32();
-                    if (Program.Verbose2)
+                    if (Context.Verbose2)
                         Console.WriteLine($"  size: {size}");
 
                     elements[i].Indices = new UInt32[size];
@@ -211,7 +211,7 @@ namespace WebAssemblyInfo
                     {
                         elements[i].Indices[j] = ReadU32();
 
-                        if (Program.Verbose2)
+                        if (Context.Verbose2)
                             Console.WriteLine($"    idx[{j}] = {elements[i].Indices[j]}");
                     }
                 }
@@ -223,28 +223,28 @@ namespace WebAssemblyInfo
         {
             var count = ReadU32();
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.Write($" count: {count}");
 
-            if (Program.Verbose2)
+            if (Context.Verbose2)
                 Console.WriteLine();
 
             dataSegments = new Data[count];
             for (uint i = 0; i < count; i++)
             {
                 dataSegments[i].Mode = (DataMode)ReadU32();
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.Write($"  data idx: {i} mode: {dataSegments[i].Mode}");
                 switch (dataSegments[i].Mode)
                 {
                     case DataMode.ActiveMemory:
                         dataSegments[i].MemIdx = ReadU32();
-                        if (Program.Verbose2)
+                        if (Context.Verbose2)
                             Console.Write($" memory index: {dataSegments[i].MemIdx}");
                         goto case DataMode.Active;
                     case DataMode.Active:
                         (dataSegments[i].Expression, _) = ReadBlock();
-                        if (Program.Verbose2)
+                        if (Context.Verbose2)
                         {
                             Console.Write(" offset expression:");
                             if (dataSegments[i].Expression.Length == 1)
@@ -262,7 +262,7 @@ namespace WebAssemblyInfo
                 }
 
                 var length = ReadU32();
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.WriteLine($" length: {length}");
 
                 dataSegments[i].Content = Reader.ReadBytes((int)length);
@@ -274,29 +274,29 @@ namespace WebAssemblyInfo
         {
             var count = ReadU32();
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.Write($" count: {count}");
 
-            if (Program.Verbose2)
+            if (Context.Verbose2)
                 Console.WriteLine();
 
             globals = new Global[count];
             for (uint i = 0; i < count; i++)
             {
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.Write($"  global idx: {i}");
 
                 ReadValueType(ref globals[i].Type);
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.Write($" type: {globals[i].Type}");
 
                 globals[i].Mutability = (Mutability)Reader.ReadByte();
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.Write($" mutability: {globals[i].Mutability.ToString().ToLower()}");
 
                 (globals[i].Expression, _) = ReadBlock();
 
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                 {
                     if (globals[i].Expression.Length == 1)
                     {
@@ -310,7 +310,7 @@ namespace WebAssemblyInfo
                     }
                 }
 
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.WriteLine();
             }
         }
@@ -320,10 +320,10 @@ namespace WebAssemblyInfo
         {
             var count = ReadU32();
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.Write($" count: {count}");
 
-            if (Program.Verbose2)
+            if (Context.Verbose2)
                 Console.WriteLine();
 
             memories = new Memory[count];
@@ -331,38 +331,38 @@ namespace WebAssemblyInfo
             {
                 (memories[i].Min, memories[i].Max) = ReadLimits();
 
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.Write($"  memory: {i} limits: {memories[i].Min}, {memories[i].Max}");
 
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.WriteLine();
             }
         }
 
-        protected Code[]? funcsCode;
-        internal long funcMetadataSize;
+        protected Code[]? FuncsCode;
+        public long FuncMetadataSize;
         void ReadCodeSection()
         {
             var start = Reader.BaseStream.Position;
             UInt32 count = ReadU32();
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.Write($" count: {count}");
 
-            if (Program.Verbose2)
+            if (Context.Verbose2)
                 Console.WriteLine();
 
-            funcsCode = new Code[count];
-            funcMetadataSize += Reader.BaseStream.Position - start;
+            FuncsCode = new Code[count];
+            FuncMetadataSize += Reader.BaseStream.Position - start;
 
             for (uint i = 0; i < count; i++)
             {
                 start = Reader.BaseStream.Position;
-                funcsCode[i].Idx = i;
-                funcsCode[i].Size = ReadU32();
-                funcsCode[i].Offset = Reader.BaseStream.Position;
-                funcMetadataSize += funcsCode[i].Offset - start;
-                Reader.BaseStream.Seek(funcsCode[i].Offset + funcsCode[i].Size, SeekOrigin.Begin);
+                FuncsCode[i].Idx = i;
+                FuncsCode[i].Size = ReadU32();
+                FuncsCode[i].Offset = Reader.BaseStream.Position;
+                FuncMetadataSize += FuncsCode[i].Offset - start;
+                Reader.BaseStream.Seek(FuncsCode[i].Offset + FuncsCode[i].Size, SeekOrigin.Begin);
             }
         }
 
@@ -1105,7 +1105,7 @@ namespace WebAssemblyInfo
             var name = ReadString();
             customSectionNames.Add(name);
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.Write($" name: {name}");
 
             if (name == "name")
@@ -1130,7 +1130,7 @@ namespace WebAssemblyInfo
         {
             var start = Reader.BaseStream.Position;
 
-            if (Program.Verbose2)
+            if (Context.Verbose2)
                 Console.WriteLine();
 
             while (Reader.BaseStream.Position - start < size)
@@ -1143,7 +1143,7 @@ namespace WebAssemblyInfo
                 {
                     case CustomSubSectionId.ModuleName:
                         ModuleName = ReadString();
-                        if (Program.Verbose2)
+                        if (Context.Verbose2)
                             Console.WriteLine($"  module name: {ModuleName}");
                         break;
                     case CustomSubSectionId.FunctionNames:
@@ -1159,7 +1159,7 @@ namespace WebAssemblyInfo
                         ReadNameMap(dataSegmentNames, "data segment");
                         break;
                     default:
-                        if (Program.Verbose2)
+                        if (Context.Verbose2)
                             Console.WriteLine($"  subsection {id}");
                         break;
                 }
@@ -1171,13 +1171,13 @@ namespace WebAssemblyInfo
         void ReadIndirectNameMap(Dictionary<UInt32, NameMap> indirectMap, string mapName, string indiceName)
         {
             var count = ReadU32();
-            if (Program.Verbose2)
+            if (Context.Verbose2)
                 Console.WriteLine($"  {mapName} names count: {count}");
 
             for (int i = 0; i < count; i++)
             {
                 var idx = ReadU32();
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.WriteLine($"    {mapName} map for {indiceName}: {idx}");
 
                 var map = ReadNameMap(null, mapName);
@@ -1191,7 +1191,7 @@ namespace WebAssemblyInfo
         Dictionary<UInt32, string> ReadNameMap(Dictionary<UInt32, string>? map, string mapName, Dictionary<string, UInt32>? reversed = null)
         {
             var count = ReadU32();
-            if (Program.Verbose2)
+            if (Context.Verbose2)
                 Console.WriteLine($"      {mapName} names count: {count}");
 
             if (map == null)
@@ -1201,7 +1201,7 @@ namespace WebAssemblyInfo
             {
                 var idx = ReadU32();
                 var name = ReadString();
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.WriteLine($"        {mapName} idx: {idx} name: {name}");
 
                 if (map.ContainsKey(idx))
@@ -1223,10 +1223,10 @@ namespace WebAssemblyInfo
         {
             UInt32 count = ReadU32();
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.Write($" count: {count}");
 
-            if (Program.Verbose2)
+            if (Context.Verbose2)
                 Console.WriteLine();
 
             exports = new Export[count];
@@ -1237,7 +1237,7 @@ namespace WebAssemblyInfo
                 exports[i].Desc = (ExportDesc)Reader.ReadByte();
                 exports[i].Idx = ReadU32();
 
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.WriteLine($"  {exports[i]}");
             }
         }
@@ -1249,10 +1249,10 @@ namespace WebAssemblyInfo
         {
             UInt32 count = ReadU32();
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.Write($" count: {count}");
 
-            if (Program.Verbose2)
+            if (Context.Verbose2)
                 Console.WriteLine();
 
             imports = new Import[count];
@@ -1271,7 +1271,7 @@ namespace WebAssemblyInfo
                 if (imports[i].Desc == ImportDesc.TypeIdx)
                     functionImportsCount++;
 
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.WriteLine($"  {imports[i]}");
             }
         }
@@ -1291,10 +1291,10 @@ namespace WebAssemblyInfo
         {
             UInt32 count = ReadU32();
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.Write($" count: {count}");
 
-            if (Program.Verbose2)
+            if (Context.Verbose2)
                 Console.WriteLine();
 
             functionTypes = new FunctionType[count];
@@ -1307,7 +1307,7 @@ namespace WebAssemblyInfo
                 ReadResultTypes(ref functionTypes[i].Parameters);
                 ReadResultTypes(ref functionTypes[i].Results);
 
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.WriteLine($"  Function type[{i}]: {functionTypes[i]}");
             }
         }
@@ -1336,7 +1336,7 @@ namespace WebAssemblyInfo
         {
             UInt32 count = ReadU32();
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.Write($" count: {count}");
 
             functions = new Function[count];
@@ -1380,7 +1380,7 @@ namespace WebAssemblyInfo
         void ReadWitExternDescription(ref WitExternDescription ed)
         {
                 ed.Kind = (WitExternDescriptionKind) Reader.ReadByte();
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.WriteLine($" extern description kind: {ed.Kind}");
 
                 switch(ed.Kind) {
@@ -1389,14 +1389,14 @@ namespace WebAssemblyInfo
                     case WitExternDescriptionKind.Component:
                     case WitExternDescriptionKind.Instance:
                         var typeIdx = ReadU32();
-                    if (Program.Verbose2)
+                    if (Context.Verbose2)
                         Console.WriteLine($" idx: {typeIdx}");
                         break;
                     case WitExternDescriptionKind.Type:
                         ed.TypeBound = (WitTypeBound) Reader.ReadByte();
                         if (ed.TypeBound == WitTypeBound.Eq)
                             ed.Idx = ReadU32();
-                        if (Program.Verbose2)
+                        if (Context.Verbose2)
                             Console.WriteLine($" typebound: {ed.ValueBound} idx: {ed.Idx}");
                         break;
                     case WitExternDescriptionKind.Value:
@@ -1405,7 +1405,7 @@ namespace WebAssemblyInfo
                             ed.Idx = ReadU32();
                         else
                             ReadWitValueType(ref ed.ValueType);
-                        if (Program.Verbose2)
+                        if (Context.Verbose2)
                             Console.WriteLine($" valuebound: {ed.ValueBound} idx: {ed.Idx}");
                         break;
                 }
@@ -1415,7 +1415,7 @@ namespace WebAssemblyInfo
         {
             var v = Reader.ReadByte();
             vt.Kind = v >= 0x73 && v < 0x7f ? WitValueTypeKind.PrimaryValueType : WitValueTypeKind.Type;
-            if (Program.Verbose2)
+            if (Context.Verbose2)
                 Console.WriteLine($" kind: {vt.Kind}");
             if (vt.Kind == WitValueTypeKind.PrimaryValueType)
                 vt.PrimaryValueType = (WitPrimaryValueType) v;
@@ -1429,10 +1429,10 @@ namespace WebAssemblyInfo
         {
             UInt32 count = ReadU32();
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.Write($" count: {count}");
 
-            if (Program.Verbose2)
+            if (Context.Verbose2)
                 Console.WriteLine();
 
             witImports ??= new ();
@@ -1442,7 +1442,7 @@ namespace WebAssemblyInfo
                 var import = new WitImport();
                 import.Length = ReadU32();
                 import.Name = ReadString();
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.WriteLine($" len: {import.Length} name: {import.Name}");
 
                 ReadWitExternDescription(ref import.ExternDescription);
@@ -1457,10 +1457,10 @@ namespace WebAssemblyInfo
         {
             UInt32 count = ReadU32();
 
-            if (Program.Verbose)
+            if (Context.Verbose)
                 Console.Write($" count: {count}");
 
-            if (Program.Verbose2)
+            if (Context.Verbose2)
                 Console.WriteLine();
 
             witExports ??= new ();
@@ -1471,11 +1471,11 @@ namespace WebAssemblyInfo
                 var export = new WitExport();
                 export.Length = ReadU32();
                 export.Name = ReadString();
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.WriteLine($" len: {export.Length} name: {export.Name}");
 
                 export.Sort = (WitSort) Reader.ReadByte();
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.WriteLine($" sort: {export.Sort}");
 
                 if (export.Sort == WitSort.CoreSort) {
@@ -1485,7 +1485,7 @@ namespace WebAssemblyInfo
 
                 export.SortIdx = ReadU32();
 
-                if (Program.Verbose2)
+                if (Context.Verbose2)
                     Console.WriteLine($" sort idx: {export.SortIdx}");
 
                 ReadWitExternDescription(ref export.ExternDescription);
@@ -1514,16 +1514,16 @@ namespace WebAssemblyInfo
         protected virtual bool FilterFunction(uint idx, out string? name, object? data = null)
         {
             name = null;
-            bool process = Program.FunctionFilter == null && Program.FunctionOffset == -1;
+            bool process = Context.FunctionFilter == null && Context.FunctionOffset == -1;
 
-            if (Program.FunctionOffset != -1 && funcsCode != null
-                && idx < funcsCode.Length
-                && funcsCode[idx].Offset <= Program.FunctionOffset && funcsCode[idx].Offset + funcsCode[idx].Size > Program.FunctionOffset)
+            if (Context.FunctionOffset != -1 && FuncsCode != null
+                && idx < FuncsCode.Length
+                && FuncsCode[idx].Offset <= Context.FunctionOffset && FuncsCode[idx].Offset + FuncsCode[idx].Size > Context.FunctionOffset)
             {
                 process = true;
             }
 
-            if (!process && Program.FunctionFilter != null)
+            if (!process && Context.FunctionFilter != null)
             {
                 if (!HasFunctionNames)
                     return false;
@@ -1532,7 +1532,7 @@ namespace WebAssemblyInfo
                 if (name == null)
                     return false;
 
-                if (!Program.FunctionFilter.Match(name).Success)
+                if (!Context.FunctionFilter.Match(name).Success)
                     return false;
 
                 process = true;
@@ -1557,11 +1557,11 @@ namespace WebAssemblyInfo
 
         protected void PrintFunctionWithPrefix(UInt32 idx, string? name, string? prefix = null)
         {
-            if (functions == null || functionTypes == null || funcsCode == null)
+            if (functions == null || functionTypes == null || FuncsCode == null)
                 return;
 
             var type = functionTypes[functions[idx].TypeIdx];
-            Console.WriteLine($"{prefix}{type.ToString(name, true)}\n{funcsCode[idx].ToString(this, type.Parameters.Types.Length).Indent(prefix)}");
+            Console.WriteLine($"{prefix}{type.ToString(name, true)}\n{FuncsCode[idx].ToString(this, type.Parameters.Types.Length).Indent(prefix)}");
         }
 
         protected void PrintFunction(UInt32 idx, string? name, object? _ = null)
@@ -1590,7 +1590,7 @@ namespace WebAssemblyInfo
 
         public void FindFunctionsCallingInterp()
         {
-            if (funcsCode == null || imports == null)
+            if (FuncsCode == null || imports == null)
                 return;
 
             if (!nameToFunction.TryGetValue("mini_llvmonly_get_interp_entry", out var interpIdx))
@@ -1601,11 +1601,11 @@ namespace WebAssemblyInfo
             }
 
             uint count = 0, totalCount = 0;
-            for (UInt32 idx = 0; idx < funcsCode.Length; idx++)
+            for (UInt32 idx = 0; idx < FuncsCode.Length; idx++)
             {
                 UInt32 funcIdx = FunctionOffset(idx);
                 var name = functionNames[funcIdx];
-                if (Program.FunctionFilter != null && !Program.FunctionFilter.Match(name).Success)
+                if (Context.FunctionFilter != null && !Context.FunctionFilter.Match(name).Success)
                     continue;
 
                 totalCount++;
@@ -1614,8 +1614,8 @@ namespace WebAssemblyInfo
                 {
                     count++;
 
-                    if (Program.Verbose)
-                        Console.WriteLine($"function {name} calls interpreter, code size: {funcsCode[idx].Size}");
+                    if (Context.Verbose)
+                        Console.WriteLine($"function {name} calls interpreter, code size: {FuncsCode[idx].Size}");
                 }
             }
 
@@ -1624,10 +1624,10 @@ namespace WebAssemblyInfo
 
         bool FunctionCallsFunction(UInt32 idx, UInt32 calledIdx)
         {
-            if (funcsCode == null || imports == null)
+            if (FuncsCode == null || imports == null)
                 return false;
 
-            var code = funcsCode[idx - functionImportsCount];
+            var code = FuncsCode[idx - functionImportsCount];
             if (!code.EnsureCodeReaded(this))
                 return false;
 

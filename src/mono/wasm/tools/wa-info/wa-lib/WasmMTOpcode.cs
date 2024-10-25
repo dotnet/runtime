@@ -2,7 +2,7 @@
 
 namespace WebAssemblyInfo
 {
-    enum MTOpcode : Int32
+    public enum MTOpcode : Int32
     {
         Memory_Atomic_Notify = 0x00,
         Memory_Atomic_Wait32 = 0x01,
