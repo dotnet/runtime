@@ -4856,6 +4856,426 @@ void Compiler::fgMoveColdBlocks()
 }
 
 //-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::EdgeCmp: Comparator for the 'cutPoints' priority queue.
+// If 'left' has a bigger edge weight than 'right', 3-opt will consider it first.
+// Else, 3-opt will consider 'right' first.
+//
+// Parameters:
+//   left - One of the two edges to compare
+//   right - The other edge to compare
+//
+// Returns:
+//   True if 'right' should be considered before 'left', and false otherwise
+//
+/* static */ bool Compiler::ThreeOptLayout::EdgeCmp(const FlowEdge* left, const FlowEdge* right)
+{
+    return left->getLikelyWeight() < right->getLikelyWeight();
+}
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::ThreeOptLayout: Constructs a ThreeOptLayout instance.
+//
+// Parameters:
+//   comp - The Compiler instance
+//
+Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
+    : compiler(comp)
+    , cutPoints(comp->getAllocator(CMK_FlowEdge), &ThreeOptLayout::EdgeCmp)
+    , usedCandidates(comp->getAllocator(CMK_FlowEdge))
+    , ordinals(new(comp, CMK_Generic) unsigned[comp->fgBBNumMax + 1]{})
+    , blockOrder(nullptr)
+    , tempOrder(nullptr)
+{
+}
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::ConsiderEdge: Adds 'edge' to 'cutPoints' for later consideration
+// if 'edge' looks promising, and it hasn't been considered already.
+// Since adding to 'cutPoints' has logarithmic time complexity and might cause a heap allocation,
+// avoid adding edges that 3-opt obviously won't consider later.
+//
+// Parameters:
+//   edge - The branch to consider creating fallthrough for
+//   startPos - The start index of the region currently being reordered
+//
+void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge, unsigned startPos)
+{
+    // Since adding to priority queues has logarithmic time complexity,
+    // try to avoid adding edges that we obviously won't consider when reordering.
+    assert(edge != nullptr);
+
+    BasicBlock* const srcBlk = edge->getSourceBlock();
+    BasicBlock* const dstBlk = edge->getDestinationBlock();
+
+    // Ignore cross-region branches
+    if (!BasicBlock::sameEHRegion(srcBlk, dstBlk))
+    {
+        return;
+    }
+
+    const unsigned srcPos = ordinals[srcBlk->bbNum];
+    const unsigned dstPos = ordinals[dstBlk->bbNum];
+
+    // Don't consider edges from outside the hot range.
+    // If 'srcBlk' has an ordinal of zero and it isn't the first block,
+    // it's not tracked by 'ordinals', so it's not in the hot section.
+    if ((srcPos == 0) && !srcBlk->IsFirst())
+    {
+        return;
+    }
+
+    // Don't consider edges to blocks outside the hot range,
+    // or backedges to the first block in a region; we don't want to change the entry point.
+    if (dstPos == startPos)
+    {
+        return;
+    }
+
+    // Don't consider backedges for single-block loops
+    if (srcPos == dstPos)
+    {
+        return;
+    }
+
+    // Don't add an edge that we've already considered
+    if (!usedCandidates.Set(edge, true, usedCandidates.SetKind::Overwrite))
+    {
+        cutPoints.Push(edge);
+    }
+}
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::AddNonFallthroughSuccs: Considers every edge out of 'block'
+// that doesn't fall through as a future cut point.
+//
+// Parameters:
+//   block - The source of edges to consider
+//   next - The lexical successor to 'block' in 3-opt's current ordering
+//   startPos - The start index of the region currently being reordered
+//
+void Compiler::ThreeOptLayout::AddNonFallthroughSuccs(BasicBlock* block, BasicBlock* next, unsigned startPos)
+{
+    assert(block != nullptr);
+    for (FlowEdge* const succEdge : block->SuccEdges(compiler))
+    {
+        if (succEdge->getDestinationBlock() != next)
+        {
+            ConsiderEdge(succEdge, startPos);
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::AddNonFallthroughPreds: Considers every edge into 'block'
+// that doesn't fall through as a future cut point.
+//
+// Parameters:
+//   block - The destination of edges to consider
+//   prev - The lexical predecessor to 'block' in 3-opt's current ordering
+//   startPos - The start index of the region currently being reordered
+//
+void Compiler::ThreeOptLayout::AddNonFallthroughPreds(BasicBlock* block, BasicBlock* prev, unsigned startPos)
+{
+    assert(block != nullptr);
+
+    for (FlowEdge* const predEdge : block->PredEdges())
+    {
+        if (predEdge->getSourceBlock() != prev)
+        {
+            ConsiderEdge(predEdge, startPos);
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::Run: Runs 3-opt for each contiguous region of the block list
+// we're interested in reordering.
+// Skips handler regions for now, as these are assumed to be cold.
+//
+void Compiler::ThreeOptLayout::Run()
+{
+    // Walk backwards through the main method body, looking for the last hot block.
+    // Since we moved all cold blocks to the end of the method already,
+    // we should have a span of hot blocks to consider reordering at the beginning of the method.
+    BasicBlock* finalBlock;
+    for (finalBlock = compiler->fgLastBBInMainFunction();
+         !finalBlock->IsFirst() && finalBlock->isBBWeightCold(compiler); finalBlock = finalBlock->Prev())
+        ;
+
+    // Initialize the ordinal numbers for the hot blocks.
+    // Note that we default-initialized 'ordinals' with zeros.
+    // Block reordering shouldn't change the method's entry point,
+    // so if a block has an ordinal of zero and it's not 'fgFirstBB',
+    // the block wasn't visited below, so it's not in the range of candidate blocks.
+    unsigned numHotBlocks = 0;
+    for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB, finalBlock))
+    {
+        ordinals[block->bbNum] = numHotBlocks++;
+    }
+
+    if (numHotBlocks < 3)
+    {
+        JITDUMP("Not enough hot blocks; skipping reordering\n");
+        return;
+    }
+
+    assert(finalBlock != nullptr);
+    blockOrder        = new (compiler, CMK_BasicBlock) BasicBlock*[numHotBlocks];
+    tempOrder         = new (compiler, CMK_BasicBlock) BasicBlock*[numHotBlocks];
+    unsigned position = 0;
+
+    // Initialize current block order
+    for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB, finalBlock))
+    {
+        blockOrder[position++] = block;
+
+        EHblkDsc* const HBtab = compiler->ehGetBlockTryDsc(block);
+        if (HBtab != nullptr)
+        {
+            HBtab->ebdTryLast = block;
+        }
+    }
+
+    bool        modified   = false;
+    BasicBlock* lastTryBeg = nullptr;
+    for (EHblkDsc* const HBtab : EHClauses(compiler))
+    {
+        BasicBlock* const tryBeg = HBtab->ebdTryBeg;
+        if ((tryBeg != lastTryBeg) && (ordinals[tryBeg->bbNum] != 0))
+        {
+            modified |= RunThreeOptPass(tryBeg, HBtab->ebdTryLast);
+        }
+
+        lastTryBeg = tryBeg;
+    }
+
+    if (compiler->fgFirstBB != lastTryBeg)
+    {
+        modified |= RunThreeOptPass(compiler->fgFirstBB, finalBlock);
+    }
+
+    if (modified)
+    {
+        for (unsigned i = 1; i < numHotBlocks; i++)
+        {
+            BasicBlock* const block = blockOrder[i - 1];
+            BasicBlock* const next  = blockOrder[i];
+            if (!block->NextIs(next))
+            {
+                compiler->fgUnlinkBlock(next);
+                compiler->fgInsertBBafter(block, next);
+            }
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::RunThreeOptPass: Runs 3-opt for the given block range.
+//
+// Parameters:
+//   startBlock - The first block of the range to reorder
+//   endBlock - The last block (inclusive) of the range to reorder
+//
+bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
+{
+    assert(startBlock != nullptr);
+    assert(endBlock != nullptr);
+    assert((ordinals[startBlock->bbNum] != 0) || startBlock->IsFirst());
+    assert(ordinals[endBlock->bbNum] != 0);
+    assert(cutPoints.Empty());
+
+    bool           modified           = false;
+    const unsigned startPos           = ordinals[startBlock->bbNum];
+    const unsigned endPos             = ordinals[endBlock->bbNum];
+    const unsigned numCandidateBlocks = endPos - startPos + 1;
+    assert(startPos <= endPos);
+
+    // Initialize cutPoints with candidate branches in this section
+    for (unsigned position = startPos; position < endPos; position++)
+    {
+        AddNonFallthroughSuccs(blockOrder[position], blockOrder[position + 1], startPos);
+    }
+
+    // Also consider any backedges out of the last block in this region
+    AddNonFallthroughSuccs(blockOrder[endPos], nullptr, startPos);
+
+    // For each candidate edge, determine if it's profitable to partition after the source block
+    // and before the destination block, and swapping the partitions to create fallthrough.
+    // If it is, do the swap, and for the blocks before/after each cut point that lost fallthrough,
+    // consider adding their successors/predecessors to the worklist.
+    while (!cutPoints.Empty())
+    {
+        FlowEdge* const candidateEdge = cutPoints.Top();
+        cutPoints.Pop();
+        assert(usedCandidates[candidateEdge]);
+
+        BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
+        BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
+        const unsigned    srcPos = ordinals[srcBlk->bbNum];
+        const unsigned    dstPos = ordinals[dstBlk->bbNum];
+
+        // This edge better be between blocks in the current region
+        assert((srcPos >= startPos) && (srcPos <= endPos));
+        assert((dstPos >= startPos) && (dstPos <= endPos));
+
+        // 'dstBlk' better not be the region's entry point
+        assert(dstPos != startPos);
+
+        // 'srcBlk' and 'dstBlk' better be distinct
+        assert(srcPos != dstPos);
+
+        // Previous moves might have inadvertently created fallthrough from srcBlk to dstBlk,
+        // so there's nothing to do this round.
+        if ((srcPos + 1) == dstPos)
+        {
+            assert(modified);
+            continue;
+        }
+
+        // Before getting any edges, make sure 'ordinals' is accurate
+        assert(blockOrder[srcPos] == srcBlk);
+        assert(blockOrder[dstPos] == dstBlk);
+
+        auto getCost = [this](BasicBlock* srcBlk, BasicBlock* dstBlk) -> weight_t {
+            assert(srcBlk != nullptr);
+            assert(dstBlk != nullptr);
+            FlowEdge* const edge = compiler->fgGetPredForBlock(dstBlk, srcBlk);
+            return (edge != nullptr) ? edge->getLikelyWeight() : 0.0;
+        };
+
+        const bool isForwardJump = (srcPos < dstPos);
+        weight_t   srcPrevCost   = 0.0;
+        weight_t   srcNextCost   = 0.0;
+        weight_t   dstPrevCost   = 0.0;
+        weight_t   cost, improvement;
+        unsigned   part1Size, part2Size, part3Size;
+
+        if (isForwardJump)
+        {
+            // Here is the proposed partition:
+            // S1: startPos ~ srcPos
+            // S2: srcPos+1 ~ dstPos-1
+            // S3: dstPos ~ endPos
+            // S4: remaining blocks
+            //
+            // After the swap:
+            // S1: startPos ~ srcPos
+            // S3: dstPos ~ endPos
+            // S2: srcPos+1 ~ dstPos-1
+            // S4: remaining blocks
+            part1Size = srcPos - startPos + 1;
+            part2Size = dstPos - srcPos - 1;
+            part3Size = endPos - dstPos + 1;
+
+            srcNextCost = getCost(srcBlk, blockOrder[srcPos + 1]);
+            dstPrevCost = getCost(blockOrder[dstPos - 1], dstBlk);
+            cost        = srcNextCost + dstPrevCost;
+            improvement = candidateEdge->getLikelyWeight() + getCost(blockOrder[endPos], blockOrder[srcPos + 1]);
+
+            // Don't include branches S4 in the cost/improvement calculation,
+            // since we're only considering branches within this region.
+        }
+        else
+        {
+            assert(dstPos < srcPos);
+
+            // Here is the proposed partition:
+            // S1: startPos ~ dstPos-1
+            // S2: dstPos ~ srcPos-1
+            // S3: srcPos
+            // S4: srcPos+1 ~ endPos
+            //
+            // After the swap:
+            // S1: startPos ~ dstPos-1
+            // S3: srcPos
+            // S2: dstPos ~ srcPos-1
+            // S4: srcPos+1 ~ endPos
+            part1Size = dstPos - startPos;
+            part2Size = srcPos - dstPos;
+            part3Size = 1;
+
+            srcPrevCost = getCost(blockOrder[srcPos - 1], srcBlk);
+            dstPrevCost = getCost(blockOrder[dstPos - 1], dstBlk);
+            cost        = srcPrevCost + dstPrevCost;
+            improvement = candidateEdge->getLikelyWeight() + getCost(blockOrder[dstPos - 1], srcBlk);
+
+            if (srcPos != endPos)
+            {
+                srcNextCost = getCost(srcBlk, blockOrder[srcPos + 1]);
+                cost += srcNextCost;
+                improvement += getCost(blockOrder[srcPos - 1], blockOrder[srcPos + 1]);
+            }
+        }
+
+        // Continue evaluating candidates if this one isn't profitable
+        if ((improvement <= cost) || Compiler::fgProfileWeightsEqual(improvement, cost, 0.001))
+        {
+            continue;
+        }
+
+        // We've found a profitable cut point. Continue with the swap.
+        JITDUMP("Creating fallthrough for " FMT_BB " -> " FMT_BB " (cost=%f, improvement=%f)\n", srcBlk->bbNum,
+                dstBlk->bbNum, cost, improvement);
+
+        // If we're going to break up fallthrough into 'srcBlk',
+        // consider all other edges out of 'srcBlk''s current fallthrough predecessor
+        if (srcPrevCost != 0.0)
+        {
+            AddNonFallthroughSuccs(blockOrder[srcPos - 1], srcBlk, startPos);
+        }
+
+        // If we're going to break up fallthrough out of 'srcBlk',
+        // consider all other edges into 'srcBlk''s current fallthrough successor
+        if (srcNextCost != 0.0)
+        {
+            AddNonFallthroughPreds(blockOrder[srcPos + 1], srcBlk, startPos);
+        }
+
+        // If we're going to break up fallthrough into 'dstBlk',
+        // consider all other edges out of 'dstBlk''s current fallthrough predecessor
+        if (dstPrevCost != 0.0)
+        {
+            AddNonFallthroughSuccs(blockOrder[dstPos - 1], dstBlk, startPos);
+        }
+
+        // Swap the partitions
+        BasicBlock** const regionStart = blockOrder + startPos;
+        BasicBlock** const tempStart   = tempOrder + startPos;
+        const unsigned     numBlocks   = endPos - startPos + 1;
+        memcpy(tempStart, regionStart, sizeof(BasicBlock*) * part1Size);
+        memcpy(tempStart + part1Size, regionStart + part1Size + part2Size, sizeof(BasicBlock*) * part3Size);
+        memcpy(tempStart + part1Size + part3Size, regionStart + part1Size, sizeof(BasicBlock*) * part2Size);
+
+        if (!isForwardJump)
+        {
+            const unsigned remainingCodeSize = endPos - srcPos;
+            if (remainingCodeSize != 0)
+            {
+                memcpy(tempStart + srcPos + 1, regionStart + srcPos + 1, sizeof(BasicBlock*) * remainingCodeSize);
+            }
+        }
+        else
+        {
+            assert((part1Size + part2Size + part3Size) == numBlocks);
+        }
+
+        std::swap(blockOrder, tempOrder);
+
+        // Update the positions of the blocks we moved
+        for (unsigned i = part1Size; i < numBlocks; i++)
+        {
+            ordinals[tempStart[i]->bbNum] = i;
+        }
+
+        // Ensure this move created fallthrough from srcBlk to dstBlk
+        assert((ordinals[srcBlk->bbNum] + 1) == ordinals[dstBlk->bbNum]);
+        modified = true;
+    }
+
+    return modified;
+}
+
+//-----------------------------------------------------------------------------
 // fgSearchImprovedLayout: Try to improve upon RPO-based layout with the 3-opt method:
 //   - Identify a range of hot blocks to reorder within
 //   - Partition this set into three segments: S1 - S2 - S3
@@ -4881,309 +5301,8 @@ void Compiler::fgSearchImprovedLayout()
     }
 #endif // DEBUG
 
-    // Note that we're default-initializing 'ordinals' with zeros.
-    // Block reordering shouldn't change the method's entry point,
-    // so if a block has an ordinal of zero and it's not 'fgFirstBB',
-    // the block wasn't visited below, so it's not in the range of hot blocks.
-    unsigned* const ordinals     = new (this, CMK_Generic) unsigned[fgBBNumMax + 1]{};
-    unsigned        numHotBlocks = 0;
-    BasicBlock*     finalBlock;
-
-    // Walk backwards through the main method body, looking for the last hot block.
-    // Since we moved all cold blocks to the end of the method already,
-    // we should have a span of hot blocks to consider reordering at the beginning of the method.
-    for (finalBlock = fgLastBBInMainFunction(); !finalBlock->IsFirst() && finalBlock->isBBWeightCold(this);
-         finalBlock = finalBlock->Prev())
-        ;
-
-    // Initialize the ordinal numbers for the hot blocks
-    for (BasicBlock* const block : Blocks(fgFirstBB, finalBlock))
-    {
-        ordinals[block->bbNum] = numHotBlocks++;
-    }
-
-    if (numHotBlocks < 3)
-    {
-        JITDUMP("Not enough hot blocks; skipping reordering\n");
-        return;
-    }
-
-    // We will use a priority queue to greedily get the next hottest edge to try to create fallthrough for
-    auto edgeWeightComp = [](const FlowEdge* left, const FlowEdge* right) -> bool {
-        return left->getLikelyWeight() < right->getLikelyWeight();
-    };
-    PriorityQueue<FlowEdge*, decltype(edgeWeightComp)> cutPoints(getAllocator(CMK_FlowEdge), edgeWeightComp);
-
-    // We will also maintain a set of candidate edges to avoid adding duplicate edges to cutPoints.
-    // For large flowgraphs, we risk exploding 'cutPoints' with duplicate edges.
-    JitHashTable<FlowEdge*, JitPtrKeyFuncs<FlowEdge>, bool> usedCandidates(getAllocator(CMK_FlowEdge));
-
-    // Since adding to priority queues has logarithmic time complexity,
-    // try to avoid adding edges that we obviously won't consider when reordering.
-    auto considerEdge = [&cutPoints, &usedCandidates, ordinals](FlowEdge* edge) {
-        assert(edge != nullptr);
-
-        BasicBlock* const srcBlk = edge->getSourceBlock();
-        BasicBlock* const dstBlk = edge->getDestinationBlock();
-        const unsigned    srcPos = ordinals[srcBlk->bbNum];
-        const unsigned    dstPos = ordinals[dstBlk->bbNum];
-
-        // Don't consider edges from outside the hot range.
-        // If 'srcBlk' has an ordinal of zero and it isn't the first block,
-        // it's not tracked by 'ordinals', so it's not in the hot section.
-        if ((srcPos == 0) && !srcBlk->IsFirst())
-        {
-            return;
-        }
-
-        // Don't consider edges to blocks outside the hot range,
-        // or backedges to 'fgFirstBB'; we don't want to change the entry point.
-        if (dstPos == 0)
-        {
-            return;
-        }
-
-        // Don't consider backedges for single-block loops
-        if (srcPos == dstPos)
-        {
-            return;
-        }
-
-        // Don't add an edge that we've already considered
-        if (!usedCandidates.Set(edge, true, usedCandidates.SetKind::Overwrite))
-        {
-            cutPoints.Push(edge);
-        }
-    };
-
-    auto addNonFallthroughSuccs = [this, considerEdge](BasicBlock* block, BasicBlock* next) {
-        assert(block != nullptr);
-
-        for (FlowEdge* const succEdge : block->SuccEdges(this))
-        {
-            if (succEdge->getDestinationBlock() != next)
-            {
-                considerEdge(succEdge);
-            }
-        }
-    };
-
-    auto addNonFallthroughPreds = [considerEdge](BasicBlock* block, BasicBlock* prev) {
-        assert(block != nullptr);
-
-        for (FlowEdge* const predEdge : block->PredEdges())
-        {
-            if (predEdge->getSourceBlock() != prev)
-            {
-                considerEdge(predEdge);
-            }
-        }
-    };
-
-    assert(finalBlock != nullptr);
-    BasicBlock** blockOrder = new (this, CMK_BasicBlock) BasicBlock*[numHotBlocks];
-    BasicBlock** tempOrder  = new (this, CMK_BasicBlock) BasicBlock*[numHotBlocks];
-    unsigned     position   = 0;
-
-    // Initialize current block order, and find potential cut points in the hot section
-    for (BasicBlock* const block : Blocks(fgFirstBB, finalBlock))
-    {
-        blockOrder[position] = block;
-        position++;
-        addNonFallthroughSuccs(block, block->Next());
-    }
-
-    assert(position == numHotBlocks);
-    const unsigned lastHotIndex = numHotBlocks - 1;
-    bool           modified     = false;
-
-    // For each candidate edge, determine if it's profitable to partition after the source block
-    // and before the destination block, and swapping the partitions to create fallthrough.
-    // If it is, do the swap, and for the blocks before/after each cut point that lost fallthrough,
-    // consider adding their successors/predecessors to the worklist.
-    while (!cutPoints.Empty())
-    {
-        FlowEdge* const candidateEdge = cutPoints.Top();
-        cutPoints.Pop();
-        assert(usedCandidates[candidateEdge]);
-
-        BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
-        BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
-        const unsigned    srcPos = ordinals[srcBlk->bbNum];
-        const unsigned    dstPos = ordinals[dstBlk->bbNum];
-
-        assert(srcPos < numHotBlocks);
-        assert(dstPos < numHotBlocks);
-
-        // 'dstBlk' better be hot, and better not be 'fgFirstBB'
-        // (we don't want to change the entry point)
-        assert(dstPos != 0);
-
-        // 'srcBlk' and 'dstBlk' better be distinct
-        assert(srcPos != dstPos);
-
-        // Previous moves might have inadvertently created fallthrough from srcBlk to dstBlk,
-        // so there's nothing to do this round.
-        if ((srcPos + 1) == dstPos)
-        {
-            assert(modified);
-            continue;
-        }
-
-        // Before getting any edges, make sure 'ordinals' is accurate
-        assert(blockOrder[srcPos] == srcBlk);
-        assert(blockOrder[dstPos] == dstBlk);
-
-        auto getCost = [this](BasicBlock* srcBlk, BasicBlock* dstBlk) -> weight_t {
-            assert(srcBlk != nullptr);
-            assert(dstBlk != nullptr);
-            FlowEdge* const edge = fgGetPredForBlock(dstBlk, srcBlk);
-            return (edge != nullptr) ? edge->getLikelyWeight() : 0.0;
-        };
-
-        const bool isForwardJump = (srcPos < dstPos);
-        weight_t   srcPrevCost   = 0.0;
-        weight_t   srcNextCost   = 0.0;
-        weight_t   dstPrevCost   = 0.0;
-        weight_t   cost, improvement;
-        unsigned   part1Size, part2Size, part3Size;
-
-        if (isForwardJump)
-        {
-            // Here is the proposed partition:
-            // S1: 0 ~ srcPos
-            // S2: srcPos+1 ~ dstPos-1
-            // S3: dstPos ~ lastHotIndex
-            // S4: cold section
-            //
-            // After the swap:
-            // S1: 0 ~ srcPos
-            // S3: dstPos ~ lastHotIndex
-            // S2: srcPos+1 ~ dstPos-1
-            // S4: cold section
-            part1Size = srcPos + 1;
-            part2Size = dstPos - srcPos - 1;
-            part3Size = numHotBlocks - dstPos;
-
-            srcNextCost = getCost(srcBlk, blockOrder[srcPos + 1]);
-            dstPrevCost = getCost(blockOrder[dstPos - 1], dstBlk);
-            cost        = srcNextCost + dstPrevCost;
-            improvement = candidateEdge->getLikelyWeight() + getCost(blockOrder[lastHotIndex], blockOrder[srcPos + 1]);
-
-            // Don't include branches to the cold section (S4) in the cost/improvement calculation.
-            // If the section is truly cold, branches into it should have negligible cost.
-        }
-        else
-        {
-            assert(dstPos < srcPos);
-
-            // Here is the proposed partition:
-            // S1: 0 ~ dstPos-1
-            // S2: dstPos ~ srcPos-1
-            // S3: srcPos
-            // S4: srcPos+1 ~ remaining code
-            //
-            // After the swap:
-            // S1: 0 ~ dstPos-1
-            // S3: srcPos
-            // S2: dstPos ~ srcPos-1
-            // S4: srcPos+1 ~ remaining code
-            part1Size = dstPos;
-            part2Size = srcPos - dstPos;
-            part3Size = 1;
-
-            srcPrevCost = getCost(blockOrder[srcPos - 1], srcBlk);
-            dstPrevCost = getCost(blockOrder[dstPos - 1], dstBlk);
-            cost        = srcPrevCost + dstPrevCost;
-            improvement = candidateEdge->getLikelyWeight() + getCost(blockOrder[dstPos - 1], srcBlk);
-
-            if (srcPos != lastHotIndex)
-            {
-                srcNextCost = getCost(srcBlk, blockOrder[srcPos + 1]);
-                cost += srcNextCost;
-                improvement += getCost(blockOrder[srcPos - 1], blockOrder[srcPos + 1]);
-            }
-        }
-
-        // Continue evaluating candidates if this one isn't profitable
-        if ((improvement <= cost) || Compiler::fgProfileWeightsEqual(improvement, cost, 0.001))
-        {
-            continue;
-        }
-
-        // We've found a profitable cut point. Continue with the swap.
-        JITDUMP("Creating fallthrough for " FMT_BB " -> " FMT_BB " (cost=%f, improvement=%f)\n", srcBlk->bbNum,
-                dstBlk->bbNum, cost, improvement);
-
-        // If we're going to break up fallthrough into 'srcBlk',
-        // consider all other edges out of 'srcBlk''s current fallthrough predecessor
-        if (srcPrevCost != 0.0)
-        {
-            addNonFallthroughSuccs(blockOrder[srcPos - 1], srcBlk);
-        }
-
-        // If we're going to break up fallthrough out of 'srcBlk',
-        // consider all other edges into 'srcBlk''s current fallthrough successor
-        if (srcNextCost != 0.0)
-        {
-            addNonFallthroughPreds(blockOrder[srcPos + 1], srcBlk);
-        }
-
-        // If we're going to break up fallthrough into 'dstBlk',
-        // consider all other edges out of 'dstBlk''s current fallthrough predecessor
-        if (dstPrevCost != 0.0)
-        {
-            addNonFallthroughSuccs(blockOrder[dstPos - 1], dstBlk);
-        }
-
-        // Swap the partitions
-        memcpy(tempOrder, blockOrder, sizeof(BasicBlock*) * part1Size);
-        memcpy(tempOrder + part1Size, blockOrder + part1Size + part2Size, sizeof(BasicBlock*) * part3Size);
-        memcpy(tempOrder + part1Size + part3Size, blockOrder + part1Size, sizeof(BasicBlock*) * part2Size);
-
-        if (!isForwardJump)
-        {
-            const unsigned remainingCodeSize = numHotBlocks - srcPos - 1;
-            if (remainingCodeSize != 0)
-            {
-                memcpy(tempOrder + srcPos + 1, blockOrder + srcPos + 1, sizeof(BasicBlock*) * remainingCodeSize);
-            }
-            else
-            {
-                assert(srcPos == lastHotIndex);
-            }
-        }
-        else
-        {
-            assert((part1Size + part2Size + part3Size) == numHotBlocks);
-        }
-
-        std::swap(blockOrder, tempOrder);
-
-        // Update the positions of the blocks we moved
-        for (unsigned i = part1Size; i < numHotBlocks; i++)
-        {
-            ordinals[blockOrder[i]->bbNum] = i;
-        }
-
-        // Ensure this move created fallthrough from srcBlk to dstBlk
-        assert((ordinals[srcBlk->bbNum] + 1) == ordinals[dstBlk->bbNum]);
-        modified = true;
-    }
-
-    if (modified)
-    {
-        for (unsigned i = 1; i < numHotBlocks; i++)
-        {
-            BasicBlock* const block = blockOrder[i - 1];
-            BasicBlock* const next  = blockOrder[i];
-            if (!block->NextIs(next))
-            {
-                fgUnlinkBlock(next);
-                fgInsertBBafter(block, next);
-            }
-        }
-    }
+    ThreeOptLayout layoutRunner(this);
+    layoutRunner.Run();
 }
 
 //-------------------------------------------------------------

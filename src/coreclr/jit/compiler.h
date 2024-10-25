@@ -6252,6 +6252,27 @@ public:
     void fgMoveColdBlocks();
     void fgSearchImprovedLayout();
 
+    class ThreeOptLayout
+    {
+        static bool EdgeCmp(const FlowEdge* left, const FlowEdge* right);
+
+        Compiler* compiler;
+        PriorityQueue<FlowEdge*, decltype(&ThreeOptLayout::EdgeCmp)> cutPoints;
+        JitHashTable<FlowEdge*, JitPtrKeyFuncs<FlowEdge>, bool> usedCandidates;
+        unsigned* ordinals;
+        BasicBlock** blockOrder;
+        BasicBlock** tempOrder;
+
+        void ConsiderEdge(FlowEdge* edge, unsigned startPos);
+        void AddNonFallthroughSuccs(BasicBlock* block, BasicBlock* next, unsigned startPos);
+        void AddNonFallthroughPreds(BasicBlock* block, BasicBlock* prev, unsigned startPos);
+        bool RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
+
+    public:
+        ThreeOptLayout(Compiler* comp);
+        void Run();
+    };
+
     template <bool hasEH>
     void fgMoveHotJumps();
 
