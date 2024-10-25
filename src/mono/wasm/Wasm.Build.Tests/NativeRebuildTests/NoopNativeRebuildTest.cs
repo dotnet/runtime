@@ -37,5 +37,31 @@ namespace Wasm.Build.NativeRebuild.Tests
             CompareStat(originalStat, newStat, pathsDict);
             await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42));
         }
+
+        [Fact]
+        
+        public void NativeRelinkFailsWithInvariant()
+        {
+            bool nativeRelink = false;
+            var extraArgs = new string[] {
+                "-p:_WasmDevel=true",
+                $"-p:WasmBuildNative={nativeRelink}",
+                $"-p:InvariantGlobalization=true",
+            };
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, "Release", aot: true, "relink_fails");
+            bool isPublish = true;
+            (string _, string buildOutput) = BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    info.Configuration,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                    IsPublish: isPublish,
+                    GlobalizationMode: GlobalizationMode.Invariant,
+                    ExpectSuccess: false
+                ),
+                extraArgs
+            );
+            Assert.Contains("WasmBuildNative is required because InvariantGlobalization=true, but WasmBuildNative is already set to 'false'", _testOutput.ToString());
+        }
     }
 }

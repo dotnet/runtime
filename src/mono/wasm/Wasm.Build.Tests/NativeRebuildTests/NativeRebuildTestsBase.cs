@@ -35,7 +35,6 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             // aot
             data.AddRange(GetData(aot: true, nativeRelinking: false, invariant: false));
-            data.AddRange(GetData(aot: true, nativeRelinking: false, invariant: true));
 
             return data;
 
@@ -53,7 +52,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             var extraArgs = new string[] {
                 "-p:_WasmDevel=true",
                 $"-p:WasmBuildNative={nativeRelink}",
-                $"-p:InvariantGlobalization={invariant}",                
+                $"-p:InvariantGlobalization={invariant}",
                 extraBuildArgs
             };
             bool isPublish = true;
