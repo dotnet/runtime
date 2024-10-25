@@ -9,7 +9,7 @@ namespace System.Threading.RateLimiting
     {
         internal static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
 #if !NET
-        public static TimeStamp GetElapsedTime(long startTimestamp) => new TimeSpan((long)((Stopwatch.GetTimestamp() - startTimestamp) * TickFrequency));
+        public static TimeSpan GetElapsedTime(long startTimestamp) => new TimeSpan((long)((Stopwatch.GetTimestamp() - startTimestamp) * TickFrequency));
 #endif
     }
 }
