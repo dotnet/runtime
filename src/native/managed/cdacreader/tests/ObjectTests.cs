@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Text;
 using Xunit;
 
@@ -11,7 +12,7 @@ using MockObject = MockDescriptors.Object;
 
 public unsafe class ObjectTests
 {
-    private delegate MockMemorySpace.Builder ConfigureContextBuilder(MockMemorySpace.Builder builder);
+    private delegate MockMemorySpace.Builder ConfigureContextBuilder(Dictionary<DataType, Target.TypeInfo> types, MockMemorySpace.Builder builder);
 
     private static void ObjectContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
     {
@@ -28,7 +29,7 @@ public unsafe class ObjectTests
 
         if (configure != null)
         {
-            builder = configure(builder);
+            builder = configure(types, builder);
         }
 
         bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
@@ -42,11 +43,10 @@ public unsafe class ObjectTests
     {
         const ulong TestObjectAddress = 0x00000000_10000010;
         const ulong TestMethodTableAddress = 0x00000000_10000027;
-        TargetTestHelpers targetTestHelpers = new(arch);
         ObjectContractHelper(arch,
-            (builder) =>
+            (types, builder) =>
             {
-                builder = MockObject.AddObject(targetTestHelpers, builder, TestObjectAddress, TestMethodTableAddress);
+                builder = MockObject.AddObject(types, builder, TestObjectAddress, TestMethodTableAddress);
                 return builder;
             },
             (target) =>
@@ -64,11 +64,10 @@ public unsafe class ObjectTests
     {
         const ulong TestStringAddress = 0x00000000_10000010;
         string expected = "test_string_value";
-        TargetTestHelpers targetTestHelpers = new(arch);
         ObjectContractHelper(arch,
-            (builder) =>
+            (types, builder) =>
             {
-                builder = MockObject.AddStringObject(targetTestHelpers, builder, TestStringAddress, expected);
+                builder = MockObject.AddStringObject(types, builder, TestStringAddress, expected);
                 return builder;
             },
             (target) =>
@@ -93,11 +92,11 @@ public unsafe class ObjectTests
         Array nonZeroLowerBound = Array.CreateInstance(typeof(int), [10], [5]);
         TargetTestHelpers targetTestHelpers = new(arch);
         ObjectContractHelper(arch,
-            (builder) =>
+            (types, builder) =>
             {
-                builder = MockObject.AddArrayObject(builder, SingleDimensionArrayAddress, singleDimension);
-                builder = MockObject.AddArrayObject(builder, MultiDimensionArrayAddress, multiDimension);
-                builder = MockObject.AddArrayObject(builder, NonZeroLowerBoundArrayAddress, nonZeroLowerBound);
+                builder = MockObject.AddArrayObject(types, builder, SingleDimensionArrayAddress, singleDimension);
+                builder = MockObject.AddArrayObject(types, builder, MultiDimensionArrayAddress, multiDimension);
+                builder = MockObject.AddArrayObject(types, builder, NonZeroLowerBoundArrayAddress, nonZeroLowerBound);
                 return builder;
             },
             (target) =>
@@ -138,13 +137,12 @@ public unsafe class ObjectTests
         TargetPointer expectedRCW = 0xaaaa;
         TargetPointer expectedCCW = 0xbbbb;
 
-        TargetTestHelpers targetTestHelpers = new(arch);
         ObjectContractHelper(arch,
-            (builder) =>
+            (types, builder) =>
             {
                 uint syncBlockIndex = 0;
-                builder = MockObject.AddObjectWithSyncBlock(targetTestHelpers, builder, TestComObjectAddress, 0, syncBlockIndex++, expectedRCW, expectedCCW);
-                builder = MockObject.AddObjectWithSyncBlock(targetTestHelpers, builder, TestNonComObjectAddress, 0, syncBlockIndex++, TargetPointer.Null, TargetPointer.Null);
+                builder = MockObject.AddObjectWithSyncBlock(types, builder, TestComObjectAddress, 0, syncBlockIndex++, expectedRCW, expectedCCW);
+                builder = MockObject.AddObjectWithSyncBlock(types, builder, TestNonComObjectAddress, 0, syncBlockIndex++, TargetPointer.Null, TargetPointer.Null);
                 return builder;
             },
             (target) =>
