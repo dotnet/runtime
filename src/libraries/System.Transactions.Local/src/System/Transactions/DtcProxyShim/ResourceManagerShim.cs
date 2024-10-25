@@ -26,7 +26,7 @@ internal sealed class ResourceManagerShim
         var pEnlistmentShim = new EnlistmentShim(pEnlistmentNotifyShim);
 
         ITransaction transaction = transactionShim.Transaction;
-        ResourceManager!.Enlist(transaction, pEnlistmentNotifyShim, out Guid txUow, out OletxTransactionIsolationLevel isoLevel, out ITransactionEnlistmentAsync pEnlistmentAsync);
+        ResourceManager!.Enlist(transaction, pEnlistmentNotifyShim, out Guid txUow, out Interop.Xolehlp.OletxTransactionIsolationLevel isoLevel, out ITransactionEnlistmentAsync pEnlistmentAsync);
 
         pEnlistmentNotifyShim.EnlistmentAsync = pEnlistmentAsync;
         pEnlistmentShim.EnlistmentAsync = pEnlistmentAsync;
@@ -34,24 +34,24 @@ internal sealed class ResourceManagerShim
         enlistmentShim = pEnlistmentShim;
     }
 
-    public void Reenlist(byte[] prepareInfo, out OletxTransactionOutcome outcome)
+    public void Reenlist(byte[] prepareInfo, out Interop.Xolehlp.OletxTransactionOutcome outcome)
     {
         // Call Reenlist on the proxy, waiting for 5 milliseconds for it to get the outcome.  If it doesn't know that outcome in that
         // amount of time, tell the caller we don't know the outcome yet.  The managed code will reschedule the check by using the
         // ReenlistThread.
         try
         {
-            ResourceManager!.Reenlist(prepareInfo, (uint)prepareInfo.Length, 5, out OletxXactStat xactStatus);
+            ResourceManager!.Reenlist(prepareInfo, (uint)prepareInfo.Length, 5, out Interop.Xolehlp.OletxXactStat xactStatus);
             outcome = xactStatus switch
             {
-                OletxXactStat.XACTSTAT_ABORTED => OletxTransactionOutcome.Aborted,
-                OletxXactStat.XACTSTAT_COMMITTED => OletxTransactionOutcome.Committed,
-                _ => OletxTransactionOutcome.Aborted
+                Interop.Xolehlp.OletxXactStat.XACTSTAT_ABORTED => Interop.Xolehlp.OletxTransactionOutcome.Aborted,
+                Interop.Xolehlp.OletxXactStat.XACTSTAT_COMMITTED => Interop.Xolehlp.OletxTransactionOutcome.Committed,
+                _ => Interop.Xolehlp.OletxTransactionOutcome.Aborted
             };
         }
         catch (COMException e) when (e.ErrorCode == OletxHelper.XACT_E_REENLISTTIMEOUT)
         {
-            outcome = OletxTransactionOutcome.NotKnownYet;
+            outcome = Interop.Xolehlp.OletxTransactionOutcome.NotKnownYet;
             return;
         }
     }
