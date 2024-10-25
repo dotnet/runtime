@@ -1302,7 +1302,7 @@ namespace Internal.JitInterface
             info->devirtualizedMethod = null;
             info->exactContext = null;
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
-            info->requiresInstMethodTableArg = false;
+            info->requiresInstMethodDescArg = false;
             info->wasArrayInterfaceDevirt = false;
 
             TypeDesc objType = HandleToObject(info->objClass);
@@ -1450,7 +1450,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->requiresInstMethodTableArg = false;
+            info->requiresInstMethodDescArg = false;
             info->exactContext = contextFromType(owningType);
 
             return true;
