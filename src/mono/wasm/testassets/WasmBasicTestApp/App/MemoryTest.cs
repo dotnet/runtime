@@ -31,7 +31,7 @@ public partial class MemoryTest
                 errors += $"Exception {ex} was thrown on i={i}";
             }
         }
-        TestOutput.WriteLine("Finished over managed array allocation");
+        TestOutput.WriteLine("Finished managed array allocation");
 
         // call a method many times to trigger tier-up optimization
         string randomString = GenerateRandomString(1000);
