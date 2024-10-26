@@ -621,13 +621,6 @@ class RangeSectionStubManager : public StubManager
 
     virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
 
-#ifndef DACCESS_COMPILE
-    virtual BOOL TraceManager(Thread *thread,
-                              TraceDestination *trace,
-                              T_CONTEXT *pContext,
-                              BYTE **pRetAddr);
-#endif
-
 #ifdef DACCESS_COMPILE
     virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 

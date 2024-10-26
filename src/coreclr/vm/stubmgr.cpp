@@ -1579,28 +1579,6 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
     return FALSE;
 }
 
-#ifndef DACCESS_COMPILE
-BOOL RangeSectionStubManager::TraceManager(Thread *thread,
-                            TraceDestination *trace,
-                            CONTEXT *pContext,
-                            BYTE **pRetAddr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
-
-    PCODE target = StubManagerHelpers::GetTailCallTarget(pContext);
-    trace->InitForStub(target);
-    return TRUE;
-}
-#endif
-
 #ifdef DACCESS_COMPILE
 LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
 {
