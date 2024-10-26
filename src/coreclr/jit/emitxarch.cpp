@@ -19870,7 +19870,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_pclmulqdq:
-        case INS_pclmulqdq_evex:
+        case INS_vpclmulqdq:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_7C;
             break;
