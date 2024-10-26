@@ -8,8 +8,13 @@ namespace System.Threading.RateLimiting
     internal static class RateLimiterHelper
     {
         internal static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
-#if !NET
-        public static TimeSpan GetElapsedTime(long startTimestamp) => new TimeSpan((long)((Stopwatch.GetTimestamp() - startTimestamp) * TickFrequency));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TimeSpan GetElapsedTime(long startTimestamp)
+#if NET
+            => Stopwatch.GetElapsedTime(startTimestamp);
+#else
+            => new((long)((Stopwatch.GetTimestamp() - startTimestamp) * TickFrequency));
 #endif
     }
 }

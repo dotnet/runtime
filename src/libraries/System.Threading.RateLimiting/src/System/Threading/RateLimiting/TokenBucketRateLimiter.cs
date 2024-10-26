@@ -34,13 +34,7 @@ namespace System.Threading.RateLimiting
         private static readonly RateLimitLease FailedLease = new TokenBucketLease(false, null);
 
         /// <inheritdoc />
-        public override TimeSpan? IdleDuration => _idleSince is null ? null :
-#if NET
-            Stopwatch.GetElapsedTime(_idleSince.Value)
-#else
-            RateLimiterHelper.GetElapsedTime(_idleSince.Value)
-#endif
-            ;
+        public override TimeSpan? IdleDuration => _idleSince is null ? null : RateLimiterHelper.GetElapsedTime(_idleSince.Value);
 
         /// <inheritdoc />
         public override bool IsAutoReplenishing => _options.AutoReplenishment;
