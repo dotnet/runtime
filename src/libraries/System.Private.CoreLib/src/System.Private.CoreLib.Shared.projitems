@@ -2636,6 +2636,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Bmi2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Fma.cs" Condition="'$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Fma.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Gfni.cs" Condition="'$(FeatureMono)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Gfni.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Lzcnt.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Pclmulqdq.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Popcnt.cs" />
@@ -2674,6 +2676,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Ssse3.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\X86Base.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\X86Serialize.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Gfni.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsArmIntrinsics)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\AdvSimd.cs" />

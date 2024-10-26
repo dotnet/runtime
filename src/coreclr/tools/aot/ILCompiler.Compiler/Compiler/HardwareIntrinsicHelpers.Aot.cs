@@ -52,8 +52,7 @@ namespace ILCompiler
             if(!uint.IsPow2((uint)flag))
             {
                 // These are the ISAs managed by multiple-bit flags.
-                // we need to emit different IL to handle the checks.
-                // For now just Avx10v1_V512 = (Avx10v1 | Avx512)
+                // We need to emit different IL to handle the checks.
                 // (isSupportedField & flag) == flag
                 codeStream.Emit(ILOpcode.ldsfld, emit.NewToken(isSupportedField));
                 codeStream.EmitLdc(flag);

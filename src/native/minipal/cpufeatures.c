@@ -216,6 +216,11 @@ int minipal_getcpufeatures(void)
                             {
                                 __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
+                                if ((cpuidInfo[CPUID_ECX] & (1 << 8)) != 0)                                     // GFNI
+                                {
+                                    result |= XArchIntrinsicConstants_Gfni;
+                                }
+
                                 if ((cpuidInfo[CPUID_EBX] & (1 << 5)) != 0)                                     // AVX2
                                 {
                                     result |= XArchIntrinsicConstants_Avx2;

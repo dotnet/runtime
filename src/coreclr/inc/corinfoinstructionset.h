@@ -66,48 +66,51 @@ enum CORINFO_InstructionSet
     InstructionSet_MOVBE=21,
     InstructionSet_X86Serialize=22,
     InstructionSet_EVEX=23,
-    InstructionSet_AVX512F=24,
-    InstructionSet_AVX512F_VL=25,
-    InstructionSet_AVX512BW=26,
-    InstructionSet_AVX512BW_VL=27,
-    InstructionSet_AVX512CD=28,
-    InstructionSet_AVX512CD_VL=29,
-    InstructionSet_AVX512DQ=30,
-    InstructionSet_AVX512DQ_VL=31,
-    InstructionSet_AVX512VBMI=32,
-    InstructionSet_AVX512VBMI_VL=33,
-    InstructionSet_AVX10v1=34,
-    InstructionSet_AVX10v1_V512=35,
-    InstructionSet_VectorT128=36,
-    InstructionSet_VectorT256=37,
-    InstructionSet_VectorT512=38,
-    InstructionSet_X86Base_X64=39,
-    InstructionSet_SSE_X64=40,
-    InstructionSet_SSE2_X64=41,
-    InstructionSet_SSE3_X64=42,
-    InstructionSet_SSSE3_X64=43,
-    InstructionSet_SSE41_X64=44,
-    InstructionSet_SSE42_X64=45,
-    InstructionSet_AVX_X64=46,
-    InstructionSet_AVX2_X64=47,
-    InstructionSet_AES_X64=48,
-    InstructionSet_BMI1_X64=49,
-    InstructionSet_BMI2_X64=50,
-    InstructionSet_FMA_X64=51,
-    InstructionSet_LZCNT_X64=52,
-    InstructionSet_PCLMULQDQ_X64=53,
-    InstructionSet_POPCNT_X64=54,
-    InstructionSet_AVXVNNI_X64=55,
-    InstructionSet_MOVBE_X64=56,
-    InstructionSet_X86Serialize_X64=57,
-    InstructionSet_EVEX_X64=58,
-    InstructionSet_AVX512F_X64=59,
-    InstructionSet_AVX512BW_X64=60,
-    InstructionSet_AVX512CD_X64=61,
-    InstructionSet_AVX512DQ_X64=62,
-    InstructionSet_AVX512VBMI_X64=63,
-    InstructionSet_AVX10v1_X64=64,
-    InstructionSet_AVX10v1_V512_X64=65,
+    InstructionSet_GFNI=24,
+    InstructionSet_GFNI_V256=25,
+    InstructionSet_GFNI_V512=26,
+    InstructionSet_AVX512F=27,
+    InstructionSet_AVX512F_VL=28,
+    InstructionSet_AVX512BW=29,
+    InstructionSet_AVX512BW_VL=30,
+    InstructionSet_AVX512CD=31,
+    InstructionSet_AVX512CD_VL=32,
+    InstructionSet_AVX512DQ=33,
+    InstructionSet_AVX512DQ_VL=34,
+    InstructionSet_AVX512VBMI=35,
+    InstructionSet_AVX512VBMI_VL=36,
+    InstructionSet_AVX10v1=37,
+    InstructionSet_AVX10v1_V512=38,
+    InstructionSet_VectorT128=39,
+    InstructionSet_VectorT256=40,
+    InstructionSet_VectorT512=41,
+    InstructionSet_X86Base_X64=42,
+    InstructionSet_SSE_X64=43,
+    InstructionSet_SSE2_X64=44,
+    InstructionSet_SSE3_X64=45,
+    InstructionSet_SSSE3_X64=46,
+    InstructionSet_SSE41_X64=47,
+    InstructionSet_SSE42_X64=48,
+    InstructionSet_AVX_X64=49,
+    InstructionSet_AVX2_X64=50,
+    InstructionSet_AES_X64=51,
+    InstructionSet_BMI1_X64=52,
+    InstructionSet_BMI2_X64=53,
+    InstructionSet_FMA_X64=54,
+    InstructionSet_LZCNT_X64=55,
+    InstructionSet_PCLMULQDQ_X64=56,
+    InstructionSet_POPCNT_X64=57,
+    InstructionSet_AVXVNNI_X64=58,
+    InstructionSet_MOVBE_X64=59,
+    InstructionSet_X86Serialize_X64=60,
+    InstructionSet_EVEX_X64=61,
+    InstructionSet_AVX512F_X64=62,
+    InstructionSet_AVX512BW_X64=63,
+    InstructionSet_AVX512CD_X64=64,
+    InstructionSet_AVX512DQ_X64=65,
+    InstructionSet_AVX512VBMI_X64=66,
+    InstructionSet_AVX10v1_X64=67,
+    InstructionSet_AVX10v1_V512_X64=68,
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
     InstructionSet_X86Base=1,
@@ -133,48 +136,51 @@ enum CORINFO_InstructionSet
     InstructionSet_MOVBE=21,
     InstructionSet_X86Serialize=22,
     InstructionSet_EVEX=23,
-    InstructionSet_AVX512F=24,
-    InstructionSet_AVX512F_VL=25,
-    InstructionSet_AVX512BW=26,
-    InstructionSet_AVX512BW_VL=27,
-    InstructionSet_AVX512CD=28,
-    InstructionSet_AVX512CD_VL=29,
-    InstructionSet_AVX512DQ=30,
-    InstructionSet_AVX512DQ_VL=31,
-    InstructionSet_AVX512VBMI=32,
-    InstructionSet_AVX512VBMI_VL=33,
-    InstructionSet_AVX10v1=34,
-    InstructionSet_AVX10v1_V512=35,
-    InstructionSet_VectorT128=36,
-    InstructionSet_VectorT256=37,
-    InstructionSet_VectorT512=38,
-    InstructionSet_X86Base_X64=39,
-    InstructionSet_SSE_X64=40,
-    InstructionSet_SSE2_X64=41,
-    InstructionSet_SSE3_X64=42,
-    InstructionSet_SSSE3_X64=43,
-    InstructionSet_SSE41_X64=44,
-    InstructionSet_SSE42_X64=45,
-    InstructionSet_AVX_X64=46,
-    InstructionSet_AVX2_X64=47,
-    InstructionSet_AES_X64=48,
-    InstructionSet_BMI1_X64=49,
-    InstructionSet_BMI2_X64=50,
-    InstructionSet_FMA_X64=51,
-    InstructionSet_LZCNT_X64=52,
-    InstructionSet_PCLMULQDQ_X64=53,
-    InstructionSet_POPCNT_X64=54,
-    InstructionSet_AVXVNNI_X64=55,
-    InstructionSet_MOVBE_X64=56,
-    InstructionSet_X86Serialize_X64=57,
-    InstructionSet_EVEX_X64=58,
-    InstructionSet_AVX512F_X64=59,
-    InstructionSet_AVX512BW_X64=60,
-    InstructionSet_AVX512CD_X64=61,
-    InstructionSet_AVX512DQ_X64=62,
-    InstructionSet_AVX512VBMI_X64=63,
-    InstructionSet_AVX10v1_X64=64,
-    InstructionSet_AVX10v1_V512_X64=65,
+    InstructionSet_GFNI=24,
+    InstructionSet_GFNI_V256=25,
+    InstructionSet_GFNI_V512=26,
+    InstructionSet_AVX512F=27,
+    InstructionSet_AVX512F_VL=28,
+    InstructionSet_AVX512BW=29,
+    InstructionSet_AVX512BW_VL=30,
+    InstructionSet_AVX512CD=31,
+    InstructionSet_AVX512CD_VL=32,
+    InstructionSet_AVX512DQ=33,
+    InstructionSet_AVX512DQ_VL=34,
+    InstructionSet_AVX512VBMI=35,
+    InstructionSet_AVX512VBMI_VL=36,
+    InstructionSet_AVX10v1=37,
+    InstructionSet_AVX10v1_V512=38,
+    InstructionSet_VectorT128=39,
+    InstructionSet_VectorT256=40,
+    InstructionSet_VectorT512=41,
+    InstructionSet_X86Base_X64=42,
+    InstructionSet_SSE_X64=43,
+    InstructionSet_SSE2_X64=44,
+    InstructionSet_SSE3_X64=45,
+    InstructionSet_SSSE3_X64=46,
+    InstructionSet_SSE41_X64=47,
+    InstructionSet_SSE42_X64=48,
+    InstructionSet_AVX_X64=49,
+    InstructionSet_AVX2_X64=50,
+    InstructionSet_AES_X64=51,
+    InstructionSet_BMI1_X64=52,
+    InstructionSet_BMI2_X64=53,
+    InstructionSet_FMA_X64=54,
+    InstructionSet_LZCNT_X64=55,
+    InstructionSet_PCLMULQDQ_X64=56,
+    InstructionSet_POPCNT_X64=57,
+    InstructionSet_AVXVNNI_X64=58,
+    InstructionSet_MOVBE_X64=59,
+    InstructionSet_X86Serialize_X64=60,
+    InstructionSet_EVEX_X64=61,
+    InstructionSet_AVX512F_X64=62,
+    InstructionSet_AVX512BW_X64=63,
+    InstructionSet_AVX512CD_X64=64,
+    InstructionSet_AVX512DQ_X64=65,
+    InstructionSet_AVX512VBMI_X64=66,
+    InstructionSet_AVX10v1_X64=67,
+    InstructionSet_AVX10v1_V512_X64=68,
 #endif // TARGET_X86
 
 };
@@ -600,6 +606,16 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_AVXVNNI);
         if (resultflags.HasInstructionSet(InstructionSet_X86Serialize) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
             resultflags.RemoveInstructionSet(InstructionSet_X86Serialize);
+        if (resultflags.HasInstructionSet(InstructionSet_GFNI) && !resultflags.HasInstructionSet(InstructionSet_SSE41))
+            resultflags.RemoveInstructionSet(InstructionSet_GFNI);
+        if (resultflags.HasInstructionSet(InstructionSet_GFNI_V256) && !resultflags.HasInstructionSet(InstructionSet_GFNI))
+            resultflags.RemoveInstructionSet(InstructionSet_GFNI_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_GFNI_V256) && !resultflags.HasInstructionSet(InstructionSet_AVX))
+            resultflags.RemoveInstructionSet(InstructionSet_GFNI_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_GFNI_V512) && !resultflags.HasInstructionSet(InstructionSet_GFNI))
+            resultflags.RemoveInstructionSet(InstructionSet_GFNI_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_GFNI_V512) && !resultflags.HasInstructionSet(InstructionSet_AVX512F))
+            resultflags.RemoveInstructionSet(InstructionSet_GFNI_V512);
         if (resultflags.HasInstructionSet(InstructionSet_AVX10v1) && !resultflags.HasInstructionSet(InstructionSet_EVEX))
             resultflags.RemoveInstructionSet(InstructionSet_AVX10v1);
         if (resultflags.HasInstructionSet(InstructionSet_AVX10v1_V512) && !resultflags.HasInstructionSet(InstructionSet_AVX10v1))
@@ -706,6 +722,16 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_AVXVNNI);
         if (resultflags.HasInstructionSet(InstructionSet_X86Serialize) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
             resultflags.RemoveInstructionSet(InstructionSet_X86Serialize);
+        if (resultflags.HasInstructionSet(InstructionSet_GFNI) && !resultflags.HasInstructionSet(InstructionSet_SSE41))
+            resultflags.RemoveInstructionSet(InstructionSet_GFNI);
+        if (resultflags.HasInstructionSet(InstructionSet_GFNI_V256) && !resultflags.HasInstructionSet(InstructionSet_GFNI))
+            resultflags.RemoveInstructionSet(InstructionSet_GFNI_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_GFNI_V256) && !resultflags.HasInstructionSet(InstructionSet_AVX))
+            resultflags.RemoveInstructionSet(InstructionSet_GFNI_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_GFNI_V512) && !resultflags.HasInstructionSet(InstructionSet_GFNI))
+            resultflags.RemoveInstructionSet(InstructionSet_GFNI_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_GFNI_V512) && !resultflags.HasInstructionSet(InstructionSet_AVX512F))
+            resultflags.RemoveInstructionSet(InstructionSet_GFNI_V512);
         if (resultflags.HasInstructionSet(InstructionSet_AVX10v1) && !resultflags.HasInstructionSet(InstructionSet_EVEX))
             resultflags.RemoveInstructionSet(InstructionSet_AVX10v1);
         if (resultflags.HasInstructionSet(InstructionSet_AVX10v1_V512) && !resultflags.HasInstructionSet(InstructionSet_AVX10v1))
@@ -896,6 +922,12 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "EVEX";
         case InstructionSet_EVEX_X64 :
             return "EVEX_X64";
+        case InstructionSet_GFNI :
+            return "GFNI";
+        case InstructionSet_GFNI_V256 :
+            return "GFNI_V256";
+        case InstructionSet_GFNI_V512 :
+            return "GFNI_V512";
         case InstructionSet_AVX512F :
             return "AVX512F";
         case InstructionSet_AVX512F_X64 :
@@ -988,6 +1020,12 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "X86Serialize";
         case InstructionSet_EVEX :
             return "EVEX";
+        case InstructionSet_GFNI :
+            return "GFNI";
+        case InstructionSet_GFNI_V256 :
+            return "GFNI_V256";
+        case InstructionSet_GFNI_V512 :
+            return "GFNI_V512";
         case InstructionSet_AVX512F :
             return "AVX512F";
         case InstructionSet_AVX512F_VL :
@@ -1073,6 +1111,9 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Movbe: return InstructionSet_MOVBE;
         case READYTORUN_INSTRUCTION_X86Serialize: return InstructionSet_X86Serialize;
         case READYTORUN_INSTRUCTION_EVEX: return InstructionSet_EVEX;
+        case READYTORUN_INSTRUCTION_Gfni: return InstructionSet_GFNI;
+        case READYTORUN_INSTRUCTION_Gfni_V256: return InstructionSet_GFNI_V256;
+        case READYTORUN_INSTRUCTION_Gfni_V512: return InstructionSet_GFNI_V512;
         case READYTORUN_INSTRUCTION_Avx512F: return InstructionSet_AVX512F;
         case READYTORUN_INSTRUCTION_Avx512F_VL: return InstructionSet_AVX512F_VL;
         case READYTORUN_INSTRUCTION_Avx512BW: return InstructionSet_AVX512BW;
@@ -1110,6 +1151,9 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Movbe: return InstructionSet_MOVBE;
         case READYTORUN_INSTRUCTION_X86Serialize: return InstructionSet_X86Serialize;
         case READYTORUN_INSTRUCTION_EVEX: return InstructionSet_EVEX;
+        case READYTORUN_INSTRUCTION_Gfni: return InstructionSet_GFNI;
+        case READYTORUN_INSTRUCTION_Gfni_V256: return InstructionSet_GFNI_V256;
+        case READYTORUN_INSTRUCTION_Gfni_V512: return InstructionSet_GFNI_V512;
         case READYTORUN_INSTRUCTION_Avx512F: return InstructionSet_AVX512F;
         case READYTORUN_INSTRUCTION_Avx512F_VL: return InstructionSet_AVX512F_VL;
         case READYTORUN_INSTRUCTION_Avx512BW: return InstructionSet_AVX512BW;

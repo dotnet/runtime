@@ -58,6 +58,9 @@ namespace Internal.ReadyToRunConstants
         Avx10v1=44,
         Avx10v1_V512=46,
         EVEX=47,
+        Gfni=48,
+        Gfni_V256=49,
+        Gfni_V512=50,
 
     }
 }

@@ -789,6 +789,9 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 // MOVBE
     { FIRST_NI_X86Serialize, LAST_NI_X86Serialize },
     { NI_Illegal, NI_Illegal },                                 // EVEX
+    { FIRST_NI_GFNI, LAST_NI_GFNI },
+    { FIRST_NI_GFNI_V256, LAST_NI_GFNI_V256 },
+    { FIRST_NI_GFNI_V512, LAST_NI_GFNI_V512 },
     { FIRST_NI_AVX512F, LAST_NI_AVX512F },
     { FIRST_NI_AVX512F_VL, LAST_NI_AVX512F_VL },
     { FIRST_NI_AVX512BW, LAST_NI_AVX512BW },

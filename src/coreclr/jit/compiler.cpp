@@ -6161,6 +6161,13 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_FMA);
         }
 
+        if (JitConfig.EnableGFNI() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_GFNI);
+            instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V256);
+            instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V512);
+        }
+
         if (JitConfig.EnableLZCNT() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_LZCNT);

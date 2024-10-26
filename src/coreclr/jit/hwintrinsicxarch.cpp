@@ -103,13 +103,32 @@ static CORINFO_InstructionSet VLVersionOfIsa(CORINFO_InstructionSet isa)
 }
 
 //------------------------------------------------------------------------
-// V512VersionOfIsa: Gets the corresponding AVX10V512 only InstructionSet for a given InstructionSet
+// V256VersionOfIsa: Gets the corresponding V256 only InstructionSet for a given InstructionSet
 //
 // Arguments:
 //    isa -- The InstructionSet ID
 //
 // Return Value:
-//    The AVX10V512 only InstructionSet associated with isa
+//    The V256 only InstructionSet associated with isa
+static CORINFO_InstructionSet V256VersionOfIsa(CORINFO_InstructionSet isa)
+{
+    switch (isa)
+    {
+        case InstructionSet_GFNI:
+            return InstructionSet_GFNI_V256;
+        default:
+            return InstructionSet_NONE;
+    }
+}
+
+//------------------------------------------------------------------------
+// V512VersionOfIsa: Gets the corresponding V512 only InstructionSet for a given InstructionSet
+//
+// Arguments:
+//    isa -- The InstructionSet ID
+//
+// Return Value:
+//    The V512 only InstructionSet associated with isa
 static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
@@ -118,6 +137,8 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX10v1_V512;
         case InstructionSet_AVX10v1_X64:
             return InstructionSet_AVX10v1_V512_X64;
+        case InstructionSet_GFNI:
+            return InstructionSet_GFNI_V512;
         default:
             return InstructionSet_NONE;
     }
@@ -203,6 +224,13 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         if (strcmp(className, "Fma") == 0)
         {
             return InstructionSet_FMA;
+        }
+    }
+    else if (className[0] == 'G')
+    {
+        if (strcmp(className, "Gfni") == 0)
+        {
+            return InstructionSet_GFNI;
         }
     }
     else if (className[0] == 'L')
@@ -330,7 +358,11 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className,
 
     if (className[0] == 'V')
     {
-        if (strcmp(className, "V512") == 0)
+        if (strcmp(className, "V256") == 0)
+        {
+            return V256VersionOfIsa(enclosingIsa);
+        }
+        else if (strcmp(className, "V512") == 0)
         {
             return V512VersionOfIsa(enclosingIsa);
         }
@@ -873,6 +905,9 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX10v1_V512:
         case InstructionSet_AVX10v1_V512_X64:
         case InstructionSet_EVEX:
+        case InstructionSet_GFNI:
+        case InstructionSet_GFNI_V256:
+        case InstructionSet_GFNI_V512:
         {
             return true;
         }

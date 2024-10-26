@@ -2592,6 +2592,19 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicTernaryLogic(node);
         }
 
+        case NI_GFNI_GaloisFieldAffineTransform:
+        case NI_GFNI_GaloisFieldAffineTransformInverse:
+        case NI_GFNI_V256_GaloisFieldAffineTransform:
+        case NI_GFNI_V256_GaloisFieldAffineTransformInverse:
+        case NI_GFNI_V512_GaloisFieldAffineTransform:
+        case NI_GFNI_V512_GaloisFieldAffineTransformInverse:
+        {
+            // Managed API surfaces these with only UBYTE operands.
+            // We retype in order to support EVEX embedded broadcast of op2
+            node->SetSimdBaseJitType(CORINFO_TYPE_ULONG);
+            break;
+        }
+
         default:
             break;
     }
@@ -9412,6 +9425,12 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX10v1_TernaryLogic:
                 case NI_AVX10v1_V512_Range:
                 case NI_AVX10v1_V512_Reduce:
+                case NI_GFNI_GaloisFieldAffineTransform:
+                case NI_GFNI_GaloisFieldAffineTransformInverse:
+                case NI_GFNI_V256_GaloisFieldAffineTransform:
+                case NI_GFNI_V256_GaloisFieldAffineTransformInverse:
+                case NI_GFNI_V512_GaloisFieldAffineTransform:
+                case NI_GFNI_V512_GaloisFieldAffineTransformInverse:
                 {
                     assert(!supportsSIMDScalarLoads);
 
@@ -11328,6 +11347,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX10v1_V512_InsertVector128:
                         case NI_AVX10v1_V512_InsertVector256:
                         case NI_AVX10v1_V512_Range:
+                        case NI_GFNI_GaloisFieldAffineTransform:
+                        case NI_GFNI_GaloisFieldAffineTransformInverse:
+                        case NI_GFNI_V256_GaloisFieldAffineTransform:
+                        case NI_GFNI_V256_GaloisFieldAffineTransformInverse:
+                        case NI_GFNI_V512_GaloisFieldAffineTransform:
+                        case NI_GFNI_V512_GaloisFieldAffineTransformInverse:
                         {
                             if (!isContainedImm)
                             {
