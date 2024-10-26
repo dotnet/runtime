@@ -482,30 +482,21 @@ namespace Internal.Runtime.TypeLoader
             /// <summary>
             /// Writes this layout to the given bitfield.
             /// </summary>
-            /// <param name="bitfield">The bitfield to write a layout to (may be null, at which
-            /// point it will be created and assigned).</param>
-            /// <param name="offset">The offset at which we need to write the bitfield.</param>
-            /// <returns>The result bitfield, may or may not be the input array.</returns>
-            public bool[] WriteToBitfield(bool[] bitfield, int offset)
+            /// <returns>The result bitfield.</returns>
+            public bool[] WriteToBitfield()
             {
-                ArgumentNullException.ThrowIfNull(bitfield);
-
-                if (IsNone)
-                    return bitfield;
-
                 // Ensure exactly one of these two are set.
+                Debug.Assert(!IsNone);
                 Debug.Assert(_gcdesc != null ^ _bitfield != null);
 
                 if (_bitfield != null)
-                    return MergeBitfields(bitfield, offset);
+                    return MergeBitfields();
                 else
-                    return WriteGCDescToBitfield(bitfield, offset);
+                    return WriteGCDescToBitfield();
             }
 
-            private unsafe bool[] WriteGCDescToBitfield(bool[] bitfield, int offset)
+            private unsafe bool[] WriteGCDescToBitfield()
             {
-                int startIndex = offset / IntPtr.Size;
-
                 void** ptr = (void**)_gcdesc;
                 Debug.Assert(_gcdesc != null);
 
@@ -514,8 +505,8 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(count >= 0);
 
                 // Ensure capacity for the values we are about to write
-                int capacity = startIndex + _size / IntPtr.Size - 2;
-                Array.Resize(ref bitfield, capacity);
+                int capacity = _size / IntPtr.Size - 2;
+                bool[] bitfield = new bool[capacity];
 
                 while (count-- >= 0)
                 {
@@ -526,16 +517,14 @@ namespace Internal.Runtime.TypeLoader
                     Debug.Assert(offs >= 0);
 
                     for (int i = 0; i < len; i++)
-                        bitfield[startIndex + offs + i] = true;
+                        bitfield[offs + i] = true;
                 }
 
                 return bitfield;
             }
 
-            private bool[] MergeBitfields(bool[] outputBitfield, int offset)
+            private bool[] MergeBitfields()
             {
-                int startIndex = offset / IntPtr.Size;
-
                 // These routines represent the GC layout after the MethodTable pointer
                 // in an object, but the bool[] bitfield logically contains the EETypepointer
                 // if it is describing a reference type. So, skip the first value.
@@ -545,15 +534,15 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(itemsToSkip == 0 || _bitfield[0] == false);
 
                 // Ensure capacity for the values we are about to write
-                int capacity = startIndex + _bitfield.Length - itemsToSkip;
-                Array.Resize(ref outputBitfield, capacity);
+                int capacity = _bitfield.Length - itemsToSkip;
+                bool[] outputBitfield = new bool[capacity];
 
                 for (int i = itemsToSkip; i < _bitfield.Length; i++)
                 {
                     // We should never overwrite a TRUE value in the table.
-                    Debug.Assert(!outputBitfield[startIndex + i - itemsToSkip] || _bitfield[i]);
+                    Debug.Assert(!outputBitfield[i - itemsToSkip] || _bitfield[i]);
 
-                    outputBitfield[startIndex + i - itemsToSkip] = _bitfield[i];
+                    outputBitfield[i - itemsToSkip] = _bitfield[i];
                 }
 
                 return outputBitfield;
