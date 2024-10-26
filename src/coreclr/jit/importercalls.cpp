@@ -8316,7 +8316,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // Pass the method desc as the inst param arg.
         // Need to make sure this works in all cases. We might need more complex embedding.
         //
-        GenTree* const instParam = gtNewIconNode((ssize_t)derivedMethod, TYP_I_IMPL);
+        GenTree* const instParam = gtNewIconNode((ssize_t)dvInfo.virtualMethod, TYP_I_IMPL);
         call->gtArgs.InsertInstParam(this, instParam);
     }
 

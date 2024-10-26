@@ -8772,11 +8772,13 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         //
         if (pDevirtMD->IsInstantiatingStub())
         {
+            // hack
+            info->virtualMethod = (CORINFO_METHOD_HANDLE)pDevirtMD;
             pDevirtMD = pDevirtMD->GetWrappedMethodDesc();
         }
 
-        info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
         info->requiresInstMethodDescArg = pDevirtMD->RequiresInstMethodDescArg();
+        info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
         info->wasArrayInterfaceDevirt = true;
     }
     else
