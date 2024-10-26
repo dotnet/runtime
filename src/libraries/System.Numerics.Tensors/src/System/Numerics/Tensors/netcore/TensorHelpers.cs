@@ -43,6 +43,9 @@ namespace System.Numerics.Tensors
             nint s1;
             nint s2;
 
+            if (lengths1.Length == 0 || lengths2.Length == 0)
+                return false;
+
             while (lengths1Index >= 0 || lengths2Index >= 0)
             {
                 // if a dimension is missing in one of the shapes, it is considered to be 1
@@ -56,7 +59,7 @@ namespace System.Numerics.Tensors
                 else
                     s2 = lengths2[lengths2Index--];
 
-                if (s1 == s2 || (s1 == 1 && s2 != 1) || (s2 == 1 && s1 != 1)) { }
+                if (s1 == s2 || (s1 == 1 && s2 > 1) || (s2 == 1 && s1 > 1)) { }
                 else
                 {
                     areCompatible = false;
@@ -96,6 +99,21 @@ namespace System.Numerics.Tensors
 
         internal static bool AreLengthsTheSame(ReadOnlySpan<nint> lengths1, ReadOnlySpan<nint> lengths2)
             => lengths1.SequenceEqual(lengths2);
+
+        internal static bool IsContiguousAndDense<T>(scoped in ReadOnlyTensorSpan<T> tensor)
+        {
+            // Right most dimension must be 1 for a dense tensor.
+            if (tensor._shape.Strides[^1] != 1)
+                return false;
+
+            // For other dimensions, the stride must be equal to the product of the dimensions to the right.
+            for (int i = tensor._shape._rank - 2; i >= 0; i--)
+            {
+                if (tensor._shape.Strides[i] != TensorPrimitives.Product(tensor.Lengths.Slice(i + 1, tensor.Lengths.Length - i - 1)))
+                    return false;
+            }
+            return true;
+        }
 
         internal static void PermuteIndices(Span<nint> indices, Span<nint> permutedIndices, ReadOnlySpan<int> permutation)
         {

@@ -24,12 +24,12 @@ The .NET Foundation licenses this file to you under the MIT license.
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
     <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == '' and '$(_linuxLibcFlavor)' == 'musl'">1572864</IlcDefaultStackSize>
-    <UseSystemZlib Condition="'$(UseSystemZlib)' == '' and !Exists('$(IlcFrameworkNativePath)libz.a')">true</UseSystemZlib>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
     <PropertyGroup>
+      <UseSystemZlib Condition="'$(UseSystemZlib)' == '' and !Exists('$(IlcSdkPath)libz.a')">true</UseSystemZlib>
       <FullRuntimeName>libRuntime.WorkstationGC</FullRuntimeName>
       <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(IlcLinkServerGC)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
 
@@ -64,6 +64,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcRPath Condition="'$(IlcRPath)' == '' and '$(_IsApplePlatform)' != 'true'">$ORIGIN</IlcRPath>
       <IlcRPath Condition="'$(IlcRPath)' == '' and '$(_IsApplePlatform)' == 'true'">@executable_path</IlcRPath>
 
+      <SharedLibraryInstallName Condition="'$(SharedLibraryInstallName)' == '' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'">@rpath/$(TargetName)$(NativeBinaryExt)</SharedLibraryInstallName>
+
       <EventPipeName>libeventpipe-disabled</EventPipeName>
       <EventPipeName Condition="'$(EventSourceSupport)' == 'true'">libeventpipe-enabled</EventPipeName>
 
@@ -92,7 +94,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_AppleTripleAbi Condition="$(_targetOS.EndsWith('simulator'))">simulator</_AppleTripleAbi>
 
       <TargetTriple>$(CrossCompileArch)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)-$(_AppleTripleAbi)</TargetTriple>
-      <SharedLibraryInstallName Condition="'$(SharedLibraryInstallName)' == '' and '$(NativeLib)' == 'Shared'">@rpath/$(TargetName)$(NativeBinaryExt)</SharedLibraryInstallName>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(_targetOS)' == 'osx'">
@@ -121,22 +122,23 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Error Condition="!Exists('$(SysRoot)') and '$(_IsiOSLikePlatform)' == 'true'"
       Text="Apple SDK was not found in: '$(SysRoot)'" />
 
+    <!--
+      Include any managed code libraries first, followed by native shims, followed then by the runtimes.
+      This order ensures that all dependencies are met in order:
+      - managed code can have dependencies on native shims and the runtime
+      - native shims can have dependencies on shared code in the runtime (like the minipal)
+      - the native portion of the runtime can't have dependencies on the native shims.
+      This order is important as some Unix linkers only do a single pass to resolve symbols, so all dependencies
+      must come after dependents.
+      -->
     <ItemGroup>
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
-      <NativeLibrary Condition="'$(NativeLib)' == '' and '$(CustomNativeMain)' != 'true'" Include="$(IlcSdkPath)libbootstrapper.o" />
-      <NativeLibrary Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'" Include="$(IlcSdkPath)libbootstrapperdll.o" />
-      <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName).a" />
-      <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName)$(LibFileExt)" />
-      <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibFileExt)" />
-      <NativeLibrary Include="$(IlcSdkPath)$(StandaloneGCSupportName)$(LibFileExt)" />
-      <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true' and '$(StaticICULinking)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
     </ItemGroup>
 
     <ItemGroup>
       <NetCoreAppNativeLibrary Include="System.Native" />
       <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(StaticICULinking)' != 'true' and '$(InvariantGlobalization)' != 'true'" />
       <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
-      <NetCoreAppNativeLibrary Include="z" Condition="'$(UseSystemZlib)' != 'true'" /> <!-- zlib must be added after System.IO.Compression.Native, order matters. -->
       <NetCoreAppNativeLibrary Include="System.Net.Security.Native" Condition="!$(_targetOS.StartsWith('tvos')) and '$(_linuxLibcFlavor)' != 'bionic'" />
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Apple" Condition="'$(_IsApplePlatform)' == 'true'" />
       <!-- Not compliant for iOS-like platforms -->
@@ -151,6 +153,22 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'%(EscapedPath)')" />
     </ItemGroup>
 
+    <ItemGroup>
+      <NativeLibrary Condition="'$(NativeLib)' == '' and '$(CustomNativeMain)' != 'true'" Include="$(IlcSdkPath)libbootstrapper.o" />
+      <NativeLibrary Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'" Include="$(IlcSdkPath)libbootstrapperdll.o" />
+      <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName).a" />
+      <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName)$(LibFileExt)" />
+      <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibFileExt)" />
+      <NativeLibrary Include="$(IlcSdkPath)$(StandaloneGCSupportName)$(LibFileExt)" />
+      <NativeLibrary Include="$(IlcSdkPath)libaotminipal.a" />
+      <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true' and '$(StaticICULinking)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- zlib must be added after System.IO.Compression.Native, order matters. -->
+      <NativeLibrary Condition="'$(UseSystemZlib)' != 'true'" Include="$(IlcSdkPath)libz.a" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(StaticICULinking)' == 'true' and '$(NativeLib)' != 'Static' and '$(InvariantGlobalization)' != 'true'">
       <NativeLibrary Include="$(IntermediateOutputPath)libs/System.Globalization.Native/build/libSystem.Globalization.Native.a" />
       <DirectPInvoke Include="libSystem.Globalization.Native" />
@@ -162,6 +180,11 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ItemGroup Condition="'$(StaticOpenSslLinking)' != 'true' and Exists('$(IlcSdkPath)nonportable.txt')">
       <NativeSystemLibrary Include="ssl" />
       <NativeSystemLibrary Include="crypto" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(UseSystemBrotli)' != 'false' and Exists('$(IlcSdkPath)nonportable.txt')">
+      <NativeSystemLibrary Include="brotlienc" />
+      <NativeSystemLibrary Include="brotlidec" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(StaticOpenSslLinking)' == 'true' and '$(NativeLib)' != 'Static'">
@@ -205,10 +228,10 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-Wl,--strip-debug" Condition="$(NativeDebugSymbols) != 'true' and '$(_IsApplePlatform)' != 'true'" />
       <LinkerArg Include="-Wl,-rpath,'$(IlcRPath)'" Condition="'$(StaticExecutable)' != 'true' and !$([MSBuild]::IsOSPlatform('Windows'))" />
       <LinkerArg Include="-Wl,-rpath,&quot;$(IlcRPath)&quot;" Condition="'$(StaticExecutable)' != 'true' and $([MSBuild]::IsOSPlatform('Windows'))" />
-      <LinkerArg Include="-Wl,-install_name,&quot;$(SharedLibraryInstallName)&quot;" Condition="'$(_IsiOSLikePlatform)' == 'true' and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="-Wl,-install_name,&quot;$(SharedLibraryInstallName)&quot;" Condition="'$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'" />
       <LinkerArg Include="-Wl,--build-id=sha1" Condition="'$(_IsApplePlatform)' != 'true'" />
       <LinkerArg Include="-Wl,--as-needed" Condition="'$(_IsApplePlatform)' != 'true'" />
-      <LinkerArg Include="-Wl,-e0x0" Condition="'$(NativeLib)' == 'Shared' and '$(_IsApplePlatform)' != 'true'" />
+      <LinkerArg Include="-Wl,-e,0x0" Condition="'$(NativeLib)' == 'Shared' and '$(_IsApplePlatform)' != 'true'" />
       <LinkerArg Include="-pthread" Condition="'$(_IsApplePlatform)' != 'true'" />
       <LinkerArg Include="@(NativeSystemLibrary->'-l%(Identity)')" />
       <LinkerArg Include="-L/usr/lib/swift" Condition="'$(_IsApplePlatform)' == 'true'" />

@@ -1236,6 +1236,10 @@ namespace System
 
         #region Hierarchy
 
+        public override bool IsInstanceOfType([NotNullWhen(true)] object? o) => RuntimeTypeHandle.IsInstanceOfType(this, o);
+
+        protected override bool IsCOMObjectImpl() => false;
+
         // Reflexive, symmetric, transitive.
         public override bool IsEquivalentTo(Type? other)
         {
@@ -1246,9 +1250,7 @@ namespace System
             if (otherRtType == this)
                 return true;
 
-            // It's not worth trying to perform further checks in managed
-            // as they would lead to FCalls anyway.
-            return RuntimeTypeHandle.IsEquivalentTo(this, otherRtType);
+            return false;
         }
 
         #endregion
@@ -1547,13 +1549,18 @@ namespace System
                         }
 
                         MethodBase? invokeMethod;
-                        object? state = null;
+                        object? state;
 
                         try
                         {
                             invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null, out state);
                         }
-                        catch (MissingMethodException) { invokeMethod = null; }
+                        catch (MissingMethodException innerMME)
+                        {
+                            // Rethrows to rewrite a message to include the class name.
+                            // Make sure the original exception is set as an inner exception.
+                            throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName), innerMME);
+                        }
 
                         if (invokeMethod == null)
                         {

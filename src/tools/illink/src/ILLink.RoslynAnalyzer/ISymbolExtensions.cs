@@ -47,6 +47,12 @@ namespace ILLink.RoslynAnalyzer
 			}
 		}
 
+		/// <summary>
+		/// Gets DynamicallyAccessedMemberTypes for any DynamicallyAccessedMembers annotation on the symbol.
+		/// This doesn't validate whether the annotation is valid based on the type of the annotated symbol.
+		/// Use FlowAnnotations.Get*Annotation when getting annotations that are valid and should participate
+		/// in dataflow analysis.
+		/// </summary>
 		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypes (this ISymbol symbol)
 		{
 			if (!TryGetAttribute (symbol, DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var dynamicallyAccessedMembers))
@@ -97,15 +103,15 @@ namespace ILLink.RoslynAnalyzer
 		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesOnAssociatedSymbol (this IMethodSymbol methodSymbol) =>
 			methodSymbol.AssociatedSymbol is ISymbol associatedSymbol ? GetDynamicallyAccessedMemberTypes (associatedSymbol) : DynamicallyAccessedMemberTypes.None;
 
-		internal static bool TryGetOverriddenMember (this ISymbol? symbol, [NotNullWhen (returnValue: true)] out ISymbol? overridenMember)
+		internal static bool TryGetOverriddenMember (this ISymbol? symbol, [NotNullWhen (returnValue: true)] out ISymbol? overriddenMember)
 		{
-			overridenMember = symbol switch {
+			overriddenMember = symbol switch {
 				IMethodSymbol method => method.OverriddenMethod,
 				IPropertySymbol property => property.OverriddenProperty,
 				IEventSymbol @event => @event.OverriddenEvent,
 				_ => null,
 			};
-			return overridenMember != null;
+			return overriddenMember != null;
 		}
 
 		public static SymbolDisplayFormat ILLinkTypeDisplayFormat { get; } =

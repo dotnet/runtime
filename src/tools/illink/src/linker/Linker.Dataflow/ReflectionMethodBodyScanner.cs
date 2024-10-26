@@ -91,26 +91,26 @@ namespace Mono.Linker.Dataflow
 		MethodParameterValue GetMethodParameterValue (ParameterProxy parameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 			=> _annotations.GetMethodParameterValue (parameter, dynamicallyAccessedMemberTypes);
 
-		protected override MultiValue GetFieldValue (FieldDefinition field) => _annotations.GetFieldValue (field);
+		protected override MultiValue GetFieldValue (FieldReference field) => _annotations.GetFieldValue (field);
 
 		protected override MethodReturnValue GetReturnValue (MethodDefinition method) => _annotations.GetMethodReturnValue (method, isNewObj: false);
 
-		private void HandleStoreValueWithDynamicallyAccessedMembers (ValueWithDynamicallyAccessedMembers targetValue, Instruction operation, MultiValue sourceValue)
+		private void HandleStoreValueWithDynamicallyAccessedMembers (ValueWithDynamicallyAccessedMembers targetValue, Instruction operation, MultiValue sourceValue, int? parameterIndex)
 		{
 			if (targetValue.DynamicallyAccessedMemberTypes != 0) {
 				_origin = _origin.WithInstructionOffset (operation.Offset);
-				TrimAnalysisPatterns.Add (new TrimAnalysisAssignmentPattern (sourceValue, targetValue, _origin));
+				TrimAnalysisPatterns.Add (new TrimAnalysisAssignmentPattern (sourceValue, targetValue, _origin, parameterIndex));
 			}
 		}
 
-		protected override void HandleStoreField (MethodDefinition method, FieldValue field, Instruction operation, MultiValue valueToStore)
-			=> HandleStoreValueWithDynamicallyAccessedMembers (field, operation, valueToStore);
+		protected override void HandleStoreField (MethodDefinition method, FieldValue field, Instruction operation, MultiValue valueToStore, int? parameterIndex)
+			=> HandleStoreValueWithDynamicallyAccessedMembers (field, operation, valueToStore, parameterIndex);
 
-		protected override void HandleStoreParameter (MethodDefinition method, MethodParameterValue parameter, Instruction operation, MultiValue valueToStore)
-			=> HandleStoreValueWithDynamicallyAccessedMembers (parameter, operation, valueToStore);
+		protected override void HandleStoreParameter (MethodDefinition method, MethodParameterValue parameter, Instruction operation, MultiValue valueToStore, int? parameterIndex)
+			=> HandleStoreValueWithDynamicallyAccessedMembers (parameter, operation, valueToStore, parameterIndex);
 
 		protected override void HandleReturnValue (MethodDefinition method, MethodReturnValue returnValue, Instruction operation, MultiValue valueToStore)
-			=> HandleStoreValueWithDynamicallyAccessedMembers (returnValue, operation, valueToStore);
+			=> HandleStoreValueWithDynamicallyAccessedMembers (returnValue, operation, valueToStore, null);
 
 		public override MultiValue HandleCall (MethodBody callingMethodBody, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams)
 		{
@@ -168,19 +168,22 @@ namespace Mono.Linker.Dataflow
 			MarkStep markStep)
 		{
 			var origin = diagnosticContext.Origin;
-			var calledMethodDefinition = context.TryResolve (calledMethod);
-			Debug.Assert (calledMethodDefinition != null);
+			if (!MethodProxy.TryCreate (calledMethod, context, out MethodProxy? calledMethodProxy)) {
+				Debug.Fail ("Should only be called for resolvable methods");
+				return UnknownValue.Instance;
+			}
+			var calledMethodDefinition = calledMethodProxy.Value.Definition;
 			var callingMethodDefinition = origin.Provider as MethodDefinition;
 			Debug.Assert (callingMethodDefinition != null);
 
 			bool requiresDataFlowAnalysis = context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (calledMethodDefinition);
 			bool isNewObj = operation.OpCode.Code == Code.Newobj;
-			var annotatedMethodReturnValue = context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodDefinition, isNewObj);
+			var annotatedMethodReturnValue = context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodProxy.Value, isNewObj);
 			Debug.Assert (requiresDataFlowAnalysis || annotatedMethodReturnValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None);
 
-			var handleCallAction = new HandleCallAction (context, operation, markStep, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod);
-			var intrinsicId = Intrinsics.GetIntrinsicIdForMethod (calledMethodDefinition);
-			if (!handleCallAction.Invoke (calledMethodDefinition, instanceValue, argumentValues, intrinsicId, out MultiValue methodReturnValue))
+			var handleCallAction = new HandleCallAction (context, operation, markStep, reflectionMarker, diagnosticContext, callingMethodDefinition);
+			var intrinsicId = Intrinsics.GetIntrinsicIdForMethod (calledMethodProxy.Value);
+			if (!handleCallAction.Invoke (calledMethodProxy.Value, instanceValue, argumentValues, intrinsicId, out MultiValue methodReturnValue))
 				throw new NotImplementedException ($"Unhandled intrinsic: {intrinsicId}");
 			return methodReturnValue;
 		}

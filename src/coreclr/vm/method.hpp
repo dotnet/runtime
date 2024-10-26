@@ -93,7 +93,7 @@ enum MethodClassification
 {
     mcIL        = 0, // IL
     mcFCall     = 1, // FCall (also includes tlbimped ctor, Delegate ctor)
-    mcNDirect   = 2, // N/Direct
+    mcPInvoke   = 2, // PInvoke method also known as N/Direct in this codebase
     mcEEImpl    = 3, // special method; implementation provided by EE (like Delegate Invoke)
     mcArray     = 4, // Array ECall
     mcInstantiated = 5, // Instantiated generic methods, including descriptors
@@ -637,7 +637,7 @@ public:
     inline DWORD IsNDirect()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return mcNDirect == GetClassification();
+        return mcPInvoke == GetClassification();
     }
 
     inline DWORD IsInterface()
@@ -820,8 +820,6 @@ public:
         return IsEEImpl() || IsArray() || IsNoMetadata();
     }
 
-    PCCOR_SIGNATURE GetSig();
-
     void GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig);
     SigParser GetSigParser();
 
@@ -1000,8 +998,6 @@ public:
     }
 
     inline PTR_MethodTable GetMethodTable() const;
-
-    inline DPTR(PTR_MethodTable) GetMethodTablePtr() const;
 
   public:
     inline MethodDescChunk* GetMethodDescChunk() const;
@@ -1668,20 +1664,6 @@ private:
     //================================================================
     // The actual data stored in a MethodDesc follows.
 
-#ifdef _DEBUG
-public:
-    // These are set only for MethodDescs but every time we want to use the debugger
-    // to examine these fields, the code has the thing stored in a MethodDesc*.
-    // So...
-    LPCUTF8         m_pszDebugMethodName;
-    LPCUTF8         m_pszDebugClassName;
-    LPCUTF8         m_pszDebugMethodSignature;
-    PTR_MethodTable m_pDebugMethodTable;
-
-    PTR_GCCoverageInfo m_GcCover;
-
-#endif // _DEBUG
-
 protected:
     enum {
         // There are flags available for use here (currently 4 flags bits are available); however, new bits are hard to come by, so any new flags bits should
@@ -1711,6 +1693,20 @@ protected:
     WORD m_wSlotNumber; // The slot number of this MethodDesc in the vtable array.
     WORD m_wFlags; // See MethodDescFlags
     PTR_MethodDescCodeData m_codeData;
+
+#ifdef _DEBUG
+public:
+    // These are set only for MethodDescs but every time we want to use the debugger
+    // to examine these fields, the code has the thing stored in a MethodDesc*.
+    // So...
+    LPCUTF8         m_pszDebugMethodName;
+    LPCUTF8         m_pszDebugClassName;
+    LPCUTF8         m_pszDebugMethodSignature;
+    PTR_MethodTable m_pDebugMethodTable;
+
+    PTR_GCCoverageInfo m_GcCover;
+
+#endif // _DEBUG
 
 public:
 #ifdef DACCESS_COMPILE
@@ -1909,7 +1905,7 @@ public:
     static void Init();
 #endif
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<MethodDesc>;
 };
 
 template<> struct cdac_data<MethodDesc>
@@ -1917,6 +1913,7 @@ template<> struct cdac_data<MethodDesc>
     static constexpr size_t ChunkIndex = offsetof(MethodDesc, m_chunkIndex);
     static constexpr size_t Slot = offsetof(MethodDesc, m_wSlotNumber);
     static constexpr size_t Flags = offsetof(MethodDesc, m_wFlags);
+    static constexpr size_t Flags3AndTokenRemainder = offsetof(MethodDesc, m_wFlags3AndTokenRemainder);
 };
 
 #ifndef DACCESS_COMPILE
@@ -2214,7 +2211,8 @@ class MethodDescChunk
                                                                      // and for the logic that splits the token to be algorithmically generated based on the
                                                                      // #define
         enum_flag_DeterminedIsEligibleForTieredCompilation = 0x4000, // Has this chunk had its methods been determined eligible for tiered compilation or not
-        // unused                                          = 0x8000,
+        enum_flag_LoaderModuleAttachedToChunk              = 0x8000, // Is this chunk associated with a LoaderModule directly? If this flag is set, then the
+                                                                     // LoaderModule pointer is placed at the end of the chunk.
     };
 
 #ifndef DACCESS_COMPILE
@@ -2231,7 +2229,8 @@ public:
                                         BOOL fNonVtableSlot,
                                         BOOL fNativeCodeSlot,
                                         MethodTable *initialMT,
-                                        class AllocMemTracker *pamTracker);
+                                        class AllocMemTracker *pamTracker,
+                                        Module* pLoaderModule = NULL);
 
     bool DeterminedIfMethodsAreEligibleForTieredCompilation()
     {
@@ -2247,10 +2246,13 @@ public:
         return m_methodTable;
     }
 
-    inline DPTR(PTR_MethodTable) GetMethodTablePtr() const
+public:
+    PTR_Module GetLoaderModule();
+
+    inline bool IsLoaderModuleAttachedToChunk() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return dac_cast<DPTR(PTR_MethodTable)>(PTR_HOST_MEMBER_TADDR(MethodDescChunk, this, m_methodTable));
+        return (m_flagsAndTokenRange & enum_flag_LoaderModuleAttachedToChunk) != 0;
     }
 
 #ifndef DACCESS_COMPILE
@@ -2280,6 +2282,13 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_next = chunk;
     }
+
+    void SetLoaderModuleAttachedToChunk(Module* pModule)
+    {
+        m_flagsAndTokenRange |= enum_flag_LoaderModuleAttachedToChunk;
+        TADDR ppLoaderModule = dac_cast<TADDR>(this) + SizeOf() - sizeof(PTR_Module);
+        *(Module**)ppLoaderModule = pModule;
+    }
 #endif // !DACCESS_COMPILE
 
     PTR_MethodDescChunk GetNextChunk()
@@ -2300,10 +2309,10 @@ public:
         return m_flagsAndTokenRange & enum_flag_TokenRangeMask;
     }
 
-    inline SIZE_T SizeOf()
+    inline SIZE_T SizeOf() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return sizeof(MethodDescChunk) + (m_size + 1) * MethodDesc::ALIGNMENT;
+        return sizeof(MethodDescChunk) + (m_size + 1) * MethodDesc::ALIGNMENT + (IsLoaderModuleAttachedToChunk() ? sizeof(PTR_Module) : 0);
     }
 
     inline MethodDesc *GetFirstMethodDesc()
@@ -2338,7 +2347,7 @@ private:
 
     // Followed by array of method descs...
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<MethodDescChunk>;
 };
 
 template<>
@@ -2348,6 +2357,7 @@ struct cdac_data<MethodDescChunk>
     static constexpr size_t Next = offsetof(MethodDescChunk, m_next);
     static constexpr size_t Size = offsetof(MethodDescChunk, m_size);
     static constexpr size_t Count = offsetof(MethodDescChunk, m_count);
+    static constexpr size_t FlagsAndTokenRange = offsetof(MethodDescChunk, m_flagsAndTokenRange);
 };
 
 inline int MethodDesc::GetMethodDescChunkIndex() const
@@ -2424,6 +2434,15 @@ public:
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
+    friend struct ::cdac_data<StoredSigMethodDesc>;
+};
+
+template<>
+struct cdac_data<StoredSigMethodDesc>
+{
+    static constexpr size_t Sig = offsetof(StoredSigMethodDesc, m_pSig);
+    static constexpr size_t cSig = offsetof(StoredSigMethodDesc, m_cSig);
+    static constexpr size_t ExtendedFlags = offsetof(StoredSigMethodDesc, m_dwExtendedFlags);
 };
 
 //-----------------------------------------------------------------------
@@ -2491,6 +2510,9 @@ public:
         StubTailCallCallTarget,
 
         StubVirtualStaticMethodDispatch,
+        StubDelegateShuffleThunk,
+
+        StubDelegateInvokeMethod,
 
         StubLast
     };
@@ -2639,6 +2661,12 @@ public:
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubMulticastDelegate;
     }
+    bool IsDelegateInvokeMethodStub() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        return GetILStubType() == DynamicMethodDesc::StubDelegateInvokeMethod;
+    }
     bool IsWrapperDelegateStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2653,6 +2681,12 @@ public:
         return GetILStubType() == DynamicMethodDesc::StubUnboxingIL;
     }
 #endif
+    bool IsDelegateShuffleThunk() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        return GetILStubType() == DynamicMethodDesc::StubDelegateShuffleThunk;
+    }
 
     // Whether the stub takes a context argument that is an interop MethodDesc.
     bool HasMDContextArg() const
@@ -2665,8 +2699,14 @@ public:
     // following implementations defined in DynamicMethod.cpp
     //
     void Destroy();
+    friend struct ::cdac_data<DynamicMethodDesc>;
 };
 
+template<>
+struct cdac_data<DynamicMethodDesc>
+{
+    static constexpr size_t MethodName = offsetof(DynamicMethodDesc, m_pszMethodName);
+};
 
 class ArrayMethodDesc : public StoredSigMethodDesc
 {
@@ -3418,7 +3458,14 @@ private:
                                                              MethodDesc* pSharedMDescForStub,
                                                              Instantiation methodInst,
                                                              BOOL getSharedNotStub);
+    friend struct ::cdac_data<InstantiatedMethodDesc>;
+};
 
+template<> struct cdac_data<InstantiatedMethodDesc>
+{
+    static constexpr size_t PerInstInfo = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
+    static constexpr size_t Flags2 = offsetof(InstantiatedMethodDesc, m_wFlags2);
+    static constexpr size_t NumGenericArgs = offsetof(InstantiatedMethodDesc, m_wNumGenericArgs);
 };
 
 inline PTR_MethodTable MethodDesc::GetMethodTable() const
@@ -3428,15 +3475,6 @@ inline PTR_MethodTable MethodDesc::GetMethodTable() const
     MethodDescChunk *pChunk = GetMethodDescChunk();
     PREFIX_ASSUME(pChunk != NULL);
     return pChunk->GetMethodTable();
-}
-
-inline DPTR(PTR_MethodTable) MethodDesc::GetMethodTablePtr() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    MethodDescChunk *pChunk = GetMethodDescChunk();
-    PREFIX_ASSUME(pChunk != NULL);
-    return pChunk->GetMethodTablePtr();
 }
 
 inline MethodTable* MethodDesc::GetCanonicalMethodTable()

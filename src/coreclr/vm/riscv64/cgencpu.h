@@ -104,6 +104,8 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
+#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
+#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 //**********************************************************************
 // Frames
@@ -206,14 +208,14 @@ inline void SetRA( T_CONTEXT * context, TADDR ip) {
 inline TADDR GetReg(T_CONTEXT * context, int Regnum)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(Regnum >= 0 && Regnum < 32 );
+    _ASSERTE(Regnum >= 0 && Regnum < 32);
      return (TADDR)(&context->R0 + Regnum);
 }
 
 inline void SetReg(T_CONTEXT * context, int Regnum, PCODE RegContent)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(Regnum >= 0 && Regnum <=28 );
+    _ASSERTE(Regnum >= 0 && Regnum < 32);
     *(&context->R0 + Regnum) = RegContent;
 }
 
@@ -343,30 +345,6 @@ struct IntReg
     WORD Mask() const { return 1 << reg; }
 };
 
-struct FloatReg
-{
-    int reg;
-    FloatReg(int reg):reg(reg)
-    {
-        _ASSERTE(0 <= reg && reg < 32);
-    }
-
-    operator int () { return reg; }
-    operator int () const { return reg; }
-    int operator == (FloatReg other) { return reg == other.reg; }
-    int operator != (FloatReg other) { return reg != other.reg; }
-    WORD Mask() const { return 1 << reg; }
-};
-
-struct CondCode
-{
-    int cond;
-    CondCode(int cond):cond(cond)
-    {
-        _ASSERTE(0 <= cond && cond < 16);
-    }
-};
-
 const IntReg RegSp  = IntReg(2);
 const IntReg RegFp  = IntReg(8);
 const IntReg RegRa  = IntReg(1);
@@ -398,23 +376,15 @@ public:
     void EmitMovConstant(IntReg target, UINT64 constant);
     void EmitJumpRegister(IntReg regTarget);
     void EmitMovReg(IntReg dest, IntReg source);
-    void EmitMovReg(FloatReg dest, FloatReg source);
 
-    void EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value);
-    void EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value);
+    void EmitAddImm(IntReg Xd, IntReg Xn, int value);
     void EmitSllImm(IntReg Xd, IntReg Xn, unsigned int value);
     void EmitLuImm(IntReg Xd, unsigned int value);
 
     void EmitLoad(IntReg dest, IntReg srcAddr, int offset = 0);
-    void EmitLoad(FloatReg dest, IntReg srcAddr, int offset = 0);
+
     void EmitStore(IntReg src, IntReg destAddr, int offset = 0);
-    void EmitStore(FloatReg src, IntReg destAddr, int offset = 0);
-
-    void EmitProlog(unsigned short cIntRegArgs, unsigned short cFpRegArgs, unsigned short cbStackSpace = 0);
-    void EmitEpilog();
 };
-
-extern "C" void SinglecastDelegateInvokeStub();
 
 
 // preferred alignment for data

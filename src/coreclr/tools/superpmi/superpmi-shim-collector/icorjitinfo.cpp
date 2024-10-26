@@ -267,6 +267,16 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(CORINFO_C
     return result;
 }
 
+// Given T, return the type of the SZGenericArrayEnumerator<T>.
+// Returns null if the type can't be determined exactly.
+CORINFO_CLASS_HANDLE interceptor_ICJI::getSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("getSZArrayHelperEnumeratorClass");
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getSZArrayHelperEnumeratorClass(cls);
+    mc->recGetSZArrayHelperEnumeratorClass(cls, result);
+    return result;
+}
+
 void interceptor_ICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
                                                 CORINFO_METHOD_HANDLE         callerHandle,
                                                 CORINFO_GENERICHANDLE_RESULT* pResult)
@@ -491,29 +501,12 @@ uint32_t interceptor_ICJI::getClassAttribs(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
-CORINFO_MODULE_HANDLE interceptor_ICJI::getClassModule(CORINFO_CLASS_HANDLE cls)
+// Returns the assembly name of the class "cls".
+const char* interceptor_ICJI::getClassAssemblyName(CORINFO_CLASS_HANDLE cls)
 {
-    mc->cr->AddCall("getClassModule");
-    CORINFO_MODULE_HANDLE temp = original_ICorJitInfo->getClassModule(cls);
-    mc->recGetClassModule(cls, temp);
-    return temp;
-}
-
-// Returns the assembly that contains the module "mod".
-CORINFO_ASSEMBLY_HANDLE interceptor_ICJI::getModuleAssembly(CORINFO_MODULE_HANDLE mod)
-{
-    mc->cr->AddCall("getModuleAssembly");
-    CORINFO_ASSEMBLY_HANDLE temp = original_ICorJitInfo->getModuleAssembly(mod);
-    mc->recGetModuleAssembly(mod, temp);
-    return temp;
-}
-
-// Returns the name of the assembly "assem".
-const char* interceptor_ICJI::getAssemblyName(CORINFO_ASSEMBLY_HANDLE assem)
-{
-    mc->cr->AddCall("getAssemblyName");
-    const char* temp = original_ICorJitInfo->getAssemblyName(assem);
-    mc->recGetAssemblyName(assem, temp);
+    mc->cr->AddCall("getClassAssemblyName");
+    const char* temp = original_ICorJitInfo->getClassAssemblyName(cls);
+    mc->recGetClassAssemblyName(cls, temp);
     return temp;
 }
 
@@ -1062,16 +1055,16 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getFieldClass(CORINFO_FIELD_HANDLE field)
 // the field's value class (if 'structType' == 0, then don't bother
 // the structure info).
 //
-// 'memberParent' is typically only set when verifying.  It should be the
-// result of calling getMemberParent.
+// 'fieldOwnerHint' is, potentially, a more exact owner of the field.
+// it's fine for it to be non-precise, it's just a hint.
 CorInfoType interceptor_ICJI::getFieldType(CORINFO_FIELD_HANDLE  field,
                                            CORINFO_CLASS_HANDLE* structType,
-                                           CORINFO_CLASS_HANDLE  memberParent /* IN */
+                                           CORINFO_CLASS_HANDLE  fieldOwnerHint /* IN */
                                            )
 {
     mc->cr->AddCall("getFieldType");
-    CorInfoType temp = original_ICorJitInfo->getFieldType(field, structType, memberParent);
-    mc->recGetFieldType(field, structType, memberParent, temp);
+    CorInfoType temp = original_ICorJitInfo->getFieldType(field, structType, fieldOwnerHint);
+    mc->recGetFieldType(field, structType, fieldOwnerHint, temp);
     return temp;
 }
 
@@ -1391,12 +1384,13 @@ size_t interceptor_ICJI::printMethodName(CORINFO_METHOD_HANDLE ftn, char* buffer
 const char* interceptor_ICJI::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,                  /* IN */
                                                         const char**          className,            /* OUT */
                                                         const char**          namespaceName,        /* OUT */
-                                                        const char**          enclosingClassName   /* OUT */
+                                                        const char**          enclosingClassNames,  /* OUT */
+                                                        size_t                maxEnclosingClassNames
                                                         )
 {
     mc->cr->AddCall("getMethodNameFromMetadata");
-    const char* temp = original_ICorJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassName);
-    mc->recGetMethodNameFromMetadata(ftn, (char*)temp, className, namespaceName, enclosingClassName);
+    const char* temp = original_ICorJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassNames, maxEnclosingClassNames);
+    mc->recGetMethodNameFromMetadata(ftn, (char*)temp, className, namespaceName, enclosingClassNames, maxEnclosingClassNames);
     return temp;
 }
 
@@ -2026,4 +2020,12 @@ uint32_t interceptor_ICJI::getExpectedTargetArchitecture()
 bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
 {
     return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
+{
+    mc->cr->AddCall("getSpecialCopyHelper");
+    CORINFO_METHOD_HANDLE temp = original_ICorJitInfo->getSpecialCopyHelper(type);
+    mc->recGetSpecialCopyHelper(type, temp);
+    return temp;
 }

@@ -104,7 +104,7 @@ public:
     static void Startup();
 
     ~PEImage();
-    PEImage();
+    explicit PEImage(const WCHAR* path);
 
     BOOL Equals(PEImage* pImage);
 
@@ -121,7 +121,7 @@ public:
         MDInternalImportFlags flags = MDInternalImport_Default,
         BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());
 
-    static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle = TRUE);
+    static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle);
     void AddToHashMap();
 #endif
 
@@ -182,8 +182,8 @@ public:
     void SetModuleFileNameHintForDAC();
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    const SString &GetModuleFileNameHintForDAC();
 #endif
+    const SString &GetModuleFileNameHintForDAC();
 
 private:
 #ifndef DACCESS_COMPILE
@@ -206,7 +206,7 @@ private:
     // Private routines
     // ------------------------------------------------------------
 
-    void Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation);
+    void Init(BundleFileLocation bundleFileLocation);
 
     struct PEImageLocator
     {
@@ -285,7 +285,7 @@ private:
     // Instance fields
     // ------------------------------------------------------------
 
-    SString   m_path;
+    const SString   m_path;
     ULONG     m_pathHash;
     LONG      m_refCount;
 
@@ -302,12 +302,10 @@ private:
     DWORD m_dwPEKind;
     DWORD m_dwMachine;
 
-    // This variable will have the data of module name.
-    // It is only used by DAC to remap fusion loaded modules back to
-    // disk IL. This really is a workaround. The real fix is for fusion loader
-    // hook (public API on hosting) to take an additional file name hint.
-    // We are piggy backing on the fact that module name is the same as file name!!!
-    SString   m_sModuleFileNameHintUsedByDac; // This is only used by DAC
+    // This only used by DAC
+    // For assemblies loaded from a path or single-file bundle, this is the file name portion of the path
+    // For assemblies loaded from memory, this is the module file name from metadata
+    SString   m_sModuleFileNameHintUsedByDac;
 
     enum
     {

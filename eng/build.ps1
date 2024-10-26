@@ -79,8 +79,8 @@ function Get-Help() {
   Write-Host "Libraries settings:"
   Write-Host "  -allconfigurations      Build packages for all build configurations."
   Write-Host "  -coverage               Collect code coverage when testing."
-  Write-Host "  -framework (-f)         Build framework: net9.0 or net48."
-  Write-Host "                          [Default: net9.0]"
+  Write-Host "  -framework (-f)         Build framework: net10.0 or net48."
+  Write-Host "                          [Default: net10.0]"
   Write-Host "  -testnobuild            Skip building tests when invoking -test."
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all."
   Write-Host ""
@@ -329,7 +329,7 @@ foreach ($argument in $PSBoundParameters.Keys)
 }
 
 if ($env:TreatWarningsAsErrors -eq 'false') {
-  $arguments += " -warnAsError 0"
+  $arguments += " -warnAsError `$false"
 }
 
 # disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211

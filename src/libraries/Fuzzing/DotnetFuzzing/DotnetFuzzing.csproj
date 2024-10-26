@@ -2,12 +2,13 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
-    <PublishSelfContained>true</PublishSelfContained>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <UseAppHost>true</UseAppHost>
+    <AppHostSourcePath>$(ArtifactsDir)\bin\win-x64.Debug\corehost\apphost.exe</AppHostSourcePath>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <EnablePreviewFeatures>True</EnablePreviewFeatures>
-    <NoWarn>$(NoWarn);CA2252</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -16,18 +17,33 @@
   </ItemGroup>
 
   <ItemGroup>
-    <FrameworkReference Update="Microsoft.NETCore.App" RuntimeFrameworkVersion="$(ProductVersion)-dev" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <Compile Include="Assert.cs" />
+    <Compile Include="Fuzzers\AssemblyNameInfoFuzzer.cs" />
+    <Compile Include="Fuzzers\Base64Fuzzer.cs" />
+    <Compile Include="Fuzzers\Base64UrlFuzzer.cs" />
+    <Compile Include="Fuzzers\HttpHeadersFuzzer.cs" />
+    <Compile Include="Fuzzers\JsonDocumentFuzzer.cs" />
+    <Compile Include="Fuzzers\NrbfDecoderFuzzer.cs" />
+    <Compile Include="Fuzzers\SearchValuesByteCharFuzzer.cs" />
+    <Compile Include="Fuzzers\SearchValuesStringFuzzer.cs" />
+    <Compile Include="Fuzzers\TextEncodingFuzzer.cs" />
+    <Compile Include="Fuzzers\TypeNameFuzzer.cs" />
+    <Compile Include="Fuzzers\UTF8Fuzzer.cs" />
+    <Compile Include="IFuzzer.cs" />
+    <Compile Include="PooledBoundedMemory.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="$(TestUtilities)\System\Buffers\BoundedMemory.*" Link="TestUtilities\%(Filename)%(Extension)" />
     <Compile Include="$(TestUtilities)\System\Buffers\PoisonPagePlacement.cs" Link="TestUtilities\PoisonPagePlacement.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Dictionaries\*">
+    <None Include="Dictionaries\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Formats.Nrbf\src\System.Formats.Nrbf.csproj" />
   </ItemGroup>
 
 </Project>

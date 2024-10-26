@@ -823,7 +823,6 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
-            - WasmTestOnV8
             - WasmTestOnChrome
             - WasmTestOnFirefox
 
@@ -850,7 +849,6 @@ extends:
           scenarios:
             - WasmTestOnChrome
             - WasmTestOnFirefox
-            #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
 
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -869,7 +867,6 @@ extends:
           platforms:
             - browser_wasm
             - browser_wasm_win
-            - wasi_wasm
           nameSuffix: _Smoke_AOT
           runAOT: true
           shouldRunSmokeOnly: true
@@ -1847,21 +1844,21 @@ extends:
         #
         # Sourcebuild legs
         # We have 3 important legs for source-build:
-        # - Centos.8 (ensures that known non-portable RID is working)
+        # - Centos.9 (ensures that known non-portable RID is working)
         # - Linux-x64 portable (used for dependency flow and downstream PR verification)
         # - Banana.24 - Non-existent RID to ensure we don't break RIDs we don't know about.
         #
-        # Running all of these everywhere is wasteful. Run Banana.24 and CentOS.8 in rolling CI,
+        # Running all of these everywhere is wasteful. Run Banana.24 and CentOS.9 in rolling CI,
         # Run Linux-x64 in PR.
         - template: /eng/common/templates/jobs/source-build.yml
           parameters:
             platforms:
-              - name: CentOS8
-                targetRid: centos.8-x64
+              - name: CentOS9
+                targetRID: centos.9-x64
                 nonPortable: true
                 container: SourceBuild_centos_x64
               - name: NonexistentRID
                 baseOS: linux
-                targetRid: banana.24-x64
+                targetRID: banana.24-x64
                 nonPortable: true
                 container: SourceBuild_centos_x64

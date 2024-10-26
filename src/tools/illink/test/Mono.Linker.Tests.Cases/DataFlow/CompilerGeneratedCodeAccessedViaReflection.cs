@@ -79,11 +79,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				t_IteratorWithProblematicDataflow.RequiresAll ();
 			}
 
-			[ExpectedWarning ("IL2112", nameof (RUCTypeWithIterators) + "()", "--RUCTypeWithIterators--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002", CompilerGeneratedCode = true)] // warning about .ctor
+			[ExpectedWarning ("IL2112", nameof (RUCTypeWithIterators) + "()", "--RUCTypeWithIterators--", CompilerGeneratedCode = true)] // warning about .ctor
 			[RequiresUnreferencedCode ("--RUCTypeWithIterators--")]
 			class RUCTypeWithIterators
 			{
-				[ExpectedWarning ("IL2112", nameof (StaticIteratorCallsMethodWithRequires) + "()", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002")]
+				[ExpectedWarning ("IL2112", nameof (StaticIteratorCallsMethodWithRequires) + "()")]
 				[ExpectedWarning ("IL3002", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warning", CompilerGeneratedCode = true)]
 				[ExpectedWarning ("IL3050", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warning", CompilerGeneratedCode = true)]
 				public static IEnumerable<int> StaticIteratorCallsMethodWithRequires ()
@@ -92,7 +92,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					MethodWithRequires ();
 				}
 
-				[ExpectedWarning ("IL2112", nameof (InstanceIteratorCallsMethodWithRequires) + "()", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002")]
+				[ExpectedWarning ("IL2112", nameof (InstanceIteratorCallsMethodWithRequires) + "()")]
 				[ExpectedWarning ("IL3002", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warning", CompilerGeneratedCode = true)]
 				[ExpectedWarning ("IL3050", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warning", CompilerGeneratedCode = true)]
 				public IEnumerable<int> InstanceIteratorCallsMethodWithRequires ()
@@ -268,11 +268,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				lambda ();
 			}
 
-			[ExpectedWarning ("IL2112", nameof (RUCTypeWithLambdas) + "()", "--RUCTypeWithLambdas--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2112", nameof (RUCTypeWithLambdas) + "()", "--RUCTypeWithLambdas--", CompilerGeneratedCode = true)]
 			[RequiresUnreferencedCode ("--RUCTypeWithLambdas--")]
 			class RUCTypeWithLambdas
 			{
-				[ExpectedWarning ("IL2112", [nameof (MethodWithLambdas), "--RUCTypeWithLambdas--"], Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002")]
+				[ExpectedWarning ("IL2112", nameof (MethodWithLambdas), "--RUCTypeWithLambdas--")]
 				public void MethodWithLambdas ()
 				{
 					var lambda =
@@ -374,11 +374,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				LocalFunction ();
 			}
 
-			[ExpectedWarning ("IL2112", nameof (RUCTypeWithLocalFunctions) + "()", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2112", nameof (RUCTypeWithLocalFunctions) + "()", CompilerGeneratedCode = true)]
 			[RequiresUnreferencedCode ("--RUCTypeWithLocalFunctions--")]
 			class RUCTypeWithLocalFunctions
 			{
-				[ExpectedWarning ("IL2112", nameof (MethodWithLocalFunctions), "--RUCTypeWithLocalFunctions--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002")]
+				[ExpectedWarning ("IL2112", nameof (MethodWithLocalFunctions), "--RUCTypeWithLocalFunctions--")]
 				public void MethodWithLocalFunctions ()
 				{
 					[ExpectedWarning ("IL3002", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
