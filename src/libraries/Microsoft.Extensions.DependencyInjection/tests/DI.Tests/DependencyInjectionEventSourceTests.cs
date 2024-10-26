@@ -356,7 +356,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         {
             if (data.PayloadNames is { } names &&
                 data.Payload is { } payload &&
-                names.IndexOf(propName) is var index and >= 0 &&
+                names.IndexOf(propName) is int index and >= 0 &&
                 payload[index] is T value)
             {
                 result = value;
