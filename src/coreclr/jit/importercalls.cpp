@@ -8350,7 +8350,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     {
         // Pass the instantiating stub method desc as the inst param arg.
         //
-        GenTree* const instParam = gtNewIconHandleNode((size_t)instantiatingStub, GTF_ICON_METHOD_HDL);
+        // Note different embedding would be needed for NAOT/R2R,
+        // but we have ruled those out above.
+        //
+        GenTree* const instParam =
+            gtNewIconEmbHandleNode(instantiatingStub, null, GTF_ICON_METHOD_HDL, instantiatingStub);
         call->gtArgs.InsertInstParam(this, instParam);
     }
 
