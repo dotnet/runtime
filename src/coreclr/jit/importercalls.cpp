@@ -8354,7 +8354,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // but we have ruled those out above.
         //
         GenTree* const instParam =
-            gtNewIconEmbHandleNode(instantiatingStub, null, GTF_ICON_METHOD_HDL, instantiatingStub);
+            gtNewIconEmbHndNode(instantiatingStub, nullptr, GTF_ICON_METHOD_HDL, instantiatingStub);
         call->gtArgs.InsertInstParam(this, instParam);
     }
 
