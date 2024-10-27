@@ -4047,8 +4047,6 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
     {
         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
         {
-            assert(!compIsForInlining());
-
             // We first call a special helper to get the statics base pointer
             op1 = impParentClassTokenToHandle(pResolvedToken);
 
@@ -9222,10 +9220,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             compInlineResult->NoteFatal(InlineObservation::CALLEE_LDFLD_NEEDS_HELPER);
                             return;
 
-                        case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
-                            /* We may be able to inline the field accessors in specific instantiations of generic
-                             * methods */
                             compInlineResult->NoteFatal(InlineObservation::CALLSITE_LDFLD_NEEDS_HELPER);
                             return;
 
