@@ -8192,7 +8192,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     const char* instArg           = "";
 #endif
 
-    if (dvInfo.requiresInstMethodDescArg)
+    CORINFO_METHOD_HANDLE instantiatingStub = NO_METHOD_HANDLE;
+
+    if (dvInfo.isInstantiatingStub)
     {
         // We should only end up with generic methods for array interface devirt.
         //
@@ -8216,6 +8218,13 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             assert(!"unexpected inst param in virtual/interface call");
             return;
         }
+
+        // We want to inline the instantiating stub. Fetch the relevant info.
+        //
+        CORINFO_CLASS_HANDLE ignored = NO_CLASS_HANDLE;
+        derivedMethod = info.compCompHnd->getInstantiatedEntry(derivedMethod, &instantiatingStub, &ignored);
+        assert(ignored == NO_CLASS_HANDLE);
+        assert((derivedMethod == NO_METHOD_HANDLE) || (instantiatingStub != NO_METHOD_HANDLE));
     }
 
     // If we failed to get a method handle, we can't directly devirtualize.
@@ -8246,9 +8255,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         {
             note = "final method";
         }
-        if (dvInfo.requiresInstMethodDescArg)
+        if (dvInfo.isInstantiatingStub)
         {
-            instArg = " + requires inst arg";
+            instArg = " [instantiating stub]";
         }
 
         if (verbose || doPrint)
@@ -8311,12 +8320,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     call->gtControlExpr = nullptr;
     INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
 
-    if (dvInfo.requiresInstMethodDescArg)
+    if (dvInfo.isInstantiatingStub)
     {
-        // Pass the method desc as the inst param arg.
-        // Need to make sure this works in all cases. We might need more complex embedding.
+        // Pass the instantiating stub method desc as the inst param arg.
         //
-        GenTree* const instParam = gtNewIconNode((ssize_t)dvInfo.virtualMethod, TYP_I_IMPL);
+        GenTree* const instParam = gtNewIconHandleNode((size_t)instantiatingStub, GTF_ICON_METHOD_HDL);
         call->gtArgs.InsertInstParam(this, instParam);
     }
 
@@ -8877,10 +8885,10 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
             if (instParam != nullptr)
             {
                 assert(instParam->GetNext() == nullptr);
-                CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetNode());
-                if (hClass != NO_CLASS_HANDLE)
+                CORINFO_METHOD_HANDLE hMethod = gtGetHelperArgMethodHandle(instParam->GetNode());
+                if (hMethod != NO_METHOD_HANDLE)
                 {
-                    typeHnd = getTypeInstantiationArgument(hClass, 0);
+                    typeHnd = getMethodInstantiationArgument(hMethod, 0);
                 }
             }
 
