@@ -5269,9 +5269,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             DoPhase(this, PHASE_OPTIMIZE_LAYOUT, lateLayoutPhase);
         }
 
-        // Determine start of cold region if we are hot/cold splitting
-        DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
-
         // Now that the flowgraph is finalized, run post-layout optimizations.
         //
         DoPhase(this, PHASE_OPTIMIZE_POST_LAYOUT, &Compiler::optOptimizePostLayout);

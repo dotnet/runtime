@@ -37,7 +37,17 @@ internal readonly struct Loader_1 : ILoader
     string ILoader.GetPath(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        return _target.ReadUtf16String(module.Path);
+        return module.Path != TargetPointer.Null
+            ? _target.ReadUtf16String(module.Path)
+            : string.Empty;
+    }
+
+    string ILoader.GetFileName(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return module.FileName != TargetPointer.Null
+            ? _target.ReadUtf16String(module.FileName)
+            : string.Empty;
     }
 
     TargetPointer ILoader.GetLoaderAllocator(ModuleHandle handle)
